@@ -1,0 +1,32 @@
+{
+  "name": "jstools",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "jest",
+    "tsc": "tsc",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --build",
+    "ts-node": "ts-node",
+    "script": "tsc && node ./dist/src/$npm_config_name.js",
+    "script-module": "tsc && node --es-module-specifier-resolution=node ./dist/src/$npm_config_name.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@milaboratory/helpers": "^1.0.0",
+    "@milaboratory/sequences": "^1.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "tsconfig-paths": "^4.2.0",
+    "ts-jest": "^29.0.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
+  }
+}
