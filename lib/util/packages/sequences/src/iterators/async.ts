@@ -36,6 +36,15 @@ export async function* mapIterable<T, R>(it: AsyncIterable<T>, cb: (v: T) => R) 
   }
 }
 
+export async function* flatMapIterable<T, R>(it: AsyncIterable<T>, cb: (v: T) => Promise<R[]>) {
+  for await (const v of it) {
+    const items = await cb(v);
+    for (const it of items) {
+      yield it;
+    }
+  }
+}
+
 export async function* throttleIterable<T, R>(
   it: AsyncIterable<T>,
   dt: number,

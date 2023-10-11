@@ -1,4 +1,11 @@
-import {mapIterable, filterIterable, sliceIterable, mergeIterable, throttleIterable} from './iterators/async';
+import {
+  mapIterable,
+  flatMapIterable,
+  filterIterable,
+  sliceIterable,
+  mergeIterable,
+  throttleIterable
+} from './iterators/async';
 
 export class AsyncSequence<T> {
   constructor(private iterable: AsyncIterable<T>) {
@@ -12,7 +19,11 @@ export class AsyncSequence<T> {
     return new AsyncSequence(mapIterable(this.iterable, cb));
   }
 
-  throttle(dt: number, options?: {leading?: boolean; trailing?: boolean}) {
+  flatMap<R>(cb: (v: T) => Promise<R[]>) {
+    return new AsyncSequence(flatMapIterable(this.iterable, cb));
+  }
+
+  throttle(dt: number, options?: { leading?: boolean; trailing?: boolean }) {
     return new AsyncSequence(throttleIterable(this.iterable, dt, options ?? {}));
   }
 
