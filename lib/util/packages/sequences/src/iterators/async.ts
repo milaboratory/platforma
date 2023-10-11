@@ -85,12 +85,12 @@ export async function* filterIterable<T>(it: AsyncIterable<T>, cb: (v: T) => boo
 export async function* sliceIterable<T>(it: AsyncIterable<T>, from: number, to: number) {
   let i = 0;
   for await (const v of it) {
-    if (i >= to) {
-      break;
-    }
     if (i >= from) {
       yield v;
     }
     i++;
+    if (i >= to) {
+      break;
+    }
   }
 }
