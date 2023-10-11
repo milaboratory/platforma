@@ -65,9 +65,9 @@ export async function* throttleIterable<T, R>(
   }
 }
 
-export async function* filterIterable<T>(it: AsyncIterable<T>, cb: (v: T) => boolean) {
+export async function* filterIterable<T>(it: AsyncIterable<T>, cb: (v: T) => boolean | Promise<boolean>) {
   for await (const v of it) {
-    if (cb(v)) {
+    if (await cb(v)) {
       yield v;
     }
   }

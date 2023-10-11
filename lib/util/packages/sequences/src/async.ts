@@ -16,7 +16,7 @@ export class AsyncSequence<T> {
     return new AsyncSequence(throttleIterable(this.iterable, dt, options ?? {}));
   }
 
-  filter(cb: (v: T) => boolean) {
+  filter(cb: (v: T) => boolean | Promise<boolean>) {
     return new AsyncSequence(filterIterable(this.iterable, cb));
   }
 
