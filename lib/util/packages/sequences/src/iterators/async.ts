@@ -1,5 +1,17 @@
 import {Emitter} from '../tools';
 
+function getTime() {
+  return new Date().getTime();
+}
+
+function timerPassed() {
+  let t = getTime();
+  return function (dt: number) {
+    const d = getTime() - t;
+    return d > dt ? !!(t = getTime()) : false;
+  }
+}
+
 export async function* mergeIterable<T, B>(it1: AsyncIterable<T>, it2: AsyncIterable<B>): AsyncIterable<T | B> {
   const em = new Emitter<T | B>();
 
@@ -21,6 +33,35 @@ export async function* mergeIterable<T, B>(it1: AsyncIterable<T>, it2: AsyncIter
 export async function* mapIterable<T, R>(it: AsyncIterable<T>, cb: (v: T) => R) {
   for await (const v of it) {
     yield cb(v);
+  }
+}
+
+export async function* throttleIterable<T, R>(
+  it: AsyncIterable<T>,
+  dt: number,
+  options: { leading?: boolean; trailing?: boolean }) {
+  const passed = timerPassed();
+
+  const state = {
+    leading: options.leading ?? true,
+    trailing: options.trailing ?? false,
+    trailingValue: [] as T[]
+  };
+
+  for await (const v of it) {
+    if (state.leading) {
+      yield v;
+      state.leading = false;
+    } else if (passed(dt)) {
+      yield v;
+      state.trailingValue = [];
+    } else {
+      state.trailingValue = [v];
+    }
+  }
+
+  if (state.trailing && state.trailingValue.length) {
+    yield state.trailingValue[0];
   }
 }
 
