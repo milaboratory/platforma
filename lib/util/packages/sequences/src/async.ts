@@ -35,6 +35,22 @@ export class AsyncSequence<T> {
     return new AsyncSequence(sliceIterable(this.iterable, from, to));
   }
 
+  async until(cb: (v: T) => Promise<boolean>) {
+    for await (const v of this.iterable) {
+      if (await cb(v)) {
+        return v;
+      }
+    }
+  }
+
+  take(n: number) {
+    if (n < 1) {
+      throw Error('take param should be greater than 0');
+    }
+    return this.slice(0, n);
+  }
+
+
   async reduce<R>(cb: (acc: R, v: T) => R, acc: R) {
     for await (const v of this.iterable) {
       acc = cb(acc, v);
