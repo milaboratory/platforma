@@ -1,5 +1,5 @@
 import {test, beforeEach, expect} from '@jest/globals';
-import {timer, arrayFrom} from '@milaboratory/helpers';
+import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
 
 beforeEach(() => {
@@ -15,7 +15,7 @@ test('BasicSeqTest', async () => {
 }, 100000);
 
 test('BasicSeqTest2', async () => {
-  const arr = arrayFrom(10000000, i => i);
+  const arr = utils.arrayFrom(10000000, i => i);
 
   const n = 177112;
 

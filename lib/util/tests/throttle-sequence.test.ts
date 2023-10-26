@@ -1,6 +1,8 @@
 import {test, beforeEach, expect} from '@jest/globals';
-import {delay, arrayFrom} from '@milaboratory/helpers';
+import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
+
+const {delay, arrayFrom} = utils;
 
 beforeEach(() => {
   global.console = require('console');

@@ -1,6 +1,8 @@
 import {test, beforeEach, expect} from '@jest/globals';
-import {delay, timer} from '@milaboratory/helpers';
+import {utils} from '@milaboratory/helpers';
 import {sequence, Emitter} from '@milaboratory/sequences';
+
+const {delay, timer} = utils;
 
 beforeEach(() => {
   global.console = require('console');

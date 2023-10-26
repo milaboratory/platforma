@@ -1,5 +1,5 @@
 import {test, beforeEach, expect} from '@jest/globals';
-import {delay, arrayFrom} from '@milaboratory/helpers';
+import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
 
 beforeEach(() => {
@@ -7,12 +7,12 @@ beforeEach(() => {
 });
 
 test('AsyncSequence 1', async () => {
-  let values = arrayFrom(10, i => i);
+  let values = utils.arrayFrom(10, i => i);
 
   async function* gen() {
     while (values.length) {
       yield values.shift()!;
-      await delay(10);
+      await utils.delay(10);
     }
   }
 
@@ -32,7 +32,7 @@ test('AsyncSequence 1', async () => {
 }, 10000);
 
 test('AsyncSequence 1', async () => {
-  const arr = arrayFrom(1000, i => i);
+  const arr = utils.arrayFrom(1000, i => i);
 
   async function* gen(): AsyncIterable<number> {
     while (arr.length) {
