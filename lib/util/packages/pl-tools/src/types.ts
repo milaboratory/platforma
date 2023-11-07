@@ -1,5 +1,11 @@
 export type Arranged = {
   fileName: string
   filePath: string
-  groups: Record<string, string> | null
+  Sample: string
+  R: string
+  tags: {
+    [key: string]: string
+  } | null
+  valid: boolean
+  hasMatch: boolean
 };

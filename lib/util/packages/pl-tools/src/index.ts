@@ -1,5 +1,7 @@
-import Arrange from './Arrange';
+import SamplePatterns from './SamplePatterns';
+import {Arranged} from './types';
 
 export {
-  Arrange
+  SamplePatterns,
+  Arranged
 }

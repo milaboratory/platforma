@@ -79,3 +79,15 @@ export class Interval {
 export function arrayFrom<T>(length: number, cb: (i: number) => T) {
   return Array.from({length}, (_, i) => cb(i));
 }
+
+export function *iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
+  const acc: T[] = [];
+  for (const it of iterable) {
+    acc.push(it);
+    if (acc.length === 2) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      yield [acc[0]!, acc[1]!];
+      acc.shift();
+    }
+  }
+}

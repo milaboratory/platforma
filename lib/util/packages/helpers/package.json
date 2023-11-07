@@ -1,14 +1,12 @@
 {
   "name": "@milaboratory/helpers",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "",
   "main": "build/index.js",
   "scripts": {
     "build": "tsc --build"
   },
-  "dependencies": {
-    "@milaboratory/helpers": "^1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {},
   "keywords": [],
   "author": "",
