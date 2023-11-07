@@ -12,5 +12,6 @@
     "rootDir": "./src",
     "outDir": "./build",
     "composite": true
-  }
+  },
+  "include": ["src/**/*"]
 }

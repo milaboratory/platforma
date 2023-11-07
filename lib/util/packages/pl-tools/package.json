@@ -1,13 +1,10 @@
 {
-  "name": "@milaboratory/helpers",
-  "version": "1.0.10",
+  "name": "@milaboratory/pl-tools",
+  "version": "1.0.1",
   "description": "",
   "main": "build/index.js",
   "scripts": {
     "build": "tsc --build"
-  },
-  "dependencies": {
-    "@milaboratory/helpers": "^1.0.0"
   },
   "devDependencies": {},
   "keywords": [],
