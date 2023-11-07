@@ -5,7 +5,7 @@ name: Build NodeJS Libraries
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
     tags:
       - 'v*'
   workflow_dispatch: {}
@@ -19,7 +19,7 @@ jobs:
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-monorepo.yaml@v4-beta
+    uses: milaboratory/github-ci-internal/.github/workflows/node-monorepo.yaml@v4-beta
     with:
       app-name: JSTools
       app-name-slug: 'jstools'
