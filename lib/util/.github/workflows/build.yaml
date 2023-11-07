@@ -16,6 +16,7 @@ jobs:
       - uses: milaboratory/github-ci/actions/context/init@v4-beta
         with:
           version-canonize: false
+          branch-versioning: main
   run:
     needs:
       - init
