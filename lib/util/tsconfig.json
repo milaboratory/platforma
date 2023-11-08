@@ -29,7 +29,7 @@
     "noUncheckedIndexedAccess": true,                 /* Add 'undefined' to a type when accessed using an index. */
     /* Completeness */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */,
-    "composite": true
+    "composite": false
   },
   "include": ["test/**/*"],
   "exclude": ["raw/**/*"],

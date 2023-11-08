@@ -10,7 +10,7 @@
   "scripts": {
     "test": "jest",
     "tsc": "tsc",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit --composite false",
     "build": "tsc --build",
     "ts-node": "ts-node",
     "script": "tsc && node ./dist/src/$npm_config_name.js",

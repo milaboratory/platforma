@@ -1,8 +1,8 @@
-import {strings, objects, utils} from '@milaboratory/helpers';
+import {trimChars, isRegexpValid, extractFileName} from '@milaboratory/helpers/build/strings.js';
 import {Arranged} from './types';
-import {iterateByPairs} from '@milaboratory/helpers/build/utils';
 import {sequence} from '@milaboratory/sequences';
-import {omit} from '@milaboratory/helpers/build/objects';
+import {omit, setProp} from '@milaboratory/helpers/build/objects.js';
+import {iterateByPairs} from '@milaboratory/helpers/build/utils.js';
 
 function escapeRegExp(string: string) {
   return string ? string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : '';
@@ -15,7 +15,7 @@ export default {
     const matches = sequence(pattern.matchAll(tagPattern)).map(m => ({
       first: m.index ?? 0,
       last: (m.index ?? 0) + m[0].length,
-      name: strings.trimChars(m[0], ['{', '}'])
+      name: trimChars(m[0], ['{', '}'])
     })).toArray();
 
     matches.unshift({
@@ -53,10 +53,10 @@ export default {
   arrangeFiles(filePaths: string[], pattern: string): Arranged[] {
     const regExp = this.compilePattern(pattern);
 
-    const isRegexValid = strings.isRegexpValid(regExp);
+    const isRegexValid = isRegexpValid(regExp);
 
     return filePaths.map(filePath => {
-      const fileName = strings.extractFileName(filePath);
+      const fileName = extractFileName(filePath);
 
       const match = isRegexValid ? fileName.match(regExp) : null;
 
@@ -78,7 +78,7 @@ export default {
       if (!a.Sample || !a.R) {
         return v;
       }
-      return objects.setProp(v, a.Sample, [...v[a.Sample] || [], a.R]);
+      return setProp(v, a.Sample, [...v[a.Sample] || [], a.R]);
     }, {} as Record<string, string[]>);
 
     return arranged.filter(a => {
