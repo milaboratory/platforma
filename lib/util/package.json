@@ -5,7 +5,10 @@
   "main": "index.js",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/helpers",
+    "packages/node-streams",
+    "packages/sequences",
+    "packages/pl-tools"
   ],
   "scripts": {
     "test": "jest",
@@ -20,7 +23,8 @@
   "license": "ISC",
   "dependencies": {
     "@milaboratory/helpers": "^1.0.0",
-    "@milaboratory/sequences": "^1.0.0"
+    "@milaboratory/sequences": "^1.0.0",
+    "@milaboratory/node-streams": "^1.0.0"
   },
   "devDependencies": {
     "jest": "^29.3.1",

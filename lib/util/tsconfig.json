@@ -40,6 +40,9 @@
   },
   "references": [
     {
+      "path": "./packages/node-streams"
+    },
+    {
       "path": "./packages/sequences"
     },
     {

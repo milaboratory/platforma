@@ -1,12 +1,8 @@
-import {test, beforeEach, expect} from '@jest/globals';
+import {test, expect} from '@jest/globals';
 import {utils} from '@milaboratory/helpers';
 import {sequence, Emitter} from '@milaboratory/sequences';
 
 const {delay, timer} = utils;
-
-beforeEach(() => {
-  global.console = require('console');
-});
 
 test('test 1', async () => {
   async function* gen() {
@@ -147,4 +143,6 @@ test('PushTestAsync', async () => {
   for await (const v of it) {
     // console.log('v', v);
   }
+
+  await delay(1000);
 }, 100000);

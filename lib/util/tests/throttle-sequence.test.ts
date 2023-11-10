@@ -1,12 +1,8 @@
-import {test, beforeEach, expect} from '@jest/globals';
+import {test, expect} from '@jest/globals';
 import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
 
 const {delay, arrayFrom} = utils;
-
-beforeEach(() => {
-  global.console = require('console');
-});
 
 test('Throttle', async () => {
   const values = arrayFrom(20, i => i);

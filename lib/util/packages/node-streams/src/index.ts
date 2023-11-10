@@ -6,7 +6,7 @@ import type {Readable} from 'node:stream';
 
 export const finished = util.promisify(stream.finished);
 
-// export const pipeline = util.promisify(stream.pipeline);
+export const pipeline = util.promisify(stream.pipeline);
 
 export const readableToString = (stream: Readable): Promise<string> =>
   new Promise((resolve, reject) => {

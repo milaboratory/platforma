@@ -1,9 +1,5 @@
-import {test, beforeEach, expect} from '@jest/globals';
+import {test, expect} from '@jest/globals';
 import {SamplePatterns} from '@milaboratory/pl-tools';
-
-beforeEach(() => {
-  global.console = require('console');
-});
 
 const cases = [
   {

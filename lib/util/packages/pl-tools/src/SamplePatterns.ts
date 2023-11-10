@@ -1,8 +1,10 @@
-import {trimChars, isRegexpValid, extractFileName} from '@milaboratory/helpers/build/strings.js';
+import {strings, objects, utils} from '@milaboratory/helpers';
 import {Arranged} from './types';
 import {sequence} from '@milaboratory/sequences';
-import {omit, setProp} from '@milaboratory/helpers/build/objects.js';
-import {iterateByPairs} from '@milaboratory/helpers/build/utils.js';
+
+const {trimChars, isRegexpValid, extractFileName} = strings;
+const {omit, setProp} = objects;
+const {iterateByPairs} = utils;
 
 function escapeRegExp(string: string) {
   return string ? string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : '';

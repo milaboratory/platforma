@@ -1,10 +1,6 @@
-import {test, beforeEach, expect} from '@jest/globals';
+import {test, expect} from '@jest/globals';
 import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
-
-beforeEach(() => {
-  global.console = require('console');
-});
 
 test('BasicSeqTest', async () => {
   const s = sequence([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);

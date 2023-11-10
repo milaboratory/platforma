@@ -1,10 +1,6 @@
-import {test, beforeEach, expect} from '@jest/globals';
+import {test, expect} from '@jest/globals';
 import {utils} from '@milaboratory/helpers';
 import {sequence} from '@milaboratory/sequences';
-
-beforeEach(() => {
-  global.console = require('console');
-});
 
 test('AsyncSequence 1', async () => {
   let values = utils.arrayFrom(10, i => i);
