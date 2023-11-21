@@ -37,6 +37,10 @@ export function call<R>(f: () => R): R {
   return f();
 }
 
+export function clamp(n: number, lo: number, up: number) {
+  return lo > n ? lo : n > up ? up : n;
+}
+
 export function tap<T, R>(v: T, cb: (v: T) => R) {
   return cb(v);
 }
