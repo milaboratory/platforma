@@ -1,0 +1,28 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+#app {
+  display: flex;
+  justify-content: start;
+  height: 100%;
+  border: 1px solid green;
+  padding: 24px;
+}
+
+.dev-layout {
+  border: 1px solid #ccc;
+  width: 1160px;
+  height: 560px;
+  resize: both;
+  overflow: auto;
+}

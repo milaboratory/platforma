@@ -1,0 +1,168 @@
+@import "@/assets/mixins.scss";
+
+.grid-table {
+  --cell-font-family: var(--font-family-base);
+  --cell-font-weight: 500;
+
+  width: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: 40px 1fr;
+  flex-direction: column;
+  border: 1px solid var(--bg-elevated-02);
+  border-radius: 6px;
+  overflow: auto;
+  position: relative;
+  font-weight: 500;
+
+  &.monospace {
+    --cell-font-family: var(--font-family-monospace);
+    --cell-font-weight: 400;
+  }
+
+  .add-column-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 40px;
+    height: 39px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid var(--color-div-grey);
+    background-color: #F7F8FA;
+    cursor: pointer;
+    z-index: 1;
+    > div {
+      background-color: var(--color-text);
+      @include mask(url(./16_add.svg), 16px);
+    }
+  }
+
+  .table-head {
+    position: relative;
+    max-width: 100%;
+    display: grid;
+    gap: 1px;
+    padding-bottom: 1px;
+    background-color: var(--bg-elevated-02);
+    border-bottom: 1px solid var(--color-txt-01);
+    overflow: hidden;
+    padding-right: 8px;
+
+    .cell {
+      background-color: #F7F8FA;
+      font-weight: 600;
+      font-size: 14px;
+      user-select: none;
+      white-space: nowrap;
+
+      .integer {
+        @include icon(url(./16_cell-type-num.svg), 16px);
+        margin-right: 4px;
+      }
+
+      .float {
+        @include icon(url(./16_cell-type-num.svg), 16px);
+        margin-right: 4px;
+      }
+
+      .string {
+        @include icon(url(./16_cell-type-txt.svg), 16px);
+        margin-right: 4px;
+      }
+
+      .unknown {
+        @include icon(url(./16_cell-type-txt.svg), 16px);
+        margin-right: 4px;
+        opacity: 0.5;
+      }
+
+      .sort {
+        margin-left: auto;
+        @include icon(url(./16_arrow-down.svg), 16px);
+        opacity: 0.1;
+        cursor: pointer;
+        &:hover {
+          opacity: 0.5;
+        }
+        &.DESC {
+          display: block;
+          opacity: 1;
+        }
+        &.ASC {
+          display: block;
+          transform: rotateZ(180deg);
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  .table-body {
+    display: grid;
+    max-height: 100%;
+    max-width: 100%;
+    gap: 1px;
+    background-color: var(--bg-elevated-02);
+    overflow: auto;
+    scroll-snap-type: y mandatory;
+    @include scrollbarTable(true, true);
+    .cell {
+      font-family: var(--cell-font-family);
+      font-weight: var(--cell-font-weight);
+      &.edit {
+        outline: 1px solid var(--color-focus);
+      }
+      input {
+        border: none;
+        outline: none;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: inherit;
+        width: 100%;
+        padding: 0;
+      }
+    }
+    &__no-data {
+      background-color: #F7F8FA;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 0;
+
+      color: var(--color-txt-mask);
+      font-size: 28px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 32px;
+      letter-spacing: -0.56px;
+      > div {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: center;
+      }
+    }
+  }
+
+  .cell {
+    padding: 8px 12px;
+    background-color: #fff;
+    scroll-snap-align: start;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    user-select: text;
+
+    &.justify-center {
+      justify-content: center;
+    }
+
+    &.hovered {
+      // background-color: rgba(99, 224, 36, 0.12);
+    }
+  }
+}
