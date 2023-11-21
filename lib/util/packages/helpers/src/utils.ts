@@ -33,6 +33,10 @@ export function timer() {
   };
 }
 
+export function call<R>(f: () => R): R {
+  return f();
+}
+
 export function tap<T, R>(v: T, cb: (v: T) => R) {
   return cb(v);
 }
