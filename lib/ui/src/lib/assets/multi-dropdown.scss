@@ -1,0 +1,308 @@
+@import "./mixins";
+
+.ui-multi-dropdown {
+  $root: &;
+
+  --label-color: var(--color-txt-01);
+  --contour-color: var(--color-txt-01);
+  --contour-border-width: 1px;
+  --options-bg: #fff;
+  --option-hover-bg: var(--btn-sec-hover-grey);
+
+  --label-offset-left-x: 8px;
+  --label-offset-right-x: 8px;
+
+  [data-theme="dark"] & {
+    --options-bg: #1B1B1F;
+  }
+
+  position: relative;
+  outline: none;
+  min-height: var(--control-height);
+  border-radius: 6px;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weigh-base);
+
+  label {
+    position: absolute;
+    top: 0;
+    transform: translateY(-60%);
+    left: var(--label-offset-left-x);
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 4px;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    cursor: inherit;
+
+    color: var(--label-color);
+
+    .required {
+      display: inline-block;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 16px;
+      color: #F1222F;
+      margin-right: 4px;
+    }
+  }
+
+  &__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: 6px;
+    min-height: var(--control-height);
+    padding: 1px;
+    color: var(--color-txt-01);
+  }
+
+  &__contour {
+    border-radius: var(--border-radius-control);
+    border: var(--contour-border-width) solid var(--contour-color);
+    box-shadow: var(--contour-box-shadow);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__options {
+    position: relative;
+    background-color: var(--options-bg);
+    border-radius: 0 0 6px 6px;
+    max-height: 244px;
+    @include scrollbar;
+    border-top: 1px solid var(--color-div-black);
+
+    .nothing-found {
+      padding: 0 10px;
+      height: var(--control-height);
+      line-height: var(--control-height);
+      background-color: #fff;
+      opacity: 0.5;
+      font-style: italic;
+    }
+
+    .option {
+      position: relative;
+      padding: 0 10px;
+      height: var(--control-height);
+      line-height: var(--control-height);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      --base-icon: url('./images/24_checkbox-base.svg');
+      --checked-icon: url('./images/24_checkbox-checked.svg');
+
+      .ui-multi-dropdown__checkmark {
+        cursor: pointer;
+        outline: none;
+        border-radius: 4px;
+        @include icon(var(--base-icon), 24px);
+        [data-theme="dark"] & {
+          --base-icon: url('./images/24_checkbox-base-dark.svg');
+          --checked-icon: url('./images/24_checkbox-checked-dark.svg');
+        }
+      }
+
+      > span {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 100%;
+        text-overflow: ellipsis;
+      }
+
+      &.selected {
+        background-color: var(--color-active-select);
+        .ui-multi-dropdown__checkmark {
+          @include icon(var(--checked-icon), 24px);
+        }
+      }
+
+      &.active:not(.selected) {
+        background-color: var(--option-hover-bg);
+      }
+
+      &:hover {
+        background-color: var(--option-hover-bg);
+      }
+    }
+  }
+
+  &__field {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background: transparent;
+    padding: 0 11px;
+
+    min-height: var(--control-height);
+    line-height: var(--control-height);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .chips-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 30px;
+      overflow: hidden;
+      padding: 0 11px;
+      line-height: var(--control-height);
+      color: var(--contour-color);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input {
+      min-height: calc(var(--control-height) - 2px);
+      line-height: calc(var(--control-height) - 2px);
+      font-family: inherit;
+      font-size: inherit;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      width: calc(100% - 20px);
+      color: var(--color-txt-01);
+      caret-color: var(--color-focus);
+
+      &:focus {
+        outline: none;
+      }
+
+      &:placeholder-shown {
+        text-overflow: ellipsis;
+      }
+
+      &::placeholder {
+        color: var(--color-placeholder);
+      }
+    }
+
+    &:hover {
+      .clear {
+        display: block;
+      }
+    }
+  }
+
+  &__error {
+    position: absolute;
+    height: 18px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    font-size: 12px;
+    transform: translateY(100%);
+    color: var(--color-txt-error);
+    padding: 2px 12px 0;
+
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+  }
+
+  &__append {
+    padding-right: 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    .icon {
+      cursor: pointer;
+    }
+    .mask {
+      background-color: var(--control-mask-fill);
+      cursor: pointer;
+    }
+  }
+
+  .arrow {
+    position: absolute;
+    @include abs-center-y;
+    right: 12px;
+    background-color: var(--control-mask-fill);
+    @include mask(url("./images/16_chevron-down.svg"), 16px);
+  }
+
+  &.open {
+    .arrow {
+      background-color: var(--control-mask-fill);
+      @include mask(url(./images/16_up.svg), 16px);
+    }
+  }
+
+  .clear {
+    display: none;
+    position: absolute;
+    @include abs-center-y;
+    right: 36px;
+    z-index: 1;
+    @include icon(url("./images/16_clear.svg"), 16px); // @todo mask-image
+    cursor: pointer;
+  }
+
+  &.open,&:focus-within {
+    z-index: 1;
+
+    #{$root}__container {
+      .label {
+        color: var(--color-txt-focus);
+      }
+    }
+  }
+
+  &.open {
+    #{$root}__container {
+      z-index: 1000;
+    }
+
+    #{$root}__field {
+      border-radius: 6px 6px 0 0;
+    }
+
+    .arrow {
+      background-color: var(--control-mask-fill);
+      @include mask(url(./images/16_chevron-up.svg), 16px);
+    }
+  }
+
+  &:hover {
+    --contour-color: var(--control-hover-color);
+  }
+
+  &:focus-within:not(.error) {
+    --label-color: var(--color-txt-focus);
+    --contour-color: var(--color-focus);
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);
+  }
+
+  &:focus-within.error {
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+  }
+
+  &.error {
+    --contour-color: var(--color-error);
+  }
+
+  &.disabled {
+    --contour-color: var(--color-dis-01);
+    --control-mask-fill: var(--color-dis-01);
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+}

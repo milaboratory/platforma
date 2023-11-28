@@ -1,0 +1,26 @@
+@import "./mixins";
+
+.ui-checkbox {
+  --base-icon: url('./images/24_checkbox-base.svg');
+  --checked-icon: url('./images/24_checkbox-checked.svg');
+  --disabled-icon: url('./images/24_checkbox-disabled.svg');
+  background-color: red;
+  cursor: pointer;
+  outline: none;
+  border-radius: 4px;
+  @include icon(var(--base-icon), 24px);
+  &.checked {
+    @include icon(var(--checked-icon), 24px);
+  }
+  &.disabled {
+    @include icon(var(--disabled-icon), 24px);
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-focus);
+  }
+  [data-theme="dark"] & {
+    --base-icon: url('./images/24_checkbox-base-dark.svg');
+    --checked-icon: url('./images/24_checkbox-checked-dark.svg');
+    --disabled-icon: url('./images/24_checkbox-disabled-dark.svg');
+  }
+}

@@ -4,7 +4,8 @@ import type {Data} from './types';
 import {useColumn} from './useColumn';
 import {getColumnPositions} from './getColumnPositions';
 import {MIN_COLUMN_WIDTH, RESIZE_GAP} from './constants';
-import {useMouse, useHover} from '@milaboratory/uikit';
+import {useMouse} from '@/lib/composition/useMouse';
+import {useHover} from '@/lib/composition/useHover';
 import {utils} from '@milaboratory/helpers';
 
 const {tapIf, clamp} = utils;

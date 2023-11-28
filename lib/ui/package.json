@@ -1,7 +1,7 @@
 {
   "name": "@milaboratory/pl-uikit",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,15 +10,22 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json"
   },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/pl-uikit.umd.cjs",
+  "module": "./dist/pl-uikit.js",
+  "types": "./dist/lib.d.ts",
   "dependencies": {
     "@milaboratory/helpers": "^1.2.2",
-    "@milaboratory/uikit": "^1.18.2",
-    "vue": "^3.3.8"
+    "vue": "^3.3.8",
+    "vue-router": "^4.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.5.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.6.3",
     "vue-tsc": "^1.8.22"
   }
 }

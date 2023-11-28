@@ -1,4 +1,4 @@
-import {useEventListener} from '@milaboratory/uikit';
+import {useEventListener} from '@/lib/composition/useEventListener.ts';
 import {useMouseUp} from './useMouseUp';
 import {requestTick} from '@/lib/helpers';
 
