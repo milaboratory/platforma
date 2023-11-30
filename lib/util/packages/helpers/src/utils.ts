@@ -1,3 +1,11 @@
+export function notEmpty<T>(v: T | null | undefined, message: string): T {
+  if (v === null || v === undefined) {
+    throw Error(message);
+  }
+
+  return v;
+}
+
 export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
   return function (...args: A) {
     const generator = gf(...args);
@@ -22,8 +30,24 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
   }
 }
 
+export class Deferred<T> {
+  public readonly promise: Promise<T>;
+  public resolve: (v: T) => void = () => {};
+  public reject: (err: Error) => void = () => {};
+  constructor() {
+    this.promise = new Promise<T>((res, rej) => {
+      this.resolve = res;
+      this.reject = rej;
+    });
+  }
+}
+
 export function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function tear() {
+  return new Promise<void>(r => queueMicrotask(r));
 }
 
 export function timer() {
