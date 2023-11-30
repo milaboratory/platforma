@@ -1,9 +1,29 @@
-export function notEmpty<T>(v: T | null | undefined, message: string): T {
+export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
-    throw Error(message);
+    throw Error(message ?? 'Empty (null | undefined) value');
   }
 
   return v;
+}
+
+export function notUndef<T>(v: T | undefined, message?: string): T {
+  if (v === undefined) {
+    throw Error(message ?? 'Undefined value');
+  }
+
+  return v;
+}
+
+export function checkIfNotEmpty<T>(v: T | null | undefined, message?: string): asserts v is T {
+  if (v === undefined || v === null) {
+    throw Error(message ?? 'Empty (null | undefined) value');
+  }
+}
+
+export function checkIfDefined<T>(v: T | undefined, message?: string): asserts v is T {
+  if (v === undefined) {
+    throw Error(message ?? 'Undefined value');
+  }
 }
 
 export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
@@ -122,4 +142,8 @@ export function *iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
       acc.shift();
     }
   }
+}
+
+export function exhaustive(v: never, message: string): never {
+  throw Error(message);
 }

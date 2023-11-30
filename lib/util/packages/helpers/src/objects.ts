@@ -104,6 +104,10 @@ export function pick<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
   return Object.assign({}, ...keys.map(k => ({[k]: obj[k]})));
 }
 
+export function pickValues<T, K extends keyof T>(obj: T, ...keys: K[]) {
+  return keys.map(k => obj[k]);
+}
+
 export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
   const o = Object.assign({}, obj) as PartialBy<T, K>;
   keys.forEach(k => delete o[k]);
