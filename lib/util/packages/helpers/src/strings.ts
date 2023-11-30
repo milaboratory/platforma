@@ -66,3 +66,9 @@ export function before(str: string, sub: string) {
 export function after(str: string, sub: string) {
   return str.substring(str.indexOf(sub) + sub.length, str.length);
 }
+
+export function assertString(v: unknown): asserts v is string {
+  if (typeof v !== 'string') {
+    throw Error('Expect string value, got: ' + typeof v);
+  }
+}
