@@ -63,6 +63,10 @@ export function before(str: string, sub: string) {
   return str.substring(0, str.indexOf(sub));
 }
 
+export function beforeLast(str: string, sub: string) {
+  return str.substring(0, str.lastIndexOf(sub));
+}
+
 export function after(str: string, sub: string) {
   return str.substring(str.indexOf(sub) + sub.length, str.length);
 }
