@@ -1,6 +1,7 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
 import { Settings as GridTableSettings } from './lib/components/GridTable/types';
+import * as GridTableTypes from './lib/components/GridTable/types';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
@@ -66,6 +67,7 @@ export {
 // types
 export type {
   MaybeRef,
-  GridTableSettings
+  GridTableSettings,
+  GridTableTypes
 }
 
