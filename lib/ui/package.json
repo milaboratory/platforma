@@ -1,11 +1,11 @@
 {
   "name": "@milaboratory/pl-uikit",
-  "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
+    "build-watch": "vue-tsc && vite build --watch",
     "build-demo": "vite build -c vite.demo.config.ts",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json"

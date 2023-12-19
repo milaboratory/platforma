@@ -1,5 +1,6 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
+import { Settings as GridTableSettings } from './lib/components/GridTable/types';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
@@ -17,18 +18,18 @@ import Chip from '@/lib/components/Chip.vue';
 import Tooltip from '@/lib/components/Tooltip.vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
-import {usePosition} from '@/lib/composition/usePosition';
-import {useClickOutside} from '@/lib/composition/useClickOuside';
-import {useEventListener} from '@/lib/composition/useEventListener';
-import {useLabelNotch} from '@/lib/composition/useLabelNotch';
-import {useScroll} from '@/lib/composition/useScroll';
-import {useResizeObserver} from '@/lib/composition/useResizeObserver';
-import {useTheme} from '@/lib/composition/useTheme';
-import {useLocalStorage} from '@/lib/composition/useLocalStorage';
-import {useMouseCapture} from '@/lib/composition/useMouseCapture';
-import {useHover} from '@/lib/composition/useHover';
-import {useMouse} from '@/lib/composition/useMouse';
-import type {MaybeRef} from '@/lib/types.ts';
+import { usePosition } from '@/lib/composition/usePosition';
+import { useClickOutside } from '@/lib/composition/useClickOuside';
+import { useEventListener } from '@/lib/composition/useEventListener';
+import { useLabelNotch } from '@/lib/composition/useLabelNotch';
+import { useScroll } from '@/lib/composition/useScroll';
+import { useResizeObserver } from '@/lib/composition/useResizeObserver';
+import { useTheme } from '@/lib/composition/useTheme';
+import { useLocalStorage } from '@/lib/composition/useLocalStorage';
+import { useMouseCapture } from '@/lib/composition/useMouseCapture';
+import { useHover } from '@/lib/composition/useHover';
+import { useMouse } from '@/lib/composition/useMouse';
+import type { MaybeRef } from '@/lib/types.ts';
 
 export {
   ThemeSwitcher,
@@ -60,7 +61,11 @@ export {
   useMouseCapture,
   useHover,
   useMouse,
-  // types
-  MaybeRef
+}
+
+// types
+export type {
+  MaybeRef,
+  GridTableSettings
 }
 

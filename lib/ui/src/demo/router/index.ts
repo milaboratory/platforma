@@ -62,6 +62,11 @@ export const routes = [
     component: () => import('@/demo/Tooltips/index.vue')
   },
   {
+    name: 'Grid Table',
+    path: '/grid-table',
+    component: () => import('@/demo/grid-table/index.vue')
+  },
+  {
     name: 'Test',
     path: '/test',
     component: () => import('@/demo/test/index.vue')

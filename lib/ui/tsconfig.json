@@ -21,8 +21,10 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
+    "declaration": true,
+    "declarationMap": true,
+
     "paths": {
-      "@demo/*": ["./demo/*"],
       "@/*": ["./src/*"]
     },
   },
