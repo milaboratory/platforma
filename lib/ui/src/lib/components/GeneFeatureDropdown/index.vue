@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import SelectInput from '../SelectInput.vue';
-import { getOptions } from './data';
+import { datum } from '@milaboratory/pl-core';
 
 defineEmits(['update:modelValue']);
 
@@ -8,7 +8,7 @@ defineProps<{
   modelValue: string;
 }>();
 
-const options = getOptions().map((o) => ({
+const options = datum.geneFeatures().map((o) => ({
   text: o.label,
   value: o.code,
 }));
