@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import {reactive} from 'vue';
+import { reactive } from 'vue';
 import Layout from '@/demo/Layout.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
 import Split from '@/demo/Split.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
 import BtnAccent from '@/lib/components/BtnAccent.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
-import {Size} from '@/lib/types';
+import type { Size } from '@/lib/types';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import BtnGhost from '@/lib/components/BtnGhost.vue';
 
@@ -15,10 +15,10 @@ const props = reactive({
   disabled: false,
   reverse: false,
   loading: false,
-  justifyCenter: false
+  justifyCenter: false,
 });
 
-const sizeOptions = ['small', 'medium', 'large'].map(it => ({text: it, value: it}));
+const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
 
 const text = 'Click me';
 
@@ -31,19 +31,11 @@ function onClick() {
   <layout>
     <split name="Buttons">
       <div class="flex-row gap-12">
-        <btn-group v-model="props.size" :options="sizeOptions"/>
-        <label style="user-select: none">
-          <input type="checkbox" v-model="props.disabled">Disabled
-        </label>
-        <label style="user-select: none">
-          <input type="checkbox" v-model="props.reverse">Reverse
-        </label>
-        <label style="user-select: none">
-          <input type="checkbox" v-model="props.loading">Loading
-        </label>
-        <label style="user-select: none">
-          <input type="checkbox" v-model="props.justifyCenter">Justify center
-        </label>
+        <btn-group v-model="props.size" :options="sizeOptions" />
+        <label style="user-select: none"> <input v-model="props.disabled" type="checkbox" />Disabled </label>
+        <label style="user-select: none"> <input v-model="props.reverse" type="checkbox" />Reverse </label>
+        <label style="user-select: none"> <input v-model="props.loading" type="checkbox" />Loading </label>
+        <label style="user-select: none"> <input v-model="props.justifyCenter" type="checkbox" />Justify center </label>
       </div>
       <div class="test-buttons">
         <div>
@@ -54,7 +46,7 @@ function onClick() {
         <div>
           <btn-primary v-bind="props">{{ text }}</btn-primary>
           <btn-primary icon="play" v-bind="props">{{ text }}</btn-primary>
-          <btn-primary @click="onClick" round icon="add" v-bind="props">{{ text }}</btn-primary>
+          <btn-primary round icon="add" v-bind="props" @click="onClick">{{ text }}</btn-primary>
         </div>
         <div>
           <btn-secondary v-bind="props">{{ text }}</btn-secondary>
@@ -70,7 +62,7 @@ function onClick() {
           <btn-ghost style="min-width: 160px" v-bind="props">{{ text }}</btn-ghost>
           <btn-ghost icon="arrow-right" v-bind="props">{{ text }}</btn-ghost>
           <btn-ghost icon="add" v-bind="props">{{ text }}</btn-ghost>
-          <btn-ghost icon="clipboard" v-bind="props"/>
+          <btn-ghost icon="clipboard" v-bind="props" />
           <btn-ghost icon="settings-2" v-bind="props">Settings</btn-ghost>
         </div>
       </div>

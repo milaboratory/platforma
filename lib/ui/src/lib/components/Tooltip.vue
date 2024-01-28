@@ -1,29 +1,31 @@
 <script lang="ts" setup>
-import {reactive, ref, watch} from 'vue';
-import {useTooltipPosition} from '@/lib/composition/useTooltipPosition';
-import {delay, timeout} from '@/lib/helpers/utils';
-import {useClickOutside} from '@/lib/composition/useClickOuside';
+import { reactive, ref, watch } from 'vue';
+import { useTooltipPosition } from '@/lib/composition/useTooltipPosition';
+import { delay, timeout } from '@/lib/helpers/utils';
+import { useClickOutside } from '@/lib/composition/useClickOuside';
 
 const emit = defineEmits(['tooltip:close']);
 
-const props = withDefaults(defineProps<{
-  delay?: number;
-  position?: 'top-left' | 'left' | 'right' | 'top';
-  hide?: boolean;
-  gap?: number;
-}>(), {
-  delay: 1000,
-  gap: 8,
-  position: 'top'
-});
+const props = withDefaults(
+  defineProps<{
+    delay?: number;
+    position?: 'top-left' | 'left' | 'right' | 'top';
+    hide?: boolean;
+    gap?: number;
+  }>(),
+  {
+    delay: 1000,
+    gap: 8,
+    position: 'top',
+  },
+);
 
 const data = reactive({
   open: false,
-  over: false
+  over: false,
 });
 
-let clearTimeout = () => {
-};
+let clearTimeout = () => {};
 
 async function onOver() {
   if (props.hide) {
@@ -56,11 +58,14 @@ function onLeave() {
   }, props.delay);
 }
 
-watch(() => props.hide, (hide) => {
-  if (hide) {
-    closeTooltip();
-  }
-});
+watch(
+  () => props.hide,
+  (hide) => {
+    if (hide) {
+      closeTooltip();
+    }
+  },
+);
 
 const root = ref<HTMLElement | undefined>();
 const tooltip = ref<HTMLElement | undefined>();
@@ -72,22 +77,16 @@ useClickOutside([root, tooltip], () => closeTooltip());
 
 <template>
   <div ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
-    <slot/>
+    <slot />
     <Teleport v-if="data.open" to="body">
       <Transition name="tooltip">
         <div class="ui-tooltip__container" :style="style">
-          <div
-            class="ui-tooltip"
-            ref="tooltip"
-            :class="position"
-            @mouseover="onOver"
-            @mouseleave="onLeave"
-          >
+          <div ref="tooltip" class="ui-tooltip" :class="position" @mouseover="onOver" @mouseleave="onLeave">
             <div>
-              <slot name="tooltip"/>
+              <slot name="tooltip" />
             </div>
             <svg class="beak" width="5" height="9" viewBox="0 0 3 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4.00222 8.00933L0 4.00711L4.00222 0.00488281L4.00222 8.00933Z" fill="#24223D"/>
+              <path d="M4.00222 8.00933L0 4.00711L4.00222 0.00488281L4.00222 8.00933Z" fill="#24223D" />
             </svg>
           </div>
         </div>

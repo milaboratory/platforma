@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import {computed, ref, unref} from 'vue';
-import {useEventListener} from '@/lib/composition/useEventListener';
-import {eventListener} from '@/lib/helpers/dom';
+import { computed, ref, unref } from 'vue';
+import { useEventListener } from '@/lib/composition/useEventListener';
+import { eventListener } from '@/lib/helpers/dom';
 
 const emit = defineEmits(['update:scrollLeft']);
 
@@ -23,13 +23,13 @@ const scrollbarStyle = computed(() => {
   const ratio = unref(ratioRef);
   return {
     left: props.scrollLeft * ratio + 'px',
-    width: Math.floor(props.clientWidth * ratio) + 'px'
+    width: Math.floor(props.clientWidth * ratio) + 'px',
   };
 });
 
 useEventListener(scrollRef, 'pointerdown', (down: PointerEvent) => {
   const s = {
-    clientX: down.clientX
+    clientX: down.clientX,
   };
 
   const update = (e: MouseEvent) => {
@@ -38,19 +38,17 @@ useEventListener(scrollRef, 'pointerdown', (down: PointerEvent) => {
     s.clientX = e.clientX;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const removePointerMove = eventListener(document as any, 'mousemove', update);
 
-  [
-    'mouseup',
-    'pointercancel',
-  ].forEach(eventType => {
-    document.addEventListener(eventType, removePointerMove, {once: true});
+  ['mouseup', 'pointercancel'].forEach((eventType) => {
+    document.addEventListener(eventType, removePointerMove, { once: true });
   });
 });
 </script>
 
 <template>
   <div v-if="visibleRef" ref="scrollRef" class="h-scroll">
-    <div class="h-scroll__scrollbar" :style="scrollbarStyle"/>
+    <div class="h-scroll__scrollbar" :style="scrollbarStyle" />
   </div>
 </template>

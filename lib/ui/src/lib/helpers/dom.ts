@@ -1,11 +1,11 @@
-import {animate, makeEaseOut} from '@/lib/helpers/utils';
+import { animate, makeEaseOut } from '@/lib/helpers/utils';
 
 export function isElementVisible(parent: HTMLElement, el: HTMLElement) {
   const scrollTop = parent.scrollTop;
   const parentHeight = parent.getBoundingClientRect().height;
   const elOffsetTop = el.offsetTop;
   const elHeight = el.getBoundingClientRect().height;
-  return ((elOffsetTop + elHeight) < parentHeight + scrollTop) && (elOffsetTop > scrollTop);
+  return elOffsetTop + elHeight < parentHeight + scrollTop && elOffsetTop > scrollTop;
 }
 
 export function getElementScrollPosition(parent: HTMLElement, el: HTMLElement) {
@@ -14,7 +14,7 @@ export function getElementScrollPosition(parent: HTMLElement, el: HTMLElement) {
   const elOffsetTop = el.offsetTop;
   const elHeight = el.getBoundingClientRect().height;
 
-  if ((elOffsetTop + elHeight) < parentHeight + scrollTop) {
+  if (elOffsetTop + elHeight < parentHeight + scrollTop) {
     return 'ceil' as const;
   }
 
@@ -25,7 +25,7 @@ export function getElementScrollPosition(parent: HTMLElement, el: HTMLElement) {
   return 'visible' as const;
 }
 
-export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: {duration?: number} = {}) {
+export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: { duration?: number } = {}) {
   const scrollTop = parent.scrollTop;
   const parentHeight = parent.getBoundingClientRect().height;
   const elHeight = el.getBoundingClientRect().height;
@@ -39,13 +39,13 @@ export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: {d
   const draw = (progress: number) => {
     const to = scrollPosition === 'floor' ? offsetTop - (parentHeight - elHeight) : offsetTop;
     parent.scrollTop = scrollTop + progress * (to - scrollTop);
-  }
+  };
 
   if (!isElementVisible(parent, el)) {
     animate({
       duration: options.duration || 300,
-      timing: makeEaseOut(t => t),
-      draw
+      timing: makeEaseOut((t) => t),
+      draw,
     });
   }
 }
@@ -53,30 +53,34 @@ export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: {d
 export function eventListener<K extends keyof DocumentEventMap>(
   el: Document,
   type: K,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listener: (this: Document, ev: DocumentEventMap[K]) => any,
-  options?: boolean | AddEventListenerOptions): () => void;
+  options?: boolean | AddEventListenerOptions,
+): () => void;
 
 export function eventListener<K extends keyof HTMLElementEventMap>(
   el: HTMLElement,
   type: K,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listener: (this: HTMLElement, ev: HTMLElementEventMap[K]) => any,
-  options?: boolean | AddEventListenerOptions
+  options?: boolean | AddEventListenerOptions,
 ): () => void;
 
 export function eventListener<K extends string>(
   el: HTMLElement | Document,
   type: K,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   listener: (this: HTMLElement | Document, ev: unknown) => any,
-  options?: boolean | AddEventListenerOptions
+  options?: boolean | AddEventListenerOptions,
 ) {
   el.addEventListener(type, listener, options);
 
   return function () {
     el.removeEventListener(type, listener);
-  }
+  };
 }
 
-export function detectOutside(e: {x: number, y: number}, el: HTMLElement) {
+export function detectOutside(e: { x: number; y: number }, el: HTMLElement) {
   const rect = el.getBoundingClientRect();
-  return e.x < rect.x || e.x > (rect.x + rect.width) || e.y < rect.y || e.y > (rect.y + rect.height)
+  return e.x < rect.x || e.x > rect.x + rect.width || e.y < rect.y || e.y > rect.y + rect.height;
 }

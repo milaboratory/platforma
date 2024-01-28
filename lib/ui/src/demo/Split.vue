@@ -11,10 +11,10 @@ defineProps<{
       {{ name }}
     </div>
     <div class="split__column">
-      <slot/>
+      <slot />
     </div>
     <div v-if="!hideSecond" class="split__column" data-theme="dark">
-      <slot/>
+      <slot />
     </div>
   </div>
 </template>

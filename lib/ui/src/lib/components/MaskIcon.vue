@@ -1,14 +1,14 @@
 <script lang="ts" setup>
-import {computed} from 'vue';
-import {MaskIconName} from '@/lib/types';
+import { computed } from 'vue';
+import type { MaskIconName } from '@/lib/types';
 
 const props = defineProps<{
-  name: MaskIconName
+  name: MaskIconName;
 }>();
 
 const className = computed(() => `mask mask--${props.name}`);
 </script>
 
 <template>
-  <div :class="className"/>
+  <div :class="className" />
 </template>

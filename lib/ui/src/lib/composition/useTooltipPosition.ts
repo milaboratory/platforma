@@ -1,12 +1,8 @@
-import {type Ref, ref} from 'vue';
-import {call} from '@/lib/helpers/utils';
-import {usePosition} from '@/lib/composition/usePosition';
+import { type Ref, ref } from 'vue';
+import { call } from '@/lib/helpers/utils';
+import { usePosition } from '@/lib/composition/usePosition';
 
-export function useTooltipPosition(
-  el: Ref<HTMLElement | undefined>,
-  position: 'top-left' | 'right' | 'left' | 'top' = 'right',
-  gap = 8
-) {
+export function useTooltipPosition(el: Ref<HTMLElement | undefined>, position: 'top-left' | 'right' | 'left' | 'top' = 'right', gap = 8) {
   const style = ref('');
 
   usePosition(el, (pos) => {

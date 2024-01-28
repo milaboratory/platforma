@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import {ref} from 'vue';
+import { ref } from 'vue';
 import Layout from '@/demo/Layout.vue';
 import Tooltip from '@/lib/components/Tooltip.vue';
-import {useTheme} from '@/lib/composition/useTheme';
+import { useTheme } from '@/lib/composition/useTheme';
 import Scrollable from '@/demo/test/Scrollable.vue';
-import {useResizeObserver} from '@/lib/composition/useResizeObserver';
+import { useResizeObserver } from '@/lib/composition/useResizeObserver';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 
 const resizable = ref<HTMLElement | undefined>();
@@ -29,33 +29,31 @@ function onCloseTooltip() {
       <div>Item 2</div>
       <div>Item 3</div>
       <div>
-        <mask-icon style="background-color: red" name="paper-clip"/>
-        <mask-icon style="background-color: red" name="checkmark"/>
+        <mask-icon style="background-color: red" name="paper-clip" />
+        <mask-icon style="background-color: red" name="checkmark" />
       </div>
     </div>
     <div style="display: flex; background-color: #fff; padding: 12px; margin-top: 12px">
       <tooltip class="tt" :delay="100000" position="top">
         <span>Has tooltip</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Second line<br/>
-          Third line<br/>
+          Tooltip content<br />
+          Second line<br />
+          Third line<br />
         </template>
       </tooltip>
 
       <tooltip class="info">
-        <template #tooltip>
-          Icon
-        </template>
+        <template #tooltip> Icon </template>
       </tooltip>
     </div>
     <div style="background-color: #fff; padding: 12px; margin-top: 12px">
       <tooltip class="tt" :delay="100000" position="top">
         <span>Has tooltip</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Second line<br/>
-          Third line<br/>
+          Tooltip content<br />
+          Second line<br />
+          Third line<br />
         </template>
       </tooltip>
     </div>
@@ -63,14 +61,14 @@ function onCloseTooltip() {
       <tooltip class="tt" :delay="1000" position="top" @tooltip:close="onCloseTooltip">
         <span>Has tooltip</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Second line<br/>
-          Third line<br/>
+          Tooltip content<br />
+          Second line<br />
+          Third line<br />
         </template>
       </tooltip>
     </div>
     <div style="width: 800px; height: 500px; background-color: #fff; padding: 24px; display: flex">
-      <scrollable/>
+      <scrollable />
       <div ref="resizable" style="resize: both; padding: 20px; border: 1px solid #333; overflow: auto"></div>
     </div>
   </layout>

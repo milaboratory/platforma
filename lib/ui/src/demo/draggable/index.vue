@@ -8,8 +8,8 @@ import Tbl from '@/demo/draggable/Tbl.vue';
 <template>
   <layout>
     <split name="Draggable">
-      <list/>
-      <tbl/>
+      <list />
+      <tbl />
     </split>
   </layout>
 </template>

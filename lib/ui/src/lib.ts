@@ -1,7 +1,8 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
-import { Settings as GridTableSettings } from './lib/components/GridTable/types';
-import * as GridTableTypes from './lib/components/GridTable/types';
+import GeneFeatureDropdown from '@/lib/components/GeneFeatureDropdown/index.vue';
+import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
+import type * as GridTableTypes from './lib/components/GridTable/types';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
@@ -50,6 +51,7 @@ export {
   Tooltip,
   MaskIcon,
   GridTable,
+  GeneFeatureDropdown,
   ContextProvider,
   useClickOutside,
   useEventListener,
@@ -62,12 +64,7 @@ export {
   useMouseCapture,
   useHover,
   useMouse,
-}
+};
 
 // types
-export type {
-  MaybeRef,
-  GridTableSettings,
-  GridTableTypes
-}
-
+export type { MaybeRef, GridTableSettings, GridTableTypes };

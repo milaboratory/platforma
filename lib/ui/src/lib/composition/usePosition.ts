@@ -1,12 +1,12 @@
-import {type Ref, onMounted} from 'vue';
-import {useEventListener} from '@/lib/composition/useEventListener';
-import {requestTick} from '@/lib/helpers/utils';
-import {Position} from '@/lib/types';
+import { type Ref, onMounted } from 'vue';
+import { useEventListener } from '@/lib/composition/useEventListener';
+import { requestTick } from '@/lib/helpers/utils';
+import type { Position } from '@/lib/types';
 
 export function usePosition(el: Ref<HTMLElement | undefined>, cb: (pos: Position) => void) {
   const update = () => {
     if (el.value) {
-      const {scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth} = document.documentElement;
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = document.documentElement;
       const rect = el.value.getBoundingClientRect();
       cb({
         scrollTop,
@@ -24,7 +24,7 @@ export function usePosition(el: Ref<HTMLElement | undefined>, cb: (pos: Position
         width: rect.width,
         height: rect.height,
         x: rect.x,
-        y: rect.y
+        y: rect.y,
       });
     }
   };

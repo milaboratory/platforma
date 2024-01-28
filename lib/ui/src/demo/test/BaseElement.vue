@@ -4,9 +4,8 @@ const props = defineProps<{
   id: number;
   name: string;
 }>();
-
 </script>
 
 <template>
-  <div>My props: {{props}}</div>
+  <div>My props: {{ props }}</div>
 </template>

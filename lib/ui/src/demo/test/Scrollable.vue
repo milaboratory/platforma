@@ -1,17 +1,16 @@
 <script lang="ts" setup>
-import {generate, tapIf} from '@/lib/helpers/functions';
-import {ref} from 'vue';
-import {animate, makeEaseOut} from '@/lib/helpers/utils';
-import {isElementVisible, scrollIntoView} from '@/lib/helpers/dom';
+import { generate } from '@/lib/helpers/functions';
+import { ref } from 'vue';
+import { scrollIntoView } from '@/lib/helpers/dom';
 
 const scrollable = ref<HTMLElement>();
 
-const options = generate(100, i => ({
+const options = generate(100, (i) => ({
   text: `Option ${i}`,
-  value: i
+  value: i,
 }));
 
-function onScroll(e: unknown) {
+function onScroll(_e: unknown) {
   // console.log('e', e);
 }
 
@@ -40,7 +39,7 @@ function onClick(delta: number) {
 
 <template>
   <div ref="scrollable" class="scrollable" @scroll.passive="onScroll">
-    <div v-for="(o) in options" :key="o.value" class="option" :data-id="o.value">
+    <div v-for="o in options" :key="o.value" class="option" :data-id="o.value">
       {{ o.text }}
     </div>
   </div>

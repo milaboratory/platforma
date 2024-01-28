@@ -1,18 +1,21 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import {fileURLToPath, URL} from 'node:url';
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue({
-    template: {
-      compilerOptions: {
-        isCustomElement: (tag) => {
-          return tag.startsWith('web')
-        }
-      }
-    }
-  }) as any],
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => {
+            return tag.startsWith('web');
+          },
+        },
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any,
+  ],
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
   },
@@ -21,4 +24,4 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-})
+});

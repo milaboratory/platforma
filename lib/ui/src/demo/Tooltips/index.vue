@@ -2,10 +2,6 @@
 import Layout from '@/demo/Layout.vue';
 import Tooltip from '@/lib/components/Tooltip.vue';
 
-function onCloseTooltip() {
-  console.log('closed');
-}
-
 const delay = 1000;
 </script>
 
@@ -15,56 +11,52 @@ const delay = 1000;
       <tooltip class="tt" :delay="delay" position="top">
         <span>Top position</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Second line<br/>
-          Third line<br/>
+          Tooltip content<br />
+          Second line<br />
+          Third line<br />
         </template>
       </tooltip>
 
       <tooltip class="tt" :delay="delay" position="left">
         <span>Left position</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Second line<br/>
-          Third line<br/>
+          Tooltip content<br />
+          Second line<br />
+          Third line<br />
         </template>
       </tooltip>
 
       <tooltip class="info">
-        <template #tooltip>
-          Icon
-        </template>
+        <template #tooltip> Icon </template>
       </tooltip>
     </div>
     <div class="line">
       <tooltip class="tt" :delay="delay" position="top-left">
         <span>Top left</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
         </template>
       </tooltip>
 
       <tooltip class="tt" :delay="delay" position="right">
         <span>Right</span>
         <template #tooltip>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
-          Tooltip content<br/>
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
+          Tooltip content<br />
         </template>
       </tooltip>
     </div>
 
     <div class="line">
       <tooltip position="top-left">
-        <template #tooltip>
-          Tooltip content
-        </template>
+        <template #tooltip> Tooltip content </template>
         <button class="nn">NN</button>
       </tooltip>
     </div>

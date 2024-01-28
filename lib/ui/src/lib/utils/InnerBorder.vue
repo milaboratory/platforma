@@ -1,11 +1,11 @@
 <template>
   <div class="inner-border">
-    <slot/>
+    <slot />
   </div>
 </template>
 
 <script>
 export default {
   // inheritAttrs: false
-}
+};
 </script>

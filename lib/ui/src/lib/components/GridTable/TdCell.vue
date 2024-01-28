@@ -1,22 +1,23 @@
 <script lang="ts" setup>
-import type {CellProps} from './types';
-import {reactive, ref} from 'vue';
+import type { CellProps } from './types';
+import { reactive, ref } from 'vue';
 
 const emit = defineEmits(['delete:row', 'update:value']);
 
 const props = defineProps<{
-  cell: CellProps
+  cell: CellProps;
 }>();
 
 const data = reactive({
-  edit: false as boolean
+  edit: false as boolean,
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function onInput(ev: any) {
   emit('update:value', {
     rowIndex: props.cell.rowIndex,
     name: props.cell.colName,
-    value: ev.target.value
+    value: ev.target.value,
   });
   data.edit = false;
 }
@@ -49,12 +50,12 @@ function onClick() {
   <div
     ref="cellRef"
     class="cell"
-    :class="{[cell.class]: true, edit: data.edit}"
+    :class="{ [cell.class]: true, edit: data.edit }"
     :data-row-index.attr="cell.rowIndex"
     @contextmenu="showContextMenu"
     @click.stop="onClick"
   >
-    <input v-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput">
-    <slot v-else/>
+    <input v-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput" />
+    <slot v-else />
   </div>
 </template>

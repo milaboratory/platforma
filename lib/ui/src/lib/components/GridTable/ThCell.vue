@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import type {ColumnSettings} from './types';
+import type { ColumnSettings } from './types';
 
 const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
 
 defineProps<{
-  col: ColumnSettings
+  col: ColumnSettings;
 }>();
 
 function rotate<T>(v: T, lst: T[]) {
@@ -29,19 +29,15 @@ function onSort(colName: string, _v: 'DESC' | 'ASC' | undefined) {
   const v = _v ?? 'DESC';
   emit('change:sort', {
     colName,
-    direction: rotate(v, ['DESC', 'ASC'])
+    direction: rotate(v, ['DESC', 'ASC']),
   });
 }
 </script>
 
 <template>
-  <div
-    class="cell th-cell"
-    :class="{'justify-center': col.justify}"
-    @contextmenu="showContextMenu"
-  >
-    <div v-if="col.valueType" :class="col.valueType"/>
+  <div class="cell th-cell" :class="{ 'justify-center': col.justify }" @contextmenu="showContextMenu">
+    <div v-if="col.valueType" :class="col.valueType" />
     {{ col.text }}
-    <div v-if="col.sort" class="sort" :class="col.sort.direction" @click.stop="() => onSort(col.name, col.sort?.direction)"/>
+    <div v-if="col.sort" class="sort" :class="col.sort.direction" @click.stop="() => onSort(col.name, col.sort?.direction)" />
   </div>
 </template>

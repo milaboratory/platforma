@@ -25,15 +25,14 @@ export type Option<T = unknown> = {
 };
 
 export type MaskIconName =
-  'checkmark' |
-  'import' |
-  'clear' |
-  'chevron-right' |
-  'add' |
-  'play' |
-  'loader' |
-  'arrow-right' |
-  'clipboard' |
-  'paper-clip' |
-  'settings-2'
-  ;
+  | 'checkmark'
+  | 'import'
+  | 'clear'
+  | 'chevron-right'
+  | 'add'
+  | 'play'
+  | 'loader'
+  | 'arrow-right'
+  | 'clipboard'
+  | 'paper-clip'
+  | 'settings-2';

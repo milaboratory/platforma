@@ -8,34 +8,34 @@ styles.replaceSync(`
 `);
 
 export class WebStopWatchElement extends HTMLElement {
-  static define(tag = "web-stop-watch") {
-    customElements.define(tag, this)
+  static define(tag = 'web-stop-watch') {
+    customElements.define(tag, this);
   }
 
   // Give this element its own encapsulated DOM
-  shadowRoot = this.attachShadow({ mode: "open" })
+  shadowRoot = this.attachShadow({ mode: 'open' });
 
   // Initialize private state
-  #start = Date.now()
+  #start = Date.now();
 
   connectedCallback() {
     // Add the shared styles
-    this.shadowRoot.adoptedStyleSheets = [styles]
+    this.shadowRoot.adoptedStyleSheets = [styles];
 
     // Start the timer
-    this.#tick()
+    this.#tick();
   }
 
   #tick() {
-    const milliseconds = Date.now() - this.#start
-    const minutes = String(Math.floor(milliseconds / (1000 * 60))).padStart(2, "0")
-    const seconds = String(Math.floor((milliseconds / 1000) % 60)).padStart(2, "0")
-    const hundredths = String(Math.floor((milliseconds % 1000) / 10)).padStart(2, "0")
+    const milliseconds = Date.now() - this.#start;
+    const minutes = String(Math.floor(milliseconds / (1000 * 60))).padStart(2, '0');
+    const seconds = String(Math.floor((milliseconds / 1000) % 60)).padStart(2, '0');
+    const hundredths = String(Math.floor((milliseconds % 1000) / 10)).padStart(2, '0');
 
-    this.shadowRoot.replaceChildren(`${minutes}:${seconds}:${hundredths}`)
+    this.shadowRoot.replaceChildren(`${minutes}:${seconds}:${hundredths}`);
 
     // Schedule next update
-    requestAnimationFrame(() => this.#tick())
+    requestAnimationFrame(() => this.#tick());
   }
 }
 

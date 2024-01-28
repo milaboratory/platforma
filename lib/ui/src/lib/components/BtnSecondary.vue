@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {MaskIconName, Size} from '@/lib/types';
+import type { MaskIconName, Size } from '@/lib/types';
 import BtnBase from '@/lib/components/btn/BtnBase.vue';
 
 const props = defineProps<{
@@ -17,6 +17,6 @@ const props = defineProps<{
 
 <template>
   <btn-base v-bind="props" class="ui-btn-secondary">
-    <slot/>
+    <slot />
   </btn-base>
 </template>

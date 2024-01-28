@@ -8,8 +8,8 @@ import NativeScroll from '@/demo/scroll/NativeScroll.vue';
 <template>
   <layout>
     <split name="Scrolls">
-      <dom-scroll/>
-      <native-scroll/>
+      <dom-scroll />
+      <native-scroll />
     </split>
   </layout>
 </template>

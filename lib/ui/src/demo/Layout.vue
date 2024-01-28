@@ -8,12 +8,12 @@ defineProps<{
 
 <template>
   <header>
-    <slot name="header"/>
+    <slot name="header" />
   </header>
   <div class="layout">
-    <sidebar v-once/>
+    <sidebar v-once />
     <main>
-      <slot/>
+      <slot />
     </main>
   </div>
 </template>

@@ -1,14 +1,10 @@
-import {type Ref, onMounted} from 'vue';
-import {useEventListener} from '@/lib/composition/useEventListener';
-import {requestTick} from '@/lib/helpers/utils';
+import { type Ref, onMounted } from 'vue';
+import { useEventListener } from '@/lib/composition/useEventListener';
+import { requestTick } from '@/lib/helpers/utils';
 
 export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number | null = null, fadeWidth: number | null = null) {
   function getYMask(el: HTMLElement) {
-    const {
-      scrollTop,
-      scrollHeight,
-      clientHeight,
-    } = el;
+    const { scrollTop, scrollHeight, clientHeight } = el;
 
     const hasScroll = scrollHeight > clientHeight;
 
@@ -30,11 +26,7 @@ export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number 
   }
 
   function getXMask(el: HTMLElement) {
-    const {
-      scrollLeft,
-      scrollWidth,
-      clientWidth
-    } = el;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
 
     const hasScroll = scrollWidth > clientWidth;
 
@@ -62,7 +54,7 @@ export function useScroll($el: Ref<HTMLElement | undefined>, fadeHeight: number 
       return;
     }
 
-    const masks = [getYMask(el), getXMask(el)].filter(m => m !== null);
+    const masks = [getYMask(el), getXMask(el)].filter((m) => m !== null);
     el.style.setProperty('-webkit-mask-image', masks.join(','));
     el.style.setProperty('mask-image', masks.join(','));
     if (masks.length > 1) {

@@ -11,5 +11,5 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     return false;
   }
 
-  return Object.keys(a).every(k => deepEqual(a[k], b[k]));
+  return Object.keys(a).every((k) => deepEqual(a[k], b[k]));
 }

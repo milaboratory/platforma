@@ -1,4 +1,4 @@
 <template>
-  <slot/>
-  <slot data-theme="dark"/>
+  <slot />
+  <slot data-theme="dark" />
 </template>

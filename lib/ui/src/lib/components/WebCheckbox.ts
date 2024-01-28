@@ -6,21 +6,23 @@ export default class WebCheckbox extends HTMLElement {
 
   onCheck() {
     this.toggleAttribute('checked');
-    this.dispatchEvent(new CustomEvent('change', {
-      bubbles: true,
-      detail: this.hasAttribute('checked')
-    }));
+    this.dispatchEvent(
+      new CustomEvent('change', {
+        bubbles: true,
+        detail: this.hasAttribute('checked'),
+      }),
+    );
   }
 
   static define(tag = 'web-checkbox') {
     if (!customElements.get(tag)) {
-      customElements.define(tag, this)
+      customElements.define(tag, this);
     } else {
       console.log(`${tag} already defined`);
     }
   }
 
-  shadowRoot = this.attachShadow({mode: 'open'})
+  shadowRoot = this.attachShadow({ mode: 'open' });
 
   connectedCallback() {
     this.classList.add('ui-checkbox');
@@ -42,7 +44,7 @@ export default class WebCheckbox extends HTMLElement {
     }
 
     if (name === 'disabled') {
-      this.classList.toggle('disabled', newValue === 'true')
+      this.classList.toggle('disabled', newValue === 'true');
     }
   }
 }

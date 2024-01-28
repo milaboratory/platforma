@@ -1,14 +1,14 @@
 <script lang="ts">
 export default {
-  inheritAttrs: false
-}
+  inheritAttrs: false,
+};
 </script>
 
 <script lang="ts" setup>
-import type {MaskIconName, Size} from '@/lib/types';
-import {computed, ref} from 'vue';
+import type { MaskIconName, Size } from '@/lib/types';
+import { computed, ref } from 'vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
-import {useRipple} from '@/lib/composition/useRipple';
+import { useRipple } from '@/lib/composition/useRipple';
 
 const props = defineProps<{
   loading?: boolean;
@@ -34,13 +34,13 @@ useRipple(btn);
   <button
     ref="btn"
     tabindex="0"
-    :class="{loading, small, large, round, reverse, justifyCenter, hover, [$attrs.class + '']: true}"
-    v-bind="{...$attrs, disabled: Boolean($attrs.disabled) || loading}"
+    :class="{ loading, small, large, round, reverse, justifyCenter, hover, [$attrs.class + '']: true }"
+    v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
     <span v-if="!round">
-      <slot/>
+      <slot />
     </span>
-    <mask-icon v-if="loading" name="loader"/>
-    <mask-icon v-else-if="icon" :name="icon"/>
+    <mask-icon v-if="loading" name="loader" />
+    <mask-icon v-else-if="icon" :name="icon" />
   </button>
 </template>

@@ -1,5 +1,5 @@
-import {MaybeRef} from '@/lib/types';
-import {onMounted, onUnmounted, unref} from 'vue';
+import type { MaybeRef } from '@/lib/types';
+import { onMounted, onUnmounted, unref } from 'vue';
 
 type Position = {
   x: number;
@@ -22,24 +22,27 @@ export function useDraggable<T extends HTMLElement>(elRef: MaybeRef<T | undefine
 
     document.addEventListener('mousemove', listener);
 
-    document.addEventListener('mouseup', () => {
-      const el = unref(elRef);
+    document.addEventListener(
+      'mouseup',
+      () => {
+        const el = unref(elRef);
 
-      document.removeEventListener('mousemove', listener);
+        document.removeEventListener('mousemove', listener);
 
-      if (!el) {
-        return;
-      }
+        if (!el) {
+          return;
+        }
 
-      el.style.setProperty('transition', 'all .3s ease-in-out');
+        el.style.setProperty('transition', 'all .3s ease-in-out');
 
-      el.style.removeProperty('transform');
+        el.style.removeProperty('transform');
 
-      el.addEventListener('transitionend', () => {
-        el.style.removeProperty('transition');
-      });
-
-    }, {once: true});
+        el.addEventListener('transitionend', () => {
+          el.style.removeProperty('transition');
+        });
+      },
+      { once: true },
+    );
   }
 
   function init() {

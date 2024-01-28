@@ -1,16 +1,17 @@
-import {computed, onMounted, onUnmounted, ref, unref, watch} from 'vue';
-import {mapIterable, toList} from '@/lib/helpers/iterators';
-import {useLocalStorage} from '@/lib/composition/useLocalStorage';
+import { computed, onMounted, onUnmounted, ref, unref, watch } from 'vue';
+import { mapIterable, toList } from '@/lib/helpers/iterators';
+import { useLocalStorage } from '@/lib/composition/useLocalStorage';
 
 type Theme = 'light' | 'dark';
 
 type Callback = (mode: Theme) => void;
 
-const cm = new Set<Callback>;
+const cm = new Set<Callback>();
 
-window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-  toList(mapIterable(cm.values(), cb => cb(e.matches ? 'dark' : 'light')));
-});
+window.matchMedia &&
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    toList(mapIterable(cm.values(), (cb) => cb(e.matches ? 'dark' : 'light')));
+  });
 
 const init = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 

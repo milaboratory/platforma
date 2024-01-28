@@ -1,13 +1,12 @@
 <script lang="ts" setup>
-import {ref} from 'vue';
-import {useDraggable} from '@/lib/composition/useDraggable';
+import { ref } from 'vue';
+import { useDraggable } from '@/lib/composition/useDraggable';
 
 const squareRef = ref();
 
-useDraggable(squareRef, (ev) => {
+useDraggable(squareRef, (_ev) => {
   // console.log('ev', ev);
 });
-
 </script>
 
 <template>

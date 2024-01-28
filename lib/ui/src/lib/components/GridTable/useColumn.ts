@@ -1,12 +1,12 @@
-import {useEventListener} from '@/lib/composition/useEventListener.ts';
-import {useMouseUp} from './useMouseUp';
-import {requestTick} from '@/lib/helpers';
+import { useEventListener } from '@/lib/composition/useEventListener.ts';
+import { useMouseUp } from './useMouseUp';
+import { requestTick } from '@/lib/helpers';
 
-export function useColumn(cb: (state: {x: number; width: number; diff: number}) => void, clear: () => void) {
-  let state = undefined as {x: number; width: number} | undefined;
+export function useColumn(cb: (state: { x: number; width: number; diff: number }) => void, clear: () => void) {
+  let state = undefined as { x: number; width: number } | undefined;
 
-  function start(e: { x: number; width: number; }) {
-    state = {...e};
+  function start(e: { x: number; width: number }) {
+    state = { ...e };
   }
 
   useMouseUp(() => {
@@ -21,12 +21,12 @@ export function useColumn(cb: (state: {x: number; width: number; diff: number}) 
       handle({
         x: state.x,
         width: state.width,
-        diff: e.x - state.x
+        diff: e.x - state.x,
       });
     }
   });
 
   return {
-    start
+    start,
   };
 }

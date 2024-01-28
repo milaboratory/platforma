@@ -1,7 +1,8 @@
-import {Ref, ref, watch} from 'vue';
-import {notEmpty} from '@/lib/helpers/utils';
+import type { Ref } from 'vue';
+import { ref, watch } from 'vue';
+import { notEmpty } from '@/lib/helpers/utils';
 
-const $store = new Map<string, Ref<string | null>>;
+const $store = new Map<string, Ref<string | null>>();
 
 function getValue(key: string) {
   if (!$store.has(key)) {

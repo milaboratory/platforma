@@ -22,7 +22,7 @@ function onClose() {
       </div>
     </split>
     <div class="ground">
-      <chips-example/>
+      <chips-example />
     </div>
   </layout>
 </template>

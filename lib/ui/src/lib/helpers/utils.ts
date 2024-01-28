@@ -25,10 +25,11 @@ export function requestTick<P>(cb: (...args: P[]) => void) {
 }
 
 export function delay(ms: number) {
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export function timeout(cb: () => void, ms: number) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const r: any = setTimeout(cb, ms);
   return () => {
     clearTimeout(r);
@@ -50,26 +51,20 @@ export function randomString(length: number) {
 }
 
 export function makeEaseOut(timing: (t: number) => number) {
-  return function(timeFraction: number) {
+  return function (timeFraction: number) {
     return 1 - timing(1 - timeFraction);
-  }
+  };
 }
 
 export function makeEaseInOut(timing: (t: number) => number) {
-  return function(timeFraction: number) {
-    if (timeFraction < .5)
-      return timing(2 * timeFraction) / 2;
-    else
-      return (2 - timing(2 * (1 - timeFraction))) / 2;
-  }
+  return function (timeFraction: number) {
+    if (timeFraction < 0.5) return timing(2 * timeFraction) / 2;
+    else return (2 - timing(2 * (1 - timeFraction))) / 2;
+  };
 }
 
-export function animate(options: {
-  duration: number;
-  draw: (p: number) => void;
-  timing: (t: number) => number;
-}) {
-  const {duration, draw, timing} = options;
+export function animate(options: { duration: number; draw: (p: number) => void; timing: (t: number) => number }) {
+  const { duration, draw, timing } = options;
   const start = performance.now();
   let stop = false;
   requestAnimationFrame(function animate(time) {
@@ -84,15 +79,11 @@ export function animate(options: {
 
   return function () {
     stop = true;
-  }
+  };
 }
 
-export function animateInfinite(options: {
-  getFraction: (dt: number) => number;
-  draw: (p: number) => void;
-  timing: (t: number) => number;
-}) {
-  const {getFraction, draw, timing} = options;
+export function animateInfinite(options: { getFraction: (dt: number) => number; draw: (p: number) => void; timing: (t: number) => number }) {
+  const { getFraction, draw, timing } = options;
   const start = performance.now();
   let stop = false;
   requestAnimationFrame(function animate(time) {
@@ -109,5 +100,5 @@ export function animateInfinite(options: {
   });
   return function () {
     stop = true;
-  }
+  };
 }

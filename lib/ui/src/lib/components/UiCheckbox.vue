@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-import {computed} from 'vue';
+import { computed } from 'vue';
 
 defineEmits(['update:modelValue']);
 
 const props = defineProps<{
-  modelValue: boolean
-  disabled?: boolean
+  modelValue: boolean;
+  disabled?: boolean;
 }>();
 
 const checked = computed(() => props.modelValue);
@@ -15,7 +15,7 @@ const checked = computed(() => props.modelValue);
   <div
     tabindex="0"
     class="ui-checkbox"
-    :class="{checked, disabled}"
+    :class="{ checked, disabled }"
     @click="$emit('update:modelValue', !modelValue)"
     @keydown.enter="$emit('update:modelValue', !modelValue)"
   />

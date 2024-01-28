@@ -1,4 +1,4 @@
-import {onMounted, onUpdated} from 'vue';
+import { onMounted, onUpdated } from 'vue';
 
 export function onChanged(hook: () => unknown) {
   onMounted(hook);

@@ -1,29 +1,35 @@
 <script lang="ts" setup>
-import {computed, reactive, ref, unref, useSlots} from 'vue';
-import {useMouseCapture} from '@/lib/composition/useMouseCapture';
-import {tapIf} from '@/lib/helpers/functions';
-import {clamp} from '@/lib/helpers/math';
+import { computed, reactive, ref, unref, useSlots } from 'vue';
+import { useMouseCapture } from '@/lib/composition/useMouseCapture';
+import { tapIf } from '@/lib/helpers/functions';
+import { clamp } from '@/lib/helpers/math';
 import Tooltip from '@/lib/components/Tooltip.vue';
 
 const slots = useSlots();
 
 const emit = defineEmits(['update:modelValue']);
 
-const props = withDefaults(defineProps<{
-  modelValue: number
-  min?: number
-  max: number
-  step?: number
-  label?: string
-  helper?: string
-  error?: string
-}>(), {
-  min: 0,
-  step: 1
-});
+const props = withDefaults(
+  defineProps<{
+    modelValue: number;
+    min?: number;
+    max: number;
+    step?: number;
+    label?: string;
+    helper?: string;
+    error?: string;
+  }>(),
+  {
+    label: undefined,
+    helper: undefined,
+    error: undefined,
+    min: 0,
+    step: 1,
+  },
+);
 
 const data = reactive({
-  deltaValue: 0
+  deltaValue: 0,
 });
 
 const range = computed(() => props.max - props.min);
@@ -53,11 +59,11 @@ const position = computed(() => {
 });
 
 const progressStyle = computed(() => ({
-  right: Math.ceil((1 - position.value) * 100) + '%'
+  right: Math.ceil((1 - position.value) * 100) + '%',
 }));
 
 const thumbStyle = computed(() => ({
-  right: Math.ceil((1 - position.value) * 100) + '%'
+  right: Math.ceil((1 - position.value) * 100) + '%',
 }));
 
 const barRef = ref<HTMLElement>();
@@ -70,8 +76,8 @@ function round(value: number) {
 }
 
 useMouseCapture(thumbRef, (ev) => {
-  tapIf(unref(barRef)?.getBoundingClientRect(), rect => {
-    const {dx} = ev;
+  tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
+    const { dx } = ev;
     data.deltaValue = (dx / rect.width) * range.value;
     if (ev.stop) {
       emit('update:modelValue', round(localValue.value));
@@ -87,17 +93,17 @@ useMouseCapture(thumbRef, (ev) => {
       <label v-if="label">
         <span>{{ label }}</span>
         <tooltip v-if="slots.tooltip" class="info" position="top">
-          <template v-slot:tooltip>
-            <slot name="tooltip"/>
+          <template #tooltip>
+            <slot name="tooltip" />
           </template>
         </tooltip>
       </label>
       <div class="ui-slider__base">
         <div class="ui-slider__container">
           <div ref="barRef" class="ui-slider__bar">
-            <div class="ui-slider__progress" :style="progressStyle"/>
+            <div class="ui-slider__progress" :style="progressStyle" />
           </div>
-          <div ref="thumbRef" class="ui-slider__thumb" :style="thumbStyle"/>
+          <div ref="thumbRef" class="ui-slider__thumb" :style="thumbStyle" />
         </div>
         <div class="ui-slider__value">
           {{ modelValue }}

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/demo/Layout.vue';
 import Heap from '@/demo/theme/Heap.vue';
-import {useTheme} from '@/lib/composition/useTheme';
+import { useTheme } from '@/lib/composition/useTheme';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 
 const [theme] = useTheme((theme) => {
@@ -18,10 +18,10 @@ useTheme((theme) => {
     <div class="panel" :data-theme="theme">
       <div class="split__header">
         Toggle theme (appearance)
-        <ThemeSwitcher/>
+        <ThemeSwitcher />
       </div>
       <div>
-        <Heap/>
+        <Heap />
       </div>
     </div>
   </layout>
@@ -36,8 +36,8 @@ useTheme((theme) => {
 
   --bg-color: #fff;
 
-  &[data-theme="dark"] {
-    --bg-color: #1B1B1F;
+  &[data-theme='dark'] {
+    --bg-color: #1b1b1f;
   }
 
   > div:first-child {

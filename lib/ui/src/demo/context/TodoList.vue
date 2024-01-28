@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import {inject, unref} from 'vue';
+import { inject, unref } from 'vue';
 import TodoItem from '@/demo/context/TodoItem.vue';
-import {todoListKey} from './keys';
-import {notEmpty, randomString} from '@/lib/helpers/utils';
+import { todoListKey } from './keys';
+import { notEmpty, randomString } from '@/lib/helpers/utils';
 
 const state = notEmpty(inject(todoListKey), 'Empty state');
 
@@ -13,10 +13,8 @@ function addItem() {
 
 <template>
   <div class="todo-list">
-    <todo-item v-for="(it, i) in state.items" :key="i" :id="it.id"/>
-    <button @click.stop="addItem">
-      Add
-    </button>
+    <todo-item v-for="(it, i) in state.items" :id="it.id" :key="i" />
+    <button @click.stop="addItem">Add</button>
   </div>
 </template>
 

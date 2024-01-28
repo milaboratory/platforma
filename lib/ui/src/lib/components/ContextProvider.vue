@@ -1,14 +1,17 @@
 <script lang="ts" setup>
-import {computed, provide} from 'vue';
+import { type InjectionKey, computed, provide } from 'vue';
 
 const props = defineProps<{
-  context: object
-  contextKey: Symbol
+  context: object;
+  contextKey: InjectionKey<unknown>;
 }>();
 
-provide<unknown>(props.contextKey, computed(() => props.context));
+provide<unknown>(
+  props.contextKey,
+  computed(() => props.context),
+);
 </script>
 
 <template>
-  <slot/>
+  <slot />
 </template>

@@ -1,10 +1,10 @@
-import {tapIf} from '@/lib/helpers/functions';
+import { tapIf } from '@/lib/helpers/functions';
 
-const cm = new WeakMap<Element, () => void>;
+const cm = new WeakMap<Element, () => void>();
 
 const resizeObserver = new ResizeObserver((entries) => {
   for (const entry of entries) {
-    tapIf(cm.get(entry.target), cb => cb());
+    tapIf(cm.get(entry.target), (cb) => cb());
   }
 });
 
