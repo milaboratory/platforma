@@ -80,6 +80,11 @@
     @include mask(url("./images/24_settings-2.svg"), var(--mask-size));
   }
 
+  &--filters {
+    --mask-size: 24px;
+    @include mask(url("./images/24_filters.svg"), var(--mask-size));
+  }
+
   /* Deprecated */
 
   &--paper-clip {

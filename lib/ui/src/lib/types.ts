@@ -24,15 +24,19 @@ export type Option<T = unknown> = {
   value: T;
 };
 
-export type MaskIconName =
-  | 'checkmark'
-  | 'import'
-  | 'clear'
-  | 'chevron-right'
-  | 'add'
-  | 'play'
-  | 'loader'
-  | 'arrow-right'
-  | 'clipboard'
-  | 'paper-clip'
-  | 'settings-2';
+export const maskIcons = [
+  'checkmark',
+  'import',
+  'clear',
+  'chevron-right',
+  'add',
+  'play',
+  'loader',
+  'arrow-right',
+  'clipboard',
+  'paper-clip',
+  'settings-2',
+  'filters',
+] as const;
+
+export type MaskIconName = (typeof maskIcons)[number];
