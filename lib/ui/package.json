@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-uikit",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,6 +23,7 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.4.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@vitejs/plugin-vue": "^5.0.0",
     "eslint": "8.17.0",

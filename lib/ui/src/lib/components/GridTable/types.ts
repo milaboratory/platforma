@@ -25,6 +25,7 @@ export type Settings = {
   rows: Record<string, unknown>[];
   addColumn?: () => Promise<void>;
   autoLastColumn?: boolean;
+  selfSort?: boolean;
 };
 
 export type CellProps = {

@@ -8,6 +8,7 @@ import { utils, strings } from '@milaboratory/helpers';
 import AddColumnBtn from './AddColumnBtn.vue';
 import TableIcon from './assets/TableIcon.vue';
 import ThCell from './ThCell.vue';
+import { compareRecords } from './domain';
 
 const { tapIf } = utils;
 
@@ -71,9 +72,29 @@ const classes = computed(() => {
 
 const tableRef = ref<HTMLElement>();
 
-const cells = computed(() =>
-  props.settings.rows.flatMap((row, rowIndex) => {
-    return unref(columnsRef).map((col) => {
+const cells = computed(() => {
+  const columns = unref(columnsRef);
+
+  const rows = props.settings.rows.slice();
+
+  if (props.settings.selfSort) {
+    const sorts = columns.reduce(
+      (acc, col) => {
+        if (col.sort?.direction) {
+          acc[col.name] = col.sort.direction;
+        }
+        return acc;
+      },
+      {} as Record<string, 'DESC' | 'ASC'>,
+    );
+
+    if (Object.keys(sorts).length) {
+      rows.sort((a, b) => compareRecords(sorts, a, b));
+    }
+  }
+
+  return rows.flatMap((row, rowIndex) => {
+    return columns.map((col) => {
       const colName = col.name;
       return {
         colName,
@@ -84,8 +105,8 @@ const cells = computed(() =>
         editable: col.editable,
       };
     });
-  }),
-);
+  });
+});
 
 const { mouseDown } = useResize(data, tableRef);
 

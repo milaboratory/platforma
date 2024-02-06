@@ -9,7 +9,6 @@ import BtnGroup from '@/lib/components/BtnGroup.vue';
 import { maskIcons, type Size } from '@/lib/types';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import BtnGhost from '@/lib/components/BtnGhost.vue';
-import { SelectInput } from '@/lib';
 
 const props = reactive({
   size: 'medium' as Size,
