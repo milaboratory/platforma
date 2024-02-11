@@ -37,6 +37,8 @@ export const maskIcons = [
   'paper-clip',
   'settings-2',
   'filters',
+  'local',
+  'server-on',
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];

@@ -67,6 +67,16 @@
     @include icon(url("./images/24_clips.svg"), var(--icon-size));
   }
 
+  &--local {
+    --icon-size: 24px;
+    @include icon(url("./images/24_local.svg"), var(--icon-size));
+  }
+
+  &--server-on {
+    --icon-size: 24px;
+    @include icon(url("./images/24_server-on.svg"), var(--icon-size));
+  }
+
   /* Deprecated */
 
   &--search {
