@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Select-input-line',
+    path: '/select-input-line',
+    component: () => import('@/demo/select-input-line/index.vue'),
+  },
+  {
     name: 'Form',
     path: '/',
     component: () => import('@/demo/form/index.vue'),

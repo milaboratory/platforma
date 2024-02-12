@@ -36,3 +36,6 @@ export type MaskIconName =
   | 'clipboard'
   | 'paper-clip'
   | 'settings-2';
+
+
+export type SelectInputItem = { [key: string]: any };
