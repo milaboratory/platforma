@@ -1,7 +1,7 @@
 <template>
     <Layout>
         <Split name="Select input">
-            <div style="width: 170px;">
+            <div>
                 <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'" />
                 <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
                 <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'" />

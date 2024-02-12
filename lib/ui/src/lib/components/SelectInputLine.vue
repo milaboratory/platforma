@@ -3,12 +3,11 @@
         <div class="ui-select-input-line__prefix">
             {{ props.prefix }}
         </div>
-        <input :value="selectedValues" :placeholder="props.placeholder" :disabled="props.disabled" type="text"
-            class="ui-select-input-line__input" @input="setSearchPhrase">
+        <ResizableInput class="ui-select-input-line__input" :value="selectedValues" :placeholder="'...'"
+            :disabled="props.disabled" @input="setSearchPhrase" />
         <div class="ui-select-input-line__icon-wrapper">
             <div class="ui-select-input-line__icon" @click="toggleList" />
         </div>
-
         <div v-if="props.mode === 'list'" v-show="data.isOpen" class="ui-select-input-line__items">
             <div v-for="(item, index) in items" :key="index" :class="getClassForSelectedItem(item)"
                 class="ui-select-input-line__item" @click.stop="selectItem(item)">
@@ -17,8 +16,14 @@
                 </div>
                 <div v-if="isItemSelected(item)" class="ui-select-input-line__item-icon"></div>
             </div>
-        </div>
 
+            <div v-if="items.length === 0" class="ui-select-input-line__item">
+                <div class="ui-select-input-line__item-title">
+                    No items...
+                </div>
+            </div>
+
+        </div>
         <div v-if="props.mode === 'tabs'" v-show="data.isOpen" class="ui-select-input-line__items-tabs">
             <div v-for="(item, index) in items" :key="index" :class="getClassForSelectedItem(item)"
                 class="ui-select-input-line__item-tab" @click.stop="selectItem(item)">
@@ -36,6 +41,7 @@ import { SelectInputItem } from '@/lib/types';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useFilteredList } from '@/lib/composition/useFilteredList';
+import ResizableInput from '@/lib/components/ResizableInput.vue';
 
 const props = defineProps({
     modelValue: {
@@ -88,11 +94,8 @@ const classes = computed(() => {
     }
     return classesResult.join(' ');
 });
-
 const searchPhrase = ref<string>('');
-
 const items = useFilteredList(props.items, searchPhrase, 'text');
-
 const selectedValues = computed<string>(() => {
     if (searchPhrase.value) {
         return searchPhrase.value;
@@ -103,6 +106,10 @@ const selectedValues = computed<string>(() => {
     return '';
 });
 
+useClickOutside(container as Ref<HTMLElement>, () => {
+    data.isOpen = false;
+});
+
 function getClassForSelectedItem(item: SelectInputItem): string {
     const result = isItemSelected(item);
     if (result) {
@@ -110,8 +117,10 @@ function getClassForSelectedItem(item: SelectInputItem): string {
     }
     return '';
 }
-function setSearchPhrase(event: Event) {
-    searchPhrase.value = (event.target as HTMLInputElement).value;
+
+function setSearchPhrase(str: string) {
+    searchPhrase.value = str;
+    data.isOpen = true;
     if (!searchPhrase.value) {
         selectItem();
     }
@@ -125,21 +134,25 @@ function toggleList(): void {
     }
 }
 
-useClickOutside(container as Ref<HTMLElement>, () => {
-    data.isOpen = false;
-});
+function resetSearchPhrase() {
+    searchPhrase.value = '';
+}
+
+function closePopupIfNeeded() {
+    if (props.mode === 'list') {
+        data.isOpen = false;
+    }
+}
 
 function selectItem(item?: SelectInputItem): void {
     if (item) {
         emit('update:modelValue', [item]);
-        searchPhrase.value = '';
+        resetSearchPhrase();
     } else {
         emit('update:modelValue', []);
     }
 
-    if (props.mode === 'list') {
-        data.isOpen = false;
-    }
+    closePopupIfNeeded();
 }
 
 function isItemSelected(item: SelectInputItem): boolean {

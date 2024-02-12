@@ -3,7 +3,7 @@
 .ui-select-input-line {
     display: flex;
     align-items: center;
-    width: 100%;
+    width: fit-content;
     padding: 13px 0;
     box-sizing: border-box;
     position: relative;
@@ -41,14 +41,14 @@
         letter-spacing: 0.52px;
     }
 
-    &__input {
-        border: none;
-        outline: none;
-        flex-grow: 1;
-        width: 100%;
-        background-color: inherit;
-        margin: 0 4px;
-    }
+    // &__input {
+    //     border: none;
+    //     outline: none;
+    //     // flex-grow: 1;
+    //     // width: 100%;
+    //     background-color: inherit;
+    //     margin: 0 4px;
+    // }
 
     &__input::placeholder {
         color: var(--color-txt-mask);
