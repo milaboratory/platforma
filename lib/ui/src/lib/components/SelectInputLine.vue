@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PropType, Ref } from 'vue';
+import type { Ref } from 'vue';
 import { computed, reactive, ref } from 'vue';
 import type { SelectInputItem } from '@/lib/types';
 import { deepEqual } from '@/lib/helpers/objects';
@@ -7,40 +7,25 @@ import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useFilteredList } from '@/lib/composition/useFilteredList';
 import ResizableInput from '@/lib/components/ResizableInput.vue';
 
-const props = defineProps({
-  modelValue: {
-    type: Array as PropType<SelectInputItem[]>,
-    required: true,
+const props = withDefaults(
+  defineProps<{
+    modelValue: Record<string, any>[];
+    disabled: boolean;
+    prefix: string;
+    items: SelectInputItem[];
+    itemText: string;
+    itemValue: string;
+    placeholder: string;
+    mode: 'list' | 'tabs';
+  }>(),
+  {
+    mode: 'list',
+    itemText: 'text',
+    itemValue: 'value',
+    placeholder: 'Select..',
   },
-  disabled: {
-    type: Boolean as PropType<boolean>,
-    default: false,
-  },
-  prefix: {
-    type: String as PropType<string>,
-    // required: true,
-  },
-  items: {
-    type: Array as PropType<SelectInputItem[]>,
-    default: () => [],
-  },
-  itemText: {
-    type: String as PropType<string>,
-    default: 'text',
-  },
-  itemValue: {
-    type: String as PropType<string>,
-    default: 'value',
-  },
-  placeholder: {
-    type: String as PropType<string>,
-    default: 'Select...',
-  },
-  mode: {
-    type: String as PropType<'list' | 'tabs'>,
-    default: 'list',
-  },
-});
+);
+
 const emit = defineEmits(['update:modelValue']);
 const data = reactive({
   isOpen: false,
