@@ -111,6 +111,10 @@
         align-items: center;
     }
 
+    &__item.hovered-item{
+        background-color: var(--bg-elevated-02);
+    }
+
     &__item:hover {
         background-color: var(--bg-elevated-02);
     }

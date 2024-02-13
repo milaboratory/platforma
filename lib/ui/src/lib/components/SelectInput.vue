@@ -226,7 +226,7 @@ watchPostEffect(() => {
             </template>
           </tooltip>
         </label>
-        <div v-if="data.open" ref="list" class="ui-select-input__options">
+        <div v-if="true" ref="list" class="ui-select-input__options">
           <div
             v-for="(opt, i) in filtered"
             :key="i"
