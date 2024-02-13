@@ -111,19 +111,31 @@ function isItemSelected(item: SelectInputItem): boolean {
   }
   return false;
 }
+
+function onBlur(event: Event) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!container?.value?.contains((event as any).relatedTarget)) {
+    data.isOpen = false;
+  }
+}
+
+function onInputFocus() {
+  data.isOpen = true;
+}
 </script>
 
 <template>
-  <div ref="container" :class="classes" class="ui-select-input-line uc-pointer" @click="toggleList">
+  <div ref="container" :class="classes" class="ui-select-input-line uc-pointer" @click="toggleList" @focusout="onBlur">
     <div class="ui-select-input-line__prefix">
       {{ props.prefix }}
     </div>
     <ResizableInput
-      class="ui-select-input-line__input"
       :value="selectedValues"
       :placeholder="'...'"
       :disabled="props.disabled"
+      class="ui-select-input-line__input"
       @input="setSearchPhrase"
+      @focus="onInputFocus"
     />
     <div class="ui-select-input-line__icon-wrapper">
       <div class="ui-select-input-line__icon" @click="toggleList" />

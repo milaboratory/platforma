@@ -2,10 +2,10 @@
 import { computed } from 'vue';
 
 const props = defineProps<{
-  modelValue: string;
-  placeholder: string;
-  value: string;
-  disabled: boolean;
+  modelValue?: string;
+  placeholder?: string;
+  value?: string;
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits(['input', 'update:modelValue']);
