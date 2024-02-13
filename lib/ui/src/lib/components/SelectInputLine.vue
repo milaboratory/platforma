@@ -172,7 +172,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+  if (['ArrowDown', 'ArrowUp', 'Enter', 'ArrowRight', 'ArrowLeft'].includes(e.code)) {
     e.preventDefault();
   }
 
@@ -180,7 +180,11 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     selectItem(items.value[activeOption]);
   }
 
-  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  let d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+
+  if (props.mode === 'tabs') {
+    d = e.code === 'ArrowRight' ? 1 : e.code === 'ArrowLeft' ? -1 : 0;
+  }
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
@@ -189,21 +193,23 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
 
 function scrollIntoActive() {
   const $list = list.value;
-
   if (!$list) {
     return;
   }
-  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
-    scrollIntoView($list, opt);
+  const element = $list.querySelector('.hovered-item') as HTMLElement;
+  tapIf(element, (opt) => {
+    if (props.mode === 'list') {
+      scrollIntoView($list, opt);
+    } else {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
   });
 }
 </script>
 
 <template>
   <div ref="container" :class="classes" class="ui-select-input-line uc-pointer" @click="toggleList" @focusout="onBlur" @keydown="handleKeydown">
-    <div class="ui-select-input-line__prefix">
-      {{ props?.prefix }}
-    </div>
+    <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
     <ResizableInput
       :value="selectedValues"
       :placeholder="'...'"

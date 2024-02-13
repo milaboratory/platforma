@@ -1,56 +1,56 @@
 <template>
-    <Layout>
-        <Split name="Select input">
-            <div>
-                <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'" />
-                <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
-                <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'" />
-            </div>
-            <br>
-            <br>
-            <br>
-            <div>
-                {{ model0 }}
-            </div>
-            <div>
-                {{ model1 }}
-            </div>
-            <div>
-                {{ model2 }}
-            </div>
-        </Split>
-    </Layout>
+  <Layout>
+    <Split name="Select input">
+      <div>
+        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'" />
+        <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
+        <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'" />
+      </div>
+      <br />
+      <br />
+      <br />
+      <div>
+        {{ model0 }}
+      </div>
+      <div>
+        {{ model1 }}
+      </div>
+      <div>
+        {{ model2 }}
+      </div>
+    </Split>
+  </Layout>
 </template>
 <script setup lang="ts">
 import SelectInputLine from '@/lib/components/SelectInputLine.vue';
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
-import { reactive } from 'vue';
+// import { reactive } from 'vue';
 import { generate } from '@/lib/helpers/functions';
 import { ref } from 'vue';
 
 const items0 = generate(30, (i) => ({
-    text: `Option ${i}`,
-    value: {
-        i,
-    },
+  text: `Option ${i}`,
+  value: {
+    i,
+  },
 }));
 
-const items1 = generate(30, (i) => ({
-    text: `List item ${i}`,
-    value: {
-        i,
-    },
+const items1 = generate(40, (i) => ({
+  text: `List item ${i}`,
+  value: {
+    i,
+  },
 }));
 
 const items2 = generate(300, (i) => ({
-    text: `Tab ${i}`,
-    value: {
-        i,
-    },
+  text: `Tab ${i}`,
+  value: {
+    i,
+  },
 }));
 
 const model0 = ref([]);
-const model1 = ref([{ "text": "List item 5", "value": { "i": 5 } }]);
-const model2 = ref([{ "text": "Tab 2", "value": { "i": 2 } }]);
+const model1 = ref([{ text: 'List item 35', value: { i: 35 } }]);
+const model2 = ref([{ text: 'Tab 2', value: { i: 2 } }]);
 </script>

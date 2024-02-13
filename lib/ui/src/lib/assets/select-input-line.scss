@@ -169,4 +169,8 @@
 
         border-bottom: 2px solid var(--color-div-grey);
     }
+
+    &__item-tab.hovered-item{
+        border-bottom: 2px solid var(--color-focus);
+    }
 }
