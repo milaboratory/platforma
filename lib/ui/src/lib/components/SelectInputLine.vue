@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { Ref } from 'vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import type { SelectInputItem } from '@/lib/types';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useFilteredList } from '@/lib/composition/useFilteredList';
 import ResizableInput from '@/lib/components/ResizableInput.vue';
-import { tapIf } from '@/lib/helpers/functions';
+import { tapIf, tap } from '@/lib/helpers/functions';
 import { scrollIntoView } from '@/lib/helpers/dom';
 
 const props = withDefaults(
@@ -34,7 +34,7 @@ const props = withDefaults(
 const emit = defineEmits(['update:modelValue']);
 const data = reactive({
   isOpen: false,
-  activeOption: 0,
+  activeOption: -1,
 });
 const container = ref<HTMLElement | null>(null);
 const list = ref<HTMLElement | null>(null);
@@ -66,6 +66,30 @@ const selectedValues = computed<string>(() => {
 useClickOutside(container as Ref<HTMLElement>, () => {
   data.isOpen = false;
 });
+
+watch(
+  () => data.isOpen,
+  (value: boolean) => {
+    if (value) {
+      nextTick(() => scrollIntoActive());
+    }
+  },
+);
+
+watch(
+  () => props.modelValue,
+  () => updateSelected(),
+  { immediate: true },
+);
+
+function updateSelected() {
+  data.activeOption = tap(
+    items.value.findIndex((o) => {
+      return deepEqual(o, props.modelValue[0]);
+    }),
+    (v) => (v < 0 ? 0 : v),
+  );
+}
 
 function getClassForSelectedItem(item: SelectInputItem, index: number): string {
   const result = isItemSelected(item);
@@ -159,8 +183,6 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
-
-  console.log(data.activeOption);
 
   requestAnimationFrame(scrollIntoActive);
 }
