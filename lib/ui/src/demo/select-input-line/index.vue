@@ -2,13 +2,14 @@
   <Layout>
     <Split name="Select input">
       <div>
-        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'" />
+        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'">
+          <template #item="slotProps">
+            <DropdownListItem v-bind="slotProps" :size="'medium'" />
+          </template>
+        </SelectInputLine>
         <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
         <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'" />
       </div>
-      <br />
-      <br />
-      <br />
       <div>
         {{ model0 }}
       </div>
@@ -25,7 +26,7 @@
 import SelectInputLine from '@/lib/components/SelectInputLine.vue';
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
-// import { reactive } from 'vue';
+import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 import { generate } from '@/lib/helpers/functions';
 import { ref } from 'vue';
 
