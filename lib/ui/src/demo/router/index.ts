@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Typography',
+    path: '/typography',
+    component: () => import('@/demo/typography/index.vue'),
+  },
+  {
     name: 'Select-input-line',
     path: '/select-input-line',
     component: () => import('@/demo/select-input-line/index.vue'),
