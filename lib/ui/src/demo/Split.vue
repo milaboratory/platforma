@@ -12,6 +12,7 @@ defineProps<{
     </div>
     <div class="split__column">
       <slot />
+      <slot name="props" />
     </div>
     <div v-if="!hideSecond" class="split__column" data-theme="dark">
       <slot />

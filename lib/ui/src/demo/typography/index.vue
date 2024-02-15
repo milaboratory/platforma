@@ -25,7 +25,7 @@ const text = 'Lorem Ipsum is simply dummy text of the printing and typesetting i
 </script>
 <template lang="html">
     <Layout>
-        <Split name="Select input">
+        <Split name="Typography">
             <div v-for="(classStr, index) in classes" :key="index" class="typography-container">
                 <h2>{{ classStr }}</h2>
                 <div :class="classStr">{{ text }}</div>
