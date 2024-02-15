@@ -23,7 +23,8 @@ const classes: string[] = [
 
 const text = 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.';
 </script>
-<template lang="html">
+
+<template>
     <Layout>
         <Split name="Typography">
             <div v-for="(classStr, index) in classes" :key="index" class="typography-container">

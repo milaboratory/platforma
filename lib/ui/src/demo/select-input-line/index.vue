@@ -1,24 +1,3 @@
-<template>
-  <Layout>
-    <Split name="Select input">
-      <div>
-        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'">
-          <template #item="slotProps">
-            <DropdownListItem v-bind="slotProps" :size="'medium'" />
-          </template>
-        </SelectInputLine>
-        <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
-        <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'"
-          :tabs-container-styles="{ maxWidth: '700px' }" />
-      </div>
-
-      <template #props>
-        <PropsDisplay :data="propsDescription" />
-      </template>
-
-    </Split>
-  </Layout>
-</template>
 <script setup lang="ts">
 import SelectInputLine from '@/lib/components/SelectInputLine.vue';
 import Layout from '@/demo/Layout.vue';
@@ -55,7 +34,7 @@ const model2 = ref([{ text: 'Tab 2', value: { i: 2 } }]);
 
 const propsDescription = {
   modelValue: {
-    type: 'Record < string, any> [];',
+    type: 'Record < string, unknown> [];',
     description: 'Model for component v-model'
   },
   disabled: {
@@ -92,3 +71,25 @@ const propsDescription = {
   },
 }
 </script>
+
+<template>
+  <Layout>
+    <Split name="Select input">
+      <div>
+        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'">
+          <template #item="slotProps">
+            <DropdownListItem v-bind="slotProps" :size="'medium'" />
+          </template>
+        </SelectInputLine>
+        <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
+        <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'"
+          :tabs-container-styles="{ maxWidth: '700px' }" />
+      </div>
+
+      <template #props>
+        <PropsDisplay :data="propsDescription" />
+      </template>
+
+    </Split>
+  </Layout>
+</template>
