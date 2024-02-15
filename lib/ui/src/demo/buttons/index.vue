@@ -6,7 +6,7 @@ import Split from '@/demo/Split.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
 import BtnAccent from '@/lib/components/BtnAccent.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
-import type { Size } from '@/lib/types';
+import { maskIcons, type Size } from '@/lib/types';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import BtnGhost from '@/lib/components/BtnGhost.vue';
 
@@ -19,6 +19,8 @@ const props = reactive({
 });
 
 const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
+
+const iconOptions = maskIcons.map((text) => ({ text, value: text })); //
 
 const text = 'Click me';
 
@@ -64,6 +66,9 @@ function onClick() {
           <btn-ghost icon="add" v-bind="props">{{ text }}</btn-ghost>
           <btn-ghost icon="clipboard" v-bind="props" />
           <btn-ghost icon="settings-2" v-bind="props">Settings</btn-ghost>
+        </div>
+        <div>
+          <btn-ghost v-for="icon in maskIcons" :key="icon" :icon="icon">Icon: {{ icon }}</btn-ghost>
         </div>
       </div>
     </split>

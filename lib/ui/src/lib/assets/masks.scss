@@ -80,6 +80,21 @@
     @include mask(url("./images/24_settings-2.svg"), var(--mask-size));
   }
 
+  &--filters {
+    --mask-size: 24px;
+    @include mask(url("./images/24_filters.svg"), var(--mask-size));
+  }
+
+  &--local {
+    --icon-size: 24px;
+    @include mask(url("./images/24_local.svg"), var(--icon-size));
+  }
+
+  &--server-on {
+    --icon-size: 24px;
+    @include mask(url("./images/24_server-on.svg"), var(--icon-size));
+  }
+
   /* Deprecated */
 
   &--paper-clip {
