@@ -1,6 +1,6 @@
 .text-h1 {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 64px;
   font-style: normal;
   font-weight: 400;
@@ -10,7 +10,7 @@
 
 .text-h2 {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 40px;
   font-style: normal;
   font-weight: 500;
@@ -30,7 +30,7 @@
 
 .text-subtitle-m {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 28px;
   font-style: normal;
   font-weight: 500;
@@ -40,7 +40,7 @@
 
 .text-subtitle-s {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -50,7 +50,7 @@
 
 .text-m {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -59,7 +59,7 @@
 
 .text-m-btn {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 16px;
   font-style: normal;
   font-weight: 600;
@@ -68,7 +68,7 @@
 
 .text-m-link {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -78,7 +78,7 @@
 
 .text-s {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -87,7 +87,7 @@
 
 .text-s-btn {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 14px;
   font-style: normal;
   font-weight: 600;
@@ -96,7 +96,7 @@
 
 .text-s-link {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -126,7 +126,7 @@
 
 .text-caps13 {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 13px;
   font-style: normal;
   font-weight: 600;
@@ -137,7 +137,7 @@
 
 .text-caps11 {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 11px;
   font-style: normal;
   font-weight: 600;
@@ -148,7 +148,7 @@
 
 .text-description {
   color: var(--color-txt-01);
-  font-family: Manrope;
+  font-family: var(--font-family-base);
   font-size: 12px;
   font-style: normal;
   font-weight: 500;
