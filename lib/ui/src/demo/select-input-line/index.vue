@@ -29,12 +29,12 @@ const items2 = generate(300, (i) => ({
 }));
 
 const model0 = ref([]);
-const model1 = ref([{ text: 'List item 35', value: { i: 35 } }]);
-const model2 = ref([{ text: 'Tab 2', value: { i: 2 } }]);
+const model1 = ref({ i: 35 }); //{ i: 35 } | 'Nikolai' | 'Grisha' | 7 //options= [{text:'Grisha', value:7}]
+const model2 = ref({ i: 2 });
 
 const propsDescription = {
   modelValue: {
-    type: 'Record < string, unknown> [];',
+    type: 'Option;',
     description: 'Model for component v-model'
   },
   disabled: {
@@ -45,17 +45,9 @@ const propsDescription = {
     type: '?string;',
     description: 'Prefix in UI'
   },
-  items: {
-    type: 'SelectInputItem[];',
+  options: {
+    type: 'Option[];',
     description: 'Items for component'
-  },
-  itemText: {
-    type: '?string;',
-    description: 'Property name for item where we should get text value for UI'
-  },
-  itemValue: {
-    type: '?string;',
-    description: 'Property name for item where we should get value for inner comparison'
   },
   placeholder: {
     type: '?string;',
@@ -75,14 +67,15 @@ const propsDescription = {
 <template>
   <Layout>
     <Split name="Select input">
-      <div>
-        <SelectInputLine v-model="model0" :items="items0" :prefix="'Option:'">
+      <div style="display: flex;">
+        <SelectInputLine v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'200px'">
           <template #item="slotProps">
             <DropdownListItem v-bind="slotProps" :size="'medium'" />
           </template>
         </SelectInputLine>
-        <SelectInputLine v-model="model1" :items="items1" :prefix="'List:'" />
-        <SelectInputLine v-model="model2" :mode="'tabs'" :items="items2" :prefix="'Tab:'"
+        <SelectInputLine v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
+        <SelectInputLine v-model="model1" :options="items1" :prefix="'List:'" />
+        <SelectInputLine v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'"
           :tabs-container-styles="{ maxWidth: '700px' }" />
       </div>
 
@@ -93,3 +86,9 @@ const propsDescription = {
     </Split>
   </Layout>
 </template>
+
+<style>
+.ui-select-input-line {
+  margin-right: 25px;
+}
+</style>

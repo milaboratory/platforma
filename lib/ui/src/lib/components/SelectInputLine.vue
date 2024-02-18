@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Ref } from 'vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import type { SelectInputItem } from '@/lib/types';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useFilteredList } from '@/lib/composition/useFilteredList';
@@ -10,27 +9,23 @@ import { tapIf, tap } from '@/lib/helpers/functions';
 import { scrollIntoView } from '@/lib/helpers/dom';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 import TabItem from '@/lib/components/TabItem.vue';
+import type { Option } from '@/lib/types';
 
 const props = withDefaults(
   defineProps<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    modelValue: Record<string, any>[];
+    modelValue: Option['value'];
     disabled?: boolean;
     prefix?: string;
-    items: SelectInputItem[];
-    itemText?: string;
-    itemValue?: string;
+    options: Option[];
     placeholder?: string;
     mode?: 'list' | 'tabs';
-    tabsContainerStyles?: Record<string, any>
+    tabsContainerStyles?: Record<string, any>;
+    inputMaxWidth?: string
   }>(),
   {
     mode: 'list',
-    itemText: 'text',
-    itemValue: 'value',
     placeholder: 'Select..',
     prefix: '',
-    modelValue: () => [],
   },
 );
 
@@ -43,9 +38,11 @@ const container = ref<HTMLElement | null>(null);
 const list = ref<HTMLElement | null>(null);
 const classes = computed(() => {
   const classesResult = [];
-  if (props.modelValue && props.modelValue.length > 0) {
-    classesResult.push('active');
-  }
+  //FIXME delete after review. No need active class because green underline showed when component is focused
+  // const index = getIndexForModelInItems();
+  // if (props.modelValue && index !== -1) {
+  //   classesResult.push('active');
+  // }
   if (data.isOpen) {
     classesResult.push('open');
   }
@@ -55,13 +52,17 @@ const classes = computed(() => {
   return classesResult.join(' ');
 });
 const searchPhrase = ref<string>('');
-const items = useFilteredList(props.items, searchPhrase, 'text');
+const options = useFilteredList(props.options, searchPhrase, 'text');
+
 const selectedValues = computed<string>(() => {
   if (searchPhrase.value) {
     return searchPhrase.value;
   }
-  if (props.modelValue && props.modelValue?.length > 0) {
-    return props.modelValue[0][props.itemText];
+  if (props.modelValue) {
+    const index = getIndexForModelInItems();
+    if (index !== -1) {
+      return props.options[index]['text'];
+    }
   }
   return '';
 });
@@ -87,10 +88,16 @@ watch(
   { immediate: true },
 );
 
+function getIndexForModelInItems(): number | -1 {
+  const index = options.value.findIndex((o: Option) => {
+    return deepEqual(o.value, props.modelValue);
+  });
+  return index;
+}
 function updateSelected() {
   data.activeOption = tap(
-    items.value.findIndex((o) => {
-      return deepEqual(o, props.modelValue[0]);
+    options.value.findIndex((o: Option) => {
+      return deepEqual(o.value, props.modelValue);
     }),
     (v) => (v < 0 ? 0 : v),
   );
@@ -124,21 +131,18 @@ function closePopupIfNeeded() {
   }
 }
 
-function selectItem(item?: SelectInputItem): void {
+function selectItem(item?: Option): void {
   if (item) {
-    emit('update:modelValue', [item]);
+    emit('update:modelValue', item.value);
     closePopupIfNeeded();
     resetSearchPhrase();
   } else {
-    emit('update:modelValue', []);
+    emit('update:modelValue', undefined);
   }
 }
 
-function isItemSelected(item: SelectInputItem): boolean {
-  if (props.modelValue?.findIndex((el) => deepEqual(el[props.itemValue], item[props.itemValue])) !== -1) {
-    return true;
-  }
-  return false;
+function isItemSelected(item: Option): boolean {
+  return deepEqual(item.value, props.modelValue);
 }
 
 function onBlur(event: Event) {
@@ -157,7 +161,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     return;
   }
 
-  const { length } = items.value;
+  const { length } = options.value;
 
   if (!length) {
     return;
@@ -168,7 +172,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   }
 
   if (e.code === 'Enter') {
-    selectItem(items.value[activeOption]);
+    selectItem(options.value[activeOption]);
   }
 
   let d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
@@ -203,33 +207,33 @@ function scrollIntoActive() {
     @focusout="onBlur" @click="toggleList">
     <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
     <ResizableInput :value="selectedValues" :placeholder="'...'" :disabled="props.disabled"
-      class="ui-select-input-line__input" @input="setSearchPhrase" />
+      :max-width="props.inputMaxWidth" class="ui-select-input-line__input" @input="setSearchPhrase" />
     <div class="ui-select-input-line__icon-wrapper">
       <div class="ui-select-input-line__icon" />
     </div>
     <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-select-input-line__items">
-      <template v-for="(item, index) in items" :key="index">
-        <slot name="item" :item="item" :text-item="props.itemText" :is-selected="isItemSelected(item)"
+      <template v-for="(item, index) in options" :key="index">
+        <slot name="item" :item="item" :text-item="'text'" :is-selected="isItemSelected(item)"
           :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-          <DropdownListItem :item="item" :text-item="props.itemText" :is-selected="isItemSelected(item)"
+          <DropdownListItem :item="item" :text-item="'text'" :is-selected="isItemSelected(item)"
             :is-hovered="data.activeOption == index" size="medium" @click.stop="selectItem(item)" />
         </slot>
       </template>
 
-      <div v-if="items.length === 0" class="ui-select-input-line__no-item">
+      <div v-if="options.length === 0" class="ui-select-input-line__no-item">
         <div class="ui-select-input-line__no-item-title text-s">Didn't find anything that matched</div>
       </div>
     </div>
     <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles"
       class="ui-select-input-line__items-tabs">
-      <template v-for="(item, index) in items" :key="index">
-        <slot name="item" :item="item" :text-item="props.itemText" :is-selected="isItemSelected(item)"
-          :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-          <TabItem :item="item" :text-item="props.itemText" :is-selected="isItemSelected(item)"
-            :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
+      <template v-for="(item, index) in options" :key="index">
+        <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index"
+          @click.stop="selectItem(item)">
+          <TabItem :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index"
+            @click.stop="selectItem(item)" />
         </slot>
       </template>
-      <div v-if="items.length === 0" class="ui-select-input-line__no-item">
+      <div v-if="options.length === 0" class="ui-select-input-line__no-item">
         <div class="ui-select-input-line__no-item-title text-s">Didn't find anything that matched</div>
       </div>
     </div>

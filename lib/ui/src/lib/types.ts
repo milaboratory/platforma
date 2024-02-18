@@ -24,7 +24,6 @@ export type Option<T = unknown> = {
   value: T;
 };
 
-export type SelectInputItem = { [key: string]: any };
 export const maskIcons = [
   'checkmark',
   'import',

@@ -21,9 +21,9 @@
         text-transform: uppercase;
     }
 
-    &.active::after {
-        border-bottom: 2px solid var(--color-focus);
-    }
+    // &.active::after {
+    //     border-bottom: 2px solid var(--color-focus);
+    // }
 
     &:hover::after {
         border-bottom: 2px solid var(--color-focus);
@@ -82,12 +82,16 @@
         }
 
         #{$this}__icon {
-            background-color: var(--color-div-grey);
+            background-color: var(--color-div-grey) !important;
         }
     }
 
+    &.disabled::after {
+        border-bottom: 2px solid var(--color-div-grey) !important;
+    }
+
     &.disabled:hover::after {
-        border-bottom: 2px solid var(--color-div-grey);
+        border-bottom: 2px solid var(--color-div-grey) !important;
     }
 
     &__no-item {

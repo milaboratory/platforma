@@ -2,12 +2,11 @@
 import { computed } from 'vue';
 import CheckboxUncheckedSvg from '@/lib/assets/images/24_checkbox-base.svg?raw';
 import CheckboxCheckedSvg from '@/lib/assets/images/24_checkbox-checked.svg?raw';
+import type { Option } from '@/lib/types';
 
 const props = withDefaults(
   defineProps<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any>;
-    textItem: string;
+    item: Option;
     isSelected: boolean;
     size: 'small' | 'medium';
     isHovered: boolean;
@@ -20,7 +19,7 @@ const props = withDefaults(
     useCheckbox: false,
   },
 );
-const text = computed<string>(() => props.item[props.textItem]);
+const text = computed<string>(() => props.item['text']);
 const classes = computed<string>(() => {
   const classItems: string[] = [];
   if (props.size === 'small') {

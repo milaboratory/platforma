@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { Option } from '@/lib/types';
 
 const props = withDefaults(
   defineProps<{
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    item: Record<string, any>;
-    textItem: string;
+    item: Option;
     isSelected: boolean;
     isHovered: boolean;
   }>(),
@@ -29,7 +28,7 @@ const classes = computed<string>(() => {
 <template>
   <div :class="classes" class="dropdown-tab-item">
     <div class="dropdown-tab-item__title text-caps13">
-      {{ props.item[props.textItem] }}
+      {{ props.item['text'] }}
     </div>
   </div>
 </template>
