@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Ref } from 'vue';
+import type { Ref, StyleValue } from 'vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
@@ -11,16 +11,17 @@ import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 import TabItem from '@/lib/components/TabItem.vue';
 import type { Option } from '@/lib/types';
 
+const emit = defineEmits(['update:modelValue']); // at the top always
+
 const props = withDefaults(
   defineProps<{
-    modelValue: Option['value'];
+    modelValue: unknown;
     disabled?: boolean;
     prefix?: string;
     options: Option[];
     placeholder?: string;
     mode?: 'list' | 'tabs';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tabsContainerStyles?: Record<string, any>;
+    tabsContainerStyles?: StyleValue;
     inputMaxWidth?: string;
   }>(),
   {
@@ -32,13 +33,15 @@ const props = withDefaults(
   },
 );
 
-const emit = defineEmits(['update:modelValue']);
 const data = reactive({
   isOpen: false,
   activeOption: -1,
 });
+
 const container = ref<HTMLElement | null>(null);
+
 const list = ref<HTMLElement | null>(null);
+
 const classes = computed(() => {
   const classesResult = [];
   //FIXME delete after review. No need active class because green underline showed when component is focused
@@ -54,7 +57,9 @@ const classes = computed(() => {
   }
   return classesResult.join(' ');
 });
+
 const searchPhrase = ref<string>('');
+
 const options = useFilteredList(props.options, searchPhrase);
 
 const selectedValues = computed<string>(() => {
@@ -97,6 +102,7 @@ function getIndexForModelInItems(): number | -1 {
   });
   return index;
 }
+
 function updateSelected() {
   data.activeOption = tap(
     options.value.findIndex((o: Option) => {

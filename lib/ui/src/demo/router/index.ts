@@ -12,6 +12,11 @@ export const routes = [
     component: () => import('@/demo/select-input-line/index.vue'),
   },
   {
+    name: 'Line dropdown',
+    path: '/line-dropdown',
+    component: () => import('@/demo/line-dropdown/index.vue'),
+  },
+  {
     name: 'Form',
     path: '/',
     component: () => import('@/demo/form/index.vue'),
