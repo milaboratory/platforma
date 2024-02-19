@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SelectInputLine from '@/lib/components/SelectInputLine.vue';
+import LineDropdown from '@/lib/components/LineDropdown.vue';
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
@@ -35,54 +35,52 @@ const model2 = ref({ i: 2 });
 const propsDescription = {
   modelValue: {
     type: 'Option;',
-    description: 'Model for component v-model'
+    description: 'Model for component v-model',
   },
   disabled: {
     type: '?boolean;',
-    description: 'Is component disable or not'
+    description: 'Is component disable or not',
   },
   prefix: {
     type: '?string;',
-    description: 'Prefix in UI'
+    description: 'Prefix in UI',
   },
   options: {
     type: 'Option[];',
-    description: 'Items for component'
+    description: 'Items for component',
   },
   placeholder: {
     type: '?string;',
-    description: 'UI placeholder'
+    description: 'UI placeholder',
   },
   mode: {
-    type: "'list' | '?tabs';",
-    description: 'Component has two types of list "tabs" view and "list" view'
+    type: '"list" | "?tabs";',
+    description: 'Component has two types of list "tabs" view and "list" view',
   },
   tabsContainerStyles: {
     type: '?Record<string, any>',
-    description: 'Styles for "tabs" view'
+    description: 'Styles for "tabs" view',
   },
-}
+};
 </script>
 
 <template>
   <Layout>
     <Split name="Select input">
-      <div style="display: flex;">
-        <SelectInputLine v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'200px'">
+      <div style="display: flex">
+        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'200px'">
           <template #item="slotProps">
             <DropdownListItem v-bind="slotProps" :size="'medium'" />
           </template>
-        </SelectInputLine>
-        <SelectInputLine v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
-        <SelectInputLine v-model="model1" :options="items1" :prefix="'List:'" />
-        <SelectInputLine v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'"
-          :tabs-container-styles="{ maxWidth: '700px' }" />
+        </LineDropdown>
+        <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
+        <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
+        <LineDropdown v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'" :tabs-container-styles="{ maxWidth: '700px' }" />
       </div>
 
       <template #props>
         <PropsDisplay :data="propsDescription" />
       </template>
-
     </Split>
   </Layout>
 </template>

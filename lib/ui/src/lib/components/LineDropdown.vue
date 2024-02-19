@@ -19,13 +19,16 @@ const props = withDefaults(
     options: Option[];
     placeholder?: string;
     mode?: 'list' | 'tabs';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tabsContainerStyles?: Record<string, any>;
-    inputMaxWidth?: string
+    inputMaxWidth?: string;
   }>(),
   {
     mode: 'list',
     placeholder: 'Select..',
     prefix: '',
+    inputMaxWidth: '',
+    tabsContainerStyles: undefined,
   },
 );
 
@@ -52,7 +55,7 @@ const classes = computed(() => {
   return classesResult.join(' ');
 });
 const searchPhrase = ref<string>('');
-const options = useFilteredList(props.options, searchPhrase, 'text');
+const options = useFilteredList(props.options, searchPhrase);
 
 const selectedValues = computed<string>(() => {
   if (searchPhrase.value) {
@@ -111,7 +114,7 @@ function setSearchPhrase(str: string) {
   }
 }
 
-function toggleList(event: Event): void {
+function toggleList(): void {
   if (props.disabled) {
     data.isOpen = false;
   } else {
@@ -153,7 +156,6 @@ function onBlur(event: Event) {
 }
 
 function handleKeydown(e: { code: string; preventDefault(): void }) {
-
   const { activeOption } = data;
 
   if (!data.isOpen && e.code === 'Enter') {
@@ -203,20 +205,45 @@ function scrollIntoActive() {
 </script>
 
 <template>
-  <div ref="container" tabindex="0" :class="classes" class="ui-select-input-line uc-pointer" @keydown="handleKeydown"
-    @focusout="onBlur" @click="toggleList">
+  <div
+    ref="container"
+    tabindex="0"
+    :class="classes"
+    class="ui-select-input-line uc-pointer"
+    @keydown="handleKeydown"
+    @focusout="onBlur"
+    @click="toggleList"
+  >
     <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
-    <ResizableInput :value="selectedValues" :placeholder="'...'" :disabled="props.disabled"
-      :max-width="props.inputMaxWidth" class="ui-select-input-line__input" @input="setSearchPhrase" />
+    <ResizableInput
+      :value="selectedValues"
+      :placeholder="'...'"
+      :disabled="props.disabled"
+      :max-width="props.inputMaxWidth"
+      class="ui-select-input-line__input"
+      @input="setSearchPhrase"
+    />
     <div class="ui-select-input-line__icon-wrapper">
       <div class="ui-select-input-line__icon" />
     </div>
     <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-select-input-line__items">
       <template v-for="(item, index) in options" :key="index">
-        <slot name="item" :item="item" :text-item="'text'" :is-selected="isItemSelected(item)"
-          :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-          <DropdownListItem :item="item" :text-item="'text'" :is-selected="isItemSelected(item)"
-            :is-hovered="data.activeOption == index" size="medium" @click.stop="selectItem(item)" />
+        <slot
+          name="item"
+          :item="item"
+          :text-item="'text'"
+          :is-selected="isItemSelected(item)"
+          :is-hovered="data.activeOption == index"
+          @click.stop="selectItem(item)"
+        >
+          <DropdownListItem
+            :item="item"
+            :text-item="'text'"
+            :is-selected="isItemSelected(item)"
+            :is-hovered="data.activeOption == index"
+            size="medium"
+            @click.stop="selectItem(item)"
+          />
         </slot>
       </template>
 
@@ -224,13 +251,10 @@ function scrollIntoActive() {
         <div class="ui-select-input-line__no-item-title text-s">Didn't find anything that matched</div>
       </div>
     </div>
-    <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles"
-      class="ui-select-input-line__items-tabs">
+    <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles" class="ui-select-input-line__items-tabs">
       <template v-for="(item, index) in options" :key="index">
-        <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index"
-          @click.stop="selectItem(item)">
-          <TabItem :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index"
-            @click.stop="selectItem(item)" />
+        <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
+          <TabItem :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
         </slot>
       </template>
       <div v-if="options.length === 0" class="ui-select-input-line__no-item">

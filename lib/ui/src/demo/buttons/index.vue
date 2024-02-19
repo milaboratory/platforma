@@ -20,8 +20,6 @@ const props = reactive({
 
 const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
 
-const iconOptions = maskIcons.map((text) => ({ text, value: text })); //
-
 const text = 'Click me';
 
 function onClick() {

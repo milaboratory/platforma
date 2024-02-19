@@ -44,7 +44,9 @@ const checkbox = computed(() => (props.isSelected ? CheckboxCheckedSvg : Checkbo
 </script>
 <template>
   <div :class="classes" class="dropdown-list-item">
+    <!-- eslint-disable vue/no-v-html -->
     <div v-if="props.useCheckbox" :class="checkboxClasses" v-html="checkbox" />
+    <!--eslint-enable-->
     <div class="dropdown-list-item__title text-s">{{ text }}</div>
     <div v-if="!props.useCheckbox && props.isSelected" class="dropdown-list-item__icon" />
   </div>

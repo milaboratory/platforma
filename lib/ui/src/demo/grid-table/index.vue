@@ -10,7 +10,7 @@ const columnsLength = 5;
 
 const rowsLength = 40;
 
-const columnsData = utils.arrayFrom(columnsLength, (i) => {
+const columnsData = utils.arrayFrom(columnsLength, () => {
   return {
     text: faker.word.noun(),
     name: strings.uniqueId(),
