@@ -6,13 +6,17 @@ import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 import { generate } from '@/lib/helpers/functions';
 import { reactive } from 'vue';
 
-const options = generate(30, (i) => ({
-  text: `Option ${i}`,
-  value: i,
+const options = generate(30, (id) => ({
+  text: `Option ${id}`,
+  value: {
+    id,
+  },
 }));
 
 const form = reactive({
-  value: 3,
+  value: {
+    id: 3,
+  },
 });
 </script>
 

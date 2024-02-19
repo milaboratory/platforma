@@ -68,11 +68,7 @@ const propsDescription = {
   <Layout>
     <Split name="Select input">
       <div style="display: flex">
-        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'200px'">
-          <template #item="slotProps">
-            <DropdownListItem v-bind="slotProps" :size="'medium'" />
-          </template>
-        </LineDropdown>
+        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'200px'"> </LineDropdown>
         <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
         <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
         <LineDropdown v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'" :tabs-container-styles="{ maxWidth: '700px' }" />
