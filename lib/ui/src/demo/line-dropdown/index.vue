@@ -87,7 +87,7 @@ const propsDescription = {
 </template>
 
 <style>
-.ui-select-input-line {
+.ui-line-dropdown {
   margin-right: 25px;
 }
 </style>
