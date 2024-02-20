@@ -7,11 +7,6 @@ export const routes = [
     component: () => import('@/demo/typography/index.vue'),
   },
   {
-    name: 'Select-input-line',
-    path: '/select-input-line',
-    component: () => import('@/demo/select-input-line/index.vue'),
-  },
-  {
     name: 'Line dropdown',
     path: '/line-dropdown',
     component: () => import('@/demo/line-dropdown/index.vue'),

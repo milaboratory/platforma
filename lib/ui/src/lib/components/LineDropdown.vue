@@ -23,12 +23,14 @@ const props = withDefaults(
     mode?: 'list' | 'tabs';
     tabsContainerStyles?: StyleValue;
     inputMaxWidth?: string;
+    inputWidth?: string;
   }>(),
   {
     mode: 'list',
     placeholder: 'Select..',
     prefix: '',
     inputMaxWidth: '',
+    inputWidth: '',
     tabsContainerStyles: undefined,
   },
 );
@@ -44,11 +46,6 @@ const list = ref<HTMLElement | null>(null);
 
 const classes = computed(() => {
   const classesResult = [];
-  //FIXME delete after review. No need active class because green underline showed when component is focused
-  // const index = getIndexForModelInItems();
-  // if (props.modelValue && index !== -1) {
-  //   classesResult.push('active');
-  // }
   if (data.isOpen) {
     classesResult.push('open');
   }
@@ -62,12 +59,7 @@ const searchPhrase = ref<string>('');
 
 const options = useFilteredList(props.options, searchPhrase);
 
-const selectedValues = computed<string>(() => {
-  if (data.isOpen) {
-    if (searchPhrase.value && searchPhrase.value.length >= selectedValues.value.length - 1) {
-      return searchPhrase.value;
-    }
-  }
+const modelText = computed(() => {
   if (props.modelValue) {
     const index = getIndexForModelInItems();
     if (index !== -1) {
@@ -77,14 +69,25 @@ const selectedValues = computed<string>(() => {
   return '';
 });
 
+const inputValue = computed(() => {
+  if (data.isOpen) {
+    if (searchPhrase.value && searchPhrase.value.length >= inputValue.value.length - 1) {
+      return searchPhrase.value;
+    }
+    return '';
+  }
+
+  return modelText.value;
+});
+
 const placeholder = computed(() => {
-  if (props.modelValue) {
-    const index = getIndexForModelInItems();
-    if (index !== -1) {
-      return props.options[index]['text'];
+  if (data.isOpen) {
+    if (searchPhrase.value && searchPhrase.value.length >= modelText.value.length - 1) {
+      return searchPhrase.value;
     }
   }
-  return '...';
+
+  return modelText.value || '...';
 });
 
 useClickOutside(container as Ref<HTMLElement>, () => {
@@ -99,7 +102,6 @@ watch(
     if (value) {
       if (container.value) {
         container.value.querySelector('input')?.focus();
-        container.value.querySelector('input')!.value = '';
       }
       nextTick(() => scrollIntoActive());
     }
@@ -170,9 +172,6 @@ function onBlur(event: Event) {
   if (!container?.value?.contains((event as any).relatedTarget)) {
     data.isOpen = false;
     searchPhrase.value = '';
-    if (container.value) {
-      container.value.querySelector('input')!.value = selectedValues.value;
-    }
   }
 }
 
@@ -190,7 +189,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter', 'ArrowRight', 'ArrowLeft'].includes(e.code)) {
+  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
     e.preventDefault();
   }
 
@@ -199,10 +198,6 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   }
 
   let d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
-
-  if (props.mode === 'tabs') {
-    d = e.code === 'ArrowRight' ? 1 : e.code === 'ArrowLeft' ? -1 : 0;
-  }
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
@@ -236,16 +231,16 @@ function scrollIntoActive() {
     @click="toggleList"
   >
     <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
-    <div>
-      <ResizableInput
-        :value="selectedValues"
-        :placeholder="placeholder"
-        :disabled="props.disabled"
-        :max-width="props.inputMaxWidth"
-        class="ui-select-input-line__input"
-        @input="setSearchPhrase"
-      />
-    </div>
+
+    <ResizableInput
+      :value="inputValue"
+      :placeholder="placeholder"
+      :disabled="props.disabled"
+      :max-width="props.inputMaxWidth"
+      :width="props.inputWidth"
+      class="ui-select-input-line__input"
+      @input="setSearchPhrase"
+    />
 
     <div class="ui-select-input-line__icon-wrapper">
       <div class="ui-select-input-line__icon" />
