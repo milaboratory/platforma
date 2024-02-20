@@ -11,7 +11,7 @@
 
     $this: &;
 
-    &:focus::after {
+    &:focus-within::after {
         border-bottom: 2px solid var(--color-focus);
         // box-shadow: 0 2px 2px 0px var(--color-focus-shadow);
     }

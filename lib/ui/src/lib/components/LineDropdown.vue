@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Ref, StyleValue } from 'vue';
+import type { StyleValue } from 'vue';
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
@@ -40,9 +40,9 @@ const data = reactive({
   activeOption: -1,
 });
 
-const container = ref<HTMLElement | null>(null);
+const container = ref<HTMLElement>();
 
-const list = ref<HTMLElement | null>(null);
+const list = ref<HTMLElement>();
 
 const classes = computed(() => {
   const classesResult = [];
@@ -90,7 +90,7 @@ const placeholder = computed(() => {
   return modelText.value || '...';
 });
 
-useClickOutside(container as Ref<HTMLElement>, () => {
+useClickOutside(container, () => {
   if (props.mode === 'list') {
     data.isOpen = false;
   }
@@ -99,10 +99,8 @@ useClickOutside(container as Ref<HTMLElement>, () => {
 watch(
   () => data.isOpen,
   (value: boolean) => {
-    if (value) {
-      if (container.value) {
-        container.value.querySelector('input')?.focus();
-      }
+    if (value && container.value) {
+      container.value.querySelector('input')?.focus();
       nextTick(() => scrollIntoActive());
     }
   },
@@ -115,10 +113,9 @@ watch(
 );
 
 function getIndexForModelInItems(): number | -1 {
-  const index = props.options.findIndex((o: Option) => {
+  return props.options.findIndex((o: Option) => {
     return deepEqual(o.value, props.modelValue);
   });
-  return index;
 }
 
 function updateSelected() {
@@ -135,6 +132,10 @@ function setSearchPhrase(str: string) {
   data.isOpen = true;
 }
 
+function resetSearchPhrase() {
+  searchPhrase.value = '';
+}
+
 function toggleList(): void {
   if (props.disabled) {
     data.isOpen = false;
@@ -143,10 +144,6 @@ function toggleList(): void {
       data.isOpen = !data.isOpen;
     });
   }
-}
-
-function resetSearchPhrase() {
-  searchPhrase.value = '';
 }
 
 function closePopupIfNeeded() {
@@ -197,7 +194,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
     selectItem(options.value[activeOption]);
   }
 
-  let d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 

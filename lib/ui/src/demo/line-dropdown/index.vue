@@ -28,7 +28,7 @@ const items2 = generate(300, (i) => ({
   },
 }));
 
-const model0 = ref([]);
+const model0 = ref(undefined);
 const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
 
@@ -66,7 +66,7 @@ const propsDescription = {
 
 <template>
   <Layout>
-    <Split name="Select input">
+    <Split name="Line Dropdown">
       <div style="display: flex">
         <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'400px'">
           <template #item="slotProps">
@@ -78,7 +78,7 @@ const propsDescription = {
         <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" />
         <LineDropdown v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'" :tabs-container-styles="{ maxWidth: '700px' }" />
       </div>
-      {{ model0 }}
+      {{ model0 }} {{ typeof model0 }}
       <template #props>
         <PropsDisplay :data="propsDescription" />
       </template>
