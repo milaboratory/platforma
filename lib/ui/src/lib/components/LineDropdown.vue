@@ -63,8 +63,10 @@ const searchPhrase = ref<string>('');
 const options = useFilteredList(props.options, searchPhrase);
 
 const selectedValues = computed<string>(() => {
-  if (searchPhrase.value) {
-    return searchPhrase.value;
+  if (data.isOpen) {
+    if (searchPhrase.value && searchPhrase.value.length >= selectedValues.value.length - 1) {
+      return searchPhrase.value;
+    }
   }
   if (props.modelValue) {
     const index = getIndexForModelInItems();
@@ -73,6 +75,16 @@ const selectedValues = computed<string>(() => {
     }
   }
   return '';
+});
+
+const placeholder = computed(() => {
+  if (props.modelValue) {
+    const index = getIndexForModelInItems();
+    if (index !== -1) {
+      return props.options[index]['text'];
+    }
+  }
+  return '...';
 });
 
 useClickOutside(container as Ref<HTMLElement>, () => {
@@ -85,6 +97,10 @@ watch(
   () => data.isOpen,
   (value: boolean) => {
     if (value) {
+      if (container.value) {
+        container.value.querySelector('input')?.focus();
+        container.value.querySelector('input')!.value = '';
+      }
       nextTick(() => scrollIntoActive());
     }
   },
@@ -97,7 +113,7 @@ watch(
 );
 
 function getIndexForModelInItems(): number | -1 {
-  const index = options.value.findIndex((o: Option) => {
+  const index = props.options.findIndex((o: Option) => {
     return deepEqual(o.value, props.modelValue);
   });
   return index;
@@ -115,9 +131,6 @@ function updateSelected() {
 function setSearchPhrase(str: string) {
   searchPhrase.value = str;
   data.isOpen = true;
-  if (!searchPhrase.value) {
-    selectItem();
-  }
 }
 
 function toggleList(): void {
@@ -145,8 +158,6 @@ function selectItem(item?: Option): void {
     emit('update:modelValue', item.value);
     closePopupIfNeeded();
     resetSearchPhrase();
-  } else {
-    emit('update:modelValue', undefined);
   }
 }
 
@@ -158,6 +169,10 @@ function onBlur(event: Event) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!container?.value?.contains((event as any).relatedTarget)) {
     data.isOpen = false;
+    searchPhrase.value = '';
+    if (container.value) {
+      container.value.querySelector('input')!.value = selectedValues.value;
+    }
   }
 }
 
@@ -221,14 +236,17 @@ function scrollIntoActive() {
     @click="toggleList"
   >
     <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
-    <ResizableInput
-      :value="selectedValues"
-      :placeholder="'...'"
-      :disabled="props.disabled"
-      :max-width="props.inputMaxWidth"
-      class="ui-select-input-line__input"
-      @input="setSearchPhrase"
-    />
+    <div>
+      <ResizableInput
+        :value="selectedValues"
+        :placeholder="placeholder"
+        :disabled="props.disabled"
+        :max-width="props.inputMaxWidth"
+        class="ui-select-input-line__input"
+        @input="setSearchPhrase"
+      />
+    </div>
+
     <div class="ui-select-input-line__icon-wrapper">
       <div class="ui-select-input-line__icon" />
     </div>
