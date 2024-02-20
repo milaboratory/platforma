@@ -18,6 +18,7 @@ import CheckboxGroup from '@/lib/components/CheckboxGroup.vue';
 import WebCheckbox from '@/lib/components/WebCheckbox'; // experimental web component
 import Chip from '@/lib/components/Chip.vue';
 import Tooltip from '@/lib/components/Tooltip.vue';
+import ToggleSwitch from '@/lib/components/ToggleSwitch.vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
 import { usePosition } from '@/lib/composition/usePosition';
@@ -49,6 +50,7 @@ export {
   CheckboxGroup,
   Chip,
   Tooltip,
+  ToggleSwitch,
   MaskIcon,
   GridTable,
   GeneFeatureDropdown,
