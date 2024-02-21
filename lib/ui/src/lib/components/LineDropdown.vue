@@ -61,6 +61,8 @@ const searchPhrase = ref<string>('');
 
 const options = useFilteredList(props.options, searchPhrase);
 
+const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
+
 const modelText = computed(() => {
   if (props.modelValue) {
     const index = getIndexForModelInItems();
@@ -217,6 +219,10 @@ function scrollIntoActive() {
     }
   });
 }
+
+function clearModel() {
+  emit('update:modelValue', undefined);
+}
 </script>
 
 <template>
@@ -242,7 +248,8 @@ function scrollIntoActive() {
     />
 
     <div class="ui-line-dropdown__icon-wrapper">
-      <div class="ui-line-dropdown__icon" />
+      <div v-show="!canShowClearBtn" class="ui-line-dropdown__icon" />
+      <div v-show="canShowClearBtn" class="ui-line-dropdown__icon-clear" @click="clearModel" />
     </div>
     <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-line-dropdown__items">
       <template v-for="(item, index) in options" :key="index">

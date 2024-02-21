@@ -59,6 +59,11 @@
         @include mask(url(./images/16_chevron-down.svg), 16px);
     }
 
+    &__icon-clear {
+        @include mask(url(./images/16_clear.svg), 16px);
+        background-color: var(--color-ic-02);
+    }
+
     &.open {
         #{$this}__icon {
             @include mask(url(./images/16_chevron-up.svg), 16px);

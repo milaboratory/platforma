@@ -7,6 +7,9 @@ import { ref } from 'vue';
 import PropsDisplay from '@/demo/PropsDisplay.vue';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 
+// const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
+const lorem = 'Lorem ipsum dolor sit amet, consectetur ';
+
 const items0 = generate(40, (i) => ({
   text: `Option ${i}`,
   value: {
@@ -23,6 +26,13 @@ const items1 = generate(40, (i) => ({
 
 const items2 = generate(300, (i) => ({
   text: `Tab ${i}`,
+  value: {
+    i,
+  },
+}));
+
+const itemsLong = generate(300, (i) => ({
+  text: `Tab ${i} ${lorem}`,
   value: {
     i,
   },
@@ -61,6 +71,11 @@ const propsDescription = {
     type: '?Record<string, any>',
     description: 'Styles for "tabs" view',
   },
+
+  clearable: {
+    type: 'boolean;',
+    description: 'Allows you show or hide clear icon. Button will be shown whe you have selected item and you opened list.',
+  },
 };
 </script>
 
@@ -68,15 +83,15 @@ const propsDescription = {
   <Layout>
     <Split name="Line Dropdown">
       <div style="display: flex">
-        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'400px'">
+        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'400px'" clearable>
           <template #item="slotProps">
             <DropdownListItem v-bind="slotProps" :size="'small'" />
           </template>
         </LineDropdown>
-        <LineDropdown v-model="model0" :options="items0" :prefix="'Option:'" :input-max-width="'400px'" :input-width="'150px'"> </LineDropdown>
+        <LineDropdown v-model="model0" :options="itemsLong" :prefix="'Option:'" :input-max-width="'400px'" :input-width="'150px'" />
         <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" :disabled="true" />
-        <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" />
-        <LineDropdown v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'" :tabs-container-styles="{ maxWidth: '700px' }" />
+        <LineDropdown v-model="model1" :options="items1" :prefix="'List:'" clearable />
+        <LineDropdown v-model="model2" :mode="'tabs'" :options="items2" :prefix="'Tab:'" :tabs-container-styles="{ maxWidth: '700px' }" clearable />
       </div>
       {{ model0 }} {{ typeof model0 }}
       <template #props>
