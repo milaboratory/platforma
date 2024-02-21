@@ -7,6 +7,7 @@ import { useLabelNotch } from '@/lib/composition/useLabelNotch';
 import type { Option } from '@/lib/types';
 import { scrollIntoView } from '@/lib/helpers/dom';
 import { deepEqual } from '@/lib/helpers/objects';
+import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 
 const emit = defineEmits(['update:modelValue']);
 const emitModel = (v: unknown) => emit('update:modelValue', v);
@@ -135,7 +136,7 @@ function scrollIntoActive() {
     return;
   }
 
-  tapIf($list.querySelector('.option.active') as HTMLElement, (opt) => {
+  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
     scrollIntoView($list, opt);
   });
 }
@@ -227,7 +228,17 @@ watchPostEffect(() => {
           </tooltip>
         </label>
         <div v-if="data.open" ref="list" class="ui-select-input__options">
-          <div
+          <DropdownListItem
+            v-for="(item, index) in filtered"
+            :key="index"
+            :item="item"
+            :text-item="'text'"
+            :is-selected="index === selectedOption"
+            :is-hovered="data.activeOption == index"
+            size="medium"
+            @click.stop="selectItem(item.value)"
+          />
+          <!-- <div
             v-for="(opt, i) in filtered"
             :key="i"
             class="option"
@@ -239,7 +250,7 @@ watchPostEffect(() => {
           >
             <span>{{ opt.text }}</span>
             <div class="checkmark" />
-          </div>
+          </div> -->
           <div v-if="!filtered.length" class="nothing-found">Nothing found</div>
         </div>
         <double-contour class="ui-select-input__contour" />
