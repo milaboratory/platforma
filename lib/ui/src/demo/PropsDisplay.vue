@@ -3,6 +3,7 @@ const props = defineProps<{ data: Record<string, { type: string; description: st
 </script>
 <template>
   <div class="props-description-container">
+    <h3 class="text-h3 h3">Component Props</h3>
     <div v-for="(value, key) in props.data" :key="key" class="props-description-container__item">
       <div class="props-description-container__wrapper">
         <div class="text-mono-m props-description-container__title">{{ key }}</div>
@@ -13,7 +14,13 @@ const props = defineProps<{ data: Record<string, { type: string; description: st
     </div>
   </div>
 </template>
-<style lang="scss">
+<style lang="scss" scoped>
+.h3 {
+  margin: 0;
+  margin-bottom: 16px;
+  font-size: 24px;
+  line-height: 24px;
+}
 .props-description-container {
   &__item {
     margin-bottom: 24px;

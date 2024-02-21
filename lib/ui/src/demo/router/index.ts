@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Dropdown list item',
+    path: '/dropdownlistitem',
+    component: () => import('@/demo/dropdown-list-item/index.vue'),
+  },
+  {
     name: 'Typography',
     path: '/typography',
     component: () => import('@/demo/typography/index.vue'),

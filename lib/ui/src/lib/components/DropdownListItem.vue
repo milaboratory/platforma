@@ -34,7 +34,7 @@ const classes = computed<string>(() => {
   return classItems.join(' ');
 });
 const checkboxClasses = computed(() => {
-  const classes: string[] = ['dropdown-list-item__checkbox'];
+  const classes: string[] = ['dropdown-list-item__checkbox', 'flex-self-start'];
   if (props.isSelected) {
     classes.push('checked');
   }
@@ -48,6 +48,6 @@ const checkbox = computed(() => (props.isSelected ? CheckboxCheckedSvg : Checkbo
     <div v-if="props.useCheckbox" :class="checkboxClasses" v-html="checkbox" />
     <!--eslint-enable-->
     <div class="dropdown-list-item__title text-s">{{ text }}</div>
-    <div v-if="!props.useCheckbox && props.isSelected" class="dropdown-list-item__icon" />
+    <div v-if="!props.useCheckbox && props.isSelected" class="dropdown-list-item__icon flex-self-start" />
   </div>
 </template>

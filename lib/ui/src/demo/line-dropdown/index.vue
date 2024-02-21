@@ -7,12 +7,24 @@ import { ref } from 'vue';
 import PropsDisplay from '@/demo/PropsDisplay.vue';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 
-const items0 = generate(40, (i) => ({
-  text: `Option ${i}`,
-  value: {
-    i,
-  },
-}));
+const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
+
+const items0 = generate(40, (i) => {
+  if (i % 2 === 0) {
+    return {
+      text: `Option ${i} ${lorem}`,
+      value: {
+        i,
+      },
+    };
+  }
+  return {
+    text: `Option ${i}`,
+    value: {
+      i,
+    },
+  };
+});
 
 const items1 = generate(40, (i) => ({
   text: `List item ${i}`,
@@ -21,12 +33,22 @@ const items1 = generate(40, (i) => ({
   },
 }));
 
-const items2 = generate(300, (i) => ({
-  text: `Tab ${i}`,
-  value: {
-    i,
-  },
-}));
+const items2 = generate(300, (i) => {
+  if (i % 2 === 0) {
+    return {
+      text: `Tab ${i}`,
+      value: {
+        i,
+      },
+    };
+  }
+  return {
+    text: `Tab Option ${i}`,
+    value: {
+      i,
+    },
+  };
+});
 
 const model0 = ref(undefined);
 const model1 = ref({ i: 35 });

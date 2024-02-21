@@ -8,6 +8,7 @@
     box-sizing: border-box;
     position: relative;
     outline: none;
+    max-width: 256px;
 
     $this: &;
 
@@ -112,7 +113,7 @@
         border-radius: 6px;
         padding: 12px 0;
         border: 1px solid var(--color-div-grey);
-        width: 265px;
+        width: 256px;
         box-sizing: border-box;
         max-height: 320px;
         overflow-y: auto;
