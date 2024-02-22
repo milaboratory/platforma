@@ -24,6 +24,7 @@ const props = withDefaults(
     tabsContainerStyles?: StyleValue;
     inputMaxWidth?: string;
     inputWidth?: string;
+    clearable?: boolean;
   }>(),
   {
     mode: 'list',
@@ -32,6 +33,7 @@ const props = withDefaults(
     inputMaxWidth: '',
     inputWidth: '',
     tabsContainerStyles: undefined,
+    clearable: false,
   },
 );
 
@@ -58,6 +60,8 @@ const classes = computed(() => {
 const searchPhrase = ref<string>('');
 
 const options = useFilteredList(props.options, searchPhrase);
+
+const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
 
 const modelText = computed(() => {
   if (props.modelValue) {
@@ -206,14 +210,17 @@ function scrollIntoActive() {
   if (!$list) {
     return;
   }
-  const element = $list.querySelector('.hovered-item') as HTMLElement;
-  tapIf(element, (opt) => {
+  tapIf($list.querySelector('.hovered-item'), (el: Element) => {
     if (props.mode === 'list') {
-      scrollIntoView($list, opt);
+      scrollIntoView($list, el as HTMLElement);
     } else {
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   });
+}
+
+function clearModel() {
+  emit('update:modelValue', undefined);
 }
 </script>
 
@@ -222,12 +229,12 @@ function scrollIntoActive() {
     ref="container"
     tabindex="0"
     :class="classes"
-    class="ui-select-input-line uc-pointer"
+    class="ui-line-dropdown uc-pointer"
     @keydown="handleKeydown"
     @focusout="onBlur"
     @click="toggleList"
   >
-    <div class="ui-select-input-line__prefix">{{ props?.prefix }}</div>
+    <div class="ui-line-dropdown__prefix">{{ props?.prefix }}</div>
 
     <ResizableInput
       :value="inputValue"
@@ -235,14 +242,15 @@ function scrollIntoActive() {
       :disabled="props.disabled"
       :max-width="props.inputMaxWidth"
       :width="props.inputWidth"
-      class="ui-select-input-line__input"
+      class="ui-line-dropdown__input"
       @input="setSearchPhrase"
     />
 
-    <div class="ui-select-input-line__icon-wrapper">
-      <div class="ui-select-input-line__icon" />
+    <div class="ui-line-dropdown__icon-wrapper">
+      <div v-show="!canShowClearBtn" class="ui-line-dropdown__icon" />
+      <div v-show="canShowClearBtn" class="ui-line-dropdown__icon-clear" @click="clearModel" />
     </div>
-    <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-select-input-line__items">
+    <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-line-dropdown__items">
       <template v-for="(item, index) in options" :key="index">
         <slot
           name="item"
@@ -263,18 +271,18 @@ function scrollIntoActive() {
         </slot>
       </template>
 
-      <div v-if="options.length === 0" class="ui-select-input-line__no-item">
-        <div class="ui-select-input-line__no-item-title text-s">Didn't find anything that matched</div>
+      <div v-if="options.length === 0" class="ui-line-dropdown__no-item">
+        <div class="ui-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
       </div>
     </div>
-    <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles" class="ui-select-input-line__items-tabs">
+    <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles" class="ui-line-dropdown__items-tabs">
       <template v-for="(item, index) in options" :key="index">
         <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
           <TabItem :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
         </slot>
       </template>
-      <div v-if="options.length === 0" class="ui-select-input-line__no-item">
-        <div class="ui-select-input-line__no-item-title text-s">Didn't find anything that matched</div>
+      <div v-if="options.length === 0" class="ui-line-dropdown__no-item">
+        <div class="ui-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
       </div>
     </div>
   </div>

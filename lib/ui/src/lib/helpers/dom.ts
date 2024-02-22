@@ -43,7 +43,7 @@ export function scrollIntoView(parent: HTMLElement, el: HTMLElement, options: { 
 
   if (!isElementVisible(parent, el)) {
     animate({
-      duration: options.duration || 300,
+      duration: options.duration || 100,
       timing: makeEaseOut((t) => t),
       draw,
     });

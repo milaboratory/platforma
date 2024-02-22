@@ -1,6 +1,6 @@
 @import "./mixins";
 
-.ui-select-input-line {
+.ui-line-dropdown {
     display: flex;
     align-items: center;
     width: fit-content;
@@ -58,6 +58,11 @@
         min-width: 16px;
         background-color: var(--control-mask-fill);
         @include mask(url(./images/16_chevron-down.svg), 16px);
+    }
+
+    &__icon-clear {
+        @include mask(url(./images/16_clear.svg), 16px);
+        background-color: var(--color-ic-02);
     }
 
     &.open {
