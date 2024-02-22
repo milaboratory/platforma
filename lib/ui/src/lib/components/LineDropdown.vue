@@ -210,12 +210,11 @@ function scrollIntoActive() {
   if (!$list) {
     return;
   }
-  const element = $list.querySelector('.hovered-item') as HTMLElement;
-  tapIf(element, (opt) => {
+  tapIf($list.querySelector('.hovered-item'), (el: Element) => {
     if (props.mode === 'list') {
-      scrollIntoView($list, opt);
+      scrollIntoView($list, el as HTMLElement);
     } else {
-      element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
   });
 }
