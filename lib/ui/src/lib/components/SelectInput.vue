@@ -47,18 +47,18 @@ const input = ref<HTMLInputElement | undefined>();
 
 const data = reactive({
   search: '',
-  activeOption: -1,
+  activeIndex: -1,
   open: false,
 });
 
 function updateSelected() {
-  data.activeOption = tap(
+  data.activeIndex = tap(
     filtered.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
     (v) => (v < 0 ? 0 : v),
   );
 }
 
-const selectedOption = computed(() => {
+const selectedIndex = computed(() => {
   return props.options.findIndex((o) => deepEqual(o.value, props.modelValue));
 });
 
@@ -79,21 +79,29 @@ const nonEmpty = computed(() => {
 });
 
 const filtered = computed(() => {
-  return data.search
-    ? props.options.filter((o) => {
-        const _search = data.search.toLowerCase();
+  const options = props.options.map((opt, index) => ({
+    ...opt,
+    index,
+    isSelected: index === selectedIndex.value,
+    isActive: index === data.activeIndex,
+  }));
 
-        if (o.text) {
-          return o.text.toLowerCase().includes(_search);
-        }
+  if (data.search) {
+    return options.filter((o) => {
+      const search = data.search.toLowerCase();
 
-        if (typeof o.value === 'string') {
-          return o.value.toLowerCase().includes(_search);
-        }
+      if (o.text) {
+        return o.text.toLowerCase().includes(search);
+      }
 
-        return o.value === data.search;
-      })
-    : [...props.options];
+      if (typeof o.value === 'string') {
+        return o.value.toLowerCase().includes(search);
+      }
+
+      return o.value === data.search;
+    });
+  }
+  return options;
 });
 
 const tabindex = computed(() => (props.disabled ? undefined : '0'));
@@ -142,7 +150,7 @@ function scrollIntoActive() {
 }
 
 function handleKeydown(e: { code: string; preventDefault(): void }) {
-  const { open, activeOption } = data;
+  const { open, activeIndex: activeOption } = data;
 
   if (!open && e.code === 'Enter') {
     data.open = true;
@@ -165,7 +173,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
 
   const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
-  data.activeOption = Math.abs(activeOption + d + length) % length;
+  data.activeIndex = Math.abs(activeOption + d + length) % length;
 
   requestAnimationFrame(scrollIntoActive);
 }
@@ -233,24 +241,11 @@ watchPostEffect(() => {
             :key="index"
             :item="item"
             :text-item="'text'"
-            :is-selected="index === selectedOption"
-            :is-hovered="data.activeOption == index"
+            :is-selected="item.isSelected"
+            :is-hovered="item.isActive"
             size="medium"
             @click.stop="selectItem(item.value)"
           />
-          <!-- <div
-            v-for="(opt, i) in filtered"
-            :key="i"
-            class="option"
-            :class="{
-              active: i === data.activeOption,
-              selected: i === selectedOption,
-            }"
-            @click="selectItem(opt.value)"
-          >
-            <span>{{ opt.text }}</span>
-            <div class="checkmark" />
-          </div> -->
           <div v-if="!filtered.length" class="nothing-found">Nothing found</div>
         </div>
         <double-contour class="ui-select-input__contour" />
