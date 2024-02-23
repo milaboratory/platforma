@@ -8,6 +8,7 @@ import type { Option } from '@/lib/types';
 import { scrollIntoView } from '@/lib/helpers/dom';
 import { deepEqual } from '@/lib/helpers/objects';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
+import LongText from '@/lib/components/LongText.vue';
 
 const emit = defineEmits(['update:modelValue']);
 const emitModel = (v: unknown) => emit('update:modelValue', v);
@@ -208,10 +209,18 @@ watchPostEffect(() => {
             autocomplete="chrome-off"
             @focus="onInputFocus"
           />
-          <div v-if="!data.open" class="input-value" @click="setFocusOnInput">
+          <!-- OLD VERSION -->
+          <!-- <div v-if="!data.open" class="input-value" @click="setFocusOnInput">
             {{ textValue }}
             <div v-if="clearable" class="close" @click.stop="clear" />
+          </div> -->
+
+          <!-- NEW VERSION -->
+          <div v-if="!data.open" @click="setFocusOnInput">
+            <LongText class="input-value"> {{ textValue }} </LongText>
+            <div v-if="clearable" class="close" @click.stop="clear" />
           </div>
+
           <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggle" />
           <div v-else class="arrow" @click.stop="toggle" />
           <div class="ui-select-input__append">

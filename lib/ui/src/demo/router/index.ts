@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Long text',
+    path: '/long-text',
+    component: () => import('@/demo/text-component/index.vue'),
+  },
+  {
     name: 'Dropdown list item',
     path: '/dropdownlistitem',
     component: () => import('@/demo/dropdown-list-item/index.vue'),
