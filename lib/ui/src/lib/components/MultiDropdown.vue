@@ -55,17 +55,18 @@ function updateSelected() {
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
 
-const textValue = computed(() => {
-  const selectedValues = unref(selectedValuesRef);
-  return props.options
-    .filter((o) => selectedValues.includes(o.value))
-    .map((o) => o.text)
-    .join(', ');
-});
+// const textValue = computed(() => {
+//   const selectedValues = unref(selectedValuesRef);
+//   return props.options
+//     .filter((o) => selectedValues.includes(o.value))
+//     .map((o) => o.text)
+//     .join(', ');
+// });
 
 const placeholderRef = computed(() => {
   if (data.open && props.modelValue.length > 0) {
-    return String(textValue.value);
+    return props.placeholder;
+    // return String(textValue.value);
   }
 
   return props.modelValue.length > 0 ? '' : props.placeholder;
@@ -106,7 +107,7 @@ function selectItem(v: unknown) {
   const values = unref(selectedValuesRef);
   emitModel(values.includes(v) ? values.filter((it) => it !== v) : [...values, v]);
   data.search = '';
-  data.open = false;
+  // data.open = false;
   rootRef?.value?.focus();
 }
 
@@ -216,9 +217,9 @@ watchPostEffect(() => {
           @focus="onInputFocus"
         />
         <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
-          <chip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop @close="closeItem(opt.value)">
-            {{ opt.text || opt.value }}</chip
-          >
+          <Chip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="closeItem(opt.value)">
+            {{ opt.text || opt.value }}
+          </Chip>
         </div>
         <div class="arrow" @click.stop="toggle" />
         <div class="ui-multi-dropdown__append">
@@ -234,6 +235,11 @@ watchPostEffect(() => {
         </tooltip>
       </label>
       <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
+        <div class="ui-multi-dropdown__open-chips-conteiner">
+          <Chip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop @close="closeItem(opt.value)">
+            {{ opt.text || opt.value }}
+          </Chip>
+        </div>
         <DropdownListItem
           v-for="(item, index) in filteredOptionsRef"
           :key="index"

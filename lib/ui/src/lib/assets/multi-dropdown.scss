@@ -106,13 +106,14 @@
         outline: none;
         border-radius: 4px;
         @include icon(var(--base-icon), 24px);
+
         [data-theme="dark"] & {
           --base-icon: url('./images/24_checkbox-base-dark.svg');
           --checked-icon: url('./images/24_checkbox-checked-dark.svg');
         }
       }
 
-      > span {
+      >span {
         display: block;
         overflow: hidden;
         white-space: nowrap;
@@ -122,6 +123,7 @@
 
       &.selected {
         background-color: var(--color-active-select);
+
         .ui-multi-dropdown__checkmark {
           @include icon(var(--checked-icon), 24px);
         }
@@ -220,9 +222,11 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
+
     .icon {
       cursor: pointer;
     }
+
     .mask {
       background-color: var(--control-mask-fill);
       cursor: pointer;
@@ -254,7 +258,8 @@
     cursor: pointer;
   }
 
-  &.open,&:focus-within {
+  &.open,
+  &:focus-within {
     z-index: 1;
 
     #{$root}__container {
@@ -304,5 +309,14 @@
     --control-mask-fill: var(--color-dis-01);
     cursor: not-allowed;
     pointer-events: none;
+  }
+
+  &__open-chips-conteiner {
+    padding: 12px;
+
+    .ui-chip {
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
   }
 }
