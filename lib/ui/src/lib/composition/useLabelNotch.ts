@@ -1,10 +1,12 @@
-import type { Ref } from 'vue';
+import { onBeforeUnmount, type Ref } from 'vue';
 import { tap, tapIf } from '@/lib/helpers/functions';
 import { onChanged } from '@/lib/composition/utils';
 import { call } from '@/lib/helpers/utils';
-import { onResizeElement } from '@/lib/global/resizeObserver';
+import { onResizeElement, unobserve } from '@/lib/global/resizeObserver';
 
 export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector = 'label') {
+  const labels = new Set<Element>();
+
   onChanged(() => {
     tapIf(root?.value, (el) => {
       const label = el.querySelector(labelSelector);
@@ -12,6 +14,8 @@ export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector 
       if (!label) {
         return;
       }
+
+      labels.add(label);
 
       onResizeElement(label, () => {
         const rightOffset = call(() => {
@@ -22,5 +26,9 @@ export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector 
         el.style.setProperty('--label-offset-right-x', `${rightOffset}px`);
       });
     });
+  });
+
+  onBeforeUnmount(() => {
+    Array.from(labels.values()).map((el) => unobserve(el));
   });
 }
