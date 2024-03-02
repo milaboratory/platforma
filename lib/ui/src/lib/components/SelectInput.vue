@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, useSlots, watch, watchPostEffect } from 'vue';
+import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
 import { tap, tapIf } from '@/lib/helpers/functions';
 import Tooltip from '@/lib/components/Tooltip.vue';
 import DoubleContour from '@/lib/utils/DoubleContour.vue';
@@ -52,12 +52,13 @@ const data = reactive({
   open: false,
 });
 
-function updateSelected() {
-  data.activeIndex = tap(
-    filtered.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
+const findActiveIndex = () =>
+  tap(
+    filteredRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
     (v) => (v < 0 ? 0 : v),
   );
-}
+
+const updateActive = () => (data.activeIndex = findActiveIndex());
 
 const selectedIndex = computed(() => {
   return props.options.findIndex((o) => deepEqual(o.value, props.modelValue));
@@ -75,17 +76,21 @@ const computedPlaceholder = computed(() => {
   return props.modelValue ? String(textValue.value) : props.placeholder;
 });
 
-const nonEmpty = computed(() => {
+const hasValue = computed(() => {
   return props.modelValue !== undefined && props.modelValue !== null;
 });
 
-const filtered = computed(() => {
-  const options = props.options.map((opt, index) => ({
+const optionsRef = computed(() =>
+  props.options.map((opt, index) => ({
     ...opt,
     index,
     isSelected: index === selectedIndex.value,
     isActive: index === data.activeIndex,
-  }));
+  })),
+);
+
+const filteredRef = computed(() => {
+  const options = optionsRef.value;
 
   if (data.search) {
     return options.filter((o) => {
@@ -102,12 +107,13 @@ const filtered = computed(() => {
       return o.value === data.search;
     });
   }
+
   return options;
 });
 
 const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
-function selectItem(v: unknown) {
+function selectOption(v: unknown) {
   emitModel(v);
   data.search = '';
   data.open = false;
@@ -151,44 +157,55 @@ function scrollIntoActive() {
 }
 
 function handleKeydown(e: { code: string; preventDefault(): void }) {
-  const { open, activeIndex: activeOption } = data;
+  if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+    return;
+  } else {
+    e.preventDefault();
+  }
 
-  if (!open && e.code === 'Enter') {
-    data.open = true;
+  const { open, activeIndex } = data;
+
+  if (!open) {
+    if (e.code === 'Enter') {
+      data.open = true;
+    }
     return;
   }
 
-  const { length } = filtered.value;
+  const filtered = unref(filteredRef);
+
+  const { length } = filtered;
 
   if (!length) {
     return;
   }
 
-  if (['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
-    e.preventDefault();
-  }
-
   if (e.code === 'Enter') {
-    selectItem(filtered.value[activeOption].value);
+    selectOption(filtered.find((it) => it.index === activeIndex)?.value);
   }
 
-  const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
+  const localIndex = filtered.findIndex((it) => it.index === activeIndex) ?? -1;
 
-  data.activeIndex = Math.abs(activeOption + d + length) % length;
+  const delta = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
 
-  requestAnimationFrame(scrollIntoActive);
+  const newIndex = Math.abs(localIndex + delta + length) % length;
+
+  data.activeIndex = filteredRef.value[newIndex].index ?? -1;
 }
 
 useLabelNotch(root);
 
+watch(() => props.modelValue, updateActive, { immediate: true });
+
 watch(
-  () => props.modelValue,
-  () => updateSelected(),
-  { immediate: true },
+  () => data.open,
+  (open) => (open ? input.value?.focus() : ''),
 );
 
 watchPostEffect(() => {
-  if (data.open) {
+  data.search; // to watch
+
+  if (data.activeIndex >= 0 && data.open) {
     scrollIntoActive();
   }
 });
@@ -225,14 +242,14 @@ watchPostEffect(() => {
 
           <!-- NEW VERSION -->
           <div v-if="!data.open" @click="setFocusOnInput">
-            <LongText class="input-value"> {{ textValue }} </LongText>
+            <long-text class="input-value"> {{ textValue }} </long-text>
             <div v-if="clearable" class="close" @click.stop="clear" />
           </div>
 
           <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggle" />
           <div v-else class="arrow" @click.stop="toggle" />
           <div class="ui-select-input__append">
-            <div v-if="clearable && nonEmpty" class="icon icon--clear" @click.stop="clear" />
+            <div v-if="clearable && hasValue" class="icon icon--clear" @click.stop="clear" />
             <slot name="append" />
           </div>
         </div>
@@ -246,16 +263,16 @@ watchPostEffect(() => {
         </label>
         <div v-if="data.open" ref="list" class="ui-select-input__options">
           <DropdownListItem
-            v-for="(item, index) in filtered"
+            v-for="(item, index) in filteredRef"
             :key="index"
             :item="item"
             :text-item="'text'"
             :is-selected="item.isSelected"
             :is-hovered="item.isActive"
             size="medium"
-            @click.stop="selectItem(item.value)"
+            @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filtered.length" class="nothing-found">Nothing found</div>
+          <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
         </div>
         <double-contour class="ui-select-input__contour" />
       </div>

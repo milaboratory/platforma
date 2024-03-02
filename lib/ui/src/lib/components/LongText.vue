@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { debounce } from '../helpers/utils';
+import { debounce, notEmpty } from '../helpers/utils';
 
 const hasElementEllipsis = ref(false);
 
@@ -15,11 +15,8 @@ const updateStatus = debounce((val: boolean) => (isHovered.value = val), 500);
 const animationTime = computed(() => (span.value ? `${span.value?.innerHTML.length * 0.3}s` : '5s'));
 
 function isEllipsisEnabled() {
-  if (!span.value) {
-    throw Error('WOW');
-  }
-
-  hasElementEllipsis.value = span.value.clientWidth < span.value.scrollWidth;
+  const el = notEmpty(span.value, 'span cannot be empty');
+  hasElementEllipsis.value = el.clientWidth < el.scrollWidth;
 }
 
 function mouseoverHandler() {
