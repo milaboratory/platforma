@@ -4,6 +4,7 @@ import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
 import Tooltip from '@/lib/components/Tooltip.vue';
+import type { SliderMode } from '@/lib/types';
 
 const slots = useSlots();
 
@@ -18,6 +19,8 @@ const props = withDefaults(
     label?: string;
     helper?: string;
     error?: string;
+    mode?: SliderMode;
+    measure?: string;
   }>(),
   {
     label: undefined,
@@ -25,6 +28,8 @@ const props = withDefaults(
     error: undefined,
     min: 0,
     step: 1,
+    mode: 'text',
+    measure: '',
   },
 );
 
@@ -34,7 +39,9 @@ const data = reactive({
 
 const range = computed(() => props.max - props.min);
 
-const localValue = computed(() => clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max));
+const localValue = computed(() => {
+  return clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max);
+});
 
 const error = computed(() => {
   const v = props.modelValue;
@@ -62,9 +69,13 @@ const progressStyle = computed(() => ({
   right: Math.ceil((1 - position.value) * 100) + '%',
 }));
 
-const thumbStyle = computed(() => ({
-  right: Math.ceil((1 - position.value) * 100) + '%',
-}));
+const thumbStyle = computed(() => {
+  let value = Math.ceil((1 - position.value) * 100);
+  value = value > 98 ? 98 : value < 2 ? 2 : value;
+  return {
+    right: `calc(${value}%) `,
+  };
+});
 
 const barRef = ref<HTMLElement>();
 const thumbRef = ref<HTMLElement>();
@@ -78,36 +89,52 @@ function round(value: number) {
 useMouseCapture(thumbRef, (ev) => {
   tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
     const { dx } = ev;
+
     data.deltaValue = (dx / rect.width) * range.value;
+
     if (ev.stop) {
       emit('update:modelValue', round(localValue.value));
       data.deltaValue = 0;
     }
   });
 });
+
+function setModelValue(value: number) {
+  emit('update:modelValue', round(value));
+}
+
+function updateModelValue(event: Event) {
+  setModelValue(+(event.target as HTMLInputElement).value);
+}
 </script>
 
 <template>
   <div class="ui-slider__envelope">
-    <div class="ui-slider">
-      <label v-if="label">
-        <span>{{ label }}</span>
-        <tooltip v-if="slots.tooltip" class="info" position="top">
-          <template #tooltip>
-            <slot name="tooltip" />
-          </template>
-        </tooltip>
-      </label>
-      <div class="ui-slider__base">
-        <div class="ui-slider__container">
-          <div ref="barRef" class="ui-slider__bar">
-            <div class="ui-slider__progress" :style="progressStyle" />
+    <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
+      <div class="ui-slider__wrapper">
+        <div class="ui-slider__label-section">
+          <label v-if="label" class="text-s">
+            <span>{{ label }}</span>
+            <tooltip v-if="slots.tooltip" class="info" position="top">
+              <template #tooltip>
+                <slot name="tooltip" />
+              </template>
+            </tooltip>
+          </label>
+          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ modelValue }}</div>
+        </div>
+        <div class="ui-slider__base">
+          <div class="ui-slider__container">
+            <div ref="barRef" class="ui-slider__bar">
+              <div class="ui-slider__progress" :style="progressStyle" />
+            </div>
+            <div ref="thumbRef" class="ui-slider__thumb" :style="thumbStyle" />
           </div>
-          <div ref="thumbRef" class="ui-slider__thumb" :style="thumbStyle" />
         </div>
-        <div class="ui-slider__value">
-          {{ modelValue }}
-        </div>
+      </div>
+
+      <div class="ui-slider__input-wrapper d-flex">
+        <input v-if="props.mode === 'input'" :value="modelValue" class="ui-slider__value text-s" @input="updateModelValue($event)" />
       </div>
     </div>
     <div v-if="helper" class="ui-slider__helper">

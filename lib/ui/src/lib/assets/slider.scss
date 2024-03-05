@@ -9,33 +9,61 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 0 var(--padding-gap);
+  // padding: 0 var(--padding-gap);
+  // background-color: yellow;
+
 
   &__envelope {
     font-family: var(--control-font-family);
   }
 
   label {
-    margin-bottom: 6px;
     display: flex;
     align-items: center;
-    font-weight: 500;
-    font-size: var(--font-size-base);
-    line-height: 20px;
-    margin-left: calc(var(--padding-gap) * -1);
+  }
+
+  &__mode-text,
+  &__mode-input {
+    padding-bottom: 12px;
+
+    label {
+      margin-bottom: 8px;
+    }
+  }
+
+  &__mode-input {
+    display: flex;
+    flex-direction: row;
+    padding-bottom: 0;
+
+    .ui-slider__wrapper {
+      padding-bottom: 12px;
+    }
+  }
+
+  &__input-wrapper {
+    align-items: flex-end;
+
+    .ui-input-range {
+      margin-left: 12px;
+    }
+  }
+
+  &__wrapper {
+    flex-grow: 1;
   }
 
   &__value {
     display: flex;
     width: 56px;
     height: 32px;
-    padding: 0 6px;
+    margin-left: 12px;
     justify-content: center;
     align-items: center;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     background: var(--bg-elevated-01);
-    margin-left: 20px;
+    text-align: center;
   }
 
   &__helper {
@@ -64,7 +92,7 @@
     border-radius: 4px;
     flex: 1;
     overflow: hidden;
-    margin: 0 calc(var(--padding-gap) * -1);
+    // margin: 0 calc(var(--padding-gap) * -1);
   }
 
   &__progress {
@@ -85,5 +113,59 @@
     border: 1px solid var(--color-border-default);
     background: var(--color-ic-00, #FFF);
     box-shadow: 0 2px 6px 0 rgba(17, 5, 41, 0.16), 0px -3px 0px 0px rgba(36, 34, 61, 0.12) inset;
+  }
+
+  &__label-section {
+    // background-color: red;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__value-static {
+    margin-bottom: 8px;
+  }
+
+  &__triple-thumb::before {
+    content: attr(data-percent);
+    position: relative;
+    display: block;
+    width: fit-content;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    color: var(--color-txt-01);
+    font-family: Manrope;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  &__triple &__label-section {
+    margin-bottom: 20px;
+  }
+
+  &__triple-thumb::after {
+    content: attr(data-hint);
+    position: relative;
+    display: block;
+    width: fit-content;
+    top: 0px;
+    left: 50%;
+    // background-color: red;
+    transform: translateX(-50%);
+
+    color: var(--color-txt-03);
+    font-family: Manrope;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 16px;
+  }
+
+  &__triple {
+    padding-bottom: 12px;
   }
 }
