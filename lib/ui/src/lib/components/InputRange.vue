@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -34,7 +34,10 @@ const valuesModelText = computed({
   },
   set() {},
 });
-
+watch(
+  () => valuesModelText.value,
+  (value) => (data.left = value.left) && (data.right = value.right),
+);
 // watch(
 //   () => props.modelValue,
 //   (value: [number, number]) => {
@@ -68,7 +71,8 @@ function validateInput(isLeft: boolean, event: Event) {
 }
 </script>
 <template>
-  <div :class="classes" class="ui-input-range">
+  {{ data }}
+  <div :class="classes" class="ui-input-range" v-bind="$attrs">
     <input
       v-model="valuesModelText.left"
       class="text-s"

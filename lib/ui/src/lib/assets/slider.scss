@@ -127,10 +127,12 @@
 
   &__thumb:active {
     border-width: 2px;
+    z-index: 1;
   }
 
   &__thumb:focus {
     background-color: red;
+    z-index: 1;
   }
 
 

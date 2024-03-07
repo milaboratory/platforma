@@ -169,7 +169,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
     e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
 
   const arr: [number, number] = [...props.modelValue];
-  arr[index] = arr[index] + nextStep;
+  arr[index] = clamp(arr[index] + nextStep, props.min, props.max);
   setModelValue(arr);
 }
 </script>
