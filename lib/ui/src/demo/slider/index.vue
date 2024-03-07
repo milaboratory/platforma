@@ -13,7 +13,7 @@ const value = ref(3);
 const value2 = ref<[number, number]>([2, 15]);
 const invalidModel = ref([1, 2, 3]);
 const invalidModel2 = ref([1, '2']);
-const modelTriple = ref([15, 11, 60]);
+const modelTriple = ref([11, 20, 60]);
 
 const value3 = ref(Number.NaN);
 const step = ref(0.1);

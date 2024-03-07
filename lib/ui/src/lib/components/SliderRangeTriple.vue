@@ -203,6 +203,22 @@ function getHint() {
   }
 }
 
+function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
+  console.log(e.code, index);
+
+  if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+    e.preventDefault();
+  }
+
+  const nextStep =
+    e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+
+  const arr: ModelType = [...props.modelValue];
+  arr[index] = arr[index] + nextStep;
+  setModelValue(arr);
+  getHint();
+}
+
 onMounted(() => {
   getHint();
 });
@@ -246,6 +262,7 @@ onMounted(() => {
               class="ui-slider__thumb ui-slider__triple-thumb"
               r1
               tabindex="0"
+              @keydown="handleKeyPress($event, 0)"
             />
             <div
               ref="thumbRef2"
@@ -254,6 +271,7 @@ onMounted(() => {
               class="ui-slider__thumb ui-slider__triple-thumb"
               r2
               tabindex="0"
+              @keydown="handleKeyPress($event, 1)"
             />
             <div
               ref="thumbRef3"
@@ -262,6 +280,7 @@ onMounted(() => {
               class="ui-slider__thumb ui-slider__triple-thumb"
               r3
               tabindex="0"
+              @keydown="handleKeyPress($event, 2)"
             />
           </div>
         </div>
