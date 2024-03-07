@@ -71,7 +71,7 @@ function validateInput(isLeft: boolean, event: Event) {
 }
 </script>
 <template>
-  {{ data }}
+  <!-- {{ data }} -->
   <div :class="classes" class="ui-input-range" v-bind="$attrs">
     <input
       v-model="valuesModelText.left"

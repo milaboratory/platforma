@@ -153,7 +153,9 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
             </div>
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
-            <div ref="thumbRef" tabindex="0" class="ui-slider__thumb ui-slider__thumb-active" :style="thumbStyle" @keydown="handleKeyPress" />
+            <div ref="thumbRef" tabindex="0" class="ui-slider__thumb ui-slider__thumb-active" :style="thumbStyle" @keydown="handleKeyPress">
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
           </div>
         </div>
       </div>

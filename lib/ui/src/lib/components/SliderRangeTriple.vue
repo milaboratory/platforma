@@ -263,7 +263,9 @@ onMounted(() => {
               r1
               tabindex="0"
               @keydown="handleKeyPress($event, 0)"
-            />
+            >
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
             <div
               ref="thumbRef2"
               :style="thumbStyle2"
@@ -272,7 +274,9 @@ onMounted(() => {
               r2
               tabindex="0"
               @keydown="handleKeyPress($event, 1)"
-            />
+            >
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
             <div
               ref="thumbRef3"
               :style="thumbStyle3"
@@ -281,7 +285,9 @@ onMounted(() => {
               r3
               tabindex="0"
               @keydown="handleKeyPress($event, 2)"
-            />
+            >
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
           </div>
         </div>
       </div>

@@ -130,12 +130,30 @@
     z-index: 1;
   }
 
-  &__thumb:focus {
-    background-color: red;
+  &__thumb:focus &__thumb-focused-contour {
+    display: block;
     z-index: 1;
   }
 
+  &__thumb:active &__thumb-focused-contour {
+    display: block;
+    z-index: 1;
+    top: -1px;
+    left: -1px;
+  }
 
+  &__thumb-focused-contour {
+    display: none;
+    width: 22px;
+    height: 22px;
+    position: absolute;
+    top: 0;
+    transform: translate(-4px, -4px);
+    border-radius: 5px;
+    border: 2px solid var(--color-focus);
+    pointer-events: none;
+    z-index: 0;
+  }
 
   &__label-section {
     display: flex;

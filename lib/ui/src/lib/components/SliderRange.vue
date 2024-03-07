@@ -200,8 +200,12 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
             <!-- <div ref="barRef" class="ui-slider__bar">
               <div class="ui-slider__progress" :style="progressStyle" />
             </div> -->
-            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)" />
-            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 1)" />
+            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)">
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
+            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 1)">
+              <div class="ui-slider__thumb-focused-contour" />
+            </div>
           </div>
         </div>
       </div>
