@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch, toRefs } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -16,61 +16,38 @@ const emit = defineEmits<{
   (e: 'change', val: [number, number]): void;
 }>();
 
-const data = reactive({
-  left: props.modelValue[0],
-  right: props.modelValue[1],
-});
+const data = computed(() => ({
+  left: Math.min(...props.modelValue),
+  right: Math.max(...props.modelValue),
+}));
 
 const isFocused = ref(false);
 
 const classes = computed(() => (isFocused.value ? 'ui-input-range-focused' : 'ui-input-range-focused'));
 
-const valuesModelText = computed({
-  get() {
-    return {
-      left: Math.min(...props.modelValue),
-      right: Math.max(...props.modelValue),
-    };
-  },
-  set() {},
-});
-
-// watch(
-//   () => props.modelValue,
-//   (value: [number, number]) => {
-//     console.log('model value updated');
-//     (data.left = value[0]), (data.right = value[1]);
-//   },
-// );
-
 function updateModel() {
-  emit('update:modelValue', [+data.left, +data.right]);
-  emit('change', [+data.left, +data.right]);
+  emit('update:modelValue', [+data.value.left, +data.value.right]);
+  emit('change', [+data.value.left, +data.value.right]);
+  console.log('updateModel');
 }
 
 function validateInput(isLeft: boolean, event: Event) {
   const value: string = (event.target as HTMLInputElement).value;
   const result = /^[0-9]{0,2}$/.test(value);
-  //if there is more than 3 digits we cut last one
   if (!result) {
     if (isLeft) {
-      data.left = +value.slice(0, value.length - 1);
+      data.value.left = +value.slice(0, value.length - 1);
     } else {
-      data.right = +value.slice(0, value.length - 1);
-    }
-  } else {
-    if (isLeft) {
-      data.left = +value;
-    } else {
-      data.right = +value;
+      data.value.right = +value.slice(0, value.length - 1);
     }
   }
 }
 </script>
 <template>
+  {{ props.modelValue }}
   <div :class="classes" class="ui-input-range">
     <input
-      v-model="valuesModelText.left"
+      :value="data.left"
       class="text-s"
       type="text"
       @change="updateModel"
@@ -80,7 +57,7 @@ function validateInput(isLeft: boolean, event: Event) {
     />
     <div class="ui-input-range__separator">{{ props.separator }}</div>
     <input
-      v-model="valuesModelText.right"
+      :value="data.right"
       class="text-s"
       type="text"
       @change="updateModel"

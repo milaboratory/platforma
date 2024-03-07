@@ -42,7 +42,7 @@ const data = reactive({
 const barRef = ref<HTMLElement>();
 const thumbRef1 = ref<HTMLElement>();
 const thumbRef2 = ref<HTMLElement>();
-const inputRange = ref<[number, number]>(props.modelValue);
+const inputRange = reactive<{ arr: [number, number] }>({ arr: props.modelValue });
 const leftDelta = ref(props.modelValue[0]);
 const rightDelta = ref(props.modelValue[1]);
 
@@ -97,7 +97,7 @@ const thumbStyle2 = computed(() => ({
 watch(
   () => props.modelValue,
   (value: [number, number]) => {
-    inputRange.value = value;
+    inputRange.arr = value; //.sort((a, b) => a - b);
     leftDelta.value = +value[0];
     rightDelta.value = +value[1];
   },
@@ -111,7 +111,7 @@ useMouseCapture(thumbRef1, (ev) => {
 
     leftDelta.value = round(clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
 
-    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+    inputRange.arr = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
 
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
@@ -127,7 +127,7 @@ useMouseCapture(thumbRef2, (ev) => {
 
     rightDelta.value = round(clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
 
-    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+    inputRange.arr = ([rightDelta.value, leftDelta.value] as [number, number]).sort((a, b) => a - b);
 
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
@@ -159,8 +159,6 @@ function setModelValue(value: [number, number]) {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
-  console.log(e.code, index);
-
   if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
     e.preventDefault();
   }
@@ -168,14 +166,17 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
   const nextStep =
     e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
 
-  const arr: [number, number] = [...props.modelValue];
-  arr[index] = arr[index] + nextStep;
-  setModelValue(arr);
+  // setModelValue(props.modelValue + nextStep);
+}
+
+function inputChanged(value: [number, number]) {
+  debugger;
+  setModelValue(value);
 }
 </script>
 
 <template>
-  <!-- {{ leftDelta }} {{ rightDelta }} -->
+  {{ props.modelValue }}
   <div class="ui-slider__envelope">
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
@@ -200,14 +201,14 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
             <!-- <div ref="barRef" class="ui-slider__bar">
               <div class="ui-slider__progress" :style="progressStyle" />
             </div> -->
-            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)" />
-            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 1)" />
+            <div ref="thumbRef1" r1 :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)" />
+            <div ref="thumbRef2" r2 :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" />
           </div>
         </div>
       </div>
 
       <div class="ui-slider__input-wrapper d-flex">
-        <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" @change="setModelValue" />
+        <InputRange v-if="props.mode === 'input'" v-model="inputRange.arr" class="ui-focused-border" @change="inputChanged" />
       </div>
     </div>
     <div v-if="helper" class="ui-slider__helper">
