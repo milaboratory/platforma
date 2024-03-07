@@ -43,8 +43,10 @@ const barRef = ref<HTMLElement>();
 const thumbRef1 = ref<HTMLElement>();
 const thumbRef2 = ref<HTMLElement>();
 const inputRange = ref<[number, number]>(props.modelValue);
+const leftDelta = ref(props.modelValue[0]);
+const rightDelta = ref(props.modelValue[1]);
 
-const textModelValue = computed(() => props.modelValue.join(' - '));
+const textModelValue = computed(() => [leftDelta.value, rightDelta.value].sort((a, b) => a - b).join('-'));
 
 const range = computed(() => props.max - props.min);
 
@@ -95,19 +97,22 @@ const thumbStyle2 = computed(() => ({
 watch(
   () => props.modelValue,
   (value: [number, number]) => {
-    inputRange.value = value;
+    inputRange.value = value.sort((a, b) => a - b);
+    leftDelta.value = +value[0];
+    rightDelta.value = +value[1];
   },
   { immediate: true },
 );
-
-watch(inputRange, (value: [number, number]) => {
-  setModelValue(value);
-});
 
 useMouseCapture(thumbRef1, (ev) => {
   tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
     const { dx } = ev;
     data.deltaValue1 = (dx / rect.width) * range.value;
+
+    leftDelta.value = round(clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
+
+    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
       data.deltaValue1 = 0;
@@ -120,6 +125,10 @@ useMouseCapture(thumbRef2, (ev) => {
     const { dx } = ev;
     data.deltaValue2 = (dx / rect.width) * range.value;
 
+    rightDelta.value = round(clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
+
+    inputRange.value = ([leftDelta.value, rightDelta.value] as [number, number]).sort((a, b) => a - b);
+
     if (ev.stop) {
       setModelValue([round(localValue1.value), round(localValue2.value)]);
       data.deltaValue2 = 0;
@@ -130,7 +139,6 @@ useMouseCapture(thumbRef2, (ev) => {
 function getLeftAndRight() {
   const point1 = Math.ceil((1 - position1.value) * 100);
   const point2 = Math.ceil((1 - position2.value) * 100);
-  // return point1 < point2 ? [point1, point2] : [point2, point1];
   return [point1, point2].sort((a, b) => a - b);
 }
 
@@ -143,14 +151,29 @@ function round(value: number) {
 function setModelValue(value: [number, number]) {
   emit(
     'update:modelValue',
-    value.sort(function (a, b) {
-      return a - b;
-    }),
+    value,
+    // value.sort(function (a, b) {
+    //   return a - b;
+    // }),
   );
 }
+
+// function handleKeyPress(e: { code: string; preventDefault(): void }) {
+//   console.log(e.code);
+
+//   if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+//     e.preventDefault();
+//   }
+
+//   const nextStep =
+//     e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+
+//   setModelValue(props.modelValue + nextStep);
+// }
 </script>
 
 <template>
+  <!-- {{ leftDelta }} {{ rightDelta }} -->
   <div class="ui-slider__envelope">
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
@@ -170,14 +193,19 @@ function setModelValue(value: [number, number]) {
             <div ref="barRef" class="ui-slider__bar">
               <div class="ui-slider__progress" :style="progressStyle" />
             </div>
-            <div ref="thumbRef1" class="ui-slider__thumb" :style="thumbStyle1" />
-            <div ref="thumbRef2" class="ui-slider__thumb" :style="thumbStyle2" />
+          </div>
+          <div class="ui-slider__container ui-slider__container-thumb">
+            <!-- <div ref="barRef" class="ui-slider__bar">
+              <div class="ui-slider__progress" :style="progressStyle" />
+            </div> -->
+            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" />
+            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb" tabindex="0" />
           </div>
         </div>
       </div>
 
       <div class="ui-slider__input-wrapper d-flex">
-        <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" />
+        <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" @change="setModelValue" />
       </div>
     </div>
     <div v-if="helper" class="ui-slider__helper">

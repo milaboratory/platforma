@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, unref, useSlots } from 'vue';
+import { computed, reactive, ref, unref, useSlots, watch } from 'vue';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
@@ -43,6 +43,8 @@ const localValue = computed(() => {
   return clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max);
 });
 
+const realtimeVal = ref(props.modelValue);
+
 const error = computed(() => {
   const v = props.modelValue;
 
@@ -71,7 +73,7 @@ const progressStyle = computed(() => ({
 
 const thumbStyle = computed(() => {
   let value = Math.ceil((1 - position.value) * 100);
-  value = value > 98 ? 98 : value < 2 ? 2 : value;
+  // value = value > 98 ? 98 : value < 2 ? 2 : value;
   return {
     right: `calc(${value}%) `,
   };
@@ -80,6 +82,12 @@ const thumbStyle = computed(() => {
 const barRef = ref<HTMLElement>();
 const thumbRef = ref<HTMLElement>();
 
+watch(
+  () => props.modelValue,
+  (val) => {
+    realtimeVal.value = val;
+  },
+);
 function round(value: number) {
   const v = clamp(value, props.min, props.max);
   // This is the same as Math.round(v / props.step) * props.step but here we need this magic to avoid numbers like 3.00000000000000000004
@@ -91,6 +99,8 @@ useMouseCapture(thumbRef, (ev) => {
     const { dx } = ev;
 
     data.deltaValue = (dx / rect.width) * range.value;
+
+    realtimeVal.value = round(clamp((props.modelValue ?? 0) + data.deltaValue, props.min, props.max));
 
     if (ev.stop) {
       emit('update:modelValue', round(localValue.value));
@@ -105,6 +115,19 @@ function setModelValue(value: number) {
 
 function updateModelValue(event: Event) {
   setModelValue(+(event.target as HTMLInputElement).value);
+}
+
+function handleKeyPress(e: { code: string; preventDefault(): void }) {
+  console.log(e.code);
+
+  if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
+    e.preventDefault();
+  }
+
+  const nextStep =
+    e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+
+  setModelValue(props.modelValue + nextStep);
 }
 </script>
 
@@ -121,20 +144,22 @@ function updateModelValue(event: Event) {
               </template>
             </tooltip>
           </label>
-          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ modelValue }}</div>
+          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ realtimeVal }}</div>
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
             <div ref="barRef" class="ui-slider__bar">
               <div class="ui-slider__progress" :style="progressStyle" />
             </div>
-            <div ref="thumbRef" class="ui-slider__thumb" :style="thumbStyle" />
+          </div>
+          <div class="ui-slider__container ui-slider__container-thumb">
+            <div ref="thumbRef" tabindex="0" class="ui-slider__thumb ui-slider__thumb-active" :style="thumbStyle" @keydown="handleKeyPress" />
           </div>
         </div>
       </div>
 
       <div class="ui-slider__input-wrapper d-flex">
-        <input v-if="props.mode === 'input'" :value="modelValue" class="ui-slider__value text-s" @input="updateModelValue($event)" />
+        <input v-if="props.mode === 'input'" :value="realtimeVal" class="ui-slider__value text-s" @change="updateModelValue($event)" />
       </div>
     </div>
     <div v-if="helper" class="ui-slider__helper">

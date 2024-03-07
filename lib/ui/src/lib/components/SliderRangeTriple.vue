@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, unref, useSlots, watch } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, unref, useSlots, watch } from 'vue';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
@@ -97,12 +97,6 @@ const thumbStyle2 = computed(() => ({
 const thumbStyle3 = computed(() => ({
   right: Math.ceil((1 - position3.value) * 100) + '%',
 }));
-getHint();
-function updateDatasetForThumb(thumb: HTMLElement, modelVal: number, delta: number) {
-  const value = round(clamp((modelVal ?? 0) + delta, props.min, props.max));
-  thumb.dataset.percent = `${value}${props.measure}`;
-  getHint();
-}
 
 useMouseCapture(thumbRef1, (ev) => {
   tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
@@ -152,6 +146,14 @@ useMouseCapture(thumbRef3, (ev) => {
   });
 });
 
+function updateDatasetForThumb(thumb: HTMLElement, modelVal: number, delta: number) {
+  const value = round(clamp((modelVal ?? 0) + delta, props.min, props.max));
+  thumb.dataset.percent = `${value}${props.measure}`;
+  // setTimeout(() => {
+  getHint();
+  // }, 0);
+}
+
 function getLeftAndRight() {
   const point1 = Math.ceil((1 - position1.value) * 100);
   const point2 = Math.ceil((1 - position2.value) * 100);
@@ -200,6 +202,10 @@ function getHint() {
     arr[2].th.value.dataset.hint = 'low';
   }
 }
+
+onMounted(() => {
+  getHint();
+});
 </script>
 
 <template>
@@ -223,14 +229,40 @@ function getHint() {
             </div>
             <!-- Step 3 comment -->
             <!-- do not delete :data-percent="props.modelValue[0] + '%'" because when we update modelValue we sort model -->
-            <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb ui-slider__triple-thumb" r1 :data-percent="props.modelValue[0] + '%'" />
+            <!-- <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb ui-slider__triple-thumb" r1 :data-percent="props.modelValue[0] + '%'" />
             <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb ui-slider__triple-thumb" r2 :data-percent="props.modelValue[1] + '%'" />
-            <div ref="thumbRef3" :style="thumbStyle3" class="ui-slider__thumb ui-slider__triple-thumb" r3 :data-percent="props.modelValue[2] + '%'" />
+            <div ref="thumbRef3" :style="thumbStyle3" class="ui-slider__thumb ui-slider__triple-thumb" r3 :data-percent="props.modelValue[2] + '%'" /> -->
 
             <!-- Step 1 uncomment -->
             <!-- <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb ui-slider__triple-thumb" r1 />
             <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb ui-slider__triple-thumb" r2 />
             <div ref="thumbRef3" :style="thumbStyle3" class="ui-slider__thumb ui-slider__triple-thumb" r3 /> -->
+          </div>
+          <div class="ui-slider__container ui-slider__container-thumb">
+            <div
+              ref="thumbRef1"
+              :style="thumbStyle1"
+              :data-percent="props.modelValue[0] + '%'"
+              class="ui-slider__thumb ui-slider__triple-thumb"
+              r1
+              tabindex="0"
+            />
+            <div
+              ref="thumbRef2"
+              :style="thumbStyle2"
+              :data-percent="props.modelValue[1] + '%'"
+              class="ui-slider__thumb ui-slider__triple-thumb"
+              r2
+              tabindex="0"
+            />
+            <div
+              ref="thumbRef3"
+              :style="thumbStyle3"
+              :data-percent="props.modelValue[2] + '%'"
+              class="ui-slider__thumb ui-slider__triple-thumb"
+              r3
+              tabindex="0"
+            />
           </div>
         </div>
       </div>

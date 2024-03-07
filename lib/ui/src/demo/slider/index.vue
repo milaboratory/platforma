@@ -9,7 +9,7 @@ import BtnSecondary from '@/lib/components/BtnSecondary.vue';
 const lorem =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
-const value = ref(5);
+const value = ref(3);
 const value2 = ref<[number, number]>([2, 6]);
 const invalidModel = ref([1, 2, 3]);
 const invalidModel2 = ref([1, '2']);
@@ -33,6 +33,9 @@ const helper = computed(() => (data.state === 'helper' ? data.helper : ''));
   <layout>
     <split name="Slider">
       <div class="demo-slider-container">
+        <slider v-model="value" label="Slider" :max="10" />
+      </div>
+      <div class="demo-slider-container">
         <h3 class="text-subtitle-m ma-0 mb-6">Range triple</h3>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Text mode</h4>
@@ -43,17 +46,17 @@ const helper = computed(() => (data.state === 'helper' ? data.helper : ''));
         <h3 class="text-subtitle-m ma-0 mb-6">Range</h3>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Text mode</h4>
-          <SliderRange v-model="value2" label="Range Slider" :max="100" />
+          <SliderRange v-model="value2" label="Range Slider" :max="99" />
         </div>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Input mode</h4>
-          <SliderRange v-model="value2" label="Range Slider" mode="input" :step="10" :max="100" />
+          <SliderRange v-model="value2" label="Range Slider" mode="input" :max="99" />
         </div>
-        <div class="demo-slider-container">
+        <!-- <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Invalid model</h4>
           <SliderRange v-model="invalidModel" label="Range Slider" :max="100" />
           <SliderRange v-model="invalidModel2" label="Range Slider" :max="100" />
-        </div>
+        </div> -->
       </div>
       <div class="demo-slider-container">
         <slider v-model="value" label="Slider" :step="2" :max="10" />

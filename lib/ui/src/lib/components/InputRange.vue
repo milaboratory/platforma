@@ -13,6 +13,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', val: [number, number]): void;
+  (e: 'change', val: [number, number]): void;
 }>();
 
 const data = reactive({
@@ -33,6 +34,8 @@ watch(
 
 function updateModel() {
   emit('update:modelValue', [+data.left, +data.right]);
+  emit('change', [+data.left, +data.right]);
+  console.log('updateModel');
 }
 
 function validateInput(isLeft: boolean, event: Event) {
