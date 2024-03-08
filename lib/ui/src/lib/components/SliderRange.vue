@@ -6,6 +6,7 @@ import { clamp } from '@/lib/helpers/math';
 import Tooltip from '@/lib/components/Tooltip.vue';
 import type { SliderMode } from '@/lib/types';
 import InputRange from '@/lib/components/InputRange.vue';
+import { useSliderBreakpoints } from '@/lib/composition/useSliderBreakpoints';
 
 const slots = useSlots();
 
@@ -22,6 +23,8 @@ const props = withDefaults(
     error?: string;
     mode?: SliderMode;
     measure?: string;
+    breakpoints?: boolean;
+    disabled?: boolean;
   }>(),
   {
     label: undefined,
@@ -31,6 +34,8 @@ const props = withDefaults(
     step: 1,
     mode: 'text',
     measure: '',
+    breakpoints: false,
+    disabled: false,
   },
 );
 
@@ -45,6 +50,10 @@ const thumbRef2 = ref<HTMLElement>();
 const inputRange = ref<[number, number]>(props.modelValue);
 const leftDelta = ref(props.modelValue[0]);
 const rightDelta = ref(props.modelValue[1]);
+
+const propsRef = computed(() => props);
+
+const breakpoints = useSliderBreakpoints(propsRef);
 
 const textModelValue = computed(() => [leftDelta.value, rightDelta.value].sort((a, b) => a - b).join('-'));
 
@@ -176,7 +185,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
 
 <template>
   <!-- {{ leftDelta }} {{ rightDelta }} -->
-  <div class="ui-slider__envelope">
+  <div :class="props.disabled ? 'ui-slider__disabled' : undefined" class="ui-slider__envelope">
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
         <div class="ui-slider__label-section">
@@ -197,9 +206,9 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
             </div>
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
-            <!-- <div ref="barRef" class="ui-slider__bar">
-              <div class="ui-slider__progress" :style="progressStyle" />
-            </div> -->
+            <template v-if="props.breakpoints">
+              <div v-for="(item, index) in breakpoints" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"></div>
+            </template>
             <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb" tabindex="0" @keydown="handleKeyPress($event, 0)">
               <div class="ui-slider__thumb-focused-contour" />
             </div>
@@ -214,9 +223,9 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
         <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" @change="setModelValue" />
       </div>
     </div>
-    <div v-if="helper" class="ui-slider__helper">
+    <!-- <div v-if="helper" class="ui-slider__helper">
       {{ helper }}
-    </div>
+    </div> -->
     <div v-if="error" class="ui-slider__error">
       {{ error }}
     </div>

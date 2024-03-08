@@ -1,10 +1,11 @@
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, reactive, ref, unref, useSlots, watch } from 'vue';
+import { computed, onMounted, reactive, ref, unref, useSlots } from 'vue';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
 import Tooltip from '@/lib/components/Tooltip.vue';
 import type { SliderMode } from '@/lib/types';
+import { useSliderBreakpoints } from '@/lib/composition/useSliderBreakpoints';
 
 type ModelType = [number, number, number];
 const slots = useSlots();
@@ -22,6 +23,8 @@ const props = withDefaults(
     error?: string;
     mode?: SliderMode;
     measure?: string;
+    breakpoints?: boolean;
+    disabled?: boolean;
   }>(),
   {
     label: undefined,
@@ -31,6 +34,8 @@ const props = withDefaults(
     step: 1,
     mode: 'text',
     measure: '%',
+    breakpoints: false,
+    disabled: false,
   },
 );
 
@@ -47,6 +52,10 @@ const thumbRef3 = ref<HTMLElement>();
 
 const range = computed(() => props.max - props.min);
 
+const propsRef = computed(() => props);
+
+const breakpoints = useSliderBreakpoints(propsRef);
+
 const localValue1 = computed(() => clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
 const localValue2 = computed(() => clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
 const localValue3 = computed(() => clamp((props.modelValue[2] ?? 0) + data.deltaValue3, props.min, props.max));
@@ -62,6 +71,21 @@ const error = computed(() => {
   });
   if (v.length > 3 || v.length < 3 || !isValidModel) {
     return 'Expected model [number, number]';
+  }
+
+  const errors: string[] = [];
+
+  [...props.modelValue].forEach((v) => {
+    if (v > props.max) {
+      errors.push(`Max model value must be lower than max props ${props.max}.`);
+    }
+    if (v < props.min) {
+      errors.push('Min model value must be greater than max props.');
+    }
+  });
+
+  if (errors.length > 0) {
+    return errors.join(' ');
   }
 
   return props.error;
@@ -149,9 +173,7 @@ useMouseCapture(thumbRef3, (ev) => {
 function updateDatasetForThumb(thumb: HTMLElement, modelVal: number, delta: number) {
   const value = round(clamp((modelVal ?? 0) + delta, props.min, props.max));
   thumb.dataset.percent = `${value}${props.measure}`;
-  // setTimeout(() => {
   getHint();
-  // }, 0);
 }
 
 function getLeftAndRight() {
@@ -168,14 +190,7 @@ function round(value: number) {
 }
 
 function setModelValue(value: ModelType) {
-  emit(
-    'update:modelValue',
-    //<!-- Step 2 uncomment -->
-    value,
-    // value.sort(function (a, b) {
-    //   return a - b;
-    // }),
-  );
+  emit('update:modelValue', value);
 }
 
 function getHint() {
@@ -225,7 +240,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="ui-slider__envelope ui-slider__triple">
+  <div :class="props.disabled ? 'ui-slider__disabled' : undefined" class="ui-slider__envelope ui-slider__triple">
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
         <div class="ui-slider__label-section">
@@ -243,18 +258,11 @@ onMounted(() => {
             <div ref="barRef" class="ui-slider__bar">
               <div class="ui-slider__progress" :style="progressStyle" />
             </div>
-            <!-- Step 3 comment -->
-            <!-- do not delete :data-percent="props.modelValue[0] + '%'" because when we update modelValue we sort model -->
-            <!-- <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb ui-slider__triple-thumb" r1 :data-percent="props.modelValue[0] + '%'" />
-            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb ui-slider__triple-thumb" r2 :data-percent="props.modelValue[1] + '%'" />
-            <div ref="thumbRef3" :style="thumbStyle3" class="ui-slider__thumb ui-slider__triple-thumb" r3 :data-percent="props.modelValue[2] + '%'" /> -->
-
-            <!-- Step 1 uncomment -->
-            <!-- <div ref="thumbRef1" :style="thumbStyle1" class="ui-slider__thumb ui-slider__triple-thumb" r1 />
-            <div ref="thumbRef2" :style="thumbStyle2" class="ui-slider__thumb ui-slider__triple-thumb" r2 />
-            <div ref="thumbRef3" :style="thumbStyle3" class="ui-slider__thumb ui-slider__triple-thumb" r3 /> -->
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
+            <template v-if="props.breakpoints">
+              <div v-for="(item, index) in breakpoints" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"></div>
+            </template>
             <div
               ref="thumbRef1"
               :style="thumbStyle1"
@@ -297,9 +305,9 @@ onMounted(() => {
         <!-- <InputRange v-if="props.mode === 'input'" v-model="inputRange" class="ui-focused-border" /> -->
       </div>
     </div>
-    <div v-if="helper" class="ui-slider__helper">
+    <!-- <div v-if="helper" class="ui-slider__helper">
       {{ helper }}
-    </div>
+    </div> -->
     <div v-if="error" class="ui-slider__error">
       {{ error }}
     </div>
