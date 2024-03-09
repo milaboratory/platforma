@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { StyleValue } from 'vue';
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, toRef, watch } from 'vue';
 import { deepEqual } from '@/lib/helpers/objects';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useFilteredList } from '@/lib/composition/useFilteredList';
@@ -59,7 +59,7 @@ const classes = computed(() => {
 
 const searchPhrase = ref<string>('');
 
-const options = useFilteredList(props.options, searchPhrase);
+const options = useFilteredList(toRef(props, 'options'), searchPhrase);
 
 const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
 
