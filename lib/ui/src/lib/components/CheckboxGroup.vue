@@ -16,7 +16,6 @@ function hasValue(value: unknown) {
 }
 
 function updateModel(value: unknown) {
-  console.log('update', value);
   const values = props.modelValue ?? [];
   emit('update:modelValue', hasValue(value) ? values.filter((v) => v !== value) : [...values, value]);
 }

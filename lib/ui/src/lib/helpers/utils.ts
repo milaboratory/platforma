@@ -117,3 +117,20 @@ export function debounce<F extends AnyFunction>(func: F, delay: number) {
     timerId = window.setTimeout(() => func(...args), delay);
   };
 }
+
+export function throttle<F extends AnyFunction>(callback: F, ms: number, trailing = true): (...args: Parameters<F>) => void {
+  let t = 0,
+    call: AnyFunction | null;
+  return function (this: unknown, ...args: Parameters<F>) {
+    call = () => {
+      callback.apply(this, args);
+      t = new Date().getTime() + ms;
+      call = null;
+      trailing &&
+        setTimeout(() => {
+          call && call();
+        }, ms);
+    };
+    if (new Date().getTime() > t) call();
+  };
+}
