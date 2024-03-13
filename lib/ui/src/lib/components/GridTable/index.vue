@@ -11,6 +11,7 @@ import ThCell from './ThCell.vue';
 import TRow from './TRow.vue';
 import { compareRecords } from './domain';
 import { throttle } from '@/lib/helpers/utils';
+import { useEventListener } from '@/lib';
 
 const minRowHeight = 40;
 
@@ -188,6 +189,8 @@ watchPostEffect(() => {
   unref(props.settings);
   nextTick(updateBodyHeight);
 });
+
+useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
 </script>
 
 <template>
