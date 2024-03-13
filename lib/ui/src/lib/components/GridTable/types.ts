@@ -24,6 +24,10 @@ export type ColumnSettings = {
 
 export type ShowContextOptions = <T = string>(options: Option<T>[], onSelect: (op: T) => void) => void;
 
+export type ColumnEvent = 'delete:column' | 'expand:column';
+
+export type CellEvent = 'delete:row' | 'update:value';
+
 export type Settings = {
   columns: ColumnSettings[];
   rows: Record<string, unknown>[];
@@ -31,6 +35,8 @@ export type Settings = {
   autoLastColumn?: boolean;
   selfSort?: boolean;
   showContextOptions?: ShowContextOptions;
+  columnEvents?: ColumnEvent[];
+  cellEvents?: CellEvent[];
 };
 
 export type CellProps = {

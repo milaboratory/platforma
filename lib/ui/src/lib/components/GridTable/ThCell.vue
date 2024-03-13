@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import type { ColumnSettings, ShowContextOptions } from './types';
+import { columnEventOptions } from './constants';
+import type { ColumnEvent, ColumnSettings, ShowContextOptions } from './types';
 
 const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
 
 const props = defineProps<{
   col: ColumnSettings;
   showContextOptions?: ShowContextOptions;
+  columnEvents?: ColumnEvent[];
 }>();
 
 function rotate<T>(v: T, lst: T[]) {
@@ -14,26 +16,22 @@ function rotate<T>(v: T, lst: T[]) {
 }
 
 function onContextMenu() {
+  const columnEvents = props.columnEvents ?? [];
+
   if (!props.showContextOptions) {
     console.warn('inject showContextOptions interface for the table');
     return;
   }
 
-  props.showContextOptions(
-    [
-      // {
-      //   text: 'Delete column',
-      //   value: 'delete:column', // todo
-      // },
-      {
-        text: 'Fit content',
-        value: 'expand:column',
-      },
-    ],
-    (op) => {
-      emit(op as 'delete:column' | 'expand:column' | 'change:sort', props.col.name);
-    },
-  );
+  const options = columnEventOptions.filter((opt) => columnEvents.includes(opt.value));
+
+  if (!options.length) {
+    return;
+  }
+
+  props.showContextOptions(options, (op) => {
+    emit(op, props.col.name);
+  });
 }
 
 function onSort(colName: string, _v: 'DESC' | 'ASC' | undefined) {

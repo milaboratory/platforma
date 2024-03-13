@@ -168,6 +168,7 @@ function onExpand(colName: string) {
   const width = props.settings.rows.reduce((width, row) => {
     const length = utils.call(() => {
       const value = row[colName];
+
       if (value && typeof value === 'object' && 'segments' in value) {
         const segments = value['segments'] as { sequence: string }[];
         return segments.map((s) => s.sequence).join('').length;
@@ -201,7 +202,8 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
         v-for="(col, i) in columnsRef"
         :key="i"
         :col="col"
-        :show-context-options="props.settings.showContextOptions"
+        :show-context-options="settings.showContextOptions"
+        :column-events="settings.columnEvents"
         @delete:column="$emit('delete:column', $event)"
         @change:sort="$emit('change:sort', $event)"
         @expand:column="onExpand($event)"
@@ -219,6 +221,8 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
           v-for="(cell, k) in row.cells"
           :key="k"
           :cell="cell"
+          :show-context-options="settings.showContextOptions"
+          :cell-events="settings.cellEvents"
           @click.stop="$emit('click:cell', cell)"
           @delete:row="$emit('delete:row', $event)"
           @update:value="$emit('update:value', $event)"
