@@ -13,12 +13,21 @@ const options = generate(100, (i) => ({
   text: `Option ${i}`,
   value: i,
 }));
+
+const optionsTitleAndDescription = generate(100, (i) => ({
+  text: { title: `Title ${i}`, description: `Description ${i}` },
+  // value: {
+  //   i,
+  // },
+  value: i,
+}));
 </script>
 
 <template>
   <layout>
     <split name="Multi Dropdown" style="min-height: 600px">
       {{ data.value }}
+      <multi-dropdown v-model="data.value" placeholder="Hello" label="Placeholder" :options="optionsTitleAndDescription" />
       <multi-dropdown v-model="data.value" placeholder="Hello" label="Placeholder" :options="options" />
       <multi-dropdown v-model="data.value" label="Label" :options="options" />
       <multi-dropdown v-model="data.value" label="Has tooltip" :options="options">

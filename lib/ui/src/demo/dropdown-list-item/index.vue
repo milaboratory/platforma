@@ -36,6 +36,87 @@ const propsDescription = {
       <div>
         <h3 class="text-h3 h3">Examles</h3>
         <div class="container">
+          <h3 class="text-h3 h3">Title and description SMALL</h3>
+          <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
+            <DropdownListItem :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }" />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              is-selected
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: `Description with some data ${lorem}` }, value: 'any value' }"
+              is-hovered
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: `Description with some data ${lorem}` }, value: 'any value' }"
+              use-checkbox
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+              is-selected
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+            />
+            <DropdownListItem
+              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              is-selected
+            />
+            <DropdownListItem
+              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+            />
+          </div>
+        </div>
+        <div class="container">
+          <h3 class="text-h3 h3">Title and description MEDIUM</h3>
+          <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              is-selected
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              is-hovered
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+              is-selected
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              is-selected
+              size="medium"
+            />
+            <DropdownListItem
+              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              use-checkbox
+              size="medium"
+            />
+          </div>
+        </div>
+
+        <div class="container">
           <h3 class="text-h3 h3">Small size</h3>
           <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
             <DropdownListItem :item="{ text: 'Just item', value: 'any value' }" />

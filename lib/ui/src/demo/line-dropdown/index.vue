@@ -57,6 +57,13 @@ const itemsLong = generate(300, (i) => ({
   },
 }));
 
+const itemsTitleAndDescription = generate(300, (i) => ({
+  text: { title: `Title ${i}`, description: `${lorem}` },
+  value: {
+    i,
+  },
+}));
+
 const model0 = ref({ i: 0 });
 const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
@@ -100,13 +107,16 @@ const propsDescription = {
 <template>
   <Layout>
     <Split name="Line Dropdown">
+      <div>
+        <LineDropdown v-model="model0" :options="itemsTitleAndDescription" prefix="Option:" />
+      </div>
       <div style="display: flex">
         <LineDropdown v-model="model0" :options="items0" prefix="Option:" :input-max-width="'400px'" clearable>
           <template #item="slotProps">
             <DropdownListItem v-bind="slotProps" :size="'small'" />
           </template>
         </LineDropdown>
-        <LineDropdown v-model="model0" :options="itemsLong" prefix="Option:" :input-max-width="'400px'" :input-width="'150px'" />
+        <LineDropdown v-model="model0" :options="itemsLong" prefix="Option:" />
         <LineDropdown v-model="model1" :options="items1" prefix="List:" :disabled="true" />
         <LineDropdown v-model="model1" :options="items1" prefix="List:" clearable />
         <LineDropdown v-model="model2" mode="tabs" :options="items2" prefix="Tab:" :tabs-container-styles="{ maxWidth: '700px' }" clearable />

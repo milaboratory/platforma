@@ -85,7 +85,12 @@ const filteredOptionsRef = computed(() => {
           const _search = data.search.toLowerCase();
 
           if (opt.text) {
-            return opt.text.toLowerCase().includes(_search);
+            // return opt.text.toLowerCase().includes(_search);
+            if (typeof opt.text === 'object') {
+              return opt.text.title.toLowerCase().includes(_search);
+            } else {
+              return opt.text.toLowerCase().includes(_search);
+            }
           }
 
           if (typeof opt.value === 'string') {
@@ -105,7 +110,11 @@ const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
 function selectItem(v: unknown) {
   const values = unref(selectedValuesRef);
-  emitModel(values.includes(v) ? values.filter((it) => it !== v) : [...values, v]);
+  const filtered = values.filter((it) => {
+    return unref(it) !== unref(v);
+  });
+
+  emitModel(values.includes(v) ? filtered : [...filtered, v]);
   data.search = '';
   // data.open = false;
   rootRef?.value?.focus();
@@ -218,7 +227,7 @@ watchPostEffect(() => {
         />
         <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
           <Chip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="closeItem(opt.value)">
-            {{ opt.text || opt.value }}
+            {{ (typeof opt.text === 'object' ? opt.text.title : opt.text) || opt.value }}
           </Chip>
         </div>
         <div class="arrow" @click.stop="toggle" />
@@ -237,7 +246,7 @@ watchPostEffect(() => {
       <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
         <div class="ui-multi-dropdown__open-chips-conteiner">
           <Chip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop @close="closeItem(opt.value)">
-            {{ opt.text || opt.value }}
+            {{ (typeof opt.text === 'object' ? opt.text.title : opt.text) || opt.value }}
           </Chip>
         </div>
         <DropdownListItem

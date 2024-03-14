@@ -4,17 +4,27 @@
     padding: 8px 12px;
     display: flex;
     align-items: center;
+    // flex-direction: column;
+    min-height: 40px;
 
     &__small {
         padding: 4px 12px;
+        min-height: 32px;
+    }
+
+    &__title-container {
+        // height: 24px;
+        display: flex;
+        // align-items: center;
+        margin-right: 8px;
+        flex-grow: 1;
+        flex-direction: column;
     }
 
     &__title {
-        // height: 24px;
+        line-height: 24px !important;
         display: flex;
         align-items: center;
-        margin-right: 8px;
-        flex-grow: 1;
     }
 
     &__icon {
@@ -30,6 +40,7 @@
 
     &:hover {
         background-color: var(--bg-elevated-02);
+        cursor: pointer;
     }
 
     &__selected {
@@ -46,5 +57,9 @@
         margin-right: 8px;
         background-color: red;
         @include mask(url(./images/24_checkbox-checked-dark.svg), 24px);
+    }
+
+    &__description {
+        color: var(--color-txt-03);
     }
 }

@@ -20,7 +20,7 @@ export type Position = Omit<DOMRect, 'toJSON'> & {
 };
 
 export type Option<T = unknown> = {
-  text: string;
+  text: string | { title: string; description: string };
   value: T;
 };
 

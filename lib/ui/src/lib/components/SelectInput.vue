@@ -65,7 +65,16 @@ const selectedIndex = computed(() => {
 });
 
 const textValue = computed(() => {
-  return props.options.find((o) => deepEqual(o.value, props.modelValue))?.text || props.modelValue;
+  const item: Option | undefined = props.options.find((o) => deepEqual(o.value, props.modelValue));
+  if (item) {
+    if (item) {
+      if (typeof item.text === 'object') {
+        return item.text.title;
+      }
+    }
+  }
+
+  return item?.text || props.modelValue;
 });
 
 const computedPlaceholder = computed(() => {
@@ -93,11 +102,15 @@ const filteredRef = computed(() => {
   const options = optionsRef.value;
 
   if (data.search) {
-    return options.filter((o) => {
+    return options.filter((o: Option) => {
       const search = data.search.toLowerCase();
 
       if (o.text) {
-        return o.text.toLowerCase().includes(search);
+        if (typeof o.text === 'object') {
+          return o.text.title.toLowerCase().includes(search);
+        } else {
+          return o.text.toLowerCase().includes(search);
+        }
       }
 
       if (typeof o.value === 'string') {

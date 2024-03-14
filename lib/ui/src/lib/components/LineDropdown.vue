@@ -63,17 +63,22 @@ const options = useFilteredList(toRef(props, 'options'), searchPhrase);
 
 const canShowClearBtn = computed<boolean>(() => !!(props.clearable && data.isOpen && props.modelValue && modelText.value));
 
-const modelText = computed(() => {
+const modelText = computed<string>(() => {
   if (props.modelValue) {
     const index = getIndexForModelInItems();
     if (index !== -1) {
-      return props.options[index]['text'];
+      const item = props.options[index];
+      if (typeof item['text'] === 'object') {
+        return item['text']['title'];
+      } else {
+        return item['text'];
+      }
     }
   }
   return '';
 });
 
-const inputValue = computed(() => {
+const inputValue = computed<string>(() => {
   if (data.isOpen) {
     if (searchPhrase.value && searchPhrase.value.length >= inputValue.value.length - 1) {
       return searchPhrase.value;
