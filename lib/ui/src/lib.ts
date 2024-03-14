@@ -11,6 +11,7 @@ import BtnGhost from '@/lib/components/BtnGhost.vue';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import TextField from '@/lib/components/TextField.vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
+import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
 import UiCheckbox from '@/lib/components/UiCheckbox.vue';
@@ -32,6 +33,7 @@ import { useLocalStorage } from '@/lib/composition/useLocalStorage';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { useHover } from '@/lib/composition/useHover';
 import { useMouse } from '@/lib/composition/useMouse';
+import { useSortable } from './lib/composition/useSortable';
 import type { MaybeRef } from '@/lib/types.ts';
 
 export {
@@ -42,6 +44,7 @@ export {
   TextField,
   SelectInput,
   MultiDropdown,
+  LineDropdown,
   BtnGroup,
   BtnGhost,
   BtnLink,
@@ -66,6 +69,7 @@ export {
   useMouseCapture,
   useHover,
   useMouse,
+  useSortable,
 };
 
 // types

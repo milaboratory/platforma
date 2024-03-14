@@ -30,7 +30,6 @@ const onWheel = (e: WheelEvent) => {
 
 function updateTop(v: number) {
   tapIf(unref(containerRef), (el) => {
-    console.log('update top');
     el.scrollTop = v;
     updateState(el);
   });

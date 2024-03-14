@@ -7,6 +7,11 @@ export const routes = [
     component: () => import('@/demo/form/index.vue'),
   },
   {
+    name: 'Long text',
+    path: '/long-text',
+    component: () => import('@/demo/text-component/index.vue'),
+  },
+  {
     name: 'Dropdown list item',
     path: '/dropdownlistitem',
     component: () => import('@/demo/dropdown-list-item/index.vue'),
@@ -80,6 +85,11 @@ export const routes = [
     name: 'Grid Table',
     path: '/grid-table',
     component: () => import('@/demo/grid-table/index.vue'),
+  },
+  {
+    name: 'Use Sortable',
+    path: '/use-sortable',
+    component: () => import('@/demo/useSortable/index.vue'),
   },
   {
     name: 'Test',

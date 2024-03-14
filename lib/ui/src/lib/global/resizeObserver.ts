@@ -16,4 +16,5 @@ export function onResizeElement(el: Element, cb: () => void) {
 
 export function unobserve(el: Element) {
   resizeObserver.unobserve(el);
+  cm.delete(el);
 }

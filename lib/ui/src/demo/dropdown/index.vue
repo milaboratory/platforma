@@ -5,11 +5,10 @@ import { reactive } from 'vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
 import GeneFeature from '@/lib/components/GeneFeatureDropdown/index.vue';
 import { generate } from '@/lib/helpers/functions';
-
-const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
+import { faker } from '@faker-js/faker';
 
 const options = generate(100, (i) => ({
-  text: `Option ${i} ${lorem}`,
+  text: `${i}: ${faker.lorem.sentence({ min: 1, max: 10 })}`,
   value: {
     i,
   },

@@ -57,7 +57,7 @@ const itemsLong = generate(300, (i) => ({
   },
 }));
 
-const model0 = ref(undefined);
+const model0 = ref({ i: 0 });
 const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
 
