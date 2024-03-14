@@ -96,6 +96,7 @@ watch(
     realtimeVal.value = val;
   },
 );
+
 function round(value: number) {
   const v = clamp(value, props.min, props.max);
   // This is the same as Math.round(v / props.step) * props.step but here we need this magic to avoid numbers like 3.00000000000000000004
@@ -126,8 +127,6 @@ function updateModelValue(event: Event) {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }) {
-  console.log(e.code);
-
   if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
     e.preventDefault();
   }

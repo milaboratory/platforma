@@ -61,16 +61,12 @@ const localValue2 = computed(() => clamp((props.modelValue[1] ?? 0) + data.delta
 const localValue3 = computed(() => clamp((props.modelValue[2] ?? 0) + data.deltaValue3, props.min, props.max));
 
 const error = computed(() => {
-  const v = props.modelValue;
+  const v = props.modelValue as unknown;
 
-  let isValidModel = true;
-  v.forEach((val: number) => {
-    if (!Number.isFinite(val)) {
-      isValidModel = false;
-    }
-  });
-  if (v.length > 3 || v.length < 3 || !isValidModel) {
-    return 'Expected model [number, number]';
+  const isValidModel = Array.isArray(v) && v.length === 3 && v.every((it) => Number.isFinite(it));
+
+  if (!isValidModel) {
+    return 'Expected model [number, number, number]';
   }
 
   const errors: string[] = [];

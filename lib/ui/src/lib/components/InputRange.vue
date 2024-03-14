@@ -25,19 +25,21 @@ const isFocused = ref(false);
 
 const classes = computed(() => (isFocused.value ? 'ui-input-range-focused' : 'ui-input-range-focused'));
 
-const valuesModelText = computed({
+const valuesModel = computed({
   get() {
     return {
-      left: Math.min(...props.modelValue),
+      left: Math.min(...props.modelValue), // dangerous....
       right: Math.max(...props.modelValue),
     };
   },
   set() {},
 });
+
 watch(
-  () => valuesModelText.value,
+  () => valuesModel.value,
   (value) => (data.left = value.left) && (data.right = value.right),
 );
+
 // watch(
 //   () => props.modelValue,
 //   (value: [number, number]) => {
@@ -70,11 +72,12 @@ function validateInput(isLeft: boolean, event: Event) {
   }
 }
 </script>
+
 <template>
   <!-- {{ data }} -->
   <div :class="classes" class="ui-input-range" v-bind="$attrs">
     <input
-      v-model="valuesModelText.left"
+      v-model="valuesModel.left"
       class="text-s"
       type="text"
       @change="updateModel"
@@ -84,7 +87,7 @@ function validateInput(isLeft: boolean, event: Event) {
     />
     <div class="ui-input-range__separator">{{ props.separator }}</div>
     <input
-      v-model="valuesModelText.right"
+      v-model="valuesModel.right"
       class="text-s"
       type="text"
       @change="updateModel"

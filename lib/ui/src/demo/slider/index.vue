@@ -9,9 +9,9 @@ import BtnSecondary from '@/lib/components/BtnSecondary.vue';
 
 const value = ref(2);
 const value2 = ref<[number, number]>([2, 15]);
-const invalidModel = ref([1, 2, 3]);
-const invalidModel2 = ref([1, '2']);
-const modelTriple = ref([2, 20, 30]);
+const invalidModel = ref([1, 2, 3] as unknown as [number, number]); // to check runtime validation
+const invalidModel2 = ref([1, '2'] as unknown as [number, number]); // to check runtime validation
+const modelTriple = ref([2, 20, 30] as [number, number, number]);
 
 // const lorem =
 //   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
@@ -104,6 +104,7 @@ const modelTriple = ref([2, 20, 30]);
     </split>
   </layout>
 </template>
+
 <style lang="scss" scoped>
 h4 {
   font-family: RoadRadio;

@@ -62,18 +62,15 @@ const range = computed(() => props.max - props.min);
 const localValue1 = computed(() => {
   return clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max);
 });
+
 const localValue2 = computed(() => clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
 
 const error = computed(() => {
-  const v = props.modelValue;
+  const v = props.modelValue as unknown;
 
-  let isValidModel = true;
-  v.forEach((val: number) => {
-    if (!Number.isFinite(val)) {
-      isValidModel = false;
-    }
-  });
-  if (v.length > 2 || v.length < 2 || !isValidModel) {
+  const isValidModel = Array.isArray(v) && v.length === 2 && v.every((it) => Number.isFinite(it));
+
+  if (!isValidModel) {
     return 'Expected model [number, number]';
   }
 
@@ -116,6 +113,7 @@ watch(
 useMouseCapture(thumbRef1, (ev) => {
   tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
     const { dx } = ev;
+
     data.deltaValue1 = (dx / rect.width) * range.value;
 
     leftDelta.value = round(clamp((props.modelValue[0] ?? 0) + data.deltaValue1, props.min, props.max));
@@ -132,6 +130,7 @@ useMouseCapture(thumbRef1, (ev) => {
 useMouseCapture(thumbRef2, (ev) => {
   tapIf(unref(barRef)?.getBoundingClientRect(), (rect) => {
     const { dx } = ev;
+
     data.deltaValue2 = (dx / rect.width) * range.value;
 
     rightDelta.value = round(clamp((props.modelValue[1] ?? 0) + data.deltaValue2, props.min, props.max));
@@ -158,18 +157,10 @@ function round(value: number) {
 }
 
 function setModelValue(value: [number, number]) {
-  emit(
-    'update:modelValue',
-    value,
-    // value.sort(function (a, b) {
-    //   return a - b;
-    // }),
-  );
+  emit('update:modelValue', value);
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
-  console.log(e.code, index);
-
   if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
     e.preventDefault();
   }

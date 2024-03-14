@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Form',
+    path: '/',
+    component: () => import('@/demo/form/index.vue'),
+  },
+  {
     name: 'Dropdown list item',
     path: '/dropdownlistitem',
     component: () => import('@/demo/dropdown-list-item/index.vue'),
@@ -15,11 +20,6 @@ export const routes = [
     name: 'Line dropdown',
     path: '/line-dropdown',
     component: () => import('@/demo/line-dropdown/index.vue'),
-  },
-  {
-    name: 'Form',
-    path: '/',
-    component: () => import('@/demo/form/index.vue'),
   },
   {
     name: 'Text Field',
