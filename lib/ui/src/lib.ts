@@ -33,6 +33,7 @@ import { useLocalStorage } from '@/lib/composition/useLocalStorage';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { useHover } from '@/lib/composition/useHover';
 import { useMouse } from '@/lib/composition/useMouse';
+import { useSortable } from './lib/composition/useSortable';
 import type { MaybeRef } from '@/lib/types.ts';
 
 export {
@@ -68,6 +69,7 @@ export {
   useMouseCapture,
   useHover,
   useMouse,
+  useSortable,
 };
 
 // types

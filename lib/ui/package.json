@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-uikit",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
