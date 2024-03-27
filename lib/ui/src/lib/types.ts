@@ -43,3 +43,5 @@ export const maskIcons = [
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];
+
+export type SliderMode = 'input' | 'text';

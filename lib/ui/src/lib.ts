@@ -3,6 +3,7 @@ import GridTable from '@/lib/components/GridTable/index.vue';
 import GeneFeatureDropdown from '@/lib/components/GeneFeatureDropdown/index.vue';
 import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
 import type * as GridTableTypes from './lib/components/GridTable/types';
+import type { MaskIconName } from '@/lib/types.ts';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
 import BtnSecondary from '@/lib/components/BtnSecondary.vue';
@@ -33,6 +34,7 @@ import { useLocalStorage } from '@/lib/composition/useLocalStorage';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { useHover } from '@/lib/composition/useHover';
 import { useMouse } from '@/lib/composition/useMouse';
+import { useSortable } from './lib/composition/useSortable';
 import type { MaybeRef } from '@/lib/types.ts';
 
 export {
@@ -68,7 +70,8 @@ export {
   useMouseCapture,
   useHover,
   useMouse,
+  useSortable,
 };
 
 // types
-export type { MaybeRef, GridTableSettings, GridTableTypes };
+export type { MaybeRef, GridTableSettings, GridTableTypes, MaskIconName };
