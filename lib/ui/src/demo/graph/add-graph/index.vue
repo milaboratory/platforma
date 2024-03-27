@@ -35,8 +35,6 @@ import { reactive, ref } from 'vue';
 type AvailableImagesKeys = keyof typeof images;
 type AvailableGroups = (typeof groups)[number];
 
-const selectedItem = ref('');
-
 const images = {
   AreaChart: { image: AreaChart, title: 'Area Chart', id: '1' },
   BarChart: { image: BarChart, title: 'Bar Chart', id: '2' },
@@ -109,14 +107,21 @@ const items = reactive<{ data: { group: AvailableGroups; items: (typeof images)[
     },
   ],
 });
+
+function selectedItem(id: string) {
+  console.log('selected item', id);
+}
+
+function closeDialog() {
+  console.log('close event called');
+}
 </script>
 
 <template>
   <Layout>
     <Split name="DropdownListItem" :hide-second="true">
       <div style="padding: 20px; background-color: red">
-        {{ selectedItem }}
-        <AddGraph :items="items.data" @selected="selectedItem = $event" />
+        <AddGraph :items="items.data" @selected="selectedItem" @close="closeDialog" />
       </div>
     </Split>
   </Layout>

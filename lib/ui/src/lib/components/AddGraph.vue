@@ -9,6 +9,7 @@ type Data = { group: string; items: { image: string; title: string; id: string }
 const props = defineProps<{ items: Data }>();
 defineEmits<{
   (e: 'selected', id: string): void;
+  (e: 'close'): void;
 }>();
 const activeGroup = ref(props.items[0].group);
 const rightPanel = ref<HTMLElement>();
@@ -53,7 +54,7 @@ onMounted(() => {
 </script>
 <template>
   <div class="add-graph">
-    <btn-ghost icon="close" size="medium" />
+    <btn-ghost icon="close" size="medium" @click="$emit('close')" />
     <div class="add-graph__title">Add Graph</div>
     <div class="add-graph__wrapper">
       <div class="add-graph__left">
