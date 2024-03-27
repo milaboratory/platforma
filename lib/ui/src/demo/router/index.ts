@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Add graph',
+    path: '/add-graph',
+    component: () => import('@/demo/graph/add-graph/index.vue'),
+  },
+  {
     name: 'Long text',
     path: '/long-text',
     component: () => import('@/demo/text-component/index.vue'),

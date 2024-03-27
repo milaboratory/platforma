@@ -8,9 +8,12 @@
 
 @mixin size($w: 24px, $h: null) {
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -18,9 +21,12 @@
 @mixin icon($bg, $w: 24px, $h: null) {
   background: $bg no-repeat center;
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -29,9 +35,12 @@
   background: $bg-light no-repeat center;
 
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -46,9 +55,12 @@
   mask-size: $w;
   -webkit-mask-size: $w;
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -71,6 +83,7 @@
     background-color: transparent;
     display: block;
   }
+
   &::-webkit-scrollbar-thumb {
     background: var(--color-ic-02);
     border-radius: 5px;
@@ -79,6 +92,7 @@
   @if $y {
     overflow-y: $over;
   }
+
   @if $x {
     overflow-x: $over;
   }
@@ -99,6 +113,7 @@
 
 @mixin border-fix($offset: 0) {
   position: relative;
+
   &::after {
     content: '';
     position: absolute;
@@ -138,4 +153,29 @@
   font-weight: 500;
   line-height: 16px;
   margin-top: 6px;
+}
+
+@mixin scrollbarTable($y: true, $x: false) {
+  @if $y {
+    overflow-y: auto;
+  }
+
+  @if $x {
+    overflow-x: auto;
+  }
+
+  &::-webkit-scrollbar {
+    width: 7px;
+    height: 8px;
+    background-color: #E1E3EB;
+    display: block;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #fff;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-right: 1px solid transparent;
+  }
 }
