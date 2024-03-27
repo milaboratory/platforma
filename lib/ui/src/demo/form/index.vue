@@ -41,11 +41,12 @@ const helper = computed(() => (data.state === 'helper' ? data.helper : ''));
 
 <template>
   <layout>
-    <split name="Text Field">
+    <split name="Form">
       <btn-group v-model="data.state" label="Variants" :helper="helper" :error="error" :options="options" />
       <text-field v-model="data.text" label="Label Text" :helper="helper" :error="error" />
       <select-input v-model="data.text" label="Label Dropdown" :options="options" :helper="helper" :error="error" />
       <slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" />
+      <slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" :breakpoints="true" />
       <toggle-switch v-model="data.on" />
       <toggle-switch v-model="data.on" label="With label" />
     </split>
