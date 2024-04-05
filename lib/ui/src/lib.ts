@@ -23,6 +23,7 @@ import Tooltip from '@/lib/components/Tooltip.vue';
 import ToggleSwitch from '@/lib/components/ToggleSwitch.vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
+import Slider from '@/lib/components/Slider.vue';
 import { usePosition } from '@/lib/composition/usePosition';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useEventListener } from '@/lib/composition/useEventListener';
@@ -59,6 +60,7 @@ export {
   GridTable,
   GeneFeatureDropdown,
   ContextProvider,
+  Slider,
   useClickOutside,
   useEventListener,
   useLabelNotch,
