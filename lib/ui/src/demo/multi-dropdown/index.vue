@@ -11,7 +11,9 @@ const data = reactive({
 
 const options = generate(100, (i) => ({
   text: `Option ${i}`,
-  value: i,
+  value: {
+    i,
+  },
 }));
 </script>
 
