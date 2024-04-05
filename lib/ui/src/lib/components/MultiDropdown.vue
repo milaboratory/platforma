@@ -8,6 +8,7 @@ import { useLabelNotch } from '@/lib/composition/useLabelNotch';
 import type { Option } from '@/lib/types';
 import { scrollIntoView } from '@/lib/helpers/dom';
 import DropdownListItem from '@/lib/components/DropdownListItem.vue';
+import { deepEqual, deepIncludes } from '../helpers/objects';
 
 const emit = defineEmits(['update:modelValue']);
 const emitModel = (v: unknown[]) => emit('update:modelValue', v);
@@ -48,32 +49,23 @@ const data = reactive({
 
 function updateSelected() {
   data.activeOption = tap(
-    filteredOptionsRef.value.findIndex((o) => o.value === props.modelValue),
+    filteredOptionsRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
     (v) => (v < 0 ? 0 : v),
   );
 }
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
 
-// const textValue = computed(() => {
-//   const selectedValues = unref(selectedValuesRef);
-//   return props.options
-//     .filter((o) => selectedValues.includes(o.value))
-//     .map((o) => o.text)
-//     .join(', ');
-// });
-
 const placeholderRef = computed(() => {
   if (data.open && props.modelValue.length > 0) {
     return props.placeholder;
-    // return String(textValue.value);
   }
 
   return props.modelValue.length > 0 ? '' : props.placeholder;
 });
 
 const selectedOptionsRef = computed(() => {
-  return props.options.filter((opt) => unref(selectedValuesRef).includes(opt.value));
+  return props.options.filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
 });
 
 const filteredOptionsRef = computed(() => {
@@ -97,7 +89,7 @@ const filteredOptionsRef = computed(() => {
       : [...props.options]
   ).map((opt) => ({
     ...opt,
-    selected: selectedValues.includes(opt.value),
+    selected: deepIncludes(selectedValues, opt.value),
   }));
 });
 
@@ -105,14 +97,13 @@ const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
 function selectItem(v: unknown) {
   const values = unref(selectedValuesRef);
-  emitModel(values.includes(v) ? values.filter((it) => it !== v) : [...values, v]);
+  emitModel(deepIncludes(values, v) ? values.filter((it) => !deepEqual(it, v)) : [...values, v]);
   data.search = '';
-  // data.open = false;
   rootRef?.value?.focus();
 }
 
 function closeItem(d: unknown) {
-  emitModel(unref(selectedValuesRef).filter((v) => v !== d));
+  emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
 }
 
 function setFocusOnInput() {
@@ -251,19 +242,6 @@ watchPostEffect(() => {
           use-checkbox
           @click.stop="selectItem(item.value)"
         />
-        <!-- <div
-          v-for="(opt, i) in filteredOptionsRef"
-          :key="i"
-          class="option"
-          :class="{
-            active: i === data.activeOption,
-            selected: opt.selected,
-          }"
-          @click="selectItem(opt.value)"
-        >
-          <div class="ui-multi-dropdown__checkmark" />
-          <span>{{ opt.text }}</span>
-        </div> -->
         <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
       </div>
       <double-contour class="ui-multi-dropdown__contour" />

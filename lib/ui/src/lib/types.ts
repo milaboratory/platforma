@@ -39,6 +39,7 @@ export const maskIcons = [
   'filters',
   'local',
   'server-on',
+  'close',
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];

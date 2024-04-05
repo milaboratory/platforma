@@ -13,3 +13,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 
   return Object.keys(a).every((k) => deepEqual(a[k], b[k]));
 }
+
+export function deepIncludes<T>(arr: T[], search: T) {
+  return arr.some((it) => deepEqual(it, search));
+}
