@@ -16,6 +16,7 @@ import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
 import UiCheckbox from '@/lib/components/UiCheckbox.vue';
+import Checkbox from '@/lib/components/Checkbox.vue';
 import CheckboxGroup from '@/lib/components/CheckboxGroup.vue';
 import WebCheckbox from '@/lib/components/WebCheckbox'; // experimental web component
 import Chip from '@/lib/components/Chip.vue';
@@ -52,6 +53,7 @@ export {
   BtnLink,
   UiCheckbox,
   WebCheckbox,
+  Checkbox,
   CheckboxGroup,
   Chip,
   Tooltip,

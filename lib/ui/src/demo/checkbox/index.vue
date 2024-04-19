@@ -2,6 +2,7 @@
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
 import UiCheckbox from '@/lib/components/UiCheckbox.vue';
+import Checkbox from '@/lib/components/Checkbox.vue';
 import CheckboxGroup from '@/lib/components/CheckboxGroup.vue';
 import { reactive } from 'vue';
 import WebCheckbox from '@/lib/components/WebCheckbox';
@@ -54,11 +55,14 @@ WebCheckbox.define();
       </div>
       <div class="flex-row" style="gap: 12px">
         <web-checkbox :disabled="data.disabled" :checked="data.checked" @change="onChanged" />
-        <span>Web component</span>
+        <span>Web component (TODO)</span>
       </div>
       <div class="flex-row" style="gap: 12px">Values: {{ data.values }}</div>
       <div class="flex-row" style="gap: 12px">
         <checkbox-group v-model="data.values" label="Label" :disabled="data.disabled" :options="options" />
+      </div>
+      <div>
+        <checkbox v-model="data.checked" :disabled="data.disabled">Checkbox with label</checkbox>
       </div>
     </split>
   </layout>
