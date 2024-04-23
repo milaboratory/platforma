@@ -7,6 +7,11 @@ export const routes = [
     component: () => import('@/demo/form/index.vue'),
   },
   {
+    name: 'Mixcr',
+    path: '/mixcr',
+    component: () => import('@/demo/mixcr/index.vue'),
+  },
+  {
     name: 'Add graph',
     path: '/add-graph',
     component: () => import('@/demo/graph/add-graph/index.vue'),

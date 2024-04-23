@@ -1,3 +1,5 @@
+import type { Option } from '../types';
+
 export function call<R>(f: () => R): R {
   return f();
 }
@@ -133,4 +135,8 @@ export function throttle<F extends AnyFunction>(callback: F, ms: number, trailin
     };
     if (new Date().getTime() > t) call();
   };
+}
+
+export function listToOptions<T>(list: T[] | readonly T[]): Option<T>[] {
+  return list.map((value) => ({ text: String(value), value }));
 }
