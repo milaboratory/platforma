@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { MiXCR } from '@milaboratory/pl-core';
 import BtnGroup from './BtnGroup.vue';
-import { listToOptions } from '@/lib/helpers/utils';
 
 defineEmits(['update:modelValue']);
 
-const options = listToOptions(MiXCR.Constants.AlphabetValues());
+const options = MiXCR.Constants.AlphabetOptions();
 
 defineProps<{
   modelValue: MiXCR.Types.Alphabet;

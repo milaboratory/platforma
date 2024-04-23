@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import BtnGroup from './BtnGroup.vue';
 import { MiXCR } from '@milaboratory/pl-core';
-import { listToOptions } from '../helpers/utils';
 
 defineEmits(['update:modelValue']);
 
@@ -15,7 +14,7 @@ const props = withDefaults(
   },
 );
 
-const options = listToOptions(MiXCR.Constants.AbundanceMeasureValues());
+const options = MiXCR.Constants.AbundanceMeasureOptions();
 </script>
 
 <template>
