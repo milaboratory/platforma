@@ -1,8 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { BtnGroup } from '@milaboratory/pl-uikit';
+import BtnGroup from '@/lib/components/BtnGroup.vue';
 import { MiXCR } from '@milaboratory/pl-core';
-// import { getGeneTypeMatchOptions } from '../impl/CloneBrowser/Data/constants';
 
 defineEmits(['update:modelValue']);
 
