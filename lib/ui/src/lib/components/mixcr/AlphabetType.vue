@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { MiXCR } from '@milaboratory/pl-core';
-import BtnGroup from './BtnGroup.vue';
+import BtnGroup from '@/lib/components/BtnGroup.vue';
 
 defineEmits(['update:modelValue']);
 

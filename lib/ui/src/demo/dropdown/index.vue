@@ -3,7 +3,7 @@ import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
 import { reactive } from 'vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
-import GeneFeature from '@/lib/components/GeneFeatureDropdown/index.vue';
+import GeneFeature from '@/lib/components/mixcr/GeneFeatureDropdown/index.vue';
 import { generate } from '@/lib/helpers/functions';
 import { faker } from '@faker-js/faker';
 

@@ -1,6 +1,5 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
-import GeneFeatureDropdown from '@/lib/components/GeneFeatureDropdown/index.vue';
 import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
 import type * as GridTableTypes from './lib/components/GridTable/types';
 import type { MaskIconName } from '@/lib/types.ts';
@@ -39,13 +38,18 @@ import { useMouse } from '@/lib/composition/useMouse';
 import { useSortable } from './lib/composition/useSortable';
 import type { MaybeRef } from '@/lib/types.ts';
 
-// Specific
-import AlphabetType from '@/lib/components/AlphabetType.vue';
-import AbundanceMeasure from '@/lib/components/AbundanceMeasure.vue';
+// MiXCR
+import AlphabetType from '@/lib/components/mixcr/AlphabetType.vue';
+import AbundanceMeasure from '@/lib/components/mixcr/AbundanceMeasure.vue';
+import AbundanceType from '@/lib/components/mixcr/AbundanceType.vue';
+import GeneFeatureDropdown from '@/lib/components/mixcr/GeneFeatureDropdown/index.vue';
 
 export {
   AlphabetType,
   AbundanceMeasure,
+  AbundanceType,
+  GeneFeatureDropdown,
+  // Common
   ThemeSwitcher,
   BtnPrimary,
   BtnSecondary,
@@ -66,7 +70,6 @@ export {
   ToggleSwitch,
   MaskIcon,
   GridTable,
-  GeneFeatureDropdown,
   ContextProvider,
   Slider,
   useClickOutside,
