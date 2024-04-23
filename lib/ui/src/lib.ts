@@ -39,7 +39,13 @@ import { useMouse } from '@/lib/composition/useMouse';
 import { useSortable } from './lib/composition/useSortable';
 import type { MaybeRef } from '@/lib/types.ts';
 
+// Specific
+import AlphabetType from '@/lib/components/AlphabetType.vue';
+import AbundanceMeasure from '@/lib/components/AbundanceMeasure.vue';
+
 export {
+  AlphabetType,
+  AbundanceMeasure,
   ThemeSwitcher,
   BtnPrimary,
   BtnSecondary,
