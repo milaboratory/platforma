@@ -43,12 +43,16 @@ import AlphabetType from '@/lib/components/mixcr/AlphabetType.vue';
 import AbundanceMeasure from '@/lib/components/mixcr/AbundanceMeasure.vue';
 import AbundanceType from '@/lib/components/mixcr/AbundanceType.vue';
 import GeneFeatureDropdown from '@/lib/components/mixcr/GeneFeatureDropdown/index.vue';
+import GeneNameFormat from '@/lib/components/mixcr/GeneNameFormat.vue';
+import GeneType from '@/lib/components/mixcr/GeneType.vue';
 
 export {
   AlphabetType,
   AbundanceMeasure,
   AbundanceType,
   GeneFeatureDropdown,
+  GeneNameFormat,
+  GeneType,
   // Common
   ThemeSwitcher,
   BtnPrimary,
