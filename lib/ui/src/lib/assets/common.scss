@@ -6,6 +6,11 @@
     display: flex;
 }
 
+.d-flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
 .flex-justify-center {
     justify-content: center;
 }
@@ -17,6 +22,16 @@
 .flex-self-start {
     align-self: flex-start;
 }
+
+.flex-align-center {
+    align-items: center;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+
 
 .ui-focused-border {
 
