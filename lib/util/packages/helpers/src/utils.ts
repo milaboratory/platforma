@@ -147,3 +147,11 @@ export function *iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
 export function exhaustive(v: never, message: string): never {
   throw Error(message);
 }
+
+export type Matcher<T extends string, R = unknown> = {
+  [P in T]: () => R;
+};
+
+export function match<T extends string, R = unknown>(matcher: Matcher<T, R>) {
+  return (key: T) => matcher[key]();
+}
