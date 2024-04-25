@@ -10,6 +10,7 @@ span.ripple {
 
 .inner-border {
   position: relative;
+
   &::after {
     content: '';
     position: absolute;
@@ -32,19 +33,17 @@ span.ripple {
   --offset-left-x: calc(var(--label-offset-left-x) + var(--contour-offset));
 
   clip-path:
-      polygon(
-              0 0,
-              var(--offset-left-x) 0,
-              var(--offset-left-x) 12px,
-              var(--label-offset-right-x) 12px,
-              var(--label-offset-right-x) 0,
-              100% 0,
-              100% 100%,
-              0 100%,
-              0 0
-      );
+    polygon(0 0,
+      var(--offset-left-x) 0,
+      var(--offset-left-x) 12px,
+      var(--label-offset-right-x) 12px,
+      var(--label-offset-right-x) 0,
+      100% 0,
+      100% 100%,
+      0 100%,
+      0 0);
 
-  > div {
+  >div {
     position: absolute;
     top: var(--contour-offset);
     left: var(--contour-offset);
@@ -94,6 +93,7 @@ a.btn-link {
   &__light {
     display: none;
   }
+
   &__dark {
     display: block;
   }
@@ -116,4 +116,8 @@ a.btn-link {
   [data-theme="dark"] & {
     @include icon(url('./images/16_checkmark-dark.svg'), 16px);
   }
+}
+
+.ml-auto {
+  margin-left: auto;
 }

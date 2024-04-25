@@ -12,6 +12,11 @@ export const routes = [
     component: () => import('@/demo/mixcr/index.vue'),
   },
   {
+    name: 'Layout',
+    path: '/layout',
+    component: () => import('@/demo/layout/index.vue'),
+  },
+  {
     name: 'Add graph',
     path: '/add-graph',
     component: () => import('@/demo/graph/add-graph/index.vue'),
