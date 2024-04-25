@@ -2,6 +2,7 @@ import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
 import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
 import type * as GridTableTypes from './lib/components/GridTable/types';
+import type * as ManageModalTypes from './lib/components/ManageModal/types';
 import type { MaskIconName } from '@/lib/types.ts';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
 import BtnPrimary from '@/lib/components/BtnPrimary.vue';
@@ -100,4 +101,4 @@ export {
 };
 
 // types
-export type { MaybeRef, GridTableSettings, GridTableTypes, MaskIconName };
+export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, MaskIconName };
