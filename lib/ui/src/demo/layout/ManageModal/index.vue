@@ -1,25 +1,17 @@
 <script lang="ts" setup>
 import { computed, reactive } from 'vue';
 import ManageModal from '@/lib/components/ManageModal/index.vue';
-import type { ColumnInfo, ManageModalSettings } from '@/lib/components/ManageModal/types';
+import type { ManageModalSettings, Column } from '@/lib/components/ManageModal/types';
 import { strings } from '@milaboratory/helpers';
 import type { MySpec } from './domain';
 import First from './forms/First.vue';
 import Second from './forms/Second.vue';
+import Third from './forms/Third.vue';
+import { objects } from '@milaboratory/helpers';
 
 const data = reactive({
   open: false,
-  inputs: [
-    {
-      type: 'first',
-      value: false,
-    },
-    {
-      type: 'second',
-      age: 100,
-      title: 'Test',
-    },
-  ] as MySpec[],
+  inputs: [] as MySpec[],
   newInputs: undefined as unknown,
   test: 0,
 });
@@ -31,9 +23,9 @@ const entitiesRef = computed(() =>
   })),
 );
 
-const settings = computed(() => {
+const settings = computed<ManageModalSettings<MySpec>>(() => {
   const settings: ManageModalSettings<MySpec> = {
-    title: 'Manage me',
+    title: 'Manage items',
     columnSettings: [
       {
         title: 'One title',
@@ -51,12 +43,40 @@ const settings = computed(() => {
         defaultSpec: () => ({
           type: 'second',
           age: 100,
-          title: 'Default title',
+          title: '',
+          label: '',
+        }),
+        resolveTitle() {
+          return this.type === 'second' ? this.label : 'unknown';
+        },
+        refine() {
+          if (this.type === 'second' && !this.title) {
+            this.title = 'Second title refined';
+          }
+
+          return this;
+        },
+      },
+      {
+        title: 'Third title',
+        description: 'Third description',
+        component: Third,
+        defaultSpec: () => ({
+          type: 'third',
+          check: false,
+          title1: '...',
+          title2: '...',
+          title3: '...',
+          title4: '...',
+          title5: '...',
+          title6: '...',
+          title7: '...',
+          title8: '...',
         }),
       },
     ],
     items: entitiesRef.value,
-    defaultColumn() {
+    defaultColumnSettings() {
       return this.columnSettings[0];
     },
     findColumnSettings(s: MySpec) {
@@ -64,14 +84,19 @@ const settings = computed(() => {
         return it.defaultSpec().type === s.type;
       })!;
     },
-  };
+    validate(spec: unknown) {
+      if (objects.isObject(spec) && 'type' in spec && 'label' in spec) {
+        return typeof spec.label === 'string' && !!spec.label;
+      }
 
-  console.log('new settings ...');
+      return true;
+    },
+  };
 
   return settings;
 });
 
-const onUpdate = (columns: ColumnInfo[]) => {
+const onUpdate = (columns: Column[]) => {
   data.newInputs = columns;
   data.inputs = columns.map((col) => col.spec) as MySpec[];
   data.open = false;

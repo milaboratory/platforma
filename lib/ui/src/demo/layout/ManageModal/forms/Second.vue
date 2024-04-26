@@ -16,6 +16,8 @@ const props = defineProps<{
   column: Column<SecondSpec>;
 }>();
 
+const placeholder = computed(() => props.column.columnSettings?.title ?? '');
+
 const form = useFormState(
   toRef(props, 'column'),
   (v) => v,
@@ -41,7 +43,8 @@ const age = computed({
 <template>
   <div class="filter-form">
     <TextField v-model="age" label="Age" />
-    <TextField v-model="form.data.spec.title" label="Title" />
+    <TextField v-model="form.data.spec.label" label="Label" />
+    <TextField v-model="form.data.spec.title" label="Title" :placeholder="placeholder" />
   </div>
 </template>
 

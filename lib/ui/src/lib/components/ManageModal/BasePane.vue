@@ -3,10 +3,10 @@ import { objects } from '@milaboratory/helpers';
 import { computed, onMounted, reactive } from 'vue';
 import AddPane from './AddPane.vue';
 import EditPane from './EditPane.vue';
-import type { ManageModalSettings, ColumnInfo, Column } from './types';
+import type { ManageModalSettings, Column } from './types';
 
 const emit = defineEmits<{
-  (e: 'update:columns', value: ColumnInfo[]): void;
+  (e: 'update:columns', value: Column[]): void;
   (e: 'close'): void;
 }>();
 
@@ -17,17 +17,22 @@ const props = defineProps<{
 const form = reactive({
   addMode: false,
   columnId: undefined as string | undefined,
-  columns: [] as ColumnInfo[],
+  columns: [] as Column[],
+  isValid: true,
 });
 
-const storedColumns = computed<ColumnInfo[]>(() => {
+const checkIsValid = (spec: unknown) => {
+  return props.settings.validate ? props.settings.validate(spec) : true;
+};
+
+const storedColumns = computed<Column[]>(() => {
   return props.settings.items.map((e) => {
     const columnSettings = props.settings.findColumnSettings(e.spec);
     return {
       id: e.id,
-      title: columnSettings?.title ?? '...',
-      description: columnSettings?.description ?? '...', //
+      columnSettings,
       spec: e.spec ?? objects.deepClone(e.spec),
+      isValid: checkIsValid(e.spec),
     };
   });
 });
@@ -39,12 +44,12 @@ const selectColumnId = () => {
 };
 
 const addColumn = (column: Column) => {
-  const columnSettings = props.settings.findColumnSettings(column.spec);
+  const { columnSettings, spec, id } = column;
   form.columns.push({
-    id: column.id,
-    title: columnSettings?.title as string,
-    description: columnSettings?.description as string,
-    spec: column.spec,
+    id,
+    columnSettings,
+    spec: columnSettings.refine ? columnSettings.refine.apply(spec) : spec,
+    isValid: checkIsValid(spec),
   });
   form.addMode = false;
   form.columnId = form.columns[form.columns.length - 1]?.id;
@@ -59,9 +64,12 @@ const removeColumn = (columnId: string) => {
   selectColumnId();
 };
 
-const updateColumn = (v: { id: string; spec: unknown }) => {
+const updateColumn = (column: Column) => {
+  const { columnSettings, spec, id } = column;
   form.columns = form.columns.map((c) => {
-    return c.id === v.id ? ({ ...c, spec: v.spec } as ColumnInfo) : c;
+    return c.id === id
+      ? ({ ...c, spec: columnSettings.refine ? columnSettings.refine.apply(spec) : spec, isValid: checkIsValid(column.spec) } as Column)
+      : c;
   });
 };
 

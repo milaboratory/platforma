@@ -21,23 +21,30 @@ const form = reactive({
 
 watchEffect(() => {
   if (!form.column) {
+    const columnSettings = props.settings.defaultColumnSettings();
     form.column = {
       id: strings.uniqueId(),
-      spec: props.settings.defaultColumn().defaultSpec(),
+      columnSettings,
+      spec: columnSettings.defaultSpec(),
+      isValid: false,
     };
   }
 });
 
 const isReady = computed(() => form.column && form.column.spec);
 
+const columnSettings = computed(() => (form.column ? props.settings.findColumnSettings(form.column.spec) : undefined));
+
 const ColumnComponent = computed<Component<{ column: Column }> | undefined>(() => {
-  return form.column ? props.settings.findColumnSettings(form.column.spec)?.component : undefined;
+  return columnSettings.value?.component as Component<{ column: Column }> | undefined;
 });
 
-const selectForm = (s: ColumnSettings, index: number) => {
+const selectForm = (columnSettings: ColumnSettings, index: number) => {
   form.column = {
     id: strings.uniqueId(),
-    spec: s.defaultSpec(),
+    columnSettings,
+    spec: columnSettings.defaultSpec(),
+    isValid: false,
   };
   form.index = index;
 };
@@ -55,7 +62,7 @@ const addColumn = () => {
 
 <template>
   <div class="manage-columns form-modal" @click.stop>
-    <div class="form-modal__title">Add Column</div>
+    <div class="form-modal__title">{{ settings.addTitle ?? 'Add column' }}</div>
     <div class="left-right">
       <div>
         <div class="split__header">Type</div>
@@ -75,13 +82,19 @@ const addColumn = () => {
       <div>
         <div class="split__header">Settings</div>
         <div style="margin: 0 24px">
-          <component :is="ColumnComponent" v-if="ColumnComponent" :column="form.column" @update:column="updateColumn" />
+          <component
+            :is="ColumnComponent"
+            v-if="ColumnComponent"
+            :column="form.column"
+            :column-settings="columnSettings"
+            @update:column="updateColumn"
+          />
           <div v-if="!ColumnComponent">Not found</div>
         </div>
       </div>
     </div>
     <div class="action-buttons d-flex row gap-8 mt-auto">
-      <btn-primary :disabled="!isReady" @click.stop="addColumn">Add Column</btn-primary>
+      <btn-primary :disabled="!isReady" @click.stop="addColumn">{{ settings.addTitle ?? 'Add column' }}</btn-primary>
       <btn-ghost :justify-center="false" @click.stop="$emit('close')">Cancel</btn-ghost>
     </div>
   </div>
