@@ -6,6 +6,7 @@ import Tooltip from '@/lib/components/Tooltip.vue';
 
 type NumberInputProps = {
   modelValue: number | undefined;
+  disabled?: boolean;
   label?: string;
   placeholder?: string;
   step?: number;
@@ -22,7 +23,7 @@ const emit = defineEmits<{ (e: 'update:modelValue', number?: number): void }>();
 const root = ref<HTMLElement>();
 const slots = useSlots();
 const input = ref<HTMLInputElement>();
-const value = ref<string | undefined>(props.modelValue?.toString());
+// const localErrors = ref<string[]>([]);
 
 useLabelNotch(root);
 
@@ -30,13 +31,10 @@ const canRenderValue = ref(true);
 
 const computedValue = computed({
   get() {
-    // console.log('get');
     if (canRenderValue.value) {
       if (props.modelValue !== undefined) {
-        // const r = new Intl.NumberFormat(navigator.languages, { minimumFractionDigits: 5 }).format(props.modelValue);
-        const r = new Number(props.modelValue);
-        console.log(r, 'get R');
-        return r.toString();
+        const num = new Number(props.modelValue);
+        return num.toString();
       }
       return '';
     }
@@ -68,55 +66,103 @@ const computedValue = computed({
   },
 });
 
-const isIncrementDisable = computed(() => {
+const errors = computed(() => {
+  let ers: string[] = [];
+  if (props.errorMessage) {
+    ers.push(props.errorMessage);
+  }
+  if (!isNumeric(props.modelValue)) {
+    ers.push('Model value is not a number.');
+  } else {
+    if (props.minValue !== undefined && props.modelValue !== undefined && props.modelValue < props.minValue) {
+      ers.push(`Model value must be higher than ${props.minValue}`);
+    }
+    if (props.maxValue !== undefined && props.modelValue !== undefined && props.modelValue > props.maxValue) {
+      ers.push(`Model value must be less than ${props.maxValue}`);
+    }
+  }
+
+  ers = [...ers];
+
+  return ers.join(' ');
+});
+
+const isIncrementDisabled = computed(() => {
+  if (props.maxValue && props.modelValue !== undefined) {
+    if ((props.modelValue || 0) + props.step > props.maxValue) {
+      return true;
+    }
+  }
+
   return false;
 });
 
-const isDecrementDisable = computed(() => {
+const isDecrementDisabled = computed(() => {
+  if (props.minValue && props.modelValue !== undefined) {
+    if ((props.modelValue || 0) - props.step < props.minValue) {
+      return true;
+    }
+  }
+
   return false;
 });
 
-function isNumeric(str: string) {
-  if (typeof str != 'string') return false;
-  return !isNaN(+str) && !isNaN(parseFloat(str));
+function isNumeric(str: string | number | undefined) {
+  if (str !== undefined) {
+    str = str?.toString();
+    return !isNaN(+str) && !isNaN(parseFloat(str));
+  }
+  return false;
 }
 
 function increment() {
-  if (props.modelValue === undefined) {
-    computedValue.value = (0).toString();
-  } else {
-    computedValue.value = ((props.modelValue || 0) + props.step).toString();
+  if (!isIncrementDisabled.value) {
+    let nV = 0;
+    if (props.modelValue === undefined) {
+      nV = props.minValue ? props.minValue : 0;
+    } else {
+      nV = +(props.modelValue || 0) + props.step;
+    }
+
+    computedValue.value = nV.toString();
   }
 }
 
 function decrement() {
-  if (props.modelValue === undefined) {
-    computedValue.value = (0).toString();
-  } else {
-    computedValue.value = ((props.modelValue || 0) - props.step).toString();
+  if (!isDecrementDisabled.value) {
+    let nV = 0;
+    if (props.modelValue === undefined) {
+      nV = 0;
+    } else {
+      nV = +(props.modelValue || 0) - props.step;
+    }
+
+    computedValue.value = props.minValue ? Math.max(props.minValue, nV).toString() : nV.toString();
   }
 }
 </script>
 
 <template>
-  <div ref="root" class="mi-number-input d-flex-column">
+  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-input d-flex-column">
     <div class="mi-number-input__main-wrapper d-flex">
       <DoubleContour class="mi-number-input__contour" />
       <div class="mi-number-input__wrapper flex-grow d-flex flex-align-center">
         <label v-if="label" class="text-description">
-          {{ label }} {{ value }}
+          {{ label }}
           <Tooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
               <slot name="tooltip" />
             </template>
           </Tooltip>
         </label>
-
-        <!-- <input ref="input" :value="computedValue" :placeholder="placeholder" class="text-s flex-grow" @input="handleInput" /> -->
-        <input ref="input" v-model="computedValue" :placeholder="placeholder" class="text-s flex-grow" />
+        <input ref="input" v-model="computedValue" :disabled="disabled" :placeholder="placeholder" class="text-s flex-grow" />
       </div>
       <div class="mi-number-input__icons d-flex-column">
-        <div class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center" @click="increment">
+        <div
+          :class="{ disabled: isIncrementDisabled }"
+          class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          @click="increment"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
               fill-rule="evenodd"
@@ -126,7 +172,11 @@ function decrement() {
             />
           </svg>
         </div>
-        <div class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center" @click="decrement">
+        <div
+          :class="{ disabled: isDecrementDisabled }"
+          class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          @click="decrement"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
               fill-rule="evenodd"
@@ -138,6 +188,6 @@ function decrement() {
         </div>
       </div>
     </div>
-    <div class="mi-number-input__hint text-description">Helper or error text</div>
+    <div v-if="errors.trim()" class="mi-number-input__hint text-description">{{ errors }}</div>
   </div>
 </template>
