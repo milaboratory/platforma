@@ -155,3 +155,27 @@ export type Matcher<T extends string, R = unknown> = {
 export function match<T extends string, R = unknown>(matcher: Matcher<T, R>) {
   return (key: T) => matcher[key]();
 }
+
+export type Result<T, E = string> =
+  | { ok: true; value: T }
+  | { ok: false; error: E };
+
+export function okOptional<V>(v: Result<V> | undefined) {
+  if (!v) {
+    return undefined;
+  }
+
+  if (v.ok) {
+    return v.value;
+  }
+}
+
+export function errorOptional<V>(v: Result<V> | undefined) {
+  if (!v) {
+    return undefined;
+  }
+
+  if (!v.ok) {
+    return v.error;
+  }
+}
