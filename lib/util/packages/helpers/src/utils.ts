@@ -160,6 +160,8 @@ export type Result<T, E = string> =
   | { ok: true; value: T }
   | { ok: false; error: E };
 
+export type OkType<R extends Result<unknown>> = Extract<R, { ok: true }>['value'];  
+
 export function okOptional<V>(v: Result<V> | undefined) {
   if (!v) {
     return undefined;
