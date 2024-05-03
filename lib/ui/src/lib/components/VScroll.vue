@@ -16,7 +16,6 @@ const scrollRef = ref<EventTarget>();
 const ratioRef = computed(() => props.clientHeight / (props.scrollHeight || 1));
 
 const visibleRef = computed(() => {
-  console.log('ratio', ratioRef.value);
   return ratioRef.value < 1;
 });
 

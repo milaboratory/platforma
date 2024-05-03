@@ -16,7 +16,6 @@ function hasValue(value: unknown) {
 }
 
 function updateModel(value: unknown) {
-  console.log('update', value);
   const values = props.modelValue ?? [];
   emit('update:modelValue', hasValue(value) ? values.filter((v) => v !== value) : [...values, value]);
 }
@@ -35,14 +34,17 @@ function updateModel(value: unknown) {
 <style lang="scss">
 .ui-checkbox-group {
   --color-label: var(--color-text);
+  --cursor-label: pointer;
   display: flex;
   flex-direction: column;
   font-family: var(--font-family-base);
   &.disabled {
     --color-label: var(--color-dis-01);
+    --cursor-label: default;
   }
   label {
     color: var(--color-label);
+    cursor: var(--cursor-label);
   }
   > label {
     margin-bottom: 6px;
@@ -57,7 +59,6 @@ function updateModel(value: unknown) {
     align-items: center;
     gap: 8px;
     > label {
-      cursor: pointer;
       font-size: 14px;
       font-weight: 500;
     }

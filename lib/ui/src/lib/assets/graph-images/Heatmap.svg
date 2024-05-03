@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <path d="M12 44H20V52H12.5C12.2239 52 12 51.7761 12 51.5V44Z" fill="#DEDBFF" stroke="#110529"/>
+  <path d="M12 12.5C12 12.2239 12.2239 12 12.5 12H20V20H12V12.5Z" fill="#C1ADFF" stroke="#110529"/>
+  <rect x="12" y="20" width="8" height="8" fill="#C1ADFF" stroke="#110529"/>
+  <rect x="36" y="36" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="28" y="28" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="20" y="28" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="20" y="20" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="28" y="20" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="36" y="20" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="36" y="12" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="12" y="28" width="8" height="8" fill="#C1ADFF" stroke="#110529"/>
+  <rect x="12" y="36" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="44" y="20" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="20" y="12" width="8" height="8" fill="#C1ADFF" stroke="#110529"/>
+  <rect x="28" y="12" width="8" height="8" fill="#C1ADFF" stroke="#110529"/>
+  <path d="M44 12H51.5C51.7761 12 52 12.2239 52 12.5V20H44V12Z" fill="#DEDBFF" stroke="#110529"/>
+  <rect x="44" y="28" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="44" y="36" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="36" y="28" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="28" y="36" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="20" y="36" width="8" height="8" fill="#DEDBFF" stroke="#110529"/>
+  <path d="M44 44H52V51.5C52 51.7761 51.7761 52 51.5 52H44V44Z" fill="white" stroke="#110529"/>
+  <rect x="36" y="44" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="28" y="44" width="8" height="8" fill="white" stroke="#110529"/>
+  <rect x="20" y="44" width="8" height="8" fill="white" stroke="#110529"/>
+</svg>

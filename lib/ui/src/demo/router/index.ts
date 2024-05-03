@@ -2,9 +2,24 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
-    name: 'Color slider',
-    path: '/color-slider',
-    component: () => import('@/demo/color-slider/index.vue'),
+    name: 'Form',
+    path: '/',
+    component: () => import('@/demo/form/index.vue'),
+  },
+  {
+    name: 'Mixcr',
+    path: '/mixcr',
+    component: () => import('@/demo/mixcr/index.vue'),
+  },
+  {
+    name: 'Layout',
+    path: '/layout',
+    component: () => import('@/demo/layout/index.vue'),
+  },
+  {
+    name: 'Add graph',
+    path: '/add-graph',
+    component: () => import('@/demo/graph/add-graph/index.vue'),
   },
   {
     name: 'Long text',
@@ -25,11 +40,6 @@ export const routes = [
     name: 'Line dropdown',
     path: '/line-dropdown',
     component: () => import('@/demo/line-dropdown/index.vue'),
-  },
-  {
-    name: 'Form',
-    path: '/',
-    component: () => import('@/demo/form/index.vue'),
   },
   {
     name: 'Text Field',
@@ -90,6 +100,11 @@ export const routes = [
     name: 'Grid Table',
     path: '/grid-table',
     component: () => import('@/demo/grid-table/index.vue'),
+  },
+  {
+    name: 'Use Sortable',
+    path: '/use-sortable',
+    component: () => import('@/demo/useSortable/index.vue'),
   },
   {
     name: 'Test',

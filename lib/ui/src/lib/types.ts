@@ -39,6 +39,10 @@ export const maskIcons = [
   'filters',
   'local',
   'server-on',
+  'close',
+  'columns',
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];
+
+export type SliderMode = 'input' | 'text';

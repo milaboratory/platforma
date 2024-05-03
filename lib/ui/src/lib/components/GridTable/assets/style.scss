@@ -34,7 +34,8 @@
     background-color: #F7F8FA;
     cursor: pointer;
     z-index: 1;
-    > div {
+
+    >div {
       background-color: var(--color-text);
       @include mask(url(./16_add.svg), 16px);
     }
@@ -84,13 +85,16 @@
         @include icon(url(./16_arrow-down.svg), 16px);
         opacity: 0.1;
         cursor: pointer;
+
         &:hover {
           opacity: 0.5;
         }
+
         &.DESC {
           display: block;
           opacity: 1;
         }
+
         &.ASC {
           display: block;
           transform: rotateZ(180deg);
@@ -109,12 +113,15 @@
     overflow: auto;
     scroll-snap-type: y mandatory;
     @include scrollbarTable(true, true);
+
     .cell {
       font-family: var(--cell-font-family);
       font-weight: var(--cell-font-weight);
+
       &.edit {
         outline: 1px solid var(--color-focus);
       }
+
       input {
         border: none;
         outline: none;
@@ -125,6 +132,7 @@
         padding: 0;
       }
     }
+
     &__no-data {
       background-color: #F7F8FA;
       display: flex;
@@ -138,7 +146,8 @@
       font-weight: 500;
       line-height: 32px;
       letter-spacing: -0.56px;
-      > div {
+
+      >div {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -147,10 +156,17 @@
     }
   }
 
+  .t-row {
+    display: grid;
+    gap: 1px;
+    min-height: 40px;
+    background-color: transparent;
+  }
+
   .cell {
     padding: 8px 12px;
     background-color: #fff;
-    scroll-snap-align: start;
+    // scroll-snap-align: start;
     overflow: hidden;
     display: flex;
     align-items: center;

@@ -85,6 +85,11 @@
     @include mask(url("./images/24_filters.svg"), var(--mask-size));
   }
 
+  &--columns {
+    --mask-size: 24px;
+    @include mask(url("./images/24_columns.svg"), var(--mask-size));
+  }
+
   &--local {
     --icon-size: 24px;
     @include mask(url("./images/24_local.svg"), var(--icon-size));

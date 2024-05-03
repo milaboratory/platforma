@@ -1,3 +1,5 @@
+import type { Option } from '@/lib/types';
+
 type TypeMap = {
   integer: number;
   float: number;
@@ -20,12 +22,21 @@ export type ColumnSettings = {
   valueType?: ValueType;
 };
 
+export type ShowContextOptions = <T extends string = string>(options: Option<T>[], onSelect: (op: T) => void) => void;
+
+export type ColumnEvent = 'delete:column' | 'expand:column';
+
+export type CellEvent = 'delete:row' | 'update:value';
+
 export type Settings = {
   columns: ColumnSettings[];
   rows: Record<string, unknown>[];
   addColumn?: () => Promise<void>;
   autoLastColumn?: boolean;
   selfSort?: boolean;
+  showContextOptions?: ShowContextOptions;
+  columnEvents?: ColumnEvent[];
+  cellEvents?: CellEvent[];
 };
 
 export type CellProps = {
@@ -48,4 +59,6 @@ export type Data = {
         right: number;
       }
     | undefined;
+  bodyHeight: number;
+  scrollTop: number;
 };

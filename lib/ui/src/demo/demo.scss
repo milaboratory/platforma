@@ -7,6 +7,7 @@
 }
 
 body {
+  position: relative;
   padding: 0;
   margin: 0;
   min-width: 320px;
@@ -33,7 +34,7 @@ main {
     grid-template-columns: 1fr 1fr;
     height: 100%;
 
-    > div:first-child {
+    >div:first-child {
       grid-column: 1 / span 2;
     }
 
@@ -85,7 +86,7 @@ main {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  box-shadow: 3px 2px 5px -4px rgba(0,0,0,0.25);
+  box-shadow: 3px 2px 5px -4px rgba(0, 0, 0, 0.25);
   position: absolute;
   top: 0;
   bottom: 0;
@@ -98,16 +99,18 @@ main {
     padding: 12px 20px;
   }
 
-  > a {
+  >a {
     margin: 0;
-    padding: 12px 20px;
+    padding: 8px 20px;
     display: block;
     text-decoration: none;
     border: 1px solid transparent;
     font-family: "Manrope", sans-serif;
     text-transform: uppercase;
     font-weight: 500;
-    color: #110529;
+    font-size: 14px;
+    color: var(--color-txt-01);
+    border-bottom: 1px solid var(--color-div-grey);
   }
 
   .router-link-active {
@@ -124,7 +127,9 @@ main {
     cursor: pointer;
     --bar-color: #aaa;
 
-    .bar1, .bar2, .bar3 {
+    .bar1,
+    .bar2,
+    .bar3 {
       width: 35px;
       height: 5px;
       background-color: var(--bar-color);
@@ -158,6 +163,7 @@ main {
   @media screen and (min-width: 680px) {
     position: relative;
     transform: translateX(0);
+
     #{$sidebar}__menu-btn {
       display: none;
     }
@@ -170,7 +176,7 @@ main {
   color: var(--color-txt-01);
 
   &.fill {
-    > * {
+    >* {
       flex-grow: 1;
     }
   }

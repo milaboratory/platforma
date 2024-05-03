@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import './assets/style.scss';
-import { computed, reactive, ref, unref } from 'vue';
+import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect } from 'vue';
 import TdCell from './TdCell.vue';
 import type { Settings, Data } from './types';
 import { useResize } from './useResize';
@@ -8,9 +8,14 @@ import { utils, strings } from '@milaboratory/helpers';
 import AddColumnBtn from './AddColumnBtn.vue';
 import TableIcon from './assets/TableIcon.vue';
 import ThCell from './ThCell.vue';
+import TRow from './TRow.vue';
 import { compareRecords } from './domain';
+import { throttle } from '@/lib/helpers/utils';
+import { useEventListener } from '@/lib';
 
-const { tapIf } = utils;
+const minRowHeight = 40;
+
+const { tapIf, tap } = utils;
 
 const { uniqueId } = strings;
 
@@ -25,7 +30,19 @@ const data = reactive<Data>({
   columnsMeta: {},
   resize: false,
   resizeTh: undefined,
+  bodyHeight: 0,
+  scrollTop: 0,
 });
+
+const tableRef = ref<HTMLElement>();
+const headRef = ref<HTMLElement>();
+const bodyRef = ref<HTMLElement>();
+
+const updateBodyHeight = () => {
+  tapIf(bodyRef.value, (el) => {
+    data.bodyHeight = el.getBoundingClientRect().height;
+  });
+};
 
 const columnsRef = computed(() => {
   if (props.settings.autoLastColumn) {
@@ -70,12 +87,12 @@ const classes = computed(() => {
   );
 });
 
-const tableRef = ref<HTMLElement>();
-
-const cells = computed(() => {
+const rows = computed(() => {
   const columns = unref(columnsRef);
 
   const rows = props.settings.rows.slice();
+
+  const { bodyHeight, scrollTop } = data;
 
   if (props.settings.selfSort) {
     const sorts = columns.reduce(
@@ -93,8 +110,16 @@ const cells = computed(() => {
     }
   }
 
-  return rows.flatMap((row, rowIndex) => {
-    return columns.map((col) => {
+  const safeGap = 160; // @TODO
+
+  let offset = 0;
+
+  return rows.map((row, rowIndex) => {
+    const height = tap(row['__height'] ? Number(row['__height']) : minRowHeight, (n) => {
+      return !Number.isFinite(n) || n < minRowHeight ? minRowHeight : n;
+    });
+
+    const cells = columns.map((col) => {
       const colName = col.name;
       return {
         colName,
@@ -105,21 +130,35 @@ const cells = computed(() => {
         editable: col.editable,
       };
     });
+
+    const visible = bodyHeight ? scrollTop < offset + height + safeGap && offset < bodyHeight + scrollTop + safeGap : false;
+
+    offset += height + 1;
+
+    return {
+      visible,
+      height,
+      cells,
+    };
   });
 });
 
 const { mouseDown } = useResize(data, tableRef);
 
-function syncScroll(selector: string) {
-  return function (e: Event) {
-    tapIf(unref(tableRef)?.querySelector(selector), (el) => {
-      const t = e.currentTarget as HTMLElement;
-      el.scrollLeft = t.scrollLeft;
-    });
-  };
+function syncScroll() {
+  tapIf(headRef.value, (el) => {
+    el.scrollLeft = bodyRef.value?.scrollLeft ?? 0;
+  });
 }
 
-const syncBody = syncScroll('.table-head');
+const updateScrollTop = throttle(() => {
+  data.scrollTop = bodyRef.value?.scrollTop ?? 0;
+}, 10);
+
+const onBodyScroll = () => {
+  syncScroll();
+  updateScrollTop();
+};
 
 function onExpand(colName: string) {
   const index = columnsRef.value.findIndex((col) => col.name === colName);
@@ -129,6 +168,7 @@ function onExpand(colName: string) {
   const width = props.settings.rows.reduce((width, row) => {
     const length = utils.call(() => {
       const value = row[colName];
+
       if (value && typeof value === 'object' && 'segments' in value) {
         const segments = value['segments'] as { sequence: string }[];
         return segments.map((s) => s.sequence).join('').length;
@@ -141,41 +181,58 @@ function onExpand(colName: string) {
   }, 0);
   data.columnsMeta[index] = { width };
 }
+
+onMounted(() => {
+  nextTick(updateBodyHeight);
+});
+
+watchPostEffect(() => {
+  unref(props.settings);
+  nextTick(updateBodyHeight);
+});
+
+useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
 </script>
 
 <template>
   <div ref="tableRef" class="grid-table" @mousedown="mouseDown">
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
-    <div class="table-head" :style="{ gridTemplateColumns }">
+    <div ref="headRef" class="table-head" :style="{ gridTemplateColumns }">
       <th-cell
         v-for="(col, i) in columnsRef"
         :key="i"
         :col="col"
+        :show-context-options="settings.showContextOptions"
+        :column-events="settings.columnEvents"
         @delete:column="$emit('delete:column', $event)"
         @change:sort="$emit('change:sort', $event)"
         @expand:column="onExpand($event)"
       />
     </div>
-    <div class="table-body" :style="{ gridTemplateColumns }" @scroll="syncBody">
-      <div v-if="cells.length === 0" class="table-body__no-data" :style="noDataStyle">
+    <div ref="bodyRef" class="table-body" @scroll="onBodyScroll">
+      <div v-if="rows.length === 0" class="table-body__no-data" :style="noDataStyle">
         <div>
           <table-icon />
           <div>No Data To Show</div>
         </div>
       </div>
-      <td-cell
-        v-for="(cell, i) in cells"
-        :key="i"
-        :cell="cell"
-        @click.stop="$emit('click:cell', cell)"
-        @delete:row="$emit('delete:row', $event)"
-        @update:value="$emit('update:value', $event)"
-      >
-        <slot v-if="cell.slot" :name="cell.colName" v-bind="cell">
-          {{ cell.value }}
-        </slot>
-        <slot v-else v-bind="cell">{{ cell.value }}</slot>
-      </td-cell>
+      <t-row v-for="(row, i) in rows" :key="i" :visible="row.visible" :height="row.height" :index="i" :style="{ gridTemplateColumns }">
+        <td-cell
+          v-for="(cell, k) in row.cells"
+          :key="k"
+          :cell="cell"
+          :show-context-options="settings.showContextOptions"
+          :cell-events="settings.cellEvents"
+          @click.stop="$emit('click:cell', cell)"
+          @delete:row="$emit('delete:row', $event)"
+          @update:value="$emit('update:value', $event)"
+        >
+          <slot v-if="cell.slot" :name="cell.colName" v-bind="cell">
+            {{ cell.value }}
+          </slot>
+          <slot v-else v-bind="cell">{{ cell.value }}</slot>
+        </td-cell>
+      </t-row>
     </div>
   </div>
 </template>
