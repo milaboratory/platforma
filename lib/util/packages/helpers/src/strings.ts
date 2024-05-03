@@ -24,6 +24,31 @@ export function extractExtension(fileName: string) {
   return fileName.replace(/^.*?[.]/, '');
 }
 
+// @TODO move from here
+export function extractPaths(e: DragEvent, extensions?: string[]) {
+  const paths: string[] = [];
+
+  if (e.dataTransfer) {
+    for (let i = 0; i < e.dataTransfer.items.length; i++) {
+      if (e.dataTransfer.items[i].kind !== 'file') {
+        continue;
+      }
+      const file = e.dataTransfer.items[i].getAsFile() as (File & { path: string }) | null; // @TODO electron specific
+      if (file && file.path) {
+        paths.push(file.path);
+      }
+    }
+  }
+
+  if (extensions) {
+    return paths.filter((p) => extensions.includes(extractExtension(extractFileName(p))));
+  }
+
+  return paths;
+}
+
+export const pluralize = (count: number, noun: string, suffix = 's') => `${count} ${noun}${count !== 1 ? suffix : ''}`;
+
 export function isRegexpValid(exp: string) {
   try {
     new RegExp(exp);
