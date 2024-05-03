@@ -2,6 +2,7 @@ import * as utils from './utils';
 import * as strings from './strings';
 import * as objects from './objects';
 import * as collections from './collections';
+import * as functions from './functions';
 import { prettyBytes } from './prettyBytes';
 
 export {
@@ -9,5 +10,6 @@ export {
   strings,
   objects,
   collections,
+  functions,
   prettyBytes,
 }

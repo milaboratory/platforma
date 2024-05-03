@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/helpers",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "description": "",
   "main": "build/index.js",
   "exports": {
@@ -8,7 +8,8 @@
     "./strings": "./build/strings.js",
     "./utils": "./build/utils.js",
     "./objects": "./build/objects.js",
-    "./collections": "./build/collections.js"
+    "./collections": "./build/collections.js",
+    "./functions": "./build/functions.js"
   },
   "type": "commonjs",
   "scripts": {
