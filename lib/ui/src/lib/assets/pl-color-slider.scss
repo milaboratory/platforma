@@ -1,1 +1,43 @@
-.color-slider {}
+.pl-color-slider {
+    height: 32px;
+    border: 1px solid var(--color-border-default);
+    border-radius: 6px;
+    display: flex;
+    overflow: hidden;
+
+    &__wrapper {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    &__color-contaier {
+        height: 100%;
+        padding: 0 16px;
+        background-color: #F0F0F0;
+        position: absolute;
+        width: 100%;
+        z-index: 2;
+    }
+
+    &__gradient {
+        height: 100%;
+        // background: linear-gradient(to right, #FFF680 25%, #53D788 50%, #36739D 75%, #4A005C 100%);
+    }
+
+    &__thumbs-contaier {
+        height: 100%;
+        background: rgba(255, 0, 0, 0.269);
+        z-index: 2;
+        position: relative;
+    }
+
+    &__thumb {
+        height: 100%;
+        width: 10px;
+        background-color: green;
+        position: absolute;
+        z-index: 5;
+        cursor: pointer;
+    }
+}

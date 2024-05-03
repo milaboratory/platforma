@@ -2,12 +2,18 @@
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
 import PlColorSlider from '@/lib/components/PlColorSlider.vue';
+import { reactive } from 'vue';
+const data = reactive({
+  colors: ['#FFF680', '#53D788', '#36739D', '#4A005C'],
+  values: [20, 35, 56, 70],
+  //0-25      25-50
+});
 </script>
 
 <template>
   <Layout>
-    <Split name="DropdownListItem">
-      <PlColorSlider />
+    <Split hide-second name="DropdownListItem">
+      <PlColorSlider v-model="data.values" :colors="data.colors" />
     </Split>
   </Layout>
 </template>
