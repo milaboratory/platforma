@@ -70,7 +70,9 @@ const toLocaleString = (number: number, locale: string | undefined) => {
   return result;
 };
 
-export function prettyBytes(number: number, options: Options) {
+export function prettyBytes(number: number | bigint, options: Options) {
+  number = typeof number === 'bigint' ? Number(number) : number;
+
   if (!Number.isFinite(number)) {
     throw new TypeError(`Expected a finite number, got ${typeof number}: ${number}`);
   }
