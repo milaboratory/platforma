@@ -1,3 +1,5 @@
+import type { Option } from "./types";
+
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
     throw Error(message ?? 'Empty (null | undefined) value');
@@ -24,6 +26,17 @@ export function checkIfDefined<T>(v: T | undefined, message?: string): asserts v
   if (v === undefined) {
     throw Error(message ?? 'Undefined value');
   }
+}
+
+export function between(n: number, a: number, b: number) {
+  const min = Math.min(a, b);
+  const max = Math.max(a, b);
+
+  return n >= min && n <= max;
+}
+
+export function listToOptions<T>(list: T[] | readonly T[]): Option<T>[] {
+  return list.map((value) => ({ text: String(value), value }));
 }
 
 export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
