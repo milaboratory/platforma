@@ -1,5 +1,5 @@
 <template>
-  <div></div>
+  <div class="pl-color-slider"></div>
 </template>
 
 <script setup lang="ts">

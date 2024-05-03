@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Color slider',
+    path: '/color-slider',
+    component: () => import('@/demo/color-slider/index.vue'),
+  },
+  {
     name: 'Long text',
     path: '/long-text',
     component: () => import('@/demo/text-component/index.vue'),
