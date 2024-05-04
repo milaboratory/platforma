@@ -1,0 +1,4 @@
+export {
+    "some": "value",
+    "template2": getTemplate(":local-template-2")
+}

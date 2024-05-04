@@ -1,0 +1,13 @@
+{
+  "name": "@milaboratory/tengo-integration-tests-lib-1",
+  "version": "1.0.0",
+  "description": "The library-1",
+  "scripts": {
+    "echo": "echo"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratory/tengo-template-builder": "file:../../."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@milaboratory/tengo-template-builder-all-integration-tests",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "workspaces": [
+    "library-1"
+  ],
+  "scripts": {},
+  "devDependencies": {
+  }
+}

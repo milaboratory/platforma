@@ -1,0 +1,3 @@
+thelib = import(":local-lib")
+
+tpl1 = getTemplate(":local-template-1")
