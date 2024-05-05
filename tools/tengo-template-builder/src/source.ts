@@ -1,4 +1,4 @@
-import { ArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
+import { TypedArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
 const getTemplateCheck = /getTemplate\s*\(/;
@@ -34,7 +34,7 @@ export class ArtifactSource {
     /** Normalized source code */
     public readonly src: string,
     /** List of dependencies */
-    public readonly dependencies: ArtifactName[]) {
+    public readonly dependencies: TypedArtifactName[]) {
   }
 }
 

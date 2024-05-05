@@ -1,5 +1,5 @@
 import { Template } from './template';
-import { FullArtifactName, artifactIdToString } from './package';
+import { formatArtefactNameAndVersion, FullArtifactName } from './package';
 
 test('template serialization / deserialization', () => {
   const name: FullArtifactName = {
@@ -12,8 +12,7 @@ test('template serialization / deserialization', () => {
     {
       data: {
         type: 'pl.tengo-template.v2',
-        name: artifactIdToString(name),
-        version: name.version,
+        ...formatArtefactNameAndVersion(name),
         libs: {
           '@milaboratory/some-package:the-library': {
             name: '@milaboratory/some-package:the-library',

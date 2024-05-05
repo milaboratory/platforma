@@ -1,9 +1,9 @@
-import { ArtifactName, artifactKey } from './package';
+import { TypedArtifactName, artifactKey } from './package';
 
 export class ArtifactMap<T> {
   private readonly map = new Map<string, T>();
 
-  constructor(private readonly nameExtractor: (obj: T) => ArtifactName) {
+  constructor(private readonly nameExtractor: (obj: T) => TypedArtifactName) {
   }
 
   add(obj: T, replace: boolean = true): T | undefined {
@@ -15,7 +15,7 @@ export class ArtifactMap<T> {
     return ret;
   }
 
-  get(name: ArtifactName): T | undefined {
+  get(name: TypedArtifactName): T | undefined {
     return this.map.get(artifactKey(name));
   }
 
@@ -25,11 +25,11 @@ export class ArtifactMap<T> {
     return ret;
   }
 
-  forEach(callback: (value: T, key: ArtifactName) => void) {
+  forEach(callback: (value: T, key: TypedArtifactName) => void) {
     this.map.forEach(v => callback(v, this.nameExtractor(v)));
   }
 }
 
-export function createArtifactNameSet(): ArtifactMap<ArtifactName> {
-  return new ArtifactMap<ArtifactName>(obj => obj);
+export function createArtifactNameSet(): ArtifactMap<TypedArtifactName> {
+  return new ArtifactMap<TypedArtifactName>(obj => obj);
 }
