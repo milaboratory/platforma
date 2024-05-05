@@ -1,10 +1,10 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
-import { FullArtefactId } from './package';
+import { FullArtifactName } from './package';
 
 export interface TemplateLibData {
   /** i.e. @milaboratory/some-package:lib1 */
-  id: string;
+  name: string;
   /** i.e. 1.2.3 */
   version: string;
   /** full source code */
@@ -16,7 +16,7 @@ export interface TemplateData {
   type: 'pl.tengo-template.v2';
 
   /** i.e. @milaboratory/some-package:template */
-  id: string;
+  name: string;
   /** i.e. 1.2.3 */
   version: string;
 
@@ -35,7 +35,7 @@ export class Template {
   private _data?: TemplateData;
   private _content?: Uint8Array;
 
-  constructor(public readonly id: FullArtefactId,
+  constructor(public readonly fullName: FullArtifactName,
               body: {
                 data?: TemplateData,
                 content?: Uint8Array

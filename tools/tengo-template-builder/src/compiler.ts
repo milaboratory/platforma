@@ -1,38 +1,38 @@
-import { ArtefactSource } from './source';
+import { ArtifactSource } from './source';
 import { Template } from './template';
-import { ArtefactId, artefactKey, fullIdToString, idToString } from './package';
-import { ArtefactMap } from './idset';
+import { ArtifactName, artifactKey, fullNameToString, nameToString } from './package';
+import { ArtifactMap } from './artifactset';
 
 export class TengoTemplateCompiler {
-  private readonly libs = new ArtefactMap<ArtefactSource>(src => src.id);
-  private readonly templates = new ArtefactMap<Template>(tpl => tpl.id);
+  private readonly libs = new ArtifactMap<ArtifactSource>(src => src.fullName);
+  private readonly templates = new ArtifactMap<Template>(tpl => tpl.fullName);
 
   addTemplate(tpl: Template) {
     const tplFromMap = this.templates.add(tpl, false);
     if (tplFromMap)
       throw new Error(
-        `compiler already contain such template: adding = ${fullIdToString(tpl.id)}, contains = ${fullIdToString(tplFromMap.id)}`
+        `compiler already contain such template: adding = ${fullNameToString(tpl.fullName)}, contains = ${fullNameToString(tplFromMap.fullName)}`
       );
   }
 
-  addLib(lib: ArtefactSource) {
+  addLib(lib: ArtifactSource) {
     const libFromMap = this.libs.add(lib, false);
     if (libFromMap)
       throw new Error(
-        `compiler already contain such library: adding = ${fullIdToString(lib.id)}, contains = ${fullIdToString(libFromMap.id)}`
+        `compiler already contain such library: adding = ${fullNameToString(lib.fullName)}, contains = ${fullNameToString(libFromMap.fullName)}`
       );
   }
 
-  getTemplate(id: ArtefactId): Template | undefined {
-    if (id.type !== 'template')
-      throw new Error('illegal id type');
-    return this.templates.get(id);
+  getTemplate(name: ArtifactName): Template | undefined {
+    if (name.type !== 'template')
+      throw new Error('illegal name type');
+    return this.templates.get(name);
   }
 
-  getLib(id: ArtefactId): ArtefactSource | undefined {
-    if (id.type !== 'library')
-      throw new Error('illegal id type');
-    return this.libs.get(id);
+  getLib(name: ArtifactName): ArtifactSource | undefined {
+    if (name.type !== 'library')
+      throw new Error('illegal name type');
+    return this.libs.get(name);
   }
 
   checkLibs() {
@@ -40,8 +40,12 @@ export class TengoTemplateCompiler {
       for (const dep of lib.dependencies) {
         if ((dep.type === 'template' && !this.getTemplate(dep))
           || (dep.type === 'library' && !this.getLib(dep)))
-          throw new Error(`unresolved dependency ${idToString(dep)} for ${fullIdToString(lib.id)}`);
+          throw new Error(`unresolved dependency ${nameToString(dep)} for ${fullNameToString(lib.fullName)}`);
       }
     });
+  }
+
+  compileAndAdd(sources: ArtifactSource[]) {
+
   }
 }

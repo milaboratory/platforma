@@ -20,51 +20,51 @@ import canonicalize from 'canonicalize';
 
  */
 
-export type ArtefactType = 'library' | 'template'
+export type ArtifactType = 'library' | 'template'
 
-/** Artefact ID including package version */
-export interface FullArtefactId {
+/** Artifact Name including package version */
+export interface FullArtifactName {
   /** Dependency type */
-  type: ArtefactType;
+  type: ArtifactType;
 
   /** Fully qualified package */
   pkg: string;
 
-  /** Name (path) of the artefact inside the package */
-  name: string;
+  /** Id of the artifact inside the package */
+  id: string;
 
   /** Package version */
   version: string;
 }
 
-export type FullArtefactIdWithoutType = Omit<FullArtefactId, 'type'>;
+export type FullArtifactNameWithoutType = Omit<FullArtifactName, 'type'>;
 
-export type ArtefactId = Pick<FullArtefactId, 'type' | 'pkg' | 'name'>;
+export type ArtifactName = Pick<FullArtifactName, 'type' | 'pkg' | 'id'>;
 
-export type PackageId = Pick<FullArtefactId, 'pkg' | 'version'>;
+export type PackageName = Pick<FullArtifactName, 'pkg' | 'version'>;
 
-export type PkgAndName = Pick<FullArtefactId, 'pkg' | 'name'>;
+export type ArtifactId = Pick<FullArtifactName, 'pkg' | 'id'>;
 
-export function artefactKey(id: ArtefactId): string {
-  return `${id.type}||${id.pkg}||${id.name}`;
+export function artifactKey(name: ArtifactName): string {
+  return `${name.type}||${name.pkg}||${name.id}`;
 }
 
-export function fullIdToString(id: FullArtefactId): string {
-  return `${id.type}:${id.pkg}:${id.name}:${id.version}`;
+export function fullNameToString(name: FullArtifactName): string {
+  return `${name.type}:${name.pkg}:${name.id}:${name.version}`;
 }
 
-export function idToString(id: ArtefactId): string {
-  return `${id.type}:${id.pkg}:${id.name}`;
+export function nameToString(name: ArtifactName): string {
+  return `${name.type}:${name.pkg}:${name.id}`;
 }
 
-export function pkgAndNameToString(id: PkgAndName): string {
-  return `${id.pkg}:${id.name}`;
+export function artifactIdToString(id: ArtifactId): string {
+  return `${id.pkg}:${id.id}`;
 }
 
-export function fullIdWithoutTypeToString(id: FullArtefactId): string {
-  return `${id.pkg}:${id.name}:${id.version}`;
+export function fullNameWithoutTypeToString(name: FullArtifactName): string {
+  return `${name.pkg}:${name.id}:${name.version}`;
 }
 
-export function fullIdWithoutType(id: FullArtefactId): FullArtefactIdWithoutType {
-  return { pkg: id.pkg, name: id.name, version: id.version };
+export function fullNameWithoutType(name: FullArtifactName): FullArtifactNameWithoutType {
+  return { pkg: name.pkg, id: name.id, version: name.version };
 }

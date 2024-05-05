@@ -1,22 +1,22 @@
 import { Template } from './template';
-import { FullArtefactId, pkgAndNameToString } from './package';
+import { FullArtifactName, artifactIdToString } from './package';
 
 test('template serialization / deserialization', () => {
-  const id: FullArtefactId = {
+  const name: FullArtifactName = {
     type: 'template',
     pkg: '@milaboratory/some-package',
-    name: 'the-template',
+    id: 'the-template',
     version: '1.2.3'
   };
-  const template1 = new Template(id,
+  const template1 = new Template(name,
     {
       data: {
         type: 'pl.tengo-template.v2',
-        id: pkgAndNameToString(id),
-        version: id.version,
+        name: artifactIdToString(name),
+        version: name.version,
         libs: {
           '@milaboratory/some-package:the-library': {
-            id: '@milaboratory/some-package:the-library',
+            name: '@milaboratory/some-package:the-library',
             version: '1.2.3',
             src: 'asdasd'
           }
@@ -24,11 +24,11 @@ test('template serialization / deserialization', () => {
         templates: {
           '@milaboratory/some-package:the-template-1': {
             type: 'pl.tengo-template.v2',
-            id: '@milaboratory/some-package:the-template-1',
+            name: '@milaboratory/some-package:the-template-1',
             version: '1.2.3',
             libs: {
               '@milaboratory/some-package:the-library:1.2.4': {
-                id: '@milaboratory/some-package:the-library',
+                name: '@milaboratory/some-package:the-library',
                 version: '1.2.4',
                 src: 'asdasd'
               }
@@ -43,7 +43,7 @@ test('template serialization / deserialization', () => {
   );
 
   const template2 = new Template(
-    { type: 'template', pkg: '@milaboratory/some-package', name: 'the-template', version: '1.2.3' },
+    { type: 'template', pkg: '@milaboratory/some-package', id: 'the-template', version: '1.2.3' },
     { content: template1.content }
   );
 

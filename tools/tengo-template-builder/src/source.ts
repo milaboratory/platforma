@@ -1,5 +1,5 @@
-import { ArtefactId, artefactKey, ArtefactType, FullArtefactId } from './package';
-import { ArtefactMap, createArtefactIdSet } from './idset';
+import { ArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
+import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
 const getTemplateCheck = /getTemplate\s*\(/;
 const getTemplatePattern = /getTemplate\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
@@ -16,30 +16,30 @@ function renderImport(pkg: string, name: string): string {
 }
 
 interface Dependency {
-  artefactType: ArtefactType;
+  type: ArtifactType;
   pattern: RegExp;
   check: RegExp;
   render: (pkg: string, name: string) => string;
 }
 
 const dependencyTypes: Dependency[] = [
-  { artefactType: 'template', pattern: getTemplatePattern, check: getTemplateCheck, render: renderGetTemplate },
-  { artefactType: 'library', pattern: importPattern, check: importCheck, render: renderImport }
+  { type: 'template', pattern: getTemplatePattern, check: getTemplateCheck, render: renderGetTemplate },
+  { type: 'library', pattern: importPattern, check: importCheck, render: renderImport }
 ];
 
-export class ArtefactSource {
+export class ArtifactSource {
   constructor(
-    /** Full artefact id, including package version */
-    public readonly id: FullArtefactId,
+    /** Full artifact id, including package version */
+    public readonly fullName: FullArtifactName,
     /** Normalized source code */
     public readonly src: string,
     /** List of dependencies */
-    public readonly dependencies: ArtefactId[]) {
+    public readonly dependencies: ArtifactName[]) {
   }
 }
 
-export function parseSource(src: string, sourceId: FullArtefactId, normalize: boolean): ArtefactSource {
-  const dependencySet = createArtefactIdSet();
+export function parseSource(src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+  const dependencySet = createArtifactNameSet();
 
   // iterating over lines
   const lines = src.split('\n');
@@ -63,13 +63,13 @@ export function parseSource(src: string, sourceId: FullArtefactId, normalize: bo
         let pkg = _pkg;
         if (pkg === '') {
           if (normalize)
-            pkg = sourceId.pkg;
+            pkg = fullSourceName.pkg;
           else
-            throw new Error(`package not specified for ${dt.artefactType}: ${substring}`);
+            throw new Error(`package not specified for ${dt.type}: ${substring}`);
         }
 
         // adding dependency to the set
-        dependencySet.add({ type: dt.artefactType, pkg, name }, false);
+        dependencySet.add({ type: dt.type, pkg, id: name }, false);
 
         return normalize
           // if normalization is requested, we re-render corresponding statement
@@ -80,7 +80,7 @@ export function parseSource(src: string, sourceId: FullArtefactId, normalize: bo
 
       if (!matched && newLine.match(dt.check))
         // checkin that we don't miss some unexpectedly formatted reference
-        throw new Error(`Can't parse reference to ${dt.artefactType} in line (${lineNumber}): ${line}`);
+        throw new Error(`Can't parse reference to ${dt.type} in line (${lineNumber}): ${line}`);
     }
 
     // assert line === newLine || normalize
@@ -89,6 +89,6 @@ export function parseSource(src: string, sourceId: FullArtefactId, normalize: bo
     processedLines.push(newLine);
   }
 
-  return new ArtefactSource(sourceId, processedLines.join('\n'), dependencySet.array);
+  return new ArtifactSource(fullSourceName, processedLines.join('\n'), dependencySet.array);
 }
 

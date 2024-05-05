@@ -1,26 +1,23 @@
 import { parseSource } from './source';
-import { FullArtefactId } from './package';
-import { testLocalLib1Src, testLocalLib1Id, testLocalLib1SrcNormalized } from './test.artefacts';
+import { testLocalLib1Src, testLocalLib1Name, testLocalLib1SrcNormalized } from './test.artifacts';
 
 test('test lib 1 parsing and normalization', () => {
-  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Id, true);
+  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Name, true);
   expect(libSrc.src).toStrictEqual(testLocalLib1SrcNormalized);
   expect(libSrc.dependencies).toEqual([
-    { type: 'library', pkg: 'current-package', name: 'local-lib' },
-    { type: 'template', pkg: 'current-package', name: 'local-template-2' },
-    { type: 'template', pkg: 'package1', name: 'local-template-3' },
-    { type: 'template', pkg: 'current-package', name: 'local-template-4' }
+    { type: 'library', pkg: 'package1', id: 'other-lib-1' },
+    { type: 'template', pkg: 'current-package', id: 'local-template-2' },
+    { type: 'template', pkg: 'package1', id: 'template-3' }
   ]);
 });
 
 test('test lib 1 parsing, normalization & re-parsing', () => {
-  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Id, true);
-  const libSrc1 = parseSource(libSrc.src, testLocalLib1Id, false);
+  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Name, true);
+  const libSrc1 = parseSource(libSrc.src, testLocalLib1Name, false);
   expect(libSrc1.src).toStrictEqual(testLocalLib1SrcNormalized);
-  expect(libSrc1.dependencies).toEqual([
-    { type: 'library', pkg: 'current-package', name: 'local-lib' },
-    { type: 'template', pkg: 'current-package', name: 'local-template-2' },
-    { type: 'template', pkg: 'package1', name: 'local-template-3' },
-    { type: 'template', pkg: 'current-package', name: 'local-template-4' }
+  expect(libSrc.dependencies).toEqual([
+    { type: 'library', pkg: 'package1', id: 'other-lib-1' },
+    { type: 'template', pkg: 'current-package', id: 'local-template-2' },
+    { type: 'template', pkg: 'package1', id: 'template-3' }
   ]);
 });
