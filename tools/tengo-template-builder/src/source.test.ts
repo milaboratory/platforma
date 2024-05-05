@@ -1,25 +1,26 @@
 import { parseSource } from './source';
+import { FullArtefactId } from './package';
+import { testLocalLib1Src, testLocalLib1Id, testLocalLib1SrcNormalized } from './test.artefacts';
 
-const lib1 = `
-export {
-    "some": "value",
-    "template2": getTemplate(":local-template-2")
-}
-`;
+test('test lib 1 parsing and normalization', () => {
+  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Id, true);
+  expect(libSrc.src).toStrictEqual(testLocalLib1SrcNormalized);
+  expect(libSrc.dependencies).toEqual([
+    { type: 'library', pkg: 'current-package', name: 'local-lib' },
+    { type: 'template', pkg: 'current-package', name: 'local-template-2' },
+    { type: 'template', pkg: 'package1', name: 'local-template-3' },
+    { type: 'template', pkg: 'current-package', name: 'local-template-4' }
+  ]);
+});
 
-const tpl1 = `
-thelib = import(":local-lib")
-tpl1 = getTemplate(":local-template-1")
-tpl2 = getTemplate("the-package:template-123")
-`;
-
-
-test('test lib 1', () => {
-  const libSorce = parseSource(lib1, {
-    type: 'library',
-    pkg: 'current-package',
-    name: 'current-library',
-    version: '1.2.3'
-  });
-  console.log(libSorce)
+test('test lib 1 parsing, normalization & re-parsing', () => {
+  const libSrc = parseSource(testLocalLib1Src, testLocalLib1Id, true);
+  const libSrc1 = parseSource(libSrc.src, testLocalLib1Id, false);
+  expect(libSrc1.src).toStrictEqual(testLocalLib1SrcNormalized);
+  expect(libSrc1.dependencies).toEqual([
+    { type: 'library', pkg: 'current-package', name: 'local-lib' },
+    { type: 'template', pkg: 'current-package', name: 'local-template-2' },
+    { type: 'template', pkg: 'package1', name: 'local-template-3' },
+    { type: 'template', pkg: 'current-package', name: 'local-template-4' }
+  ]);
 });

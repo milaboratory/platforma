@@ -37,76 +37,34 @@ export interface FullArtefactId {
   version: string;
 }
 
+export type FullArtefactIdWithoutType = Omit<FullArtefactId, 'type'>;
+
 export type ArtefactId = Pick<FullArtefactId, 'type' | 'pkg' | 'name'>;
 
 export type PackageId = Pick<FullArtefactId, 'pkg' | 'version'>;
 
-export function artefactKey(id: ArtefactId) {
+export type PkgAndName = Pick<FullArtefactId, 'pkg' | 'name'>;
+
+export function artefactKey(id: ArtefactId): string {
   return `${id.type}||${id.pkg}||${id.name}`;
 }
 
-export class ArtefactSource {
-  constructor(
-    /** Full artefact id, including package version */
-    public readonly id: FullArtefactId,
-    /** Normalized source code */
-    public readonly src: string,
-    /** List of dependencies */
-    public readonly dependencies: ArtefactId[]) {
-  }
+export function fullIdToString(id: FullArtefactId): string {
+  return `${id.type}:${id.pkg}:${id.name}:${id.version}`;
 }
 
-export interface TemplateData {
-  /** Discriminator for future use */
-  type: 'pl.tengo-template.v2';
-
-  /** i.e. @milaboratory/some-package:template:1.2.3 */
-  name: string;
-  /** i.e. @milaboratory/some-package:some-lib -> normalized library source code */
-  libs: Record<string, string>;
-  /** i.e. @milaboratory/some-package:some-lib -> to nested template data */
-  templates?: Record<string, TemplateData>;
-  /** Template source code */
-  src: string;
+export function idToString(id: ArtefactId): string {
+  return `${id.type}:${id.pkg}:${id.name}`;
 }
 
-const decoder = new TextDecoder();
-const encoder = new TextEncoder();
+export function pkgAndNameToString(id: PkgAndName): string {
+  return `${id.pkg}:${id.name}`;
+}
 
-export class Template {
-  private _data?: TemplateData;
-  private _content?: Uint8Array;
+export function fullIdWithoutTypeToString(id: FullArtefactId): string {
+  return `${id.pkg}:${id.name}:${id.version}`;
+}
 
-  constructor(public readonly id: FullArtefactId,
-              body: {
-                data?: TemplateData,
-                content?: Uint8Array
-              }) {
-    if (body.data === undefined && body.content === undefined)
-      throw new Error('Neither data nor content is provided for template constructor');
-    if (body.data !== undefined && body.content !== undefined)
-      throw new Error('Both data and content are provided for template constructor');
-    this._data = body.data;
-    this._content = body.content;
-  }
-
-  get data(): TemplateData {
-    if (this._data !== undefined)
-      return this._data;
-
-    this._data = JSON.parse(decoder.decode(gunzipSync(this._content!))) as TemplateData;
-    if (this._data.type !== 'pl.tengo-template.v2')
-      throw new Error('malformed template');
-
-    return this._data;
-  }
-
-  get content(): Uint8Array {
-    if (this._content !== undefined)
-      return this._content;
-
-    this._content = gzipSync(encoder.encode(canonicalize(this._data!)));
-
-    return this._content;
-  }
+export function fullIdWithoutType(id: FullArtefactId): FullArtefactIdWithoutType {
+  return { pkg: id.pkg, name: id.name, version: id.version };
 }
