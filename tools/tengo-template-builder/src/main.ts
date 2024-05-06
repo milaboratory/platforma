@@ -29,7 +29,7 @@ function pathType(path: string): PathType {
 const logger = winston.createLogger({
   level: 'debug',
   format: winston.format.printf(({ level, message }) => {
-    return `${level}: ${message}`;
+    return `${level.padStart(6, ' ')}: ${message}`;
   }),
   transports: [
     new winston.transports.Console({ handleExceptions: true })

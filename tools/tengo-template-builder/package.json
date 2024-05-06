@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-template-builder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "build": "tsc",
@@ -9,6 +9,9 @@
   "bin": {
     "pl-tengo-build": "dist/main.js"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
