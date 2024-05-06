@@ -3,6 +3,8 @@ import { computed, ref, unref } from 'vue';
 import { useMouseCapture } from '@/lib/composition/useMouseCapture';
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
+import ThumbBig from '@/lib/assets/images/color-slider-thumb-big.svg?raw';
+import ThumbSmall from '@/lib/assets/images/color-slider-thumb-small.svg?raw';
 
 const props = defineProps<{
   barRef: HTMLElement;
@@ -51,5 +53,9 @@ useMouseCapture(thumb, (ev) => {
 });
 </script>
 <template>
-  <div ref="thumb" :style="thumbStyle" class="pl-color-slider__thumb" tabindex="0">{{ localValue }}</div>
+  <div :style="thumbStyle" class="pl-color-slider__thumb" tabindex="0">
+    {{ localValue }}
+    <div ref="thumb" class="pl-color-slider__thumb-roof"></div>
+    <div class="pl-color-slider__thumb-"></div>
+  </div>
 </template>

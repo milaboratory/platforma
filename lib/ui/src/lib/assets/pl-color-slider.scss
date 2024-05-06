@@ -3,7 +3,7 @@
     border: 1px solid var(--color-border-default);
     border-radius: 6px;
     display: flex;
-    overflow: hidden;
+    // overflow: hidden;
 
     &__wrapper {
         width: 100%;
@@ -18,11 +18,11 @@
         position: absolute;
         width: 100%;
         z-index: 2;
+        border-radius: 5px;
     }
 
     &__gradient {
         height: 100%;
-        // background: linear-gradient(to right, #FFF680 25%, #53D788 50%, #36739D 75%, #4A005C 100%);
     }
 
     &__thumbs-contaier {
@@ -30,14 +30,63 @@
         background: rgba(255, 0, 0, 0.269);
         z-index: 2;
         position: relative;
+        border-radius: 4px;
     }
 
     &__thumb {
         height: 100%;
-        width: 10px;
-        background-color: green;
+        width: 1px;
+        background-color: var(--color-txt-01);
         position: absolute;
         z-index: 5;
         cursor: pointer;
     }
+
+    // &__thumb::after {
+    //     width: 20px;
+    //     height: 20px;
+    //     content: '';
+    //     background-color: red;
+    //     position: absolute;
+    // }
+
+
+    &__thumb-roof {
+        width: 8px;
+        height: 8px;
+        position: absolute;
+        bottom: -4px;
+        left: -3.5px;
+        background-color: red;
+        background: url(./images/color-slider-thumb-small.svg);
+    }
+
+    &__thumb-roof:active,
+    &__thumb-roof:hover {
+        background: url(./images/color-slider-thumb-big.svg);
+        width: 24px;
+        height: 32px;
+        background-repeat: no-repeat;
+        // background-color: red;
+        background-position: -6px -4px;
+        border-radius: 4px;
+        left: -11.5px;
+        bottom: -25px;
+        position: absolute;
+        transition: all .2s ease-in-out;
+    }
+
+    // &__thumb-roof {
+    //     background: url(./images/color-slider-thumb-big.svg);
+    //     width: 24px;
+    //     height: 32px;
+    //     background-repeat: no-repeat;
+    //     background-color: red;
+    //     background-position: -6px -4px;
+    //     border-radius: 4px;
+    //     left: -11.5px;
+    //     position: absolute;
+    // }
+
+
 }

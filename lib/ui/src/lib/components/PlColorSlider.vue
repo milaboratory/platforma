@@ -1,6 +1,5 @@
 <template>
   <div class="pl-color-slider">
-    {{ models }}
     <div class="pl-color-slider__wrapper">
       <div ref="barRef" class="pl-color-slider__color-contaier">
         <div :style="{ background: gradient }" class="pl-color-slider__gradient" />
