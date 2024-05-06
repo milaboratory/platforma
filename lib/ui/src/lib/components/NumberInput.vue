@@ -140,10 +140,18 @@ function decrement() {
     computedValue.value = props.minValue ? Math.max(props.minValue, nV).toString() : nV.toString();
   }
 }
+
+function handleKeyPress(e: { code: string; preventDefault(): void }) {
+  if (['ArrowDown', 'ArrowUp'].includes(e.code)) {
+    e.preventDefault();
+  }
+
+  e.code === 'ArrowUp' ? increment() : e.code === 'ArrowDown' ? decrement() : undefined;
+}
 </script>
 
 <template>
-  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-input d-flex-column">
+  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-input d-flex-column" @keydown="handleKeyPress($event)">
     <div class="mi-number-input__main-wrapper d-flex">
       <DoubleContour class="mi-number-input__contour" />
       <div class="mi-number-input__wrapper flex-grow d-flex flex-align-center">
