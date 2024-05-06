@@ -43,7 +43,7 @@ interface PackageJson {
   'version': string;
 }
 
-const compiledTplSuffix = '.pl.pkg';
+const compiledTplSuffix = '.plj.gz';
 const compiledLibSuffix = '.lib.tengo';
 
 const srcTplSuffix = '.tpl.tengo';
