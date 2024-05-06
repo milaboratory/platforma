@@ -25,6 +25,7 @@ import ToggleSwitch from '@/lib/components/ToggleSwitch.vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
 import Slider from '@/lib/components/Slider.vue';
+import PlColorSlider from '@/lib/components/PlColorSlider.vue';
 import DialogModal from './lib/components/DialogModal.vue';
 import ManageModal from './lib/components/ManageModal/index.vue';
 import { usePosition } from '@/lib/composition/usePosition';
@@ -81,6 +82,7 @@ export {
   GridTable,
   ContextProvider,
   Slider,
+  PlColorSlider,
   DialogModal,
   ManageModal,
   // Usables
