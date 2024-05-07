@@ -17,6 +17,10 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
   };
 
   useEventListener(document, 'mousedown', (ev) => {
+    //disable selection when moving
+    if (ev.stopPropagation) ev.stopPropagation();
+    if (ev.preventDefault) ev.preventDefault();
+
     if (ev.target === unref(elRef)) {
       state.el = unref(elRef);
       state.x = ev.x;
