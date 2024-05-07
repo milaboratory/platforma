@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratory/pl-block-registry",
+  "version": "1.1.0",
+  "description": "Utility to manipulate platforma block registry",
+  "scripts": {
+    "build": "tsc",
+    "readme": "exec oclif readme",
+    "test": "jest"
+  },
+  "bin": {
+    "pl-reg": "./bin/run.js"
+  },
+  "files": [
+    "bin/*",
+    "dist/**/*"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.8",
+    "oclif": "^4.10.4",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.569.0",
+    "@oclif/core": "^3.26.6",
+    "semver-parser": "^4.1.6"
+  },
+  "oclif": {
+    "bin": "pl-reg",
+    "commands": "./dist/commands",
+    "dirname": "pl-reg",
+    "topicSeparator": " "
+  }
+}
