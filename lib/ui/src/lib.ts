@@ -25,7 +25,6 @@ import ToggleSwitch from '@/lib/components/ToggleSwitch.vue';
 import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
 import Slider from '@/lib/components/Slider.vue';
-import PlColorSlider from '@/lib/components/PlColorSlider.vue';
 import DialogModal from './lib/components/DialogModal.vue';
 import ManageModal from './lib/components/ManageModal/index.vue';
 import { usePosition } from '@/lib/composition/usePosition';
@@ -44,6 +43,9 @@ import { useInterval } from './lib/composition/useInterval';
 import { useFormState } from './lib/composition/useFormState';
 import type { MaybeRef } from '@/lib/types.ts';
 
+import { tapIf } from '@/lib/helpers/functions';
+import { clamp } from '@/lib/helpers/math';
+
 // MiXCR
 import AlphabetType from '@/lib/components/mixcr/AlphabetType.vue';
 import AbundanceMeasure from '@/lib/components/mixcr/AbundanceMeasure.vue';
@@ -53,6 +55,8 @@ import GeneNameFormat from '@/lib/components/mixcr/GeneNameFormat.vue';
 import GeneType from '@/lib/components/mixcr/GeneType.vue';
 
 export {
+  tapIf,
+  clamp,
   AlphabetType,
   AbundanceMeasure,
   AbundanceType,
@@ -82,7 +86,6 @@ export {
   GridTable,
   ContextProvider,
   Slider,
-  PlColorSlider,
   DialogModal,
   ManageModal,
   // Usables
