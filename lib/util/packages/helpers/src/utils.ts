@@ -200,3 +200,7 @@ export function errorOptional<V>(v: Result<V> | undefined) {
     return v.error;
   }
 }
+
+export function flatValue<T>(v: T | T[]): T[] {
+  return Array.isArray(v) ? v : [v];
+}
