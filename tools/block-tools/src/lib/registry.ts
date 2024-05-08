@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { GlobalOverview, PackageOverview } from './structs';
 import semver from 'semver/preload';
 import { version } from 'node:os';
+import { Logger } from './cmd';
 
 export interface FullBlockPackageName {
   organization: string;
@@ -87,7 +88,7 @@ const MetaFile = 'meta.json';
  *
  */
 export class BlockRegistry {
-  constructor(private readonly storage: RegistryStorage) {
+  constructor(private readonly storage: RegistryStorage, private readonly logger?: Logger) {
   }
 
   constructNewPackage(pack: FullBlockPackageName): BlockRegistryPackConstructor {
@@ -95,10 +96,14 @@ export class BlockRegistry {
   }
 
   private async updateRegistry() {
+    this.logger?.info('Initiating registry refresh...');
+
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
     const seedPaths: string[] = [];
-    for (const seedPath of await this.storage.listFiles(VersionUpdatesPrefix)) {
+    const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
+    this.logger?.info('Packages to be updated:');
+    for (const seedPath of rawSeedPaths) {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match)
         continue;
@@ -106,18 +111,24 @@ export class BlockRegistry {
       const { packageKeyWithoutVersion, organization, pkg, version, seed } = match.groups!;
 
       let update = packagesToUpdate.get(packageKeyWithoutVersion);
-      if (!update)
+      let added = false;
+      if (!update) {
         packagesToUpdate.set(packageKeyWithoutVersion, {
           package: { organization, package: pkg },
           versions: new Set([version])
         });
-      else
+        added = true;
+      } else if (!update.versions.has(version)) {
         update.versions.add(version);
+        added = true;
+      }
+      this.logger?.info(`  - ${organization}:${pkg}:${version}`);
     }
 
     // loading global overview
     const overviewContent = await this.storage.getFile(OverviewFile);
     let overview = overviewContent === undefined ? [] : JSON.parse(overviewContent.toString()) as GlobalOverview;
+    this.logger?.info(`Global overview loaded, ${overview.length} records`);
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
@@ -125,6 +136,7 @@ export class BlockRegistry {
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
       const packageOverview = pOverviewContent === undefined ? [] : JSON.parse(pOverviewContent.toString()) as PackageOverview;
+      this.logger?.info(`Updating ${packageInfo.package.organization}:${packageInfo.package.package} overview, ${packageOverview.length} records`);
 
       // removing versions that we will update
       packageOverview.filter(e => !packageInfo.versions.has(e.version));
@@ -146,6 +158,7 @@ export class BlockRegistry {
 
       // write package overview back
       await this.storage.putFile(overviewFile, Buffer.from(JSON.stringify(packageOverview)));
+      this.logger?.info(`Done (${packageOverview.length} records)`);
 
       // patching corresponding entry in overview
       overview = overview.filter(e =>
@@ -162,14 +175,17 @@ export class BlockRegistry {
 
     // writing global overview
     await this.storage.putFile(OverviewFile, Buffer.from(JSON.stringify(overview)));
+    this.logger?.info(`Global overview updated (${overview.length} records)`);
 
     // deleting seeds
     await this.storage.deleteFiles(...seedPaths.map(sp => `${VersionUpdatesPrefix}${sp}`));
+    this.logger?.info(`Version update requests cleared`);
   }
 
   async updateIfNeeded(force: boolean = false): Promise<void> {
     // implementation of main convergence algorithm
 
+    this.logger?.info(`Checking if registry requires refresh...`);
     const updateRequestSeed = await this.storage.getFile(GlobalUpdateSeedInFile);
     const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
     if (
@@ -186,8 +202,10 @@ export class BlockRegistry {
 
     await this.updateRegistry();
 
-    if (updateRequestSeed)
+    if (updateRequestSeed) {
       await this.storage.putFile(GlobalUpdateSeedOutFile, updateRequestSeed);
+      this.logger?.info(`Refresh finished`);
+    }
   }
 
   async getPackageOverview(name: BlockPackageNameWithoutVersion): Promise<undefined | PackageOverview> {

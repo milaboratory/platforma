@@ -3,12 +3,13 @@ import path from 'node:path';
 import { storageByUrl } from './storage';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
+import { Logger, TestLogger } from './cmd';
 
 test('basic registry test', async () => {
   const uuid = randomUUID().toString();
   const tmp = path.resolve('tmp');
   const storage = storageByUrl('file://' + path.resolve(tmp, uuid));
-  const registry = new BlockRegistry(storage);
+  const registry = new BlockRegistry(storage, new TestLogger());
   await registry.updateIfNeeded();
   const constructor1 = registry.constructNewPackage({ organization: 'org1', package: 'pkg1', version: '1.1.0' });
   await constructor1.writeMeta({ some: 'value1' });

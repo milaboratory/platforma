@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-block-registry",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Utility to manipulate platforma block registry",
   "scripts": {
     "build": "tsc",
@@ -28,7 +28,8 @@
     "@aws-sdk/client-s3": "^3.569.0",
     "@oclif/core": "^3.26.6",
     "@types/semver": "^7.5.8",
-    "semver": "^7.6.1"
+    "semver": "^7.6.1",
+    "yaml": "^2.4.2"
   },
   "oclif": {
     "bin": "pl-reg",
