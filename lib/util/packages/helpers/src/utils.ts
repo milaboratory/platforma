@@ -16,6 +16,12 @@ export function notUndef<T>(v: T | undefined, message?: string): T {
   return v;
 }
 
+export type Undef<T> = T | undefined;
+
+export function undef<V>(v: V | undefined = undefined): V | undefined {
+  return v;
+}
+
 export function checkIfNotEmpty<T>(v: T | null | undefined, message?: string): asserts v is T {
   if (v === undefined || v === null) {
     throw Error(message ?? 'Empty (null | undefined) value');
