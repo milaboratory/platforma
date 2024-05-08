@@ -1,15 +1,16 @@
 import pathPosix from 'node:path/posix';
 import path from 'node:path';
-import * as fs from 'node:fs';
 import { paginateListObjectsV2, S3 } from '@aws-sdk/client-s3';
-import { se_PutBucketAccelerateConfigurationCommand } from '@aws-sdk/client-s3/dist-types/protocols/Aws_restXml';
+import * as fs from 'node:fs';
 
 export interface RegistryStorage {
-  putFile(address: string, buffer: Buffer): Promise<void>;
+  putFile(file: string, buffer: Buffer): Promise<void>;
 
-  getFile(address: string): Promise<Buffer | undefined>;
+  getFile(file: string): Promise<Buffer | undefined>;
 
   listFiles(prefix: string): Promise<string[]>;
+
+  deleteFiles(...files: string[]): Promise<void>;
 }
 
 export class S3Storage implements RegistryStorage {
@@ -18,11 +19,11 @@ export class S3Storage implements RegistryStorage {
               public readonly root: string) {
   }
 
-  async getFile(address: string): Promise<Buffer | undefined> {
+  async getFile(file: string): Promise<Buffer | undefined> {
     try {
       return Buffer.from(await (await this.client.getObject({
         Bucket: this.bucket,
-        Key: pathPosix.join(this.root, address)
+        Key: pathPosix.join(this.root, file)
       })).Body!.transformToByteArray());
     } catch (e: any) {
       if (e.name === 'NoSuchKey')
@@ -44,12 +45,27 @@ export class S3Storage implements RegistryStorage {
     return result;
   }
 
-  async putFile(address: string, buffer: Buffer): Promise<void> {
-    await this.client.putObject({ Bucket: this.bucket, Key: pathPosix.join(this.root, address), Body: buffer });
+  async putFile(file: string, buffer: Buffer): Promise<void> {
+    await this.client.putObject({ Bucket: this.bucket, Key: pathPosix.join(this.root, file), Body: buffer });
+  }
+
+  async deleteFiles(...files: string[]): Promise<void> {
+    // TODO implement support of more than 1000 files
+    await this.client.deleteObjects({
+      Bucket: this.bucket,
+      Delete: {
+        Objects: files.map(file => (
+          {
+            Key: pathPosix.join(this.root, file)
+          }
+        ))
+      }
+    });
   }
 }
 
 export class FSStorage implements RegistryStorage {
+  /** Absolute path */
   public readonly root: string;
 
   constructor(_root: string) {
@@ -69,22 +85,35 @@ export class FSStorage implements RegistryStorage {
       if (err.code == 'ENOENT')
         return undefined;
       else
-        throw err;
+        throw new Error('', { cause: err });
     }
   }
 
   async listFiles(prefix: string): Promise<string[]> {
-    const listRoot = this.toAbsolutePath(prefix);
-    return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
-      .filter(e => e.isFile())
-      .map(e => path.relative(listRoot, path.resolve(e.path, e.name))
-        .split(path.sep).join(pathPosix.sep));
+    try {
+      const listRoot = this.toAbsolutePath(prefix);
+      return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
+        .filter(e => e.isFile())
+        .map(e => path.relative(listRoot, path.resolve(e.path, e.name))
+          .split(path.sep).join(pathPosix.sep));
+    } catch (err: any) {
+      if (err.code == 'ENOENT')
+        return [];
+      else
+        throw new Error('', { cause: err });
+    }
   }
 
   async putFile(address: string, buffer: Buffer): Promise<void> {
     const absoluteAddress = this.toAbsolutePath(address);
     await fs.promises.mkdir(path.dirname(absoluteAddress), { recursive: true });
     await fs.promises.writeFile(absoluteAddress, buffer);
+  }
+
+  async deleteFiles(...files: string[]): Promise<void> {
+    // Folders are not removed, deletes issued sequentially
+    for (const file of files)
+      await fs.promises.rm(this.toAbsolutePath(file));
   }
 }
 

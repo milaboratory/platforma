@@ -26,6 +26,11 @@ test('test local fs list', async () => {
   const expected = ['deep2/file_1.txt', 'deep1/file_1.txt', 'deep1/file_2.txt'];
   expected.sort();
   expect(result).toEqual(expected);
+  await storage.deleteFiles('some/deep2/file_1.txt');
+  expected.splice(expected.indexOf('some/deep2/file_1.txt'), 1);
+  const result1 = await storage.listFiles('some');
+  result1.sort();
+  expect(result1).toEqual(expected);
   await fs.promises.rm(tmp, { recursive: true });
 });
 
@@ -58,6 +63,11 @@ if (testS3Address) {
     const expected = ['deep2/file_1.txt', 'deep1/file_1.txt', 'deep1/file_2.txt'];
     expected.sort();
     expect(result).toEqual(expected);
+    await storage.deleteFiles('some/deep2/file_1.txt');
+    expected.splice(expected.indexOf('some/deep2/file_1.txt'), 1);
+    const result1 = await storage.listFiles('some');
+    result1.sort();
+    expect(result1).toEqual(expected);
     await storage.client.deleteObjects({
       Bucket: storage.bucket, Delete: {
         Objects: [
