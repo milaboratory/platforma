@@ -1,11 +1,11 @@
 import { TypedArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
-const getTemplateCheck = /getTemplate\s*\(/;
-const getTemplatePattern = /getTemplate\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
+const getTemplateIdCheck = /getTemplateId\s*\(/;
+const getTemplateIdPattern = /getTemplateId\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
 
-function renderGetTemplate(pkg: string, name: string): string {
-  return `getTemplate("${pkg}:${name}")`;
+function renderGetTemplateId(pkg: string, name: string): string {
+  return `getTemplateId("${pkg}:${name}")`;
 }
 
 const importCheck = /import\s*\(\s*"[^"]*:/;
@@ -23,7 +23,7 @@ interface Dependency {
 }
 
 const dependencyTypes: Dependency[] = [
-  { type: 'template', pattern: getTemplatePattern, check: getTemplateCheck, render: renderGetTemplate },
+  { type: 'template', pattern: getTemplateIdPattern, check: getTemplateIdCheck, render: renderGetTemplateId },
   { type: 'library', pattern: importPattern, check: importCheck, render: renderImport }
 ];
 

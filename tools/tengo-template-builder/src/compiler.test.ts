@@ -3,11 +3,9 @@ import { ArtifactSource, parseSource } from './source';
 import {
   TestArtifactSource, testLocalPackage,
   testPackage1,
-  testPackage1Lib1,
   testPackage1Lib1Name,
-  testPackage1Lib1Src,
   testPackage1Lib1SrcNormalized, testPackage1Lib2Name, testPackage1Lib2SrcNormalized,
-  testPackage1Tpl3, testPackage1Tpl3CompiledBase64, testPackage1Tpl3Name
+  testPackage1Tpl3CompiledBase64, testPackage1Tpl3Name
 } from './test.artifacts';
 import { artifactNameToString } from './package';
 import { Template } from './template';
