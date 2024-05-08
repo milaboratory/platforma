@@ -8,8 +8,9 @@ export type PackageOverview = PackageOverviewEntry[]
 export interface GlobalOverviewEntry {
   organization: string,
   package: string,
+  allVersions: string[],
   latestVersion: string,
-  latestMeta: object
+  latestMeta: object,
 }
 
 export type GlobalOverview = GlobalOverviewEntry[]

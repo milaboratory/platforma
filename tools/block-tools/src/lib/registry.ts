@@ -1,7 +1,8 @@
 import { RegistryStorage } from './storage';
 import { randomUUID } from 'node:crypto';
-import { PackageOverview } from './structs';
+import { GlobalOverview, PackageOverview } from './structs';
 import semver from 'semver/preload';
+import { version } from 'node:os';
 
 export interface FullBlockPackageName {
   organization: string;
@@ -11,33 +12,32 @@ export interface FullBlockPackageName {
 
 export type BlockPackageNameWithoutVersion = Pick<FullBlockPackageName, 'organization' | 'package'>
 
-const DataPrefix = 'v1/data/';
-const PackagesPrefix = 'v1/packages/';
+const MainPrefix = 'v1/';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
 }
 
 function dataFilePath(bp: FullBlockPackageName, file: string): string {
-  return `${DataPrefix}${bp.organization}/${bp.package}/${bp.version}/${file}`;
+  return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}/${file}`;
 }
 
 function packageOverviewPath(bp: BlockPackageNameWithoutVersion): string {
-  return `${PackagesPrefix}${bp.organization}/${bp.package}.json`;
+  return `${MainPrefix}${bp.organization}/${bp.package}/overview.json`;
 }
 
-const PackageUpdatesPrefix = 'v1/packages/_updates/';
+const VersionUpdatesPrefix = '_updates_v1/per_package_version/';
 
 function packageUpdatePath(bp: FullBlockPackageName, seed: string): string {
-  return `${PackageUpdatesPrefix}${bp.organization}/${bp.package}/${bp.version}/${seed}`;
+  return `${VersionUpdatesPrefix}${bp.organization}/${bp.package}/${bp.version}/${seed}`;
 }
 
 const PackageUpdatePattern = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<pkg>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
 
 const OverviewFile = 'v1/overview.json';
 
-const GlobalUpdateSeedFile = 'v1/_update_seed';
-const GlobalUpdatedSeedFile = 'v1/_updated_seed';
+const GlobalUpdateSeedInFile = '_updates_v1/_global_update_in';
+const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
 
 const MetaFile = 'meta.json';
 
@@ -67,26 +67,24 @@ const MetaFile = 'meta.json';
 /**
  * Layout:
  *
- *   v1/data/          <-- actual block pack contents
+ *   _updates_v1/per_package/
+ *     organisationA/package1/1.2.3/seedABC    <-- Tells that change happened for organisationA/package1 version 1.2.3, and reassembly of package1 overview is required
+ *     organisationA/package1/1.2.3/seedCDE
+ *     organisationB/package2/1.4.3/seedFGH
+ *
+ *   _updates_v1/_global_update_in             <-- Anybody who changes contents writes a random seed in this file
+ *   _updates_v1/_global_update_out            <-- Update process writes update seed from the _global_update_in here after successful update.
+ *                                                 Mismatch between contents of those files is a sign that another update should be performed.
+ *
+ *   v1/                                       <-- Actual block packages content
  *     organisationA/package2/1.2.3/meta.json
- *     organisationA/package2/1.2.3/template.plj.gz
+ *     organisationA/package2/1.2.3/main.template.plj.gz
  *     organisationA/package2/1.2.3/...
+ *     organisationA/package2/overview.json    <-- Per-package aggregated meta-data over all available versions
  *     ...
  *
- *   v1/packages/       <-- per-package aggregated data over all available versions
- *     _updates/
- *       organisationA/package1/1.2.3/seedABC  <-- tells that change happened for organisationA/package1 version 1.2.3, and reassembly of package1 overview is required
- *       organisationA/package1/1.2.3/seedCDE
- *       organisationB/package2/1.4.3/seedFGH
- *     organisationA/package1.json
- *     organisationB/package2.json
- *     ...
+ *   v1/overview.json                          <-- aggregated information about all packages
  *
- *   v1/overview.json
- *
- *   v1/_update_seed      <-- anybody who changes contents writes a random seed in this file
- *   v1/_updated_seed     <-- update process writes update seed from the _update_seed here after successful update.
- *                            Mismatch between contents of those files is a sign that another update should be performed.
  */
 export class BlockRegistry {
   constructor(private readonly storage: RegistryStorage) {
@@ -100,7 +98,7 @@ export class BlockRegistry {
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
     const seedPaths: string[] = [];
-    for (const seedPath of await this.storage.listFiles(PackageUpdatesPrefix)) {
+    for (const seedPath of await this.storage.listFiles(VersionUpdatesPrefix)) {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match)
         continue;
@@ -116,6 +114,10 @@ export class BlockRegistry {
       else
         update.versions.add(version);
     }
+
+    // loading global overview
+    const overviewContent = await this.storage.getFile(OverviewFile);
+    let overview = overviewContent === undefined ? [] : JSON.parse(overviewContent.toString()) as GlobalOverview;
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
@@ -140,21 +142,36 @@ export class BlockRegistry {
       }
 
       // sorting entries according to version
-      packageOverview.sort((e1, e2) => semver.compare(e2.version,e1.version));
+      packageOverview.sort((e1, e2) => semver.compare(e2.version, e1.version));
 
       // write package overview back
       await this.storage.putFile(overviewFile, Buffer.from(JSON.stringify(packageOverview)));
+
+      // patching corresponding entry in overview
+      overview = overview.filter(e =>
+        e.organization !== packageInfo.package.organization
+        || e.package !== packageInfo.package.package);
+      overview.push({
+        organization: packageInfo.package.organization,
+        package: packageInfo.package.package,
+        allVersions: packageOverview.map(e => e.version).reverse(),
+        latestVersion: packageOverview[0].version,
+        latestMeta: packageOverview[0].meta
+      });
     }
 
+    // writing global overview
+    await this.storage.putFile(OverviewFile, Buffer.from(JSON.stringify(overview)));
+
     // deleting seeds
-    await this.storage.deleteFiles(...seedPaths.map(sp => `${PackageUpdatesPrefix}${sp}`));
+    await this.storage.deleteFiles(...seedPaths.map(sp => `${VersionUpdatesPrefix}${sp}`));
   }
 
   async updateIfNeeded(force: boolean = false): Promise<void> {
     // implementation of main convergence algorithm
 
-    const updateRequestSeed = await this.storage.getFile(GlobalUpdateSeedFile);
-    const currentUpdatedSeed = await this.storage.getFile(GlobalUpdatedSeedFile);
+    const updateRequestSeed = await this.storage.getFile(GlobalUpdateSeedInFile);
+    const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
     if (
       !force &&
       updateRequestSeed === undefined && currentUpdatedSeed === undefined
@@ -170,7 +187,7 @@ export class BlockRegistry {
     await this.updateRegistry();
 
     if (updateRequestSeed)
-      await this.storage.putFile(GlobalUpdatedSeedFile, updateRequestSeed);
+      await this.storage.putFile(GlobalUpdateSeedOutFile, updateRequestSeed);
   }
 
   async getPackageOverview(name: BlockPackageNameWithoutVersion): Promise<undefined | PackageOverview> {
@@ -178,6 +195,13 @@ export class BlockRegistry {
     if (content === undefined)
       return undefined;
     return JSON.parse(content.toString()) as PackageOverview;
+  }
+
+  async getGlobalOverview(): Promise<undefined | GlobalOverview> {
+    const content = await this.storage.getFile(OverviewFile);
+    if (content === undefined)
+      return undefined;
+    return JSON.parse(content.toString()) as GlobalOverview;
   }
 }
 
@@ -202,7 +226,7 @@ export class BlockRegistryPackConstructor {
     if (!this.metaAdded)
       throw new Error('meta not added');
     await this.storage.putFile(packageUpdatePath(this.name, this.seed), Buffer.of());
-    await this.storage.putFile(GlobalUpdateSeedFile, Buffer.from(this.seed));
+    await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(this.seed));
   }
 }
 

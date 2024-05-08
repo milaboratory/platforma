@@ -18,6 +18,21 @@ test('basic registry test', async () => {
   await constructor2.writeMeta({ some: 'value2' });
   await constructor2.finish();
   await registry.updateIfNeeded();
-  console.log(await registry.getPackageOverview({ organization: 'org1', package: 'pkg1' }));
+  expect(await registry.getPackageOverview({ organization: 'org1', package: 'pkg1' })).toEqual(
+    [
+      { version: '1.2.0', meta: { some: 'value2' } },
+      { version: '1.1.0', meta: { some: 'value1' } }
+    ]
+  );
+  expect(await registry.getGlobalOverview()).toEqual([
+      {
+        organization: 'org1',
+        package: 'pkg1',
+        allVersions: ['1.1.0', '1.2.0'],
+        latestVersion: '1.2.0',
+        latestMeta: { some: 'value2' }
+      }
+    ]
+  );
   await fs.promises.rm(tmp, { recursive: true, force: true });
 });
