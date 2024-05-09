@@ -22,6 +22,9 @@ const logger = winston.createLogger({
 
 const compiler = new TengoTemplateCompiler();
 
+// reading current package.json
+const targetPackageJson: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
+
 interface PackageJson {
   'name': string;
   'version': string;
@@ -53,7 +56,7 @@ const loadDependencies = (target: string) => {
       if (type === 'dir')
         loadDependencies(file);
     }
-    return
+    return;
   }
 
   // we are in package folder
@@ -61,8 +64,8 @@ const loadDependencies = (target: string) => {
   const libFolder = resolveDistLibs(target);
   const tplFolder = resolveDistTemplates(target);
 
-  const libFolderExists = pathType(libFolder) === 'dir'
-  const tplFolderExists = pathType(tplFolder) === 'dir'
+  const libFolderExists = pathType(libFolder) === 'dir';
+  const tplFolderExists = pathType(tplFolder) === 'dir';
 
   if (!libFolderExists && !tplFolderExists)
     // if neither of tengo-specific folders detected, skipping package
@@ -71,6 +74,10 @@ const loadDependencies = (target: string) => {
   // we are in tengo dependency folder
 
   const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
+
+  // in a workspace we will find ourselves in node_modules, ignoring
+  if (packageJson.name === targetPackageJson.name)
+    return;
 
   if (pathType(path.resolve(target, 'node_modules')) === 'dir')
     throw new Error(`nested node_modules is a sign of library dependencies version incompatibility in ${target}`);
@@ -99,26 +106,23 @@ const loadDependencies = (target: string) => {
   }
 
   if (tplFolderExists) {
-      // adding templates
-      for (const f of fs.readdirSync(tplFolder)) {
-        const file = path.resolve(tplFolder, f);
-        if (!f.endsWith(compiledTplSuffix))
-          throw new Error(`unexpected file: ${file}`);
-        const fullName: FullArtifactName = {
-          type: 'template',
-          pkg: packageJson.name,
-          id: f.slice(0, f.length - compiledTplSuffix.length),
-          version: packageJson.version
-        };
-        const tpl = new Template(fullName, { content: fs.readFileSync(file) });
-        compiler.addTemplate(tpl);
-        logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
-      }
+    // adding templates
+    for (const f of fs.readdirSync(tplFolder)) {
+      const file = path.resolve(tplFolder, f);
+      if (!f.endsWith(compiledTplSuffix))
+        throw new Error(`unexpected file: ${file}`);
+      const fullName: FullArtifactName = {
+        type: 'template',
+        pkg: packageJson.name,
+        id: f.slice(0, f.length - compiledTplSuffix.length),
+        version: packageJson.version
+      };
+      const tpl = new Template(fullName, { content: fs.readFileSync(file) });
+      compiler.addTemplate(tpl);
+      logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+    }
   }
 };
-
-// reading current package.json
-const packageJson: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
 
 // collecting all dependencies from node_modules
 loadDependencies(findNodeModules());
@@ -135,7 +139,7 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
 // collecting all source artifacts
 const sources: ArtifactSource[] = [];
 for (const f of fs.readdirSync('src')) {
-  const fullName = fullNameFromFileName(packageJson, f);
+  const fullName = fullNameFromFileName(targetPackageJson, f);
   const file = path.resolve('src', f);
   logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
   const src = parseSource(fs.readFileSync(file).toString(), fullName, true);

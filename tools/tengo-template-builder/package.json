@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-template-builder",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "build": "tsc",
