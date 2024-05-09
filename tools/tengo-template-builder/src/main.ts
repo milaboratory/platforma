@@ -2,29 +2,13 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import { findNodeModules, pathType } from './util';
 import { TengoTemplateCompiler } from './compiler';
 import { artifactNameToString, FullArtifactName, fullNameToString } from './package';
 import { ArtifactSource, parseSource } from './source';
 import { Template } from './template';
 import winston from 'winston';
 
-type PathType = 'absent' | 'file' | 'dir' | 'unknown'
-
-function pathType(path: string): PathType {
-  try {
-    const s = fs.statSync(path);
-    if (s.isDirectory())
-      return 'dir';
-    if (s.isFile())
-      return 'file';
-    return 'unknown';
-  } catch (err: any) {
-    if (err.code == 'ENOENT')
-      return 'absent';
-    else
-      throw err;
-  }
-}
 
 const logger = winston.createLogger({
   level: 'debug',
@@ -60,24 +44,38 @@ function resolveDistTemplates(root: string) {
 
 const loadDependencies = (target: string) => {
   const packageJsonPath = path.resolve(target, 'package.json');
-  if (pathType(packageJsonPath) === 'file') {
 
-    // we are in package folder
+  if (pathType(packageJsonPath) !== 'file') {
+    // recursively iterate over all folders
+    for (const f of fs.readdirSync(target)) {
+      const file = path.resolve(target, f);
+      const type = pathType(file);
+      if (type === 'dir')
+        loadDependencies(file);
+    }
+    return
+  }
 
-    const libFolder = resolveDistLibs(target);
-    const tplFolder = resolveDistTemplates(target);
+  // we are in package folder
 
-    if (pathType(libFolder) !== 'dir' && pathType(tplFolder) !== 'dir')
-      // if neither of tengo-specific folders detected, skipping package
-      return;
+  const libFolder = resolveDistLibs(target);
+  const tplFolder = resolveDistTemplates(target);
 
-    // we are in tengo dependency folder
+  const libFolderExists = pathType(libFolder) === 'dir'
+  const tplFolderExists = pathType(tplFolder) === 'dir'
 
-    const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
+  if (!libFolderExists && !tplFolderExists)
+    // if neither of tengo-specific folders detected, skipping package
+    return;
 
-    if (pathType(path.resolve(target, 'node_modules')) === 'dir')
-      throw new Error(`nested node_modules is a sign of library dependencies version incompatibility in ${target}`);
+  // we are in tengo dependency folder
 
+  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
+
+  if (pathType(path.resolve(target, 'node_modules')) === 'dir')
+    throw new Error(`nested node_modules is a sign of library dependencies version incompatibility in ${target}`);
+
+  if (libFolderExists) {
     // adding libs
     for (const f of fs.readdirSync(libFolder)) {
       const file = path.resolve(libFolder, f);
@@ -98,31 +96,24 @@ const loadDependencies = (target: string) => {
           logger.debug(`  - ${artifactNameToString(dep)}`);
       }
     }
+  }
 
-    // adding templates
-    for (const f of fs.readdirSync(tplFolder)) {
-      const file = path.resolve(tplFolder, f);
-      if (!f.endsWith(compiledTplSuffix))
-        throw new Error(`unexpected file: ${file}`);
-      const fullName: FullArtifactName = {
-        type: 'template',
-        pkg: packageJson.name,
-        id: f.slice(0, f.length - compiledTplSuffix.length),
-        version: packageJson.version
-      };
-      const tpl = new Template(fullName, { content: fs.readFileSync(file) });
-      compiler.addTemplate(tpl);
-      logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
-    }
-
-  } else {
-    // recursively iterate over all folders
-    for (const f of fs.readdirSync(target)) {
-      const file = path.resolve(target, f);
-      const type = pathType(file);
-      if (type === 'dir')
-        loadDependencies(file);
-    }
+  if (tplFolderExists) {
+      // adding templates
+      for (const f of fs.readdirSync(tplFolder)) {
+        const file = path.resolve(tplFolder, f);
+        if (!f.endsWith(compiledTplSuffix))
+          throw new Error(`unexpected file: ${file}`);
+        const fullName: FullArtifactName = {
+          type: 'template',
+          pkg: packageJson.name,
+          id: f.slice(0, f.length - compiledTplSuffix.length),
+          version: packageJson.version
+        };
+        const tpl = new Template(fullName, { content: fs.readFileSync(file) });
+        compiler.addTemplate(tpl);
+        logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+      }
   }
 };
 
@@ -130,7 +121,7 @@ const loadDependencies = (target: string) => {
 const packageJson: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
 
 // collecting all dependencies from node_modules
-loadDependencies('node_modules');
+loadDependencies(findNodeModules());
 
 function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullArtifactName {
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
