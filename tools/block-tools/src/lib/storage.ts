@@ -118,7 +118,7 @@ export class FSStorage implements RegistryStorage {
 }
 
 export function storageByUrl(address: string): RegistryStorage {
-  const url = new URL(address);
+  const url = new URL(address, `file:${path.resolve('.').split(path.sep).join(pathPosix.sep)}/`);
   switch (url.protocol) {
     case 'file:':
       const root = path.resolve(url.pathname);

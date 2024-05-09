@@ -1,6 +1,4 @@
 import { Flags } from '@oclif/core';
-import { BlockRegistry } from './lib/registry';
-import { getConfig } from './config';
 import path from 'node:path';
 
 // export const registryFlag = Flags.custom<BlockRegistry>({
@@ -18,7 +16,7 @@ export interface TargetFile {
 }
 
 function parseTargetFile(arg: string): TargetFile {
-  const match = arg.match(/(?<destName>[^\/\\]+)@(?<src>.*)/);
+  const match = arg.match(/(?<destName>[^\/\\]+)=(?<src>.*)/);
   if (match) {
     const { src, destName } = match.groups!;
     return { src, destName };
@@ -29,6 +27,6 @@ function parseTargetFile(arg: string): TargetFile {
 
 export const targetFile = Flags.custom<TargetFile>({
   summary: 'target files to upload',
-  helpValue: 'file_path | remote_name@file_path',
+  helpValue: 'file_path | package_name=file_path',
   parse: async (arg) => parseTargetFile(arg)
 });

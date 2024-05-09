@@ -2,7 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { FSStorage, S3Storage, storageByUrl } from './storage';
 import path from 'node:path';
 import * as fs from 'node:fs';
-import { S3 } from '@aws-sdk/client-s3';
+
+test('file url test #1', async () => {
+  const url = new URL('file:./local/path', 'file://' + path.resolve('.') + '/');
+  expect(url.pathname).toEqual(path.resolve('./local/path'));
+});
+
+test('file url test #2', async () => {
+  const url = new URL('http://a/b/c', 'file://' + path.resolve('.') + '/');
+  expect(url.toString()).toEqual('http://a/b/c');
+});
 
 test('test local fs read write', async () => {
   const uuid = randomUUID().toString();

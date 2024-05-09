@@ -1,0 +1,12 @@
+registry: file:./tmp/reg0
+organization: milaboratory
+package: testpackage
+version: 1.0.2
+files:
+  the-file-1.txt: file1.txt
+  the-file-2.txt: file2.txt
+meta:
+  description:
+    Test package
+  changelog:
+    Some new things

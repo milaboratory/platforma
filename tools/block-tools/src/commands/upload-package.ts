@@ -1,11 +1,12 @@
 import { Args, Command, Flags } from '@oclif/core';
-import { getConfig } from '../config';
+import { getConfig, PlRegPackageConfigDataShard } from '../config';
 import { targetFile } from '../flags';
-import { CmdLoggerAdapter } from '../lib/cmd';
-import { FullBlockPackageName } from '../lib/registry';
 import fs from 'node:fs';
-import { version } from 'node:os';
-import semver from 'semver/preload';
+import YAML from 'yaml';
+import { CmdLoggerAdapter } from '../lib/cmd';
+
+type BasicConfigField = (keyof PlRegPackageConfigDataShard) & ('registry' | 'organization' | 'package' | 'version')
+const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
 
 export default class UploadPackage extends Command {
   static description = 'Uploads package and refreshes the registry';
@@ -24,26 +25,22 @@ export default class UploadPackage extends Command {
       char: 'r',
       summary: 'full address of the registry or alias from .pl.reg',
       helpValue: '<address|alias>',
-      env: 'PL_REGISTRY',
-      default: 'default'
+      env: 'PL_REGISTRY'
     }),
 
     organization: Flags.string({
       char: 'o',
-      summary: 'target organisation',
-      required: true
+      summary: 'target organisation'
     }),
 
     package: Flags.string({
       char: 'p',
-      summary: 'target package',
-      required: true
+      summary: 'target package'
     }),
 
     version: Flags.string({
       char: 'v',
-      summary: 'target version',
-      required: true
+      summary: 'target version'
     }),
 
     meta: Flags.file({
@@ -56,7 +53,7 @@ export default class UploadPackage extends Command {
       char: 'f',
       summary: 'package files',
       multiple: true,
-      required: true
+      default: []
     }),
 
     refresh: Flags.boolean({
@@ -68,28 +65,40 @@ export default class UploadPackage extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(UploadPackage);
-    const registry = (await getConfig()).createRegistry(flags.registry, new CmdLoggerAdapter(this));
-    const name: FullBlockPackageName = {
-      organization: flags.organization,
-      package: flags.package,
-      version: flags.version
-    };
+    const configFromFlags: PlRegPackageConfigDataShard = PlRegPackageConfigDataShard.parse({});
 
-    // Validating
-    if (!semver.valid(name.version))
-      this.error(`Wrong version format, please use valid semver: ${name.version}`, { exit: 1 });
+    for (const field of BasicConfigFields)
+      if (flags[field])
+        configFromFlags[field] = flags[field];
 
-    let meta = {};
-    if (flags.meta)
-      meta = JSON.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
-    const builder = registry.constructNewPackage(name);
-    for (const targetFile of flags.file) {
-      this.log(`Uploading ${targetFile.src} -> ${targetFile.destName} ...`);
-      const content = await fs.promises.readFile(targetFile.src);
-      await builder.addFile(targetFile.destName, content);
+    if (flags.meta) {
+      if (flags.meta.endsWith('.json'))
+        configFromFlags.meta = JSON.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
+      else if (flags.meta.endsWith('.yaml'))
+        configFromFlags.meta = YAML.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
     }
+
+    for (const targetFile of flags.file) {
+      configFromFlags.files[targetFile.destName] = targetFile.src;
+    }
+
+    const conf = await getConfig(configFromFlags);
+
+    this.log(YAML.stringify(conf.conf));
+
+    const registry = conf.createRegistry(new CmdLoggerAdapter(this));
+    const name = conf.fullPackageName;
+
+    const builder = registry.constructNewPackage(name);
+
+    for (const [dst, src] of Object.entries(conf.conf.files)) {
+      this.log(`Uploading ${src} -> ${dst} ...`);
+      const content = await fs.promises.readFile(src);
+      await builder.addFile(dst, content);
+    }
+
     this.log(`Uploading meta information...`);
-    await builder.writeMeta(meta);
+    await builder.writeMeta(conf.conf.meta);
     await builder.finish();
 
     if (flags.refresh)
