@@ -11,15 +11,6 @@ const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'pack
 export default class UploadPackage extends Command {
   static description = 'Uploads package and refreshes the registry';
 
-  // static args = {
-  //   registry: Args.string({
-  //     options: ['registry'],
-  //     description: 'Full address of the registry or alias from .pl.registries',
-  //     required: true
-  //   })
-  // };
-
-
   static flags = {
     registry: Flags.string({
       char: 'r',
@@ -30,17 +21,20 @@ export default class UploadPackage extends Command {
 
     organization: Flags.string({
       char: 'o',
-      summary: 'target organisation'
+      summary: 'target organisation',
+      env: 'PL_PACKAGE_ORGANIZATION'
     }),
 
     package: Flags.string({
       char: 'p',
-      summary: 'target package'
+      summary: 'target package',
+      env: 'PL_PACKAGE_NAME'
     }),
 
     version: Flags.string({
       char: 'v',
-      summary: 'target version'
+      summary: 'target version',
+      env: 'PL_PACKAGE_VERSION'
     }),
 
     meta: Flags.file({
@@ -59,7 +53,8 @@ export default class UploadPackage extends Command {
     refresh: Flags.boolean({
       summary: 'refresh repository after adding the package',
       default: true,
-      allowNo: true
+      allowNo: true,
+      env: 'PL_REGISTRY_REFRESH'
     })
   };
 
