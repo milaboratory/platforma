@@ -3,7 +3,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
-import { TengoTemplateCompiler } from './compiler';
+import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
 import { artifactNameToString, FullArtifactName, fullNameToString } from './package';
 import { ArtifactSource, parseSource } from './source';
 import { Template } from './template';
@@ -20,6 +20,26 @@ const compiledLibSuffix = '.lib.tengo';
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
 const validSuffixes = [srcLibSuffix, srcTplSuffix];
+
+export function createLogger(): winston.Logger {
+  return winston.createLogger({
+    level: 'debug',
+    format: winston.format.printf(({ level, message }) => {
+      return `${level.padStart(6, ' ')}: ${message}`;
+    }),
+    transports: [
+      new winston.transports.Console({
+        stderrLevels: ['error', 'warn', 'info', 'debug'],
+        handleExceptions: true
+      })
+    ]
+  });
+}
+
+export function getPackageInfo(): PackageJson {
+  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
+  return packageInfo
+}
 
 function resolveDistLibs(root: string) {
   return path.resolve(root, 'dist', 'tengo', 'lib');
@@ -112,7 +132,7 @@ const loadDependencies = (
   }
 };
 
-function parseSources(
+export function parseSources(
   logger: winston.Logger, packageInfo: PackageJson,
   target: string): ArtifactSource[] {
   const sources: ArtifactSource[] = [];
@@ -145,6 +165,18 @@ function parseSources(
   return sources
 }
 
+export function newCompiler(logger: winston.Logger, packageInfo: PackageJson) : TengoTemplateCompiler {
+  const compiler = new TengoTemplateCompiler();
+
+  // collect all data (templates and libs) from dependency tree
+  loadDependencies(
+    logger, compiler, packageInfo,
+    findNodeModules()
+  );
+
+  return compiler
+}
+
 function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullArtifactName | null {
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
   if (fileName.endsWith(srcLibSuffix))
@@ -156,29 +188,9 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
   return null;
 }
 
-export function compile() {
-  const logger = winston.createLogger({
-    level: 'debug',
-    format: winston.format.printf(({ level, message }) => {
-      return `${level.padStart(6, ' ')}: ${message}`;
-    }),
-    transports: [
-      new winston.transports.Console({ handleExceptions: true })
-    ]
-  });
-
-  // reading current package.json
-  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
-  
-  const compiler = new TengoTemplateCompiler();
-
-  // collecting all dependencies from node_modules
-  loadDependencies(
-    logger, compiler, packageInfo,
-    findNodeModules()
-  );
-
-  // collecting all source artifacts
+export function compile(logger : winston.Logger) : TemplatesAndLibs {
+  const packageInfo = getPackageInfo()
+  const compiler = newCompiler(logger, packageInfo)
   const sources = parseSources(logger, packageInfo, 'src')
 
   // checking that we have something to do
@@ -198,8 +210,10 @@ export function compile() {
   const compiled = compiler.compileAndAdd(sources);
   logger.info(`Done.`);
 
-  // writing results
+  return compiled
+}
 
+export function savePacks(logger: winston.Logger, compiled : TemplatesAndLibs) {
   // writing libs
   if (compiled.libs.length > 0) {
     const libOutput = resolveDistLibs('.');

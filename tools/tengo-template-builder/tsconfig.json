@@ -10,9 +10,7 @@
     "incremental": true,
     "sourceMap": true,
     "declaration": true,
-    "skipLibCheck": true,
-    "paths": {
-    }
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
