@@ -14,6 +14,7 @@ import TextField from '@/lib/components/TextField.vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
 import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
+import DropdownListItem from './lib/components/DropdownListItem.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
 import UiCheckbox from '@/lib/components/UiCheckbox.vue';
 import Checkbox from '@/lib/components/Checkbox.vue';
@@ -72,6 +73,7 @@ export {
   SelectInput,
   MultiDropdown,
   LineDropdown,
+  DropdownListItem,
   BtnGroup,
   BtnGhost,
   BtnLink,
