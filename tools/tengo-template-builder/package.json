@@ -7,7 +7,7 @@
     "test": "jest"
   },
   "bin": {
-    "pl-tengo-build": "dist/main.js"
+    "pl-tengo-build": "./bin/run.js"
   },
   "files": [
     "dist"
@@ -18,10 +18,18 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.8",
     "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@oclif/core": "^3.26.6",
     "canonicalize": "^2.0.0",
     "winston": "^3.13.0"
+  },
+  "oclif": {
+    "bin": "pl-tengo-build",
+    "commands": "./dist/commands",
+    "dirname": "pl-tengo-build",
+    "topicSeparator": " "
   }
 }
