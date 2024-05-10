@@ -1,0 +1,9 @@
+node_modules/
+*.iml
+*.tgz
+dist/
+runtime/*
+proto/.proto/
+proto/plapi/.proto/
+proto/shared/.proto/
+assets/heavy/*

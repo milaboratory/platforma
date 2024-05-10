@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package MiLaboratories.Controller.Shared;
+
+option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/downloadapi;downloadapi";
+
+import "google/api/annotations.proto";
+
+//
+// Download provides access to any data, that can be downloaded via network.
+//
+service Download {
+  rpc GetDownloadURL(DownloadAPI.GetDownloadURL.Request) returns (DownloadAPI.GetDownloadURL.Response) {
+    option (google.api.http) = {
+      get: "/resources/{resource_id}/get-download-url"
+    };
+  }
+}
+
+message DownloadAPI {
+  message GetDownloadURL {
+    message Request {
+      uint64 resource_id = 1;
+    }
+
+    message HTTPHeader {
+      string Name = 1;
+      string Value = 2;
+    }
+
+    message Response {
+      string download_url = 1;
+      repeated HTTPHeader headers = 2;
+    }
+  }
+}

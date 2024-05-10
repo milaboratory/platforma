@@ -1,0 +1,1020 @@
+syntax = "proto3";
+
+package MiLaboratories.PL.API;
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+import "google/protobuf/duration.proto";
+import "github.com/googleapis/googleapis/google/rpc/status.proto";
+
+import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
+import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
+import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
+
+service Platform {
+  //
+  // Transactions
+  //
+  rpc Tx(stream TxAPI.ClientMessage) returns (stream TxAPI.ServerMessage) {}
+  rpc TxSync(TxAPI.Sync.Request) returns (TxAPI.Sync.Response) {}
+
+  //
+  // Subscriptions
+  //
+  rpc SubscriptionAttachFilter(SubscriptionAPI.AttachFilter.Request) returns (SubscriptionAPI.AttachFilter.Response) {}
+  rpc SubscriptionDetachFilter(SubscriptionAPI.DetachFilter.Request) returns (SubscriptionAPI.DetachFilter.Response) {}
+  rpc NotificationsGet(NotificationAPI.Get.Request) returns (NotificationAPI.Get.Response) {}
+
+  //
+  // Controllers
+  //
+  rpc ControllerRegister(ControllerAPI.Register.Request) returns (ControllerAPI.Register.Response) {}
+  rpc ControllerDeregister(ControllerAPI.Deregister.Request) returns (ControllerAPI.Deregister.Response) {}
+  rpc ControllerCreate(ControllerAPI.Create.Request) returns (ControllerAPI.Create.Response) {}
+  rpc ControllerExists(ControllerAPI.Exists.Request) returns (ControllerAPI.Exists.Response) {}
+  rpc ControllerGet(ControllerAPI.Get.Request) returns (ControllerAPI.Get.Response) {}
+  rpc ControllerUpdate(ControllerAPI.Update.Request) returns (ControllerAPI.Update.Response) {}
+  rpc ControllerAttachSubscription(ControllerAPI.AttachSubscription.Request) returns (ControllerAPI.AttachSubscription.Response) {}
+  rpc GetControllerNotifications(ControllerAPI.GetNotifications.Request) returns (ControllerAPI.GetNotifications.Response) {}
+  rpc WriteControllerAliasesAndUrls(ControllerAPI.WriteAliasesAndUrls.Request) returns (ControllerAPI.WriteAliasesAndUrls.Response) {}
+  rpc RemoveControllerAliasesAndUrls(ControllerAPI.RemoveAliasesAndUrls.Request) returns (ControllerAPI.RemoveAliasesAndUrls.Response) {}
+  rpc GetControllerUrl(ControllerAPI.GetUrl.Request) returns (ControllerAPI.GetUrl.Response) {}
+  rpc ControllerSetFeatures(ControllerAPI.SetFeatures.Request) returns (ControllerAPI.SetFeatures.Response) {}
+  rpc ControllerClearFeatures(ControllerAPI.ClearFeatures.Request) returns (ControllerAPI.ClearFeatures.Response) {}
+
+  //
+  // Locks
+  //
+  rpc LeaseResource(LocksAPI.Lease.Create.Request) returns (LocksAPI.Lease.Create.Response) {}
+  rpc UpdateLease(LocksAPI.Lease.Update.Request) returns (LocksAPI.Lease.Update.Response) {}
+  rpc ReleaseLease(LocksAPI.Lease.Release.Request) returns (LocksAPI.Lease.Release.Response) {}
+
+  //
+  // Authentication
+  //
+  rpc AuthMethods(AuthAPI.ListMethods.Request) returns (AuthAPI.ListMethods.Response) {}
+  rpc GetJWTToken(AuthAPI.GetJWTToken.Request) returns (AuthAPI.GetJWTToken.Response) {}
+
+  //
+  // Other stuff
+  //
+  rpc ListResourceTypes(MiscAPI.ListResourceTypes.Request) returns (MiscAPI.ListResourceTypes.Response) {}
+
+  //
+  // Various service requests
+  //
+  rpc Ping(MaintenanceAPI.Ping.Request) returns (MaintenanceAPI.Ping.Response) {}
+}
+
+// Platform transactions on API level are implemented as bidirectional
+// streams that exist in parallel with transactions.
+// One stream = one transaction at all times.
+//
+// Long story short from client side:
+//   - client initializes stream and immediately gets transaction info
+//     message from server;
+//   - client calls server methods by sending messages to the server,
+//     each message has its own request ID starting from 1, request ID number
+//     grows as new messages are sent to the server;
+//   - client reads server responses for each messages sent. Client can batch
+//     writes and reads: e.g. send 3 messages, read 2 responses, send one
+//     more, read 2;
+//   - to finish communication client sends 'commit' message and reads last
+//     response;
+//
+// Detailed description of the process.
+//
+// The Platform transaction over gRPC has 3 stages:
+//
+// 1. Initialization:
+//
+//   - client opens new bidirectional stream by calling 'Tx' gRPC method;
+//   - client sends 'tx_open' message with request_id = 0 to open RO or RW
+//     transaction.
+//     Any message from client other than 'tx_open' during initialization is
+//     treated as communication error and causes server to close the stream;
+//   - server opens new transaction and sends transaction info to the client
+//     'tx_open' server message;
+//
+// 2. Communication:
+//
+//     Once the transaction gets initialized, all the communication between
+// client and server should be considered as request-response sequence.
+// The only difference to simple gRPC call is that sending a request does not
+// block client until the response arrives from server.
+//
+//     Client can send as many requests to the server as it wants before
+// reading responses. This allows client to batch method calls, when it is not
+// interested in result of each action, but needs only overall summary of
+// transaction commit.
+// For example, the following sequence is totally valid from client side:
+//   1. send reqA.
+//   2. send reqB.
+//   3. get respA.
+//   4. send reqC.
+//   5. get respB.
+//   6. get respC.
+//
+// Here are detailed rules of client-server communication inside transaction
+// stream:
+//   - if stream is closed by client or interrupted by any unrecoverable
+//     communication error, the accompanied transaction is discarded;
+//   - each message in client stream (from client to server) is considered as
+//     method call.
+//     E.g. 'resource_remove' makes server to actually remove resource inside
+//     transaction, bound to current stream;
+//   - each message in client stream MUST have its own ID (request_id),
+//     generated by client, UNIQUE for transaction. Numeration starts from
+//     1 for each transaction. request_id == 0 is treated as unrecoverable
+//     communication error by server and cancels transaction;
+//   - server expects 'request_id' from client to grow constantly by one as
+//     messages come. If message M2 arrives next to M1 and
+//       M2.request_id != (M1.request_id + 1)
+//     server treats it as unrecoverable communication error and cancels
+//     transaction;
+//   - all messages in server stream (from server to client) in communication
+//     stage have the same 'request_id' as the client messages, that triggered
+//     the operation. This allows client to match server responses to the
+//     requests it sent earlier;
+//   - messages order in server stream matches order in client stream: if
+//     client sent sequence [ReqA, ReqB], the server will always response
+//     [RespA, RespB];
+//   - client is allowed (but not obligated) to generate local IDs for new
+//     instances and use them in links and other references. These local IDs
+//     are valid only within current transaction;
+//   - any instance in server stream always has _real_ global ID that is valid
+//     at any times in any other request outside current transaction;
+//
+// 3. Finalization:
+//
+//    - client finalizes transaction by sending 'tx_commit' or 'tx_discard'
+//      message to the server. After that client can close client stream as any
+//      message sent to the server after commit/discard will be ignored anyway;
+//    - server stops reading client stream and does the commit/discard action.
+//    - once transaction is closed, server sends the result to client and
+//      closes server stream.
+//
+// At this point the transaction over gRPC is considered as finalized, all
+// local IDs generated within the transaction are no longer valid.
+//
+message TxAPI {
+  message ClientMessage {
+    uint32 request_id = 1;
+
+    oneof request {
+      Open.Request tx_open = 11; // open transaction
+      Commit.Request tx_commit = 12; // commit the transaction and close the stream
+      Discard.Request tx_discard = 13; // discard the transaction and close the stream
+
+      ResourceAPI.CreateRoot.Request resource_create_root = 58; // create new root resource
+      ResourceAPI.Remove.Request resource_remove = 57; // remove root resource from platform
+      ResourceAPI.CreateStruct.Request resource_create_struct = 51; // create new structural resource
+      ResourceAPI.CreateEphemeral.Request resource_create_ephemeral = 62; // create new ephemeral resource
+      ResourceAPI.CreateValue.Request resource_create_value = 52; // create value resource
+      ResourceAPI.GetValueID.Request resource_get_value_id = 63; // get value resource by type and data
+      ResourceAPI.CreateSingleton.Request resource_create_singleton = 64; // create singleton resource
+      ResourceAPI.GetSingleton.Request resource_get_singleton = 65; // get singleton resource by type and data
+      ResourceAPI.CreateChild.Request resource_create_child = 59; // create new child resource
+      ResourceAPI.LockInputs.Request resource_lock_inputs = 53; // lock inputs of resources without schema
+      ResourceAPI.LockOutputs.Request resource_lock_outputs = 56; // lock outputs of resources without schema
+      ResourceAPI.Exists.Request resource_exists = 54; // check if resource exists
+      ResourceAPI.Get.Request resource_get = 55; // get actual resource info from server
+      ResourceAPI.SetError.Request resource_set_error = 61; // create a special field and set error there.
+      ResourceAPI.List.ByType.Request resource_list_by_type = 60; // list resources of specific type
+      ResourceAPI.Name.Set.Request resource_name_set = 66; // assign name to resource
+      ResourceAPI.Name.Get.Request resource_name_get = 67; // get resource ID by name
+      ResourceAPI.Name.Exists.Request resource_name_exists = 68; // check if resource name exists in platform
+      ResourceAPI.Name.Delete.Request resource_name_delete = 69; // detach name from resource
+
+      FieldAPI.Create.Request field_create = 101; // add field to resource
+      FieldAPI.Exists.Request field_exists = 107; // add field to resource
+      FieldAPI.Set.Request field_set = 102; // link field to another resource or field
+      FieldAPI.SetError.Request field_set_error = 105; // link field to error resource
+      FieldAPI.Get.Request field_get = 103; // get field info
+      FieldAPI.Reset.Request field_reset = 104; // clear field value (MTW fields only)
+      FieldAPI.Remove.Request field_remove = 106; // clear field value (MTW fields only)
+
+      SubscriptionAPI.CreateSubscription.Request subscription_create = 111; // create subscription
+      SubscriptionAPI.AttachFilter.Request subscription_attach_filter = 112; // add filter to existing subscription
+      SubscriptionAPI.DetachFilter.Request subscription_detach_filter = 113; // add filter to existing subscription
+      SubscriptionAPI.CreateFilter.Request subscription_create_filter = 115; // create filter resource
+
+      NotificationAPI.Get.Request notification_get = 154; // get notification info from platform
+      NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handle by controller
+      NotificationAPI.Discard.Request notification_discard = 156; // discard notification handle by controller
+
+      ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
+      ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
+      ResourceKVAPI.GetIfExists.Request resource_key_value_get_if_exists = 202; // get a value from a KV if the value exists.
+
+      ResourceKVAPI.SetFlag.Request resource_key_value_set_flag = 203; // set a bool to a resource's key-value store.
+      ResourceKVAPI.GetFlag.Request resource_key_value_get_flag = 204; // get a bool from a resource's key-value store.
+      ResourceKVAPI.GetFlag.Request resource_key_value_get_flag_if_exists = 205; // get a bool from a resource's key-value store, return false if key is not found.
+
+      ControllerKVAPI.Set.Request controller_key_value_set = 250; // set a value to a controller's key-value store.
+      ControllerKVAPI.Get.Request controller_key_value_get = 251; // get a value from a controller's key-value store.
+      ControllerKVAPI.GetIfExists.Request controller_key_value_get_if_exists = 252; // get a value from a KV if the value exists.
+
+      CacheAPI.SetToField.Request cache_set_to_field = 300; // store the topology info and results of the field.
+      CacheAPI.DeleteExpiredRecords.Request cache_delete_expired_records = 301; // iterate through all records and delete expired.
+
+      ControllerAPI.SetFeatures.Request controller_features_set = 350; // replace list of resource features, provided by controller.
+      ControllerAPI.ClearFeatures.Request controller_features_clear = 351; // clear list of resource features, provided by controller.
+    }
+  }
+
+  message ServerMessage {
+    uint32 request_id = 1;
+
+    oneof response {
+      Open.Response tx_open = 11;
+      Commit.Response tx_commit = 12;
+      Discard.Response tx_discard = 13;
+
+      ResourceAPI.CreateRoot.Response resource_create_root = 58;
+      ResourceAPI.Remove.Response resource_remove = 57;
+      ResourceAPI.CreateStruct.Response resource_create_struct = 51;
+      ResourceAPI.CreateEphemeral.Response resource_create_ephemeral = 62;
+      ResourceAPI.CreateValue.Response resource_create_value = 52;
+      ResourceAPI.GetValueID.Response resource_get_value_id = 63;
+      ResourceAPI.CreateSingleton.Response resource_create_singleton = 64;
+      ResourceAPI.GetSingleton.Response resource_get_singleton = 65;
+      ResourceAPI.CreateChild.Response resource_create_child = 59;
+      ResourceAPI.LockInputs.Response resource_lock_inputs = 53;
+      ResourceAPI.LockOutputs.Response resource_lock_outputs = 56;
+      ResourceAPI.Exists.Response resource_exists = 54;
+      ResourceAPI.Get.Response resource_get = 55;
+      ResourceAPI.SetError.Response resource_set_error = 61;
+      ResourceAPI.List.ByType.Response resource_list_by_type = 60;
+      ResourceAPI.Name.Set.Response resource_name_set = 66;
+      ResourceAPI.Name.Get.Response resource_name_get = 67;
+      ResourceAPI.Name.Exists.Response resource_name_exists = 68;
+      ResourceAPI.Name.Delete.Response resource_name_delete = 69;
+
+      FieldAPI.Create.Response field_create = 101;
+      FieldAPI.Exists.Response field_exists = 107;
+      FieldAPI.Set.Response field_set = 102;
+      FieldAPI.SetError.Response field_set_error = 105;
+      FieldAPI.Get.Response field_get = 103;
+      FieldAPI.Reset.Response field_reset = 104;
+      FieldAPI.Remove.Response field_remove = 106;
+
+      SubscriptionAPI.CreateSubscription.Response subscription_create = 111;
+      SubscriptionAPI.CreateFilter.Response subscription_create_filter = 115;
+      SubscriptionAPI.AttachFilter.Response subscription_attach_filter = 112;
+      SubscriptionAPI.DetachFilter.Response subscription_detach_filter = 113;
+
+      NotificationAPI.Get.Response notification_get = 154;
+      NotificationAPI.Ack.Response notification_ack = 155;
+      NotificationAPI.Discard.Response notification_discard = 156;
+
+      ResourceKVAPI.Set.Response resource_key_value_set = 200;
+      ResourceKVAPI.Get.Response resource_key_value_get = 201;
+      ResourceKVAPI.GetIfExists.Response resource_key_value_get_if_exists = 202;
+
+      ResourceKVAPI.SetFlag.Response resource_key_value_set_flag = 203;
+      ResourceKVAPI.GetFlag.Response resource_key_value_get_flag = 204;
+      ResourceKVAPI.GetFlag.Response resource_key_value_get_flag_if_exists = 205;
+
+      ControllerKVAPI.Set.Response controller_key_value_set = 250;
+      ControllerKVAPI.Get.Response controller_key_value_get = 251;
+      ControllerKVAPI.GetIfExists.Response controller_key_value_get_if_exists = 252;
+
+      CacheAPI.SetToField.Response cache_set_to_field = 300;
+      CacheAPI.DeleteExpiredRecords.Response cache_delete_expired_records = 301;
+
+      ControllerAPI.SetFeatures.Response controller_features_set = 350;
+      ControllerAPI.ClearFeatures.Response controller_features_clear = 351;
+    }
+
+    google.rpc.Status error = 3;
+  }
+
+  message Open {
+    message Request {
+      enum WritableTx {
+        INVALID = 0;
+        WRITABLE = 1;
+        NOT_WRITABLE = 2;
+      }
+      string name = 1;
+      WritableTx writable = 2;
+    }
+
+    message Response {
+      Tx tx = 1;
+    }
+  }
+  message Commit {
+    message Request {}
+
+    message Response {
+      bool success = 1;
+    }
+  }
+  message Discard {
+    message Request {}
+
+    message Response {}
+  }
+
+  message Sync {
+    message Request {
+      uint64 tx_id = 1;
+    }
+
+    message Response {}
+  }
+}
+
+message ResourceAPI {
+  message CreateStruct {
+    message Request {
+      uint64 id = 2;
+      Base.ResourceType type = 3;
+
+      optional bytes data = 4;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+  message CreateEphemeral {
+    message Request {
+      uint64 id = 2;
+      Base.ResourceType type = 3;
+
+      optional bytes data = 4;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  message CreateChild {
+    message Request {
+      uint64 id = 1;
+      Base.ResourceType type = 2;
+      Base.FieldRef parent_field = 3;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  message CreateValue {
+    message Request {
+      uint64 id = 2;
+      Base.ResourceType type = 3;
+
+      bytes data = 6;
+
+      bool error_if_exists = 7;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  message GetValueID {
+    message Request {
+      Base.ResourceType type = 1;
+      bytes data = 2;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  message CreateSingleton {
+    message Request {
+      uint64 id = 2;
+      Base.ResourceType type = 3;
+
+      bytes data = 6;
+
+      bool error_if_exists = 7;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  message GetSingleton {
+    message Request {
+      Base.ResourceType type = 1;
+      bytes data = 2;
+
+      bool load_fields = 3;
+    }
+
+    message Response {
+      Resource resource = 1;
+    }
+  }
+
+  message LockInputs {
+    message Request {
+      uint64 resource_id = 1;
+    }
+
+    message Response {}
+  }
+
+  message LockOutputs {
+    message Request {
+      uint64 resource_id = 1;
+    }
+
+    message Response {}
+  }
+
+  message Exists {
+    message Request {
+      uint64 resource_id = 1;
+    }
+
+    message Response {
+      bool exists = 1;
+    }
+  }
+
+  message SetError {
+    message Request {
+      uint64 resource_id = 1;
+      uint64 error_resource_id = 2;
+    }
+    message Response {}
+  }
+  
+  message Get {
+    message Request {
+      uint64 resource_id = 1;
+      bool load_fields = 2;
+    }
+
+    message Response {
+      Resource resource = 1;
+    }
+  }
+
+  message List {
+    message ByType {
+      message Request {
+        Base.ResourceType resource_type = 1;
+      }
+
+      message Response {
+        map<uint64, Resource> resources = 1;
+      }
+    }
+  }
+
+  message CreateRoot {
+    message Request {
+      uint64 id = 2;
+      Base.ResourceType type = 3;
+    }
+
+    message Response {
+      uint64 resource_id = 1;
+    }
+  }
+
+  // FIXME: add CreateResource method to API
+
+  // Remove any resource, that has garbage collection disabled
+  message Remove {
+    message Request {
+      uint64 id = 1;
+    }
+
+    message Response {}
+  }
+
+  message Name {
+    message Set {
+      message Request {
+        uint64 resource_id = 1;
+        string name = 2;
+      }
+
+      message Response {}
+    }
+
+    message Get {
+      message Request {
+        string name = 1;
+      }
+
+      message Response {
+        uint64 resource_id = 1;
+      }
+    }
+
+    message Exists {
+      message Request {
+        string name = 1;
+      }
+
+      message Response {
+        bool exists = 1;
+      }
+    }
+
+    message Delete {
+      message Request {
+        string name = 1;
+      }
+
+      message Response {}
+    }
+  }
+}
+
+message FieldAPI {
+  message Create {
+    message Request {
+      Base.FieldType type = 1;
+
+      // field ID is always combination of parent resource ID and field name
+      Base.FieldRef id = 2;
+    }
+
+    message Response {
+      Base.FieldRef global_id = 1;
+    }
+  }
+
+  message Exists {
+    message Request {
+      Base.FieldRef field = 1;
+    }
+
+    message Response {
+      bool exists = 1;
+    }
+  }
+
+  message Set {
+    message Request {
+      Base.FieldRef field = 1;
+      Base.FieldRef value = 2;
+    }
+
+    message Response {}
+  }
+
+  message SetError {
+    message Request {
+      Base.FieldRef field = 1;
+      uint64 err_resource_id = 2;
+    }
+
+    message Response {}
+  }
+
+  message Get {
+    message Request {
+      Base.FieldRef field = 1;
+    }
+
+    message Response {
+      Field field = 1;
+    }
+  }
+
+  message Reset {
+    message Request {
+      Base.FieldRef field = 1;
+    }
+    message Response {}
+  }
+
+  message Remove {
+    message Request {
+      Base.FieldRef field = 1;
+    }
+    message Response {}
+  }
+}
+
+message NotificationAPI {
+  message Get {
+    message Request {
+      uint64 subscription = 1;
+      uint32 max_notifications = 2;
+    }
+
+    message Response {
+       repeated Notification notifications = 1;
+    }
+  }
+
+  message Ack {
+    message Request {
+      uint64 subscription_id = 1;
+      uint64 event_id = 2;
+    }
+
+    message Response {}
+  }
+
+  message Discard {
+    message Request {
+      uint64 subscription_id = 1;
+      uint64 event_id = 2;
+    }
+
+    message Response {}
+  }
+}
+
+message SubscriptionAPI {
+  message CreateSubscription {
+    message Request {
+      uint64 id = 1;
+      bool blocking = 2;
+      bool gc = 3;
+    }
+
+    message Response {
+      uint64 subscription_id = 1;
+    }
+  }
+
+  message CreateFilter {
+    message Request {
+      uint64 id = 1;
+      RTypes.NotificationFilter filter = 2;
+    }
+
+    message Response {
+      uint64 filter_id = 1;
+    }
+  }
+
+  message ListSubscriptions {
+    message SubscriptionInfo {
+      Subscription subscription = 1;
+
+      // TS of the moment someone last read notifications from subscription.
+      // old time = stale (lost) subscription
+      uint64 last_read_time = 2;
+
+      // number of not-yet-read notifications in subscription queue
+      // (notifications subscriber is expected to get on next reads)
+      uint64 notification_queue_size = 3;
+    }
+
+    message Request {}
+
+    message Response {
+      repeated SubscriptionInfo subscriptions = 1;
+    }
+  }
+
+  message AttachFilter {
+    message Request {
+      uint64 subscription_id = 1;
+      string filter_name = 2;
+      uint64 filter_id = 3;
+    }
+
+    message Response {}
+  }
+
+  message DetachFilter {
+    message Request {
+      uint64 subscription_id = 1;
+      string filter_name = 2;
+    }
+
+    message Response {}
+  }
+}
+
+message ControllerAPI {
+  message Register {
+    message Request {
+      string controller_type = 1;
+      map<string, RTypes.NotificationFilter> filters = 2;
+      repeated ResourceSchema resource_schemas = 3;
+    }
+
+    message Response {
+      uint64 controller_id = 1;
+      uint64 subscription_id = 2;
+    }
+  }
+
+  message Exists {
+    message Request {
+      string controller_type = 1;
+    }
+
+    message Response {
+      bool exists = 1;
+    }
+  }
+
+  message Update {
+    message Request {
+      string controller_type = 1;
+      map<string, RTypes.NotificationFilter> filters = 2;
+      repeated ResourceSchema resource_schemas = 3;
+    }
+
+    message Response {}
+  }
+
+  message Deregister {
+    message Request {
+      string controller_type = 1;
+    }
+
+    message Response {}
+  }
+
+  message Create {
+    message Request {
+      uint64 id = 1;
+      string controller_type = 2;
+    }
+
+    message Response {
+      uint64 controller_id = 1;
+    }
+  }
+
+  message Get {
+    message Request {
+      string controller_type = 1;
+    }
+
+    message Response {
+      Controller controller = 1;
+    }
+  }
+
+  message AttachSubscription {
+    message Request {
+      uint64 controller_id = 1;
+      uint64 subscription_id = 2;
+    }
+
+    message Response {}
+  }
+
+  message GetNotifications {
+    message Request {
+      string controller_type = 1;
+      uint32 max_notifications = 2;
+    }
+
+    message Response {
+       repeated Notification notifications = 1;
+    }
+  }
+
+  message WriteAliasesAndUrls {
+    message Request {
+      string controller_type = 1;
+      map<string, string> aliases_to_urls = 2;
+    }
+
+    message Response {}
+  }
+
+  message GetUrl {
+    message Request {
+      string controller_alias = 1;
+      uint64 resource_id = 2;
+    }
+
+    message Response {
+      string controller_url = 2;
+    }
+  }
+
+  message RemoveAliasesAndUrls {
+    message Request {
+      string controller_type = 1;
+    }
+
+    message Response {}
+  }
+
+  message SetFeatures {
+    message Request {
+      repeated ResourceAPIFeature features = 2;
+    }
+
+    message Response {}
+  }
+
+  message ClearFeatures {
+    message Request {
+      string controller_type = 1;
+    }
+
+    message Response {}
+  }
+}
+
+message ResourceKVAPI {
+  message Set {
+    message Request {
+      uint64 resource_id = 1;
+      string key = 2;
+      bytes value = 3;
+    }
+
+    message Response {}
+  }
+
+  message Get {
+    message Request {
+      uint64 resource_id = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bytes value = 1;
+    }
+  }
+
+  message GetIfExists {
+    message Request {
+      uint64 resource_id = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bytes value = 1;
+      bool exists = 2;
+    }
+  }
+
+  message SetFlag {
+    message Request {
+      uint64 resource_id = 1;
+      string key = 2;
+      bool value = 3;
+    }
+
+    message Response {}
+  }
+
+  message GetFlag {
+    message Request {
+      uint64 resource_id = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bool value = 1;
+    }
+  }
+}
+
+message ControllerKVAPI {
+  message Set {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+      bytes value = 3;
+    }
+
+    message Response {}
+  }
+
+  message Get {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bytes value = 1;
+    }
+  }
+
+  message GetIfExists {
+    message Request {
+      string controller_type = 1;
+      string key = 2;
+    }
+
+    message Response {
+      bytes value = 1;
+      bool exists = 2;
+    }
+  }
+}
+
+message CacheAPI {
+  message SetToField {
+    message Request {
+      Base.FieldRef id = 1;
+      google.protobuf.Duration period = 2;
+    }
+    message Response {}
+  }
+
+  message DeleteExpiredRecords {
+    message Request {}
+    message Response {}
+  }
+}
+
+message LocksAPI {
+  message Lease {
+    message Create {
+      message Request {
+        uint64 resource_id = 1;
+
+        google.protobuf.Duration timeout = 3;
+        string name = 4;
+      }
+      message Response {
+        bytes lease_id = 1;
+      }
+    }
+
+    message Update {
+      message Request {
+        uint64 resource_id = 1;
+        bytes lease_id = 2;
+
+        google.protobuf.Duration timeout = 3;
+        string name = 4;
+      }
+      message Response {}
+    }
+
+    message Release {
+      message Request {
+        uint64 resource_id = 1;
+        bytes lease_id = 2;
+      }
+      message Response {}
+    }
+  }
+}
+
+message AuthAPI {
+  message ListMethods {
+    message Request {}
+
+    message Response {
+      repeated MethodInfo methods = 1;
+    }
+
+    message MethodInfo {
+      string type = 1;
+      string name = 2;
+      map<string, string> info = 3;
+    }
+  }
+
+  message GetJWTToken {
+    message Request {
+      google.protobuf.Duration expiration = 1;
+    }
+
+    message Response {
+      string token = 1;
+    }
+  }
+}
+
+message MiscAPI {
+  message ListResourceTypes {
+    message Request {}
+
+    message Response {
+      repeated Base.ResourceType types = 1;
+    }
+  }
+}
+
+message MaintenanceAPI {
+  message Ping {
+    // Early connection check
+    message Request {}
+
+    message Response {
+      string core_version = 1;
+      string core_full_version = 2;
+
+      string server_info = 3;
+    }
+  }
+}

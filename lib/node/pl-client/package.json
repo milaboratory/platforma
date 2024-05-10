@@ -1,0 +1,46 @@
+{
+  "name": "@milaboratory/pl-ts-client-v2",
+  "version": "2.0.0",
+  "description": "TS/JS client for Platform API V2",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "build-watch": "tsup --watch",
+    "type-check": "tsc --noEmit --composite false",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.7",
+    "@protobuf-ts/grpc-transport": "^2.9.4",
+    "https-proxy-agent": "^7.0.4",
+    "long": "^5.2.3"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@protobuf-ts/plugin": "^2.9.4",
+    "@types/http-proxy": "^1.17.14",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": true,
+    "sourcemap": true
+  }
+}

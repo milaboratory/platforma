@@ -1,0 +1,79 @@
+Syncing 'main' proto version...
+  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Volumes/Data/Projects/MiLaboratory/platforma/pl-state/pl-ts-client-v2/proto/plapi/tmp-repo
+    Cloning into '/Volumes/Data/Projects/MiLaboratory/platforma/pl-state/pl-ts-client-v2/proto/plapi/tmp-repo'...
+  Syncing proto files from 'plapi'
+    - 'plapiproto/'
+      building file list ... done
+      api.proto
+      api_types.proto
+      base_types.proto
+      import.proto
+      resource_types.proto
+      
+      sent 34784 bytes  received 130 bytes  69828.00 bytes/sec
+      total size is 34373  speedup is 0.98
+
+    - 'plapi/'
+      building file list ... done
+      
+      sent 75 bytes  received 20 bytes  190.00 bytes/sec
+      total size is 0  speedup is 0.00
+
+    - 'protodep.toml'
+      building file list ... done
+      protodep.toml
+      
+      sent 271 bytes  received 42 bytes  626.00 bytes/sec
+      total size is 138  speedup is 0.44
+
+    - 'protodep.lock'
+      building file list ... done
+      protodep.lock
+      
+      sent 369 bytes  received 42 bytes  822.00 bytes/sec
+      total size is 236  speedup is 0.57
+
+  Syncing shared proto files from 'controllers/shared/grpc'
+    - 'progressapi/'
+      building file list ... done
+      protocol.proto
+      
+      sent 1365 bytes  received 42 bytes  2814.00 bytes/sec
+      total size is 1220  speedup is 0.87
+
+    - 'streamingapi/'
+      building file list ... done
+      protocol.proto
+      
+      sent 9042 bytes  received 42 bytes  18168.00 bytes/sec
+      total size is 8897  speedup is 0.98
+
+    - 'downloadapi/'
+      building file list ... done
+      protocol.proto
+      
+      sent 948 bytes  received 42 bytes  1980.00 bytes/sec
+      total size is 803  speedup is 0.81
+
+    - 'lsapi/'
+      building file list ... done
+      protocol.proto
+      
+      sent 5005 bytes  received 42 bytes  10094.00 bytes/sec
+      total size is 4860  speedup is 0.96
+
+    - 'protodep.toml'
+      building file list ... done
+      protodep.toml
+      
+      sent 241 bytes  received 42 bytes  566.00 bytes/sec
+      total size is 108  speedup is 0.38
+
+    - 'protodep.lock'
+      building file list ... done
+      protodep.lock
+      
+      sent 339 bytes  received 42 bytes  762.00 bytes/sec
+      total size is 206  speedup is 0.54
+
+Updating dependencies...
