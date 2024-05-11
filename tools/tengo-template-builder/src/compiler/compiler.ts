@@ -20,14 +20,6 @@ export class TengoTemplateCompiler {
   private readonly libs = new ArtifactMap<ArtifactSource>(src => src.fullName);
   private readonly templates = new ArtifactMap<Template>(tpl => tpl.fullName);
 
-  addTemplate(tpl: Template) {
-    const tplFromMap = this.templates.add(tpl, false);
-    if (tplFromMap)
-      throw new Error(
-        `compiler already contain such template: adding = ${fullNameToString(tpl.fullName)}, contains = ${fullNameToString(tplFromMap.fullName)}`
-      );
-  }
-
   private populateTemplateDataFromDependencies(fullName: FullArtifactName,
                                                data: TemplateData,
                                                deps: TypedArtifactName[]) {
@@ -88,17 +80,8 @@ export class TengoTemplateCompiler {
       );
   }
 
-  getTemplate(name: TypedArtifactName): Template | undefined {
-    if (name.type !== 'template')
-      throw new Error('illegal name type');
-    return this.templates.get(name);
-  }
-
-  getTemplateOrError(name: TypedArtifactName): Template {
-    const tpl = this.getTemplate(name);
-    if (!tpl)
-      throw new Error(`library not found ${typedArtifactNameToString(name)}`);
-    return tpl;
+  allLibs() : ArtifactSource[] {
+    return this.libs.array
   }
 
   getLib(name: TypedArtifactName): ArtifactSource | undefined {
@@ -112,6 +95,31 @@ export class TengoTemplateCompiler {
     if (!lib)
       throw new Error(`library not found ${typedArtifactNameToString(name)}`);
     return lib;
+  }
+
+  addTemplate(tpl: Template) {
+    const tplFromMap = this.templates.add(tpl, false);
+    if (tplFromMap)
+      throw new Error(
+        `compiler already contain such template: adding = ${fullNameToString(tpl.fullName)}, contains = ${fullNameToString(tplFromMap.fullName)}`
+      );
+  }
+
+  allTemplates() : Template[] {
+    return this.templates.array
+  }
+
+  getTemplate(name: TypedArtifactName): Template | undefined {
+    if (name.type !== 'template')
+      throw new Error('illegal name type');
+    return this.templates.get(name);
+  }
+
+  getTemplateOrError(name: TypedArtifactName): Template {
+    const tpl = this.getTemplate(name);
+    if (!tpl)
+      throw new Error(`library not found ${typedArtifactNameToString(name)}`);
+    return tpl;
   }
 
   getArtefact(name: TypedArtifactName): ArtifactSource | Template | undefined {
