@@ -56,7 +56,7 @@ function generate() {
 
     local _generator_opts=(
       --"${_generator}_opt=client_generic"
-      #--"${_generator}_opt=long_type_string"
+      # --"${_generator}_opt=long_type_string"
       --"${_generator}_opt=optimize_speed"
       --"${_generator}_opt=generate_dependencies"
       --"${_generator}_opt=force_server_none"
