@@ -134,35 +134,58 @@ const loadDependencies = (
 
 export function parseSources(
   logger: winston.Logger, packageInfo: PackageJson,
-  target: string): ArtifactSource[] {
-  const sources: ArtifactSource[] = [];
+  root: string, target: string): ArtifactSource[] {
 
-  for (const f of fs.readdirSync(target)) {
-    const relPath = path.join(target, f)
+  const sources = new Map<string, ArtifactSource>();
 
-    if (pathType(relPath) === "dir") {
-      sources.push(...parseSources(logger, packageInfo, relPath))
+  function nameKey(n : FullArtifactName):string {
+    return `${n.pkg}:${n.id}:${n.version}`
+  }
+
+  for (const f of fs.readdirSync(path.join(root, target))) {
+    const inRootPath = path.join(target, f) // path to item inside given <root>
+    const fullPath = path.join(root, inRootPath) // full path to item from CWD (or abs path, if <root> is abs path)
+
+    if (pathType(fullPath) === "dir") {
+      const newSources = parseSources(logger, packageInfo, root, inRootPath)
+
+      for (const newSrc of newSources.values()) {
+        const existingSrc = sources.get(nameKey(newSrc.fullName))
+        if (existingSrc) {
+          throw new Error(`name collision between sources ${existingSrc.srcName} and ${newSrc.srcName}`);
+        }
+
+        sources.set(nameKey(newSrc.fullName), newSrc)
+      }
+
       continue
     }
 
-    const fullName = fullNameFromFileName(packageInfo, f);
+    const fullName = fullNameFromFileName(packageInfo, inRootPath);
     if (!fullName) {
       logger.warn(`unknown file type ${f}`)
       continue
     }
 
-    const file = path.resolve('src', f);
+    const file = path.resolve(root, inRootPath);
     logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
-    const src = parseSourceFile(file, fullName, true);
-    if (src.dependencies.length > 0) {
+    const newSrc = parseSourceFile(file, fullName, true);
+    if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
-      for (const dep of src.dependencies)
+      for (const dep of newSrc.dependencies)
         logger.debug(`  - ${artifactNameToString(dep)}`);
     }
-    sources.push(src);
+
+    const existingSrc = sources.get(nameKey(newSrc.fullName))
+    if (existingSrc) {
+      throw new Error(`name collision between sources ${existingSrc.srcName} and ${newSrc.srcName}`);
+    }
+    sources.set(nameKey(newSrc.fullName), newSrc)
   }
 
-  return sources
+  const ret: ArtifactSource[] = [];
+  sources.forEach(obj => ret.push(obj));
+  return ret;
 }
 
 export function newCompiler(logger: winston.Logger, packageInfo: PackageJson) : TengoTemplateCompiler {
@@ -191,7 +214,7 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
 export function compile(logger : winston.Logger) : TemplatesAndLibs {
   const packageInfo = getPackageInfo()
   const compiler = newCompiler(logger, packageInfo)
-  const sources = parseSources(logger, packageInfo, 'src')
+  const sources = parseSources(logger, packageInfo, 'src', '')
 
   // checking that we have something to do
   if (sources.length === 0) {
