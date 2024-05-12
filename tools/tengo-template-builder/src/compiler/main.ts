@@ -134,37 +134,37 @@ const loadDependencies = (
 
 export function parseSources(
   logger: winston.Logger, packageInfo: PackageJson,
-  root: string, target: string): ArtifactSource[] {
+  root: string, subdir: string,
+): ArtifactSource[] {
 
-  const sources = new Map<string, ArtifactSource>();
+  const sources: ArtifactSource[] = [];
 
-  function nameKey(n : FullArtifactName):string {
-    return `${n.pkg}:${n.id}:${n.version}`
-  }
-
-  for (const f of fs.readdirSync(path.join(root, target))) {
-    const inRootPath = path.join(target, f) // path to item inside given <root>
+  for (const f of fs.readdirSync(path.join(root, subdir))) {
+    const inRootPath = path.join(subdir, f) // path to item inside given <root>
     const fullPath = path.join(root, inRootPath) // full path to item from CWD (or abs path, if <root> is abs path)
 
     if (pathType(fullPath) === "dir") {
-      const newSources = parseSources(logger, packageInfo, root, inRootPath)
-
-      for (const newSrc of newSources.values()) {
-        const existingSrc = sources.get(nameKey(newSrc.fullName))
-        if (existingSrc) {
-          throw new Error(`name collision between sources ${existingSrc.srcName} and ${newSrc.srcName}`);
-        }
-
-        sources.set(nameKey(newSrc.fullName), newSrc)
-      }
-
+      // Just check that no libs or templates reside inside nested directories.
+      // We forbid that for now for sake of simplicity.
+      parseSources(logger, packageInfo, root, inRootPath)
       continue
     }
 
     const fullName = fullNameFromFileName(packageInfo, inRootPath);
     if (!fullName) {
-      logger.warn(`unknown file type ${f}`)
+      if (subdir == '') {
+        // Do not print warnings for all 'excess' files in subdirs.
+        // As long as we forbid templates and libs in subdirs, there is no point
+        // to warn on each file inside. Just stay silent until the error appears.
+        logger.warn(`unknown file type ${f}`)
+      }
       continue
+    }
+
+    if (subdir != '') {
+      throw new Error(`Templates and libraries should reside only inside '${root}' dir.
+       You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
+       but regarding ${validSuffixes.join(", ")}, the flat file structure is mandatory.`);
     }
 
     const file = path.resolve(root, inRootPath);
@@ -176,16 +176,10 @@ export function parseSources(
         logger.debug(`  - ${artifactNameToString(dep)}`);
     }
 
-    const existingSrc = sources.get(nameKey(newSrc.fullName))
-    if (existingSrc) {
-      throw new Error(`name collision between sources ${existingSrc.srcName} and ${newSrc.srcName}`);
-    }
-    sources.set(nameKey(newSrc.fullName), newSrc)
+    sources.push(newSrc)
   }
 
-  const ret: ArtifactSource[] = [];
-  sources.forEach(obj => ret.push(obj));
-  return ret;
+  return sources
 }
 
 export function newCompiler(logger: winston.Logger, packageInfo: PackageJson) : TengoTemplateCompiler {
