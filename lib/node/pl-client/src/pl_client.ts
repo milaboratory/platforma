@@ -1,8 +1,5 @@
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { MaintenanceAPI_Ping_Response } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { IPlatformClient, PlatformClient } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
-
-export type PlPingResponse = MaintenanceAPI_Ping_Response;
 
 /** Client for core pl API. Wraps grpc API into more ts idiomatic methods and
  * classes, implements easy to use wrapper around tx API. */

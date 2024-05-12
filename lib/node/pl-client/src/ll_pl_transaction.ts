@@ -2,6 +2,7 @@ import { TxAPI_ClientMessage, TxAPI_ServerMessage } from './proto/github.com/mil
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
+import { NonUndefined, Optional } from 'utility-types';
 
 type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
@@ -9,8 +10,13 @@ type ServerMessageResponse = TxAPI_ServerMessage['response'];
 
 type TxStream = DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
 
-export type OneOfKind<T extends { oneofKind: unknown },
-  K extends T['oneofKind']> = Extract<T, { oneofKind: K }>;
+// export type OneOfKind<T extends { oneofKind: unknown },
+//   Kind extends T['oneofKind'] & string> = Extract<T, { [K in Kind]: any }>;
+
+export type OneOfKind<
+  T extends { oneofKind: unknown },
+  Kind extends T['oneofKind']>
+  = Extract<T, { oneofKind: Kind }>;
 
 interface ResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
   kind: Kind;
@@ -99,7 +105,8 @@ export class LLPlTransaction {
   }
 
   private assignClosedTransactionErrorIfNotSet(cause: Error) {
-    this.assignErrorFactoryIfNotSet(() => new Error(`closed transaction`, { cause }));
+    // this.assignErrorFactoryIfNotSet(() => cause);
+    this.assignErrorFactoryIfNotSet(() => new Error(`closed transaction because of: ${cause.message}`, { cause: cause }));
   }
 
   private async incomingEventProcessor(): Promise<void> {
@@ -170,13 +177,13 @@ export class LLPlTransaction {
       }
       this.assignClosedTransactionErrorIfNotSet(error);
     } finally {
-      await close();
+      await this.close();
     }
   }
 
   /** Executed after termination of incoming message processor */
   private async close(): Promise<void> {
-    if (closed)
+    if (this.closed)
       return;
 
     this.closed = true;
@@ -203,7 +210,7 @@ export class LLPlTransaction {
     this.abortController.abort(cause);
   }
 
-  public awaitTermination(): Promise<void> {
+  public await(): Promise<void> {
     return this.incomingProcessorResult;
   }
 
@@ -214,7 +221,7 @@ export class LLPlTransaction {
     if (this.errorFactory)
       return Promise.reject(this.errorFactory());
 
-    if (closed)
+    if (this.closed)
       return Promise.reject(new Error('Transaction already closed'));
 
     // Note: Promise synchronously executes a callback passed to a constructor
@@ -234,5 +241,9 @@ export class LLPlTransaction {
     });
 
     return result;
+  }
+
+  public async complete() {
+    await this.stream.requests.complete();
   }
 }

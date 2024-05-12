@@ -9,14 +9,16 @@
     "build": "tsup",
     "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test-setup": "tsup --no-config src/cmd/test_setup.ts --out-dir test_scripts && node test_scripts/test_setup.js"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.7",
     "@protobuf-ts/grpc-transport": "^2.9.4",
     "denque": "^2.1.0",
     "https-proxy-agent": "^7.0.4",
-    "long": "^5.2.3"
+    "long": "^5.2.3",
+    "utility-types": "^3.11.0"
   },
   "files": [
     "dist/**/*"
