@@ -44,6 +44,10 @@ export class TengoTemplateCompiler {
           const tpl = this.getTemplateOrError(dep);
           data.templates[artifactNameToString(dep)] = tpl.data;
           break;
+        case 'test':
+          throw new Error(
+            `dependencies tree error: tests should never be part of template: ${typedArtifactNameToString(dep)} is dependency of ${artifactNameToString(fullName)}`,
+          )
         default:
           assertNever(dep.type);
       }
@@ -128,6 +132,10 @@ export class TengoTemplateCompiler {
         return this.getTemplate(name);
       case 'library':
         return this.getLib(name);
+      case 'test':
+        // Tests are ignored by the complier. They should never be compiled into templates or libs and
+        // should never be a dependency.
+        return undefined;
       default:
         assertNever(name.type);
     }
@@ -135,9 +143,13 @@ export class TengoTemplateCompiler {
 
   checkLibs() {
     this.libs.forEach(lib => {
-      for (const dep of lib.dependencies)
+      for (const dep of lib.dependencies) {
+        if (dep.type === 'test')
+          throw new Error(`test should never be dependency of production code: ${typedArtifactNameToString(dep)} test is dependency of ${fullNameToString(lib.fullName)}`);
+
         if (!this.getArtefact(dep))
           throw new Error(`unresolved dependency ${typedArtifactNameToString(dep)} for ${fullNameToString(lib.fullName)}`);
+      }
     });
   }
 
@@ -176,6 +188,9 @@ export class TengoTemplateCompiler {
             const tpl = this.compileAndAddTemplate(src);
             ret.templates.push(tpl);
             break;
+          case 'test':
+            // Ignore tests: they never should be part of compiled code or be a dependency.
+            break;
           default:
             assertNever(src.fullName.type);
         }
@@ -185,7 +200,7 @@ export class TengoTemplateCompiler {
       // if not all the source files in unprocessed array have unmet dependencies
       if (current.length === unprocessed.length) {
         let errorMessage = '';
-        const unmetDependencies = new ArtifactMap<TypedArtifactName>(name => name);
+
         for (const src of unprocessed) {
           errorMessage += `\nUnsatisfied dependencies in ${fullNameToString(src.fullName)}\n`;
           for (const dep of src.dependencies) {

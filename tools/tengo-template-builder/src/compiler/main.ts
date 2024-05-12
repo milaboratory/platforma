@@ -17,6 +17,11 @@ interface PackageJson {
 const compiledTplSuffix = '.plj.gz';
 const compiledLibSuffix = '.lib.tengo';
 
+// We need to keep track of dependencies for correct tgo-test CLI utility configuraiton.
+// It is much simpler to do this here, than duplicate all tle logic regarding dependencies
+// in go code.
+const srcTestSuffix = '.test.tengo';
+
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix];
@@ -196,6 +201,9 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
   if (fileName.endsWith(srcTplSuffix))
     return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcTplSuffix.length), type: 'template' };
 
+  if (fileName.endsWith(srcTestSuffix))
+    return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcTestSuffix.length), type: 'test' };
+
   return null;
 }
 
@@ -214,7 +222,6 @@ export function compile(logger : winston.Logger) : TemplatesAndLibs {
     logger.error(`Nothing to compile. Looked for ${lookFor.join(", ")}`);
     process.exit(1);
   }
-
 
   // compilation
   logger.info(`Compilation...`);

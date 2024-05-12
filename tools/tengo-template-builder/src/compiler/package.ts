@@ -20,7 +20,7 @@ import canonicalize from 'canonicalize';
 
  */
 
-export type ArtifactType = 'library' | 'template'
+export type ArtifactType = 'library' | 'template' | 'test'
 
 /** Artifact Name including package version */
 export interface FullArtifactName {
