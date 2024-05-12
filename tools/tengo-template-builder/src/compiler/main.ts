@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
 import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
 import { artifactNameToString, FullArtifactName, fullNameToString } from './package';
-import { ArtifactSource, parseSource } from './source';
+import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
 import winston from 'winston';
 
@@ -102,7 +102,7 @@ const loadDependencies = (
         id: f.slice(0, f.length - compiledLibSuffix.length),
         version: packageJson.version
       };
-      const src = parseSource(fs.readFileSync(file).toString(), fullName, false);
+      const src = parseSourceFile(file, fullName, false);
       compiler.addLib(src);
       logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
       if (src.dependencies.length > 0) {
@@ -153,7 +153,7 @@ export function parseSources(
 
     const file = path.resolve('src', f);
     logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
-    const src = parseSource(fs.readFileSync(file).toString(), fullName, true);
+    const src = parseSourceFile(file, fullName, true);
     if (src.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
       for (const dep of src.dependencies)
