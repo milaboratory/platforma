@@ -19,7 +19,7 @@ export default class DumpLibs extends Command {
     const logger = createLogger()
     const packageInfo = getPackageInfo()
 
-    const sources = parseSources(logger, packageInfo, 'src')
+    const sources = parseSources(logger, packageInfo, 'src', '')
     
     if (!flags.deps) {
       for (const src of sources) {

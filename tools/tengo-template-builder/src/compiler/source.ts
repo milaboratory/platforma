@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { TypedArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
@@ -33,12 +34,27 @@ export class ArtifactSource {
     public readonly fullName: FullArtifactName,
     /** Normalized source code */
     public readonly src: string,
+    /** Path to source file where artifact came from */
+    public readonly srcName: string,
     /** List of dependencies */
-    public readonly dependencies: TypedArtifactName[]) {
-  }
+    public readonly dependencies: TypedArtifactName[],
+  ) { }
+}
+
+export function parseSourceFile(srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+  const src = readFileSync(srcFile).toString()
+  const { normalized, deps } = parseSourceData(src, fullSourceName, normalize)
+
+  return new ArtifactSource(fullSourceName, normalized, srcFile, deps.array);
 }
 
 export function parseSource(src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+  const { normalized, deps } = parseSourceData(src, fullSourceName, normalize)
+
+  return new ArtifactSource(fullSourceName, normalized, "", deps.array);
+}
+
+function parseSourceData(src: string, fullSourceName: FullArtifactName, normalize: boolean): { normalized: string, deps: ArtifactMap<TypedArtifactName> } {
   const dependencySet = createArtifactNameSet();
 
   // iterating over lines
@@ -89,6 +105,9 @@ export function parseSource(src: string, fullSourceName: FullArtifactName, norma
     processedLines.push(newLine);
   }
 
-  return new ArtifactSource(fullSourceName, processedLines.join('\n'), dependencySet.array);
+  return {
+    normalized: processedLines.join('\n'),
+    deps: dependencySet
+  }
 }
 

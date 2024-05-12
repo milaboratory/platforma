@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
 import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
 import { artifactNameToString, FullArtifactName, fullNameToString } from './package';
-import { ArtifactSource, parseSource } from './source';
+import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
 import winston from 'winston';
 
@@ -102,7 +102,7 @@ const loadDependencies = (
         id: f.slice(0, f.length - compiledLibSuffix.length),
         version: packageJson.version
       };
-      const src = parseSource(fs.readFileSync(file).toString(), fullName, false);
+      const src = parseSourceFile(file, fullName, false);
       compiler.addLib(src);
       logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
       if (src.dependencies.length > 0) {
@@ -134,32 +134,49 @@ const loadDependencies = (
 
 export function parseSources(
   logger: winston.Logger, packageInfo: PackageJson,
-  target: string): ArtifactSource[] {
+  root: string, subdir: string,
+): ArtifactSource[] {
+
   const sources: ArtifactSource[] = [];
 
-  for (const f of fs.readdirSync(target)) {
-    const relPath = path.join(target, f)
+  for (const f of fs.readdirSync(path.join(root, subdir))) {
+    const inRootPath = path.join(subdir, f) // path to item inside given <root>
+    const fullPath = path.join(root, inRootPath) // full path to item from CWD (or abs path, if <root> is abs path)
 
-    if (pathType(relPath) === "dir") {
-      sources.push(...parseSources(logger, packageInfo, relPath))
+    if (pathType(fullPath) === "dir") {
+      // Just check that no libs or templates reside inside nested directories.
+      // We forbid that for now for sake of simplicity.
+      parseSources(logger, packageInfo, root, inRootPath)
       continue
     }
 
-    const fullName = fullNameFromFileName(packageInfo, f);
+    const fullName = fullNameFromFileName(packageInfo, inRootPath);
     if (!fullName) {
-      logger.warn(`unknown file type ${f}`)
+      if (subdir == '') {
+        // Do not print warnings for all 'excess' files in subdirs.
+        // As long as we forbid templates and libs in subdirs, there is no point
+        // to warn on each file inside. Just stay silent until the error appears.
+        logger.warn(`unknown file type ${f}`)
+      }
       continue
     }
 
-    const file = path.resolve('src', f);
+    if (subdir != '') {
+      throw new Error(`Templates and libraries should reside only inside '${root}' dir.
+       You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
+       but regarding ${validSuffixes.join(", ")}, the flat file structure is mandatory.`);
+    }
+
+    const file = path.resolve(root, inRootPath);
     logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
-    const src = parseSource(fs.readFileSync(file).toString(), fullName, true);
-    if (src.dependencies.length > 0) {
+    const newSrc = parseSourceFile(file, fullName, true);
+    if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
-      for (const dep of src.dependencies)
+      for (const dep of newSrc.dependencies)
         logger.debug(`  - ${artifactNameToString(dep)}`);
     }
-    sources.push(src);
+
+    sources.push(newSrc)
   }
 
   return sources
@@ -191,7 +208,7 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
 export function compile(logger : winston.Logger) : TemplatesAndLibs {
   const packageInfo = getPackageInfo()
   const compiler = newCompiler(logger, packageInfo)
-  const sources = parseSources(logger, packageInfo, 'src')
+  const sources = parseSources(logger, packageInfo, 'src', '')
 
   // checking that we have something to do
   if (sources.length === 0) {

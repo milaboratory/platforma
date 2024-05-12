@@ -13,7 +13,7 @@ export default class DumpTemplates extends Command {
     const logger = createLogger()
     const packageInfo = getPackageInfo()
     
-    const sources = parseSources(logger, packageInfo, 'src')
+    const sources = parseSources(logger, packageInfo, 'src', '')
     
     for (const src of sources) {
       if (src.fullName.type === "template") {
