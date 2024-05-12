@@ -19,7 +19,7 @@ const compiledLibSuffix = '.lib.tengo';
 
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
-const validSuffixes = [srcLibSuffix, srcTplSuffix];
+const compilableSuffixes = [srcLibSuffix, srcTplSuffix];
 
 export function createLogger(): winston.Logger {
   return winston.createLogger({
@@ -152,19 +152,13 @@ export function parseSources(
 
     const fullName = fullNameFromFileName(packageInfo, inRootPath);
     if (!fullName) {
-      if (subdir == '') {
-        // Do not print warnings for all 'excess' files in subdirs.
-        // As long as we forbid templates and libs in subdirs, there is no point
-        // to warn on each file inside. Just stay silent until the error appears.
-        logger.warn(`unknown file type ${f}`)
-      }
-      continue
+      continue // skip unknown file types
     }
 
     if (subdir != '') {
       throw new Error(`Templates and libraries should reside only inside '${root}' dir.
        You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
-       but regarding ${validSuffixes.join(", ")}, the flat file structure is mandatory.`);
+       but regarding ${compilableSuffixes.join(", ")}, the flat file structure is mandatory.`);
     }
 
     const file = path.resolve(root, inRootPath);
@@ -213,7 +207,7 @@ export function compile(logger : winston.Logger) : TemplatesAndLibs {
   // checking that we have something to do
   if (sources.length === 0) {
     const lookFor: string[] = []
-    for (const suffix of validSuffixes) {
+    for (const suffix of compilableSuffixes) {
       lookFor.push(`*${suffix}`)
     }
 
