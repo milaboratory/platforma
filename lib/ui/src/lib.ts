@@ -14,7 +14,7 @@ import TextField from '@/lib/components/TextField.vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
 import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
-import DropdownListItem from './lib/components/DropdownListItem.vue';
+import DropdownListItem from '@/lib/components/DropdownListItem.vue';
 import BtnGroup from '@/lib/components/BtnGroup.vue';
 import UiCheckbox from '@/lib/components/UiCheckbox.vue';
 import Checkbox from '@/lib/components/Checkbox.vue';
@@ -43,6 +43,13 @@ import { useSortable } from './lib/composition/useSortable';
 import { useInterval } from './lib/composition/useInterval';
 import { useFormState } from './lib/composition/useFormState';
 import type { MaybeRef } from '@/lib/types.ts';
+
+//for new version
+import LongText from '@/lib/components/LongText.vue';
+import SliderRangeTriple from '@/lib/components/SliderRangeTriple.vue';
+import SliderRange from '@/lib/components/SliderRange.vue';
+import Scrollable from '@/lib/components/Scrollable.vue';
+import AddGraph from '@/lib/components/AddGraph.vue';
 
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
@@ -109,3 +116,6 @@ export {
 
 // types
 export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, MaskIconName };
+
+//move to new version pl-uikit
+export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph };
