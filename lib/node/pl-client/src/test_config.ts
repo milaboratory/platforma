@@ -42,7 +42,7 @@ interface AuthCache {
   authInformation: AuthInformation
 }
 
-export async function getTestLLClientData(): Promise<{ conf: PlConnectionConfig, authInformation: AuthInformation }> {
+export async function getTestClientConf(): Promise<{ conf: PlConnectionConfig, authInformation: AuthInformation }> {
   const tConf = getTestConfig();
 
   let authInformation: AuthInformation | undefined = undefined;
@@ -82,12 +82,12 @@ export async function getTestLLClientData(): Promise<{ conf: PlConnectionConfig,
 }
 
 export async function getTestLLClient() {
-  const { conf, authInformation } = await getTestLLClientData();
+  const { conf, authInformation } = await getTestClientConf();
   return new LLPlClient(conf, { auth: { authInformation } });
 }
 
 export async function getTestClient(init: boolean = true) {
-  const { conf, authInformation } = await getTestLLClientData();
+  const { conf, authInformation } = await getTestClientConf();
   const client = new PlClient(conf, { authInformation });
   if (init)
     await client.init();

@@ -1,5 +1,10 @@
 export interface PlConnectionConfig {
   hostAndPort: string;
+
+  /** If set, client will expose a nested object under a field with name `alternative_root_${alternativeRoot}` as a
+   * client root. */
+  alternativeRoot?: string;
+
   // Not implementing custom ssl validation logic for now.
   // Implementing it in a correct way is really a nontrivial thing, real use-cases should be considered.
   ssl: boolean;
@@ -55,6 +60,7 @@ export function plAddressToConfig(address: string, overrides: ConnectionDataOver
 
   return {
     hostAndPort: url.host, // this also includes port
+    alternativeRoot: url.searchParams.get('alternative-root') ?? undefined,
     ssl: url.protocol === 'https:' || url.protocol === 'tls:',
     defaultRequestTimeout: parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
     defaultTransactionTimeout: parseInt(url.searchParams.get('tx-timeout')) ?? DEFAULT_TX_TIMEOUT,

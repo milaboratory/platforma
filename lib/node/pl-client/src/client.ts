@@ -1,9 +1,9 @@
 import { AuthOps, PlConnectionConfig } from './config';
 import { LLPlClient, PlCallOps, PlConnectionStatusListener } from './ll_client';
-import { PlTransaction, TxCommitConflict } from './transaction';
+import { AnyFieldRef, AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { sleep } from './util/temporal';
 import { createHash } from 'crypto';
-import { isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
+import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
 import { ClientRoot } from './resource_types';
 
 export type TxOps = PlCallOps & {
@@ -24,12 +24,16 @@ const defaultTxOps: TxOps = {
 
 const AnonymousClientRoot = 'AnonymousRoot';
 
+function alternativeRootFieldName(alternativeRoot: string): string {
+  return `alternative_root_${alternativeRoot}`;
+}
+
 /** Client to access core PL API. */
 export class PlClient {
   private readonly ll: LLPlClient;
 
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
-  private clientRoot: OptionalResourceId = NullResourceId;
+  private _clientRoot: OptionalResourceId = NullResourceId;
 
   constructor(configOrAddress: PlConnectionConfig | string,
               auth: AuthOps,
@@ -39,8 +43,22 @@ export class PlClient {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
   }
 
+  public get conf(): PlConnectionConfig {
+    return this.ll.conf;
+  }
+
   public get initialized() {
-    return !isNullResourceId(this.clientRoot);
+    return !isNullResourceId(this._clientRoot);
+  }
+
+  private checkInitialized() {
+    if (!this.initialized)
+      throw new Error('Client not initialized');
+  }
+
+  public get clientRoot(): ResourceId {
+    this.checkInitialized();
+    return ensureResourceIdNotNull(this._clientRoot);
   }
 
   /** Currently implements custom logic to emulate future behaviour with single root. */
@@ -50,30 +68,71 @@ export class PlClient {
 
     // calculating reproducible root name from the username
     const user = this.ll.authUser;
-    const clientRootName = user === null
+    const mainRootName = user === null
       ? AnonymousClientRoot
       : createHash('sha256').update(user).digest('hex');
 
-    this.clientRoot = await this.withWriteTx('initialization', async tx => {
-      if (await tx.checkResourceNameExists(clientRootName))
-        return await tx.getResourceByName(clientRootName);
-      else {
-        const newRoot = tx.createRoot(ClientRoot);
-        await Promise.all([
-          tx.setResourceName(clientRootName, newRoot),
-          tx.commit()
-        ]);
-        return await newRoot.globalId;
-      }
+    this._clientRoot = await this._withTx('initialization', true, NullResourceId,
+      async tx => {
+        let mainRoot: AnyResourceRef;
+
+        // saving multiple round-trips
+        const ops: Promise<void>[] = [];
+
+        if (await tx.checkResourceNameExists(mainRootName))
+          mainRoot = await tx.getResourceByName(mainRootName);
+        else {
+          mainRoot = tx.createRoot(ClientRoot);
+          ops.push(tx.setResourceName(mainRootName, mainRoot));
+        }
+
+        if (this.conf.alternativeRoot === undefined) {
+          ops.push(tx.commit());
+          await Promise.all(ops);
+          return await toGlobalResourceId(mainRoot);
+        } else {
+          const aFId = { resourceId: mainRoot, fieldName: alternativeRootFieldName(this.conf.alternativeRoot) };
+
+          const altRoot = tx.createEphemeral(ClientRoot);
+          ops.push(
+            tx.lock(altRoot),
+            tx.createField(aFId, 'Dynamic'),
+            tx.setField(aFId, altRoot),
+            tx.commit()
+          );
+          await Promise.all(ops);
+
+          return await altRoot.globalId;
+        }
+      });
+  }
+
+  /** Returns true if field existed */
+  public async deleteAlternativeRoot(alternativeRootName: string): Promise<boolean> {
+    this.checkInitialized();
+    if (this.ll.conf.alternativeRoot !== undefined)
+      throw new Error('Initialized with alternative root.');
+    return await this.withWriteTx('delete-alternative-root', async tx => {
+      const fId = {
+        resourceId: tx.clientRoot,
+        fieldName: alternativeRootFieldName(alternativeRootName)
+      };
+      const exists = tx.fieldExists(fId);
+      // saving a round-trip
+      await Promise.all([
+        tx.removeField(fId),
+        tx.commit()
+      ]);
+      return await exists;
     });
   }
 
   // TODO maybe it is better to create a common timeout abort signal here
   //      to make execution time more predictable, or maybe it makes more
   //      sense to keep it as it is now...
-  public async withTx<T>(name: string, writable: boolean,
-                         body: (tx: PlTransaction) => Promise<T>,
-                         ops: TxOps = defaultTxOps): Promise<T> {
+  private async _withTx<T>(name: string, writable: boolean, clientRoot: OptionalResourceId,
+                           body: (tx: PlTransaction) => Promise<T>,
+                           ops: TxOps = defaultTxOps): Promise<T> {
     // for exponential backoff
     let nextDelay = ops.initialRetryDelay;
 
@@ -82,7 +141,7 @@ export class PlClient {
       // opening low-level tx
       const llTx = this.ll.createTx(ops);
       // wrapping it into high-level tx (this also asynchronously sends initialization message)
-      const tx = new PlTransaction(llTx, name, writable);
+      const tx = new PlTransaction(llTx, name, writable, clientRoot);
 
       try {
 
@@ -122,6 +181,13 @@ export class PlClient {
     }
 
     throw new Error('Reached max number of attempts.');
+  }
+
+  private async withTx<T>(name: string, writable: boolean,
+                          body: (tx: PlTransaction) => Promise<T>,
+                          ops: TxOps = defaultTxOps): Promise<T> {
+    this.checkInitialized();
+    return this._withTx(name, writable, this.clientRoot, body, ops);
   }
 
   public withWriteTx<T>(name: string,

@@ -1,10 +1,9 @@
 import {
   AnyResourceId,
-  createLocalResourceId, ensureResourceIdNotNull,
-  isAnyResourceId,
+  createLocalResourceId, ensureResourceIdNotNull, fieldTypeToProto,
   LocalResourceId,
-  MaxTxId, OptionalResourceId, PlBasicResourceData, PlResourceData,
-  PlResourceType, protoToResource,
+  MaxTxId, OptionalResourceId, PlBasicResourceData, PlFieldData, PlFieldType, PlResourceData,
+  PlResourceType, protoToField, protoToResource,
   ResourceId
 } from './types';
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
@@ -13,85 +12,72 @@ import { NonUndefined } from 'utility-types';
 import { notEmpty } from './util/util';
 
 /** Reference to resource, used only within transaction */
-export class ResourceRef {
-  constructor(
-    /** Global resource id of newly created resources, become available only
-     * after response for the corresponding creation request is received. */
-    public readonly globalId: Promise<ResourceId>,
-    /** Transaction-local resource id is assigned right after resource creation
-     * request is sent, and can be used right away */
-    public readonly localId: LocalResourceId) {
-  }
+export interface ResourceRef {
+  /** Global resource id of newly created resources, become available only
+   * after response for the corresponding creation request is received. */
+  readonly globalId: Promise<ResourceId>;
 
-  field(name: string): FieldRef {
-    return new FieldRef(this, name);
-  }
+  /** Transaction-local resource id is assigned right after resource creation
+   * request is sent, and can be used right away */
+  readonly localId: LocalResourceId;
 }
 
-/** Transaction-local field reference object */
-export class FieldRef {
-  constructor(
-    public readonly resourceRef: ResourceRef,
-    public readonly fieldName: string) {
-  }
-
-  async global(): Promise<FieldId> {
-    return {
-      resourceId: await this.resourceRef.globalId,
-      fieldName: this.fieldName
-    };
-  }
-
-  local(): LocalFieldId {
-    return {
-      resourceId: this.resourceRef.localId,
-      fieldName: this.fieldName
-    };
-  }
-}
-
-interface _FieldId<RId extends AnyResourceId> {
+interface _FieldId<RId> {
   /** Parent resource id */
-  readonly resourceId: RId,
+  resourceId: RId,
   /** Field name */
-  readonly fieldName: string
+  fieldName: string
 }
 
 export type FieldId = _FieldId<ResourceId>
+export type FieldRef = _FieldId<ResourceRef>
 export type LocalFieldId = _FieldId<LocalResourceId>
-export type AnyFieldId = _FieldId<AnyResourceId>
+export type AnyFieldId = FieldId | LocalFieldId;
 
-export type AnyResourceRef = ResourceRef | AnyResourceId;
-export type AnyFieldRef = FieldRef | AnyFieldId;
+export type AnyResourceRef = ResourceRef | ResourceId;
+export type AnyFieldRef = _FieldId<AnyResourceRef>; // FieldRef | FieldId
 export type AnyRef = AnyResourceRef | AnyFieldRef;
 
-function isResourceRef(ref: AnyRef): ref is AnyResourceRef {
-  return typeof ref === 'bigint' ? isAnyResourceId(ref) : ref instanceof ResourceRef;
+export function isField(ref: AnyRef): ref is AnyFieldRef {
+  return ref.hasOwnProperty('resourceId') && ref.hasOwnProperty('fieldName');
 }
 
-function toAnyFieldId(ref: AnyFieldRef): AnyFieldId {
-  if (ref instanceof FieldRef)
-    return ref.local();
+export function isResource(ref: AnyRef): ref is AnyResourceRef {
+  return typeof ref === 'bigint' ||
+    (ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId'));
+}
+
+export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
+  return isResourceRef(ref.resourceId);
+}
+
+export function isResourceRef(ref: AnyResourceRef): ref is ResourceRef {
+  return ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId');
+}
+
+export function toFieldId(ref: AnyFieldRef): AnyFieldId {
+  if (isFieldRef(ref))
+    return { resourceId: ref.resourceId.localId, fieldName: ref.fieldName };
   else
-    return ref;
+    return ref as FieldId;
 }
 
-async function toGlobalFieldId(ref: FieldRef | FieldId): Promise<FieldId> {
-  if (ref instanceof FieldRef)
-    return await ref.global();
+export async function toGlobalFieldId(ref: AnyFieldRef): Promise<FieldId> {
+  if (isFieldRef(ref))
+    return { resourceId: await ref.resourceId.globalId, fieldName: ref.fieldName };
   else
-    return ref;
+    return ref as FieldId;
 }
 
-function toAnyResourceId(ref: AnyResourceRef): AnyResourceId {
-  if (ref instanceof ResourceRef)
+export function toResourceId(ref: AnyResourceRef): AnyResourceId {
+  if (isResourceRef(ref))
     return ref.localId;
   else
     return ref;
 }
 
-async function toGlobalResourceId(ref: ResourceId | ResourceRef): Promise<ResourceId> {
-  if (ref instanceof ResourceRef)
+export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
+  if (isResourceRef(ref))
     return await ref.globalId;
   else
     return ref;
@@ -113,6 +99,7 @@ export class TxCommitConflict extends Error {
 export class PlTransaction {
   private readonly globalTxId: Promise<bigint>;
   private readonly localTxId: number = PlTransaction.nextLocalTxId();
+
   private localResourceIdCounter = 0;
 
   /** Store logical tx open / closed state to prevent invalid sequence of requests. */
@@ -121,7 +108,8 @@ export class PlTransaction {
   constructor(
     private readonly ll: LLPlTransaction,
     public readonly name: string,
-    public readonly writable: boolean
+    public readonly writable: boolean,
+    private readonly _clientRoot: OptionalResourceId
   ) {
     // initiating transaction
     this.globalTxId = this.sendAndParse({
@@ -210,10 +198,14 @@ export class PlTransaction {
   // Main tx methods
   //
 
+  public get clientRoot(): ResourceId {
+    return ensureResourceIdNotNull(this._clientRoot);
+  }
+
   public createSingleton(name: string, type: PlResourceType, errorIfExists: boolean = false): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
-    const globalResourceId = this.sendAndParse(
+    const globalId = this.sendAndParse(
       {
         oneofKind: 'resourceCreateSingleton', resourceCreateSingleton: {
           type, id: localId, data: Buffer.from(name), errorIfExists
@@ -222,7 +214,7 @@ export class PlTransaction {
       r => r.resourceCreateSingleton.resourceId as ResourceId
     );
 
-    return new ResourceRef(globalResourceId, localId);
+    return { globalId, localId };
   }
 
   public async getSingleton(name: string, loadFields: true): Promise<PlResourceData>;
@@ -241,50 +233,50 @@ export class PlTransaction {
   public createRoot(type: PlResourceType): ResourceRef {
     const localId = this.nextLocalResourceId(true);
 
-    const globalResourceId = this.sendAndParse(
+    const globalId = this.sendAndParse(
       { oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } },
       r => r.resourceCreateRoot.resourceId as ResourceId
     );
 
-    return new ResourceRef(globalResourceId, localId);
+    return { globalId, localId };
   }
 
   public createStruct(type: PlResourceType, data?: Uint8Array): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
-    const globalResourceId = this.sendAndParse(
+    const globalId = this.sendAndParse(
       { oneofKind: 'resourceCreateStruct', resourceCreateStruct: { type, id: localId, data } },
       r => r.resourceCreateStruct.resourceId as ResourceId
     );
 
-    return new ResourceRef(globalResourceId, localId);
+    return { globalId, localId };
   }
 
   public createEphemeral(type: PlResourceType, data?: Uint8Array): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
-    const globalResourceId = this.sendAndParse(
+    const globalId = this.sendAndParse(
       { oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: { type, id: localId, data } },
       r => r.resourceCreateEphemeral.resourceId as ResourceId
     );
 
-    return new ResourceRef(globalResourceId, localId);
+    return { globalId, localId };
   }
 
   public createValue(type: PlResourceType, data: Uint8Array, errorIfExists: boolean = false): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
-    const globalResourceId = this.sendAndParse(
+    const globalId = this.sendAndParse(
       { oneofKind: 'resourceCreateValue', resourceCreateValue: { type, id: localId, data, errorIfExists } },
       r => r.resourceCreateValue.resourceId as ResourceId
     );
 
-    return new ResourceRef(globalResourceId, localId);
+    return { globalId, localId };
   }
 
   public async setResourceName(name: string, rId: AnyResourceRef): Promise<void> {
     return await this.sendVoid(
-      { oneofKind: 'resourceNameSet', resourceNameSet: { resourceId: toAnyResourceId(rId), name } }
+      { oneofKind: 'resourceNameSet', resourceNameSet: { resourceId: toResourceId(rId), name } }
     );
   }
 
@@ -318,18 +310,12 @@ export class PlTransaction {
       r => r.resourceExists.exists);
   }
 
-  public async fieldExists(fieldId: FieldId): Promise<boolean> {
-    return await this.sendAndParse(
-      { oneofKind: 'fieldExists', fieldExists: { field: fieldId } },
-      r => r.fieldExists.exists);
-  }
-
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<PlResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<PlBasicResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<PlBasicResourceData | PlResourceData> {
-    return this.sendAndParse({
+    return await this.sendAndParse({
         oneofKind: 'resourceGet',
-        resourceGet: { resourceId: toAnyResourceId(rId), loadFields: loadFields }
+        resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
       },
       r => protoToResource(notEmpty(r.resourceGet.resource))
     );
@@ -343,9 +329,9 @@ export class PlTransaction {
    * have their values, if inputs list is not locked.
    */
   public async lockInputs(rId: ResourceRef): Promise<void> {
-    return this.sendVoid({
+    await this.sendVoid({
         oneofKind: 'resourceLockInputs',
-        resourceLockInputs: { resourceId: toAnyResourceId(rId) }
+        resourceLockInputs: { resourceId: toResourceId(rId) }
       }
     );
   }
@@ -355,9 +341,9 @@ export class PlTransaction {
    * This is required for resource to pass deduplication.
    */
   public async lockOutputs(rId: ResourceRef): Promise<void> {
-    return this.sendVoid({
+    await this.sendVoid({
         oneofKind: 'resourceLockOutputs',
-        resourceLockOutputs: { resourceId: toAnyResourceId(rId) }
+        resourceLockOutputs: { resourceId: toResourceId(rId) }
       }
     );
   }
@@ -365,6 +351,78 @@ export class PlTransaction {
   public async lock(rID: ResourceRef): Promise<void> {
     await Promise.all([this.lockInputs(rID), this.lockOutputs(rID)]);
   }
+
+  public async createField(fId: AnyFieldRef, fieldType: PlFieldType): Promise<void> {
+    await this.sendVoid({
+        oneofKind: 'fieldCreate',
+        fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
+      }
+    );
+  }
+
+  public async fieldExists(fId: AnyFieldRef): Promise<boolean> {
+    return await this.sendAndParse({
+        oneofKind: 'fieldExists',
+        fieldExists: { field: toFieldId(fId) }
+      },
+      r => r.fieldExists.exists
+    );
+  }
+
+  public async setField(fId: AnyFieldRef, ref: AnyRef): Promise<void> {
+    if (isResource(ref))
+      await this.sendVoid({
+          oneofKind: 'fieldSet',
+          fieldSet: {
+            field: toFieldId(fId), value:
+              {
+                resourceId: toResourceId(ref),
+                fieldName: '' // default value, read as undefined
+              }
+          }
+        }
+      );
+    else
+      await this.sendVoid({
+          oneofKind: 'fieldSet',
+          fieldSet: {
+            field: toFieldId(fId),
+            value: toFieldId(ref)
+          }
+        }
+      );
+  }
+
+  public async setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): Promise<void> {
+    await this.sendVoid({
+      oneofKind: 'fieldSetError',
+      fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) }
+    });
+  }
+
+  public async getField(fId: AnyFieldRef): Promise<PlFieldData> {
+    return await this.sendAndParse(
+      { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
+      r => protoToField(notEmpty(r.fieldGet.field))
+    );
+  }
+
+  public async resetField(fId: AnyFieldRef): Promise<void> {
+    await this.sendVoid(
+      { oneofKind: 'fieldReset', fieldReset: { field: toFieldId(fId) } }
+    );
+  }
+
+  public async removeField(fId: AnyFieldRef): Promise<void> {
+    await this.sendVoid(
+      { oneofKind: 'fieldRemove', fieldRemove: { field: toFieldId(fId) } }
+    );
+  }
+
+  // /** Resolves existing or create first level resource from */
+  // public async getClientResource(fieldName: string, resourceType: PlResourceType): Promise<ResourceId> {
+  //
+  // }
 
   //
   // Technical

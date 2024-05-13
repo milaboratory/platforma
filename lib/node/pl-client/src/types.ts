@@ -9,7 +9,7 @@ import {
   Resource,
   Resource_Kind
 } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
-import { notEmpty } from './util/util';
+import { assertNever, notEmpty } from './util/util';
 import { FieldType } from './proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
@@ -134,7 +134,7 @@ function protoToError(proto: Resource): OptionalResourceId {
   return (f?.error ?? NullResourceId) as OptionalResourceId;
 }
 
-function protoToField(proto: Field): PlFieldData {
+export function protoToField(proto: Field): PlFieldData {
   return {
     name: notEmpty(proto.id?.fieldName),
     type: protoToFieldType(proto.type),
@@ -173,6 +173,25 @@ function protoToFieldStatus(proto: Field_ValueStatus): PlFieldStatus {
       return 'Resolved';
     default:
       throw new Error('invalid FieldStatus: ' + proto);
+  }
+}
+
+export function fieldTypeToProto(type: PlFieldType): FieldType {
+  switch (type) {
+    case 'Input':
+      return FieldType.INPUT;
+    case 'Output':
+      return FieldType.OUTPUT;
+    case 'Dynamic':
+      return FieldType.DYNAMIC;
+    case 'Service':
+      return FieldType.SERVICE;
+    case 'MTW':
+      return FieldType.MULTIPLE_TIMES_WRITABLE;
+    case 'OTW':
+      return FieldType.ONE_TIME_WRITABLE;
+    default:
+      return assertNever(type);
   }
 }
 
