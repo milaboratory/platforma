@@ -2,16 +2,12 @@ import { TxAPI_ClientMessage, TxAPI_ServerMessage } from './proto/github.com/mil
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
-import { NonUndefined, Optional } from 'utility-types';
 
 type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
 type ServerMessageResponse = TxAPI_ServerMessage['response'];
 
 type TxStream = DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
-
-// export type OneOfKind<T extends { oneofKind: unknown },
-//   Kind extends T['oneofKind'] & string> = Extract<T, { [K in Kind]: any }>;
 
 export type OneOfKind<
   T extends { oneofKind: unknown },
@@ -89,7 +85,7 @@ export class LLPlTransaction {
   /** Timestamp when transaction was opened */
   private readonly openTimestamp = Date.now();
 
-  private readonly incomingProcessorResult: Promise<void>;
+  private readonly incomingProcessorResult: Promise<Error | null>;
 
   constructor(streamFactory: (abortSignal: AbortSignal) => TxStream) {
     this.stream = streamFactory(this.abortController.signal);
@@ -109,7 +105,7 @@ export class LLPlTransaction {
     this.assignErrorFactoryIfNotSet(() => new Error(`closed transaction because of: ${cause.message}`, { cause: cause }));
   }
 
-  private async incomingEventProcessor(): Promise<void> {
+  private async incomingEventProcessor(): Promise<Error | null> {
     /** Counter of received responses, used to check consistency of responses.
      * Increments on each received message. */
     let responseIdxCounter = 0;
@@ -176,9 +172,13 @@ export class LLPlTransaction {
         currentHandler.reject(error);
       }
       this.assignClosedTransactionErrorIfNotSet(error);
+
+      // to notify anybody who awaits transaction termination
+      return error;
     } finally {
       await this.close();
     }
+    return null;
   }
 
   /** Executed after termination of incoming message processor */
@@ -210,8 +210,10 @@ export class LLPlTransaction {
     this.abortController.abort(cause);
   }
 
-  public await(): Promise<void> {
-    return this.incomingProcessorResult;
+  public async await(): Promise<void> {
+    const processingResult = await this.incomingProcessorResult;
+    if (processingResult !== null)
+      throw processingResult;
   }
 
   /** Generate proper client message and send it to the server, and returns a promise of future response. */

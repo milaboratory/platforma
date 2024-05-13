@@ -1,7 +1,7 @@
-import { LLPlClient, UnauthenticatedPlClient } from './ll_pl_client';
+import { LLPlClient } from './ll_client';
 import { getTestConfig, getTestLLClient, getTestLLClientData } from './test_config';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import advanceTimersByTimeAsync = jest.advanceTimersByTimeAsync;
+import { UnauthenticatedPlClient } from './unauth_client';
 
 
 test('ping test', async () => {
@@ -28,9 +28,12 @@ test('unauthenticated status change', async () => {
     console.log('skipping test because target server doesn\'t support authentication');
     return;
   }
+
   const client = new LLPlClient(cfg.address);
   expect(client.status).toBe('OK');
+
   const tx = client.createTx();
+
   await expect(async () => {
     await tx.send({
       oneofKind: 'txOpen',
@@ -39,6 +42,13 @@ test('unauthenticated status change', async () => {
   })
     .rejects
     .toThrow(/authenticate/);
+
+  await expect(async () => {
+    await tx.await();
+  })
+    .rejects
+    .toThrow(/authenticate/);
+
   expect(client.status).toEqual('Unauthenticated');
 });
 
@@ -48,7 +58,9 @@ test('automatic token update', async () => {
   let numberOfAuthUpdates = 0;
   const client = new LLPlClient(conf, {
     plAuthOptions: {
-      authInformation, onUpdate: (auth) => {
+      authInformation,
+      onUpdate: (auth) => {
+        console.log(auth);
         ++numberOfAuthUpdates;
       }
     }

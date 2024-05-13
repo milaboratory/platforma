@@ -65,3 +65,17 @@ export function plAddressToConfig(address: string, overrides: ConnectionDataOver
     ...overrides
   };
 }
+
+export interface AuthInformation {
+  /** Absent token means anonymous access */
+  jwtToken?: string;
+}
+
+export interface AuthOps {
+  /** Initial authorization information */
+  authInformation: AuthInformation,
+  /** Will be executed after successful authorization information refresh */
+  readonly onUpdate?: (newInfo: AuthInformation) => void,
+  /** Will be executed if error encountered during token update */
+  readonly onUpdateError?: (error: unknown) => void
+}

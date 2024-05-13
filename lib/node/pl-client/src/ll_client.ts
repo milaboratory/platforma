@@ -1,47 +1,9 @@
 import { PlatformClient } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
-import {
-  ChannelCredentials,
-  InterceptingCall,
-  Interceptor
-} from '@grpc/grpc-js';
-import { parsePlJwt } from './util/jwt';
-import { plAddressToConfig, PlConnectionConfig } from './config';
+import { ChannelCredentials, InterceptingCall, Interceptor, status as GrpcStatus } from '@grpc/grpc-js';
+import { AuthInformation, AuthOps, plAddressToConfig, PlConnectionConfig } from './config';
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { status as GrpcStatus } from '@grpc/grpc-js';
-import {
-  AuthAPI_ListMethods_Response,
-  MaintenanceAPI_Ping_Response
-} from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { LLPlTransaction } from './ll_pl_transaction';
-
-export interface AuthInformation {
-  /** Absent token means anonymous access */
-  jwtToken?: string;
-}
-
-export interface AuthOps {
-  /** Initial authorization information */
-  authInformation: AuthInformation,
-  /** Will be executed after successful authorization information refresh */
-  readonly onUpdate?: (newInfo: AuthInformation) => void,
-  /** Will be executed if error encountered during token update */
-  readonly onUpdateError?: (error: unknown) => void
-}
-
-/** Returns a timestamp when current authorization information should be refreshed.
- * Compare the value with Date.now(). */
-export function inferAuthRefreshTime(info: AuthInformation, maxRefreshSeconds: number): number | undefined {
-  if (info.jwtToken === undefined)
-    return undefined;
-
-  const { exp, iat } = parsePlJwt(info.jwtToken);
-
-  return Math.min(
-    // in the middle between issue and expiration time points
-    (iat + exp) / 2,
-    iat + maxRefreshSeconds
-  ) * 1000;
-}
+import { LLPlTransaction } from './ll_transaction';
+import { inferAuthRefreshTime } from './util/pl';
 
 export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;
@@ -99,7 +61,10 @@ export class LLPlClient {
       channelCredentials: this.conf.ssl
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
-      clientOptions: { interceptors: grpcInterceptors }
+      clientOptions: {
+        'grpc.use_local_subchannel_pool': 1,
+        interceptors: grpcInterceptors
+      }
     };
 
     if (this.conf.grpcProxy)
@@ -119,7 +84,7 @@ export class LLPlClient {
   private updateStatus(newStatus: PlConnectionStatus) {
     if (this._status !== newStatus) {
       this._status = newStatus;
-      if (this.statusListener)
+      if (this.statusListener !== undefined)
         this.statusListener(this._status);
     }
   }
@@ -208,37 +173,7 @@ export class LLPlClient {
       });
     });
   }
+
+
 }
 
-export class UnauthenticatedPlClient {
-  public readonly ll: LLPlClient;
-
-  constructor(configOrAddress: PlConnectionConfig | string) {
-    this.ll = new LLPlClient(configOrAddress);
-  }
-
-  public async ping(): Promise<MaintenanceAPI_Ping_Response> {
-    return (await this.ll.grpcPl.ping({})).response;
-  }
-
-  public async authMethods(): Promise<AuthAPI_ListMethods_Response> {
-    return (await this.ll.grpcPl.authMethods({})).response;
-  }
-
-  public async requireAuth(): Promise<boolean> {
-    return (await this.authMethods()).methods.length > 0;
-  }
-
-  public async login(user: string, password: string): Promise<AuthInformation> {
-    const response = await this.ll.grpcPl.getJWTToken(
-      { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
-      {
-        meta: {
-          'authorization':
-            'Basic ' + Buffer.from(user + ':' + password).toString('base64')
-        }
-      }
-    );
-    return { jwtToken: response.response.token };
-  }
-}

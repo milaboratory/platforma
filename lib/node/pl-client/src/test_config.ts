@@ -1,6 +1,8 @@
 import * as fs from 'node:fs';
-import { AuthInformation, inferAuthRefreshTime, LLPlClient, UnauthenticatedPlClient } from './ll_pl_client';
-import { plAddressToConfig, PlConnectionConfig } from './config';
+import { LLPlClient } from './ll_client';
+import { AuthInformation, plAddressToConfig, PlConnectionConfig } from './config';
+import { inferAuthRefreshTime } from './util/pl';
+import { UnauthenticatedPlClient } from './unauth_client';
 
 export interface TestConfig {
   address: string;
