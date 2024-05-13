@@ -3,9 +3,9 @@ import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
 
-type ClientMessageRequest = TxAPI_ClientMessage['request'];
+export type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
-type ServerMessageResponse = TxAPI_ServerMessage['response'];
+export type ServerMessageResponse = TxAPI_ServerMessage['response'];
 
 type TxStream = DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
 
@@ -49,8 +49,6 @@ export class UnrecoverablePlError extends PlError {
 }
 
 function wrapPlError(status: Status): PlError {
-  if ('1' === '1')
-    throw new Error('asd');
   return new UnrecoverablePlError(status);
 }
 
@@ -210,10 +208,18 @@ export class LLPlTransaction {
     this.abortController.abort(cause);
   }
 
+  /** Await incoming message loop termination and throw any leftover errors if it was unsuccessful */
   public async await(): Promise<void> {
+
+    // for those who want to understand "why?":
+    // this way there is no hanging promise that will complete with rejection
+    // until await is implicitly requested, the this.incomingProcessorResult
+    // always resolves with success
+
     const processingResult = await this.incomingProcessorResult;
     if (processingResult !== null)
       throw processingResult;
+
   }
 
   /** Generate proper client message and send it to the server, and returns a promise of future response. */
@@ -245,7 +251,13 @@ export class LLPlTransaction {
     return result;
   }
 
+  private _completed = false;
+
+  /** Safe to call multiple times */
   public async complete() {
+    if (this._completed)
+      return;
+    this._completed = true;
     await this.stream.requests.complete();
   }
 }

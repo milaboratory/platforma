@@ -3,6 +3,8 @@ import { LLPlClient } from './ll_client';
 import { AuthInformation, plAddressToConfig, PlConnectionConfig } from './config';
 import { inferAuthRefreshTime } from './util/pl';
 import { UnauthenticatedPlClient } from './unauth_client';
+import { PlClient } from './client';
+import * as trace_events from 'node:trace_events';
 
 export interface TestConfig {
   address: string;
@@ -81,5 +83,13 @@ export async function getTestLLClientData(): Promise<{ conf: PlConnectionConfig,
 
 export async function getTestLLClient() {
   const { conf, authInformation } = await getTestLLClientData();
-  return new LLPlClient(conf, { plAuthOptions: { authInformation } });
+  return new LLPlClient(conf, { auth: { authInformation } });
+}
+
+export async function getTestClient(init: boolean = true) {
+  const { conf, authInformation } = await getTestLLClientData();
+  const client = new PlClient(conf, { authInformation });
+  if (init)
+    await client.init();
+  return client;
 }

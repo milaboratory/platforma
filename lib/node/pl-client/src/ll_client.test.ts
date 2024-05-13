@@ -57,7 +57,7 @@ test('automatic token update', async () => {
   conf.authMaxRefreshSeconds = 1;
   let numberOfAuthUpdates = 0;
   const client = new LLPlClient(conf, {
-    plAuthOptions: {
+    auth: {
       authInformation,
       onUpdate: (auth) => {
         console.log(auth);

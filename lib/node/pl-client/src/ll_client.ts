@@ -3,7 +3,8 @@ import { ChannelCredentials, InterceptingCall, Interceptor, status as GrpcStatus
 import { AuthInformation, AuthOps, plAddressToConfig, PlConnectionConfig } from './config';
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
-import { inferAuthRefreshTime } from './util/pl';
+import { inferAuthRefreshTime, parsePlJwt } from './util/pl';
+import { Aborted } from './util/temporal';
 
 export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;
@@ -11,6 +12,18 @@ export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
+}
+
+export function isTimeoutOrCancelError(err: any, nested: boolean = false): boolean {
+  if (!(err instanceof Error))
+    return false;
+  if (err instanceof Aborted)
+    return true;
+  if ((err as any).name === 'RpcError' && ((err as any).code === 'CANCELLED' || (err as any).code === 'DEADLINE_EXCEEDED'))
+    return true;
+  if (err.cause !== undefined && !nested)
+    return isTimeoutOrCancelError(err.cause, true);
+  return false;
 }
 
 /** Abstract out low level networking and authorization details */
@@ -34,7 +47,7 @@ export class LLPlClient {
 
   constructor(configOrAddress: PlConnectionConfig | string,
               ops: {
-                plAuthOptions?: AuthOps,
+                auth?: AuthOps,
                 statusListener?: PlConnectionStatusListener
               } = {}) {
     this.conf = typeof configOrAddress === 'string'
@@ -43,14 +56,14 @@ export class LLPlClient {
 
     const grpcInterceptors: Interceptor[] = [];
 
-    const { plAuthOptions, statusListener } = ops;
+    const { auth, statusListener } = ops;
 
-    if (plAuthOptions !== undefined) {
-      this.refreshTimestamp = inferAuthRefreshTime(plAuthOptions.authInformation, this.conf.authMaxRefreshSeconds);
+    if (auth !== undefined) {
+      this.refreshTimestamp = inferAuthRefreshTime(auth.authInformation, this.conf.authMaxRefreshSeconds);
       grpcInterceptors.push(this.createAuthInterceptor());
-      this.authInformation = plAuthOptions.authInformation;
-      this.onAuthUpdate = plAuthOptions.onUpdate;
-      this.onAuthRefreshProblem = plAuthOptions.onUpdateError;
+      this.authInformation = auth.authInformation;
+      this.onAuthUpdate = auth.onUpdate;
+      this.onAuthRefreshProblem = auth.onUpdateError;
     }
 
     grpcInterceptors.push(this.createErrorInterceptor());
@@ -79,6 +92,23 @@ export class LLPlClient {
       this.statusListener = statusListener;
       statusListener(this._status);
     }
+  }
+
+  /** Returns true if client is authenticated. Even with anonymous auth information
+   * connection is considered authenticated. Unauthenticated clients are used for
+   * login and similar tasks, see {@link UnauthenticatedPlClient}. */
+  public get authenticarted(): boolean {
+    return this.authInformation !== undefined;
+  }
+
+  /** null means anonymous connection */
+  public get authUser(): string | null {
+    if (!this.authenticarted)
+      throw new Error('Client is not authenticated');
+    if (this.authInformation?.jwtToken)
+      return parsePlJwt(this.authInformation?.jwtToken).user.login;
+    else
+      return null;
   }
 
   private updateStatus(newStatus: PlConnectionStatus) {
@@ -174,6 +204,9 @@ export class LLPlClient {
     });
   }
 
-
+  /** Closes underlying transport */
+  public close() {
+    this.grpcTransport.close();
+  }
 }
 

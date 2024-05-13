@@ -50,6 +50,11 @@ export function ensureResourceIdNotNull(resourceId: OptionalResourceId): Resourc
   return resourceId;
 }
 
+export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId {
+  return resourceId !== 0n;
+}
+
+
 // see local / global resource logic below...
 
 export type ResourceKind = 'Structural' | 'Value';
@@ -109,7 +114,7 @@ export function protoToResource(proto: Resource): PlResourceData {
     resourceReady: proto.resourceReady,
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
-    fields: proto.fields.map(protoToField)
+    fields: proto.fields?.map(protoToField)
   };
 }
 
