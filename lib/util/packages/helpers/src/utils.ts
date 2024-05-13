@@ -22,6 +22,14 @@ export function undef<V>(v: V | undefined = undefined): V | undefined {
   return v;
 }
 
+export function bool<V extends boolean>(v: V): boolean {
+  return v;
+}
+
+export function uniqueValues<T>(items: T[]): T[] {
+  return [...new Set(items)];
+}
+
 export function checkIfNotEmpty<T>(v: T | null | undefined, message?: string): asserts v is T {
   if (v === undefined || v === null) {
     throw Error(message ?? 'Empty (null | undefined) value');
