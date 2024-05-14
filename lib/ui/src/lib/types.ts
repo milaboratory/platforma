@@ -26,7 +26,7 @@ export type Option<T = unknown> = {
 
 export const maskIcons = [
   'checkmark',
-  'import',
+  'download',
   'clear',
   'chevron-right',
   'add',
