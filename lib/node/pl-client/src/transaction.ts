@@ -2,8 +2,8 @@ import {
   AnyResourceId,
   createLocalResourceId, ensureResourceIdNotNull, fieldTypeToProto,
   LocalResourceId,
-  MaxTxId, OptionalResourceId, PlBasicResourceData, PlFieldData, PlFieldType, PlResourceData,
-  PlResourceType, protoToField, protoToResource,
+  MaxTxId, OptionalResourceId, PlBasicResourceData, FieldData, PlFieldType, ResourceData,
+  ResourceType, protoToField, protoToResource,
   ResourceId
 } from './types';
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
@@ -248,7 +248,7 @@ export class PlTransaction {
   // Resources
   //
 
-  public createSingleton(name: string, type: PlResourceType, errorIfExists: boolean = false): ResourceRef {
+  public createSingleton(name: string, type: ResourceType, errorIfExists: boolean = false): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
     const globalId = this.sendAndParse(
@@ -263,9 +263,9 @@ export class PlTransaction {
     return { globalId, localId };
   }
 
-  public async getSingleton(name: string, loadFields: true): Promise<PlResourceData>;
+  public async getSingleton(name: string, loadFields: true): Promise<ResourceData>;
   public async getSingleton(name: string, loadFields: false): Promise<PlBasicResourceData>;
-  public async getSingleton(name: string, loadFields: boolean = true): Promise<PlBasicResourceData | PlResourceData> {
+  public async getSingleton(name: string, loadFields: boolean = true): Promise<PlBasicResourceData | ResourceData> {
     return await this.sendAndParse(
       {
         oneofKind: 'resourceGetSingleton', resourceGetSingleton: {
@@ -291,28 +291,28 @@ export class PlTransaction {
     return { globalId, localId };
   }
 
-  public createRoot(type: PlResourceType): ResourceRef {
+  public createRoot(type: ResourceType): ResourceRef {
     return this.createResource(true,
       localId => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
       r => r.resourceCreateRoot.resourceId
     );
   }
 
-  public createStruct(type: PlResourceType, data?: Uint8Array): ResourceRef {
+  public createStruct(type: ResourceType, data?: Uint8Array): ResourceRef {
     return this.createResource(false,
       localId => ({ oneofKind: 'resourceCreateStruct', resourceCreateStruct: { type, id: localId, data } }),
       r => r.resourceCreateStruct.resourceId
     );
   }
 
-  public createEphemeral(type: PlResourceType, data?: Uint8Array): ResourceRef {
+  public createEphemeral(type: ResourceType, data?: Uint8Array): ResourceRef {
     return this.createResource(false,
       localId => ({ oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: { type, id: localId, data } }),
       r => r.resourceCreateEphemeral.resourceId
     );
   }
 
-  public createValue(type: PlResourceType, data: Uint8Array, errorIfExists: boolean = false): ResourceRef {
+  public createValue(type: ResourceType, data: Uint8Array, errorIfExists: boolean = false): ResourceRef {
     return this.createResource(false,
       localId => ({
         oneofKind: 'resourceCreateValue',
@@ -358,9 +358,9 @@ export class PlTransaction {
       r => r.resourceExists.exists);
   }
 
-  public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<PlResourceData>;
+  public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<PlBasicResourceData>;
-  public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<PlBasicResourceData | PlResourceData> {
+  public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<PlBasicResourceData | ResourceData> {
     return await this.sendAndParse({
         oneofKind: 'resourceGet',
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
@@ -453,7 +453,7 @@ export class PlTransaction {
     });
   }
 
-  public async getField(fId: AnyFieldRef): Promise<PlFieldData> {
+  public async getField(fId: AnyFieldRef): Promise<FieldData> {
     return await this.sendAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       r => protoToField(notEmpty(r.fieldGet.field))

@@ -1,4 +1,4 @@
-import { PlResourceType } from './types';
+import { ResourceType } from './types';
 
 //
 // NOTE: This code is not used.
@@ -9,7 +9,7 @@ export type PlAnyStructuralResourceKind = 'structural' | 'ephemeral' | 'singleto
 export type PlResourceKind = PlAnyStructuralResourceKind | 'value';
 
 declare const __resource_type: unique symbol;
-export type WithRichType<T, B extends PlResourceType> = T & { [__resource_type]: B }
+export type WithRichType<T, B extends ResourceType> = T & { [__resource_type]: B }
 
 export type Serde<V> = {
   ser: (obj: V) => Uint8Array

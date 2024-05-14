@@ -67,9 +67,9 @@ export type PlFieldType =
   | 'Dynamic'
   | 'MTW';
 
-export type PlFieldStatus = 'Empty' | 'Assigned' | 'Resolved';
+export type FieldStatus = 'Empty' | 'Assigned' | 'Resolved';
 
-export interface PlResourceType {
+export interface ResourceType {
   readonly name: string;
   readonly version: string;
 }
@@ -80,7 +80,7 @@ export interface PlBasicResourceData {
   originalResourceId: OptionalResourceId;
 
   readonly kind: ResourceKind;
-  readonly type: PlResourceType;
+  readonly type: ResourceType;
 
   readonly data?: Uint8Array;
 
@@ -91,19 +91,19 @@ export interface PlBasicResourceData {
   resourceReady: boolean;
 }
 
-export interface PlResourceData extends PlBasicResourceData {
-  fields: PlFieldData[];
+export interface ResourceData extends PlBasicResourceData {
+  fields: FieldData[];
 }
 
-export interface PlFieldData {
+export interface FieldData {
   name: string;
   type: PlFieldType;
-  status: PlFieldStatus;
+  status: FieldStatus;
   value: OptionalResourceId;
   error: OptionalResourceId;
 }
 
-export function protoToResource(proto: Resource): PlResourceData {
+export function protoToResource(proto: Resource): ResourceData {
   return {
     id: proto.id as ResourceId,
     originalResourceId: proto.originalResourceId as OptionalResourceId,
@@ -134,7 +134,7 @@ function protoToError(proto: Resource): OptionalResourceId {
   return (f?.error ?? NullResourceId) as OptionalResourceId;
 }
 
-export function protoToField(proto: Field): PlFieldData {
+export function protoToField(proto: Field): FieldData {
   return {
     name: notEmpty(proto.id?.fieldName),
     type: protoToFieldType(proto.type),
@@ -163,7 +163,7 @@ function protoToFieldType(proto: FieldType): PlFieldType {
   }
 }
 
-function protoToFieldStatus(proto: Field_ValueStatus): PlFieldStatus {
+function protoToFieldStatus(proto: Field_ValueStatus): FieldStatus {
   switch (proto) {
     case Field_ValueStatus.EMPTY:
       return 'Empty';
