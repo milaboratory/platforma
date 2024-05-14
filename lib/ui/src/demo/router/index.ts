@@ -2,11 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
-    name: 'Color slider',
-    path: '/color-slider',
-    component: () => import('@/demo/color-slider/index.vue'),
-  },
-  {
     name: 'Form',
     path: '/',
     component: () => import('@/demo/form/index.vue'),

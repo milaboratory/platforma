@@ -151,7 +151,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
               </template>
             </tooltip>
           </label>
-          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ realtimeVal }}</div>
+          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ realtimeVal }}{{ measure }}</div>
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
