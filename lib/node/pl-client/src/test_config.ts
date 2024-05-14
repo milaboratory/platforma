@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { LLPlClient } from './ll_client';
-import { AuthInformation, plAddressToConfig, PlConnectionConfig } from './config';
+import { AuthInformation, plAddressToConfig, PlClientConfig } from './config';
 import { inferAuthRefreshTime } from './util/pl';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { PlClient } from './client';
@@ -42,7 +42,7 @@ interface AuthCache {
   authInformation: AuthInformation
 }
 
-export async function getTestClientConf(): Promise<{ conf: PlConnectionConfig, authInformation: AuthInformation }> {
+export async function getTestClientConf(): Promise<{ conf: PlClientConfig, authInformation: AuthInformation }> {
   const tConf = getTestConfig();
 
   let authInformation: AuthInformation | undefined = undefined;

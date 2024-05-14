@@ -1,4 +1,4 @@
-import { AuthInformation, PlConnectionConfig } from './config';
+import { AuthInformation, PlClientConfig } from './config';
 import {
   AuthAPI_ListMethods_Response,
   MaintenanceAPI_Ping_Response
@@ -9,7 +9,7 @@ import { LLPlClient } from './ll_client';
 export class UnauthenticatedPlClient {
   public readonly ll: LLPlClient;
 
-  constructor(configOrAddress: PlConnectionConfig | string) {
+  constructor(configOrAddress: PlClientConfig | string) {
     this.ll = new LLPlClient(configOrAddress);
   }
 

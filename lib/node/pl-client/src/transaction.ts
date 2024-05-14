@@ -102,8 +102,15 @@ export class PlTransaction {
 
   private localResourceIdCounter = 0;
 
-  /** Store logical tx open / closed state to prevent invalid sequence of requests. */
+  /** Store logical tx open / closed state to prevent invalid sequence of requests.
+   * True means output stream was completed.
+   * Contract: there must be no async operations between setting this field to true and sending complete signal to stream.*/
   private _completed = false;
+
+  /** Void operation futures are placed into this pool, and corresponding method return immediately.
+   * This is done to save number of round-trips. Next operation producing result will also await those
+   * pending ops, to throw any pending errors. */
+  private pendingVoidOps: Promise<void>[] = [];
 
   constructor(
     private readonly ll: LLPlTransaction,
@@ -123,17 +130,41 @@ export class PlTransaction {
     }, r => notEmpty(r.txOpen.tx?.id));
   }
 
+  private async drainAndAwaitPendingOps(): Promise<void> {
+    if (this.pendingVoidOps.length === 0)
+      return;
+
+    // drain pending operations into temp array
+    const pending = this.pendingVoidOps;
+    this.pendingVoidOps = [];
+    // awaiting these pending operations first, to catch any errors
+    await Promise.all(pending);
+  }
+
   private async sendAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T
   ): Promise<T> {
-    return parser(await this.ll.send(r));
+    // pushing operation packet to server
+    const rawResponsePromise = this.ll.send(r);
+
+    await this.drainAndAwaitPendingOps();
+
+    // awaiting our result, and parsing the response
+    return parser(await rawResponsePromise);
   }
 
-  private async sendVoid<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>
   ): Promise<void> {
     await this.ll.send(r);
+  }
+
+  /** Requests sent with this method should never produce recoverable errors */
+  private sendVoidAsync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+    r: OneOfKind<ClientMessageRequest, Kind>
+  ): void {
+    this.pendingVoidOps.push(this.sendVoidSync(r));
   }
 
   private checkTxOpen() {
@@ -154,27 +185,34 @@ export class PlTransaction {
     this._completed = true;
 
     if (!this.writable) {
+
       // no need to explicitly commit or reject read-only tx
-      await this.ll.complete();
+      const completeResult = this.ll.complete();
+      await this.drainAndAwaitPendingOps();
+      await completeResult;
       await this.ll.await();
-      return;
+
+    } else {
+      const commitResponse = this.sendAndParse(
+        { oneofKind: 'txCommit', txCommit: {} },
+        r => r.txCommit.success
+      );
+
+      // send closing frame right after commit to save some time on round-trips
+      const completeResult = this.ll.complete();
+
+      // now when we pushed all packets into the stream, we should wait for any
+      // pending void operations from before, to catch any errors
+      await this.drainAndAwaitPendingOps();
+
+      if (!await commitResponse)
+        throw new TxCommitConflict();
+
+      await completeResult;
+
+      // await event-loop completion
+      await this.ll.await();
     }
-
-    const commitResponse = this.sendAndParse(
-      { oneofKind: 'txCommit', txCommit: {} },
-      r => r.txCommit.success
-    );
-
-    // send closing frame right after commit to save some time on round-trips
-    const completeResult = this.ll.complete();
-
-    if (!await commitResponse)
-      throw new TxCommitConflict();
-
-    await completeResult;
-
-    // await event-loop completion
-    await this.ll.await();
   }
 
   public async discard() {
@@ -183,11 +221,15 @@ export class PlTransaction {
     // tx will accept no requests after this one
     this._completed = true;
 
-    const discardResponse = this.sendVoid(
+    const discardResponse = this.sendVoidSync(
       { oneofKind: 'txDiscard', txDiscard: {} }
     );
     // send closing frame right after commit to save some time on round-trips
     const completeResult = this.ll.complete();
+
+    // now when we pushed all packets into the stream, we should wait for any
+    // pending void operations from before, to catch any errors
+    await this.drainAndAwaitPendingOps();
 
     await discardResponse;
     await completeResult;
@@ -230,58 +272,64 @@ export class PlTransaction {
     );
   }
 
-  public createRoot(type: PlResourceType): ResourceRef {
-    const localId = this.nextLocalResourceId(true);
+  //(
+  //     r: OneOfKind<ClientMessageRequest, Kind>,
+  //     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T
+  //   ): Promise<T> {
+  private createResource<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
+    root: boolean,
+    req: (localId: LocalResourceId) => OneOfKind<ClientMessageRequest, Kind>,
+    parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => bigint
+  ): ResourceRef {
+    const localId = this.nextLocalResourceId(root);
 
     const globalId = this.sendAndParse(
-      { oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } },
-      r => r.resourceCreateRoot.resourceId as ResourceId
+      req(localId),
+      r => parser(r) as ResourceId
     );
 
     return { globalId, localId };
+  }
+
+  public createRoot(type: PlResourceType): ResourceRef {
+    return this.createResource(true,
+      localId => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
+      r => r.resourceCreateRoot.resourceId
+    );
   }
 
   public createStruct(type: PlResourceType, data?: Uint8Array): ResourceRef {
-    const localId = this.nextLocalResourceId(false);
-
-    const globalId = this.sendAndParse(
-      { oneofKind: 'resourceCreateStruct', resourceCreateStruct: { type, id: localId, data } },
-      r => r.resourceCreateStruct.resourceId as ResourceId
+    return this.createResource(false,
+      localId => ({ oneofKind: 'resourceCreateStruct', resourceCreateStruct: { type, id: localId, data } }),
+      r => r.resourceCreateStruct.resourceId
     );
-
-    return { globalId, localId };
   }
 
   public createEphemeral(type: PlResourceType, data?: Uint8Array): ResourceRef {
-    const localId = this.nextLocalResourceId(false);
-
-    const globalId = this.sendAndParse(
-      { oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: { type, id: localId, data } },
-      r => r.resourceCreateEphemeral.resourceId as ResourceId
+    return this.createResource(false,
+      localId => ({ oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: { type, id: localId, data } }),
+      r => r.resourceCreateEphemeral.resourceId
     );
-
-    return { globalId, localId };
   }
 
   public createValue(type: PlResourceType, data: Uint8Array, errorIfExists: boolean = false): ResourceRef {
-    const localId = this.nextLocalResourceId(false);
-
-    const globalId = this.sendAndParse(
-      { oneofKind: 'resourceCreateValue', resourceCreateValue: { type, id: localId, data, errorIfExists } },
-      r => r.resourceCreateValue.resourceId as ResourceId
+    return this.createResource(false,
+      localId => ({
+        oneofKind: 'resourceCreateValue',
+        resourceCreateValue: { type, id: localId, data, errorIfExists }
+      }),
+      r => r.resourceCreateValue.resourceId
     );
-
-    return { globalId, localId };
   }
 
-  public async setResourceName(name: string, rId: AnyResourceRef): Promise<void> {
-    return await this.sendVoid(
+  public setResourceName(name: string, rId: AnyResourceRef): void {
+    this.sendVoidAsync(
       { oneofKind: 'resourceNameSet', resourceNameSet: { resourceId: toResourceId(rId), name } }
     );
   }
 
-  public async deleteResourceName(name: string): Promise<void> {
-    return await this.sendVoid(
+  public deleteResourceName(name: string): void {
+    this.sendVoidAsync(
       { oneofKind: 'resourceNameDelete', resourceNameDelete: { name } }
     );
   }
@@ -300,8 +348,8 @@ export class PlTransaction {
     );
   }
 
-  public async resourceRemove(rId: ResourceId): Promise<void> {
-    await this.sendVoid({ oneofKind: 'resourceRemove', resourceRemove: { id: rId } });
+  public removeResource(rId: ResourceId): void {
+    this.sendVoidAsync({ oneofKind: 'resourceRemove', resourceRemove: { id: rId } });
   }
 
   public async resourceExists(rId: ResourceId): Promise<boolean> {
@@ -328,8 +376,8 @@ export class PlTransaction {
    * Most controllers will not start calculations even when all inputs
    * have their values, if inputs list is not locked.
    */
-  public async lockInputs(rId: ResourceRef): Promise<void> {
-    await this.sendVoid({
+  public lockInputs(rId: ResourceRef): void {
+    this.sendVoidAsync({
         oneofKind: 'resourceLockInputs',
         resourceLockInputs: { resourceId: toResourceId(rId) }
       }
@@ -340,20 +388,21 @@ export class PlTransaction {
    * Inform platform that resource will not get any new output fields.
    * This is required for resource to pass deduplication.
    */
-  public async lockOutputs(rId: ResourceRef): Promise<void> {
-    await this.sendVoid({
+  public lockOutputs(rId: ResourceRef): void {
+    this.sendVoidAsync({
         oneofKind: 'resourceLockOutputs',
         resourceLockOutputs: { resourceId: toResourceId(rId) }
       }
     );
   }
 
-  public async lock(rID: ResourceRef): Promise<void> {
-    await Promise.all([this.lockInputs(rID), this.lockOutputs(rID)]);
+  public lock(rID: ResourceRef): void {
+    this.lockInputs(rID);
+    this.lockOutputs(rID);
   }
 
-  public async createField(fId: AnyFieldRef, fieldType: PlFieldType): Promise<void> {
-    await this.sendVoid({
+  public createField(fId: AnyFieldRef, fieldType: PlFieldType): void {
+    this.sendVoidAsync({
         oneofKind: 'fieldCreate',
         fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
       }
@@ -369,9 +418,9 @@ export class PlTransaction {
     );
   }
 
-  public async setField(fId: AnyFieldRef, ref: AnyRef): Promise<void> {
+  public setField(fId: AnyFieldRef, ref: AnyRef): void {
     if (isResource(ref))
-      await this.sendVoid({
+      this.sendVoidAsync({
           oneofKind: 'fieldSet',
           fieldSet: {
             field: toFieldId(fId), value:
@@ -383,7 +432,7 @@ export class PlTransaction {
         }
       );
     else
-      await this.sendVoid({
+      this.sendVoidAsync({
           oneofKind: 'fieldSet',
           fieldSet: {
             field: toFieldId(fId),
@@ -393,8 +442,8 @@ export class PlTransaction {
       );
   }
 
-  public async setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): Promise<void> {
-    await this.sendVoid({
+  public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
+    this.sendVoidAsync({
       oneofKind: 'fieldSetError',
       fieldSetError: { field: toFieldId(fId), errResourceId: toResourceId(ref) }
     });
@@ -407,14 +456,14 @@ export class PlTransaction {
     );
   }
 
-  public async resetField(fId: AnyFieldRef): Promise<void> {
-    await this.sendVoid(
+  public resetField(fId: AnyFieldRef): void {
+    this.sendVoidAsync(
       { oneofKind: 'fieldReset', fieldReset: { field: toFieldId(fId) } }
     );
   }
 
-  public async removeField(fId: AnyFieldRef): Promise<void> {
-    await this.sendVoid(
+  public removeField(fId: AnyFieldRef): void {
+    this.sendVoidAsync(
       { oneofKind: 'fieldRemove', fieldRemove: { field: toFieldId(fId) } }
     );
   }
@@ -434,7 +483,12 @@ export class PlTransaction {
 
   /** Closes output event stream */
   public async complete() {
-    await this.ll.complete();
+    if (this._completed)
+      return;
+    this._completed = true;
+    const completeResult = this.ll.complete();
+    await this.drainAndAwaitPendingOps();
+    await completeResult;
   }
 
   /** Await incoming message loop termination and throw

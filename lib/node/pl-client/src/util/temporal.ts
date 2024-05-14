@@ -1,8 +1,4 @@
-export class Aborted extends Error {
-  constructor(cause: unknown) {
-    super('aborted', { cause });
-  }
-}
+import { Aborted } from '../errors';
 
 export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {

@@ -1,7 +1,8 @@
 import { getTestLLClient } from './test_config';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { createLocalResourceId } from './types';
-import { isTimeoutOrCancelError } from './ll_client';
+
+import { isTimeoutOrCancelError } from './errors';
 
 test('transaction timeout test', async () => {
   const client = await getTestLLClient();

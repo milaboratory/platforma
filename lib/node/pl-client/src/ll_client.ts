@@ -1,34 +1,25 @@
 import { PlatformClient } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
 import { ChannelCredentials, InterceptingCall, Interceptor, status as GrpcStatus } from '@grpc/grpc-js';
-import { AuthInformation, AuthOps, plAddressToConfig, PlConnectionConfig } from './config';
+import {
+  AuthInformation,
+  AuthOps,
+  plAddressToConfig,
+  PlClientConfig,
+  PlConnectionStatus,
+  PlConnectionStatusListener
+} from './config';
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
 import { inferAuthRefreshTime, parsePlJwt } from './util/pl';
-import { Aborted } from './util/temporal';
-
-export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
-export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;
 
 export interface PlCallOps {
   timeout?: number;
   abortSignal?: AbortSignal;
 }
 
-export function isTimeoutOrCancelError(err: any, nested: boolean = false): boolean {
-  if (!(err instanceof Error))
-    return false;
-  if (err instanceof Aborted)
-    return true;
-  if ((err as any).name === 'RpcError' && ((err as any).code === 'CANCELLED' || (err as any).code === 'DEADLINE_EXCEEDED'))
-    return true;
-  if (err.cause !== undefined && !nested)
-    return isTimeoutOrCancelError(err.cause, true);
-  return false;
-}
-
 /** Abstract out low level networking and authorization details */
 export class LLPlClient {
-  public readonly conf: PlConnectionConfig;
+  public readonly conf: PlClientConfig;
 
   /** Initial authorization information */
   private authInformation?: AuthInformation;
@@ -45,7 +36,7 @@ export class LLPlClient {
   private readonly grpcTransport: GrpcTransport;
   public readonly grpcPl: PlatformClient;
 
-  constructor(configOrAddress: PlConnectionConfig | string,
+  constructor(configOrAddress: PlClientConfig | string,
               ops: {
                 auth?: AuthOps,
                 statusListener?: PlConnectionStatusListener

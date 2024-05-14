@@ -2,6 +2,7 @@ import { TxAPI_ClientMessage, TxAPI_ServerMessage } from './proto/github.com/mil
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
+import { PlError, UnrecoverablePlError } from './errors';
 
 export type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
@@ -28,24 +29,6 @@ function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
   reject: (e: Error) => void
 ): AnyResponseHandler {
   return { kind, resolve, reject } as AnyResponseHandler;
-}
-
-export class PlError extends Error {
-  constructor(status: Status) {
-    super(status.message);
-  }
-}
-
-export class RecoverablePlError extends PlError {
-  constructor(status: Status) {
-    super(status);
-  }
-}
-
-export class UnrecoverablePlError extends PlError {
-  constructor(status: Status) {
-    super(status);
-  }
 }
 
 function wrapPlError(status: Status): PlError {

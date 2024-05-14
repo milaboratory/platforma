@@ -1,6 +1,6 @@
-import { AuthOps, PlConnectionConfig } from './config';
-import { LLPlClient, PlCallOps, PlConnectionStatusListener } from './ll_client';
-import { AnyFieldRef, AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
+import { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
+import { LLPlClient, PlCallOps } from './ll_client';
+import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { sleep } from './util/temporal';
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
@@ -35,7 +35,7 @@ export class PlClient {
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
   private _clientRoot: OptionalResourceId = NullResourceId;
 
-  constructor(configOrAddress: PlConnectionConfig | string,
+  constructor(configOrAddress: PlClientConfig | string,
               auth: AuthOps,
               ops: {
                 statusListener?: PlConnectionStatusListener
@@ -43,7 +43,7 @@ export class PlClient {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
   }
 
-  public get conf(): PlConnectionConfig {
+  public get conf(): PlClientConfig {
     return this.ll.conf;
   }
 
@@ -76,31 +76,24 @@ export class PlClient {
       async tx => {
         let mainRoot: AnyResourceRef;
 
-        // saving multiple round-trips
-        const ops: Promise<void>[] = [];
-
         if (await tx.checkResourceNameExists(mainRootName))
           mainRoot = await tx.getResourceByName(mainRootName);
         else {
           mainRoot = tx.createRoot(ClientRoot);
-          ops.push(tx.setResourceName(mainRootName, mainRoot));
+          tx.setResourceName(mainRootName, mainRoot);
         }
 
         if (this.conf.alternativeRoot === undefined) {
-          ops.push(tx.commit());
-          await Promise.all(ops);
+          await tx.commit();
           return await toGlobalResourceId(mainRoot);
         } else {
           const aFId = { resourceId: mainRoot, fieldName: alternativeRootFieldName(this.conf.alternativeRoot) };
 
           const altRoot = tx.createEphemeral(ClientRoot);
-          ops.push(
-            tx.lock(altRoot),
-            tx.createField(aFId, 'Dynamic'),
-            tx.setField(aFId, altRoot),
-            tx.commit()
-          );
-          await Promise.all(ops);
+          tx.lock(altRoot);
+          tx.createField(aFId, 'Dynamic');
+          tx.setField(aFId, altRoot);
+          await tx.commit();
 
           return await altRoot.globalId;
         }
@@ -118,11 +111,8 @@ export class PlClient {
         fieldName: alternativeRootFieldName(alternativeRootName)
       };
       const exists = tx.fieldExists(fId);
-      // saving a round-trip
-      await Promise.all([
-        tx.removeField(fId),
-        tx.commit()
-      ]);
+      tx.removeField(fId);
+      await tx.commit();
       return await exists;
     });
   }

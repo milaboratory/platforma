@@ -1,4 +1,4 @@
-export interface PlConnectionConfig {
+export interface PlClientConfig {
   hostAndPort: string;
 
   /** If set, client will expose a nested object under a field with name `alternative_root_${alternativeRoot}` as a
@@ -23,8 +23,8 @@ export const DEFAULT_TX_TIMEOUT = 10_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
-export type ConnectionDataOverrides = Partial<Pick<
-  PlConnectionConfig,
+type PlConfigOverrides = Partial<Pick<
+  PlClientConfig,
   'ssl' | 'defaultRequestTimeout' | 'defaultTransactionTimeout' | 'httpProxy' | 'grpcProxy'
 >>
 
@@ -34,7 +34,7 @@ function parseInt(s: string | null | undefined): number | undefined {
   return Number.parseInt(s);
 }
 
-export function plAddressToConfig(address: string, overrides: ConnectionDataOverrides = {}): PlConnectionConfig {
+export function plAddressToConfig(address: string, overrides: PlConfigOverrides = {}): PlClientConfig {
   if (address.indexOf('://') === -1)
     // non-url address
     return {
@@ -85,3 +85,6 @@ export interface AuthOps {
   /** Will be executed if error encountered during token update */
   readonly onUpdateError?: (error: unknown) => void
 }
+
+export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
+export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;
