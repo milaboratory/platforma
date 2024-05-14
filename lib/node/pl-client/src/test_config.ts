@@ -4,7 +4,8 @@ import { AuthInformation, plAddressToConfig, PlClientConfig } from './config';
 import { inferAuthRefreshTime } from './util/pl';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { PlClient } from './client';
-import * as trace_events from 'node:trace_events';
+import { randomUUID } from 'crypto';
+import { a } from '@milaboratory/pl-project-state/dist/lib';
 
 export interface TestConfig {
   address: string;
@@ -86,10 +87,23 @@ export async function getTestLLClient() {
   return new LLPlClient(conf, { auth: { authInformation } });
 }
 
-export async function getTestClient(init: boolean = true) {
+export async function getTestClient(alternativeRoot?: string, init: boolean = true) {
   const { conf, authInformation } = await getTestClientConf();
-  const client = new PlClient(conf, { authInformation });
+  if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
+    throw new Error('test pl address configured with alternative root');
+  const client = new PlClient({ ...conf, alternativeRoot }, { authInformation });
   if (init)
     await client.init();
   return client;
+}
+
+export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {
+  const altRoot = `test_${Date.now()}_${randomUUID()}`;
+  try {
+    const client = await getTestClient(altRoot);
+    return await body(client);
+  } finally {
+    const rawClient = await getTestClient();
+    await rawClient.deleteAlternativeRoot(altRoot);
+  }
 }

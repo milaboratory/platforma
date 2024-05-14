@@ -5,3 +5,6 @@ function rt(name: string, version: string): PlResourceType {
 }
 
 export const ClientRoot = rt('ClientRoot', '1');
+
+export const StructTestResource = rt('StructTest', '1');
+export const ValueTestResource = rt('ValueTest', '1');

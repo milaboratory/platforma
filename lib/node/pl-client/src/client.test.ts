@@ -2,7 +2,7 @@ import { getTestClient, getTestClientConf } from './test_config';
 import { PlClient } from './client';
 
 test('test client init', async () => {
-  const client = await getTestClient(false);
+  const client = await getTestClient(undefined, false);
   await client.init();
 });
 

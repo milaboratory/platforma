@@ -9,7 +9,7 @@ import {
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { NonUndefined } from 'utility-types';
-import { notEmpty } from './util/util';
+import { notEmpty, toBytes } from './util/util';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -244,6 +244,10 @@ export class PlTransaction {
     return ensureResourceIdNotNull(this._clientRoot);
   }
 
+  //
+  // Resources
+  //
+
   public createSingleton(name: string, type: PlResourceType, errorIfExists: boolean = false): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
@@ -272,10 +276,6 @@ export class PlTransaction {
     );
   }
 
-  //(
-  //     r: OneOfKind<ClientMessageRequest, Kind>,
-  //     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T
-  //   ): Promise<T> {
   private createResource<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>>(
     root: boolean,
     req: (localId: LocalResourceId) => OneOfKind<ClientMessageRequest, Kind>,
@@ -376,7 +376,7 @@ export class PlTransaction {
    * Most controllers will not start calculations even when all inputs
    * have their values, if inputs list is not locked.
    */
-  public lockInputs(rId: ResourceRef): void {
+  public lockInputs(rId: AnyResourceRef): void {
     this.sendVoidAsync({
         oneofKind: 'resourceLockInputs',
         resourceLockInputs: { resourceId: toResourceId(rId) }
@@ -388,7 +388,7 @@ export class PlTransaction {
    * Inform platform that resource will not get any new output fields.
    * This is required for resource to pass deduplication.
    */
-  public lockOutputs(rId: ResourceRef): void {
+  public lockOutputs(rId: AnyResourceRef): void {
     this.sendVoidAsync({
         oneofKind: 'resourceLockOutputs',
         resourceLockOutputs: { resourceId: toResourceId(rId) }
@@ -396,10 +396,14 @@ export class PlTransaction {
     );
   }
 
-  public lock(rID: ResourceRef): void {
+  public lock(rID: AnyResourceRef): void {
     this.lockInputs(rID);
     this.lockOutputs(rID);
   }
+
+  //
+  // Fields
+  //
 
   public createField(fId: AnyFieldRef, fieldType: PlFieldType): void {
     this.sendVoidAsync({
@@ -468,10 +472,61 @@ export class PlTransaction {
     );
   }
 
-  // /** Resolves existing or create first level resource from */
-  // public async getClientResource(fieldName: string, resourceType: PlResourceType): Promise<ResourceId> {
   //
-  // }
+  // KV
+  //
+
+  public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
+    this.sendVoidAsync({
+      oneofKind: 'resourceKeyValueSet', resourceKeyValueSet: {
+        resourceId: toResourceId(rId), key,
+        value: toBytes(value)
+      }
+    });
+  }
+
+  public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
+    return await this.sendAndParse(
+      { oneofKind: 'resourceKeyValueGet', resourceKeyValueGet: { resourceId: toResourceId(rId), key } },
+      r => r.resourceKeyValueGet.value
+    );
+  }
+
+  public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
+    return Buffer.from(await this.getKValue(rId, key)).toString();
+  }
+
+  public async getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
+    return await this.sendAndParse(
+      { oneofKind: 'resourceKeyValueGetIfExists', resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key } },
+      r => r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
+    );
+  }
+
+  public async getKValueStringIfExists(rId: AnyResourceRef, key: string): Promise<string | undefined> {
+    const data = await this.getKValueIfExists(rId, key);
+    return data === undefined ? undefined : Buffer.from(data).toString();
+  }
+
+  //
+  // Cache
+  //
+  // TODO
+
+  //
+  // High level ops
+  //
+
+  /** Resolves existing or create first level resource from */
+  public getFutureFieldValue(rId: AnyResourceRef,
+                             fieldName: string,
+                             fieldType: 'Output' | 'Input' | 'Service'
+  ): FieldRef {
+    const data = Buffer.from(JSON.stringify({ fieldName, fieldType }));
+    const getFieldResource = this.createEphemeral({ name: 'json/getField', version: '1' }, data);
+    this.setField({ resourceId: getFieldResource, fieldName: 'resource' }, rId);
+    return { resourceId: getFieldResource, fieldName: 'result' };
+  }
 
   //
   // Technical
