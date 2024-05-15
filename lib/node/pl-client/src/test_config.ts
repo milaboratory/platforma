@@ -5,7 +5,6 @@ import { inferAuthRefreshTime } from './util/pl';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { PlClient } from './client';
 import { randomUUID } from 'crypto';
-import { a } from '@milaboratory/pl-project-state/dist/lib';
 
 export interface TestConfig {
   address: string;
