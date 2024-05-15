@@ -4,5 +4,6 @@ export * from './config';
 export * from './client';
 export * from './transaction';
 export * from './errors';
+export * from './util/temporal';
 
 export * as TestHelpers from './test_config';

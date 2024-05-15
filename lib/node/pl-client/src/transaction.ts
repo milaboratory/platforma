@@ -1,15 +1,14 @@
 import {
   AnyResourceId,
-  createLocalResourceId, ensureResourceIdNotNull, fieldTypeToProto,
-  LocalResourceId,
-  MaxTxId, OptionalResourceId, PlBasicResourceData, FieldData, PlFieldType, ResourceData,
-  ResourceType, protoToField, protoToResource,
-  ResourceId
+  createLocalResourceId, ensureResourceIdNotNull, LocalResourceId,
+  MaxTxId, OptionalResourceId, BasicResourceData, FieldData, FieldType, ResourceData,
+  ResourceId, ResourceType
 } from './types';
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { NonUndefined } from 'utility-types';
 import { notEmpty, toBytes } from './util/util';
+import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -81,6 +80,10 @@ export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceI
     return await ref.globalId;
   else
     return ref;
+}
+
+export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRef {
+  return { resourceId, fieldName };
 }
 
 /** If transaction commit failed due to write conflicts */
@@ -264,8 +267,8 @@ export class PlTransaction {
   }
 
   public async getSingleton(name: string, loadFields: true): Promise<ResourceData>;
-  public async getSingleton(name: string, loadFields: false): Promise<PlBasicResourceData>;
-  public async getSingleton(name: string, loadFields: boolean = true): Promise<PlBasicResourceData | ResourceData> {
+  public async getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
+  public async getSingleton(name: string, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
     return await this.sendAndParse(
       {
         oneofKind: 'resourceGetSingleton', resourceGetSingleton: {
@@ -359,8 +362,8 @@ export class PlTransaction {
   }
 
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
-  public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<PlBasicResourceData>;
-  public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<PlBasicResourceData | ResourceData> {
+  public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
+  public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
     return await this.sendAndParse({
         oneofKind: 'resourceGet',
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
@@ -405,7 +408,7 @@ export class PlTransaction {
   // Fields
   //
 
-  public createField(fId: AnyFieldRef, fieldType: PlFieldType): void {
+  public createField(fId: AnyFieldRef, fieldType: FieldType): void {
     this.sendVoidAsync({
         oneofKind: 'fieldCreate',
         fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }

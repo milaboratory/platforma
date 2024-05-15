@@ -3,15 +3,6 @@ Questions to Denis or Gleb:
 - Difference between Dynamic and MTW fields?
 */
 
-import {
-  Field,
-  Field_ValueStatus,
-  Resource,
-  Resource_Kind
-} from './proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
-import { assertNever, notEmpty } from './util/util';
-import { FieldType } from './proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
-
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
 type BrandResourceId<B> = bigint & { [__resource_id_type__]: B }
@@ -57,9 +48,11 @@ export function isAnyResourceId(resourceId: bigint): resourceId is AnyResourceId
 
 // see local / global resource logic below...
 
-export type ResourceKind = 'Structural' | 'Value';
+export type ResourceKind =
+  | 'Structural'
+  | 'Value';
 
-export type PlFieldType =
+export type FieldType =
   | 'Input'
   | 'Output'
   | 'Service'
@@ -67,7 +60,10 @@ export type PlFieldType =
   | 'Dynamic'
   | 'MTW';
 
-export type FieldStatus = 'Empty' | 'Assigned' | 'Resolved';
+export type FieldStatus =
+  | 'Empty'
+  | 'Assigned'
+  | 'Resolved';
 
 export interface ResourceType {
   readonly name: string;
@@ -75,7 +71,7 @@ export interface ResourceType {
 }
 
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
-export interface PlBasicResourceData {
+export interface BasicResourceData {
   readonly id: ResourceId;
   originalResourceId: OptionalResourceId;
 
@@ -91,108 +87,16 @@ export interface PlBasicResourceData {
   resourceReady: boolean;
 }
 
-export interface ResourceData extends PlBasicResourceData {
+export interface ResourceData extends BasicResourceData {
   fields: FieldData[];
 }
 
 export interface FieldData {
   name: string;
-  type: PlFieldType;
+  type: FieldType;
   status: FieldStatus;
   value: OptionalResourceId;
   error: OptionalResourceId;
-}
-
-export function protoToResource(proto: Resource): ResourceData {
-  return {
-    id: proto.id as ResourceId,
-    originalResourceId: proto.originalResourceId as OptionalResourceId,
-    type: notEmpty(proto.type),
-    data: proto.data,
-    inputsLocked: proto.inputsLocked,
-    outputsLocked: proto.outputsLocked,
-    resourceReady: proto.resourceReady,
-    kind: protoToResourceKind(proto.kind),
-    error: protoToError(proto),
-    fields: proto.fields?.map(protoToField)
-  };
-}
-
-function protoToResourceKind(proto: Resource_Kind): ResourceKind {
-  switch (proto) {
-    case Resource_Kind.STRUCTURAL:
-      return 'Structural';
-    case Resource_Kind.VALUE:
-      return 'Value';
-  }
-
-  throw new Error('invalid ResourceKind: ' + proto);
-}
-
-function protoToError(proto: Resource): OptionalResourceId {
-  const f = proto.fields.find((f) => f?.id?.fieldName === 'resourceError');
-  return (f?.error ?? NullResourceId) as OptionalResourceId;
-}
-
-export function protoToField(proto: Field): FieldData {
-  return {
-    name: notEmpty(proto.id?.fieldName),
-    type: protoToFieldType(proto.type),
-    status: protoToFieldStatus(proto.valueStatus),
-    value: proto.value as OptionalResourceId,
-    error: proto.error as OptionalResourceId
-  };
-}
-
-function protoToFieldType(proto: FieldType): PlFieldType {
-  switch (proto) {
-    case FieldType.INPUT:
-      return 'Input';
-    case FieldType.OUTPUT:
-      return 'Output';
-    case FieldType.SERVICE:
-      return 'Service';
-    case FieldType.ONE_TIME_WRITABLE:
-      return 'OTW';
-    case FieldType.DYNAMIC:
-      return 'Dynamic';
-    case FieldType.MULTIPLE_TIMES_WRITABLE:
-      return 'MTW';
-    default:
-      throw new Error('invalid FieldType: ' + proto);
-  }
-}
-
-function protoToFieldStatus(proto: Field_ValueStatus): FieldStatus {
-  switch (proto) {
-    case Field_ValueStatus.EMPTY:
-      return 'Empty';
-    case Field_ValueStatus.ASSIGNED:
-      return 'Assigned';
-    case Field_ValueStatus.RESOLVED:
-      return 'Resolved';
-    default:
-      throw new Error('invalid FieldStatus: ' + proto);
-  }
-}
-
-export function fieldTypeToProto(type: PlFieldType): FieldType {
-  switch (type) {
-    case 'Input':
-      return FieldType.INPUT;
-    case 'Output':
-      return FieldType.OUTPUT;
-    case 'Dynamic':
-      return FieldType.DYNAMIC;
-    case 'Service':
-      return FieldType.SERVICE;
-    case 'MTW':
-      return FieldType.MULTIPLE_TIMES_WRITABLE;
-    case 'OTW':
-      return FieldType.ONE_TIME_WRITABLE;
-    default:
-      return assertNever(type);
-  }
 }
 
 //
