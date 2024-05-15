@@ -154,7 +154,7 @@ export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
   const results = [];
 
   const isProduction = tx.createValue(
-    KnownResourceTypes.JsonString,
+    KnownResourceTypes.JsonBool,
     Buffer.from(JSON.stringify(true)),
   );
 
