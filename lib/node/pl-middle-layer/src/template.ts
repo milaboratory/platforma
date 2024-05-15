@@ -53,6 +53,7 @@ function loadTemplateFromRegistry(tx: PlTransaction, spec: TemplateFromRegistry)
   const uri = field(getTemplate, TengoTemplateGetTemplateURI);
   const templateFromRegistry = field(getTemplate, TengoTemplateGetTemplatePack);
 
+  // Note: it has a resource schema, so platforma creates fields by itself.
   // tx.createField(registry, 'Input');
   // tx.createField(uri, 'Input');
   // tx.createField(templateFromRegistry, 'Output');

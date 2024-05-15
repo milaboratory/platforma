@@ -3,9 +3,15 @@ import {
   PlTransaction,
   ResourceId,
   AnyResourceRef,
-  field
+  field,
+  KnownResourceTypes,
+  ResourceRef,
+  FieldRef,
+  AnyRef
 } from '@milaboratory/pl-ts-client-v2';
 import { BlockPackSpec, createBlockPack } from './block_pack';
+import { notEmpty } from './util';
+import { createBContextEnd, createTemplateBlock } from './template_block';
 
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '1' };
 export const BlockResourceType: ResourceType = { name: 'UserProjectBlock', version: '1' };
@@ -30,6 +36,53 @@ export interface BlockStructure {
 export const InitialBlockStructure: BlockStructure = {
   blocks: []
 };
+
+export interface BlockInfo {
+  readonly tplId: ResourceRef;
+  readonly inputsToRender: ResourceRef;
+  readonly blockId: ResourceRef;
+}
+
+export interface ProjectInfo {
+  readonly rId: ResourceId;
+  readonly structure: BlockStructure;
+  readonly blocks: Map<string, BlockInfo>;
+}
+
+export class ProjectAccessor {
+  constructor(public readonly resourceId: ResourceId,
+              private readonly tx: PlTransaction) {
+
+    this.blockStructure = new KVAccessor(
+      this.resourceId, BlockStructureKey, this.tx,
+    );
+  }
+
+  private blockStructure: KVAccessor<BlockStructure>;
+
+  private blocks: Map<string, BlockAccessor> = new Map();
+
+  // public 
+
+  private setSchemaVersion(version: number = SchemaVersionCurrent) {
+    this.tx.setKValue(this.resourceId, SchemaVersionKey, version.toString());
+  }
+
+  public async getSchemaVersion(): Promise<number> {
+    return Number(await this.tx.getKValue(this.resourceId, SchemaVersionKey));
+  }
+
+  public async addBlock(bpSpec: BlockPackSpec) {
+    const uuid = crypto.randomUUID();
+    const block = createBlock(this.tx, bpSpec);
+  }
+}
+
+export class BlockAccessor {
+  constructor(public readonly resourceId: ResourceId,
+              private readonly tx: PlTransaction) {
+  }
+}
 
 export class KVAccessor<T> {
   constructor(public readonly resourceId: ResourceId,
@@ -70,40 +123,6 @@ export class KVAccessor<T> {
   }
 }
 
-export class ProjectAccessor {
-  constructor(public readonly resourceId: ResourceId,
-              private readonly tx: PlTransaction) {
-  }
-
-  private blockStructureLoaded?: Promise<void>;
-  private blockStructure?: BlockStructure;
-
-  public ensureBlockStructure() {
-    if (this.blockStructureLoaded === undefined)
-      this.blockStructureLoaded = (async () => {
-        const data = await this.tx.getKValueString(this.resourceId, BlockStructureKey);
-        this.blockStructure = JSON.parse(data) as BlockStructure;
-      })();
-  }
-
-  public async getBlockStructure(): Promise<BlockStructure> {
-    this.ensureBlockStructure();
-    return await this.blockStructureLoaded!;
-  }
-
-  private setSchemaVersion(version: number = SchemaVersionCurrent) {
-    this.tx.setKValue(this.resourceId, SchemaVersionKey, version.toString());
-  }
-
-  public async getSchemaVersion(): Promise<number> {
-    return Number(await this.tx.getKValue(this.resourceId, SchemaVersionKey));
-  }
-
-  public async addBlock() {
-
-  }
-}
-
 export function createProject(tx: PlTransaction): AnyResourceRef {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
@@ -121,4 +140,41 @@ export function createBlock(tx: PlTransaction,
   tx.createField(bpField, 'Dynamic');
   tx.setField(bpField, bp);
   return block;
+}
+
+export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
+  result: AnyRef,
+  context: AnyRef,
+}[] {
+  const order = prj.structure.blocks.map(b => b.id);
+  const blocks = order.map(
+    (id) => notEmpty(prj.blocks.get(id)),
+  );
+
+  const results = [];
+
+  const isProduction = tx.createValue(
+    KnownResourceTypes.JsonString,
+    Buffer.from(JSON.stringify(true)),
+  );
+
+  let ctx: AnyRef = createBContextEnd(tx);
+  for (const b of blocks) {
+    const rendered = createTemplateBlock(
+      tx, b.tplId, 'HeavyBlock', {
+        args: b.inputsToRender,
+        blockId: b.blockId,
+        isProduction: isProduction,
+        context: ctx,
+      },
+    )
+
+    ctx = notEmpty(rendered.outputs.get(`outputs/context`));
+    results.push({
+      result: notEmpty(rendered.outputs.get(`outputs/result`)),
+      context: ctx,
+    })
+  }
+
+  return results;
 }
