@@ -209,6 +209,14 @@ export function errorOptional<V>(v: Result<V> | undefined) {
   }
 }
 
+export function unwrap<T>(r: Result<T>): T {
+  if (r.ok) {
+    return r.value;
+  }
+
+  throw Error(r.error);
+}
+
 export function flatValue<T>(v: T | T[]): T[] {
   return Array.isArray(v) ? v : [v];
 }
