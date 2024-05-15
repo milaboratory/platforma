@@ -1,5 +1,6 @@
 import { Command } from '@oclif/core'
-import { createLogger, getPackageInfo, newCompiler, parseSources } from '../../compiler/main'
+import { createLogger } from '../../compiler/main'
+import { dumpTemplates } from '../../shared/dump'
 import { stdout } from 'process'
 
 export default class DumpTemplates extends Command {
@@ -11,15 +12,7 @@ export default class DumpTemplates extends Command {
 
   public async run(): Promise<void> {
     const logger = createLogger()
-    const packageInfo = getPackageInfo()
-    
-    const sources = parseSources(logger, packageInfo, 'src', '')
-    
-    for (const src of sources) {
-      if (src.fullName.type === "template") {
-        stdout.write(JSON.stringify(src)+"\n")
-      }
-    }
+    dumpTemplates(logger, stdout)
   }
 }
 

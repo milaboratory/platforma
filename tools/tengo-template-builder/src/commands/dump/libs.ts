@@ -1,5 +1,6 @@
 import { Command, Flags } from '@oclif/core'
-import { createLogger, getPackageInfo, newCompiler, parseSources } from '../../compiler/main'
+import { createLogger } from '../../compiler/main'
+import { dumpLibs } from '../../shared/dump'
 import { stdout } from 'process'
 
 export default class DumpLibs extends Command {
@@ -17,30 +18,7 @@ export default class DumpLibs extends Command {
     const {flags} = await this.parse(DumpLibs)
 
     const logger = createLogger()
-    const packageInfo = getPackageInfo()
-
-    const sources = parseSources(logger, packageInfo, 'src', '')
-    
-    if (!flags.deps) {
-      for (const src of sources) {
-        if (src.fullName.type === "library") {
-          stdout.write(JSON.stringify(src)+"\n")
-        }
-      }
-
-      return
-    }
-
-    const compiler = newCompiler(logger, packageInfo)
-    for (const src of sources) {
-      if (src.fullName.type === "library") {
-        compiler.addLib(src)
-      }
-    }
-
-    for (const lib of compiler.allLibs()) {
-      stdout.write(JSON.stringify(lib)+"\n")
-    }
+    dumpLibs(logger, flags.deps, stdout)
   }
 }
 

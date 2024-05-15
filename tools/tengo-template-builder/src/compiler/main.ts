@@ -26,9 +26,9 @@ const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix];
 
-export function createLogger(): winston.Logger {
+export function createLogger(level : string = 'debug'): winston.Logger {
   return winston.createLogger({
-    level: 'debug',
+    level: level,
     format: winston.format.printf(({ level, message }) => {
       return `${level.padStart(6, ' ')}: ${message}`;
     }),

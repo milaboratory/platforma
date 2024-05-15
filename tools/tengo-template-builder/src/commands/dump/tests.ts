@@ -1,5 +1,6 @@
 import { Command } from '@oclif/core'
-import { createLogger, getPackageInfo, newCompiler, parseSources } from '../../compiler/main'
+import { createLogger } from '../../compiler/main'
+import { dumpTests } from '../../shared/dump'
 import { stdout } from 'process'
 
 export default class DumpTests extends Command {
@@ -11,14 +12,6 @@ export default class DumpTests extends Command {
 
   public async run(): Promise<void> {
     const logger = createLogger()
-    const packageInfo = getPackageInfo()
-    
-    const sources = parseSources(logger, packageInfo, 'src', '')
-    
-    for (const src of sources) {
-      if (src.fullName.type === 'test') {
-        stdout.write(JSON.stringify(src)+"\n")
-      }
-    }
+    dumpTests(logger, stdout)
   }
 }
