@@ -21,7 +21,7 @@ jobs:
     with:
       app-name: Pl Typescript Client V2
       app-name-slug: 'pl-ts-client-v2'
-      notify-telegram: true
+      notify-telegram: false
 
       node-version: '20.x'
       is-electron-application: 'false'
