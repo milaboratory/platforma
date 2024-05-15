@@ -1,0 +1,59 @@
+{
+  "name": "@milaboratory/pl-project-state",
+  "version": "1.1.0",
+  "description": "Pl Project State",
+  "main": "dist/lib.js",
+  "module": "dist/lib.mjs",
+  "types": "dist/lib.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "readme": "exec oclif readme",
+    "test": "jest"
+  },
+  "bin": {
+    "pl-state": "./bin/run.js"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratory/pl-ts-client-v2": "^2.2.1",
+    "@oclif/core": "^3.26.6",
+    "yaml": "^2.4.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.12.8",
+    "ts-jest": "^29.1.2",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "tsup": {
+    "entry": {
+      "cli": "src/cmd/index.ts",
+      "lib": "src/index.ts"
+    },
+    "splitting": false,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": true,
+    "sourcemap": true
+  },
+  "oclif": {
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/cli.js",
+      "identifier": "COMMANDS"
+    },
+    "bin": "pl-state",
+    "dirname": "pl-state",
+    "topicSeparator": " "
+  }
+}
