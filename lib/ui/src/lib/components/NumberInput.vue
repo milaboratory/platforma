@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import DoubleContour from '../utils/DoubleContour.vue';
 import { useLabelNotch } from '@/lib/composition/useLabelNotch';
-import { computed, nextTick, ref, useSlots, watch } from 'vue';
+import { computed, nextTick, ref, useSlots } from 'vue';
 import Tooltip from '@/lib/components/Tooltip.vue';
 
 type NumberInputProps = {
@@ -15,9 +15,17 @@ type NumberInputProps = {
   errorMessage?: string;
   validate?: (v: number) => string | undefined;
 };
+
 const props = withDefaults(defineProps<NumberInputProps>(), {
   step: 1,
+  label: undefined,
+  placeholder: undefined,
+  minValue: undefined,
+  maxValue: undefined,
+  errorMessage: undefined,
+  validate: undefined,
 });
+
 const emit = defineEmits<{ (e: 'update:modelValue', number?: number): void }>();
 
 const root = ref<HTMLElement>();
@@ -41,13 +49,11 @@ const computedValue = computed({
     return '';
   },
   set(val) {
-    console.log('set', val);
     val = val.replace(/,/g, '');
     if (isNumeric(val)) {
       emit('update:modelValue', +val);
       //try press 123.12345678912345 and than 6
       if (val.toString() !== props.modelValue?.toString() && +val === props.modelValue && val[val.length - 1] !== '.') {
-        console.log('123.45678902345679');
         canRenderValue.value = false;
         nextTick(() => {
           canRenderValue.value = true;
@@ -57,7 +63,6 @@ const computedValue = computed({
       if (val.trim() === '') {
         emit('update:modelValue', undefined);
       }
-      console.log('canRenderValue');
       canRenderValue.value = false;
       nextTick(() => {
         canRenderValue.value = true;

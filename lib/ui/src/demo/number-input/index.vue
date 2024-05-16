@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive } from 'vue';
 import Layout from '@/demo/Layout.vue';
 import Split from '@/demo/Split.vue';
 import NumberInput from '@/lib/components/NumberInput.vue';
@@ -8,8 +8,8 @@ const models = reactive({
   model0: 0,
   model1: undefined,
   model2: NaN,
-  model3: '23a',
-  model4: '100',
+  model3: '23a' as unknown as number, // to cause runtime error
+  model4: '100' as unknown as number, // to cause runtime error
 });
 </script>
 <template>
