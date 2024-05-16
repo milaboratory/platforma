@@ -1,17 +1,15 @@
 import {
-  ResourceType,
-  PlTransaction,
-  ResourceId,
+  AnyRef,
   AnyResourceRef,
   field,
-  KnownResourceTypes,
+  PlTransaction,
+  ResourceId,
   ResourceRef,
-  FieldRef,
-  AnyRef
+  ResourceType
 } from '@milaboratory/pl-ts-client-v2';
 import { BlockPackSpec, createBlockPack } from './block_pack';
 import { notEmpty } from './util';
-import { createBContextEnd, createTemplateBlock } from './template_block';
+import { createTrue, KVAccessor } from './pl_util';
 
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '1' };
 export const BlockResourceType: ResourceType = { name: 'UserProjectBlock', version: '1' };
@@ -50,19 +48,18 @@ export interface ProjectInfo {
 }
 
 export class ProjectAccessor {
+  private readonly blockStructure: KVAccessor<BlockStructure>;
+
   constructor(public readonly resourceId: ResourceId,
               private readonly tx: PlTransaction) {
-
     this.blockStructure = new KVAccessor(
-      this.resourceId, BlockStructureKey, this.tx,
+      this.resourceId, BlockStructureKey, this.tx
     );
   }
 
-  private blockStructure: KVAccessor<BlockStructure>;
-
   private blocks: Map<string, BlockAccessor> = new Map();
 
-  // public 
+  // public
 
   private setSchemaVersion(version: number = SchemaVersionCurrent) {
     this.tx.setKValue(this.resourceId, SchemaVersionKey, version.toString());
@@ -81,45 +78,6 @@ export class ProjectAccessor {
 export class BlockAccessor {
   constructor(public readonly resourceId: ResourceId,
               private readonly tx: PlTransaction) {
-  }
-}
-
-export class KVAccessor<T> {
-  constructor(public readonly resourceId: ResourceId,
-              public readonly key: string,
-              private readonly tx: PlTransaction) {
-  }
-
-  private loaded?: Promise<void>;
-  private _value?: T;
-  private _changed: boolean = false;
-
-  public ensureLoadingStarted() {
-    if (this.loaded === undefined)
-      this.loaded = (async () => {
-        const data = await this.tx.getKValueString(this.resourceId, this.key);
-        this._value = JSON.parse(data) as T;
-      })();
-  }
-
-  public async getReadonly() {
-    this.ensureLoadingStarted();
-    await this.loaded!;
-    return this._value;
-  }
-
-  public async getForChange() {
-    this._changed = true;
-    return await this.getReadonly();
-  }
-
-  public flush() {
-    if (this.loaded === undefined
-      || !this._value === undefined
-      || !this._changed)
-      return;
-    this.tx.setKValue(this.resourceId, this.key, JSON.stringify(this._value));
-    this._changed = false;
   }
 }
 
@@ -148,15 +106,12 @@ export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
 }[] {
   const order = prj.structure.blocks.map(b => b.id);
   const blocks = order.map(
-    (id) => notEmpty(prj.blocks.get(id)),
+    (id) => notEmpty(prj.blocks.get(id))
   );
 
   const results = [];
 
-  const isProduction = tx.createValue(
-    KnownResourceTypes.JsonBool,
-    Buffer.from(JSON.stringify(true)),
-  );
+  const isProduction = createTrue(tx);
 
   let ctx: AnyRef = createBContextEnd(tx);
   for (const b of blocks) {
@@ -165,15 +120,15 @@ export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
         args: b.inputsToRender,
         blockId: b.blockId,
         isProduction: isProduction,
-        context: ctx,
-      },
-    )
+        context: ctx
+      }
+    );
 
     ctx = notEmpty(rendered.outputs.get(`outputs/context`));
     results.push({
       result: notEmpty(rendered.outputs.get(`outputs/result`)),
-      context: ctx,
-    })
+      context: ctx
+    });
   }
 
   return results;
