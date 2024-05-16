@@ -1,32 +1,21 @@
 import { readFileSync } from 'node:fs';
-import { TypedArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
+import { TypedArtifactName, FullArtifactName } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
-const getTemplateIdCheck = /plapi.getTemplateId\s*\(/;
-const getTemplateIdPattern = /plapi.getTemplateId\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
+// matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
+const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
 
-function renderGetTemplateId(pkg: string, name: string): string {
-  return `plapi.getTemplateId("${pkg}:${name}")`;
+const importPattern = /import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
+const newGetTemplateIdRE = (moduleName: string) => {
+  return new RegExp(`\\b${moduleName}\\.getTemplateId\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\)`)
+}
+const newGetTemplateIdLineRE = (moduleName: string) => {
+  return new RegExp(`\\b${moduleName}\\.getTemplateId\\s*\\(`)
 }
 
-const importCheck = /import\s*\(\s*"[^"]*:/;
-const importPattern = /import\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
-
-function renderImport(pkg: string, name: string): string {
-  return `import("${pkg}:${name}")`;
-}
-
-interface Dependency {
-  type: ArtifactType;
-  pattern: RegExp;
-  check: RegExp;
-  render: (pkg: string, name: string) => string;
-}
-
-const dependencyTypes: Dependency[] = [
-  { type: 'template', pattern: getTemplateIdPattern, check: getTemplateIdCheck, render: renderGetTemplateId },
-  { type: 'library', pattern: importPattern, check: importCheck, render: renderImport }
-];
+const importRE = new RegExp(`\\b${importPattern.source}`);
+const importNameRE = new RegExp(`\\b(?<importName>${namePattern}(\\.${namePattern})*)\\s*:=\\s*${importPattern.source}`)
+const dependencyRE = /(?<pkgName>[^"]*):(?<depID>[^"]+)/ // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
 
 export class ArtifactSource {
   constructor(
@@ -41,73 +30,124 @@ export class ArtifactSource {
   ) { }
 }
 
-export function parseSourceFile(srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+export function parseSourceFile(srcFile: string, fullSourceName: FullArtifactName): ArtifactSource {
   const src = readFileSync(srcFile).toString()
-  const { normalized, deps } = parseSourceData(src, fullSourceName, normalize)
+  const { deps } = parseSourceData(src, fullSourceName)
 
-  return new ArtifactSource(fullSourceName, normalized, srcFile, deps.array);
+  return new ArtifactSource(fullSourceName, src, srcFile, deps.array);
 }
 
-export function parseSource(src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
-  const { normalized, deps } = parseSourceData(src, fullSourceName, normalize)
+export function parseSource(src: string, fullSourceName: FullArtifactName): ArtifactSource {
+  const { deps } = parseSourceData(src, fullSourceName)
 
-  return new ArtifactSource(fullSourceName, normalized, "", deps.array);
+  return new ArtifactSource(fullSourceName, src, "", deps.array);
 }
 
-function parseSourceData(src: string, fullSourceName: FullArtifactName, normalize: boolean): { normalized: string, deps: ArtifactMap<TypedArtifactName> } {
+function parseSourceData(src: string, fullSourceName: FullArtifactName): { deps: ArtifactMap<TypedArtifactName> } {
   const dependencySet = createArtifactNameSet();
 
   // iterating over lines
   const lines = src.split('\n');
-  // and creating normalized output
-  const processedLines: string[] = [];
-  let lineNumber = 0;
+  // // and creating normalized output
+  // const processedLines: string[] = [];
+  let getTemplateIdRE : RegExp | undefined
+  let getTemplateIdLineRE : RegExp | undefined
+
+  let lineNo = 0;
   for (const line of lines) {
-    lineNumber++;
-    let newLine = line;
-    for (const dt of dependencyTypes) {
+    lineNo++;
 
-      // will prevent incomplete statement checks below
-      let matched = false;
-
-      // iterate over template or lib references and replace them with
-      // normalized statements, if requested by normalize flag
-      newLine = newLine.replace(dt.pattern, (substring, _pkg, name) => {
-        matched = true;
-
-        // normalizing package name, if requested, or validating that it is specified
-        let pkg = _pkg;
-        if (pkg === '') {
-          if (normalize)
-            pkg = fullSourceName.pkg;
-          else
-            throw new Error(`package not specified for ${dt.type}: ${substring}`);
+    try {
+      if (importRE.test(line)) {
+        const result = parseLibraryImport(line)
+        
+        if (!result) {
+          continue
         }
 
-        // adding dependency to the set
-        dependencySet.add({ type: dt.type, pkg, id: name }, false);
+        if (typeof result == 'string') {
+          getTemplateIdRE = newGetTemplateIdRE(result)
+          getTemplateIdLineRE = newGetTemplateIdLineRE(result)
+        } else {
+          dependencySet.add(result)
+        }
 
-        return normalize
-          // if normalization is requested, we re-render corresponding statement
-          ? dt.render(pkg, name)
-          // if not, keep the substring unchanged
-          : substring;
-      });
+        continue
+      }
 
-      if (!matched && newLine.match(dt.check))
-        // checkin that we don't miss some unexpectedly formatted reference
-        throw new Error(`Can't parse reference to ${dt.type} in line (${lineNumber}): ${line}`);
+      if (getTemplateIdLineRE && getTemplateIdLineRE.test(line)) {
+        const result = parseTemplateUse(getTemplateIdRE!, line)
+        if (result) {
+          dependencySet.add(result)
+        }
+
+        continue
+      }
+      
+    } catch (error: any) {
+      throw new Error(`[line ${lineNo}]: ${error.message}\n\t${line}`);
     }
-
-    // assert line === newLine || normalize
-
-    // adding line to the output code
-    processedLines.push(newLine);
   }
 
   return {
-    normalized: processedLines.join('\n'),
     deps: dependencySet
   }
 }
 
+function parseLibraryImport(line: string): TypedArtifactName | string {
+  const match = importNameRE.exec(line)
+
+  if (!match || !match.groups) {
+    throw Error(`failed to parse 'import' statement`)
+  }
+
+  const { importName, moduleName } = match.groups
+  if (!importName || !moduleName) {
+    throw Error(`failed to parse 'import' statement`)
+  }
+
+  if (moduleName == "plapi") {
+    return importName
+  }
+
+  const depInfo = dependencyRE.exec(moduleName)
+  if (!depInfo) {
+    return ""
+  }
+
+  if (!depInfo.groups) {
+    throw Error(`failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`)
+  }
+
+  const { pkgName, depID } = depInfo.groups
+  if (!pkgName || !depID) {
+    throw Error(`failed to parse dependency name inside 'import' statement. The dependency name should have format '<package>:<templateName>'`)
+  }
+
+  return { type: 'library', pkg: pkgName, id: depID }
+}
+
+function parseTemplateUse(re: RegExp, line: string): TypedArtifactName | undefined {
+  const match = re.exec(line)
+
+  if (!match || !match.groups) {
+    throw Error(`failed to parse 'getTemplateId' statement`)
+  }
+
+  const { templateName } = match.groups
+  if (!templateName) {
+    throw Error(`failed to parse 'getTemplateId' statement`)
+  }
+
+  const depInfo = dependencyRE.exec(templateName)
+  if (!depInfo || !depInfo.groups) {
+    throw Error(`failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`)
+  }
+
+  const { pkgName, depID } = depInfo.groups
+  if (!pkgName || !depID) {
+    throw Error(`failed to parse dependency name inside 'getTemplateId' statement. The dependency name should have format '<package>:<templateName>'`)
+  }
+
+  return { type: 'template', pkg: pkgName, id: depID }
+}

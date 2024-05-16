@@ -1,3 +1,4 @@
-thelib = import(":local-lib")
+thelib := import("tengo-integration-tests-lib-1:local-lib")
+plapi := import("plapi")
 
-tpl1 = getTemplateId(":local-template-1")
+tpl1 := plapi.getTemplateId("tengo-integration-tests-lib-1:local-template-1")

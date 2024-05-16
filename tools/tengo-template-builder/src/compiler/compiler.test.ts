@@ -4,7 +4,7 @@ import {
   TestArtifactSource, testLocalPackage,
   testPackage1,
   testPackage1Lib1Name,
-  testPackage1Lib1SrcNormalized, testPackage1Lib2Name, testPackage1Lib2SrcNormalized,
+  testPackage1Lib1Src, testPackage1Lib2Name, testPackage1Lib2Src,
   testPackage1Tpl3CompiledBase64, testPackage1Tpl3Name
 } from './test.artifacts';
 import { artifactNameToString } from './package';
@@ -12,9 +12,7 @@ import { Template } from './template';
 
 function parseSrc(src: TestArtifactSource[]): ArtifactSource[] {
   return src.map(tp => {
-    const aSrc = parseSource(tp.src, tp.fullName, true);
-    if (tp.normalizedSrc !== undefined)
-      expect(aSrc.src).toEqual(tp.normalizedSrc);
+    const aSrc = parseSource(tp.src, tp.fullName);
     return aSrc;
   });
 }
@@ -30,8 +28,8 @@ test('compile main source set', () => {
   const compiler = new TengoTemplateCompiler();
 
   // emulate adding compiled artifacts
-  compiler.addLib(parseSource(testPackage1Lib1SrcNormalized, testPackage1Lib1Name, false));
-  compiler.addLib(parseSource(testPackage1Lib2SrcNormalized, testPackage1Lib2Name, false));
+  compiler.addLib(parseSource(testPackage1Lib1Src, testPackage1Lib1Name));
+  compiler.addLib(parseSource(testPackage1Lib2Src, testPackage1Lib2Name));
   compiler.addTemplate(new Template(testPackage1Tpl3Name, { content: Buffer.from(testPackage1Tpl3CompiledBase64, 'base64') }));
 
   // all elements in the context must have all their dependencies met

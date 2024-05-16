@@ -13,10 +13,10 @@ import canonicalize from 'canonicalize';
 
   Code of "main.tpl.tengo":
 
-  getTemplateId("@milaboratory/some-tengo-template") // -> getTemplateId("@milaboratory/some-tengo-template:main")
-  getTemplateId(":local-template") // -> getTemplateId("@milaboratory/current-tengo-package:local-template")
+  plapi := import("plapi")
+
+  plapi.getTemplateId("@milaboratory/some-tengo-template") // -> getTemplateId("@milaboratory/some-tengo-template:main")
   import("@milaboratory/some-tengo-library") // -> import("@milaboratory/some-tengo-library:main")
-  import(":local-library") // -> import("@milaboratory/current-tengo-package:local-library")
 
  */
 
