@@ -31,7 +31,13 @@
     @include icon(url("./images/16_link.svg"), var(--icon-size));
   }
 
+  // @TODO, there is a bug with keyword "import" in the vue-tsc
   &--import {
+    @include icon(url("./images/16_import.svg"), var(--icon-size));
+  }
+
+  // instead of 'import'
+  &--download {
     @include icon(url("./images/16_import.svg"), var(--icon-size));
   }
 

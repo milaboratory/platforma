@@ -1,5 +1,9 @@
 @import "./mixins";
 
+.ui-chip-tooltip {
+  display: inline-flex;
+}
+
 .ui-chip {
   --chip-color: var(--color-txt-01);
 
@@ -12,7 +16,7 @@
   background: var(--chip-bg);
   border: var(--chip-border);
   border-radius: 6px;
-  max-width: 260px;
+  max-width: 256px;
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);

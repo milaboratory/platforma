@@ -1,7 +1,7 @@
 import type { MaybeRef } from '@/lib/types';
 import { unref } from 'vue';
 import { useEventListener } from '@/lib/composition/useEventListener';
-import { requestTick } from '@/lib/helpers/utils';
+// import { requestTick } from '@/lib/helpers/utils';
 
 type CustomEvent = {
   dx: number;
@@ -17,6 +17,10 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
   };
 
   useEventListener(document, 'mousedown', (ev) => {
+    //disable selection when moving
+    if (ev.stopPropagation) ev.stopPropagation();
+    if (ev.preventDefault) ev.preventDefault();
+
     if (ev.target === unref(elRef)) {
       state.el = unref(elRef);
       state.x = ev.x;
@@ -37,11 +41,11 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
     });
   });
 
-  const handle = requestTick(cb);
+  // const handle = requestTick(cb);
 
   useEventListener(document, 'mousemove', (ev) => {
     if (state.el) {
-      handle({
+      cb({
         dx: ev.x - state.x,
         dy: ev.y - state.y,
       });

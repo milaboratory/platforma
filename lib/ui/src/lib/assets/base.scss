@@ -1,4 +1,6 @@
 :root {
+  --main-dark-color: #110529;
+
   --color-txt-00: #ffffff;
   --color-txt-01: #110529;
   --color-txt-02: #363452;
@@ -70,6 +72,8 @@
   --theme-switcher-icon-color: var(--color-txt-01);
 
   --shadow-m: 0px 6px 24px -2px rgba(15, 36, 77, 0.08), 0px 4px 12px -2px rgba(15, 36, 77, 0.08);
+
+  --title-bar-height: 40px; // @TODO
 }
 
 [data-theme="dark"] {

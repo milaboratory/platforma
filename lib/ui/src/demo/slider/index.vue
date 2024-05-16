@@ -35,7 +35,7 @@ const modelTriple = ref([2, 20, 30] as [number, number, number]);
       <div class="demo-slider-container">
         <h3 class="text-subtitle-m ma-0 mb-6">Slider</h3>
         <div class="demo-slider-container">
-          <slider v-model="value" label="Slider" :max="10" />
+          <slider v-model="value" label="Slider" :max="10" measure="$" />
         </div>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Disabled</h4>

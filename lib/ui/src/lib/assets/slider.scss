@@ -1,7 +1,7 @@
 @import "./mixins";
 
 .ui-slider {
-  --progress-bg: linear-gradient(#A1E59C, #D0F5B0);
+  --progress-bg: linear-gradient(to right, #A1E59C, #D0F5B0);
   --border-color: var(--color-border-default);
   --padding-gap: 8px; // half of thumb width
 
@@ -112,6 +112,7 @@
   }
 
   &__thumb {
+    cursor: pointer;
     outline: none;
     position: absolute;
     box-sizing: border-box;
