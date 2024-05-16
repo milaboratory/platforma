@@ -3,6 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   verbose: true,
   modulePathIgnorePatterns: [
-    '<rootDir>/src/commands/test.ts'
+    '<rootDir>/src/commands/test.ts',
+    '<rootDir>/dist/commands/test.js',
   ]
 };

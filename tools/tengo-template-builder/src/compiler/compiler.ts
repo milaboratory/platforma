@@ -122,7 +122,7 @@ export class TengoTemplateCompiler {
   getTemplateOrError(name: TypedArtifactName): Template {
     const tpl = this.getTemplate(name);
     if (!tpl)
-      throw new Error(`library not found ${typedArtifactNameToString(name)}`);
+      throw new Error(`template not found ${typedArtifactNameToString(name)}`);
     return tpl;
   }
 
@@ -155,7 +155,18 @@ export class TengoTemplateCompiler {
 
   compileAndAdd(sources: ArtifactSource[]): TemplatesAndLibs {
     const ret: TemplatesAndLibs = { templates: [], libs: [] };
-    let current = sources;
+    let current : ArtifactSource[] = [];
+
+    for(const src of sources) {
+      if (src.fullName.type === 'library') {
+        // add libraries first to be able to resolve them as dependencies
+        this.addLib(src);
+        ret.libs.push(src);
+      } else {
+        current.push(src)
+      }
+    }
+
     while (current.length > 0) {
       const unprocessed: ArtifactSource[] = [];
 
@@ -185,8 +196,12 @@ export class TengoTemplateCompiler {
             break;
           case 'template':
             // templates are compiled and then added
-            const tpl = this.compileAndAddTemplate(src);
-            ret.templates.push(tpl);
+            try {
+              const tpl = this.compileAndAddTemplate(src);
+              ret.templates.push(tpl);
+            } catch (error: any) {
+              unprocessed.push(src) // one or more dependencies are not resolvable yet
+            }
             break;
           case 'test':
             // Ignore tests: they never should be part of compiled code or be a dependency.

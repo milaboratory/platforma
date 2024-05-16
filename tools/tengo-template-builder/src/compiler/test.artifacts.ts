@@ -106,7 +106,7 @@ export const testLocalTpl2: TestArtifactSource = {
   src: testLocalTpl2Src,
 };
 
-export const testLocalPackage = [testLocalLib1, testLocalTpl1, testLocalTpl2];
+export const testLocalPackage = [testLocalTpl1, testLocalLib1, testLocalTpl2];
 
 export const testPackage1Lib1Name: FullArtifactName = {
   type: 'library',
