@@ -60,6 +60,11 @@ export type FieldType =
   | 'Dynamic'
   | 'MTW';
 
+export type FutureFieldType =
+  | 'Output'
+  | 'Input'
+  | 'Service'
+
 export type FieldStatus =
   | 'Empty'
   | 'Assigned'

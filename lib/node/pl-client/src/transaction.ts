@@ -2,7 +2,7 @@ import {
   AnyResourceId,
   createLocalResourceId, ensureResourceIdNotNull, LocalResourceId,
   MaxTxId, OptionalResourceId, BasicResourceData, FieldData, FieldType, ResourceData,
-  ResourceId, ResourceType
+  ResourceId, ResourceType, FutureFieldType
 } from './types';
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
@@ -408,12 +408,14 @@ export class PlTransaction {
   // Fields
   //
 
-  public createField(fId: AnyFieldRef, fieldType: FieldType): void {
+  public createField(fId: AnyFieldRef, fieldType: FieldType, value?: AnyRef): void {
     this.sendVoidAsync({
         oneofKind: 'fieldCreate',
         fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
       }
     );
+    if (value !== undefined)
+      this.setField(fId, value);
   }
 
   public async fieldExists(fId: AnyFieldRef): Promise<boolean> {
@@ -521,9 +523,9 @@ export class PlTransaction {
   //
 
   /** Resolves existing or create first level resource from */
-  public getFutureFieldValue(rId: AnyResourceRef,
+  public getFutureFieldValue(rId: AnyRef,
                              fieldName: string,
-                             fieldType: 'Output' | 'Input' | 'Service'
+                             fieldType: FutureFieldType
   ): FieldRef {
     const data = Buffer.from(JSON.stringify({ fieldName, fieldType }));
     const getFieldResource = this.createEphemeral({ name: 'json/getField', version: '1' }, data);
