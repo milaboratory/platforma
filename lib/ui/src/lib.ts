@@ -50,6 +50,7 @@ import SliderRangeTriple from '@/lib/components/SliderRangeTriple.vue';
 import SliderRange from '@/lib/components/SliderRange.vue';
 import Scrollable from '@/lib/components/Scrollable.vue';
 import AddGraph from '@/lib/components/AddGraph.vue';
+import { useDraggable } from '@/lib/composition/useDraggable';
 
 import { tapIf } from '@/lib/helpers/functions';
 import { clamp } from '@/lib/helpers/math';
@@ -118,4 +119,4 @@ export {
 export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, MaskIconName };
 
 //move to new version pl-uikit
-export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph };
+export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
