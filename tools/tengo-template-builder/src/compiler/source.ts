@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs';
 import { TypedArtifactName, artifactKey, ArtifactType, FullArtifactName } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
-const getTemplateIdCheck = /getTemplateId\s*\(/;
-const getTemplateIdPattern = /getTemplateId\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
+const getTemplateIdCheck = /plapi.getTemplateId\s*\(/;
+const getTemplateIdPattern = /plapi.getTemplateId\s*\(\s*"([^"]*):([^"]+)"\s*\)/g;
 
 function renderGetTemplateId(pkg: string, name: string): string {
-  return `getTemplateId("${pkg}:${name}")`;
+  return `plapi.getTemplateId("${pkg}:${name}")`;
 }
 
 const importCheck = /import\s*\(\s*"[^"]*:/;

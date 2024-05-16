@@ -42,16 +42,16 @@ export const testLocalLib1Src = `
 otherLib = import("package1:other-lib-2" )
 export {
     "some": "value",
-    "template2": getTemplateId(":local-template-2" ),
-    "template3": getTemplateId ( "package1:template-3")
+    "template2": plapi.getTemplateId(":local-template-2" ),
+    "template3": plapi.getTemplateId ( "package1:template-3")
 }
 `;
 export const testLocalLib1SrcNormalized = `
 otherLib = import("package1:other-lib-2")
 export {
     "some": "value",
-    "template2": getTemplateId("current-package:local-template-2"),
-    "template3": getTemplateId("package1:template-3")
+    "template2": plapi.getTemplateId("current-package:local-template-2"),
+    "template3": plapi.getTemplateId("package1:template-3")
 }
 `;
 
@@ -64,12 +64,12 @@ export const testLocalTpl1Name: FullArtifactName = {
 export const testLocalTpl1Src = `
 lib1 = import( ":local-library-1")
 lib2 = import("package1:other-lib-1")
-tpl2 = getTemplateId(":local-template-1" )
+tpl2 = plapi.getTemplateId(":local-template-1" )
 `;
 export const testLocalTpl1SrcNormalized = `
 lib1 = import("current-package:local-library-1")
 lib2 = import("package1:other-lib-1")
-tpl2 = getTemplateId("current-package:local-template-1")
+tpl2 = plapi.getTemplateId("current-package:local-template-1")
 `;
 
 export const testLocalTpl2Name: FullArtifactName = {
