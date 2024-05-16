@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-template-builder",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "build": "tsc",
@@ -23,7 +23,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@milaboratory/tengo-tester": "^1.2.1",
+    "@milaboratory/tengo-tester": "^1.2.2",
     "@oclif/core": "^3.26.6",
     "canonicalize": "^2.0.0",
     "winston": "^3.13.0"
