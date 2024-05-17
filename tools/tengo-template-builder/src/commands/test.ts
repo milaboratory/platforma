@@ -1,6 +1,7 @@
 import { Command } from '@oclif/core'
 import { createLogger } from '../compiler/main'
 import { dumpAll } from '../shared/dump';
+import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
 
 export default class Test extends Command {
@@ -8,16 +9,19 @@ export default class Test extends Command {
 
   static strict = false
 
+  static override flags = { ...GlobalFlags }
+
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
   ]
 
   public async run(): Promise<void> {
-    const testerArgs: string[] = (this.argv.length == 0) ? ['./src'] : this.argv
+    const {flags} = await this.parse(Test)
+    const logger = createLogger(flags['log-level'])
 
+    const testerArgs: string[] = (this.argv.length == 0) ? ['./src'] : this.argv
     const tester = spawnEmbed('npx', 'tgo-test', 'run', '--artifacts', '-', ...testerArgs)
 
-    const logger = createLogger('error');
     dumpAll(logger, tester.stdin)
     tester.stdin.end()
 

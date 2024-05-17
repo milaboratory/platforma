@@ -107,7 +107,7 @@ const loadDependencies = (
         id: f.slice(0, f.length - compiledLibSuffix.length),
         version: packageJson.version
       };
-      const src = parseSourceFile(file, fullName);
+      const src = parseSourceFile(file, fullName, true);
       compiler.addLib(src);
       logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
       if (src.dependencies.length > 0) {
@@ -168,7 +168,7 @@ export function parseSources(
 
     const file = path.resolve(root, inRootPath);
     logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
-    const newSrc = parseSourceFile(file, fullName);
+    const newSrc = parseSourceFile(file, fullName, true);
     if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
       for (const dep of newSrc.dependencies)

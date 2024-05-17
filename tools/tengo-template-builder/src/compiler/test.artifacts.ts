@@ -39,16 +39,30 @@ export const testLocalLib1Name: FullArtifactName = {
 };
 export const testLocalLib1Src = `
 otherLib := import("package1:other-lib-2" )
-plapiCustomName := import("plapi")
+plapiCustomName := import("plapi" )
 
-notplapiCustomName.getTemplateId("some other:parameter")
+notplapiCustomName.getTemplateId( "some other:parameter")
 
-plapiCustomName.getTemplateIdAnother("sss:kkk")
+plapiCustomName.getTemplateIdAnother("sss:kkk" )
 
 export {
     "some": "value",
-    "template2": plapiCustomName.getTemplateId("current-package:local-template-2" ),
+    "template2": plapiCustomName.getTemplateId(":local-template-2" ),
     "template3": plapiCustomName.getTemplateId ( "package1:template-3")
+}
+`;
+export const testLocalLib1SrcNormalized = `
+otherLib := import("package1:other-lib-2")
+plapiCustomName := import("plapi" )
+
+notplapiCustomName.getTemplateId( "some other:parameter")
+
+plapiCustomName.getTemplateIdAnother("sss:kkk" )
+
+export {
+    "some": "value",
+    "template2": plapiCustomName.getTemplateId("current-package:local-template-2"),
+    "template3": plapiCustomName.getTemplateId("package1:template-3")
 }
 `;
 export const testLocalLib2Src = `
@@ -71,7 +85,7 @@ export const testLocalTpl1Name: FullArtifactName = {
   version: '1.2.3'
 };
 export const testLocalTpl1Src = `
-lib1 := import( "current-package:local-library-1")
+lib1 := import( ":local-library-1")
 lib2 := import("package1:other-lib-1")
 plapi := import("plapi")
 

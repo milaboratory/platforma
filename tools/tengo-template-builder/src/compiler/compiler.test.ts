@@ -12,7 +12,7 @@ import { Template } from './template';
 
 function parseSrc(src: TestArtifactSource[]): ArtifactSource[] {
   return src.map(tp => {
-    const aSrc = parseSource(tp.src, tp.fullName);
+    const aSrc = parseSource(tp.src, tp.fullName, true);
     return aSrc;
   });
 }
@@ -28,8 +28,8 @@ test('compile main source set', () => {
   const compiler = new TengoTemplateCompiler();
 
   // emulate adding compiled artifacts
-  compiler.addLib(parseSource(testPackage1Lib1Src, testPackage1Lib1Name));
-  compiler.addLib(parseSource(testPackage1Lib2Src, testPackage1Lib2Name));
+  compiler.addLib(parseSource(testPackage1Lib1Src, testPackage1Lib1Name, true));
+  compiler.addLib(parseSource(testPackage1Lib2Src, testPackage1Lib2Name, true));
   compiler.addTemplate(new Template(testPackage1Tpl3Name, { content: Buffer.from(testPackage1Tpl3CompiledBase64, 'base64') }));
 
   // all elements in the context must have all their dependencies met
