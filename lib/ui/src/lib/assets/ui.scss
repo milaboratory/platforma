@@ -1,5 +1,6 @@
 @use "./base";
-@use "./common.scss";
+@use "./fonts";
+@use "./common";
 @use "./utils";
 @use "./animations";
 @use "./icons";
@@ -29,7 +30,7 @@
 @use "./input-range.scss";
 @use "./sortable";
 @use "./number-input.scss";
-// @use "./pl-color-slider.scss";
+@use "./layout.scss";
 
 *,
 *::before,

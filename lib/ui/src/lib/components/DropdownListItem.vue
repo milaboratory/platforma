@@ -21,12 +21,12 @@ const props = withDefaults(
 );
 const isHavingTitle = computed(() => typeof props.item.text === 'object');
 
-const text = computed<Option['text']>(() => {
-  // if (typeof props.item.text === 'object') {
-  //   return props.item.text['title'];
-  // }
-  return props.item['text'];
-});
+// const text = computed<Option['text']>(() => {
+//   // if (typeof props.item.text === 'object') {
+//   //   return props.item.text['title'];
+//   // }
+//   return props.item['text'];
+// });
 
 const classes = computed<string>(() => {
   const classItems: string[] = [];

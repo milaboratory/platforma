@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import SelectInput from '@/lib/components/SelectInput.vue';
-import { datum } from '@milaboratory/pl-core';
+import { datum } from '@milaboratory/platforma-core';
 
 defineEmits(['update:modelValue']);
 

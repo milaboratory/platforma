@@ -30,7 +30,7 @@ import Trendline from '@/lib/assets/graph-images/Trendline.svg';
 import ViolinPlot from '@/lib/assets/graph-images/ViolinPlot.svg';
 import ViolinPlotBinnedDots from '@/lib/assets/graph-images/ViolinPlotBinnedDots.svg';
 import ViolinPlotJitteredDots from '@/lib/assets/graph-images/ViolinPlotJitteredDots.svg';
-import { reactive, ref } from 'vue';
+import { reactive } from 'vue';
 
 type AvailableImagesKeys = keyof typeof images;
 type AvailableGroups = (typeof groups)[number];

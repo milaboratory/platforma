@@ -42,7 +42,9 @@
 
   --border-radius-control: 6px;
 
-  --font-family-base: 'Manrope', sans-serif;
+  --font-family-base: "Manrope", sans-serif;
+  --font-family-monospace: "Spline Sans Mono", monospace;
+
   --font-size-base: 14px;
   --font-weigh-base: 500;
 
@@ -73,7 +75,9 @@
 
   --shadow-m: 0px 6px 24px -2px rgba(15, 36, 77, 0.08), 0px 4px 12px -2px rgba(15, 36, 77, 0.08);
 
-  --title-bar-height: 40px; // @TODO
+  --title-bar-height: 0px; // @TODO
+
+  --divider-color: var(--color-txt-01); // @TODO
 }
 
 [data-theme="dark"] {
@@ -132,4 +136,44 @@
   --chip-close-ic-hover-color: var(--color-focus);
 
   --theme-switcher-icon-color: var(--color-txt-01);
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--main-dark-color);
+  box-sizing: border-box;
+  position: relative;
+  background-size: cover;
+  overflow: hidden;
+}
+
+body {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  user-select: none;
+  font-family: var(--font-family-base);
+  // border: 1px solid red;
+}
+
+/// @TODO
+.space-keeper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.base-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }

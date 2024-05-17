@@ -27,6 +27,7 @@ import MaskIcon from '@/lib/components/MaskIcon.vue';
 import ContextProvider from '@/lib/components/ContextProvider.vue';
 import Slider from '@/lib/components/Slider.vue';
 import DialogModal from './lib/components/DialogModal.vue';
+import SlideModal from './lib/components/SlideModal.vue';
 import ManageModal from './lib/components/ManageModal/index.vue';
 import { usePosition } from '@/lib/composition/usePosition';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
@@ -42,6 +43,7 @@ import { useMouse } from '@/lib/composition/useMouse';
 import { useSortable } from './lib/composition/useSortable';
 import { useInterval } from './lib/composition/useInterval';
 import { useFormState } from './lib/composition/useFormState';
+import { useQuery } from './lib/composition/useQuery.ts';
 import type { MaybeRef } from '@/lib/types.ts';
 
 //for new version
@@ -52,9 +54,6 @@ import Scrollable from '@/lib/components/Scrollable.vue';
 import AddGraph from '@/lib/components/AddGraph.vue';
 import { useDraggable } from '@/lib/composition/useDraggable';
 
-import { tapIf } from '@/lib/helpers/functions';
-import { clamp } from '@/lib/helpers/math';
-
 // MiXCR
 import AlphabetType from '@/lib/components/mixcr/AlphabetType.vue';
 import AbundanceMeasure from '@/lib/components/mixcr/AbundanceMeasure.vue';
@@ -62,16 +61,30 @@ import AbundanceType from '@/lib/components/mixcr/AbundanceType.vue';
 import GeneFeatureDropdown from '@/lib/components/mixcr/GeneFeatureDropdown/index.vue';
 import GeneNameFormat from '@/lib/components/mixcr/GeneNameFormat.vue';
 import GeneType from '@/lib/components/mixcr/GeneType.vue';
+import MarkedSequence from './lib/components/mixcr/MarkedSequence.vue';
+
+// Layout
+import SpaceKeeper from './lib/layout/SpaceKeeper.vue';
+import FileInput from './lib/layout/FileInput.vue';
+import EditableLabel from './lib/layout/EditableLabel.vue';
+import BlockPane from './lib/layout/BlockPane.vue';
+import BlockSection from './lib/layout/BlockSection.vue';
+import BlockRow from './lib/layout/BlockRow.vue';
+import BlockTitle from './lib/layout/BlockTitle.vue';
+import BlockSubtitle from './lib/layout/BlockSubtitle.vue';
+import HTabs from './lib/layout/HTabs.vue';
+import TransitionSlidePanel from './lib/components/TransitionSlidePanel.vue';
+import BtnClose from './lib/layout/BtnClose.vue';
+import FileContentInput from './lib/layout/FileContentInput.vue';
+
+import { BlockApp } from './lib/layout/BlockApp.ts';
+import { useBlockInput } from './lib/layout/BlockApp.ts';
+import { BlockStore } from './lib/layout/BlockStore.ts';
+
+// MiXCR
+export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };
 
 export {
-  tapIf,
-  clamp,
-  AlphabetType,
-  AbundanceMeasure,
-  AbundanceType,
-  GeneFeatureDropdown,
-  GeneNameFormat,
-  GeneType,
   // Common
   ThemeSwitcher,
   BtnPrimary,
@@ -97,6 +110,7 @@ export {
   ContextProvider,
   Slider,
   DialogModal,
+  SlideModal,
   ManageModal,
   // Usables
   useClickOutside,
@@ -113,6 +127,26 @@ export {
   useSortable,
   useInterval,
   useFormState,
+  useQuery,
+};
+
+// Layout
+export {
+  SpaceKeeper,
+  FileInput,
+  FileContentInput,
+  EditableLabel,
+  BlockPane,
+  BlockSection,
+  BlockRow,
+  BlockTitle,
+  BlockSubtitle,
+  HTabs,
+  TransitionSlidePanel,
+  BtnClose,
+  BlockApp,
+  BlockStore,
+  useBlockInput,
 };
 
 // types
