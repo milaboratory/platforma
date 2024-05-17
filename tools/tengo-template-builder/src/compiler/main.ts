@@ -109,7 +109,7 @@ const loadDependencies = (
       };
       const src = parseSourceFile(file, fullName, true);
       compiler.addLib(src);
-      logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+      logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
       if (src.dependencies.length > 0) {
         logger.debug('Dependencies:');
         for (const dep of src.dependencies)
@@ -132,7 +132,7 @@ const loadDependencies = (
       };
       const tpl = new Template(fullName, { content: fs.readFileSync(file) });
       compiler.addTemplate(tpl);
-      logger.info(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+      logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     }
   }
 };
@@ -167,7 +167,7 @@ export function parseSources(
     }
 
     const file = path.resolve(root, inRootPath);
-    logger.info(`Parsing ${fullNameToString(fullName)} from ${file}`);
+    logger.debug(`Parsing ${fullNameToString(fullName)} from ${file}`);
     const newSrc = parseSourceFile(file, fullName, true);
     if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');

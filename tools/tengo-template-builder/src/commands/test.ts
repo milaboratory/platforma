@@ -20,7 +20,12 @@ export default class Test extends Command {
     const logger = createLogger(flags['log-level'])
 
     const testerArgs: string[] = (this.argv.length == 0) ? ['./src'] : this.argv
-    const tester = spawnEmbed('npx', 'tgo-test', 'run', '--artifacts', '-', ...testerArgs)
+    const tester = spawnEmbed(
+      'npx', 'tgo-test', 'run',
+      '--log-level', flags['log-level'],
+      '--artifacts', '-',
+      ...testerArgs,
+    )
 
     dumpAll(logger, tester.stdin)
     tester.stdin.end()
