@@ -11,3 +11,7 @@ export const ValueTestResource = rt('ValueTest', '1');
 
 export const JsonString = rt('json/string', '1');
 export const JsonBool = rt('json/bool', '1');
+export const JsonObject = rt('json/object', '1');
+export const JsonArray = rt('json/array', '1');
+export const JsonNumber = rt('json/number', '1');
+export const JsonNull = rt('json/null', '1');

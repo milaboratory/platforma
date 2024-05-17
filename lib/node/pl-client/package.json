@@ -44,7 +44,7 @@
       "esm"
     ],
     "dts": true,
-    "minify": true,
+    "minify": false,
     "sourcemap": true
   }
 }
