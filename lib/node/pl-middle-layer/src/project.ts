@@ -9,7 +9,8 @@ import {
 } from '@milaboratory/pl-ts-client-v2';
 import { BlockPackSpec, createBlockPack } from './block_pack';
 import { notEmpty } from './util';
-import { createTrue, KVAccessor } from './pl_util';
+import { createBool, KVAccessor } from './pl_util';
+import { createBContextEnd, createRenderHeavyBlock } from './template_render';
 
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '1' };
 export const BlockResourceType: ResourceType = { name: 'UserProjectBlock', version: '1' };
@@ -111,12 +112,12 @@ export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
 
   const results = [];
 
-  const isProduction = createTrue(tx);
+  const isProduction = createBool(tx, true);
 
   let ctx: AnyRef = createBContextEnd(tx);
   for (const b of blocks) {
-    const rendered = createTemplateBlock(
-      tx, b.tplId, 'HeavyBlock', {
+    const rendered = createRenderHeavyBlock(
+      tx, b.tplId, {
         args: b.inputsToRender,
         blockId: b.blockId,
         isProduction: isProduction,
@@ -124,9 +125,9 @@ export function renderProduction(tx: PlTransaction, prj: ProjectInfo): {
       }
     );
 
-    ctx = notEmpty(rendered.outputs.get(`outputs/context`));
+    ctx = notEmpty(rendered.context);
     results.push({
-      result: notEmpty(rendered.outputs.get(`outputs/result`)),
+      result: notEmpty(rendered.result),
       context: ctx
     });
   }

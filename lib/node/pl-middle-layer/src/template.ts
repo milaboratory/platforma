@@ -5,7 +5,7 @@ import fs from 'node:fs';
 export const TengoTemplateGet: ResourceType = { name: 'TengoTemplateGet', version: '1' };
 export const TengoTemplateGetRegistry = 'registry';
 export const TengoTemplateGetTemplateURI = 'templateURI';
-export const TengoTemplateGetTemplatePack = 'templatePack';
+export const TengoTemplateGetTemplate = 'template';
 
 export const TengoTemplatePack: ResourceType = { name: 'TengoTemplatePack', version: '1' };
 
@@ -51,13 +51,9 @@ function loadTemplateFromRegistry(tx: PlTransaction, spec: TemplateFromRegistry)
   const getTemplate = tx.createStruct(TengoTemplateGet);
   const registry = field(getTemplate, TengoTemplateGetRegistry);
   const uri = field(getTemplate, TengoTemplateGetTemplateURI);
-  const templateFromRegistry = field(getTemplate, TengoTemplateGetTemplatePack);
+  const templateFromRegistry = field(getTemplate, TengoTemplateGetTemplate);
 
   // Note: it has a resource schema, so platforma creates fields by itself.
-  // tx.createField(registry, 'Input');
-  // tx.createField(uri, 'Input');
-  // tx.createField(templateFromRegistry, 'Output');
-  // tx.lock(getTemplate);
 
   tx.setField(registry, tx.createValue(KnownResourceTypes.JsonString, Buffer.from(JSON.stringify(spec.registry))));
   tx.setField(uri, tx.createValue(KnownResourceTypes.JsonString, Buffer.from(JSON.stringify(spec.path))));

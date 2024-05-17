@@ -6,6 +6,7 @@ import {
   ResourceType
 } from '@milaboratory/pl-ts-client-v2';
 import { buildMap, constructFutureFieldRecord, pair, PlMapEntry } from './pl_util';
+import { FutureFieldType } from '@milaboratory/pl-ts-client-v2';
 
 export const BContextEnd: ResourceType = { name: 'BContextEnd', version: '1' };
 export const EphRenderTemplate: ResourceType = { name: 'EphRenderTemplate', version: '1' };
@@ -15,29 +16,6 @@ export type BlockType =
   | 'LightBlock'
   | 'HeavyBlock'
   | 'DualContextHeavyBlock';
-
-// export type BlockInputs = HeavyBlockInputs;//| LightBlockInputs | never;
-//
-// export function createTemplateBlock(
-//   tx: PlTransaction,
-//   tpl: ResourceRef,
-//   blockType: BlockType,
-//   inputs: BlockInputs
-// ) {
-//   switch (blockType) {
-//     case 'HeavyBlock':
-//       return createRenderHeavyBlock(tx, tpl, inputs as HeavyBlockInputs);
-//     case 'LightBlock':
-//       throw new Error('unimplemented');
-//     // return createLightBlock(tx, tpl, inputs as LightBlockInputs);
-//     case 'DualContextHeavyBlock':
-//       throw new Error('unimplemented');
-//     // TODO
-//     // return '';
-//     // default:
-//     // assertNever(blockType)
-//   }
-// }
 
 export interface HeavyBlockInputs {
   args: AnyRef;
@@ -114,8 +92,16 @@ function createEphRenderTemplate<O extends string>(
     buildMap(tx, inputs, true));
   tx.lockInputs(rId);
 
-  return constructFutureFieldRecord(tx, rId,
-    outputNames.map(n => `outputs/${n}`), 'Output');
+  return constructFutureFieldOutputsRender(tx, rId, outputNames, 'Output');
+}
+
+export function constructFutureFieldOutputsRender<K extends string>(
+  tx: PlTransaction, rId: AnyRef,
+  keys: K[],
+  fieldType: FutureFieldType,
+): Record<K, AnyRef> {
+  return Object.fromEntries(keys.map(k =>
+    pair(k, tx.getFutureFieldValue(rId, `outputs/${k}`, fieldType)))) as Record<K, AnyRef>;
 }
 
 export function createBContextEnd(tx: PlTransaction): ResourceRef {

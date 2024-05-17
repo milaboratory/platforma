@@ -47,13 +47,19 @@ export class KVAccessor<T> {
   }
 }
 
-export function createTrue(tx: PlTransaction): ResourceRef {
+export function createBool(tx: PlTransaction, val: boolean): ResourceRef {
   return tx.createValue(
     KnownResourceTypes.JsonBool,
-    Buffer.from(JSON.stringify(true))
+    Buffer.from(JSON.stringify(val))
   );
 }
 
+export function createNull(tx: PlTransaction, val: boolean): ResourceRef {
+  return tx.createValue(
+    KnownResourceTypes.JsonNull,
+    Buffer.from(JSON.stringify(null))
+  );
+}
 
 export function pair<T1, T2>(v1: T1, v2: T2): [T1, T2] {
   return [v1, v2];
@@ -84,6 +90,7 @@ export function constructFutureFieldRecord<K extends string>(
   keys: K[],
   fieldType: FutureFieldType): Record<K, AnyRef> {
   return Object.fromEntries(keys.map(k =>
-    [k, tx.getFutureFieldValue(rId, k, fieldType)])) as Record<K, AnyRef>;
+    pair(k, tx.getFutureFieldValue(rId, k, fieldType)))) as Record<K, AnyRef>;
 }
+
 
