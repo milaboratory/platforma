@@ -122,8 +122,32 @@ a.btn-link {
   margin-left: auto;
 }
 
+.mt-auto {
+  margin-top: auto;
+}
+
+.mr-auto {
+  margin-right: auto;
+}
+
+.mb-auto {
+  margin-bottom: auto;
+}
+
 .flex-1 {
   flex: 1;
+}
+
+.d-flex {
+  display: flex;
+
+  &.row {
+    flex-direction: row;
+  }
+
+  &.column {
+    flex-direction: column;
+  }
 }
 
 @for $i from 1 through 48 {
