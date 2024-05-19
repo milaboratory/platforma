@@ -1,7 +1,7 @@
 import { onMounted, onUnmounted } from 'vue';
 
 export function useInterval(update: () => void, ms: number) {
-  let interval: number;
+  let interval: ReturnType<typeof setInterval>;
   onMounted(() => {
     interval = setInterval(update, ms);
   });

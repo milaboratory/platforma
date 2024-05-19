@@ -37,12 +37,10 @@ export abstract class BlockApp<S extends PlCore.BlockState = PlCore.BlockState, 
   }
 
   initListeners() {
-    api.onEvent((ev) => {
-      if (ev.type === 'block:action') {
-        console.log('block:action, blockId:', this.blockId, ', action', JSON.stringify(ev)); // temp log
-        this.onAction(ev);
-        this.sendSettings();
-      }
+    api.onAction((ev) => {
+      console.log('block:action, blockId:', this.blockId, ', action', JSON.stringify(ev)); // temp log
+      this.onAction(ev);
+      this.sendSettings();
     });
 
     api.onChanged(() => {
@@ -91,7 +89,7 @@ export abstract class BlockApp<S extends PlCore.BlockState = PlCore.BlockState, 
 
   abstract defaultData(): D;
 
-  abstract getSections(): Blocks.BlockTabSection[];
+  abstract getSections(): Blocks.TabSection[];
 
   sendSettings() {
     api.sendBlockTabPatch({
