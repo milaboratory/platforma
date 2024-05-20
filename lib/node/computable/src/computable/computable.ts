@@ -34,7 +34,7 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     this[WrappedKernelField] = kernel;
   }
 
-  get isChanged(): boolean {
+  get changed(): boolean {
     return this.state === undefined || this.state.watcher.isChanged;
   }
 

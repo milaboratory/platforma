@@ -10,19 +10,19 @@ test('simple computable state', async () => {
     return a.get('a')?.get('b')?.getValue();
   });
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toBeUndefined();
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a');
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toBeUndefined();
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toEqual('ugu');
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 });
 
 test('cross tree computable state', async () => {
@@ -36,24 +36,24 @@ test('cross tree computable state', async () => {
     return computable(tree2.accessor, {}, a2 => a2.get(nodeName)?.getValue());
   });
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toBeUndefined();
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a').setValue('node1');
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toBeUndefined();
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree2.writer.getOrCreateChild('node2');
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toBeUndefined();
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree2.writer.getOrCreateChild('node1').setValue('ugu');
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValue()).toEqual('ugu');
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 });
 
 function traverse(
@@ -125,21 +125,21 @@ test('stability test simple #1', async () => {
 
   const cs1 = getValueFromTree(tree1, {}, 'a', 'b');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 });
 
 test('stability test simple #2', async () => {
@@ -147,31 +147,31 @@ test('stability test simple #2', async () => {
 
   const cs1 = getValueFromTree(tree1, {}, 'a', 'b');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a');
   tree1.writer.lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a').lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 });
 
 test('stability test simple #3', async () => {
@@ -179,40 +179,40 @@ test('stability test simple #3', async () => {
 
   const cs1 = getValueFromTree(tree1, {}, 'a', 'b');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a');
   tree1.writer.lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 
   tree1.writer.getOrCreateChild('a').lock().getOrCreateChild('b').lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
 });
 
 test('on destroy test nested', async () => {
@@ -222,42 +222,42 @@ test('on destroy test nested', async () => {
   const cs1 = getValueFromTreeAsNestedWithDestroy(
     tree1.accessor, {}, c => destroyed.push(c), ['a', 'b']);
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.getOrCreateChild('a');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.deleteChild('a');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   await new Promise(r => setImmediate(r));
   expect(destroyed).toEqual([['a', 'b'], ['a']]);
 });
@@ -269,45 +269,45 @@ test('on destroy test nested #2', async () => {
   const cs1 = getValueFromTreeAsNestedWithDestroy(
     tree1.accessor, {}, c => destroyed.push(c), ['a', 'b']);
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
   tree1.writer.lock().getOrCreateChild('a').lock().getOrCreateChild('b').lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.unlock().deleteChild('a');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.lock();
 
   // child destroyed only after result become stable
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   await new Promise(r => setImmediate(r));
   expect(destroyed).toEqual([['a', 'b'], ['a']]);
 });
@@ -320,55 +320,55 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
     tree1.accessor, { mode: 'StableOnlyRetentive' }, c => destroyed.push(c), ['a', 'b']
   );
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.lock().getOrCreateChild('a').lock().getOrCreateChild('b').lock();
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
 
   tree1.writer.unlock().deleteChild('a');
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: false,
     value: 'ugu'
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   expect(destroyed).toEqual([]);
 
   tree1.writer.lock();
 
   // child destroyed only after result become stable
 
-  expect(cs1.isChanged).toBe(true);
+  expect(cs1.changed).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
     stable: true,
     value: undefined
   });
-  expect(cs1.isChanged).toBe(false);
+  expect(cs1.changed).toBe(false);
   await new Promise(r => setImmediate(r));
   expect(destroyed).toEqual([['a', 'b'], ['a']]);
 });
