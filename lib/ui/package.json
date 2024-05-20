@@ -13,7 +13,8 @@
     "build-demo": "vite build -c vite.demo.config.ts",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
-    "lint": "eslint . --ext js,ts,vue"
+    "lint": "eslint . --ext js,ts,vue",
+    "install-no-ws": "npm i --package-lock-only --workspaces false"
   },
   "files": [
     "dist",
@@ -24,7 +25,7 @@
   "types": "./dist/lib.d.ts",
   "dependencies": {
     "@milaboratory/helpers": "^1.2.2",
-    "@milaboratory/platforma-core": "^0.0.4",
+    "@milaboratory/platforma-core": "^0.0.6",
     "js-yaml": "^4.1.0",
     "vue": "^3.4.27",
     "vue-router": "^4.2.5"
