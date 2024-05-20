@@ -3,7 +3,7 @@ Questions to Denis or Gleb:
 - Difference between Dynamic and MTW fields?
 */
 
-import { notEmpty } from "./util/util";
+import { notEmpty } from './util/util';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
@@ -99,7 +99,7 @@ export interface ResourceData extends BasicResourceData {
 }
 
 export function getField(r: ResourceData, name: string): FieldData {
-  return notEmpty(r.fields.filter(f => f.name == name).at(0));
+  return notEmpty(r.fields.find(f => f.name == name));
 }
 
 export interface FieldData {
