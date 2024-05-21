@@ -315,11 +315,15 @@ export class PlTransaction {
     );
   }
 
-  public createValue(type: ResourceType, data: Uint8Array, errorIfExists: boolean = false): ResourceRef {
+  public createValue(type: ResourceType, data: Uint8Array | string, errorIfExists: boolean = false): ResourceRef {
     return this.createResource(false,
       localId => ({
         oneofKind: 'resourceCreateValue',
-        resourceCreateValue: { type, id: localId, data, errorIfExists }
+        resourceCreateValue: {
+          type, id: localId,
+          data: typeof data === 'string' ? Buffer.from(data) : data,
+          errorIfExists
+        }
       }),
       r => r.resourceCreateValue.resourceId
     );
