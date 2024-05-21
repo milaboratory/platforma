@@ -58,12 +58,9 @@ test('cross tree computable state', async () => {
 
 function traverse(
   a: FakeTreeAccessor,
-  ctx: ComputableCtx,
   ...path: string[]): FakeTreeAccessor | undefined {
   let node = a;
   for (const p of path) {
-    if (!node.isLocked())
-      ctx.markUnstable();
     const next = node.get(p);
     if (next === undefined)
       return undefined;
@@ -75,8 +72,8 @@ function traverse(
 function getValueFromTree(tree: FakeTreeDriver,
                           ops: Partial<ExtendedCellRenderingOps> = {},
                           ...path: string[]): Computable<undefined | string> {
-  return computable(tree.accessor, ops, (a, ctx) => {
-    return traverse(a, ctx, ...path)?.getValue();
+  return computable(tree.accessor, ops, a => {
+    return traverse(a, ...path)?.getValue();
   });
 }
 
@@ -84,12 +81,10 @@ function getValueFromTreeAsNested(node: PersistentFakeTreeNode,
                                   ops: Partial<ExtendedCellRenderingOps> = {},
                                   ...pathLeft: string[]): Computable<undefined | string> {
   return computable(node, { key: node.uuid + pathLeft.join('---'), ...ops },
-    (a, ctx) => {
+    a => {
       if (pathLeft.length === 0)
         return a.getValue();
       else {
-        if (!a.isLocked())
-          ctx.markUnstable();
         const next = a.get(pathLeft[0])?.persist;
         if (next === undefined)
           return undefined;

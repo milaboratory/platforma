@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/computable",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Watcher / Computable Abstraction",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

@@ -1,7 +1,8 @@
 import { Watcher } from '../watcher';
 import { ChangeSource } from '../change_source';
-import { TrackedAccessorProvider } from './accessor_provider';
+import { TrackedAccessorProvider, UsageGuard } from './accessor_provider';
 import { randomUUID } from 'node:crypto';
+import { ComputableCtx } from './kernel';
 
 export interface PersistentFakeTreeNode extends TrackedAccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;
@@ -10,7 +11,9 @@ export interface PersistentFakeTreeNode extends TrackedAccessorProvider<FakeTree
 export class FakeTreeAccessor {
   constructor(
     private readonly node: FakeTreeNodeReader,
-    private readonly watcher: Watcher
+    private readonly watcher: Watcher,
+    private readonly guard: UsageGuard,
+    private readonly ctx: ComputableCtx
   ) {
   }
 
@@ -18,29 +21,39 @@ export class FakeTreeAccessor {
     return this.node.uuid;
   }
 
+  private access() {
+    this.guard();
+    if (!this.isLocked())
+      this.ctx.markUnstable();
+  }
+
   listChildren(): string[] {
+    this.access();
     return this.node.listChildren(this.watcher);
   }
 
   getValue(): string {
+    this.access();
     return this.node.getValue(this.watcher);
   }
 
   get(key: string) {
+    this.access();
     const childNode = this.node.get(this.watcher, key);
     if (!childNode) return undefined;
-    return new FakeTreeAccessor(childNode, this.watcher);
+    return new FakeTreeAccessor(childNode, this.watcher, this.guard, this.ctx);
   }
 
   isLocked(): boolean {
+    this.guard();
     return this.node.isLocked(this.watcher);
   }
 
   get persist(): PersistentFakeTreeNode {
     return {
       uuid: this.uuid,
-      createInstance: (watcher: Watcher): FakeTreeAccessor => {
-        return new FakeTreeAccessor(this.node, watcher);
+      createInstance: (watcher, guard, ctx) => {
+        return new FakeTreeAccessor(this.node, watcher, guard, ctx);
       }
     };
   }
@@ -164,8 +177,8 @@ export class FakeTreeDriver {
   get accessor(): PersistentFakeTreeNode {
     return {
       uuid: this.root.uuid,
-      createInstance: (watcher: Watcher): FakeTreeAccessor => {
-        return new FakeTreeAccessor(this.root, watcher);
+      createInstance: (watcher, guard, ctx) => {
+        return new FakeTreeAccessor(this.root, watcher, guard, ctx);
       }
     };
   }

@@ -1,5 +1,5 @@
-import { TrackedAccessorProvider } from './accessor_provider';
-import { CellRenderingOps, ComputableCtx, ComputableKernel, KernelLambdaField, UnwrapComputables } from './kernel';
+import { AccessorLeakException, TrackedAccessorProvider } from './accessor_provider';
+import { CellRenderingOps, ComputableCtx, KernelLambdaField, UnwrapComputables } from './kernel';
 import { Computable } from './computable';
 
 let ephKeyCounter = 1;
@@ -28,18 +28,16 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   return new Computable<T>({
     ops: { ...DefaultRenderingOps, ...ops }, key: ops.key ?? nextEphemeralKey(),
     [KernelLambdaField]: (watcher, ctx) => {
-      const ir = cb(ap.createInstance(watcher), ctx);
+      let inCallback = true;
+      const ir = cb(ap.createInstance(watcher, () => {
+        if (!inCallback)
+          throw new AccessorLeakException();
+      }, ctx), ctx);
+      inCallback = false;
       return {
         ir,
         postprocessValue: postprocessValue ?? (noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>)
       };
     }
   });
-}
-
-export function simpleLiveComputable<A, IR>(
-  ap: TrackedAccessorProvider<A>,
-  cb: (a: A, ctx: ComputableCtx) => IR
-): Computable<UnwrapComputables<IR>> {
-  return computable(ap, { mode: 'Live' }, cb);
 }
