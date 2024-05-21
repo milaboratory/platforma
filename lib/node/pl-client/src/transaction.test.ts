@@ -2,6 +2,7 @@ import { withTempRoot } from './test_config';
 import { StructTestResource, ValueTestResource } from './resource_types';
 import { toGlobalFieldId } from './transaction';
 import { sleep } from './util/temporal';
+import { RecoverablePlError } from './errors';
 
 test('get field', async () => {
   await withTempRoot(async pl => {
@@ -75,7 +76,7 @@ test('handle absent resource error', async () => {
         await tx.getResourceData(rr0, true);
       })
         .rejects
-        .toThrow('ode=5');
+        .toThrow(RecoverablePlError);
       return await tx.getResourceData(tx.clientRoot, true);
     });
 
@@ -86,7 +87,7 @@ test('handle absent resource error', async () => {
         await tx.getField(ff0);
       })
         .rejects
-        .toThrow('ode=5');
+        .toThrow(RecoverablePlError);
       return await tx.getResourceData(tx.clientRoot, true);
     });
 

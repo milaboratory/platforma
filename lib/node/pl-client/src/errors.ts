@@ -21,7 +21,7 @@ export function isTimeoutOrCancelError(err: any, nested: boolean = false): boole
 export const PlErrorCodeNotFound = 5;
 
 export class PlError extends Error {
-  constructor(status: Status) {
+  constructor(public readonly status: Status) {
     super(`code=${status.code} ${status.message}`);
   }
 }
