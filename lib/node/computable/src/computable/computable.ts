@@ -18,10 +18,9 @@ export interface ComputableResultOk<T> {
   stable: boolean;
 }
 
-export class ComputableError extends Error {
+export class ComputableError extends AggregateError {
   constructor(public readonly errors: any[]) {
-    super(errors.map(e => e?.message).join('\n'),
-      { cause: errors.find(e => e instanceof Error) });
+    super(errors);
   }
 }
 

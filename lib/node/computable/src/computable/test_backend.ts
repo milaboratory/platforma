@@ -3,7 +3,7 @@ import { ChangeSource } from '../change_source';
 import { TrackedAccessorProvider } from './accessor_provider';
 import { randomUUID } from 'node:crypto';
 
-export interface PersistentFakeTreeBranch extends TrackedAccessorProvider<FakeTreeAccessor> {
+export interface PersistentFakeTreeNode extends TrackedAccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;
 }
 
@@ -36,7 +36,7 @@ export class FakeTreeAccessor {
     return this.node.isLocked(this.watcher);
   }
 
-  get persist(): PersistentFakeTreeBranch {
+  get persist(): PersistentFakeTreeNode {
     return {
       uuid: this.uuid,
       createInstance: (watcher: Watcher): FakeTreeAccessor => {
@@ -161,7 +161,7 @@ export class FakeTreeDriver {
     return this.root;
   }
 
-  get accessor(): PersistentFakeTreeBranch {
+  get accessor(): PersistentFakeTreeNode {
     return {
       uuid: this.root.uuid,
       createInstance: (watcher: Watcher): FakeTreeAccessor => {

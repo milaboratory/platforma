@@ -1,4 +1,4 @@
-import { FakeTreeAccessor, FakeTreeDriver, PersistentFakeTreeBranch } from './test_backend';
+import { FakeTreeAccessor, FakeTreeDriver, PersistentFakeTreeNode } from './test_backend';
 import { computable, ExtendedCellRenderingOps } from './computable_helpers';
 import { Computable } from './computable';
 import { ComputableCtx } from './kernel';
@@ -80,10 +80,10 @@ function getValueFromTree(tree: FakeTreeDriver,
   });
 }
 
-function getValueFromTreeAsNested(tree: PersistentFakeTreeBranch,
+function getValueFromTreeAsNested(node: PersistentFakeTreeNode,
                                   ops: Partial<ExtendedCellRenderingOps> = {},
                                   ...pathLeft: string[]): Computable<undefined | string> {
-  return computable(tree, { key: tree.uuid + pathLeft.join('---'), ...ops },
+  return computable(node, { key: node.uuid + pathLeft.join('---'), ...ops },
     (a, ctx) => {
       if (pathLeft.length === 0)
         return a.getValue();
@@ -98,7 +98,7 @@ function getValueFromTreeAsNested(tree: PersistentFakeTreeBranch,
     });
 }
 
-function getValueFromTreeAsNestedWithDestroy(tree: PersistentFakeTreeBranch,
+function getValueFromTreeAsNestedWithDestroy(tree: PersistentFakeTreeNode,
                                              ops: Partial<ExtendedCellRenderingOps> = {},
                                              onDestroy: (currentPath: string[]) => void,
                                              pathLeft: string[], currentPath: string[] = []): Computable<undefined | string> {
