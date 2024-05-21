@@ -94,3 +94,29 @@ test('handle absent resource error', async () => {
     expect(rState.fields).toHaveLength(0);
   });
 });
+
+test('handle KV storage', async () => {
+  await withTempRoot(async pl => {
+    await pl.withWriteTx('writeKV', async tx => {
+      tx.setKValue(tx.clientRoot, 'a', 'a');
+      tx.setKValue(tx.clientRoot, 'b', 'b');
+      await tx.commit();
+    });
+
+    await pl.withReadTx('testReadIndividual', async tx => {
+      expect(await tx.getKValueString(tx.clientRoot, 'a')).toEqual('a');
+      expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
+    });
+
+    await pl.withReadTx('testReadIndividualAndList', async tx => {
+      expect(await tx.getKValueString(tx.clientRoot, 'a')).toEqual('a');
+      expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
+      expect(await tx.listKeyValuesString(tx.clientRoot)).toEqual([
+        { key: 'a', value: 'a' },
+        { key: 'b', value: 'b' }
+      ]);
+      expect(await tx.getKValueString(tx.clientRoot, 'a')).toEqual('a');
+      expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
+    });
+  });
+});

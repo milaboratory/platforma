@@ -21,6 +21,19 @@ export interface ResourceRef {
   readonly localId: LocalResourceId;
 }
 
+/** Key-Value pair from resource-attached KV storage */
+export interface KeyValue {
+  key: string;
+  value: Uint8Array;
+}
+
+/** Key-Value pair from resource-attached KV storage */
+export interface KeyValueString {
+  key: string;
+  value: string;
+}
+
+
 interface _FieldId<RId> {
   /** Parent resource id */
   resourceId: RId,
@@ -122,7 +135,7 @@ export class PlTransaction {
     private readonly _clientRoot: OptionalResourceId
   ) {
     // initiating transaction
-    this.globalTxId = this.sendAndParse({
+    this.globalTxId = this.sendSingleAndParse({
       oneofKind: 'txOpen',
       txOpen: {
         name,
@@ -144,12 +157,25 @@ export class PlTransaction {
     await Promise.all(pending);
   }
 
-  private async sendAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+  private async sendSingleAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     parser: (resp: OneOfKind<ServerMessageResponse, Kind>) => T
   ): Promise<T> {
     // pushing operation packet to server
-    const rawResponsePromise = this.ll.send(r);
+    const rawResponsePromise = this.ll.send(r, false);
+
+    await this.drainAndAwaitPendingOps();
+
+    // awaiting our result, and parsing the response
+    return parser(await rawResponsePromise);
+  }
+
+  private async sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
+    parser: (resp: OneOfKind<ServerMessageResponse, Kind>[]) => T
+  ): Promise<T> {
+    // pushing operation packet to server
+    const rawResponsePromise = this.ll.send(r, true);
 
     await this.drainAndAwaitPendingOps();
 
@@ -160,7 +186,7 @@ export class PlTransaction {
   private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
     r: OneOfKind<ClientMessageRequest, Kind>
   ): Promise<void> {
-    await this.ll.send(r);
+    await this.ll.send(r, false);
   }
 
   /** Requests sent with this method should never produce recoverable errors */
@@ -196,7 +222,7 @@ export class PlTransaction {
       await this.ll.await();
 
     } else {
-      const commitResponse = this.sendAndParse(
+      const commitResponse = this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
         r => r.txCommit.success
       );
@@ -254,7 +280,7 @@ export class PlTransaction {
   public createSingleton(name: string, type: ResourceType, errorIfExists: boolean = false): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
-    const globalId = this.sendAndParse(
+    const globalId = this.sendSingleAndParse(
       {
         oneofKind: 'resourceCreateSingleton', resourceCreateSingleton: {
           type, id: localId, data: Buffer.from(name), errorIfExists
@@ -269,7 +295,7 @@ export class PlTransaction {
   public async getSingleton(name: string, loadFields: true): Promise<ResourceData>;
   public async getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
   public async getSingleton(name: string, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       {
         oneofKind: 'resourceGetSingleton', resourceGetSingleton: {
           data: Buffer.from(name), loadFields
@@ -286,7 +312,7 @@ export class PlTransaction {
   ): ResourceRef {
     const localId = this.nextLocalResourceId(root);
 
-    const globalId = this.sendAndParse(
+    const globalId = this.sendSingleAndParse(
       req(localId),
       r => parser(r) as ResourceId
     );
@@ -342,14 +368,14 @@ export class PlTransaction {
   }
 
   public async getResourceByName(name: string): Promise<ResourceId> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameGet', resourceNameGet: { name } },
       r => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId)
     );
   }
 
   public async checkResourceNameExists(name: string): Promise<boolean> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameExists', resourceNameExists: { name } },
       r => r.resourceNameExists.exists
     );
@@ -360,7 +386,7 @@ export class PlTransaction {
   }
 
   public async resourceExists(rId: ResourceId): Promise<boolean> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'resourceExists', resourceExists: { resourceId: rId } },
       r => r.resourceExists.exists);
   }
@@ -368,7 +394,7 @@ export class PlTransaction {
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
-    return await this.sendAndParse({
+    return await this.sendSingleAndParse({
         oneofKind: 'resourceGet',
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
       },
@@ -423,7 +449,7 @@ export class PlTransaction {
   }
 
   public async fieldExists(fId: AnyFieldRef): Promise<boolean> {
-    return await this.sendAndParse({
+    return await this.sendSingleAndParse({
         oneofKind: 'fieldExists',
         fieldExists: { field: toFieldId(fId) }
       },
@@ -463,7 +489,7 @@ export class PlTransaction {
   }
 
   public async getField(fId: AnyFieldRef): Promise<FieldData> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       r => protoToField(notEmpty(r.fieldGet.field))
     );
@@ -485,6 +511,21 @@ export class PlTransaction {
   // KV
   //
 
+  public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
+    return await this.sendMultiAndParse(
+      {
+        oneofKind: 'resourceKeyValueList',
+        resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 }
+      },
+      r => r.map(e => e.resourceKeyValueList.record!)
+    );
+  }
+
+  public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
+    return (await this.listKeyValues(rId))
+      .map(({ key, value }) => ({ key, value: Buffer.from(value).toString() }));
+  }
+
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
     this.sendVoidAsync({
       oneofKind: 'resourceKeyValueSet', resourceKeyValueSet: {
@@ -495,7 +536,7 @@ export class PlTransaction {
   }
 
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'resourceKeyValueGet', resourceKeyValueGet: { resourceId: toResourceId(rId), key } },
       r => r.resourceKeyValueGet.value
     );
@@ -506,7 +547,7 @@ export class PlTransaction {
   }
 
   public async getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
-    return await this.sendAndParse(
+    return await this.sendSingleAndParse(
       { oneofKind: 'resourceKeyValueGetIfExists', resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key } },
       r => r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
     );
@@ -577,762 +618,4 @@ export class PlTransaction {
       PlTransaction.localTxIdCounter = 1;
     return PlTransaction.localTxIdCounter;
   }
-
-// public async resourceRemove(rID: $Resource) {
-//   return this.send<void, 'resourceRemove'>(
-//     m.resourceRemove(await rID.ID(this.internalTxId)),
-//     (msg, parsed) => parsed()
-//   );
-// }
-//
-// public createResourceStruct(resourceType: ResourceType, options: { root?: boolean; clean?: boolean }) {
-//   return options.root ? this.createRoot(resourceType, options) : this.createStruct(resourceType);
-// }
-//
-// public createRoot(resourceType: RLType, options?: { clean?: boolean }): $Resource {
-//   const localID = this.#nextResourceRootId();
-//
-//   const idResolver = this.send<bigint, 'resourceCreateRoot'>(
-//     m.resourceCreateRoot(localID, normalizeResourceType(resourceType)),
-//     (msg, parsed) => {
-//       parsed(msg.resourceCreateRoot.resourceId);
-//     }
-//   );
-//
-//   const $resource = $Resource.local(localID, this, unfold(idResolver));
-//
-//   if (options?.clean) {
-//     this.client.toClean.$resources.push($resource);
-//   }
-//
-//   return $resource;
-// }
-//
-// public createStruct(resourceType: RLType, data?: Uint8Array): $Resource {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'resourceCreateStruct'>(
-//     m.resourceCreateStruct(localID, normalizeResourceType(resourceType), data),
-//     (msg, parsed) => {
-//       parsed(msg.resourceCreateStruct.resourceId);
-//     }
-//   );
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public createEphemeral(resourceType: ResourceType, data?: Uint8Array): $Resource {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'resourceCreateEphemeral'>(
-//     m.resourceCreateEphemeral(localID, resourceType, data),
-//     (msg, parsed) => {
-//       parsed(msg.resourceCreateEphemeral.resourceId);
-//     }
-//   );
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public createBContextEndV1() {
-//   return this.createEphemeral({
-//     name: 'BContextEnd',
-//     version: '1'
-//   }, Buffer.from('null'));
-// }
-//
-// public createEphemeralRenderTemplateV1() {
-//   return this.createEphemeral({
-//     name: 'EphRenderTemplate',
-//     version: '1'
-//   });
-// }
-//
-// public createStdMapV1() {
-//   return this.createStruct({
-//     name: 'std/map',
-//     version: '1'
-//   });
-// }
-//
-// public createEphStdMapV1() {
-//   return this.createEphemeral({
-//     name: 'EphStdMap',
-//     version: '1'
-//   });
-// }
-//
-// public createContentMapV1() {
-//   return this.createStruct({
-//     name: 'ContentMap',
-//     version: '1'
-//   });
-// }
-//
-// public async createFutureFieldId(fieldType: FieldType, fieldName: string) {
-//   return this.createEphemeral({
-//     name: 'json/getField',
-//     version: '1'
-//   }, Buffer.from(JSON.stringify({
-//     fieldName,
-//     fieldType: call(() => {
-//       if (fieldType === FieldType.OUTPUT) {
-//         return 'Output';
-//       }
-//
-//       throw Error('Unsupported field type: ' + fieldType);
-//     })
-//   })));
-// }
-//
-// public async getFutureFieldByResource(target: $Resource, fieldType: FieldType, fieldName: string) {
-//   const s = await this.createFutureFieldId(fieldType, fieldName);
-//   await this.setField(s.FieldID('resource'), target);
-//   return s.FieldID('result');
-// }
-//
-// public async getFutureOutputByResource(target: $Resource, fieldName: string) {
-//   const s = await this.createFutureFieldId(FieldType.OUTPUT, fieldName);
-//   await this.setField(s.FieldID('resource'), target);
-//   return s.FieldID('result');
-// }
-//
-// public async createChild(resourceType: RLType, $parentField: $Field): Promise<$Resource> {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'resourceCreateChild'>(
-//     {
-//       oneofKind: 'resourceCreateChild',
-//       resourceCreateChild: {
-//         id: localID,
-//         type: normalizeResourceType(resourceType),
-//         parentField: await $parentField.Ref(this)
-//       }
-//     },
-//     (msg, parsed) => {
-//       parsed(msg.resourceCreateChild.resourceId);
-//     }
-//   );
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public createValue(resourceValue: ResourceValue): $Resource {
-//   return this.createValueFromBuffer(resourceValue, serializeValue(resourceValue.name, resourceValue.value));
-// }
-//
-// public createValueFrom<V = unknown>(value: V): $Resource {
-//   const resourceValue = resolveResourceValue(value);
-//   return this.createValueFromBuffer(resourceValue, serializeValue(resourceValue.name, resourceValue.value));
-// }
-//
-// public createValueFromBuffer(resourceType: ResourceValueType, data: Uint8Array): $Resource {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'resourceCreateValue'>(
-//     m.resourceCreateValue(localID, resourceType, data),
-//     (msg, parsed) => {
-//       parsed(msg.resourceCreateValue.resourceId);
-//     }
-//   );
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public async resourceExists(rID: $Resource | bigint): Promise<boolean> {
-//   const resourceId = typeof rID === 'bigint' ? rID : await rID.ID(this.internalTxId);
-//   return unfold(this.send<boolean, 'resourceExists'>(
-//     m.resourceExists(resourceId),
-//     (msg, parsed) => parsed(msg.resourceExists.exists)
-//   ));
-// }
-//
-// public async fieldExists(fieldRef: FieldRef): Promise<boolean> {
-//   return unfold(this.send<boolean, 'fieldExists'>(
-//     m.fieldExists(fieldRef),
-//     (msg, parsed) => parsed(msg.fieldExists.exists)
-//   ));
-// }
-//
-// public async getResource(rID: $Resource | bigint, loadFields: boolean = true): Promise<PlResource> {
-//   const resourceId = typeof rID === 'bigint' ? rID : await rID.ID(this.internalTxId);
-//   return unfold(this.send<PlResource, 'resourceGet'>(
-//     m.resourceGet(resourceId, loadFields),
-//     (msg, parsed, failed) => {
-//       const { resource } = msg.resourceGet;
-//
-//       if (resource === undefined) {
-//         return failed(Error('server returned no resource info'));
-//       }
-//
-//       parsed(resource as PlResource);
-//     }
-//   ));
-// }
-//
-// public async getResourceData(r: $Resource | bigint) {
-//   const $err = await this.getResource(r, false);
-//   return $err.data.toString();
-// }
-//
-// public async getResourceFields(rID: $Resource | bigint) {
-//   const resource = await this.getResource(rID, true);
-//   return resource.fields.map(f => f as PlField);
-// }
-//
-// // Inform platform that resource will not get any new input fields.
-// // This is required, when client creates resource without schema and wants
-// // controller to start calculations.
-// // Most controllers will not start calculations even when all inputs
-// // have their values, if inputs list is not locked.
-// public async lockInputs(rID: $Resource) {
-//   return this.send<void, 'resourceLockInputs'>(
-//     m.lockInputs(await rID.ID(this.internalTxId)),
-//     (msg, parsed) => {
-//       parsed(undefined);
-//     }
-//   );
-// }
-//
-// // Inform platform that resource will not get any new output fields.
-// // This is required for resource to pass deduplication.
-// public async lockOutputs(rID: $Resource) {
-//   return this.send<void, 'resourceLockOutputs'>(
-//     m.lockOutputs(
-//       await rID.ID(this.internalTxId)
-//     ),
-//     (msg, parsed) => {
-//       parsed(undefined);
-//     }
-//   );
-// }
-//
-// public async lock(rID: $Resource) {
-//   await this.lockInputs(rID);
-//   await this.lockOutputs(rID);
-// }
-//
-// public createSubscription() {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'subscriptionCreate'>(
-//     {
-//       oneofKind: 'subscriptionCreate',
-//       subscriptionCreate: {
-//         id: localID,
-//         blocking: false,
-//         gc: false // @todo attach to session object
-//       }
-//     },
-//     (msg, parsed) => {
-//       parsed(msg.subscriptionCreate.subscriptionId);
-//     }
-//   );
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public async createSubscriptionResourceFilter(s: $Resource) {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const resourceId = await s.ID(this.internalTxId);
-//
-//   const idResolver = this.send<bigint, 'subscriptionCreateFilter'>({
-//       oneofKind: 'subscriptionCreateFilter',
-//       subscriptionCreateFilter: {
-//         id: localID,
-//         filter: {
-//           resourceFilter: {
-//             oneofKind: 'resourceId',
-//             resourceId
-//           },
-//           eventFilter: {
-//             all: true
-//           }
-//         }
-//       }
-//     },
-//     (msg, parsed) => {
-//       parsed(msg.subscriptionCreateFilter.filterId); //
-//     });
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public async createSubscriptionFilter(filter: NotificationFilter) {
-//   const localID = this.#nextResourceLocalID();
-//
-//   const idResolver = this.send<bigint, 'subscriptionCreateFilter'>({
-//       oneofKind: 'subscriptionCreateFilter',
-//       subscriptionCreateFilter: {
-//         id: localID,
-//         filter
-//       }
-//     },
-//     (msg, parsed) => {
-//       parsed(msg.subscriptionCreateFilter.filterId);
-//     });
-//
-//   return $Resource.local(localID, this, unfold(idResolver));
-// }
-//
-// public async attachSubscriptionFilter($subscription: $Resource, filterName: string, $filter: $Resource) {
-//   return this.send<void, 'subscriptionAttachFilter'>(
-//     {
-//       oneofKind: 'subscriptionAttachFilter',
-//       subscriptionAttachFilter: {
-//         subscriptionId: await $subscription.ID(this.internalTxId),
-//         filterName,
-//         filterId: await $filter.ID(this.internalTxId)
-//       }
-//     },
-//     (msg, parsed) => parsed(undefined)
-//   );
-// }
-//
-// public async createField($field: $Field, fieldType: FieldType): SendResult<FieldRef> {
-//   return this.send<FieldRef, 'fieldCreate'>(
-//     m.fieldCreate(
-//       await $field.Ref(this),
-//       fieldType
-//     ),
-//     (msg, parsed, failed) => {
-//       const globalID = msg.fieldCreate.globalId;
-//
-//       if (globalID === undefined) {
-//         failed(Error('server returned no field info'));
-//         return;
-//       }
-//
-//       parsed({ resourceId: globalID.resourceId, fieldName: globalID.fieldName });
-//     }
-//   );
-// }
-//
-// public async createFieldAndSet(options: {
-//   field: $Field;
-//   fieldType: FieldType;
-//   target: $Reference | ResourceValue | undefined;
-// }) {
-//   const { field, fieldType, target } = options;
-//   await this.createField(field, fieldType);
-//
-//   if (target) {
-//     const t = target instanceof $Reference ? target : this.createValue(target);
-//     return this.setField(field, t);
-//   }
-//
-//   return field;
-// }
-//
-// public async createInputFieldAndSet(options: {
-//   field: $Field;
-//   target: $Reference | ResourceValue | undefined;
-// }) {
-//   return this.createFieldAndSet({
-//     field: options.field,
-//     fieldType: FieldType.INPUT,
-//     target: options.target
-//   });
-// }
-//
-// public async createOneTimeWritableFieldAndSet(options: {
-//   field: $Field;
-//   target: $Reference | ResourceValue | undefined;
-// }) {
-//   return this.createFieldAndSet({
-//     field: options.field,
-//     fieldType: FieldType.ONE_TIME_WRITABLE,
-//     target: options.target
-//   });
-// }
-//
-// public async createDynamicFieldAndSet(options: {
-//   field: $Field;
-//   target: $Reference | ResourceValue | undefined;
-// }) {
-//   return this.createFieldAndSet({
-//     field: options.field,
-//     fieldType: FieldType.DYNAMIC,
-//     target: options.target
-//   });
-// }
-//
-// public async setField($field: $Field, target: $Reference | ResourceValue) {
-//   const $target = target instanceof $Reference ? target : this.createValue(target);
-//
-//   await this.send<void, 'fieldSet'>(
-//     m.setFieldRef(
-//       await $field.Ref(this),
-//       await $target.Ref(this)
-//     ),
-//     (msg, parsed) => parsed(undefined)
-//   );
-//
-//   return $field;
-// }
-//
-// public async setFieldValue(field: $Field, desc: ResourceValue) {
-//   return this.setField(field, this.createValueFromBuffer({
-//     name: desc.name,
-//     version: desc.version
-//   }, serializeValue(desc.name, desc.value)));
-// }
-//
-// public async resetField($field: $Field) {
-//   return this.send<void, 'fieldReset'>(
-//     {
-//       oneofKind: 'fieldReset',
-//       fieldReset: {
-//         field: await $field.Ref(this)
-//       }
-//     },
-//     (msg, parsed) => parsed(undefined)
-//   );
-// }
-//
-// public async removeField($field: $Field) {
-//   return this.send<void, 'fieldRemove'>(
-//     {
-//       oneofKind: 'fieldRemove',
-//       fieldRemove: {
-//         field: await $field.Ref(this)
-//       }
-//     },
-//     (msg, parsed) => parsed(undefined)
-//   );
-// }
-//
-// public async getField($field: $Field): Promise<PlField> {
-//   return unfold(this.send<PlField, 'fieldGet'>(
-//     m.fieldGet(await $field.rRef(this)),
-//     (msg, parsed, failed) => {
-//       const { field } = msg.fieldGet;
-//       if (field === undefined) {
-//         return failed(Error('server returned no field info'));
-//       }
-//       parsed(field as PlField);
-//     }
-//   ));
-// }
-//
-// public async getFieldResource(fieldOrRef: Field | $Field, loadFields = true) {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.error) {
-//     const err = await this.getResource(field.error, false);
-//     throw Error(`Error in field ${jsonStringify(fieldOrRef)}: ${errToString(err)}`);
-//   }
-//
-//   if (field.value === 0n) {
-//     return undefined;
-//   }
-//
-//   return this.getResource(field.value, loadFields);
-// }
-//
-// public async loadFieldResource(fieldOrRef: Field | $Field) {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.error) {
-//     return this.getResource(field.error);
-//   }
-//
-//   if (field.value === 0n) {
-//     return undefined;
-//   }
-//
-//   return this.getResource(field.value);
-// }
-//
-// // @TODO, ask Gleb
-// public async getFieldResourceSafe(fieldOrRef: Field | $Field, loadFields = true) {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.value === 0n) {
-//     return undefined;
-//   }
-//
-//   return this.getResource(field.value, loadFields);
-// }
-//
-// // @TODO
-// public async getFieldResourceOrError(fieldOrRef: Field | $Field, loadFields = true) {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.error) {
-//     return await this.getResource(field.error, false);
-//   }
-//
-//   if (field.value === 0n) {
-//     this.logger.debug('getFieldResourceOrError empty value for field: ' + jsonStringify(field)); // @TODO
-//     return undefined;
-//   }
-//
-//   return this.getResource(field.value, loadFields);
-// }
-//
-// public async isFieldResourceExists(fieldOrRef: Field | $Field) {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.value === 0n) {
-//     return false;
-//   }
-//
-//   return this.resourceExists(field.value);
-// }
-//
-// public async getFieldResourceOptional(fieldOrRef: Field | $Field) {
-//   const $field = $Field.from(this.ctx, fieldOrRef);
-//
-//   const ref = await $field.rRef(this);
-//
-//   const exists = await this.fieldExists(ref);
-//
-//   if (!exists) {
-//     return undefined;
-//   }
-//
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.value === 0n) {
-//     return undefined;
-//   }
-//
-//   if (!await this.resourceExists(field.value)) {
-//     this.logger.warn('Resource does not exist');
-//     return undefined;
-//   }
-//
-//   return this.getResource(field.value, true);
-// }
-//
-// public async getResourceValue(resource: Resource) {
-//   return deserializeValue(resource);
-// }
-//
-// async loadChildResources(resource: Resource | Resource[]) {
-//   const fields = ensureArray(resource).flatMap(r => r.fields);
-//
-//   const res = await Promise.all(fields.map(field => {
-//     return this.loadFieldResource(field);
-//   })).then(lst => lst.filter(r => r) as PlResource[]);
-//
-//   return res;
-// }
-//
-// async loadChildResourcesRecursive(resources: PlResource[], store: RMap = new RMap): Promise<RMap> {
-//   const children = await this.loadChildResources(resources);
-//
-//   store.setResources([...resources, ...children]);
-//
-//   if (!children.length) {
-//     return store;
-//   }
-//
-//   return this.loadChildResourcesRecursive(children, store);
-// }
-//
-// // @TODO replace this with the API implemented on the backend
-// async getResourceTree($resource: $Resource | bigint): Promise<PlResource[]> {
-//   const resource = await this.getResource($resource);
-//
-//   const children = await this.loadChildResourcesRecursive([resource]);
-//
-//   children.setResources([resource]);
-//
-//   return children.asArray();
-// }
-//
-// async getResourceResults($resource: $Resource, fieldNames?: string[]): Promise<Record<string, Result<unknown>>> {
-//   const fields = await $resource.getResourceFields(this);
-//   const attrs: Record<string, Result<unknown>> = {};
-//   const filtered = fieldNames ? fields.filter(field => fieldNames.includes(field.id.fieldName)) : fields;
-//
-//   await Promise.all(filtered.map(field => {
-//     return this.getFieldResult(field).then(res => attrs[field.id.fieldName] = res ?? null);
-//   }));
-//
-//   return attrs;
-// }
-//
-// public async getFieldResult<T = unknown>(fieldOrRef: Field | $Field): Promise<Result<T | undefined>> {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   if (field.error) {
-//     const err = await this.getResource(field.error, false);
-//     return { ok: false, error: errToString(err) };
-//   }
-//
-//   if (field.value === 0n) {
-//     return {
-//       ok: true,
-//       value: undefined
-//     };
-//   }
-//
-//   const resource = await this.getResource(field.value);
-//
-//   const { type, kind } = resource;
-//
-//   if (!type) {
-//     throw Error('Empty resource type');
-//   }
-//
-//   if (kind === Resource_Kind.STRUCTURAL) {
-//     const errors = [] as string[];
-//
-//     const result = await this.getResourceResults($Resource.from(this.ctx, resource));
-//
-//     const record: Record<string, unknown> = {};
-//
-//     if (type.name === 'StreamManager') { // temp @todo deserializeResource
-//       record.resourceId = String(resource.id);
-//       record.type = type;
-//     }
-//
-//     if (type.name.startsWith('BlobIndex/')) { // temp @todo deserializeResource
-//       record.resourceId = String(resource.id);
-//       record.type = type;
-//     }
-//
-//     for (const key of Object.keys(result)) {
-//       const r = result[key];
-//       if (r.ok) {
-//         record[key] = r.value;
-//       } else {
-//         errors.push(`${key}: ${r.error}`);
-//       }
-//     }
-//
-//     if (errors.length) {
-//       return {
-//         ok: false,
-//         error: errors.join('\n')
-//       };
-//     }
-//
-//     return {
-//       ok: true,
-//       value: record
-//     } as Result<T>;
-//   }
-//
-//   return {
-//     ok: true,
-//     value: deserializeValue(resource) as T
-//   };
-// }
-//
-// public async getFieldValue<T = unknown>(fieldOrRef: Field | $Field): Promise<T | undefined> {
-//   return this.getFieldResult<T>(fieldOrRef).then(r => okValue(r));
-// }
-//
-// public async ackNotification(n: Notification): Promise<void> {
-//   return unfold(this.send<void, 'notificationAck'>(
-//     m.ackNotification(n.subscriptionId, n.eventId),
-//     (msg, parsed) => {
-//       parsed(undefined);
-//     }
-//   ));
-// }
-//
-// public async getResourceIdByName(name: string): Promise<$Resource> {
-//   const resp = await this.send<bigint, 'resourceNameGet'>(
-//     m.resourceNameGet(name),
-//     (msg, parsed) => {
-//       parsed(msg.resourceNameGet.resourceId);
-//     }
-//   );
-//
-//   const rId = await resp.response;
-//
-//   return $Resource.global(this.ctx, rId);
-// }
-//
-// public async setResourceName(rId: $Resource, name: string) {
-//   const resourceId = await rId.ID();
-//
-//   await this.send<void, 'resourceNameSet'>(
-//     m.resourceNameSet(resourceId, name),
-//     (msg, parsed) => parsed(undefined)
-//   );
-// }
-//
-// /**
-//  * Debug/tests only
-//  */
-// async getResourceDump(rID: $Resource | bigint, fieldNames?: string[], _acc?: {
-//   resourceIds: unknown[]
-// }): Promise<Record<string, unknown>> {
-//   const res = await this.getResource(rID);
-//   const attrs: Record<string, unknown> = {};
-//   const _fields = fieldNames ? res.fields.filter(field => fieldNames.includes(field.id.fieldName)) : res.fields;
-//
-//   const isRoot = !_acc;
-//
-//   const acc = _acc ?? {
-//     resourceIds: [res.id]
-//   };
-//
-//   await Promise.all(_fields.map(field => {
-//     return this.getFieldDump(field, acc).then(res => attrs[field.id.fieldName] = res ?? null);
-//   }));
-//
-//   if (isRoot) {
-//     attrs['@resourceIds'] = uniqueFrom(acc.resourceIds, id => id).filter(it => it).sort();
-//   }
-//
-//   return attrs;
-// }
-//
-// async getFieldDump(fieldOrRef: Field | $Field, acc: { resourceIds: unknown[] }): Promise<{
-//   resourceId: unknown,
-//   resourceType: unknown
-// }> {
-//   const field = await this.#resolveField(fieldOrRef);
-//
-//   const dump = {
-//     resourceId: undefined as unknown | undefined,
-//     resourceType: undefined as unknown | undefined,
-//     field: `type: ${getFieldTypeLabel(field.type)} value: ${field.value} error: ${field.error}`,
-//     error: undefined as string | undefined,
-//     value: undefined as unknown,
-//     fields: undefined as unknown
-//   };
-//
-//   if (field.error) {
-//     const err = await this.getResource(field.error, false);
-//     dump.error = 'Field: ' + field.id?.fieldName + ': ' + errToString(err);
-//   }
-//
-//   if (field.value) {
-//     const resource = await this.getResource(field.value || field.error, true);
-//
-//     const { type, kind } = resource;
-//
-//     if (!type) {
-//       throw Error('Empty resource type');
-//     }
-//
-//     dump.resourceId = resource.id;
-//
-//     dump.resourceType = `${type.name}@${type.version}`;
-//
-//     if (kind === Resource_Kind.STRUCTURAL) {
-//       dump.fields = await this.getResourceDump($Resource.from(this.ctx, resource), undefined, acc);
-//       dump.value = Buffer.from(resource.data).toString();
-//     } else {
-//       dump.value = deserializeValue(resource);
-//     }
-//   }
-//
-//   acc.resourceIds.push(dump.resourceId);
-//
-//   return dump;
-// }
-//
-// public getReport() {
-//   return ['tx', this.writable ? 'w' : 'r', this.name, ...this.reports, this.dt(), 'ms'].join(' ');
-// }
 }

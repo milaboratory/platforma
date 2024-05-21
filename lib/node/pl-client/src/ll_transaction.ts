@@ -15,20 +15,37 @@ export type OneOfKind<
   Kind extends T['oneofKind']>
   = Extract<T, { oneofKind: Kind }>;
 
-interface ResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
+interface SingleResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
   kind: Kind;
+  expectMultiResponse: false;
   resolve: (v: OneOfKind<ServerMessageResponse, Kind>) => void;
   reject: (e: Error) => void;
 }
 
-type AnyResponseHandler = ResponseHandler<ServerMessageResponse['oneofKind']>
+interface MultiResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
+  kind: Kind;
+  expectMultiResponse: true;
+  resolve: (v: OneOfKind<ServerMessageResponse, Kind>[]) => void;
+  reject: (e: Error) => void;
+}
+
+type AnySingleResponseHandler =
+  SingleResponseHandler<ServerMessageResponse['oneofKind']>
+
+type AnyMultiResponseHandler =
+  MultiResponseHandler<ServerMessageResponse['oneofKind']>
+
+type AnyResponseHandler =
+  | SingleResponseHandler<ServerMessageResponse['oneofKind']>
+  | MultiResponseHandler<ServerMessageResponse['oneofKind']>
 
 function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
   kind: Kind,
-  resolve: (v: OneOfKind<ServerMessageResponse, Kind>) => void,
+  expectMultiResponse: boolean,
+  resolve: ((v: OneOfKind<ServerMessageResponse, Kind>) => void) | ((v: OneOfKind<ServerMessageResponse, Kind>[]) => void),
   reject: (e: Error) => void
 ): AnyResponseHandler {
-  return { kind, resolve, reject } as AnyResponseHandler;
+  return { kind, expectMultiResponse, resolve, reject } as AnyResponseHandler;
 }
 
 function wrapPlError(status: Status): PlError {
@@ -91,14 +108,31 @@ export class LLPlTransaction {
   private async incomingEventProcessor(): Promise<Error | null> {
     /** Counter of received responses, used to check consistency of responses.
      * Increments on each received message. */
-    let responseIdxCounter = 0;
+    let expectedId = -1;
 
     // defined externally to make possible to communicate any processing errors
     // to the specific request on which it happened
     let currentHandler: AnyResponseHandler | undefined = undefined;
+    let responseAggregator: ServerMessageResponse[] | undefined = undefined;
     try {
       for await (const message of this.stream.responses) {
-        const expectedId = responseIdxCounter++;
+        if (currentHandler === undefined) {
+          currentHandler = this.responseHandlerQueue.shift();
+
+          if (currentHandler === undefined) {
+            this.assignErrorFactoryIfNotSet(
+              () => new Error(`orphan incoming message`)
+            );
+            break;
+          }
+
+          // allocating response aggregator array
+          if (currentHandler.expectMultiResponse)
+            responseAggregator = [];
+
+          expectedId++;
+        }
+
         if (message.requestId !== expectedId) {
           this.assignErrorFactoryIfNotSet(
             () => new Error(`out of order messages, ${message.requestId} !== ${expectedId}`)
@@ -106,18 +140,9 @@ export class LLPlTransaction {
           break;
         }
 
-        currentHandler = this.responseHandlerQueue.shift();
-
-        if (currentHandler === undefined) {
-          this.assignErrorFactoryIfNotSet(
-            () => new Error(`orphan incoming message`)
-          );
-          break;
-        }
-
         if (message.error !== undefined) {
           const currentError = wrapPlError(message.error);
-          currentHandler.reject(currentError);
+          currentHandler!.reject(currentError);
           currentHandler = undefined;
 
           if (currentError instanceof UnrecoverablePlError) {
@@ -126,15 +151,32 @@ export class LLPlTransaction {
             break;
           }
 
+          if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
+            this.assignClosedTransactionErrorIfNotSet(new Error('Unexpected message sequence.'));
+            break;
+          }
+
           // We can continue to work after recoverable errors
           continue;
         }
 
-        if (currentHandler.kind !== message.response.oneofKind) {
+        if (currentHandler!.kind !== message.response.oneofKind) {
           const currentError = new Error(
-            `inconsistent request response types: ${currentHandler.kind} !== ${message.response.oneofKind}`
+            `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`
           );
-          currentHandler.reject(currentError);
+          currentHandler!.reject(currentError);
+          currentHandler = undefined;
+
+          this.assignClosedTransactionErrorIfNotSet(currentError);
+
+          break;
+        }
+
+        if (currentHandler!.expectMultiResponse !== (message.multiMessage !== undefined)) {
+          const currentError = new Error(
+            `inconsistent multi state: ${currentHandler!.expectMultiResponse} !== ${message.multiMessage !== undefined}`
+          );
+          currentHandler!.reject(currentError);
           currentHandler = undefined;
 
           this.assignClosedTransactionErrorIfNotSet(currentError);
@@ -144,8 +186,32 @@ export class LLPlTransaction {
 
         // <- at this point we validated everything we can at this level
 
-        currentHandler.resolve(message.response);
-        currentHandler = undefined;
+        if (message.multiMessage !== undefined) {
+          if (!message.multiMessage.isEmpty) {
+            if (message.multiMessage.id !== (responseAggregator!.length + 1)) {
+              const currentError = new Error(
+                `inconsistent multi id: ${message.multiMessage.id} !== ${responseAggregator!.length + 1}`
+              );
+              currentHandler!.reject(currentError);
+              currentHandler = undefined;
+
+              this.assignClosedTransactionErrorIfNotSet(currentError);
+
+              break;
+            }
+
+            responseAggregator!.push(message.response);
+          }
+
+          if (message.multiMessage.isLast) {
+            (currentHandler as AnyMultiResponseHandler).resolve(responseAggregator!);
+            responseAggregator = undefined;
+            currentHandler = undefined;
+          }
+        } else {
+          (currentHandler as AnySingleResponseHandler).resolve(message.response);
+          currentHandler = undefined;
+        }
       }
     } catch (e: unknown) {
       const error = e instanceof Error ? e : new Error('error');
@@ -207,10 +273,19 @@ export class LLPlTransaction {
 
   }
 
+  public async send<Kind extends ClientMessageRequest['oneofKind']>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
+    expectMultiResponse: false
+  ): Promise<OneOfKind<ServerMessageResponse, Kind>>
+  public async send<Kind extends ClientMessageRequest['oneofKind']>(
+    r: OneOfKind<ClientMessageRequest, Kind>,
+    expectMultiResponse: true
+  ): Promise<OneOfKind<ServerMessageResponse, Kind>[]>
   /** Generate proper client message and send it to the server, and returns a promise of future response. */
   public async send<Kind extends ClientMessageRequest['oneofKind']>(
-    r: OneOfKind<ClientMessageRequest, Kind>
-  ): Promise<OneOfKind<ServerMessageResponse, Kind>> {
+    r: OneOfKind<ClientMessageRequest, Kind>,
+    expectMultiResponse: boolean
+  ): Promise<OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]> {
     if (this.errorFactory)
       return Promise.reject(this.errorFactory());
 
@@ -221,6 +296,7 @@ export class LLPlTransaction {
     const result = new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
       this.responseHandlerQueue.push(createResponseHandler(
         r.oneofKind,
+        expectMultiResponse,
         resolve,
         reject
       ));
