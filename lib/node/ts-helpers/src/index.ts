@@ -9,3 +9,4 @@ export function notEmpty<T>(v: T | null | undefined, message?: string): T {
 
     return v;
 }
+
