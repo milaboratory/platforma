@@ -20,7 +20,7 @@ jobs:
     uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple.yaml@v4
     with:
       app-name: TS Pl Tree
-      app-name-slug: 'mi-computable'
+      app-name-slug: '@milaboratory/pl-tree'
       notify-telegram: true
 
       node-version: '20.x'

@@ -1,7 +1,7 @@
 {
   "name": "@milaboratory/pl-tree",
-  "version": "0.0.1",
-  "description": "Reactive pl state tree",
+  "version": "1.0.0",
+  "description": "Reactive pl tree state",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -12,9 +12,10 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@milaboratory/computable": "^1.0.1",
-    "@milaboratory/pl-client-v2": "^2.2.4",
-    "denque": "^2.1.0"
+    "@milaboratory/computable": "^1.0.3",
+    "@milaboratory/pl-client-v2": "^2.2.7",
+    "denque": "^2.1.0",
+    "utility-types": "^3.11.0"
   },
   "files": [
     "dist/**/*"

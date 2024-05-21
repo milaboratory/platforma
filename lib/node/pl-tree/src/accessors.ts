@@ -1,45 +1,7 @@
-import { mapValueAndError, ValueAndError } from './test_utils';
-import { PlTreeResource, PlTreeState } from './tree_state';
-import { TrackedAccessorProvider, Watcher } from '@milaboratory/computable';
+import { PlTreeResource, PlTreeState } from './state';
+import { ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { FieldType, ResourceId } from '@milaboratory/pl-client-v2';
-
-// /**
-//  * Important: never store instances of this class, always get fresh instance from the backend.
-//  * */
-// export class ResourceTree {
-//   constructor(
-//     private readonly watcher: Watcher,
-//     private readonly tree: PlTreeState
-//   ) {
-//   }
-//
-//   get(rid: ResourceId): PlTreeNodeAccessor | undefined {
-//     const res = this.tree.get(this.watcher, rid);
-//     if (!res) return undefined;
-//     else return new PlTreeNodeAccessor(this.watcher, this, res);
-//   }
-//
-//   getAndTraverse(
-//     rid: ResourceId,
-//     commonOptions: TraverseOptions = {},
-//     ...path: (TraverseStep | string)[]
-//   ) {
-//     return traverse(this.get(rid), commonOptions, ...path);
-//   }
-//
-//   getRoot(): PlTreeNodeAccessor | undefined {
-//     const res = this.tree.getRoot(this.watcher);
-//     if (!res) return undefined;
-//     else return new PlTreeNodeAccessor(this.watcher, this, res);
-//   }
-//
-//   traverseFromRoot(
-//     commonOptions: TraverseOptions = {},
-//     ...path: (TraverseStep | string)[]
-//   ) {
-//     return traverse(this.getRoot(), commonOptions, ...path);
-//   }
-// }
+import { mapValueAndError, ValueAndError } from './value_and_error';
 
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor> {
@@ -49,28 +11,36 @@ export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor>
   ) {
   }
 
-  createInstance(watcher: Watcher): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.tree, this.rid, watcher);
+  createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): PlTreeEntryAccessor {
+    return new PlTreeEntryAccessor(this.tree, this.rid, watcher, guard, ctx);
   }
 }
 
 export class PlTreeEntryAccessor {
   constructor(private readonly tree: PlTreeState,
               private readonly rid: ResourceId,
-              private readonly watcher: Watcher) {
+              private readonly watcher: Watcher,
+              private readonly guard: UsageGuard,
+              private readonly ctx: ComputableCtx
+  ) {
   }
 
   node(): PlTreeNodeAccessor | undefined {
+    this.guard();
     const r = this.tree.get(this.watcher, this.rid);
-    if (r === undefined)
+    if (r === undefined) {
+      // resource may appear later, so in a broad sense this result is unstable,
+      // regardless the FinalPredicate
+      this.ctx.markUnstable();
       return undefined;
-    return new PlTreeNodeAccessor(this.watcher, this.tree, r);
+    }
+    return new PlTreeNodeAccessor(this.watcher, this.tree, r, this.guard, this.ctx);
   }
 
   traverse(
     commonOptions: TraverseOptions = {},
     ...path: (TraverseStep | string)[]
-  ) {
+  ): ValueAndError<PlTreeNodeAccessor> | undefined {
     return traverse(this.node(), commonOptions, ...path);
   }
 }
@@ -85,14 +55,16 @@ export class PlTreeNodeAccessor {
   constructor(
     private readonly watcher: Watcher,
     private readonly tree: PlTreeState,
-    private readonly resource: PlTreeResource
+    private readonly resource: PlTreeResource,
+    private readonly guard: UsageGuard,
+    private readonly ctx: ComputableCtx
   ) {
   }
 
   private getResourceFromTree(rid: ResourceId): PlTreeNodeAccessor {
     const res = this.tree.get(this.watcher, rid);
     if (res == undefined) throw new Error(`Can't find resource ${rid}`);
-    return new PlTreeNodeAccessor(this.watcher, this.tree, res);
+    return new PlTreeNodeAccessor(this.watcher, this.tree, res, this.guard, this.ctx);
   }
 
   get(
@@ -100,31 +72,57 @@ export class PlTreeNodeAccessor {
     assertFieldType?: FieldType,
     errorIfNotFound?: boolean
   ): ValueAndError<PlTreeNodeAccessor> | undefined {
+    this.guard();
     const ve = this.resource.get(
       this.watcher,
       fieldName,
       assertFieldType,
-      errorIfNotFound
+      errorIfNotFound,
+      () => this.ctx.markUnstable()
     );
-    if (!ve) return undefined;
+    if (ve === undefined) return undefined;
     return mapValueAndError(ve, (rid) => this.getResourceFromTree(rid));
   }
 
   getInputsLocked(): boolean {
-    return this.resource.getInputsLocked(this.watcher);
+    this.guard();
+    const result = this.resource.getInputsLocked(this.watcher);
+    if (!result)
+      this.ctx.markUnstable();
+    return result;
   }
 
   getOutputsLocked(): boolean {
-    return this.resource.getOutputsLocked(this.watcher);
+    this.guard();
+    const result = this.resource.getOutputsLocked(this.watcher);
+    if (!result)
+      this.ctx.markUnstable();
+    return result;
   }
 
   getIsReadyOrError(): boolean {
-    return this.resource.getIsReadyOrError(this.watcher);
+    this.guard();
+    const result = this.resource.getIsReadyOrError(this.watcher);
+    if (!result)
+      this.ctx.markUnstable();
+    return result;
+  }
+
+  getIsFinal() {
+    this.guard();
+    return this.resource.getIsFinal(this.watcher);
   }
 
   getError(): PlTreeNodeAccessor | undefined {
+    this.guard();
     const rid = this.resource.getError(this.watcher);
-    if (rid === undefined) return undefined;
+    if (rid === undefined) {
+      // in general, errors should not appear after resource is ready,
+      // so we will consider such cases stable
+      if (!this.getIsReadyOrError())
+        this.ctx.markUnstable();
+      return undefined;
+    }
     return this.getResourceFromTree(rid);
   }
 

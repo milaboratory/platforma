@@ -1,8 +1,7 @@
-import { PlTreeState } from './tree_state';
+import { PlTreeState } from './state';
 import {
   dField,
   iField,
-  mapValueAndErrorIfDefined,
   ResourceReady,
   TestDynamicRootId1,
   TestDynamicRootState1,
@@ -11,6 +10,7 @@ import {
 } from './test_utils';
 import { computable } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
+import { mapValueAndErrorIfDefined } from './value_and_error';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;
