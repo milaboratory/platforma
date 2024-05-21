@@ -1,22 +1,24 @@
 Syncing 'main' proto version...
-  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Volumes/Data/Projects/MiLaboratory/platforma/pl-state/pl-ts-client-v2/proto/plapi/tmp-repo
-    Cloning into '/Volumes/Data/Projects/MiLaboratory/platforma/pl-state/pl-ts-client-v2/proto/plapi/tmp-repo'...
+  Cloning 'git@github.com:milaboratory/pl.git' into tmp directory /Volumes/Data/Projects/MiLaboratory/platforma/ts-pl-client-v2/proto/plapi/tmp-repo
+    Cloning into '/Volumes/Data/Projects/MiLaboratory/platforma/ts-pl-client-v2/proto/plapi/tmp-repo'...
   Syncing proto files from 'plapi'
     - 'plapiproto/'
       building file list ... done
+      ./
       api.proto
       api_types.proto
       base_types.proto
       import.proto
       resource_types.proto
       
-      sent 34784 bytes  received 130 bytes  69828.00 bytes/sec
-      total size is 34373  speedup is 0.98
+      sent 38330 bytes  received 136 bytes  76932.00 bytes/sec
+      total size is 37913  speedup is 0.99
 
     - 'plapi/'
       building file list ... done
+      ./
       
-      sent 75 bytes  received 20 bytes  190.00 bytes/sec
+      sent 81 bytes  received 26 bytes  214.00 bytes/sec
       total size is 0  speedup is 0.00
 
     - 'protodep.toml'
@@ -36,30 +38,34 @@ Syncing 'main' proto version...
   Syncing shared proto files from 'controllers/shared/grpc'
     - 'progressapi/'
       building file list ... done
+      ./
       protocol.proto
       
-      sent 1365 bytes  received 42 bytes  2814.00 bytes/sec
-      total size is 1220  speedup is 0.87
+      sent 1371 bytes  received 48 bytes  2838.00 bytes/sec
+      total size is 1220  speedup is 0.86
 
     - 'streamingapi/'
       building file list ... done
+      ./
       protocol.proto
       
-      sent 9042 bytes  received 42 bytes  18168.00 bytes/sec
+      sent 9048 bytes  received 48 bytes  18192.00 bytes/sec
       total size is 8897  speedup is 0.98
 
     - 'downloadapi/'
       building file list ... done
+      ./
       protocol.proto
       
-      sent 948 bytes  received 42 bytes  1980.00 bytes/sec
-      total size is 803  speedup is 0.81
+      sent 954 bytes  received 48 bytes  2004.00 bytes/sec
+      total size is 803  speedup is 0.80
 
     - 'lsapi/'
       building file list ... done
+      ./
       protocol.proto
       
-      sent 5005 bytes  received 42 bytes  10094.00 bytes/sec
+      sent 5011 bytes  received 48 bytes  10118.00 bytes/sec
       total size is 4860  speedup is 0.96
 
     - 'protodep.toml'
