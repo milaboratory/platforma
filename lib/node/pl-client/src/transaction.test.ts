@@ -50,3 +50,46 @@ test('get field', async () => {
     }
   });
 });
+
+test('handle absent resource error', async () => {
+  await withTempRoot(async pl => {
+    const [rr0, ff0] = await pl.withWriteTx('testCreateResource', async tx => {
+      const r0 = tx.createStruct(StructTestResource);
+      const f0 = { resourceId: tx.clientRoot, fieldName: 'test0' };
+
+      tx.createField(f0, 'Dynamic');
+      tx.setField(f0, r0);
+
+      await tx.commit();
+      return [await r0.globalId, await toGlobalFieldId(f0)];
+    });
+
+    await pl.withWriteTx('testDeleteResource', async tx => {
+      await tx.getResourceData(rr0, true);
+      tx.removeField(ff0);
+      await tx.commit();
+    }, { sync: true });
+
+    let rState = await pl.withReadTx('testRetrieveResource', async tx => {
+      await expect(async () => {
+        await tx.getResourceData(rr0, true);
+      })
+        .rejects
+        .toThrow('ode=5');
+      return await tx.getResourceData(tx.clientRoot, true);
+    });
+
+    expect(rState.fields).toHaveLength(0);
+
+    rState = await pl.withReadTx('testRetrieveResource', async tx => {
+      await expect(async () => {
+        await tx.getField(ff0);
+      })
+        .rejects
+        .toThrow('ode=5');
+      return await tx.getResourceData(tx.clientRoot, true);
+    });
+
+    expect(rState.fields).toHaveLength(0);
+  });
+});

@@ -18,9 +18,11 @@ export function isTimeoutOrCancelError(err: any, nested: boolean = false): boole
   return false;
 }
 
+export const PlErrorCodeNotFound = 5;
+
 export class PlError extends Error {
   constructor(status: Status) {
-    super(status.message);
+    super(`code=${status.code} ${status.message}`);
   }
 }
 

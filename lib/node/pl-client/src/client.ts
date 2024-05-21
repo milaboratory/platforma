@@ -175,21 +175,21 @@ export class PlClient {
 
   private async withTx<T>(name: string, writable: boolean,
                           body: (tx: PlTransaction) => Promise<T>,
-                          ops: TxOps = defaultTxOps): Promise<T> {
+                          ops: Partial<TxOps> = {}): Promise<T> {
     this.checkInitialized();
-    return this._withTx(name, writable, this.clientRoot, body, ops);
+    return this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
   }
 
   public withWriteTx<T>(name: string,
                         body: (tx: PlTransaction) => Promise<T>,
-                        ops: TxOps = defaultTxOps): Promise<T> {
-    return this.withTx(name, true, body, ops);
+                        ops: Partial<TxOps> = {}): Promise<T> {
+    return this.withTx(name, true, body, { ...ops, ...defaultTxOps });
   }
 
   public withReadTx<T>(name: string,
                        body: (tx: PlTransaction) => Promise<T>,
-                       ops: TxOps = defaultTxOps): Promise<T> {
-    return this.withTx(name, false, body, ops);
+                       ops: Partial<TxOps> = {}): Promise<T> {
+    return this.withTx(name, false, body, { ...ops, ...defaultTxOps });
   }
 
   /** Closes underlying transport */
