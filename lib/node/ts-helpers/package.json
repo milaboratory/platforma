@@ -1,0 +1,45 @@
+{
+  "name": "@milaboratory/ts-helpers",
+  "version": "0.0.1",
+  "description": "Useful helpers for our TS projects",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "build-watch": "tsup --watch",
+    "type-check": "tsc --noEmit --composite false",
+    "test": "jest --runInBand --passWithNoTests"
+  },
+  "dependencies": {
+    "@milaboratory/computable": "^1.0.1",
+    "@milaboratory/pl-client-v2": "^2.2.4",
+    "denque": "^2.1.0",
+    "winston": "^3.13.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "treeshake": true,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  }
+}
