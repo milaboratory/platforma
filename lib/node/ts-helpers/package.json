@@ -12,9 +12,6 @@
     "test": "jest --runInBand --passWithNoTests"
   },
   "dependencies": {
-    "@milaboratory/computable": "^1.0.1",
-    "@milaboratory/pl-client-v2": "^2.2.4",
-    "denque": "^2.1.0",
     "winston": "^3.13.0"
   },
   "files": [
