@@ -1,4 +1,4 @@
-import { AnyRef, field, KnownResourceTypes, PlTransaction, ResourceType } from '@milaboratory/pl-ts-client-v2';
+import { AnyRef, field, KnownResourceTypes, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import { assertNever } from './util';
 import fs from 'node:fs';
 

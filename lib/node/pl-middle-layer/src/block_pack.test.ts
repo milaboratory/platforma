@@ -1,12 +1,11 @@
 import {
-  isNotNullResourceId,
   isNullResourceId,
-  sleep,
   TestHelpers,
   toGlobalResourceId
-} from '@milaboratory/pl-ts-client-v2';
+} from '@milaboratory/pl-client-v2';
 import { BlockPackCustom, createBlockPack } from './block_pack';
 import { ExplicitTemplateSumNumbers } from './explicit_templates';
+import { sleep } from '@milaboratory/ts-helpers';
 
 test('test load custom template from registry', async () => {
   const spec: BlockPackCustom = {

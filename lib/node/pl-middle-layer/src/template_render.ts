@@ -4,9 +4,9 @@ import {
   PlTransaction,
   ResourceRef,
   ResourceType
-} from '@milaboratory/pl-ts-client-v2';
-import { buildMap, constructFutureFieldRecord, pair, PlMapEntry } from './pl_util';
-import { FutureFieldType } from '@milaboratory/pl-ts-client-v2';
+} from '@milaboratory/pl-client-v2';
+import { buildMap, pair, PlMapEntry } from './pl_util';
+import { FutureFieldType } from '@milaboratory/pl-client-v2';
 
 export const BContextEnd: ResourceType = { name: 'BContextEnd', version: '1' };
 export const EphRenderTemplate: ResourceType = { name: 'EphRenderTemplate', version: '1' };
@@ -98,7 +98,7 @@ function createEphRenderTemplate<O extends string>(
 export function constructFutureFieldOutputsRender<K extends string>(
   tx: PlTransaction, rId: AnyRef,
   keys: K[],
-  fieldType: FutureFieldType,
+  fieldType: FutureFieldType
 ): Record<K, AnyRef> {
   return Object.fromEntries(keys.map(k =>
     pair(k, tx.getFutureFieldValue(rId, `outputs/${k}`, fieldType)))) as Record<K, AnyRef>;

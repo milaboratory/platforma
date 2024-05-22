@@ -1,4 +1,4 @@
-import { AnyRef, field, FieldType, PlTransaction, ResourceRef, ResourceType } from '@milaboratory/pl-ts-client-v2';
+import { ResourceType } from '@milaboratory/pl-client-v2';
 
 export const EphStdMap: ResourceType = { name: 'EphStdMap', version: '1' };
 export const StdMap: ResourceType = { name: 'StdMap', version: '1' };

@@ -6,7 +6,7 @@ import {
   ResourceId,
   ResourceRef,
   ResourceType
-} from '@milaboratory/pl-ts-client-v2';
+} from '@milaboratory/pl-client-v2';
 import { BlockPackSpec, createBlockPack } from './block_pack';
 import { notEmpty } from './util';
 import { createBool, KVAccessor } from './pl_util';

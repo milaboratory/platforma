@@ -8,27 +8,27 @@ import {
   PlTransaction,
   ResourceData,
   ResourceId,
-  sleep,
   TestHelpers,
   getField,
   valErr,
   KnownResourceTypes
-} from '@milaboratory/pl-ts-client-v2';
+} from '@milaboratory/pl-client-v2';
 import { loadTemplate, TemplateSourcePrepared } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
 import { createBool } from './pl_util';
 import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
 import { notEmpty } from './util';
+import { sleep } from '@milaboratory/ts-helpers';
 
 describe('test render', () => {
   const specEnter: TemplateSourcePrepared = {
     type: 'explicit',
-    content: ExplicitTemplateEnterNumbers,
+    content: ExplicitTemplateEnterNumbers
   };
 
   const specSum: TemplateSourcePrepared = {
     type: 'explicit',
-    content: ExplicitTemplateSumNumbers,
+    content: ExplicitTemplateSumNumbers
   };
 
   const args: {
@@ -39,89 +39,89 @@ describe('test render', () => {
     {
       name: 'test render template staging',
       createBlocksFn: async (tx) => {
-        return createEnterNumbers(tx, specEnter, false, "block1", createBContextEnd(tx), undefined);
+        return createEnterNumbers(tx, specEnter, false, 'block1', createBContextEnd(tx), undefined);
       },
 
       expect: async (pl, tx) => {
         const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
         if (!ok) return false;
 
-        expectFields(result!, ["dependsOnBlocks"]);
-        expectFields(ctx!, ["id", "parent", "values/column.spec"]);
-        expect(await expectData(tx, result!, "dependsOnBlocks")).toStrictEqual([]);
+        expectFields(result!, ['dependsOnBlocks']);
+        expectFields(ctx!, ['id', 'parent', 'values/column.spec']);
+        expect(await expectData(tx, result!, 'dependsOnBlocks')).toStrictEqual([]);
         expect(await expectData(tx, ctx!, 'values/column.spec')).not.toBeUndefined();
 
         return true;
       }
+    },
+    {
+      name: 'test render template production',
+      createBlocksFn: async (tx) => {
+        return createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [42, 2, 3, 7]);
       },
-      {
-        name: 'test render template production',
-        createBlocksFn: async (tx) => {
-          return createEnterNumbers(tx, specEnter, true, "block1", createBContextEnd(tx), [42, 2, 3, 7]);
-        },
-        expect: async (pl, tx) => {
-          const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
-          if (!ok) return false;
+      expect: async (pl, tx) => {
+        const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
+        if (!ok) return false;
 
-          expectFields(result!, ["dependsOnBlocks"]);
-          expectFields(ctx!, ["id", "parent", "values/column.spec", "values/column.data"]);
-          expect(await expectData(tx, result!, "dependsOnBlocks")).toStrictEqual([]);
-          expect(await expectData(tx, ctx!, "values/column.data")).toStrictEqual([42, 2, 3, 7]);
+        expectFields(result!, ['dependsOnBlocks']);
+        expectFields(ctx!, ['id', 'parent', 'values/column.spec', 'values/column.data']);
+        expect(await expectData(tx, result!, 'dependsOnBlocks')).toStrictEqual([]);
+        expect(await expectData(tx, ctx!, 'values/column.data')).toStrictEqual([42, 2, 3, 7]);
 
-          return true;
-        },
-      },
-      {
-        name: 'test render chain staging',
-        createBlocksFn: async (tx) => {
-          const enter1 = createEnterNumbers(tx, specEnter, false, "block1", createBContextEnd(tx), undefined);
-          const enter2 = createEnterNumbers(tx, specEnter, false, "block2", enter1.context, undefined);
-          return createSumNumbers(tx, specSum, false, "block3", enter2.context, undefined);
-        },
-
-        expect: async (pl, tx) => {
-          const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
-          if (!ok) return false;
-
-          expectFields(result!, ["dependsOnBlocks", "opts"]);
-          expectFields(ctx!, ["id", "parent"]);
-          expect(await expectData(tx, result!, "opts")).toStrictEqual([
-            {
-              label: 'block1 / column',
-              ref: { blockId: 'block1', name: 'column' }
-            },
-            {
-              label: 'block2 / column',
-              ref: { blockId: 'block2', name: 'column' }
-            },
-          ]);
-
-          return true;
-        },
-      },
-      {
-        name: 'test render chain production',
-        createBlocksFn: async (tx) => {
-          const enter1 = createEnterNumbers(tx, specEnter, true, "block1", createBContextEnd(tx), [21]);
-          const enter2 = createEnterNumbers(tx, specEnter, true, "block2", enter1.context, [10, 11]);
-          return createSumNumbers(tx, specSum, true, "block3", enter2.context, [
-            { blockId: "block1", name: "column" },
-            { blockId: "block2", name: "column" },
-          ]);
-        },
-
-        expect: async (pl, tx) => {
-          const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
-          if (!ok) return false;
-
-          expectFields(result!, ["dependsOnBlocks", "sum"]);
-          expectFields(ctx!, ["id", "parent"]);
-          expect(await expectData(tx, result!, "sum")).toBe(42);
-
-          return true;
-        },
+        return true;
       }
-    ]
+    },
+    {
+      name: 'test render chain staging',
+      createBlocksFn: async (tx) => {
+        const enter1 = createEnterNumbers(tx, specEnter, false, 'block1', createBContextEnd(tx), undefined);
+        const enter2 = createEnterNumbers(tx, specEnter, false, 'block2', enter1.context, undefined);
+        return createSumNumbers(tx, specSum, false, 'block3', enter2.context, undefined);
+      },
+
+      expect: async (pl, tx) => {
+        const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
+        if (!ok) return false;
+
+        expectFields(result!, ['dependsOnBlocks', 'opts']);
+        expectFields(ctx!, ['id', 'parent']);
+        expect(await expectData(tx, result!, 'opts')).toStrictEqual([
+          {
+            label: 'block1 / column',
+            ref: { blockId: 'block1', name: 'column' }
+          },
+          {
+            label: 'block2 / column',
+            ref: { blockId: 'block2', name: 'column' }
+          }
+        ]);
+
+        return true;
+      }
+    },
+    {
+      name: 'test render chain production',
+      createBlocksFn: async (tx) => {
+        const enter1 = createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [21]);
+        const enter2 = createEnterNumbers(tx, specEnter, true, 'block2', enter1.context, [10, 11]);
+        return createSumNumbers(tx, specSum, true, 'block3', enter2.context, [
+          { blockId: 'block1', name: 'column' },
+          { blockId: 'block2', name: 'column' }
+        ]);
+      },
+
+      expect: async (pl, tx) => {
+        const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
+        if (!ok) return false;
+
+        expectFields(result!, ['dependsOnBlocks', 'sum']);
+        expectFields(ctx!, ['id', 'parent']);
+        expect(await expectData(tx, result!, 'sum')).toBe(42);
+
+        return true;
+      }
+    }
+  ];
 
   for (const arg of args) {
     test(arg.name, async () => {
@@ -145,7 +145,7 @@ describe('test render', () => {
       });
     }, 5000);
   }
-})
+});
 
 function createEnterNumbers(
   tx: PlTransaction,
@@ -153,7 +153,7 @@ function createEnterNumbers(
   isProd: boolean,
   blockIdData: string,
   ctx: AnyRef,
-  numbers?: number[],
+  numbers?: number[]
 ) {
   const tpl = loadTemplate(tx, template);
 
@@ -165,12 +165,13 @@ function createEnterNumbers(
     args: args,
     blockId: blockId,
     isProduction: isProduction,
-    context: ctx,
+    context: ctx
   });
 }
 
 interface Ref {
-  blockId: string, name: string
+  blockId: string,
+  name: string
 }
 
 function createSumNumbers(
@@ -179,7 +180,7 @@ function createSumNumbers(
   isProd: boolean,
   blockIdData: string,
   ctx: AnyRef,
-  sources?: Ref[],
+  sources?: Ref[]
 ) {
   const tpl = loadTemplate(tx, template);
 
@@ -191,13 +192,13 @@ function createSumNumbers(
     args: args,
     blockId: blockId,
     isProduction: isProduction,
-    context: ctx,
+    context: ctx
   });
 }
 
 async function expectResultAndContext(
   tx: PlTransaction,
-  root: AnyResourceRef,
+  root: AnyResourceRef
 ): Promise<{
   ctx?: ResourceData,
   result?: ResourceData,
@@ -205,7 +206,7 @@ async function expectResultAndContext(
 }> {
   const fieldData = await tx.getResourceData(root, true);
   expect(isNullResourceId(fieldData.error)).toBe(true);
-  expectFields(fieldData, ["context", "result"]);
+  expectFields(fieldData, ['context', 'result']);
 
   const ctxField = await valErr(tx, getField(fieldData, 'context'));
   expect(ctxField.error).toHaveLength(0);
@@ -230,9 +231,9 @@ async function expectResultAndContext(
 async function expectResource(
   tx: PlTransaction,
   res: ResourceData,
-  fieldName: string,
+  fieldName: string
 ) {
-  const f = getField(res, fieldName)
+  const f = getField(res, fieldName);
   const ve = await valErr(tx, f);
   expect(ve.error).toHaveLength(0);
   expect(isNotNullResourceId(ve.valueId)).toBeTruthy();
@@ -242,14 +243,14 @@ async function expectResource(
 async function expectData(
   tx: PlTransaction,
   result: ResourceData,
-  fieldName: string,
+  fieldName: string
 ) {
   return expectResource(tx, result, fieldName)
     .then(resDataToJson);
 }
 
 function expectFields(res: ResourceData, fields: string[]) {
-  const names = res.fields.map((f) => f.name);
+  const names = res.fields.map(f => f.name);
   expect(names.sort()).toStrictEqual(fields.sort());
 }
 

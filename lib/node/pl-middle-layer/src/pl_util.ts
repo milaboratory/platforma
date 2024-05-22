@@ -1,11 +1,11 @@
 import {
-  AnyRef, field, FieldType, FutureFieldType,
+  AnyRef, field, FutureFieldType,
   KnownResourceTypes,
   PlTransaction,
   ResourceId,
   ResourceRef,
   ResourceType
-} from '@milaboratory/pl-ts-client-v2';
+} from '@milaboratory/pl-client-v2';
 import { EphStdMap, StdMap } from './util';
 
 export class KVAccessor<T> {
@@ -92,5 +92,3 @@ export function constructFutureFieldRecord<K extends string>(
   return Object.fromEntries(keys.map(k =>
     pair(k, tx.getFutureFieldValue(rId, k, fieldType)))) as Record<K, AnyRef>;
 }
-
-

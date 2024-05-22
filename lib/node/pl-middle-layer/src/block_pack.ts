@@ -1,4 +1,4 @@
-import { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratory/pl-ts-client-v2';
+import { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import { assertNever } from './util';
 import { loadTemplate, prepareTemplateSource, TemplateSourceAny, TemplateSourcePrepared } from './template';
 
