@@ -17,7 +17,7 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple.yaml@v4
+    uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
     with:
       app-name: Typescript Helpers
       app-name-slug: '@milaboratory/ts-helpers'
