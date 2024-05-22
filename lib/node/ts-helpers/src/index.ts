@@ -1,5 +1,6 @@
 export * from './map';
 export * from './log';
+export * from './temporal';
 
 export function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);
