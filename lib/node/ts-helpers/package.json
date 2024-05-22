@@ -12,6 +12,7 @@
     "test": "jest --runInBand --passWithNoTests"
   },
   "dependencies": {
+    "denque": "^2.1.0"
   },
   "files": [
     "dist/**/*"

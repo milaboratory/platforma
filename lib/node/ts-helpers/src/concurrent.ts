@@ -1,5 +1,5 @@
-import { MiLogger } from "./log";
 import { sleep } from "./temporal";
+import { MiLogger } from './log';
 
 /** Runs worker Promises one by one with different data
  * and can be closed. */
