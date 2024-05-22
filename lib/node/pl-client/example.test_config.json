@@ -1,5 +1,6 @@
 {
   "address": "http://127.0.0.1:6345",
   "test_user": "test_user",
-  "test_password": "test_password"
+  "test_password": "test_password",
+  "test_proxy": "http://testuser1:testpassword1@copycat.mixcr.io:3128"
 }

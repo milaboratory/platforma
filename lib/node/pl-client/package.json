@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-client-v2",
-  "version": "2.2.8",
+  "version": "2.2.9",
   "description": "New TS/JS client for Platform API",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -13,12 +13,13 @@
     "test-setup": "tsup --no-config src/cmd/test_setup.ts --out-dir test_scripts && node test_scripts/test_setup.js"
   },
   "dependencies": {
-    "@milaboratory/ts-helpers": "^1.0.1",
     "@grpc/grpc-js": "^1.10.8",
+    "@milaboratory/ts-helpers": "^1.0.1",
     "@protobuf-ts/grpc-transport": "^2.9.4",
     "denque": "^2.1.0",
     "https-proxy-agent": "^7.0.4",
     "long": "^5.2.3",
+    "undici": "^6.18.0",
     "utility-types": "^3.11.0"
   },
   "files": [

@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
 import { ClientRoot } from './resource_types';
 import { sleep } from '@milaboratory/ts-helpers';
+import { PlDriver, PlDriverDefinition } from './driver';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
@@ -31,6 +32,7 @@ function alternativeRootFieldName(alternativeRoot: string): string {
 /** Client to access core PL API. */
 export class PlClient {
   private readonly ll: LLPlClient;
+  private readonly drivers = new Map<String, PlDriver>();
 
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
   private _clientRoot: OptionalResourceId = NullResourceId;
@@ -190,6 +192,15 @@ export class PlClient {
                        body: (tx: PlTransaction) => Promise<T>,
                        ops: Partial<TxOps> = {}): Promise<T> {
     return this.withTx(name, false, body, { ...ops, ...defaultTxOps });
+  }
+
+  public getDriver<Drv extends PlDriver>(definition: PlDriverDefinition<Drv>): Drv {
+    const attached = this.drivers.get(definition.name);
+    if (attached !== undefined)
+      return attached as Drv;
+    const driver = definition.init(this, this.ll.grpcTransport, this.ll.httpDispatcher);
+    this.drivers.set(definition.name, driver);
+    return driver;
   }
 
   /** Closes underlying transport */

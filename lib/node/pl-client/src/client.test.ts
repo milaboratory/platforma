@@ -1,5 +1,8 @@
 import { getTestClient, getTestClientConf } from './test_config';
 import { PlClient } from './client';
+import { PlDriver, PlDriverDefinition } from './driver';
+import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import { Dispatcher, request } from 'undici';
 
 test('test client init', async () => {
   const client = await getTestClient(undefined, false);
@@ -19,4 +22,28 @@ test('test client alternative root init', async () => {
 
 test('test client init', async () => {
   const client = await getTestClient();
+});
+
+interface SimpleDriver extends PlDriver {
+  ping(): Promise<string>;
+}
+
+const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
+  name: 'SimpleDriver',
+  init(pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher): SimpleDriver {
+    return {
+      async ping(): Promise<string> {
+        const response = await request('https://cdn.milaboratory.com/ping', { dispatcher: httpDispatcher });
+        return await response.body.text();
+      },
+      close() {
+      }
+    };
+  }
+};
+
+test('test driver', async () => {
+  const client = await getTestClient();
+  const drv = client.getDriver(SimpleDriverDefinition);
+  expect(await drv.ping()).toEqual('pong');
 });

@@ -2,6 +2,8 @@ import { LLPlClient } from './ll_client';
 import { getTestConfig, getTestLLClient, getTestClientConf } from './test_config';
 import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { UnauthenticatedPlClient } from './unauth_client';
+import { request } from 'undici';
+import ProvidesCallback = jest.ProvidesCallback;
 
 
 test('ping test', async () => {
@@ -85,3 +87,23 @@ test('automatic token update', async () => {
     await sleep(1000);
   }
 }, 5000);
+
+test('test simple https call', async () => {
+  const client = await getTestLLClient();
+  const response = await request('https://cdn.milaboratory.com/ping', { dispatcher: client.httpDispatcher });
+  const text = await response.body.text();
+  expect(text).toEqual('pong');
+});
+
+
+test('test https call via proxy', async () => {
+  const testConfig = getTestConfig();
+  if (testConfig.test_proxy === undefined) {
+    console.log('skipped');
+    return;
+  }
+  const client = await getTestLLClient({ httpProxy: testConfig.test_proxy });
+  const response = await request('https://cdn.milaboratory.com/ping', { dispatcher: client.httpDispatcher });
+  const text = await response.body.text();
+  expect(text).toEqual('pong');
+});

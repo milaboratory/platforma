@@ -11,6 +11,7 @@ import {
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
 import { inferAuthRefreshTime, parsePlJwt } from './util/pl';
+import { Agent, Dispatcher, ProxyAgent } from 'undici';
 
 export interface PlCallOps {
   timeout?: number;
@@ -33,8 +34,10 @@ export class LLPlClient {
   private _status: PlConnectionStatus = 'OK';
   private readonly statusListener?: PlConnectionStatusListener;
 
-  private readonly grpcTransport: GrpcTransport;
+  public readonly grpcTransport: GrpcTransport;
   public readonly grpcPl: PlatformClient;
+
+  public readonly httpDispatcher: Dispatcher;
 
   constructor(configOrAddress: PlClientConfig | string,
               ops: {
@@ -78,6 +81,12 @@ export class LLPlClient {
 
     this.grpcTransport = new GrpcTransport(grpcOptions);
     this.grpcPl = new PlatformClient(this.grpcTransport);
+
+    // setting up http(s)
+    if (this.conf.httpProxy !== undefined)
+      this.httpDispatcher = new ProxyAgent(this.conf.httpProxy);
+    else
+      this.httpDispatcher = new Agent();
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;

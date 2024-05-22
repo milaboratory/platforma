@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 
 export interface TestConfig {
   address: string;
+  test_proxy?: string;
   test_user?: string;
   test_password?: string;
 }
@@ -28,6 +29,9 @@ export function getTestConfig(): TestConfig {
 
   if (process.env.PL_TEST_PASSWORD !== undefined)
     conf.test_password = process.env.PL_TEST_PASSWORD;
+
+  if (process.env.PL_TEST_PROXY !== undefined)
+    conf.test_proxy = process.env.PL_TEST_PROXY;
 
   if (conf.address === undefined)
     throw new Error(`can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`);
@@ -81,9 +85,9 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, authI
   return { conf: plConf, authInformation };
 }
 
-export async function getTestLLClient() {
+export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {}) {
   const { conf, authInformation } = await getTestClientConf();
-  return new LLPlClient(conf, { auth: { authInformation } });
+  return new LLPlClient({ ...conf, ...confOverrides }, { auth: { authInformation } });
 }
 
 export async function getTestClient(alternativeRoot?: string, init: boolean = true) {
