@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/computable",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Watcher / Computable Abstraction",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -12,6 +12,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@milaboratory/ts-helpers": "^1.0.0",
     "utility-types": "^3.11.0"
   },
   "files": [

@@ -5,8 +5,8 @@ import {
   ComputableCtx, tryExtractComputableKernel
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
-import { assertNever } from '../util';
 import { Writable } from 'utility-types';
+import { assertNever } from '@milaboratory/ts-helpers';
 
 interface ExecutionError {
   error: any;

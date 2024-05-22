@@ -3,7 +3,7 @@ import {
   WrappedComputableKernel, WrappedKernelField
 } from './kernel';
 import { CellState, createCellState, updateCellState } from './computable_state';
-import { notEmpty } from '../util';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
 
