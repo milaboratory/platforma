@@ -1,4 +1,4 @@
-import { Aborted, sleep } from './temporal';
+import { Aborted, jitter, sleep } from './temporal';
 
 test('timeout', async () => {
   await sleep(10);
@@ -19,3 +19,9 @@ test('aborted timeout', async () => {
     .rejects
     .toThrow(/aborted/);
 });
+
+test('jitter', () => {
+  const result = jitter({ms: 1000, factor: 0.1});
+  expect(result).toBeGreaterThanOrEqual(900);
+  expect(result).toBeLessThanOrEqual(1100);
+})

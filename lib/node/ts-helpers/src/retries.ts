@@ -1,4 +1,4 @@
-import { JitterOpts, jitterSleep } from "./temporal";
+import { JitterOpts, jitter, sleep } from "./temporal";
 
 export async function withRetries(
   nAttempts: number,
@@ -15,7 +15,7 @@ export async function withRetries(
     } catch (e) {
       lastError = e;
       if (retryOn(e)) {
-        await jitterSleep(jitterOpts);
+        await sleep(jitter(jitterOpts));
         continue;
       }
       throw e;
