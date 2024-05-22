@@ -1,10 +1,10 @@
 import { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
 import { LLPlClient, PlCallOps } from './ll_client';
 import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
-import { sleep } from './util/temporal';
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
 import { ClientRoot } from './resource_types';
+import { sleep } from '@milaboratory/ts-helpers';
 
 export type TxOps = PlCallOps & {
   sync: boolean,

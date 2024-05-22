@@ -1,8 +1,8 @@
 import { withTempRoot } from './test_config';
 import { StructTestResource, ValueTestResource } from './resource_types';
 import { toGlobalFieldId } from './transaction';
-import { sleep } from './util/temporal';
 import { RecoverablePlError } from './errors';
+import { sleep } from '@milaboratory/ts-helpers';
 
 test('get field', async () => {
   await withTempRoot(async pl => {

@@ -1,10 +1,5 @@
 import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
-
-export class Aborted extends Error {
-  constructor(cause: unknown) {
-    super('aborted', { cause });
-  }
-}
+import { Aborted } from '@milaboratory/ts-helpers';
 
 export function isTimeoutOrCancelError(err: any, nested: boolean = false): boolean {
   if (!(err instanceof Error))
