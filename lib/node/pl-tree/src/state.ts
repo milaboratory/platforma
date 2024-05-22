@@ -7,10 +7,9 @@ import {
   ResourceType, stringifyWithResourceId
 } from '@milaboratory/pl-client-v2';
 import { ChangeSource, Watcher } from '@milaboratory/computable';
-import { PlLogger } from './log';
 import { PlTreeEntry } from './accessors';
-import { notEmpty } from './util';
 import { ValueAndError } from './value_and_error';
+import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
 
 class PlTreeField {
   readonly change = new ChangeSource();
@@ -82,11 +81,11 @@ export class PlTreeResource implements PlTreeResourceI {
   /** Set externally by the tree, using {@link FinalPredicate} */
   _final: boolean = false;
 
-  private readonly logger?: PlLogger;
+  private readonly logger?: MiLogger;
 
   constructor(
     initialState: BasicResourceData,
-    logger?: PlLogger
+    logger?: MiLogger
   ) {
     this.id = initialState.id;
     this.originalResourceId = initialState.originalResourceId;
