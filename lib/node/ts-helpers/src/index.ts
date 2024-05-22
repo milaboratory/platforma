@@ -1,6 +1,9 @@
 export * from './map';
 export * from './log';
 export * from './temporal';
+export * from './test_helpers';
+export * from './concurrent';
+export * from './retries';
 
 export function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);

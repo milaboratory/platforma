@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/ts-helpers",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Useful helpers for our TS projects",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -11,7 +11,9 @@
     "type-check": "tsc --noEmit --composite false",
     "test": "jest --runInBand --passWithNoTests"
   },
-  "dependencies": {},
+  "dependencies": {
+    "winston": "^3.13.0"
+  },
   "files": [
     "dist/**/*"
   ],
