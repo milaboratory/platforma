@@ -1,4 +1,4 @@
-import winston from "winston";
+import { MiLogger } from "./log";
 import { sleep } from "./temporal";
 
 /** Runs worker Promises one by one with different data
@@ -9,7 +9,7 @@ export class Queue<T> {
 
   constructor(
     private closePoolingMs: number = 100,
-    private logger: winston.Logger,
+    private logger: MiLogger,
     private worker: (data: T) => Promise<void>
   ) {}
 
@@ -50,7 +50,7 @@ export class Queue<T> {
  * Slightly modified version of
  * https://github.com/rxaviers/async-pool/blob/1.x/lib/es7.js */
 export async function asyncPool<T, R>(
-  logger: winston.Logger,
+  logger: MiLogger,
   concurrency: number,
   iterable: Iterable<T>,
   iteratorFn: (_: T) => Promise<R>
