@@ -546,6 +546,10 @@ export class PlTransaction {
     return Buffer.from(await this.getKValue(rId, key)).toString();
   }
 
+  public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
+    return JSON.parse(await this.getKValueString(rId, key)) as T;
+  }
+
   public async getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceKeyValueGetIfExists', resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key } },
@@ -556,6 +560,13 @@ export class PlTransaction {
   public async getKValueStringIfExists(rId: AnyResourceRef, key: string): Promise<string | undefined> {
     const data = await this.getKValueIfExists(rId, key);
     return data === undefined ? undefined : Buffer.from(data).toString();
+  }
+
+  public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
+    const str = await this.getKValueString(rId, key);
+    if (str === undefined)
+      return undefined;
+    return JSON.parse(str) as T;
   }
 
   //
