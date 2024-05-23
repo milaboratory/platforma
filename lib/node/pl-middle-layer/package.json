@@ -19,7 +19,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-client-v2": "^2.2.9",
+    "@milaboratory/pl-client-v2": "^2.2.10",
     "@milaboratory/ts-helpers": "^1.0.3",
     "@oclif/core": "^3.26.6",
     "utility-types": "^3.11.0",

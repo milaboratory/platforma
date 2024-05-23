@@ -1,21 +1,27 @@
 import {
   AnyRef,
-  field,
+  field, KnownResourceTypes,
   PlTransaction,
   ResourceRef,
   ResourceType
 } from '@milaboratory/pl-client-v2';
 import { buildMap, pair, PlMapEntry } from './pl_util';
 import { FutureFieldType } from '@milaboratory/pl-client-v2';
+import { randomUUID } from 'node:crypto';
 
 export const BContextEnd: ResourceType = { name: 'BContextEnd', version: '1' };
+export const BContext: ResourceType = { name: 'BContext', version: '1' };
+export const BContextId = 'id';
+export const BContextParent = 'parent';
+export const BContextMultiParentPrefix = 'parent/';
 export const EphRenderTemplate: ResourceType = { name: 'EphRenderTemplate', version: '1' };
 
 // TODO: add implementation for dual context heavy block.
-export type BlockType =
-  | 'LightBlock'
-  | 'HeavyBlock'
-  | 'DualContextHeavyBlock';
+// export type BlockType =
+//   | 'LightBlock'
+//   | 'HeavyBlock'
+//   | 'DualContextHeavyBlock';
+// moved to project model ==>>>
 
 export interface HeavyBlockInputs {
   args: AnyRef;
@@ -108,3 +114,25 @@ export function createBContextEnd(tx: PlTransaction): ResourceRef {
   return tx.createEphemeral(BContextEnd);
 }
 
+export function createBContextFromUpstreams(tx: PlTransaction,
+                                            upstreamCtxs: AnyRef[]): AnyRef {
+  if (upstreamCtxs.length === 0)
+    return createBContextEnd(tx);
+
+  if (upstreamCtxs.length === 1)
+    return upstreamCtxs[0];
+
+  const ctx = tx.createEphemeral(BContext);
+
+  // setting id
+  tx.createField(field(ctx, BContextId), 'Input',
+    tx.createValue(KnownResourceTypes.JsonString, JSON.stringify(randomUUID())));
+
+  // setting parents
+  for (let i = 0; i < upstreamCtxs.length; i++)
+    tx.createField(field(ctx, `BContextMultiParentPrefix${i}`), 'Input',
+      upstreamCtxs[i]);
+
+  tx.lock(ctx);
+  return ctx;
+}
