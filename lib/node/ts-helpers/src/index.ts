@@ -3,6 +3,8 @@ export * from './log';
 export * from './temporal';
 export * from './test_helpers';
 export * from './concurrent';
+export * from './concurrent/async_queue';
+export * from './concurrent/task_processor';
 export * from './retries';
 
 export function assertNever(x: never): never {
