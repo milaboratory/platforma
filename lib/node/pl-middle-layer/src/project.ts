@@ -1,5 +1,5 @@
 import {
-  AnyRef,
+  AnyRef, AnyResourceRef,
   BasicResourceData, ensureResourceIdNotNull,
   field, isNotNullResourceId, isResource, isResourceRef, KnownResourceTypes,
   PlTransaction,
@@ -14,63 +14,103 @@ import {
   BlockStructureKey, parseProjectField,
   ProjectField, projectFieldName,
   ProjectRenderingState, SchemaVersionCurrent,
-  SchemaVersionKey
-} from './project_model';
-import { inferAllReferencedBlocks } from './inputs';
-import { toJS } from 'yaml/dist/nodes/toJS';
-import { BlockPackTemplateField } from './block_pack';
-
-// export interface BlockInfo {
-//   readonly tplId: ResourceRef;
-//   readonly inputsToRender: ResourceRef;
-//   readonly blockId: ResourceRef;
-// }
-//
-// export interface ProjectInfo {
-//   readonly rId: ResourceId;
-//   readonly structure: BlockStructure;
-//   readonly blocks: Map<string, BlockInfo>;
-// }
+  SchemaVersionKey, BlockPackHolderType, ProjectResourceType, InitialBlockStructure, InitialProjectRenderingState
+} from './model/project_model';
+import { BlockPackTemplateField, createBlockPack } from './block_pack';
+import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from './model/project_model_util';
+import { BlockPackSpec } from './model/block_pack_spec';
+import { throws } from 'node:assert';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
 interface BlockFieldState {
+  modCount: number,
   ref: AnyRef;
   status?: FieldStatus;
   value?: Uint8Array;
 }
 
-export type BlockFieldStates = Partial<Record<ProjectField['field'], BlockFieldState>>
+export type BlockFieldStates = Partial<Record<ProjectField['fieldName'], BlockFieldState>>
 
-export interface BlockInfo {
-  /** Block id */
+export interface BlockInfoState {
   readonly id: string;
-
-  stagingRendered: boolean;
-
-  /** Distance to furthers staging block that is not rendered (1 meaning first not rendered) */
-  stagingLag?: number;
-  /** Knowing project structure is enough to calculate staging graph */
-  stagingUpstream?: Set<string>;
-  /** Knowing project structure is enough to calculate staging graph */
-  stagingDownstream?: Set<string>;
-
-  /** If loaded */
-  currentInputs?: any;
-  /** True if missing reference was encountered during future production graph reconstruction */
-  missingReferenceInCurrentInputs?: boolean;
-  /** Requires inputs */
-  futureProductionUpstream?: Set<string>;
-  /** Requires inputs */
-  futureProductionDownstream?: Set<string>;
-
-  /** If loaded */
-  actualProductionInputs?: any;
-  /** Requires inputs */
-  actualProductionUpstream?: Set<string>;
-  /** Requires inputs */
-  actualProductionDownstream?: Set<string>;
+  readonly fields: BlockFieldStates;
 }
+
+function cached<ModId, T>(modIdCb: () => ModId, valueCb: () => T): () => T {
+  let initialized = false;
+  let lastModId: ModId | undefined = undefined;
+  let value: T | undefined = undefined;
+  return () => {
+    if (!initialized) {
+      initialized = true;
+      lastModId = modIdCb();
+      value = valueCb();
+      return value as T;
+    }
+    const currentModId = modIdCb();
+    if (lastModId !== currentModId) {
+      lastModId = currentModId;
+      value = valueCb();
+    }
+    return valueCb() as T;
+  };
+}
+
+export class BlockInfo {
+  constructor(
+    public readonly id: string,
+    public readonly fields: BlockFieldStates) {
+  }
+
+  private readonly currentInputsC = cached(
+    () => this.fields.currentInputs!.modCount,
+    () => JSON.parse(Buffer.from(this.fields.currentInputs!.value!).toString())
+  );
+  private readonly actualProductionInputsC = cached(
+    () => this.fields.prodInputs?.modCount,
+    () => {
+      const bin = this.fields.prodInputs?.value;
+      if (bin === undefined)
+        return undefined;
+      return JSON.parse(Buffer.from(bin).toString());
+    }
+  );
+
+  get currentInputs(): any {
+    return this.currentInputsC();
+  }
+
+  get stagingRendered(): any {
+    return this.fields.stagingCtx !== undefined;
+  }
+
+  get productionRendered(): any {
+    return this.fields.prodCtx !== undefined;
+  }
+
+  private readonly productionStaleC = cached(
+    () => `${this.fields.currentInputs!.modCount}_${this.fields.prodInputs?.modCount}`,
+    () => this.fields.prodInputs === undefined || Buffer.compare(this.fields.currentInputs!.value!, this.fields.prodInputs.value!) !== 0
+  );
+
+  get productionStale(): any {
+    return this.productionRendered && this.productionStaleC();
+  }
+
+  get actualProductionInputs(): any | undefined {
+    return this.actualProductionInputsC();
+  }
+}
+
+export interface NewBlockSpec {
+  blockPack: BlockPackSpec,
+  inputs: string
+}
+
+const NoNewBlocks = (blockId: string) => {
+  throw new Error(`No new block info for ${blockId}`);
+};
 
 export interface SetInputRequest {
   blockId: string;
@@ -83,236 +123,76 @@ type GraphInfoFields =
   | 'actualProductionUpstream' | 'actualProductionDownstream'
 
 export class ProjectMutator {
+  private globalModCount = 0;
   private structureChanged = false;
   private renderingStateChanged = false;
 
-  private schema?: string;
-  private structure?: ProjectStructure;
-  private blockInfos?: Map<string, BlockInfo>;
-  private renderingState?: ProjectRenderingState;
-  private blockFields?: Map<string, BlockFieldStates>;
-
-  /**
-   * 0 - nothing is loaded
-   * 1 - fields and kv store is loaded
-   * 2 - block inputs loaded
-   * */
-  private loaded = 0;
-
-  /** To prevent concurrent access to the object */
-  private loading = false;
-
   constructor(public readonly rid: ResourceId,
-              private readonly tx: PlTransaction
+              private readonly tx: PlTransaction,
+              private readonly schema: string,
+              private struct: ProjectStructure,
+              private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
+              private readonly blocksInLimbo: Set<string>,
+              private readonly blockInfos: Map<string, BlockInfo>
   ) {
   }
 
-  private ensureNotLoading() {
-    if (this.loading)
-      throw new Error('Concurrent access.');
-  }
-
-  private checkMinLoadingLevel(required: number) {
-    this.ensureNotLoading();
-    if (this.loaded < required)
-      throw new Error(`loading level ${required} is required`);
-  }
-
-  /** Each subsequent level costs one round-trip */
-  public async load(requestLevel: number): Promise<void> {
-    if (this.loaded >= requestLevel)
-      return;
-
-    this.ensureNotLoading();
-
-    this.loading = true;
-
-    if (this.loaded === 0) {
-      const fullResourceStateP = this.tx.getResourceData(this.rid, true);
-      const schemaP = this.tx.getKValueJson<string>(this.rid, SchemaVersionKey);
-      const structureP = this.tx.getKValueJson<ProjectStructure>(this.rid, BlockStructureKey);
-      const renderingStateP = this.tx.getKValueJson<ProjectRenderingState>(this.rid, BlockRenderingStateKey);
-
-      // loading field information
-      this.blockFields = new Map();
-      const fullResourceState = await fullResourceStateP;
-      for (const f of fullResourceState.fields) {
-        const projectField = parseProjectField(f.name);
-
-        // processing only fields with known structure
-        if (projectField === undefined)
-          continue;
-
-        let blockFields = this.blockFields.get(projectField.blockId);
-        if (blockFields === undefined) {
-          blockFields = {};
-          this.blockFields.set(projectField.blockId, blockFields);
-        }
-
-        // we never create fields without values
-        const ref = ensureResourceIdNotNull(f.value);
-        blockFields[projectField.field] = { ref };
-      }
-      // also initializing blockInfos
-      this.blockInfos = new Map();
-      this.blockFields.forEach((v, k) => this.blockInfos!.set(k, { id: k, stagingRendered: 'stagingCtx' in v }));
-
-      // loading jsons
-      this.schema = await schemaP;
-      if (this.schema !== SchemaVersionCurrent)
-        throw new Error(`Can't act on this project resource because it has a wrong schema version: ${this.schema}`);
-      this.structure = await structureP;
-      this.renderingState = await renderingStateP;
-
-      this.loaded = 1;
-    }
-
-    if (this.loaded === 1 && requestLevel > 1) {
-      const requests: [ProjectField, Promise<BasicResourceData>][] = [];
-      this.blockFields!.forEach((v, blockId) => {
-        for (const [type, state] of Object.entries(v)) {
-          if (!isResource(state.ref) || isResourceRef(state.ref))
-            throw new Error('load full state in one go');
-          requests.push([{ field: type, blockId } as ProjectField, this.tx.getResourceData(state.ref, false)]);
-        }
-      });
-      for (const [f, r] of requests) {
-        const result = await r;
-        const state = this.blockFields!.get(f.blockId)![f.field]!;
-        state.value = result.data;
-        if (isNotNullResourceId(result.error))
-          state.status = 'Error';
-        else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
-          state.status = 'Ready';
-        else
-          state.status = 'NotReady';
-      }
-      this.blockInfos!.forEach(info => {
-        info.currentInputs = Buffer.from(this.blockFields!.get(info.id)!.currentInputs!.value!).toString();
-        if (this.blockFields!.get(info.id)!.prodInputs !== undefined)
-          info.actualProductionInputs = Buffer.from(this.blockFields!.get(info.id)!.prodInputs!.value!).toString();
-      });
-
-      this.loaded = 2;
-    }
-
-
-    this.loading = false;
+  get structure(): ProjectStructure {
+    return JSON.parse(JSON.stringify(this.struct));
   }
 
   //
   // Graph calculation
   //
 
-  private stagingGraphReady = false;
+  private stagingGraph: BlockGraph | undefined = undefined;
+  private futureProductionGraph: BlockGraph | undefined = undefined;
+  private actualProductionGraph: BlockGraph | undefined = undefined;
 
-  private ensureStagingGraph() {
-    if (this.stagingGraphReady)
-      return;
-
-    this.checkMinLoadingLevel(1);
-
-    // Simple dependency graph from previous to next
-    //
-    //   more complicated patterns to be implemented later
-    //   (i.e. groups with specific behaviours for total outputs and inputs)
-    //
-    let previous: BlockInfo | undefined = undefined;
-    const infos = this.blockInfos!;
-    let stagingLag: number = 0;
-    for (const g of this.structure!.groups) {
-      for (const b of g.blocks) {
-        const current = notEmpty(infos.get(b.id));
-        if (previous === undefined) {
-          current.stagingUpstream = new Set<string>();
-        } else {
-          previous.stagingDownstream = new Set<string>([current.id]);
-          current.stagingUpstream = new Set<string>([previous.id]);
-        }
-
-        if (current.stagingRendered)
-          stagingLag = 0;
-        else
-          stagingLag++;
-        current.stagingLag = stagingLag;
-
-        previous = current;
-      }
-    }
-    if (previous !== undefined)
-      previous.stagingDownstream = new Set<string>();
-
-    this.stagingGraphReady = true;
-  }
-
-  private futureProductionGraphReady = false;
-
-  private ensureFutureProductionGraph() {
-    if (this.futureProductionGraphReady)
-      return;
-    this.checkMinLoadingLevel(2);
-    this.recalculateProductionGraph(
-      'currentInputs', 'futureProductionUpstream', 'futureProductionDownstream',
-      'missingReferenceInCurrentInputs'
-    );
-    this.futureProductionGraphReady = true;
-  }
-
-  private actualProductionGraphReady = false;
-
-  private ensureActualProductionGraph() {
-    if (this.actualProductionGraphReady)
-      return;
-    this.checkMinLoadingLevel(2);
-    this.recalculateProductionGraph('actualProductionInputs', 'actualProductionUpstream', 'actualProductionDownstream');
-    this.actualProductionGraphReady = true;
-  }
-
-
-  private recalculateProductionGraph(inputsField: 'currentInputs' | 'actualProductionInputs',
-                                     upstreamField: 'futureProductionUpstream' | 'actualProductionUpstream',
-                                     downstreamField: 'futureProductionDownstream' | 'actualProductionDownstream',
-                                     missingRefField?: 'missingReferenceInCurrentInputs') {
-    const infos = this.blockInfos!;
-
-    // traversing blocks in topological order defined by the project structure
-    // and keeping possibleUpstreams set on each step, to consider only
-    // those dependencies that are possible under current topology
-    const possibleUpstreams = new Set<string>();
-    for (const g of this.structure!.groups) {
-      for (const b of g.blocks) {
-        const info = notEmpty(infos.get(b.id));
-        const upstreams = inferAllReferencedBlocks(info[inputsField], possibleUpstreams);
-        info[upstreamField] = upstreams.upstreams;
-        if (missingRefField !== undefined)
-          info[missingRefField] = upstreams.missingReferences;
-        info[downstreamField] = new Set<string>(); // will be populated from downstream blocks
-        upstreams.upstreams.forEach(dep => infos.get(dep)![downstreamField]!.add(info.id));
-        possibleUpstreams.add(info.id);
-      }
-    }
-  }
-
-  private getBlock(blockId: string): Block {
-    for (const group of this.structure!.groups)
-      for (const block of group.blocks)
-        if (block.id === blockId)
-          return block;
-    throw new Error('block not found');
+  private getStagingGraph(): BlockGraph {
+    if (this.stagingGraph === undefined)
+      this.stagingGraph = stagingGraph(this.struct);
+    return this.stagingGraph;
   }
 
   private getBlockInfo(blockId: string): BlockInfo {
-    return notEmpty(this.blockInfos!.get(blockId));
+    return notEmpty(this.blockInfos.get(blockId));
   }
 
-  private getBlockFields(blockId: string): BlockFieldStates {
-    return notEmpty(this.blockFields!.get(blockId));
+  private getBlock(blockId: string): Block {
+    for (const block of allBlocks(this.struct))
+      if (block.id === blockId)
+        return block;
+    throw new Error('block not found');
+  }
+
+  private getFutureProductionGraph(): BlockGraph {
+    if (this.futureProductionGraph === undefined)
+      this.futureProductionGraph = productionGraph(this.struct,
+        blockId => this.getBlockInfo(blockId).currentInputs);
+    return this.futureProductionGraph;
+  }
+
+  private getActualProductionGraph(): BlockGraph {
+    if (this.actualProductionGraph === undefined)
+      this.actualProductionGraph = productionGraph(this.struct,
+        blockId => this.getBlockInfo(blockId).actualProductionInputs);
+    return this.actualProductionGraph;
   }
 
   public setBlockFieldObj(blockId: string, fieldName: keyof BlockFieldStates,
-                          state: BlockFieldState) {
-    this.tx.setField(field(this.rid, projectFieldName({ blockId, field: fieldName })), state.ref);
-    this.getBlockFields(blockId)[fieldName] = state;
+                          state: Omit<BlockFieldState, 'modCount'>) {
+    const fid = field(this.rid, projectFieldName({ blockId, fieldName: fieldName }));
+
+    if (this.getBlockInfo(blockId).fields[fieldName] === undefined)
+      this.tx.createField(fid, 'Dynamic', state.ref);
+    else
+      this.tx.setField(fid, state.ref);
+
+    this.getBlockInfo(blockId).fields[fieldName] = {
+      modCount: this.globalModCount++,
+      ...state
+    };
   }
 
   public setBlockField(
@@ -323,97 +203,67 @@ export class ProjectMutator {
   }
 
   public deleteBlockField(blockId: string, fieldName: keyof BlockFieldStates): boolean {
-    const fields = this.getBlockFields(blockId);
+    const fields = this.getBlockInfo(blockId).fields;
     if (!(fieldName in fields))
       return false;
-    this.tx.removeField(field(this.rid, projectFieldName({ blockId, field: fieldName })));
+    this.tx.removeField(field(this.rid, projectFieldName({ blockId, fieldName })));
     delete fields[fieldName];
     return true;
   }
 
-  public traverseAll(field: GraphInfoFields,
-                     rootBlockIds: string[],
-                     cb: (info: BlockInfo) => void): void {
-
-    switch (field) {
-      case 'stagingUpstream':
-      case 'stagingDownstream':
-        this.ensureStagingGraph();
-        break;
-      case 'futureProductionUpstream':
-      case 'futureProductionDownstream':
-        this.ensureFutureProductionGraph();
-        break;
-      case 'actualProductionUpstream':
-      case 'actualProductionDownstream':
-        this.ensureActualProductionGraph();
-        break;
+  private resetStaging(blockId: string): void {
+    const fields = this.getBlockInfo(blockId).fields;
+    if (fields.stagingOutput?.status === 'Ready' && fields.stagingCtx?.status === 'Ready') {
+      this.setBlockFieldObj(blockId, 'stagingOutputPrevious', fields.stagingOutput);
+      this.setBlockFieldObj(blockId, 'stagingCtxPrevious', fields.stagingCtx);
+      this.deleteBlockField(blockId, 'stagingOutput');
+      this.deleteBlockField(blockId, 'stagingCtx');
     }
+    this.renderingState.stagingRefreshTimestamp = Date.now();
+    this.renderingStateChanged = true;
+  }
 
-    let unprocessed = rootBlockIds;
-    // used to deduplicate possible downstream blocks and process them only once
-    const queued = new Set<string>(unprocessed);
-    while (unprocessed.length > 0) {
-      let nextUnprocessed: string[] = [];
-      for (const blockId of unprocessed) {
-        const info = this.getBlockInfo(blockId);
-        cb(info);
-        info[field]!.forEach(v => {
-          if (!queued.has(v)) {
-            queued.add(v);
-            nextUnprocessed.push(v);
-          }
-        });
-      }
-      unprocessed = nextUnprocessed;
+  private resetOrLimboProduction(blockId: string): void {
+    const fields = this.getBlockInfo(blockId).fields;
+    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+      // limbo
+      this.blocksInLimbo.add(blockId);
+      this.renderingStateChanged = true;
+      // doing some gc before refresh
+      this.deleteBlockField(blockId, 'prodOutputPrevious');
+      this.deleteBlockField(blockId, 'prodCtxPrevious');
+    } else {
+      // reset
+      this.deleteBlockField(blockId, 'prodOutput');
+      this.deleteBlockField(blockId, 'prodCtx');
     }
   }
 
-  /** Optimally sets inputs for multiple blocks in one turn */
+  /** Optimally sets inputs for multiple blocks in one go */
   public setInputs(requests: SetInputRequest[]) {
-    this.checkMinLoadingLevel(2);
-
     for (const { blockId, inputs } of requests) {
       const info = this.getBlockInfo(blockId);
       const parsedInputs = JSON.parse(inputs);
       const binary = Buffer.from(inputs);
       const ref = this.tx.createValue(KnownResourceTypes.JsonObject, binary);
       this.setBlockField(blockId, 'currentInputs', ref, 'Ready', binary);
-      info.currentInputs = parsedInputs;
     }
-    this.futureProductionGraphReady = false;
 
     // resetting staging outputs for all downstream blocks
-    this.traverseAll('stagingDownstream', requests.map(e => e.blockId),
-      info => {
-        const fields = this.getBlockFields(info.id);
-        if (fields.stagingOutput?.status === 'Ready' && fields.stagingCtx?.status === 'Ready') {
-          this.setBlockFieldObj(info.id, 'stagingOutputPrevious', fields.stagingOutput);
-          this.setBlockFieldObj(info.id, 'stagingCtxPrevious', fields.stagingCtx);
-          this.deleteBlockField(info.id, 'stagingOutput');
-          this.deleteBlockField(info.id, 'stagingCtx');
-        }
-      });
-    this.stagingGraphReady = false; // to recalculate stagingLags
-
-    // mark a timestamp we did the reset
-    this.renderingState!.stagingRefreshTimestamp = Date.now();
-    this.renderingStateChanged = true;
+    this.getStagingGraph().traverse('downstream', requests.map(e => e.blockId),
+      ({ id }) => this.resetStaging(id));
   }
 
   private renderStagingFor(blockId: string) {
-    this.checkMinLoadingLevel(2);
-
     const info = this.getBlockInfo(blockId);
-    const fields = this.getBlockFields(blockId);
     const block = this.getBlock(blockId);
+    const stagingNode = this.getStagingGraph().nodes.get(blockId)!;
 
     const upstreamContexts: AnyRef[] = [];
-    info.stagingUpstream!.forEach(id => {
-      const upstreamFields = this.getBlockFields(id);
-      if (upstreamFields.stagingCtx === undefined)
+    stagingNode.upstream.forEach(id => {
+      if (info.fields.stagingCtx === undefined)
         throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(upstreamFields.stagingCtx.ref);
+      upstreamContexts.push(info.fields.stagingCtx.ref);
     });
 
     const ctx = createBContextFromUpstreams(this.tx, upstreamContexts);
@@ -422,7 +272,7 @@ export class ProjectMutator {
       throw new Error('not supported yet');
 
     const tpl = this.tx.getFutureFieldValue(
-      this.tx.getFutureFieldValue(fields.blockPack!.ref, BlockPackHolderMainField, 'Input'),
+      this.tx.getFutureFieldValue(info.fields.blockPack!.ref, BlockPackHolderMainField, 'Input'),
       BlockPackTemplateField, 'Input'
     );
 
@@ -430,7 +280,7 @@ export class ProjectMutator {
     const falseRes = this.tx.createValue(KnownResourceTypes.JsonBool, JSON.stringify(false));
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: fields.currentInputs!.ref,
+      args: info.fields.currentInputs!.ref,
       blockId: blockIdRes,
       isProduction: falseRes,
       context: ctx
@@ -439,8 +289,74 @@ export class ProjectMutator {
     this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
   }
 
-  public updateStructure(newStructure: ProjectStructure) {
+  public updateStructure(newStructure: ProjectStructure, newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks) {
+    // const newBlockArgsParsed = new Map<string, any>();
+    // newBlockArgs.forEach((args, blockId) => newBlockArgsParsed.set(blockId, JSON.parse(args)));
 
+    const currentStagingGraph = this.getStagingGraph();
+    const currentActualProductionGraph = this.getActualProductionGraph();
+
+    const newStagingGraph = stagingGraph(newStructure);
+    // new actual production graph without new blocks
+    const newActualProductionGraph = productionGraph(newStructure,
+      blockId => this.blockInfos.get(blockId)?.actualProductionInputs);
+
+    const stagingDiff = graphDiff(currentStagingGraph, newStagingGraph);
+    const prodDiff = graphDiff(currentActualProductionGraph, newActualProductionGraph);
+
+    // removing blocks
+    for (const blockId of stagingDiff.onlyInA) {
+      const { fields } = this.getBlockInfo(blockId);
+      for (const fieldName of Object.keys(fields))
+        this.tx.removeField(field(this.rid, projectFieldName({ blockId, fieldName } as ProjectField)));
+      this.blockInfos.delete(blockId);
+      this.blocksInLimbo.delete(blockId);
+    }
+
+    // creating new blocks
+    for (const blockId of stagingDiff.onlyInB) {
+      this.blockInfos.set(blockId, new BlockInfo(blockId, {}));
+      const spec = newBlockSpecProvider(blockId);
+
+      // block pack
+      const bp = createBlockPack(this.tx, spec.blockPack);
+      const holder = this.tx.createStruct(BlockPackHolderType);
+      const mainHolderField = field(holder, BlockPackHolderMainField);
+      this.tx.createField(mainHolderField, 'Input', bp);
+      this.tx.lock(holder);
+      this.setBlockField(blockId, 'blockPack', holder, 'NotReady');
+
+      // inputs
+      const binArgs = Buffer.from(spec.inputs);
+      const argsRes = this.tx.createValue(KnownResourceTypes.JsonObject, binArgs);
+      this.setBlockField(blockId, 'currentInputs', argsRes, 'Ready', binArgs);
+    }
+
+    // resetting stagings affected by topology change
+    for (const blockId of stagingDiff.different)
+      this.resetStaging(blockId);
+
+    // applying changes due to topology change in production
+    for (const blockId of prodDiff.different)
+      this.resetOrLimboProduction(blockId);
+
+    this.struct = newStructure;
+    this.stagingGraph = undefined;
+    this.futureProductionGraph = undefined;
+    this.actualProductionGraph = undefined;
+  }
+
+  public save() {
+    if (this.structureChanged)
+      this.tx.setKValue(this.rid, BlockStructureKey, JSON.stringify(this.struct));
+
+    if (this.renderingStateChanged)
+      this.tx.setKValue(this.rid, BlockRenderingStateKey, JSON.stringify(
+        {
+          ...this.renderingState,
+          blocksInLimbo: [...this.blocksInLimbo]
+        } as ProjectRenderingState
+      ));
   }
 
   public addBlock() {
@@ -452,14 +368,90 @@ export class ProjectMutator {
   }
 }
 
-// export function createProject(tx: PlTransaction): AnyResourceRef {
-//   const prj = tx.createEphemeral(ProjectResourceType);
-//   tx.lock(prj);
-//   tx.setKValue(prj, SchemaVersionKey, String(SchemaVersionCurrent));
-//   tx.setKValue(prj, BlockStructureKey, JSON.stringify(InitialBlockStructure));
-//   return prj;
-// }
-//
+export interface ProjectState {
+  schema: string;
+  structure: ProjectStructure;
+  renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>;
+  blocksInLimbo: Set<string>;
+  blockInfos: Map<string, BlockInfo>;
+}
+
+export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<ProjectMutator> {
+  const fullResourceStateP = tx.getResourceData(rid, true);
+  const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
+  const structureP = tx.getKValueJson<ProjectStructure>(rid, BlockStructureKey);
+  const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
+
+  // loading field information
+  const blockInfoStates = new Map<string, BlockInfoState>();
+  const fullResourceState = await fullResourceStateP;
+  for (const f of fullResourceState.fields) {
+    const projectField = parseProjectField(f.name);
+
+    // processing only fields with known structure
+    if (projectField === undefined)
+      continue;
+
+    let info = blockInfoStates.get(projectField.blockId);
+    if (info === undefined) {
+      info = {
+        id: projectField.blockId,
+        fields: {}
+      };
+      blockInfoStates.set(projectField.blockId, info);
+    }
+
+    // we never create fields without values
+    const ref = ensureResourceIdNotNull(f.value);
+    info.fields[projectField.fieldName] = { modCount: 0, ref };
+  }
+
+  // loading jsons
+  const schema = await schemaP;
+  if (schema !== SchemaVersionCurrent)
+    throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
+  const structure = await structureP;
+
+  const { stagingRefreshTimestamp, blocksInLimbo } = await renderingStateP;
+  const renderingState = { stagingRefreshTimestamp };
+  const blocksInLimboSet = new Set(blocksInLimbo);
+
+  const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
+  blockInfoStates!.forEach(({ id, fields }) => {
+    for (const [, state] of Object.entries(fields)) {
+      if (!isResource(state.ref) || isResourceRef(state.ref))
+        throw new Error('load full state in one go');
+      requests.push([state, tx.getResourceData(state.ref, false)]);
+    }
+  });
+  for (const [state, response] of requests) {
+    const result = await response;
+    state.value = result.data;
+    if (isNotNullResourceId(result.error))
+      state.status = 'Error';
+    else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
+      state.status = 'Ready';
+    else
+      state.status = 'NotReady';
+  }
+
+  const blockInfos = new Map<string, BlockInfo>();
+  blockInfoStates.forEach(({ id, fields }) => new BlockInfo(id, fields));
+
+  return new ProjectMutator(rid, tx,
+    schema, structure, renderingState, blocksInLimboSet,
+    blockInfos);
+}
+
+export function createProject(tx: PlTransaction): AnyResourceRef {
+  const prj = tx.createEphemeral(ProjectResourceType);
+  tx.lock(prj);
+  tx.setKValue(prj, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));
+  tx.setKValue(prj, BlockStructureKey, JSON.stringify(InitialBlockStructure));
+  tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
+  return prj;
+}
+
 // export function createBlock(tx: PlTransaction,
 //                             bpSpec: BlockPackSpec): AnyResourceRef {
 //   const block = tx.createEphemeral(Block);

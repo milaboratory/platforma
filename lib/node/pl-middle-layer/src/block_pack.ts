@@ -1,17 +1,10 @@
 import { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import { assertNever } from './util';
-import { loadTemplate, prepareTemplateSource, TemplateSourceAny, TemplateSourcePrepared } from './template';
+import { loadTemplate, prepareTemplateSource } from './template';
+import { BlockPackSpecCustom, BlockPackSpec, BlockPackSpecNotPrepared } from './model/block_pack_spec';
 
-export const BlockPackCustom: ResourceType = { name: 'BlockPackCustom', version: '1' };
+export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
-
-export interface BlockPackCustom<Tpl extends TemplateSourceAny = TemplateSourcePrepared> {
-  type: 'custom';
-  template: Tpl;
-}
-
-export type BlockPackSpec = BlockPackCustom;
-export type BlockPackSpecNotPrepared = BlockPackCustom<TemplateSourceAny>;
 
 export async function prepareBlockSpec(spec: BlockPackSpecNotPrepared): Promise<BlockPackSpec> {
   switch (spec.type) {
@@ -25,10 +18,10 @@ export async function prepareBlockSpec(spec: BlockPackSpecNotPrepared): Promise<
   }
 }
 
-function createCustomBlockPack(tx: PlTransaction, spec: BlockPackCustom): AnyResourceRef {
+function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecCustom): AnyResourceRef {
   const template = loadTemplate(tx, spec.template);
 
-  const bp = tx.createStruct(BlockPackCustom);
+  const bp = tx.createStruct(BlockPackCustomType);
   const templateInBP = { resourceId: bp, fieldName: BlockPackTemplateField };
   tx.createField(templateInBP, 'Input');
   tx.lock(bp);

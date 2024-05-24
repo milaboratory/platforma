@@ -3,12 +3,13 @@ import {
   TestHelpers,
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
-import { BlockPackCustom, createBlockPack } from './block_pack';
+import { createBlockPack } from './block_pack';
 import { ExplicitTemplateSumNumbers } from './explicit_templates';
 import { sleep } from '@milaboratory/ts-helpers';
+import { BlockPackSpecCustom } from './model/block_pack_spec';
 
 test('test load custom template from registry', async () => {
-  const spec: BlockPackCustom = {
+  const spec: BlockPackSpecCustom = {
     type: 'custom',
     template: {
       type: 'from-registry',
@@ -41,7 +42,7 @@ test('test load custom template from registry', async () => {
 });
 
 test('test load custom template from explicit', async () => {
-  const spec: BlockPackCustom = {
+  const spec: BlockPackSpecCustom = {
     type: 'custom',
     template: {
       type: 'explicit',

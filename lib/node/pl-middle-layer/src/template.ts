@@ -1,6 +1,7 @@
 import { AnyRef, field, KnownResourceTypes, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import { assertNever } from './util';
 import fs from 'node:fs';
+import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from './model/template';
 
 export const TengoTemplateGet: ResourceType = { name: 'TengoTemplateGet', version: '1' };
 export const TengoTemplateGetRegistry = 'registry';
@@ -12,25 +13,6 @@ export const TengoTemplatePack: ResourceType = { name: 'TengoTemplatePack', vers
 export const TengoTemplatePackConvert: ResourceType = { name: 'TengoTemplatePackConvert', version: '1' };
 export const TengoTemplatePackConvertTemplatePack = 'templatePack';
 export const TengoTemplatePackConvertTemplate = 'template';
-
-export interface TemplateFromRegistry {
-  readonly type: 'from-registry';
-  registry: string;
-  path: string;
-}
-
-export interface ExplicitTemplate {
-  readonly type: 'explicit';
-  content: Uint8Array;
-}
-
-export interface TemplateFromFile {
-  readonly type: 'from-file';
-  path: string;
-}
-
-export type TemplateSourcePrepared = TemplateFromRegistry | ExplicitTemplate;
-export type TemplateSourceAny = TemplateSourcePrepared | TemplateFromFile;
 
 export async function prepareTemplateSource(tpl: TemplateSourceAny): Promise<TemplateSourcePrepared> {
   switch (tpl.type) {

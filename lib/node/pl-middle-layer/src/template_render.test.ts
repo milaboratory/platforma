@@ -13,24 +13,41 @@ import {
   valErr,
   KnownResourceTypes
 } from '@milaboratory/pl-client-v2';
-import { loadTemplate, TemplateSourcePrepared } from './template';
+import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
 import { createBool } from './pl_util';
 import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
 import { notEmpty } from './util';
 import { sleep } from '@milaboratory/ts-helpers';
+import { TemplateSourcePrepared } from './model/template';
 
-describe('test render', () => {
-  const specEnter: TemplateSourcePrepared = {
-    type: 'explicit',
-    content: ExplicitTemplateEnterNumbers
-  };
+const specEnterExplicit: TemplateSourcePrepared = {
+  type: 'explicit',
+  content: ExplicitTemplateEnterNumbers
+};
 
-  const specSum: TemplateSourcePrepared = {
-    type: 'explicit',
-    content: ExplicitTemplateSumNumbers
-  };
+const specEnterFromRegistry: TemplateSourcePrepared = {
+  type: 'from-registry',
+  registry: 'milaboratories',
+  path: 'releases/v1/milaboratory/enter-numbers/0.0.2/template.plj.gz'
+};
 
+const specSumExplicit: TemplateSourcePrepared = {
+  type: 'explicit',
+  content: ExplicitTemplateSumNumbers
+};
+
+const specSumFromRegistry: TemplateSourcePrepared = {
+  type: 'from-registry',
+  registry: 'milaboratories',
+  path: 'releases/v1/milaboratory/sum-numbers/0.0.2/template.plj.gz'
+};
+
+
+describe.each([
+  { name: 'explicit', specEnter: specEnterExplicit, specSum: specSumExplicit },
+  { name: 'explicit', specEnter: specEnterFromRegistry, specSum: specSumFromRegistry }
+])('test render $name', ({ specEnter, specSum }) => {
   const args: {
     name: string,
     createBlocksFn: (tx: PlTransaction) => Promise<HeavyBlockOutputs>,

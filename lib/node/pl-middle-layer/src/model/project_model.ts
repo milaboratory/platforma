@@ -3,7 +3,7 @@
 //
 
 import { ResourceType } from '@milaboratory/pl-client-v2';
-import { StdMap } from './util';
+import { StdMap } from '../util';
 
 /** Structure to help resolve conflicts if multiple participants writes to the same state */
 export interface AuthorMarker {
@@ -79,7 +79,7 @@ export const BlockRenderingStateKey = 'BlockRenderingState';
 
 export interface ProjectField {
   blockId: string;
-  field:
+  fieldName:
     | 'blockPack'
     | 'prodInputs' | 'currentInputs'
     | 'prodCtx' | 'prodOutput'
@@ -89,15 +89,15 @@ export interface ProjectField {
 }
 
 export function projectFieldName(field: ProjectField) {
-  return `${field.blockId}-${field.field}`;
+  return `${field.blockId}-${field.fieldName}`;
 }
 
-const projectFieldPattern = /^(?<blockId>.*)-(?<type>blockPack|prodInputs|currentInputs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
+const projectFieldPattern = /^(?<blockId>.*)-(?<fieldName>blockPack|prodInputs|currentInputs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
   if (match === null)
     return undefined;
-  const { blockId, type } = match.groups!;
-  return { blockId, field: type } as ProjectField;
+  const { blockId, fieldName } = match.groups!;
+  return { blockId, fieldName } as ProjectField;
 }

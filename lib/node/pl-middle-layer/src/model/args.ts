@@ -11,7 +11,7 @@ export interface BlockOutputReference {
 
 export function isBlockOutputReference(obj: any): obj is BlockOutputReference {
   // noinspection PointlessBooleanExpressionJS
-  return typeof obj === 'object' && obj.__isRef === true && 'block' in obj && 'output' in obj;
+  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'block' in obj && 'output' in obj;
 }
 
 function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set<string>) {
@@ -27,6 +27,9 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set
       return;
 
     case 'object':
+      if (node === null)
+        return;
+
       if (isBlockOutputReference(node)) {
         if (allowed === undefined || allowed.has(node.block))
           result.upstreams.add(node.block);
@@ -56,9 +59,9 @@ export interface BlockUpstreams {
   missingReferences: boolean;
 }
 
-/** Extracts all resource ids referenced by input object. */
-export function inferAllReferencedBlocks(input: any, allowed?: Set<string>): BlockUpstreams {
+/** Extracts all resource ids referenced by args object. */
+export function inferAllReferencedBlocks(args: any, allowed?: Set<string>): BlockUpstreams {
   const result = { upstreams: new Set<string>(), missingReferences: false };
-  addAllReferencedBlocks(result, input, allowed);
+  addAllReferencedBlocks(result, args, allowed);
   return result;
 }
