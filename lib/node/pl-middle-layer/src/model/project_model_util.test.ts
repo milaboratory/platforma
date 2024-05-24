@@ -1,9 +1,9 @@
 import { ProjectStructure } from './project_model';
 import { graphDiff, productionGraph, stagingGraph } from './project_model_util';
-import { BlockOutputReference } from './args';
+import { BlockOutputReference, outputRef } from './args';
 
 function toRefs(...ids: string[]): BlockOutputReference[] {
-  return ids.map(id => ({ __isRef: true, block: id, output: '' }));
+  return ids.map(id => (outputRef(id, '')));
 }
 
 function simpleStructure(...ids: string[]): ProjectStructure {

@@ -130,9 +130,10 @@ export function createBContextFromUpstreams(tx: PlTransaction,
 
   // setting parents
   for (let i = 0; i < upstreamCtxs.length; i++)
-    tx.createField(field(ctx, `BContextMultiParentPrefix${i}`), 'Input',
-      upstreamCtxs[i]);
+    tx.createField(field(ctx, `${BContextMultiParentPrefix}${i}`),
+      'Input', upstreamCtxs[i]);
 
   tx.lock(ctx);
+
   return ctx;
 }

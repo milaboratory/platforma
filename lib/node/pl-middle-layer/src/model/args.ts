@@ -6,12 +6,15 @@ export interface BlockOutputReference {
   /** Referenced block id */
   block: string;
   /** Referenced output name in the block */
-  output: string;
+  name: string;
+}
+
+export function outputRef(block: string, name: string): BlockOutputReference {
+  return { __isRef: true, block, name };
 }
 
 export function isBlockOutputReference(obj: any): obj is BlockOutputReference {
-  // noinspection PointlessBooleanExpressionJS
-  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'block' in obj && 'output' in obj;
+  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'block' in obj && 'name' in obj;
 }
 
 function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set<string>) {

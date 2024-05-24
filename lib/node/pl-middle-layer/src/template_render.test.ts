@@ -11,7 +11,7 @@ import {
   TestHelpers,
   getField,
   valErr,
-  KnownResourceTypes
+  KnownResourceTypes, resourceIdToString
 } from '@milaboratory/pl-client-v2';
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
@@ -43,10 +43,13 @@ const specSumFromRegistry: TemplateSourcePrepared = {
   path: 'releases/v1/milaboratory/sum-numbers/0.0.2/template.plj.gz'
 };
 
+function resourceInFinalState(data: Pick<ResourceData, 'resourceReady' | 'error' | 'originalResourceId'>) {
+  return data.resourceReady || isNotNullResourceId(data.error) || isNotNullResourceId(data.originalResourceId);
+}
 
 describe.each([
   { name: 'explicit', specEnter: specEnterExplicit, specSum: specSumExplicit },
-  { name: 'explicit', specEnter: specEnterFromRegistry, specSum: specSumFromRegistry }
+  { name: 'from registry', specEnter: specEnterFromRegistry, specSum: specSumFromRegistry }
 ])('test render $name', ({ specEnter, specSum }) => {
   const args: {
     name: string,
@@ -143,6 +146,8 @@ describe.each([
   for (const arg of args) {
     test(arg.name, async () => {
       await TestHelpers.withTempRoot(async pl => {
+        console.log(resourceIdToString(pl.clientRoot));
+        console.log(pl.clientRoot);
         const f0 = field(pl.clientRoot, 'result');
         const f1 = field(pl.clientRoot, 'context');
 
@@ -236,10 +241,11 @@ async function expectResultAndContext(
   if (isNullResourceId(ctxId) || isNullResourceId(resultId))
     return { ok: false };
 
+
   const result = await tx.getResourceData(resultId, true);
   const ctx = await tx.getResourceData(ctxId, true);
 
-  if (!result.resourceReady || !ctx.resourceReady)
+  if (!resourceInFinalState(result) || !resourceInFinalState(ctx))
     return { ok: false };
 
   return { ctx, result, ok: true };

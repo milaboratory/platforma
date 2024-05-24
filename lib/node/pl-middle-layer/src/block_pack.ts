@@ -23,9 +23,8 @@ function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecCustom): An
 
   const bp = tx.createStruct(BlockPackCustomType);
   const templateInBP = { resourceId: bp, fieldName: BlockPackTemplateField };
-  tx.createField(templateInBP, 'Input');
+  tx.createField(templateInBP, 'Input', template);
   tx.lock(bp);
-  tx.setField(templateInBP, template);
 
   return bp;
 }

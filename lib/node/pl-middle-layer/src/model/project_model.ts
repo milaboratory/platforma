@@ -67,10 +67,6 @@ export const InitialProjectRenderingState: ProjectRenderingState = {
 
 export const ProjectResourceType: ResourceType = { name: 'UserProject', version: '2' };
 
-/** Name of the field in block holder, that references the actual block-pack. */
-export const BlockPackHolderType = StdMap;
-export const BlockPackHolderMainField = 'bp';
-
 export const SchemaVersionKey = 'SchemaVersion';
 export const SchemaVersionCurrent = '1';
 
