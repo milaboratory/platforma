@@ -1,9 +1,4 @@
-/*
-Questions to Denis or Gleb:
-- Difference between Dynamic and MTW fields?
-*/
-
-import { notEmpty } from '../util/util';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;

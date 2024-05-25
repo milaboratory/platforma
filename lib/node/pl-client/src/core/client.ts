@@ -4,23 +4,23 @@ import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } f
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
 import { ClientRoot } from '../helpers/pl';
-import { sleep } from '@milaboratory/ts-helpers';
+import { createRetryState, nextRetryStateOrError, RetryOptions, sleep } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
-  maxAttempts: number,
-  initialRetryDelay: number,
-  backoffMultiplier: number,
-  jitter: number,
+  retryOptions: RetryOptions
 }
 
 const defaultTxOps: TxOps = {
   sync: false,
-  maxAttempts: 9, // final backoff 2ms * 2 ^ 8 ~ 500ms (total time ~1s)
-  initialRetryDelay: 2, // 2ms
-  backoffMultiplier: 2, // + 100% on each round
-  jitter: 0.1 // 10%
+  retryOptions: {
+    type: 'exponentialBackoff',
+    maxAttempts: 9, // final backoff 2ms * 2 ^ 8 ~ 500ms (total time ~1s)
+    initialDelay: 2, // 2ms
+    backoffMultiplier: 2, // + 100% on each round
+    jitter: 0.1 // 10%
+  }
 };
 
 const AnonymousClientRoot = 'AnonymousRoot';
@@ -126,9 +126,9 @@ export class PlClient {
                            body: (tx: PlTransaction) => Promise<T>,
                            ops: TxOps = defaultTxOps): Promise<T> {
     // for exponential backoff
-    let nextDelay = ops.initialRetryDelay;
+    let retryState = createRetryState(ops.retryOptions);
 
-    for (let i = 0; i < ops.maxAttempts; ++i) {
+    while (true) {
 
       // opening low-level tx
       const llTx = this.ll.createTx(ops);
@@ -167,12 +167,9 @@ export class PlClient {
         await tx.await(); // this should not throw recoverable errors
       }
 
-      await sleep(nextDelay, ops.abortSignal);
-
-      nextDelay = nextDelay * ops.backoffMultiplier * (Math.random() - 0.5) * ops.jitter * 2;
+      await sleep(retryState.nextDelay, ops.abortSignal);
+      retryState = nextRetryStateOrError(retryState);
     }
-
-    throw new Error(`reached max number of attempts (${ops.maxAttempts})`);
   }
 
   private async withTx<T>(name: string, writable: boolean,

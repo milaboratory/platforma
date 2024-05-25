@@ -3,7 +3,6 @@ import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { request } from 'undici';
-import ProvidesCallback = jest.ProvidesCallback;
 
 
 test('ping test', async () => {

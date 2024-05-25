@@ -7,8 +7,9 @@ import {
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { NonUndefined } from 'utility-types';
-import { notEmpty, toBytes } from '../util/util';
+import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
