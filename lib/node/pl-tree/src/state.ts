@@ -77,6 +77,7 @@ export class PlTreeResource implements PlTreeResourceI {
   inputsLocked: boolean;
   outputsLocked: boolean;
   resourceReady: boolean;
+  finalFlag: boolean;
 
   /** Set externally by the tree, using {@link FinalPredicate} */
   _final: boolean = false;
@@ -96,6 +97,7 @@ export class PlTreeResource implements PlTreeResourceI {
     this.inputsLocked = initialState.inputsLocked;
     this.outputsLocked = initialState.outputsLocked;
     this.resourceReady = initialState.resourceReady;
+    this.finalFlag = initialState.final;
     this.logger = logger;
   }
 
@@ -255,7 +257,8 @@ export class PlTreeResource implements PlTreeResourceI {
       inputsLocked: this.inputsLocked,
       outputsLocked: this.outputsLocked,
       error: this.error,
-      originalResourceId: this.originalResourceId
+      originalResourceId: this.originalResourceId,
+      final: this.finalFlag
     };
   }
 

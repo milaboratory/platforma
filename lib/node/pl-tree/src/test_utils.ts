@@ -40,11 +40,12 @@ export const TestValueResourceType2: ResourceType = {
 
 export const ResourceReady: Pick<
   BasicResourceData,
-  'inputsLocked' | 'outputsLocked' | 'resourceReady'
+  'inputsLocked' | 'outputsLocked' | 'resourceReady' | 'final'
 > = {
   inputsLocked: true,
   outputsLocked: true,
-  resourceReady: true
+  resourceReady: true,
+  final: true
 };
 
 export const InitialStructuralResourceState: Optional<
@@ -56,7 +57,8 @@ export const InitialStructuralResourceState: Optional<
   error: NullResourceId,
   inputsLocked: false,
   outputsLocked: false,
-  resourceReady: false
+  resourceReady: false,
+  final: false
 };
 
 export const InitialValueResourceState: Optional<
@@ -119,7 +121,8 @@ export function field(
   type: FieldType,
   name: string,
   value: OptionalResourceId = NullResourceId,
-  error: OptionalResourceId = NullResourceId
+  error: OptionalResourceId = NullResourceId,
+  valueIsFinal: boolean = false
 ): FieldData {
   return {
     name,
@@ -131,7 +134,8 @@ export function field(
         ? 'Resolved'
         : error !== NullResourceId
           ? 'Assigned'
-          : 'Empty'
+          : 'Empty',
+    valueIsFinal
   };
 }
 
