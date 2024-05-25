@@ -33,6 +33,7 @@ message Resource {
   bool inputs_locked = 8;
   bool outputs_locked = 9;
   bool resource_ready = 14;
+  bool is_final = 15;
 
   uint64 original_resource_id = 10;
   uint64 parent_resource_id = 11;
@@ -62,6 +63,9 @@ message Field {
 
   // If the value was empty, assigned or finally resolved.
   ValueStatus value_status = 7;
+
+  // If the value is in its final state (ready, duplicate or error)
+  bool value_is_final = 8;
 
   // Resource error resource id if any.
   // Is intended to report problems _from_ platform to client.

@@ -71,6 +71,10 @@ export interface Resource {
      */
     resourceReady: boolean;
     /**
+     * @generated from protobuf field: bool is_final = 15;
+     */
+    isFinal: boolean;
+    /**
      * @generated from protobuf field: uint64 original_resource_id = 10;
      */
     originalResourceId: bigint;
@@ -134,6 +138,12 @@ export interface Field {
      * @generated from protobuf field: MiLaboratories.PL.API.Field.ValueStatus value_status = 7;
      */
     valueStatus: Field_ValueStatus;
+    /**
+     * If the value is in its final state (ready, duplicate or error)
+     *
+     * @generated from protobuf field: bool value_is_final = 8;
+     */
+    valueIsFinal: boolean;
     /**
      * Resource error resource id if any.
      * Is intended to report problems _from_ platform to client.
@@ -444,6 +454,7 @@ class Resource$Type extends MessageType<Resource> {
             { no: 8, name: "inputs_locked", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 9, name: "outputs_locked", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 14, name: "resource_ready", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 15, name: "is_final", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 10, name: "original_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 11, name: "parent_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 12, name: "created_time", kind: "message", T: () => Timestamp },
@@ -460,6 +471,7 @@ class Resource$Type extends MessageType<Resource> {
         message.inputsLocked = false;
         message.outputsLocked = false;
         message.resourceReady = false;
+        message.isFinal = false;
         message.originalResourceId = 0n;
         message.parentResourceId = 0n;
         if (value !== undefined)
@@ -497,6 +509,9 @@ class Resource$Type extends MessageType<Resource> {
                     break;
                 case /* bool resource_ready */ 14:
                     message.resourceReady = reader.bool();
+                    break;
+                case /* bool is_final */ 15:
+                    message.isFinal = reader.bool();
                     break;
                 case /* uint64 original_resource_id */ 10:
                     message.originalResourceId = reader.uint64().toBigInt();
@@ -549,6 +564,9 @@ class Resource$Type extends MessageType<Resource> {
         /* bool resource_ready = 14; */
         if (message.resourceReady !== false)
             writer.tag(14, WireType.Varint).bool(message.resourceReady);
+        /* bool is_final = 15; */
+        if (message.isFinal !== false)
+            writer.tag(15, WireType.Varint).bool(message.isFinal);
         /* uint64 original_resource_id = 10; */
         if (message.originalResourceId !== 0n)
             writer.tag(10, WireType.Varint).uint64(message.originalResourceId);
@@ -579,6 +597,7 @@ class Field$Type extends MessageType<Field> {
             { no: 2, name: "type", kind: "enum", T: () => ["MiLaboratories.PL.Base.FieldType", FieldType] },
             { no: 5, name: "value", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 7, name: "value_status", kind: "enum", T: () => ["MiLaboratories.PL.API.Field.ValueStatus", Field_ValueStatus] },
+            { no: 8, name: "value_is_final", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 6, name: "error", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
         ]);
     }
@@ -587,6 +606,7 @@ class Field$Type extends MessageType<Field> {
         message.type = 0;
         message.value = 0n;
         message.valueStatus = 0;
+        message.valueIsFinal = false;
         message.error = 0n;
         if (value !== undefined)
             reflectionMergePartial<Field>(this, message, value);
@@ -608,6 +628,9 @@ class Field$Type extends MessageType<Field> {
                     break;
                 case /* MiLaboratories.PL.API.Field.ValueStatus value_status */ 7:
                     message.valueStatus = reader.int32();
+                    break;
+                case /* bool value_is_final */ 8:
+                    message.valueIsFinal = reader.bool();
                     break;
                 case /* uint64 error */ 6:
                     message.error = reader.uint64().toBigInt();
@@ -636,6 +659,9 @@ class Field$Type extends MessageType<Field> {
         /* MiLaboratories.PL.API.Field.ValueStatus value_status = 7; */
         if (message.valueStatus !== 0)
             writer.tag(7, WireType.Varint).int32(message.valueStatus);
+        /* bool value_is_final = 8; */
+        if (message.valueIsFinal !== false)
+            writer.tag(8, WireType.Varint).bool(message.valueIsFinal);
         /* uint64 error = 6; */
         if (message.error !== 0n)
             writer.tag(6, WireType.Varint).uint64(message.error);

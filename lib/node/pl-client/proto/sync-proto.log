@@ -11,8 +11,8 @@ Syncing 'main' proto version...
       import.proto
       resource_types.proto
       
-      sent 38330 bytes  received 136 bytes  76932.00 bytes/sec
-      total size is 37913  speedup is 0.99
+      sent 38448 bytes  received 136 bytes  77168.00 bytes/sec
+      total size is 38031  speedup is 0.99
 
     - 'plapi/'
       building file list ... done
