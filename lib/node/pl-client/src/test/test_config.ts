@@ -1,9 +1,9 @@
 import * as fs from 'node:fs';
-import { LLPlClient } from './ll_client';
-import { AuthInformation, plAddressToConfig, PlClientConfig } from './config';
-import { inferAuthRefreshTime } from './util/pl';
-import { UnauthenticatedPlClient } from './unauth_client';
-import { PlClient } from './client';
+import { LLPlClient } from '../core/ll_client';
+import { AuthInformation, plAddressToConfig, PlClientConfig } from '../core/config';
+import { inferAuthRefreshTime } from '../util/pl';
+import { UnauthenticatedPlClient } from '../core/unauth_client';
+import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
 
 export interface TestConfig {

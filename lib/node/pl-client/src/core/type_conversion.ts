@@ -3,9 +3,9 @@ import {
   Field_ValueStatus,
   Resource,
   Resource_Kind
-} from './proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
-import { assertNever, notEmpty } from './util/util';
-import { FieldType as GrpcFieldType } from './proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
+} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api_types';
+import { assertNever, notEmpty } from '../util/util';
+import { FieldType as GrpcFieldType } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/base_types';
 import {
   FieldData,
   FieldStatus,

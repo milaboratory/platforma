@@ -1,4 +1,4 @@
-import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
+import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import { Aborted } from '@milaboratory/ts-helpers';
 
 export function isTimeoutOrCancelError(err: any, nested: boolean = false): boolean {

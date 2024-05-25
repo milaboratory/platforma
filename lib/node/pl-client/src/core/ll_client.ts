@@ -1,4 +1,4 @@
-import { PlatformClient } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
+import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
 import { ChannelCredentials, InterceptingCall, Interceptor, status as GrpcStatus } from '@grpc/grpc-js';
 import {
   AuthInformation,
@@ -10,7 +10,7 @@ import {
 } from './config';
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
-import { inferAuthRefreshTime, parsePlJwt } from './util/pl';
+import { inferAuthRefreshTime, parsePlJwt } from '../util/pl';
 import { Agent, Dispatcher, ProxyAgent } from 'undici';
 
 export interface PlCallOps {

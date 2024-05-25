@@ -1,10 +1,10 @@
-export * from './types';
-export * as Pl from './pl';
-export * from './config';
-export * from './client';
-export * from './driver';
-export * from './transaction';
-export * from './errors';
-export * from './tx_helpers';
+export * from './core/types';
+export * as Pl from './helpers/pl';
+export * from './core/config';
+export * from './core/client';
+export * from './core/driver';
+export * from './core/transaction';
+export * from './core/errors';
+export * from './helpers/tx_helpers';
 
-export * as TestHelpers from './test_config';
+export * as TestHelpers from './test/test_config';

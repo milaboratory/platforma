@@ -1,7 +1,7 @@
-import { TxAPI_ClientMessage, TxAPI_ServerMessage } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
-import { Status } from './proto/github.com/googleapis/googleapis/google/rpc/status';
+import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import { PlError, PlErrorCodeNotFound, RecoverablePlError, UnrecoverablePlError } from './errors';
 
 export type ClientMessageRequest = TxAPI_ClientMessage['request'];

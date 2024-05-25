@@ -1,5 +1,5 @@
-import { withTempRoot } from './test_config';
-import { StructTestResource, ValueTestResource } from './pl';
+import { withTempRoot } from '../test/test_config';
+import { StructTestResource, ValueTestResource } from '../helpers/pl';
 import { toGlobalFieldId } from './transaction';
 import { RecoverablePlError } from './errors';
 import { sleep } from '@milaboratory/ts-helpers';

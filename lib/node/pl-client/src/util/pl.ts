@@ -1,4 +1,4 @@
-import { AuthInformation } from '../config';
+import { AuthInformation } from '../core/config';
 
 export type PlJWTPayload = {
   user: {

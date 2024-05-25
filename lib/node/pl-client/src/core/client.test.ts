@@ -1,4 +1,4 @@
-import { getTestClient, getTestClientConf } from './test_config';
+import { getTestClient, getTestClientConf } from '../test/test_config';
 import { PlClient } from './client';
 import { PlDriver, PlDriverDefinition } from './driver';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';

@@ -1,6 +1,6 @@
-import { FieldData, isNotNullResourceId, ResourceData, ResourceKind } from './types';
-import { AnyFieldRef, AnyResourceRef, PlTransaction, ResourceRef } from './transaction';
-import { notEmpty } from './util/util';
+import { FieldData, isNotNullResourceId, ResourceData, ResourceKind } from '../core/types';
+import { AnyFieldRef, AnyResourceRef, PlTransaction, ResourceRef } from '../core/transaction';
+import { notEmpty } from '../util/util';
 
 export type Serde<V> = {
   ser: (obj: V) => Uint8Array

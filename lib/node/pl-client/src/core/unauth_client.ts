@@ -2,7 +2,7 @@ import { AuthInformation, PlClientConfig } from './config';
 import {
   AuthAPI_ListMethods_Response,
   MaintenanceAPI_Ping_Response
-} from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
 
 /** Primarily used for initial authentication (login) */

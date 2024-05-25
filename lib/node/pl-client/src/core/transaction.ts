@@ -5,9 +5,9 @@ import {
   ResourceId, ResourceType, FutureFieldType
 } from './types';
 import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
-import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { NonUndefined } from 'utility-types';
-import { notEmpty, toBytes } from './util/util';
+import { notEmpty, toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 
 /** Reference to resource, used only within transaction */

@@ -3,7 +3,7 @@ import { LLPlClient, PlCallOps } from './ll_client';
 import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
-import { ClientRoot } from './pl';
+import { ClientRoot } from '../helpers/pl';
 import { sleep } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 

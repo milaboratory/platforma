@@ -1,6 +1,6 @@
 import { LLPlClient } from './ll_client';
-import { getTestConfig, getTestLLClient, getTestClientConf } from './test_config';
-import { TxAPI_Open_Request_WritableTx } from './proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
+import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { request } from 'undici';
 import ProvidesCallback = jest.ProvidesCallback;
