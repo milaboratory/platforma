@@ -102,6 +102,10 @@ export class PollResourceAccessor {
       throw new ContinuePolling();
     return value;
   }
+
+  public async getKValueObj<T>(key: string): Promise<T> {
+    return JSON.parse(await this.getKValue(key)) as T;
+  }
 }
 
 export class PollTxAccessor {
