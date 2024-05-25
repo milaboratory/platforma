@@ -6,5 +6,6 @@ export * from './core/driver';
 export * from './core/transaction';
 export * from './core/errors';
 export * from './helpers/tx_helpers';
+export * from './helpers/poll';
 
 export * as TestHelpers from './test/test_config';
