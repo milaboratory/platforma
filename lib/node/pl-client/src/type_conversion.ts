@@ -30,6 +30,7 @@ export function protoToResource(proto: Resource): ResourceData {
     resourceReady: proto.resourceReady,
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
+    final: proto.isFinal,
     fields: proto.fields?.filter(f => f.id!.fieldName !== ResourceErrorField).map(protoToField)
   };
 }
@@ -56,7 +57,8 @@ export function protoToField(proto: Field): FieldData {
     type: protoToFieldType(proto.type),
     status: protoToFieldStatus(proto.valueStatus),
     value: proto.value as OptionalResourceId,
-    error: proto.error as OptionalResourceId
+    error: proto.error as OptionalResourceId,
+    valueIsFinal: proto.valueIsFinal
   };
 }
 

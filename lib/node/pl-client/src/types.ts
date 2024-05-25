@@ -92,6 +92,10 @@ export interface BasicResourceData {
   inputsLocked: boolean;
   outputsLocked: boolean;
   resourceReady: boolean;
+
+  /** This value is derived from resource state by the server and can be used as
+   * a robust criteria to determine resource is in final state. */
+  final: boolean;
 }
 
 export interface ResourceData extends BasicResourceData {
@@ -99,7 +103,7 @@ export interface ResourceData extends BasicResourceData {
 }
 
 export function getField(r: ResourceData, name: string): FieldData {
-  return notEmpty(r.fields.find(f => f.name == name));
+  return notEmpty(r.fields.find(f => f.name === name));
 }
 
 export interface FieldData {
@@ -108,6 +112,9 @@ export interface FieldData {
   status: FieldStatus;
   value: OptionalResourceId;
   error: OptionalResourceId;
+
+  /** True if value the fields points to is in final state. */
+  valueIsFinal: boolean;
 }
 
 //

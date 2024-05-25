@@ -1,5 +1,5 @@
 export * from './types';
-export * as KnownResourceTypes from './resource_types';
+export * as Pl from './pl';
 export * from './config';
 export * from './client';
 export * from './driver';

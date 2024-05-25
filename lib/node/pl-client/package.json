@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-client-v2",
-  "version": "2.2.11",
+  "version": "2.3.0",
   "description": "New TS/JS client for Platform API",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.8",
-    "@milaboratory/ts-helpers": "^1.0.1",
+    "@milaboratory/ts-helpers": "^1.0.6",
     "@protobuf-ts/grpc-transport": "^2.9.4",
     "denque": "^2.1.0",
     "https-proxy-agent": "^7.0.4",
     "long": "^5.2.3",
-    "undici": "^6.18.0",
+    "undici": "^6.18.1",
     "utility-types": "^3.11.0"
   },
   "files": [

@@ -3,7 +3,7 @@ import { LLPlClient, PlCallOps } from './ll_client';
 import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
-import { ClientRoot } from './resource_types';
+import { ClientRoot } from './pl';
 import { sleep } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 
@@ -172,7 +172,7 @@ export class PlClient {
       nextDelay = nextDelay * ops.backoffMultiplier * (Math.random() - 0.5) * ops.jitter * 2;
     }
 
-    throw new Error('Reached max number of attempts.');
+    throw new Error(`reached max number of attempts (${ops.maxAttempts})`);
   }
 
   private async withTx<T>(name: string, writable: boolean,
