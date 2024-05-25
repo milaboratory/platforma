@@ -11,15 +11,13 @@ import {
   TestHelpers,
   getField,
   valErr,
-  KnownResourceTypes, resourceIdToString
+  resourceIdToString, Pl
 } from '@milaboratory/pl-client-v2';
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
-import { createBool } from './pl_util';
-import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
-import { notEmpty } from './util';
-import { sleep } from '@milaboratory/ts-helpers';
-import { TemplateSourcePrepared } from './model/template';
+import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './block-pack/explicit_templates';
+import { notEmpty, sleep } from '@milaboratory/ts-helpers';
+import { TemplateSourcePrepared } from '../model/template';
 
 const specEnterExplicit: TemplateSourcePrepared = {
   type: 'explicit',
@@ -179,9 +177,9 @@ function createEnterNumbers(
 ) {
   const tpl = loadTemplate(tx, template);
 
-  const args = tx.createValue(KnownResourceTypes.JsonObject, jsonToData({ numbers: numbers }));
-  const blockId = tx.createValue(KnownResourceTypes.JsonString, jsonToData(blockIdData));
-  const isProduction = createBool(tx, isProd);
+  const args = tx.createValue(Pl.JsonObject, jsonToData({ numbers: numbers }));
+  const blockId = tx.createValue(Pl.JsonString, jsonToData(blockIdData));
+  const isProduction = Pl.createPlBool(tx, isProd);
 
   return createRenderHeavyBlock(tx, tpl, {
     args: args,
@@ -206,9 +204,9 @@ function createSumNumbers(
 ) {
   const tpl = loadTemplate(tx, template);
 
-  const args = tx.createValue(KnownResourceTypes.JsonObject, jsonToData({ sources: sources }));
-  const blockId = tx.createValue(KnownResourceTypes.JsonString, jsonToData(blockIdData));
-  const isProduction = createBool(tx, isProd);
+  const args = tx.createValue(Pl.JsonObject, jsonToData({ sources: sources }));
+  const blockId = tx.createValue(Pl.JsonString, jsonToData(blockIdData));
+  const isProduction = Pl.createPlBool(tx, isProd);
 
   return createRenderHeavyBlock(tx, tpl, {
     args: args,

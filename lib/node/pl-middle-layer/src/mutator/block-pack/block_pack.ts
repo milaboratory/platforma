@@ -1,7 +1,7 @@
 import { AnyResourceRef, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
-import { assertNever } from './util';
-import { loadTemplate, prepareTemplateSource } from './template';
-import { BlockPackSpecCustom, BlockPackSpec, BlockPackSpecNotPrepared } from './model/block_pack_spec';
+import { loadTemplate, prepareTemplateSource } from '../template';
+import { BlockPackSpecCustom, BlockPackSpec, BlockPackSpecNotPrepared } from '../../model/block_pack_spec';
+import { assertNever } from '@milaboratory/ts-helpers';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';

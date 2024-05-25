@@ -1,7 +1,7 @@
-import { AnyRef, field, KnownResourceTypes, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
-import { assertNever } from './util';
+import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import fs from 'node:fs';
-import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from './model/template';
+import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from '../model/template';
+import { assertNever } from '@milaboratory/ts-helpers';
 
 export const TengoTemplateGet: ResourceType = { name: 'TengoTemplateGet', version: '1' };
 export const TengoTemplateGetRegistry = 'registry';
@@ -37,8 +37,8 @@ function loadTemplateFromRegistry(tx: PlTransaction, spec: TemplateFromRegistry)
 
   // Note: it has a resource schema, so platforma creates fields by itself.
 
-  tx.setField(registry, tx.createValue(KnownResourceTypes.JsonString, Buffer.from(JSON.stringify(spec.registry))));
-  tx.setField(uri, tx.createValue(KnownResourceTypes.JsonString, Buffer.from(JSON.stringify(spec.path))));
+  tx.setField(registry, tx.createValue(Pl.JsonString, Buffer.from(JSON.stringify(spec.registry))));
+  tx.setField(uri, tx.createValue(Pl.JsonString, Buffer.from(JSON.stringify(spec.path))));
 
   return templateFromRegistry;
 }

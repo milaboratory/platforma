@@ -1,12 +1,10 @@
 import {
   AnyRef,
-  field, KnownResourceTypes,
+  field,
   PlTransaction,
   ResourceRef,
-  ResourceType
+  ResourceType, Pl
 } from '@milaboratory/pl-client-v2';
-import { buildMap, pair, PlMapEntry } from './pl_util';
-import { FutureFieldType } from '@milaboratory/pl-client-v2';
 import { randomUUID } from 'node:crypto';
 
 export const BContextEnd: ResourceType = { name: 'BContextEnd', version: '1' };
@@ -23,17 +21,14 @@ export const EphRenderTemplate: ResourceType = { name: 'EphRenderTemplate', vers
 //   | 'DualContextHeavyBlock';
 // moved to project model ==>>>
 
-export interface HeavyBlockInputs {
+export type HeavyBlockInputs = {
   args: AnyRef;
   blockId: AnyRef;
   isProduction: AnyRef;
   context: AnyRef;
 }
 
-const HeavyBlockInputNames: (keyof HeavyBlockInputs)[] =
-  ['args', 'blockId', 'isProduction', 'context'];
-
-export interface HeavyBlockOutputs {
+export type HeavyBlockOutputs = {
   context: AnyRef;
   result: AnyRef;
 }
@@ -48,36 +43,31 @@ export function createRenderHeavyBlock(
 ): HeavyBlockOutputs {
   return createEphRenderTemplate(
     tx, tpl,
-    HeavyBlockInputNames.map(n => pair(n, inputs[n])),
+    inputs,
     HeavyBlockOutputNames
   );
 }
 
-export interface LightBlockInputs {
+export type LightBlockInputs = {
   args: AnyRef,
   blockId: AnyRef,
   stagingContext: AnyRef,
   productionContext: AnyRef,
 }
 
-const LightBlockInputsNames: (keyof LightBlockInputs)[] =
-  ['args', 'blockId', 'stagingContext', 'productionContext'];
-
-export interface LightBlockOutput {
+export type LightBlockOutput = {
   result: AnyRef;
 }
 
 export const LightBlockOutputNames: (keyof LightBlockOutput)[] = ['result'];
 
-export function createLightBlock(
+export function createRenderLightBlock(
   tx: PlTransaction,
   tpl: ResourceRef,
   inputs: LightBlockInputs
 ): LightBlockOutput {
   return createEphRenderTemplate(
-    tx, tpl,
-    LightBlockInputsNames.map(n => pair(n, inputs[n])),
-    LightBlockOutputNames
+    tx, tpl, inputs, LightBlockOutputNames
   );
 }
 
@@ -85,7 +75,7 @@ export function createLightBlock(
 function createEphRenderTemplate<O extends string>(
   tx: PlTransaction,
   tpl: AnyRef,
-  inputs: PlMapEntry[],
+  inputs: Pl.PlRecord,
   outputNames: O[]
 ): Record<O, AnyRef> {
   const rId = tx.createEphemeral(EphRenderTemplate);
@@ -95,19 +85,10 @@ function createEphRenderTemplate<O extends string>(
 
   tx.createField(tplField, 'Input', tpl);
   tx.createField(inputsField, 'Input',
-    buildMap(tx, inputs, true));
+    Pl.createPlMap(tx, inputs, true));
   tx.lockInputs(rId);
 
-  return constructFutureFieldOutputsRender(tx, rId, outputNames, 'Output');
-}
-
-export function constructFutureFieldOutputsRender<K extends string>(
-  tx: PlTransaction, rId: AnyRef,
-  keys: K[],
-  fieldType: FutureFieldType
-): Record<K, AnyRef> {
-  return Object.fromEntries(keys.map(k =>
-    pair(k, tx.getFutureFieldValue(rId, `outputs/${k}`, fieldType)))) as Record<K, AnyRef>;
+  return Pl.futureRecord(tx, rId, outputNames, 'Output', 'outputs/');
 }
 
 export function createBContextEnd(tx: PlTransaction): ResourceRef {
@@ -126,7 +107,7 @@ export function createBContextFromUpstreams(tx: PlTransaction,
 
   // setting id
   tx.createField(field(ctx, BContextId), 'Input',
-    tx.createValue(KnownResourceTypes.JsonString, JSON.stringify(randomUUID())));
+    Pl.createPlString(tx, randomUUID()));
 
   // setting parents
   for (let i = 0; i < upstreamCtxs.length; i++)

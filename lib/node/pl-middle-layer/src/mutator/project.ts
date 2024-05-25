@@ -1,11 +1,10 @@
 import {
   AnyRef, AnyResourceRef,
-  BasicResourceData, ensureResourceIdNotNull,
-  field, isNotNullResourceId, isNullResourceId, isResource, isResourceRef, KnownResourceTypes,
+  BasicResourceData,
+  field, isNotNullResourceId, isNullResourceId, isResource, isResourceRef, Pl,
   PlTransaction,
   ResourceId
 } from '@milaboratory/pl-client-v2';
-import { notEmpty } from './util';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template_render';
 import {
   Block,
@@ -15,11 +14,11 @@ import {
   ProjectField, projectFieldName,
   ProjectRenderingState, SchemaVersionCurrent,
   SchemaVersionKey, ProjectResourceType, InitialBlockStructure, InitialProjectRenderingState
-} from './model/project_model';
-import { BlockPackTemplateField, createBlockPack } from './block_pack';
-import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from './model/project_model_util';
-import { BlockPackSpec } from './model/block_pack_spec';
-import { unwrapHolder, wrapInEphHolder, wrapInHolder } from './holder';
+} from '../model/project_model';
+import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
+import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
+import { BlockPackSpec } from '../model/block_pack_spec';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -104,7 +103,7 @@ export class BlockInfo {
 
   public getTemplate(tx: PlTransaction): AnyRef {
     return tx.getFutureFieldValue(
-      unwrapHolder(tx, this.fields.blockPack!.ref!),
+      Pl.unwrapHolder(tx, this.fields.blockPack!.ref!),
       BlockPackTemplateField, 'Input'
     );
   }
@@ -162,17 +161,6 @@ export class ProjectMutator {
     return this.stagingGraph;
   }
 
-  private getBlockInfo(blockId: string): BlockInfo {
-    return notEmpty(this.blockInfos.get(blockId));
-  }
-
-  private getBlock(blockId: string): Block {
-    for (const block of allBlocks(this.struct))
-      if (block.id === blockId)
-        return block;
-    throw new Error('block not found');
-  }
-
   private getPendingProductionGraph(): BlockGraph {
     if (this.pendingProductionGraph === undefined)
       this.pendingProductionGraph = productionGraph(this.struct,
@@ -185,6 +173,21 @@ export class ProjectMutator {
       this.actualProductionGraph = productionGraph(this.struct,
         blockId => this.getBlockInfo(blockId).actualProductionInputs);
     return this.actualProductionGraph;
+  }
+
+  //
+  // Generic helpers to interact with project state
+  //
+
+  private getBlockInfo(blockId: string): BlockInfo {
+    return notEmpty(this.blockInfos.get(blockId));
+  }
+
+  private getBlock(blockId: string): Block {
+    for (const block of allBlocks(this.struct))
+      if (block.id === blockId)
+        return block;
+    throw new Error('block not found');
   }
 
   public setBlockFieldObj(blockId: string, fieldName: keyof BlockFieldStates,
@@ -220,6 +223,10 @@ export class ProjectMutator {
     delete fields[fieldName];
     return true;
   }
+
+  //
+  // Main project actions
+  //
 
   private resetStagingRefreshTimestamp() {
     this.renderingState.stagingRefreshTimestamp = Date.now();
@@ -269,7 +276,7 @@ export class ProjectMutator {
       const info = this.getBlockInfo(blockId);
       const parsedInputs = JSON.parse(inputs);
       const binary = Buffer.from(inputs);
-      const ref = this.tx.createValue(KnownResourceTypes.JsonObject, binary);
+      const ref = this.tx.createValue(Pl.JsonObject, binary);
       this.setBlockField(blockId, 'currentInputs', ref, 'Ready', binary);
     }
 
@@ -284,7 +291,7 @@ export class ProjectMutator {
       const info = this.getBlockInfo(id);
       if (info.fields[ctxField] === undefined || info.fields[ctxField]!.ref === undefined)
         throw new Error('One of the upstreams staging is not rendered.');
-      upstreamContexts.push(unwrapHolder(this.tx, info.fields[ctxField]!.ref!));
+      upstreamContexts.push(Pl.unwrapHolder(this.tx, info.fields[ctxField]!.ref!));
     });
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
@@ -305,11 +312,11 @@ export class ProjectMutator {
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
       args: info.fields.currentInputs!.ref!,
-      blockId: this.tx.createValue(KnownResourceTypes.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(KnownResourceTypes.JsonBool, JSON.stringify(false)),
+      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
       context: ctx
     });
-    this.setBlockField(blockId, 'stagingCtx', wrapInEphHolder(this.tx, results.context), 'NotReady');
+    this.setBlockField(blockId, 'stagingCtx', Pl.wrapInEphHolder(this.tx, results.context), 'NotReady');
     this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
   }
 
@@ -329,11 +336,11 @@ export class ProjectMutator {
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
       args: info.fields.currentInputs!.ref!,
-      blockId: this.tx.createValue(KnownResourceTypes.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(KnownResourceTypes.JsonBool, JSON.stringify(true)),
+      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
       context: ctx
     });
-    this.setBlockField(blockId, 'prodCtx', wrapInEphHolder(this.tx, results.context), 'NotReady');
+    this.setBlockField(blockId, 'prodCtx', Pl.wrapInEphHolder(this.tx, results.context), 'NotReady');
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
   }
 
@@ -367,11 +374,11 @@ export class ProjectMutator {
       // block pack
       const bp = createBlockPack(this.tx, spec.blockPack);
       this.setBlockField(blockId, 'blockPack',
-        wrapInHolder(this.tx, bp), 'NotReady');
+        Pl.wrapInHolder(this.tx, bp), 'NotReady');
 
       // inputs
       const binArgs = Buffer.from(spec.inputs);
-      const argsRes = this.tx.createValue(KnownResourceTypes.JsonObject, binArgs);
+      const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
       this.setBlockField(blockId, 'currentInputs', argsRes, 'Ready', binArgs);
     }
 
@@ -448,6 +455,10 @@ export class ProjectMutator {
     });
     this.resetStagingRefreshTimestamp();
   }
+
+  // public refreshRequired(): boolean {
+  //
+  // }
 
   /** @param stagingRenderingRate rate in blocks per second */
   public doRefresh(stagingRenderingRate: number = 10) {

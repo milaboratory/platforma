@@ -7,11 +7,11 @@ import {
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
 import { createProject, loadProject } from './project';
-import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
-import { TemplateSourcePrepared } from './model/template';
-import { outputRef } from './model/args';
+import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './block-pack/explicit_templates';
+import { TemplateSourcePrepared } from '../model/template';
+import { outputRef } from '../model/args';
 import { sleep } from '@milaboratory/ts-helpers';
-import { projectFieldName } from './model/project_model';
+import { projectFieldName } from '../model/project_model';
 
 const specEnterExplicit: TemplateSourcePrepared = {
   type: 'explicit',

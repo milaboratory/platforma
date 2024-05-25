@@ -1,9 +1,4 @@
-//
-// JSON Model
-//
-
 import { ResourceType } from '@milaboratory/pl-client-v2';
-import { StdMap } from '../util';
 
 /** Structure to help resolve conflicts if multiple participants writes to the same state */
 export interface AuthorMarker {

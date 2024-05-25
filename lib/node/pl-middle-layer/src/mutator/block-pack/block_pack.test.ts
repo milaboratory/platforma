@@ -6,7 +6,7 @@ import {
 import { createBlockPack } from './block_pack';
 import { ExplicitTemplateSumNumbers } from './explicit_templates';
 import { sleep } from '@milaboratory/ts-helpers';
-import { BlockPackSpecCustom } from './model/block_pack_spec';
+import { BlockPackSpecCustom } from '../../model/block_pack_spec';
 
 test('test load custom template from registry', async () => {
   const spec: BlockPackSpecCustom = {
