@@ -19,8 +19,8 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-client-v2": "^2.3.0",
-    "@milaboratory/ts-helpers": "^1.0.6",
+    "@milaboratory/pl-client-v2": "^2.3.3",
+    "@milaboratory/ts-helpers": "^1.0.7",
     "@oclif/core": "^3.26.6",
     "utility-types": "^3.11.0",
     "yaml": "^2.4.2",

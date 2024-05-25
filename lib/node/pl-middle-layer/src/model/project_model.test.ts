@@ -3,6 +3,6 @@ import { randomUUID } from 'node:crypto';
 
 test('project field parsing test', () => {
   const field: ProjectField = { fieldName: 'stagingCtx', blockId: randomUUID() };
-  const fieldName = projectFieldName(field);
+  const fieldName = projectFieldName(field.blockId, field.fieldName);
   expect(parseProjectField(fieldName)).toStrictEqual(field);
 });

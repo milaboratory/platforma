@@ -69,8 +69,8 @@ export function stagingGraph(structure: ProjectStructure) {
     if (previous === undefined) {
       current.upstream = new Set<string>();
     } else {
-      previous.downstream = new Set<string>([current.id]);
       current.upstream = new Set<string>([previous.id]);
+      previous.downstream = new Set<string>([current.id]);
     }
 
     previous = current;

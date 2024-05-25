@@ -15,39 +15,23 @@ import {
 } from '@milaboratory/pl-client-v2';
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
-import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './block-pack/explicit_templates';
 import { notEmpty, sleep } from '@milaboratory/ts-helpers';
 import { TemplateSourcePrepared } from '../model/template';
-
-const specEnterExplicit: TemplateSourcePrepared = {
-  type: 'explicit',
-  content: ExplicitTemplateEnterNumbers
-};
-
-const specEnterFromRegistry: TemplateSourcePrepared = {
-  type: 'from-registry',
-  registry: 'milaboratories',
-  path: 'releases/v1/milaboratory/enter-numbers/0.0.2/template.plj.gz'
-};
-
-const specSumExplicit: TemplateSourcePrepared = {
-  type: 'explicit',
-  content: ExplicitTemplateSumNumbers
-};
-
-const specSumFromRegistry: TemplateSourcePrepared = {
-  type: 'from-registry',
-  registry: 'milaboratories',
-  path: 'releases/v1/milaboratory/sum-numbers/0.0.2/template.plj.gz'
-};
+import {
+  TplSpecEnterExplicit,
+  TplSpecEnterFromRegistry,
+  TplSpecSumExplicit,
+  TplSpecSumFromRegistry
+} from '../test/known_templates';
+import { outputRef } from '../model/args';
 
 function resourceInFinalState(data: Pick<ResourceData, 'resourceReady' | 'error' | 'originalResourceId'>) {
   return data.resourceReady || isNotNullResourceId(data.error) || isNotNullResourceId(data.originalResourceId);
 }
 
 describe.each([
-  { name: 'explicit', specEnter: specEnterExplicit, specSum: specSumExplicit },
-  { name: 'from registry', specEnter: specEnterFromRegistry, specSum: specSumFromRegistry }
+  { name: 'explicit', specEnter: TplSpecEnterExplicit, specSum: TplSpecSumExplicit },
+  { name: 'from registry', specEnter: TplSpecEnterFromRegistry, specSum: TplSpecSumFromRegistry }
 ])('test render $name', ({ specEnter, specSum }) => {
   const args: {
     name: string,
@@ -123,8 +107,8 @@ describe.each([
         const enter1 = createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [21]);
         const enter2 = createEnterNumbers(tx, specEnter, true, 'block2', enter1.context, [10, 11]);
         return createSumNumbers(tx, specSum, true, 'block3', enter2.context, [
-          { blockId: 'block1', name: 'column' },
-          { blockId: 'block2', name: 'column' }
+          outputRef('block1', 'column'), //{ blockId: 'block1', name: 'column' },
+          outputRef('block2', 'column') //{ blockId: 'block2', name: 'column' }
         ]);
       },
 

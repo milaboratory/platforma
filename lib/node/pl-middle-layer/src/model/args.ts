@@ -4,17 +4,17 @@ export interface BlockOutputReference {
   /** Marker of reference. Used to extract all references from block input. */
   __isRef: true;
   /** Referenced block id */
-  block: string;
+  blockId: string;
   /** Referenced output name in the block */
   name: string;
 }
 
-export function outputRef(block: string, name: string): BlockOutputReference {
-  return { __isRef: true, block, name };
+export function outputRef(blockId: string, name: string): BlockOutputReference {
+  return { __isRef: true, blockId, name };
 }
 
 export function isBlockOutputReference(obj: any): obj is BlockOutputReference {
-  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'block' in obj && 'name' in obj;
+  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'blockId' in obj && 'name' in obj;
 }
 
 function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set<string>) {
@@ -34,8 +34,8 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set
         return;
 
       if (isBlockOutputReference(node)) {
-        if (allowed === undefined || allowed.has(node.block))
-          result.upstreams.add(node.block);
+        if (allowed === undefined || allowed.has(node.blockId))
+          result.upstreams.add(node.blockId);
         else
           result.missingReferences = true;
 

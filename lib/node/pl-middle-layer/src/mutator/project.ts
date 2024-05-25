@@ -192,7 +192,7 @@ export class ProjectMutator {
 
   public setBlockFieldObj(blockId: string, fieldName: keyof BlockFieldStates,
                           state: Omit<BlockFieldState, 'modCount'>) {
-    const fid = field(this.rid, projectFieldName({ blockId, fieldName: fieldName }));
+    const fid = field(this.rid, projectFieldName(blockId, fieldName));
 
     if (state.ref === undefined)
       throw new Error('Can\'t set value with empty ref');
@@ -219,7 +219,7 @@ export class ProjectMutator {
     const fields = this.getBlockInfo(blockId).fields;
     if (!(fieldName in fields))
       return false;
-    this.tx.removeField(field(this.rid, projectFieldName({ blockId, fieldName })));
+    this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName)));
     delete fields[fieldName];
     return true;
   }
@@ -342,9 +342,20 @@ export class ProjectMutator {
     });
     this.setBlockField(blockId, 'prodCtx', Pl.wrapInEphHolder(this.tx, results.context), 'NotReady');
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
+
+    // saving inputs for which we rendered the production
+    this.setBlockField(blockId, 'prodInputs', info.fields.currentInputs!.ref!, 'NotReady');
+
+    // removing block from limbo as we juts rendered fresh production for it
+    if (this.blocksInLimbo.delete(blockId))
+      this.renderingStateChanged = true;
   }
 
-  public updateStructure(newStructure: ProjectStructure, newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks) {
+  //
+  // Structure changes
+  //
+
+  public updateStructure(newStructure: ProjectStructure, newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks): void {
     const currentStagingGraph = this.getStagingGraph();
     const currentActualProductionGraph = this.getActualProductionGraph();
 
@@ -361,7 +372,7 @@ export class ProjectMutator {
     for (const blockId of stagingDiff.onlyInA) {
       const { fields } = this.getBlockInfo(blockId);
       for (const fieldName of Object.keys(fields))
-        this.tx.removeField(field(this.rid, projectFieldName({ blockId, fieldName } as ProjectField)));
+        this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName as ProjectField['fieldName'])));
       this.blockInfos.delete(blockId);
       this.blocksInLimbo.delete(blockId);
     }
@@ -400,13 +411,89 @@ export class ProjectMutator {
     this.actualProductionGraph = undefined;
   }
 
+  //
+  // Structure change helpers
+  //
+
+  public addBlock(block: Block, spec: NewBlockSpec, after?: string): void {
+    const newStruct = this.structure; // copy current structure
+    if (after === undefined) {
+      // adding as a very last block
+      newStruct.groups[newStruct.groups.length - 1].blocks.push(block);
+    } else {
+      let done = false;
+      for (const group of newStruct.groups) {
+        const idx = group.blocks.findIndex(b => b.id === after);
+        if (idx < 0)
+          continue;
+        group.blocks.splice(idx, 0, block);
+        done = true;
+        break;
+      }
+      if (!done)
+        throw new Error(`Can't find element with id: ${after}`);
+    }
+    this.updateStructure(newStruct, (blockId) => {
+      if (blockId !== block.id)
+        throw new Error('Unexpected');
+      return spec;
+    });
+  }
+
+  public deleteBlock(blockId: string): void {
+    const newStruct = this.structure; // copy current structure
+    let done = false;
+    for (const group of newStruct.groups) {
+      const idx = group.blocks.findIndex(b => b.id === blockId);
+      if (idx < 0)
+        continue;
+      group.blocks.splice(idx, 1);
+      done = true;
+      break;
+    }
+    if (!done)
+      throw new Error(`Can't find element with id: ${blockId}`);
+    this.updateStructure(newStruct);
+  }
+
+  //
+  // Block-pack migration
+  //
+
+  public migrateBlockPack(blockId: string, spec: BlockPackSpec, newArgs?: string): void {
+    const info = this.getBlockInfo(blockId);
+
+    this.setBlockField(blockId, 'blockPack',
+      Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
+      'NotReady');
+
+    if (newArgs !== undefined)
+      // this will also reset all downstream stagings
+      this.setInputs([{ blockId, inputs: newArgs }]);
+    else
+      // resetting staging outputs for all downstream blocks
+      this.getStagingGraph().traverse('downstream', [blockId],
+        ({ id }) => this.resetStaging(id));
+
+    // also reset or limbo all downstream productions
+    if (info.productionRendered)
+      this.getActualProductionGraph().traverse('downstream', [blockId],
+        ({ id }) => this.resetOrLimboProduction(id));
+  }
+
+  //
+  // Render
+  //
+
   public renderProduction(blockIds: string[]) {
     const blockIdsSet = new Set(blockIds);
 
     // checking that targets contain all upstreams
     const prodGraph = this.getPendingProductionGraph();
     for (const blockId of blockIdsSet) {
-      const node = prodGraph.nodes.get(blockId)!;
+      const node = prodGraph.nodes.get(blockId);
+      if (node === undefined)
+        throw new Error(`Can't find block with id: ${blockId}`);
       for (const upstream of node.upstream)
         if (!blockIdsSet.has(upstream))
           throw new Error('Can\'t render blocks not including all upstreams.');
@@ -416,19 +503,6 @@ export class ProjectMutator {
     for (const block of allBlocks(this.structure))
       if (blockIdsSet.has(block.id))
         this.renderProductionFor(block.id);
-  }
-
-  public save() {
-    if (this.structureChanged)
-      this.tx.setKValue(this.rid, BlockStructureKey, JSON.stringify(this.struct));
-
-    if (this.renderingStateChanged)
-      this.tx.setKValue(this.rid, BlockRenderingStateKey, JSON.stringify(
-        {
-          ...this.renderingState,
-          blocksInLimbo: [...this.blocksInLimbo]
-        } as ProjectRenderingState
-      ));
   }
 
   private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {
@@ -445,12 +519,14 @@ export class ProjectMutator {
     });
   }
 
-  /** @param rate rate in blocks per second */
-  private refreshStagings(rate: number) {
+  /** @param stagingRenderingRate rate in blocks per second */
+  private refreshStagings(stagingRenderingRate?: number) {
     const elapsed = Date.now() - this.renderingState.stagingRefreshTimestamp;
-    const lagThreshold = 1 + Math.max(0, elapsed * rate / 1000);
+    const lagThreshold = stagingRenderingRate === undefined
+      ? undefined
+      : 1 + Math.max(0, elapsed * stagingRenderingRate / 1000);
     this.traverseWithStagingLag((blockId, lag) => {
-      if (lag <= lagThreshold)
+      if (lagThreshold === undefined || lag <= lagThreshold)
         this.renderStagingFor(blockId);
     });
     this.resetStagingRefreshTimestamp();
@@ -460,8 +536,12 @@ export class ProjectMutator {
   //
   // }
 
+  //
+  // Maintenance
+  //
+
   /** @param stagingRenderingRate rate in blocks per second */
-  public doRefresh(stagingRenderingRate: number = 10) {
+  public doRefresh(stagingRenderingRate?: number) {
     this.refreshStagings(stagingRenderingRate);
     this.blockInfos.forEach(blockInfo => {
       if (blockInfo.fields.prodCtx?.status === 'Ready' && blockInfo.fields.prodOutput?.status === 'Ready') {
@@ -473,6 +553,19 @@ export class ProjectMutator {
         this.deleteBlockField(blockInfo.id, 'stagingCtxPrevious');
       }
     });
+  }
+
+  public save() {
+    if (this.structureChanged)
+      this.tx.setKValue(this.rid, BlockStructureKey, JSON.stringify(this.struct));
+
+    if (this.renderingStateChanged)
+      this.tx.setKValue(this.rid, BlockRenderingStateKey, JSON.stringify(
+        {
+          ...this.renderingState,
+          blocksInLimbo: [...this.blocksInLimbo]
+        } as ProjectRenderingState
+      ));
   }
 }
 

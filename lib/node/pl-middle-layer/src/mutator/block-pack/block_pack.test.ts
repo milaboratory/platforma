@@ -4,7 +4,7 @@ import {
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
 import { createBlockPack } from './block_pack';
-import { ExplicitTemplateSumNumbers } from './explicit_templates';
+import { ExplicitTemplateSumNumbers } from '../../test/explicit_templates';
 import { sleep } from '@milaboratory/ts-helpers';
 import { BlockPackSpecCustom } from '../../model/block_pack_spec';
 

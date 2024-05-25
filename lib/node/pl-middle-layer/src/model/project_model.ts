@@ -79,9 +79,13 @@ export interface ProjectField {
     | 'stagingCtxPrevious' | 'stagingOutputPrevious';
 }
 
-export function projectFieldName(field: ProjectField) {
-  return `${field.blockId}-${field.fieldName}`;
+export function projectFieldName(blockId: string, fieldName: ProjectField['fieldName']): string {
+  return `${blockId}-${fieldName}`;
 }
+
+// export function projectFieldName(field: ProjectField) {
+//   return `${field.blockId}-${field.fieldName}`;
+// }
 
 const projectFieldPattern = /^(?<blockId>.*)-(?<fieldName>blockPack|prodInputs|currentInputs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
 
