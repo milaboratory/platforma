@@ -1,0 +1,37 @@
+name: Build NPM package
+on:
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch: { }
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: milaboratory/github-ci/actions/context/init@v4
+        with:
+          version-canonize: false
+          branch-versioning: main
+  run:
+    needs:
+      - init
+
+    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple.yaml@v4
+    with:
+      app-name: Pl Project State Mutator
+      app-name-slug: '@milaboratory/pl-project-state'
+      notify-telegram: true
+
+      node-version: '20.x'
+      is-electron-application: 'false'
+      always-auth: 'true'
+
+      build-script-name: 'build'
+
+      test: true
+      test-script-name: 'test'
+
+    secrets:
+      TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
+      TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
