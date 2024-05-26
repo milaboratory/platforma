@@ -16,6 +16,9 @@ export interface PlClientConfig {
 
   grpcProxy?: string;
   httpProxy?: string;
+
+  user?: string;
+  password?: string;
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 1000;
@@ -68,6 +71,8 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
     authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
     grpcProxy: url.searchParams.get('grpc-proxy') ?? undefined,
     httpProxy: url.searchParams.get('http-proxy') ?? undefined,
+    user: url.username === '' ? undefined : url.username,
+    password: url.password === '' ? undefined : url.password,
     ...overrides
   };
 }

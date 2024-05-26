@@ -97,13 +97,13 @@ export class LLPlClient {
   /** Returns true if client is authenticated. Even with anonymous auth information
    * connection is considered authenticated. Unauthenticated clients are used for
    * login and similar tasks, see {@link UnauthenticatedPlClient}. */
-  public get authenticarted(): boolean {
+  public get authenticated(): boolean {
     return this.authInformation !== undefined;
   }
 
   /** null means anonymous connection */
   public get authUser(): string | null {
-    if (!this.authenticarted)
+    if (!this.authenticated)
       throw new Error('Client is not authenticated');
     if (this.authInformation?.jwtToken)
       return parsePlJwt(this.authInformation?.jwtToken).user.login;
