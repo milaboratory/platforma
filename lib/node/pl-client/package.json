@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-client-v2",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "New TS/JS client for Platform API",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
