@@ -50,7 +50,7 @@ export type LinearBackoffRetryOptions = {
   type: 'linearBackoff',
   /** Max attempts */
   maxAttempts: number,
-  /** Delay after first failed attempt */
+  /** Delay after first failed attempt (in milliseconds) */
   initialDelay: number,
   /** This value will be added to the delay from the previous step */
   backoffStep: number,
@@ -64,7 +64,9 @@ export type RetryState = {
   options: RetryOptions,
   attemptsLeft: number,
   startTimestamp: number,
+  /** Total delays so far (including next delay, implying it already applied) */
   totalDelay: number,
+  /** Next delay in ms */
   nextDelay: number
 }
 

@@ -23,7 +23,7 @@ export class TaskProcessor {
     this.queue.push(task);
   }
 
-  public stop(){
+  public stop() {
     this.continue = false;
   }
 
