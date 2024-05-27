@@ -1,6 +1,6 @@
 import { AccessorLeakException, TrackedAccessorProvider } from './accessor_provider';
 import { CellRenderingOps, ComputableCtx, KernelLambdaField, UnwrapComputables } from './kernel';
-import { Computable } from './computable';
+import { Computable, ComputableListener } from './computable';
 
 let ephKeyCounter = 1;
 
@@ -16,17 +16,24 @@ export function noopPostprocessValue<IR>(): (value: UnwrapComputables<IR>, stabl
   return async v => v;
 }
 
-export interface ExtendedCellRenderingOps extends CellRenderingOps {
+export interface ComputableRenderingOps extends CellRenderingOps {
   key: string;
+  listener: ComputableListener;
 }
 
 export function computable<A, IR, T = UnwrapComputables<IR>>(
   ap: TrackedAccessorProvider<A>,
-  ops: Partial<ExtendedCellRenderingOps> = {},
+  ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IR,
   postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>): Computable<T> {
+  const { mode, resetValueOnError } = ops;
+  const renderingOps: CellRenderingOps = {
+    ...DefaultRenderingOps,
+    ...(mode !== undefined && { mode }),
+    ...(resetValueOnError !== undefined && { resetValueOnError })
+  };
   return new Computable<T>({
-    ops: { ...DefaultRenderingOps, ...ops }, key: ops.key ?? nextEphemeralKey(),
+    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
     [KernelLambdaField]: (watcher, ctx) => {
       let inCallback = true;
       const ir = cb(ap.createInstance(watcher, () => {
@@ -39,5 +46,5 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
         postprocessValue: postprocessValue ?? (noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>)
       };
     }
-  });
+  }, ops.listener);
 }

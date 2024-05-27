@@ -10,12 +10,14 @@ export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>
 export interface ComputableResultErrors {
   type: 'error';
   errors: any[];
+  uTag: string;
 }
 
 export interface ComputableResultOk<T> {
   type: 'ok';
   value: T;
   stable: boolean;
+  uTag: string;
 }
 
 export class ComputableError extends AggregateError {
@@ -24,26 +26,76 @@ export class ComputableError extends AggregateError {
   }
 }
 
+/** Allows to listen for user interaction events after computable is created */
+export interface ComputableListener {
+  onChangedRequest(instance: Computable<unknown>): void;
+
+  getValue(instance: Computable<unknown>): void;
+
+  onListenStart(instance: Computable<unknown>): void;
+
+  onListenStop(instance: Computable<unknown>): void;
+}
+
 export class Computable<T> implements WrappedComputableKernel<T> {
   private stateCalculation?: Promise<void>;
   private state?: CellState<T>;
+  private uTag: string = '';
   public readonly [WrappedKernelField]: ComputableKernel<T>;
 
-  constructor(kernel: ComputableKernel<T>) {
+  constructor(kernel: ComputableKernel<T>,
+              private readonly listener?: ComputableListener) {
     this[WrappedKernelField] = kernel;
   }
 
-  get changed(): boolean {
-    return this.state === undefined || this.state.watcher.isChanged;
+  private _changed(uTag?: string): boolean {
+    return this.state === undefined
+      || this.state.watcher.isChanged
+      || (uTag !== undefined && this.uTag !== uTag);
   }
 
-  async listen(): Promise<void> {
-    if (this.state === undefined)
+  /** @deprecated use {@link isChanged} instead */
+  public get changed(): boolean {
+    return this.isChanged();
+  }
+
+  public isChanged(uTag?: string): boolean {
+    // reporting to listener if it is set
+    this.listener?.onChangedRequest(this);
+
+    return this._changed(uTag);
+  }
+
+  /** Used if listener is attached to this computable instance to report only clean
+   * "listening status" change events. */
+  private listenCounter = 0;
+
+  public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
+    if (this._changed(uTag)) {
+      // this counts as "changed flag" polling
+      this.listener?.onChangedRequest(this);
+
+      // reporting "changed" immediately
       return;
-    await this.state.watcher.listen();
+    }
+
+    const lPromise = this.state!.watcher.listen(abortSignal);
+    if (this.listener !== undefined) {
+      if (this.listenCounter === 0)
+        this.listener.onListenStart(this);
+      this.listenCounter++;
+      try {
+        return await lPromise;
+      } finally {
+        if (--this.listenCounter === 0)
+          this.listener!.onListenStop(this);
+      }
+    } else {
+      return await lPromise;
+    }
   }
 
-  async getValue(): Promise<T> {
+  public async getValue(): Promise<T> {
     const result = await this.getValueOrError();
     if (result.type === 'error')
       throw new ComputableError(result.errors);
@@ -51,22 +103,37 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   }
 
   async getValueOrError(): Promise<ComputableResult<T>> {
+    // notifying the listener
+    this.listener?.getValue(this);
+
     if (this.stateCalculation !== undefined) {
+
+      // waiting for stat to update in case update was triggered elsewhere
       await this.stateCalculation;
+
     } else if (this.state === undefined || this.state.watcher.isChanged) {
+
+      // starting async state update
       this.stateCalculation = (async () => {
         this.state = this.state === undefined
           ? await createCellState(this[WrappedKernelField])
           : await updateCellState(this.state);
+        // updating uTag as we just assigned new state
+        this.uTag = crypto.randomUUID();
+        // we are done updating state
         this.stateCalculation = undefined;
       })();
+
+      // and now waiting for it to finish
       await this.stateCalculation;
+
     }
 
     const state = notEmpty(this.state);
+
     if (state.allErrors.length === 0)
-      return { type: 'ok', value: state.value as T, stable: state.stable };
+      return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };
     else
-      return { type: 'error', errors: state.allErrors };
+      return { type: 'error', errors: state.allErrors, uTag: this.uTag };
   }
 }
