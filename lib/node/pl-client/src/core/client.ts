@@ -167,6 +167,9 @@ export class PlClient {
         await tx.await(); // this should not throw recoverable errors
       }
 
+      // we only get here after TxCommitConflict error,
+      // all other errors terminate this loop instantly
+
       await sleep(retryState.nextDelay, ops.abortSignal);
       retryState = nextRetryStateOrError(retryState);
     }

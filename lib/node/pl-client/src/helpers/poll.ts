@@ -137,15 +137,15 @@ export const DefaultPollingRetryOptions: RetryOptions = {
   initialDelay: 10
 };
 
-export async function poll(cl: PlClient, cb: (tx: PollTxAccessor) => Promise<void>,
-                           retryOptions: RetryOptions = DefaultPollingRetryOptions, txName: string = 'polling') {
+export async function poll<T>(cl: PlClient, cb: (tx: PollTxAccessor) => Promise<T>,
+                              retryOptions: RetryOptions = DefaultPollingRetryOptions,
+                              txName: string = 'polling'): Promise<T> {
   let retryState = createRetryState(retryOptions);
   while (true) {
     try {
-      await cl.withReadTx(txName, async tx => {
-        await cb(new PollTxAccessor(tx));
+      return await cl.withReadTx(txName, async tx => {
+        return await cb(new PollTxAccessor(tx));
       });
-      return;
     } catch (e: any) {
       // Rethrowing any error except the "not ready yet"
       if (!(e instanceof ContinuePolling)) throw e;
