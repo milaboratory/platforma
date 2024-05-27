@@ -1,4 +1,5 @@
 import {
+  FieldData,
   isNullResourceId,
   OptionalResourceId,
   PlErrorCodeNotFound, PlTransaction,
@@ -9,20 +10,31 @@ import {
 import Denque from 'denque';
 import { PlTreeState } from './state';
 
+/** Applied to list of fields in resource data. */
+export type PruningFunction = (resource: ResourceData) => FieldData[]
+
 export interface TreeLoadingRequest {
   /** Resource to prime the traversal algorithm. It is ok, if some of them
    * doesn't exist anymore. Should not contain elements from final resource
    * set. */
   readonly seedResources: ResourceId[];
+
   /** Resource ids for which state is already known and not expected to change.
    * Algorithm will not continue traversal over those ids, and states will not
    * be retrieved for them. */
   readonly finalResources: Set<ResourceId>;
+
+  /** This function is applied to each resource data field list, before
+   * using it continue traversal. This modification also is applied to
+   * output data to make result self-consistent in terms that it will contain
+   * all referenced resources, this is required to be able to pass it to tree
+   * to update the state. */
+  readonly pruningFunction?: PruningFunction;
 }
 
 /** Given the current tree state, build the request object to pass to
  * {@link loadTreeState} to load updated state. */
-export function constructTreeLoadingRequest(tree: PlTreeState): TreeLoadingRequest {
+export function constructTreeLoadingRequest(tree: PlTreeState, pruningFunction?: PruningFunction): TreeLoadingRequest {
   const seedResources: ResourceId[] = [];
   const finalResources = new Set<ResourceId>();
   tree.forEachResource(res => {
@@ -36,7 +48,7 @@ export function constructTreeLoadingRequest(tree: PlTreeState): TreeLoadingReque
   if (seedResources.length === 0 && finalResources.size === 0)
     seedResources.push(tree.root);
 
-  return { seedResources: seedResources, finalResources: finalResources };
+  return { seedResources, finalResources, pruningFunction };
 }
 
 /** Given the transaction (preferably read-only) and loading request, executes
@@ -44,7 +56,7 @@ export function constructTreeLoadingRequest(tree: PlTreeState): TreeLoadingReque
  * to update the tree state. */
 export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadingRequest): Promise<ResourceData[]> {
 
-  const { seedResources, finalResources } = loadingRequest;
+  const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
   // Main idea of using a queue here is that responses will arrive in the same order as they were
   // sent, so we can only wait for the earliest sent unprocessed response promise at any given moment.
@@ -86,6 +98,10 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
         continue;
       throw e;
     }
+
+    // apply field pruning, if requested
+    if (pruningFunction !== undefined)
+      nextResource = { ...nextResource, fields: pruningFunction(nextResource) };
 
     // continue traversal over the referenced resource
     requestState(nextResource.error);
