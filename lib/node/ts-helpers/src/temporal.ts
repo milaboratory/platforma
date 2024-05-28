@@ -43,7 +43,7 @@ export type ExponentialBackoffRetryOptions = {
   type: 'exponentialBackoff',
   /** Max attempts */
   maxAttempts: number,
-  /** Delay after first failed attempt */
+  /** Delay after first failed attempt, in ms. */
   initialDelay: number,
   /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
   backoffMultiplier: number,
@@ -57,7 +57,7 @@ export type LinearBackoffRetryOptions = {
   maxAttempts: number,
   /** Delay after first failed attempt (in milliseconds) */
   initialDelay: number,
-  /** This value will be added to the delay from the previous step */
+  /** This value will be added to the delay from the previous step, in ms */
   backoffStep: number,
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
   jitter: number
@@ -92,6 +92,7 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
     ? previous.options.backoffStep
     : (previous.nextDelay * (previous.options.backoffMultiplier - 1));
   delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
+
   return {
     options: previous.options,
     nextDelay: previous.nextDelay + delayDelta,
