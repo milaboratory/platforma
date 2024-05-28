@@ -93,6 +93,10 @@ export interface BasicResourceData {
   final: boolean;
 }
 
+export const jsonToData = (data: unknown) => Buffer.from(JSON.stringify(data));
+
+export const resDataToJson = (res: ResourceData) => JSON.parse(notEmpty(res.data).toString());
+
 export interface ResourceData extends BasicResourceData {
   fields: FieldData[];
 }
