@@ -1,6 +1,6 @@
 import { PlTreeResource, PlTreeState } from './state';
 import { ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
-import { FieldType, ResourceId } from '@milaboratory/pl-client-v2';
+import { FieldType, ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 
 /** Main entry point for using PlTree in reactive setting */
@@ -65,6 +65,10 @@ export class PlTreeNodeAccessor {
     const res = this.tree.get(this.watcher, rid);
     if (res == undefined) throw new Error(`Can't find resource ${rid}`);
     return new PlTreeNodeAccessor(this.watcher, this.tree, res, this.guard, this.ctx);
+  }
+
+  get resourceType(): ResourceType {
+    return this.resource.type;
   }
 
   get(
@@ -147,6 +151,21 @@ export class PlTreeNodeAccessor {
     ...path: (TraverseStep | string)[]
   ) {
     return traverse(this, commonOptions, ...path);
+  }
+
+  listInputFields(): string[] {
+    this.guard();
+    return this.resource.listInputFields(this.watcher);
+  }
+
+  listOutputFields(): string[] {
+    this.guard();
+    return this.resource.listOutputFields(this.watcher);
+  }
+
+  listDynamicFields(): string[] {
+    this.guard();
+    return this.resource.listDynamicFields(this.watcher);
   }
 }
 

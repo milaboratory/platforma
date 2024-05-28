@@ -35,7 +35,7 @@ export interface PlTreeResourceI extends BasicResourceData {
 
 /** Predicate of resource state used to determine if it's state is considered to be final,
  * and not expected to change in the future. */
-type FinalPredicate = (r: Omit<PlTreeResourceI, 'final'>) => boolean;
+export type FinalPredicate = (r: Omit<PlTreeResourceI, 'final'>) => boolean;
 
 /** Never store instances of this class, always get fresh instance from {@link PlTreeState} */
 export class PlTreeResource implements PlTreeResourceI {
@@ -224,6 +224,16 @@ export class PlTreeResource implements PlTreeResourceI {
       if (field.type === 'Output') ret.push(name);
     });
     this.outputFieldListChanged?.attachWatcher(watcher);
+
+    return ret;
+  }
+
+  listDynamicFields(watcher: Watcher): string[] {
+    const ret: string[] = [];
+    this.fields.forEach((field, name) => {
+      if (field.type !== 'Input' && field.type !== 'Output') ret.push(name);
+    });
+    this.dynamicFieldListChanged?.attachWatcher(watcher);
 
     return ret;
   }
