@@ -21,28 +21,33 @@ export type ComputableReactorOps = {
   stopDebounce: number
 };
 
+/** Allows to link computable state requests (i.e. signs that somebody is
+ * interested in its value) to the processes keeping the underlying state
+ * fresh, like periodically polling pl. */
 export class ComputableReactor<A> implements ComputableListener {
-  private sourceActive = false;
   private readonly stopDebounce: number;
 
-  constructor(private readonly source: ComputableDataSource<A>, ops: ComputableReactorOps) {
+  private sourceActivated = false;
+
+  constructor(private readonly source: ComputableDataSource<A>,
+              ops: ComputableReactorOps) {
     this.stopDebounce = ops.stopDebounce;
   }
 
   private stopCountdown: NodeJS.Timeout | undefined;
 
   private scheduleStopIfNeeded(): void {
-    if (this.sourceActive && this.listening.size === 0
+    if (this.sourceActivated && this.listening.size === 0
       && this.stopCountdown === undefined)
       this.stopCountdown = setTimeout(() => {
         this.source.stopUpdating();
-        this.sourceActive = false;
+        this.sourceActivated = false;
         this.stopCountdown = undefined;
       }, this.stopDebounce);
   }
 
   private startIfNeeded(): void {
-    if (this.sourceActive) {
+    if (this.sourceActivated) {
       if (this.stopCountdown !== undefined) {
         clearTimeout(this.stopCountdown);
         this.stopCountdown = undefined;
@@ -50,7 +55,7 @@ export class ComputableReactor<A> implements ComputableListener {
       return;
     } else {
       this.source.startUpdating();
-      this.sourceActive = true;
+      this.sourceActivated = true;
     }
   }
 

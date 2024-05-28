@@ -20,11 +20,33 @@ export interface ComputableResultOk<T> {
   uTag: string;
 }
 
-export class ComputableError extends AggregateError {
-  constructor(public readonly errors: any[]) {
-    super(errors);
+function throwComputableError(errors: any[]): never {
+  if (errors.length === 1)
+    throw new ComputableError(errors[0]);
+  else
+    throw new AggregateComputableError(errors);
+}
+
+export type AnyComputableError = ComputableError | AggregateComputableError;
+
+export class ComputableError extends Error {
+  constructor(public readonly cause: any) {
+    super(`Computable error: ${cause.message}`, { cause });
   }
 }
+
+export class AggregateComputableError extends AggregateError {
+  constructor(public readonly errors: any[]) {
+    super(errors, `Computable error: ${errors.map(e => e.message).join(' ; ')}`);
+  }
+}
+
+// TODO ComputableListener pattern is limited to only track events of the
+//      root computable, not allowing to track interactions with derived states,
+//      if computable in question is used as "nested computable". If this becomes
+//      an issue in the future, it is easy to push this pattern to the level of
+//      watchers, and harnessing watcher's hierarchy to spread "listeners" from
+//      nested to parent watchers and thus computables.
 
 /** Allows to listen for user interaction events after computable is created */
 export interface ComputableListener {
@@ -98,11 +120,18 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   public async getValue(): Promise<T> {
     const result = await this.getValueOrError();
     if (result.type === 'error')
-      throw new ComputableError(result.errors);
+      throwComputableError(result.errors);
     return result.value;
   }
 
-  async getValueOrError(): Promise<ComputableResult<T>> {
+  public async getFullValue(): Promise<ComputableResultOk<T>> {
+    const result = await this.getValueOrError();
+    if (result.type === 'error')
+      throwComputableError(result.errors);
+    return result;
+  }
+
+  public async getValueOrError(): Promise<ComputableResult<T>> {
     // notifying the listener
     this.listener?.getValue(this);
 
