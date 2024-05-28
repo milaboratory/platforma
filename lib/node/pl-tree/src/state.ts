@@ -1,6 +1,6 @@
 import {
   BasicResourceData,
-  FieldType, isNotNullResourceId, isNullResourceId, NullResourceId,
+  FieldType, isNotNullResourceId, isNullResourceId, KeyValue, NullResourceId,
   OptionalResourceId, ResourceData,
   ResourceId,
   ResourceKind,
@@ -10,6 +10,10 @@ import { ChangeSource, Watcher } from '@milaboratory/computable';
 import { PlTreeEntry } from './accessors';
 import { ValueAndError } from './value_and_error';
 import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+
+export type ExtendedResourceData = ResourceData & {
+  kv: KeyValue[]
+}
 
 class PlTreeField {
   readonly change = new ChangeSource();
@@ -49,6 +53,8 @@ export class PlTreeResource implements PlTreeResourceI {
 
   readonly fields: Map<string, PlTreeField> = new Map();
 
+  readonly kv = new Map<string, Uint8Array>();
+
   readonly resourceRemoved = new ChangeSource();
 
   // following change source are removed when resource is marked as final
@@ -61,6 +67,8 @@ export class PlTreeResource implements PlTreeResourceI {
   inputAndServiceFieldListChanged? = new ChangeSource();
   outputFieldListChanged? = new ChangeSource();
   dynamicFieldListChanged? = new ChangeSource();
+
+  kvChanged? = new ChangeSource();
 
   readonly id: ResourceId;
   originalResourceId: OptionalResourceId;
@@ -135,14 +143,21 @@ export class PlTreeResource implements PlTreeResourceI {
         throw new Error(
           `Service or input field not found ${fieldName}.`
         );
+      else
+        // stable absence of field
+        return undefined;
 
       if (!this.outputsLocked)
         this.outputFieldListChanged?.attachWatcher(watcher);
       else if (errorIfNotFound && assertFieldType === 'Output')
         throw new Error(`Output field not found ${fieldName}.`);
+      else
+        // stable absence of field
+        return undefined;
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
-      onUnstable();
+      if (!this._final)
+        onUnstable();
 
       return undefined;
     } else {
@@ -151,9 +166,9 @@ export class PlTreeResource implements PlTreeResourceI {
           `Unexpected field type: expected ${assertFieldType} but got ${field.type}`
         );
 
-      if (!this._final && (field.type === 'Dynamic' || field.type === 'MTW'))
-        // for input, output and service field result is stable
-        onUnstable();
+      // if (!this._final && (field.type === 'Dynamic' || field.type === 'MTW'))
+      //   // for input, output and service field result is stable
+      //   onUnstable();
 
       const ret = {} as ValueAndError<ResourceId>;
       if (isNotNullResourceId(field.value)) ret.value = field.value;
@@ -236,6 +251,18 @@ export class PlTreeResource implements PlTreeResourceI {
     this.dynamicFieldListChanged?.attachWatcher(watcher);
 
     return ret;
+  }
+
+  getKeyValue(watcher: Watcher, key: string): Uint8Array | undefined {
+    this.kvChanged?.attachWatcher(watcher);
+    return this.kv.get(key);
+  }
+
+  getKeyValueString(watcher: Watcher, key: string): string | undefined {
+    const bytes = this.getKeyValue(watcher, key);
+    if (bytes === undefined)
+      return undefined;
+    return decoder.decode(bytes);
   }
 
   getDataAsString(): string | undefined {
@@ -339,7 +366,7 @@ export class PlTreeState {
   }
 
   updateFromResourceData(
-    resourceData: ResourceData[],
+    resourceData: ExtendedResourceData[],
     allowOrphanInputs: boolean = false
   ) {
     // All resources for which recount should be incremented, first are aggregated in this list
@@ -541,6 +568,35 @@ export class PlTreeState {
           notEmpty(resource.resourceStateChange).markChanged();
           changed = true;
         }
+
+        // syncing kv
+        let kvChanged = false;
+        for (const kv of rd.kv) {
+          const current = resource.kv.get(kv.key);
+          if (current === undefined) {
+            resource.kv.set(kv.key, kv.value);
+            kvChanged = true;
+          } else if (Buffer.compare(current, kv.value) !== 0) {
+            resource.kv.set(kv.key, kv.value);
+            kvChanged = true;
+          }
+        }
+
+        if (resource.kv.size > rd.kv.length) {
+          // only it this case it makes sense to check for deletions
+          const newStateKeys = new Set(rd.kv.map(kv => kv.key));
+
+          // deleting keys not present in resource anymore
+          resource.kv.forEach((value, key, map) => {
+            if (!newStateKeys.has(key))
+              map.delete(key);
+          });
+
+          kvChanged = true;
+        }
+
+        if (kvChanged)
+          notEmpty(resource.kvChanged).markChanged();
 
         if (changed) {
           // if resource was changed, updating resource data version

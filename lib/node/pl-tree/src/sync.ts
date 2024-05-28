@@ -4,14 +4,13 @@ import {
   OptionalResourceId,
   PlErrorCodeNotFound, PlTransaction,
   RecoverablePlError,
-  ResourceData,
   ResourceId
 } from '@milaboratory/pl-client-v2';
 import Denque from 'denque';
-import { PlTreeState } from './state';
+import { ExtendedResourceData, PlTreeState } from './state';
 
 /** Applied to list of fields in resource data. */
-export type PruningFunction = (resource: ResourceData) => FieldData[]
+export type PruningFunction = (resource: ExtendedResourceData) => FieldData[]
 
 export interface TreeLoadingRequest {
   /** Resource to prime the traversal algorithm. It is ok, if some of them
@@ -54,7 +53,7 @@ export function constructTreeLoadingRequest(tree: PlTreeState, pruningFunction?:
 /** Given the transaction (preferably read-only) and loading request, executes
  * the tree traversal algorithm, and collects fresh states of resources
  * to update the tree state. */
-export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadingRequest): Promise<ResourceData[]> {
+export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadingRequest): Promise<ExtendedResourceData[]> {
 
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
@@ -63,7 +62,7 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
   // In such a way logic become linear without recursion, and at the same time deal with data
   // as soon as it arrives.
 
-  const pending = new Denque<Promise<ResourceData>>();
+  const pending = new Denque<Promise<ExtendedResourceData>>();
 
   // tracking resources we already requested
   const requested = new Set<ResourceId>();
@@ -73,14 +72,23 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
     // adding the id, so we will not request it's state again if somebody else
     // references the same resource
     requested.add(rid);
-    // sending the request
-    pending.push(tx.getResourceData(rid, true));
+
+    // requesting resource and all kv records
+    const resourceData = tx.getResourceData(rid, true);
+    const kvData = tx.listKeyValues(rid);
+
+    // pushing combined promise
+    pending.push((async () => {
+      const resource = await resourceData;
+      const kv = await kvData;
+      return { ...resource, kv };
+    })());
   };
 
   // sending seed requests
   seedResources.forEach(rid => requestState(rid));
 
-  const result: ResourceData[] = [];
+  const result: ExtendedResourceData[] = [];
   while (true) {
     // taking next pending request
     const nextResourcePromise = pending.shift();
@@ -89,7 +97,7 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
       break;
 
     // at this point we pause and wait for the nest requested resource state to arrive
-    let nextResource: ResourceData;
+    let nextResource: ExtendedResourceData;
     try {
       nextResource = await nextResourcePromise;
     } catch (e: unknown) {

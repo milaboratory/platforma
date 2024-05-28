@@ -2,6 +2,14 @@ import { PlTreeResource, PlTreeState } from './state';
 import { ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { FieldType, ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
+import { notEmpty } from '@milaboratory/ts-helpers';
+
+/** Error encountered during traversal in field or resource. */
+export class PlError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor> {
@@ -42,6 +50,16 @@ export class PlTreeEntryAccessor {
     ...path: (TraverseStep | string)[]
   ): ValueAndError<PlTreeNodeAccessor> | undefined {
     return traverse(this.node(), commonOptions, ...path);
+  }
+
+  traverseNoError(
+    commonOptions: TraverseOptions = {},
+    ...path: (TraverseStep | string)[]
+  ): PlTreeNodeAccessor | undefined {
+    const result = this.traverse(commonOptions, ...path);
+    if (result?.error !== undefined)
+      throw new PlError(notEmpty(result.error.getDataAsString()));
+    return result?.value;
   }
 }
 
@@ -121,10 +139,10 @@ export class PlTreeNodeAccessor {
     this.guard();
     const rid = this.resource.getError(this.watcher);
     if (rid === undefined) {
-      // in general, errors should not appear after resource is ready,
-      // so we will consider such cases stable
-      if (!this.getIsReadyOrError())
-        this.ctx.markUnstable();
+      // // in general, errors should not appear after resource is ready,
+      // // so we will consider such cases stable
+      // if (!this.getIsReadyOrError())
+      //   this.ctx.markUnstable();
       return undefined;
     }
     return this.getResourceFromTree(rid);
@@ -166,6 +184,14 @@ export class PlTreeNodeAccessor {
   listDynamicFields(): string[] {
     this.guard();
     return this.resource.listDynamicFields(this.watcher);
+  }
+
+  getKeyValue(key: string): Uint8Array | undefined {
+    return this.resource.getKeyValue(this.watcher, key);
+  }
+
+  getKeyValueString(key: string): string | undefined {
+    return this.resource.getKeyValueString(this.watcher, key);
   }
 }
 
