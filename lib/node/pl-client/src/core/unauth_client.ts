@@ -4,6 +4,13 @@ import {
   MaintenanceAPI_Ping_Response
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
+import { notEmpty } from '@milaboratory/ts-helpers';
+
+export class LoginFailed extends Error {
+  constructor(message: string) {
+    super('LoginFailed: ' + message);
+  }
+}
 
 /** Primarily used for initial authentication (login) */
 export class UnauthenticatedPlClient {
@@ -26,15 +33,24 @@ export class UnauthenticatedPlClient {
   }
 
   public async login(user: string, password: string): Promise<AuthInformation> {
-    const response = await this.ll.grpcPl.getJWTToken(
-      { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
-      {
-        meta: {
-          'authorization':
-            'Basic ' + Buffer.from(user + ':' + password).toString('base64')
+    try {
+      const response = await this.ll.grpcPl.getJWTToken(
+        { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
+        {
+          meta: {
+            'authorization':
+              'Basic ' + Buffer.from(user + ':' + password).toString('base64')
+          }
         }
-      }
-    );
-    return { jwtToken: response.response.token };
+      ).response;
+      const jwtToken = notEmpty(response.token);
+      if (jwtToken === '')
+        throw new Error('empty token');
+      return { jwtToken };
+    } catch (e: any) {
+      if (e.code === 'UNAUTHENTICATED')
+        throw new LoginFailed(e.message);
+      throw new Error(e);
+    }
   }
 }

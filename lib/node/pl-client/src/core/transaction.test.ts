@@ -92,6 +92,10 @@ test('handle absent resource error', async () => {
     });
 
     expect(rState.fields).toHaveLength(0);
+
+    await pl.withReadTx('testFieldAbsent', async tx => {
+      expect(await tx.getFieldIfExists(ff0)).toBeUndefined();
+    });
   });
 });
 

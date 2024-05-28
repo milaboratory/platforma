@@ -32,3 +32,7 @@ export class UnrecoverablePlError extends PlError {
     super(status);
   }
 }
+
+export function isNotFoundError(err: any): boolean {
+  return err instanceof RecoverablePlError && err.status.code === PlErrorCodeNotFound;
+}

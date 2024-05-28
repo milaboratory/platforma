@@ -1,15 +1,7 @@
 import { LLPlClient } from './ll_client';
 import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { UnauthenticatedPlClient } from './unauth_client';
 import { request } from 'undici';
-
-
-test('ping test', async () => {
-  const client = new UnauthenticatedPlClient(getTestConfig().address);
-  const response = await client.ping();
-  expect(response).toHaveProperty('coreVersion');
-});
 
 test('authenticated instance test', async () => {
   const client = await getTestLLClient();

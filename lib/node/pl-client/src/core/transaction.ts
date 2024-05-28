@@ -10,6 +10,7 @@ import { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { isNotFoundError } from './errors';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -494,6 +495,16 @@ export class PlTransaction {
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
       r => protoToField(notEmpty(r.fieldGet.field))
     );
+  }
+
+  public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
+    try {
+      return await this.getField(fId);
+    } catch (e: any) {
+      if (isNotFoundError(e))
+        return undefined;
+      throw e;
+    }
   }
 
   public resetField(fId: AnyFieldRef): void {
