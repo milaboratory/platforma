@@ -12,7 +12,7 @@
 
   @each $name, $path in $icons16 {
     &.icon-#{$name} {
-      background: url(@icons/assets/icon-assets/#{$path}.svg);
+      background: url(@icons/icon-assets/#{$path}.svg);
     }
   }
 }
@@ -25,7 +25,7 @@
   height: var(--icon-size);
   @each $name, $path in $icons24 {
     &.icon-#{$name} {
-      background: url(@icons/assets/icon-assets/#{$path}.svg);
+      background: url(@icons/icon-assets/#{$path}.svg);
     }
   }
 }
@@ -36,7 +36,7 @@
 
   @each $name, $path in $icons16 {
     &.mask-#{$name} {
-      @include mask-var(url(@icons/assets/icon-assets/#{$path}.svg));
+      @include mask-var(url(@icons/icon-assets/#{$path}.svg));
     }
   }
 }
@@ -47,7 +47,7 @@
 
   @each $name, $path in $icons24 {
     &.mask-#{$name} {
-      @include mask-var(url(@icons/assets/icon-assets/#{$path}.svg));
+      @include mask-var(url(@icons/icon-assets/#{$path}.svg));
     }
   }
 }

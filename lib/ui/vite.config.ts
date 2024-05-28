@@ -25,9 +25,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@icons': fileURLToPath(new URL('./src/lib/assets/icons', import.meta.url)),
     },
   },
   build: {
+    emptyOutDir: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: [resolve(__dirname, 'src/lib.ts')],
