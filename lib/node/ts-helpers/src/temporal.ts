@@ -1,24 +1,29 @@
 export class Aborted extends Error {
-  constructor(cause: unknown) {
+  constructor(cause?: unknown) {
     super('aborted', { cause });
   }
 }
 
 export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    let timeoutRef: NodeJS.Timeout;
-    let abortHandler = () => {
-      clearTimeout(timeoutRef);
-      reject(new Aborted(abortSignal?.reason));
-    };
-    if (abortSignal?.aborted)
-      reject(new Aborted(abortSignal.reason));
-    timeoutRef = setTimeout(() => {
-      abortSignal?.removeEventListener('abort', abortHandler);
-      resolve();
-    }, timeout);
-    abortSignal?.addEventListener('abort', abortHandler);
-  });
+  if (timeout === 0)
+    return new Promise((resolve, reject) => {
+      setImmediate(resolve);
+    });
+  else
+    return new Promise((resolve, reject) => {
+      let timeoutRef: NodeJS.Timeout;
+      let abortHandler = () => {
+        clearTimeout(timeoutRef);
+        reject(new Aborted(abortSignal?.reason));
+      };
+      if (abortSignal?.aborted)
+        reject(new Aborted(abortSignal.reason));
+      timeoutRef = setTimeout(() => {
+        abortSignal?.removeEventListener('abort', abortHandler);
+        resolve();
+      }, timeout);
+      abortSignal?.addEventListener('abort', abortHandler);
+    });
 }
 
 export interface JitterOpts {
@@ -99,7 +104,7 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
 export function nextRetryStateOrError(previous: RetryState): RetryState {
   const next = tryNextRetryState(previous);
   if (next === undefined)
-    throw new Error(`reached max number of attempts reached (${previous.options.maxAttempts}): ` +
+    throw new Error(`max number of attempts reached (${previous.options.maxAttempts}): ` +
       `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, total delay = ${msToHumanReadable(previous.totalDelay)}`);
   return next;
 }
