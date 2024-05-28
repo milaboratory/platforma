@@ -4,6 +4,7 @@ import {
 } from './kernel';
 import { CellState, createCellState, updateCellState } from './computable_state';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { randomUUID } from 'node:crypto';
 
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
 
@@ -148,7 +149,7 @@ export class Computable<T> implements WrappedComputableKernel<T> {
           ? await createCellState(this[WrappedKernelField])
           : await updateCellState(this.state);
         // updating uTag as we just assigned new state
-        this.uTag = crypto.randomUUID();
+        this.uTag = randomUUID();
         // we are done updating state
         this.stateCalculation = undefined;
       })();
