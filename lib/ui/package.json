@@ -14,7 +14,11 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "lint": "eslint . --ext js,ts,vue",
-    "install-no-ws": "npm i --package-lock-only --workspaces false"
+    "install-no-ws": "npm i --package-lock-only --workspaces false",
+    "icons-size-16": "json-sass -i ./src/lib/assets/icons/16-icons.json -o ./src/lib/assets/icons/icons-16.scss -p '$icons16: '",
+    "icons-size-24": "json-sass -i ./src/lib/assets/icons/24-icons.json -o ./src/lib/assets/icons/icons-24.scss -p '$icons24: '",
+    "parse-icons-folder": "node parse-icons.js",
+    "generate-icons": "npm run parse-icons-folder && npm run icons-size-16 && npm run icons-size-24"
   },
   "files": [
     "dist",
@@ -45,6 +49,7 @@
     "typescript": "^5.4",
     "vite": "^5.2.0",
     "vite-plugin-dts": "^3.6.3",
-    "vue-tsc": "^2.0.6"
+    "vue-tsc": "^2.0.6",
+    "json-sass": "1.3.5"
   }
 }
