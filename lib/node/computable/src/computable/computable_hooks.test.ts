@@ -7,15 +7,14 @@ import { computable } from './computable_helpers';
 import { ChangeSource } from '../change_source';
 import { Watcher } from '../watcher';
 import { ComputableCtx } from './kernel';
-import { SimpleComputableObserver, SimpleComputableObserverOps } from './observer_util';
+import { PollingComputableHooks, StartStopComputableHooksOps } from './hooks_util';
 
 class SynchronizedWatchableValue<T> implements TrackedAccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();
+  private readonly hooks: PollingComputableHooks;
 
-  private readonly observer: SimpleComputableObserver;
-
-  constructor(private readonly src: Computable<T>, private value: T, ops: SimpleComputableObserverOps) {
-    this.observer = new SimpleComputableObserver(
+  constructor(private readonly src: Computable<T>, private value: T, ops: StartStopComputableHooksOps) {
+    this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
       ops);
@@ -32,7 +31,7 @@ class SynchronizedWatchableValue<T> implements TrackedAccessorProvider<Observabl
     return {
       getValue: () => {
         guard();
-        ctx.attacheObserver(this.observer);
+        ctx.attacheHooks(this.hooks);
         this.change.attachWatcher(watcher);
         return this.value;
       }
@@ -122,6 +121,8 @@ test.each(getTestSetups())
   await new Promise(resolve => setImmediate(resolve));
   expect(await res2.getValue()).toEqual(40);
   expect(synchronized.active).toEqual(true);
+  
+  await res2.refreshState();
 });
 
 test.each(getTestSetups())
@@ -151,4 +152,6 @@ test.each(getTestSetups())
   expect(synchronized.active).toEqual(true);
   await sleep(20);
   expect(synchronized.active).toEqual(false);
+
+  await res2.refreshState();
 });

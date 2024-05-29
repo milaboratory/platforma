@@ -7,7 +7,7 @@ import {
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
 import { assertNever } from '@milaboratory/ts-helpers';
-import { ComputableObserver } from './computable_observer';
+import { ComputableHooks } from './computable_hooks';
 
 interface ExecutionError {
   error: any;
@@ -29,7 +29,7 @@ class CellComputableContext implements ComputableCtx {
   private kv?: Map<string, any>;
   /** Must be reset to "undefined", to only accumulate those observers injected
    * during a specific call*/
-  public observers: Set<ComputableObserver> | undefined = undefined;
+  public hooks: Set<ComputableHooks> | undefined = undefined;
   public validity: number | undefined = undefined;
 
   markUnstable(): void {
@@ -83,10 +83,10 @@ class CellComputableContext implements ComputableCtx {
     this.kv.set(key, value);
   }
 
-  attacheObserver(listener: ComputableObserver): void {
-    if (this.observers === undefined)
-      this.observers = new Set();
-    this.observers.add(listener);
+  attacheHooks(listener: ComputableHooks): void {
+    if (this.hooks === undefined)
+      this.hooks = new Set();
+    this.hooks.add(listener);
   }
 
   setValidity(timestamp: number): void {
@@ -157,10 +157,7 @@ export interface CellState<T> {
   readonly watcher: HierarchicalWatcher;
 
   /** Observers injected during self rendering and rendering of all non-orphan child states */
-  readonly observers: Set<ComputableObserver> | undefined;
-
-  /** Earliest validity of this data reported by accessors via context */
-  readonly validity: number | undefined;
+  readonly hooks: Set<ComputableHooks> | undefined;
 
   /** Flag used to communicate requirement to run second state rendering for this node.
    *
@@ -320,7 +317,7 @@ function renderSelfState<T>(
   try {
     // stable by default
     ctx.stable = true;
-    ctx.observers = undefined;
+    ctx.hooks = undefined;
     ctx.validity = undefined;
     const iResult = kernel[KernelLambdaField](selfWatcher, ctx);
     return { kernel, ctx, selfWatcher, iResult };
@@ -414,7 +411,7 @@ function finalizeCellState<T>(
   const nestedWatchers: HierarchicalWatcher[] = [];
   const allErrors: Error[] = [];
   let stable = incompleteState.selfState.ctx.stable;
-  let observers: Set<ComputableObserver> | undefined = undefined;
+  let hooks: Set<ComputableHooks> | undefined = undefined;
   let validity: number | undefined = undefined;
   for (const [, { orphan, state }] of Object.entries(
     incompleteState.childrenStates
@@ -425,18 +422,11 @@ function finalizeCellState<T>(
     allErrors.push(...state.allErrors);
     stable = stable && state.stable;
 
-    if (state.observers !== undefined) {
-      if (observers === undefined)
-        observers = new Set();
-      for (const observer of state.observers)
-        observers.add(observer);
-    }
-
-    if (state.validity !== undefined) {
-      if (validity === undefined)
-        validity = state.validity;
-      else
-        validity = Math.min(validity, state.validity);
+    if (state.hooks !== undefined) {
+      if (hooks === undefined)
+        hooks = new Set();
+      for (const h of state.hooks)
+        hooks.add(h);
     }
   }
 
@@ -445,18 +435,11 @@ function finalizeCellState<T>(
 
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
-  if (incompleteState.selfState.ctx.observers !== undefined) {
-    if (observers === undefined)
-      observers = new Set();
-    for (const observer of incompleteState.selfState.ctx.observers)
-      observers.add(observer);
-  }
-
-  if (incompleteState.selfState.ctx.validity !== undefined) {
-    if (validity === undefined)
-      validity = incompleteState.selfState.ctx.validity;
-    else
-      validity = Math.min(validity, incompleteState.selfState.ctx.validity);
+  if (incompleteState.selfState.ctx.hooks !== undefined) {
+    if (hooks === undefined)
+      hooks = new Set();
+    for (const h of incompleteState.selfState.ctx.hooks)
+      hooks.add(h);
   }
 
   return {
@@ -466,8 +449,7 @@ function finalizeCellState<T>(
     allErrors,
     watcher: new HierarchicalWatcher(nestedWatchers),
 
-    observers,
-    validity,
+    hooks,
 
     // next two fields will be rewritten on the second rendering stage
     valueNotCalculated: true,

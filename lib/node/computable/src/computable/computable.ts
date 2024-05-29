@@ -60,12 +60,24 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     return this.isChanged();
   }
 
+  public async refreshState(): Promise<void> {
+    const hooks = this.state?.hooks;
+    if (hooks === undefined)
+      return;
+    const promises: Promise<void>[] = [];
+    for (const h of hooks)
+      promises.push(h.refreshState(this));
+    if (promises.length === 0)
+      return;
+    await Promise.all(promises);
+  }
+
   public isChanged(uTag?: string): boolean {
     // reporting to observers
-    const observers = this.state?.observers;
-    if (observers !== undefined)
-      for (const observer of observers)
-        observer.onChangedRequest(this);
+    const hooks = this.state?.hooks;
+    if (hooks !== undefined)
+      for (const h of hooks)
+        h.onChangedRequest(this);
 
     return this._changed(uTag);
   }
@@ -77,28 +89,28 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
-      const observers = this.state?.observers;
-      if (observers !== undefined)
-        for (const observer of observers)
-          observer.onChangedRequest(this);
+      const hooks = this.state?.hooks;
+      if (hooks !== undefined)
+        for (const h of hooks)
+          h.onChangedRequest(this);
 
       // reporting "changed" immediately
       return;
     }
 
     const lPromise = this.state!.watcher.listen(abortSignal);
-    const observers = this.state?.observers;
-    if (observers !== undefined) {
+    const hooks = this.state?.hooks;
+    if (hooks !== undefined) {
       if (this.listenCounter === 0)
-        for (const observer of observers)
-          observer.onListenStart(this);
+        for (const h of hooks)
+          h.onListenStart(this);
       this.listenCounter++;
       try {
         return await lPromise;
       } finally {
         if (--this.listenCounter === 0)
-          for (const observer of observers)
-            observer.onListenStop(this);
+          for (const h of hooks)
+            h.onListenStop(this);
       }
     } else {
       return await lPromise;
@@ -156,9 +168,9 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     const state = notEmpty(this.state);
 
     // reporting to observers
-    if (state.observers !== undefined)
-      for (const observer of state.observers)
-        observer.getValue(this);
+    if (state.hooks !== undefined)
+      for (const hooks of state.hooks)
+        hooks.onGetValue(this);
 
     if (state.allErrors.length === 0)
       return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };

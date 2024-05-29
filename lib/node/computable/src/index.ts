@@ -7,6 +7,6 @@ export * from './computable/accessor_provider';
 export * from './computable/computable';
 export * from './computable/computable_helpers';
 export * from './computable/kernel';
-export * from './computable/computable_observer';
-export * from './computable/observer_util';
+export * from './computable/computable_hooks';
+export * from './computable/hooks_util';
 
