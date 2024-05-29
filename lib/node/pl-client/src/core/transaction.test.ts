@@ -124,3 +124,11 @@ test('handle KV storage', async () => {
     });
   });
 });
+
+test('handle empty KV storage', async () => {
+  await withTempRoot(async pl => {
+    await pl.withReadTx('testReadIndividualAndList', async tx => {
+      expect(await tx.listKeyValuesString(tx.clientRoot)).toEqual([]);
+    });
+  });
+});

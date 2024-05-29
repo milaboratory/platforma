@@ -160,7 +160,7 @@ export class LLPlTransaction {
           continue;
         }
 
-        if (currentHandler!.kind !== message.response.oneofKind) {
+        if (currentHandler!.kind !== message.response.oneofKind && message?.multiMessage?.isEmpty !== true) {
           const currentError = new Error(
             `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`
           );
