@@ -7,6 +7,7 @@ import {
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
 import { assertNever } from '@milaboratory/ts-helpers';
+import { ComputableObserver } from './computable_observer';
 
 interface ExecutionError {
   error: any;
@@ -26,6 +27,10 @@ class CellComputableContext implements ComputableCtx {
   public stable: boolean = false;
   private onDestroy?: (() => void);
   private kv?: Map<string, any>;
+  /** Must be reset to "undefined", to only accumulate those observers injected
+   * during a specific call*/
+  public observers: Set<ComputableObserver> | undefined = undefined;
+  public validity: number | undefined = undefined;
 
   markUnstable(): void {
     this.stable = false;
@@ -76,6 +81,19 @@ class CellComputableContext implements ComputableCtx {
     if (this.kv === undefined)
       this.kv = new Map<string, any>();
     this.kv.set(key, value);
+  }
+
+  attacheObserver(listener: ComputableObserver): void {
+    if (this.observers === undefined)
+      this.observers = new Set();
+    this.observers.add(listener);
+  }
+
+  setValidity(timestamp: number): void {
+    if (this.validity === undefined)
+      this.validity = timestamp;
+    else
+      this.validity = Math.min(this.validity, timestamp);
   }
 }
 
@@ -137,6 +155,12 @@ export interface CellState<T> {
 
   /** Includes selfWatcher and all children watchers. It is passed to parent Cells. */
   readonly watcher: HierarchicalWatcher;
+
+  /** Observers injected during self rendering and rendering of all non-orphan child states */
+  readonly observers: Set<ComputableObserver> | undefined;
+
+  /** Earliest validity of this data reported by accessors via context */
+  readonly validity: number | undefined;
 
   /** Flag used to communicate requirement to run second state rendering for this node.
    *
@@ -296,6 +320,8 @@ function renderSelfState<T>(
   try {
     // stable by default
     ctx.stable = true;
+    ctx.observers = undefined;
+    ctx.validity = undefined;
     const iResult = kernel[KernelLambdaField](selfWatcher, ctx);
     return { kernel, ctx, selfWatcher, iResult };
   } catch (error: any) {
@@ -388,6 +414,8 @@ function finalizeCellState<T>(
   const nestedWatchers: HierarchicalWatcher[] = [];
   const allErrors: Error[] = [];
   let stable = incompleteState.selfState.ctx.stable;
+  let observers: Set<ComputableObserver> | undefined = undefined;
+  let validity: number | undefined = undefined;
   for (const [, { orphan, state }] of Object.entries(
     incompleteState.childrenStates
   )) {
@@ -396,6 +424,20 @@ function finalizeCellState<T>(
     nestedWatchers.push(state.watcher);
     allErrors.push(...state.allErrors);
     stable = stable && state.stable;
+
+    if (state.observers !== undefined) {
+      if (observers === undefined)
+        observers = new Set();
+      for (const observer of state.observers)
+        observers.add(observer);
+    }
+
+    if (state.validity !== undefined) {
+      if (validity === undefined)
+        validity = state.validity;
+      else
+        validity = Math.min(validity, state.validity);
+    }
   }
 
   if (isExecutionError(incompleteState.selfState.iResult))
@@ -403,12 +445,29 @@ function finalizeCellState<T>(
 
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
+  if (incompleteState.selfState.ctx.observers !== undefined) {
+    if (observers === undefined)
+      observers = new Set();
+    for (const observer of incompleteState.selfState.ctx.observers)
+      observers.add(observer);
+  }
+
+  if (incompleteState.selfState.ctx.validity !== undefined) {
+    if (validity === undefined)
+      validity = incompleteState.selfState.ctx.validity;
+    else
+      validity = Math.min(validity, incompleteState.selfState.ctx.validity);
+  }
+
   return {
     isLatest: true,
     ...incompleteState,
     stable,
     allErrors,
     watcher: new HierarchicalWatcher(nestedWatchers),
+
+    observers,
+    validity,
 
     // next two fields will be rewritten on the second rendering stage
     valueNotCalculated: true,

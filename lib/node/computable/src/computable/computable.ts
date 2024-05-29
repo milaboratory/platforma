@@ -1,7 +1,4 @@
-import {
-  ComputableKernel,
-  WrappedComputableKernel, WrappedKernelField
-} from './kernel';
+import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
 import { CellState, createCellState, updateCellState } from './computable_state';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -42,32 +39,13 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
-// TODO ComputableListener pattern is limited to only track events of the
-//      root computable, not allowing to track interactions with derived states,
-//      if computable in question is used as "nested computable". If this becomes
-//      an issue in the future, it is easy to push this pattern to the level of
-//      watchers, and harnessing watcher's hierarchy to spread "listeners" from
-//      nested to parent watchers and thus computables.
-
-/** Allows to listen for user interaction events after computable is created */
-export interface ComputableListener {
-  onChangedRequest(instance: Computable<unknown>): void;
-
-  getValue(instance: Computable<unknown>): void;
-
-  onListenStart(instance: Computable<unknown>): void;
-
-  onListenStop(instance: Computable<unknown>): void;
-}
-
 export class Computable<T> implements WrappedComputableKernel<T> {
   private stateCalculation?: Promise<void>;
   private state?: CellState<T>;
   private uTag: string = '';
   public readonly [WrappedKernelField]: ComputableKernel<T>;
 
-  constructor(kernel: ComputableKernel<T>,
-              private readonly listener?: ComputableListener) {
+  constructor(kernel: ComputableKernel<T>) {
     this[WrappedKernelField] = kernel;
   }
 
@@ -83,8 +61,11 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   }
 
   public isChanged(uTag?: string): boolean {
-    // reporting to listener if it is set
-    this.listener?.onChangedRequest(this);
+    // reporting to observers
+    const observers = this.state?.observers;
+    if (observers !== undefined)
+      for (const observer of observers)
+        observer.onChangedRequest(this);
 
     return this._changed(uTag);
   }
@@ -96,22 +77,28 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
-      this.listener?.onChangedRequest(this);
+      const observers = this.state?.observers;
+      if (observers !== undefined)
+        for (const observer of observers)
+          observer.onChangedRequest(this);
 
       // reporting "changed" immediately
       return;
     }
 
     const lPromise = this.state!.watcher.listen(abortSignal);
-    if (this.listener !== undefined) {
+    const observers = this.state?.observers;
+    if (observers !== undefined) {
       if (this.listenCounter === 0)
-        this.listener.onListenStart(this);
+        for (const observer of observers)
+          observer.onListenStart(this);
       this.listenCounter++;
       try {
         return await lPromise;
       } finally {
         if (--this.listenCounter === 0)
-          this.listener!.onListenStop(this);
+          for (const observer of observers)
+            observer.onListenStop(this);
       }
     } else {
       return await lPromise;
@@ -133,9 +120,6 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   }
 
   public async getValueOrError(): Promise<ComputableResult<T>> {
-    // notifying the listener
-    this.listener?.getValue(this);
-
     if (this.stateCalculation !== undefined) {
 
       // waiting for stat to update in case update was triggered elsewhere
@@ -145,11 +129,21 @@ export class Computable<T> implements WrappedComputableKernel<T> {
 
       // starting async state update
       this.stateCalculation = (async () => {
-        this.state = this.state === undefined
+        // awaiting new state
+        const newState = this.state === undefined
           ? await createCellState(this[WrappedKernelField])
           : await updateCellState(this.state);
+
+        // important state assertion
+        if (this.listenCounter !== 0)
+          throw new Error('Concurrent listening and state update.');
+
+        // updating the state
+        this.state = newState;
+
         // updating uTag as we just assigned new state
         this.uTag = randomUUID();
+
         // we are done updating state
         this.stateCalculation = undefined;
       })();
@@ -160,6 +154,11 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     }
 
     const state = notEmpty(this.state);
+
+    // reporting to observers
+    if (state.observers !== undefined)
+      for (const observer of state.observers)
+        observer.getValue(this);
 
     if (state.allErrors.length === 0)
       return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };

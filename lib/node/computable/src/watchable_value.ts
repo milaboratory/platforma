@@ -8,7 +8,7 @@ export interface ObservableAccessor<T> {
 }
 
 /** Super primitive observable implementation */
-export class Observable<T> implements TrackedAccessorProvider<ObservableAccessor<T>> {
+export class WatchableValue<T> implements TrackedAccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();
 
   constructor(private value: T) {

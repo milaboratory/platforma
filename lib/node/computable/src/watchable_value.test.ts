@@ -1,10 +1,10 @@
-import { Observable } from './observable';
+import { WatchableValue } from './watchable_value';
 import { computable } from './computable/computable_helpers';
 import { combineProviders } from './computable/accessor_provider';
 
 test('simple observable', async () => {
-  const obs1 = new Observable(1);
-  const obs2 = new Observable(2);
+  const obs1 = new WatchableValue(1);
+  const obs2 = new WatchableValue(2);
 
   const c = computable(combineProviders({ obs1, obs2 }), {},
     ({ obs1, obs2 }) => {

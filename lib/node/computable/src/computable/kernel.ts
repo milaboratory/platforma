@@ -1,6 +1,16 @@
 import { Watcher } from '../watcher';
+import { ComputableObserver } from './computable_observer';
 
 export interface ComputableCtx {
+  /** Sets timestamp of the data used by accessor. I.e. last time this data was updated. */
+  setValidity(timestamp: number): void;
+
+  /** Attaches computable observer to track interactions with resulting computable.
+   * Important: try to always inject the same instance of the observer, if it is
+   * possible in the context, instance are placed in the Set to keep number of
+   * listeners low for a tree. */
+  attacheObserver(listener: ComputableObserver): void;
+
   /** If called during construction, this result will be considered as unstable */
   markUnstable(): void;
 

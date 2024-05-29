@@ -1,36 +1,23 @@
-import { Computable, ComputableListener } from './computable';
-import { TrackedAccessorProvider } from './accessor_provider';
-import { ComputableCtx, UnwrapComputables } from './kernel';
-import { ComputableRenderingOps, computable } from './computable_helpers';
-import { Omit } from 'utility-types';
+import { Computable } from './computable';
+import { ComputableObserver } from './computable_observer';
 
-export interface ComputableDataSource<A> {
-  /** Returns accessor factory to facilitate creation of new computables */
-  accessorFactory: TrackedAccessorProvider<A>;
-
-  /** Should start update process */
-  startUpdating(): void;
-
-  /** Should terminate update process */
-  stopUpdating(): void;
-}
-
-export type ComputableReactorOps = {
+export type SimpleComputableObserverOps = {
   /** How long to wait after last computable request to send stopUpdating
    * request to the data source. */
   stopDebounce: number
 };
 
-/** Allows to link computable state requests (i.e. signs that somebody is
- * interested in its value) to the processes keeping the underlying state
- * fresh, like periodically polling pl. */
-export class ComputableReactor<A> implements ComputableListener {
+/** Allows to simplify linkage of computable state request events (i.e. signs
+ * that somebody is interested in its value) to the processes keeping the
+ * underlying state fresh, like periodically polling pl. */
+export class SimpleComputableObserver implements ComputableObserver {
   private readonly stopDebounce: number;
 
   private sourceActivated = false;
 
-  constructor(private readonly source: ComputableDataSource<A>,
-              ops: ComputableReactorOps) {
+  constructor(private readonly startUpdating: () => void,
+              private readonly stopUpdating: () => void,
+              ops: SimpleComputableObserverOps) {
     this.stopDebounce = ops.stopDebounce;
   }
 
@@ -40,7 +27,7 @@ export class ComputableReactor<A> implements ComputableListener {
     if (this.sourceActivated && this.listening.size === 0
       && this.stopCountdown === undefined)
       this.stopCountdown = setTimeout(() => {
-        this.source.stopUpdating();
+        this.stopUpdating();
         this.sourceActivated = false;
         this.stopCountdown = undefined;
       }, this.stopDebounce);
@@ -54,7 +41,7 @@ export class ComputableReactor<A> implements ComputableListener {
       }
       return;
     } else {
-      this.source.startUpdating();
+      this.startUpdating();
       this.sourceActivated = true;
     }
   }
@@ -80,12 +67,5 @@ export class ComputableReactor<A> implements ComputableListener {
   getValue(instance: Computable<unknown>): void {
     // the same a onChangeRequest
     this.onChangedRequest();
-  }
-
-  computable<IR, T = UnwrapComputables<IR>>(
-    ops: Omit<Partial<ComputableRenderingOps>, 'listener'> = {},
-    cb: (a: A, ctx: ComputableCtx) => IR,
-    postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>): Computable<T> {
-    return computable(this.source.accessorFactory, { ...ops, listener: this }, cb, postprocessValue);
   }
 }
