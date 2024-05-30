@@ -547,6 +547,14 @@ export class PlTransaction {
     });
   }
 
+  public deleteKValue(rId: AnyResourceRef, key: string): void {
+    this.sendVoidAsync({
+      oneofKind: 'resourceKeyValueDelete', resourceKeyValueDelete: {
+        resourceId: toResourceId(rId), key
+      }
+    });
+  }
+
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceKeyValueGet', resourceKeyValueGet: { resourceId: toResourceId(rId), key } },

@@ -122,6 +122,19 @@ test('handle KV storage', async () => {
       expect(await tx.getKValueString(tx.clientRoot, 'a')).toEqual('a');
       expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
     });
+
+    await pl.withWriteTx('deleteKV', async tx => {
+      tx.deleteKValue(tx.clientRoot, 'a');
+      await tx.commit();
+    });
+
+    await pl.withReadTx('testReadIndividualAndList2', async tx => {
+      expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
+      expect(await tx.listKeyValuesString(tx.clientRoot)).toEqual([
+        { key: 'b', value: 'b' }
+      ]);
+      expect(await tx.getKValueString(tx.clientRoot, 'b')).toEqual('b');
+    });
   });
 });
 
