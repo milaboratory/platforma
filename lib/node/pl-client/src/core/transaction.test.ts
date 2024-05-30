@@ -84,6 +84,17 @@ test('handle absent resource error', async () => {
 
     rState = await pl.withReadTx('testRetrieveResource', async tx => {
       await expect(async () => {
+        await tx.listKeyValues(rr0);
+      })
+        .rejects
+        .toThrow(RecoverablePlError);
+      return await tx.getResourceData(tx.clientRoot, true);
+    });
+
+    expect(rState.fields).toHaveLength(0);
+
+    rState = await pl.withReadTx('testRetrieveResource', async tx => {
+      await expect(async () => {
         await tx.getField(ff0);
       })
         .rejects

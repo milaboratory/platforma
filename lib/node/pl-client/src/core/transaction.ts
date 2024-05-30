@@ -105,6 +105,15 @@ export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRe
 export class TxCommitConflict extends Error {
 }
 
+async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await cb();
+  } catch (e: any) {
+    if (isNotFoundError(e))
+      return undefined;
+    throw e;
+  }
+}
 
 /**
  * Each platform transaction has 3 stages:
@@ -395,6 +404,7 @@ export class PlTransaction {
 
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
+  public async getResourceData(rId: AnyResourceRef, loadFields: boolean): Promise<BasicResourceData | ResourceData>
   public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
     return await this.sendSingleAndParse({
         oneofKind: 'resourceGet',
@@ -402,6 +412,13 @@ export class PlTransaction {
       },
       r => protoToResource(notEmpty(r.resourceGet.resource))
     );
+  }
+
+  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: true): Promise<ResourceData | undefined>;
+  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData | undefined>;
+  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: boolean): Promise<BasicResourceData | ResourceData | undefined>
+  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData | undefined> {
+    return notFoundToUndefined(async () => await this.getResourceData(rId, loadFields));
   }
 
   /**
@@ -498,13 +515,7 @@ export class PlTransaction {
   }
 
   public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
-    try {
-      return await this.getField(fId);
-    } catch (e: any) {
-      if (isNotFoundError(e))
-        return undefined;
-      throw e;
-    }
+    return notFoundToUndefined(async () => await this.getField(fId));
   }
 
   public resetField(fId: AnyFieldRef): void {
@@ -536,6 +547,14 @@ export class PlTransaction {
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
     return (await this.listKeyValues(rId))
       .map(({ key, value }) => ({ key, value: Buffer.from(value).toString() }));
+  }
+
+  public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
+    return notFoundToUndefined(async () => await this.listKeyValues(rId));
+  }
+
+  public async listKeyValuesStringIfResourceExists(rId: AnyResourceRef): Promise<KeyValueString[] | undefined> {
+    return notFoundToUndefined(async () => await this.listKeyValuesString(rId));
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
