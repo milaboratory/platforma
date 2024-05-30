@@ -84,6 +84,8 @@ import { BlockStore } from './lib/layout/BlockStore.ts';
 import icons16 from './lib/assets/icons/16-icons.json';
 import icons24 from './lib/assets/icons/24-icons.json';
 
+import { allCssVariables } from './lib/demo-site-data/all-css-variables.ts';
+
 export { icons16, icons24 };
 
 // MiXCR
@@ -159,3 +161,6 @@ export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, Mas
 
 //move to new version pl-uikit
 export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
+
+const DemoData = { allCssVariables: allCssVariables() };
+export { DemoData };
