@@ -95,7 +95,7 @@ export class BlockStore<State extends PlCore.BlockState = PlCore.BlockState> {
   }
 
   get title() {
-    return this.block.name || strings.ucFirst(this.block.kind);
+    return this.block.name || strings.ucFirst(this.block.kind ?? '');
   }
 
   get hasErrors() {

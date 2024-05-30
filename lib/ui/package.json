@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -29,7 +29,7 @@
   "types": "./dist/lib.d.ts",
   "dependencies": {
     "@milaboratory/helpers": "^1.2.2",
-    "@milaboratory/platforma-core": "^0.0.6",
+    "@milaboratory/platforma-core": "^0.1.2",
     "js-yaml": "^4.1.0",
     "vue": "^3.4.27",
     "vue-router": "^4.2.5"

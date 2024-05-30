@@ -160,7 +160,7 @@ export abstract class BlockApp<S extends PlCore.BlockState = PlCore.BlockState, 
   }
 
   get title() {
-    return this.block.name || ucFirst(this.block.kind);
+    return this.block.name || ucFirst(this.block.kind ?? '');
   }
 
   get hasErrors() {
