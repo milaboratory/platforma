@@ -5,6 +5,7 @@ import { inferAuthRefreshTime } from '../util/pl';
 import { UnauthenticatedPlClient } from '../core/unauth_client';
 import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
+import { NullResourceId, OptionalResourceId, ResourceId, resourceIdToString } from '../core/types';
 
 export interface TestConfig {
   address: string;
@@ -102,11 +103,16 @@ export async function getTestClient(alternativeRoot?: string, init: boolean = tr
 
 export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {
   const altRoot = `test_${Date.now()}_${randomUUID()}`;
+  let altRootId: OptionalResourceId = NullResourceId;
   try {
     const client = await getTestClient(altRoot);
-    return await body(client);
-  } finally {
+    altRootId = client.clientRoot;
+    const value = await body(client);
     const rawClient = await getTestClient();
     await rawClient.deleteAlternativeRoot(altRoot);
+    return value;
+  } catch (err) {
+    console.log(`ALTERNATIVE ROOT: ${altRoot} (${resourceIdToString(altRootId)})`);
+    throw err;
   }
 }
