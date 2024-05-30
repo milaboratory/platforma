@@ -1,5 +1,10 @@
 import { PlTreeResource, PlTreeState } from './state';
-import { ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
+import {
+  ComputableCtx, ComputableHooks,
+  TrackedAccessorProvider,
+  UsageGuard,
+  Watcher
+} from '@milaboratory/computable';
 import { FieldType, ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 import { notEmpty } from '@milaboratory/ts-helpers';
@@ -15,12 +20,13 @@ export class PlError extends Error {
 export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor> {
   constructor(
     private readonly tree: PlTreeState,
-    public readonly rid: ResourceId = tree.root
+    public readonly rid: ResourceId = tree.root,
+    private readonly hooks?: ComputableHooks
   ) {
   }
 
   createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.tree, this.rid, watcher, guard, ctx);
+    return new PlTreeEntryAccessor(this.tree, this.rid, watcher, guard, ctx, this.hooks);
   }
 }
 
@@ -29,12 +35,15 @@ export class PlTreeEntryAccessor {
               private readonly rid: ResourceId,
               private readonly watcher: Watcher,
               private readonly guard: UsageGuard,
-              private readonly ctx: ComputableCtx
+              private readonly ctx: ComputableCtx,
+              private readonly hooks?: ComputableHooks
   ) {
   }
 
   node(): PlTreeNodeAccessor | undefined {
     this.guard();
+    if (this.hooks !== undefined)
+      this.ctx.attacheHooks(this.hooks);
     const r = this.tree.get(this.watcher, this.rid);
     if (r === undefined) {
       // resource may appear later, so in a broad sense this result is unstable,
@@ -42,7 +51,7 @@ export class PlTreeEntryAccessor {
       this.ctx.markUnstable();
       return undefined;
     }
-    return new PlTreeNodeAccessor(this.watcher, this.tree, r, this.guard, this.ctx);
+    return new PlTreeNodeAccessor(this.watcher, this.tree, r, this.guard, this.ctx, this.hooks);
   }
 
   traverse(
@@ -75,7 +84,8 @@ export class PlTreeNodeAccessor {
     private readonly tree: PlTreeState,
     private readonly resource: PlTreeResource,
     private readonly guard: UsageGuard,
-    private readonly ctx: ComputableCtx
+    private readonly ctx: ComputableCtx,
+    private readonly hooks?: ComputableHooks
   ) {
   }
 
@@ -160,10 +170,6 @@ export class PlTreeNodeAccessor {
     return this.resource.getDataAsJson<T>();
   }
 
-  persist(): PlTreeEntry {
-    return new PlTreeEntry(this.tree, this.resource.id);
-  }
-
   traverse(
     commonOptions: TraverseOptions = {},
     ...path: (TraverseStep | string)[]
@@ -192,6 +198,10 @@ export class PlTreeNodeAccessor {
 
   getKeyValueString(key: string): string | undefined {
     return this.resource.getKeyValueString(this.watcher, key);
+  }
+
+  persist(): PlTreeEntry {
+    return new PlTreeEntry(this.tree, this.resource.id, this.hooks);
   }
 }
 

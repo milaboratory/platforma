@@ -136,24 +136,23 @@ export class PlTreeResource implements PlTreeResourceI {
 
       if (!this.inputsLocked)
         this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
-      else if (
-        errorIfNotFound &&
-        (assertFieldType === 'Service' || assertFieldType === 'Input')
-      )
-        throw new Error(
-          `Service or input field not found ${fieldName}.`
-        );
-      else
-        // stable absence of field
-        return undefined;
+      else if (assertFieldType === 'Service' || assertFieldType === 'Input') {
+        if (errorIfNotFound)
+          throw new Error(`Service or input field not found ${fieldName}.`);
+        else
+          // stable absence of field
+          return undefined;
+      }
 
       if (!this.outputsLocked)
         this.outputFieldListChanged?.attachWatcher(watcher);
-      else if (errorIfNotFound && assertFieldType === 'Output')
-        throw new Error(`Output field not found ${fieldName}.`);
-      else
-        // stable absence of field
-        return undefined;
+      else if (assertFieldType === 'Output') {
+        if (errorIfNotFound)
+          throw new Error(`Output field not found ${fieldName}.`);
+        else
+          // stable absence of field
+          return undefined;
+      }
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
       if (!this._final)

@@ -62,7 +62,7 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
   // In such a way logic become linear without recursion, and at the same time deal with data
   // as soon as it arrives.
 
-  const pending = new Denque<Promise<ExtendedResourceData>>();
+  const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
   // tracking resources we already requested
   const requested = new Set<ResourceId>();
@@ -74,13 +74,18 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
     requested.add(rid);
 
     // requesting resource and all kv records
-    const resourceData = tx.getResourceData(rid, true);
-    const kvData = tx.listKeyValues(rid);
+    const resourceData = tx.getResourceDataIfExists(rid, true);
+    const kvData = tx.listKeyValuesIfResourceExists(rid);
 
     // pushing combined promise
     pending.push((async () => {
       const resource = await resourceData;
       const kv = await kvData;
+      if (resource === undefined || kv === undefined) {
+        if (kv !== undefined || resource !== undefined)
+          throw new Error('Inconsistent replies');
+        return undefined;
+      }
       return { ...resource, kv };
     })());
   };
@@ -97,15 +102,10 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
       break;
 
     // at this point we pause and wait for the nest requested resource state to arrive
-    let nextResource: ExtendedResourceData;
-    try {
-      nextResource = await nextResourcePromise;
-    } catch (e: unknown) {
-      // ignoring not-found errors (such errors may be produced by seed resource ids)
-      if (e instanceof RecoverablePlError && e.status.code === PlErrorCodeNotFound)
-        continue;
-      throw e;
-    }
+    let nextResource = await nextResourcePromise;
+    if (nextResource === undefined)
+      // ignoring resources that were not found (this may happen for seed resource ids)
+      continue;
 
     // apply field pruning, if requested
     if (pruningFunction !== undefined)

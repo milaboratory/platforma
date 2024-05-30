@@ -12,9 +12,9 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@milaboratory/computable": "^1.0.5",
-    "@milaboratory/pl-client-v2": "^2.3.6",
-    "@milaboratory/ts-helpers": "^1.0.10",
+    "@milaboratory/computable": "1.1.1",
+    "@milaboratory/pl-client-v2": "2.3.12",
+    "@milaboratory/ts-helpers": "1.0.11",
     "denque": "^2.1.0",
     "utility-types": "^3.11.0"
   },
