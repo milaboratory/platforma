@@ -1,5 +1,6 @@
-import { LoginFailed, UnauthenticatedPlClient } from './unauth_client';
+import { UnauthenticatedPlClient } from './unauth_client';
 import { getTestConfig } from '../test/test_config';
+import { UnauthenticatedError } from './errors';
 
 test('ping test', async () => {
   const client = new UnauthenticatedPlClient(getTestConfig().address);
@@ -17,5 +18,5 @@ test('wrong login', async () => {
   const client = new UnauthenticatedPlClient(testConfig.address);
   await expect(client.login(testConfig.test_user, testConfig.test_password + 'A'))
     .rejects
-    .toThrow(LoginFailed);
+    .toThrow(UnauthenticatedError);
 });

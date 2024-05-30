@@ -3,6 +3,8 @@ import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { request } from 'undici';
 
+import { UnauthenticatedError } from './errors';
+
 test('authenticated instance test', async () => {
   const client = await getTestLLClient();
   const tx = client.createTx();
@@ -34,13 +36,13 @@ test('unauthenticated status change', async () => {
     }, false);
   })
     .rejects
-    .toThrow(/authenticate/);
+    .toThrow(UnauthenticatedError);
 
   await expect(async () => {
     await tx.await();
   })
     .rejects
-    .toThrow(/authenticate/);
+    .toThrow(UnauthenticatedError);
 
   expect(client.status).toEqual('Unauthenticated');
 });

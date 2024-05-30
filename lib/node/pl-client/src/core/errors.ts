@@ -36,3 +36,20 @@ export class UnrecoverablePlError extends PlError {
 export function isNotFoundError(err: any): boolean {
   return err instanceof RecoverablePlError && err.status.code === PlErrorCodeNotFound;
 }
+
+export class UnauthenticatedError extends Error {
+  constructor(message: string) {
+    super('LoginFailed: ' + message);
+  }
+}
+
+export function rethrowMeaningfulError(error: any, wrapIfUnknown: boolean = false): never {
+  if (error.code === 'UNAUTHENTICATED')
+    throw new UnauthenticatedError(error.message);
+  if (error.code === 'DEADLINE_EXCEEDED')
+    throw new Aborted(error);
+  if (wrapIfUnknown)
+    throw new Error(error.message, { cause: error });
+  else
+    throw error;
+}

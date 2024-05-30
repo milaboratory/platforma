@@ -2,7 +2,14 @@ import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto/github.com/mi
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
-import { PlError, PlErrorCodeNotFound, RecoverablePlError, UnrecoverablePlError } from './errors';
+import {
+  PlError,
+  PlErrorCodeNotFound,
+  RecoverablePlError,
+  rethrowMeaningfulError,
+  UnauthenticatedError,
+  UnrecoverablePlError
+} from './errors';
 
 export type ClientMessageRequest = TxAPI_ClientMessage['request'];
 
@@ -48,10 +55,20 @@ function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
   return { kind, expectMultiResponse, resolve, reject } as AnyResponseHandler;
 }
 
+function isRecoverable(status: Status): boolean {
+  return status.code === PlErrorCodeNotFound;
+}
+
 function wrapPlError(status: Status): PlError {
-  if (status.code === PlErrorCodeNotFound)
+  if (isRecoverable(status))
     return new RecoverablePlError(status);
   return new UnrecoverablePlError(status);
+}
+
+export class RethrowError extends Error {
+  constructor(public readonly rethrowLambda: () => never) {
+    super('Rethrow error, you should never see this one.');
+  }
 }
 
 export class LLPlTransaction {
@@ -80,12 +97,12 @@ export class LLPlTransaction {
   private completed = false;
 
   /** If this transaction was terminated due to error, this is a generator to create new errors if corresponding response is required. */
-  private errorFactory?: () => Error;
+  private errorFactory?: () => never;
 
   /** Timestamp when transaction was opened */
   private readonly openTimestamp = Date.now();
 
-  private readonly incomingProcessorResult: Promise<Error | null>;
+  private readonly incomingProcessorResult: Promise<(() => never) | null>;
 
   constructor(streamFactory: (abortSignal: AbortSignal) => TxStream) {
     this.stream = streamFactory(this.abortController.signal);
@@ -94,18 +111,16 @@ export class LLPlTransaction {
     this.incomingProcessorResult = this.incomingEventProcessor();
   }
 
-  private assignErrorFactoryIfNotSet(errorFactory: () => Error) {
+  private assignErrorFactoryIfNotSet(errorFactory: () => never, reject?: (e: Error) => void): () => never {
+    if (reject !== undefined)
+      reject(new RethrowError(errorFactory));
     if (this.errorFactory)
-      return;
+      return errorFactory;
     this.errorFactory = errorFactory;
+    return errorFactory;
   }
 
-  private assignClosedTransactionErrorIfNotSet(cause: Error) {
-    // this.assignErrorFactoryIfNotSet(() => cause);
-    this.assignErrorFactoryIfNotSet(() => new Error(`closed transaction because of: ${cause.message}`, { cause: cause }));
-  }
-
-  private async incomingEventProcessor(): Promise<Error | null> {
+  private async incomingEventProcessor(): Promise<(() => never) | null> {
     /** Counter of received responses, used to check consistency of responses.
      * Increments on each received message. */
     let expectedId = -1;
@@ -120,9 +135,9 @@ export class LLPlTransaction {
           currentHandler = this.responseHandlerQueue.shift();
 
           if (currentHandler === undefined) {
-            this.assignErrorFactoryIfNotSet(
-              () => new Error(`orphan incoming message`)
-            );
+            this.assignErrorFactoryIfNotSet(() => {
+              throw new Error(`orphan incoming message`);
+            });
             break;
           }
 
@@ -134,52 +149,60 @@ export class LLPlTransaction {
         }
 
         if (message.requestId !== expectedId) {
-          this.assignErrorFactoryIfNotSet(
-            () => new Error(`out of order messages, ${message.requestId} !== ${expectedId}`)
-          );
+          const errorMessage = `out of order messages, ${message.requestId} !== ${expectedId}`;
+          this.assignErrorFactoryIfNotSet(() => {
+            throw new Error(errorMessage);
+          });
           break;
         }
 
         if (message.error !== undefined) {
-          const currentError = wrapPlError(message.error);
-          currentHandler!.reject(currentError);
-          currentHandler = undefined;
+          const status = message.error;
 
-          if (currentError instanceof UnrecoverablePlError) {
+          if (isRecoverable(status)) {
+            currentHandler.reject(new RethrowError(() => {
+              throw new RecoverablePlError(status);
+            }));
+            currentHandler = undefined;
+
+            if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
+              this.assignErrorFactoryIfNotSet(() => {
+                throw new Error('Unexpected message sequence.');
+              });
+              break;
+            }
+
+            // We can continue to work after recoverable errors
+            continue;
+          } else {
+            this.assignErrorFactoryIfNotSet(() => {
+              throw new UnrecoverablePlError(status);
+            }, currentHandler.reject);
+            currentHandler = undefined;
+
             // In case of unrecoverable errors we close the transaction
-            this.assignClosedTransactionErrorIfNotSet(currentError);
             break;
           }
-
-          if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
-            this.assignClosedTransactionErrorIfNotSet(new Error('Unexpected message sequence.'));
-            break;
-          }
-
-          // We can continue to work after recoverable errors
-          continue;
         }
 
         if (currentHandler!.kind !== message.response.oneofKind && message?.multiMessage?.isEmpty !== true) {
-          const currentError = new Error(
-            `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`
-          );
-          currentHandler!.reject(currentError);
-          currentHandler = undefined;
+          const errorMessage = `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`;
 
-          this.assignClosedTransactionErrorIfNotSet(currentError);
+          this.assignErrorFactoryIfNotSet(() => {
+            throw new Error(errorMessage);
+          }, currentHandler.reject);
+          currentHandler = undefined;
 
           break;
         }
 
         if (currentHandler!.expectMultiResponse !== (message.multiMessage !== undefined)) {
-          const currentError = new Error(
-            `inconsistent multi state: ${currentHandler!.expectMultiResponse} !== ${message.multiMessage !== undefined}`
-          );
-          currentHandler!.reject(currentError);
-          currentHandler = undefined;
+          const errorMessage = `inconsistent multi state: ${currentHandler!.expectMultiResponse} !== ${message.multiMessage !== undefined}`;
 
-          this.assignClosedTransactionErrorIfNotSet(currentError);
+          this.assignErrorFactoryIfNotSet(() => {
+            throw new Error(errorMessage);
+          }, currentHandler.reject);
+          currentHandler = undefined;
 
           break;
         }
@@ -189,13 +212,12 @@ export class LLPlTransaction {
         if (message.multiMessage !== undefined) {
           if (!message.multiMessage.isEmpty) {
             if (message.multiMessage.id !== (responseAggregator!.length + 1)) {
-              const currentError = new Error(
-                `inconsistent multi id: ${message.multiMessage.id} !== ${responseAggregator!.length + 1}`
-              );
-              currentHandler!.reject(currentError);
-              currentHandler = undefined;
+              const errorMessage = `inconsistent multi id: ${message.multiMessage.id} !== ${responseAggregator!.length + 1}`;
 
-              this.assignClosedTransactionErrorIfNotSet(currentError);
+              this.assignErrorFactoryIfNotSet(() => {
+                throw new Error(errorMessage);
+              }, currentHandler.reject);
+              currentHandler = undefined;
 
               break;
             }
@@ -213,17 +235,13 @@ export class LLPlTransaction {
           currentHandler = undefined;
         }
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       const error = e instanceof Error ? e : new Error('error');
-      // noinspection PointlessBooleanExpressionJS
-      if (currentHandler !== undefined) {
-        // noinspection JSObjectNullOrUndefined
-        currentHandler.reject(error);
-      }
-      this.assignClosedTransactionErrorIfNotSet(error);
 
-      // to notify anybody who awaits transaction termination
-      return error;
+      return this.assignErrorFactoryIfNotSet(() => {
+        rethrowMeaningfulError(e, true);
+      }, currentHandler?.reject);
+
     } finally {
       await this.close();
     }
@@ -244,7 +262,7 @@ export class LLPlTransaction {
       if (!handler)
         break;
       if (this.errorFactory)
-        handler.reject(this.errorFactory());
+        handler.reject(new RethrowError(this.errorFactory));
       else
         handler.reject(new Error('no reply'));
     }
@@ -255,7 +273,9 @@ export class LLPlTransaction {
 
   /** Forcefully close the transaction, terminate all connections and reject all pending requests */
   public abort(cause?: Error) {
-    this.assignErrorFactoryIfNotSet(() => new Error(`transaction aborted`, { cause }));
+    this.assignErrorFactoryIfNotSet(() => {
+      throw new Error(`transaction aborted`, { cause });
+    });
     this.abortController.abort(cause);
   }
 
@@ -269,7 +289,7 @@ export class LLPlTransaction {
 
     const processingResult = await this.incomingProcessorResult;
     if (processingResult !== null)
-      throw processingResult;
+      processingResult();
 
   }
 
@@ -287,7 +307,7 @@ export class LLPlTransaction {
     expectMultiResponse: boolean
   ): Promise<OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]> {
     if (this.errorFactory)
-      return Promise.reject(this.errorFactory());
+      return Promise.reject(new RethrowError(this.errorFactory));
 
     if (this.closed)
       return Promise.reject(new Error('Transaction already closed'));
@@ -309,7 +329,13 @@ export class LLPlTransaction {
       request: r
     });
 
-    return result;
+    try {
+      return await result;
+    } catch (e: any) {
+      if (e instanceof RethrowError)
+        e.rethrowLambda();
+      throw new Error('Error while waiting for response', { cause: e });
+    }
   }
 
   private _completed = false;

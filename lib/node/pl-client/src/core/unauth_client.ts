@@ -5,12 +5,7 @@ import {
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
 import { notEmpty } from '@milaboratory/ts-helpers';
-
-export class LoginFailed extends Error {
-  constructor(message: string) {
-    super('LoginFailed: ' + message);
-  }
-}
+import { UnauthenticatedError } from './errors';
 
 /** Primarily used for initial authentication (login) */
 export class UnauthenticatedPlClient {
@@ -49,7 +44,7 @@ export class UnauthenticatedPlClient {
       return { jwtToken };
     } catch (e: any) {
       if (e.code === 'UNAUTHENTICATED')
-        throw new LoginFailed(e.message);
+        throw new UnauthenticatedError(e.message);
       throw new Error(e);
     }
   }
