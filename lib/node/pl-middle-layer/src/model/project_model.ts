@@ -18,21 +18,31 @@ export interface Block {
   /** Unique block id */
   readonly id: string;
 
+  /** Name shown to the user */
   name: string;
 
+  /** How to approach block rendering */
   renderingMode: BlockRenderingMode;
 }
 
 /** Block group in block structure */
 export interface BlockGroup {
+  /** Unique group id */
   readonly id: string;
+
+  /** Name shown to the user */
   name: string;
+
+  /** Blocks */
   blocks: Block[];
 }
 
 /** Root of block structure value */
 export interface ProjectStructure {
+  /** Marker of a "client" who set this structure instance */
   readonly authorMarker?: AuthorMarker;
+
+  /** The structure */
   readonly groups: BlockGroup[];
 }
 
@@ -55,6 +65,18 @@ export const InitialProjectRenderingState: ProjectRenderingState = {
   blocksInLimbo: []
 };
 
+export interface ProjectMeta {
+  /** Marker of a "client" who set meta instance */
+  readonly authorMarker?: AuthorMarker;
+
+  /** Project name */
+  readonly name: string;
+}
+
+export const InitialBlockMeta: ProjectMeta = {
+  name: 'New Project'
+};
+
 
 //
 // Pl Model
@@ -65,8 +87,24 @@ export const ProjectResourceType: ResourceType = { name: 'UserProject', version:
 export const SchemaVersionKey = 'SchemaVersion';
 export const SchemaVersionCurrent = '1';
 
-export const BlockStructureKey = 'BlockStructure';
+export const ProjectMetaKey = 'ProjectMeta';
+export const ProjectStructureKey = 'ProjectStructure';
 export const BlockRenderingStateKey = 'BlockRenderingState';
+
+export const BlockFrontendStateKeyPrefix = 'BlockFrontendState/';
+export const BlockFrontendStateKeyPattern = /^BlockFrontendState\/(?<blockid>.*)$/;
+
+export function blockFrontendStateKey(blockId: string): string {
+  return `${BlockFrontendStateKeyPrefix}${blockId}`;
+}
+
+/** Returns block id, or undefined if key does not match the pattern. */
+export function parseBlockFrontendStateKey(key: string): string | undefined {
+  const match = key.match(BlockFrontendStateKeyPattern);
+  if (match === null)
+    return undefined;
+  return match.groups!['blockid'];
+}
 
 export interface ProjectField {
   blockId: string;

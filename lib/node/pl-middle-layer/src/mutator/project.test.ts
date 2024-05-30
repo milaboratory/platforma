@@ -5,7 +5,12 @@ import {
 } from '@milaboratory/pl-client-v2';
 import { createProject, loadProject } from './project';
 import { outputRef } from '../model/args';
-import { BlockRenderingStateKey, projectFieldName, ProjectRenderingState } from '../model/project_model';
+import {
+  blockFrontendStateKey,
+  BlockRenderingStateKey,
+  projectFieldName,
+  ProjectRenderingState
+} from '../model/project_model';
 import { BPSpecEnterExplicit, BPSpecEnterFromRegistry, BPSpecSumFromRegistry } from '../test/block_packs';
 
 test('simple test #1', async () => {
@@ -56,6 +61,7 @@ test('simple test #1', async () => {
         }
       );
       mut.renderProduction(['block1', 'block2', 'block3']);
+      mut.setFrontendState('block2', '{"some":1}');
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -79,11 +85,19 @@ test('simple test #1', async () => {
       expect(new Set(Object.keys(all))).toEqual(new Set(['opts', 'dependsOnBlocks']));
     });
 
+    await pl.withReadTx('CheckFrontendStatePresent', async tx => {
+      expect(await tx.getKValueString(prj, blockFrontendStateKey('block2'))).toEqual('{"some":1}');
+    });
+
     await pl.withWriteTx('DeleteBlock2', async tx => {
       const mut = await loadProject(tx, prj);
       mut.deleteBlock('block2');
       mut.save();
       await tx.commit();
+    });
+
+    await pl.withReadTx('CheckFrontendStateAbsent', async tx => {
+      expect(await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block2'))).toBeUndefined();
     });
 
     await poll(pl, async tx => {
@@ -130,7 +144,6 @@ test('simple test #1', async () => {
     });
   });
 });
-
 
 test('simple test #2 with bp migration', async () => {
   await TestHelpers.withTempRoot(async pl => {

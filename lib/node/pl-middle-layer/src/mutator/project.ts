@@ -10,15 +10,24 @@ import {
   Block,
   BlockRenderingStateKey,
   ProjectStructure,
-  BlockStructureKey, parseProjectField,
-  ProjectField, projectFieldName,
-  ProjectRenderingState, SchemaVersionCurrent,
-  SchemaVersionKey, ProjectResourceType, InitialBlockStructure, InitialProjectRenderingState
+  ProjectStructureKey,
+  parseProjectField,
+  ProjectField,
+  projectFieldName,
+  ProjectRenderingState,
+  SchemaVersionCurrent,
+  SchemaVersionKey,
+  ProjectResourceType,
+  InitialBlockStructure,
+  InitialProjectRenderingState,
+  ProjectMeta,
+  ProjectMetaKey, InitialBlockMeta, parseBlockFrontendStateKey, blockFrontendStateKey
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
 import { BlockPackSpec } from '../model/block_pack_spec';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { toJS } from 'yaml/dist/nodes/toJS';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -131,15 +140,19 @@ type GraphInfoFields =
 export class ProjectMutator {
   private globalModCount = 0;
   private structureChanged = false;
+  private metaChanged = false;
   private renderingStateChanged = false;
+  private readonly changedBlockFrontendStates = new Set<string>();
 
   constructor(public readonly rid: ResourceId,
               private readonly tx: PlTransaction,
               private readonly schema: string,
+              private meta: ProjectMeta,
               private struct: ProjectStructure,
               private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
               private readonly blocksInLimbo: Set<string>,
-              private readonly blockInfos: Map<string, BlockInfo>
+              private readonly blockInfos: Map<string, BlockInfo>,
+              private readonly blockFrontendStates: Map<string, string>
   ) {
   }
 
@@ -285,6 +298,13 @@ export class ProjectMutator {
       ({ id }) => this.resetStaging(id));
   }
 
+  public setFrontendState(blockId: string, newState: string): void {
+    if (this.blockInfos.get(blockId) === undefined)
+      throw new Error('no such block');
+    this.blockFrontendStates.set(blockId, newState);
+    this.changedBlockFrontendStates.add(blockId);
+  }
+
   private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach(id => {
@@ -374,7 +394,10 @@ export class ProjectMutator {
       for (const fieldName of Object.keys(fields))
         this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName as ProjectField['fieldName'])));
       this.blockInfos.delete(blockId);
-      this.blocksInLimbo.delete(blockId);
+      if (this.blocksInLimbo.delete(blockId))
+        this.renderingStateChanged = true;
+      if (this.blockFrontendStates.has(blockId))
+        this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
     }
 
     // creating new blocks
@@ -532,10 +555,6 @@ export class ProjectMutator {
     this.resetStagingRefreshTimestamp();
   }
 
-  // public refreshRequired(): boolean {
-  //
-  // }
-
   //
   // Maintenance
   //
@@ -557,7 +576,7 @@ export class ProjectMutator {
 
   public save() {
     if (this.structureChanged)
-      this.tx.setKValue(this.rid, BlockStructureKey, JSON.stringify(this.struct));
+      this.tx.setKValue(this.rid, ProjectStructureKey, JSON.stringify(this.struct));
 
     if (this.renderingStateChanged)
       this.tx.setKValue(this.rid, BlockRenderingStateKey, JSON.stringify(
@@ -566,6 +585,12 @@ export class ProjectMutator {
           blocksInLimbo: [...this.blocksInLimbo]
         } as ProjectRenderingState
       ));
+
+    if (this.metaChanged)
+      this.tx.setKValue(this.rid, ProjectMetaKey, JSON.stringify(this.meta));
+
+    for (const blockId of this.changedBlockFrontendStates)
+      this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), this.blockFrontendStates.get(blockId)!);
   }
 }
 
@@ -580,8 +605,11 @@ export interface ProjectState {
 export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<ProjectMutator> {
   const fullResourceStateP = tx.getResourceData(rid, true);
   const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
-  const structureP = tx.getKValueJson<ProjectStructure>(rid, BlockStructureKey);
+  const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
+  const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
   const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
+
+  const allKVP = tx.listKeyValuesString(rid);
 
   // loading field information
   const blockInfoStates = new Map<string, BlockInfoState>();
@@ -611,11 +639,22 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<P
   const schema = await schemaP;
   if (schema !== SchemaVersionCurrent)
     throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
+
+  const meta = await metaP;
+
   const structure = await structureP;
 
   const { stagingRefreshTimestamp, blocksInLimbo } = await renderingStateP;
   const renderingState = { stagingRefreshTimestamp };
   const blocksInLimboSet = new Set(blocksInLimbo);
+
+  const blockFrontendStates = new Map<string, string>();
+  for (const kv of await allKVP) {
+    const blockId = parseBlockFrontendStateKey(kv.key);
+    if (blockId === undefined)
+      continue;
+    blockFrontendStates.set(blockId, kv.value);
+  }
 
   const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
   blockInfoStates!.forEach(({ id, fields }) => {
@@ -654,15 +693,16 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<P
   });
 
   return new ProjectMutator(rid, tx,
-    schema, structure, renderingState, blocksInLimboSet,
-    blockInfos);
+    schema, meta, structure, renderingState, blocksInLimboSet,
+    blockInfos, blockFrontendStates);
 }
 
-export function createProject(tx: PlTransaction): AnyResourceRef {
+export function createProject(tx: PlTransaction, meta: ProjectMeta = InitialBlockMeta): AnyResourceRef {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
   tx.setKValue(prj, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));
-  tx.setKValue(prj, BlockStructureKey, JSON.stringify(InitialBlockStructure));
+  tx.setKValue(prj, ProjectMetaKey, JSON.stringify(meta));
+  tx.setKValue(prj, ProjectStructureKey, JSON.stringify(InitialBlockStructure));
   tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
   return prj;
 }

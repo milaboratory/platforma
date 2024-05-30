@@ -128,8 +128,6 @@ describe.each([
   for (const arg of args) {
     test(arg.name, async () => {
       await TestHelpers.withTempRoot(async pl => {
-        console.log(resourceIdToString(pl.clientRoot));
-        console.log(pl.clientRoot);
         const f0 = field(pl.clientRoot, 'result');
         const f1 = field(pl.clientRoot, 'context');
 
