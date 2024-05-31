@@ -2,6 +2,19 @@ export type AnyFunction = (...args: any[]) => any;
 
 export type Optional<T> = T | undefined;
 
+export type OneOrMany<T> = T | T[];
+
+type _Resolve<T> = T;
+
+export type Prettify<T> = _Resolve<{ [K in keyof T]: T[K] }>;
+
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+export type Expect<T extends true> = T;
+
+export type Equal<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
+
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type MethodOf<T> = {
