@@ -34,6 +34,13 @@ export class PlClient {
   private readonly ll: LLPlClient;
   private readonly drivers = new Map<String, PlDriver>();
 
+  /** Artificial delay introduced after write transactions completion, to
+   * somewhat throttle the load on pl. Delay introduced after sync, if requested. */
+  private readonly txDelay: number;
+
+  /** Last resort measure to solve complicated race conditions in pl. */
+  private readonly forceSync: boolean;
+
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
   private _clientRoot: OptionalResourceId = NullResourceId;
 
@@ -43,6 +50,8 @@ export class PlClient {
                 statusListener?: PlConnectionStatusListener
               } = {}) {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
+    this.txDelay = this.ll.conf.txDelay;
+    this.forceSync = this.ll.conf.forceSync;
   }
 
   public get conf(): PlClientConfig {
@@ -135,23 +144,15 @@ export class PlClient {
       // wrapping it into high-level tx (this also asynchronously sends initialization message)
       const tx = new PlTransaction(llTx, name, writable, clientRoot);
 
+      let ok = false;
+      let result: T | undefined = undefined;
+      let txId;
+
       try {
 
         // executing transaction body
-        const result = await body(tx);
-
-        // syncing on transaction if requested
-        if (ops.sync) {
-
-          // Making sure server completed current transaction
-          await tx.complete();
-          await tx.await();
-
-          const txId = await tx.getGlobalTxId();
-          await this.ll.grpcPl.txSync({ txId });
-        }
-
-        return result;
+        result = await body(tx);
+        ok = true;
 
       } catch (e: unknown) {
         // the only recoverable
@@ -163,8 +164,26 @@ export class PlClient {
         }
       } finally {
         // close underlying grpc stream, if not yet done
-        await tx.complete(); // this should not throw recoverable errors
-        await tx.await(); // this should not throw recoverable errors
+
+        // even though we can skip two lines below for read-only transactions,
+        // we don't do it to simplify reasoning about what is going on in
+        // concurrent code, especially in significant latency situations
+        await tx.complete();
+        await tx.await();
+
+        txId = await tx.getGlobalTxId();
+      }
+
+      if (ok) {
+        // syncing on transaction if requested
+        if (ops.sync || this.forceSync)
+          await this.ll.grpcPl.txSync({ txId });
+
+        // introducing artificial delay, if requested
+        if (writable && this.txDelay > 0)
+          await sleep(this.txDelay, ops.abortSignal);
+
+        return result!;
       }
 
       // we only get here after TxCommitConflict error,
@@ -179,7 +198,9 @@ export class PlClient {
                           body: (tx: PlTransaction) => Promise<T>,
                           ops: Partial<TxOps> = {}): Promise<T> {
     this.checkInitialized();
-    return this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
+    const result = await this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
+
+    return result;
   }
 
   public withWriteTx<T>(name: string,

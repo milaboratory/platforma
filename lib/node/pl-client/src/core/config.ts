@@ -19,6 +19,13 @@ export interface PlClientConfig {
 
   user?: string;
   password?: string;
+
+  /** Artificial delay introduced after write transactions completion, to
+   * somewhat throttle the load on pl. Delay introduced after sync, if requested. */
+  txDelay: number;
+
+  /** Last resort measure to solve complicated race conditions in pl. */
+  forceSync: boolean;
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 1000;
@@ -47,6 +54,8 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
       defaultTransactionTimeout: DEFAULT_TX_TIMEOUT,
       authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
       authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
+      txDelay: 0,
+      forceSync: false,
       ...overrides
     };
 
@@ -73,6 +82,8 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
     httpProxy: url.searchParams.get('http-proxy') ?? undefined,
     user: url.username === '' ? undefined : url.username,
     password: url.password === '' ? undefined : url.password,
+    txDelay: Number(url.searchParams.get('tx-delay')) ?? 0,
+    forceSync: Boolean(url.searchParams.get('force-sync')) ?? false,
     ...overrides
   };
 }
