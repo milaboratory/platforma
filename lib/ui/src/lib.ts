@@ -86,8 +86,6 @@ import icons24 from './lib/assets/icons/icons-24-generated.json';
 
 import { allCssVariables } from './lib/demo-site-data/all-css-variables.ts';
 
-export { icons16, icons24 };
-
 // MiXCR
 export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };
 
@@ -162,5 +160,5 @@ export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, Mas
 //move to new version pl-uikit
 export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
 
-const DemoData = { allCssVariables: allCssVariables() };
+const DemoData = { allCssVariables: allCssVariables(), icons16, icons24 };
 export { DemoData };
