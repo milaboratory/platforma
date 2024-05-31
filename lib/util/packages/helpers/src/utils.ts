@@ -1,4 +1,4 @@
-import type { Option } from "./types";
+import type { Option, AwaitedStruct } from "./types";
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -219,4 +219,8 @@ export function unwrap<T>(r: Result<T>): T {
 
 export function flatValue<T>(v: T | T[]): T[] {
   return Array.isArray(v) ? v : [v];
+}
+
+export async function resolveAwaited<O extends Record<string, unknown>>(obj: O): Promise<AwaitedStruct<O>> {
+  return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v])));
 }

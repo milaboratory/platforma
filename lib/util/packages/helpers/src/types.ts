@@ -61,3 +61,7 @@ export type Result<T, E = string> =
 export type OkType<R extends Result<unknown>> = Extract<R, { ok: true }>['value'];
 
 export type ReturnTupleType<F extends AnyFunction> = ReturnType<F>[number];
+
+export type AwaitedStruct<O extends Record<string, unknown>> = {
+  [P in keyof O]: Awaited<O[P]>
+};
