@@ -69,3 +69,13 @@ export const memoize = <F extends AnyFunction>(fn: F) => {
       : cache.set(key, fn.call(null, ...args)) && cache.get(key);
   };
 };
+
+export const wrapFunction = <T extends unknown[], U>(
+  fn: (...args: T) => U,
+  before: () => void
+) => {
+  return (...args: T): U => {
+    before();
+    return fn(...args);
+  };
+};
