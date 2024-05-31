@@ -1,4 +1,4 @@
-@use './platforma-uikit-variables.scss';
+@use './variables.scss';
 
 :root {
   --main-dark-color: #110529;
@@ -160,9 +160,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  // user-select: none;
   font-family: var(--font-family-base);
-  // border: 1px solid red;
 }
 
 /// @TODO
