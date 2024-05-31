@@ -225,6 +225,6 @@ export async function resolveAwaited<O extends Record<string, unknown>>(obj: O):
   return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v])));
 }
 
-export function isAssignable(obj: Record<string, unknown>, to: Record<string, unknown>) {
+export function alike(obj: Record<string, unknown>, to: Record<string, unknown>) {
   return Object.keys(to).every(bKey => obj[bKey] === to[bKey]);
 }
