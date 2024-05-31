@@ -113,3 +113,7 @@ export function uniques<T, V>(items: T[], cb: (s: Set<V>, it: T) => void): V[] {
 
   return Array.from(s.values());
 }
+
+export function toSorted<T>(arr: readonly T[], compareFn?: (a: T, b: T) => number): T[] {
+  return arr.slice().sort(compareFn);
+}
