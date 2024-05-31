@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -17,7 +17,7 @@
     "install-no-ws": "npm i --package-lock-only --workspaces false",
     "icons-size-16": "json-sass -i ./src/lib/assets/icons/16-icons.json -o ./src/lib/assets/icons/icons-16.scss -p '$icons16: '",
     "icons-size-24": "json-sass -i ./src/lib/assets/icons/24-icons.json -o ./src/lib/assets/icons/icons-24.scss -p '$icons24: '",
-    "parse-icons-folder": "node parse-icons.js",
+    "parse-icons-folder": "node scripts/parse-icons.js",
     "generate-icons": "npm run parse-icons-folder && npm run icons-size-16 && npm run icons-size-24"
   },
   "files": [
@@ -28,7 +28,7 @@
   "module": "./dist/pl-uikit.js",
   "types": "./dist/lib.d.ts",
   "dependencies": {
-    "@milaboratory/helpers": "^1.2.2",
+    "@milaboratory/helpers": "^1.2.23",
     "@milaboratory/platforma-core": "^0.1.2",
     "js-yaml": "^4.1.0",
     "vue": "^3.4.27",

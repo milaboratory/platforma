@@ -1,6 +1,6 @@
 @import '../mixins.scss';
-@import './icons-16.scss';
-@import './icons-24.scss';
+@import './icons-16-generated.scss';
+@import './icons-24-generated.scss';
 
 .icon-16 {
   --icon-size: 16px;
@@ -12,10 +12,11 @@
 
   @each $name, $path in $icons16 {
     &.icon-#{$name} {
-      background: url(@icons/icon-assets/#{$path}.svg);
+      background: url(@icons/icon-assets/16_#{$path});
     }
   }
 }
+
 .icon-24 {
   --icon-size: 24px;
   background-repeat: no-repeat !important;
@@ -25,7 +26,7 @@
   height: var(--icon-size);
   @each $name, $path in $icons24 {
     &.icon-#{$name} {
-      background: url(@icons/icon-assets/#{$path}.svg);
+      background: url(@icons/icon-assets/24_#{$path});
     }
   }
 }
@@ -36,7 +37,7 @@
 
   @each $name, $path in $icons16 {
     &.mask-#{$name} {
-      @include mask-var(url(@icons/icon-assets/#{$path}.svg));
+      @include mask-var(url(@icons/icon-assets/16_#{$path}));
     }
   }
 }
@@ -47,7 +48,7 @@
 
   @each $name, $path in $icons24 {
     &.mask-#{$name} {
-      @include mask-var(url(@icons/icon-assets/#{$path}.svg));
+      @include mask-var(url(@icons/icon-assets/24_#{$path}));
     }
   }
 }

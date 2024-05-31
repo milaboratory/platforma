@@ -81,8 +81,8 @@ import { BlockApp } from './lib/layout/BlockApp.ts';
 import { useBlockInput } from './lib/layout/BlockApp.ts';
 import { BlockStore } from './lib/layout/BlockStore.ts';
 
-import icons16 from './lib/assets/icons/16-icons.json';
-import icons24 from './lib/assets/icons/24-icons.json';
+import icons16 from './lib/assets/icons/icons-16-generated.json';
+import icons24 from './lib/assets/icons/icons-24-generated.json';
 
 import { allCssVariables } from './lib/demo-site-data/all-css-variables.ts';
 
