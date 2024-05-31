@@ -4,7 +4,7 @@ import {
   UsageGuard,
   Watcher
 } from '@milaboratory/computable';
-import { PlTreeEntryAccessor } from './accessors';
+import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
 import { PlClient, ResourceId } from '@milaboratory/pl-client-v2';
 import { FinalPredicate, PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
@@ -20,7 +20,7 @@ export type TreeDataSourceOps = {
   stopPollingDelay: number;
 }
 
-export class SynchronizedTreeState implements TrackedAccessorProvider<PlTreeEntryAccessor> {
+export class SynchronizedTreeState {
   private readonly state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
@@ -41,8 +41,8 @@ export class SynchronizedTreeState implements TrackedAccessorProvider<PlTreeEntr
     );
   }
 
-  public createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.state, this.root, watcher, guard, ctx, this.hooks);
+  public accessor(rid: ResourceId = this.root): PlTreeEntry {
+    return new PlTreeEntry(this.state, this.root, this.hooks);
   }
 
   private scheduledOnNextState: (() => void)[] = [];

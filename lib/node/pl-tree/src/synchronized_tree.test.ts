@@ -16,7 +16,7 @@ test('simple synchronized tree test', async () => {
 
     const treeState = new SynchronizedTreeState(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
 
-    const theComputable = computable(treeState, {},
+    const theComputable = computable(treeState.accessor(), {},
       a => a.traverse({}, 'a', 'b')?.value?.getDataAsString());
 
     await theComputable.refreshState();

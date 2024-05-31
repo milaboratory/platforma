@@ -279,8 +279,8 @@ export class PlTreeResource implements PlTreeResourceI {
   }
 
   verifyReadyState() {
-    if (this.resourceReady && (!this.inputsLocked || !this.outputsLocked))
-      throw new Error('ready without input or output lock');
+    if (this.resourceReady && !this.inputsLocked)
+      throw new Error(`ready without input or output lock: ${stringifyWithResourceId(this.state)}`);
   }
 
   get state(): BasicResourceData {

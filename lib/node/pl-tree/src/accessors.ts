@@ -89,6 +89,10 @@ export class PlTreeNodeAccessor {
   ) {
   }
 
+  get id(){
+    return this.resource.id;
+  }
+
   private getResourceFromTree(rid: ResourceId): PlTreeNodeAccessor {
     const res = this.tree.get(this.watcher, rid);
     if (res == undefined) throw new Error(`Can't find resource ${rid}`);
