@@ -1,4 +1,16 @@
-@import "./base-btn";
+@import './base-btn';
+
+@mixin mask-var($bg) {
+  -webkit-mask-image: $bg;
+  mask-image: $bg;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+  mask-size: var(--mask-size);
+  width: var(--mask-size);
+  height: var(--mask-size);
+}
 
 @mixin vendor-prefix($name, $value) {
   @each $vendor in ('-webkit-', '-moz-', '-ms-', '-o-', '') {
@@ -11,9 +23,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -24,9 +34,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -38,9 +46,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -58,9 +64,7 @@
 
   @if $h ==null {
     height: $w;
-  }
-
-  @else {
+  } @else {
     height: $h;
   }
 }
@@ -167,7 +171,7 @@
   &::-webkit-scrollbar {
     width: 7px;
     height: 8px;
-    background-color: #E1E3EB;
+    background-color: #e1e3eb;
     display: block;
   }
 
