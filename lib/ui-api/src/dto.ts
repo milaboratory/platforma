@@ -1,4 +1,4 @@
-type Cfg =
+export type Cfg =
   | CfgImmediate
   | CfgGetJsonField
   | CfgGetFromCtx
@@ -9,55 +9,55 @@ type Cfg =
   | CfgGetResourceField
   | CfgResourceValueAsJson;
 
-type CfgImmediate = {
+export type CfgImmediate = {
   type: 'Immediate'
   value: any
 }
 
-type CfgGetJsonField = {
+export type CfgGetJsonField = {
   type: 'GetJsonField'
   source: Cfg
   field: Cfg
 }
 
-type CfgGetFromCtx = {
+export type CfgGetFromCtx = {
   type: 'GetFromCtx'
   variable: string
 }
 
-type CfgMakeObject = {
+export type CfgMakeObject = {
   type: 'MakeObject'
   template: Record<string, Cfg>
 }
 
-type CfgMapRecordValues = {
+export type CfgMapRecordValues = {
   type: 'MapRecordValues'
   source: Cfg
   itVar: string
   mapping: Cfg
 }
 
-type CfgMapArray = {
+export type CfgMapArray = {
   type: 'MapArray'
   source: Cfg
   itVar: string
   mapping: Cfg
 }
 
-type CfgMapResourceFields = {
+export type CfgMapResourceFields = {
   type: 'MapResourceFields'
   source: Cfg
   itVar: string
   mapping: Cfg
 }
 
-type CfgGetResourceField = {
+export type CfgGetResourceField = {
   type: 'GetResourceField'
   source: Cfg
   field: Cfg
 }
 
-type CfgResourceValueAsJson = {
+export type CfgResourceValueAsJson = {
   type: 'GetResourceValueAsJson'
   source: Cfg
 }

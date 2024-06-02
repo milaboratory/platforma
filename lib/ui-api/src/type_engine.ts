@@ -1,4 +1,5 @@
 import { GetImmediate } from './actions_kinds';
+import { Cfg } from './dto';
 
 // Higher kind types pattern taken from here: https://code.lol/post/programming/higher-kinded-types/
 

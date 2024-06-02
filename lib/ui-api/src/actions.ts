@@ -9,12 +9,11 @@ import {
 } from './actions_kinds';
 import {
   ExtractAction,
-  InferConfResultType,
-  PlResourceEntry,
   POCExtractAction,
   PrimitiveOrConfig,
   TypedConfig
 } from './type_engine';
+import { Cfg } from './dto';
 
 function primitiveToConfig(value: PrimitiveOrConfig): TypedConfig {
   if ((typeof value) === 'string' || (typeof value) === 'number' || (typeof value) === 'boolean' || (value === null))
@@ -36,7 +35,7 @@ export function getJsonField<const Source extends PrimitiveOrConfig, const Field
 ): TypedConfig<GetField<POCExtractAction<Source>, POCExtractAction<Field>>> {
   return ({
     type: 'GetJsonField', field, source
-  } as CfgGetJsonField) as any;
+  } as Cfg) as any;
 }
 
 export function makeObject<const T extends Record<string, PrimitiveOrConfig>>(template: T):
