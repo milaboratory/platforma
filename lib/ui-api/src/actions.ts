@@ -113,3 +113,4 @@ export function mapResourceFields<
 export const Inputs = getFromCfg('$inputs');
 export const It = getFromCfg('$it');
 export const Outputs = getFromCfg('$outputs');
+export const UiState = getFromCfg('$ui');

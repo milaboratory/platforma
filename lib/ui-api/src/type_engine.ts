@@ -13,7 +13,7 @@ export interface ConfAction {
 }
 
 /** This type basically sets parameter to a ConfAction kind. */
-export type GetCfgResult<A extends ConfAction, Ctx> = ReturnType<
+export type ActionResult<A extends ConfAction, Ctx> = ReturnType<
   (A & {
     readonly ctx: Ctx;
   })['new']
@@ -41,7 +41,7 @@ export type POCExtractAction<T extends PrimitiveOrConfig> = ExtractAction<Primit
 
 export type InferVarTypeSafe<Ctx, V> = V extends string ? Ctx extends { [key in V]: infer T } ? T : never : never;
 
-export type InferConfResultType<Cfg extends TypedConfig, Ctx> = GetCfgResult<ExtractAction<Cfg>, Ctx>
+export type ConfigResult<Cfg extends TypedConfig, Ctx> = ActionResult<ExtractAction<Cfg>, Ctx>
 
 declare const plResourceEntry: unique symbol;
 
