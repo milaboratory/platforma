@@ -15,7 +15,7 @@ export type Option = {
   label: string
 }
 
-function fromPlRef<Source extends TypedConfig>(source: Source) {
+export function fromPlRef<Source extends TypedConfig>(source: Source) {
   return makeObject({
     __isRef: true,
     blockId: getJsonField(source, 'blockId'),
@@ -23,7 +23,7 @@ function fromPlRef<Source extends TypedConfig>(source: Source) {
   });
 }
 
-function fromPlOption<Source extends TypedConfig>(source: Source) {
+export function fromPlOption<Source extends TypedConfig>(source: Source) {
   return makeObject({
     ref: fromPlRef(getJsonField(source, 'ref')),
     label: getJsonField(source, 'label')
