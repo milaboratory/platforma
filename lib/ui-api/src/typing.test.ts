@@ -7,9 +7,9 @@ import {
   Inputs, It,
   makeObject,
   mapRecordValues,
-  Outputs
+  MainOutputs, isEmpty
 } from './actions';
-import { BlockConfig, blockConfigFactory, Section } from './std';
+import { BlockConfig, BlockConfigBuilder, ResolveOutputsType, StdCtx } from './std';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -36,7 +36,7 @@ export const assertTypeExtends = <T, Expected>(
 
 function typeTest1() {
   const a = getJsonField(Inputs, 'field1');
-  const dd = getResourceValueAsJson<{ s: boolean, g: number }>()(getResourceField(Outputs, 'a'));
+  const dd = getResourceValueAsJson<{ s: boolean, g: number }>()(getResourceField(MainOutputs, 'a'));
 
   const cfg1 = makeObject({
     a,
@@ -48,13 +48,10 @@ function typeTest1() {
     d: getJsonField(dd, 's')
   });
 
-  type Ret = ConfigResult<typeof cfg1, {
-    $inputs: {
-      field1: number,
-      field2: Record<string, { b: 'yap' }>
-    },
-    $outputs: PlResourceEntry
-  }>
+  type Ret = ConfigResult<typeof cfg1, StdCtx<{
+    field1: number,
+    field2: Record<string, { b: 'yap' }>
+  }>>
 
   assertType<Ret, {
     a: number,
@@ -64,42 +61,16 @@ function typeTest1() {
   }>();
 }
 
-function typeTest2() {
-  const blockConfig1 = blockConfigFactory<{ a: string }>()(
-    getImmediate({
-      canRun: true,
-      sections: [
-        { id: 'main', title: 'Main' }
-      ]
-    }),
-    getImmediate('the_state')
-  );
-
-  assertTypeExtends<typeof blockConfig1, BlockConfig>();
-
-  const blockConfig2 = blockConfigFactory<{ a: string }>()(
-    getImmediate({
-      canRun: true,
-      sections: [
-        { id: 'main', title1: 'Main' }
-      ]
-    }),
-    getImmediate('the_state')
-  );
-
-  assertTypeExtends<typeof blockConfig2, never>();
-}
-
 test('test config content', () => {
-  const blockConfig1 = blockConfigFactory<{ a: string }>()(
-    getImmediate({
-      canRun: true,
-      sections: [
-        { id: 'main', title: 'Main' }
-      ]
-    }),
-    getImmediate('the_state')
-  );
+  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>()
+    .output('cell1', makeObject({ b: getJsonField(Inputs, 'a') }))
+    .canRun(isEmpty(getJsonField(Inputs, 'a')))
+    .sections(getImmediate([
+      { id: 'main', title: 'Main' }
+    ]))
+    .build();
+
+  assertType<ResolveOutputsType<typeof blockConfig1>, { cell1: { b: string[] } }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
 });

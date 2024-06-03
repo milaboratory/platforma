@@ -1,13 +1,31 @@
 export type Cfg =
+  | CfgGetFromCtx
+
   | CfgImmediate
   | CfgGetJsonField
-  | CfgGetFromCtx
   | CfgMakeObject
   | CfgMapRecordValues
-  | CfgMapArray
+  | CfgMapArrayValues
+
+  | CfgIsEmpty
+  | CfgNot
+
   | CfgMapResourceFields
   | CfgGetResourceField
   | CfgResourceValueAsJson;
+
+//
+// Context
+//
+
+export type CfgGetFromCtx = {
+  type: 'GetFromCtx'
+  variable: string
+}
+
+//
+// Json
+//
 
 export type CfgImmediate = {
   type: 'Immediate'
@@ -18,11 +36,6 @@ export type CfgGetJsonField = {
   type: 'GetJsonField'
   source: Cfg
   field: Cfg
-}
-
-export type CfgGetFromCtx = {
-  type: 'GetFromCtx'
-  variable: string
 }
 
 export type CfgMakeObject = {
@@ -37,12 +50,30 @@ export type CfgMapRecordValues = {
   mapping: Cfg
 }
 
-export type CfgMapArray = {
-  type: 'MapArray'
+export type CfgMapArrayValues = {
+  type: 'MapArrayValues'
   source: Cfg
   itVar: string
   mapping: Cfg
 }
+
+//
+// Boolean
+//
+
+export type CfgIsEmpty = {
+  type: 'IsEmpty'
+  arg: Cfg
+}
+
+export type CfgNot = {
+  type: 'Not'
+  operand: Cfg
+}
+
+//
+// Resources
+//
 
 export type CfgMapResourceFields = {
   type: 'MapResourceFields'
