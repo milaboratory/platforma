@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package MiLaboratories.PL._Stub;
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+// Makes protobuf to forcefully compile all well-known types into code (for TS)
+// or just add dependencies on them (for go)
+message _ImportWellKnown {
+  google.protobuf.Empty empty = 1;
+  google.protobuf.Any any = 2;
+
+  google.protobuf.BytesValue bytes = 3;
+
+  google.protobuf.BoolValue bool = 4;
+  google.protobuf.StringValue string = 5;
+
+  google.protobuf.Int32Value int32 = 6;
+  google.protobuf.UInt32Value uint32 = 7;
+
+  google.protobuf.Int64Value int64 = 8;
+  google.protobuf.UInt64Value uint64 = 9;
+
+  google.protobuf.FloatValue float = 10;
+  google.protobuf.DoubleValue double = 11;
+
+  google.protobuf.Duration duration = 12;
+  google.protobuf.Timestamp timestamp = 13;
+
+  google.protobuf.Value value = 14;
+  google.protobuf.ListValue list = 15;
+  google.protobuf.Struct struct = 16;
+}

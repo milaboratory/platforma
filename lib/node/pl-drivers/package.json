@@ -1,0 +1,49 @@
+{
+  "name": "@milaboratory/pl-drivers",
+  "version": "1.0.2",
+  "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to Platforma",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "build-watch": "tsup --watch",
+    "type-check": "tsc --noEmit --composite false",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.10.8",
+    "@milaboratory/computable": "^1.0.7",
+    "@milaboratory/pl-client-v2": "^2.3.7",
+    "@milaboratory/ts-helpers": "^1.0.11",
+    "@protobuf-ts/grpc-transport": "^2.9.4",
+    "@protobuf-ts/plugin": "^2.9.4",
+    "denque": "^2.1.0",
+    "undici": "^6.18.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.6.4",
+    "ts-jest": "^29.1.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "treeshake": true,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  }
+}
