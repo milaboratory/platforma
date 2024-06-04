@@ -75,22 +75,22 @@ export interface ResourceType {
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
 export interface BasicResourceData {
   readonly id: ResourceId;
-  originalResourceId: OptionalResourceId;
+  readonly originalResourceId: OptionalResourceId;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
 
   readonly data?: Uint8Array;
 
-  error: OptionalResourceId;
+  readonly error: OptionalResourceId;
 
-  inputsLocked: boolean;
-  outputsLocked: boolean;
-  resourceReady: boolean;
+  readonly inputsLocked: boolean;
+  readonly outputsLocked: boolean;
+  readonly resourceReady: boolean;
 
   /** This value is derived from resource state by the server and can be used as
    * a robust criteria to determine resource is in final state. */
-  final: boolean;
+  readonly final: boolean;
 }
 
 export const jsonToData = (data: unknown) => Buffer.from(JSON.stringify(data));

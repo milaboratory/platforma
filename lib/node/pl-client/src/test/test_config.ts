@@ -111,8 +111,8 @@ export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promi
     const rawClient = await getTestClient();
     await rawClient.deleteAlternativeRoot(altRoot);
     return value;
-  } catch (err) {
+  } catch (err: any) {
     console.log(`ALTERNATIVE ROOT: ${altRoot} (${resourceIdToString(altRootId)})`);
-    throw err;
+    throw new Error(err.message, { cause: err });
   }
 }
