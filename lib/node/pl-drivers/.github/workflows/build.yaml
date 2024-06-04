@@ -22,13 +22,11 @@ jobs:
       app-name: Ts Pl Drivers
       app-name-slug: '@milaboratory/pl-drivers'
       notify-telegram: true
-
+      pl-docker-tag: 'main'
       node-version: '20.x'
       is-electron-application: 'false'
       always-auth: 'true'
-
       build-script-name: 'build'
-
       test: true
       test-script-name: 'test'
 

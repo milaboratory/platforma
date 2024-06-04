@@ -1,10 +1,12 @@
-import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, FieldId, AnyFieldRef, ResourceRef } from '@milaboratory/pl-client-v2';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
-import { computable } from '@milaboratory/computable';
+import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, FieldId, AnyFieldRef, ResourceRef } from '@milaboratory/pl-client-v2';
+import { ConsoleLoggerAdapter, MiLogger } from '@milaboratory/ts-helpers';
+import { Computable, computable } from '@milaboratory/computable';
 import { createDownloadDriver, createLogsDriver } from './helpers';
 import * as os from 'node:os';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { ResourceInfo } from '../clients/helpers';
+import { scheduler } from 'node:timers/promises';
+import { Log, LogId } from './logs_stream';
 
 const callerId = 'callerId';
 
@@ -17,7 +19,7 @@ test('should get all logs', async () => {
     const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
     const c = computable(
-      tree.accessor(), {mode: 'StableOnlyRetentive'},
+      tree.accessor(), { mode: 'StableOnlyRetentive' },
       tree => {
         const stream = tree.traverse({}, 'result', 'stream')?.value;
         if (stream == undefined)
@@ -27,20 +29,20 @@ test('should get all logs', async () => {
           id: stream.id,
           type: stream.resourceType,
         }
-        
+
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
           return computable(logs, {}, (driver, ctx) => {
             const logs = driver.getLastLogs(rInfo, 100, callerId);
             if (logs.log == '')
               ctx.markUnstable();
-            return {...logs, done: false}
+            return { ...logs, done: false }
           })
         else
           return computable(download, {}, (driver, ctx) => {
             const logs = driver.getLastLogs(rInfo, 100, callerId);
             if (logs.log == '')
               ctx.markUnstable();
-            return {...logs, done: true}
+            return { ...logs, done: true }
           })
       }
     );
@@ -53,7 +55,7 @@ test('should get all logs', async () => {
       await c.listen();
 
       const result = await c.getValue();
-      
+
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result?.done) {
         expect(result.error).toBeUndefined();
@@ -64,106 +66,139 @@ test('should get all logs', async () => {
   })
 })
 
-// test.skip('should get last line with a prefix', async () => {
-//   await TestHelpers.withTempRoot(async client => {
-//     const logger = new ConsoleLoggerAdapter();
+test('should get last line with a prefix', async () => {
+  await TestHelpers.withTempRoot(async client => {
+    const logger = new ConsoleLoggerAdapter();
 
-//     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
-//     const logs = await createLogsDriver(client, logger);
-//     const download = await createDownloadDriver(client, logger, {}, os.tmpdir(), 700 * 1024);
+    const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
+    const logs = await createLogsDriver(client, logger);
+    const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
-//     const c = computable(
-//       tree.accessor(), {mode: 'StableOnlyRetentive'},
-//       tree => {
-//         const stream = tree.traverse({}, 'result', 'stream')?.value;
-//         if (stream == undefined)
-//           return undefined;
+    const c = computable(
+      tree.accessor(), { mode: 'StableOnlyRetentive' },
+      tree => {
+        const stream = tree.traverse({}, 'result', 'stream')?.value;
+        if (stream == undefined)
+          return undefined;
 
-//         const rInfo: ResourceInfo = {
-//           id: stream.id,
-//           type: stream.resourceType,
-//         }
+        const rInfo: ResourceInfo = {
+          id: stream.id,
+          type: stream.resourceType,
+        }
 
-//         if (stream.resourceType.name.startsWith('StreamWorkdir'))
-//           return computable(logs, {}, (driver, ctx) => {
-//             const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
-//             if (logs.log == '')
-//               ctx.markUnstable();
-//             return {...logs, done: false}
-//           })
-//         else
-//           return computable(download, {}, (driver, ctx) => {
-//             const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
-//             if (logs.log == '')
-//               ctx.markUnstable();
-//             return {...logs, done: true}
-//           })
-//       }
-//     );
+        if (stream.resourceType.name.startsWith('StreamWorkdir'))
+          return computable(logs, {}, (driver, ctx) => {
+            const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
+            if (logs.log == '')
+              ctx.markUnstable();
+            return { ...logs, done: false }
+          })
+        else
+          return computable(download, {}, (driver, ctx) => {
+            const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
+            if (logs.log == '')
+              ctx.markUnstable();
+            return { ...logs, done: true }
+          })
+      }
+    );
 
-//     expect(await c.getValue()).toBeUndefined();
+    expect(await c.getValue()).toBeUndefined();
 
-//     await createRunCommandWithStdoutStream(
-//       client,
-//       "bash",
-//       ["-c", "echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4"],
-//     );
+    await createRunCommandWithStdoutStream(
+      client,
+      "bash",
+      ["-c", "echo PREFIX1; echo PREFIX2; echo 3; sleep 0.1; echo PREFIX4"],
+    );
 
-//     while (true) {
-//       await c.listen();
+    while (true) {
+      await c.listen();
 
-//       const result = await c.getValue();
-//       logger.info(`got result: ${JSON.stringify(result)}`);
-//       if (result?.done) {
-//         expect(result.error).toBeUndefined();
-//         expect(result.log).toStrictEqual("PREFIX4\n")
-//         return;
-//       }
-//     }
-//   })
-// })
+      const result = await c.getValue();
+      logger.info(`got result: ${JSON.stringify(result)}`);
+      if (result?.done) {
+        expect(result.error).toBeUndefined();
+        expect(result.log).toStrictEqual("PREFIX4\n")
+        return;
+      }
+    }
+  })
+})
 
-// test.skip('should get log smart object and get log lines from that', async () => {
-//   await TestHelpers.withTempRoot(async client => {
-//     const logger = new ConsoleLoggerAdapter();
+test('should get log smart object and get log lines from that', async () => {
+  await TestHelpers.withTempRoot(async client => {
+    const logger = new ConsoleLoggerAdapter();
 
-//     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
-//     const logs = await createLogsDriver(client, logger);
-//     const download = await createDownloadDriver(client, logger, {}, os.tmpdir(), 700 * 1024);
+    const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
+    const logs = await createLogsDriver(client, logger);
+    const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
-//     await createRunCommandWithStdoutStream(
-//       client,
-//       "bash",
-//       ["-c", "echo 1; sleep 0.1; echo 2"],
-//     );
+    const c = computable(
+      tree.accessor(), { mode: 'StableOnlyRetentive' },
+      tree => {
+        const stream = tree.traverse({}, 'result', 'stream')?.value;
+        if (stream == undefined)
+          return undefined;
 
-//     // const c = computable(
-//     //   tree.accessor(), {},
-//     //   a => a.traverse({}, 'a', 'b')?.value?.getDataAsString());
+        const rInfo: ResourceInfo = {
+          id: stream.id,
+          type: stream.resourceType,
+        }
 
+        if (stream.resourceType.name.startsWith('StreamWorkdir'))
+          return computable(
+            logs, {},
+            driver => driver.getLogId(rInfo, callerId),
+            async logId => logId !== undefined ? logs.getLog(logId as LogId) : undefined,
+          )
+        else
+          return computable(
+            download, {},
+            driver => driver.getLogId(rInfo, callerId),
+            async logId => logId !== undefined ? download.getLog(logId as LogId) : undefined,
+          )
+      }
+    );
 
-//     const streamManager = await getStreamManager(client);
+    await createRunCommandWithStdoutStream(
+      client,
+      "bash",
+      ["-c", "echo 1; sleep 1; echo 2"],
+    );
 
-//     const c = computable(
-//       logs, {},
-//       (driver, ctx) => driver.getLogId(streamManager, callerId),
-//       async (val, stable) => logs.getLog(val),
-//     )
+    let smartObject = await getSmartObject(logger, c as Computable<Log | undefined>);
 
-//     const smartObject = await c.getValue();
+    while (true) {
+      try {
+        const logs = await smartObject.readText(10, 0n)
+        logger.info(`got size of the result: ${logs?.size}`);
+        if (logs?.data.toString().length == 4) {
+          expect(logs.data.toString()).toStrictEqual("1\n2\n")
+          return;
+        }
+      } catch (e) {
+        smartObject = await getSmartObject(logger, c as Computable<Log | undefined>);
+      }
 
-//     while (true) {
-//       const logs = await smartObject.readText(10, 0n)
-//       logger.info(`got size of the result: ${logs?.size}`);
-//       if (logs?.data.toString().length == 4) {
-//         expect(logs.data.toString()).toStrictEqual("1\n2\n")
-//         return;
-//       }
+      await scheduler.wait(200);
+    }
+  })
+})
 
-//       await scheduler.wait(200);
-//     }
-//   })
-// })
+async function getSmartObject(
+  logger: MiLogger,
+  c: Computable<Log | undefined>,
+) {
+  while (true) {
+    await c.listen();
+
+    const result = await c.getValue();
+    logger.info(`got result: ${JSON.stringify(result)}`);
+    if (result != undefined) {
+      return result;
+    }
+  }
+}
 
 async function createRunCommandWithStdoutStream(
   client: PlClient,
