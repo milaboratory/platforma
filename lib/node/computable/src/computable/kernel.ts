@@ -110,4 +110,6 @@ export type UnwrapComputables<K> = K extends ComputableKernel<infer T>
   ? UnwrapComputables<T>
   : K extends WrappedComputableKernel<infer T>
     ? UnwrapComputables<T>
-    : { [key in keyof K]: UnwrapComputables<K[key]> };
+    : K extends bigint | boolean | null | number | string | symbol | undefined
+      ? K
+      : { [key in keyof K]: UnwrapComputables<K[key]> }

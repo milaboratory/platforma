@@ -1,5 +1,11 @@
 import { AccessorLeakException, TrackedAccessorProvider } from './accessor_provider';
-import { CellRenderingOps, ComputableCtx, KernelLambdaField, UnwrapComputables } from './kernel';
+import {
+  CellRenderingOps,
+  ComputableCtx,
+  IntermediateRenderingResult,
+  KernelLambdaField,
+  UnwrapComputables
+} from './kernel';
 import { Computable } from './computable';
 
 let ephKeyCounter = 1;
@@ -52,7 +58,7 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
       return {
         ir,
         postprocessValue: postprocessValue ?? (noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>)
-      };
+      } as IntermediateRenderingResult<IR, T>;
     }
   });
 }
