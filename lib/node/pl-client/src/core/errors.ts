@@ -21,6 +21,10 @@ export class PlError extends Error {
   }
 }
 
+export function throwPlNotFoundError(message: string): never {
+  throw new RecoverablePlError({ code: PlErrorCodeNotFound, message, details: [] });
+}
+
 export class RecoverablePlError extends PlError {
   constructor(status: Status) {
     super(status);

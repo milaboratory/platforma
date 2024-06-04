@@ -16,10 +16,18 @@ import {
   ResourceKind
 } from './types';
 import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
+import { throwPlNotFoundError } from './errors';
 
 const ResourceErrorField = 'resourceError';
 
+function resourceIsDeleted(proto: Resource): boolean {
+  return proto.deletedTime !== undefined && proto.deletedTime.seconds !== 0n;
+}
+
+/** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
+  if (resourceIsDeleted(proto))
+    throwPlNotFoundError('resource deleted');
   return {
     id: proto.id as ResourceId,
     originalResourceId: proto.originalResourceId as OptionalResourceId,

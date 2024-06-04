@@ -7,7 +7,6 @@ import {
   PlErrorCodeNotFound,
   RecoverablePlError,
   rethrowMeaningfulError,
-  UnauthenticatedError,
   UnrecoverablePlError
 } from './errors';
 
@@ -57,12 +56,6 @@ function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
 
 function isRecoverable(status: Status): boolean {
   return status.code === PlErrorCodeNotFound;
-}
-
-function wrapPlError(status: Status): PlError {
-  if (isRecoverable(status))
-    return new RecoverablePlError(status);
-  return new UnrecoverablePlError(status);
 }
 
 export class RethrowError extends Error {
