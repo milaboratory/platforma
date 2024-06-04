@@ -18,7 +18,7 @@ export class PollingComputableHooks implements ComputableHooks {
   constructor(private readonly startUpdating: () => void,
               private readonly stopUpdating: () => void,
               ops: StartStopComputableHooksOps,
-              private readonly scheduleOnNextFreshState?: (resolve: () => void) => void) {
+              private readonly scheduleOnNextFreshState?: (resolve: () => void, reject: (error: any) => void) => void) {
     this.stopDebounce = ops.stopDebounce;
   }
 
@@ -67,12 +67,19 @@ export class PollingComputableHooks implements ComputableHooks {
       return Promise.resolve();
 
     const uniqueSymbol = Symbol();
-    const result = new Promise<void>(res =>
-      this.scheduleOnNextFreshState!(() => {
-        this.awaitingRefresh.delete(uniqueSymbol);
-        this.scheduleStopIfNeeded();
-        res();
-      }));
+    const result = new Promise<void>((resolve, reject) =>
+      this.scheduleOnNextFreshState!(
+        () => {
+          this.awaitingRefresh.delete(uniqueSymbol);
+          this.scheduleStopIfNeeded();
+          resolve();
+        },
+        (err) => {
+          this.awaitingRefresh.delete(uniqueSymbol);
+          this.scheduleStopIfNeeded();
+          reject(err);
+        }
+      ));
     this.awaitingRefresh.add(uniqueSymbol);
     this.startIfNeeded();
     return result;
