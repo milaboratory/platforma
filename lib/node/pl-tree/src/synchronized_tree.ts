@@ -6,7 +6,7 @@ import {
 } from '@milaboratory/computable';
 import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
 import { PlClient, ResourceId } from '@milaboratory/pl-client-v2';
-import { FinalPredicate, PlTreeState } from './state';
+import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
 import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
 import { sleep } from '@milaboratory/ts-helpers';
 
@@ -20,8 +20,14 @@ export type TreeDataSourceOps = {
   stopPollingDelay: number;
 }
 
+type ScheduledRefresh = {
+  resolve: () => void,
+  reject: (err: any) => void
+}
+
 export class SynchronizedTreeState {
-  private readonly state: PlTreeState;
+  private readonly finalPredicate: FinalPredicate | undefined;
+  private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
   private readonly hooks: PollingComputableHooks;
@@ -32,23 +38,26 @@ export class SynchronizedTreeState {
     const { finalPredicate, pruning, pollingInterval, stopPollingDelay } = ops;
     this.pruning = pruning;
     this.pollingInterval = pollingInterval;
+    this.finalPredicate = finalPredicate;
     this.state = new PlTreeState(root, finalPredicate);
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
       { stopDebounce: stopPollingDelay },
-      (res) => this.scheduleOnNextState(res)
+      (resolve, reject) => this.scheduleOnNextState(resolve, reject)
     );
   }
 
   public accessor(rid: ResourceId = this.root): PlTreeEntry {
-    return new PlTreeEntry(this.state, this.root, this.hooks);
+    return new PlTreeEntry(
+      { treeProvider: () => this.state, hooks: this.hooks },
+      rid);
   }
 
-  private scheduledOnNextState: (() => void)[] = [];
+  private scheduledOnNextState: ScheduledRefresh[] = [];
 
-  private scheduleOnNextState(res: () => void): void {
-    this.scheduledOnNextState.push(res);
+  private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
+    this.scheduledOnNextState.push({ resolve, reject });
   }
 
   /** Called from observer */
@@ -70,11 +79,13 @@ export class SynchronizedTreeState {
 
   private async mainLoop() {
     while (true) {
+      if (!this.keepRunning)
+        break;
 
       // saving those who want to be notified about new state here
       // because those who will be added during the tree retrieval
       // should be notified only on the next round
-      let toNotify: (() => void)[] | undefined = undefined;
+      let toNotify: ScheduledRefresh[] | undefined = undefined;
       if (this.scheduledOnNextState.length > 0) {
         toNotify = this.scheduledOnNextState;
         this.scheduledOnNextState = [];
@@ -89,28 +100,38 @@ export class SynchronizedTreeState {
         this.state.updateFromResourceData(data, true);
 
         // notifying that we got new state
-        if (toNotify !== undefined) {
-          for (const res of toNotify)
-            res();
-          // to prevent rescheduling in finally
-          toNotify = undefined;
-        }
+        if (toNotify !== undefined)
+          for (const n of toNotify)
+            n.resolve();
 
       } catch (e: any) {
         console.error(e);
-      } finally {
-        // rescheduling, if we were not able to pull the state
+
+        // notifying that we failed to refresh the state
         if (toNotify !== undefined)
-          this.scheduledOnNextState.push(...toNotify);
+          for (const n of toNotify)
+            n.reject(e);
+
+        // catching tree update errors, as they may leave our tree in inconsistent state
+        if (e instanceof TreeStateUpdateError) {
+          // marking everybody who used previous state as changed
+          this.state.invalidateTree();
+          // creating new tree
+          this.state = new PlTreeState(this.root, this.finalPredicate);
+          // scheduling state update without delay
+          continue;
+
+          // unfortunately external observer may still see tree in its default
+          // empty state, though this is best we can do in this exceptional
+          // situation, and hope on caching layers inside computables to present
+          // some stale state until we reconstruct the tree again
+        }
       }
 
       if (!this.keepRunning)
         break;
 
       await sleep(this.pollingInterval);
-
-      if (!this.keepRunning)
-        break;
     }
 
     // reset only as a very last line

@@ -2,8 +2,7 @@ import {
   FieldData,
   isNullResourceId,
   OptionalResourceId,
-  PlErrorCodeNotFound, PlTransaction,
-  RecoverablePlError,
+  PlTransaction,
   ResourceId
 } from '@milaboratory/pl-client-v2';
 import Denque from 'denque';

@@ -15,6 +15,12 @@ export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[]
 }
 
+export class TreeStateUpdateError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 class PlTreeField {
   readonly change = new ChangeSource();
 
@@ -312,14 +318,17 @@ export class PlTreeResource implements PlTreeResourceI {
     this.lockedChange = undefined;
   }
 
+  /** Used for invalidation */
   markAllChanged() {
     this.fields.forEach((field) => field.change.markChanged());
+    this.finalChanged?.markChanged();
     this.resourceStateChange?.markChanged();
-    this.dynamicFieldListChanged?.markChanged();
+    this.lockedChange?.markChanged();
     this.inputAndServiceFieldListChanged?.markChanged();
     this.outputFieldListChanged?.markChanged();
+    this.dynamicFieldListChanged?.markChanged();
+    this.kvChanged?.markChanged();
     this.resourceRemoved.markChanged();
-    this.lockedChange?.markChanged();
   }
 }
 
@@ -376,9 +385,11 @@ export class PlTreeState {
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
 
+      const statBeforeMutation = resource?.state;
       const unexpectedTransitionError = (reason: string): never => {
-        throw new Error(
-          `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(resource?.state)} <- ${stringifyWithResourceId(rd)}`
+        const { fields, ...rdWithoutFields } = rd;
+        throw new TreeStateUpdateError(
+          `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(rdWithoutFields)} -> ${stringifyWithResourceId(statBeforeMutation)}`
         );
       };
 
@@ -634,7 +645,7 @@ export class PlTreeState {
     // applying refCount increments
     for (const rid of incrementRefs) {
       const res = this.resources.get(rid);
-      if (!res) throw new Error(`orphan resource ${rid}`);
+      if (!res) throw new TreeStateUpdateError(`orphan resource ${rid}`);
       res.refCount++;
     }
 
@@ -644,7 +655,7 @@ export class PlTreeState {
       const nextRefs: ResourceId[] = [];
       for (const rid of currentRefs) {
         const res = this.resources.get(rid);
-        if (!res) throw new Error(`orphan resource ${rid}`);
+        if (!res) throw new TreeStateUpdateError(`orphan resource ${rid}`);
         res.refCount--;
 
         // garbage collection
@@ -669,17 +680,18 @@ export class PlTreeState {
     if (!allowOrphanInputs) {
       for (const rd of resourceData) {
         if (!this.resources.has(rd.id))
-          throw new Error(`orphan input resource ${rd.id}`);
+          throw new TreeStateUpdateError(`orphan input resource ${rd.id}`);
       }
     }
   }
 
   accessor(rid: ResourceId = this.root): PlTreeEntry {
-    return new PlTreeEntry(this, rid);
+    return new PlTreeEntry({ treeProvider: () => this }, rid);
   }
 
   invalidateTree() {
     this.resources.forEach((res) => {
+      res.markAllChanged();
     });
   }
 }

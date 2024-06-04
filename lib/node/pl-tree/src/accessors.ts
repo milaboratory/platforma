@@ -16,42 +16,53 @@ export class PlError extends Error {
   }
 }
 
+export type TreeAccessorData = {
+  readonly treeProvider: () => PlTreeState,
+  readonly hooks?: ComputableHooks
+}
+
+export type TreeAccessorInstanceData = {
+  readonly watcher: Watcher,
+  readonly guard: UsageGuard,
+  readonly ctx: ComputableCtx
+}
+
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor> {
   constructor(
-    private readonly tree: PlTreeState,
-    public readonly rid: ResourceId = tree.root,
-    private readonly hooks?: ComputableHooks
+    private readonly accessorData: TreeAccessorData,
+    public readonly rid: ResourceId
   ) {
   }
 
   createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): PlTreeEntryAccessor {
-    return new PlTreeEntryAccessor(this.tree, this.rid, watcher, guard, ctx, this.hooks);
+    return new PlTreeEntryAccessor(this.accessorData,
+      this.accessorData.treeProvider(), this.rid,
+      { ctx, watcher, guard });
   }
 }
 
 export class PlTreeEntryAccessor {
-  constructor(private readonly tree: PlTreeState,
-              private readonly rid: ResourceId,
-              private readonly watcher: Watcher,
-              private readonly guard: UsageGuard,
-              private readonly ctx: ComputableCtx,
-              private readonly hooks?: ComputableHooks
+  constructor(
+    private readonly accessorData: TreeAccessorData,
+    private readonly tree: PlTreeState,
+    private readonly rid: ResourceId,
+    private readonly instanceData: TreeAccessorInstanceData
   ) {
   }
 
   node(): PlTreeNodeAccessor | undefined {
-    this.guard();
-    if (this.hooks !== undefined)
-      this.ctx.attacheHooks(this.hooks);
-    const r = this.tree.get(this.watcher, this.rid);
+    this.instanceData.guard();
+    if (this.accessorData.hooks !== undefined)
+      this.instanceData.ctx.attacheHooks(this.accessorData.hooks);
+    const r = this.tree.get(this.instanceData.watcher, this.rid);
     if (r === undefined) {
       // resource may appear later, so in a broad sense this result is unstable,
       // regardless the FinalPredicate
-      this.ctx.markUnstable();
+      this.instanceData.ctx.markUnstable();
       return undefined;
     }
-    return new PlTreeNodeAccessor(this.watcher, this.tree, r, this.guard, this.ctx, this.hooks);
+    return new PlTreeNodeAccessor(this.accessorData, this.tree, r, this.instanceData);
   }
 
   traverse(
@@ -80,23 +91,21 @@ export class PlTreeEntryAccessor {
  * */
 export class PlTreeNodeAccessor {
   constructor(
-    private readonly watcher: Watcher,
+    private readonly accessorData: TreeAccessorData,
     private readonly tree: PlTreeState,
     private readonly resource: PlTreeResource,
-    private readonly guard: UsageGuard,
-    private readonly ctx: ComputableCtx,
-    private readonly hooks?: ComputableHooks
+    private readonly instanceData: TreeAccessorInstanceData
   ) {
   }
 
-  get id(){
+  get id() {
     return this.resource.id;
   }
 
   private getResourceFromTree(rid: ResourceId): PlTreeNodeAccessor {
-    const res = this.tree.get(this.watcher, rid);
+    const res = this.tree.get(this.instanceData.watcher, rid);
     if (res == undefined) throw new Error(`Can't find resource ${rid}`);
-    return new PlTreeNodeAccessor(this.watcher, this.tree, res, this.guard, this.ctx);
+    return new PlTreeNodeAccessor(this.accessorData, this.tree, res, this.instanceData);
   }
 
   get resourceType(): ResourceType {
@@ -108,50 +117,50 @@ export class PlTreeNodeAccessor {
     assertFieldType?: FieldType,
     errorIfNotFound?: boolean
   ): ValueAndError<PlTreeNodeAccessor> | undefined {
-    this.guard();
+    this.instanceData.guard();
     const ve = this.resource.get(
-      this.watcher,
+      this.instanceData.watcher,
       fieldName,
       assertFieldType,
       errorIfNotFound,
-      () => this.ctx.markUnstable()
+      () => this.instanceData.ctx.markUnstable()
     );
     if (ve === undefined) return undefined;
     return mapValueAndError(ve, (rid) => this.getResourceFromTree(rid));
   }
 
   getInputsLocked(): boolean {
-    this.guard();
-    const result = this.resource.getInputsLocked(this.watcher);
+    this.instanceData.guard();
+    const result = this.resource.getInputsLocked(this.instanceData.watcher);
     if (!result)
-      this.ctx.markUnstable();
+      this.instanceData.ctx.markUnstable();
     return result;
   }
 
   getOutputsLocked(): boolean {
-    this.guard();
-    const result = this.resource.getOutputsLocked(this.watcher);
+    this.instanceData.guard();
+    const result = this.resource.getOutputsLocked(this.instanceData.watcher);
     if (!result)
-      this.ctx.markUnstable();
+      this.instanceData.ctx.markUnstable();
     return result;
   }
 
   getIsReadyOrError(): boolean {
-    this.guard();
-    const result = this.resource.getIsReadyOrError(this.watcher);
+    this.instanceData.guard();
+    const result = this.resource.getIsReadyOrError(this.instanceData.watcher);
     if (!result)
-      this.ctx.markUnstable();
+      this.instanceData.ctx.markUnstable();
     return result;
   }
 
   getIsFinal() {
-    this.guard();
-    return this.resource.getIsFinal(this.watcher);
+    this.instanceData.guard();
+    return this.resource.getIsFinal(this.instanceData.watcher);
   }
 
   getError(): PlTreeNodeAccessor | undefined {
-    this.guard();
-    const rid = this.resource.getError(this.watcher);
+    this.instanceData.guard();
+    const rid = this.resource.getError(this.instanceData.watcher);
     if (rid === undefined) {
       // // in general, errors should not appear after resource is ready,
       // // so we will consider such cases stable
@@ -182,30 +191,30 @@ export class PlTreeNodeAccessor {
   }
 
   listInputFields(): string[] {
-    this.guard();
-    return this.resource.listInputFields(this.watcher);
+    this.instanceData.guard();
+    return this.resource.listInputFields(this.instanceData.watcher);
   }
 
   listOutputFields(): string[] {
-    this.guard();
-    return this.resource.listOutputFields(this.watcher);
+    this.instanceData.guard();
+    return this.resource.listOutputFields(this.instanceData.watcher);
   }
 
   listDynamicFields(): string[] {
-    this.guard();
-    return this.resource.listDynamicFields(this.watcher);
+    this.instanceData.guard();
+    return this.resource.listDynamicFields(this.instanceData.watcher);
   }
 
   getKeyValue(key: string): Uint8Array | undefined {
-    return this.resource.getKeyValue(this.watcher, key);
+    return this.resource.getKeyValue(this.instanceData.watcher, key);
   }
 
   getKeyValueString(key: string): string | undefined {
-    return this.resource.getKeyValueString(this.watcher, key);
+    return this.resource.getKeyValueString(this.instanceData.watcher, key);
   }
 
   persist(): PlTreeEntry {
-    return new PlTreeEntry(this.tree, this.resource.id, this.hooks);
+    return new PlTreeEntry(this.accessorData, this.resource.id);
   }
 }
 
