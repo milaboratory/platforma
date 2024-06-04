@@ -558,11 +558,12 @@ export class PlTreeState {
 
         // ready flag
         if (resource.resourceReady !== rd.resourceReady) {
+          const readyStateBefore = resource.resourceReady;
           resource.resourceReady = rd.resourceReady;
           resource.verifyReadyState();
           if (!resource.isReadyOrError)
             unexpectedTransitionError(
-              'resource can\'t lose it\'s ready or error state'
+              `resource can't lose it's ready or error state (ready state before ${readyStateBefore})`
             );
           notEmpty(resource.resourceStateChange).markChanged();
           changed = true;

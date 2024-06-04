@@ -106,11 +106,14 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning)
         break;
+
       await sleep(this.pollingInterval);
+
       if (!this.keepRunning)
         break;
-
     }
+
+    // reset only as a very last line
     this.currentLoop = undefined;
   }
 }
