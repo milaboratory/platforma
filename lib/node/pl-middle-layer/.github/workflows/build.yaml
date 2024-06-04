@@ -24,7 +24,7 @@ jobs:
       notify-telegram: true
 
       node-version: '20.x'
-      pl-docker-tag: 0.9.20-36-main
+      pl-docker-tag: 0.9.21-44-main
       is-electron-application: 'false'
       always-auth: 'true'
 

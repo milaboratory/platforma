@@ -64,16 +64,16 @@ export function projectState(entry: PlTreeEntry): Computable<ProjectState> {
 
       const rInputs = prj.get(projectFieldName(id, 'prodInputs'), 'Dynamic', false)?.value;
       if (rInputs !== undefined) {
-        const result = prj.get(projectFieldName(id, 'prodOutput'), 'Dynamic', false);
-        const ctx = prj.get(projectFieldName(id, 'prodCtx'), 'Dynamic', false);
-        if (result?.value === undefined || ctx?.value === undefined)
+        const result = prj.get(projectFieldName(id, 'prodOutput'), 'Dynamic', true);
+        const ctx = prj.get(projectFieldName(id, 'prodCtx'), 'Dynamic', true);
+        if (result === undefined || ctx === undefined)
           throw new Error('unexpected project structure');
         prod = {
           arguments: rInputs.getDataAsJson(),
           stale: cInputs.id !== rInputs.id,
-          calculationStatus: result.error !== undefined || ctx.error !== undefined || result.value.getError() !== undefined || ctx.value.getError() !== undefined
+          calculationStatus: result.error !== undefined || ctx.error !== undefined || result.value?.getError() !== undefined || ctx.value?.getError() !== undefined
             ? 'Error'
-            : result.value.getIsReadyOrError() && ctx.value.getIsReadyOrError()
+            : (result.value !== undefined && result.value.getIsReadyOrError()) && (ctx.value !== undefined && ctx.value.getIsReadyOrError())
               ? 'Done'
               : 'Running'
         };
