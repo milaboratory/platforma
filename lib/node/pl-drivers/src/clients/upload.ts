@@ -17,7 +17,7 @@ export class NetworkError extends Error {}
 /** Low-level client for grpc uploadapi.
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
-export class ClientBlob {
+export class ClientUpload {
   private readonly grpcClient: UploadClient;
 
   constructor(

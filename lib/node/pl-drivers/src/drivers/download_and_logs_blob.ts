@@ -1,5 +1,5 @@
 import { ChangeSource, TrackedAccessorProvider, Watcher } from '@milaboratory/computable';
-import { ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
+import { ResourceId } from '@milaboratory/pl-client-v2';
 import { CallersCounter, TaskProcessor, mapEntries, mapGet, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
@@ -8,22 +8,26 @@ import { Writable } from 'node:stream'
 import { ClientDownload } from '../clients/download';
 import { ReadableStream } from "node:stream/web";
 import { ResourceInfo } from '../clients/helpers';
+import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncAccessor, LogsSyncReader } from './logs_stream';
+import { ClientLogs } from '../clients/logs';
+import { Updater } from './helpers';
+import * as readline from 'node:readline/promises';
+import Denque from 'denque';
+import * as os from 'node:os';
 
 export interface DownloadSyncReader {
   /** If a blob were already downloaded, returns a path.
    * A path can be passed to a DownloadAsyncReader to retrieve a blob content. */
-  getPathToDownloadedBlob(
+  getDownloadedBlob(
     watcher: Watcher,
-    blobId: ResourceId,
-    rType: ResourceType,
+    { id, type }: ResourceInfo,
     callerId: string,
   ): BlobResult | undefined;
 
   /** Get an Url for downloading without downloading it on a hard drive. */
   getUrl(
     watcher: Watcher,
-    blobId: ResourceId,
-    rType: ResourceType,
+    { id, type }: ResourceInfo,
     callerId: string,
   ): string | undefined;
 }
@@ -41,15 +45,38 @@ export interface DownloadDestroyer {
 export class DownloadSyncAccessor {
   constructor(
     private readonly w: Watcher,
-    private readonly reader: DownloadSyncReader
+    private readonly reader: DownloadSyncReader & LogsSyncReader,
   ) {}
 
-  getPathToDownloadedBlob(rId: ResourceId, rType: ResourceType, callerId: string) {
-    return this.reader.getPathToDownloadedBlob(this.w, rId, rType, callerId);
+  getDownloadedBlob(rInfo: ResourceInfo, callerId: string) {
+    return this.reader.getDownloadedBlob(this.w, rInfo, callerId);
   }
 
-  getUrl(rId: ResourceId, rType: ResourceType, callerId: string): string | undefined {
-    return this.reader.getUrl(this.w, rId, rType, callerId);
+  getUrl(rInfo: ResourceInfo, callerId: string): string | undefined {
+    return this.reader.getUrl(this.w, rInfo, callerId);
+  }
+
+  getLastLogs(
+    rInfo: ResourceInfo,
+    lines: number,
+    callerId: string,
+  ): LogResult {
+    return this.reader.getLastLogs(this.w, rInfo, lines, callerId);
+  }
+
+  getProgressLog(
+    rInfo: ResourceInfo,
+    patternToSearch: string,
+    callerId: string,
+  ): LogResult {
+    return this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+  }
+
+  getLogId(
+    rInfo: ResourceInfo,
+    callerId: string,
+  ): LogId | undefined {
+    return this.reader.getLogId(this.w, rInfo, callerId);
   }
 }
 
@@ -66,7 +93,9 @@ export type PathLike = string;
 export class DownloadDriver implements
 TrackedAccessorProvider<DownloadSyncAccessor>,
 DownloadSyncReader,
-DownloadDestroyer {
+DownloadDestroyer,
+LogsSyncReader,
+LogsAsyncReader {
   /** Represents a Resource Id to the path of a blob as a map. */
   private idToDownloadedPath: Map<ResourceId, string> = new Map();
 
@@ -83,8 +112,12 @@ DownloadDestroyer {
   /** Holds Urls */
   private idToUrl: Map<ResourceId, UrlGetter> = new Map();
 
+  private idToLastLines: Map<ResourceId, LastLinesGetter> = new Map();
+  private idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
+
   constructor(
     private readonly clientDownload: ClientDownload,
+    private readonly clientLogs: ClientLogs,
     private readonly saveDir: string,
     cacheSoftSizeBytes: number,
     nConcurrentDownloads: number = 10,
@@ -104,19 +137,18 @@ DownloadDestroyer {
   }
 
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
-  getPathToDownloadedBlob(
+  getDownloadedBlob(
     w: Watcher,
-    rId: ResourceId,
-    rType: ResourceType,
+    rInfo: ResourceInfo,
     callerId: string,
   ): BlobResult | undefined {
-    const path = this.idToDownloadedPath.get(rId);
+    const path = this.idToDownloadedPath.get(rInfo.id);
 
     if (path == undefined) {
       // Schedule the blob downloading.
-      const fPath = this.setNewFilePath(w, rId);
+      const fPath = this.setNewFilePath(w, rInfo.id);
       this.downloadQueue.push({
-        fn: () => this.downloadBlob(rId, rType, fPath, callerId),
+        fn: () => this.downloadBlob(rInfo, fPath, callerId),
         recoverableErrorPredicate: (e: unknown) => true,
       })
 
@@ -127,7 +159,7 @@ DownloadDestroyer {
 
     if (result == undefined) {
       // Another thing is already calculating a result.
-      this.attachWatcherToFilePath(w, rId);
+      this.attachWatcherToFilePath(w, rInfo.id);
       return undefined;
     }
 
@@ -147,15 +179,14 @@ DownloadDestroyer {
   }
 
   private async downloadBlob(
-    id: ResourceId,
-    type: ResourceType,
+    { id, type }: ResourceInfo,
     fPath: string,
     callerId: string,
   ) {
     const { content, size } = await this.clientDownload.downloadBlob(
       { id, type },
     );
-    const result: BlobResult = {rId: id, path: fPath, sizeBytes: size};
+    const result: BlobResult = { rId: id, path: fPath, sizeBytes: size };
     await this.cache.addBlob(result, content, callerId);
     mapGet(this.idToChange, id).markChanged();
   }
@@ -167,8 +198,7 @@ DownloadDestroyer {
   /** Gets an URL by its resource id or downloads a blob and sets it in a cache. */
   getUrl(
     w: Watcher,
-    id: ResourceId,
-    type: ResourceType,
+    { id, type }: ResourceInfo,
     callerId: string,
   ): string | undefined {
     const urlGetter = this.idToUrl.get(id);
@@ -182,6 +212,87 @@ DownloadDestroyer {
     return urlGetter.getUrlOrSchedule(w, callerId);
   }
 
+  /** Returns all logs and schedules a job that reads remain logs.
+   * Notifies when a new portion of the log appeared. */
+  getLastLogs(
+    w: Watcher,
+    rInfo: ResourceInfo,
+    lines: number,
+    callerId: string,
+  ): LogResult {
+    const blob = this.getDownloadedBlob(w, rInfo, callerId);
+    if (blob == undefined)
+      return { log: '' };
+
+    const logGetter = this.idToLastLines.get(rInfo.id);
+
+    if (logGetter == undefined) {
+      const newLogGetter = new LastLinesGetter(blob.path, lines);
+      this.idToLastLines.set(rInfo.id, newLogGetter);
+      return newLogGetter.getOrSchedule(w);
+    }
+
+    return logGetter.getOrSchedule(w);
+  }
+
+  /** Returns a last line that has patternToSearch.
+   * Notifies when a new line appeared or EOF reached. */
+  getProgressLog(
+    w: Watcher,
+    rInfo: ResourceInfo,
+    patternToSearch: string,
+    callerId: string,
+  ): LogResult {
+    const blob = this.getDownloadedBlob(w, rInfo, callerId);
+    if (blob == undefined)
+      return { log: '' };
+
+    const logGetter = this.idToProgressLog.get(rInfo.id);
+
+    if (logGetter == undefined) {
+      const newLogGetter = new LastLinesGetter(
+        blob.path, 1, patternToSearch,
+      );
+      this.idToProgressLog.set(rInfo.id, newLogGetter);
+      return newLogGetter.getOrSchedule(w);
+    }
+
+    return logGetter.getOrSchedule(w);
+  }
+
+  /** Returns an Id of a smart object, that can read logs directly from
+   * the platform. */
+  getLogId(
+    w: Watcher,
+    rInfo: ResourceInfo,
+    callerId: string,
+  ): LogId | undefined {
+    const path = this.getDownloadedBlob(w, rInfo, callerId)?.path;
+    if (path == undefined)
+      return undefined;
+
+    return {
+      id: path,
+      rInfo: rInfo,
+    }
+  }
+
+  getLog(logId: LogId): Log {
+    return {
+      lastLines: async (
+        lineCount: number,
+        offsetBytes: bigint,
+        searchStr?: string,
+      ) => this.clientLogs.lastLines(logId.rInfo, lineCount, offsetBytes, searchStr),
+
+      readText: async (
+        lineCount: number,
+        offsetBytes: bigint, // if 0n, then start from the beginning.
+        searchStr?: string,
+      ) => this.clientLogs.readText(logId.rInfo, lineCount, offsetBytes, searchStr),
+    }
+  }
+
   /** Implements DownloadDestroyer. */
   async releaseBlob(blobId: ResourceId, callerId: string) {
     const path = this.idToDownloadedPath.get(blobId);
@@ -191,9 +302,11 @@ DownloadDestroyer {
     const deletedBlobIds = await this.cache.removeBlob(notEmpty(path), callerId);
 
     deletedBlobIds.forEach((blobId) => {
+      this.idToChange.get(blobId)?.markChanged();
       this.idToChange.delete(blobId);
       this.idToDownloadedPath.delete(blobId);
-      this.idToChange.get(blobId)?.markChanged();
+      this.idToLastLines.delete(blobId);
+      this.idToProgressLog.delete(blobId);
     })
   }
 
@@ -241,7 +354,7 @@ class UrlGetter {
       const url = this.url;
       // this.url = undefined; // TODO: do we need to refresh Url somehow? It expires.
       return url;
-    }    
+    }
 
     if (this.updating !== undefined) {
       return undefined;
@@ -362,6 +475,51 @@ export class FilesCache {
   }
 }
 
+class LastLinesGetter {
+  private updater: Updater;
+  private logs: string = "";
+  private readonly change: ChangeSource = new ChangeSource();
+  private error: string | undefined = undefined;
+
+  constructor(
+    private readonly path: string,
+    private readonly lines: number,
+    private readonly patternToSearch?: string,
+  ) {
+    this.updater = new Updater(
+      async () => this.update(),
+    )
+  }
+
+  getOrSchedule(w: Watcher): LogResult {
+    this.change.attachWatcher(w);
+
+    this.updater.schedule();
+
+    return {
+      log: this.logs,
+      error: this.error,
+    };
+  }
+
+  async update(): Promise<void> {
+    try {
+      this.logs = await getLastLines(this.path, this.lines, this.patternToSearch);
+      this.change.markChanged();
+    } catch (e: any) {
+      if (e.name == 'RpcError' && e.code == 'UNKNOWN') {
+        // No resource
+        this.logs = '';
+        this.error = e;
+        this.change.markChanged();
+        return;
+      }
+
+      throw e;
+    }
+  }
+}
+
 async function fileExists(path: string): Promise<boolean> {
   try {
     await fsp.access(path);
@@ -369,4 +527,33 @@ async function fileExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Gets last lines from a file by reading the file from the top and keeping
+ * last N lines in a window queue. */
+function getLastLines(fPath: PathLike, nLines: number, patternToSearch?: string): Promise<string> {
+  const inStream = fs.createReadStream(fPath);
+  const outStream = new Writable();
+
+  return new Promise((resolve, reject) => {
+    const rl = readline.createInterface(inStream, outStream);
+
+    const lines = new Denque();
+    rl.on('line', function (line) {
+      if (patternToSearch != undefined && !line.includes(patternToSearch))
+        return;
+
+      lines.push(line);
+      if (lines.length > nLines) {
+        lines.shift();
+      }
+    });
+
+    rl.on('error', reject)
+
+    rl.on('close', function () {
+      // last EOL is for keeping backward compat with platforma implementation.
+      resolve(lines.toArray().join(os.EOL) + os.EOL); 
+    });
+  })
 }

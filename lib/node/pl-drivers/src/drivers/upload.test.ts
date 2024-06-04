@@ -8,7 +8,7 @@ import { computable } from '@milaboratory/computable';
 import { UploadDriver } from './upload';
 import { makeGetSignatureFn } from '../signature';
 import { poll } from '@milaboratory/pl-client-v2';
-import { createDriver } from './helpers';
+import { createUploadDriver } from './helpers';
 
 const callerId = 'callerId';
 
@@ -46,7 +46,7 @@ test('upload a blob', async () => {
 })
 
 test('upload a big blob', async () => {
-  const lotsOfNumbers = [];
+  const lotsOfNumbers: number[] = [];
   for (let i = 0; i < 5000000; i++) {
     lotsOfNumbers.push(i);
   }
@@ -172,7 +172,7 @@ async function withTest(
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
     const signFn = await makeGetSignatureFn();
-    const uploader = await createDriver(client, logger, signFn);
+    const uploader = await createUploadDriver(client, logger, signFn);
 
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
     const fPath = path.join(tmpDir, 'testUploadABlob.txt');

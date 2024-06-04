@@ -1,5 +1,5 @@
 import { PlClient, PlTransaction, ResourceId, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, BasicResourceData, FieldId } from '@milaboratory/pl-client-v2';
-import { BlobResult, FilesCache } from './download';
+import { BlobResult, FilesCache } from './download_and_logs_blob';
 import * as os from 'node:os';
 import * as fs from 'fs';
 import { Readable } from 'node:stream';
@@ -14,12 +14,12 @@ const fileName = "answer_to_the_ultimate_question.txt";
 test('should download a blob and read its content', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
-    const driver = await createDownloadDriver(client, logger, {}, os.tmpdir(), 700 * 1024);
+    const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = computable(
       driver, {},
-      (driver, ctx) => driver.getPathToDownloadedBlob(downloadable.id, downloadable.type, callerId),
+      (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
     )
 
     const blob = await c.getValue();
@@ -37,12 +37,12 @@ test('should download a blob and read its content', async () => {
 test('should get a download url without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
-    const driver = await createDownloadDriver(client, logger, {}, os.tmpdir(), 700 * 1024);
+    const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = computable(
       driver, {},
-      (driver, _) => driver.getUrl(downloadable.id, downloadable.type, callerId),
+      (driver, _) => driver.getUrl(downloadable, callerId),
     )
 
     const url1 = await c.getValue();
@@ -60,12 +60,12 @@ test(
   async () => {
     await TestHelpers.withTempRoot(async client => {
       const logger = new ConsoleLoggerAdapter();
-      const driver = await createDownloadDriver(client, logger, {}, os.tmpdir(), 1);
+      const driver = await createDownloadDriver(client, logger, os.tmpdir(), 1);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
       const c = computable(
         driver, {},
-        (driver, ctx) => driver.getPathToDownloadedBlob(downloadable.id, downloadable.type, callerId),
+        (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
       )
 
       const blob = await c.getValue();
@@ -83,7 +83,7 @@ test(
 
       const c2 = computable(
         driver, {},
-        (driver, ctx) => driver.getPathToDownloadedBlob(downloadable.id, downloadable.type, callerId),
+        (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
       )
 
       const noBlob = await c2.getValue();
@@ -96,12 +96,12 @@ test(
   async () => {
     await TestHelpers.withTempRoot(async client => {
       const logger = new ConsoleLoggerAdapter();
-      const driver = await createDownloadDriver(client, logger, {}, os.tmpdir(), 700 * 1024);
+      const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
       const c = computable(
         driver, {},
-        (driver, ctx) => driver.getPathToDownloadedBlob(downloadable.id, downloadable.type, callerId),
+        (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
       )
 
       const blob = await c.getValue();
@@ -119,13 +119,14 @@ test(
 
       const c2 = computable(
         driver, {},
-        (driver, ctx) => driver.getPathToDownloadedBlob(downloadable.id, downloadable.type, callerId),
+        (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
       )
 
       const blob3 = await c2.getValue();
       expect(blob3?.path).not.toBeUndefined();
     })
-  })
+  }
+)
 
 async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string): Promise<BasicResourceData> {
   const dynamicId = await client.withWriteTx(

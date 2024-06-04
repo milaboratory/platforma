@@ -2,7 +2,7 @@ import { BasicResourceData, PlClient, ResourceId, ResourceType, stringifyWithRes
 import { TrackedAccessorProvider, Watcher, ChangeSource } from '@milaboratory/computable';
 import { MiLogger, JitterOpts, asyncPool, mapGet, notEmpty, TaskProcessor, CallersCounter } from '@milaboratory/ts-helpers';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
-import { ClientBlob, MTimeError, UnexpectedEOF } from '../clients/blob';
+import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
 
 export interface UploadReader {
   /** Returns a progress id and schedules an upload task if it's necessary.
@@ -64,7 +64,7 @@ UploadReleaser {
     private readonly logger: MiLogger,
     private readonly getSignature: (path: string) => Promise<string>,
     private readonly client: PlClient,
-    private readonly clientBlob: ClientBlob,
+    private readonly clientBlob: ClientUpload,
     private readonly clientProgress: ClientProgress,
     private readonly opts: {
       nConcurrentPartUploads: number;
@@ -174,7 +174,7 @@ class ProgressUpdater {
   constructor(
     private readonly logger: MiLogger,
     private readonly client: PlClient,
-    private readonly clientBlob: ClientBlob,
+    private readonly clientBlob: ClientUpload,
     private readonly clientProgress: ClientProgress,
     private readonly nConcurrentPartsUpload: number,
     private readonly getSignature: (path: string) => Promise<string>,

@@ -13,7 +13,7 @@ import { DownloadAPI_GetDownloadURL_HTTPHeader, DownloadAPI_GetDownloadURL_Respo
 import { ResourceInfo } from "./helpers";
 
 const storageProtocol = 'storage://';
-const localPathRegex = /storage:\/\/(?<storageId>.*)\/(?<localPath>.*)/;
+const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
 
 export interface DownloadResponse {
   content: ReadableStream,

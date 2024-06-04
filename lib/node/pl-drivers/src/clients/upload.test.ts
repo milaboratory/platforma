@@ -1,5 +1,5 @@
 import { PlClient, ResourceId, TestHelpers } from "@milaboratory/pl-client-v2";
-import { ClientBlob } from "../clients/blob";
+import { ClientUpload } from "../clients/upload";
 import { Dispatcher } from "undici";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
 import { ConsoleLoggerAdapter } from "@milaboratory/ts-helpers";
@@ -10,7 +10,7 @@ test('integration test, grpc upload blob should throw error on NOT_FOUND', async
     const clientBlob = client.getDriver({
       name: 'UploadBlob',
       init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-        new ClientBlob(grpcTransport, httpDispatcher, client, logger)
+        new ClientUpload(grpcTransport, httpDispatcher, client, logger)
     })
 
     try {

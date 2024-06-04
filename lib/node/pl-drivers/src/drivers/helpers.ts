@@ -1,34 +1,53 @@
-import { PlClient } from "@milaboratory/pl-client-v2";
-import { GrpcTransport } from "@protobuf-ts/grpc-transport";
-import { Dispatcher } from "undici";
-import { ClientBlob } from "../clients/blob";
-import { MiLogger } from "@milaboratory/ts-helpers";
-import { ClientProgress } from "../clients/progress";
-import { UploadDriver } from "./upload";
-import { DownloadDriver } from "./download";
+import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
+import { ClientUpload } from "../clients/upload";
 import { ClientDownload } from "../clients/download";
 import { ClientLogs } from "../clients/logs";
-import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { LogsDriver } from "./logs";
+import { ClientProgress } from "../clients/progress";
+import { Dispatcher } from "undici";
+import { DownloadDriver } from "./download_and_logs_blob";
+import { GrpcTransport } from "@protobuf-ts/grpc-transport";
+import { LogsDriver } from "./logs_stream";
+import { MiLogger } from "@milaboratory/ts-helpers";
+import {
+  PlClient,
+  ResourceId,
+  BasicResourceData,
+  isNullResourceId,
+  valErr,
+  getField,
+} from "@milaboratory/pl-client-v2";
 import { ResourceInfo } from "../clients/helpers";
+import { UploadDriver } from "./upload";
+import { scheduler } from 'node:timers/promises';
+import { PL_STORAGE_TO_PATH } from './test_helpers';
 
 /** Just a helper to create a driver and all clients. */
 export async function createDownloadDriver(
   client: PlClient,
   logger: MiLogger,
-  localStorageIdsToRoot: Record<string, string>,
   saveDir: string,
   cacheSoftSizeBytes: number,
   nConcurrentDownloads: number = 10,
+  localStorageIdsToRoot?: Record<string, string>,
 ): Promise<DownloadDriver> {
+  if (localStorageIdsToRoot === undefined)
+    localStorageIdsToRoot = PL_STORAGE_TO_PATH;
+
   const clientDownload = client.getDriver({
     name: 'DownloadBlob',
-    init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientDownload(grpcTransport, httpDispatcher, logger, localStorageIdsToRoot)
+    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+      new ClientDownload(grpcTransport, httpDispatcher, logger, localStorageIdsToRoot!)
+  })
+
+  const clientLogs = client.getDriver({
+    name: 'StreamLogs',
+    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+      new ClientLogs(grpcTransport, httpDispatcher, logger)
   })
 
   return new DownloadDriver(
     clientDownload,
+    clientLogs,
     saveDir,
     cacheSoftSizeBytes,
     nConcurrentDownloads,
@@ -36,19 +55,19 @@ export async function createDownloadDriver(
 }
 
 /** Just a helper to create a driver and all clients. */
-export async function createDriver(
+export async function createUploadDriver(
   client: PlClient,
   logger: MiLogger,
   signFn: (path: string) => Promise<string>,
 ): Promise<UploadDriver> {
   const clientBlob = client.getDriver({
     name: 'UploadBlob',
-    init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientBlob(grpcTransport, httpDispatcher, client, logger)
+    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+      new ClientUpload(grpcTransport, httpDispatcher, client, logger)
   })
   const clientProgress = client.getDriver({
     name: 'UploadProgress',
-    init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
       new ClientProgress(grpcTransport, httpDispatcher, client, logger)
   })
 
@@ -66,14 +85,78 @@ export async function createLogsDriver(
 ): Promise<LogsDriver> {
   const clientLogs = client.getDriver({
     name: 'StreamLogs',
-    init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
       new ClientLogs(grpcTransport, httpDispatcher, logger)
   })
 
-  return new LogsDriver(client, clientLogs);
+  return new LogsDriver(clientLogs);
+}
+
+// TODO: remove this when we switch to refreshState.
+
+/** It's an Updater but for tasks that happens in a while loop with sleeping between. */
+export class LongUpdater {
+  private updater: Updater;
+
+  constructor(
+    private readonly onUpdate: () => Promise<boolean>,
+    private readonly sleepMs: number,
+  ) {
+    this.updater = new Updater(
+      async () => {
+        while (true) {
+          const done = await this.onUpdate();
+          if (done)
+            return
+          await scheduler.wait(this.sleepMs);
+        }
+      }
+    )
+  }
+
+  schedule = () => this.updater.schedule();
+}
+
+/** Updater incorporates a pattern when someone wants to run a callback
+ * that updates something only when it's not already running. */
+export class Updater {
+  private updating: Promise<void> | undefined;
+
+  constructor(private readonly onUpdate: () => Promise<void>) {}
+
+  schedule() {
+    if (this.updating == undefined) {
+      this.updating = (async () => {
+        try {
+          await this.onUpdate();
+        } catch (e) {
+          console.log(`error while updating in Updater: ${e}`)
+        } finally {
+          this.updating = undefined;
+        }
+      })()
+    }
+  }
 }
 
 // TODO: remove all the code below to the computable that calculates Mixcr logs.
+
+export async function getStream(
+  client: PlClient,
+  streamManagerId: ResourceId,
+): Promise<BasicResourceData | undefined> {
+  return client.withReadTx("LogsDriverGetStream", async (tx) => {
+    const sm = await tx.getResourceData(streamManagerId, true);
+    const stream = await valErr(tx, getField(sm, 'stream'));
+    if (stream.error != '') {
+      throw new Error(`while getting stream: ${stream.error}`);
+    }
+    if (isNullResourceId(stream.valueId))
+      return undefined;
+
+    return await tx.getResourceData(stream.valueId, false);
+  })
+}
 
 export type MixcrProgressResponse =
   | { found: false }
