@@ -15,7 +15,9 @@ export function allBlocks(structure: ProjectStructure): Iterable<Block> {
 export interface BlockGraphNode {
   readonly id: string;
   readonly missingReferences: boolean;
+  /** Direct upstreams */
   readonly upstream: Set<string>;
+  /** Direct downstreams */
   readonly downstream: Set<string>;
 }
 

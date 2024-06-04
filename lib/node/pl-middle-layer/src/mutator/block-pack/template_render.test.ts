@@ -16,14 +16,14 @@ import {
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
 import { notEmpty, sleep } from '@milaboratory/ts-helpers';
-import { TemplateSourcePrepared } from '../model/template';
+import { TemplateSourcePrepared } from '../../model/template';
 import {
   TplSpecEnterExplicit,
   TplSpecEnterFromRegistry,
   TplSpecSumExplicit,
   TplSpecSumFromRegistry
-} from '../test/known_templates';
-import { outputRef } from '../model/args';
+} from '../../test/known_templates';
+import { outputRef } from '../../model/args';
 
 function resourceInFinalState(data: Pick<ResourceData, 'resourceReady' | 'error' | 'originalResourceId'>) {
   return data.resourceReady || isNotNullResourceId(data.error) || isNotNullResourceId(data.originalResourceId);

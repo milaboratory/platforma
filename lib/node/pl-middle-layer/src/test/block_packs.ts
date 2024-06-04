@@ -1,27 +1,16 @@
-import { BlockPackSpec } from '../model/block_pack_spec';
-import {
-  TplSpecEnterExplicit,
-  TplSpecEnterFromRegistry,
-  TplSpecSumExplicit,
-  TplSpecSumFromRegistry
-} from './known_templates';
+import { BlockPackSpecNotPrepared } from '../model/block_pack_spec';
+import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 
-export const BPSpecEnterExplicit: BlockPackSpec = {
-  type: 'custom',
-  template: TplSpecEnterExplicit
+export const TestSecret = 'secret';
+
+export const TestBPPreparer = new BlockPackPreparer(TestSecret);
+
+export const BPSpecEnterV020NotPrepared: BlockPackSpecNotPrepared = {
+  type: 'from-registry-v1',
+  url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.2.0'
 };
 
-export const BPSpecEnterFromRegistry: BlockPackSpec = {
-  type: 'custom',
-  template: TplSpecEnterFromRegistry
-};
-
-export const BPSpecSumExplicit: BlockPackSpec = {
-  type: 'custom',
-  template: TplSpecSumExplicit
-};
-
-export const BPSpecSumFromRegistry: BlockPackSpec = {
-  type: 'custom',
-  template: TplSpecSumFromRegistry
+export const BPSpecSumV020NotPrepared: BlockPackSpecNotPrepared = {
+  type: 'from-registry-v1',
+  url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/sum-numbers/0.2.0'
 };

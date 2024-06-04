@@ -5,7 +5,7 @@ import {
   PlTransaction,
   ResourceId
 } from '@milaboratory/pl-client-v2';
-import { createRenderHeavyBlock, createBContextFromUpstreams } from './template_render';
+import { createRenderHeavyBlock, createBContextFromUpstreams } from './block-pack/template_render';
 import {
   Block,
   BlockRenderingStateKey,
@@ -25,9 +25,8 @@ import {
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
-import { BlockPackSpec } from '../model/block_pack_spec';
+import { BlockPackSpecPrepared } from '../model/block_pack_spec';
 import { notEmpty } from '@milaboratory/ts-helpers';
-import { toJS } from 'yaml/dist/nodes/toJS';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -119,7 +118,7 @@ export class BlockInfo {
 }
 
 export interface NewBlockSpec {
-  blockPack: BlockPackSpec,
+  blockPack: BlockPackSpecPrepared,
   inputs: string
 }
 
@@ -483,7 +482,7 @@ export class ProjectMutator {
   // Block-pack migration
   //
 
-  public migrateBlockPack(blockId: string, spec: BlockPackSpec, newArgs?: string): void {
+  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newArgs?: string): void {
     const info = this.getBlockInfo(blockId);
 
     this.setBlockField(blockId, 'blockPack',
