@@ -1,5 +1,5 @@
 import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
-import { CellState, createCellState, updateCellState } from './computable_state';
+import { CellState, createCellState, destroyState, updateCellState } from './computable_state';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
 
@@ -176,5 +176,15 @@ export class Computable<T> implements WrappedComputableKernel<T> {
       return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };
     else
       return { type: 'error', errors: state.allErrors, uTag: this.uTag };
+  }
+
+  /** This will trigger all onDestroys down the state tree, and reset the
+   * state of this computable to initial. */
+  public resetState(): void {
+    if (this.state === undefined)
+      return;
+    destroyState(this.state);
+    this.state = undefined;
+    this.uTag = '';
   }
 }

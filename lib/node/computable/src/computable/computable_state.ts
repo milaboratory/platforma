@@ -328,7 +328,7 @@ function renderSelfState<T>(
   }
 }
 
-function destroyState(_state: CellState<unknown>) {
+export function destroyState(_state: CellState<unknown>) {
   for (const [, { state }] of Object.entries(_state.childrenStates))
     destroyState(state);
   _state.selfState.ctx.scheduleAndResetOnDestroy();
