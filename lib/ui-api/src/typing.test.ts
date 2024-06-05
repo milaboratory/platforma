@@ -1,4 +1,4 @@
-import { ConfigResult, PlResourceEntry } from './type_engine';
+import { ConfigResult } from './type_engine';
 import {
   getImmediate,
   getJsonField,
@@ -7,9 +7,9 @@ import {
   Inputs, It,
   makeObject,
   mapRecordValues,
-  MainOutputs, isEmpty
+  MainOutputs, isEmpty, mapArrayValues
 } from './actions';
-import { BlockConfig, BlockConfigBuilder, ResolveOutputsType, StdCtx } from './std';
+import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './std';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -64,13 +64,14 @@ function typeTest1() {
 test('test config content', () => {
   const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>()
     .output('cell1', makeObject({ b: getJsonField(Inputs, 'a') }))
+    .output('cell2', mapArrayValues(getJsonField(Inputs, 'a'), getImmediate('v1')))
     .canRun(isEmpty(getJsonField(Inputs, 'a')))
     .sections(getImmediate([
       { id: 'main', title: 'Main' }
     ]))
     .build();
 
-  assertType<ResolveOutputsType<typeof blockConfig1>, { cell1: { b: string[] } }>();
+  assertType<ResolveOutputsType<typeof blockConfig1>, { cell1: { b: string[] }, cell2: 'v1'[] }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
 });

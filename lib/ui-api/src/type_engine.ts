@@ -1,5 +1,5 @@
-import { GetImmediate } from './actions_kinds';
-import { Cfg } from './dto';
+import { ActGetImmediate } from './actions_kinds';
+import { Cfg } from './model';
 
 // Higher kind types pattern taken from here: https://code.lol/post/programming/higher-kinded-types/
 
@@ -10,6 +10,7 @@ type GenericFunction = (x: any) => unknown;
 export interface ConfAction {
   readonly ctx: unknown;
   new: GenericFunction;
+  isSync: boolean;
 }
 
 /** This type basically sets parameter to a ConfAction kind. */
@@ -31,7 +32,7 @@ export type PrimitiveOrConfig = TypedConfig | string | number | boolean | null
 
 /** Converts primitive types to immediate config */
 export type PrimitiveToCfg<T extends PrimitiveOrConfig> = T extends string | number | boolean | null
-  ? TypedConfig<GetImmediate<T>>
+  ? TypedConfig<ActGetImmediate<T>>
   : T
 
 /** Extracts action */

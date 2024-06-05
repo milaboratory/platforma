@@ -1,81 +1,111 @@
-import { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
+import {
+  ConfAction,
+  ActionResult,
+  InferVarTypeSafe,
+  PlResourceEntry
+} from './type_engine';
+import { And, IsA, SyncConfAction } from './type_util';
 
-export interface GetFromCtx<V extends string> extends ConfAction {
+//
+// Context
+//
+
+export interface ActGetFromCtx<V extends string> extends ConfAction {
   new: (x: this['ctx']) => InferVarTypeSafe<typeof x, V>;
+  isSync: true;
+}
+
+//
+// Isolate
+//
+
+export interface ActIsolate<Nested extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Nested, typeof x>;
+  isSync: false;
 }
 
 //
 // Json
 //
 
-export interface GetImmediate<T> extends ConfAction {
+export interface ActGetImmediate<T> extends ConfAction {
   new: () => T;
+  isSync: true;
 }
 
-export interface GetField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
+export interface ActGetField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => InferVarTypeSafe<
     ActionResult<Source, typeof x>,
     ActionResult<Field, typeof x>>;
+  isSync: true;
 }
 
-export interface MakeObject<T extends Record<string, ConfAction>> extends ConfAction {
+export interface ActMakeObject<T extends Record<string, ConfAction>> extends ConfAction {
   new: (x: this['ctx']) => {
     [Key in keyof T]: ActionResult<T[Key], typeof x>
   };
+  isSync: IsA<T, Record<string, SyncConfAction>>;
 }
 
-export interface MapRecordValues<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
+export interface ActMapRecordValues<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends Record<string, infer V>
     ? Record<string, ActionResult<Mapping, (typeof x) & { [K in ItVar]: V }>>
     : unknown;
+  isSync: And<IsA<Source, SyncConfAction>, IsA<Mapping, SyncConfAction>>;
 }
 
-export interface MapArrayValues<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
+export interface ActMapArrayValues<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (infer V)[]
     ? ActionResult<Mapping, (typeof x) & { [K in ItVar]: V }>[]
     : unknown;
+  isSync: And<IsA<Source, SyncConfAction>, IsA<Mapping, SyncConfAction>>;
 }
 
 //
 // Boolean
 //
 
-export interface IsEmpty<Source extends ConfAction> extends ConfAction {
+export interface ActIsEmpty<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends unknown[]
     ? boolean
     : unknown;
+  isSync: IsA<Source, SyncConfAction>;
 }
 
-export interface Not<Source extends ConfAction> extends ConfAction {
+export interface ActNot<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends boolean
     ? boolean
     : unknown;
+  isSync: IsA<Source, SyncConfAction>;
 }
 
 //
 // Resource
 //
 
-export interface GetResourceField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
+export interface ActGetResourceField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? ActionResult<Field, typeof x> extends string
       ? PlResourceEntry
       : unknown
     : unknown;
+  isSync: And<IsA<Source, SyncConfAction>, IsA<Field, SyncConfAction>>;
 }
 
-export interface MapResourceFields<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
+export interface ActMapResourceFields<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? Record<string, ActionResult<Mapping, (typeof x) & { [K in ItVar]: PlResourceEntry }>>
     : unknown;
+  isSync: And<IsA<Source, SyncConfAction>, IsA<Mapping, SyncConfAction>>;
 }
 
 //
 // Resource To Json
 //
 
-export interface GetResourceValueAsJson<Source extends ConfAction, T> extends ConfAction {
+export interface ActGetResourceValueAsJson<Source extends ConfAction, T> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? T
     : unknown;
+  isSync: IsA<Source, SyncConfAction>;
 }

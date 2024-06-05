@@ -1,5 +1,6 @@
 import { ConfigResult, PlResourceEntry, TypedConfig } from './type_engine';
 import { getImmediate } from './actions';
+import { Checked } from './type_util';
 
 export type StdCtx<Inputs, UiState = undefined> = {
   $inputs: Inputs,
@@ -7,8 +8,6 @@ export type StdCtx<Inputs, UiState = undefined> = {
   $prod: PlResourceEntry,
   $staging: PlResourceEntry,
 }
-
-type Checked<Type, Condition> = Condition extends true ? Type : 'error';
 
 export type ResolveCfgType<Cfg extends TypedConfig, Inputs, UiState = undefined> = ConfigResult<Cfg, StdCtx<Inputs, UiState>>
 

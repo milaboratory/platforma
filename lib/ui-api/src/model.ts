@@ -1,6 +1,8 @@
 export type Cfg =
   | CfgGetFromCtx
 
+  | CfgIsolate
+
   | CfgImmediate
   | CfgGetJsonField
   | CfgMakeObject
@@ -13,6 +15,17 @@ export type Cfg =
   | CfgMapResourceFields
   | CfgGetResourceField
   | CfgResourceValueAsJson;
+
+//
+// Isolate / Rendering Mode
+//
+
+/** Forces wrapped config to be rendered asynchronously, using its own
+ * rendering cell */
+export type CfgIsolate = {
+  type: 'Isolate'
+  cfg: Cfg
+}
 
 //
 // Context

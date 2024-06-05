@@ -1,11 +1,11 @@
 import {
-  GetField,
-  GetFromCtx,
-  GetImmediate,
-  GetResourceField, GetResourceValueAsJson,
-  MakeObject,
-  MapRecordValues,
-  MapResourceFields, MapArrayValues, IsEmpty, Not
+  ActGetField,
+  ActGetFromCtx,
+  ActGetImmediate,
+  ActGetResourceField, ActGetResourceValueAsJson,
+  ActMakeObject,
+  ActMapRecordValues,
+  ActMapResourceFields, ActMapArrayValues, ActIsEmpty, ActNot, ActIsolate
 } from './actions_kinds';
 import {
   ExtractAction,
@@ -13,7 +13,8 @@ import {
   PrimitiveOrConfig,
   TypedConfig
 } from './type_engine';
-import { Cfg } from './dto';
+import { Cfg } from './model';
+import { Checked, CheckedSyncConf, IsA, IsSyncConf, SyncConfAction } from './type_util';
 
 //
 // Helpers
@@ -30,9 +31,22 @@ function primitiveToConfig(value: PrimitiveOrConfig): TypedConfig {
 // Context
 //
 
-export function getFromCfg<const V extends string>(variable: V): TypedConfig<GetFromCtx<V>> {
+export function getFromCfg<const V extends string>(variable: V): TypedConfig<ActGetFromCtx<V>> {
   return { type: 'GetFromCtx', variable } as Cfg as any;
 }
+
+//
+// Isolate
+//
+
+export function isolate<const Config extends TypedConfig>(
+  cfg: Config
+): TypedConfig<ActIsolate<ExtractAction<Config>>> {
+  return ({
+    type: 'Isolate', cfg
+  } as Cfg) as any;
+}
+
 
 //
 // Well-known Context Vars
@@ -48,43 +62,57 @@ export const UiState = getFromCfg('$ui');
 // Json
 //
 
-export function getImmediate<const T>(value: T): TypedConfig<GetImmediate<T>> {
+export function getImmediate<const T>(value: T): TypedConfig<ActGetImmediate<T>> {
   return { type: 'Immediate', value } as Cfg as any;
 }
 
 export function getJsonField<const Source extends PrimitiveOrConfig, const Field extends PrimitiveOrConfig>(
   source: Source, field: Field
-): TypedConfig<GetField<POCExtractAction<Source>, POCExtractAction<Field>>> {
+): TypedConfig<ActGetField<POCExtractAction<Source>, POCExtractAction<Field>>> {
   return ({
-    type: 'GetJsonField', field, source
+    type: 'GetJsonField', source: primitiveToConfig(source), field: primitiveToConfig(field)
   } as Cfg) as any;
 }
 
 export function makeObject<const T extends Record<string, PrimitiveOrConfig>>(template: T):
-  TypedConfig<MakeObject<{ [Key in keyof T]: POCExtractAction<T[Key]> }>> {
+  TypedConfig<ActMakeObject<{ [Key in keyof T]: POCExtractAction<T[Key]> }>> {
+  const normalizedTemplate: Record<string, TypedConfig> = {};
+  for (const [k, cfg] of Object.entries(template))
+    normalizedTemplate[k] = primitiveToConfig(cfg);
   return {
     type: 'MakeObject',
-    template
+    template: normalizedTemplate
   } as Cfg as any;
 }
 
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig>
-(source: Source, mapping: Mapping):
-  TypedConfig<MapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
+(source: Source & CheckedSyncConf<Source>, mapping: Mapping):
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
+export function mapRecordValues<
+  const Source extends TypedConfig,
+  const Mapping extends TypedConfig>
+(source: Source, mapping: Mapping & CheckedSyncConf<Mapping>):
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
-(source: Source, mapping: Mapping, itVar: ItVar):
-  TypedConfig<MapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
+(source: Source & CheckedSyncConf<Source>, mapping: Mapping, itVar: ItVar):
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
+export function mapRecordValues<
+  const Source extends TypedConfig,
+  const Mapping extends TypedConfig,
+  const ItVar extends string>
+(source: Source, mapping: Mapping & CheckedSyncConf<Mapping>, itVar: ItVar):
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
 export function mapRecordValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
 (source: Source, mapping: Mapping, itVar: ItVar = '$it' as ItVar):
-  TypedConfig<MapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapRecordValues',
     source, mapping, itVar
@@ -94,20 +122,31 @@ export function mapRecordValues<
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig>
-(source: Source, mapping: Mapping):
-  TypedConfig<MapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
+(source: Source & CheckedSyncConf<Source>, mapping: Mapping):
+  TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
+export function mapArrayValues<
+  const Source extends TypedConfig,
+  const Mapping extends TypedConfig>
+(source: Source, mapping: Mapping & CheckedSyncConf<Mapping>):
+  TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
-(source: Source, mapping: Mapping, itVar: ItVar):
-  TypedConfig<MapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
+(source: Source & CheckedSyncConf<Source>, mapping: Mapping, itVar: ItVar):
+  TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
+export function mapArrayValues<
+  const Source extends TypedConfig,
+  const Mapping extends TypedConfig,
+  const ItVar extends string>
+(source: Source, mapping: Mapping & CheckedSyncConf<Mapping>, itVar: ItVar):
+  TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
 export function mapArrayValues<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
 (source: Source, mapping: Mapping, itVar: ItVar = '$it' as ItVar):
-  TypedConfig<MapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
+  TypedConfig<ActMapArrayValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapArrayValues',
     source, mapping, itVar
@@ -120,7 +159,7 @@ export function mapArrayValues<
 
 export function isEmpty<const Arg extends TypedConfig>(
   arg: Arg
-): TypedConfig<IsEmpty<ExtractAction<Arg>>> {
+): TypedConfig<ActIsEmpty<ExtractAction<Arg>>> {
   return ({
     type: 'IsEmpty', arg
   } as Cfg) as any;
@@ -128,7 +167,7 @@ export function isEmpty<const Arg extends TypedConfig>(
 
 export function not<const Operand extends TypedConfig>(
   operand: Operand
-): TypedConfig<Not<ExtractAction<Operand>>> {
+): TypedConfig<ActNot<ExtractAction<Operand>>> {
   return ({
     type: 'Not', operand
   } as Cfg) as any;
@@ -140,18 +179,18 @@ export function not<const Operand extends TypedConfig>(
 
 export function getResourceField<const Source extends PrimitiveOrConfig, const Field extends PrimitiveOrConfig>(
   source: Source, field: Field
-): TypedConfig<GetResourceField<POCExtractAction<Source>, POCExtractAction<Field>>> {
+): TypedConfig<ActGetResourceField<POCExtractAction<Source>, POCExtractAction<Field>>> {
   return ({
-    type: 'GetResourceField', field, source
+    type: 'GetResourceField', source: primitiveToConfig(source), field: primitiveToConfig(field)
   } as Cfg) as any;
 }
 
 export function getResourceValueAsJson<T>() {
   return function <const Source extends PrimitiveOrConfig>(
     source: Source
-  ): TypedConfig<GetResourceValueAsJson<POCExtractAction<Source>, T>> {
+  ): TypedConfig<ActGetResourceValueAsJson<POCExtractAction<Source>, T>> {
     return ({
-      type: 'GetResourceValueAsJson', source
+      type: 'GetResourceValueAsJson', source: primitiveToConfig(source)
     } as Cfg) as any;
   };
 }
@@ -160,21 +199,21 @@ export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig>
 (source: Source, mapping: Mapping):
-  TypedConfig<MapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
 (source: Source, mapping: Mapping, itVar: ItVar):
-  TypedConfig<MapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
+  TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
   const ItVar extends string>
 (source: Source, mapping: Mapping, itVar: ItVar = '$it' as ItVar):
-  TypedConfig<MapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
+  TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>> {
   return {
     type: 'MapResourceFields',
     source, mapping, itVar
-  } as Cfg as TypedConfig<MapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>;
+  } as Cfg as TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>;
 }
