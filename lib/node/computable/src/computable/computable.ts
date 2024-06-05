@@ -39,7 +39,15 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
+/** This runs state cleanup logic */
+// TODO TBD
+const computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>(
+  c =>
+    c.resetState());
+
 export class Computable<T> implements WrappedComputableKernel<T> {
+  /** Updated on each state reset */
+  private epoch = 0;
   private stateCalculation?: Promise<void>;
   private state?: CellState<T>;
   private uTag: string = '';
@@ -132,6 +140,9 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   }
 
   public async getValueOrError(): Promise<ComputableResult<T>> {
+    // to check that epoch is still ours when we finish updating the state
+    const ourEpoch = this.epoch;
+
     if (this.stateCalculation !== undefined) {
 
       // waiting for stat to update in case update was triggered elsewhere
@@ -141,29 +152,41 @@ export class Computable<T> implements WrappedComputableKernel<T> {
 
       // starting async state update
       this.stateCalculation = (async () => {
-        // awaiting new state
-        const newState = this.state === undefined
-          ? await createCellState(this[WrappedKernelField])
-          : await updateCellState(this.state);
+        try {
+          // awaiting new state
+          const newState = this.state === undefined
+            ? await createCellState(this[WrappedKernelField])
+            : await updateCellState(this.state);
 
-        // important state assertion
-        if (this.listenCounter !== 0)
-          throw new Error('Concurrent listening and state update.');
+          // check that reset state didn't happen
+          if (this.epoch !== ourEpoch) {
+            // all those efforts were for nothing
+            destroyState(newState);
+            return;
+          }
 
-        // updating the state
-        this.state = newState;
+          // important state assertion
+          if (this.listenCounter !== 0)
+            throw new Error('Concurrent listening and state update.');
 
-        // updating uTag as we just assigned new state
-        this.uTag = randomUUID();
+          // updating the state
+          this.state = newState;
 
-        // we are done updating state
-        this.stateCalculation = undefined;
+          // updating uTag as we just assigned new state
+          this.uTag = randomUUID();
+        } finally {
+          if (this.epoch === ourEpoch)
+            // we are done updating state
+            this.stateCalculation = undefined;
+        }
       })();
 
       // and now waiting for it to finish
       await this.stateCalculation;
-
     }
+
+    if (this.epoch !== ourEpoch)
+      throw new Error('Somebody reset the state while we were recalculating');
 
     const state = notEmpty(this.state);
 
@@ -181,10 +204,17 @@ export class Computable<T> implements WrappedComputableKernel<T> {
   /** This will trigger all onDestroys down the state tree, and reset the
    * state of this computable to initial. */
   public resetState(): void {
-    if (this.state === undefined)
+    if (this.state === undefined && this.stateCalculation === undefined)
       return;
-    destroyState(this.state);
+    if (this.stateCalculation !== undefined) {
+      this.stateCalculation = undefined;
+      // no need to destroy current state, state updater will do it for us
+      // when discover that epoch changed
+    } else if (this.state !== undefined) {
+      destroyState(this.state);
+    }
     this.state = undefined;
+    this.epoch++;
     this.uTag = '';
   }
 }
