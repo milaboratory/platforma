@@ -115,5 +115,26 @@
   align-items: center;
   justify-content: center;
 }
-//
-//padding
+.gap-4 {
+  gap: 4px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+//border
+.border-default {
+  border: 1px solid var(--border-color-default);
+}
+.border-top-default {
+  border-top: 1px solid var(--border-color-default);
+}
+.border-bottom-default {
+  border-bottom: 1px solid var(--border-color-default);
+}
+.border-left-default {
+  border-left: 1px solid var(--border-color-default);
+}
+.border-right-default {
+  border-left: 1px solid var(--border-color-default);
+}
