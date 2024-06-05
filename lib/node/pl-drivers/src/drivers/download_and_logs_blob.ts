@@ -1,4 +1,4 @@
-import { ChangeSource, TrackedAccessorProvider, Watcher } from '@milaboratory/computable';
+import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { CallersCounter, TaskProcessor, mapEntries, mapGet, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
@@ -45,15 +45,22 @@ export interface DownloadDestroyer {
 export class DownloadSyncAccessor {
   constructor(
     private readonly w: Watcher,
+    private readonly ctx: ComputableCtx,
     private readonly reader: DownloadSyncReader & LogsSyncReader,
   ) {}
 
   getDownloadedBlob(rInfo: ResourceInfo, callerId: string) {
-    return this.reader.getDownloadedBlob(this.w, rInfo, callerId);
+    const blob = this.reader.getDownloadedBlob(this.w, rInfo, callerId);
+    if (blob == undefined)
+      this.ctx.markUnstable();
+    return blob;
   }
 
   getUrl(rInfo: ResourceInfo, callerId: string): string | undefined {
-    return this.reader.getUrl(this.w, rInfo, callerId);
+    const url = this.reader.getUrl(this.w, rInfo, callerId);
+    if (url == undefined)
+      this.ctx.markUnstable();
+    return url;
   }
 
   getLastLogs(
@@ -61,7 +68,10 @@ export class DownloadSyncAccessor {
     lines: number,
     callerId: string,
   ): LogResult {
-    return this.reader.getLastLogs(this.w, rInfo, lines, callerId);
+    const logs = this.reader.getLastLogs(this.w, rInfo, lines, callerId);
+    if (logs.log == '')
+      this.ctx.markUnstable();
+    return logs;
   }
 
   getProgressLog(
@@ -69,7 +79,10 @@ export class DownloadSyncAccessor {
     patternToSearch: string,
     callerId: string,
   ): LogResult {
-    return this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+    const logs = this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+    if (logs.log == '')
+      this.ctx.markUnstable();
+    return logs;
   }
 
   getLogId(
@@ -127,8 +140,8 @@ LogsAsyncReader {
   }
 
   /** Just binds a watcher to DownloadSyncAccessor. */
-  createInstance(watcher: Watcher): DownloadSyncAccessor {
-    return new DownloadSyncAccessor(watcher, this);
+  createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): DownloadSyncAccessor {
+    return new DownloadSyncAccessor(watcher, ctx, this);
   }
 
   /** Implements DownloadAsyncReader. */

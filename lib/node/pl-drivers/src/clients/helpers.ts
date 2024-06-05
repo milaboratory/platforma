@@ -1,8 +1,8 @@
 import { ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
 
 export interface ResourceInfo {
-  id: ResourceId;
-  type: ResourceType;
+  readonly id: ResourceId;
+  readonly type: ResourceType;
 }
 
 // TODO: move this logic to a computable that uploads blobs.

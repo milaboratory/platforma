@@ -1,4 +1,4 @@
-import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, FieldId, AnyFieldRef, ResourceRef } from '@milaboratory/pl-client-v2';
+import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, FieldId, AnyFieldRef, ResourceRef, stringifyWithResourceId } from '@milaboratory/pl-client-v2';
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratory/ts-helpers';
 import { Computable, computable } from '@milaboratory/computable';
 import { createDownloadDriver, createLogsDriver } from './helpers';
@@ -6,7 +6,8 @@ import * as os from 'node:os';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { ResourceInfo } from '../clients/helpers';
 import { scheduler } from 'node:timers/promises';
-import { Log, LogId } from './logs_stream';
+import { Log, LogId, LogsDriver } from './logs_stream';
+import { DownloadDriver } from './download_and_logs_blob';
 
 const callerId = 'callerId';
 
@@ -31,19 +32,15 @@ test('should get all logs', async () => {
         }
 
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
-          return computable(logs, {}, (driver, ctx) => {
-            const logs = driver.getLastLogs(rInfo, 100, callerId);
-            if (logs.log == '')
-              ctx.markUnstable();
-            return { ...logs, done: false }
-          })
+          return computable(
+            logs, {},
+            driver => ({ done: false, ...driver.getLastLogs(rInfo, 100, callerId) }),
+          )
         else
-          return computable(download, {}, (driver, ctx) => {
-            const logs = driver.getLastLogs(rInfo, 100, callerId);
-            if (logs.log == '')
-              ctx.markUnstable();
-            return { ...logs, done: true }
-          })
+          return computable(
+            download, {},
+            driver => ({ done: true, ...driver.getLastLogs(rInfo, 100, callerId) }),
+          )
       }
     );
 
@@ -87,19 +84,15 @@ test('should get last line with a prefix', async () => {
         }
 
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
-          return computable(logs, {}, (driver, ctx) => {
-            const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
-            if (logs.log == '')
-              ctx.markUnstable();
-            return { ...logs, done: false }
-          })
+          return computable(
+            logs, {},
+            driver => ({done: false, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
+          )
         else
-          return computable(download, {}, (driver, ctx) => {
-            const logs = driver.getProgressLog(rInfo, "PREFIX", callerId);
-            if (logs.log == '')
-              ctx.markUnstable();
-            return { ...logs, done: true }
-          })
+          return computable(
+            download, {},
+            driver => ({done: true, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
+          )
       }
     );
 
@@ -148,17 +141,17 @@ test('should get log smart object and get log lines from that', async () => {
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
           return computable(
             logs, {},
-            driver => driver.getLogId(rInfo, callerId),
-            async logId => logId !== undefined ? logs.getLog(logId as LogId) : undefined,
+            driver => ({ logId: driver.getLogId(rInfo, callerId), source: 'logs' }),
           )
         else
           return computable(
             download, {},
-            driver => driver.getLogId(rInfo, callerId),
-            async logId => logId !== undefined ? download.getLog(logId as LogId) : undefined,
+            driver => ({ logId: driver.getLogId(rInfo, callerId), source: 'download' }),
           )
       }
     );
+
+    // TODO: callerId (maybe in accessor?)
 
     await createRunCommandWithStdoutStream(
       client,
@@ -166,7 +159,7 @@ test('should get log smart object and get log lines from that', async () => {
       ["-c", "echo 1; sleep 1; echo 2"],
     );
 
-    let smartObject = await getSmartObject(logger, c as Computable<Log | undefined>);
+    let smartObject = await getSmartObject(logger, logs, download, c);
 
     while (true) {
       try {
@@ -177,7 +170,7 @@ test('should get log smart object and get log lines from that', async () => {
           return;
         }
       } catch (e) {
-        smartObject = await getSmartObject(logger, c as Computable<Log | undefined>);
+        smartObject = await getSmartObject(logger, logs, download, c);
       }
 
       await scheduler.wait(200);
@@ -185,17 +178,27 @@ test('should get log smart object and get log lines from that', async () => {
   })
 })
 
+interface LogIdAndSource {
+  logId: LogId | undefined;
+  source: string;
+}
+
 async function getSmartObject(
   logger: MiLogger,
-  c: Computable<Log | undefined>,
+  logs: LogsDriver,
+  download: DownloadDriver,
+  c: Computable<LogIdAndSource | undefined>,
 ) {
   while (true) {
     await c.listen();
 
     const result = await c.getValue();
-    logger.info(`got result: ${JSON.stringify(result)}`);
-    if (result != undefined) {
-      return result;
+    logger.info(`got result: ${stringifyWithResourceId(result)}`);
+    if (result != undefined && result.logId != undefined) {
+      if (result.source == 'logs')
+        return logs.getLog(result.logId);
+      else
+        return download.getLog(result.logId);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { ChangeSource, TrackedAccessorProvider, Watcher } from '@milaboratory/computable';
+import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { CallersCounter, mapGet } from '@milaboratory/ts-helpers';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
@@ -41,8 +41,8 @@ export interface LogResult {
 }
 
 export interface LogId {
-  id: string;
-  rInfo: ResourceInfo;
+  readonly id: string;
+  readonly rInfo: ResourceInfo;
 }
 
 export interface LogsAsyncReader {
@@ -74,7 +74,8 @@ export interface LogsDestroyer {
 export class LogsSyncAccessor {
   constructor(
     private readonly w: Watcher,
-    private readonly reader: LogsSyncReader
+    private readonly ctx: ComputableCtx,
+    private readonly reader: LogsSyncReader,
   ) {}
 
   getLastLogs(
@@ -82,7 +83,10 @@ export class LogsSyncAccessor {
     lines: number,
     callerId: string,
   ): LogResult {
-    return this.reader.getLastLogs(this.w, rInfo, lines, callerId);
+    const logs = this.reader.getLastLogs(this.w, rInfo, lines, callerId);
+    if (logs.log == '')
+      this.ctx.markUnstable();
+    return logs;
   }
 
   getProgressLog(
@@ -90,7 +94,10 @@ export class LogsSyncAccessor {
     patternToSearch: string,
     callerId: string,
   ): LogResult {
-    return this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+    const logs = this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+    if (logs.log == '')
+      this.ctx.markUnstable();
+    return logs;
   }
 
   getLogId(
@@ -123,8 +130,8 @@ export class LogsDriver implements
     ) {
     }
 
-    createInstance(watcher: Watcher): LogsSyncAccessor {
-      return new LogsSyncAccessor(watcher, this);
+    createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): LogsSyncAccessor {
+      return new LogsSyncAccessor(watcher, ctx, this);
     }
 
     getLastLogs(
@@ -265,7 +272,7 @@ class LastLinesGetter {
 
       return true;
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'UNKNOWN') {
+      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
         this.logs = '';
         this.error = e;
