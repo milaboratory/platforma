@@ -80,11 +80,13 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
     pending.push((async () => {
       const resource = await resourceData;
       const kv = await kvData;
-      if (resource === undefined || kv === undefined) {
-        if (kv !== undefined || resource !== undefined)
-          throw new Error('Inconsistent replies');
+
+      if (resource === undefined)
         return undefined;
-      }
+
+      if (kv === undefined)
+        throw new Error('Inconsistent replies');
+
       return { ...resource, kv };
     })());
   };
