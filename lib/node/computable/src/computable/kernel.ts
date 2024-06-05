@@ -88,7 +88,7 @@ export interface ComputableKernel<T> {
 
   /** Computable calculation code. Symbol is use here to facilitate easy identification
    * of computable kernels in arbitrary object trees. */
-  [KernelLambdaField](watcher: Watcher, ctx: ComputableCtx): IntermediateRenderingResult<unknown, T>
+  [KernelLambdaField](watcher: Watcher, ctx: ComputableCtx): IntermediateRenderingResult<any, T>
 }
 
 /** I.e. computable. */

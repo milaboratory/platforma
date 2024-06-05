@@ -7,6 +7,7 @@ import {
   UnwrapComputables
 } from './kernel';
 import { Computable } from './computable';
+import { Watcher } from '../watcher';
 
 let ephKeyCounter = 1;
 
@@ -57,8 +58,51 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
       inCallback = false;
       return {
         ir,
-        postprocessValue: postprocessValue ?? (noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>)
-      } as IntermediateRenderingResult<IR, T>;
+        postprocessValue: postprocessValue ?? noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+      };
+    }
+  });
+}
+
+export function rawComputable<IR>(
+  cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
+  ops: Partial<ComputableRenderingOps> = {}
+): Computable<UnwrapComputables<IR>> {
+
+  const { mode, resetValueOnError } = ops;
+  const renderingOps: CellRenderingOps = {
+    ...DefaultRenderingOps,
+    ...(mode !== undefined && { mode }),
+    ...(resetValueOnError !== undefined && { resetValueOnError })
+  };
+
+  return new Computable<UnwrapComputables<IR>>({
+    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
+    [KernelLambdaField]: (watcher, ctx) => {
+      const result = cb(watcher, ctx);
+      return { ir: result, postprocessValue: noopPostprocessValue<IR>() };
+    }
+  });
+}
+
+export function rawComputableWithPostprocess<IR, T>(
+  cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
+  ops: Partial<ComputableRenderingOps> = {},
+  postprocessValue: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+): Computable<T> {
+
+  const { mode, resetValueOnError } = ops;
+  const renderingOps: CellRenderingOps = {
+    ...DefaultRenderingOps,
+    ...(mode !== undefined && { mode }),
+    ...(resetValueOnError !== undefined && { resetValueOnError })
+  };
+
+  return new Computable({
+    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
+    [KernelLambdaField]: (watcher, ctx) => {
+      const result = cb(watcher, ctx);
+      return { ir: result, postprocessValue };
     }
   });
 }
