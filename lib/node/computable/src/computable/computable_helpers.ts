@@ -64,6 +64,31 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   });
 }
 
+export function computableInstancePosprocessor<A, IR, T>(
+  ap: TrackedAccessorProvider<A>,
+  ops: Partial<ComputableRenderingOps> = {},
+  cb: (a: A, ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>): Computable<T> {
+  const { mode, resetValueOnError } = ops;
+  const renderingOps: CellRenderingOps = {
+    ...DefaultRenderingOps,
+    ...(mode !== undefined && { mode }),
+    ...(resetValueOnError !== undefined && { resetValueOnError })
+  };
+  return new Computable<T>({
+    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
+    [KernelLambdaField]: (watcher, ctx) => {
+      let inCallback = true;
+      const ir = cb(ap.createInstance(watcher, () => {
+        if (!inCallback)
+          throw new AccessorLeakException();
+      }, ctx), ctx);
+      inCallback = false;
+      return ir;
+    }
+  });
+}
+
+
 export function rawComputable<IR>(
   cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
   ops: Partial<ComputableRenderingOps> = {}

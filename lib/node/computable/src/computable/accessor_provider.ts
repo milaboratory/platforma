@@ -52,3 +52,30 @@ export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<Ext
     }
   };
 }
+
+export class LazyAccessorFactory {
+  private accessors = new Map<TrackedAccessorProvider<any>, any>();
+
+  constructor(private readonly watcher: Watcher,
+              private readonly guard: UsageGuard,
+              private readonly ctx: ComputableCtx) {
+  }
+
+  public get<A>(provider: TrackedAccessorProvider<A>): A {
+    this.guard();
+    const cached = this.accessors.get(provider);
+    if (cached !== undefined)
+      return cached as A;
+    const acc = provider.createInstance(this.watcher, this.guard, this.ctx);
+    this.accessors.set(provider, acc);
+    return acc;
+  }
+}
+
+export function lazyFactory(): TrackedAccessorProvider<LazyAccessorFactory> {
+  return {
+    createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): LazyAccessorFactory {
+      return new LazyAccessorFactory(watcher, guard, ctx);
+    }
+  };
+}
