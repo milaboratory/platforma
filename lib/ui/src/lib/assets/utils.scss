@@ -151,6 +151,10 @@ a.btn-link {
 }
 
 @for $i from 1 through 48 {
+  .p-#{$i} {
+    padding: #{$i}px;
+  }
+
   .pt-#{$i} {
     padding-top: #{$i}px;
   }
@@ -165,6 +169,10 @@ a.btn-link {
 
   .pb-#{$i} {
     padding-bottom: #{$i}px;
+  }
+
+  .m-#{$i} {
+    margin: #{$i}px;
   }
 
   .mt-#{$i} {

@@ -1,7 +1,10 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
+import DataTable from '@/lib/components/DataTable/index.vue';
 import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
+import type { Settings as DataTableSettings } from './lib/components/DataTable/types';
 import type * as GridTableTypes from './lib/components/GridTable/types';
+import type * as DataTableTypes from './lib/components/DataTable/types';
 import type * as ManageModalTypes from './lib/components/ManageModal/types';
 import type { MaskIconName } from '@/lib/types.ts';
 import ThemeSwitcher from '@/lib/components/ThemeSwitcher.vue';
@@ -112,6 +115,7 @@ export {
   ToggleSwitch,
   MaskIcon,
   GridTable,
+  DataTable,
   ContextProvider,
   Slider,
   DialogModal,
@@ -155,7 +159,7 @@ export {
 };
 
 // types
-export type { MaybeRef, GridTableSettings, GridTableTypes, ManageModalTypes, MaskIconName };
+export type { MaybeRef, GridTableSettings, DataTableSettings, GridTableTypes, DataTableTypes, ManageModalTypes, MaskIconName };
 
 //move to new version pl-uikit
 export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
