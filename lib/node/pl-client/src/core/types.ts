@@ -1,4 +1,5 @@
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { version } from 'ts-jest/dist/transformers/hoist-jest';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript
 declare const __resource_id_type__: unique symbol;
@@ -70,6 +71,14 @@ export type FieldStatus =
 export interface ResourceType {
   readonly name: string;
   readonly version: string;
+}
+
+export function resourceType(name: string, version: string): ResourceType {
+  return { name, version };
+}
+
+export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): boolean {
+  return type1.name === type2.name && type1.version === type2.version;
 }
 
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */

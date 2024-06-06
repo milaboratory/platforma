@@ -1,6 +1,6 @@
 import { withTempRoot } from '../test/test_config';
 import { StructTestResource, ValueTestResource } from '../helpers/pl';
-import { toGlobalFieldId } from './transaction';
+import { field, toGlobalFieldId, toGlobalResourceId } from './transaction';
 import { RecoverablePlError } from './errors';
 import { sleep } from '@milaboratory/ts-helpers';
 
@@ -153,6 +153,26 @@ test('handle empty KV storage', async () => {
   await withTempRoot(async pl => {
     await pl.withReadTx('testReadIndividualAndList', async tx => {
       expect(await tx.listKeyValuesString(tx.clientRoot)).toEqual([]);
+    });
+  });
+});
+
+test('handle KV storage 2', async () => {
+  await withTempRoot(async pl => {
+    const r1 = await pl.withWriteTx('writeKV', async tx => {
+      const rr1 = tx.createEphemeral(StructTestResource);
+      tx.createField(field(rr1, 'a'), 'Dynamic', rr1);
+      tx.setKValue(rr1, 'a', 'a');
+      tx.setKValue(rr1, 'b', 'b');
+      await tx.commit();
+      return await toGlobalResourceId(rr1);
+    });
+
+    await pl.withReadTx('testReadIndividualAndList', async tx => {
+      expect(await tx.listKeyValuesString(r1)).toEqual([
+        { key: 'a', value: 'a' },
+        { key: 'b', value: 'b' }
+      ]);
     });
   });
 });
