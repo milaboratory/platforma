@@ -62,7 +62,7 @@ export class PollingComputableHooks implements ComputableHooks {
 
   private readonly awaitingRefresh = new Set<symbol>();
 
-  refreshState(instance: Computable<unknown>): Promise<void> {
+  refreshState(): Promise<void> {
     if (this.scheduleOnNextFreshState === undefined)
       return Promise.resolve();
 

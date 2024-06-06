@@ -45,7 +45,9 @@ const computableFinalizationRegistry = new FinalizationRegistry<Computable<unkno
   c =>
     c.resetState());
 
-export class Computable<T> implements WrappedComputableKernel<T> {
+export type ComputableSU<T> = Computable<T | undefined, T>;
+
+export class Computable<T, StableT extends T = T> implements WrappedComputableKernel<T> {
   /** Updated on each state reset */
   private epoch = 0;
   private stateCalculation?: Promise<void>;
@@ -61,6 +63,12 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     return this.state === undefined
       || this.state.watcher.isChanged
       || (uTag !== undefined && this.uTag !== uTag);
+  }
+
+  /** This is a noop helper method to add stable type to the
+   * computable type signature. */
+  public withStableType<ST extends T = Exclude<T, undefined>>(): Computable<T, ST> {
+    return this as any as Computable<T, ST>;
   }
 
   /** @deprecated use {@link isChanged} instead */
@@ -123,6 +131,19 @@ export class Computable<T> implements WrappedComputableKernel<T> {
     } else {
       return await lPromise;
     }
+  }
+
+  public async awaitStableFullValue(abortSignal?: AbortSignal): Promise<ComputableResultOk<StableT>> {
+    while (true) {
+      const value = await this.getFullValue();
+      if (value.stable)
+        return value as ComputableResultOk<StableT>;
+      await this.listen(abortSignal);
+    }
+  }
+
+  public async awaitStableValue(abortSignal?: AbortSignal): Promise<StableT> {
+    return (await this.awaitStableFullValue(abortSignal)).value;
   }
 
   public async getValue(): Promise<T> {
