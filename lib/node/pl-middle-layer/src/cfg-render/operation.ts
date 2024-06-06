@@ -11,10 +11,15 @@ export type ArgumentRequests = Record<ArgumentKey, Operation>;
 
 export type Subroutine = (args: ArgumentValues) => Operation;
 
-export type CallSubroutine = {
-  type: 'CallSubroutine'
+export type ScheduleSubroutine = {
+  type: 'ScheduleSubroutine'
   subroutine: Subroutine,
   args: ArgumentRequests
+}
+
+export type ScheduleComputable = {
+  type: 'ScheduleComputable'
+  computable: Computable<unknown>
 }
 
 export type ReturnResult = {
@@ -22,11 +27,6 @@ export type ReturnResult = {
   result: unknown
 }
 
-export type AwaitComputable = {
-  type: 'AwaitComputable'
-  computable: Computable<unknown>
-}
-
-export type OperationAction = CallSubroutine | AwaitComputable | ReturnResult;
+export type OperationAction = ScheduleSubroutine | ScheduleComputable | ReturnResult;
 
 export type Operation = (e: ExecutionEnvironment) => OperationAction;
