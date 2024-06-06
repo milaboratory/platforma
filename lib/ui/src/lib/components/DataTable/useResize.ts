@@ -6,9 +6,8 @@ import { getColumnPositions } from './getColumnPositions';
 import { MIN_COLUMN_WIDTH, RESIZE_GAP } from './constants';
 import { useMouse } from '@/lib/composition/useMouse';
 import { useHover } from '@/lib/composition/useHover';
-import { utils } from '@milaboratory/helpers';
+import { tapIf, clamp } from '@milaboratory/helpers/utils';
 
-const { tapIf, clamp } = utils;
 export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
   const mousePos = useMouse();
   const isHovered = useHover(tableRef, {});

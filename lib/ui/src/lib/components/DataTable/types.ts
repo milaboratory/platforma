@@ -9,10 +9,14 @@ type TypeMap = {
 
 export type ValueType = keyof TypeMap;
 
+export type Props = {
+  settings: Settings;
+};
+
 export type ColumnSettings = {
   text: string;
   name: string;
-  width?: string;
+  width: number;
   justify?: 'center' | 'start';
   sort?: {
     direction: 'DESC' | 'ASC' | undefined;
@@ -45,6 +49,7 @@ export type CellProps = {
   value: unknown;
   class: string;
   editable?: boolean;
+  width: number;
 };
 
 export type Data = {
@@ -60,5 +65,7 @@ export type Data = {
       }
     | undefined;
   bodyHeight: number;
+  bodyWidth: number;
   scrollTop: number;
+  scrollLeft: number;
 };

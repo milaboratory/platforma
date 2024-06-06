@@ -6,8 +6,9 @@ import { utils, strings } from '@milaboratory/helpers';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
 import { listToOptions } from '@milaboratory/helpers/utils';
+import type { Data } from '@/lib/components/GridTable/types';
 
-const rowsLength = 2000;
+const rowsLength = 100000;
 
 const cases = ['narrow', 'wide'] as const;
 
@@ -16,23 +17,24 @@ const caseOptions = listToOptions(cases);
 type Case = (typeof cases)[number];
 
 const data = reactive({
-  case: 'narrow' as Case,
+  case: 'wide' as Case,
+  tableData: undefined as Data | undefined,
 });
 
 const columnsNumber = computed(() => {
   if (data.case === 'wide') {
-    return 20;
+    return 100;
   }
 
   return 5;
 });
 
 const columnsRef = computed(() => {
-  const all = utils.arrayFrom(columnsNumber.value, () => {
+  const all = utils.arrayFrom(columnsNumber.value, (i) => {
     return {
-      text: faker.word.noun(),
+      text: i + ') ' + faker.word.noun(),
       name: strings.uniqueId(),
-      sort: { direction: undefined },
+      width: 100,
     } as DataTableSettings['columns'][number];
   });
 
@@ -40,6 +42,7 @@ const columnsRef = computed(() => {
     {
       text: 'ID',
       name: 'ID',
+      width: 100,
     },
     ...all,
   ];
@@ -49,7 +52,6 @@ const rowsRef = computed(() => {
   return utils.arrayFrom(rowsLength, (id) => {
     return Object.fromEntries(
       columnsRef.value.map((col, colIndex) => {
-
         if (col.name === 'ID') {
           return [col.name, id];
         }
@@ -68,11 +70,11 @@ const settings = computed(() => {
   };
 });
 
-const onChangeSort = (v: { colName: string; direction: 'ASC' | 'DESC' | undefined }) => {
-  console.log('new sort', JSON.stringify(v));
-  const col = settings.value.columns.find((col) => col.name === v.colName);
-  if (col) {
-    col.sort = { direction: v.direction };
+const onUpdateData = (v: Data) => (data.tableData = v);
+
+const goDown = () => {
+  if (data.tableData) {
+    data.tableData.scrollTop = data.tableData.scrollTop + 100000;
   }
 };
 </script>
@@ -81,11 +83,14 @@ const onChangeSort = (v: { colName: string; direction: 'ASC' | 'DESC' | undefine
   <layout>
     <div style="display: flex; background-color: #fff; align-items: center" class="p-12 gap-24">
       <select-input v-model="data.case" style="width: 200px" :options="caseOptions" />
-      rows: {{ rowsLength }} last id: {{ rowsRef[rowsRef.length - 1]['ID'] }}
-      <button>Down</button>
+      rows: {{ rowsLength }} cols: {{ columnsNumber }} last id: {{ rowsRef[rowsRef.length - 1]['ID'] }}
+      <button @click="goDown">Down</button>
     </div>
-    <div style="display: flex; height: 800px; flex-direction: column; border: 1px solid green">
-      <data-table style="flex: 1" :settings="settings" @change:sort="onChangeSort" />
+    <div v-if="false" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24">
+      {{ data.tableData }}
+    </div>
+    <div style="display: flex; flex-direction: column; max-height: 800px; border: 1px solid green">
+      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" />
     </div>
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
