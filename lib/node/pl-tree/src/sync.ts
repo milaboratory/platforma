@@ -68,6 +68,7 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
   const requestState = (rid: OptionalResourceId) => {
     if (isNullResourceId(rid) || requested.has(rid) || finalResources.has(rid))
       return;
+
     // adding the id, so we will not request it's state again if somebody else
     // references the same resource
     requested.add(rid);

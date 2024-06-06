@@ -1,16 +1,11 @@
-import {
-  ComputableCtx, PollingComputableHooks,
-  TrackedAccessorProvider,
-  UsageGuard,
-  Watcher
-} from '@milaboratory/computable';
-import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
+import { PollingComputableHooks } from '@milaboratory/computable';
+import { PlTreeEntry } from './accessors';
 import { PlClient, ResourceId } from '@milaboratory/pl-client-v2';
 import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
 import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
 import { sleep } from '@milaboratory/ts-helpers';
 
-export type TreeDataSourceOps = {
+export type SynchronizedTreeOps = {
   finalPredicate?: FinalPredicate,
   pruning?: PruningFunction,
 
@@ -34,7 +29,7 @@ export class SynchronizedTreeState {
 
   constructor(private readonly pl: PlClient,
               private readonly root: ResourceId,
-              ops: TreeDataSourceOps) {
+              ops: SynchronizedTreeOps) {
     const { finalPredicate, pruning, pollingInterval, stopPollingDelay } = ops;
     this.pruning = pruning;
     this.pollingInterval = pollingInterval;
@@ -48,10 +43,21 @@ export class SynchronizedTreeState {
     );
   }
 
+  /** @deprecated use "entry" instead */
   public accessor(rid: ResourceId = this.root): PlTreeEntry {
+    return this.entry(rid);
+  }
+
+  public entry(rid: ResourceId = this.root): PlTreeEntry {
     return new PlTreeEntry(
       { treeProvider: () => this.state, hooks: this.hooks },
       rid);
+  }
+
+  /** Can be used to externally kick off the synchronization polling loop, and
+   * await for the first synchronization to happen. */
+  public async refreshState(): Promise<void> {
+    await this.hooks.refreshState();
   }
 
   private scheduledOnNextState: ScheduledRefresh[] = [];

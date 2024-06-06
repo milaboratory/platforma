@@ -636,6 +636,10 @@ export class PlTreeState {
           resource.fields.set(fd.name, field);
         }
 
+        // adding kv
+        for (const kv of rd.kv)
+          resource.kv.set(kv.key, kv.value);
+
         // adding the resource to the heap
         this.resources.set(resource.id, resource);
         this.resourcesAdded.markChanged();
@@ -676,7 +680,7 @@ export class PlTreeState {
       currentRefs = nextRefs;
     }
 
-    // checking for orphans (may be removed in the future)
+    // checking for orphans (maybe removed in the future)
     if (!allowOrphanInputs) {
       for (const rd of resourceData) {
         if (!this.resources.has(rd.id))
@@ -685,7 +689,12 @@ export class PlTreeState {
     }
   }
 
-  accessor(rid: ResourceId = this.root): PlTreeEntry {
+  /** @deprecated use "entry" instead */
+  public accessor(rid: ResourceId = this.root): PlTreeEntry {
+    return this.entry(rid);
+  }
+
+  public entry(rid: ResourceId = this.root): PlTreeEntry {
     return new PlTreeEntry({ treeProvider: () => this }, rid);
   }
 

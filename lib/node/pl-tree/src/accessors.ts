@@ -206,11 +206,19 @@ export class PlTreeNodeAccessor {
   }
 
   getKeyValue(key: string): Uint8Array | undefined {
-    return this.resource.getKeyValue(this.instanceData.watcher, key);
+    this.instanceData.guard();
+    const result = this.resource.getKeyValue(this.instanceData.watcher, key);
+    if (!result)
+      this.instanceData.ctx.markUnstable();
+    return result;
   }
 
   getKeyValueString(key: string): string | undefined {
-    return this.resource.getKeyValueString(this.instanceData.watcher, key);
+    this.instanceData.guard();
+    const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
+    if (!result)
+      this.instanceData.ctx.markUnstable();
+    return result;
   }
 
   persist(): PlTreeEntry {

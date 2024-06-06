@@ -16,7 +16,7 @@ test('simple synchronized tree test', async () => {
 
     const treeState = new SynchronizedTreeState(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
 
-    const theComputable = computable(treeState.accessor(), {},
+    const theComputable = computable(treeState.entry(), {},
       a => a.traverse({}, 'a', 'b')?.value?.getDataAsString());
 
     await theComputable.refreshState();
@@ -65,6 +65,61 @@ test('simple synchronized tree test', async () => {
       tx.lock(r2);
       await tx.commit();
     }, { sync: true });
+
+    await theComputable.refreshState();
+
+    expect(theComputable.isChanged()).toBe(true);
+    expect(await theComputable.getValueOrError()).toMatchObject({
+      stable: true,
+      value: 'hi!'
+    });
+  });
+});
+
+test('synchronized tree test with KV', async () => {
+  await TestHelpers.withTempRoot(async pl => {
+    const r1 = await pl.withWriteTx('CreatingStructure1', async tx => {
+      const rr1 = tx.createStruct(TestStructuralResourceType1);
+      const ff1 = field(tx.clientRoot, 'f1');
+      tx.createField(ff1, 'Dynamic');
+      tx.setField(ff1, rr1);
+      await tx.commit();
+      return await rr1.globalId;
+    }, { sync: true });
+
+    const treeState = new SynchronizedTreeState(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
+
+    const theComputable = computable(treeState.entry(), {},
+      a => a.traverse({}, 'a')?.value?.getKeyValueString('b'));
+
+    await theComputable.refreshState();
+
+    expect(await theComputable.getValueOrError()).toMatchObject({
+      stable: false,
+      value: undefined
+    });
+
+    const r2 = await pl.withWriteTx('CreatingStructure2', async tx => {
+      const rr2 = tx.createStruct(TestStructuralResourceType1);
+      const ff2 = field(r1, 'a');
+      tx.createField(ff2, 'Input');
+      tx.setField(ff2, rr2);
+      await tx.commit();
+      return await rr2.globalId;
+    }, { sync: true });
+
+    await theComputable.refreshState();
+
+    expect(theComputable.isChanged()).toBe(true);
+    expect(await theComputable.getValueOrError()).toMatchObject({
+      stable: false,
+      value: undefined
+    });
+
+    await pl.withWriteTx('AssignKeyValue', async tx => {
+      tx.setKValue(r2, 'b', 'hi!');
+      await tx.commit();
+    });
 
     await theComputable.refreshState();
 
