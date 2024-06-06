@@ -83,11 +83,11 @@ export class ClientDownload {
 
   async downloadRemoteFile(
     url: string,
-    headers: Record<string, string>,
+    reqHeaders: Record<string, string>,
   ): Promise<DownloadResponse> {
-    const { statusCode, body } = await request(url, {
+    const { statusCode, body, headers } = await request(url, {
       dispatcher: this.httpClient,
-      headers: headers,
+      headers: reqHeaders,
     });
 
     if (statusCode != 200) {

@@ -3,6 +3,8 @@ import { ConsoleLoggerAdapter, MiLogger } from '@milaboratory/ts-helpers';
 import { Computable, computable } from '@milaboratory/computable';
 import { createDownloadDriver, createLogsDriver } from './helpers';
 import * as os from 'node:os';
+import * as fsp from 'node:fs/promises';
+import * as path from 'node:path';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { ResourceInfo } from '../clients/helpers';
 import { scheduler } from 'node:timers/promises';
@@ -17,7 +19,8 @@ test('should get all logs', async () => {
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
-    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
+    const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },
@@ -69,7 +72,8 @@ test('should get last line with a prefix', async () => {
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
-    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
+    const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },
@@ -86,12 +90,12 @@ test('should get last line with a prefix', async () => {
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
           return computable(
             logs, {},
-            driver => ({done: false, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
+            driver => ({ done: false, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
           )
         else
           return computable(
             download, {},
-            driver => ({done: true, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
+            driver => ({ done: true, ...driver.getProgressLog(rInfo, "PREFIX", callerId) }),
           )
       }
     );
@@ -124,7 +128,8 @@ test('should get log smart object and get log lines from that', async () => {
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
-    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
+    const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },

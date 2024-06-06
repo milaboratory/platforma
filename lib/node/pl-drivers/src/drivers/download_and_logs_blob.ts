@@ -8,7 +8,7 @@ import { Writable } from 'node:stream'
 import { ClientDownload } from '../clients/download';
 import { ReadableStream } from "node:stream/web";
 import { ResourceInfo } from '../clients/helpers';
-import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncAccessor, LogsSyncReader } from './logs_stream';
+import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncReader } from './logs_stream';
 import { ClientLogs } from '../clients/logs';
 import { Updater } from './helpers';
 import * as readline from 'node:readline/promises';

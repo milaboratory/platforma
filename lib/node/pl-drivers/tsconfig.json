@@ -8,14 +8,9 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "sourceMap": true,
-    "declaration": true
+    "declarationMap": true
   },
   "types": [],
-  "references": [
-    {
-      "path": "../ts-computable"
-    }
-  ],
   "include": [
     "src/**/*"
   ],
