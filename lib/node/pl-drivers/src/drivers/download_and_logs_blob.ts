@@ -99,7 +99,7 @@ export interface BlobResult {
   readonly sizeBytes: number;
 }
 
-export type PathLike = string;
+type PathLike = string;
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */

@@ -1,11 +1,6 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { ClientUpload } from "../clients/upload";
-import { ClientDownload } from "../clients/download";
 import { ClientLogs } from "../clients/logs";
-import { ClientProgress } from "../clients/progress";
-import { Dispatcher } from "undici";
 import { DownloadDriver } from "./download_and_logs_blob";
-import { GrpcTransport } from "@protobuf-ts/grpc-transport";
 import { LogsDriver } from "./logs_stream";
 import { MiLogger } from "@milaboratory/ts-helpers";
 import {
@@ -16,38 +11,37 @@ import {
   valErr,
   getField,
 } from "@milaboratory/pl-client-v2";
-import { ResourceInfo } from "../clients/helpers";
+import { ResourceInfo, createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient } from "../clients/helpers";
 import { UploadDriver } from "./upload";
 import { scheduler } from 'node:timers/promises';
-import { PL_STORAGE_TO_PATH } from './test_helpers';
+import { DownloadUrlDriver } from './download_url';
 
 /** Just a helper to create a driver and all clients. */
-export async function createDownloadDriver(
+export function createDownloadUrlDriver(
+  client: PlClient,
+  logger: MiLogger,
+  saveDir: string,
+  localStorageIdsToRoot?: Record<string, string>,
+): DownloadUrlDriver {
+  return new DownloadUrlDriver(
+    logger,
+    createDownloadClient(logger, client, localStorageIdsToRoot),
+    saveDir,
+  );
+}
+
+/** Just a helper to create a driver and all clients. */
+export function createDownloadDriver(
   client: PlClient,
   logger: MiLogger,
   saveDir: string,
   cacheSoftSizeBytes: number,
   nConcurrentDownloads: number = 10,
   localStorageIdsToRoot?: Record<string, string>,
-): Promise<DownloadDriver> {
-  if (localStorageIdsToRoot === undefined)
-    localStorageIdsToRoot = PL_STORAGE_TO_PATH;
-
-  const clientDownload = client.getDriver({
-    name: 'DownloadBlob',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientDownload(grpcTransport, httpDispatcher, logger, localStorageIdsToRoot!)
-  })
-
-  const clientLogs = client.getDriver({
-    name: 'StreamLogs',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientLogs(grpcTransport, httpDispatcher, logger)
-  })
-
+): DownloadDriver {
   return new DownloadDriver(
-    clientDownload,
-    clientLogs,
+    createDownloadClient(logger, client, localStorageIdsToRoot),
+    createLogsClient(client, logger),
     saveDir,
     cacheSoftSizeBytes,
     nConcurrentDownloads,
@@ -55,41 +49,26 @@ export async function createDownloadDriver(
 }
 
 /** Just a helper to create a driver and all clients. */
-export async function createUploadDriver(
+export function createUploadDriver(
   client: PlClient,
   logger: MiLogger,
   signFn: (path: string) => Promise<string>,
-): Promise<UploadDriver> {
-  const clientBlob = client.getDriver({
-    name: 'UploadBlob',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientUpload(grpcTransport, httpDispatcher, client, logger)
-  })
-  const clientProgress = client.getDriver({
-    name: 'UploadProgress',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientProgress(grpcTransport, httpDispatcher, client, logger)
-  })
-
+): UploadDriver {
   return new UploadDriver(
     logger,
     signFn,
-    client, clientBlob, clientProgress
+    client,
+    createUploadBlobClient(client, logger),
+    createUploadProgressClient(client, logger),
   );
 }
 
 /** Just a helper to create a driver and all clients. */
-export async function createLogsDriver(
+export function createLogsDriver(
   client: PlClient,
   logger: MiLogger,
-): Promise<LogsDriver> {
-  const clientLogs = client.getDriver({
-    name: 'StreamLogs',
-    init: (_: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
-      new ClientLogs(grpcTransport, httpDispatcher, logger)
-  })
-
-  return new LogsDriver(clientLogs);
+): LogsDriver {
+  return new LogsDriver(createLogsClient(client, logger));
 }
 
 // TODO: remove this when we switch to refreshState.

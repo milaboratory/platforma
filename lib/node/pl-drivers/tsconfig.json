@@ -11,6 +11,11 @@
     "declaration": true
   },
   "types": [],
+  "references": [
+    {
+      "path": "../ts-computable"
+    }
+  ],
   "include": [
     "src/**/*"
   ],

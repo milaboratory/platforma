@@ -16,8 +16,8 @@ test('should get all logs', async () => {
     const logger = new ConsoleLoggerAdapter();
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
-    const logs = await createLogsDriver(client, logger);
-    const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const logs = createLogsDriver(client, logger);
+    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },
@@ -68,8 +68,8 @@ test('should get last line with a prefix', async () => {
     const logger = new ConsoleLoggerAdapter();
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
-    const logs = await createLogsDriver(client, logger);
-    const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const logs = createLogsDriver(client, logger);
+    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },
@@ -123,8 +123,8 @@ test('should get log smart object and get log lines from that', async () => {
     const logger = new ConsoleLoggerAdapter();
 
     const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
-    const logs = await createLogsDriver(client, logger);
-    const download = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const logs = createLogsDriver(client, logger);
+    const download = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
 
     const c = computable(
       tree.accessor(), { mode: 'StableOnlyRetentive' },

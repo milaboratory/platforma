@@ -14,7 +14,7 @@ const fileName = "answer_to_the_ultimate_question.txt";
 test('should download a blob and read its content', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
-    const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const driver = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = computable(
@@ -37,7 +37,7 @@ test('should download a blob and read its content', async () => {
 test('should get a download url without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
-    const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+    const driver = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = computable(
@@ -60,7 +60,7 @@ test(
   async () => {
     await TestHelpers.withTempRoot(async client => {
       const logger = new ConsoleLoggerAdapter();
-      const driver = await createDownloadDriver(client, logger, os.tmpdir(), 1);
+      const driver = createDownloadDriver(client, logger, os.tmpdir(), 1);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
       const c = computable(
@@ -96,7 +96,7 @@ test(
   async () => {
     await TestHelpers.withTempRoot(async client => {
       const logger = new ConsoleLoggerAdapter();
-      const driver = await createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
+      const driver = createDownloadDriver(client, logger, os.tmpdir(), 700 * 1024);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
       const c = computable(

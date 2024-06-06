@@ -172,7 +172,7 @@ async function withTest(
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
     const signFn = await makeGetSignatureFn();
-    const uploader = await createUploadDriver(client, logger, signFn);
+    const uploader = createUploadDriver(client, logger, signFn);
 
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
     const fPath = path.join(tmpDir, 'testUploadABlob.txt');

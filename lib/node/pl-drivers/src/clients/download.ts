@@ -53,7 +53,7 @@ export class ClientDownload {
 
     return this.isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
-      : await this.downloadRemoteFile(downloadUrl, headers);
+      : await this.downloadRemoteFile(downloadUrl, headersFromProto(headers));
   }
 
   private isLocal = (url: string) => url.startsWith(storageProtocol);
@@ -83,13 +83,11 @@ export class ClientDownload {
 
   async downloadRemoteFile(
     url: string,
-    headersFromGrpc: DownloadAPI_GetDownloadURL_HTTPHeader[],
+    headers: Record<string, string>,
   ): Promise<DownloadResponse> {
-    const reqHeaders = headersFromGrpc.map(({ name, value }) => [name, value])
-
-    const { statusCode, body, headers } = await request(url, {
+    const { statusCode, body } = await request(url, {
       dispatcher: this.httpClient,
-      headers: Object.fromEntries(reqHeaders),
+      headers: headers,
     });
 
     if (statusCode != 200) {
@@ -101,4 +99,10 @@ export class ClientDownload {
       size: Number(headers['content-length']),
     }
   }
+}
+
+function headersFromProto(
+  headers: DownloadAPI_GetDownloadURL_HTTPHeader[],
+): Record<string, string> {
+  return Object.fromEntries(headers.map(({ name, value }) => [name, value]));
 }
