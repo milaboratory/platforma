@@ -54,12 +54,16 @@ DownloadUrlSyncReader {
 
   /** Returns a Computable that do the work */
   getPath(url: URL): Computable<PathResult | undefined> {
-    return rawComputable(wrapUnstable((w: Watcher, ctx: ComputableCtx) => {
+    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
       const callerId = randomUUID();
       ctx.setOnDestroy(() => this.releasePath(url, callerId));
 
-      return this.getPathNoComputable(w, url, callerId)
-    }))
+      const result = this.getPathNoComputable(w, url, callerId);
+      if (result?.path == undefined)
+        ctx.markUnstable();
+
+      return result;
+    })
   }
 
   /** If path is not done, creates a task for downloading. */
@@ -237,19 +241,6 @@ class Download {
   private setAbortError() {
     this.error = String(this.signalCtl.signal.reason);
     this.change.markChanged();
-  }
-}
-
-type ComputableLambda<T> = (w: Watcher, ctx: ComputableCtx) => T;
-
-/** Marks a ComputableCtx as unstable when there is no result from the lambda. */
-function wrapUnstable<T>(cb: ComputableLambda<T>): ComputableLambda<T> {
-  return (w, ctx) => {
-    const result = cb(w, ctx);
-    if (result == undefined)
-      ctx.markUnstable();
-
-    return result;
   }
 }
 
