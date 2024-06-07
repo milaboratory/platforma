@@ -1,5 +1,4 @@
-import { PlClient, PlTransaction, ResourceId, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, BasicResourceData, FieldId } from '@milaboratory/pl-client-v2';
-import { BlobResult, FilesCache } from './download_and_logs_blob';
+import { PlClient, PlTransaction, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, BasicResourceData, FieldId } from '@milaboratory/pl-client-v2';
 import * as os from 'node:os';
 import * as fs from 'fs';
 import * as fsp from 'node:fs/promises';
@@ -104,7 +103,7 @@ test(
 
       const c = computable(
         driver, {},
-        (driver, ctx) => driver.getDownloadedBlob(downloadable, callerId),
+        driver => driver.getDownloadedBlob(downloadable, callerId),
       )
 
       const blob = await c.getValue();
@@ -131,8 +130,8 @@ test(
 )
 
 async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string): Promise<BasicResourceData> {
-  const dynamicId = await client.withWriteTx(
-    'MakeAssetDownloadable',
+   await client.withWriteTx(
+     'MakeAssetDownloadable',
     async (tx: PlTransaction) => {
       const importSettings = jsonToData({
         path: fileName,
@@ -150,8 +149,6 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
       tx.setField(downloadBlob, importerBlob)
       tx.createField(dynamicId, 'Dynamic', downloadDownloadable);
       await tx.commit();
-
-      return dynamicId;
     })
 
   return await poll(client, async (tx: PollTxAccessor) => {
@@ -160,36 +157,3 @@ async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string
     return download.data;
   })
 }
-
-test('should delete blob3 when add 3 blobs, exceed a soft limit and nothing holds blob3', () => {
-  const cache = new FilesCache(20);
-  const callerId1 = 'callerId1';
-  const blob1: BlobResult = { rId: 1n as ResourceId, path: 'path1', sizeBytes: 5 };
-  const blob2: BlobResult = { rId: 2n as ResourceId, path: 'path2', sizeBytes: 10 };
-  const blob3: BlobResult = { rId: 3n as ResourceId, path: 'path3', sizeBytes: 10 };
-
-  // add blobs and check that we don't exceed the soft limit.
-  cache.addCache(blob1, callerId1);
-  cache.addCache(blob2, callerId1);
-  expect(cache.needDelete()).toHaveLength(0);
-
-  // add already existing blob and, again, check that we don't exceed the limit.
-  cache.addCache(blob2, callerId1);
-  expect(cache.needDelete()).toHaveLength(0);
-
-  // add the third blob. We exceeds a soft limit,
-  // but every blob has a positive counter,
-  // so we can't delete anything.
-  cache.addCache(blob3, callerId1);
-  expect(cache.needDelete()).toHaveLength(0);
-
-  // blob3 have a zero counter, we can delete it.
-  cache.decCounter(blob3.path, callerId1);
-  expect(cache.needDelete()).toStrictEqual([blob3]);
-
-  // removes blob3 from a cache, checks that others are still there.
-  cache.removeCache(blob3);
-  expect(cache.getBlob(blob1.path)).toBe(blob1);
-  expect(cache.getBlob(blob2.path)).toBe(blob2);
-  expect(cache.getBlob(blob3.path)).toBeUndefined();
-});

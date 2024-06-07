@@ -1,14 +1,13 @@
-import { CallersCounter, MiLogger, TaskProcessor, asyncPool, mapEntries, mapGet, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream'
 import { ClientDownload } from '../clients/download';
 import { ChangeSource, Computable, ComputableCtx, Watcher, rawComputable } from '@milaboratory/computable';
 import { randomUUID, createHash } from 'node:crypto';
-import { PollingComputableHooks } from '@milaboratory/computable';
-import { scheduler } from 'node:timers/promises';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
+import { FilesCache } from './files_cache';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -21,210 +20,158 @@ export interface DownloadUrlSyncReader {
  * and extracts them into saveDir. */
 export class DownloadUrlDriver implements
 DownloadUrlSyncReader {
-  private idToPath: Map<string, PathResult> = new Map();
-  private idToCounters: Map<string, CallersCounter> = new Map();
-  private idToChange: Map<string, ChangeSource> = new Map();
+  private urlToDownload: Map<string, Download> = new Map();
+  private downloadQueue: TaskProcessor;
 
-  private hooks: PollingComputableHooks;
+  /** Writes and removes files to a hard drive and holds a counter for every
+   * file that should be kept. */
+  private cache: FilesCache<Download>;
 
   constructor(
     private readonly logger: MiLogger,
     private readonly clientDownload: ClientDownload,
     private readonly saveDir: string,
     private readonly opts: {
-      pollingInterval: number,
-      stopDebounce: number,
-      withUntar: boolean,
+      cacheSoftSizeBytes: number,
       withGunzip: boolean,
       nConcurrentDownloads: number,
     } = {
-        pollingInterval: 100,
-        stopDebounce: 1000,
-        withUntar: true,
-        withGunzip: true,
-        nConcurrentDownloads: 50,
-      }
+      cacheSoftSizeBytes: 50 * 1024 * 1024,
+      withGunzip: true,
+      nConcurrentDownloads: 50,
+    }
   ) {
-    this.hooks = new PollingComputableHooks(
-      () => this.startUpdating(this.opts.pollingInterval),
-      () => this.stopUpdating(),
-      { stopDebounce: this.opts.stopDebounce },
-      (resolve, reject) => this.scheduleOnNextState(resolve, reject),
-    );
+    this.downloadQueue = new TaskProcessor(
+      this.opts.nConcurrentDownloads);
+
+    this.cache = new FilesCache(
+      this.opts.cacheSoftSizeBytes);
   }
 
-  /** Returns a Computable that do the work.
-   * With hooks, the caller will schedule the downloading. */
+  /** Returns a Computable that do the work */
   getPath(url: URL): Computable<string | undefined> {
     return rawComputable(wrapUnstable((w: Watcher, ctx: ComputableCtx) => {
       const callerId = randomUUID();
       ctx.setOnDestroy(() => this.releasePath(url, callerId));
-      ctx.attacheHooks(this.hooks);
 
       return this.getPathNoComputable(w, url, callerId)
     }))
   }
 
-  /** If path is not ready, just updates ChangeSources and creates a task
-   * that will be downloaded in a main loop (it is launched via hooks). */
-  private getPathNoComputable(w: Watcher, url: URL, callerId: string): string | undefined {
+  /** If path is not ready, just creates a task for downloading. */
+  private getPathNoComputable(
+    w: Watcher, url: URL, callerId: string,
+  ): string | undefined {
     const id = url.toString();
-    const result = this.idToPath.get(id);
-    if (result == undefined) {
-      this.setNewFilePath(w, url, callerId);
-      return undefined;
+    const result = this.urlToDownload.get(id);
+
+    if (result != undefined) {
+      result.attach(w, callerId);
+      return result.getPath();
     }
 
-    mapGet(this.idToCounters, id).inc(callerId);
-    if (!result.done) {
-      this.attachWatcherToFilePath(w, url);
-    }
+    const newResult = new Download(this.getFilePath(url), url);
+    this.urlToDownload.set(id, newResult);
+    newResult.attach(w, callerId);
 
-    return result?.done ? notEmpty(result.path) : undefined;
-  }
+    this.downloadQueue.push({
+      fn: async () => this.downloadUrl(newResult, callerId),
+      recoverableErrorPredicate: (e) => true,
+    })
 
-  /** Creates a task for downloading. */
-  private setNewFilePath(w: Watcher, url: URL, callerId: string) {
-    const id = url.toString();
-
-    const change = new ChangeSource();
-    this.idToChange.set(id, change);
-    change.attachWatcher(w);
-
-    const counter = new CallersCounter();
-    this.idToCounters.set(id, counter);
-    counter.inc(callerId);
-
-    const result = { done: false, path: this.getFilePath(url) };
-    this.idToPath.set(id, result);
-
-    return result;
-  }
-
-  /** Just attaches a watcher to the url. */
-  private attachWatcherToFilePath(w: Watcher, url: URL) {
-    mapGet(this.idToChange, url.toString()).attachWatcher(w);
-  }
-
-  /** Computables that call refreshState will be notified via this array. */
-  private scheduledOnNextState: ScheduledRefresh[] = [];
-
-  /** Schedule to fulfill this promise
-   * when the tick of the main loop will be done. */
-  private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
-    this.scheduledOnNextState.push({ resolve, reject });
-  }
-
-  /** Called from observer */
-  private startUpdating(pollingInterval: number): void {
-    this.keepRunning = true;
-    if (this.currentLoop === undefined)
-      this.currentLoop = this.mainLoop(pollingInterval);
-  }
-
-  /** Called from observer */
-  private stopUpdating(): void {
-    this.keepRunning = false;
-  }
-
-  /** If true, main loop will continue polling pl state. */
-  private keepRunning = false;
-  /** Actual state of main loop. */
-  private currentLoop: Promise<void> | undefined = undefined;
-
-  /** Downloads all remaining URLs and fulfill all promises that was interested. */
-  private async mainLoop(pollingInterval: number) {
-    while (this.keepRunning) {
-      const toNotify = this.scheduledOnNextState;
-      this.scheduledOnNextState = [];
-
-      try {
-        await asyncPool(
-          this.opts.nConcurrentDownloads,
-          this.getToDownload(),
-          ([id, path]) => this.downloadUrl(id, path),
-        )
-
-        // notifying that we got new state
-        toNotify.forEach(n => n.resolve());
-      } catch (e: any) {
-        this.logger.error(`error in DownloadUrlDriver in main loop: ${e}`);
-        toNotify.forEach(n => n.reject(e));
-      }
-
-      if (!this.keepRunning) break;
-      await scheduler.wait(pollingInterval);
-    }
-
-    this.currentLoop = undefined;
-  }
-
-  /** Returns all not done tasks. */
-  private getToDownload() {
-    return Array.from(this.idToPath.entries())
-      .filter(([_, path]) => !path.done);
+    return undefined;
   }
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
-  private async downloadUrl(url: string, path: PathResult) {
-    if (!(await fileExists(path.path))) {
-      let { content } = await this.clientDownload.downloadRemoteFile(url, {});
-
-      if (this.opts.withGunzip)
-        content = content.pipeThrough(Transform.toWeb(zlib.createGunzip()));
-
-      await content.pipeTo(Writable.toWeb(tar.extract(path.path)));
-    }
-
-    mapGet(this.idToPath, url).done = true;
-    mapGet(this.idToChange, url).markChanged();
+  async downloadUrl(task: Download, callerId: string) {
+    await task.download(this.clientDownload, this.opts.withGunzip);
+    this.cache.addCache(task, callerId)
   }
 
   /** Removes a directory when all callers are not interested in it. */
   async releasePath(url: URL, callerId: string): Promise<void> {
     const key = url.toString();
 
-    const deleted = this.idToCounters.get(key)?.dec(callerId);
-    if (deleted) {
-      this.idToChange.get(key)?.markChanged();
-      const path = mapGet(this.idToPath, key);
-      this.idToPath.delete(key);
-      this.idToCounters.delete(key);
-      this.idToChange.delete(key);
+    const task = this.urlToDownload.get(key);
+    if (task == undefined)
+      return;
 
-      await this.rmDir(path.path);
-    }
+    const toDelete = this.cache.removeFile(task.path, callerId)
+
+    await Promise.all(toDelete.map(async (task) => {
+      await rmRFDir(task.path);
+
+      task.change.markChanged();
+      this.urlToDownload.delete(task.url.toString());
+      this.cache.removeCache(task);
+    }))
   }
 
   /** Removes all files from a hard drive. */
   async releaseAll() {
-    this.idToPath.forEach(async (path, id) => {
-      mapGet(this.idToChange, id).markChanged();
-      this.idToChange.delete(id);
-      this.idToPath.delete(id);
+    await Promise.all(Array
+      .from(this.urlToDownload.entries())
+      .map(async ([id, task]) => {
+        await rmRFDir(task.path);
 
-      await this.rmDir(path.path);
-    });
+        task.change.markChanged();
+        this.urlToDownload.delete(id);
+        this.cache.removeCache(task);
+      }));
   }
 
   private getFilePath(url: URL): string {
     const sha256 = createHash('sha256').update(url.toString()).digest('hex');
     return path.join(this.saveDir, sha256);
   }
+}
 
-  private async rmDir(path: string) {
-    await fsp.rm(path, { recursive: true, force: true }); // like rm -rf
+class Download {
+  readonly counter = new CallersCounter();
+  readonly change = new ChangeSource();
+  done = false;
+  sizeBytes = 0;
+
+  constructor(
+    readonly path: string,
+    readonly url: URL,
+  ) {
   }
-}
 
-interface PathResult {
-  path: string;
-  done: boolean;
-}
+  attach(w: Watcher, callerId: string) {
+    this.counter.inc(callerId);
+    if (!this.done)
+      this.change.attachWatcher(w);
+  }
 
-type ScheduledRefresh = {
-  resolve: () => void,
-  reject: (err: any) => void
+  async download(clientDownload: ClientDownload, withGunzip: boolean) {
+    let sizeBytes = 0;
+
+    if (await fileExists(this.path)) {
+      sizeBytes = await dirSize(this.path);
+    } else {
+      const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {});
+      let content = resp.content;
+      sizeBytes = resp.size;
+
+      if (withGunzip)
+        content = content.pipeThrough(Transform.toWeb(zlib.createGunzip()));
+
+      await content.pipeTo(Writable.toWeb(tar.extract(this.path)));
+    }
+
+    this.setDone(sizeBytes);
+  }
+
+  getPath(): string | undefined {
+    return this?.done ? notEmpty(this.path) : undefined;
+  }
+
+  setDone(sizeBytes: number) {
+    this.done = true;
+    this.change.markChanged();
+    this.sizeBytes = sizeBytes;
+  }
 }
 
 type ComputableLambda<T> = (w: Watcher, ctx: ComputableCtx) => T;
@@ -247,4 +194,25 @@ async function fileExists(path: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Gets a directory size by calculating sizes recursively. */
+async function dirSize(dir: string): Promise<number> {
+  const files = await fsp.readdir(dir, { withFileTypes: true });
+  const sizes = await Promise.all(files.map(async file => {
+    const fPath = path.join(dir, file.name);
+
+    if (file.isDirectory())
+      return await dirSize(fPath);
+
+    const stat = await fsp.stat(fPath);
+    return stat.size;
+  }));
+
+  return sizes.reduce((sum, size) => sum + size, 0);
+}
+
+/** Do rm -rf on dir. */
+async function rmRFDir(path: string) {
+  await fsp.rm(path, { recursive: true, force: true });
 }

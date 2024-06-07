@@ -1,12 +1,11 @@
 import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
-import { CallersCounter, TaskProcessor, mapEntries, mapGet, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, TaskProcessor, mapGet, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { Writable } from 'node:stream'
 import { ClientDownload } from '../clients/download';
-import { ReadableStream } from "node:stream/web";
 import { ResourceInfo } from '../clients/helpers';
 import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncReader } from './logs_stream';
 import { ClientLogs } from '../clients/logs';
@@ -14,10 +13,10 @@ import { Updater } from './helpers';
 import * as readline from 'node:readline/promises';
 import Denque from 'denque';
 import * as os from 'node:os';
+import { FilesCache } from './files_cache';
 
 export interface DownloadSyncReader {
-  /** If a blob were already downloaded, returns a path.
-   * A path can be passed to a DownloadAsyncReader to retrieve a blob content. */
+  /** If a blob were already downloaded, returns a path. */
   getDownloadedBlob(
     watcher: Watcher,
     { id, type }: ResourceInfo,
@@ -93,10 +92,14 @@ export class DownloadSyncAccessor {
   }
 }
 
-export interface BlobResult {
-  readonly rId: ResourceId;
-  readonly path: PathLike;
-  readonly sizeBytes: number;
+export class BlobResult {
+  readonly counter = new CallersCounter();
+
+  constructor(
+    readonly rId: ResourceId,
+    readonly path: PathLike,
+    readonly sizeBytes: number,
+  ) {}
 }
 
 type PathLike = string;
@@ -114,7 +117,7 @@ LogsAsyncReader {
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
-  private cache: FilesCache;
+  private cache: FilesCache<BlobResult>;
 
   /** Represents a Resource Id to ChangeSource as a map. */
   private idToChange: Map<ResourceId, ChangeSource> = new Map();
@@ -140,13 +143,8 @@ LogsAsyncReader {
   }
 
   /** Just binds a watcher to DownloadSyncAccessor. */
-  createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): DownloadSyncAccessor {
+  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): DownloadSyncAccessor {
     return new DownloadSyncAccessor(watcher, ctx, this);
-  }
-
-  /** Implements DownloadAsyncReader. */
-  getBlob(path: PathLike): BlobResult | undefined {
-    return this.cache.getBlob(path);
   }
 
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
@@ -162,13 +160,13 @@ LogsAsyncReader {
       const fPath = this.setNewFilePath(w, rInfo.id);
       this.downloadQueue.push({
         fn: () => this.downloadBlob(rInfo, fPath, callerId),
-        recoverableErrorPredicate: (e: unknown) => true,
+        recoverableErrorPredicate: (_) => true,
       })
 
       return undefined;
     }
 
-    const result = this.cache.getBlob(path, callerId);
+    const result = this.cache.getFile(path, callerId);
 
     if (result == undefined) {
       // Another thing is already calculating a result.
@@ -199,8 +197,17 @@ LogsAsyncReader {
     const { content, size } = await this.clientDownload.downloadBlob(
       { id, type },
     );
-    const result: BlobResult = { rId: id, path: fPath, sizeBytes: size };
-    await this.cache.addBlob(result, content, callerId);
+    const result = new BlobResult(id, fPath, size);
+
+    // check in case we already have a file by this resource id
+    // in the directory. It can happen when we forgot to call removeAll
+    // in the previous launch.
+    if (!(await fileExists(fPath))) {
+      const fileToWrite = Writable.toWeb(fs.createWriteStream(fPath));
+      await content.pipeTo(fileToWrite);
+    }
+
+    this.cache.addCache(result, callerId);
     mapGet(this.idToChange, id).markChanged();
   }
 
@@ -312,15 +319,19 @@ LogsAsyncReader {
     if (path == undefined)
       return;
 
-    const deletedBlobIds = await this.cache.removeBlob(notEmpty(path), callerId);
+    const toDelete = this.cache.removeFile(notEmpty(path), callerId);
 
-    deletedBlobIds.forEach((blobId) => {
-      this.idToChange.get(blobId)?.markChanged();
-      this.idToChange.delete(blobId);
-      this.idToDownloadedPath.delete(blobId);
-      this.idToLastLines.delete(blobId);
-      this.idToProgressLog.delete(blobId);
-    })
+    await Promise.all(toDelete.map(async (blob) => {
+      await fsp.rm(blob.path);
+
+      this.cache.removeCache(blob);
+
+      this.idToChange.get(blob.rId)?.markChanged();
+      this.idToChange.delete(blob.rId);
+      this.idToDownloadedPath.delete(blob.rId);
+      this.idToLastLines.delete(blob.rId);
+      this.idToProgressLog.delete(blob.rId);
+    }))
   }
 
   /** Implements DownloadDestroyer. */
@@ -339,7 +350,6 @@ LogsAsyncReader {
       this.idToDownloadedPath.delete(blobId);
       change.markChanged();
     });
-    await this.cache.removeAll();
   }
 
   private getFilePath(rId: ResourceId): string {
@@ -385,106 +395,6 @@ class UrlGetter {
 
   release(callerId: string): boolean {
     return this.counter.dec(callerId);
-  }
-}
-
-/** Holds counters of how many renders need the file.
- * If some counters become zero and a cache size exceeds a soft limit,
- * remove not needed blobs one by one.
- * If all the files are needed, do nothing. */
-export class FilesCache {
-  private cache: Map<PathLike, BlobResult> = new Map();
-  private counters: Map<PathLike, CallersCounter> = new Map();
-  private totalSizeBytes: number = 0;
-
-  constructor(private readonly softSizeBytes: number) {}
-
-  async removeAll() {
-    this.cache.forEach((blob) => this.doDelete(blob));
-  }
-
-  getBlob(path: PathLike, callerId?: string): BlobResult | undefined {
-    if (callerId !== undefined)
-      this.incCounter(path, callerId)
-
-    return this.cache.get(path);
-  }
-
-  /** Writes a file (if it doesn't exist) and sets it in a cache. */
-  async addBlob(blob: BlobResult, content: ReadableStream, callerId: string) {
-    // check in case we already have a file by this resource id
-    // in the directory. It can happen when we forgot to call removeAll
-    // in the previous launch.
-    if (!(await fileExists(blob.path))) {
-      const fileToWrite = Writable.toWeb(fs.createWriteStream(blob.path));
-      await content.pipeTo(fileToWrite);
-    }
-
-    this.addCache(blob, callerId);
-  }
-
-  /** Decrements a counter in a cache and if we exceeds
-   * a soft limit, removes files with zero counters. */
-  async removeBlob(path: PathLike, callerId: string): Promise<ResourceId[]> {
-    this.decCounter(path, callerId);
-    const toDelete = this.needDelete();
-    await Promise.all(toDelete.map((blob) => this.doDelete(blob)));
-
-    return toDelete.map((blob) => blob.rId);
-  }
-
-  /** Returns what results should be deleted to comply with the soft limit. */
-  needDelete(): BlobResult[] {
-    if (this.totalSizeBytes <= this.softSizeBytes) return [];
-
-    const toDelete = new Array<BlobResult>();
-    let freedBytes = 0;
-
-    mapEntries(this.counters)
-      .filter(([_, counter]: [string, CallersCounter]) => counter.isZero())
-      .forEach(([path, _]) => {
-        const blob = mapGet(this.cache, path);
-        if (this.totalSizeBytes - freedBytes <= this.softSizeBytes)
-          return;
-        freedBytes += blob.sizeBytes;
-        toDelete.push(blob);
-      });
-
-    return toDelete;
-  }
-
-  /** Deletes a file. */
-  private async doDelete(blob: BlobResult) {
-    await fsp.rm(blob.path);
-    this.removeCache(blob);
-  }
-
-  addCache(blob: BlobResult, callerId: string) {
-    this.cache.set(blob.path, blob);
-    const created = this.incCounter(blob.path, callerId);
-
-    if (created)
-      this.totalSizeBytes += blob.sizeBytes;
-  }
-
-  removeCache(blob: BlobResult) {
-    this.counters.delete(blob.path);
-    this.cache.delete(blob.path);
-    this.totalSizeBytes -= blob.sizeBytes;
-  }
-
-  incCounter(path: string, callerId: string): boolean {
-    let c = this.counters.get(path);
-    if (c === undefined) {
-      c = new CallersCounter();
-      this.counters.set(path, c);
-    }
-
-    return c.inc(callerId);
-  }
-
-  decCounter(path: string, callerId: string): boolean {
-    return mapGet(this.counters, path).dec(callerId);
   }
 }
 
@@ -566,7 +476,7 @@ function getLastLines(fPath: PathLike, nLines: number, patternToSearch?: string)
 
     rl.on('close', function () {
       // last EOL is for keeping backward compat with platforma implementation.
-      resolve(lines.toArray().join(os.EOL) + os.EOL); 
+      resolve(lines.toArray().join(os.EOL) + os.EOL);
     });
   })
 }
