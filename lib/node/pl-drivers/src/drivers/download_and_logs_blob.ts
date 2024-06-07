@@ -430,7 +430,7 @@ class LastLinesGetter {
       this.logs = await getLastLines(this.path, this.lines, this.patternToSearch);
       this.change.markChanged();
     } catch (e: any) {
-      if (e.name == 'RpcError' && e.code == 'UNKNOWN') {
+      if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
         this.logs = '';
         this.error = e;
