@@ -24,7 +24,7 @@ jobs:
     with:
       app-name: JSTools
       app-name-slug: 'jstools'
-      node-version: '16.x'
+      node-version: '20.x'
       build-script-name: 'build'
       is-electron-application: 'false'
       always-auth: 'true'
