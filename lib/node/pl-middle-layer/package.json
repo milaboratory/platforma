@@ -23,7 +23,7 @@
     "@milaboratory/computable": "^1.1.7",
     "@milaboratory/pl-client-v2": "^2.3.16",
     "@milaboratory/pl-tree": "^1.0.11",
-    "@milaboratory/sdk-block-config": "^0.2.2",
+    "@milaboratory/sdk-block-config": "^0.4.0",
     "@milaboratory/ts-helpers": "^1.0.11",
     "@oclif/core": "^3.26.9",
     "undici": "^6.18.2",

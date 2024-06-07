@@ -60,7 +60,8 @@ test('simple test #1', async () => {
           blockPack: await TestBPPreparer.prepare(BPSpecSumV020NotPrepared)
         }
       );
-      mut.renderProduction(['block1', 'block2', 'block3']);
+      const rendered = mut.renderProduction(['block3'], true);
+      expect([...rendered]).toEqual(['block3'])
       mut.setFrontendState('block2', '{"some":1}');
       mut.doRefresh();
       mut.save();

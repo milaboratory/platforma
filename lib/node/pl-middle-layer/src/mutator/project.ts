@@ -1,7 +1,7 @@
 import {
   AnyRef, AnyResourceRef,
   BasicResourceData,
-  field, isNotNullResourceId, isNullResourceId, isResource, isResourceRef, Pl,
+  field, isNotNullResourceId, isNullResourceId, isResource, isResourceRef, Pl, PlClient,
   PlTransaction,
   ResourceId
 } from '@milaboratory/pl-client-v2';
@@ -88,21 +88,25 @@ export class BlockInfo {
     return this.currentInputsC();
   }
 
-  get stagingRendered(): any {
+  get stagingRendered(): boolean {
     return this.fields.stagingCtx !== undefined;
   }
 
-  get productionRendered(): any {
+  get productionRendered(): boolean {
     return this.fields.prodCtx !== undefined;
   }
 
-  private readonly productionStaleC = cached(
+  private readonly productionStaleC: () => boolean = cached(
     () => `${this.fields.currentInputs!.modCount}_${this.fields.prodInputs?.modCount}`,
     () => this.fields.prodInputs === undefined || Buffer.compare(this.fields.currentInputs!.value!, this.fields.prodInputs.value!) !== 0
   );
 
-  get productionStale(): any {
+  get productionStale(): boolean {
     return this.productionRendered && this.productionStaleC();
+  }
+
+  get requireProductionRendering(): boolean {
+    return !this.productionRendered || this.productionStaleC();
   }
 
   get actualProductionInputs(): any | undefined {
@@ -507,24 +511,50 @@ export class ProjectMutator {
   // Render
   //
 
-  public renderProduction(blockIds: string[]) {
+  public renderProduction(blockIds: string[], addUpstreams: boolean = false): Set<string> {
     const blockIdsSet = new Set(blockIds);
 
-    // checking that targets contain all upstreams
     const prodGraph = this.getPendingProductionGraph();
-    for (const blockId of blockIdsSet) {
-      const node = prodGraph.nodes.get(blockId);
-      if (node === undefined)
-        throw new Error(`Can't find block with id: ${blockId}`);
-      for (const upstream of node.upstream)
-        if (!blockIdsSet.has(upstream))
-          throw new Error('Can\'t render blocks not including all upstreams.');
-    }
+    if (addUpstreams)
+      // adding all upstreams automatically
+      prodGraph.traverse('upstream', blockIds, node => {
+        blockIdsSet.add(node.id);
+      });
+    else
+      // checking that targets contain all upstreams
+      for (const blockId of blockIdsSet) {
+        const node = prodGraph.nodes.get(blockId);
+        if (node === undefined)
+          throw new Error(`Can't find block with id: ${blockId}`);
+        for (const upstream of node.upstream)
+          if (!blockIdsSet.has(upstream))
+            throw new Error('Can\'t render blocks not including all upstreams.');
+      }
 
     // traversing in topological order and rendering target blocks
-    for (const block of allBlocks(this.structure))
-      if (blockIdsSet.has(block.id))
+    const rendered = new Set<string>();
+    for (const block of allBlocks(this.structure)) {
+      if (!blockIdsSet.has(block.id))
+        continue;
+
+      let render =
+        this.getBlockInfo(block.id).requireProductionRendering
+        || this.blocksInLimbo.has(block.id);
+
+      if (!render)
+        for (const upstream of prodGraph.nodes.get(block.id)!.upstream)
+          if (rendered.has(upstream)) {
+            render = true;
+            break;
+          }
+
+      if (render) {
         this.renderProductionFor(block.id);
+        rendered.add(block.id);
+      }
+    }
+
+    return rendered;
   }
 
   private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {
@@ -704,4 +734,17 @@ export function createProject(tx: PlTransaction, meta: ProjectMeta = InitialBloc
   tx.setKValue(prj, ProjectStructureKey, JSON.stringify(InitialBlockStructure));
   tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
   return prj;
+}
+
+export async function withProject<T>(txOrPl: PlTransaction | PlClient, rid: ResourceId, cb: (p: ProjectMutator) => T | Promise<T>): Promise<T> {
+  if (txOrPl instanceof PlClient)
+    return await txOrPl.withWriteTx('ProjectAction', async tx => {
+      const result = await withProject(tx, rid, cb);
+      await tx.commit();
+      return result;
+    });
+  const mut = await loadProject(txOrPl, rid);
+  const result = await Promise.resolve(cb(mut));
+  mut.save();
+  return result;
 }

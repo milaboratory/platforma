@@ -1,5 +1,5 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { Computable, computable } from '@milaboratory/computable';
+import { computable, ComputableSU } from '@milaboratory/computable';
 import {
   BlockRenderingMode, BlockRenderingStateKey, projectFieldName,
   ProjectMeta,
@@ -17,7 +17,8 @@ export type BlockProductionStatus =
   | 'Done'
   | 'Limbo'
 
-export type ProjectState = {
+export type ProjectOverview = {
+  meta: ProjectMeta;
   blocks: BlockState[];
 }
 
@@ -47,11 +48,12 @@ type BlockInfo = {
 }
 
 /** Returns derived general project state form the project resource */
-export function projectState(entry: PlTreeEntry): Computable<ProjectState> {
+export function projectOverview(entry: PlTreeEntry): ComputableSU<ProjectOverview> {
   return computable(entry, {}, a => {
     const prj = a.node();
     if (prj === undefined)
       return undefined;
+
     const meta = JSON.parse(notEmpty(prj.getKeyValueString(ProjectMetaKey))) as ProjectMeta;
     const structure = JSON.parse(notEmpty(prj.getKeyValueString(ProjectStructureKey))) as ProjectStructure;
     const renderingState = JSON.parse(notEmpty(prj.getKeyValueString(BlockRenderingStateKey))) as ProjectRenderingState;
@@ -88,7 +90,7 @@ export function projectState(entry: PlTreeEntry): Computable<ProjectState> {
 
     const blocks = [...allBlocks(structure)].map(({ id, name, renderingMode }) => {
       const info = notEmpty(infos.get(id));
-      const node = notEmpty(currentGraph.nodes.get(id));
+      const gNode = notEmpty(currentGraph.nodes.get(id));
       let calculationStatus: BlockProductionStatus = 'NotCalculated';
       if (info.prod !== undefined) {
         if (limbo.has(id))
@@ -99,11 +101,11 @@ export function projectState(entry: PlTreeEntry): Computable<ProjectState> {
       return {
         id, name, renderingMode,
         stale: info.prod?.stale !== false,
-        missingReference: node.missingReferences,
+        missingReference: gNode.missingReferences,
         calculationStatus
       } as BlockState;
     });
 
-    return { blocks };
-  });
+    return { meta, blocks };
+  }).withStableType();
 }

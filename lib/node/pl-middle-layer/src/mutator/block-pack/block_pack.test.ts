@@ -13,7 +13,7 @@ test.each([
   {
     spec: {
       type: 'from-registry-v1',
-      url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.2.0'
+      url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.0'
     } as BlockPackSpecAny
   },
   {
@@ -23,6 +23,10 @@ test.each([
     } as BlockPackSpecAny
   }
 ])('test load template from $spec.type', async ({ spec }) => {
+  const config = await preparation.getBlockConfig(spec);
+  expect(config).toBeDefined();
+  expect(config.renderingMode).toEqual('Heavy');
+
   const specPrepared = await preparation.prepare(spec);
 
   await TestHelpers.withTempRoot(async pl => {

@@ -7,6 +7,7 @@ import { createHmac } from 'node:crypto';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
+import { BlockConfig } from '@milaboratory/sdk-block-config';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -16,6 +17,36 @@ export class BlockPackPreparer {
   constructor(
     private readonly secret: string | Uint8Array,
     private readonly http?: Dispatcher) {
+  }
+
+  public async getBlockConfig(spec: BlockPackSpecAny): Promise<BlockConfig<unknown, unknown, {}>> {
+    switch (spec.type) {
+
+      case 'explicit':
+        return JSON.parse(Buffer.from(spec.config).toString()) as BlockConfig<unknown, unknown, {}>;
+
+      case 'dev': {
+        const configContent = await fs.promises.readFile(path.resolve(
+          spec.folder,
+          'config', 'dist', 'config.json'));
+        return JSON.parse(configContent.toString()) as BlockConfig<unknown, unknown, {}>;
+      }
+
+      case 'from-registry-v1': {
+        const httpOptions = this.http !== undefined
+          ? { dispatcher: this.http }
+          : {};
+
+        const configResponse = await request(
+          `${spec.url}/config.json`, httpOptions);
+        const configContent = await configResponse.body.text();
+
+        return JSON.parse(configContent);
+      }
+
+      default:
+        return assertNever(spec);
+    }
   }
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
