@@ -30,13 +30,41 @@ test(
 
       const path2 = await c.getValue();
       expect(path2).not.toBeUndefined();
+      expect(path2?.path).not.toBeUndefined();
+      expect(path2?.error).toBeUndefined();
 
       console.log("frontend saved to dir: ", path2);
-      const indexJs = fs.createReadStream(path.join(path2!, 'index.js'));
+      const indexJs = fs.createReadStream(path.join(path2!.path!, 'index.js'));
       const indexJsCode = await text(Readable.toWeb(indexJs));
       expect(indexJsCode).toContain('use strict');
 
       c.resetState();
+    })
+  }
+)
+
+test(
+  'should abort a downloading process when we reset a state of a computable',
+  async () => {
+    await TestHelpers.withTempRoot(async client => {
+      const logger = new ConsoleLoggerAdapter();
+      const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test2-'));
+      const driver = createDownloadUrlDriver(client, logger, dir);
+
+      const url = new URL(
+        "https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.2.1/frontend.tgz"
+      );
+
+      const c = rawComputable(() => driver.getPath(url))
+
+      const path1 = await c.getValue();
+      expect(path1).toBeUndefined();
+
+      c.resetState();
+      await c.listen();
+
+      const path2 = await c.getValue();
+      expect(path2).toBeUndefined();
     })
   }
 )

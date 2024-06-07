@@ -37,23 +37,28 @@ export class ClientDownload {
   async getUrl(
     { id, type }: ResourceInfo,
     options?: RpcOptions,
+    signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
+    const withAbort = options ?? {};
+    withAbort.abort = signal;
+
     return await this.grpcClient.getDownloadURL(
-      { resourceId: id }, addRTypeToMetadata(type, options)
+      { resourceId: id }, addRTypeToMetadata(type, withAbort)
     ).response;
   }
 
   async downloadBlob(
     info: ResourceInfo,
     options?: RpcOptions,
+    signal?: AbortSignal,
   ): Promise<DownloadResponse> {
-    const { downloadUrl, headers } = await this.getUrl(info, options);
+    const { downloadUrl, headers } = await this.getUrl(info, options, signal);
 
     this.logger.info(`download from url ${downloadUrl}`);
 
     return this.isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
-      : await this.downloadRemoteFile(downloadUrl, headersFromProto(headers));
+      : await this.downloadRemoteFile(downloadUrl, headersFromProto(headers), signal);
   }
 
   private isLocal = (url: string) => url.startsWith(storageProtocol);
@@ -84,10 +89,12 @@ export class ClientDownload {
   async downloadRemoteFile(
     url: string,
     reqHeaders: Record<string, string>,
+    signal?: AbortSignal,
   ): Promise<DownloadResponse> {
     const { statusCode, body, headers } = await request(url, {
       dispatcher: this.httpClient,
       headers: reqHeaders,
+      signal,
     });
 
     if (statusCode != 200) {

@@ -1,4 +1,4 @@
-import { CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
+import { Aborted, CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream'
@@ -13,7 +13,14 @@ export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
    * downloads an archive from an URL,
    * extracts it to the local dir and returns a path to that dir. */
-  getPath(url: URL): Computable<string | undefined>;
+  getPath(url: URL): Computable<PathResult | undefined>;
+}
+
+export interface PathResult {
+  /** Path to the downloadable blob, might be undefined when the error happened. */
+  path?: string;
+  /** Error that happened when the archive were downloaded. */
+  error?: string;
 }
 
 /** Downloads .tar or .tar.gz archives by given URLs
@@ -41,15 +48,12 @@ DownloadUrlSyncReader {
       nConcurrentDownloads: 50,
     }
   ) {
-    this.downloadQueue = new TaskProcessor(
-      this.opts.nConcurrentDownloads);
-
-    this.cache = new FilesCache(
-      this.opts.cacheSoftSizeBytes);
+    this.downloadQueue = new TaskProcessor(this.opts.nConcurrentDownloads);
+    this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
   }
 
   /** Returns a Computable that do the work */
-  getPath(url: URL): Computable<string | undefined> {
+  getPath(url: URL): Computable<PathResult | undefined> {
     return rawComputable(wrapUnstable((w: Watcher, ctx: ComputableCtx) => {
       const callerId = randomUUID();
       ctx.setOnDestroy(() => this.releasePath(url, callerId));
@@ -58,66 +62,89 @@ DownloadUrlSyncReader {
     }))
   }
 
-  /** If path is not ready, just creates a task for downloading. */
+  /** If path is not done, creates a task for downloading. */
   private getPathNoComputable(
     w: Watcher, url: URL, callerId: string,
-  ): string | undefined {
-    const id = url.toString();
-    const result = this.urlToDownload.get(id);
+  ): PathResult | undefined {
+    const key = url.toString();
+    const task = this.urlToDownload.get(key);
 
-    if (result != undefined) {
-      result.attach(w, callerId);
-      return result.getPath();
+    if (task != undefined) {
+      task.attach(w, callerId);
+      return task.getPath();
     }
 
-    const newResult = new Download(this.getFilePath(url), url);
-    this.urlToDownload.set(id, newResult);
-    newResult.attach(w, callerId);
-
+    const newTask = this.setNewTask(w, url, callerId);
     this.downloadQueue.push({
-      fn: async () => this.downloadUrl(newResult, callerId),
+      fn: async () => this.downloadUrl(newTask, callerId),
       recoverableErrorPredicate: (e) => true,
     })
 
-    return undefined;
+    return newTask.getPath();
   }
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
   async downloadUrl(task: Download, callerId: string) {
     await task.download(this.clientDownload, this.opts.withGunzip);
-    this.cache.addCache(task, callerId)
+    // Might be undefined if a error happened
+    if (task.getPath()?.path != undefined)
+      this.cache.addCache(task, callerId)
   }
 
-  /** Removes a directory when all callers are not interested in it. */
+  /** Removes a directory and aborts a downloading task when all callers
+   * are not interested in it. */
   async releasePath(url: URL, callerId: string): Promise<void> {
     const key = url.toString();
-
     const task = this.urlToDownload.get(key);
     if (task == undefined)
       return;
 
-    const toDelete = this.cache.removeFile(task.path, callerId)
+    if (this.cache.existsFile(task.path)) {
+      const toDelete = this.cache.removeFile(task.path, callerId)
 
-    await Promise.all(toDelete.map(async (task) => {
-      await rmRFDir(task.path);
+      await Promise.all(toDelete.map(async (task) => {
+        await rmRFDir(task.path);
+        this.cache.removeCache(task);
 
-      task.change.markChanged();
-      this.urlToDownload.delete(task.url.toString());
-      this.cache.removeCache(task);
-    }))
+        this.removeTask(
+          task, `the task ${JSON.stringify(task)} was removed`
+        + `from cache along with ${JSON.stringify(toDelete)}`,
+        )
+      }))
+    } else {
+      // The task is still in a downloading queue.
+      const deleted = task.counter.dec(callerId);
+      if (deleted)
+        this.removeTask(task, `the task ${JSON.stringify(task)} was removed from cache`);
+    }
   }
 
   /** Removes all files from a hard drive. */
   async releaseAll() {
+    this.downloadQueue.stop();
+
     await Promise.all(Array
       .from(this.urlToDownload.entries())
       .map(async ([id, task]) => {
         await rmRFDir(task.path);
-
-        task.change.markChanged();
-        this.urlToDownload.delete(id);
         this.cache.removeCache(task);
+
+        this.removeTask(task, `the task ${task} was released when the driver was closed`)
       }));
+  }
+
+  private setNewTask(w: Watcher, url: URL, callerId: string) {
+    const result = new Download(this.getFilePath(url), url);
+    result.attach(w, callerId);
+    this.urlToDownload.set(url.toString(), result);
+
+    return result;
+  }
+
+  private removeTask(task: Download, reason: string) {
+    task.abort(reason);
+    task.change.markChanged();
+    this.urlToDownload.delete(task.url.toString());
   }
 
   private getFilePath(url: URL): string {
@@ -129,14 +156,15 @@ DownloadUrlSyncReader {
 class Download {
   readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
+  readonly signalCtl = new AbortController();
+  error: string | undefined;
   done = false;
   sizeBytes = 0;
 
   constructor(
     readonly path: string,
     readonly url: URL,
-  ) {
-  }
+  ) {}
 
   attach(w: Watcher, callerId: string) {
     this.counter.inc(callerId);
@@ -145,32 +173,70 @@ class Download {
   }
 
   async download(clientDownload: ClientDownload, withGunzip: boolean) {
-    let sizeBytes = 0;
+    try {
+      const sizeBytes = await this.downloadAndUntar(
+        clientDownload,
+        withGunzip,
+        this.signalCtl.signal,
+      )
+      this.setDone(sizeBytes);
+    } catch (e: any) {
+      if (e instanceof Aborted) {
+        this.setAbortError();
+        // Just in case we were half-way extracting an archive.
+        await rmRFDir(this.path);
+        return;
+      }
 
+      throw e;
+    }
+  }
+
+  private async downloadAndUntar(
+    clientDownload: ClientDownload,
+    withGunzip: boolean,
+    signal: AbortSignal,
+  ): Promise<number> {
     if (await fileExists(this.path)) {
-      sizeBytes = await dirSize(this.path);
-    } else {
-      const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {});
-      let content = resp.content;
-      sizeBytes = resp.size;
-
-      if (withGunzip)
-        content = content.pipeThrough(Transform.toWeb(zlib.createGunzip()));
-
-      await content.pipeTo(Writable.toWeb(tar.extract(this.path)));
+      return await dirSize(this.path);
     }
 
-    this.setDone(sizeBytes);
+    const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {}, signal);
+    let content = resp.content;
+
+    if (withGunzip) {
+      const gunzip = Transform.toWeb(zlib.createGunzip());
+      content = content.pipeThrough(gunzip, { signal });
+    }
+    const untar = Writable.toWeb(tar.extract(this.path));
+    await content.pipeTo(untar, { signal });
+
+    return resp.size;
   }
 
-  getPath(): string | undefined {
-    return this?.done ? notEmpty(this.path) : undefined;
+  getPath(): PathResult | undefined {
+    if (this.done)
+      return { path: notEmpty(this.path) };
+
+    if (this.error)
+      return { error: this.error };
+
+    return undefined;
   }
 
-  setDone(sizeBytes: number) {
+  private setDone(sizeBytes: number) {
     this.done = true;
-    this.change.markChanged();
     this.sizeBytes = sizeBytes;
+    this.change.markChanged();
+  }
+
+  abort(reason: string) {
+    this.signalCtl.abort(new Aborted(reason));
+  }
+
+  private setAbortError() {
+    this.error = String(this.signalCtl.signal.reason);
+    this.change.markChanged();
   }
 }
 

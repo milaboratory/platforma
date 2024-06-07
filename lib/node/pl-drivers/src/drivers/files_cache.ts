@@ -18,6 +18,10 @@ export class FilesCache<T extends CachedFile> {
 
   constructor(private readonly softSizeBytes: number) {}
 
+  existsFile(path: PathLike): boolean {
+    return this.cache.get(path) != undefined;
+  }
+
   getFile(path: PathLike, callerId: string): T | undefined {
     const file = this.cache.get(path);
     if (file != undefined) {
