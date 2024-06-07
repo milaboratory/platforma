@@ -9,6 +9,15 @@ import {
 } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
+import { PathResult } from '@milaboratory/pl-drivers';
+import { MiddleLayerEnvironment } from './middle_layer';
+import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
+import { frontendPath } from './frontend_path';
+import { Pl } from '@milaboratory/pl-client-v2';
+import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
+import { constructBlockContext } from './block_outputs';
+import { computableFromCfg } from '../cfg_render/executor';
+import { ifNotUndef } from '../cfg_render/util';
 
 export type BlockProductionStatus =
   | 'NotCalculated'
@@ -29,6 +38,8 @@ export type BlockState = {
   missingReference: boolean;
   stale: boolean;
   calculationStatus: BlockProductionStatus;
+  sections: Section[] | undefined,
+  frontend: PathResult | undefined
 }
 
 type CalculationStatus =
@@ -48,15 +59,15 @@ type BlockInfo = {
 }
 
 /** Returns derived general project state form the project resource */
-export function projectOverview(entry: PlTreeEntry): ComputableSU<ProjectOverview> {
+export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableSU<ProjectOverview> {
   return computable(entry, {}, a => {
     const prj = a.node();
     if (prj === undefined)
       return undefined;
 
-    const meta = JSON.parse(notEmpty(prj.getKeyValueString(ProjectMetaKey))) as ProjectMeta;
-    const structure = JSON.parse(notEmpty(prj.getKeyValueString(ProjectStructureKey))) as ProjectStructure;
-    const renderingState = JSON.parse(notEmpty(prj.getKeyValueString(BlockRenderingStateKey))) as ProjectRenderingState;
+    const meta = JSON.parse(notEmpty(prj.getKeyValueAsString(ProjectMetaKey))) as ProjectMeta;
+    const structure = JSON.parse(notEmpty(prj.getKeyValueAsString(ProjectStructureKey))) as ProjectStructure;
+    const renderingState = JSON.parse(notEmpty(prj.getKeyValueAsString(BlockRenderingStateKey))) as ProjectRenderingState;
 
     const infos = new Map<string, BlockInfo>();
     for (const { id } of allBlocks(structure)) {
@@ -98,12 +109,30 @@ export function projectOverview(entry: PlTreeEntry): ComputableSU<ProjectOvervie
         else
           calculationStatus = info.prod.calculationStatus;
       }
+
+      // block-pack
+      const blockPack = prj.traverse({},
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfNotFound: true },
+        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfNotFound: true }
+      )?.value;
+
+      // frontend
+      const frontend = frontendPath(blockPack?.traverse({},
+        { field: BlockPackFrontendField, assertFieldType: 'Input', errorIfNotFound: true }
+      )?.value?.persist(), env);
+
+      // sections
+      const sections = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
+        const blockCtx = constructBlockContext(prj, id, env);
+        return computableFromCfg(blockCtx, blockConf.sections) as ComputableSU<Section[]>;
+      });
+
       return {
         id, name, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
-        calculationStatus
-      } as BlockState;
+        calculationStatus, frontend, sections
+      };
     });
 
     return { meta, blocks };

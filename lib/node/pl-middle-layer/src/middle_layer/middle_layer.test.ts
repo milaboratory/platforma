@@ -2,6 +2,10 @@ import { TestHelpers } from '@milaboratory/pl-client-v2';
 import { MiddleLayer } from './middle_layer';
 import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { outputRef } from '../model/args';
+import { randomUUID } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { sleep } from '@milaboratory/ts-helpers';
 
 const EnterNumbersSpec = {
   type: 'from-registry-v1',
@@ -14,8 +18,13 @@ const SumNumbersSpec = {
 } as BlockPackSpecAny;
 
 test('project list manipulations test', async () => {
+  const workFolder = path.resolve(`work/${randomUUID()}`);
+  await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, 'secret');
+    const ml = await MiddleLayer.init(pl, {
+      frontendDownloadPath: path.resolve(workFolder),
+      localSecret: 'secret'
+    });
     const projectList = ml.projectList;
 
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -35,8 +44,13 @@ test('project list manipulations test', async () => {
 });
 
 test('simple project manipulations test', async () => {
+  const workFolder = path.resolve(`work/${randomUUID()}`);
+  await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, 'secret');
+    const ml = await MiddleLayer.init(pl, {
+      frontendDownloadPath: path.resolve(workFolder),
+      localSecret: 'secret'
+    });
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
     const pRid1 = await ml.addProject('id1', { name: 'Project 1' });
@@ -56,9 +70,12 @@ test('simple project manipulations test', async () => {
         outputRef(block2Id, 'column')
       ]
     });
-    await ml.renderBlock(pRid1, block3Id)
+    await ml.renderBlock(pRid1, block3Id);
     await overview.refreshState();
-    console.log(await overview.getValue())
+    await sleep(3000);
+    // const s = await overview.awaitStableValue();
+    const s = await overview.getValue();
+    console.dir(s, { depth: 5 });
     // expect(await overview.getValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
   });
-});
+}, 10_000);

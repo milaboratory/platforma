@@ -1,8 +1,9 @@
 import {
+  Args,
   BlockConfigBuilder,
   ConfigResult,
   getJsonField, getResourceField, getResourceValueAsJson,
-  Inputs, isolate, It, MainOutputs,
+  isolate, It, MainOutputs,
   makeObject,
   mapArrayValues, PlResourceEntry
 } from '@milaboratory/sdk-block-config';
@@ -12,19 +13,20 @@ import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { Computable } from '@milaboratory/computable';
 
 test('local cfg test (no pl)', async () => {
-  const input = {
+  const args = {
     theC: 'c',
     a: { c: 'hi' },
     b: ['a', 'b', 'c']
   };
-  const theCValue = getJsonField(Inputs, 'theC');
+  const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = BlockConfigBuilder.create<typeof input>()
-    .output('out1', getJsonField(getJsonField(Inputs, 'a'), theCValue))
-    .output('out2', mapArrayValues(getJsonField(Inputs, 'b'), isolate(makeObject({ theField: It }))))
+  const cfg = BlockConfigBuilder.create<typeof args>('Heavy')
+    .initialArgs(args)
+    .output('out1', getJsonField(getJsonField(Args, 'a'), theCValue))
+    .output('out2', mapArrayValues(getJsonField(Args, 'b'), isolate(makeObject({ theField: It }))))
     .build();
 
-  const ctx = { $inputs: input };
+  const ctx = { $args: args };
 
   const computable1 = computableFromCfg(ctx, cfg.outputs['out1']);
   const out1 = (await computable1.getValue()) as ConfigResult<typeof cfg.outputs['out1'], typeof ctx>;
@@ -43,9 +45,10 @@ test('cfg test with pl, simple', async () => {
   const input = {
     theC: 'c'
   };
-  const theCValue = getJsonField(Inputs, 'theC');
+  const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = BlockConfigBuilder.create<typeof input>()
+  const cfg = BlockConfigBuilder.create<typeof input>('Heavy')
+    .initialArgs(input)
     .output('out1', getJsonField(
       getResourceValueAsJson<TestResourceValue>()(getResourceField(MainOutputs, theCValue)),
       'someField'))
@@ -55,7 +58,7 @@ test('cfg test with pl, simple', async () => {
     const tree = new SynchronizedTreeState(pl, pl.clientRoot, { pollingInterval: 250, stopPollingDelay: 500 });
 
     const ctx = {
-      $inputs: input,
+      $args: input,
       $prod: tree.accessor() as any as PlResourceEntry
     };
 

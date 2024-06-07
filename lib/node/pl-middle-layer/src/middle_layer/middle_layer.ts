@@ -8,41 +8,62 @@ import {
 import { createProjectList, ProjectListEntry, ProjectsField, ProjectsResourceType } from './project_list';
 import { TemporalSynchronizedTreeOps, TreeAndComputableU } from './types';
 import { ProjectMeta } from '../model/project_model';
-import { createProject, loadProject, withProject } from '../mutator/project';
+import { createProject, withProject } from '../mutator/project';
 import { ComputableSU } from '@milaboratory/computable';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { projectOverview, ProjectOverview } from './project_overview';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { randomUUID } from 'node:crypto';
+import { createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
+import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
 
 export type MiddleLayerOps = {
-  defaultTreeOptions: TemporalSynchronizedTreeOps;
+  readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
+  readonly localSecret: string,
+  readonly frontendDownloadPath: string;
 }
 
-export const DefaultMiddleLayerOps: MiddleLayerOps = {
+export const DefaultMiddleLayerOps: Pick<MiddleLayerOps, 'defaultTreeOptions'> = {
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500
   }
 };
 
+export type MiddleLayerOpsConstructor =
+  Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps>
+  & Partial<typeof DefaultMiddleLayerOps>
+
+export interface MiddleLayerEnvironment {
+  readonly pl: PlClient;
+  readonly frontendDownloadDriver: DownloadUrlDriver;
+  readonly ops: MiddleLayerOps;
+}
+
 /** Main entry point for the frontend */
 export class MiddleLayer {
   private readonly projectListTree: SynchronizedTreeState;
   public readonly projectList: ComputableSU<ProjectListEntry[]>;
   private readonly bpPreparer: BlockPackPreparer;
+  private readonly frontendDownloadDriver: DownloadUrlDriver;
+  private readonly env: MiddleLayerEnvironment;
 
   private constructor(
     private readonly pl: PlClient,
     private readonly projects: ResourceId,
-    private readonly localSecret: string,
-    private readonly ops: MiddleLayerOps = DefaultMiddleLayerOps
+    private readonly ops: MiddleLayerOps
   ) {
     const projectListTC = createProjectList(pl, projects, ops.defaultTreeOptions);
     this.projectListTree = projectListTC.tree;
     this.projectList = projectListTC.computable;
-    this.bpPreparer = new BlockPackPreparer(localSecret);
+    this.bpPreparer = new BlockPackPreparer(ops.localSecret);
+    this.frontendDownloadDriver = createDownloadUrlDriver(this.pl, new ConsoleLoggerAdapter(), this.ops.frontendDownloadPath);
+    this.env = {
+      pl,
+      ops,
+      frontendDownloadDriver: this.frontendDownloadDriver
+    };
   }
 
   //
@@ -75,7 +96,7 @@ export class MiddleLayer {
     if (this.projectOverviews.has(rid))
       throw new Error(`Project ${rid} already opened`);
     const tree = new SynchronizedTreeState(this.pl, rid, this.ops.defaultTreeOptions);
-    const overview = projectOverview(tree.entry());
+    const overview = projectOverview(tree.entry(), this.env);
     this.projectOverviews.set(rid, { tree, computable: overview });
   }
 
@@ -123,7 +144,8 @@ export class MiddleLayer {
     });
   }
 
-  public static async init(pl: PlClient, localSecret: string): Promise<MiddleLayer> {
+  public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
+    const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
     const projects = await pl.withWriteTx('MLInitialization', async tx => {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, 'Dynamic');
@@ -141,7 +163,7 @@ export class MiddleLayer {
         return projectsFieldData.value;
       }
     });
-    return new MiddleLayer(pl, projects, localSecret);
+    return new MiddleLayer(pl, projects, ops);
   }
 }
 

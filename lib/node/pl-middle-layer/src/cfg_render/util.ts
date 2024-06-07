@@ -7,3 +7,8 @@ export function mapRecord<T1, T2, Key extends string>(
     result[key as Key] = mapper(value as T1);
   return result;
 }
+
+
+export function ifNotUndef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
+  return value === undefined ? undefined : cb(value);
+}
