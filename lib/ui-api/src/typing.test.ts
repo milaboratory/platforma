@@ -62,7 +62,7 @@ function typeTest1() {
 }
 
 test('test config content', () => {
-  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>()
+  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))

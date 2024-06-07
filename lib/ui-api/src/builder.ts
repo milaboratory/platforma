@@ -24,7 +24,13 @@ export type CanRunExpectedType = boolean;
 
 export type CanRunChecked<Cfg extends TypedConfig, Args, UiState> = Checked<Cfg, ResolveCfgType<Cfg, Args, UiState> extends CanRunExpectedType ? true : false>
 
+export type BlockRenderingMode =
+  | 'Light'
+  | 'Heavy'
+  | 'DualContextHeavy';
+
 export type BlockConfig<Args, UiState, Outputs extends Record<string, TypedConfig>> = {
+  renderingMode: BlockRenderingMode,
   initialArgs: Args,
   canRun: TypedConfig,
   sections: TypedConfig,
@@ -32,41 +38,44 @@ export type BlockConfig<Args, UiState, Outputs extends Record<string, TypedConfi
 }
 
 export class BlockConfigBuilder<Args, UiState, Outputs extends Record<string, TypedConfig>> {
-  private constructor(private readonly _initialArgs: Args | undefined,
+  private constructor(private readonly _renderingMode: BlockRenderingMode,
+                      private readonly _initialArgs: Args | undefined,
                       private readonly _outputs: Outputs,
                       private readonly _canRun: TypedConfig,
                       private readonly _sections: TypedConfig) {
   }
 
-  public static create<Args, UiState = undefined>(): BlockConfigBuilder<Args, UiState, {}> {
-    return new BlockConfigBuilder<Args, UiState, {}>(undefined, {}, getImmediate(true), getImmediate([]));
+  public static create<Args, UiState = undefined>(renderingMode: BlockRenderingMode): BlockConfigBuilder<Args, UiState, {}> {
+    return new BlockConfigBuilder<Args, UiState, {}>(renderingMode, undefined, {}, getImmediate(true), getImmediate([]));
   }
 
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key, cfg: Cfg
   ): BlockConfigBuilder<Args, UiState, Outputs & { [K in Key]: Cfg }> {
-    return new BlockConfigBuilder(this._initialArgs, {
-      ...this._outputs,
-      [key]: cfg
-    }, this._canRun, this._sections);
+    return new BlockConfigBuilder(this._renderingMode,
+      this._initialArgs, {
+        ...this._outputs,
+        [key]: cfg
+      }, this._canRun, this._sections);
   }
 
   public canRun<Cfg extends TypedConfig>(cfg: Cfg & CanRunChecked<Cfg, Args, UiState>): BlockConfigBuilder<Args, UiState, Outputs> {
-    return new BlockConfigBuilder<Args, UiState, Outputs>(this._initialArgs, this._outputs, cfg, this._sections);
+    return new BlockConfigBuilder<Args, UiState, Outputs>(this._renderingMode, this._initialArgs, this._outputs, cfg, this._sections);
   }
 
   public sections<Cfg extends TypedConfig>(cfg: Cfg & SectionsChecked<Cfg, Args, UiState>): BlockConfigBuilder<Args, UiState, Outputs> {
-    return new BlockConfigBuilder<Args, UiState, Outputs>(this._initialArgs, this._outputs, this._canRun, cfg);
+    return new BlockConfigBuilder<Args, UiState, Outputs>(this._renderingMode, this._initialArgs, this._outputs, this._canRun, cfg);
   }
 
   public initialArgs(value: Args) {
-    return new BlockConfigBuilder<Args, UiState, Outputs>(value, this._outputs, this._canRun, this._sections);
+    return new BlockConfigBuilder<Args, UiState, Outputs>(this._renderingMode, value, this._outputs, this._canRun, this._sections);
   }
 
   public build(): BlockConfig<Args, UiState, Outputs> {
     if (this._initialArgs === undefined)
       throw new Error('Initial arguments not set.');
     return {
+      renderingMode: this._renderingMode,
       initialArgs: this._initialArgs,
       canRun: this._canRun,
       sections: this._sections,
