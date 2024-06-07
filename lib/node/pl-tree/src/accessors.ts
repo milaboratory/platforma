@@ -208,17 +208,31 @@ export class PlTreeNodeAccessor {
   getKeyValue(key: string): Uint8Array | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.watcher, key);
-    if (!result)
+    if (result === undefined)
       this.instanceData.ctx.markUnstable();
     return result;
   }
 
+  /** @deprecated */
   getKeyValueString(key: string): string | undefined {
+    return this.getKeyValueAsString(key);
+  }
+
+  getKeyValueAsString(key: string): string | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
-    if (!result)
+    if (result === undefined)
       this.instanceData.ctx.markUnstable();
     return result;
+  }
+
+  getKeyValueAsJson<T = unknown>(key: string): T | undefined {
+    const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
+    if (result === undefined) {
+      this.instanceData.ctx.markUnstable();
+      return undefined;
+    }
+    return JSON.parse(result) as T;
   }
 
   persist(): PlTreeEntry {
