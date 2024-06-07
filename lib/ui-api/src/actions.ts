@@ -14,7 +14,7 @@ import {
   TypedConfig
 } from './type_engine';
 import { Cfg } from './model';
-import { Checked, CheckedSyncConf, IsA, IsSyncConf, SyncConfAction } from './type_util';
+import { CheckedSyncConf } from './type_util';
 
 //
 // Helpers
@@ -52,7 +52,7 @@ export function isolate<const Config extends TypedConfig>(
 // Well-known Context Vars
 //
 
-export const Inputs = getFromCfg('$inputs');
+export const Args = getFromCfg('$args');
 export const It = getFromCfg('$it');
 export const MainOutputs = getFromCfg('$prod');
 export const StagingOutputs = getFromCfg('$staging');

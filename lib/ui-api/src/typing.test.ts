@@ -4,12 +4,12 @@ import {
   getJsonField,
   getResourceField,
   getResourceValueAsJson,
-  Inputs, It,
+  Args, It,
   makeObject,
   mapRecordValues,
   MainOutputs, isEmpty, mapArrayValues
 } from './actions';
-import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './std';
+import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -35,14 +35,14 @@ export const assertTypeExtends = <T, Expected>(
 
 
 function typeTest1() {
-  const a = getJsonField(Inputs, 'field1');
+  const a = getJsonField(Args, 'field1');
   const dd = getResourceValueAsJson<{ s: boolean, g: number }>()(getResourceField(MainOutputs, 'a'));
 
   const cfg1 = makeObject({
     a,
     b: 'attagaca',
     c: mapRecordValues(
-      getJsonField(Inputs, 'field2'),
+      getJsonField(Args, 'field2'),
       getJsonField(It, 'b')
     ),
     d: getJsonField(dd, 's')
@@ -63,9 +63,10 @@ function typeTest1() {
 
 test('test config content', () => {
   const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>()
-    .output('cell1', makeObject({ b: getJsonField(Inputs, 'a') }))
-    .output('cell2', mapArrayValues(getJsonField(Inputs, 'a'), getImmediate('v1')))
-    .canRun(isEmpty(getJsonField(Inputs, 'a')))
+    .initialArgs({ a: [] })
+    .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
+    .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
+    .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
       { id: 'main', title: 'Main' }
     ]))
