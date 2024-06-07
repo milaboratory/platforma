@@ -118,9 +118,14 @@ export function toSorted<T>(arr: readonly T[], compareFn?: (a: T, b: T) => numbe
   return arr.slice().sort(compareFn);
 }
 
-
-export function sliceBy<T>(arr: readonly T[], cb: (el: T, index: number) => boolean): T[] {
-  const left = arr.findIndex(cb);
+/**
+ * Returns a first contiguous copy of a section of an array where predicate is true
+ * @param arr 
+ * @param predicate 
+ * @returns 
+ */
+export function sliceBy<T>(arr: readonly T[], predicate: (el: T, index: number) => boolean): T[] {
+  const left = arr.findIndex(predicate);
 
   if (left < 0) {
     return [];
@@ -128,7 +133,7 @@ export function sliceBy<T>(arr: readonly T[], cb: (el: T, index: number) => bool
 
   const right = (() => {
     for (let i = left; i < arr.length; i++) {
-      if (cb(arr[i], i)) {
+      if (predicate(arr[i], i)) {
         continue;
       }
   
