@@ -117,3 +117,26 @@ export function uniques<T, V>(items: T[], cb: (s: Set<V>, it: T) => void): V[] {
 export function toSorted<T>(arr: readonly T[], compareFn?: (a: T, b: T) => number): T[] {
   return arr.slice().sort(compareFn);
 }
+
+
+export function sliceBy<T>(arr: readonly T[], cb: (el: T, index: number) => boolean): T[] {
+  const left = arr.findIndex(cb);
+
+  if (left < 0) {
+    return [];
+  }
+
+  const right = (() => {
+    for (let i = left; i < arr.length; i++) {
+      if (cb(arr[i], i)) {
+        continue;
+      }
+  
+      return i;
+    }
+
+    return left;
+  })();
+
+  return arr.slice(left, right);
+}

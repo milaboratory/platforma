@@ -104,6 +104,13 @@ export function timer() {
   };
 }
 
+export function performanceTimer() {
+  const t = performance.now();
+  return function () {
+    return performance.now() - t;
+  };
+}
+
 export function call<R>(f: () => R): R {
   return f();
 }
@@ -130,10 +137,19 @@ export function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
 
-export function *range(n: number) {
-  for (let i = 0; i < n; i++) {
+export function* range(from: number, to: number, step = 1) {
+  for (let i = from; i < to; i += step) {
     yield i;
   }
+}
+
+export function toList<T>(iterable: Iterable<T>): T[] {
+  const lst: T[] = [];
+  for (const it of iterable) {
+    lst.push(it);
+  }
+
+  return lst;
 }
 
 export class Interval {
