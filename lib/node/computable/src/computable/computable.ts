@@ -1,7 +1,8 @@
 import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
 import { CellState, createCellState, destroyState, updateCellState } from './computable_state';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { Aborted, notEmpty, sleep } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
+import { setImmediate } from 'node:timers/promises';
 
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
 
@@ -45,7 +46,7 @@ const computableFinalizationRegistry = new FinalizationRegistry<Computable<unkno
   c =>
     c.resetState());
 
-export type ComputableSU<T> = Computable<T | undefined, T>;
+export type ComputableStableDefined<T> = Computable<T | undefined, T>;
 
 export class Computable<T, StableT extends T = T> implements WrappedComputableKernel<T> {
   /** Updated on each state reset */
@@ -109,6 +110,8 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
       if (hooks !== undefined)
         for (const h of hooks)
           h.onChangedRequest(this);
+
+      await setImmediate(undefined, { signal: abortSignal });
 
       // reporting "changed" immediately
       return;

@@ -84,6 +84,11 @@ export class HierarchicalWatcher implements Watcher {
 
     if (abortSignal !== undefined)
       return new Promise<void>((res, rej) => {
+        if (abortSignal.aborted) {
+          rej(new Aborted(abortSignal.reason));
+          return;
+        }
+
         const abortCb = () => {
           // removing our promise from the set of promises that will be
           // fulfilled on watcher change
