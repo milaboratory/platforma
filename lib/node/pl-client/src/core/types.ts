@@ -77,6 +77,10 @@ export function resourceType(name: string, version: string): ResourceType {
   return { name, version };
 }
 
+export function resourceTypeToString(rt: ResourceType): string {
+  return `${rt.name}:${rt.version}`;
+}
+
 export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): boolean {
   return type1.name === type2.name && type1.version === type2.version;
 }
