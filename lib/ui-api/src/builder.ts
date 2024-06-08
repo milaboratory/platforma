@@ -2,9 +2,12 @@ import { ConfigResult, PlResourceEntry, TypedConfig } from './type_engine';
 import { getImmediate } from './actions';
 import { Checked } from './type_util';
 
-export type StdCtx<Args, UiState = undefined> = {
+export type StdCtxArgsOnly<Args, UiState = undefined> = {
   $args: Args,
   $ui: UiState,
+}
+
+export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & {
   $prod: PlResourceEntry,
   $staging: PlResourceEntry,
 }
@@ -18,7 +21,7 @@ export interface Section {
 
 export type SectionsExpectedType = readonly Section[];
 
-export type SectionsChecked<Cfg extends TypedConfig, Args, UiState> = Checked<Cfg, ResolveCfgType<Cfg, Args, UiState> extends SectionsExpectedType ? true : false>
+export type SectionsChecked<Cfg extends TypedConfig, Args, UiState> = Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false>
 
 export type CanRunExpectedType = boolean;
 
