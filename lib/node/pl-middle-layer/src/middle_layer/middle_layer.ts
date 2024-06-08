@@ -9,7 +9,6 @@ import { createProjectList, ProjectListEntry, ProjectsField, ProjectsResourceTyp
 import { TemporalSynchronizedTreeOps, TreeAndComputableU } from './types';
 import { ProjectMeta } from '../model/project_model';
 import { createProject, withProject } from '../mutator/project';
-import { ComputableSU } from '@milaboratory/computable';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { projectOverview, ProjectOverview } from './project_overview';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
@@ -17,6 +16,7 @@ import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { randomUUID } from 'node:crypto';
 import { createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { ComputableStableDefined } from '@milaboratory/computable';
 
 export type MiddleLayerOps = {
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
@@ -43,8 +43,6 @@ export interface MiddleLayerEnvironment {
 
 /** Main entry point for the frontend */
 export class MiddleLayer {
-  private readonly projectListTree: SynchronizedTreeState;
-  public readonly projectList: ComputableSU<ProjectListEntry[]>;
   private readonly bpPreparer: BlockPackPreparer;
   private readonly frontendDownloadDriver: DownloadUrlDriver;
   private readonly env: MiddleLayerEnvironment;
@@ -52,11 +50,10 @@ export class MiddleLayer {
   private constructor(
     private readonly pl: PlClient,
     private readonly projects: ResourceId,
+    private readonly projectListTree: SynchronizedTreeState,
+    public readonly projectList: ComputableStableDefined<ProjectListEntry[]>,
     private readonly ops: MiddleLayerOps
   ) {
-    const projectListTC = createProjectList(pl, projects, ops.defaultTreeOptions);
-    this.projectListTree = projectListTC.tree;
-    this.projectList = projectListTC.computable;
     this.bpPreparer = new BlockPackPreparer(ops.localSecret);
     this.frontendDownloadDriver = createDownloadUrlDriver(this.pl, new ConsoleLoggerAdapter(), this.ops.frontendDownloadPath);
     this.env = {
@@ -92,10 +89,10 @@ export class MiddleLayer {
 
   private readonly projectOverviews = new Map<ResourceId, TreeAndComputableU<ProjectOverview>>();
 
-  public openProject(rid: ResourceId) {
+  public async openProject(rid: ResourceId) {
     if (this.projectOverviews.has(rid))
       throw new Error(`Project ${rid} already opened`);
-    const tree = new SynchronizedTreeState(this.pl, rid, this.ops.defaultTreeOptions);
+    const tree = await SynchronizedTreeState.init(this.pl, rid, this.ops.defaultTreeOptions);
     const overview = projectOverview(tree.entry(), this.env);
     this.projectOverviews.set(rid, { tree, computable: overview });
   }
@@ -110,7 +107,7 @@ export class MiddleLayer {
     tc.computable.resetState();
   }
 
-  public getProjectOverview(rid: ResourceId): ComputableSU<ProjectOverview> {
+  public getProjectOverview(rid: ResourceId): ComputableStableDefined<ProjectOverview> {
     const tc = this.projectOverviews.get(rid);
     if (tc === undefined)
       throw new Error(`Project ${rid} not found among opened projects`);
@@ -163,7 +160,10 @@ export class MiddleLayer {
         return projectsFieldData.value;
       }
     });
-    return new MiddleLayer(pl, projects, ops);
+
+    const projectListTC = await createProjectList(pl, projects, ops.defaultTreeOptions);
+
+    return new MiddleLayer(pl, projects, projectListTC.tree, projectListTC.computable, ops);
   }
 }
 

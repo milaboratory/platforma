@@ -5,7 +5,6 @@ import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import { sleep } from '@milaboratory/ts-helpers';
 
 const EnterNumbersSpec = {
   type: 'from-registry-v1',
@@ -56,9 +55,10 @@ test('simple project manipulations test', async () => {
     const pRid1 = await ml.addProject('id1', { name: 'Project 1' });
     await projectList.refreshState();
     expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
-    ml.openProject(pRid1);
+    await ml.openProject(pRid1);
     const overview = ml.getProjectOverview(pRid1);
     expect(await overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
+
     const block1Id = await ml.addBlock(pRid1, 'Block 1', EnterNumbersSpec);
     const block2Id = await ml.addBlock(pRid1, 'Block 2', EnterNumbersSpec);
     const block3Id = await ml.addBlock(pRid1, 'Block 3', SumNumbersSpec);
@@ -71,11 +71,15 @@ test('simple project manipulations test', async () => {
       ]
     });
     await ml.renderBlock(pRid1, block3Id);
+
     await overview.refreshState();
-    await sleep(3000);
-    // const s = await overview.awaitStableValue();
-    const s = await overview.getValue();
-    console.dir(s, { depth: 5 });
-    // expect(await overview.getValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
+    const overviewSnapshot1 = await overview.awaitStableValue();
+
+    overviewSnapshot1.blocks.forEach(block => {
+      expect(block.frontend).toBeDefined();
+      expect(block.frontend?.error).toBeUndefined();
+      expect(block.sections).toBeDefined();
+    });
+    console.dir(overviewSnapshot1, { depth: 5 });
   });
-}, 10_000);
+});

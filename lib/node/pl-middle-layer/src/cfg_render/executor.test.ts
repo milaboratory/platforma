@@ -55,11 +55,11 @@ test('cfg test with pl, simple', async () => {
     .build();
 
   await TestHelpers.withTempRoot(async pl => {
-    const tree = new SynchronizedTreeState(pl, pl.clientRoot, { pollingInterval: 250, stopPollingDelay: 500 });
+    const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, { pollingInterval: 250, stopPollingDelay: 500 });
 
     const ctx = {
       $args: input,
-      $prod: tree.accessor() as any as PlResourceEntry
+      $prod: tree.entry() as any as PlResourceEntry
     };
 
     const computable: Computable<ConfigResult<typeof cfg.outputs['out1'], typeof ctx> | undefined> =

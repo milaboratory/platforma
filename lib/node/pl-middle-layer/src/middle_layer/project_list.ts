@@ -21,8 +21,8 @@ export interface ProjectListEntry {
 
 export type ProjectList = ProjectListEntry[];
 
-export function createProjectList(pl: PlClient, rid: ResourceId, ops: TemporalSynchronizedTreeOps): TreeAndComputableU<ProjectList> {
-  const tree = new SynchronizedTreeState(pl, rid,
+export async function createProjectList(pl: PlClient, rid: ResourceId, ops: TemporalSynchronizedTreeOps): Promise<TreeAndComputableU<ProjectList>> {
+  const tree = await SynchronizedTreeState.init(pl, rid,
     { ...ops, pruning: ProjectsListTreePruningFunction });
 
   const c = computable(tree.entry(), {}, a => {
@@ -31,10 +31,10 @@ export function createProjectList(pl: PlClient, rid: ResourceId, ops: TemporalSy
       return undefined;
     const result: ProjectListEntry[] = [];
     for (const field of node.listDynamicFields()) {
-      const prj = node.get(field)?.value;
+      const prj = node.traverse(field);
       if (prj === undefined)
         continue;
-      const meta = JSON.parse(prj.getKeyValueString(ProjectMetaKey)!) as ProjectMeta;
+      const meta = prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey)!;
       result.push({ id: field, rid: prj.id, meta });
     }
     return result;

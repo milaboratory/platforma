@@ -1,5 +1,5 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { computable, ComputableSU } from '@milaboratory/computable';
+import { computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
   BlockRenderingMode, BlockRenderingStateKey, projectFieldName,
   ProjectMeta,
@@ -15,7 +15,7 @@ import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { frontendPath } from './frontend_path';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
-import { constructBlockContext } from './block_outputs';
+import { constructBlockContext, constructBlockContextArgsOnly } from './block_outputs';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 
@@ -59,28 +59,41 @@ type BlockInfo = {
 }
 
 /** Returns derived general project state form the project resource */
-export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableSU<ProjectOverview> {
+export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableStableDefined<ProjectOverview> {
   return computable(entry, {}, a => {
     const prj = a.node();
-    if (prj === undefined)
-      return undefined;
 
-    const meta = JSON.parse(notEmpty(prj.getKeyValueAsString(ProjectMetaKey))) as ProjectMeta;
-    const structure = JSON.parse(notEmpty(prj.getKeyValueAsString(ProjectStructureKey))) as ProjectStructure;
-    const renderingState = JSON.parse(notEmpty(prj.getKeyValueAsString(BlockRenderingStateKey))) as ProjectRenderingState;
+    const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
+    const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
+    const renderingState = notEmpty(prj.getKeyValueAsJson<ProjectRenderingState>(BlockRenderingStateKey));
 
     const infos = new Map<string, BlockInfo>();
     for (const { id } of allBlocks(structure)) {
-      const cInputs = notEmpty(prj.get(projectFieldName(id, 'currentInputs'), 'Dynamic', true)?.value);
+      const cInputs = prj.traverse({
+        field: projectFieldName(id, 'currentInputs'),
+        assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true
+      });
 
       let prod: ProdState | undefined = undefined;
 
-      const rInputs = prj.get(projectFieldName(id, 'prodInputs'), 'Dynamic', false)?.value;
+      const rInputs = prj.traverse({
+        field: projectFieldName(id, 'prodInputs'),
+        assertFieldType: 'Dynamic',
+        stableIfNotFound: true
+      });
       if (rInputs !== undefined) {
-        const result = prj.get(projectFieldName(id, 'prodOutput'), 'Dynamic', true);
-        const ctx = prj.get(projectFieldName(id, 'prodCtx'), 'Dynamic', true);
-        if (result === undefined || ctx === undefined)
-          throw new Error('unexpected project structure');
+        const result = prj.getField({
+          field: projectFieldName(id, 'prodOutput'),
+          assertFieldType: 'Dynamic',
+          stableIfNotFound: true,
+          errorIfFieldNotFound: true
+        });
+        const ctx = prj.getField({
+          field: projectFieldName(id, 'prodCtx'),
+          assertFieldType: 'Dynamic',
+          stableIfNotFound: true,
+          errorIfFieldNotFound: true
+        });
         prod = {
           arguments: rInputs.getDataAsJson(),
           stale: cInputs.id !== rInputs.id,
@@ -111,20 +124,20 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       }
 
       // block-pack
-      const blockPack = prj.traverse({},
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfNotFound: true },
-        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfNotFound: true }
-      )?.value;
+      const blockPack = prj.traverse(
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
+      );
 
       // frontend
-      const frontend = frontendPath(blockPack?.traverse({},
-        { field: BlockPackFrontendField, assertFieldType: 'Input', errorIfNotFound: true }
-      )?.value?.persist(), env);
+      const frontend = frontendPath(blockPack?.traverse(
+        { field: BlockPackFrontendField, assertFieldType: 'Input' }
+      )?.persist(), env);
 
       // sections
       const sections = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
-        const blockCtx = constructBlockContext(prj, id, env);
-        return computableFromCfg(blockCtx, blockConf.sections) as ComputableSU<Section[]>;
+        const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
+        return computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>;
       });
 
       return {

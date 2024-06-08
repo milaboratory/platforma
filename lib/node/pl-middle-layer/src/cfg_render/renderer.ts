@@ -32,7 +32,7 @@ const SRGetResourceField: Subroutine = args => {
   const field = args.field as string | undefined;
   if (source === undefined || field === undefined)
     return resOp(undefined);
-  return env => res(env.accessor(source).node()?.get(field)?.value?.persist());
+  return env => res(env.accessor(source).node().traverse(field)?.persist());
 };
 
 function SRMapArrayValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>): Subroutine {
@@ -124,16 +124,14 @@ function SRMapResourceFields1(ctx: Record<string, unknown>, ops: Pick<CfgMapReso
       const accessor = env.accessor(source);
 
       const node = accessor.node();
-      if (node === undefined)
-        return res(undefined);
 
       const nextArgs: ArgumentRequests = {};
       for (const fieldName of node.listInputFields()) {
-        const res = node.get(fieldName);
-        if (res === undefined || res.value === undefined || res.error !== undefined)
+        const res = node.traverse(fieldName);
+        if (res === undefined)
           nextArgs[fieldName] = resOp(undefined);
         else {
-          const newCtx = { ...ctx, [ops.itVar]: res.value.persist() };
+          const newCtx = { ...ctx, [ops.itVar]: res.persist() };
           nextArgs[fieldName] = renderCfg(newCtx, ops.mapping);
         }
       }

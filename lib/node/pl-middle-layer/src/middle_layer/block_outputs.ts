@@ -1,28 +1,47 @@
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { blockFrontendStateKey, projectFieldName } from '../model/project_model';
-import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-block-config';
+import { PlResourceEntry, StdCtx, StdCtxArgsOnly } from '@milaboratory/sdk-block-config';
 
 type SC = StdCtx<unknown, unknown>;
+type SCAO = StdCtxArgsOnly<unknown, unknown>;
+export type MatStdCtxArgsOnly = {
+  [Var in keyof SCAO]: SCAO[Var] extends PlResourceEntry
+    ? PlTreeEntry | undefined
+    : SCAO[Var];
+}
 export type MatStdCtx = {
   [Var in keyof SC]: SC[Var] extends PlResourceEntry
     ? PlTreeEntry | undefined
     : SC[Var];
 }
 
-export function constructBlockContext(projectNode: PlTreeNodeAccessor, blockId: string, env: MiddleLayerEnvironment): MatStdCtx {
-  const argsField = projectNode.get(projectFieldName(blockId, 'currentInputs'));
-  if (argsField === undefined)
-    throw new Error('No such block');
-  const args = argsField.value!.getDataAsJson();
+export function constructBlockContextArgsOnly(projectNode: PlTreeNodeAccessor, blockId: string): MatStdCtxArgsOnly {
+  const args = projectNode.traverse({
+    field: projectFieldName(blockId, 'currentInputs'),
+    errorIfFieldNotAssigned: true
+  }).getDataAsJson();
   const ui = projectNode.getKeyValueAsJson(blockFrontendStateKey(blockId));
-  const prodField = projectNode.get(projectFieldName(blockId, 'prodOutput'));
-  const stagingField = projectNode.get(projectFieldName(blockId, 'stagingOutput'));
   return {
     $args: args,
-    $ui: ui,
-    $prod: prodField?.value?.persist(),
-    $staging: stagingField?.value?.persist()
+    $ui: ui
+  };
+}
+
+export function constructBlockContext(projectNode: PlTreeNodeAccessor, blockId: string): MatStdCtx {
+  const argsCtx = constructBlockContextArgsOnly(projectNode, blockId);
+  const prodField = projectNode.traverse({
+    field: projectFieldName(blockId, 'prodOutput'),
+    ignoreError: true
+  });
+  const stagingField = projectNode.traverse({
+    field: projectFieldName(blockId, 'stagingOutput'),
+    ignoreError: true
+  });
+  return {
+    ...argsCtx,
+    $prod: prodField?.persist(),
+    $staging: stagingField?.persist()
   };
 }
 
