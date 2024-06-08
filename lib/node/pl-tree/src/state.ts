@@ -132,7 +132,9 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public getField(
     watcher: Watcher,
-    _step: Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true },
+    _step:
+      | Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true }
+      | Omit<GetFieldStep, 'errorIfFieldNotAssigned'> & { errorIfFieldNotAssigned: true },
     onUnstable: () => void
   ): ValueAndError<ResourceId>
   public getField(
@@ -150,7 +152,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
     const field = this.fields.get(step.field);
     if (field === undefined) {
-      if (step.errorIfFieldNotFound)
+      if (step.errorIfFieldNotFound || step.errorIfFieldNotAssigned)
         throw new Error(`Field "${step.field}" not found in resource ${resourceIdToString(this.id)}`);
 
       if (!this.inputsLocked)

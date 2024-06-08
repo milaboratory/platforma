@@ -117,8 +117,8 @@ export class PlTreeNodeAccessor {
     return this.resource.type;
   }
 
-  public traverse(...steps: [Omit<FieldTraversalStep, 'errorIfFieldNotFound'> & {
-    errorIfFieldNotFound: true
+  public traverse(...steps: [Omit<FieldTraversalStep, 'errorIfFieldNotAssigned'> & {
+    errorIfFieldNotAssigned: true
   }]): PlTreeNodeAccessor
   public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined
   public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined {
@@ -145,8 +145,11 @@ export class PlTreeNodeAccessor {
       if (!step.ignoreError && next.error !== undefined)
         throw new PlError(`error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`);
 
-      if (next.value === undefined)
+      if (next.value === undefined) {
+        if (step.errorIfFieldNotAssigned)
+          throw new PlError(`field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`);
         return undefined;
+      }
 
       current = next.value;
     }
@@ -155,9 +158,10 @@ export class PlTreeNodeAccessor {
 
   private readonly onUnstableLambda = () => this.instanceData.ctx.markUnstable();
 
-  public getField(_step: Omit<GetFieldStep, 'errorIfFieldNotFound'> & {
-    errorIfFieldNotFound: true
-  }): ValueAndError<PlTreeNodeAccessor>
+  public getField(_step:
+                    | Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true }
+                    | Omit<GetFieldStep, 'errorIfFieldNotAssigned'> & { errorIfFieldNotAssigned: true }
+  ): ValueAndError<PlTreeNodeAccessor>
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined {
     this.instanceData.guard();
