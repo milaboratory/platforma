@@ -5,9 +5,14 @@ import {
   UsageGuard,
   Watcher
 } from '@milaboratory/computable';
-import { FieldType, ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
+import {
+  ResourceId,
+  resourceIdToString,
+  ResourceType, resourceTypesEqual,
+  resourceTypeToString
+} from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { CommonFieldTraverseOps, FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -42,6 +47,26 @@ export class PlTreeEntry implements TrackedAccessorProvider<PlTreeEntryAccessor>
   }
 }
 
+function getResourceFromTree(accessorData: TreeAccessorData,
+                             tree: PlTreeState, instanceData: TreeAccessorInstanceData,
+                             rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
+  const acc = new PlTreeNodeAccessor(accessorData, tree, tree.get(instanceData.watcher, rid), instanceData);
+
+  if (!ops.ignoreError) {
+    const err = acc.getError();
+    if (err !== undefined)
+      throw new PlError(`error encountered on resource ${resourceIdToString(acc.id)} (${resourceTypeToString(acc.resourceType)}): ${err.getDataAsString()}`);
+  }
+
+  if (ops.assertResourceType !== undefined &&
+    (Array.isArray(ops.assertResourceType)
+      ? ops.assertResourceType.findIndex(rt => resourceTypesEqual(rt, acc.resourceType)) === -1
+      : !resourceTypesEqual(ops.assertResourceType, acc.resourceType)))
+    throw new Error(`wrong resource type ${resourceTypeToString(acc.resourceType)} but expected ${ops.assertResourceType}`);
+
+  return acc;
+}
+
 export class PlTreeEntryAccessor {
   constructor(
     private readonly accessorData: TreeAccessorData,
@@ -51,35 +76,16 @@ export class PlTreeEntryAccessor {
   ) {
   }
 
-  node(): PlTreeNodeAccessor | undefined {
+  node(ops: ResourceTraversalOps = {}): PlTreeNodeAccessor {
     this.instanceData.guard();
+
+    // this is the only entry point to acquire a PlTreeNodeAccessor,
+    // so this is the only point where we should attach the hooks
     if (this.accessorData.hooks !== undefined)
       this.instanceData.ctx.attacheHooks(this.accessorData.hooks);
-    const r = this.tree.get(this.instanceData.watcher, this.rid);
-    if (r === undefined) {
-      // resource may appear later, so in a broad sense this result is unstable,
-      // regardless the FinalPredicate
-      this.instanceData.ctx.markUnstable();
-      return undefined;
-    }
-    return new PlTreeNodeAccessor(this.accessorData, this.tree, r, this.instanceData);
-  }
 
-  traverse(
-    commonOptions: TraverseOptions = {},
-    ...path: (TraverseStep | string)[]
-  ): ValueAndError<PlTreeNodeAccessor> | undefined {
-    return traverse(this.node(), commonOptions, ...path);
-  }
-
-  traverseNoError(
-    commonOptions: TraverseOptions = {},
-    ...path: (TraverseStep | string)[]
-  ): PlTreeNodeAccessor | undefined {
-    const result = this.traverse(commonOptions, ...path);
-    if (result?.error !== undefined)
-      throw new PlError(notEmpty(result.error.getDataAsString()));
-    return result?.value;
+    return getResourceFromTree(this.accessorData, this.tree,
+      this.instanceData, this.rid, ops);
   }
 }
 
@@ -87,7 +93,7 @@ export class PlTreeEntryAccessor {
  * API contracts:
  *   - API never return {@link NullResourceId}, absence of link is always modeled as `undefined`
  *
- * Important: never store instances of this class, always get fresh instance from {@link ResourceTree} accessor.
+ * Important: never store instances of this class, always get fresh instance from {@link PlTreeState} accessor.
  * */
 export class PlTreeNodeAccessor {
   constructor(
@@ -98,38 +104,67 @@ export class PlTreeNodeAccessor {
   ) {
   }
 
-  get id() {
+  public get id() {
     return this.resource.id;
   }
 
-  private getResourceFromTree(rid: ResourceId): PlTreeNodeAccessor {
-    const res = this.tree.get(this.instanceData.watcher, rid);
-    if (res == undefined) throw new Error(`Can't find resource ${rid}`);
-    return new PlTreeNodeAccessor(this.accessorData, this.tree, res, this.instanceData);
+  private getResourceFromTree(rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
+    return getResourceFromTree(this.accessorData, this.tree, this.instanceData,
+      rid, ops);
   }
 
-  get resourceType(): ResourceType {
+  public get resourceType(): ResourceType {
     return this.resource.type;
   }
 
-  get(
-    fieldName: string,
-    assertFieldType?: FieldType,
-    errorIfNotFound?: boolean
-  ): ValueAndError<PlTreeNodeAccessor> | undefined {
-    this.instanceData.guard();
-    const ve = this.resource.get(
-      this.instanceData.watcher,
-      fieldName,
-      assertFieldType,
-      errorIfNotFound,
-      () => this.instanceData.ctx.markUnstable()
-    );
-    if (ve === undefined) return undefined;
-    return mapValueAndError(ve, (rid) => this.getResourceFromTree(rid));
+  public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined {
+    return this.traverseWithCommon({}, ...steps);
   }
 
-  getInputsLocked(): boolean {
+  public traverseWithCommon(commonOptions: CommonFieldTraverseOps, ...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined {
+    let current: PlTreeNodeAccessor = this;
+
+    for (const _step of steps) {
+      const step: FieldTraversalStep =
+        typeof _step === 'string'
+          ? {
+            ...commonOptions,
+            field: _step
+          }
+          : { ...commonOptions, ..._step };
+
+      const next = current.getField(_step);
+
+      if (next === undefined)
+        return undefined;
+
+      if (!step.ignoreError && next.error !== undefined)
+        throw new PlError(`error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`);
+
+      if (next.value === undefined)
+        return undefined;
+
+      current = next.value;
+    }
+    return current;
+  }
+
+  private readonly onUnstableLambda = () => this.instanceData.ctx.markUnstable();
+
+  public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined {
+    this.instanceData.guard();
+    const step: GetFieldStep = typeof _step === 'string' ? { field: _step } : _step;
+
+    const ve = this.resource.getField(
+      this.instanceData.watcher, step, this.onUnstableLambda);
+
+    if (ve === undefined) return undefined;
+
+    return mapValueAndError(ve, (rid) =>
+      this.getResourceFromTree(rid, { ignoreError: true }));
+  }
+
+  public getInputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getInputsLocked(this.instanceData.watcher);
     if (!result)
@@ -137,7 +172,7 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
-  getOutputsLocked(): boolean {
+  public getOutputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getOutputsLocked(this.instanceData.watcher);
     if (!result)
@@ -145,7 +180,7 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
-  getIsReadyOrError(): boolean {
+  public getIsReadyOrError(): boolean {
     this.instanceData.guard();
     const result = this.resource.getIsReadyOrError(this.instanceData.watcher);
     if (!result)
@@ -153,59 +188,48 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
-  getIsFinal() {
+  public getIsFinal() {
     this.instanceData.guard();
     return this.resource.getIsFinal(this.instanceData.watcher);
   }
 
-  getError(): PlTreeNodeAccessor | undefined {
+  public getError(): PlTreeNodeAccessor | undefined {
     this.instanceData.guard();
     const rid = this.resource.getError(this.instanceData.watcher);
-    if (rid === undefined) {
-      // // in general, errors should not appear after resource is ready,
-      // // so we will consider such cases stable
-      // if (!this.getIsReadyOrError())
-      //   this.ctx.markUnstable();
+    if (rid === undefined)
+      // absence of error always considered as stable
       return undefined;
-    }
-    return this.getResourceFromTree(rid);
+    return this.getResourceFromTree(rid, {});
   }
 
-  getData(): Uint8Array | undefined {
+  public getData(): Uint8Array | undefined {
     return this.resource.data;
   }
 
-  getDataAsString(): string | undefined {
+  public getDataAsString(): string | undefined {
     return this.resource.getDataAsString();
   }
 
-  getDataAsJson<T = unknown>(): T | undefined {
+  public getDataAsJson<T = unknown>(): T | undefined {
     return this.resource.getDataAsJson<T>();
   }
 
-  traverse(
-    commonOptions: TraverseOptions = {},
-    ...path: (TraverseStep | string)[]
-  ) {
-    return traverse(this, commonOptions, ...path);
-  }
-
-  listInputFields(): string[] {
+  public listInputFields(): string[] {
     this.instanceData.guard();
     return this.resource.listInputFields(this.instanceData.watcher);
   }
 
-  listOutputFields(): string[] {
+  public listOutputFields(): string[] {
     this.instanceData.guard();
     return this.resource.listOutputFields(this.instanceData.watcher);
   }
 
-  listDynamicFields(): string[] {
+  public listDynamicFields(): string[] {
     this.instanceData.guard();
     return this.resource.listDynamicFields(this.instanceData.watcher);
   }
 
-  getKeyValue(key: string): Uint8Array | undefined {
+  public getKeyValue(key: string): Uint8Array | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.watcher, key);
     if (result === undefined)
@@ -214,11 +238,11 @@ export class PlTreeNodeAccessor {
   }
 
   /** @deprecated */
-  getKeyValueString(key: string): string | undefined {
+  public getKeyValueString(key: string): string | undefined {
     return this.getKeyValueAsString(key);
   }
 
-  getKeyValueAsString(key: string): string | undefined {
+  public getKeyValueAsString(key: string): string | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
     if (result === undefined)
@@ -226,7 +250,7 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
-  getKeyValueAsJson<T = unknown>(key: string): T | undefined {
+  public getKeyValueAsJson<T = unknown>(key: string): T | undefined {
     const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
     if (result === undefined) {
       this.instanceData.ctx.markUnstable();
@@ -235,61 +259,7 @@ export class PlTreeNodeAccessor {
     return JSON.parse(result) as T;
   }
 
-  persist(): PlTreeEntry {
+  public persist(): PlTreeEntry {
     return new PlTreeEntry(this.accessorData, this.resource.id);
   }
-}
-
-export interface TraverseOptions {
-  /** Terminate chain if current resource is in error stat. Resource error will be returned. */
-  stopOnResourceError?: boolean;
-  /** Terminate chain if field is associated with an error. Field error will be returned. */
-  stopOnFieldError?: boolean;
-  /** Valid only if {@link assertFieldType} is defined and equal to 'Input', 'Service' or 'Output'.
-   * If field is not found, and corresponding field list is locked, call will fail with exception. */
-  errorIfNotFound?: boolean;
-}
-
-export interface TraverseStep extends TraverseOptions {
-  /** Field name */
-  field: string;
-  /** Assert field type. Call will fail with exception if this assertion is not fulfilled. */
-  assertFieldType?: FieldType;
-  // TODO add assert resource type
-}
-
-export function traverse(
-  res: PlTreeNodeAccessor | undefined,
-  commonOptions: TraverseOptions = {},
-  ...path: (TraverseStep | string)[]
-): ValueAndError<PlTreeNodeAccessor> | undefined {
-  let current: ValueAndError<PlTreeNodeAccessor> | undefined = {
-    value: res
-  };
-  for (const _step of path) {
-    const step: TraverseStep =
-      typeof _step === 'string'
-        ? {
-          ...commonOptions,
-          field: _step
-        }
-        : { ...commonOptions, ..._step };
-    if (current === undefined || current.value === undefined)
-      return undefined;
-    const resourceError = current.value.getError();
-    if (step.stopOnResourceError && resourceError !== undefined)
-      return { error: resourceError };
-    current = current.value.get(
-      step.field,
-      step.assertFieldType,
-      step.errorIfNotFound
-    );
-    if (
-      step.stopOnFieldError &&
-      current !== undefined &&
-      current.error !== undefined
-    )
-      return { error: current.error };
-  }
-  return current;
 }

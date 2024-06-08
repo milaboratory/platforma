@@ -18,12 +18,14 @@ function rid(id: bigint): ResourceId {
 
 test('simple tree test 1', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.accessor(), {}, (b) => {
-    const res = b.traverse({}, 'a', 'b');
-    return mapValueAndErrorIfDefined(res, (r) => r.getDataAsString());
-  });
+  const c1 = computable(tree.entry(), {}, (b) =>
+    b.node().traverse('a', 'b')?.getDataAsString()
+  );
+
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toBeUndefined();
+  await expect(async () => await c1.getValue())
+    .rejects
+    .toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [] }]);
@@ -55,7 +57,7 @@ test('simple tree test 1', async () => {
     }
   ]);
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toStrictEqual({ value: 'Test1' });
+  expect(await c1.getValue()).toStrictEqual('Test1');
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -68,11 +70,13 @@ test('simple tree test 1', async () => {
 
 test('simple tree kv test', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.accessor(), {}, (b) => {
-    return b.traverseNoError({}, 'a', 'b')?.getKeyValueString('thekey');
-  });
+  const c1 = computable(tree.entry(), {}, (b) =>
+    b.node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
+
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toBeUndefined();
+  await expect(async () => await c1.getValue())
+    .rejects
+    .toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -118,16 +122,16 @@ test('simple tree kv test', async () => {
 
 test('partial tree update', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.accessor(), {}, (b) => {
-    const res = b.traverse(
-      {},
+  const c1 = computable(tree.entry(), {}, (b) =>
+    b.node().traverse(
       { field: 'a', assertFieldType: 'Dynamic' },
       { field: 'b', assertFieldType: 'Dynamic' }
-    );
-    return mapValueAndErrorIfDefined(res, (r) => r.getDataAsString());
-  });
+    )?.getDataAsString());
+
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toBeUndefined();
+  await expect(async () => await c1.getValue())
+    .rejects
+    .toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -140,7 +144,7 @@ test('partial tree update', async () => {
     }
   ]);
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toStrictEqual({ value: 'Test1' });
+  expect(await c1.getValue()).toStrictEqual('Test1');
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([

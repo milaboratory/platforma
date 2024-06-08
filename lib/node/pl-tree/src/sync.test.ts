@@ -17,8 +17,8 @@ test('load resources', async () => {
 
     const treeState = new PlTreeState(r1);
 
-    const theComputable = computable(treeState.accessor(), {},
-      a => a.traverse({}, 'a', 'b')?.value?.getDataAsString());
+    const theComputable = computable(treeState.entry(), {},
+      a => a.node().traverse('a', 'b')?.getDataAsString());
 
     const refreshState = async (): Promise<void> => {
       const req = constructTreeLoadingRequest(treeState);

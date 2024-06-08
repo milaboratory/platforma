@@ -27,9 +27,9 @@ export class SynchronizedTreeState {
   private readonly pruning?: PruningFunction;
   private readonly hooks: PollingComputableHooks;
 
-  constructor(private readonly pl: PlClient,
-              private readonly root: ResourceId,
-              ops: SynchronizedTreeOps) {
+  private constructor(private readonly pl: PlClient,
+                      private readonly root: ResourceId,
+                      ops: SynchronizedTreeOps) {
     const { finalPredicate, pruning, pollingInterval, stopPollingDelay } = ops;
     this.pruning = pruning;
     this.pollingInterval = pollingInterval;
@@ -83,6 +83,15 @@ export class SynchronizedTreeState {
   /** Actual state of main loop. */
   private currentLoop: Promise<void> | undefined = undefined;
 
+  /** Executed from the main loop, and initialization procedure. */
+  private async refresh(): Promise<void> {
+    const request = constructTreeLoadingRequest(this.state, this.pruning);
+    const data = await this.pl.withReadTx('ReadingTree', async tx => {
+      return await loadTreeState(tx, request);
+    });
+    this.state.updateFromResourceData(data, true);
+  }
+
   private async mainLoop() {
     while (true) {
       if (!this.keepRunning)
@@ -98,12 +107,8 @@ export class SynchronizedTreeState {
       }
 
       try {
-
-        const request = constructTreeLoadingRequest(this.state, this.pruning);
-        const data = await this.pl.withReadTx('ReadingTree', async tx => {
-          return await loadTreeState(tx, request);
-        });
-        this.state.updateFromResourceData(data, true);
+        // actual tree synchronization
+        await this.refresh();
 
         // notifying that we got new state
         if (toNotify !== undefined)
@@ -142,5 +147,11 @@ export class SynchronizedTreeState {
 
     // reset only as a very last line
     this.currentLoop = undefined;
+  }
+
+  public static async init(pl: PlClient, root: ResourceId, ops: SynchronizedTreeOps) {
+    const tree = new SynchronizedTreeState(pl, root, ops);
+    await tree.refresh();
+    return tree;
   }
 }

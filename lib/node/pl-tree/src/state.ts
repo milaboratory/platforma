@@ -2,7 +2,7 @@ import {
   BasicResourceData,
   FieldType, isNotNullResourceId, isNullResourceId, KeyValue, NullResourceId,
   OptionalResourceId, ResourceData,
-  ResourceId,
+  ResourceId, resourceIdToString,
   ResourceKind,
   ResourceType, stringifyWithResourceId
 } from '@milaboratory/pl-client-v2';
@@ -10,6 +10,7 @@ import { ChangeSource, Watcher } from '@milaboratory/computable';
 import { PlTreeEntry } from './accessors';
 import { ValueAndError } from './value_and_error';
 import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+import { FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[]
@@ -129,51 +130,46 @@ export class PlTreeResource implements PlTreeResourceI {
     return this._final;
   }
 
-  get(
+  public getField(
     watcher: Watcher,
-    fieldName: string,
-    assertFieldType?: FieldType,
-    errorIfNotFound?: boolean,
+    _step: string | GetFieldStep,
     onUnstable: () => void = () => {
     }
   ): ValueAndError<ResourceId> | undefined {
-    const field = this.fields.get(fieldName);
-    if (!field) {
+    const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
 
+    const field = this.fields.get(step.field);
+    if (!field) {
       if (!this.inputsLocked)
         this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
-      else if (assertFieldType === 'Service' || assertFieldType === 'Input') {
-        if (errorIfNotFound)
-          throw new Error(`Service or input field not found ${fieldName}.`);
-        else
+      else if (step.assertFieldType === 'Service' || step.assertFieldType === 'Input') {
+        if (step.allowPermanentAbsence)
           // stable absence of field
           return undefined;
+        else
+          throw new Error(`Service or input field not found ${step.field}.`);
       }
 
       if (!this.outputsLocked)
         this.outputFieldListChanged?.attachWatcher(watcher);
-      else if (assertFieldType === 'Output') {
-        if (errorIfNotFound)
-          throw new Error(`Output field not found ${fieldName}.`);
-        else
+      else if (step.assertFieldType === 'Output') {
+        if (step.allowPermanentAbsence)
           // stable absence of field
           return undefined;
+        else
+          throw new Error(`Output field not found ${step.field}.`);
       }
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
-      if (!this._final)
+      if (!this._final && !step.stableIfNotFound)
         onUnstable();
 
       return undefined;
     } else {
-      if (assertFieldType !== undefined && field.type !== assertFieldType)
+      if (step.assertFieldType !== undefined && field.type !== step.assertFieldType)
         throw new Error(
-          `Unexpected field type: expected ${assertFieldType} but got ${field.type}`
+          `Unexpected field type: expected ${step.assertFieldType} but got ${field.type}`
         );
-
-      // if (!this._final && (field.type === 'Dynamic' || field.type === 'MTW'))
-      //   // for input, output and service field result is stable
-      //   onUnstable();
 
       const ret = {} as ValueAndError<ResourceId>;
       if (isNotNullResourceId(field.value)) ret.value = field.value;
@@ -183,21 +179,21 @@ export class PlTreeResource implements PlTreeResourceI {
     }
   }
 
-  getInputsLocked(watcher: Watcher): boolean {
+  public getInputsLocked(watcher: Watcher): boolean {
     if (!this.inputsLocked)
       // reverse transition can't happen, so there is no reason to wait for value to change
       this.resourceStateChange?.attachWatcher(watcher);
     return this.inputsLocked;
   }
 
-  getOutputsLocked(watcher: Watcher): boolean {
+  public getOutputsLocked(watcher: Watcher): boolean {
     if (!this.outputsLocked)
       // reverse transition can't happen, so there is no reason to wait for value to change
       this.resourceStateChange?.attachWatcher(watcher);
     return this.outputsLocked;
   }
 
-  get isReadyOrError(): boolean {
+  public get isReadyOrError(): boolean {
     return (
       this.error !== NullResourceId ||
       this.resourceReady ||
@@ -205,19 +201,19 @@ export class PlTreeResource implements PlTreeResourceI {
     );
   }
 
-  getIsFinal(watcher: Watcher): boolean {
+  public getIsFinal(watcher: Watcher): boolean {
     this.finalChanged?.attachWatcher(watcher);
     return this._final;
   }
 
-  getIsReadyOrError(watcher: Watcher): boolean {
+  public getIsReadyOrError(watcher: Watcher): boolean {
     if (!this.isReadyOrError)
       // reverse transition can't happen, so there is no reason to wait for value to change if it is already true
       this.resourceStateChange?.attachWatcher(watcher);
     return this.isReadyOrError;
   }
 
-  getError(watcher: Watcher): ResourceId | undefined {
+  public getError(watcher: Watcher): ResourceId | undefined {
     if (isNullResourceId(this.error)) {
       this.resourceStateChange?.attachWatcher(watcher);
       return undefined;
@@ -227,7 +223,7 @@ export class PlTreeResource implements PlTreeResourceI {
     }
   }
 
-  listInputFields(watcher: Watcher): string[] {
+  public listInputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fields.forEach((field, name) => {
       if (field.type === 'Input' || field.type === 'Service')
@@ -238,7 +234,7 @@ export class PlTreeResource implements PlTreeResourceI {
     return ret;
   }
 
-  listOutputFields(watcher: Watcher): string[] {
+  public listOutputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fields.forEach((field, name) => {
       if (field.type === 'Output') ret.push(name);
@@ -248,7 +244,7 @@ export class PlTreeResource implements PlTreeResourceI {
     return ret;
   }
 
-  listDynamicFields(watcher: Watcher): string[] {
+  public listDynamicFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fields.forEach((field, name) => {
       if (field.type !== 'Input' && field.type !== 'Output') ret.push(name);
@@ -258,26 +254,26 @@ export class PlTreeResource implements PlTreeResourceI {
     return ret;
   }
 
-  getKeyValue(watcher: Watcher, key: string): Uint8Array | undefined {
+  public getKeyValue(watcher: Watcher, key: string): Uint8Array | undefined {
     this.kvChanged?.attachWatcher(watcher);
     return this.kv.get(key);
   }
 
-  getKeyValueString(watcher: Watcher, key: string): string | undefined {
+  public getKeyValueString(watcher: Watcher, key: string): string | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined)
       return undefined;
     return decoder.decode(bytes);
   }
 
-  getDataAsString(): string | undefined {
+  public getDataAsString(): string | undefined {
     if (this.data === undefined) return undefined;
     if (this.dataAsString === undefined)
       this.dataAsString = decoder.decode(this.data);
     return this.dataAsString;
   }
 
-  getDataAsJson<T = unknown>(): T | undefined {
+  public getDataAsJson<T = unknown>(): T | undefined {
     if (this.data === undefined) return undefined;
     if (this.dataAsJson === undefined)
       this.dataAsJson = JSON.parse(this.getDataAsString()!);
@@ -350,7 +346,7 @@ export class PlTreeState {
   ) {
   }
 
-  forEachResource(cb: (res: PlTreeResourceI) => void): void {
+  public forEachResource(cb: (res: PlTreeResourceI) => void): void {
     this.resources.forEach(v => cb(v));
   }
 
@@ -358,19 +354,16 @@ export class PlTreeState {
     if (!this.isValid) throw new Error('tree is in invalid state');
   }
 
-  getRoot(watcher: Watcher): PlTreeResource | undefined {
-    return this.get(watcher, this.root);
-  }
-
-  get(watcher: Watcher, rid: ResourceId): PlTreeResource | undefined {
+  public get(watcher: Watcher, rid: ResourceId): PlTreeResource {
     const res = this.resources.get(rid);
-    if (res) {
-      res.resourceRemoved.attachWatcher(watcher);
-      return res;
-    } else {
+    if (res === undefined) {
+      // to make recovery from resource not found possible, considering some
+      // race conditions, where computable is created before tree is updated
       this.resourcesAdded.attachWatcher(watcher);
-      return undefined;
+      throw new Error(`resource ${resourceIdToString(rid)} not found in the tree`);
     }
+    res.resourceRemoved.attachWatcher(watcher);
+    return res;
   }
 
   updateFromResourceData(
@@ -704,5 +697,3 @@ export class PlTreeState {
     });
   }
 }
-
-
