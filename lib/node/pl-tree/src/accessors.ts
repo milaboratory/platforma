@@ -117,6 +117,10 @@ export class PlTreeNodeAccessor {
     return this.resource.type;
   }
 
+  public traverse(...steps: [Omit<FieldTraversalStep, 'errorIfFieldNotFound'> & {
+    errorIfFieldNotFound: true
+  }]): PlTreeNodeAccessor
+  public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined
   public traverse(...steps: (FieldTraversalStep | string)[]): PlTreeNodeAccessor | undefined {
     return this.traverseWithCommon({}, ...steps);
   }
@@ -151,6 +155,10 @@ export class PlTreeNodeAccessor {
 
   private readonly onUnstableLambda = () => this.instanceData.ctx.markUnstable();
 
+  public getField(_step: Omit<GetFieldStep, 'errorIfFieldNotFound'> & {
+    errorIfFieldNotFound: true
+  }): ValueAndError<PlTreeNodeAccessor>
+  public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined {
     this.instanceData.guard();
     const step: GetFieldStep = typeof _step === 'string' ? { field: _step } : _step;

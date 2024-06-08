@@ -132,6 +132,16 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public getField(
     watcher: Watcher,
+    _step: Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true },
+    onUnstable: () => void
+  ): ValueAndError<ResourceId>
+  public getField(
+    watcher: Watcher,
+    _step: string | GetFieldStep,
+    onUnstable: () => void
+  ): ValueAndError<ResourceId> | undefined
+  public getField(
+    watcher: Watcher,
     _step: string | GetFieldStep,
     onUnstable: () => void = () => {
     }
@@ -139,7 +149,10 @@ export class PlTreeResource implements PlTreeResourceI {
     const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
 
     const field = this.fields.get(step.field);
-    if (!field) {
+    if (field === undefined) {
+      if (step.errorIfFieldNotFound)
+        throw new Error(`Field "${step.field}" not found in resource ${resourceIdToString(this.id)}`);
+
       if (!this.inputsLocked)
         this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
       else if (step.assertFieldType === 'Service' || step.assertFieldType === 'Input') {

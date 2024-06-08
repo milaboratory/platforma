@@ -11,6 +11,7 @@ export type CommonFieldTraverseOps = {
    * 'Service' or 'Output'. By default, if field is not found, and corresponding
    * field list is locked, call will fail with exception. */
   allowPermanentAbsence?: true;
+
   /** Will not mark current context as unstable, if field is not found. */
   stableIfNotFound?: true;
 }
@@ -24,6 +25,10 @@ export type ResourceTraversalOps = CommonTraversalOps & {
 export type GetFieldStep = CommonFieldTraverseOps & {
   /** Field name */
   field: string;
+
+  /** Field must exist, if this option is set, instead error will be thrown */
+  errorIfFieldNotFound?: true;
+
   /** Assert field type. Call will fail with exception if this assertion is not
    * fulfilled. */
   assertFieldType?: FieldType;
