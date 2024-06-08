@@ -90,7 +90,7 @@ test('synchronized tree test with KV', async () => {
     const treeState = await SynchronizedTreeState.init(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
 
     const theComputable = computable(treeState.entry(), {},
-      a => a.node().traverse('a')?.getKeyValueAsString('b'));
+      a => a.node().traverse('a')?.getKeyValueAsString('b', true));
 
     await theComputable.refreshState();
 

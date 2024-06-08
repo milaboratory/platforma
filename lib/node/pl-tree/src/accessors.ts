@@ -241,10 +241,10 @@ export class PlTreeNodeAccessor {
     return this.resource.listDynamicFields(this.instanceData.watcher);
   }
 
-  public getKeyValue(key: string): Uint8Array | undefined {
+  public getKeyValue(key: string, unstableIfNotFound: boolean = false): Uint8Array | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.watcher, key);
-    if (result === undefined)
+    if (result === undefined && unstableIfNotFound)
       this.instanceData.ctx.markUnstable();
     return result;
   }
@@ -254,18 +254,19 @@ export class PlTreeNodeAccessor {
     return this.getKeyValueAsString(key);
   }
 
-  public getKeyValueAsString(key: string): string | undefined {
+  public getKeyValueAsString(key: string, unstableIfNotFound: boolean = false): string | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
-    if (result === undefined)
+    if (result === undefined && unstableIfNotFound)
       this.instanceData.ctx.markUnstable();
     return result;
   }
 
-  public getKeyValueAsJson<T = unknown>(key: string): T | undefined {
+  public getKeyValueAsJson<T = unknown>(key: string, unstableIfNotFound: boolean = false): T | undefined {
     const result = this.resource.getKeyValueString(this.instanceData.watcher, key);
     if (result === undefined) {
-      this.instanceData.ctx.markUnstable();
+      if (unstableIfNotFound)
+        this.instanceData.ctx.markUnstable();
       return undefined;
     }
     return JSON.parse(result) as T;
