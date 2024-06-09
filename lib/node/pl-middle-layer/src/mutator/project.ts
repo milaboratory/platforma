@@ -21,7 +21,7 @@ import {
   InitialBlockStructure,
   InitialProjectRenderingState,
   ProjectMeta,
-  ProjectMetaKey, InitialBlockMeta, parseBlockFrontendStateKey, blockFrontendStateKey
+  ProjectMetaKey, InitialBlockMeta, parseBlockFrontendStateKey, blockFrontendStateKey, AuthorMarker, blockArgsAuthorKey
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
@@ -130,7 +130,7 @@ const NoNewBlocks = (blockId: string) => {
   throw new Error(`No new block info for ${blockId}`);
 };
 
-export interface SetInputRequest {
+export interface SetArgsRequest {
   blockId: string;
   inputs: string;
 }
@@ -287,13 +287,19 @@ export class ProjectMutator {
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
-  public setInputs(requests: SetInputRequest[]) {
+  public setArgs(requests: SetArgsRequest[], author?: AuthorMarker) {
     for (const { blockId, inputs } of requests) {
       const info = this.getBlockInfo(blockId);
       const parsedInputs = JSON.parse(inputs);
       const binary = Buffer.from(inputs);
-      const ref = this.tx.createValue(Pl.JsonObject, binary);
-      this.setBlockField(blockId, 'currentInputs', ref, 'Ready', binary);
+      const argsRef = this.tx.createValue(Pl.JsonObject, binary);
+      this.setBlockField(blockId, 'currentInputs', argsRef, 'Ready', binary);
+
+      // setting author marker
+      if (author === undefined)
+        this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
+      else
+        this.tx.setKValue(this.rid, blockArgsAuthorKey(blockId), JSON.stringify(author));
     }
 
     // resetting staging outputs for all downstream blocks
@@ -495,7 +501,7 @@ export class ProjectMutator {
 
     if (newArgs !== undefined)
       // this will also reset all downstream stagings
-      this.setInputs([{ blockId, inputs: newArgs }]);
+      this.setArgs([{ blockId, inputs: newArgs }]);
     else
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId],
@@ -640,9 +646,22 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<P
 
   const allKVP = tx.listKeyValuesString(rid);
 
+  // loading jsons
+  const [fullResourceState,
+    schema, meta, structure,
+    { stagingRefreshTimestamp, blocksInLimbo },
+    allKV
+  ] =
+    await Promise.all([fullResourceStateP,
+      schemaP, metaP, structureP,
+      renderingStateP,
+      allKVP]);
+  if (schema !== SchemaVersionCurrent)
+    throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
+
+
   // loading field information
   const blockInfoStates = new Map<string, BlockInfoState>();
-  const fullResourceState = await fullResourceStateP;
   for (const f of fullResourceState.fields) {
     const projectField = parseProjectField(f.name);
 
@@ -664,21 +683,11 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<P
       : { modCount: 0, ref: f.value };
   }
 
-  // loading jsons
-  const schema = await schemaP;
-  if (schema !== SchemaVersionCurrent)
-    throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
-
-  const meta = await metaP;
-
-  const structure = await structureP;
-
-  const { stagingRefreshTimestamp, blocksInLimbo } = await renderingStateP;
   const renderingState = { stagingRefreshTimestamp };
   const blocksInLimboSet = new Set(blocksInLimbo);
 
   const blockFrontendStates = new Map<string, string>();
-  for (const kv of await allKVP) {
+  for (const kv of allKV) {
     const blockId = parseBlockFrontendStateKey(kv.key);
     if (blockId === undefined)
       continue;

@@ -1,5 +1,5 @@
 import {
-  field, poll, resourceIdToString,
+  field, poll,
   TestHelpers,
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';

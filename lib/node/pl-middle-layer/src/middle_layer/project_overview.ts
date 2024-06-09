@@ -1,6 +1,7 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
+  AuthorMarker,
   BlockRenderingMode, BlockRenderingStateKey, projectFieldName,
   ProjectMeta,
   ProjectMetaKey, ProjectRenderingState,
@@ -15,7 +16,7 @@ import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { frontendPath } from './frontend_path';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
-import { constructBlockContext, constructBlockContextArgsOnly } from './block_outputs';
+import { constructBlockContextArgsOnly } from './block_outputs';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 
@@ -28,6 +29,7 @@ export type BlockProductionStatus =
 
 export type ProjectOverview = {
   meta: ProjectMeta;
+  structureAuthorMarker?: AuthorMarker,
   blocks: BlockState[];
 }
 
@@ -39,6 +41,7 @@ export type BlockState = {
   stale: boolean;
   calculationStatus: BlockProductionStatus;
   sections: Section[] | undefined,
+  canRun: boolean | undefined,
   frontend: PathResult | undefined
 }
 
@@ -135,19 +138,22 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       )?.persist(), env);
 
       // sections
-      const sections = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
+      const { sections, canRun } = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
         const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
-        return computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>;
-      });
+        return {
+          sections: computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
+          canRun: computableFromCfg(blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
+        };
+      }) || {};
 
       return {
         id, name, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
-        calculationStatus, frontend, sections
+        calculationStatus, frontend, sections, canRun
       };
     });
 
-    return { meta, blocks };
+    return { meta, structureAuthorMarker: structure.authorMarker, blocks };
   }).withStableType();
 }

@@ -98,6 +98,13 @@ export function blockFrontendStateKey(blockId: string): string {
   return `${BlockFrontendStateKeyPrefix}${blockId}`;
 }
 
+export const BlockArgsAuthorKeyPrefix = 'BlockArgsAuthor/';
+export const BlockArgsAuthorKeyPattern = /^BlockArgsAuthor\/(?<blockid>.*)$/;
+
+export function blockArgsAuthorKey(blockId: string): string {
+  return `${BlockArgsAuthorKeyPrefix}${blockId}`;
+}
+
 /** Returns block id, or undefined if key does not match the pattern. */
 export function parseBlockFrontendStateKey(key: string): string | undefined {
   const match = key.match(BlockFrontendStateKeyPattern);

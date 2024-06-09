@@ -11,7 +11,7 @@ import {
   TestHelpers,
   getField,
   valErr,
-  resourceIdToString, Pl
+  Pl
 } from '@milaboratory/pl-client-v2';
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';

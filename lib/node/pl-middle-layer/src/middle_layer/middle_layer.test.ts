@@ -56,24 +56,24 @@ test('simple project manipulations test', async () => {
     await projectList.refreshState();
     expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
     await ml.openProject(pRid1);
-    const overview = ml.getProjectOverview(pRid1);
-    expect(await overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
+    const prj = ml.getProject(pRid1);
+    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
 
-    const block1Id = await ml.addBlock(pRid1, 'Block 1', EnterNumbersSpec);
-    const block2Id = await ml.addBlock(pRid1, 'Block 2', EnterNumbersSpec);
-    const block3Id = await ml.addBlock(pRid1, 'Block 3', SumNumbersSpec);
-    await ml.setBlockArgs(pRid1, block1Id, { numbers: [1, 2, 3] });
-    await ml.setBlockArgs(pRid1, block2Id, { numbers: [3, 4, 5] });
-    await ml.setBlockArgs(pRid1, block3Id, {
+    const block1Id = await prj.addBlock('Block 1', EnterNumbersSpec);
+    const block2Id = await prj.addBlock('Block 2', EnterNumbersSpec);
+    const block3Id = await prj.addBlock('Block 3', SumNumbersSpec);
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
+    await prj.setBlockArgs(block3Id, {
       sources: [
         outputRef(block1Id, 'column'),
         outputRef(block2Id, 'column')
       ]
     });
-    await ml.renderBlock(pRid1, block3Id);
+    await prj.renderBlock(block3Id);
 
-    await overview.refreshState();
-    const overviewSnapshot1 = await overview.awaitStableValue();
+    await prj.overview.refreshState();
+    const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.frontend).toBeDefined();
@@ -81,5 +81,15 @@ test('simple project manipulations test', async () => {
       expect(block.sections).toBeDefined();
     });
     console.dir(overviewSnapshot1, { depth: 5 });
+
+    const block1StableState = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState = await prj.getBlockState(block3Id).awaitStableValue();
+
+    console.dir(block1StableState, { depth: 5 });
+    console.dir(block2StableState, { depth: 5 });
+    console.dir(block3StableState, { depth: 5 });
+
+    // console.log(block3StableState.outputs['sum'])
   });
 });
