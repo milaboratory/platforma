@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="th-row">
+  <div class="tr-head">
     <slot />
   </div>
 </template>

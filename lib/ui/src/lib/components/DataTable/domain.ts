@@ -24,3 +24,5 @@ export function compareRecords(sorts: Record<string, 'ASC' | 'DESC'>, a: Record<
 
   return 0;
 }
+
+export const identity = <T>(v: T): T => v;

@@ -52,13 +52,12 @@
     overflow: hidden;
     padding-right: 8px;
 
-    .th-row {
+    .tr-head {
       display: flex;
       flex-direction: row;
       gap: 1px;
       min-height: 40px;
       background-color: transparent;
-      border: 1px solid green;
     }
 
     .cell {
@@ -114,15 +113,23 @@
   }
 
   .table-body {
-    display: grid;
+    position: relative;
     max-height: 100%;
     max-width: 100%;
-    gap: 1px;
     background-color: var(--bg-elevated-02);
     overflow: hidden;
-    border: 1px solid red;
     // scroll-snap-type: y mandatory;
     // @include scrollbarTable(true, true);
+
+    .tr-body {
+      position: absolute;
+      overflow: hidden;
+      display: flex;
+      flex-direction: row;
+      gap: 1px;
+      min-height: 40px;
+      background-color: transparent;
+    }
 
     .cell {
       font-family: var(--cell-font-family);
@@ -164,14 +171,6 @@
         align-items: center;
       }
     }
-  }
-
-  .t-row {
-    display: flex;
-    flex-direction: row;
-    gap: 1px;
-    min-height: 40px;
-    background-color: transparent;
   }
 
   .cell {

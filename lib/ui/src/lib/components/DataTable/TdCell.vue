@@ -15,15 +15,16 @@ const data = reactive({
   edit: false as boolean,
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function onInput(ev: any) {
+const onInput = (ev: Event) => {
   emit('update:value', {
     rowIndex: props.cell.rowIndex,
     name: props.cell.colName,
-    value: ev.target.value,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    value: ev.target?.value,
   });
   data.edit = false;
-}
+};
 
 function showContextMenu() {
   const cellEvents = props.cellEvents ?? [];

@@ -7,11 +7,11 @@ import ToggleSwitch from '@/lib/components/ToggleSwitch.vue';
 
 const data = reactive({
   show: true,
-  items1: Array.from(utils.range(10)).map((id) => ({
+  items1: Array.from(utils.range(0, 10)).map((id) => ({
     id,
     label: `Option ${id}`,
   })),
-  items2: Array.from(utils.range(10)).map((id) => ({
+  items2: Array.from(utils.range(0, 10)).map((id) => ({
     id,
     label: `Item ${id}`,
   })),

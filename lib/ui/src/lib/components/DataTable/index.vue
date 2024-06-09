@@ -2,17 +2,18 @@
 import './assets/style.scss';
 import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect, watch } from 'vue';
 import TdCell from './TdCell.vue';
-import type { Settings, Data } from './types';
-import { useResize } from './useResize';
+import type { Settings, Data, RowSettings } from './types';
 import AddColumnBtn from './AddColumnBtn.vue';
 import TableIcon from './assets/TableIcon.vue';
-import ThRow from './ThRow.vue';
+import TrHead from './TrHead.vue';
 import ThCell from './ThCell.vue';
-import TRow from './TRow.vue';
+import TrBody from './TrBody.vue';
 import { useEventListener } from '@/lib';
 import { DEFAULT_ROW_HEIGHT } from './constants';
 import { clamp, tapIf } from '@milaboratory/helpers/utils';
-import { useRows } from './useRows';
+import { useResize } from './composition/useResize';
+import { useRows } from './composition/useRows';
+import { deepClone } from '@milaboratory/helpers/objects';
 
 const emit = defineEmits<{
   (e: 'click:cell', cell: unknown): void;
@@ -29,7 +30,8 @@ const props = defineProps<{
 
 const data = reactive<Data>({
   rowIndex: -1,
-  columnsMeta: {},
+  columns: [],
+  rows: [],
   resize: false,
   resizeTh: undefined,
   bodyHeight: 0,
@@ -38,38 +40,55 @@ const data = reactive<Data>({
   scrollLeft: 0,
 });
 
+watch(
+  () => props.settings.columns,
+  () => {
+    data.columns = deepClone(props.settings.columns);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.settings.datum,
+  () => {
+    const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
+
+    const gap = props.settings.gap ?? 1;
+
+    const raw = props.settings.datum.slice();
+
+    if (props.settings.selfSort) {
+      // sortRows(columns, raw);
+    }
+
+    data.rows = Object.freeze(
+      raw.map<RowSettings>((values, index) => ({
+        values,
+        index,
+        offset: index * (rowHeight + gap),
+        height: rowHeight,
+      })),
+    );
+  },
+  { immediate: true },
+);
+
 watch(data, (v) => emit('update:data', v), { deep: true });
 
-watch(props, () => updateSizes);
+watch(props, () => updateDimensions);
 
 const tableRef = ref<HTMLElement>();
 const headRef = ref<HTMLElement>();
 const bodyRef = ref<HTMLElement>();
 
-const updateSizes = () => {
+const updateDimensions = () => {
+  console.log('update');
   tapIf(bodyRef.value, (el) => {
     const rect = el.getBoundingClientRect();
     data.bodyHeight = rect.height;
     data.bodyWidth = rect.width;
   });
 };
-
-const columnsRef = computed(() => {
-  const { columnsMeta } = data;
-  const { columns } = props.settings;
-
-  const all = [...columns].map((col, i) => ({ ...col, width: columnsMeta[i]?.['width'] ?? col.width }));
-
-  const lastWidth = data.bodyWidth - all.reduce((r, col) => r + col.width, 0);
-
-  if (lastWidth > 0) {
-    all[all.length - 1].width = lastWidth;
-  }
-
-  return all;
-});
-
-// const gridTemplateColumns = useTemplateComlumns(data, columnsRef);
 
 const headStyle = computed(() => {
   const offX = -Math.round(data.scrollLeft);
@@ -78,43 +97,35 @@ const headStyle = computed(() => {
   };
 });
 
-const rowStyle = computed(() => {
-  const offY = -Math.round(data.scrollTop % (DEFAULT_ROW_HEIGHT + 1));
-  const offX = -Math.round(data.scrollLeft);
-  return {
-    transform: `translate(${offX}px, ${offY}px)`,
-  };
-});
-
 const noDataStyle = computed(() => ({
-  gridColumn: '1 / ' + unref(columnsRef).length + 1,
+  gridColumn: '1 / ' + data.columns.length + 1,
 }));
 
-const rows = useRows(props, data, columnsRef);
+const rows = useRows(data);
 
 const { mouseDown } = useResize(data, tableRef);
 
 onMounted(() => {
-  nextTick(updateSizes);
+  nextTick(updateDimensions);
 });
 
 watchPostEffect(() => {
   unref(props.settings);
-  nextTick(updateSizes);
+  nextTick(updateDimensions);
 });
 
-useEventListener(window, 'resize', () => nextTick(updateSizes));
+useEventListener(window, 'resize', () => nextTick(updateDimensions));
 
 const bodyHeight = computed(() => {
-  return 600;
+  return 600; // @TODO
 });
 
 const scrollHeight = computed(() => {
-  return props.settings.rows.length * (DEFAULT_ROW_HEIGHT + 1);
+  return data.rows.length * (DEFAULT_ROW_HEIGHT + 1);
 });
 
 const scrollWidth = computed(() => {
-  return props.settings.columns.reduce((acc, col) => acc + col.width, 0);
+  return props.settings.columns.reduce((acc, col) => acc + col.width + 1, 0);
 });
 
 const maxScrollTop = computed(() => scrollHeight.value - data.bodyHeight);
@@ -131,9 +142,9 @@ const onWheel = (ev: WheelEvent) => {
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head">
-      <th-row :style="headStyle">
+      <tr-head :style="headStyle">
         <th-cell
-          v-for="(col, i) in columnsRef"
+          v-for="(col, i) in data.columns"
           :key="i"
           :col="col"
           :style="{ width: col.width + 'px' }"
@@ -142,7 +153,7 @@ const onWheel = (ev: WheelEvent) => {
           @delete:column="$emit('delete:column', $event)"
           @change:sort="$emit('change:sort', $event)"
         />
-      </th-row>
+      </tr-head>
     </div>
     <div ref="bodyRef" class="table-body" :style="{ height: bodyHeight + 'px' }" @wheel="onWheel">
       <div v-if="rows.length === 0" class="table-body__no-data" :style="noDataStyle">
@@ -151,7 +162,7 @@ const onWheel = (ev: WheelEvent) => {
           <div>No Data To Show</div>
         </div>
       </div>
-      <t-row v-for="(row, i) in rows" :key="i" :visible="row.visible" :height="row.height" :index="i" :style="rowStyle">
+      <tr-body v-for="(row, i) in rows" :key="i" :height="row.height" :index="i" :style="row.style">
         <td-cell
           v-for="(cell, k) in row.cells"
           :key="k"
@@ -168,7 +179,7 @@ const onWheel = (ev: WheelEvent) => {
           </slot>
           <slot v-else v-bind="cell">{{ cell.value }}</slot>
         </td-cell>
-      </t-row>
+      </tr-body>
     </div>
   </div>
 </template>

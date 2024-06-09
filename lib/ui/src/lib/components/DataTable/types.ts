@@ -34,27 +34,23 @@ export type CellEvent = 'delete:row' | 'update:value';
 
 export type Settings = {
   columns: ColumnSettings[];
-  rows: Record<string, unknown>[];
+  datum: Record<string, unknown>[]; // @TODO columns variant
+  rowHeight?: number;
+  gap?: number;
   addColumn?: () => Promise<void>;
   autoLastColumn?: boolean;
   selfSort?: boolean;
   showContextOptions?: ShowContextOptions;
   columnEvents?: ColumnEvent[];
   cellEvents?: CellEvent[];
-};
-
-export type CellProps = {
-  colName: string;
-  rowIndex: number;
-  value: unknown;
-  class: string;
   editable?: boolean;
-  width: number;
 };
 
+// Inner state
 export type Data = {
   rowIndex: number;
-  columnsMeta: Record<number, { width: number }>;
+  columns: readonly ColumnSettings[];
+  rows: readonly RowSettings[];
   resize: boolean;
   resizeTh:
     | {
@@ -68,4 +64,28 @@ export type Data = {
   bodyWidth: number;
   scrollTop: number;
   scrollLeft: number;
+};
+
+export type RowSettings = {
+  values: Record<string, unknown>;
+  index: number;
+  offset: number;
+  height: number;
+};
+
+export type CellProps = {
+  colName: string;
+  rowIndex: number;
+  value: unknown;
+  class: string;
+  editable?: boolean;
+  slot?: boolean;
+  width: number;
+};
+
+export type TableRow = {
+  style: Record<string, string>;
+  offset: number;
+  height: number;
+  cells: CellProps[];
 };

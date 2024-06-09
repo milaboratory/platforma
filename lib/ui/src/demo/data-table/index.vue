@@ -5,8 +5,10 @@ import { DataTable, SelectInput } from '@/lib';
 import { utils, strings } from '@milaboratory/helpers';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
-import { listToOptions } from '@milaboratory/helpers/utils';
-import type { Data } from '@/lib/components/GridTable/types';
+import { listToOptions, randomInt } from '@milaboratory/helpers/utils';
+import type { Data } from '@/lib/components/DataTable/types';
+
+const identity = <T,>(v: T): T => v;
 
 const rowsLength = 100000;
 
@@ -23,7 +25,7 @@ const data = reactive({
 
 const columnsNumber = computed(() => {
   if (data.case === 'wide') {
-    return 100;
+    return 5;
   }
 
   return 5;
@@ -34,7 +36,7 @@ const columnsRef = computed(() => {
     return {
       text: i + ') ' + faker.word.noun(),
       name: strings.uniqueId(),
-      width: 100,
+      width: 200,
     } as DataTableSettings['columns'][number];
   });
 
@@ -42,11 +44,13 @@ const columnsRef = computed(() => {
     {
       text: 'ID',
       name: 'ID',
-      width: 100,
+      width: 200,
     },
     ...all,
   ];
 });
+
+const lorem = strings.randomString(40);
 
 const rowsRef = computed(() => {
   return utils.arrayFrom(rowsLength, (id) => {
@@ -56,21 +60,24 @@ const rowsRef = computed(() => {
           return [col.name, id];
         }
 
-        return [col.name, colIndex % 2 === 0 ? utils.randomInt(0, 10) : strings.randomString(5)];
+        return [col.name, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem];
       }),
     );
   });
 });
 
 const settings = computed(() => {
-  return <DataTableSettings>{
+  return identity<DataTableSettings>({
     columns: columnsRef.value,
-    rows: rowsRef.value,
+    datum: rowsRef.value,
     selfSort: true,
-  };
+    rowHeight: 40,
+  });
 });
 
-const onUpdateData = (v: Data) => (data.tableData = v);
+const onUpdateData = (v: Data): void => {
+  data.tableData = v;
+};
 
 const goDown = () => {
   if (data.tableData) {
@@ -81,15 +88,15 @@ const goDown = () => {
 
 <template>
   <layout>
-    <div style="display: flex; background-color: #fff; align-items: center" class="p-12 gap-24">
+    <div style="display: flex; background-color: #fff; align-items: center" class="p-12 gap-24 mb-6">
       <select-input v-model="data.case" style="width: 200px" :options="caseOptions" />
       rows: {{ rowsLength }} cols: {{ columnsNumber }} last id: {{ rowsRef[rowsRef.length - 1]['ID'] }}
       <button @click="goDown">Down</button>
     </div>
-    <div v-if="false" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24">
+    <div v-if="false" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24 mb-6">
       {{ data.tableData }}
     </div>
-    <div style="display: flex; flex-direction: column; max-height: 800px; border: 1px solid green">
+    <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
       <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" />
     </div>
     <div v-if="false" style="display: flex">

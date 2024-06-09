@@ -28,7 +28,7 @@
   "module": "./dist/pl-uikit.js",
   "types": "./dist/lib.d.ts",
   "dependencies": {
-    "@milaboratory/helpers": "^1.2.23",
+    "@milaboratory/helpers": "^1.3.8",
     "@milaboratory/platforma-core": "^0.1.2",
     "js-yaml": "^4.1.0",
     "vue": "^3.4.27",
