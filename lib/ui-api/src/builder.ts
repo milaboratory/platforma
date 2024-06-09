@@ -21,18 +21,20 @@ export interface Section {
 
 export type SectionsExpectedType = readonly Section[];
 
-export type SectionsChecked<Cfg extends TypedConfig, Args, UiState> = Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false>
+export type SectionsChecked<Cfg extends TypedConfig, Args, UiState> =
+  Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false>
 
 export type CanRunExpectedType = boolean;
 
-export type CanRunChecked<Cfg extends TypedConfig, Args, UiState> = Checked<Cfg, ResolveCfgType<Cfg, Args, UiState> extends CanRunExpectedType ? true : false>
+export type CanRunChecked<Cfg extends TypedConfig, Args, UiState> =
+  Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends CanRunExpectedType ? true : false>
 
 export type BlockRenderingMode =
   | 'Light'
   | 'Heavy'
   | 'DualContextHeavy';
 
-export type BlockConfig<Args, UiState, Outputs extends Record<string, TypedConfig>> = {
+export type BlockConfig<Args = {}, UiState = undefined, Outputs extends Record<string, TypedConfig> = Record<string, TypedConfig>> = {
   renderingMode: BlockRenderingMode,
   initialArgs: Args,
   canRun: TypedConfig,
