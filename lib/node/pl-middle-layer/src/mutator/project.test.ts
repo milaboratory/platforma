@@ -62,7 +62,7 @@ test('simple test #1', async () => {
       );
       const rendered = mut.renderProduction(['block3'], true);
       expect([...rendered]).toEqual(['block3'])
-      mut.setFrontendState('block2', '{"some":1}');
+      mut.setUiState('block2', '{"some":1}');
       mut.doRefresh();
       mut.save();
       await tx.commit();

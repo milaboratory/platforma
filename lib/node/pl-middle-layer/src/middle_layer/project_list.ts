@@ -1,8 +1,9 @@
 import { PruningFunction, SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
 import { TemporalSynchronizedTreeOps, TreeAndComputableU } from './types';
-import { computable } from '@milaboratory/computable';
+import { computable, lazyFactory, WatchableValue } from '@milaboratory/computable';
 import { ProjectMeta, ProjectMetaKey } from '../model/project_model';
+import { MiddleLayerEnvironment } from './middle_layer';
 
 export const ProjectsField = 'projects';
 export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };
@@ -16,17 +17,20 @@ export const ProjectsListTreePruningFunction: PruningFunction = resource => {
 export interface ProjectListEntry {
   rid: ResourceId,
   id: string,
+  opened: boolean,
   meta: ProjectMeta
 }
 
 export type ProjectList = ProjectListEntry[];
 
-export async function createProjectList(pl: PlClient, rid: ResourceId, ops: TemporalSynchronizedTreeOps): Promise<TreeAndComputableU<ProjectList>> {
+export async function createProjectList(pl: PlClient, rid: ResourceId, openedProjects: WatchableValue<ResourceId[]>,
+                                        env: MiddleLayerEnvironment): Promise<TreeAndComputableU<ProjectList>> {
   const tree = await SynchronizedTreeState.init(pl, rid,
-    { ...ops, pruning: ProjectsListTreePruningFunction });
+    { ...env.ops.defaultTreeOptions, pruning: ProjectsListTreePruningFunction });
 
-  const c = computable(tree.entry(), {}, a => {
-    const node = a.node();
+  const c = computable(lazyFactory(), {}, a => {
+    const node = a.get(tree.entry()).node();
+    const oProjects = a.get(openedProjects).getValue();
     if (node === undefined)
       return undefined;
     const result: ProjectListEntry[] = [];
@@ -35,7 +39,7 @@ export async function createProjectList(pl: PlClient, rid: ResourceId, ops: Temp
       if (prj === undefined)
         continue;
       const meta = prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey)!;
-      result.push({ id: field, rid: prj.id, meta });
+      result.push({ id: field, rid: prj.id, opened: oProjects.indexOf(prj.id) >= 0, meta });
     }
     return result;
   }).withStableType();

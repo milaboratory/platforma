@@ -1,5 +1,5 @@
 import { TestHelpers } from '@milaboratory/pl-client-v2';
-import { MiddleLayer } from './middle_layer';
+import { MiddleLayerImpl } from './middle_layer';
 import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
@@ -20,7 +20,7 @@ test('project list manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
+    const ml = await MiddleLayerImpl.init(pl, {
       frontendDownloadPath: path.resolve(workFolder),
       localSecret: 'secret'
     });
@@ -32,7 +32,30 @@ test('project list manipulations test', async () => {
 
     await projectList.refreshState();
 
-    expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
+    expect(await projectList.getValue()).toStrictEqual([{
+      id: 'id1',
+      rid: pRid1,
+      meta: { name: 'Project 1' },
+      opened: false
+    }]);
+
+    await ml.openProject(pRid1);
+
+    expect(await projectList.getValue()).toStrictEqual([{
+      id: 'id1',
+      rid: pRid1,
+      meta: { name: 'Project 1' },
+      opened: true
+    }]);
+
+    ml.closeProject(pRid1);
+
+    expect(await projectList.getValue()).toStrictEqual([{
+      id: 'id1',
+      rid: pRid1,
+      meta: { name: 'Project 1' },
+      opened: false
+    }]);
 
     await ml.deleteProject('id1');
 
@@ -46,7 +69,7 @@ test('simple project manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
+    const ml = await MiddleLayerImpl.init(pl, {
       frontendDownloadPath: path.resolve(workFolder),
       localSecret: 'secret'
     });
@@ -56,7 +79,7 @@ test('simple project manipulations test', async () => {
     await projectList.refreshState();
     expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
     await ml.openProject(pRid1);
-    const prj = ml.getProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
 
     expect(await prj.overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
 

@@ -37,9 +37,9 @@ interface BlockFieldState {
   value?: Uint8Array;
 }
 
-export type BlockFieldStates = Partial<Record<ProjectField['fieldName'], BlockFieldState>>
+type BlockFieldStates = Partial<Record<ProjectField['fieldName'], BlockFieldState>>
 
-export interface BlockInfoState {
+interface BlockInfoState {
   readonly id: string;
   readonly fields: BlockFieldStates;
 }
@@ -64,7 +64,7 @@ function cached<ModId, T>(modIdCb: () => ModId, valueCb: () => T): () => T {
   };
 }
 
-export class BlockInfo {
+class BlockInfo {
   constructor(
     public readonly id: string,
     public readonly fields: BlockFieldStates) {
@@ -142,13 +142,22 @@ type GraphInfoFields =
 
 export class ProjectMutator {
   private globalModCount = 0;
+
+  //
+  // Change trackers
+  //
+
   private structureChanged = false;
   private metaChanged = false;
   private renderingStateChanged = false;
   private readonly changedBlockFrontendStates = new Set<string>();
 
+  /** Set blocks will be assigned current mutator author marker on save */
+  private readonly blocksWithChangedInputs = new Set<string>();
+
   constructor(public readonly rid: ResourceId,
               private readonly tx: PlTransaction,
+              private readonly author: AuthorMarker | undefined,
               private readonly schema: string,
               private meta: ProjectMeta,
               private struct: ProjectStructure,
@@ -206,8 +215,8 @@ export class ProjectMutator {
     throw new Error('block not found');
   }
 
-  public setBlockFieldObj(blockId: string, fieldName: keyof BlockFieldStates,
-                          state: Omit<BlockFieldState, 'modCount'>) {
+  private setBlockFieldObj(blockId: string, fieldName: keyof BlockFieldStates,
+                           state: Omit<BlockFieldState, 'modCount'>) {
     const fid = field(this.rid, projectFieldName(blockId, fieldName));
 
     if (state.ref === undefined)
@@ -287,19 +296,15 @@ export class ProjectMutator {
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
-  public setArgs(requests: SetArgsRequest[], author?: AuthorMarker) {
+  public setArgs(requests: SetArgsRequest[]) {
     for (const { blockId, inputs } of requests) {
       const info = this.getBlockInfo(blockId);
       const parsedInputs = JSON.parse(inputs);
       const binary = Buffer.from(inputs);
       const argsRef = this.tx.createValue(Pl.JsonObject, binary);
       this.setBlockField(blockId, 'currentInputs', argsRef, 'Ready', binary);
-
-      // setting author marker
-      if (author === undefined)
-        this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
-      else
-        this.tx.setKValue(this.rid, blockArgsAuthorKey(blockId), JSON.stringify(author));
+      // will be assigned our author marker
+      this.blocksWithChangedInputs.add(blockId);
     }
 
     // resetting staging outputs for all downstream blocks
@@ -307,11 +312,13 @@ export class ProjectMutator {
       ({ id }) => this.resetStaging(id));
   }
 
-  public setFrontendState(blockId: string, newState: string): void {
+  public setUiState(blockId: string, newState: string): void {
     if (this.blockInfos.get(blockId) === undefined)
       throw new Error('no such block');
     this.blockFrontendStates.set(blockId, newState);
     this.changedBlockFrontendStates.add(blockId);
+    // will be assigned our author marker
+    this.blocksWithChangedInputs.add(blockId);
   }
 
   private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
@@ -384,6 +391,7 @@ export class ProjectMutator {
   // Structure changes
   //
 
+  /** Very generic method, better check for more specialized case-specific methods first. */
   public updateStructure(newStructure: ProjectStructure, newBlockSpecProvider: (blockId: string) => NewBlockSpec = NoNewBlocks): void {
     const currentStagingGraph = this.getStagingGraph();
     const currentActualProductionGraph = this.getActualProductionGraph();
@@ -609,6 +617,15 @@ export class ProjectMutator {
     });
   }
 
+  private assignAuthorMarkers() {
+    const markerStr = JSON.stringify(this.author);
+    for (const blockId of this.blocksWithChangedInputs)
+      if (this.author === undefined)
+        this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
+      else
+        this.tx.setKValue(this.rid, blockArgsAuthorKey(blockId), markerStr);
+  }
+
   public save() {
     if (this.structureChanged)
       this.tx.setKValue(this.rid, ProjectStructureKey, JSON.stringify(this.struct));
@@ -626,6 +643,8 @@ export class ProjectMutator {
 
     for (const blockId of this.changedBlockFrontendStates)
       this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), this.blockFrontendStates.get(blockId)!);
+
+    this.assignAuthorMarkers();
   }
 }
 
@@ -637,7 +656,7 @@ export interface ProjectState {
   blockInfos: Map<string, BlockInfo>;
 }
 
-export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<ProjectMutator> {
+export async function loadProject(tx: PlTransaction, rid: ResourceId, author?: AuthorMarker): Promise<ProjectMutator> {
   const fullResourceStateP = tx.getResourceData(rid, true);
   const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
   const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
@@ -730,7 +749,7 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId): Promise<P
       throw new Error(`Inconsistent project structure: no structure entry for ${info.id}`);
   });
 
-  return new ProjectMutator(rid, tx,
+  return new ProjectMutator(rid, tx, author,
     schema, meta, structure, renderingState, blocksInLimboSet,
     blockInfos, blockFrontendStates);
 }
@@ -746,13 +765,18 @@ export function createProject(tx: PlTransaction, meta: ProjectMeta = InitialBloc
 }
 
 export async function withProject<T>(txOrPl: PlTransaction | PlClient, rid: ResourceId, cb: (p: ProjectMutator) => T | Promise<T>): Promise<T> {
+  return withProjectAuthored(txOrPl, rid, undefined, cb);
+}
+
+export async function withProjectAuthored<T>(txOrPl: PlTransaction | PlClient, rid: ResourceId, author: AuthorMarker | undefined,
+                                             cb: (p: ProjectMutator) => T | Promise<T>): Promise<T> {
   if (txOrPl instanceof PlClient)
     return await txOrPl.withWriteTx('ProjectAction', async tx => {
       const result = await withProject(tx, rid, cb);
       await tx.commit();
       return result;
     });
-  const mut = await loadProject(txOrPl, rid);
+  const mut = await loadProject(txOrPl, rid, author);
   const result = await Promise.resolve(cb(mut));
   mut.save();
   return result;

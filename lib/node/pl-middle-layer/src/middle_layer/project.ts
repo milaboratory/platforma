@@ -4,23 +4,24 @@ import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import { projectOverview, ProjectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { randomUUID } from 'node:crypto';
-import { withProject } from '../mutator/project';
+import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { AuthorMarker } from '../model/project_model';
 import { blockState, FullBlockState } from './block';
 import { setTimeout } from 'node:timers/promises';
 import { frontendPath } from './frontend_path';
+import { Project } from '../project';
 
-export class Project {
+export class ProjectImpl implements Project {
   private readonly blockStates = new Map<string, Computable<FullBlockState>>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<string>>();
   private destroyed = false;
   private refreshLoopResult: Promise<void>;
 
   constructor(private readonly env: MiddleLayerEnvironment,
-              public readonly rid: ResourceId,
+              readonly rid: ResourceId,
               private readonly tree: SynchronizedTreeState,
-              public readonly overview: ComputableStableDefined<ProjectOverview>) {
+              readonly overview: ComputableStableDefined<ProjectOverview>) {
     this.refreshLoopResult = this.refreshLoop();
   }
 
@@ -41,12 +42,12 @@ export class Project {
     }
   }
 
-  public async addBlock(blockName: string, bp: BlockPackSpecAny,
-                        blockId: string = randomUUID(), after?: string): Promise<string> {
-    const prepared = await this.env.bpPreparer.prepare(bp);
-    const blockCfg = await this.env.bpPreparer.getBlockConfig(bp);
+  async addBlock(blockLabel: string, blockPackSpec: BlockPackSpecAny,
+                 blockId: string = randomUUID(), after?: string): Promise<string> {
+    const prepared = await this.env.bpPreparer.prepare(blockPackSpec);
+    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
     await withProject(this.env.pl, this.rid, mut =>
-      mut.addBlock({ id: blockId, name: blockName, renderingMode: blockCfg.renderingMode },
+      mut.addBlock({ id: blockId, name: blockLabel, renderingMode: blockCfg.renderingMode },
         {
           inputs: JSON.stringify(blockCfg.initialArgs),
           blockPack: prepared
@@ -55,17 +56,29 @@ export class Project {
     return blockId;
   }
 
-  public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.setArgs([{ blockId, inputs: JSON.stringify(args) }], author));
+  async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
+    await withProjectAuthored(this.env.pl, this.rid, author, mut =>
+      mut.setArgs([{ blockId, inputs: JSON.stringify(args) }]));
   }
 
-  public async runBlock(blockId: string) {
+  async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
+    await withProjectAuthored(this.env.pl, this.rid, author, mut =>
+      mut.setUiState(blockId, uiState));
+  }
+
+  async setBlockArgsAndUiState(blockId: string, args: any, uiState: any, author?: AuthorMarker) {
+    await withProjectAuthored(this.env.pl, this.rid, author, mut => {
+      mut.setArgs([{ blockId, inputs: JSON.stringify(args) }]);
+      mut.setUiState(blockId, uiState);
+    });
+  }
+
+  async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
   }
 
-  public getBlockState(blockId: string): Computable<FullBlockState> {
+  getBlockState(blockId: string): Computable<FullBlockState> {
     const cached = this.blockStates.get(blockId);
     if (cached === undefined) {
       const state = blockState(this.tree.entry(), blockId, this.env);
@@ -75,7 +88,7 @@ export class Project {
     return cached;
   }
 
-  public getBlockFrontend(blockId: string): ComputableStableDefined<string> {
+  getBlockFrontend(blockId: string): ComputableStableDefined<string> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
       const path = frontendPath(this.tree.entry(), blockId, this.env);
@@ -85,7 +98,7 @@ export class Project {
     return cached;
   }
 
-  public destroy() {
+  destroy() {
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike
     this.overview.resetState();
@@ -94,9 +107,9 @@ export class Project {
     this.destroyed = true;
   }
 
-  public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
+  public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<ProjectImpl> {
     const projectTree = await SynchronizedTreeState.init(env.pl, rid, env.ops.defaultTreeOptions);
     const overview = projectOverview(projectTree.entry(), env);
-    return new Project(env, rid, projectTree, overview);
+    return new ProjectImpl(env, rid, projectTree, overview);
   }
 }
