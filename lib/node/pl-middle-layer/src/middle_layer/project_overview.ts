@@ -10,10 +10,7 @@ import {
 } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
-import { PathResult } from '@milaboratory/pl-drivers';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
-import { frontendPath } from './frontend_path';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
 import { constructBlockContextArgsOnly } from './block_outputs';
@@ -41,8 +38,7 @@ export type BlockState = {
   stale: boolean;
   calculationStatus: BlockProductionStatus;
   sections: Section[] | undefined,
-  canRun: boolean | undefined,
-  frontend: PathResult | undefined
+  canRun: boolean | undefined
 }
 
 type CalculationStatus =
@@ -132,11 +128,6 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 
-      // frontend
-      const frontend = frontendPath(blockPack?.traverse(
-        { field: BlockPackFrontendField, assertFieldType: 'Input' }
-      )?.persist(), env);
-
       // sections
       const { sections, canRun } = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
         const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
@@ -150,7 +141,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         id, name, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
-        calculationStatus, frontend, sections, canRun
+        calculationStatus, sections, canRun
       };
     });
 

@@ -72,7 +72,7 @@ export class MiddleLayer {
   // Project List Manipulation
   //
 
-  public async addProject(id: string, meta: ProjectMeta): Promise<ResourceId> {
+  public async createProject(id: string, meta: ProjectMeta): Promise<ResourceId> {
     return await this.pl.withWriteTx('MLCreateProject', async tx => {
       const prj = createProject(tx, meta);
       tx.createField(field(this.projectsRId, id), 'Dynamic', prj);
@@ -81,7 +81,7 @@ export class MiddleLayer {
     });
   }
 
-  public async removeProject(id: string): Promise<void> {
+  public async deleteProject(id: string): Promise<void> {
     await this.pl.withWriteTx('MLRemoveProject', async tx => {
       tx.removeField(field(this.projectsRId, id));
       await tx.commit();
@@ -108,7 +108,7 @@ export class MiddleLayer {
     prj.destroy();
   }
 
-  public getProject(rid: ResourceId) {
+  public getProject(rid: ResourceId): Project {
     const prj = this.projects.get(rid);
     if (prj === undefined)
       throw new Error(`Project ${rid} not found among opened projects`);

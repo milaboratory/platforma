@@ -9,9 +9,11 @@ import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { AuthorMarker } from '../model/project_model';
 import { blockState, FullBlockState } from './block';
 import { setTimeout } from 'node:timers/promises';
+import { frontendPath } from './frontend_path';
 
 export class Project {
   private readonly blockStates = new Map<string, Computable<FullBlockState>>();
+  private readonly blockFrontends = new Map<string, ComputableStableDefined<string>>();
   private destroyed = false;
   private refreshLoopResult: Promise<void>;
 
@@ -58,7 +60,7 @@ export class Project {
       mut.setArgs([{ blockId, inputs: JSON.stringify(args) }], author));
   }
 
-  public async renderBlock(blockId: string) {
+  public async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
   }
@@ -73,10 +75,22 @@ export class Project {
     return cached;
   }
 
+  public getBlockFrontend(blockId: string): ComputableStableDefined<string> {
+    const cached = this.blockFrontends.get(blockId);
+    if (cached === undefined) {
+      const path = frontendPath(this.tree.entry(), blockId, this.env);
+      this.blockFrontends.set(blockId, path);
+      return path;
+    }
+    return cached;
+  }
+
   public destroy() {
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike
     this.overview.resetState();
+    this.blockStates.forEach(c => c.resetState());
+    this.blockFrontends.forEach(c => c.resetState());
     this.destroyed = true;
   }
 

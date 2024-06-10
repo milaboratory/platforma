@@ -28,13 +28,13 @@ test('project list manipulations test', async () => {
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
-    const pRid1 = await ml.addProject('id1', { name: 'Project 1' });
+    const pRid1 = await ml.createProject('id1', { name: 'Project 1' });
 
     await projectList.refreshState();
 
     expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
 
-    await ml.removeProject('id1');
+    await ml.deleteProject('id1');
 
     await projectList.refreshState();
 
@@ -52,11 +52,12 @@ test('simple project manipulations test', async () => {
     });
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.addProject('id1', { name: 'Project 1' });
+    const pRid1 = await ml.createProject('id1', { name: 'Project 1' });
     await projectList.refreshState();
     expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
     await ml.openProject(pRid1);
     const prj = ml.getProject(pRid1);
+
     expect(await prj.overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
 
     const block1Id = await prj.addBlock('Block 1', EnterNumbersSpec);
@@ -70,17 +71,25 @@ test('simple project manipulations test', async () => {
         outputRef(block2Id, 'column')
       ]
     });
-    await prj.renderBlock(block3Id);
+    await prj.runBlock(block3Id);
 
     await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
     overviewSnapshot1.blocks.forEach(block => {
-      expect(block.frontend).toBeDefined();
-      expect(block.frontend?.error).toBeUndefined();
       expect(block.sections).toBeDefined();
     });
     console.dir(overviewSnapshot1, { depth: 5 });
+
+    const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
+    expect(block1StableFrontend).toBeDefined();
+    const block2StableFrontend = await prj.getBlockFrontend(block2Id).awaitStableValue();
+    expect(block2StableFrontend).toBeDefined();
+    const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
+    expect(block3StableFrontend).toBeDefined();
+    console.dir(
+      { block1StableFrontend, block2StableFrontend, block3StableFrontend },
+      { depth: 5 });
 
     const block1StableState = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState = await prj.getBlockState(block2Id).awaitStableValue();
