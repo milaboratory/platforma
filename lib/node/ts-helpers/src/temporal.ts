@@ -41,7 +41,6 @@ export function jitter({ ms, factor }: JitterOpts): number {
 
 export type ExponentialBackoffRetryOptions = {
   type: 'exponentialBackoff',
-  /** Max attempts */
   maxAttempts: number,
   /** Delay after first failed attempt, in ms. */
   initialDelay: number,
@@ -53,7 +52,6 @@ export type ExponentialBackoffRetryOptions = {
 
 export type LinearBackoffRetryOptions = {
   type: 'linearBackoff',
-  /** Max attempts */
   maxAttempts: number,
   /** Delay after first failed attempt (in milliseconds) */
   initialDelay: number,
@@ -65,9 +63,8 @@ export type LinearBackoffRetryOptions = {
 
 export type RetryOptions = LinearBackoffRetryOptions | ExponentialBackoffRetryOptions;
 
-export type RetryState = {
+export type InfiniteRetryState = {
   options: RetryOptions,
-  attemptsLeft: number,
   startTimestamp: number,
   /** Total delays so far (including next delay, implying it already applied) */
   totalDelay: number,
@@ -75,19 +72,35 @@ export type RetryState = {
   nextDelay: number
 }
 
-export function createRetryState(options: RetryOptions): RetryState {
+export type RetryState = InfiniteRetryState & { attemptsLeft: number }
+
+export function createInfiniteRetryState(options: RetryOptions): InfiniteRetryState {
   return {
     options,
-    attemptsLeft: options.maxAttempts - 1,
     nextDelay: options.initialDelay,
     totalDelay: options.initialDelay,
     startTimestamp: Date.now()
   };
 }
 
+export function createRetryState(options: RetryOptions): RetryState {
+  return {
+    ...createInfiniteRetryState(options),
+    attemptsLeft: options.maxAttempts - 1,
+  };
+}
+
 export function tryNextRetryState(previous: RetryState): RetryState | undefined {
   if (previous.attemptsLeft <= 0)
     return undefined;
+
+  return {
+    ...nextInfiniteRetryState(previous),
+    attemptsLeft: previous.attemptsLeft - 1,
+  };
+}
+
+export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRetryState {
   let delayDelta = previous.options.type == 'linearBackoff'
     ? previous.options.backoffStep
     : (previous.nextDelay * (previous.options.backoffMultiplier - 1));
@@ -96,7 +109,6 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
   return {
     options: previous.options,
     nextDelay: previous.nextDelay + delayDelta,
-    attemptsLeft: previous.attemptsLeft - 1,
     startTimestamp: previous.startTimestamp,
     totalDelay: previous.totalDelay + previous.nextDelay + delayDelta
   };

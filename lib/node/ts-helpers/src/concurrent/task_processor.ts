@@ -1,5 +1,7 @@
-import { RetryOptions as BackoffOptions, createRetryState, nextRetryStateOrError, tryNextRetryState } from '../temporal';
+import { MiLogger } from '../log';
+import { LinearBackoffRetryOptions, RetryOptions, createInfiniteRetryState, createRetryState, nextInfiniteRetryState, nextRetryStateOrError, tryNextRetryState } from '../temporal';
 import { AsyncQueue } from './async_queue';
+import { scheduler } from 'node:timers/promises';
 
 export interface Task {
   readonly fn: () => Promise<void>;
@@ -12,24 +14,28 @@ export interface Task {
 export class TaskProcessor {
   readonly queue = new AsyncQueue<Task>();
   readonly workers: Promise<void>[];
-  continue: boolean = true;
+  keepRunning: boolean = true;
+
+  private readonly backoffOptionsPerWorker: LinearBackoffRetryOptions;
 
   constructor(
+    private readonly logger: MiLogger,
     numberOfWorkers: number,
-    /** Every worker has its own retry state.
-     * The consequence is that a task will be tried
-     * (N workers * N attempts) times. */
-    private readonly backoffOptionsPerWorker: BackoffOptions = {
+    /** The task will be tried infinitely. */
+    backoffOptions: LinearBackoffRetryOptions = {
+      maxAttempts: 0, // doesn't matter since we will retry infinitely.
       type: 'linearBackoff',
-      maxAttempts: 10,
-      initialDelay: 2, // 2ms
-      backoffStep: 20,
-      jitter: 0.1 // 10%
+      initialDelay: 0,
+      backoffStep: 200,
+      jitter: 0.5
     },
   ) {
+    this.backoffOptionsPerWorker = backoffOptions;
+    this.backoffOptionsPerWorker.backoffStep *= numberOfWorkers;
+
     this.workers = [];
     for (let i = 0; i < numberOfWorkers; i++)
-      this.workers.push(this.worker());
+      this.workers.push(this.worker(String(i)));
   }
 
   public push(task: Task): void {
@@ -37,7 +43,7 @@ export class TaskProcessor {
   }
 
   public stop() {
-    this.continue = false;
+    this.keepRunning = false;
   }
 
   /** TODO: we need to implement AbortSignal on queue.shift, shift and
@@ -47,25 +53,30 @@ export class TaskProcessor {
   }
 
   /** Gets a task and sleeps if the task throws a recoverable error. */
-  private async worker(): Promise<void> {
-    let retry = createRetryState(this.backoffOptionsPerWorker);
+  private async worker(id: string): Promise<void> {
+    let retry = createInfiniteRetryState(this.backoffOptionsPerWorker);
 
-    while (this.continue) {
+    while (this.keepRunning) {
       const task = await this.queue.shift();
 
       try {
         await task.fn();
-        retry = createRetryState(this.backoffOptionsPerWorker);
+        retry = createInfiniteRetryState(this.backoffOptionsPerWorker);
       } catch (e: any) {
         if (task.recoverableErrorPredicate(e)) {
-          const newRetry = tryNextRetryState(retry);
-          if (newRetry !== undefined) {
-            this.queue.push(task);
-            retry = newRetry;
-          } else {
-            retry = createRetryState(this.backoffOptionsPerWorker);
-          }
+          this.logger.warn(
+            `recoverable error in a task processor: ${String(e)},` +
+              ` worker ${id} will wait for ${retry.nextDelay} ms.`,
+          );
+          this.queue.push(task);
+          retry = nextInfiniteRetryState(retry);
+          await scheduler.wait(retry.nextDelay);
+
+          continue;
         }
+        this.logger.warn(
+          `non-recoverable error in a task processor, the task will be dropped: ${String(e)}`,
+        );
       }
     }
   }
