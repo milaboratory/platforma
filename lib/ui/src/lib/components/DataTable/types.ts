@@ -1,4 +1,4 @@
-import type { Option } from '@/lib/types';
+import type { Option, SimpleOption } from '@/lib/types';
 
 type TypeMap = {
   integer: number;
@@ -14,8 +14,8 @@ export type Props = {
 };
 
 export type ColumnSettings = {
-  text: string;
-  name: string;
+  label: string;
+  id: string;
   width: number;
   justify?: 'center' | 'start';
   sort?: {
@@ -26,7 +26,7 @@ export type ColumnSettings = {
   valueType?: ValueType;
 };
 
-export type ShowContextOptions = <T extends string = string>(options: Option<T>[], onSelect: (op: T) => void) => void;
+// export type ShowContextOptions = <T extends string = string>(options: SimpleOption<T>[], onSelect: (op: T) => void) => void;
 
 export type ColumnEvent = 'delete:column' | 'expand:column';
 
@@ -40,10 +40,16 @@ export type Settings = {
   addColumn?: () => Promise<void>;
   autoLastColumn?: boolean;
   selfSort?: boolean;
-  showContextOptions?: ShowContextOptions;
   columnEvents?: ColumnEvent[];
   cellEvents?: CellEvent[];
   editable?: boolean;
+};
+
+export type ResizeTh = {
+  colId: string;
+  width: number;
+  x: number;
+  right: number;
 };
 
 // Inner state
@@ -52,14 +58,7 @@ export type Data = {
   columns: readonly ColumnSettings[];
   rows: readonly RowSettings[];
   resize: boolean;
-  resizeTh:
-    | {
-        index: number;
-        width: number;
-        x: number;
-        right: number;
-      }
-    | undefined;
+  resizeTh?: ResizeTh;
   bodyHeight: number;
   bodyWidth: number;
   scrollTop: number;
@@ -74,13 +73,14 @@ export type RowSettings = {
 };
 
 export type CellProps = {
-  colName: string;
+  column: ColumnSettings;
   rowIndex: number;
   value: unknown;
   class: string;
   editable?: boolean;
   slot?: boolean;
   width: number;
+  style: ColumnStyle;
 };
 
 export type TableRow = {
@@ -88,4 +88,12 @@ export type TableRow = {
   offset: number;
   height: number;
   cells: CellProps[];
+};
+export type ColumnStyle = {
+  left: string;
+  width: string;
+};
+
+export type TableColumn = ColumnSettings & {
+  style: ColumnStyle;
 };

@@ -1,77 +1,86 @@
 <script lang="ts" setup>
 import Layout from '@/demo/Layout.vue';
 import type { DataTableSettings } from '@/lib';
-import { DataTable, SelectInput } from '@/lib';
-import { utils, strings } from '@milaboratory/helpers';
+import { DataTable, NumberInput, BtnSecondary } from '@/lib';
+import { strings } from '@milaboratory/helpers';
 import { faker } from '@faker-js/faker';
-import { computed, reactive } from 'vue';
-import { listToOptions, randomInt } from '@milaboratory/helpers/utils';
-import type { Data } from '@/lib/components/DataTable/types';
+import { computed, onMounted, reactive } from 'vue';
+import { randomInt, arrayFrom } from '@milaboratory/helpers/utils';
+import type { ColumnSettings } from '@/lib/components/DataTable/types';
+import { type Data } from '@/lib/components/DataTable/types';
+
+const tearRender = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+
+async function* renderSequence(n: number) {
+  await tearRender();
+  for (let i = 0; i < n; i++) {
+    yield i;
+    if (i % 1000 === 0) {
+      await tearRender();
+    }
+  }
+}
 
 const identity = <T,>(v: T): T => v;
 
-const rowsLength = 100000;
-
-const cases = ['narrow', 'wide'] as const;
-
-const caseOptions = listToOptions(cases);
-
-type Case = (typeof cases)[number];
-
 const data = reactive({
-  case: 'wide' as Case,
+  loading: false,
+  numColumns: 15,
+  numRows: 100,
   tableData: undefined as Data | undefined,
+  rows: [] as Record<string, unknown>[],
 });
 
-const columnsNumber = computed(() => {
-  if (data.case === 'wide') {
-    return 5;
-  }
-
-  return 5;
-});
+const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
 const columnsRef = computed(() => {
-  const all = utils.arrayFrom(columnsNumber.value, (i) => {
+  const all = arrayFrom(data.numColumns, (i) => {
     return {
-      text: i + ') ' + faker.word.noun(),
-      name: strings.uniqueId(),
+      label: i + 2 + ') ' + faker.word.noun(),
+      id: strings.uniqueId(),
       width: 200,
+      editable: true,
     } as DataTableSettings['columns'][number];
   });
 
   return [
-    {
-      text: 'ID',
-      name: 'ID',
+    identity<ColumnSettings>({
+      id: 'ID',
+      label: 'ID',
       width: 200,
-    },
+    }),
     ...all,
   ];
 });
 
 const lorem = strings.randomString(40);
 
-const rowsRef = computed(() => {
-  return utils.arrayFrom(rowsLength, (id) => {
-    return Object.fromEntries(
+async function generate() {
+  const rows = [] as Record<string, unknown>[];
+  for await (const id of renderSequence(Number(data.numRows))) {
+    const row = Object.fromEntries(
       columnsRef.value.map((col, colIndex) => {
-        if (col.name === 'ID') {
-          return [col.name, id];
+        if (col.id === 'ID') {
+          return [col.id, id];
         }
 
-        return [col.name, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem];
+        return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem];
       }),
     );
-  });
-});
+    rows.push(row);
+  }
 
-const settings = computed(() => {
+  data.rows = rows;
+}
+
+const settings = computed<DataTableSettings>(() => {
+  const rows = data.rows;
   return identity<DataTableSettings>({
     columns: columnsRef.value,
-    datum: rowsRef.value,
+    datum: rows,
     selfSort: true,
     rowHeight: 40,
+    editable: true,
   });
 });
 
@@ -84,23 +93,41 @@ const goDown = () => {
     data.tableData.scrollTop = data.tableData.scrollTop + 100000;
   }
 };
+
+const onGenerate = () => {
+  data.loading = true;
+  generate().finally(() => {
+    console.log('Done');
+    data.loading = false;
+  });
+};
+
+onMounted(onGenerate);
 </script>
 
 <template>
   <layout>
-    <div style="display: flex; background-color: #fff; align-items: center" class="p-12 gap-24 mb-6">
-      <select-input v-model="data.case" style="width: 200px" :options="caseOptions" />
-      rows: {{ rowsLength }} cols: {{ columnsNumber }} last id: {{ rowsRef[rowsRef.length - 1]['ID'] }}
+    <pre v-if="false">
+      {{ data.rows }}
+    </pre>
+    <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
+      <number-input v-model="data.numColumns" label="Num columns" />
+      <number-input v-model="data.numRows" label="Num rows" />
+      <btn-secondary :loading="data.loading" @click="onGenerate">Generate</btn-secondary>
+      <span>rows: {{ data.rows.length }}</span>
+      <span>cols: {{ data.numColumns }}</span>
+      <span>last id: {{ lastId }}</span>
+      <span>scrollLeft: {{ data.tableData?.scrollLeft }}</span>
       <button @click="goDown">Down</button>
+    </div>
+    <div v-if="false" style="display: flex">
+      <pre>{{ settings }}</pre>
     </div>
     <div v-if="false" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24 mb-6">
       {{ data.tableData }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
       <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" />
-    </div>
-    <div v-if="false" style="display: flex">
-      <pre>{{ settings }}</pre>
     </div>
   </layout>
 </template>

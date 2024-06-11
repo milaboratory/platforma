@@ -6,8 +6,8 @@
 
   width: 100%;
   max-height: 100%;
-  display: grid;
-  grid-template-rows: 40px 1fr;
+  // display: grid;
+  // grid-template-rows: 40px 1fr;
   flex-direction: column;
   border: 1px solid var(--bg-elevated-02);
   border-radius: 6px;
@@ -53,6 +53,7 @@
     padding-right: 8px;
 
     .tr-head {
+      position: relative;
       display: flex;
       flex-direction: row;
       gap: 1px;
@@ -61,6 +62,7 @@
     }
 
     .cell {
+      position: absolute;
       background-color: #F7F8FA;
       font-weight: 600;
       font-size: 14px;
@@ -129,9 +131,13 @@
       gap: 1px;
       min-height: 40px;
       background-color: transparent;
+      // border: 1px solid red;
+      width: 100%;
     }
 
     .cell {
+      position: absolute;
+
       font-family: var(--cell-font-family);
       font-weight: var(--cell-font-weight);
 

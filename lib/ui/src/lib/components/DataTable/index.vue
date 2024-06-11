@@ -14,6 +14,7 @@ import { clamp, tapIf } from '@milaboratory/helpers/utils';
 import { useResize } from './composition/useResize';
 import { useRows } from './composition/useRows';
 import { deepClone } from '@milaboratory/helpers/objects';
+import { useColumns } from './composition/useColumns';
 
 const emit = defineEmits<{
   (e: 'click:cell', cell: unknown): void;
@@ -48,30 +49,53 @@ watch(
   { immediate: true },
 );
 
-watch(
-  () => props.settings.datum,
-  () => {
-    const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
+const datum = computed(() => {
+  const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
 
-    const gap = props.settings.gap ?? 1;
+  const gap = props.settings.gap ?? 1;
 
-    const raw = props.settings.datum.slice();
+  const raw = props.settings.datum.slice();
 
-    if (props.settings.selfSort) {
-      // sortRows(columns, raw);
-    }
+  // if (props.settings.selfSort) {
+  //   sortRows(columns, raw);
+  // }
 
-    data.rows = Object.freeze(
-      raw.map<RowSettings>((values, index) => ({
-        values,
-        index,
-        offset: index * (rowHeight + gap),
-        height: rowHeight,
-      })),
-    );
-  },
-  { immediate: true },
-);
+  console.log('datum updated');
+
+  return raw.map<RowSettings>((values, index) => ({
+    values,
+    index,
+    offset: index * (rowHeight + gap),
+    height: rowHeight,
+  }));
+});
+
+// watch(
+//   () => props.settings.datum,
+//   () => {
+//     const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
+
+//     const gap = props.settings.gap ?? 1;
+
+//     const raw = props.settings.datum.slice();
+
+//     if (props.settings.selfSort) {
+//       // sortRows(columns, raw);
+//     }
+
+//     console.log('datum updated');
+
+//     data.rows = Object.freeze(
+//       raw.map<RowSettings>((values, index) => ({
+//         values,
+//         index,
+//         offset: index * (rowHeight + gap),
+//         height: rowHeight,
+//       })),
+//     );
+//   },
+//   { immediate: true, deep: true },
+// );
 
 watch(data, (v) => emit('update:data', v), { deep: true });
 
@@ -90,18 +114,13 @@ const updateDimensions = () => {
   });
 };
 
-const headStyle = computed(() => {
-  const offX = -Math.round(data.scrollLeft);
-  return {
-    transform: `translateX(${offX}px)`,
-  };
-});
-
 const noDataStyle = computed(() => ({
   gridColumn: '1 / ' + data.columns.length + 1,
 }));
 
-const rows = useRows(data);
+const columns = useColumns(data);
+
+const rows = useRows(data, columns, datum);
 
 const { mouseDown } = useResize(data, tableRef);
 
@@ -120,16 +139,16 @@ const bodyHeight = computed(() => {
   return 600; // @TODO
 });
 
-const scrollHeight = computed(() => {
-  return data.rows.length * (DEFAULT_ROW_HEIGHT + 1);
+const dataHeight = computed(() => {
+  return datum.value.length * (DEFAULT_ROW_HEIGHT + 1);
 });
 
-const scrollWidth = computed(() => {
+const columnsWidth = computed(() => {
   return props.settings.columns.reduce((acc, col) => acc + col.width + 1, 0);
 });
 
-const maxScrollTop = computed(() => scrollHeight.value - data.bodyHeight);
-const maxScrollLeft = computed(() => (scrollWidth.value > data.bodyWidth ? scrollWidth.value - data.bodyWidth : 0));
+const maxScrollTop = computed(() => dataHeight.value - data.bodyHeight);
+const maxScrollLeft = computed(() => (columnsWidth.value > data.bodyWidth ? columnsWidth.value - data.bodyWidth : 0));
 
 const onWheel = (ev: WheelEvent) => {
   ev.preventDefault();
@@ -140,15 +159,17 @@ const onWheel = (ev: WheelEvent) => {
 
 <template>
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
+    <div>columnsWidth: {{ columnsWidth }}</div>
+    <div>bodyWidth: {{ data.bodyWidth }}</div>
+    <div>maxScrollLeft: {{ maxScrollLeft }}</div>
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head">
-      <tr-head :style="headStyle">
+      <tr-head>
         <th-cell
-          v-for="(col, i) in data.columns"
+          v-for="(col, i) in columns"
           :key="i"
           :col="col"
-          :style="{ width: col.width + 'px' }"
-          :show-context-options="settings.showContextOptions"
+          :style="col.style"
           :column-events="settings.columnEvents"
           @delete:column="$emit('delete:column', $event)"
           @change:sort="$emit('change:sort', $event)"
@@ -164,17 +185,16 @@ const onWheel = (ev: WheelEvent) => {
       </div>
       <tr-body v-for="(row, i) in rows" :key="i" :height="row.height" :index="i" :style="row.style">
         <td-cell
-          v-for="(cell, k) in row.cells"
-          :key="k"
+          v-for="cell in row.cells"
+          :key="cell.column.id"
           :cell="cell"
-          :show-context-options="settings.showContextOptions"
           :cell-events="settings.cellEvents"
-          :style="{ width: cell.width + 'px' }"
+          :style="cell.style"
           @click.stop="$emit('click:cell', cell)"
           @delete:row="$emit('delete:row', $event)"
           @update:value="$emit('update:value', $event)"
         >
-          <slot v-if="cell.slot" :name="cell.colName" v-bind="cell">
+          <slot v-if="cell.slot" :name="cell.column.id" v-bind="cell">
             {{ cell.value }}
           </slot>
           <slot v-else v-bind="cell">{{ cell.value }}</slot>

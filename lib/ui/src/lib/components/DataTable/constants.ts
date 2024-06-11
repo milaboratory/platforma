@@ -1,4 +1,4 @@
-import type { Option } from '@/lib/types';
+import type { SimpleOption } from '@/lib/types';
 import type { CellEvent, ColumnEvent } from './types';
 
 export const RESIZE_GAP = 10;
@@ -7,7 +7,7 @@ export const MIN_COLUMN_WIDTH = 30;
 
 export const DEFAULT_ROW_HEIGHT = 40;
 
-export const cellEventOptions: Option<CellEvent>[] = [
+export const cellEventOptions: SimpleOption<CellEvent>[] = [
   {
     text: 'Delete row',
     value: 'delete:row',
@@ -18,7 +18,7 @@ export const cellEventOptions: Option<CellEvent>[] = [
   },
 ];
 
-export const columnEventOptions: Option<ColumnEvent>[] = [
+export const columnEventOptions: SimpleOption<ColumnEvent>[] = [
   {
     text: 'Delete column',
     value: 'delete:column',

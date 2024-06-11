@@ -19,8 +19,14 @@ export type Position = Omit<DOMRect, 'toJSON'> & {
   offsetX: number;
 };
 
+// @TODO nicolaygiman, ask me
 export type Option<T = unknown> = {
   text: string | { title: string; description: string };
+  value: T;
+};
+
+export type SimpleOption<T = unknown> = {
+  text: string;
   value: T;
 };
 

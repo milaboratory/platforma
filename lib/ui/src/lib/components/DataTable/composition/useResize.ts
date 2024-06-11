@@ -1,25 +1,28 @@
 import type { Ref } from 'vue';
 import { watchEffect, unref } from 'vue';
-import type { Data } from '../types';
+import type { ResizeTh } from '../types';
+import { type Data } from '../types';
 import { useColumn } from './useColumn';
 import { MIN_COLUMN_WIDTH, RESIZE_GAP } from '../constants';
 import { useMouse } from '@/lib/composition/useMouse';
 import { useHover } from '@/lib/composition/useHover';
 import { tapIf, clamp } from '@milaboratory/helpers/utils';
+import { identity } from '../domain';
 
 type MaybeRef<T> = T | Ref<T>;
 
 export function getColumnPositions(tableRef: MaybeRef<HTMLElement | undefined>) {
   const ths = tapIf(unref(tableRef)?.querySelectorAll('.th-cell'), (l) => [...l]) ?? [];
   return ths
-    .map((th, index) => {
+    .map((th) => {
       const { width, x } = th.getBoundingClientRect();
-      return {
-        index,
+      const colId = th.getAttribute('data-col-id')!;
+      return identity<ResizeTh>({
+        colId,
         width,
         x,
         right: x + width,
-      };
+      });
     })
     .slice(0, ths.length - 1);
 }
@@ -31,9 +34,13 @@ export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
   const resize = useColumn(
     (s) => {
       tapIf(data.resizeTh, (th) => {
-        const col = data.columns[th.index];
+        const prevWidth = data.columns.reduce((acc, col) => acc + col.width + 1, 0);
+        const col = data.columns.find((col) => col.id === th.colId);
         if (col) {
           col.width = clamp(s.width + s.diff, MIN_COLUMN_WIDTH, 10000);
+          const newWidth = data.columns.reduce((acc, col) => acc + col.width + 1, 0);
+          const last = data.columns[data.columns.length - 1];
+          last.width = last.width + (prevWidth - newWidth);
         }
       });
     },

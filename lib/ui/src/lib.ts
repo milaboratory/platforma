@@ -14,6 +14,7 @@ import BtnAccent from '@/lib/components/BtnAccent.vue';
 import BtnGhost from '@/lib/components/BtnGhost.vue';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import TextField from '@/lib/components/TextField.vue';
+import NumberInput from '@/lib/components/NumberInput.vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
 import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
@@ -99,6 +100,7 @@ export {
   BtnSecondary,
   BtnAccent,
   TextField,
+  NumberInput,
   SelectInput,
   MultiDropdown,
   LineDropdown,

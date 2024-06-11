@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { cellEventOptions } from './constants';
-import type { CellEvent, CellProps, ShowContextOptions } from './types';
+import { useApi } from './domain';
+import type { CellEvent, CellProps } from './types';
 import { reactive, ref } from 'vue';
 
 const emit = defineEmits(['delete:row', 'update:value']);
 
 const props = defineProps<{
   cell: CellProps;
-  showContextOptions?: ShowContextOptions;
   cellEvents?: CellEvent[];
 }>();
 
@@ -18,29 +18,25 @@ const data = reactive({
 const onInput = (ev: Event) => {
   emit('update:value', {
     rowIndex: props.cell.rowIndex,
-    name: props.cell.colName,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    value: ev.target?.value,
+    colId: props.cell.column.id,
+    value: (ev.target as HTMLInputElement)?.value,
   });
   data.edit = false;
 };
 
-function showContextMenu() {
+function showContextMenu(ev: Event) {
+  ev.preventDefault();
+  console.log('showContextMenu');
   const cellEvents = props.cellEvents ?? [];
-
-  if (!props.showContextOptions) {
-    console.warn('inject showContextOptions interface for the table');
-    return;
-  }
 
   const options = cellEventOptions.filter((opt) => cellEvents.includes(opt.value));
 
   if (!options.length) {
+    console.log('No options');
     return;
   }
 
-  props.showContextOptions(options, (op) => {
+  useApi().showOptions(options, (op) => {
     emit(op, props.cell.rowIndex);
   });
 }

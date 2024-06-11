@@ -1,5 +1,5 @@
-import type { Data, CellProps, TableRow } from '../types';
-import { computed } from 'vue';
+import type { Data, CellProps, TableRow, TableColumn, RowSettings } from '../types';
+import { ComputedRef, computed, unref } from 'vue';
 import { identity } from '../domain';
 import { sliceBy } from '@milaboratory/helpers/collections';
 import { performanceTimer } from '@milaboratory/helpers/utils';
@@ -20,52 +20,46 @@ import { performanceTimer } from '@milaboratory/helpers/utils';
 //   }
 // }
 
-export function useRows(data: Data) {
+export function useRows(data: Data, columnsRef: ComputedRef<TableColumn[]>, datum: ComputedRef<RowSettings[]>) {
   return computed(() => {
-    const { bodyHeight, scrollTop, columns } = data;
+    const { bodyHeight, scrollTop } = data;
+
+    const columns = unref(columnsRef);
 
     const classes = columns.reduce(
       (r, col) => {
-        r[col.name] = col.justify ? 'justify-' + col.justify : '';
+        r[col.id] = col.justify ? 'justify-' + col.justify : '';
         return r;
       },
       {} as Record<string, string>,
     );
 
-    const pt = performanceTimer();
-
-    const visibleRows = sliceBy(data.rows, (it) => {
+    const visibleRows = sliceBy(datum.value, (it) => {
       return scrollTop < it.offset + it.height && it.offset < bodyHeight + scrollTop;
     });
 
-    // console.log('pt1', pt(), visibleRows.length);
-
-    const r = visibleRows.map<TableRow>(({ index, offset, values, height }) => {
-      const cells = columns.map((col) => {
+    return visibleRows.map<TableRow>(({ index, offset, values, height }) => {
+      const cells = columns.map((column) => {
         return identity<CellProps>({
-          colName: col.name,
+          column: column,
           rowIndex: index,
-          value: values[col.name],
-          class: classes[col.name] + (index === data.rowIndex ? ' hovered' : ''),
-          slot: col.slot,
-          editable: col.editable,
-          width: col.width,
+          value: values[column.id],
+          class: classes[column.id] + (index === data.rowIndex ? ' hovered' : ''),
+          slot: column.slot,
+          editable: column.editable,
+          width: column.width,
+          style: column.style,
         });
       });
-
-      const offX = -Math.round(data.scrollLeft);
 
       return {
         style: {
           top: `${offset - data.scrollTop}px`,
-          left: `${offX}px`,
         },
         offset,
         height,
         cells,
       };
     });
-    console.log('pt2', pt());
-    return r;
   });
 }
