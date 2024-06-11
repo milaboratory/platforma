@@ -140,7 +140,7 @@ export function sliceBy<T>(arr: readonly T[], predicate: (el: T, index: number) 
       return i;
     }
 
-    return left;
+    return arr.length;
   })();
 
   return arr.slice(left, right);
