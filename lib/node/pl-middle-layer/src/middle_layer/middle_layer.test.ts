@@ -1,5 +1,5 @@
 import { TestHelpers } from '@milaboratory/pl-client-v2';
-import { MiddleLayerImpl } from './middle_layer';
+import { MiddleLayer } from './middle_layer';
 import { BlockPackSpecAny } from '../model/block_pack_spec';
 import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
@@ -20,7 +20,7 @@ test('project list manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayerImpl.init(pl, {
+    const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(workFolder),
       localSecret: 'secret'
     });
@@ -28,14 +28,14 @@ test('project list manipulations test', async () => {
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
-    const pRid1 = await ml.createProject('id1', { name: 'Project 1' });
+    const pRid1 = await ml.createProject('id1', { label: 'Project 1' });
 
     await projectList.refreshState();
 
     expect(await projectList.getValue()).toStrictEqual([{
       id: 'id1',
       rid: pRid1,
-      meta: { name: 'Project 1' },
+      meta: { label: 'Project 1' },
       opened: false
     }]);
 
@@ -44,7 +44,7 @@ test('project list manipulations test', async () => {
     expect(await projectList.getValue()).toStrictEqual([{
       id: 'id1',
       rid: pRid1,
-      meta: { name: 'Project 1' },
+      meta: { label: 'Project 1' },
       opened: true
     }]);
 
@@ -53,7 +53,7 @@ test('project list manipulations test', async () => {
     expect(await projectList.getValue()).toStrictEqual([{
       id: 'id1',
       rid: pRid1,
-      meta: { name: 'Project 1' },
+      meta: { label: 'Project 1' },
       opened: false
     }]);
 
@@ -69,19 +69,24 @@ test('simple project manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   await fs.promises.mkdir(workFolder, { recursive: true });
   await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayerImpl.init(pl, {
+    const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(workFolder),
       localSecret: 'secret'
     });
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject('id1', { name: 'Project 1' });
+    const pRid1 = await ml.createProject('id1', { label: 'Project 1' });
     await projectList.refreshState();
-    expect(await projectList.getValue()).toStrictEqual([{ id: 'id1', rid: pRid1, meta: { name: 'Project 1' } }]);
+    expect(await projectList.getValue()).toStrictEqual([{
+      id: 'id1',
+      rid: pRid1,
+      meta: { label: 'Project 1' },
+      opened: false
+    }]);
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { name: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
 
     const block1Id = await prj.addBlock('Block 1', EnterNumbersSpec);
     const block2Id = await prj.addBlock('Block 2', EnterNumbersSpec);

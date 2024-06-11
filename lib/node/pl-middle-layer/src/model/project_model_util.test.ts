@@ -10,8 +10,8 @@ function simpleStructure(...ids: string[]): ProjectStructure {
   return {
     groups: [
       {
-        id: 'g1', name: 'G1',
-        blocks: ids.map(id => ({ id: id, name: id, renderingMode: 'Heavy' }))
+        id: 'g1', label: 'G1',
+        blocks: ids.map(id => ({ id: id, label: id, renderingMode: 'Heavy' }))
       }
     ]
   };

@@ -11,7 +11,7 @@ import {
   projectFieldName,
   ProjectRenderingState
 } from '../model/project_model';
-import { BPSpecEnterV020NotPrepared, BPSpecSumV020NotPrepared, TestBPPreparer } from '../test/block_packs';
+import { BPSpecEnterV040NotPrepared, BPSpecSumV040NotPrepared, TestBPPreparer } from '../test/block_packs';
 
 test('simple test #1', async () => {
   await TestHelpers.withTempRoot(async pl => {
@@ -24,10 +24,10 @@ test('simple test #1', async () => {
 
     await pl.withWriteTx('AddBlock1', async tx => {
       const mut = await loadProject(tx, prj);
-      mut.addBlock({ id: 'block1', name: 'Block1', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({ numbers: [1, 2, 3] }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV020NotPrepared)
+          args: JSON.stringify({ numbers: [1, 2, 3] }),
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV040NotPrepared)
         }
       );
       mut.save();
@@ -36,10 +36,10 @@ test('simple test #1', async () => {
 
     await pl.withWriteTx('AddBlock2', async tx => {
       const mut = await loadProject(tx, prj);
-      mut.addBlock({ id: 'block2', name: 'Block2', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({ numbers: [3, 4, 5] }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV020NotPrepared)
+          args: JSON.stringify({ numbers: [3, 4, 5] }),
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV040NotPrepared)
         }
       );
       mut.renderProduction(['block1', 'block2']);
@@ -49,19 +49,19 @@ test('simple test #1', async () => {
 
     await pl.withWriteTx('AddBlock3', async tx => {
       const mut = await loadProject(tx, prj);
-      mut.addBlock({ id: 'block3', name: 'Block3', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({
+          args: JSON.stringify({
             sources: [
               outputRef('block1', 'column'),
               outputRef('block2', 'column')
             ]
           }),
-          blockPack: await TestBPPreparer.prepare(BPSpecSumV020NotPrepared)
+          blockPack: await TestBPPreparer.prepare(BPSpecSumV040NotPrepared)
         }
       );
       const rendered = mut.renderProduction(['block3'], true);
-      expect([...rendered]).toEqual(['block3'])
+      expect([...rendered]).toEqual(['block3']);
       mut.setUiState('block2', '{"some":1}');
       mut.doRefresh();
       mut.save();
@@ -157,27 +157,27 @@ test('simple test #2 with bp migration', async () => {
 
     await pl.withWriteTx('AddBlock1', async tx => {
       const mut = await loadProject(tx, prj);
-      mut.addBlock({ id: 'block1', name: 'Block1', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({ numbers: [1, 2, 3] }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV020NotPrepared)
+          args: JSON.stringify({ numbers: [1, 2, 3] }),
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV040NotPrepared)
         }
       );
-      mut.addBlock({ id: 'block2', name: 'Block2', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({ numbers: [3, 4, 5] }),
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV020NotPrepared)
+          args: JSON.stringify({ numbers: [3, 4, 5] }),
+          blockPack: await TestBPPreparer.prepare(BPSpecEnterV040NotPrepared)
         }
       );
-      mut.addBlock({ id: 'block3', name: 'Block3', renderingMode: 'Heavy' },
+      mut.addBlock({ id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
-          inputs: JSON.stringify({
+          args: JSON.stringify({
             sources: [
               outputRef('block1', 'column'),
               outputRef('block2', 'column')
             ]
           }),
-          blockPack: await TestBPPreparer.prepare(BPSpecSumV020NotPrepared)
+          blockPack: await TestBPPreparer.prepare(BPSpecSumV040NotPrepared)
         }
       );
       mut.renderProduction(['block1', 'block2', 'block3']);
@@ -207,7 +207,7 @@ test('simple test #2 with bp migration', async () => {
     await pl.withWriteTx('MigrateBlock2', async tx => {
       const mut = await loadProject(tx, prj);
       // TODO change to dev
-      mut.migrateBlockPack('block2', await TestBPPreparer.prepare(BPSpecEnterV020NotPrepared));
+      mut.migrateBlockPack('block2', await TestBPPreparer.prepare(BPSpecEnterV040NotPrepared));
       mut.save();
       await tx.commit();
     });

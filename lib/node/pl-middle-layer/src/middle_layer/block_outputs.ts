@@ -18,7 +18,7 @@ export type MatStdCtx = {
 
 export function constructBlockContextArgsOnly(projectNode: PlTreeNodeAccessor, blockId: string): MatStdCtxArgsOnly {
   const args = projectNode.traverse({
-    field: projectFieldName(blockId, 'currentInputs'),
+    field: projectFieldName(blockId, 'currentArgs'),
     errorIfFieldNotAssigned: true
   }).getDataAsJson();
   const ui = projectNode.getKeyValueAsJson(blockFrontendStateKey(blockId));

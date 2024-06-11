@@ -1,10 +1,11 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
-  AuthorMarker,
-  BlockRenderingMode, BlockRenderingStateKey, projectFieldName,
+  BlockRenderingStateKey,
+  projectFieldName,
   ProjectMeta,
-  ProjectMetaKey, ProjectRenderingState,
+  ProjectMetaKey,
+  ProjectRenderingState,
   ProjectStructure,
   ProjectStructureKey
 } from '../model/project_model';
@@ -16,41 +17,7 @@ import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
 import { constructBlockContextArgsOnly } from './block_outputs';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
-
-export type BlockProductionStatus =
-  | 'NotCalculated'
-  | 'Running'
-  | 'Error'
-  | 'Done'
-  | 'Limbo'
-
-export type ProjectOverview = {
-  meta: ProjectMeta;
-  structureAuthorMarker?: AuthorMarker,
-  blocks: BlockState[];
-}
-
-export type BlockState = {
-  id: string,
-  name: string,
-  renderingMode: BlockRenderingMode,
-  missingReference: boolean;
-  stale: boolean;
-  calculationStatus: BlockProductionStatus;
-  sections: Section[] | undefined,
-  canRun: boolean | undefined
-}
-
-type CalculationStatus =
-  | 'Running'
-  | 'Error'
-  | 'Done'
-
-export type ProdState = {
-  calculationStatus: CalculationStatus
-  stale: boolean
-  arguments: any
-}
+import { BlockProductionStatus, ProdState, ProjectOverview } from './models';
 
 type BlockInfo = {
   currentArguments: any,
@@ -69,14 +36,14 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
     const infos = new Map<string, BlockInfo>();
     for (const { id } of allBlocks(structure)) {
       const cInputs = prj.traverse({
-        field: projectFieldName(id, 'currentInputs'),
+        field: projectFieldName(id, 'currentArgs'),
         assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true
       });
 
       let prod: ProdState | undefined = undefined;
 
       const rInputs = prj.traverse({
-        field: projectFieldName(id, 'prodInputs'),
+        field: projectFieldName(id, 'prodArgs'),
         assertFieldType: 'Dynamic',
         stableIfNotFound: true
       });
@@ -111,7 +78,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
 
     const limbo = new Set(renderingState.blocksInLimbo);
 
-    const blocks = [...allBlocks(structure)].map(({ id, name, renderingMode }) => {
+    const blocks = [...allBlocks(structure)].map(({ id, label, renderingMode }) => {
       const info = notEmpty(infos.get(id));
       const gNode = notEmpty(currentGraph.nodes.get(id));
       let calculationStatus: BlockProductionStatus = 'NotCalculated';
@@ -138,7 +105,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       }) || {};
 
       return {
-        id, name, renderingMode,
+        id, label, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
         calculationStatus, sections, canRun

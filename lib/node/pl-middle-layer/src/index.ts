@@ -1,4 +1,2 @@
-export * from './mutator/project';
-export * from './model/project_model';
-export * from './model/project_model_util';
-export * from './model/template';
+export * from './block_registry/index';
+export * from './middle_layer/index';

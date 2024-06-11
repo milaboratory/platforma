@@ -19,7 +19,7 @@ test.each([
   {
     spec: {
       type: 'dev',
-      folder: path.resolve('integration', 'dev-project-test')
+      folder: path.resolve('integration', 'block-beta-sum-numbers')
     } as BlockPackSpecAny
   }
 ])('test load template from $spec.type', async ({ spec }) => {

@@ -71,13 +71,13 @@ class BlockInfo {
   }
 
   private readonly currentInputsC = cached(
-    () => this.fields.currentInputs!.modCount,
-    () => JSON.parse(Buffer.from(this.fields.currentInputs!.value!).toString())
+    () => this.fields.currentArgs!.modCount,
+    () => JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString())
   );
   private readonly actualProductionInputsC = cached(
-    () => this.fields.prodInputs?.modCount,
+    () => this.fields.prodArgs?.modCount,
     () => {
-      const bin = this.fields.prodInputs?.value;
+      const bin = this.fields.prodArgs?.value;
       if (bin === undefined)
         return undefined;
       return JSON.parse(Buffer.from(bin).toString());
@@ -97,8 +97,8 @@ class BlockInfo {
   }
 
   private readonly productionStaleC: () => boolean = cached(
-    () => `${this.fields.currentInputs!.modCount}_${this.fields.prodInputs?.modCount}`,
-    () => this.fields.prodInputs === undefined || Buffer.compare(this.fields.currentInputs!.value!, this.fields.prodInputs.value!) !== 0
+    () => `${this.fields.currentArgs!.modCount}_${this.fields.prodArgs?.modCount}`,
+    () => this.fields.prodArgs === undefined || Buffer.compare(this.fields.currentArgs!.value!, this.fields.prodArgs.value!) !== 0
   );
 
   get productionStale(): boolean {
@@ -123,7 +123,7 @@ class BlockInfo {
 
 export interface NewBlockSpec {
   blockPack: BlockPackSpecPrepared,
-  inputs: string
+  args: string
 }
 
 const NoNewBlocks = (blockId: string) => {
@@ -132,7 +132,7 @@ const NoNewBlocks = (blockId: string) => {
 
 export interface SetArgsRequest {
   blockId: string;
-  inputs: string;
+  args: string;
 }
 
 type GraphInfoFields =
@@ -297,12 +297,12 @@ export class ProjectMutator {
 
   /** Optimally sets inputs for multiple blocks in one go */
   public setArgs(requests: SetArgsRequest[]) {
-    for (const { blockId, inputs } of requests) {
+    for (const { blockId, args } of requests) {
       const info = this.getBlockInfo(blockId);
-      const parsedInputs = JSON.parse(inputs);
-      const binary = Buffer.from(inputs);
+      const parsedInputs = JSON.parse(args);
+      const binary = Buffer.from(args);
       const argsRef = this.tx.createValue(Pl.JsonObject, binary);
-      this.setBlockField(blockId, 'currentInputs', argsRef, 'Ready', binary);
+      this.setBlockField(blockId, 'currentArgs', argsRef, 'Ready', binary);
       // will be assigned our author marker
       this.blocksWithChangedInputs.add(blockId);
     }
@@ -347,7 +347,7 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentInputs!.ref!,
+      args: info.fields.currentArgs!.ref!,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
       context: ctx
@@ -371,7 +371,7 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentInputs!.ref!,
+      args: info.fields.currentArgs!.ref!,
       blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
       context: ctx
@@ -380,7 +380,7 @@ export class ProjectMutator {
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
 
     // saving inputs for which we rendered the production
-    this.setBlockField(blockId, 'prodInputs', info.fields.currentInputs!.ref!, 'NotReady');
+    this.setBlockField(blockId, 'prodArgs', info.fields.currentArgs!.ref!, 'NotReady');
 
     // removing block from limbo as we juts rendered fresh production for it
     if (this.blocksInLimbo.delete(blockId))
@@ -427,10 +427,10 @@ export class ProjectMutator {
       this.setBlockField(blockId, 'blockPack',
         Pl.wrapInHolder(this.tx, bp), 'NotReady');
 
-      // inputs
-      const binArgs = Buffer.from(spec.inputs);
+      // args
+      const binArgs = Buffer.from(spec.args);
       const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
-      this.setBlockField(blockId, 'currentInputs', argsRes, 'Ready', binArgs);
+      this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
     }
 
     // resetting stagings affected by topology change
@@ -455,15 +455,15 @@ export class ProjectMutator {
   // Structure change helpers
   //
 
-  public addBlock(block: Block, spec: NewBlockSpec, after?: string): void {
+  public addBlock(block: Block, spec: NewBlockSpec, before?: string): void {
     const newStruct = this.structure; // copy current structure
-    if (after === undefined) {
+    if (before === undefined) {
       // adding as a very last block
       newStruct.groups[newStruct.groups.length - 1].blocks.push(block);
     } else {
       let done = false;
       for (const group of newStruct.groups) {
-        const idx = group.blocks.findIndex(b => b.id === after);
+        const idx = group.blocks.findIndex(b => b.id === before);
         if (idx < 0)
           continue;
         group.blocks.splice(idx, 0, block);
@@ -471,7 +471,7 @@ export class ProjectMutator {
         break;
       }
       if (!done)
-        throw new Error(`Can't find element with id: ${after}`);
+        throw new Error(`Can't find element with id: ${before}`);
     }
     this.updateStructure(newStruct, (blockId) => {
       if (blockId !== block.id)
@@ -509,7 +509,7 @@ export class ProjectMutator {
 
     if (newArgs !== undefined)
       // this will also reset all downstream stagings
-      this.setArgs([{ blockId, inputs: newArgs }]);
+      this.setArgs([{ blockId, args: newArgs }]);
     else
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId],

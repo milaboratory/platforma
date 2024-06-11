@@ -4,6 +4,7 @@ import { ResourceType } from '@milaboratory/pl-client-v2';
 export interface AuthorMarker {
   /** Unique identifier of client or even a specific window that set this particular state */
   authorId: string;
+
   /** Sequential version of the state local to the author */
   localVersion: number;
 }
@@ -18,8 +19,8 @@ export interface Block {
   /** Unique block id */
   readonly id: string;
 
-  /** Name shown to the user */
-  name: string;
+  /** Label shown to the user */
+  label: string;
 
   /** How to approach block rendering */
   renderingMode: BlockRenderingMode;
@@ -30,8 +31,8 @@ export interface BlockGroup {
   /** Unique group id */
   readonly id: string;
 
-  /** Name shown to the user */
-  name: string;
+  /** Label shown to the user */
+  label: string;
 
   /** Blocks */
   blocks: Block[];
@@ -47,7 +48,7 @@ export interface ProjectStructure {
 }
 
 export const InitialBlockStructure: ProjectStructure = {
-  groups: [{ id: 'default', name: 'Default', blocks: [] }]
+  groups: [{ id: 'default', label: 'Default', blocks: [] }]
 };
 
 /** Root of project rendering state */
@@ -70,11 +71,11 @@ export interface ProjectMeta {
   readonly authorMarker?: AuthorMarker;
 
   /** Project name */
-  readonly name: string;
+  readonly label: string;
 }
 
 export const InitialBlockMeta: ProjectMeta = {
-  name: 'New Project'
+  label: 'New Project'
 };
 
 
@@ -117,7 +118,7 @@ export interface ProjectField {
   blockId: string;
   fieldName:
     | 'blockPack'
-    | 'prodInputs' | 'currentInputs'
+    | 'prodArgs' | 'currentArgs'
     | 'prodCtx' | 'prodOutput'
     | 'prodCtxPrevious' | 'prodOutputPrevious'
     | 'stagingCtx' | 'stagingOutput'
@@ -128,11 +129,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
   return `${blockId}-${fieldName}`;
 }
 
-// export function projectFieldName(field: ProjectField) {
-//   return `${field.blockId}-${field.fieldName}`;
-// }
-
-const projectFieldPattern = /^(?<blockId>.*)-(?<fieldName>blockPack|prodInputs|currentInputs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
+const projectFieldPattern = /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

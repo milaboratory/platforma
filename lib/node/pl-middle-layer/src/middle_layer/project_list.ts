@@ -1,9 +1,10 @@
 import { PruningFunction, SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
-import { TemporalSynchronizedTreeOps, TreeAndComputableU } from './types';
+import { TreeAndComputableU } from './types';
 import { computable, lazyFactory, WatchableValue } from '@milaboratory/computable';
 import { ProjectMeta, ProjectMetaKey } from '../model/project_model';
 import { MiddleLayerEnvironment } from './middle_layer';
+import { ProjectList, ProjectListEntry } from './models';
 
 export const ProjectsField = 'projects';
 export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };
@@ -13,15 +14,6 @@ export const ProjectsListTreePruningFunction: PruningFunction = resource => {
     return [];
   return resource.fields;
 };
-
-export interface ProjectListEntry {
-  rid: ResourceId,
-  id: string,
-  opened: boolean,
-  meta: ProjectMeta
-}
-
-export type ProjectList = ProjectListEntry[];
 
 export async function createProjectList(pl: PlClient, rid: ResourceId, openedProjects: WatchableValue<ResourceId[]>,
                                         env: MiddleLayerEnvironment): Promise<TreeAndComputableU<ProjectList>> {
