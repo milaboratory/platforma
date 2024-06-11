@@ -18,11 +18,11 @@ jobs:
 
     uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
     with:
-      app-name: Tengo Template Builder
-      app-name-slug: 'tengo-template-builder'
+      app-name: Pl Block Registry
+      app-name-slug: '@milaboratory/pl-block-registry'
       notify-telegram: true
 
-      node-version: '18.x'
+      node-version: '20.x'
       is-electron-application: 'false'
       always-auth: 'true'
 

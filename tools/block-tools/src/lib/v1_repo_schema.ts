@@ -6,6 +6,10 @@ export interface FullBlockPackageName {
 
 const MainPrefix = 'v1/';
 
+export function packageContentPrefix(bp: FullBlockPackageName): string {
+  return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}`;
+}
+
 export function payloadFilePath(bp: FullBlockPackageName, file: string): string {
   return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}/${file}`;
 }
