@@ -1,21 +1,58 @@
 import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
 import { CellState, createCellState, destroyState, updateCellState } from './computable_state';
-import { Aborted, notEmpty, sleep } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
 
+/** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
 
+/** Erroneous result of the computable */
 export interface ComputableResultErrors {
+  /** Discriminator */
   type: 'error';
+
+  /**
+   * All errors of the composed computable.
+   *
+   * Because computable is a composable object that may contain multiple
+   * nested computables, which in tern may have their own nested computables,
+   * and their values are calculated semantically in parallel, there are
+   * multiple points where errors may occur. This field aggregate all the
+   * errors happened along the computable trees, and were not recovered by the
+   * kernel's recovery method.
+   * */
   errors: any[];
+
+  /** UTag of this result, to be able to check whether the result have
+   * changed after some time, and start actively listen on the next change. */
   uTag: string;
 }
 
 export interface ComputableResultOk<T> {
+  /** Discriminator */
   type: 'ok';
+
+  /** Fully rendered result, after all rendering stages. */
   value: T;
+
+  /**
+   * Result stability.
+   *
+   * It has individual meaning in each computable case, e.g.
+   *   - file content computable until being completely downloaded will return
+   *     "undefined" as it's result and mark this result as unstable,
+   *   - computable on pl tree waiting for some field that has not yet exist
+   *     will return some incomplete result that is also marked as unstable
+   *   - etc.
+   *
+   * For any composable computable result is considered stable only if all it's
+   * nested computables are stable.
+   * */
   stable: boolean;
+
+  /** UTag of this result, to be able to check whether the result have
+   * changed after some time, and start actively listen on the next change. */
   uTag: string;
 }
 
@@ -48,6 +85,25 @@ const computableFinalizationRegistry = new FinalizationRegistry<Computable<unkno
 
 export type ComputableStableDefined<T> = Computable<T | undefined, T>;
 
+/**
+ * Class representing a reactive value that can change over time and
+ * automatically propagates updates to dependents.
+ *
+ * A computed value can be thought as result of a pure function executed on
+ * a changing underlying data, such underlying data may come from an external
+ * systems. It is important that interactions with this object may influence
+ * the external system synchronization procedure to keep the result fresh,
+ * if computable value is frequently retrieved, or changes are checked or
+ * listened to.
+ *
+ * The Computable class manages a value that is expected to change and
+ * provides mechanisms to observe these changes reactively. It supports
+ * both synchronous and asynchronous operations and integrates a
+ * post-processing step to finalize the computed values.
+ *
+ * @template T The type of the computed value.
+ * @template StableT A refined type representing the stable state of the value.
+ */
 export class Computable<T, StableT extends T = T> implements WrappedComputableKernel<T> {
   /** Updated on each state reset */
   private epoch = 0;
@@ -89,6 +145,13 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     await Promise.all(promises);
   }
 
+  /**
+   * Checks if one of the underlying data sources is marked as changed and
+   * value recalculation is required.
+   *
+   * @param uTag optional tag to compare the current state
+   * @returns true if the state has changed; otherwise, false.
+   */
   public isChanged(uTag?: string): boolean {
     // reporting to observers
     const hooks = this.state?.hooks;
@@ -103,6 +166,7 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
    * "listening status" change events. */
   private listenCounter = 0;
 
+  /** */
   public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
@@ -149,6 +213,15 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     return (await this.awaitStableFullValue(abortSignal)).value;
   }
 
+  /**
+   * Recalculates (if required) current value based on the data available at the
+   * moment, and returns it. Asynchronous nature of this method comes from optional
+   * asynchronous post-processing steps. Core part of the value is calculated
+   * synchronously at the moment of execution of this method.
+   *
+   * @returns a Promise resolving to the stable computed value, of rejected if
+   *          error(s) happened during computable calculation
+   */
   public async getValue(): Promise<T> {
     const result = await this.getValueOrError();
     if (result.type === 'error')
@@ -156,6 +229,10 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     return result.value;
   }
 
+  /**
+   * The same as {@link getValue} but also returns internal state information,
+   * such as uTag and stability. Errors are thrown as promise rejections.
+   * */
   public async getFullValue(): Promise<ComputableResultOk<T>> {
     const result = await this.getValueOrError();
     if (result.type === 'error')
@@ -163,6 +240,11 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     return result;
   }
 
+  /**
+   * The same as {@link getValue} but gets raw computable value. This method
+   * will not return rejected promise in case computable was executed with error.
+   * Error result in {@link ComputableResultErrors} object returned by this method.
+   * */
   public async getValueOrError(): Promise<ComputableResult<T>> {
     // to check that epoch is still ours when we finish updating the state
     const ourEpoch = this.epoch;
