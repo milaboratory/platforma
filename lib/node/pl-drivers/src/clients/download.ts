@@ -97,8 +97,13 @@ export class ClientDownload {
       signal,
     });
 
+    if (400 <= statusCode && statusCode < 500) {
+      throw new NetworkError400(`Http error: statusCode: ${statusCode} url: ${url.toString()}`)
+    }
     if (statusCode != 200) {
-      throw Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}.`);
+      throw Error(
+        `Http error: statusCode: ${statusCode} url: ${url.toString()}`,
+      );
     }
 
     return {
@@ -113,3 +118,6 @@ function headersFromProto(
 ): Record<string, string> {
   return Object.fromEntries(headers.map(({ name, value }) => [name, value]));
 }
+
+/** Throws when a status code of the downloading URL was in range [400, 500). */
+export class NetworkError400 extends Error {}

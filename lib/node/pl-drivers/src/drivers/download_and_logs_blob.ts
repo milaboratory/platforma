@@ -1,6 +1,6 @@
 import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
-import { CallersCounter, TaskProcessor, mapGet, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, MiLogger, TaskProcessor, mapGet, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
@@ -132,6 +132,7 @@ LogsAsyncReader {
   private idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
 
   constructor(
+    private readonly logger: MiLogger,
     private readonly clientDownload: ClientDownload,
     private readonly clientLogs: ClientLogs,
     private readonly saveDir: string,
@@ -139,7 +140,7 @@ LogsAsyncReader {
     nConcurrentDownloads: number = 10,
   ) {
     this.cache = new FilesCache(cacheSoftSizeBytes);
-    this.downloadQueue = new TaskProcessor(nConcurrentDownloads);
+    this.downloadQueue = new TaskProcessor(this.logger, nConcurrentDownloads);
   }
 
   /** Just binds a watcher to DownloadSyncAccessor. */

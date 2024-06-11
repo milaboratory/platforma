@@ -2,7 +2,7 @@ import { Aborted, CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@mil
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream'
-import { ClientDownload } from '../clients/download';
+import { ClientDownload, NetworkError400 } from '../clients/download';
 import { ChangeSource, Computable, ComputableCtx, Watcher, rawComputable } from '@milaboratory/computable';
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
@@ -48,7 +48,7 @@ DownloadUrlSyncReader {
       nConcurrentDownloads: 50,
     }
   ) {
-    this.downloadQueue = new TaskProcessor(this.opts.nConcurrentDownloads);
+    this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
   }
 
@@ -185,8 +185,8 @@ class Download {
       )
       this.setDone(sizeBytes);
     } catch (e: any) {
-      if (e instanceof Aborted) {
-        this.setAbortError();
+      if (e instanceof Aborted || e instanceof NetworkError400) {
+        this.setError(e);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         return;
@@ -205,7 +205,9 @@ class Download {
       return await dirSize(this.path);
     }
 
-    const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {}, signal);
+    const resp = await clientDownload.downloadRemoteFile(
+      this.url.toString(), {}, signal,
+    );
     let content = resp.content;
 
     if (withGunzip) {
@@ -238,8 +240,8 @@ class Download {
     this.signalCtl.abort(new Aborted(reason));
   }
 
-  private setAbortError() {
-    this.error = String(this.signalCtl.signal.reason);
+  private setError(e: any) {
+    this.error = String(e);
     this.change.markChanged();
   }
 }

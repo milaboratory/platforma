@@ -30,8 +30,8 @@ test(
 
       const path2 = await c.getValue();
       expect(path2).not.toBeUndefined();
-      expect(path2?.path).not.toBeUndefined();
       expect(path2?.error).toBeUndefined();
+      expect(path2?.path).not.toBeUndefined();
 
       console.log("frontend saved to dir: ", path2);
       const indexJs = fs.createReadStream(path.join(path2!.path!, 'index.js'));
@@ -39,6 +39,32 @@ test(
       expect(indexJsCode).toContain('use strict');
 
       c.resetState();
+    })
+  }
+)
+
+test(
+  'should show a error when 403 status code',
+  async () => {
+    await TestHelpers.withTempRoot(async client => {
+      const logger = new ConsoleLoggerAdapter();
+      const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
+      const driver = createDownloadUrlDriver(client, logger, dir);
+
+      const url = new URL(
+        "https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND"
+      );
+
+      const c = rawComputable(() => driver.getPath(url))
+
+      const path1 = await c.getValue();
+      expect(path1).toBeUndefined();
+
+      await c.listen();
+
+      const path2 = await c.getValue();
+      expect(path2).not.toBeUndefined();
+      expect(path2?.error).not.toBeUndefined();
     })
   }
 )

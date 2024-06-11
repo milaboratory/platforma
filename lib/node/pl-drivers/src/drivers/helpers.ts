@@ -40,6 +40,7 @@ export function createDownloadDriver(
   localStorageIdsToRoot?: Record<string, string>,
 ): DownloadDriver {
   return new DownloadDriver(
+    logger,
     createDownloadClient(logger, client, localStorageIdsToRoot),
     createLogsClient(client, logger),
     saveDir,

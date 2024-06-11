@@ -78,7 +78,7 @@ UploadReleaser {
       jitterOpts: { ms: 50, factor: 0.1 }
     }
   ) {
-    this.uploadQueue = new TaskProcessor(1);
+    this.uploadQueue = new TaskProcessor(this.logger, 1);
   }
 
   /** Just binds a watcher to UploadAccessor. */
