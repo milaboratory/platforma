@@ -1,30 +1,18 @@
 import { RegistryStorage } from './storage';
 import { randomUUID } from 'node:crypto';
-import { GlobalOverview, PackageOverview } from './structs';
 import semver from 'semver/preload';
-import { version } from 'node:os';
 import { Logger } from './cmd';
-
-export interface FullBlockPackageName {
-  organization: string;
-  package: string;
-  version: string;
-}
-
-export type BlockPackageNameWithoutVersion = Pick<FullBlockPackageName, 'organization' | 'package'>
-
-const MainPrefix = 'v1/';
+import {
+  BlockPackageNameWithoutVersion,
+  FullBlockPackageName, GlobalOverview,
+  GlobalOverviewPath,
+  MetaFile, PackageOverview,
+  packageOverviewPath,
+  payloadFilePath
+} from './v1_repo_schema';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
-}
-
-function dataFilePath(bp: FullBlockPackageName, file: string): string {
-  return `${MainPrefix}${bp.organization}/${bp.package}/${bp.version}/${file}`;
-}
-
-function packageOverviewPath(bp: BlockPackageNameWithoutVersion): string {
-  return `${MainPrefix}${bp.organization}/${bp.package}/overview.json`;
 }
 
 const VersionUpdatesPrefix = '_updates_v1/per_package_version/';
@@ -35,12 +23,8 @@ function packageUpdatePath(bp: FullBlockPackageName, seed: string): string {
 
 const PackageUpdatePattern = /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<pkg>[^\/]+))\/(?<version>[^\/]+)\/(?<seed>[^\/]+)$/;
 
-const OverviewFile = 'v1/overview.json';
-
 const GlobalUpdateSeedInFile = '_updates_v1/_global_update_in';
 const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
-
-const MetaFile = 'meta.json';
 
 /*
   Note on convergence guarantee.
@@ -126,7 +110,7 @@ export class BlockRegistry {
     }
 
     // loading global overview
-    const overviewContent = await this.storage.getFile(OverviewFile);
+    const overviewContent = await this.storage.getFile(GlobalOverviewPath);
     let overview = overviewContent === undefined ? [] : JSON.parse(overviewContent.toString()) as GlobalOverview;
     this.logger?.info(`Global overview loaded, ${overview.length} records`);
 
@@ -144,7 +128,7 @@ export class BlockRegistry {
       // reading new entries
       for (const [v,] of packageInfo.versions.entries()) {
         const version = v.toString();
-        const metaContent = await this.storage.getFile(dataFilePath({
+        const metaContent = await this.storage.getFile(payloadFilePath({
           ...packageInfo.package,
           version
         }, MetaFile));
@@ -174,7 +158,7 @@ export class BlockRegistry {
     }
 
     // writing global overview
-    await this.storage.putFile(OverviewFile, Buffer.from(JSON.stringify(overview)));
+    await this.storage.putFile(GlobalOverviewPath, Buffer.from(JSON.stringify(overview)));
     this.logger?.info(`Global overview updated (${overview.length} records)`);
 
     // deleting seeds
@@ -216,7 +200,7 @@ export class BlockRegistry {
   }
 
   async getGlobalOverview(): Promise<undefined | GlobalOverview> {
-    const content = await this.storage.getFile(OverviewFile);
+    const content = await this.storage.getFile(GlobalOverviewPath);
     if (content === undefined)
       return undefined;
     return JSON.parse(content.toString()) as GlobalOverview;
@@ -232,7 +216,7 @@ export class BlockRegistryPackConstructor {
   }
 
   async addFile(file: string, content: Buffer): Promise<void> {
-    await this.storage.putFile(dataFilePath(this.name, file), content);
+    await this.storage.putFile(payloadFilePath(this.name, file), content);
   }
 
   async writeMeta(meta: object) {

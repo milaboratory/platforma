@@ -2,10 +2,10 @@ import YAML from 'yaml';
 import { getHomeDir } from '@oclif/core/lib/util/os';
 import { tryLoadFile } from './util';
 import { storageByUrl } from './lib/storage';
-import { BlockRegistry, FullBlockPackageName } from './lib/registry';
+import { BlockRegistry } from './lib/registry';
 import { Logger } from './lib/cmd';
 import { z } from 'zod';
-import { Config } from '@oclif/core';
+import { FullBlockPackageName } from './lib/v1_repo_schema';
 
 export const PlRegAddress = z.string().regex(/^(?:s3:|file:)/);
 
