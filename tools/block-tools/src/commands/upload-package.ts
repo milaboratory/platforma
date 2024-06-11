@@ -1,9 +1,10 @@
 import { Args, Command, Flags } from '@oclif/core';
-import { getConfig, PlRegPackageConfigDataShard } from '../config';
+import { getConfig } from '../config';
 import { targetFile } from '../flags';
 import fs from 'node:fs';
 import YAML from 'yaml';
 import { CmdLoggerAdapter } from '../lib/cmd';
+import { PlRegPackageConfigDataShard } from '../config_schema';
 
 type BasicConfigField = (keyof PlRegPackageConfigDataShard) & ('registry' | 'organization' | 'package' | 'version')
 const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
