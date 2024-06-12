@@ -1,30 +1,16 @@
 import type { Data, CellProps, TableRow, TableColumn, RowSettings } from '../types';
-import { ComputedRef, computed, unref } from 'vue';
+import type { ComputedRef } from 'vue';
+import { computed, unref } from 'vue';
 import { identity } from '../domain';
 import { sliceBy } from '@milaboratory/helpers/collections';
-import { performanceTimer } from '@milaboratory/helpers/utils';
-
-// function sortRows(columns: ColumnSettings[], rows: Record<string, unknown>[]) {
-//   const sorts = columns.reduce(
-//     (acc, col) => {
-//       if (col.sort?.direction) {
-//         acc[col.name] = col.sort.direction;
-//       }
-//       return acc;
-//     },
-//     {} as Record<string, 'DESC' | 'ASC'>,
-//   );
-
-//   if (Object.keys(sorts).length) {
-//     rows.sort((a, b) => compareRecords(sorts, a, b));
-//   }
-// }
 
 export function useRows(data: Data, columnsRef: ComputedRef<TableColumn[]>, datum: ComputedRef<RowSettings[]>) {
   return computed(() => {
     const { bodyHeight, scrollTop } = data;
 
     const columns = unref(columnsRef);
+
+    console.log('columns.length', columns.length);
 
     const classes = columns.reduce(
       (r, col) => {

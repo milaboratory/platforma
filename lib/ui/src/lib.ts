@@ -33,6 +33,7 @@ import Slider from '@/lib/components/Slider.vue';
 import DialogModal from './lib/components/DialogModal.vue';
 import SlideModal from './lib/components/SlideModal.vue';
 import ManageModal from './lib/components/ManageModal/index.vue';
+import { showContextMenu } from './lib/components/contextMenu/index.ts';
 import { usePosition } from '@/lib/composition/usePosition';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useEventListener } from '@/lib/composition/useEventListener';
@@ -140,6 +141,9 @@ export {
   useFormState,
   useQuery,
 };
+
+// Helpers
+export { showContextMenu };
 
 // Layout
 export {

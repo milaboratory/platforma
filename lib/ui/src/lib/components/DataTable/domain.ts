@@ -1,3 +1,5 @@
+import type { ColumnSettings } from "./types";
+
 export function toComparable(v: unknown) {
   if (typeof v === 'number') {
     return v;
@@ -37,4 +39,21 @@ export function useApi() {
     throw Error('Context Api is not implemented');
   }
   return api;
+}
+
+// @TODO deprecated
+export function sortRows(columns: ColumnSettings[], rows: Record<string, unknown>[]) {
+  const sorts = columns.reduce(
+    (acc, col) => {
+      if (col.sort?.direction) {
+        acc[col.id] = col.sort.direction;
+      }
+      return acc;
+    },
+    {} as Record<string, 'DESC' | 'ASC'>,
+  );
+
+  if (Object.keys(sorts).length) {
+    rows.sort((a, b) => compareRecords(sorts, a, b));
+  }
 }

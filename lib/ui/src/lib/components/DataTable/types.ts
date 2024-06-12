@@ -1,5 +1,3 @@
-import type { Option, SimpleOption } from '@/lib/types';
-
 type TypeMap = {
   integer: number;
   float: number;
@@ -24,13 +22,14 @@ export type ColumnSettings = {
   slot?: boolean;
   editable?: boolean;
   valueType?: ValueType;
+  frozen?: boolean;
 };
 
 // export type ShowContextOptions = <T extends string = string>(options: SimpleOption<T>[], onSelect: (op: T) => void) => void;
 
 export type ColumnEvent = 'delete:column' | 'expand:column';
 
-export type CellEvent = 'delete:row' | 'update:value';
+export type CellEvent = 'delete:row' | 'update:value' | 'select:row';
 
 export type Settings = {
   columns: ColumnSettings[];
@@ -96,4 +95,5 @@ export type ColumnStyle = {
 
 export type TableColumn = ColumnSettings & {
   style: ColumnStyle;
+  offset: number;
 };

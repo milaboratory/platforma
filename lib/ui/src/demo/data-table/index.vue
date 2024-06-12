@@ -34,10 +34,11 @@ const data = reactive({
 const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
 const columnsRef = computed(() => {
-  const all = arrayFrom(data.numColumns, (i) => {
+  const rest = arrayFrom(data.numColumns, (i) => {
     return {
       label: i + 2 + ') ' + faker.word.noun(),
       id: strings.uniqueId(),
+      valueType: i % 2 === 0 ? 'string' : 'integer',
       width: 200,
       editable: true,
     } as DataTableSettings['columns'][number];
@@ -48,8 +49,15 @@ const columnsRef = computed(() => {
       id: 'ID',
       label: 'ID',
       width: 200,
+      frozen: true,
     }),
-    ...all,
+    identity<ColumnSettings>({
+      id: 'Test',
+      label: 'Test',
+      width: 200,
+      frozen: true,
+    }),
+    ...rest,
   ];
 });
 
@@ -74,15 +82,19 @@ async function generate() {
 }
 
 const settings = computed<DataTableSettings>(() => {
-  const rows = data.rows;
   return identity<DataTableSettings>({
     columns: columnsRef.value,
-    datum: rows,
+    datum: data.rows,
     selfSort: true,
     rowHeight: 40,
     editable: true,
+    cellEvents: ['delete:row', 'select:row'],
   });
 });
+
+function onDeleteRow(index: number) {
+  data.rows.splice(index, 1);
+}
 
 const onUpdateData = (v: Data): void => {
   data.tableData = v;
@@ -127,7 +139,7 @@ onMounted(onGenerate);
       {{ data.tableData }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
-      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" />
+      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" @delete:row="onDeleteRow" />
     </div>
   </layout>
 </template>

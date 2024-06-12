@@ -14,14 +14,19 @@ export function useColumns(data: Data) {
       return it;
     });
 
+    const frozen = columns.filter((col) => col.frozen);
+
     const visibleColumns = sliceBy(columns, (col) => {
+      if (col.frozen) {
+        return false;
+      }
       return scrollLeft < col.offset + col.width && col.offset < bodyWidth + scrollLeft;
-    });
+    }).concat(frozen);
 
     return visibleColumns.map<TableColumn>((col) => ({
       ...col,
       style: {
-        left: `${col.offset - data.scrollLeft}px`,
+        left: col.frozen ? `${col.offset}px` : `${col.offset - data.scrollLeft}px`,
         width: `${col.width}px`,
       },
     }));

@@ -36,7 +36,7 @@ function onSort(col: ColumnSettings) {
 </script>
 
 <template>
-  <div class="cell th-cell" :data-col-id.attr="col.id" :class="{ 'justify-center': col.justify }" @contextmenu="onContextMenu">
+  <div class="cell th-cell" :data-col-id.attr="col.id" :class="{ 'justify-center': col.justify, frozen: col.frozen }" @contextmenu="onContextMenu">
     <div v-if="col.valueType" :class="col.valueType" />
     {{ col.label }}
     <div v-if="col.sort" class="sort" :class="col.sort.direction" @click.stop="() => onSort(col)" />

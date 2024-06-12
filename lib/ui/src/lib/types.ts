@@ -25,7 +25,7 @@ export type Option<T = unknown> = {
   value: T;
 };
 
-export type SimpleOption<T = unknown> = {
+export type IOption<T = unknown> = {
   text: string;
   value: T;
 };

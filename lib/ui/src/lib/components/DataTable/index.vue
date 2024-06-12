@@ -21,7 +21,7 @@ const emit = defineEmits<{
   (e: 'update:value', value: unknown): void;
   (e: 'update:data', value: Data): void;
   (e: 'delete:column', value: unknown): void;
-  (e: 'delete:row', value: unknown): void;
+  (e: 'delete:row', value: number): void;
   (e: 'change:sort', value: unknown): void;
 }>();
 
@@ -60,8 +60,6 @@ const datum = computed(() => {
   //   sortRows(columns, raw);
   // }
 
-  console.log('datum updated');
-
   return raw.map<RowSettings>((values, index) => ({
     values,
     index,
@@ -69,33 +67,6 @@ const datum = computed(() => {
     height: rowHeight,
   }));
 });
-
-// watch(
-//   () => props.settings.datum,
-//   () => {
-//     const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
-
-//     const gap = props.settings.gap ?? 1;
-
-//     const raw = props.settings.datum.slice();
-
-//     if (props.settings.selfSort) {
-//       // sortRows(columns, raw);
-//     }
-
-//     console.log('datum updated');
-
-//     data.rows = Object.freeze(
-//       raw.map<RowSettings>((values, index) => ({
-//         values,
-//         index,
-//         offset: index * (rowHeight + gap),
-//         height: rowHeight,
-//       })),
-//     );
-//   },
-//   { immediate: true, deep: true },
-// );
 
 watch(data, (v) => emit('update:data', v), { deep: true });
 
@@ -106,7 +77,6 @@ const headRef = ref<HTMLElement>();
 const bodyRef = ref<HTMLElement>();
 
 const updateDimensions = () => {
-  console.log('update');
   tapIf(bodyRef.value, (el) => {
     const rect = el.getBoundingClientRect();
     data.bodyHeight = rect.height;
@@ -161,7 +131,9 @@ const onWheel = (ev: WheelEvent) => {
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
     <div>columnsWidth: {{ columnsWidth }}</div>
     <div>bodyWidth: {{ data.bodyWidth }}</div>
+    <div>scrollLeft: {{ data.scrollLeft }}</div>
     <div>maxScrollLeft: {{ maxScrollLeft }}</div>
+    <div v-if="false">columns: {{ columns.map((c) => `${c.label} ${c.offset} ${c.width}`).join(', ') }}</div>
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head">
       <tr-head>

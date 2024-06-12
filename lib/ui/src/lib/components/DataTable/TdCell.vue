@@ -1,10 +1,10 @@
 <script lang="ts" setup>
+import { showContextMenu } from '../contextMenu';
 import { cellEventOptions } from './constants';
-import { useApi } from './domain';
 import type { CellEvent, CellProps } from './types';
 import { reactive, ref } from 'vue';
 
-const emit = defineEmits(['delete:row', 'update:value']);
+const emit = defineEmits(['delete:row', 'update:value', 'select:row']);
 
 const props = defineProps<{
   cell: CellProps;
@@ -24,19 +24,17 @@ const onInput = (ev: Event) => {
   data.edit = false;
 };
 
-function showContextMenu(ev: Event) {
+function onContextMenu(ev: MouseEvent) {
   ev.preventDefault();
-  console.log('showContextMenu');
   const cellEvents = props.cellEvents ?? [];
 
   const options = cellEventOptions.filter((opt) => cellEvents.includes(opt.value));
 
   if (!options.length) {
-    console.log('No options');
     return;
   }
 
-  useApi().showOptions(options, (op) => {
+  showContextMenu(ev, options, (op) => {
     emit(op, props.cell.rowIndex);
   });
 }
@@ -57,9 +55,9 @@ function onClick() {
   <div
     ref="cellRef"
     class="cell"
-    :class="{ [cell.class]: true, edit: data.edit }"
+    :class="{ [cell.class]: true, edit: data.edit, frozen: cell.column.frozen }"
     :data-row-index.attr="cell.rowIndex"
-    @contextmenu="showContextMenu"
+    @contextmenu="onContextMenu"
     @click.stop="onClick"
   >
     <input v-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput" />
