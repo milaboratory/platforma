@@ -1,6 +1,7 @@
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { AuthorMarker, BlockRenderingMode, ProjectMeta } from '../model/project_model';
 import { Section } from '@milaboratory/sdk-block-config';
+import { BlockPackSource } from '../model/block_pack_spec';
 
 //
 // Project List
@@ -36,6 +37,7 @@ export type BlockProductionStatus =
 export type ProjectOverview = {
   /** Metadata, like project label associated with the project */
   meta: ProjectMeta;
+
   /** Overview information for each block */
   blocks: BlockState[];
 }
@@ -69,7 +71,10 @@ export type BlockState = {
 
   /** True if current block can be executed in terms of
    * {@link Project.runBlock} method. */
-  canRun: boolean | undefined
+  canRun: boolean | undefined,
+
+  /** Information on where the block pack for this block came from */
+  blockPackSource: BlockPackSource | undefined
 }
 
 type CalculationStatus =
@@ -105,5 +110,8 @@ export interface FullBlockState {
   ui: any;
 
   /** Outputs, rendered with block-specified config. */
-  outputs: any;
+  outputs: any | undefined;
+
+  /** Information on where the block pack for this block came from */
+  blockPackSource: BlockPackSource | undefined;
 }

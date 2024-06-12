@@ -5,9 +5,9 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import { AuthorMarker, blockArgsAuthorKey, projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { ifNotUndef } from '../cfg_render/util';
-import { BlockConfig } from '@milaboratory/sdk-block-config';
 import { computableFromCfg } from '../cfg_render/executor';
 import { FullBlockState } from './models';
+import { BlockPackInfo } from '../model/block_pack';
 
 export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): Computable<FullBlockState> {
   return computable(projectEntry, {}, prjA => {
@@ -15,10 +15,12 @@ export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLay
     const ctx = constructBlockContext(prj, id);
 
     // block-pack
-    const blockCfg = prj.traverse(
+    const bpInfo = prj.traverse(
       { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
       { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-    )?.getDataAsJson<BlockConfig>();
+    )?.getDataAsJson<BlockPackInfo>();
+
+    const blockCfg = bpInfo?.config;
 
     // sections
     const outputs = ifNotUndef(blockCfg, cfg => {
@@ -32,7 +34,8 @@ export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLay
       author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
       args: ctx.$args,
       ui: ctx.$ui,
-      outputs
+      outputs,
+      blockPackSource: bpInfo?.source
     };
   });
 }

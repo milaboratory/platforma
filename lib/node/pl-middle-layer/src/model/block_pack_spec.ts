@@ -1,10 +1,12 @@
 import { ExplicitTemplate } from './template';
 import { ResourceType } from '@milaboratory/pl-client-v2';
+import { BlockConfig } from '@milaboratory/sdk-block-config';
 
 /** Block pack from local folder, to be used during block development. */
 export interface BlockPackDev {
   type: 'dev';
   folder: string;
+  mtime?: string;
 }
 
 /** Block pack from registry with version 1 layout, to be loaded directly
@@ -48,9 +50,13 @@ export interface FrontendFromFolder extends FrontendFromFolderData {
 export interface BlockPackExplicit {
   type: 'explicit';
   template: ExplicitTemplate;
-  config: Uint8Array;
+  config: BlockConfig;
   frontend: FrontendSpec;
+  source: BlockPackSource;
 }
+
+/** Information about block pack source persisted in block pack resource */
+export type BlockPackSource = BlockPackDev | BlockPackFromRegistryV1;
 
 /** Block-pack spec that can be materialized in pl. */
 export type BlockPackSpecPrepared = BlockPackExplicit;

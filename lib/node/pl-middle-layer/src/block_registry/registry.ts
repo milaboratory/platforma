@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratory/ts-helpers';
+import { DevBlockPackFiles } from '../mutator/block-pack/block_pack';
 
 /**
  * Information specified by the developer of the block.
@@ -38,6 +39,17 @@ export type BlockPackPackageOverview = {
 async function getFileContent(path: string) {
   try {
     return await fs.promises.readFile(path, 'utf8');
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
+async function getFileStat(path: string) {
+  try {
+    return await fs.promises.stat(path, { bigint: true });
   } catch (error: any) {
     if (error.code === 'ENOENT') {
       return undefined;
@@ -77,6 +89,7 @@ export class BlockPackRegistry {
           });
         }
         return result;
+
       case 'folder_with_dev_packages':
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
           if (!entry.isDirectory())
@@ -88,6 +101,17 @@ export class BlockPackRegistry {
           if (yamlContent === undefined)
             continue;
           const config = PlPackageConfigData.parse(YAML.parse(yamlContent));
+
+          let mtime = 0n;
+          for (const f of DevBlockPackFiles) {
+            const fullPath = path.join(devPath, ...f);
+            const stat = await getFileStat(fullPath);
+            if (stat === undefined)
+              continue;
+            if (mtime < stat.mtimeNs)
+              mtime = stat.mtimeNs;
+          }
+
           result.push({
             organization: config.organization,
             package: config.package, latestVersion: 'DEV',
@@ -95,7 +119,8 @@ export class BlockPackRegistry {
             registryLabel: regSpec.label,
             latestSpec: {
               type: 'dev',
-              folder: devPath
+              folder: devPath,
+              mtime: mtime.toString()
             },
             otherVersions: []
           });

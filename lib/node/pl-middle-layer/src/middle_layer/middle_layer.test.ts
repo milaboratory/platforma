@@ -120,13 +120,16 @@ test('simple project manipulations test', async () => {
       { depth: 5 });
 
     const block1StableState = await prj.getBlockState(block1Id).awaitStableValue();
+    expect(block1StableState.blockPackSource).toBeDefined();
     const block2StableState = await prj.getBlockState(block2Id).awaitStableValue();
+    expect(block2StableState.blockPackSource).toBeDefined();
     const block3StableState = await prj.getBlockState(block3Id).awaitStableValue();
+    expect(block3StableState.blockPackSource).toBeDefined();
 
     console.dir(block1StableState, { depth: 5 });
     console.dir(block2StableState, { depth: 5 });
     console.dir(block3StableState, { depth: 5 });
 
-    // console.log(block3StableState.outputs['sum'])
+    expect(block3StableState.outputs['sum']).toStrictEqual(18);
   });
 });

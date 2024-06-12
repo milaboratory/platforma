@@ -13,11 +13,12 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { BlockConfig, Section } from '@milaboratory/sdk-block-config';
+import { Section } from '@milaboratory/sdk-block-config';
 import { constructBlockContextArgsOnly } from './block_outputs';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockProductionStatus, ProdState, ProjectOverview } from './models';
+import { BlockPackInfo } from '../model/block_pack';
 
 type BlockInfo = {
   currentArguments: any,
@@ -96,19 +97,21 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       );
 
       // sections
-      const { sections, canRun } = ifNotUndef(blockPack?.getDataAsJson<BlockConfig<any, any, any>>(), blockConf => {
-        const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
-        return {
-          sections: computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
-          canRun: computableFromCfg(blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
-        };
-      }) || {};
+      const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
+      const { sections, canRun } = ifNotUndef(bpInfo?.config,
+        blockConf => {
+          const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
+          return {
+            sections: computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
+            canRun: computableFromCfg(blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
+          };
+        }) || {};
 
       return {
         id, label, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
-        calculationStatus, sections, canRun
+        calculationStatus, sections, canRun, blockPackSource: bpInfo?.source
       };
     });
 
