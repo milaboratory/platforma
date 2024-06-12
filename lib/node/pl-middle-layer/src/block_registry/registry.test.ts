@@ -9,14 +9,14 @@ test('testing local dev registry', async () => {
     path: path.resolve('integration')
   }]);
 
-  expect(await registry.getPackages()).toHaveLength(2);
+  expect(await registry.getPackagesOverview()).toHaveLength(2);
 });
 
 test('testing remote registry', async () => {
   const registry = new BlockPackRegistry([
     CentralRegistry, CentralDevSnapshotRegistry]);
 
-  const packages = await registry.getPackages();
+  const packages = await registry.getPackagesOverview();
   console.log(packages);
   expect(packages.length).toBeGreaterThanOrEqual(2);
 });

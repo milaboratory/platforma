@@ -12,19 +12,27 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratory/ts-helpers';
 
+/**
+ * Information specified by the developer of the block.
+ * */
 export type BlockPackMeta = {
   title: string
   description: string
   [metaField: string]: unknown;
 }
 
-export type BlockPackDescription = {
+/**
+ * Information about specific package with specific organization and package names.
+ * Mainly contain information about latest version of the package.
+ * */
+export type BlockPackPackageOverview = {
   organization: string,
   package: string,
   latestVersion: string,
   latestMeta: BlockPackMeta,
   registryLabel: string,
-  latestSpec: BlockPackSpecAny
+  latestSpec: BlockPackSpecAny,
+  otherVersions: string[]
 }
 
 async function getFileContent(path: string) {
@@ -43,8 +51,8 @@ export class BlockPackRegistry {
               private readonly http?: Dispatcher) {
   }
 
-  private async getPackagesForRoot(regSpec: RegistrySpec): Promise<BlockPackDescription[]> {
-    const result: BlockPackDescription[] = [];
+  private async getPackagesForRoot(regSpec: RegistrySpec): Promise<BlockPackPackageOverview[]> {
+    const result: BlockPackPackageOverview[] = [];
     switch (regSpec.type) {
       case 'remote_v1':
         const httpOptions = this.http !== undefined
@@ -64,7 +72,8 @@ export class BlockPackRegistry {
             latestSpec: {
               type: 'from-registry-v1',
               url: `${regSpec.url}/${packageContentPrefix({ organization, package: pkg, version: latestVersion })}`
-            }
+            },
+            otherVersions: overviewEntry.allVersions
           });
         }
         return result;
@@ -87,7 +96,8 @@ export class BlockPackRegistry {
             latestSpec: {
               type: 'dev',
               folder: devPath
-            }
+            },
+            otherVersions: []
           });
         }
         return result;
@@ -96,8 +106,8 @@ export class BlockPackRegistry {
     }
   }
 
-  public async getPackages(): Promise<BlockPackDescription[]> {
-    const packages: BlockPackDescription[] = [];
+  public async getPackagesOverview(): Promise<BlockPackPackageOverview[]> {
+    const packages: BlockPackPackageOverview[] = [];
     for (const regSpecs of this.registrySpecs)
       packages.push(...await this.getPackagesForRoot(regSpecs));
     return packages;
