@@ -338,16 +338,30 @@ export class PlTransaction {
     );
   }
 
-  public createStruct(type: ResourceType, data?: Uint8Array): ResourceRef {
+  public createStruct(type: ResourceType, data?: Uint8Array | string): ResourceRef {
     return this.createResource(false,
-      localId => ({ oneofKind: 'resourceCreateStruct', resourceCreateStruct: { type, id: localId, data } }),
+      localId => ({
+        oneofKind: 'resourceCreateStruct', resourceCreateStruct: {
+          type, id: localId,
+          data: data === undefined
+            ? undefined
+            : typeof data === 'string' ? Buffer.from(data) : data
+        }
+      }),
       r => r.resourceCreateStruct.resourceId
     );
   }
 
-  public createEphemeral(type: ResourceType, data?: Uint8Array): ResourceRef {
+  public createEphemeral(type: ResourceType, data?: Uint8Array | string): ResourceRef {
     return this.createResource(false,
-      localId => ({ oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: { type, id: localId, data } }),
+      localId => ({
+        oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: {
+          type, id: localId,
+          data: data === undefined
+            ? undefined
+            : typeof data === 'string' ? Buffer.from(data) : data
+        }
+      }),
       r => r.resourceCreateEphemeral.resourceId
     );
   }
