@@ -1,6 +1,6 @@
 import { ChangeSource, Computable, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher, rawComputable } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
-import { CallersCounter, MiLogger, TaskProcessor, asyncPool, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
@@ -15,27 +15,17 @@ import Denque from 'denque';
 import * as os from 'node:os';
 import { FilesCache } from './files_cache';
 import { randomUUID } from 'node:crypto';
-import { scheduler } from 'node:timers/promises';
-import { text, buffer } from "node:stream/consumers";
+import { buffer } from "node:stream/consumers";
 import { Readable } from 'node:stream';
 
-export type BlobResult =
-  & {
-    readonly type: 'BlobResult'
-  }
-  & (
-    | {
-      readonly success: true;
-      readonly path: PathLike;
-      readonly sizeBytes: number
-    }
-    | {
-      readonly success: false;
-      readonly error: string;
-    }
-  );
+export interface DownloadedBlobHandle {
+  readonly type: 'DownloadedBlob';
+  readonly handle: string;
+  readonly sizeBytes: number;
+}
 
-export interface OnDemandBlob {
+/** You can pass it to DownloadDriver.getContent and gets a content of the blob. */
+export interface OnDemandBlobHandle {
   type: 'OnDemandBlob';
   rInfo: ResourceInfo
 }
@@ -73,14 +63,10 @@ LogsAsyncReader {
     this.downloadQueue = new TaskProcessor(this.logger, nConcurrentDownloads);
   }
 
-  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): LogsSyncAccessor {
-    return new LogsSyncAccessor(watcher, ctx, this);
-  }
-
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
   getDownloadedBlob(
     rInfo: ResourceInfo,
-  ): Computable<BlobResult | undefined> {
+  ): Computable<DownloadedBlobHandle | undefined> {
     return rawComputable((w: Watcher, ctx: ComputableCtx) => {
       const callerId = randomUUID();
       ctx.setOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
@@ -93,16 +79,47 @@ LogsAsyncReader {
     })
   }
 
-  getDownloadedBlobNoComputable(
+  getOnDemandBlob(rInfo: ResourceInfo): Computable<OnDemandBlobHandle> {
+    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
+      const callerId = randomUUID();
+      ctx.setOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
+      const result = this.getOnDemandBlobNoComputable(w, rInfo, callerId);
+      return result;
+    })
+  }
+
+  getPath(b: DownloadedBlobHandle): string {
+    return b.handle;
+  }
+  
+  async getContent(b: DownloadedBlobHandle | OnDemandBlobHandle): Promise<Uint8Array | undefined> {
+    if (b.type == 'DownloadedBlob') {
+      return await read(b.handle);
+    }
+
+    const { content } = await this.clientDownload.downloadBlob(b.rInfo);
+    return await buffer(content);
+  }
+  
+  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): LogsSyncAccessor {
+    return new LogsSyncAccessor(watcher, ctx, this);
+  }
+
+  private getDownloadedBlobNoComputable(
     w: Watcher,
     rInfo: ResourceInfo,
     callerId: string,
-  ): BlobResult | undefined {
+  ): DownloadedBlobHandle | undefined {
     const task = this.idToDownload.get(rInfo.id);
 
     if (task != undefined) {
       task.attach(w, callerId);
-      return task.getBlob();
+      const result = task.getBlob();
+      if (result?.success == false) {
+        throw result.error;
+      }
+
+      return result;
     }
 
     // Schedule the blob downloading.
@@ -112,7 +129,11 @@ LogsAsyncReader {
       recoverableErrorPredicate: (_) => true,
     })
 
-    return newTask.getBlob();
+    const result = newTask.getBlob();
+    if (result?.success == false)
+      throw result.error;
+
+    return result;
   }
 
   private setNewDownloadTask(w: Watcher, rInfo: ResourceInfo, callerId: string) {
@@ -133,20 +154,11 @@ LogsAsyncReader {
       this.cache.addCache(task, callerId);
   }
 
-  getOnDemandBlob(rInfo: ResourceInfo): Computable<OnDemandBlob> {
-    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
-      const callerId = randomUUID();
-      ctx.setOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
-      const result = this.getOnDemandBlobNoComputable(w, rInfo, callerId);
-      return result;
-    })
-  }
-
-  getOnDemandBlobNoComputable(
+  private getOnDemandBlobNoComputable(
     w: Watcher,
     { id, type }: ResourceInfo,
     callerId: string,
-  ): OnDemandBlob {
+  ): OnDemandBlobHandle {
     const blob = this.idToOnDemand.get(id);
 
     if (blob == undefined) {
@@ -160,18 +172,6 @@ LogsAsyncReader {
     return blob.get();
   }
 
-  async getContent(b: OnDemandBlob | BlobResult): Promise<Uint8Array | undefined> {
-    if (b.type == 'BlobResult') {
-      if (!b.success)
-        return undefined;
-
-      return await read(b.path);
-    }
-
-    const { content } = await this.clientDownload.downloadBlob(b.rInfo);
-    return await buffer(content);
-  }
-
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
   getLastLogs(
@@ -183,13 +183,11 @@ LogsAsyncReader {
     const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
     if (blob == undefined)
       return { log: '' };
-    if (!blob.success)
-      return { log: '', error: blob.error };
 
     const logGetter = this.idToLastLines.get(rInfo.id);
 
     if (logGetter == undefined) {
-      const newLogGetter = new LastLinesGetter(blob.path, lines);
+      const newLogGetter = new LastLinesGetter(blob.handle, lines);
       this.idToLastLines.set(rInfo.id, newLogGetter);
       return newLogGetter.getOrSchedule(w);
     }
@@ -208,20 +206,26 @@ LogsAsyncReader {
     const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
     if (blob == undefined)
       return { log: '' };
-    if (!blob.success)
-      return { log: '', error: blob.error };
 
     const logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(
-        blob.path, 1, patternToSearch,
+        blob.handle, 1, patternToSearch,
       );
       this.idToProgressLog.set(rInfo.id, newLogGetter);
-      return newLogGetter.getOrSchedule(w);
+      const result = newLogGetter.getOrSchedule(w);
+      if (result.error)
+        throw result.error;
+
+      return result;
     }
 
-    return logGetter.getOrSchedule(w);
+    const result = logGetter.getOrSchedule(w);
+    if (result.error)
+      throw result.error;
+
+    return result;
   }
 
   /** Returns an Id of a smart object, that can read logs directly from
@@ -234,11 +238,9 @@ LogsAsyncReader {
     const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
     if (blob == undefined)
       return undefined;
-    if (!blob.success)
-      return undefined;
 
     return {
-      id: blob.path,
+      id: blob.handle,
       rInfo: rInfo,
     }
   }
@@ -319,7 +321,7 @@ class OnDemandBlobHolder {
 
   constructor(private readonly rInfo: ResourceInfo) {}
 
-  get(): OnDemandBlob {
+  get(): OnDemandBlobHandle {
     return {
       type: 'OnDemandBlob',
       rInfo: this.rInfo,
@@ -340,7 +342,7 @@ class LastLinesGetter {
   private updater: Updater;
   private logs: string = "";
   private readonly change: ChangeSource = new ChangeSource();
-  private error: string | undefined = undefined;
+  private error: any | undefined = undefined;
 
   constructor(
     private readonly path: string,
@@ -352,7 +354,7 @@ class LastLinesGetter {
     )
   }
 
-  getOrSchedule(w: Watcher): LogResult {
+  getOrSchedule(w: Watcher): LogResult & {error?: any} {
     this.change.attachWatcher(w);
 
     this.updater.schedule();
@@ -427,7 +429,7 @@ export class Download {
   readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
   readonly signalCtl = new AbortController();
-  error: string | undefined;
+  error: any | undefined;
   done = false;
   sizeBytes = 0;
 
@@ -469,18 +471,17 @@ export class Download {
     }
   }
 
-  getBlob(): BlobResult | undefined {
+  getBlob(): (DownloadedBlobHandle & {success: true}) | {success: false, error: Error} | undefined {
     if (this.done)
       return {
-        type: 'BlobResult',
         success: true,
-        path: notEmpty(this.path),
+        type: 'DownloadedBlob',
+        handle: notEmpty(this.path),
         sizeBytes: this.sizeBytes,
       };
 
     if (this.error)
       return {
-        type: 'BlobResult',
         success: false,
         error: this.error,
       };
@@ -499,7 +500,7 @@ export class Download {
   }
 
   private setError(e: any) {
-    this.error = String(e);
+    this.error = e;
     this.change.markChanged();
   }
 }

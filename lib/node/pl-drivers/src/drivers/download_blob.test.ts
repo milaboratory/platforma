@@ -25,12 +25,9 @@ test('should download a blob and read its content', async () => {
 
     const blob2 = await c.getValue();
     expect(blob2).not.toBeUndefined();
-    expect(blob2!.success).toBeTruthy();
-    if (blob2 != undefined && blob2!.success) {
-      expect(blob2.path).not.toBeUndefined();
-      expect(blob2.sizeBytes).toBe(3);
-      expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
-    }
+    expect(blob2!.handle).not.toBeUndefined();
+    expect(blob2!.sizeBytes).toBe(3);
+    expect((await driver.getContent(blob2!))?.toString()).toBe("42\n");
   })
 })
 
@@ -70,12 +67,9 @@ test(
 
       const blob2 = await c.getValue();
       expect(blob2).not.toBeUndefined();
-      expect(blob2!.success).toBeTruthy();
-      if (blob2 != undefined && blob2!.success) {
-        expect(blob2.path).not.toBeUndefined();
-        expect(blob2.sizeBytes).toBe(3);
-        expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
-      }
+      expect(blob2!.handle).not.toBeUndefined();
+      expect(blob2!.sizeBytes).toBe(3);
+      expect((await driver.getContent(blob2!))?.toString()).toBe("42\n");
 
       // The blob is removed from a cache since the size is too big.
       c.resetState();
@@ -106,12 +100,9 @@ test(
 
       const blob2 = await c.getValue();
       expect(blob2).not.toBeUndefined();
-      expect(blob2!.success).toBeTruthy();
-      if (blob2 != undefined && blob2!.success) {
-        expect(blob2.path).not.toBeUndefined();
-        expect(blob2.sizeBytes).toBe(3);
-        expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
-      }
+      expect(blob2!.handle).not.toBeUndefined();
+      expect(blob2!.sizeBytes).toBe(3);
+      expect((await driver.getContent(blob2!))?.toString()).toBe("42\n");
 
       // The blob is removed from a cache since the size is too big.
       c.resetState();
@@ -121,12 +112,9 @@ test(
 
       const blob3 = await c2.getValue();
       expect(blob3).not.toBeUndefined();
-      expect(blob3!.success).toBeTruthy();
-      if (blob3 != undefined && blob3!.success) {
-        expect(blob3.path).not.toBeUndefined();
-        expect(blob3.sizeBytes).toBe(3);
-        expect((await driver.getContent(blob3))?.toString()).toBe("42\n");
-      }
+      expect(blob3!.handle).not.toBeUndefined();
+      expect(blob3!.sizeBytes).toBe(3);
+      expect((await driver.getContent(blob3!))?.toString()).toBe("42\n");
     })
   }
 )

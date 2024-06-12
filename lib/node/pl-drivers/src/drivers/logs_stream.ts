@@ -1,4 +1,4 @@
-import { ChangeSource, Computable, ComputableCtx, PollingComputableHooks, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
+import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { CallersCounter, mapGet } from '@milaboratory/ts-helpers';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
@@ -6,7 +6,6 @@ import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import { ResourceInfo } from '../clients/helpers';
 import { LongUpdater } from './helpers';
-import { scheduler } from 'node:timers/promises';
 
 export interface LogsSyncReader {
   /** Returns all logs and schedules a job that reads remain logs.
@@ -38,7 +37,6 @@ export interface LogsSyncReader {
 
 export interface LogResult {
   log: string;
-  error?: string;
 }
 
 export interface LogId {
@@ -149,10 +147,19 @@ LogsDestroyer {
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(this.clientLogs, rInfo, lines);
       this.idToLastLines.set(rInfo.id, newLogGetter);
-      return newLogGetter.getOrSchedule(w, callerId);
+      const result = newLogGetter.getOrSchedule(w, callerId);
+
+      if (result.error != undefined)
+        return {log: ''};
+
+      return result;
     }
 
-    return logGetter.getOrSchedule(w, callerId);
+    const result = logGetter.getOrSchedule(w, callerId);
+    if (result.error != undefined)
+      throw result.error;
+
+    return result;
   }
 
   getProgressLog(
@@ -231,7 +238,7 @@ class LastLinesGetter {
   private logs: string = "";
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
-  private error: string | undefined = undefined;
+  private error: any | undefined = undefined;
 
   constructor(
     private readonly clientLogs: ClientLogs,
@@ -246,7 +253,7 @@ class LastLinesGetter {
     )
   }
 
-  getOrSchedule(w: Watcher, callerId: string): LogResult {
+  getOrSchedule(w: Watcher, callerId: string): LogResult & {error?: any} {
     this.counter.inc(callerId);
     this.change.attachWatcher(w);
 

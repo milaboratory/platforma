@@ -58,7 +58,6 @@ test('should get all logs', async () => {
 
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result?.done) {
-        expect(result.error).toBeUndefined();
         expect(result.log).toStrictEqual("1\n2\n")
         return;
       }
@@ -114,7 +113,6 @@ test('should get last line with a prefix', async () => {
       const result = await c.getValue();
       logger.info(`got result: ${JSON.stringify(result)}`);
       if (result?.done) {
-        expect(result.error).toBeUndefined();
         expect(result.log).toStrictEqual("PREFIX4\n")
         return;
       }

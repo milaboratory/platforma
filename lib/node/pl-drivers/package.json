@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-drivers",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to Platforma",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
