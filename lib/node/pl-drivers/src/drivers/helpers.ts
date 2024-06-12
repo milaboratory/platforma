@@ -1,6 +1,5 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { ClientLogs } from "../clients/logs";
-import { DownloadDriver } from "./download_and_logs_blob";
 import { LogsDriver } from "./logs_stream";
 import { MiLogger } from "@milaboratory/ts-helpers";
 import {
@@ -15,6 +14,7 @@ import { ResourceInfo, createDownloadClient, createLogsClient, createUploadBlobC
 import { UploadDriver } from "./upload";
 import { scheduler } from 'node:timers/promises';
 import { DownloadUrlDriver } from './download_url';
+import { DownloadDriver } from './download_and_logs_blob';
 
 /** Just a helper to create a driver and all clients. */
 export function createDownloadUrlDriver(

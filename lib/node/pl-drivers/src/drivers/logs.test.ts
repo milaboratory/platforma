@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { ResourceInfo } from '../clients/helpers';
 import { scheduler } from 'node:timers/promises';
-import { Log, LogId, LogsDriver } from './logs_stream';
+import { LogId, LogsDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
 
 const callerId = 'callerId';
@@ -17,15 +17,15 @@ test('should get all logs', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
 
-    const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
+    const tree = await SynchronizedTreeState.init(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
     const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
-      tree.accessor(), { mode: 'StableOnlyRetentive' },
+      tree.entry(), { mode: 'StableOnlyRetentive' },
       tree => {
-        const stream = tree.traverse({}, 'result', 'stream')?.value;
+        const stream = tree.node().traverse('result', 'stream');
         if (stream == undefined)
           return undefined;
 
@@ -70,15 +70,15 @@ test('should get last line with a prefix', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
 
-    const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
+    const tree = await SynchronizedTreeState.init(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
     const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
-      tree.accessor(), { mode: 'StableOnlyRetentive' },
+      tree.entry(), { mode: 'StableOnlyRetentive' },
       tree => {
-        const stream = tree.traverse({}, 'result', 'stream')?.value;
+        const stream = tree.node().traverse('result', 'stream');
         if (stream == undefined)
           return undefined;
 
@@ -126,15 +126,15 @@ test('should get log smart object and get log lines from that', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
 
-    const tree = new SynchronizedTreeState(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
+    const tree = await SynchronizedTreeState.init(client, client.clientRoot, { stopPollingDelay: 10, pollingInterval: 10 });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
     const download = createDownloadDriver(client, logger, dir, 700 * 1024);
 
     const c = computable(
-      tree.accessor(), { mode: 'StableOnlyRetentive' },
+      tree.entry(), { mode: 'StableOnlyRetentive' },
       tree => {
-        const stream = tree.traverse({}, 'result', 'stream')?.value;
+        const stream = tree.node().traverse('result', 'stream');
         if (stream == undefined)
           return undefined;
 

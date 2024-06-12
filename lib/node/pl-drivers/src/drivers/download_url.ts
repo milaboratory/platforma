@@ -1,4 +1,4 @@
-import { Aborted, CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream'
@@ -185,7 +185,7 @@ class Download {
       )
       this.setDone(sizeBytes);
     } catch (e: any) {
-      if (e instanceof Aborted || e instanceof NetworkError400) {
+      if (e instanceof URLAborted || e instanceof NetworkError400) {
         this.setError(e);
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
@@ -237,7 +237,7 @@ class Download {
   }
 
   abort(reason: string) {
-    this.signalCtl.abort(new Aborted(reason));
+    this.signalCtl.abort(new URLAborted(reason));
   }
 
   private setError(e: any) {
@@ -245,6 +245,8 @@ class Download {
     this.change.markChanged();
   }
 }
+
+class URLAborted extends Error {}
 
 async function fileExists(path: string): Promise<boolean> {
   try {

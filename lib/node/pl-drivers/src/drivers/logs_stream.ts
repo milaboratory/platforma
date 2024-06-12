@@ -76,7 +76,7 @@ export class LogsSyncAccessor {
   constructor(
     private readonly w: Watcher,
     private readonly ctx: ComputableCtx,
-    private readonly reader: LogsSyncReader & LogsDestroyer,
+    private readonly reader: LogsSyncReader,
   ) {}
 
   getLastLogs(

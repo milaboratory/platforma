@@ -1,132 +1,62 @@
-import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
+import { ChangeSource, Computable, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher, rawComputable } from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
-import { CallersCounter, MiLogger, TaskProcessor, mapGet, notEmpty } from '@milaboratory/ts-helpers';
+import { CallersCounter, MiLogger, TaskProcessor, asyncPool, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { Writable } from 'node:stream'
 import { ClientDownload } from '../clients/download';
 import { ResourceInfo } from '../clients/helpers';
-import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncReader } from './logs_stream';
+import { Log, LogId, LogResult, LogsAsyncReader, LogsSyncAccessor, LogsSyncReader } from './logs_stream';
 import { ClientLogs } from '../clients/logs';
 import { Updater } from './helpers';
 import * as readline from 'node:readline/promises';
 import Denque from 'denque';
 import * as os from 'node:os';
 import { FilesCache } from './files_cache';
+import { randomUUID } from 'node:crypto';
+import { scheduler } from 'node:timers/promises';
+import { text, buffer } from "node:stream/consumers";
+import { Readable } from 'node:stream';
 
-export interface DownloadSyncReader {
-  /** If a blob were already downloaded, returns a path. */
-  getDownloadedBlob(
-    watcher: Watcher,
-    { id, type }: ResourceInfo,
-    callerId: string,
-  ): BlobResult | undefined;
+export type BlobResult =
+  & {
+    readonly type: 'BlobResult'
+  }
+  & (
+    | {
+      readonly success: true;
+      readonly path: PathLike;
+      readonly sizeBytes: number
+    }
+    | {
+      readonly success: false;
+      readonly error: string;
+    }
+  );
 
-  /** Get an Url for downloading without downloading it on a hard drive. */
-  getUrl(
-    watcher: Watcher,
-    { id, type }: ResourceInfo,
-    callerId: string,
-  ): string | undefined;
+export interface OnDemandBlob {
+  type: 'OnDemandBlob';
+  rInfo: ResourceInfo
 }
-
-export interface DownloadDestroyer {
-  /** Call when a renderer will be destroyed.
-   * It will clean a cache on a hard drive if it exceeds a soft limit. */
-  releaseBlob(rId: ResourceId, callerId: string): Promise<void>;
-
-  /** Call it when the cell that holds an url is destroyed. */
-  releaseUrl(rId: ResourceId, callerId: string): Promise<void>;
-}
-
-/** Just binds a watcher to a DownloadSyncReader. */
-export class DownloadSyncAccessor {
-  constructor(
-    private readonly w: Watcher,
-    private readonly ctx: ComputableCtx,
-    private readonly reader: DownloadSyncReader & LogsSyncReader,
-  ) {}
-
-  getDownloadedBlob(rInfo: ResourceInfo, callerId: string) {
-    const blob = this.reader.getDownloadedBlob(this.w, rInfo, callerId);
-    if (blob == undefined)
-      this.ctx.markUnstable();
-    return blob;
-  }
-
-  getUrl(rInfo: ResourceInfo, callerId: string): string | undefined {
-    const url = this.reader.getUrl(this.w, rInfo, callerId);
-    if (url == undefined)
-      this.ctx.markUnstable();
-    return url;
-  }
-
-  getLastLogs(
-    rInfo: ResourceInfo,
-    lines: number,
-    callerId: string,
-  ): LogResult {
-    const logs = this.reader.getLastLogs(this.w, rInfo, lines, callerId);
-    if (logs.log == '')
-      this.ctx.markUnstable();
-    return logs;
-  }
-
-  getProgressLog(
-    rInfo: ResourceInfo,
-    patternToSearch: string,
-    callerId: string,
-  ): LogResult {
-    const logs = this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
-    if (logs.log == '')
-      this.ctx.markUnstable();
-    return logs;
-  }
-
-  getLogId(
-    rInfo: ResourceInfo,
-    callerId: string,
-  ): LogId | undefined {
-    return this.reader.getLogId(this.w, rInfo, callerId);
-  }
-}
-
-export class BlobResult {
-  readonly counter = new CallersCounter();
-
-  constructor(
-    readonly rId: ResourceId,
-    readonly path: PathLike,
-    readonly sizeBytes: number,
-  ) {}
-}
-
-type PathLike = string;
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
 export class DownloadDriver implements
-TrackedAccessorProvider<DownloadSyncAccessor>,
-DownloadSyncReader,
-DownloadDestroyer,
+TrackedAccessorProvider<LogsSyncAccessor>,
 LogsSyncReader,
 LogsAsyncReader {
   /** Represents a Resource Id to the path of a blob as a map. */
-  private idToDownloadedPath: Map<ResourceId, string> = new Map();
+  private idToDownload: Map<ResourceId, Download> = new Map();
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
-  private cache: FilesCache<BlobResult>;
-
-  /** Represents a Resource Id to ChangeSource as a map. */
-  private idToChange: Map<ResourceId, ChangeSource> = new Map();
+  private cache: FilesCache<Download>;
 
   /** Downloads files and writes them to the local dir. */
   private downloadQueue: TaskProcessor;
 
-  /** Holds Urls */
-  private idToUrl: Map<ResourceId, UrlGetter> = new Map();
+  private idToOnDemand: Map<ResourceId, OnDemandBlobHolder> = new Map();
 
   private idToLastLines: Map<ResourceId, LastLinesGetter> = new Map();
   private idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
@@ -143,94 +73,103 @@ LogsAsyncReader {
     this.downloadQueue = new TaskProcessor(this.logger, nConcurrentDownloads);
   }
 
-  /** Just binds a watcher to DownloadSyncAccessor. */
-  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): DownloadSyncAccessor {
-    return new DownloadSyncAccessor(watcher, ctx, this);
+  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): LogsSyncAccessor {
+    return new LogsSyncAccessor(watcher, ctx, this);
   }
 
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
   getDownloadedBlob(
+    rInfo: ResourceInfo,
+  ): Computable<BlobResult | undefined> {
+    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
+      const callerId = randomUUID();
+      ctx.setOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
+
+      const result = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
+      if (result == undefined)
+        ctx.markUnstable();
+
+      return result;
+    })
+  }
+
+  getDownloadedBlobNoComputable(
     w: Watcher,
     rInfo: ResourceInfo,
     callerId: string,
   ): BlobResult | undefined {
-    const path = this.idToDownloadedPath.get(rInfo.id);
+    const task = this.idToDownload.get(rInfo.id);
 
-    if (path == undefined) {
-      // Schedule the blob downloading.
-      const fPath = this.setNewFilePath(w, rInfo.id);
-      this.downloadQueue.push({
-        fn: () => this.downloadBlob(rInfo, fPath, callerId),
-        recoverableErrorPredicate: (_) => true,
-      })
-
-      return undefined;
+    if (task != undefined) {
+      task.attach(w, callerId);
+      return task.getBlob();
     }
 
-    const result = this.cache.getFile(path, callerId);
+    // Schedule the blob downloading.
+    const newTask = this.setNewDownloadTask(w, rInfo, callerId);
+    this.downloadQueue.push({
+      fn: () => this.downloadBlob(newTask, callerId),
+      recoverableErrorPredicate: (_) => true,
+    })
 
-    if (result == undefined) {
-      // Another thing is already calculating a result.
-      this.attachWatcherToFilePath(w, rInfo.id);
-      return undefined;
-    }
+    return newTask.getBlob();
+  }
 
-    // Path is ready, the client can request a blob.
+  private setNewDownloadTask(w: Watcher, rInfo: ResourceInfo, callerId: string) {
+    const fPath = this.getFilePath(rInfo.id);
+    const result = new Download(this.clientDownload, rInfo, fPath);
+    result.attach(w, callerId);
+    this.idToDownload.set(rInfo.id, result);
+
     return result;
   }
 
-  private setNewFilePath(w: Watcher, rId: ResourceId) {
-    const change = new ChangeSource();
-    this.idToChange.set(rId, change);
-    change.attachWatcher(w);
-
-    const fPath = this.getFilePath(rId);
-    this.idToDownloadedPath.set(rId, fPath);
-
-    return fPath;
-  }
-
   private async downloadBlob(
-    { id, type }: ResourceInfo,
-    fPath: string,
+    task: Download,
     callerId: string,
   ) {
-    const { content, size } = await this.clientDownload.downloadBlob(
-      { id, type },
-    );
-    const result = new BlobResult(id, fPath, size);
-
-    // check in case we already have a file by this resource id
-    // in the directory. It can happen when we forgot to call removeAll
-    // in the previous launch.
-    if (!(await fileExists(fPath))) {
-      const fileToWrite = Writable.toWeb(fs.createWriteStream(fPath));
-      await content.pipeTo(fileToWrite);
-    }
-
-    this.cache.addCache(result, callerId);
-    mapGet(this.idToChange, id).markChanged();
+    await task.download();
+    if (task.getBlob()?.success)
+      this.cache.addCache(task, callerId);
   }
 
-  private attachWatcherToFilePath(w: Watcher, rId: ResourceId) {
-    mapGet(this.idToChange, rId).attachWatcher(w);
+  getOnDemandBlob(rInfo: ResourceInfo): Computable<OnDemandBlob> {
+    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
+      const callerId = randomUUID();
+      ctx.setOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
+      const result = this.getOnDemandBlobNoComputable(w, rInfo, callerId);
+      return result;
+    })
   }
 
-  /** Gets an URL by its resource id or downloads a blob and sets it in a cache. */
-  getUrl(
+  getOnDemandBlobNoComputable(
     w: Watcher,
     { id, type }: ResourceInfo,
     callerId: string,
-  ): string | undefined {
-    const urlGetter = this.idToUrl.get(id);
+  ): OnDemandBlob {
+    const blob = this.idToOnDemand.get(id);
 
-    if (urlGetter == undefined) {
-      const newUrlGetter = new UrlGetter(this.clientDownload, { id, type });
-      this.idToUrl.set(id, newUrlGetter);
-      return newUrlGetter.getUrlOrSchedule(w, callerId);
+    if (blob == undefined) {
+      const newBlob = new OnDemandBlobHolder({ id, type });
+      newBlob.attach(w, callerId);
+      this.idToOnDemand.set(id, newBlob);
+
+      return newBlob.get();
     }
 
-    return urlGetter.getUrlOrSchedule(w, callerId);
+    return blob.get();
+  }
+
+  async getContent(b: OnDemandBlob | BlobResult): Promise<Uint8Array | undefined> {
+    if (b.type == 'BlobResult') {
+      if (!b.success)
+        return undefined;
+
+      return await read(b.path);
+    }
+
+    const { content } = await this.clientDownload.downloadBlob(b.rInfo);
+    return await buffer(content);
   }
 
   /** Returns all logs and schedules a job that reads remain logs.
@@ -241,9 +180,11 @@ LogsAsyncReader {
     lines: number,
     callerId: string,
   ): LogResult {
-    const blob = this.getDownloadedBlob(w, rInfo, callerId);
+    const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
     if (blob == undefined)
       return { log: '' };
+    if (!blob.success)
+      return { log: '', error: blob.error };
 
     const logGetter = this.idToLastLines.get(rInfo.id);
 
@@ -264,9 +205,11 @@ LogsAsyncReader {
     patternToSearch: string,
     callerId: string,
   ): LogResult {
-    const blob = this.getDownloadedBlob(w, rInfo, callerId);
+    const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
     if (blob == undefined)
       return { log: '' };
+    if (!blob.success)
+      return { log: '', error: blob.error };
 
     const logGetter = this.idToProgressLog.get(rInfo.id);
 
@@ -288,12 +231,14 @@ LogsAsyncReader {
     rInfo: ResourceInfo,
     callerId: string,
   ): LogId | undefined {
-    const path = this.getDownloadedBlob(w, rInfo, callerId)?.path;
-    if (path == undefined)
+    const blob = this.getDownloadedBlobNoComputable(w, rInfo, callerId);
+    if (blob == undefined)
+      return undefined;
+    if (!blob.success)
       return undefined;
 
     return {
-      id: path,
+      id: blob.path,
       rInfo: rInfo,
     }
   }
@@ -314,42 +259,52 @@ LogsAsyncReader {
     }
   }
 
-  /** Implements DownloadDestroyer. */
   async releaseBlob(blobId: ResourceId, callerId: string) {
-    const path = this.idToDownloadedPath.get(blobId);
-    if (path == undefined)
+    const task = this.idToDownload.get(blobId);
+    if (task == undefined)
       return;
 
-    const toDelete = this.cache.removeFile(notEmpty(path), callerId);
+    if (this.cache.existsFile(task.path)) {
+      const toDelete = this.cache.removeFile(task.path, callerId)
+      await Promise.all(toDelete.map(async (task) => {
+        await fsp.rm(task.path);
 
-    await Promise.all(toDelete.map(async (blob) => {
-      await fsp.rm(blob.path);
+        this.cache.removeCache(task);
 
-      this.cache.removeCache(blob);
-
-      this.idToChange.get(blob.rId)?.markChanged();
-      this.idToChange.delete(blob.rId);
-      this.idToDownloadedPath.delete(blob.rId);
-      this.idToLastLines.delete(blob.rId);
-      this.idToProgressLog.delete(blob.rId);
-    }))
+        this.removeTask(
+          task, `the task ${task.path} was removed`
+            + `from cache along with ${toDelete.map(d => d.path)}`,
+        )
+      }))
+    } else {
+      // The task is still in a downloading queue.
+      const deleted = task.counter.dec(callerId);
+      if (deleted)
+        this.removeTask(task, `the task ${task.path} was removed from cache`);
+    }
   }
 
-  /** Implements DownloadDestroyer. */
-  async releaseUrl(blobId: ResourceId, callerId: string) {
-    const deleted = this.idToUrl.get(blobId)?.release(callerId) ?? false;
+  private removeTask(task: Download, reason: string) {
+    task.abort(reason);
+    task.change.markChanged();
+    this.idToDownload.delete(task.rInfo.id);
+    this.idToLastLines.delete(task.rInfo.id);
+    this.idToProgressLog.delete(task.rInfo.id);
+  }
+
+  async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
+    const deleted = this.idToOnDemand.get(blobId)?.release(callerId) ?? false;
     if (deleted)
-      this.idToUrl.delete(blobId);
+      this.idToOnDemand.delete(blobId);
   }
 
   /** Removes all files from a hard drive. */
   async releaseAll() {
     this.downloadQueue.stop();
 
-    this.idToChange.forEach((change, blobId) => {
-      this.idToChange.delete(blobId);
-      this.idToDownloadedPath.delete(blobId);
-      change.markChanged();
+    this.idToDownload.forEach((task, blobId) => {
+      this.idToDownload.delete(blobId);
+      task.change.markChanged();
     });
   }
 
@@ -358,40 +313,22 @@ LogsAsyncReader {
   }
 }
 
-class UrlGetter {
-  private updating: Promise<void> | undefined;
-  private url: string | undefined;
-  private change: ChangeSource = new ChangeSource();
-  private counter: CallersCounter = new CallersCounter();
+class OnDemandBlobHolder {
+  private change = new ChangeSource();
+  private counter = new CallersCounter();
 
-  constructor(
-    private readonly clientDownload: ClientDownload,
-    private readonly rInfo: ResourceInfo,
-  ) {
+  constructor(private readonly rInfo: ResourceInfo) {}
+
+  get(): OnDemandBlob {
+    return {
+      type: 'OnDemandBlob',
+      rInfo: this.rInfo,
+    }
   }
 
-  getUrlOrSchedule(w: Watcher, callerId: string) {
+  attach(w: Watcher, callerId: string) {
     this.counter.inc(callerId);
     this.change.attachWatcher(w);
-
-    if (this.url !== undefined) {
-      const url = this.url;
-      // this.url = undefined; // TODO: do we need to refresh Url somehow? It expires.
-      return url;
-    }
-
-    if (this.updating !== undefined) {
-      return undefined;
-    }
-
-    this.updating = this.getUrl();
-    return undefined;
-  }
-
-  private async getUrl() {
-    this.url = (await this.clientDownload.getUrl(this.rInfo)).downloadUrl;
-    this.change.markChanged();
-    this.updating = undefined;
   }
 
   release(callerId: string): boolean {
@@ -453,6 +390,10 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
+async function read(path: string): Promise<Uint8Array> {
+  return await buffer(Readable.toWeb(fs.createReadStream(path)))
+}
+
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
 function getLastLines(fPath: PathLike, nLines: number, patternToSearch?: string): Promise<string> {
@@ -481,3 +422,88 @@ function getLastLines(fPath: PathLike, nLines: number, patternToSearch?: string)
     });
   })
 }
+
+export class Download {
+  readonly counter = new CallersCounter();
+  readonly change = new ChangeSource();
+  readonly signalCtl = new AbortController();
+  error: string | undefined;
+  done = false;
+  sizeBytes = 0;
+
+  constructor(
+    readonly clientDownload: ClientDownload,
+    readonly rInfo: ResourceInfo,
+    readonly path: string,
+  ) {}
+
+  attach(w: Watcher, callerId: string) {
+    this.counter.inc(callerId);
+    if (!this.done)
+      this.change.attachWatcher(w);
+  }
+
+  async download() {
+    try {
+      // TODO: move size bytes inside fileExists check like in download_url.
+      const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
+
+      // check in case we already have a file by this resource id
+      // in the directory. It can happen when we forgot to call removeAll
+      // in the previous launch.
+      if (!(await fileExists(this.path))) {
+        const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
+        await content.pipeTo(fileToWrite);
+      }
+
+      this.setDone(size);
+    } catch (e: any) {
+      if (e instanceof DownloadAborted) {
+        this.setError(e);
+        // Just in case we were half-way extracting an archive.
+        await fsp.rm(this.path);
+        return;
+      }
+
+      throw e;
+    }
+  }
+
+  getBlob(): BlobResult | undefined {
+    if (this.done)
+      return {
+        type: 'BlobResult',
+        success: true,
+        path: notEmpty(this.path),
+        sizeBytes: this.sizeBytes,
+      };
+
+    if (this.error)
+      return {
+        type: 'BlobResult',
+        success: false,
+        error: this.error,
+      };
+
+    return undefined;
+  }
+
+  private setDone(sizeBytes: number) {
+    this.done = true;
+    this.sizeBytes = sizeBytes;
+    this.change.markChanged();
+  }
+
+  abort(reason: string) {
+    this.signalCtl.abort(new DownloadAborted(reason));
+  }
+
+  private setError(e: any) {
+    this.error = String(e);
+    this.change.markChanged();
+  }
+}
+
+type PathLike = string;
+
+class DownloadAborted extends Error {}

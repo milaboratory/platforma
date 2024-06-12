@@ -1,15 +1,12 @@
-import { PlClient, PlTransaction, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, BasicResourceData, FieldId } from '@milaboratory/pl-client-v2';
-import * as os from 'node:os';
-import * as fs from 'fs';
 import * as fsp from 'node:fs/promises';
+import * as os from 'node:os';
 import * as path from 'node:path';
-import { Readable } from 'node:stream';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { PlClient, PlTransaction, TestHelpers, jsonToData, FieldRef, poll, PollTxAccessor, BasicResourceData, FieldId } from '@milaboratory/pl-client-v2';
 import { createDownloadDriver } from './helpers';
-import { computable } from '@milaboratory/computable';
-import { text } from "node:stream/consumers";
+import { rawComputable } from '@milaboratory/computable';
+import { scheduler } from 'node:timers/promises';
 
-const callerId = 'callerId';
 const fileName = "answer_to_the_ultimate_question.txt";
 
 test('should download a blob and read its content', async () => {
@@ -19,9 +16,7 @@ test('should download a blob and read its content', async () => {
     const driver = createDownloadDriver(client, logger, dir, 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-    const c = computable(
-      driver, {}, driver => driver.getDownloadedBlob(downloadable, callerId),
-    )
+    const c = rawComputable(() => driver.getDownloadedBlob(downloadable))
 
     const blob = await c.getValue();
     expect(blob).toBeUndefined();
@@ -29,31 +24,31 @@ test('should download a blob and read its content', async () => {
     await c.listen();
 
     const blob2 = await c.getValue();
-    expect(blob2?.path).not.toBeUndefined();
-    expect(blob2?.sizeBytes).toBe(3);
-    expect(await text(Readable.toWeb(fs.createReadStream(blob2!.path)))).toBe("42\n");
+    expect(blob2).not.toBeUndefined();
+    expect(blob2!.success).toBeTruthy();
+    if (blob2 != undefined && blob2!.success) {
+      expect(blob2.path).not.toBeUndefined();
+      expect(blob2.sizeBytes).toBe(3);
+      expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
+    }
   })
 })
 
-test('should get a download url without downloading a blob', async () => {
+test('should get on demand blob without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async client => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
     const driver = createDownloadDriver(client, logger, dir, 700 * 1024);
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-    const c = computable(
-      driver, {},
-      (driver, _) => driver.getUrl(downloadable, callerId),
-    )
+    const c = rawComputable(() => driver.getOnDemandBlob(downloadable))
 
-    const url1 = await c.getValue();
-    expect(url1).toBeUndefined();
+    const blob = await c.getValue();
+    expect(blob).not.toBeUndefined();
 
-    await c.listen();
-
-    const url2 = await c.getValue();
-    expect(url2).not.toBeUndefined();
+    const content = await driver.getContent(blob);
+    expect(content).not.toBeUndefined();
+    expect(content?.toString()).toStrictEqual("42\n");
   })
 })
 
@@ -66,9 +61,7 @@ test(
       const driver = createDownloadDriver(client, logger, dir, 1);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-      const c = computable(
-        driver, {}, driver => driver.getDownloadedBlob(downloadable, callerId),
-      )
+      const c = rawComputable(() => driver.getDownloadedBlob(downloadable))
 
       const blob = await c.getValue();
       expect(blob).toBeUndefined();
@@ -76,16 +69,19 @@ test(
       await c.listen();
 
       const blob2 = await c.getValue();
-      expect(blob2?.path).not.toBeUndefined();
-      expect(blob2?.sizeBytes).toBe(3);
-      expect(await text(Readable.toWeb(fs.createReadStream(blob2!.path)))).toBe("42\n");
+      expect(blob2).not.toBeUndefined();
+      expect(blob2!.success).toBeTruthy();
+      if (blob2 != undefined && blob2!.success) {
+        expect(blob2.path).not.toBeUndefined();
+        expect(blob2.sizeBytes).toBe(3);
+        expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
+      }
 
       // The blob is removed from a cache since the size is too big.
-      await driver.releaseBlob(downloadable.id, callerId);
+      c.resetState();
+      await scheduler.wait(100);
 
-      const c2 = computable(
-        driver, {}, driver => driver.getDownloadedBlob(downloadable, callerId),
-      )
+      const c2 = rawComputable(() => driver.getDownloadedBlob(downloadable));
 
       const noBlob = await c2.getValue();
       expect(noBlob).toBeUndefined();
@@ -101,10 +97,7 @@ test(
       const driver = createDownloadDriver(client, logger, dir, 700 * 1024);
       const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
-      const c = computable(
-        driver, {},
-        driver => driver.getDownloadedBlob(downloadable, callerId),
-      )
+      const c = rawComputable(() => driver.getDownloadedBlob(downloadable))
 
       const blob = await c.getValue();
       expect(blob).toBeUndefined();
@@ -112,26 +105,35 @@ test(
       await c.listen();
 
       const blob2 = await c.getValue();
-      expect(blob2?.path).not.toBeUndefined();
-      expect(blob2?.sizeBytes).toBe(3);
-      expect(await text(Readable.toWeb(fs.createReadStream(blob2!.path)))).toBe("42\n");
+      expect(blob2).not.toBeUndefined();
+      expect(blob2!.success).toBeTruthy();
+      if (blob2 != undefined && blob2!.success) {
+        expect(blob2.path).not.toBeUndefined();
+        expect(blob2.sizeBytes).toBe(3);
+        expect((await driver.getContent(blob2))?.toString()).toBe("42\n");
+      }
 
-      // The blob isn't removed since the cache is big
-      await driver.releaseBlob(downloadable.id, callerId);
+      // The blob is removed from a cache since the size is too big.
+      c.resetState();
+      await scheduler.wait(100);
 
-      const c2 = computable(
-        driver, {}, driver => driver.getDownloadedBlob(downloadable, callerId),
-      )
+      const c2 = rawComputable(() => driver.getDownloadedBlob(downloadable))
 
       const blob3 = await c2.getValue();
-      expect(blob3?.path).not.toBeUndefined();
+      expect(blob3).not.toBeUndefined();
+      expect(blob3!.success).toBeTruthy();
+      if (blob3 != undefined && blob3!.success) {
+        expect(blob3.path).not.toBeUndefined();
+        expect(blob3.sizeBytes).toBe(3);
+        expect((await driver.getContent(blob3))?.toString()).toBe("42\n");
+      }
     })
   }
 )
 
 async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string): Promise<BasicResourceData> {
-   await client.withWriteTx(
-     'MakeAssetDownloadable',
+  await client.withWriteTx(
+    'MakeAssetDownloadable',
     async (tx: PlTransaction) => {
       const importSettings = jsonToData({
         path: fileName,

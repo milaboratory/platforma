@@ -2,7 +2,7 @@ import { CallersCounter, mapEntries, mapGet } from "@milaboratory/ts-helpers";
 
 type PathLike = string;
 
-interface CachedFile {
+export interface CachedFile {
   sizeBytes: number;
   path: PathLike;
   counter: CallersCounter;

@@ -113,7 +113,7 @@ export class ClientDownload {
   }
 }
 
-function headersFromProto(
+export function headersFromProto(
   headers: DownloadAPI_GetDownloadURL_HTTPHeader[],
 ): Record<string, string> {
   return Object.fromEntries(headers.map(({ name, value }) => [name, value]));
