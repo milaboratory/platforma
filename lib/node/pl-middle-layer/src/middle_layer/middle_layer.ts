@@ -10,6 +10,8 @@ import { ComputableStableDefined, WatchableValue } from '@milaboratory/computabl
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { ProjectListEntry } from './models';
+import { randomUUID } from 'node:crypto';
+import { retry } from 'undici/types/interceptors';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -52,7 +54,7 @@ export class MiddleLayer {
   //
 
   /** Creates a project with initial state and adds it to project list. */
-  async createProject(id: string, meta: ProjectMeta): Promise<ResourceId> {
+  public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
     return await this.pl.withWriteTx('MLCreateProject', async tx => {
       const prj = createProject(tx, meta);
       tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
@@ -63,7 +65,7 @@ export class MiddleLayer {
 
   /** Permanently deletes project from the project list, this will result in
    * destruction of all attached objects, like files, analysis results etc. */
-  async deleteProject(id: string): Promise<void> {
+  public async deleteProject(id: string): Promise<void> {
     await this.pl.withWriteTx('MLRemoveProject', async tx => {
       tx.removeField(field(this.projectListResourceId, id));
       await tx.commit();
@@ -74,30 +76,47 @@ export class MiddleLayer {
   // Projects
   //
 
-  private readonly projects = new Map<ResourceId, Project>();
+  private readonly openedProjectsByRid = new Map<ResourceId, Project>();
+
+  private async projectIdToResourceId(id: string): Promise<ResourceId> {
+    return await this.pl.withReadTx('Project id to resource id', async tx => {
+      const rid = (await tx.getField(field(this.projectListResourceId, id))).value;
+      if (isNullResourceId(rid))
+        throw new Error('Unexpected project list structure.');
+      return rid;
+    });
+  }
+
+  private async ensureProjectRid(id: ResourceId | string): Promise<ResourceId> {
+    if (typeof id === 'string')
+      return await this.projectIdToResourceId(id);
+    else
+      return id;
+  }
 
   /** Opens a project, and starts corresponding project maintenance loop. */
-  async openProject(rid: ResourceId) {
-    if (this.projects.has(rid))
+  public async openProject(id: ResourceId | string) {
+    const rid = await this.ensureProjectRid(id);
+    if (this.openedProjectsByRid.has(rid))
       throw new Error(`Project ${rid} already opened`);
-    this.projects.set(rid, await Project.init(this.env, rid));
-    this.openedProjectsList.setValue([...this.projects.keys()]);
+    this.openedProjectsByRid.set(rid, await Project.init(this.env, rid));
+    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
   }
 
   /** Closes the project, and deallocate all corresponding resources. */
-  closeProject(rid: ResourceId) {
-    const prj = this.projects.get(rid);
+  public closeProject(rid: ResourceId) {
+    const prj = this.openedProjectsByRid.get(rid);
     if (prj === undefined)
       throw new Error(`Project ${rid} not found among opened projects`);
-    this.projects.delete(rid);
+    this.openedProjectsByRid.delete(rid);
     prj.destroy();
-    this.openedProjectsList.setValue([...this.projects.keys()]);
+    this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
   }
 
   /** Returns a project access object for opened project, for the given project
    * resource id. */
-  getOpenedProject(rid: ResourceId): Project {
-    const prj = this.projects.get(rid);
+  public getOpenedProject(rid: ResourceId): Project {
+    const prj = this.openedProjectsByRid.get(rid);
     if (prj === undefined)
       throw new Error(`Project ${rid} not found among opened projects`);
     return prj;
@@ -105,7 +124,7 @@ export class MiddleLayer {
 
   /** Deallocates all runtime resources consumed by this object. */
   close() {
-    this.projects.forEach(prj => prj.destroy());
+    this.openedProjectsByRid.forEach(prj => prj.destroy());
   }
 
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {

@@ -28,7 +28,7 @@ test('project list manipulations test', async () => {
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
-    const pRid1 = await ml.createProject('id1', { label: 'Project 1' });
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
 
     await projectList.refreshState();
 
@@ -75,7 +75,7 @@ test('simple project manipulations test', async () => {
     });
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
-    const pRid1 = await ml.createProject('id1', { label: 'Project 1' });
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await projectList.refreshState();
     expect(await projectList.getValue()).toStrictEqual([{
       id: 'id1',

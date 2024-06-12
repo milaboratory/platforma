@@ -142,6 +142,7 @@ type GraphInfoFields =
 
 export class ProjectMutator {
   private globalModCount = 0;
+  private fieldsChanged: boolean = false;
 
   //
   // Change trackers
@@ -166,6 +167,14 @@ export class ProjectMutator {
               private readonly blockInfos: Map<string, BlockInfo>,
               private readonly blockFrontendStates: Map<string, string>
   ) {
+  }
+
+  get wasModified(): boolean {
+    return this.fieldsChanged
+      || this.metaChanged
+      || this.metaChanged
+      || this.renderingStateChanged
+      || this.changedBlockFrontendStates.size > 0;
   }
 
   get structure(): ProjectStructure {
@@ -231,6 +240,8 @@ export class ProjectMutator {
       modCount: this.globalModCount++,
       ...state
     };
+
+    this.fieldsChanged = true;
   }
 
   private setBlockField(
@@ -246,6 +257,7 @@ export class ProjectMutator {
       return false;
     this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName)));
     delete fields[fieldName];
+    this.fieldsChanged = true;
     return true;
   }
 
@@ -578,7 +590,10 @@ export class ProjectMutator {
       const info = this.getBlockInfo(node.id);
       let lag = info.stagingRendered ? 0 : 1;
       node.upstream.forEach(upstream => {
-        lag = Math.max(lags.get(upstream)!, lag);
+        const upstreamLag = lags.get(upstream)!;
+        if (upstreamLag === 0)
+          return;
+        lag = Math.max(upstreamLag + 1, lag);
       });
       cb(node.id, lag);
       lags.set(node.id, lag);
@@ -591,11 +606,17 @@ export class ProjectMutator {
     const lagThreshold = stagingRenderingRate === undefined
       ? undefined
       : 1 + Math.max(0, elapsed * stagingRenderingRate / 1000);
+    let rendered = 0;
     this.traverseWithStagingLag((blockId, lag) => {
-      if (lagThreshold === undefined || lag <= lagThreshold)
+      if (lag === 0) // meaning staging already rendered
+        return;
+      if (lagThreshold === undefined || lag <= lagThreshold) {
         this.renderStagingFor(blockId);
+        rendered++;
+      }
     });
-    this.resetStagingRefreshTimestamp();
+    if (rendered > 0)
+      this.resetStagingRefreshTimestamp();
   }
 
   //

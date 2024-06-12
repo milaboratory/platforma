@@ -180,7 +180,7 @@ test('simple test #2 with bp migration', async () => {
           blockPack: await TestBPPreparer.prepare(BPSpecSumV040NotPrepared)
         }
       );
-      mut.renderProduction(['block1', 'block2', 'block3']);
+      mut.renderProduction(['block2', 'block3'], true);
       mut.doRefresh();
       mut.save();
       await tx.commit();
