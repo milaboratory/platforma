@@ -5,16 +5,26 @@ import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
+import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 
-const EnterNumbersSpec = {
-  type: 'from-registry-v1',
-  url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.0'
-} as BlockPackSpecAny;
+// const EnterNumbersSpec = {
+//   type: 'from-registry-v1',
+//   url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.0'
+// } as BlockPackSpecAny;
+//
+// const SumNumbersSpec = {
+//   type: 'from-registry-v1',
+//   url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/sum-numbers/0.4.0'
+// } as BlockPackSpecAny;
 
-const SumNumbersSpec = {
-  type: 'from-registry-v1',
-  url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/sum-numbers/0.4.0'
-} as BlockPackSpecAny;
+const registry = new BlockPackRegistry([
+  CentralRegistry,
+  {
+    type: 'folder_with_dev_packages',
+    label: 'Local dev registry',
+    path: path.resolve('./integration')
+  }
+]);
 
 test('project list manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
@@ -88,9 +98,20 @@ test('simple project manipulations test', async () => {
 
     expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
 
-    const block1Id = await prj.addBlock('Block 1', EnterNumbersSpec);
-    const block2Id = await prj.addBlock('Block 2', EnterNumbersSpec);
-    const block3Id = await prj.addBlock('Block 3', SumNumbersSpec);
+    const blocksFromRegistry = await registry.getPackagesOverview();
+    const enterNumbersSpecFromRemote = blocksFromRegistry.find(b =>
+      b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
+    )!.latestSpec;
+    const enterNumbersSpecFromDev = blocksFromRegistry.find(b =>
+      b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
+    )!.latestSpec;
+    const sumNumbersSpecFromRemote = blocksFromRegistry.find(b =>
+      b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
+    )!.latestSpec;
+
+    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
+    const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
@@ -112,7 +133,7 @@ test('simple project manipulations test', async () => {
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend).toBeDefined();
     const block2StableFrontend = await prj.getBlockFrontend(block2Id).awaitStableValue();
-    expect(block2StableFrontend).toBeDefined();
+    expect(block2StableFrontend).toMatch(/block-beta-enter-numbers/);
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend).toBeDefined();
     console.dir(

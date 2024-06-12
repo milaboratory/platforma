@@ -139,8 +139,7 @@ export class BlockPackPreparer {
 
 function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
-  const bp = tx.createStruct(BlockPackCustomType,
-    Buffer.from(JSON.stringify(blockPackInfo)));
+  const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
   tx.createField(field(bp, BlockPackTemplateField), 'Input',
     loadTemplate(tx, spec.template));
   tx.createField(field(bp, BlockPackFrontendField), 'Input',

@@ -11,13 +11,13 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { ProjectListEntry } from './models';
 import { randomUUID } from 'node:crypto';
-import { retry } from 'undici/types/interceptors';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
   readonly frontendDownloadDriver: DownloadUrlDriver;
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
+  readonly localSecret: string;
 }
 
 /**
@@ -150,7 +150,10 @@ export class MiddleLayer {
     const frontendDownloadDriver = createDownloadUrlDriver(pl, new ConsoleLoggerAdapter(),
       ops.frontendDownloadPath);
     const bpPreparer = new BlockPackPreparer(ops.localSecret);
-    const env: MiddleLayerEnvironment = { pl, ops, bpPreparer, frontendDownloadDriver };
+    const env: MiddleLayerEnvironment = {
+      pl, ops, bpPreparer,
+      frontendDownloadDriver, localSecret: ops.localSecret
+    };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);

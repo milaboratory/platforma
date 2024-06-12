@@ -2,21 +2,38 @@ import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratory/pl-tree';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { computable, ComputableStableDefined } from '@milaboratory/computable';
 import { Pl, resourceTypesEqual } from '@milaboratory/pl-client-v2';
-import { FrontendFromUrlData, FrontendFromUrlResourceType } from '../model/block_pack_spec';
+import {
+  FrontendFromFolderData,
+  FrontendFromFolderResourceType,
+  FrontendFromUrlData,
+  FrontendFromUrlResourceType
+} from '../model/block_pack_spec';
 import { PathResult } from '@milaboratory/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
+import { createHmac } from 'node:crypto';
 
-function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined | ComputableStableDefined<PathResult> {
+function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined | string | ComputableStableDefined<PathResult> {
   const node = a.node();
   if (node === undefined)
     return undefined;
-  if (!resourceTypesEqual(node.resourceType, FrontendFromUrlResourceType))
+  if (resourceTypesEqual(node.resourceType, FrontendFromUrlResourceType)) {
+    const data = node.getDataAsJson<FrontendFromUrlData>();
+    if (data === undefined)
+      throw new Error(`No resource data.`);
+    return env.frontendDownloadDriver.getPath(new URL(data.url)).withStableType();
+  } else if (resourceTypesEqual(node.resourceType, FrontendFromFolderResourceType)) {
+    const data = node.getDataAsJson<FrontendFromFolderData>();
+    if (data === undefined)
+      throw new Error(`No resource data.`);
+    const frontendPathSignature = createHmac('sha256', env.localSecret)
+      .update(data.path).digest('hex');
+    if (frontendPathSignature !== data.signature)
+      throw new Error(`Frontend path signature mismatch: ${data.signature} != ${frontendPathSignature}`);
+    return data.path;
+  } else {
     throw new Error(`Unsupported resource type: ${JSON.stringify(node.resourceType)}`);
-  const data = node.getDataAsJson<FrontendFromUrlData>();
-  if (data === undefined)
-    throw new Error(`No resource data.`);
-  return env.frontendDownloadDriver.getPath(new URL(data.url)).withStableType();
+  }
 }
 
 function frontendPathComputable(entry: PlTreeEntry | undefined, env: MiddleLayerEnvironment): ComputableStableDefined<string> | undefined {
@@ -27,6 +44,8 @@ function frontendPathComputable(entry: PlTreeEntry | undefined, env: MiddleLayer
   }, async v => {
     if (v === undefined)
       return undefined;
+    if (typeof v === 'string')
+      return v;
     if (v.error !== undefined)
       throw new Error(v.error);
     return v.path;
