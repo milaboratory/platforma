@@ -121,7 +121,7 @@ test.each(getTestSetups())
   await new Promise(resolve => setImmediate(resolve));
   expect(await res2.getValue()).toEqual(40);
   expect(synchronized.active).toEqual(true);
-  
+
   await res2.refreshState();
 });
 
@@ -154,4 +154,21 @@ test.each(getTestSetups())
   expect(synchronized.active).toEqual(false);
 
   await res2.refreshState();
+});
+
+test.each(getTestSetups())
+('simple reactor test pre-calculation in $context context', async ({ observableSource, synchronized, res2 }) => {
+  res2.preCalculateValueTree();
+  await new Promise(resolve => setImmediate(resolve));
+  expect(await res2.getValue()).toEqual(4);
+
+  expect(synchronized.active).toEqual(true);
+  await sleep(20);
+  expect(synchronized.active).toEqual(false);
+
+  res2.preCalculateValueTree();
+
+  expect(synchronized.active).toEqual(true);
+  await sleep(20);
+  expect(synchronized.active).toEqual(false);
 });

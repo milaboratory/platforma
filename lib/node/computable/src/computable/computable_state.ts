@@ -273,6 +273,7 @@ async function fillCellValue<T>(
 ): Promise<void> {
   // assert !('value' in state)
   const ops = state.selfState.kernel.ops;
+
   let value = ops.mode == 'StableOnlyRetentive' ? previousValue : undefined;
   if (!isExecutionError(state.selfState.iResult)) {
     if (state.stable || ops.mode == 'Live') {
@@ -304,6 +305,7 @@ async function fillCellValue<T>(
   if (state.allErrors.length != 0 && ops.resetValueOnError) value = undefined;
 
   if (value !== undefined) state.value = value;
+  state.valueNotCalculated = false;
 }
 
 function renderSelfState<T>(
@@ -457,24 +459,6 @@ function finalizeCellState<T>(
   };
 }
 
-/** First (sync) stage of rendering pipeline */
-function createCellStateWithoutValue<T>(
-  core: ComputableKernel<T>
-): CellState<T> {
-  const selfState = renderSelfState(core);
-
-  const children = getChildren(selfState.iResult);
-
-  const childrenStates = calculateChildren(
-    children,
-    selfState.ctx.stable
-  );
-
-  return finalizeCellState(
-    { selfState, childrenStates }
-  );
-}
-
 async function calculateValue<T>(
   state_: CellState<T>
 ): Promise<void> {
@@ -491,6 +475,24 @@ async function calculateValue<T>(
   await fillCellValue(state_, previousValue);
 }
 
+/** First (sync) stage of rendering pipeline */
+export function createCellStateWithoutValue<T>(
+  core: ComputableKernel<T>
+): CellState<T> {
+  const selfState = renderSelfState(core);
+
+  const children = getChildren(selfState.iResult);
+
+  const childrenStates = calculateChildren(
+    children,
+    selfState.ctx.stable
+  );
+
+  return finalizeCellState(
+    { selfState, childrenStates }
+  );
+}
+
 export async function createCellState<T>(
   core: ComputableKernel<T>
 ): Promise<CellState<T>> {
@@ -500,7 +502,7 @@ export async function createCellState<T>(
 }
 
 /** First (sync) stage of rendering pipeline */
-function updateCellStateWithoutValue<T>(
+export function updateCellStateWithoutValue<T>(
   cell: CellState<T>
 ): CellState<T> {
   // checking the chaining rule

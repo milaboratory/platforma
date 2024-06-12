@@ -1,5 +1,11 @@
 import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
-import { CellState, createCellState, destroyState, updateCellState } from './computable_state';
+import {
+  CellState,
+  createCellState,
+  createCellStateWithoutValue,
+  destroyState,
+  updateCellState, updateCellStateWithoutValue
+} from './computable_state';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
@@ -7,9 +13,9 @@ import { setImmediate } from 'node:timers/promises';
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
 
-/** Erroneous result of the computable */
+/** Interface for an erroneous result from a computable */
 export interface ComputableResultErrors {
-  /** Discriminator */
+  /** Discriminator for the type of result */
   type: 'error';
 
   /**
@@ -29,33 +35,30 @@ export interface ComputableResultErrors {
   uTag: string;
 }
 
+/** Interface for a successful result from a computable */
 export interface ComputableResultOk<T> {
-  /** Discriminator */
+  /** Discriminator for the type of result */
   type: 'ok';
 
-  /** Fully rendered result, after all rendering stages. */
+  /** The fully rendered result after all processing stages */
   value: T;
 
-  /**
-   * Result stability.
-   *
-   * It has individual meaning in each computable case, e.g.
-   *   - file content computable until being completely downloaded will return
-   *     "undefined" as it's result and mark this result as unstable,
-   *   - computable on pl tree waiting for some field that has not yet exist
-   *     will return some incomplete result that is also marked as unstable
-   *   - etc.
-   *
-   * For any composable computable result is considered stable only if all it's
-   * nested computables are stable.
-   * */
-  stable: boolean;
-
-  /** UTag of this result, to be able to check whether the result have
-   * changed after some time, and start actively listen on the next change. */
+  /** Unique tag of this result to monitor changes over time and listen for the next change */
   uTag: string;
+
+  /**
+   * Indicates the stability of the result.
+   *
+   * The stability can vary based on the type of computable. For example:
+   * - A file content computable might return "undefined" until fully downloaded, marking it as unstable.
+   * - A computable waiting for a non-existent field might return an incomplete result as unstable.
+   *
+   * A result is considered stable only if all its nested computables are stable.
+   */
+  stable: boolean;
 }
 
+/** Throws an appropriate computable error based on the number of errors */
 function throwComputableError(errors: any[]): never {
   if (errors.length === 1)
     throw new ComputableError(errors[0]);
@@ -63,14 +66,17 @@ function throwComputableError(errors: any[]): never {
     throw new AggregateComputableError(errors);
 }
 
+/** Represents any computable error, single or multiple */
 export type AnyComputableError = ComputableError | AggregateComputableError;
 
+/** Error class for a single error encountered during computable calculation */
 export class ComputableError extends Error {
   constructor(public readonly cause: any) {
     super(`Computable error: ${cause.message}`, { cause });
   }
 }
 
+/** Error class for multiple errors encountered simultaneously during computable calculation */
 export class AggregateComputableError extends AggregateError {
   constructor(public readonly errors: any[]) {
     super(errors, `Computable error: ${errors.map(e => e.message).join(' ; ')}`);
@@ -86,32 +92,37 @@ const computableFinalizationRegistry = new FinalizationRegistry<Computable<unkno
 export type ComputableStableDefined<T> = Computable<T | undefined, T>;
 
 /**
- * Class representing a reactive value that can change over time and
- * automatically propagates updates to dependents.
+ * Class representing a reactive value that changes over time and
+ * propagates updates to dependents automatically.
  *
- * A computed value can be thought as result of a pure function executed on
- * a changing underlying data, such underlying data may come from an external
- * systems. It is important that interactions with this object may influence
- * the external system synchronization procedure to keep the result fresh,
- * if computable value is frequently retrieved, or changes are checked or
- * listened to.
+ * A computable value is akin to the result of a pure function executed on
+ * changing underlying data, potentially from external systems. Interactions
+ * with this object can influence external system synchronization to keep
+ * the result up-to-date, especially if the computable value is frequently
+ * accessed or monitored.
  *
- * The Computable class manages a value that is expected to change and
- * provides mechanisms to observe these changes reactively. It supports
- * both synchronous and asynchronous operations and integrates a
- * post-processing step to finalize the computed values.
+ * The `Computable` class manages dynamically changing values and provides
+ * mechanisms to observe these changes reactively. It supports both
+ * synchronous and asynchronous operations, along with a post-processing
+ * step to finalize the computed values.
  *
  * @template T The type of the computed value.
  * @template StableT A refined type representing the stable state of the value.
  */
 export class Computable<T, StableT extends T = T> implements WrappedComputableKernel<T> {
-  /** Updated on each state reset */
+  /** Tracks the state reset epochs */
   private epoch = 0;
+
   private stateCalculation?: Promise<void>;
+
+  /** Current state of the computable */
   private state?: CellState<T>;
+
   private uTag: string = '';
+
   public readonly [WrappedKernelField]: ComputableKernel<T>;
 
+  /** Better use dedicated factory methods. */
   constructor(kernel: ComputableKernel<T>) {
     this[WrappedKernelField] = kernel;
   }
@@ -119,6 +130,7 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
   private _changed(uTag?: string): boolean {
     return this.state === undefined
       || this.state.watcher.isChanged
+      || this.state.valueNotCalculated
       || (uTag !== undefined && this.uTag !== uTag);
   }
 
@@ -133,6 +145,12 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     return this.isChanged();
   }
 
+  /** This method allows to create read-after-write semantics for the values
+   * returned by the computable. This method sends refresh request to all underlying
+   * data sources, and awaits successful refresh procedure execution, so after
+   * the promise returned by this method resolves, value returned by getValue methods
+   * is guaranteed to be based on the underlying data that is up-to-date to the
+   * moment this method was entered. */
   public async refreshState(): Promise<void> {
     const hooks = this.state?.hooks;
     if (hooks === undefined)
@@ -166,7 +184,23 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
    * "listening status" change events. */
   private listenCounter = 0;
 
-  /** */
+  /**
+   * Waits for the value to be marked as changed after the last value retrieval.
+   * Resolves immediately if the value is already changed.
+   *
+   * It's important to call `getValue` within any loop using `listen`
+   * to prevent useless busy loops.
+   *
+   * uTag parameter can be used to listen for the change of a specific known value,
+   * as returned by {@link getFullValue} or {@link getValueOrError}.
+   *
+   * While pending listen operation is active, all source data providers will be notified
+   * about this fact, and will continue polling or listening for the underlying remote
+   * state, to keep the data fresh.
+   *
+   * @param abortSignal optional signal to abort the pending listening.
+   * @param uTag optional tag to check if a new value is calculated after retrieval of a specified tag.
+   * */
   public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
@@ -200,6 +234,12 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     }
   }
 
+  /**
+   * Waits for the next stable state and returns the fully stable result.
+   * Similar behavior to {@link getFullValue}.
+   *
+   * @param abortSignal Optional signal to abort the pending operation.
+   */
   public async awaitStableFullValue(abortSignal?: AbortSignal): Promise<ComputableResultOk<StableT>> {
     while (true) {
       const value = await this.getFullValue();
@@ -209,6 +249,12 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     }
   }
 
+  /**
+   * Waits for the next stable state and returns the stable value.
+   * Similar behavior to {@link getValue}.
+   *
+   * @param abortSignal Optional signal to abort the pending operation.
+   */
   public async awaitStableValue(abortSignal?: AbortSignal): Promise<StableT> {
     return (await this.awaitStableFullValue(abortSignal)).value;
   }
@@ -240,6 +286,21 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     return result;
   }
 
+  /** Internally creates value tree, but don't execute async post-processing
+   * state. */
+  public preCalculateValueTree() {
+    if (this.stateCalculation !== undefined)
+      throw new Error('Illegal state for pre-calculation.');
+    this.state = this.state === undefined
+      ? createCellStateWithoutValue(this[WrappedKernelField])
+      : updateCellStateWithoutValue(this.state);
+
+    // calling this method is equivalent to value request
+    if (this.state.hooks !== undefined)
+      for (const hooks of this.state.hooks)
+        hooks.onGetValue(this);
+  }
+
   /**
    * The same as {@link getValue} but gets raw computable value. This method
    * will not return rejected promise in case computable was executed with error.
@@ -254,7 +315,9 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
       // waiting for stat to update in case update was triggered elsewhere
       await this.stateCalculation;
 
-    } else if (this.state === undefined || this.state.watcher.isChanged) {
+    } else if (this.state === undefined
+      || this.state.watcher.isChanged
+      || this.state.valueNotCalculated) {
 
       // starting async state update
       this.stateCalculation = (async () => {
@@ -307,8 +370,10 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
       return { type: 'error', errors: state.allErrors, uTag: this.uTag };
   }
 
-  /** This will trigger all onDestroys down the state tree, and reset the
-   * state of this computable to initial. */
+  /**
+   * Resets the state of this computable to its initial state, triggering all
+   * onDestroy callbacks down the state tree.
+   */
   public resetState(): void {
     if (this.state === undefined && this.stateCalculation === undefined)
       return;
