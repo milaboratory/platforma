@@ -10,8 +10,9 @@ import {
 } from './config';
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
-import { inferAuthRefreshTime, parsePlJwt } from '../util/pl';
+import { parsePlJwt } from '../util/pl';
 import { Agent, Dispatcher, ProxyAgent } from 'undici';
+import { inferAuthRefreshTime } from './auth';
 
 export interface PlCallOps {
   timeout?: number;

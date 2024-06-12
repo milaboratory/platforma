@@ -1,23 +1,41 @@
+/** Base configuration structure for PL client */
 export interface PlClientConfig {
+  /** Port and host of remote pl server */
   hostAndPort: string;
 
   /** If set, client will expose a nested object under a field with name `alternative_root_${alternativeRoot}` as a
    * client root. */
   alternativeRoot?: string;
 
+  /** If true, client will establish tls connection to the server, using default
+   * CA of node instance. */
   // Not implementing custom ssl validation logic for now.
-  // Implementing it in a correct way is really a nontrivial thing, real use-cases should be considered.
+  // Implementing it in a correct way is really nontrivial thing,
+  // real use-cases should be considered.
   ssl: boolean;
+
+  /** Default timeout in milliseconds for unary calls, like ping and login. */
   defaultRequestTimeout: number;
+  /** Default timeout in milliseconds for transaction, should be adjusted for
+   * long round-trip connections. */
   defaultTransactionTimeout: number;
 
+  /** Controls what TTL will be requested from the server, when new JWT token
+   * is requested. */
   authTTLSeconds: number;
+  /** If token is older than this time, it will be refreshed regardless of its
+   * expiration time. */
   authMaxRefreshSeconds: number;
 
+  /** Proxy server URL to use for pl connection. */
   grpcProxy?: string;
+  /** Proxy server URL to use for http connections of pl drivers, like file
+   * downloading. */
   httpProxy?: string;
 
+  /** Username extracted from pl URL. Ignored by {@link PlClient}, picked up by {@link defaultPlClient}. */
   user?: string;
+  /** Password extracted from pl URL. Ignored by {@link PlClient}, picked up by {@link defaultPlClient}. */
   password?: string;
 
   /** Artificial delay introduced after write transactions completion, to
@@ -44,6 +62,8 @@ function parseInt(s: string | null | undefined): number | undefined {
   return Number.parseInt(s);
 }
 
+/** Parses pl url and creates a config object that can be passed to
+ * {@link PlClient} of {@link UnauthenticatedPlClient}. */
 export function plAddressToConfig(address: string, overrides: PlConfigOverrides = {}): PlClientConfig {
   if (address.indexOf('://') === -1)
     // non-url address
@@ -88,11 +108,18 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
   };
 }
 
+/**
+ * Authorization data / JWT Token.
+ * Absent JWT Token tells the client to connect as anonymous user.
+ * */
 export interface AuthInformation {
   /** Absent token means anonymous access */
   jwtToken?: string;
 }
 
+export const AnonymousAuthInformation: AuthInformation = {};
+
+/** Authorization related settings to pass to {@link PlClient}. */
 export interface AuthOps {
   /** Initial authorization information */
   authInformation: AuthInformation,
@@ -102,5 +129,8 @@ export interface AuthOps {
   readonly onUpdateError?: (error: unknown) => void
 }
 
+/** Connection status. */
 export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
+
+/** Listener that will be called each time connection status changes. */
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;

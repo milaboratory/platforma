@@ -6,9 +6,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { UnauthenticatedPlClient } from './unauth_client';
-import { inferAuthRefreshTime } from '../util/pl';
 import { PlClient } from './client';
 import { createHash } from 'crypto';
+import { inferAuthRefreshTime } from './auth';
 
 const CONFIG_FILE_LOCAL_JSON = 'pl.json';
 const CONFIG_FILE_USER_JSON = path.join(os.homedir(), '.pl.json');

@@ -6,6 +6,7 @@ import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalReso
 import { ClientRoot } from '../helpers/pl';
 import { createRetryState, nextRetryStateOrError, RetryOptions, sleep } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
+import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
@@ -52,6 +53,10 @@ export class PlClient {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
     this.txDelay = this.ll.conf.txDelay;
     this.forceSync = this.ll.conf.forceSync;
+  }
+
+  public async ping(): Promise<MaintenanceAPI_Ping_Response> {
+    return (await this.ll.grpcPl.ping({})).response;
   }
 
   public get conf(): PlClientConfig {
@@ -203,16 +208,16 @@ export class PlClient {
     return result;
   }
 
-  public withWriteTx<T>(name: string,
-                        body: (tx: PlTransaction) => Promise<T>,
-                        ops: Partial<TxOps> = {}): Promise<T> {
-    return this.withTx(name, true, body, { ...ops, ...defaultTxOps });
+  public async withWriteTx<T>(name: string,
+                              body: (tx: PlTransaction) => Promise<T>,
+                              ops: Partial<TxOps> = {}): Promise<T> {
+    return await this.withTx(name, true, body, { ...ops, ...defaultTxOps });
   }
 
-  public withReadTx<T>(name: string,
-                       body: (tx: PlTransaction) => Promise<T>,
-                       ops: Partial<TxOps> = {}): Promise<T> {
-    return this.withTx(name, false, body, { ...ops, ...defaultTxOps });
+  public async withReadTx<T>(name: string,
+                             body: (tx: PlTransaction) => Promise<T>,
+                             ops: Partial<TxOps> = {}): Promise<T> {
+    return await this.withTx(name, false, body, { ...ops, ...defaultTxOps });
   }
 
   public getDriver<Drv extends PlDriver>(definition: PlDriverDefinition<Drv>): Drv {

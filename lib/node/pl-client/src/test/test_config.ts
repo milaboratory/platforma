@@ -1,11 +1,11 @@
 import * as fs from 'node:fs';
 import { LLPlClient } from '../core/ll_client';
 import { AuthInformation, plAddressToConfig, PlClientConfig } from '../core/config';
-import { inferAuthRefreshTime } from '../util/pl';
 import { UnauthenticatedPlClient } from '../core/unauth_client';
 import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
 import { NullResourceId, OptionalResourceId, ResourceId, resourceIdToString } from '../core/types';
+import { inferAuthRefreshTime } from '../core/auth';
 
 export interface TestConfig {
   address: string;
