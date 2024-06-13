@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-drivers",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to Platforma",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.10.9",
-    "@milaboratory/computable": "^1.1.8",
-    "@milaboratory/pl-client-v2": "^2.3.17",
+    "@milaboratory/computable": "^1.1.10",
+    "@milaboratory/pl-client-v2": "^2.3.19",
     "@milaboratory/pl-tree": "^1.1.3",
     "@milaboratory/ts-helpers": "^1.0.12",
     "@protobuf-ts/grpc-transport": "^2.9.4",

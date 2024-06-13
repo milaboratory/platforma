@@ -92,7 +92,7 @@ LogsAsyncReader {
     return b.handle;
   }
   
-  async getContent(b: DownloadedBlobHandle | OnDemandBlobHandle): Promise<Uint8Array | undefined> {
+  async getContent(b: DownloadedBlobHandle | OnDemandBlobHandle): Promise<Uint8Array> {
     if (b.type == 'DownloadedBlob') {
       return await read(b.handle);
     }

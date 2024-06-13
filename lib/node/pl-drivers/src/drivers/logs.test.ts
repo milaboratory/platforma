@@ -1,4 +1,4 @@
-import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, FieldId, AnyFieldRef, ResourceRef, stringifyWithResourceId } from '@milaboratory/pl-client-v2';
+import { PlClient, PlTransaction, ResourceType, TestHelpers, jsonToData, FieldRef, FieldId, AnyFieldRef, ResourceRef, stringifyWithResourceId, isNotFoundError } from '@milaboratory/pl-client-v2';
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratory/ts-helpers';
 import { Computable, computable } from '@milaboratory/computable';
 import { createDownloadDriver, createLogsDriver } from './helpers';
@@ -37,7 +37,20 @@ test('should get all logs', async () => {
         if (stream.resourceType.name.startsWith('StreamWorkdir'))
           return computable(
             logs, {},
-            driver => ({ done: false, ...driver.getLastLogs(rInfo, 100, callerId) }),
+            (driver, ctx) => {
+              try {
+                return {
+                  ...driver.getLastLogs(rInfo, 100, callerId),
+                  done: false,
+                }
+              } catch (e: any) {
+                if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
+                  ctx.markUnstable();
+                  return {log: '', done: false};
+                }
+                throw e;
+              }
+            },
           )
         else
           return computable(
@@ -49,7 +62,7 @@ test('should get all logs', async () => {
 
     expect(await c.getValue()).toBeUndefined();
 
-    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 0.1; echo 2"]);
+    await createRunCommandWithStdoutStream(client, "bash", ["-c", "echo 1; sleep 1; echo 2"]);
 
     while (true) {
       await c.listen();
