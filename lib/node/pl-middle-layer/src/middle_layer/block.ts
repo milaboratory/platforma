@@ -1,6 +1,6 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { computable, Computable } from '@milaboratory/computable';
-import { constructBlockContext } from './block_outputs';
+import { constructBlockContext } from './block_ctx';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { AuthorMarker, blockArgsAuthorKey, projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratory/pl-client-v2';
@@ -37,5 +37,5 @@ export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLay
       outputs,
       blockPackSource: bpInfo?.source
     };
-  });
+  }).preCalculateValueTree();
 }

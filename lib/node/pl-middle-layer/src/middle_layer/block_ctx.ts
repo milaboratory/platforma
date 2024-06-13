@@ -32,6 +32,7 @@ export function constructBlockContext(projectNode: PlTreeNodeAccessor, blockId: 
   const argsCtx = constructBlockContextArgsOnly(projectNode, blockId);
   const prodField = projectNode.traverse({
     field: projectFieldName(blockId, 'prodOutput'),
+    stableIfNotFound: true,
     ignoreError: true
   });
   const stagingField = projectNode.traverse({

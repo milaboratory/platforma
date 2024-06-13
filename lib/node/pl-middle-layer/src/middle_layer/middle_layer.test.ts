@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
+import { sleep } from '@milaboratory/ts-helpers';
 
 // const EnterNumbersSpec = {
 //   type: 'from-registry-v1',
@@ -25,6 +26,23 @@ const registry = new BlockPackRegistry([
     path: path.resolve('./integration')
   }
 ]);
+
+async function getStandardBlockSpecs() {
+  const blocksFromRegistry = await registry.getPackagesOverview();
+  const enterNumbersSpecFromRemote = blocksFromRegistry.find(b =>
+    b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
+  )!.latestSpec;
+  const enterNumbersSpecFromDev = blocksFromRegistry.find(b =>
+    b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
+  )!.latestSpec;
+  const sumNumbersSpecFromRemote = blocksFromRegistry.find(b =>
+    b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
+  )!.latestSpec;
+  const sumNumbersSpecFromDev = blocksFromRegistry.find(b =>
+    b.registryLabel.match(/dev/) && b.package === 'sum-numbers'
+  )!.latestSpec;
+  return { enterNumbersSpecFromRemote, enterNumbersSpecFromDev, sumNumbersSpecFromRemote, sumNumbersSpecFromDev };
+}
 
 test('project list manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
@@ -98,17 +116,10 @@ test('simple project manipulations test', async () => {
 
     expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
 
-    const blocksFromRegistry = await registry.getPackagesOverview();
-    const enterNumbersSpecFromRemote = blocksFromRegistry.find(b =>
-      b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
-    )!.latestSpec;
-    const enterNumbersSpecFromDev = blocksFromRegistry.find(b =>
-      b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
-    )!.latestSpec;
-    const sumNumbersSpecFromRemote = blocksFromRegistry.find(b =>
-      b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
-    )!.latestSpec;
-
+    const {
+      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,
+      enterNumbersSpecFromDev, sumNumbersSpecFromDev
+    } = await getStandardBlockSpecs();
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
@@ -152,5 +163,56 @@ test('simple project manipulations test', async () => {
     console.dir(block3StableState, { depth: 5 });
 
     expect(block3StableState.outputs['sum']).toStrictEqual(18);
+  });
+});
+
+test('block error test', async () => {
+  const workFolder = path.resolve(`work/${randomUUID()}`);
+  await fs.promises.mkdir(workFolder, { recursive: true });
+  await TestHelpers.withTempRoot(async pl => {
+    const ml = await MiddleLayer.init(pl, {
+      frontendDownloadPath: path.resolve(workFolder),
+      localSecret: 'secret'
+    });
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
+
+    const {
+      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,
+      enterNumbersSpecFromDev, sumNumbersSpecFromDev
+    } = await getStandardBlockSpecs();
+
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromDev);
+
+    await prj.setBlockArgs(block3Id, {
+      sources: [] // empty reference list should produce an error
+    });
+
+    await prj.runBlock(block3Id);
+
+    await prj.overview.refreshState();
+    const overviewSnapshot1 = await prj.overview.awaitStableValue();
+
+    overviewSnapshot1.blocks.forEach(block => {
+      expect(block.sections).toBeDefined();
+    });
+    console.dir(overviewSnapshot1, { depth: 5 });
+
+    const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
+    expect(block3StableFrontend).toBeDefined();
+    console.dir(
+      { block3StableFrontend },
+      { depth: 5 });
+
+    const block3StateComputable = await prj.getBlockState(block3Id);
+    await block3StateComputable.refreshState();
+    const block3StableState = await prj.getBlockState(block3Id).getValueOrError();
+
+    console.dir(block3StableState, { depth: 5 });
+
+    // expect(block3StableState.outputs['sum']).toStrictEqual(18);
   });
 });

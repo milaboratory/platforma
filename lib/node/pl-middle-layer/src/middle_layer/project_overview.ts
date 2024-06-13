@@ -14,7 +14,7 @@ import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { Section } from '@milaboratory/sdk-block-config';
-import { constructBlockContextArgsOnly } from './block_outputs';
+import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockProductionStatus, ProdState, ProjectOverview } from './models';
