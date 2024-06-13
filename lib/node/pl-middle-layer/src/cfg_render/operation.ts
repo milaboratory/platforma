@@ -1,9 +1,13 @@
 import { Computable, TrackedAccessorProvider } from '@milaboratory/computable';
+import { DownloadDriver, LogsDriver, UploadDriver } from '@milaboratory/pl-drivers';
 
 export type ArgumentKey = string;
 
 export interface ExecutionEnvironment {
   accessor<A>(provider: TrackedAccessorProvider<A>): A;
+  downloadDriver?: DownloadDriver;
+  uploadDriver?: UploadDriver;
+  logsDriver?: LogsDriver;
 }
 
 export type ArgumentValues = Record<ArgumentKey, unknown>;

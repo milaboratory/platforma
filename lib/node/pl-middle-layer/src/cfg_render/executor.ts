@@ -173,7 +173,7 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 const PostProcessingExecutionEnvironment: ExecutionEnvironment = {
   accessor<A>(provider: TrackedAccessorProvider<A>): A {
     throw new Error('can\'t create accessors in post-processing context');
-  }
+  },
 };
 
 /** Main method to render configurations */

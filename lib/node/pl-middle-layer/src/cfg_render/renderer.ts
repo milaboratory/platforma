@@ -4,6 +4,7 @@ import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfg } from './executor';
 import { assertNever } from '@milaboratory/ts-helpers';
+import { rawComputableWithPostprocess } from '@milaboratory/computable';
 
 function res(result: unknown): OperationAction {
   return {
@@ -149,6 +150,90 @@ const SRMapResourceFields2: Subroutine = args => {
   return resOp(args);
 };
 
+const SRGetBlobContent: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return env => {
+    const node = env.accessor(source).node();
+    const driver = env.downloadDriver;
+    if (driver == undefined)
+      return res(undefined);
+
+    return {
+      type: 'ScheduleComputable',
+      computable: rawComputableWithPostprocess(
+        () => driver.getDownloadedBlob({
+          id: node.id,
+          type: node.resourceType,
+        }), {},
+        async (val) => {
+          if (val == undefined)
+            return undefined;
+          return await driver.getContent(val);
+        }
+      )
+    }
+  };
+};
+
+const SRGetBlobContentAsString: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return env => {
+    const node = env.accessor(source).node();
+    const driver = env.downloadDriver;
+    if (driver == undefined)
+      return res(undefined);
+
+    return {
+      type: 'ScheduleComputable',
+      computable: rawComputableWithPostprocess(
+        () => driver.getDownloadedBlob({
+          id: node.id,
+          type: node.resourceType,
+        }), {},
+        async (val) => {
+          if (val == undefined)
+            return undefined;
+          return (await driver.getContent(val)).toString();
+        }
+      )
+    }
+  };
+};
+
+const SRGetBlobContentAsJson: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return env => {
+    const node = env.accessor(source).node();
+    const driver = env.downloadDriver;
+    if (driver == undefined)
+      return res(undefined);
+
+    return {
+      type: 'ScheduleComputable',
+      computable: rawComputableWithPostprocess(
+        () => driver.getDownloadedBlob({
+          id: node.id,
+          type: node.resourceType,
+        }), {},
+        async (val) => {
+          if (val == undefined)
+            return undefined;
+          return JSON.parse((await driver.getContent(val)).toString());
+        }
+      )
+    }
+  };
+};
+
 /** Renders configuration into executor's Operation */
 export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
@@ -241,6 +326,33 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRResourceValueAsJson,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetBlobContent':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetBlobContent,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetBlobContentAsString':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetBlobContentAsString,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetBlobContentAsJson':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetBlobContentAsJson,
         args: {
           source: renderCfg(ctx, cfg.source)
         }
