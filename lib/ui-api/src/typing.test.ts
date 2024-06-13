@@ -7,7 +7,7 @@ import {
   Args, It,
   makeObject,
   mapRecordValues,
-  MainOutputs, isEmpty, mapArrayValues
+  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson
 } from './actions';
 import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
 
@@ -73,6 +73,31 @@ test('test config content', () => {
     .build();
 
   assertType<ResolveOutputsType<typeof blockConfig1>, { cell1: { b: string[] }, cell2: 'v1'[] }>();
+
+  expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
+});
+
+test('test config 2', () => {
+  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>('Heavy')
+    .initialArgs({ a: [] })
+    .output('cell1', makeObject({
+      b: getBlobContentAsString(getResourceField(MainOutputs, 'field1')),
+      c: getBlobContent(getResourceField(MainOutputs, 'field2')),
+      d: getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3'))
+    }))
+    .canRun(isEmpty(getJsonField(Args, 'a')))
+    .sections(getImmediate([
+      { id: 'main', title: 'Main' }
+    ]))
+    .build();
+
+  assertType<ResolveOutputsType<typeof blockConfig1>, {
+    cell1: {
+      b: string,
+      c: Uint8Array,
+      d: string[]
+    }
+  }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
 });
