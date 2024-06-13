@@ -7,8 +7,43 @@ type TypeMap = {
 
 export type ValueType = keyof TypeMap;
 
-export type Props = {
+// Data table props
+export type TableProps = {
   settings: Settings;
+};
+
+// Inner table state
+export type TableData = {
+  rowIndex: number;
+  columns: readonly ColumnSettings[];
+  resize: boolean;
+  resizeTh?: ResizeTh;
+  bodyHeight: number;
+  bodyWidth: number;
+  scrollTop: number;
+  scrollLeft: number;
+  selectedRows: Set<string>;
+};
+
+type DataRow = Record<string, unknown>;
+
+// Table settings
+export type Settings = {
+  columns: ColumnSettings[];
+  datum: DataRow[]; // @TODO common inteface
+  getPrimaryKey: (row: DataRow, index: number) => string;
+  operations?: {
+    onDelete?: (primaryIds: string[]) => void;
+  };
+  rowHeight?: number;
+  gap?: number;
+  addColumn?: () => Promise<void>;
+  autoLastColumn?: boolean;
+  selfSort?: boolean;
+  columnEvents?: ColumnEvent[];
+  cellEvents?: CellEvent[];
+  editable?: boolean;
+  controlColumn?: boolean;
 };
 
 export type ColumnSettings = {
@@ -25,24 +60,9 @@ export type ColumnSettings = {
   frozen?: boolean;
 };
 
-// export type ShowContextOptions = <T extends string = string>(options: SimpleOption<T>[], onSelect: (op: T) => void) => void;
-
 export type ColumnEvent = 'delete:column' | 'expand:column';
 
 export type CellEvent = 'delete:row' | 'update:value' | 'select:row';
-
-export type Settings = {
-  columns: ColumnSettings[];
-  datum: Record<string, unknown>[]; // @TODO columns variant
-  rowHeight?: number;
-  gap?: number;
-  addColumn?: () => Promise<void>;
-  autoLastColumn?: boolean;
-  selfSort?: boolean;
-  columnEvents?: ColumnEvent[];
-  cellEvents?: CellEvent[];
-  editable?: boolean;
-};
 
 export type ResizeTh = {
   colId: string;
@@ -51,21 +71,8 @@ export type ResizeTh = {
   right: number;
 };
 
-// Inner state
-export type Data = {
-  rowIndex: number;
-  columns: readonly ColumnSettings[];
-  rows: readonly RowSettings[];
-  resize: boolean;
-  resizeTh?: ResizeTh;
-  bodyHeight: number;
-  bodyWidth: number;
-  scrollTop: number;
-  scrollLeft: number;
-};
-
 export type RowSettings = {
-  values: Record<string, unknown>;
+  dataRow: DataRow;
   index: number;
   offset: number;
   height: number;
@@ -73,6 +80,8 @@ export type RowSettings = {
 
 export type CellProps = {
   column: ColumnSettings;
+  dataRow: DataRow;
+  primaryKey: string;
   rowIndex: number;
   value: unknown;
   class: string;
@@ -80,6 +89,7 @@ export type CellProps = {
   slot?: boolean;
   width: number;
   style: ColumnStyle;
+  control?: boolean;
 };
 
 export type TableRow = {
@@ -87,6 +97,8 @@ export type TableRow = {
   offset: number;
   height: number;
   cells: CellProps[];
+  primaryKey: string;
+  selected?: boolean;
 };
 export type ColumnStyle = {
   left: string;
@@ -96,4 +108,5 @@ export type ColumnStyle = {
 export type TableColumn = ColumnSettings & {
   style: ColumnStyle;
   offset: number;
+  control?: boolean;
 };

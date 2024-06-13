@@ -1,12 +1,13 @@
 <script lang="ts" setup>
+import type { TableRow } from './types';
+
 defineProps<{
-  index: number;
-  height: number;
+  row: TableRow;
 }>();
 </script>
 
 <template>
-  <div class="tr-body" :style="`height: ${height}px`">
+  <div class="tr-body" :style="row.style" :class="{ selected: row.selected }">
     <slot />
   </div>
 </template>

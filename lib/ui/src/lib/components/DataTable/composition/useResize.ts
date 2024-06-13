@@ -1,7 +1,7 @@
 import type { Ref } from 'vue';
 import { watchEffect, unref } from 'vue';
 import type { ResizeTh } from '../types';
-import { type Data } from '../types';
+import { type TableData } from '../types';
 import { useColumn } from './useColumn';
 import { MIN_COLUMN_WIDTH, RESIZE_GAP } from '../constants';
 import { useMouse } from '@/lib/composition/useMouse';
@@ -27,7 +27,7 @@ export function getColumnPositions(tableRef: MaybeRef<HTMLElement | undefined>) 
     .slice(0, ths.length - 1);
 }
 
-export function useResize(data: Data, tableRef: Ref<HTMLElement | undefined>) {
+export function useResize(data: TableData, tableRef: Ref<HTMLElement | undefined>) {
   const mousePos = useMouse();
   const isHovered = useHover(tableRef, {});
 

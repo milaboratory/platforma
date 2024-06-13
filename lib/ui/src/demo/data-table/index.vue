@@ -7,7 +7,10 @@ import { faker } from '@faker-js/faker';
 import { computed, onMounted, reactive } from 'vue';
 import { randomInt, arrayFrom } from '@milaboratory/helpers/utils';
 import type { ColumnSettings } from '@/lib/components/DataTable/types';
-import { type Data } from '@/lib/components/DataTable/types';
+import { type TableData } from '@/lib/components/DataTable/types';
+import { uniqueId } from '@milaboratory/helpers/strings';
+
+const lorem = strings.randomString(40);
 
 const tearRender = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -21,13 +24,13 @@ async function* renderSequence(n: number) {
   }
 }
 
-const identity = <T,>(v: T): T => v;
+const asConst = <const T,>(v: T): T => v;
 
 const data = reactive({
   loading: false,
   numColumns: 15,
   numRows: 100,
-  tableData: undefined as Data | undefined,
+  tableData: undefined as TableData | undefined,
   rows: [] as Record<string, unknown>[],
 });
 
@@ -45,23 +48,15 @@ const columnsRef = computed(() => {
   });
 
   return [
-    identity<ColumnSettings>({
-      id: 'ID',
-      label: 'ID',
-      width: 200,
-      frozen: true,
-    }),
-    identity<ColumnSettings>({
-      id: 'Test',
-      label: 'Test',
+    asConst<ColumnSettings>({
+      id: uniqueId(),
+      label: 'Frozen',
       width: 200,
       frozen: true,
     }),
     ...rest,
   ];
 });
-
-const lorem = strings.randomString(40);
 
 async function generate() {
   const rows = [] as Record<string, unknown>[];
@@ -82,13 +77,22 @@ async function generate() {
 }
 
 const settings = computed<DataTableSettings>(() => {
-  return identity<DataTableSettings>({
+  const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
+
+  return asConst<DataTableSettings>({
     columns: columnsRef.value,
     datum: data.rows,
+    getPrimaryKey,
+    operations: {
+      onDelete(ids) {
+        data.rows = data.rows.filter((row) => !ids.includes(getPrimaryKey(row)));
+      },
+    },
     selfSort: true,
     rowHeight: 40,
     editable: true,
     cellEvents: ['delete:row', 'select:row'],
+    controlColumn: true,
   });
 });
 
@@ -96,7 +100,7 @@ function onDeleteRow(index: number) {
   data.rows.splice(index, 1);
 }
 
-const onUpdateData = (v: Data): void => {
+const onUpdateData = (v: TableData): void => {
   data.tableData = v;
 };
 
@@ -109,7 +113,6 @@ const goDown = () => {
 const onGenerate = () => {
   data.loading = true;
   generate().finally(() => {
-    console.log('Done');
     data.loading = false;
   });
 };

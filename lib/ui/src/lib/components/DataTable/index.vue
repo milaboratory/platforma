@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import './assets/style.scss';
-import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect, watch } from 'vue';
+import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect, watch, provide, InjectionKey } from 'vue';
 import TdCell from './TdCell.vue';
-import type { Settings, Data, RowSettings } from './types';
+import type { Settings, TableData, RowSettings } from './types';
 import AddColumnBtn from './AddColumnBtn.vue';
 import TableIcon from './assets/TableIcon.vue';
 import TrHead from './TrHead.vue';
@@ -15,11 +15,13 @@ import { useResize } from './composition/useResize';
 import { useRows } from './composition/useRows';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { useColumns } from './composition/useColumns';
+import { settingsKey } from './keys';
+import CommandMenu from './CommandMenu.vue';
 
 const emit = defineEmits<{
   (e: 'click:cell', cell: unknown): void;
   (e: 'update:value', value: unknown): void;
-  (e: 'update:data', value: Data): void;
+  (e: 'update:data', value: TableData): void;
   (e: 'delete:column', value: unknown): void;
   (e: 'delete:row', value: number): void;
   (e: 'change:sort', value: unknown): void;
@@ -29,16 +31,16 @@ const props = defineProps<{
   settings: Settings;
 }>();
 
-const data = reactive<Data>({
+const data = reactive<TableData>({
   rowIndex: -1,
   columns: [],
-  rows: [],
   resize: false,
   resizeTh: undefined,
   bodyHeight: 0,
   bodyWidth: 0,
   scrollTop: 0,
   scrollLeft: 0,
+  selectedRows: new Set<string>(),
 });
 
 watch(
@@ -49,6 +51,10 @@ watch(
   { immediate: true },
 );
 
+const settings = computed(() => props.settings);
+
+provide(settingsKey, settings);
+
 const datum = computed(() => {
   const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
 
@@ -56,12 +62,8 @@ const datum = computed(() => {
 
   const raw = props.settings.datum.slice();
 
-  // if (props.settings.selfSort) {
-  //   sortRows(columns, raw);
-  // }
-
-  return raw.map<RowSettings>((values, index) => ({
-    values,
+  return raw.map<RowSettings>((dataRow, index) => ({
+    dataRow,
     index,
     offset: index * (rowHeight + gap),
     height: rowHeight,
@@ -84,13 +86,9 @@ const updateDimensions = () => {
   });
 };
 
-const noDataStyle = computed(() => ({
-  gridColumn: '1 / ' + data.columns.length + 1,
-}));
+const columns = useColumns(data, settings);
 
-const columns = useColumns(data);
-
-const rows = useRows(data, columns, datum);
+const rows = useRows(data, { columns, datum, settings });
 
 const { mouseDown } = useResize(data, tableRef);
 
@@ -129,11 +127,7 @@ const onWheel = (ev: WheelEvent) => {
 
 <template>
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
-    <div>columnsWidth: {{ columnsWidth }}</div>
-    <div>bodyWidth: {{ data.bodyWidth }}</div>
-    <div>scrollLeft: {{ data.scrollLeft }}</div>
-    <div>maxScrollLeft: {{ maxScrollLeft }}</div>
-    <div v-if="false">columns: {{ columns.map((c) => `${c.label} ${c.offset} ${c.width}`).join(', ') }}</div>
+    <CommandMenu :table-data="data" />
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head">
       <tr-head>
@@ -149,18 +143,18 @@ const onWheel = (ev: WheelEvent) => {
       </tr-head>
     </div>
     <div ref="bodyRef" class="table-body" :style="{ height: bodyHeight + 'px' }" @wheel="onWheel">
-      <div v-if="rows.length === 0" class="table-body__no-data" :style="noDataStyle">
+      <div v-if="rows.length === 0" class="table-body__no-data">
         <div>
           <table-icon />
           <div>No Data To Show</div>
         </div>
       </div>
-      <tr-body v-for="(row, i) in rows" :key="i" :height="row.height" :index="i" :style="row.style">
+      <tr-body v-for="(row, i) in rows" :key="i" :row="row">
         <td-cell
           v-for="cell in row.cells"
           :key="cell.column.id"
           :cell="cell"
-          :cell-events="settings.cellEvents"
+          :table-data="data"
           :style="cell.style"
           @click.stop="$emit('click:cell', cell)"
           @delete:row="$emit('delete:row', $event)"
