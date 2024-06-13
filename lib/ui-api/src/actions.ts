@@ -5,7 +5,7 @@ import {
   ActGetResourceField, ActGetResourceValueAsJson,
   ActMakeObject,
   ActMapRecordValues,
-  ActMapResourceFields, ActMapArrayValues, ActIsEmpty, ActNot, ActIsolate
+  ActMapResourceFields, ActMapArrayValues, ActIsEmpty, ActNot, ActIsolate, ActGetBlobContentAsJson, ActGetBlobContentAsString, ActGetBlobContent
 } from './actions_kinds';
 import {
   ExtractAction,
@@ -216,4 +216,38 @@ export function mapResourceFields<
     type: 'MapResourceFields',
     source, mapping, itVar
   } as Cfg as TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>;
+}
+
+//
+// Download Blobs
+//
+
+export function getBlobContent() {
+  return function <const Source extends PrimitiveOrConfig>(
+    source: Source
+  ): TypedConfig<ActGetBlobContent<POCExtractAction<Source>>> {
+    return ({
+      type: 'GetBlobContent', source: primitiveToConfig(source)
+    } as Cfg) as any;
+  };
+}
+
+export function getBlobContentAsString() {
+  return function <const Source extends PrimitiveOrConfig>(
+    source: Source
+  ): TypedConfig<ActGetBlobContentAsString<POCExtractAction<Source>>> {
+    return ({
+      type: 'GetBlobContentAsString', source: primitiveToConfig(source)
+    } as Cfg) as any;
+  };
+}
+
+export function getBlobContentAsJson<T>() {
+  return function <const Source extends PrimitiveOrConfig>(
+    source: Source
+  ): TypedConfig<ActGetBlobContentAsJson<POCExtractAction<Source>, T>> {
+    return ({
+      type: 'GetBlobContentAsJson', source: primitiveToConfig(source)
+    } as Cfg) as any;
+  };
 }

@@ -109,3 +109,28 @@ export interface ActGetResourceValueAsJson<Source extends ConfAction, T> extends
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
+
+//
+// Download Blobs
+//
+
+export interface ActGetBlobContent<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? Uint8Array
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActGetBlobContentAsString<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? string
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActGetBlobContentAsJson<Source extends ConfAction, T> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? T
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}

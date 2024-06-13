@@ -14,7 +14,11 @@ export type Cfg =
 
   | CfgMapResourceFields
   | CfgGetResourceField
-  | CfgResourceValueAsJson;
+  | CfgResourceValueAsJson
+
+  | CfgBlobContent
+  | CfgBlobContentAsString
+  | CfgBlobContentAsJson;
 
 //
 // Isolate / Rendering Mode
@@ -103,5 +107,24 @@ export type CfgGetResourceField = {
 
 export type CfgResourceValueAsJson = {
   type: 'GetResourceValueAsJson'
+  source: Cfg
+}
+
+//
+// Download Blobs
+//
+
+export type CfgBlobContent = {
+  type: 'GetBlobContent'
+  source: Cfg
+}
+
+export type CfgBlobContentAsString = {
+  type: 'GetBlobContentAsString'
+  source: Cfg
+}
+
+export type CfgBlobContentAsJson = {
+  type: 'GetBlobContentAsJson'
   source: Cfg
 }
