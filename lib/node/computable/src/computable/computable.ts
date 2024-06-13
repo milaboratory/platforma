@@ -288,7 +288,7 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
 
   /** Internally creates value tree, but don't execute async post-processing
    * state. */
-  public preCalculateValueTree() {
+  public preCalculateValueTree(): this {
     if (this.stateCalculation !== undefined)
       throw new Error('Illegal state for pre-calculation.');
     this.state = this.state === undefined
@@ -299,6 +299,8 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     if (this.state.hooks !== undefined)
       for (const hooks of this.state.hooks)
         hooks.onGetValue(this);
+
+    return this;
   }
 
   /**
