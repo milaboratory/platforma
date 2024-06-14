@@ -11,6 +11,8 @@ export type Cfg =
 
   | CfgIsEmpty
   | CfgNot
+  | CfgAnd
+  | CfgOr
 
   | CfgMapResourceFields
   | CfgGetResourceField
@@ -86,6 +88,18 @@ export type CfgIsEmpty = {
 export type CfgNot = {
   type: 'Not'
   operand: Cfg
+}
+
+export type CfgAnd = {
+  type: 'And'
+  operand1: Cfg,
+  operand2: Cfg
+}
+
+export type CfgOr = {
+  type: 'Or'
+  operand1: Cfg,
+  operand2: Cfg,
 }
 
 //

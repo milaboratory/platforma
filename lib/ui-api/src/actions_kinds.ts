@@ -66,9 +66,11 @@ export interface ActMapArrayValues<Source extends ConfAction, Mapping extends Co
 //
 
 export interface ActIsEmpty<Source extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends unknown[]
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (unknown[] | undefined)
     ? boolean
-    : unknown;
+    : (ActionResult<Source, typeof x> extends (string | undefined)
+      ? boolean
+      : unknown)
   isSync: IsA<Source, SyncConfAction>;
 }
 
@@ -77,6 +79,24 @@ export interface ActNot<Source extends ConfAction> extends ConfAction {
     ? boolean
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActAnd<Source1 extends ConfAction, Source2 extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source1, typeof x> extends boolean
+    ? (ActionResult<Source2, typeof x> extends boolean
+      ? boolean
+      : unknown)
+    : unknown;
+  isSync: IsA<Source1, SyncConfAction> & IsA<Source2, SyncConfAction>;
+}
+
+export interface ActOr<Source1 extends ConfAction, Source2 extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source1, typeof x> extends boolean
+    ? (ActionResult<Source2, typeof x> extends boolean
+      ? boolean
+      : unknown)
+    : unknown;
+  isSync: IsA<Source1, SyncConfAction> & IsA<Source2, SyncConfAction>;
 }
 
 //
