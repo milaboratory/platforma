@@ -87,7 +87,7 @@ const SRMapRecordValues2: Subroutine = args => {
 };
 
 const SRIsEmpty: Subroutine = args => {
-  const arg = args.arg as unknown[] | undefined;
+  const arg = args.arg as unknown[] | string | undefined;
   if (arg === undefined)
     return resOp(undefined);
   return resOp(arg.length === 0);
@@ -98,6 +98,22 @@ const SRNot: Subroutine = args => {
   if (operand === undefined)
     return resOp(undefined);
   return resOp(!operand);
+};
+
+const SRAnd: Subroutine = args => {
+  const operand1 = args.operand1 as boolean | undefined;
+  const operand2 = args.operand2 as boolean | undefined;
+  if (operand1 === undefined || operand2 === undefined)
+    return resOp(undefined);
+  return resOp(operand1 && operand2);
+};
+
+const SROr: Subroutine = args => {
+  const operand1 = args.operand1 as boolean | undefined;
+  const operand2 = args.operand2 as boolean | undefined;
+  if (operand1 === undefined || operand2 === undefined)
+    return resOp(undefined);
+  return resOp(operand1 || operand2);
 };
 
 const SRResourceValueAsJson: Subroutine = args => {
@@ -300,6 +316,26 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SRNot,
         args: {
           operand: renderCfg(ctx, cfg.operand)
+        }
+      });
+
+    case 'And':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRAnd,
+        args: {
+          operand1: renderCfg(ctx, cfg.operand1),
+          operand2: renderCfg(ctx, cfg.operand2),
+        }
+      });
+
+    case 'Or':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SROr,
+        args: {
+          operand1: renderCfg(ctx, cfg.operand1),
+          operand2: renderCfg(ctx, cfg.operand2),
         }
       });
 
