@@ -15,9 +15,16 @@ export class AccessorLeakException extends Error {
 export type UsageGuard = () => void;
 
 /** Interface to be implemented by accessor providers, to be used with
- * computable helpers. */
+ * computable helpers.
+ * @deprecated use AccessorProvider<A> */
 export interface TrackedAccessorProvider<I> {
   createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): I;
+}
+
+/** Interface to be implemented by accessor providers, to be used with
+ * computable helpers. */
+export interface AccessorProvider<A> {
+  createAccessor(ctx: ComputableCtx, guard: UsageGuard): A;
 }
 
 //
@@ -32,6 +39,7 @@ export type ExtractTrackedAccessorTypes<T> = {
  * From { a: provider1, b: provider2 } returns provider that constructs
  * accessors of form { a: accessor1, b: accessor2 }, where corresponding
  * accessors are produced by corresponding providers.
+ * @deprecated
  * */
 export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<ExtractTrackedAccessorTypes<PP>> {
   return {

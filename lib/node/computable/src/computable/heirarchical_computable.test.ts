@@ -1,13 +1,11 @@
 import { FakeTreeAccessor, FakeTreeDriver, PersistentFakeTreeNode } from './test_backend';
-import { computable, ComputableRenderingOps } from './computable_helpers';
-import { Computable } from './computable';
-import { ComputableCtx } from './kernel';
+import { Computable, ComputableRenderingOps } from './computable';
 
 test('simple computable state', async () => {
   const tree1 = new FakeTreeDriver();
 
-  const cs1 = computable(tree1.accessor, {}, (a, ctx) => {
-    return a.get('a')?.get('b')?.getValue();
+  const cs1 = Computable.make(ctx => {
+    return ctx.accessor(tree1.accessor).get('a')?.get('b')?.getValue();
   });
 
   expect(cs1.isChanged()).toBe(true);
@@ -29,11 +27,11 @@ test('cross tree computable state', async () => {
   const tree1 = new FakeTreeDriver();
   const tree2 = new FakeTreeDriver();
 
-  const cs1 = computable(tree1.accessor, {}, a1 => {
-    const nodeName = a1.get('a')?.getValue();
+  const cs1 = Computable.make(ctx => {
+    const nodeName = ctx.accessor(tree1.accessor).get('a')?.getValue();
     if (nodeName === undefined)
       return undefined;
-    return computable(tree2.accessor, {}, a2 => a2.get(nodeName)?.getValue());
+    return Computable.make(ctx => ctx.accessor(tree2.accessor).get(nodeName)?.getValue());
   });
 
   expect(cs1.isChanged()).toBe(true);
@@ -72,47 +70,47 @@ function traverse(
 function getValueFromTree(tree: FakeTreeDriver,
                           ops: Partial<ComputableRenderingOps> = {},
                           ...path: string[]): Computable<undefined | string> {
-  return computable(tree.accessor, ops, a => {
-    return traverse(a, ...path)?.getValue();
+  return Computable.make(ctx => {
+    return traverse(ctx.accessor(tree.accessor), ...path)?.getValue();
   });
 }
 
 function getValueFromTreeAsNested(node: PersistentFakeTreeNode,
                                   ops: Partial<ComputableRenderingOps> = {},
                                   ...pathLeft: string[]): Computable<undefined | string> {
-  return computable(node, { key: node.uuid + pathLeft.join('---'), ...ops },
-    a => {
-      if (pathLeft.length === 0)
-        return a.getValue();
-      else {
-        const next = a.get(pathLeft[0])?.persist;
-        if (next === undefined)
-          return undefined;
-        return getValueFromTreeAsNested(next, {}, ...pathLeft.slice(1));
-      }
-    });
+  return Computable.make(ctx => {
+    const a = ctx.accessor(node);
+    if (pathLeft.length === 0)
+      return a.getValue();
+    else {
+      const next = a.get(pathLeft[0])?.persist;
+      if (next === undefined)
+        return undefined;
+      return getValueFromTreeAsNested(next, {}, ...pathLeft.slice(1));
+    }
+  }, { key: node.uuid + pathLeft.join('---'), ...ops });
 }
 
 function getValueFromTreeAsNestedWithDestroy(tree: PersistentFakeTreeNode,
                                              ops: Partial<ComputableRenderingOps> = {},
                                              onDestroy: (currentPath: string[]) => void,
                                              pathLeft: string[], currentPath: string[] = []): Computable<undefined | string> {
-  return computable(tree, { key: tree.uuid + pathLeft.join('---'), ...ops },
-    (a, ctx) => {
-      if (!ctx.hasOnDestroy)
-        ctx.setOnDestroy(() => onDestroy(currentPath));
-      if (pathLeft.length === 0)
-        return a.getValue();
-      else {
-        if (!a.isLocked())
-          ctx.markUnstable();
-        const next = a.get(pathLeft[0])?.persist;
-        if (next === undefined)
-          return undefined;
-        return getValueFromTreeAsNestedWithDestroy(next, {},
-          onDestroy, pathLeft.slice(1), [...currentPath, pathLeft[0]]);
-      }
-    });
+  return Computable.make(ctx => {
+    if (!ctx.hasOnDestroy)
+      ctx.setOnDestroy(() => onDestroy(currentPath));
+    const a = ctx.accessor(tree);
+    if (pathLeft.length === 0)
+      return a.getValue();
+    else {
+      if (!a.isLocked())
+        ctx.markUnstable();
+      const next = a.get(pathLeft[0])?.persist;
+      if (next === undefined)
+        return undefined;
+      return getValueFromTreeAsNestedWithDestroy(next, {},
+        onDestroy, pathLeft.slice(1), [...currentPath, pathLeft[0]]);
+    }
+  }, { key: tree.uuid + pathLeft.join('---'), ...ops });
 }
 
 test('stability test simple #1', async () => {

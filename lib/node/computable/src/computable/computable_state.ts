@@ -1,6 +1,5 @@
 import {
   ComputableKernel,
-  KernelLambdaField,
   IntermediateRenderingResult,
   ComputableCtx, tryExtractComputableKernel
 } from './kernel';
@@ -8,6 +7,9 @@ import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
 import { assertNever } from '@milaboratory/ts-helpers';
 import { ComputableHooks } from './computable_hooks';
+import { Watcher } from '../watcher';
+import { setImmediate } from 'node:timers';
+import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
 
 interface ExecutionError {
   error: any;
@@ -30,7 +32,6 @@ class CellComputableContext implements ComputableCtx {
   /** Must be reset to "undefined", to only accumulate those observers injected
    * during a specific call*/
   public hooks: Set<ComputableHooks> | undefined = undefined;
-  public validity: number | undefined = undefined;
 
   markUnstable(): void {
     this.stable = false;
@@ -89,11 +90,51 @@ class CellComputableContext implements ComputableCtx {
     this.hooks.add(listener);
   }
 
-  setValidity(timestamp: number): void {
-    if (this.validity === undefined)
-      this.validity = timestamp;
-    else
-      this.validity = Math.min(this.validity, timestamp);
+  private _watcher: Watcher | undefined = undefined;
+
+  public get watcher(): Watcher {
+    if (this._watcher === undefined)
+      throw new Error('Unexpected call.');
+    return this._watcher;
+  }
+
+  private guardData: { finished: boolean } | undefined;
+  private guard: UsageGuard | undefined;
+
+  /** Cached accessors */
+  private accessors: Map<AccessorProvider<unknown>, unknown> | undefined;
+
+  accessor<A>(provider: AccessorProvider<A>): A {
+    if (this.accessors === undefined)
+      this.accessors = new Map<AccessorProvider<unknown>, unknown>();
+    const cached = this.accessors.get(provider);
+    if (cached !== undefined)
+      return cached as A;
+    const acc = provider.createAccessor(this, this.guard!);
+    this.accessors.set(provider, acc);
+    return acc;
+  }
+
+  /** Must be executed by the computable state engine before running the sync
+   * kernel callback. */
+  beforeCall(watcher: Watcher) {
+    this.hooks?.clear();
+    this._watcher = watcher;
+    const guardData = { finished: false };
+    this.guard = () => {
+      if (guardData.finished) throw new AccessorLeakException();
+    };
+    this.guardData = guardData;
+  }
+
+  /** Must be executed by the computable state engine after sync kernel callback
+   * execution finished. */
+  afterCall() {
+    this._watcher = undefined;
+    this.guardData!.finished = true;
+    this.guardData = undefined;
+    this.guard = undefined;
+    this.accessors?.clear();
   }
 }
 
@@ -116,9 +157,8 @@ interface SelfCellState<T> {
   readonly selfWatcher: HierarchicalWatcher;
 }
 
-// TODO change to Map
-type ChildrenStates = Record<
-  string,
+type ChildrenStates = Map<
+  string | symbol,
   ChildStateEnvelop<unknown, unknown>
 >;
 
@@ -200,12 +240,13 @@ function addChildren(node: unknown, children: Children) {
         children.push(kernel);
 
       else if (Array.isArray(node))
-        for (const child of node)
-          addChildren(child, children);
+        for (const nested of node)
+          addChildren(nested, children);
 
       else
-        for (const [, child] of Object.entries(node as object))
-          addChildren(child, children);
+        for (const [, nested] of Object.entries(node as object))
+          if (nested !== node)
+            addChildren(nested, children);
 
       return;
 
@@ -240,7 +281,7 @@ function calculateNodeValue(
     case 'object':
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined)
-        return childStates[kernel.key].state.value;
+        return childStates.get(kernel.key)!.state.value;
 
       if (Array.isArray(node))
         return node.map(child => calculateNodeValue(child, childStates));
@@ -259,12 +300,13 @@ function calculateNodeValue(
 async function runPostprocessing<IR, T>(iResult: IntermediateRenderingResult<IR, T>,
                                         childrenStates: ChildrenStates,
                                         stable: boolean): Promise<T> {
-  return await iResult.postprocessValue(
-    calculateNodeValue(
-      iResult.ir,
-      childrenStates
-    ),
-    stable);
+  const iv = calculateNodeValue(
+    iResult.ir,
+    childrenStates
+  );
+  return iResult.postprocessValue === undefined
+    ? iv
+    : await iResult.postprocessValue(iv, stable);
 }
 
 async function fillCellValue<T>(
@@ -274,9 +316,9 @@ async function fillCellValue<T>(
   // assert !('value' in state)
   const ops = state.selfState.kernel.ops;
 
-  let value = ops.mode == 'StableOnlyRetentive' ? previousValue : undefined;
+  let value = ops.mode === 'StableOnlyRetentive' ? previousValue : undefined;
   if (!isExecutionError(state.selfState.iResult)) {
-    if (state.stable || ops.mode == 'Live') {
+    if (state.stable || ops.mode === 'Live') {
 
       // check that there are errors for nested computed instances
       if (state.allErrors.length === 0) {
@@ -319,19 +361,28 @@ function renderSelfState<T>(
   try {
     // stable by default
     ctx.stable = true;
-    ctx.hooks = undefined;
-    ctx.validity = undefined;
-    const iResult = kernel[KernelLambdaField](selfWatcher, ctx);
+
+    // initialize ctx for the call
+    ctx.beforeCall(selfWatcher);
+
+    // running main kernel callback
+    const iResult = kernel.___kernel___(ctx);
+
     return { kernel, ctx, selfWatcher, iResult };
   } catch (error: any) {
+    // TODO maybe it is not correct...
     // all errors are considered unstable
     ctx.stable = false;
+
     return { kernel, ctx, selfWatcher, iResult: { error } };
+  } finally {
+    // reset call-specific state
+    ctx.afterCall();
   }
 }
 
 export function destroyState(_state: CellState<unknown>) {
-  for (const [, { state }] of Object.entries(_state.childrenStates))
+  for (const { state } of _state.childrenStates.values())
     destroyState(state);
   _state.selfState.ctx.scheduleAndResetOnDestroy();
 }
@@ -346,44 +397,43 @@ function calculateChildren(
   cachedChildrenStates?: ChildrenStates
 ): ChildrenStates {
   // Tracking which children we transferred to a new state
-  const transferred = new Set<string>();
+  const transferred = new Set<string | symbol>();
 
-  const result: ChildrenStates = {};
+  // TODO lazy initialization of children map ?
+  const result: ChildrenStates = new Map();
 
   // Updating or creating child states
   for (const child of children) {
     const existingState = cachedChildrenStates
-      ? cachedChildrenStates[child.key]
+      ? cachedChildrenStates.get(child.key)
       : undefined;
-    if (existingState) {
-      result[child.key] = {
+    if (existingState !== undefined) {
+      result.set(child.key, {
         state: updateCellStateWithoutValue(
           existingState.state
         ),
         stable: existingState.stable || fromStableState,
         orphan: false
-      };
+      });
       transferred.add(child.key);
     } else
-      result[child.key] = {
+      result.set(child.key, {
         state: createCellStateWithoutValue(child),
         stable: fromStableState,
         orphan: false
-      };
+      });
   }
 
   // if we are rendering child states for a stable result, we don't transfer anything from the previous cache,
   // except those children that exist in current incarnation (i.e. in children array)
   if (!fromStableState && cachedChildrenStates) {
-    for (const [oldCacheKey, oldCacheEnvelop] of Object.entries(
-      cachedChildrenStates
-    )) {
+    for (const [oldCacheKey, oldCacheEnvelop] of cachedChildrenStates) {
       // ignore children transferred in the previous loop
       if (transferred.has(oldCacheKey)) continue;
 
       if (oldCacheEnvelop.stable) {
         // note(!): we don't update the state for orphans
-        result[oldCacheKey] = { ...oldCacheEnvelop, orphan: true };
+        result.set(oldCacheKey, { ...oldCacheEnvelop, orphan: true });
         // adding them to transferred list to prevent calling destroy for these nodes
         transferred.add(oldCacheKey);
       }
@@ -392,9 +442,7 @@ function calculateChildren(
 
   // at this point we transferred everything we could, remaining children should be notified about destruction
   if (cachedChildrenStates) {
-    for (const [key, { state }] of Object.entries(
-      cachedChildrenStates
-    )) {
+    for (const [key, { state }] of cachedChildrenStates) {
       // ignore children transferred in the previous loops
       if (transferred.has(key)) continue;
 
@@ -414,10 +462,7 @@ function finalizeCellState<T>(
   const allErrors: Error[] = [];
   let stable = incompleteState.selfState.ctx.stable;
   let hooks: Set<ComputableHooks> | undefined = undefined;
-  let validity: number | undefined = undefined;
-  for (const [, { orphan, state }] of Object.entries(
-    incompleteState.childrenStates
-  )) {
+  for (const { orphan, state } of incompleteState.childrenStates.values()) {
     if (orphan) continue; // iterating over active children only
 
     nestedWatchers.push(state.watcher);
@@ -465,9 +510,9 @@ async function calculateValue<T>(
   if (!state_.valueNotCalculated) return;
 
   await Promise.all(
-    Object.entries(state_.childrenStates)
-      .filter(([, { orphan }]) => !orphan)
-      .map(([, { state }]) => calculateValue(state))
+    [...state_.childrenStates.values()]
+      .filter(({ orphan }) => !orphan)
+      .map(({ state }) => calculateValue(state))
   );
 
   const previousValue = state_.value;

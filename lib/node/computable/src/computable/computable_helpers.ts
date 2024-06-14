@@ -1,9 +1,8 @@
-import { AccessorLeakException, TrackedAccessorProvider } from './accessor_provider';
+import { TrackedAccessorProvider, UsageGuard } from './accessor_provider';
 import {
   CellRenderingOps,
   ComputableCtx,
   IntermediateRenderingResult,
-  KernelLambdaField,
   UnwrapComputables
 } from './kernel';
 import { Computable } from './computable';
@@ -15,15 +14,15 @@ function nextEphemeralKey(): string {
   return `__eph_key_${ephKeyCounter++}`;
 }
 
-export const DefaultRenderingOps: CellRenderingOps = {
+const DefaultRenderingOps: CellRenderingOps = {
   mode: 'Live', resetValueOnError: true
 };
 
-export function noopPostprocessValue<IR>(): (value: UnwrapComputables<IR>, stable: boolean) => Promise<UnwrapComputables<IR>> {
+function noopPostprocessValue<IR>(): (value: UnwrapComputables<IR>, stable: boolean) => Promise<UnwrapComputables<IR>> {
   return async v => v;
 }
 
-export interface ComputableRenderingOps extends CellRenderingOps {
+interface ComputableRenderingOps extends CellRenderingOps {
   key: string;
 }
 
@@ -36,6 +35,7 @@ export interface ComputableRenderingOps extends CellRenderingOps {
 //   ap: TrackedAccessorProvider<A>,
 //   ops: Partial<ComputableRenderingOps>,
 //   cb: (a: A, ctx: ComputableCtx) => IR): Computable<UnwrapComputables<IR>>
+/** @deprecated use {@link Computable.make} */
 export function computable<A, IR, T = UnwrapComputables<IR>>(
   ap: TrackedAccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
@@ -49,13 +49,12 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   };
   return new Computable<T>({
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    [KernelLambdaField]: (watcher, ctx) => {
-      let inCallback = true;
-      const ir = cb(ap.createInstance(watcher, () => {
-        if (!inCallback)
-          throw new AccessorLeakException();
-      }, ctx), ctx);
-      inCallback = false;
+    ___kernel___: ctx => {
+      const ir = cb(ctx.accessor({
+        createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
+          return ap.createInstance(ctx.watcher, guard, ctx);
+        }
+      }), ctx);
       return {
         ir,
         postprocessValue: postprocessValue ?? noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
@@ -64,7 +63,8 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   });
 }
 
-export function computableInstancePosprocessor<A, IR, T>(
+/** @deprecated use {@link Computable.make} */
+export function computableInstancePostprocessor<A, IR, T>(
   ap: TrackedAccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>): Computable<T> {
@@ -76,19 +76,17 @@ export function computableInstancePosprocessor<A, IR, T>(
   };
   return new Computable<T>({
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    [KernelLambdaField]: (watcher, ctx) => {
-      let inCallback = true;
-      const ir = cb(ap.createInstance(watcher, () => {
-        if (!inCallback)
-          throw new AccessorLeakException();
-      }, ctx), ctx);
-      inCallback = false;
-      return ir;
+    ___kernel___: ctx => {
+      return cb(ctx.accessor({
+        createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
+          return ap.createInstance(ctx.watcher, guard, ctx);
+        }
+      }), ctx);
     }
   });
 }
 
-
+/** @deprecated use {@link Computable.make} */
 export function rawComputable<IR>(
   cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
   ops: Partial<ComputableRenderingOps> = {}
@@ -103,13 +101,14 @@ export function rawComputable<IR>(
 
   return new Computable<UnwrapComputables<IR>>({
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    [KernelLambdaField]: (watcher, ctx) => {
-      const result = cb(watcher, ctx);
+    ___kernel___: ctx => {
+      const result = cb(ctx.watcher, ctx);
       return { ir: result, postprocessValue: noopPostprocessValue<IR>() };
     }
   });
 }
 
+/** @deprecated use {@link Computable.make} */
 export function rawComputableWithPostprocess<IR, T>(
   cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
   ops: Partial<ComputableRenderingOps> = {},
@@ -125,8 +124,8 @@ export function rawComputableWithPostprocess<IR, T>(
 
   return new Computable({
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    [KernelLambdaField]: (watcher, ctx) => {
-      const result = cb(watcher, ctx);
+    ___kernel___: ctx => {
+      const result = cb(ctx.watcher, ctx);
       return { ir: result, postprocessValue };
     }
   });

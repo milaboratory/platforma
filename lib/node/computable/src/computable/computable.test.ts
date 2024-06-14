@@ -1,9 +1,9 @@
-import { rawComputable } from './computable_helpers';
 import { sleep } from '@milaboratory/ts-helpers';
+import { Computable } from './computable';
 
 test('raw computable simple test', async () => {
   let users = 0;
-  const c1 = rawComputable((watcher, ctx) => {
+  const c1 = Computable.make(ctx => {
     if (!ctx.hasOnDestroy) {
       users++;
       ctx.setOnDestroy(() => users--);
@@ -22,9 +22,55 @@ test('raw computable simple test', async () => {
   expect(users).toEqual(0);
 });
 
+test('computable with post-process', async () => {
+  const c1 = Computable.make(ctx => {
+    return 12;
+  }, {
+    postprocessValue: value => String(value)
+  });
+
+  expect(await c1.getValue()).toEqual('12');
+});
+
+test('nested computable with post-process', async () => {
+  const c1 = Computable.make(ctx => {
+    return Computable.make(ctx => 12);
+  }, {
+    postprocessValue: value => String(value)
+  });
+
+  expect(await c1.getValue()).toEqual('12');
+});
+
+test('computable with post-process and recover', async () => {
+  const c1 = Computable.make(ctx => {
+    throw new Error();
+    return 12;
+  }, {
+    postprocessValue: value => String(value),
+    recover: () => undefined
+  });
+
+  expect(await c1.getValue()).toBeUndefined();
+});
+
+test('nested computable with post-process and recover', async () => {
+  const c1 = Computable.make(ctx => {
+    return Computable.make(ctx => {
+      throw new Error();
+      return 12;
+    });
+  }, {
+    postprocessValue: value => String(value),
+    recover: () => undefined
+  });
+
+  expect(await c1.getValue()).toBeUndefined();
+});
+
 test('raw computable nested test', async () => {
   let users = 0;
-  const c1 = rawComputable((watcher, ctx) => {
+  const c1 = Computable.make(ctx => {
     if (!ctx.hasOnDestroy) {
       users++;
       ctx.setOnDestroy(() => users--);
@@ -32,7 +78,7 @@ test('raw computable nested test', async () => {
     return 12;
   });
 
-  const c2 = rawComputable((watcher, ctx) => {
+  const c2 = Computable.make(ctx => {
     return c1;
   });
 

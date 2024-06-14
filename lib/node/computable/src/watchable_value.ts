@@ -1,5 +1,5 @@
 import { ChangeSource } from './change_source';
-import { TrackedAccessorProvider, UsageGuard } from './computable/accessor_provider';
+import { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './computable/accessor_provider';
 import { Watcher } from './watcher';
 import { ComputableCtx } from './computable/kernel';
 
@@ -8,7 +8,7 @@ export interface ObservableAccessor<T> {
 }
 
 /** Super primitive observable implementation */
-export class WatchableValue<T> implements TrackedAccessorProvider<ObservableAccessor<T>> {
+export class WatchableValue<T> implements TrackedAccessorProvider<ObservableAccessor<T>>, AccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();
 
   constructor(private value: T) {
@@ -27,5 +27,15 @@ export class WatchableValue<T> implements TrackedAccessorProvider<ObservableAcce
         return this.value;
       }
     } as ObservableAccessor<T>;
+  }
+
+  createAccessor(ctx: ComputableCtx, guard: UsageGuard): ObservableAccessor<T> {
+    return {
+      getValue: () => {
+        guard();
+        this.change.attachWatcher(ctx.watcher);
+        return this.value;
+      }
+    };
   }
 }

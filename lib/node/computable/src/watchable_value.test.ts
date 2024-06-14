@@ -1,17 +1,18 @@
 import { WatchableValue } from './watchable_value';
-import { computable } from './computable/computable_helpers';
-import { combineProviders } from './computable/accessor_provider';
+import { Computable } from './computable/computable';
 
 test('simple observable', async () => {
   const obs1 = new WatchableValue(1);
   const obs2 = new WatchableValue(2);
 
-  const c = computable(combineProviders({ obs1, obs2 }), {},
-    ({ obs1, obs2 }) => {
-      if (obs1.getValue() % 2 === 0)
-        return obs1.getValue();
+  const c = Computable.make(
+    ctx => {
+      const o1 = ctx.accessor(obs1);
+      const o2 = ctx.accessor(obs2);
+      if (o1.getValue() % 2 === 0)
+        return o1.getValue();
       else
-        return obs2.getValue();
+        return o2.getValue();
     });
 
   expect(c.isChanged()).toEqual(true);

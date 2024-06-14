@@ -1,10 +1,9 @@
 import { Watcher } from '../watcher';
 import { ComputableHooks } from './computable_hooks';
+import { AccessorProvider } from './accessor_provider';
+import { Computable } from './computable';
 
 export interface ComputableCtx {
-  /** Sets timestamp of the data used by accessor. I.e. last time this data was updated. */
-  setValidity(timestamp: number): void;
-
   /** Attaches computable observer to track interactions with resulting computable.
    * Important: try to always inject the same instance of the observer, if it is
    * possible in the context, instance are placed in the Set to keep number of
@@ -39,6 +38,12 @@ export interface ComputableCtx {
 
   /** Associate value */
   getOrCreate<T>(key: string, initializer: () => T): T;
+
+  /** Watcher instance. New watcher for each invocation. */
+  readonly watcher: Watcher;
+
+  /** Creates accessor, that will be valid for this invocation only. */
+  accessor<A>(provider: AccessorProvider<A>): A;
 }
 
 export type CellRenderingMode =
@@ -65,14 +70,14 @@ export interface IntermediateRenderingResult<IR, T> {
   readonly ir: IR;
 
   /** Will be called to create final representation of the cell value. */
-  postprocessValue(value: UnwrapComputables<IR>, stable: boolean): Promise<T>;
+  postprocessValue?(value: UnwrapComputables<IR>, stable: boolean): Promise<T> | T;
 
   /** Will be called to create final representation of the cell if nested error occur. */
   recover?(error: any[]): T;
 }
 
-export const KernelLambdaField: unique symbol = Symbol();
-export const WrappedKernelField: unique symbol = Symbol();
+// export const KernelLambdaField: unique symbol = Symbol();
+// export const WrappedKernelField: unique symbol = Symbol();
 
 /** This object holds minimal information to create a computable instance, while executing
  * hierarchical callbacks all such nodes in the tree are interpreted as computables and
@@ -83,32 +88,29 @@ export const WrappedKernelField: unique symbol = Symbol();
 export interface ComputableKernel<T> {
   /** Uniquely identifies this computable. Used to correlate same nested computables
    * between multiple incarnations of intermediate representations. */
-  readonly key: string,
+  readonly key: string | symbol,
+
+  /** Controls the rendering process */
   readonly ops: CellRenderingOps,
 
   /** Computable calculation code. Symbol is use here to facilitate easy identification
    * of computable kernels in arbitrary object trees. */
-  [KernelLambdaField](watcher: Watcher, ctx: ComputableCtx): IntermediateRenderingResult<any, T>
-}
-
-/** I.e. computable. */
-export interface WrappedComputableKernel<T> {
-  [WrappedKernelField]: ComputableKernel<T>;
+  ___kernel___(ctx: ComputableCtx): IntermediateRenderingResult<any, T>
 }
 
 export function tryExtractComputableKernel(v: any): ComputableKernel<unknown> | undefined {
   if (typeof v === 'object' && v !== null) {
-    if (KernelLambdaField in v)
+    if ('___kernel___' in v)
       return v;
-    if (WrappedKernelField in v)
-      return v[WrappedKernelField];
+    if ('___wrapped_kernel___' in v)
+      return v['___wrapped_kernel___'];
   }
   return undefined;
 }
 
 export type UnwrapComputables<K> = K extends ComputableKernel<infer T>
   ? UnwrapComputables<T>
-  : K extends WrappedComputableKernel<infer T>
+  : K extends Computable<infer T>
     ? UnwrapComputables<T>
     : K extends bigint | boolean | null | number | string | symbol | undefined
       ? K

@@ -1,4 +1,10 @@
-import { ComputableKernel, WrappedComputableKernel, WrappedKernelField } from './kernel';
+import {
+  CellRenderingOps,
+  ComputableCtx,
+  ComputableKernel,
+  IntermediateRenderingResult,
+  UnwrapComputables
+} from './kernel';
 import {
   CellState,
   createCellState,
@@ -83,6 +89,18 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
+export interface ComputableRenderingOps extends CellRenderingOps {
+  key: string;
+}
+
+const DefaultRenderingOps: CellRenderingOps = {
+  mode: 'Live', resetValueOnError: true
+};
+
+export type ComputablePostActions<IR, T> = Pick<
+  IntermediateRenderingResult<IR, T>,
+  'postprocessValue' | 'recover'>
+
 /** This runs state cleanup logic */
 // TODO TBD
 const computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>(
@@ -109,7 +127,7 @@ export type ComputableStableDefined<T> = Computable<T | undefined, T>;
  * @template T The type of the computed value.
  * @template StableT A refined type representing the stable state of the value.
  */
-export class Computable<T, StableT extends T = T> implements WrappedComputableKernel<T> {
+export class Computable<T, StableT extends T = T> {
   /** Tracks the state reset epochs */
   private epoch = 0;
 
@@ -120,11 +138,11 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
 
   private uTag: string = '';
 
-  public readonly [WrappedKernelField]: ComputableKernel<T>;
+  private readonly ___wrapped_kernel___: ComputableKernel<T>;
 
   /** Better use dedicated factory methods. */
   constructor(kernel: ComputableKernel<T>) {
-    this[WrappedKernelField] = kernel;
+    this.___wrapped_kernel___ = kernel;
   }
 
   private _changed(uTag?: string): boolean {
@@ -292,7 +310,7 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     if (this.stateCalculation !== undefined)
       throw new Error('Illegal state for pre-calculation.');
     this.state = this.state === undefined
-      ? createCellStateWithoutValue(this[WrappedKernelField])
+      ? createCellStateWithoutValue(this.___wrapped_kernel___)
       : updateCellStateWithoutValue(this.state);
 
     // calling this method is equivalent to value request
@@ -326,7 +344,7 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
         try {
           // awaiting new state
           const newState = this.state === undefined
-            ? await createCellState(this[WrappedKernelField])
+            ? await createCellState(this.___wrapped_kernel___)
             : await updateCellState(this.state);
 
           // check that reset state didn't happen
@@ -389,5 +407,56 @@ export class Computable<T, StableT extends T = T> implements WrappedComputableKe
     this.state = undefined;
     this.epoch++;
     this.uTag = '';
+  }
+
+  private static ephKeyCounter = 1;
+
+  private static nextEphemeralKey(): string {
+    return `__ephkey_${Computable.ephKeyCounter++}`;
+  }
+
+  public static make<IR>(
+    cb: (ctx: ComputableCtx) => IR
+  ): Computable<UnwrapComputables<IR>>
+  public static make<IR, T>(
+    cb: (ctx: ComputableCtx) => IR,
+    ops: ComputablePostActions<IR, T> & Partial<ComputableRenderingOps>
+  ): Computable<T>
+  public static make<IR>(
+    cb: (ctx: ComputableCtx) => IR,
+    ops: Partial<ComputableRenderingOps>
+  ): Computable<UnwrapComputables<IR>>
+  public static make<IR, T = UnwrapComputables<IR>>(
+    cb: (ctx: ComputableCtx) => IR,
+    ops?: ComputablePostActions<IR, T> & Partial<ComputableRenderingOps>
+  ): Computable<T> {
+    const { mode, resetValueOnError } = ops ?? {};
+    const renderingOps: CellRenderingOps = {
+      ...DefaultRenderingOps,
+      ...(mode !== undefined && { mode }),
+      ...(resetValueOnError !== undefined && { resetValueOnError })
+    };
+
+    return new Computable<T>({
+      ops: renderingOps, key: ops?.key ?? Computable.nextEphemeralKey(),
+      ___kernel___: ctx => {
+        let ir: IR;
+        if (ops?.recover !== undefined) {
+          try {
+            ir = cb(ctx);
+          } catch (err: any) {
+            return {
+              ir: ops.recover(err)
+            };
+          }
+        } else
+          ir = cb(ctx);
+        return {
+          ir,
+          postprocessValue: ops?.postprocessValue,
+          recover: ops?.recover
+        };
+      }
+    });
   }
 }
