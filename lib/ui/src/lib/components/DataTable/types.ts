@@ -1,3 +1,6 @@
+import type { Component } from 'vue';
+import type { h } from 'vue';
+
 type TypeMap = {
   integer: number;
   float: number;
@@ -55,6 +58,7 @@ export type ColumnSettings = {
     direction: 'DESC' | 'ASC' | undefined;
   };
   slot?: boolean;
+  render?: (_h: typeof h, value: unknown) => Component;
   editable?: boolean;
   valueType?: ValueType;
   frozen?: boolean;

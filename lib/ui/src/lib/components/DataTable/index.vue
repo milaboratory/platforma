@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import './assets/style.scss';
-import { computed, reactive, ref, unref, onMounted, nextTick, watchPostEffect, watch, provide, InjectionKey } from 'vue';
+import { computed, ref, unref, onMounted, nextTick, watchPostEffect, watch, provide } from 'vue';
 import TdCell from './TdCell.vue';
 import type { Settings, TableData, RowSettings } from './types';
 import AddColumnBtn from './AddColumnBtn.vue';
@@ -13,17 +13,14 @@ import { DEFAULT_ROW_HEIGHT } from './constants';
 import { clamp, tapIf } from '@milaboratory/helpers/utils';
 import { useResize } from './composition/useResize';
 import { useRows } from './composition/useRows';
-import { deepClone } from '@milaboratory/helpers/objects';
 import { useColumns } from './composition/useColumns';
-import { settingsKey } from './keys';
 import CommandMenu from './CommandMenu.vue';
+import { createState } from './state';
 
 const emit = defineEmits<{
   (e: 'click:cell', cell: unknown): void;
-  (e: 'update:value', value: unknown): void;
   (e: 'update:data', value: TableData): void;
   (e: 'delete:column', value: unknown): void;
-  (e: 'delete:row', value: number): void;
   (e: 'change:sort', value: unknown): void;
 }>();
 
@@ -31,29 +28,7 @@ const props = defineProps<{
   settings: Settings;
 }>();
 
-const data = reactive<TableData>({
-  rowIndex: -1,
-  columns: [],
-  resize: false,
-  resizeTh: undefined,
-  bodyHeight: 0,
-  bodyWidth: 0,
-  scrollTop: 0,
-  scrollLeft: 0,
-  selectedRows: new Set<string>(),
-});
-
-watch(
-  () => props.settings.columns,
-  () => {
-    data.columns = deepClone(props.settings.columns);
-  },
-  { immediate: true },
-);
-
-const settings = computed(() => props.settings);
-
-provide(settingsKey, settings);
+const state = createState(props);
 
 const datum = computed(() => {
   const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
@@ -70,7 +45,7 @@ const datum = computed(() => {
   }));
 });
 
-watch(data, (v) => emit('update:data', v), { deep: true });
+watch(state.data, (v) => emit('update:data', v), { deep: true });
 
 watch(props, () => updateDimensions);
 
@@ -81,16 +56,16 @@ const bodyRef = ref<HTMLElement>();
 const updateDimensions = () => {
   tapIf(bodyRef.value, (el) => {
     const rect = el.getBoundingClientRect();
-    data.bodyHeight = rect.height;
-    data.bodyWidth = rect.width;
+    state.data.bodyHeight = rect.height;
+    state.data.bodyWidth = rect.width;
   });
 };
 
-const columns = useColumns(data, settings);
+const columns = useColumns(state);
 
-const rows = useRows(data, { columns, datum, settings });
+const rows = useRows(state.data, { columns, datum, settings: state.settings });
 
-const { mouseDown } = useResize(data, tableRef);
+const { mouseDown } = useResize(state.data, tableRef);
 
 onMounted(() => {
   nextTick(updateDimensions);
@@ -115,19 +90,19 @@ const columnsWidth = computed(() => {
   return props.settings.columns.reduce((acc, col) => acc + col.width + 1, 0);
 });
 
-const maxScrollTop = computed(() => dataHeight.value - data.bodyHeight);
-const maxScrollLeft = computed(() => (columnsWidth.value > data.bodyWidth ? columnsWidth.value - data.bodyWidth : 0));
+const maxScrollTop = computed(() => dataHeight.value - state.data.bodyHeight);
+const maxScrollLeft = computed(() => (columnsWidth.value > state.data.bodyWidth ? columnsWidth.value - state.data.bodyWidth : 0));
 
 const onWheel = (ev: WheelEvent) => {
   ev.preventDefault();
-  data.scrollTop = clamp(data.scrollTop + ev.deltaY, 0, maxScrollTop.value);
-  data.scrollLeft = clamp(data.scrollLeft + ev.deltaX, 0, maxScrollLeft.value);
+  state.data.scrollTop = clamp(state.data.scrollTop + ev.deltaY, 0, maxScrollTop.value);
+  state.data.scrollLeft = clamp(state.data.scrollLeft + ev.deltaX, 0, maxScrollLeft.value);
 };
 </script>
 
 <template>
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
-    <CommandMenu :table-data="data" />
+    <CommandMenu :table-data="state.data" />
     <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head">
       <tr-head>
@@ -152,18 +127,12 @@ const onWheel = (ev: WheelEvent) => {
       <tr-body v-for="(row, i) in rows" :key="i" :row="row">
         <td-cell
           v-for="cell in row.cells"
-          :key="cell.column.id"
+          :key="cell.column.id + i"
           :cell="cell"
-          :table-data="data"
+          :table-data="state.data"
           :style="cell.style"
           @click.stop="$emit('click:cell', cell)"
-          @delete:row="$emit('delete:row', $event)"
-          @update:value="$emit('update:value', $event)"
         >
-          <slot v-if="cell.slot" :name="cell.column.id" v-bind="cell">
-            {{ cell.value }}
-          </slot>
-          <slot v-else v-bind="cell">{{ cell.value }}</slot>
         </td-cell>
       </tr-body>
     </div>

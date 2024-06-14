@@ -4,27 +4,15 @@ import type { DataTableSettings } from '@/lib';
 import { DataTable, NumberInput, BtnSecondary } from '@/lib';
 import { strings } from '@milaboratory/helpers';
 import { faker } from '@faker-js/faker';
-import { computed, onMounted, reactive } from 'vue';
+import { computed, h, onMounted, reactive } from 'vue';
 import { randomInt, arrayFrom } from '@milaboratory/helpers/utils';
 import type { ColumnSettings } from '@/lib/components/DataTable/types';
 import { type TableData } from '@/lib/components/DataTable/types';
-import { uniqueId } from '@milaboratory/helpers/strings';
+import CustomCell from './CustomCell.vue';
+import CustomNumber from './CustomNumber.vue';
+import { renderSequence, asConst } from './helpers';
 
 const lorem = strings.randomString(40);
-
-const tearRender = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
-
-async function* renderSequence(n: number) {
-  await tearRender();
-  for (let i = 0; i < n; i++) {
-    yield i;
-    if (i % 1000 === 0) {
-      await tearRender();
-    }
-  }
-}
-
-const asConst = <const T,>(v: T): T => v;
 
 const data = reactive({
   loading: false,
@@ -38,21 +26,33 @@ const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1
 
 const columnsRef = computed(() => {
   const rest = arrayFrom(data.numColumns, (i) => {
+    const valueType = i % 2 === 0 ? 'string' : 'integer';
+
     return {
       label: i + 2 + ') ' + faker.word.noun(),
       id: strings.uniqueId(),
-      valueType: i % 2 === 0 ? 'string' : 'integer',
+      valueType,
       width: 200,
       editable: true,
+      render:
+        valueType === 'integer'
+          ? (h, value) => {
+              return h(CustomNumber, { value: value as number });
+            }
+          : undefined,
     } as DataTableSettings['columns'][number];
   });
 
   return [
     asConst<ColumnSettings>({
-      id: uniqueId(),
+      id: 'frozen',
+      slot: true,
       label: 'Frozen',
       width: 200,
       frozen: true,
+      render(h, value) {
+        return h(CustomCell, { value, info: 'Test' });
+      },
     }),
     ...rest,
   ];
@@ -142,7 +142,7 @@ onMounted(onGenerate);
       {{ data.tableData }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
-      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" @delete:row="onDeleteRow" />
+      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" @delete:row="onDeleteRow"></data-table>
     </div>
   </layout>
 </template>

@@ -1,12 +1,13 @@
-import type { ColumnSettings, TableData, Settings, TableColumn } from '../types';
-import type { ComputedRef } from 'vue';
+import type { ColumnSettings, TableColumn } from '../types';
 import { computed } from 'vue';
 import { sliceBy } from '@milaboratory/helpers/collections';
 import { asConst } from '../domain';
 import { uniqueId } from '@milaboratory/helpers/strings';
+import type { State } from '../state';
 
-export function useColumns(data: TableData, settings: ComputedRef<Settings>) {
+export function useColumns(state: State) {
   return computed(() => {
+    const { data, settings } = state;
     const { bodyWidth, scrollLeft } = data;
 
     const columns = [...data.columns];

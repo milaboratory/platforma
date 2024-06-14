@@ -1,22 +1,24 @@
 <script lang="ts" setup>
 import { showContextMenu } from '../contextMenu2';
 import type { ContextOption } from '../contextMenu2/types';
-import { settingsKey } from './keys';
+import { injectState } from './keys';
 import type { CellProps, TableData } from './types';
-import { inject, reactive, ref } from 'vue';
+import { computed, reactive, ref, h } from 'vue';
 
-const emit = defineEmits(['delete:row', 'update:value', 'select:row']);
+const emit = defineEmits(['update:value']);
 
 const props = defineProps<{
   cell: CellProps;
   tableData: TableData;
 }>();
 
-const settings = inject(settingsKey)!;
+const state = injectState();
 
 const data = reactive({
   edit: false as boolean,
 });
+
+const render = computed(() => props.cell.column.render);
 
 const onInput = (ev: Event) => {
   emit('update:value', {
@@ -30,7 +32,7 @@ const onInput = (ev: Event) => {
 const onContextMenu = (ev: MouseEvent) => {
   ev.preventDefault();
 
-  const { operations } = settings?.value ?? {};
+  const { operations } = state.settings.value ?? {};
 
   const options = [] as ContextOption[];
 
@@ -47,7 +49,7 @@ const onContextMenu = (ev: MouseEvent) => {
       options.push({
         text: 'Select row',
         cb() {
-          props.tableData.selectedRows.add(settings.value.getPrimaryKey(props.cell.dataRow, props.cell.rowIndex));
+          props.tableData.selectedRows.add(state.settings.value.getPrimaryKey(props.cell.dataRow, props.cell.rowIndex));
         },
       });
     }
@@ -62,14 +64,16 @@ const onContextMenu = (ev: MouseEvent) => {
 
 const cellRef = ref<HTMLElement>();
 
-function onClick() {
+const onClick = () => {
   if (props.cell.editable) {
     data.edit = true;
     requestAnimationFrame(() => {
       cellRef.value?.querySelector('input')?.focus();
     });
   }
-}
+};
+
+const DynamicComponent = computed(() => (render.value ? render.value(h, props.cell.value) : h('div', props.cell.value + '')));
 </script>
 
 <template>
@@ -83,6 +87,6 @@ function onClick() {
   >
     <div v-if="cell.control">{{ cell.rowIndex }}</div>
     <input v-else-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput" />
-    <slot v-else />
+    <DynamicComponent v-else />
   </div>
 </template>
