@@ -1,7 +1,7 @@
 import { field, TestHelpers } from '@milaboratory/pl-client-v2';
 import { PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState } from './sync';
-import { computable } from '@milaboratory/computable';
+import { Computable, computable } from '@milaboratory/computable';
 import { TestStructuralResourceType1 } from './test_utils';
 
 test('load resources', async () => {
@@ -17,8 +17,8 @@ test('load resources', async () => {
 
     const treeState = new PlTreeState(r1);
 
-    const theComputable = computable(treeState.entry(), {},
-      a => a.node().traverse('a', 'b')?.getDataAsString());
+    const theComputable = Computable.make(c =>
+      c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString());
 
     const refreshState = async (): Promise<void> => {
       const req = constructTreeLoadingRequest(treeState);

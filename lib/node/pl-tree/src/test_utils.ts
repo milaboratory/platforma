@@ -39,6 +39,11 @@ export const TestValueResourceType2: ResourceType = {
   version: '0'
 };
 
+export const TestErrorResourceType1: ResourceType = {
+  name: 'json/resourceError',
+  version: '1'
+};
+
 export const ResourceReady: Pick<
   BasicResourceData,
   'inputsLocked' | 'outputsLocked' | 'resourceReady' | 'final'
@@ -97,6 +102,12 @@ export const TestValueResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> 
   {
     ...InitialValueResourceState,
     type: TestValueResourceType2
+  };
+
+export const TestErrorResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> =
+  {
+    ...InitialValueResourceState,
+    type: TestErrorResourceType1
   };
 
 export const TestDynamicRootId1 = 1000001n as ResourceId;

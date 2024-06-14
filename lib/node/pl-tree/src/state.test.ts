@@ -1,16 +1,15 @@
 import { PlTreeState } from './state';
 import {
-  dField,
+  dField, TestErrorResourceType1,
   iField,
   ResourceReady,
   TestDynamicRootId1,
   TestDynamicRootState1,
   TestStructuralResourceState1,
-  TestValueResourceState1
+  TestValueResourceState1, TestErrorResourceState2
 } from './test_utils';
-import { computable } from '@milaboratory/computable';
-import { ResourceId } from '@milaboratory/pl-client-v2';
-import { mapValueAndErrorIfDefined } from './value_and_error';
+import { Computable } from '@milaboratory/computable';
+import { NullResourceId, ResourceId } from '@milaboratory/pl-client-v2';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;
@@ -18,8 +17,8 @@ function rid(id: bigint): ResourceId {
 
 test('simple tree test 1', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.entry(), {}, (b) =>
-    b.node().traverse('a', 'b')?.getDataAsString()
+  const c1 = Computable.make(c =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getDataAsString()
   );
 
   expect(c1.isChanged()).toBeTruthy();
@@ -70,8 +69,8 @@ test('simple tree test 1', async () => {
 
 test('simple tree kv test', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.entry(), {}, (b) =>
-    b.node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
+  const c1 = Computable.make(c =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
 
   expect(c1.isChanged()).toBeTruthy();
   await expect(async () => await c1.getValue())
@@ -122,8 +121,8 @@ test('simple tree kv test', async () => {
 
 test('partial tree update', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = computable(tree.entry(), {}, (b) =>
-    b.node().traverse(
+  const c1 = Computable.make(c =>
+    c.accessor(tree.entry()).node().traverse(
       { field: 'a', assertFieldType: 'Dynamic' },
       { field: 'b', assertFieldType: 'Dynamic' }
     )?.getDataAsString());
@@ -155,6 +154,54 @@ test('partial tree update', async () => {
   expect(c1.isChanged()).toBeFalsy();
 });
 
+test('resource error', async () => {
+  const tree = new PlTreeState(TestDynamicRootId1);
+  const c1 = Computable.make(c =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
+
+  expect(c1.isChanged()).toBeTruthy();
+  await expect(async () => await c1.getValue())
+    .rejects
+    .toThrow(/not found/);
+  expect(c1.isChanged()).toBeFalsy();
+
+  tree.updateFromResourceData([
+    { ...TestDynamicRootState1, error: rid(7n), fields: [] },
+    {
+      ...TestErrorResourceState2, id: rid(7n),
+      data: Buffer.from('"error"'), fields: []
+    }
+  ]);
+
+  expect((await c1.getValueOrError()).type).toEqual('error');
+});
+
+test('field error', async () => {
+  const tree = new PlTreeState(TestDynamicRootId1);
+  const c1 = Computable.make(c => c.accessor(tree.entry())
+    .node().traverse('b', 'a')?.getKeyValueAsString('thekey'));
+
+  expect(c1.isChanged()).toBeTruthy();
+  await expect(async () => await c1.getValue())
+    .rejects
+    .toThrow(/not found/);
+  expect(c1.isChanged()).toBeFalsy();
+
+  tree.updateFromResourceData([
+    {
+      ...TestDynamicRootState1, fields: [
+        dField('b', NullResourceId, rid(7n))
+      ]
+    },
+    {
+      ...TestErrorResourceState2, id: rid(7n),
+      data: Buffer.from('"error"'), fields: []
+    }
+  ]);
+
+  expect((await c1.getValueOrError()).type).toEqual('error');
+});
+
 test('exception - deletion of input field', () => {
   const tree = new PlTreeState(TestDynamicRootId1);
 
@@ -162,8 +209,7 @@ test('exception - deletion of input field', () => {
     { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
     { ...TestStructuralResourceState1, id: rid(1n), fields: [iField('b', rid(2n))] },
     {
-      ...TestValueResourceState1,
-      id: rid(2n),
+      ...TestValueResourceState1, id: rid(2n),
       data: new TextEncoder().encode('Test1')
     }
   ]);

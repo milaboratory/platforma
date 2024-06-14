@@ -1,6 +1,6 @@
 import { field, TestHelpers } from '@milaboratory/pl-client-v2';
 import { TestStructuralResourceType1 } from './test_utils';
-import { computable } from '@milaboratory/computable';
+import { Computable, computable } from '@milaboratory/computable';
 import { SynchronizedTreeState } from './synchronized_tree';
 
 test('simple synchronized tree test', async () => {
@@ -16,8 +16,8 @@ test('simple synchronized tree test', async () => {
 
     const treeState = await SynchronizedTreeState.init(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
 
-    const theComputable = computable(treeState.entry(), {},
-      a => a.node().traverse('a', 'b')?.getDataAsString());
+    const theComputable = Computable.make(c =>
+      c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString());
 
     await theComputable.refreshState();
 
@@ -89,8 +89,8 @@ test('synchronized tree test with KV', async () => {
 
     const treeState = await SynchronizedTreeState.init(pl, r1, { stopPollingDelay: 10, pollingInterval: 10 });
 
-    const theComputable = computable(treeState.entry(), {},
-      a => a.node().traverse('a')?.getKeyValueAsString('b', true));
+    const theComputable = Computable.make(c =>
+      c.accessor(treeState.entry()).node().traverse('a')?.getKeyValueAsString('b', true));
 
     await theComputable.refreshState();
 
