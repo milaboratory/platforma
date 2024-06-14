@@ -66,12 +66,10 @@ export interface ActMapArrayValues<Source extends ConfAction, Mapping extends Co
 //
 
 export interface ActIsEmpty<Source extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (unknown[] | undefined)
-    ? boolean
-    : (ActionResult<Source, typeof x> extends (string | undefined)
-      ? boolean
-      : unknown)
-  isSync: IsA<Source, SyncConfAction>;
+    new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (unknown[] | string | undefined)
+        ? boolean
+        : unknown,
+    isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActNot<Source extends ConfAction> extends ConfAction {

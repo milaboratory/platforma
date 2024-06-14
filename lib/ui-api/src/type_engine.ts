@@ -40,7 +40,11 @@ export type ExtractAction<Cfg extends TypedConfig> = Cfg[typeof __config_action_
 
 export type POCExtractAction<T extends PrimitiveOrConfig> = ExtractAction<PrimitiveToCfg<T>>
 
-export type InferVarTypeSafe<Ctx, V> = V extends string ? Ctx extends { [key in V]: infer T } ? T : unknown : unknown;
+export type InferVarTypeSafe<Ctx, V> = V extends string
+    ? (Ctx extends { [key in V]: infer T }
+        ? T
+        : undefined)
+    : unknown;
 
 export type ConfigResult<Cfg extends TypedConfig, Ctx> = ActionResult<ExtractAction<Cfg>, Ctx>
 
