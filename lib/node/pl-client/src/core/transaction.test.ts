@@ -2,7 +2,7 @@ import { withTempRoot } from '../test/test_config';
 import { StructTestResource, ValueTestResource } from '../helpers/pl';
 import { field, toGlobalFieldId, toGlobalResourceId } from './transaction';
 import { RecoverablePlError } from './errors';
-import { sleep } from '@milaboratory/ts-helpers';
+import * as tp from 'node:timers/promises';
 
 test('get field', async () => {
   await withTempRoot(async pl => {
@@ -47,7 +47,7 @@ test('get field', async () => {
       });
       if (fieldState.status === 'Resolved')
         break;
-      await sleep(10);
+      await tp.setTimeout(10);
     }
   });
 });

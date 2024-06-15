@@ -1,5 +1,5 @@
 import { PlClient } from '../core/client';
-import { createRetryState, nextRetryStateOrError, notEmpty, RetryOptions, sleep } from '@milaboratory/ts-helpers';
+import { createRetryState, nextRetryStateOrError, notEmpty, RetryOptions } from '@milaboratory/ts-helpers';
 import {
   FieldData,
   FieldType,
@@ -10,6 +10,7 @@ import {
   resourceIdToString
 } from '../core/types';
 import { PlTransaction } from '../core/transaction';
+import * as tp from 'node:timers/promises';
 
 /** This error tells state assertion mechanism that required state is not yet ready */
 export class ContinuePolling extends Error {
@@ -150,7 +151,7 @@ export async function poll<T>(cl: PlClient, cb: (tx: PollTxAccessor) => Promise<
       // Rethrowing any error except the "not ready yet"
       if (!(e instanceof ContinuePolling)) throw e;
     }
-    await sleep(retryState.nextDelay);
+    await tp.setTimeout(retryState.nextDelay);
     retryState = nextRetryStateOrError(retryState);
   }
 }

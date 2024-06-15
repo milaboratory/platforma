@@ -4,9 +4,10 @@ import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } f
 import { createHash } from 'crypto';
 import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
 import { ClientRoot } from '../helpers/pl';
-import { createRetryState, nextRetryStateOrError, RetryOptions, sleep } from '@milaboratory/ts-helpers';
+import { createRetryState, nextRetryStateOrError, RetryOptions } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import * as tp from 'node:timers/promises';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
@@ -17,7 +18,7 @@ const defaultTxOps: TxOps = {
   sync: false,
   retryOptions: {
     type: 'exponentialBackoff',
-    maxAttempts: 9, // final backoff 2ms * 2 ^ 8 ~ 500ms (total time ~1s)
+    maxAttempts: 10, // final backoff 2ms * 2 ^ 8 ~ 500ms (total time ~1s)
     initialDelay: 2, // 2ms
     backoffMultiplier: 2, // + 100% on each round
     jitter: 0.1 // 10%
@@ -45,11 +46,13 @@ export class PlClient {
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
   private _clientRoot: OptionalResourceId = NullResourceId;
 
-  constructor(configOrAddress: PlClientConfig | string,
-              auth: AuthOps,
-              ops: {
-                statusListener?: PlConnectionStatusListener
-              } = {}) {
+  private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
+
+  private constructor(configOrAddress: PlClientConfig | string,
+                      auth: AuthOps,
+                      ops: {
+                        statusListener?: PlConnectionStatusListener
+                      } = {}) {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
     this.txDelay = this.ll.conf.txDelay;
     this.forceSync = this.ll.conf.forceSync;
@@ -63,7 +66,7 @@ export class PlClient {
     return this.ll.conf;
   }
 
-  public get initialized() {
+  private get initialized() {
     return !isNullResourceId(this._clientRoot);
   }
 
@@ -75,6 +78,11 @@ export class PlClient {
   public get clientRoot(): ResourceId {
     this.checkInitialized();
     return ensureResourceIdNotNull(this._clientRoot);
+  }
+
+  public get serverInfo(): MaintenanceAPI_Ping_Response {
+    this.checkInitialized();
+    return this._serverInfo!;
   }
 
   /** Currently implements custom logic to emulate future behaviour with single root. */
@@ -114,6 +122,8 @@ export class PlClient {
           return await altRoot.globalId;
         }
       });
+
+    this._serverInfo = await this.ping();
   }
 
   /** Returns true if field existed */
@@ -133,13 +143,11 @@ export class PlClient {
     });
   }
 
-  // TODO maybe it is better to create a common timeout abort signal here
-  //      to make execution time more predictable, or maybe it makes more
-  //      sense to keep it as it is now...
-  private async _withTx<T>(name: string, writable: boolean, clientRoot: OptionalResourceId,
+  private async _withTx<T>(name: string, writable: boolean,
+                           clientRoot: OptionalResourceId,
                            body: (tx: PlTransaction) => Promise<T>,
                            ops: TxOps = defaultTxOps): Promise<T> {
-    // for exponential backoff
+    // for exponential / linear backoff
     let retryState = createRetryState(ops.retryOptions);
 
     while (true) {
@@ -186,7 +194,7 @@ export class PlClient {
 
         // introducing artificial delay, if requested
         if (writable && this.txDelay > 0)
-          await sleep(this.txDelay, ops.abortSignal);
+          await tp.setTimeout(this.txDelay, undefined, { signal: ops.abortSignal });
 
         return result!;
       }
@@ -194,7 +202,7 @@ export class PlClient {
       // we only get here after TxCommitConflict error,
       // all other errors terminate this loop instantly
 
-      await sleep(retryState.nextDelay, ops.abortSignal);
+      await tp.setTimeout(retryState.nextDelay, undefined, { signal: ops.abortSignal });
       retryState = nextRetryStateOrError(retryState);
     }
   }
@@ -203,9 +211,7 @@ export class PlClient {
                           body: (tx: PlTransaction) => Promise<T>,
                           ops: Partial<TxOps> = {}): Promise<T> {
     this.checkInitialized();
-    const result = await this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
-
-    return result;
+    return await this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
   }
 
   public async withWriteTx<T>(name: string,
@@ -232,5 +238,15 @@ export class PlClient {
   /** Closes underlying transport */
   public close() {
     this.ll.close();
+  }
+
+  public static async init(configOrAddress: PlClientConfig | string,
+                           auth: AuthOps,
+                           ops: {
+                             statusListener?: PlConnectionStatusListener
+                           } = {}) {
+    const pl = new PlClient(configOrAddress, auth, ops);
+    await pl.init();
+    return pl;
   }
 }

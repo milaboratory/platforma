@@ -5,17 +5,14 @@ import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { Dispatcher, request } from 'undici';
 
 test('test client init', async () => {
-  const client = await getTestClient(undefined, false);
-  await client.init();
+  const client = await getTestClient(undefined);
 });
 
 test('test client alternative root init', async () => {
   const aRootName = 'test_root';
   const { conf, authInformation } = await getTestClientConf();
-  const clientA = new PlClient({ ...conf, alternativeRoot: aRootName }, { authInformation });
-  await clientA.init();
-  const clientB = new PlClient(conf, { authInformation });
-  await clientB.init();
+  const clientA = await PlClient.init({ ...conf, alternativeRoot: aRootName }, { authInformation });
+  const clientB = await PlClient.init(conf, { authInformation });
   const result = await clientB.deleteAlternativeRoot(aRootName);
   expect(result).toBe(true);
 });

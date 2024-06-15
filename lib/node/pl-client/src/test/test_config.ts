@@ -91,14 +91,11 @@ export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {
   return new LLPlClient({ ...conf, ...confOverrides }, { auth: { authInformation } });
 }
 
-export async function getTestClient(alternativeRoot?: string, init: boolean = true) {
+export async function getTestClient(alternativeRoot?: string) {
   const { conf, authInformation } = await getTestClientConf();
   if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
     throw new Error('test pl address configured with alternative root');
-  const client = new PlClient({ ...conf, alternativeRoot }, { authInformation });
-  if (init)
-    await client.init();
-  return client;
+  return await PlClient.init({ ...conf, alternativeRoot }, { authInformation });
 }
 
 export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {
@@ -106,7 +103,6 @@ export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promi
   let altRootId: OptionalResourceId = NullResourceId;
   try {
     const client = await getTestClient(altRoot);
-    altRootId = client.clientRoot;
     const value = await body(client);
     const rawClient = await getTestClient();
     await rawClient.deleteAlternativeRoot(altRoot);

@@ -165,6 +165,8 @@ export class LLPlClient {
             onReceiveStatus: (status, next) => {
               if (status.code === GrpcStatus.UNAUTHENTICATED)
                 this.updateStatus('Unauthenticated');
+              if (status.code === GrpcStatus.UNAVAILABLE)
+                this.updateStatus('Disconnected');
               next(status);
             }
           });

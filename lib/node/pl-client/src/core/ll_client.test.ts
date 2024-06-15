@@ -2,6 +2,7 @@ import { LLPlClient } from './ll_client';
 import { getTestConfig, getTestLLClient, getTestClientConf } from '../test/test_config';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { request } from 'undici';
+import * as tp from 'node:timers/promises';
 
 import { UnauthenticatedError } from './errors';
 
@@ -61,8 +62,6 @@ test('automatic token update', async () => {
     }
   });
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
   for (let i = 0; i < 6; i++) {
     const tx = client.createTx();
     const response = await tx.send({
@@ -77,7 +76,7 @@ test('automatic token update', async () => {
       return;
     }
 
-    await sleep(1000);
+    await tp.setTimeout(1000);
   }
 }, 5000);
 

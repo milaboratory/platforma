@@ -115,7 +115,7 @@ export async function defaultPlClient(): Promise<PlClient> {
     } as AuthCache)), 'utf8');
   }
 
-  return new PlClient(config, {
+  return await PlClient.init(config, {
     authInformation, onUpdate: newAuthInfo => {
       fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
         confHash, authInformation: newAuthInfo,
