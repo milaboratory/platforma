@@ -172,12 +172,12 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 const PostProcessingExecutionEnvironment: ExecutionEnvironment = {
   accessor<A>(provider: AccessorProvider<A>): A {
     throw new Error('can\'t create accessors in post-processing context');
-  },
+  }
 };
 
 /** Main method to render configurations */
 export function computableFromCfg(ctx: Record<string, unknown>, cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
-  return Computable.make(c => {
+  return Computable.makeRaw(c => {
     const env: ExecutionEnvironment = {
       accessor: provider => c.accessor(provider)
     };
