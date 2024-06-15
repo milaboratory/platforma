@@ -4,6 +4,7 @@ export class Aborted extends Error {
   }
 }
 
+/** @deprecated */
 export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
   if (timeout === 0)
     return new Promise((resolve, reject) => {
@@ -86,7 +87,7 @@ export function createInfiniteRetryState(options: RetryOptions): InfiniteRetrySt
 export function createRetryState(options: RetryOptions): RetryState {
   return {
     ...createInfiniteRetryState(options),
-    attemptsLeft: options.maxAttempts - 1,
+    attemptsLeft: options.maxAttempts - 1
   };
 }
 
@@ -96,7 +97,7 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
 
   return {
     ...nextInfiniteRetryState(previous),
-    attemptsLeft: previous.attemptsLeft - 1,
+    attemptsLeft: previous.attemptsLeft - 1
   };
 }
 
