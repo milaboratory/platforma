@@ -31,7 +31,8 @@ export interface AccessorProvider<A> {
 // Utils
 //
 
-export type ExtractTrackedAccessorTypes<T> = {
+
+type ExtractTrackedAccessorTypes<T> = {
   [K in keyof T]: T[K] extends TrackedAccessorProvider<infer I> ? I : never;
 };
 
@@ -61,6 +62,7 @@ export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<Ext
   };
 }
 
+/** @deprecated */
 export class LazyAccessorFactory {
   private accessors = new Map<TrackedAccessorProvider<any>, any>();
 
@@ -80,6 +82,7 @@ export class LazyAccessorFactory {
   }
 }
 
+/** @deprecated */
 export function lazyFactory(): TrackedAccessorProvider<LazyAccessorFactory> {
   return {
     createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): LazyAccessorFactory {

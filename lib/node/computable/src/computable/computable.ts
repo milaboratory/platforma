@@ -1,8 +1,7 @@
 import {
   CellRenderingOps,
   ComputableCtx,
-  ComputableKernel,
-  IntermediateRenderingResult,
+  ComputableKernel, ComputablePostProcess, ComputableRecoverAction,
   UnwrapComputables
 } from './kernel';
 import {
@@ -34,7 +33,7 @@ export interface ComputableResultErrors {
    * errors happened along the computable trees, and were not recovered by the
    * kernel's recovery method.
    * */
-  errors: any[];
+  errors: unknown[];
 
   /** UTag of this result, to be able to check whether the result have
    * changed after some time, and start actively listen on the next change. */
@@ -65,7 +64,7 @@ export interface ComputableResultOk<T> {
 }
 
 /** Throws an appropriate computable error based on the number of errors */
-function throwComputableError(errors: any[]): never {
+function throwComputableError(errors: unknown[]): never {
   if (errors.length === 1)
     throw new ComputableError(errors[0]);
   else
@@ -90,16 +89,12 @@ export class AggregateComputableError extends AggregateError {
 }
 
 export interface ComputableRenderingOps extends CellRenderingOps {
-  key: string;
+  key: string | symbol;
 }
 
 const DefaultRenderingOps: CellRenderingOps = {
   mode: 'Live', resetValueOnError: true
 };
-
-export type ComputablePostActions<IR, T> = Pick<
-  IntermediateRenderingResult<IR, T>,
-  'postprocessValue' | 'recover'>
 
 /** This runs state cleanup logic */
 // TODO TBD
@@ -202,6 +197,11 @@ export class Computable<T, StableT extends T = T> {
    * "listening status" change events. */
   private listenCounter = 0;
 
+  /** @deprecated use {@link awaitChange} */
+  public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
+    return await this.awaitChange(abortSignal, uTag);
+  }
+
   /**
    * Waits for the value to be marked as changed after the last value retrieval.
    * Resolves immediately if the value is already changed.
@@ -219,7 +219,7 @@ export class Computable<T, StableT extends T = T> {
    * @param abortSignal optional signal to abort the pending listening.
    * @param uTag optional tag to check if a new value is calculated after retrieval of a specified tag.
    * */
-  public async listen(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
+  public async awaitChange(abortSignal?: AbortSignal, uTag?: string): Promise<void> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
       const hooks = this.state?.hooks;
@@ -233,7 +233,7 @@ export class Computable<T, StableT extends T = T> {
       return;
     }
 
-    const lPromise = this.state!.watcher.listen(abortSignal);
+    const lPromise = this.state!.watcher.awaitChange(abortSignal);
     const hooks = this.state?.hooks;
     if (hooks !== undefined) {
       if (this.listenCounter === 0)
@@ -263,7 +263,7 @@ export class Computable<T, StableT extends T = T> {
       const value = await this.getFullValue();
       if (value.stable)
         return value as ComputableResultOk<StableT>;
-      await this.listen(abortSignal);
+      await this.awaitChange(abortSignal);
     }
   }
 
@@ -415,21 +415,91 @@ export class Computable<T, StableT extends T = T> {
     return `__ephkey_${Computable.ephKeyCounter++}`;
   }
 
+  /**
+   * Simplest way to create computable specifying only main callback. Nested
+   * computables can be returned by the callback and will be automatically
+   * computed by the computable state machine.
+   *
+   * @param cb main computable callback
+   * @returns the computable instance
+   * */
   public static make<IR>(
     cb: (ctx: ComputableCtx) => IR
   ): Computable<UnwrapComputables<IR>>
+
+  /**
+   * Creates a computable with post-processing and recover actions,
+   * and additional rendering options. This constructor allows recovery and
+   * post-processing and rendering configuration.
+   *
+   * @param cb main computable callback
+   * @param ops post-processing, recovery actions, and rendering options
+   * @returns the computable instance
+   */
   public static make<IR, T>(
     cb: (ctx: ComputableCtx) => IR,
-    ops: ComputablePostActions<IR, T> & Partial<ComputableRenderingOps>
+    ops: ComputablePostProcess<UnwrapComputables<IR>, T> & ComputableRecoverAction<T> & Partial<ComputableRenderingOps>
   ): Computable<T>
+
+  /**
+   * Creates a computable with recover actions and additional rendering options.
+   * Allows specifying custom recovery and rendering configurations without a
+   * specific post-processing.
+   *
+   * @param cb main computable callback
+   * @param ops recovery actions and rendering options
+   * @returns the computable instance
+   */
+  public static make<IR, T>(
+    cb: (ctx: ComputableCtx) => IR,
+    ops: ComputableRecoverAction<T> & Partial<ComputableRenderingOps>
+  ): Computable<UnwrapComputables<IR> | T>
+
+  /**
+   * Creates a computable with post-processing and rendering options. This allows
+   * the configuration of additional options necessary for computation without
+   * specific action for recovery.
+   *
+   * @param cb main computable callback
+   * @param ops Post-processing actions and rendering options
+   * @returns the computable instance
+   */
+  public static make<IR, T>(
+    cb: (ctx: ComputableCtx) => IR,
+    ops: ComputablePostProcess<IR, T> & Partial<ComputableRenderingOps>
+  ): Computable<T>
+
+  /**
+   * Creates a computable with just rendering options. This constructor allows
+   * specifying custom rendering configurations without recovery or post-processing.
+   *
+   * @param cb main computable callback
+   * @param ops rendering options
+   * @returns the computable instance
+   */
   public static make<IR>(
     cb: (ctx: ComputableCtx) => IR,
     ops: Partial<ComputableRenderingOps>
   ): Computable<UnwrapComputables<IR>>
+
+  /**
+   * Recommended way to construct a computable instance. Post-processing and
+   * error recovery behaviour as well as rendering options and computable key
+   * can be set via the ops argument.
+   *
+   * For advanced usage, where capturing of main callback environment in post-process
+   * lambda is required, main constructor can still be used.
+   *
+   * @param cb main computable callback
+   * @param ops post-processing, recovery, computable key and rendering options
+   *            can be set via this parameter
+   * @returns the computable instance
+   * */
   public static make<IR, T = UnwrapComputables<IR>>(
     cb: (ctx: ComputableCtx) => IR,
-    ops?: ComputablePostActions<IR, T> & Partial<ComputableRenderingOps>
+    ops?: Partial<ComputablePostProcess<IR, T>> & Partial<ComputableRecoverAction<T>> & Partial<ComputableRenderingOps>
   ): Computable<T> {
+    // adding in defaults and creating final ops for the kernel
     const { mode, resetValueOnError } = ops ?? {};
     const renderingOps: CellRenderingOps = {
       ...DefaultRenderingOps,
@@ -437,23 +507,29 @@ export class Computable<T, StableT extends T = T> {
       ...(resetValueOnError !== undefined && { resetValueOnError })
     };
 
+    // creating computable instance
     return new Computable<T>({
       ops: renderingOps, key: ops?.key ?? Computable.nextEphemeralKey(),
       ___kernel___: ctx => {
         let ir: IR;
         if (ops?.recover !== undefined) {
+          // here we also catch main callback errors, and passes any errors to
+          // the recovery lambda, raw kernel definition can't give this behaviour
+          // without manual error handling in the code
           try {
             ir = cb(ctx);
-          } catch (err: any) {
+          } catch (err: unknown) {
             return {
-              ir: ops.recover(err)
+              // this might in tern throw an error, which will be caught by the
+              // computable state machine
+              ir: ops.recover([err])
             };
           }
         } else
           ir = cb(ctx);
         return {
           ir,
-          postprocessValue: ops?.postprocessValue,
+          postprocessValue: ops?.postprocessValue as ((value: unknown, stable: boolean) => Promise<T> | T),
           recover: ops?.recover
         };
       }

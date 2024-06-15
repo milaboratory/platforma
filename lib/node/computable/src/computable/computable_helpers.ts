@@ -57,7 +57,7 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
       }), ctx);
       return {
         ir,
-        postprocessValue: postprocessValue ?? noopPostprocessValue<IR>() as (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+        postprocessValue: (postprocessValue ?? noopPostprocessValue<IR>()) as (value: unknown, stable: boolean) => Promise<T> | T
       };
     }
   });
@@ -103,7 +103,10 @@ export function rawComputable<IR>(
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
     ___kernel___: ctx => {
       const result = cb(ctx.watcher, ctx);
-      return { ir: result, postprocessValue: noopPostprocessValue<IR>() };
+      return {
+        ir: result,
+        postprocessValue: noopPostprocessValue<IR>() as (value: unknown, stable: boolean) => Promise<UnwrapComputables<IR>> | UnwrapComputables<IR>
+      };
     }
   });
 }
@@ -126,7 +129,7 @@ export function rawComputableWithPostprocess<IR, T>(
     ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
     ___kernel___: ctx => {
       const result = cb(ctx.watcher, ctx);
-      return { ir: result, postprocessValue };
+      return { ir: result, postprocessValue: postprocessValue as (value: unknown, stable: boolean) => Promise<T> | T };
     }
   });
 }

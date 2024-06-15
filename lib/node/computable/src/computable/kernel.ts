@@ -25,10 +25,10 @@ export interface ComputableCtx {
   scheduleAndResetOnDestroy(): void;
 
   /** Get associated value by key */
-  get(key: string): any | undefined;
+  get(key: string): unknown | undefined;
 
   /** Associate value */
-  set(key: string, value: any): void;
+  set(key: string, value: unknown): void;
 
   /** Delete associated value */
   reset(key: string): void;
@@ -64,20 +64,24 @@ export interface CellRenderingOps {
   resetValueOnError: boolean;
 }
 
-/** Returned by a successful execution of rendering function */
-export interface IntermediateRenderingResult<IR, T> {
-  /** Rendering result, may be absent if rendering result is marked with error. */
-  readonly ir: IR;
-
-  /** Will be called to create final representation of the cell value. */
-  postprocessValue?(value: UnwrapComputables<IR>, stable: boolean): Promise<T> | T;
-
+/** Extended by kernel intermediate returned value, and adds recover method. */
+export interface ComputableRecoverAction<T> {
   /** Will be called to create final representation of the cell if nested error occur. */
-  recover?(error: any[]): T;
+  recover(error: unknown[]): T;
 }
 
-// export const KernelLambdaField: unique symbol = Symbol();
-// export const WrappedKernelField: unique symbol = Symbol();
+/** Extended by kernel intermediate returned value, and adds postprocess step
+ * additionally to recover method. */
+export interface ComputablePostProcess<IR, T> {
+  /** Will be called to create final representation of the cell value. */
+  postprocessValue(value: UnwrapComputables<IR>, stable: boolean): Promise<T> | T;
+}
+
+/** Returned by a successful execution of rendering function */
+export interface IntermediateRenderingResult<IR, T> extends Partial<ComputableRecoverAction<T>>, Partial<ComputablePostProcess<IR, T>> {
+  /** Rendering result, may be absent if rendering result is marked with error. */
+  readonly ir: IR;
+}
 
 /** This object holds minimal information to create a computable instance, while executing
  * hierarchical callbacks all such nodes in the tree are interpreted as computables and
@@ -95,15 +99,15 @@ export interface ComputableKernel<T> {
 
   /** Computable calculation code. Symbol is use here to facilitate easy identification
    * of computable kernels in arbitrary object trees. */
-  ___kernel___(ctx: ComputableCtx): IntermediateRenderingResult<any, T>
+  ___kernel___(ctx: ComputableCtx): IntermediateRenderingResult<unknown, T>
 }
 
-export function tryExtractComputableKernel(v: any): ComputableKernel<unknown> | undefined {
+export function tryExtractComputableKernel(v: unknown): ComputableKernel<unknown> | undefined {
   if (typeof v === 'object' && v !== null) {
     if ('___kernel___' in v)
-      return v;
+      return v as ComputableKernel<unknown>;
     if ('___wrapped_kernel___' in v)
-      return v['___wrapped_kernel___'];
+      return v['___wrapped_kernel___'] as ComputableKernel<unknown>;
   }
   return undefined;
 }

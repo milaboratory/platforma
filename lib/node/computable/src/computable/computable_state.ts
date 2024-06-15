@@ -12,7 +12,7 @@ import { setImmediate } from 'node:timers';
 import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
 
 interface ExecutionError {
-  error: any;
+  error: unknown;
 }
 
 function isExecutionError(r: IntermediateRenderingResult<unknown, unknown> | ExecutionError): r is ExecutionError {
@@ -28,7 +28,7 @@ export function cleanIntermediateRenderingResult<IR, T>(r: IntermediateRendering
 class CellComputableContext implements ComputableCtx {
   public stable: boolean = false;
   private onDestroy?: (() => void);
-  private kv?: Map<string, any>;
+  private kv?: Map<string, unknown>;
   /** Must be reset to "undefined", to only accumulate those observers injected
    * during a specific call*/
   public hooks: Set<ComputableHooks> | undefined = undefined;
@@ -54,7 +54,7 @@ class CellComputableContext implements ComputableCtx {
     this.onDestroy = cb;
   }
 
-  get(key: string): any | undefined {
+  get(key: string): unknown | undefined {
     if (this.kv === undefined)
       return undefined;
     this.kv.get(key);
@@ -78,9 +78,9 @@ class CellComputableContext implements ComputableCtx {
     this.kv.delete(key);
   }
 
-  set(key: string, value: any): void {
+  set(key: string, value: unknown): void {
     if (this.kv === undefined)
-      this.kv = new Map<string, any>();
+      this.kv = new Map<string, unknown>();
     this.kv.set(key, value);
   }
 
@@ -191,7 +191,7 @@ export interface CellState<T> {
   readonly stable: boolean;
 
   /** All errors for the tree rooted in this node. Includes self error and all child errors. */
-  readonly allErrors: Error[];
+  readonly allErrors: unknown[];
 
   /** Includes selfWatcher and all children watchers. It is passed to parent Cells. */
   readonly watcher: HierarchicalWatcher;
@@ -324,7 +324,7 @@ async function fillCellValue<T>(
       if (state.allErrors.length === 0) {
         try {
           value = await runPostprocessing(state.selfState.iResult, state.childrenStates, state.stable);
-        } catch (e: any) {
+        } catch (e: unknown) {
           // Adding postprocess error
           state.allErrors.push(e);
         }
@@ -337,7 +337,7 @@ async function fillCellValue<T>(
         value = state.selfState.iResult.recover(state.allErrors);
         // successful recovery, prevents spreading of errors
         state.allErrors = [];
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Adding recovery error, if recovery itself crashed
         state.allErrors.push(e);
       }
@@ -369,7 +369,7 @@ function renderSelfState<T>(
     const iResult = kernel.___kernel___(ctx);
 
     return { kernel, ctx, selfWatcher, iResult };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // TODO maybe it is not correct...
     // all errors are considered unstable
     ctx.stable = false;
@@ -459,7 +459,7 @@ function finalizeCellState<T>(
   previousValue?: unknown
 ): CellState<T> {
   const nestedWatchers: HierarchicalWatcher[] = [];
-  const allErrors: Error[] = [];
+  const allErrors: unknown[] = [];
   let stable = incompleteState.selfState.ctx.stable;
   let hooks: Set<ComputableHooks> | undefined = undefined;
   for (const { orphan, state } of incompleteState.childrenStates.values()) {

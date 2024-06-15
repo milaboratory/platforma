@@ -68,7 +68,12 @@ export class HierarchicalWatcher implements Watcher {
     }
   }
 
-  listen(abortSignal?: AbortSignal): Promise<void> {
+  /** @deprecated use {@link awaitChange} */
+  public listen(abortSignal?: AbortSignal): Promise<void> {
+    return this.awaitChange(abortSignal);
+  }
+
+  public awaitChange(abortSignal?: AbortSignal): Promise<void> {
     if (this.changed)
       return Promise.resolve();
 

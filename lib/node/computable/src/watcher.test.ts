@@ -26,7 +26,7 @@ test('do something in a tree watcher using a callback', async () => {
   const child2 = new HierarchicalWatcher([]);
   const root = new HierarchicalWatcher([child1, child2]);
 
-  const signal = root.listen();
+  const signal = root.awaitChange();
 
   grandChild1.markChanged();
 
@@ -39,7 +39,7 @@ test('do something in a tree watcher using a callback and abort signal', async (
   const child2 = new HierarchicalWatcher([]);
   const root = new HierarchicalWatcher([child1, child2]);
 
-  const signal = root.listen(AbortSignal.timeout(10));
+  const signal = root.awaitChange(AbortSignal.timeout(10));
 
   setTimeout(() => grandChild1.markChanged(), 100);
 

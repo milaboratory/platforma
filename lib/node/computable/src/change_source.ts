@@ -20,13 +20,13 @@ export class ChangeSource {
   /** Used to track array recheck period */
   private modCount: number = 0;
 
-  constructor(private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD) {
+  public constructor(private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD) {
   }
 
   /** Attach a watcher to the change source. Periodically this method performs
    * garbage collection that cost O(N) in theory, though in real cases there
    * should not be too many listeners for a specific change source. */
-  attachWatcher(watcher: Watcher) {
+  public attachWatcher(watcher: Watcher) {
     if (this.watcherSet === undefined) {
       this.watchers = [];
       this.watcherSet = new WeakSet();
@@ -40,7 +40,7 @@ export class ChangeSource {
   }
 
   /** Marks all watchers as changed and clears current watcher list. */
-  markChanged() {
+  public markChanged() {
     if (this.watchers === undefined)
       return;
 
@@ -53,7 +53,7 @@ export class ChangeSource {
 
   /** Returns actual number of watchers in this source. For that GC round is
    * executed, so beware, complexity of this method is O(N). */
-  get size(): number {
+  public get size(): number {
     if (this.watchers === undefined)
       return 0;
     this.refresh();

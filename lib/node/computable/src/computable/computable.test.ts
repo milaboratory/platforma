@@ -42,7 +42,18 @@ test('nested computable with post-process', async () => {
   expect(await c1.getValue()).toEqual('12');
 });
 
-test('computable with post-process and recover', async () => {
+test('computable with recover', async () => {
+  const c1 = Computable.make((ctx): number => {
+    throw new Error();
+    return 12;
+  }, {
+    recover: () => undefined
+  });
+
+  expect(await c1.getValue()).toBeUndefined();
+});
+
+test('computable with post-process and recover, error in kernel callback', async () => {
   const c1 = Computable.make(ctx => {
     throw new Error();
     return 12;
@@ -53,6 +64,21 @@ test('computable with post-process and recover', async () => {
 
   expect(await c1.getValue()).toBeUndefined();
 });
+
+test('computable with post-process and recover, error in postprocess', async () => {
+  const c1 = Computable.make(ctx => {
+    return 12;
+  }, {
+    postprocessValue: value => {
+      throw new Error();
+      return String(value);
+    },
+    recover: () => undefined
+  });
+
+  expect(await c1.getValue()).toBeUndefined();
+});
+
 
 test('nested computable with post-process and recover', async () => {
   const c1 = Computable.make(ctx => {

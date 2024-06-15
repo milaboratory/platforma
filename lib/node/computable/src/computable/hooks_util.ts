@@ -18,7 +18,7 @@ export class PollingComputableHooks implements ComputableHooks {
   constructor(private readonly startUpdating: () => void,
               private readonly stopUpdating: () => void,
               ops: StartStopComputableHooksOps,
-              private readonly scheduleOnNextFreshState?: (resolve: () => void, reject: (error: any) => void) => void) {
+              private readonly scheduleOnNextFreshState?: (resolve: () => void, reject: (error: unknown) => void) => void) {
     this.stopDebounce = ops.stopDebounce;
   }
 

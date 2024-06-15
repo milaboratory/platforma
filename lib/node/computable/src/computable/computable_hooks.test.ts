@@ -1,15 +1,13 @@
 import { WatchableValue, ObservableAccessor } from '../watchable_value';
 
-import { TrackedAccessorProvider, UsageGuard } from './accessor_provider';
+import { AccessorProvider, UsageGuard } from './accessor_provider';
 import { Aborted, sleep } from '@milaboratory/ts-helpers';
 import { Computable } from './computable';
-import { computable } from './computable_helpers';
 import { ChangeSource } from '../change_source';
-import { Watcher } from '../watcher';
 import { ComputableCtx } from './kernel';
 import { PollingComputableHooks, StartStopComputableHooksOps } from './hooks_util';
 
-class SynchronizedWatchableValue<T> implements TrackedAccessorProvider<ObservableAccessor<T>> {
+class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();
   private readonly hooks: PollingComputableHooks;
 
@@ -27,12 +25,22 @@ class SynchronizedWatchableValue<T> implements TrackedAccessorProvider<Observabl
     this.change.markChanged();
   }
 
-  createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): ObservableAccessor<T> {
+  public getValue(ctx: ComputableCtx): T {
+    ctx.attacheHooks(this.hooks);
+    this.change.attachWatcher(ctx.watcher);
+    return this.value;
+  }
+
+  public asComputable() {
+    return Computable.make(ctx => this.getValue(ctx));
+  }
+
+  createAccessor(ctx: ComputableCtx, guard: UsageGuard): ObservableAccessor<T> {
     return {
       getValue: () => {
         guard();
         ctx.attacheHooks(this.hooks);
-        this.change.attachWatcher(watcher);
+        this.change.attachWatcher(ctx.watcher);
         return this.value;
       }
     } as ObservableAccessor<T>;
@@ -55,7 +63,7 @@ class SynchronizedWatchableValue<T> implements TrackedAccessorProvider<Observabl
     (async () => {
       try {
         while (true) {
-          await this.src.listen(abort.signal);
+          await this.src.awaitChange(abort.signal);
           this.setValue(await this.src.getValue());
         }
       } catch (err) {
@@ -78,21 +86,21 @@ function getTestSetups() {
     (() => {
       const observableSource = new WatchableValue(2);
       const synchronized = new SynchronizedWatchableValue(
-        computable(observableSource, {}, a => a.getValue()),
+        observableSource.asComputable(),
         1, { stopDebounce: 10 });
-      const res2 = computable(synchronized, {},
-        a => a.getValue() * 2);
+      const res2 = Computable.make(ctx =>
+        synchronized.getValue(ctx) * 2);
       return { context: 'plain', observableSource, synchronized, res2 };
     })(),
     (() => {
       const observableSource = new WatchableValue(2);
       const synchronized = new SynchronizedWatchableValue(
-        computable(observableSource, {}, a => a.getValue()),
+        observableSource.asComputable(),
         1, { stopDebounce: 10 });
-      const res1 = computable(synchronized, {},
-        a => a.getValue());
-      const res2 = computable(synchronized, {},
-        a => ({ r1: res1 }), async ({ r1 }) => r1 * 2);
+      const res1 = synchronized.asComputable();
+      const res2 = Computable.make(
+        ctx => ({ r1: synchronized.getValue(ctx) }),
+        { postprocessValue: ({ r1 }) => r1 * 2 });
       return { context: 'nested', observableSource, synchronized, res2 };
     })()
   ];
@@ -133,7 +141,7 @@ test.each(getTestSetups())
   expect(await res2.getValue()).toEqual(4);
 
   // indefinite listener
-  const listener1 = res2.listen();
+  const listener1 = res2.awaitChange();
   await sleep(20);
 
   // still active
@@ -147,7 +155,7 @@ test.each(getTestSetups())
   expect(synchronized.active).toEqual(false);
 
   // indefinite listener
-  const listener2 = res2.listen(AbortSignal.timeout(10));
+  const listener2 = res2.awaitChange(AbortSignal.timeout(10));
   await expect(listener2).rejects.toThrow(Aborted);
   expect(synchronized.active).toEqual(true);
   await sleep(20);
