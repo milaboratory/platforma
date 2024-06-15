@@ -9,7 +9,7 @@ import {
   mapRecordValues,
   MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson
 } from './actions';
-import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
+import { BlockConfigBuilder, OutputCell, ResolveOutputsType, StdCtx } from './builder';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -72,7 +72,10 @@ test('test config content', () => {
     ]))
     .build();
 
-  assertType<ResolveOutputsType<typeof blockConfig1>, { cell1: { b: string[] }, cell2: 'v1'[] }>();
+  assertType<ResolveOutputsType<typeof blockConfig1>, {
+    cell1: OutputCell<{ b: string[] }>,
+    cell2: OutputCell<'v1'[]>
+  }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
 });
@@ -92,11 +95,11 @@ test('test config 2', () => {
     .build();
 
   assertType<ResolveOutputsType<typeof blockConfig1>, {
-    cell1: {
+    cell1: OutputCell<{
       b: string,
       c: Uint8Array,
       d: string[]
-    }
+    }>
   }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
