@@ -1,104 +1,39 @@
 <script lang="ts" setup>
 import Layout from '@/demo/Layout.vue';
-import type { DataTableSettings } from '@/lib';
 import { DataTable, NumberInput, BtnSecondary } from '@/lib';
-import { strings } from '@milaboratory/helpers';
-import { faker } from '@faker-js/faker';
-import { computed, h, onMounted, reactive } from 'vue';
-import { randomInt, arrayFrom } from '@milaboratory/helpers/utils';
-import type { ColumnSettings } from '@/lib/components/DataTable/types';
-import { type TableData } from '@/lib/components/DataTable/types';
-import CustomCell from './CustomCell.vue';
-import CustomNumber from './CustomNumber.vue';
-import { renderSequence, asConst } from './helpers';
+import { computed, onMounted } from 'vue';
+import { RawData, type TableData } from '@/lib/components/DataTable/types';
+import { useData } from './useData';
 
-const lorem = strings.randomString(40);
+const DataTableComponent = DataTable.Component;
 
-const data = reactive({
-  loading: false,
-  numColumns: 15,
-  numRows: 100,
-  tableData: undefined as TableData | undefined,
-  rows: [] as Record<string, unknown>[],
-});
+const { data, columnsRef, generate } = useData();
 
 const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
-const columnsRef = computed(() => {
-  const rest = arrayFrom(data.numColumns, (i) => {
-    const valueType = i % 2 === 0 ? 'string' : 'integer';
+const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
 
-    return {
-      label: i + 2 + ') ' + faker.word.noun(),
-      id: strings.uniqueId(),
-      valueType,
-      width: 200,
-      editable: true,
-      render:
-        valueType === 'integer'
-          ? (h, value) => {
-              return h(CustomNumber, { value: value as number });
-            }
-          : undefined,
-    } as DataTableSettings['columns'][number];
-  });
-
-  return [
-    asConst<ColumnSettings>({
-      id: 'frozen',
-      slot: true,
-      label: 'Frozen',
-      width: 200,
-      frozen: true,
-      render(h, value) {
-        return h(CustomCell, { value, info: 'Test' });
-      },
-    }),
-    ...rest,
-  ];
-});
-
-async function generate() {
-  const rows = [] as Record<string, unknown>[];
-  for await (const id of renderSequence(Number(data.numRows))) {
-    const row = Object.fromEntries(
-      columnsRef.value.map((col, colIndex) => {
-        if (col.id === 'ID') {
-          return [col.id, id];
-        }
-
-        return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem];
-      }),
-    );
-    rows.push(row);
-  }
-
-  data.rows = rows;
-}
-
-const settings = computed<DataTableSettings>(() => {
-  const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
-
-  return asConst<DataTableSettings>({
+const settings = computed<DataTable.Types.TableSettings>(() => {
+  return DataTable.settings({
     columns: columnsRef.value,
-    datum: data.rows,
+    dataSource: new RawData(data.rows, 40),
     getPrimaryKey,
-    operations: {
-      onDelete(ids) {
-        data.rows = data.rows.filter((row) => !ids.includes(getPrimaryKey(row)));
-      },
+    onDeleteRows(rowIds) {
+      data.rows = data.rows.filter((row) => !rowIds.includes(getPrimaryKey(row)));
     },
-    selfSort: true,
-    rowHeight: 40,
-    editable: true,
-    cellEvents: ['delete:row', 'select:row'],
+    onDeleteColumns(colIds) {
+      alert(`Attempt to delete columns: ${colIds.join(',')}`);
+    },
+    onEdit(ev) {
+      const row = data.rows.find((r) => getPrimaryKey(r) === ev.rowId);
+      if (row) {
+        row[ev.columnId] = ev.value;
+      }
+      return true;
+    },
     controlColumn: true,
   });
 });
-
-function onDeleteRow(index: number) {
-  data.rows.splice(index, 1);
-}
 
 const onUpdateData = (v: TableData): void => {
   data.tableData = v;
@@ -122,9 +57,6 @@ onMounted(onGenerate);
 
 <template>
   <layout>
-    <pre v-if="false">
-      {{ data.rows }}
-    </pre>
     <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
       <number-input v-model="data.numColumns" label="Num columns" />
       <number-input v-model="data.numRows" label="Num rows" />
@@ -142,7 +74,7 @@ onMounted(onGenerate);
       {{ data.tableData }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
-      <data-table style="flex: 1" :settings="settings" @update:data="onUpdateData" @delete:row="onDeleteRow"></data-table>
+      <data-table-component style="flex: 1" :settings="settings" @update:data="onUpdateData" />
     </div>
   </layout>
 </template>

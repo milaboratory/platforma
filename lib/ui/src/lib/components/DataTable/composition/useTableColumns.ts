@@ -1,13 +1,15 @@
-import type { ColumnSettings, TableColumn } from '../types';
+import type { ColumnSettings, TableSettings, TableColumn, TableData } from '../types';
+import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 import { sliceBy } from '@milaboratory/helpers/collections';
 import { asConst } from '../domain';
 import { uniqueId } from '@milaboratory/helpers/strings';
-import type { State } from '../state';
+import { GAP } from '../constants';
 
-export function useColumns(state: State) {
-  return computed(() => {
+export function useTableColumns(state: { data: TableData; settings: ComputedRef<TableSettings> }) {
+  return computed<TableColumn[]>(() => {
     const { data, settings } = state;
+
     const { bodyWidth, scrollLeft } = data;
 
     const columns = [...data.columns];
@@ -29,7 +31,7 @@ export function useColumns(state: State) {
 
     const tableColumns = columns.map((col) => {
       const it = { ...col, offset };
-      offset += col.width + 1; // @TODO gap
+      offset += col.width + GAP;
       return it;
     });
 

@@ -1,29 +1,25 @@
 <script lang="ts" setup>
-import { columnEventOptions } from './constants';
-import { useApi, rotate } from './domain';
-import type { ColumnEvent, ColumnSettings } from './types';
+import { showContextMenu } from '../contextMenu2';
+import type { ContextOption } from '../contextMenu2/types';
+import { rotate } from './domain';
+import type { ColumnSettings } from './types';
 
 const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
 
-const props = defineProps<{
+defineProps<{
   col: ColumnSettings;
-  columnEvents?: ColumnEvent[];
 }>();
 
-function onContextMenu(ev: Event) {
+function onContextMenu(ev: MouseEvent) {
   ev.preventDefault();
 
-  const columnEvents = props.columnEvents ?? [];
-
-  const options = columnEventOptions.filter((opt) => columnEvents.includes(opt.value));
+  const options = [] as ContextOption[]; // @TODO
 
   if (!options.length) {
     return;
   }
 
-  useApi().showOptions(options, (op) => {
-    emit(op, props.col.id);
-  });
+  showContextMenu(ev, options);
 }
 
 function onSort(col: ColumnSettings) {

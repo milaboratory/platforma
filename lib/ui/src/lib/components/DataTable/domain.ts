@@ -36,26 +36,30 @@ export function rotate<T>(v: T, lst: T[]) {
   return lst[next >= lst.length ? 0 : next];
 }
 
-export function useApi() {
-  if (!api) {
-    throw Error('Context Api is not implemented');
-  }
-  return api;
-}
+/**
+ * Returns a first contiguous copy of a section of an array where predicate is true
+ * @param arr
+ * @param predicate
+ * @returns
+ */
+export function sliceBy<T>(arr: readonly T[], predicate: (el: T, index: number) => boolean): T[] {
+  const left = arr.findIndex(predicate);
 
-// @TODO deprecated
-export function sortRows(columns: ColumnSettings[], rows: Record<string, unknown>[]) {
-  const sorts = columns.reduce(
-    (acc, col) => {
-      if (col.sort?.direction) {
-        acc[col.id] = col.sort.direction;
+  if (left < 0) {
+    return [];
+  }
+
+  const right = (() => {
+    for (let i = left; i < arr.length; i++) {
+      if (predicate(arr[i], i)) {
+        continue;
       }
-      return acc;
-    },
-    {} as Record<string | symbol, 'DESC' | 'ASC'>,
-  );
 
-  if (Object.keys(sorts).length) {
-    rows.sort((a, b) => compareRecords(sorts, a, b));
-  }
+      return i;
+    }
+
+    return arr.length;
+  })();
+
+  return arr.slice(left, right);
 }

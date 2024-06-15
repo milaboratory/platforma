@@ -1,21 +1,42 @@
 import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, RowSettings } from './types';
+import type { TableProps, TableData, TableSettings, RowSettings, ResizeTh } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
-import { DEFAULT_ROW_HEIGHT } from './constants';
-import { useColumns } from './composition/useColumns';
+import { clamp } from '@milaboratory/helpers/utils';
+import { useTableColumns } from './composition/useTableColumns';
+import { useTableRows } from './composition/useTableRows';
+import { GAP } from './constants';
+
+type DataWindow = {
+  bodyHeight: number;
+  scrollTop: number;
+  settings: TableSettings;
+};
+
+const loadRows = async (dataWindow: DataWindow) => {
+  const { bodyHeight, scrollTop, settings } = dataWindow;
+
+  const rows = await settings.dataSource.getRows(scrollTop, bodyHeight);
+
+  const height = await settings.dataSource.getHeight();
+
+  return { rows, height };
+};
 
 export function createState(props: TableProps) {
   const data = reactive<TableData>({
     rowIndex: -1,
     columns: [],
+    rows: [],
     resize: false,
     resizeTh: undefined,
-    bodyHeight: 600,
+    dataHeight: 0,
+    bodyHeight: 600, // @TODO
     bodyWidth: 0,
     scrollTop: 0,
     scrollLeft: 0,
     selectedRows: new Set<string>(),
+    selectedColumns: new Set<string>(),
   });
 
   watch(
@@ -26,32 +47,80 @@ export function createState(props: TableProps) {
     { immediate: true },
   );
 
-  const settings = computed(() => props.settings);
-
-  const datum = computed(() => {
-    const rowHeight = props.settings.rowHeight ?? DEFAULT_ROW_HEIGHT;
-
-    const gap = props.settings.gap ?? 1;
-
-    const raw = props.settings.datum.slice();
-
-    return raw.map<RowSettings>((dataRow, index) => ({
-      dataRow,
-      index,
-      offset: index * (rowHeight + gap),
-      height: rowHeight,
-    }));
+  const settings = computed(() => {
+    return props.settings;
   });
 
-  const bodyHeight = computed(() => {
-    return 600; // @TODO
+  const columnsWidth = computed(() => {
+    return data.columns.reduce((acc, col) => acc + col.width + GAP, 0);
   });
 
-  const dataHeight = computed(() => {
-    return datum.value.length * (DEFAULT_ROW_HEIGHT + 1);
+  const maxScrollTop = computed(() => state.data.dataHeight - state.data.bodyHeight);
+  const maxScrollLeft = computed(() => (columnsWidth.value > state.data.bodyWidth ? columnsWidth.value - state.data.bodyWidth : 0));
+
+  const dataWindow = computed<DataWindow>(() => {
+    return {
+      bodyHeight: data.bodyHeight,
+      scrollTop: data.scrollTop,
+      selectedRows: data.selectedRows,
+      settings: settings.value,
+      columns: tableColumns.value,
+    };
   });
 
-  const state = { data, settings, datum, bodyHeight, dataHeight };
+  const tableColumns = useTableColumns({
+    data,
+    settings,
+  });
+
+  const tableRows = useTableRows(data, settings, tableColumns);
+
+  const adjustWidth = () => {
+    const newWidth = data.columns.reduce((acc, col) => acc + col.width + GAP, 0);
+
+    const rightOffset = data.bodyWidth + data.scrollLeft;
+
+    if (newWidth < rightOffset) {
+      const last = data.columns[data.columns.length - 1];
+      last.width = last.width + (rightOffset - newWidth);
+    }
+  };
+
+  const state = {
+    data,
+    settings,
+    tableColumns,
+    tableRows,
+    adjustWidth,
+    updateOffsets(ev: { deltaY: number; deltaX: number }) {
+      data.scrollTop = clamp(data.scrollTop + ev.deltaY, 0, maxScrollTop.value);
+      data.scrollLeft = clamp(data.scrollLeft + ev.deltaX, 0, maxScrollLeft.value);
+    },
+    selectRow(primaryId: string) {
+      data.selectedRows.add(primaryId);
+    },
+    unselectRow(primaryId: string) {
+      data.selectedRows.delete(primaryId);
+    },
+    selectColumn(columnId: string) {
+      data.selectedColumns.add(columnId);
+    },
+    unselectColumn(columnId: string) {
+      data.selectedColumns.delete(columnId);
+    },
+  };
+
+  watch(
+    dataWindow,
+    (v) => {
+      loadRows(v).then(({ rows, height }) => {
+        data.rows = rows;
+        data.dataHeight = height;
+        console.log('new height', height);
+      });
+    },
+    { deep: true, immediate: true },
+  );
 
   provide(stateKey, state);
 

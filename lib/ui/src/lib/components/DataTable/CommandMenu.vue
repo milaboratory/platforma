@@ -1,30 +1,36 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { TableData } from './types';
 import { injectState } from './keys';
 import { tapIf, toList } from '@milaboratory/helpers/utils';
 
-const props = defineProps<{
-  tableData: TableData;
-}>();
-
 const state = injectState();
 
-const operations = computed(() => state.settings.value.operations ?? {});
+const selectedRows = computed(() => toList(state.data.selectedRows));
 
-const selected = computed(() => toList(props.tableData.selectedRows));
+const selectedColumns = computed(() => toList(state.data.selectedColumns));
 
-const isVisible = computed(() => selected.value.length > 0);
+const isVisible = computed(() => selectedRows.value.length > 0);
 
-const onDelete = () => {
-  tapIf(operations.value?.onDelete, (cb) => cb(selected.value));
-  props.tableData.selectedRows.clear();
+const hasOnDeleteRows = computed(() => !!state.settings.value?.onDeleteRows);
+
+const hasOnDeleteColumns = computed(() => !!state.settings.value?.onDeleteColumns);
+
+const onDeleteRows = () => {
+  tapIf(state.settings.value?.onDeleteRows, (cb) => cb(selectedRows.value));
+  state.data.selectedRows.clear();
+};
+
+const onDeleteColumns = () => {
+  tapIf(state.settings.value?.onDeleteColumns, (cb) => cb(selectedColumns.value));
+  state.data.selectedColumns.clear();
 };
 </script>
 
 <template>
   <div v-if="isVisible" class="command-menu">
-    <span>selected {{ selected.length }}</span>
-    <button v-if="operations.onDelete" @click="onDelete">Delete</button>
+    <span v-if="selectedRows.length">selected rows {{ selectedRows.length }}</span>
+    <button v-if="hasOnDeleteRows" @click="onDeleteRows">Delete rows</button>
+    <span v-if="selectedColumns.length">selected columns {{ selectedColumns.length }}</span>
+    <button v-if="hasOnDeleteColumns" @click="onDeleteColumns">Delete columns</button>
   </div>
 </template>
