@@ -13,16 +13,25 @@ export interface ComputableCtx {
   /** If called during construction, this result will be considered as unstable */
   markUnstable(): void;
 
-  /** Sets a callback to be executed when this computable detaches from current computable tree.
-   * If onDestroy callback is already set, context will first schedule execution of that previous callback,
-   * and then associate new callback with the context. */
-  setOnDestroy(cb: () => void): void;
+  /** Executes and resets current onDestroy helper
+   * @deprecated use {@link addOnDestroy} */
+  scheduleAndResetOnDestroy(): void;
 
-  /** True if onDestroy callback is set */
+  /** True if onDestroy callback is set
+   * @deprecated use {@link addOnDestroy} */
   get hasOnDestroy(): boolean;
 
-  /** Executes and resets current onDestroy helper */
-  scheduleAndResetOnDestroy(): void;
+  /** Sets a callback to be executed when this computable detaches from current computable tree.
+   * If onDestroy callback is already set, context will first schedule execution of that previous callback,
+   * and then associate new callback with the context.
+   * @deprecated use {@link addOnDestroy} */
+  setOnDestroy(cb: () => void): void;
+
+  /** This callback will be called after generated state is no longer attached to the
+   * computable tree, or updated due to the underlying data change. In the latter case
+   * all added destructors will be called only after new state is calculated simplifying
+   * computable-provider-side logic. */
+  addOnDestroy(cb: () => void): void;
 
   /** Get associated value by key */
   get(key: string): unknown | undefined;

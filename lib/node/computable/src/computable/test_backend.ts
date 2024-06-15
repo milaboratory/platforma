@@ -1,10 +1,10 @@
 import { Watcher } from '../watcher';
 import { ChangeSource } from '../change_source';
-import { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './accessor_provider';
+import { AccessorProvider, UsageGuard } from './accessor_provider';
 import { randomUUID } from 'node:crypto';
 import { ComputableCtx } from './kernel';
 
-export interface PersistentFakeTreeNode extends TrackedAccessorProvider<FakeTreeAccessor>, AccessorProvider<FakeTreeAccessor> {
+export interface PersistentFakeTreeNode extends AccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;
 }
 
@@ -52,9 +52,6 @@ export class FakeTreeAccessor {
   get persist(): PersistentFakeTreeNode {
     return {
       uuid: this.uuid,
-      createInstance: (watcher, guard, ctx) => {
-        return new FakeTreeAccessor(this.node, watcher, guard, ctx);
-      },
       createAccessor: (ctx: ComputableCtx, guard: UsageGuard) => {
         return new FakeTreeAccessor(this.node, ctx.watcher, guard, ctx);
       }
@@ -180,9 +177,6 @@ export class FakeTreeDriver {
   get accessor(): PersistentFakeTreeNode {
     return {
       uuid: this.root.uuid,
-      createInstance: (watcher, guard, ctx) => {
-        return new FakeTreeAccessor(this.root, watcher, guard, ctx);
-      },
       createAccessor: (ctx: ComputableCtx, guard: UsageGuard) => {
         return new FakeTreeAccessor(this.root, ctx.watcher, guard, ctx);
       }

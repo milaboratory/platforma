@@ -1,4 +1,4 @@
-import { TrackedAccessorProvider, UsageGuard } from './accessor_provider';
+import { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './accessor_provider';
 import {
   CellRenderingOps,
   ComputableCtx,
@@ -26,6 +26,18 @@ interface ComputableRenderingOps extends CellRenderingOps {
   key: string;
 }
 
+function toTrackedAccessProvider<A>(ap: TrackedAccessorProvider<A> | AccessorProvider<A>): TrackedAccessorProvider<A> {
+  if ('createInstance' in ap)
+    return ap;
+  else {
+    return {
+      createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): A {
+        return ap.createAccessor(ctx, guard);
+      }
+    };
+  }
+}
+
 // export function computable<A, IR, T>(
 //   ap: TrackedAccessorProvider<A>,
 //   ops: Partial<ComputableRenderingOps>,
@@ -37,10 +49,11 @@ interface ComputableRenderingOps extends CellRenderingOps {
 //   cb: (a: A, ctx: ComputableCtx) => IR): Computable<UnwrapComputables<IR>>
 /** @deprecated use {@link Computable.make} */
 export function computable<A, IR, T = UnwrapComputables<IR>>(
-  ap: TrackedAccessorProvider<A>,
+  _ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IR,
   postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>): Computable<T> {
+  const ap = toTrackedAccessProvider(_ap);
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
     ...DefaultRenderingOps,
@@ -65,9 +78,10 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
 
 /** @deprecated use {@link Computable.make} */
 export function computableInstancePostprocessor<A, IR, T>(
-  ap: TrackedAccessorProvider<A>,
+  _ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>): Computable<T> {
+  const ap = toTrackedAccessProvider(_ap);
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
     ...DefaultRenderingOps,

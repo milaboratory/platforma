@@ -10,6 +10,7 @@ import { ComputableHooks } from './computable_hooks';
 import { Watcher } from '../watcher';
 import { setImmediate } from 'node:timers';
 import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
+import * as console from 'node:console';
 
 interface ExecutionError {
   error: unknown;
@@ -27,7 +28,10 @@ export function cleanIntermediateRenderingResult<IR, T>(r: IntermediateRendering
 
 class CellComputableContext implements ComputableCtx {
   public stable: boolean = false;
-  private onDestroy?: (() => void);
+  /** @deprecated */
+  private oldOnDestroy?: (() => void);
+  private currentOnDestroy: (() => void)[] | undefined = undefined;
+  private previousOnDestroy: (() => void)[] | undefined = undefined;
   private kv?: Map<string, unknown>;
   /** Must be reset to "undefined", to only accumulate those observers injected
    * during a specific call*/
@@ -37,21 +41,28 @@ class CellComputableContext implements ComputableCtx {
     this.stable = false;
   }
 
-  get hasOnDestroy(): boolean {
-    return this.onDestroy !== undefined;
-  }
-
   scheduleAndResetOnDestroy(): void {
-    if (this.onDestroy === undefined)
+    if (this.oldOnDestroy === undefined)
       return;
     // Scheduling execution in background
-    setImmediate(this.onDestroy);
-    this.onDestroy = undefined;
+    setImmediate(this.oldOnDestroy);
+    this.oldOnDestroy = undefined;
+  }
+
+  get hasOnDestroy(): boolean {
+    return this.oldOnDestroy !== undefined;
   }
 
   setOnDestroy(cb: () => void): void {
     this.scheduleAndResetOnDestroy();
-    this.onDestroy = cb;
+    this.oldOnDestroy = cb;
+  }
+
+  addOnDestroy(cb: () => void): void {
+    if (this.currentOnDestroy === undefined)
+      this.currentOnDestroy = [cb];
+    else
+      this.currentOnDestroy.push(cb);
   }
 
   get(key: string): unknown | undefined {
@@ -125,6 +136,8 @@ class CellComputableContext implements ComputableCtx {
       if (guardData.finished) throw new AccessorLeakException();
     };
     this.guardData = guardData;
+    this.previousOnDestroy = this.currentOnDestroy;
+    this.currentOnDestroy = undefined;
   }
 
   /** Must be executed by the computable state engine after sync kernel callback
@@ -135,6 +148,26 @@ class CellComputableContext implements ComputableCtx {
     this.guardData = undefined;
     this.guard = undefined;
     this.accessors?.clear();
+    if (this.previousOnDestroy !== undefined)
+      for (const od of this.previousOnDestroy)
+        try {
+          od();
+        } catch (err: unknown) {
+          console.error('Error in computable onDestroy', err);
+        }
+    this.previousOnDestroy = undefined;
+  }
+
+  destroy() {
+    this.scheduleAndResetOnDestroy();
+    if (this.currentOnDestroy !== undefined)
+      for (const od of this.currentOnDestroy)
+        try {
+          od();
+        } catch (err: unknown) {
+          console.error('Error in computable onDestroy', err);
+        }
+    this.currentOnDestroy = undefined;
   }
 }
 
@@ -384,7 +417,7 @@ function renderSelfState<T>(
 export function destroyState(_state: CellState<unknown>) {
   for (const { state } of _state.childrenStates.values())
     destroyState(state);
-  _state.selfState.ctx.scheduleAndResetOnDestroy();
+  _state.selfState.ctx.destroy();
 }
 
 /**

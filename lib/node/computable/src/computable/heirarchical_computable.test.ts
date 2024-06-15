@@ -93,11 +93,18 @@ function getValueFromTreeAsNested(node: PersistentFakeTreeNode,
 
 function getValueFromTreeAsNestedWithDestroy(tree: PersistentFakeTreeNode,
                                              ops: Partial<ComputableRenderingOps> = {},
-                                             onDestroy: (currentPath: string[]) => void,
+                                             tracked: Map<string, number>,
                                              pathLeft: string[], currentPath: string[] = []): Computable<undefined | string> {
   return Computable.make(ctx => {
-    if (!ctx.hasOnDestroy)
-      ctx.setOnDestroy(() => onDestroy(currentPath));
+    const pathString = currentPath.join('/');
+    tracked.set(pathString, (tracked.get(pathString) ?? 0) + 1);
+    ctx.addOnDestroy(() => {
+      const newValue = tracked.get(pathString)! - 1;
+      if (newValue === 0)
+        tracked.delete(pathString);
+      else
+        tracked.set(pathString, newValue);
+    });
     const a = ctx.accessor(tree);
     if (pathLeft.length === 0)
       return a.getValue();
@@ -108,7 +115,7 @@ function getValueFromTreeAsNestedWithDestroy(tree: PersistentFakeTreeNode,
       if (next === undefined)
         return undefined;
       return getValueFromTreeAsNestedWithDestroy(next, {},
-        onDestroy, pathLeft.slice(1), [...currentPath, pathLeft[0]]);
+        tracked, pathLeft.slice(1), [...currentPath, pathLeft[0]]);
     }
   }, { key: tree.uuid + pathLeft.join('---'), ...ops });
 }
@@ -211,9 +218,9 @@ test('stability test simple #3', async () => {
 test('on destroy test nested', async () => {
   const tree1 = new FakeTreeDriver();
 
-  const destroyed: string[][] = [];
+  const tracked = new Map<string, number>();
   const cs1 = getValueFromTreeAsNestedWithDestroy(
-    tree1.accessor, {}, c => destroyed.push(c), ['a', 'b']);
+    tree1.accessor, {}, tracked, ['a', 'b']);
 
   expect(cs1.isChanged()).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
@@ -221,7 +228,7 @@ test('on destroy test nested', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 
   tree1.writer.getOrCreateChild('a');
 
@@ -231,7 +238,8 @@ test('on destroy test nested', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a']);
+  // expect(destroyed).toEqual([]);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
 
@@ -241,7 +249,7 @@ test('on destroy test nested', async () => {
     value: 'ugu'
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
   tree1.writer.deleteChild('a');
 
@@ -252,15 +260,15 @@ test('on destroy test nested', async () => {
   });
   expect(cs1.isChanged()).toBe(false);
   await new Promise(r => setImmediate(r));
-  expect(destroyed).toEqual([['a', 'b'], ['a']]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 });
 
 test('on destroy test nested #2', async () => {
   const tree1 = new FakeTreeDriver();
 
-  const destroyed: string[][] = [];
+  const tracked = new Map<string, number>();
   const cs1 = getValueFromTreeAsNestedWithDestroy(
-    tree1.accessor, {}, c => destroyed.push(c), ['a', 'b']);
+    tree1.accessor, {}, tracked, ['a', 'b']);
 
   expect(cs1.isChanged()).toBe(true);
   expect(await cs1.getValueOrError()).toMatchObject({
@@ -268,7 +276,7 @@ test('on destroy test nested #2', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
   tree1.writer.lock().getOrCreateChild('a').lock().getOrCreateChild('b').lock();
@@ -279,7 +287,7 @@ test('on destroy test nested #2', async () => {
     value: 'ugu'
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
   tree1.writer.unlock().deleteChild('a');
 
@@ -289,7 +297,7 @@ test('on destroy test nested #2', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
   tree1.writer.lock();
 
@@ -302,15 +310,15 @@ test('on destroy test nested #2', async () => {
   });
   expect(cs1.isChanged()).toBe(false);
   await new Promise(r => setImmediate(r));
-  expect(destroyed).toEqual([['a', 'b'], ['a']]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 });
 
 test('on destroy test nested with StableOnlyRetentive', async () => {
   const tree1 = new FakeTreeDriver();
 
-  const destroyed: string[][] = [];
+  const tracked = new Map<string, number>();
   const cs1 = getValueFromTreeAsNestedWithDestroy(
-    tree1.accessor, { mode: 'StableOnlyRetentive' }, c => destroyed.push(c), ['a', 'b']
+    tree1.accessor, { mode: 'StableOnlyRetentive' }, tracked, ['a', 'b']
   );
 
   expect(cs1.isChanged()).toBe(true);
@@ -319,7 +327,7 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 
   tree1.writer.getOrCreateChild('a').getOrCreateChild('b').setValue('ugu');
 
@@ -329,7 +337,7 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
     value: undefined
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
   tree1.writer.lock().getOrCreateChild('a').lock().getOrCreateChild('b').lock();
 
@@ -339,7 +347,7 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
     value: 'ugu'
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
 
   tree1.writer.unlock().deleteChild('a');
@@ -350,7 +358,7 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
     value: 'ugu'
   });
   expect(cs1.isChanged()).toBe(false);
-  expect(destroyed).toEqual([]);
+  expect([...tracked.keys()].sort()).toEqual(['', 'a', 'a/b']);
 
   tree1.writer.lock();
 
@@ -363,5 +371,5 @@ test('on destroy test nested with StableOnlyRetentive', async () => {
   });
   expect(cs1.isChanged()).toBe(false);
   await new Promise(r => setImmediate(r));
-  expect(destroyed).toEqual([['a', 'b'], ['a']]);
+  expect([...tracked.keys()].sort()).toEqual(['']);
 });
