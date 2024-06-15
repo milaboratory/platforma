@@ -1,7 +1,7 @@
 import { PruningFunction, SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
 import { TreeAndComputableU } from './types';
-import { computable, lazyFactory, WatchableValue } from '@milaboratory/computable';
+import { Computable, WatchableValue } from '@milaboratory/computable';
 import { ProjectMeta, ProjectMetaKey } from '../model/project_model';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { ProjectList, ProjectListEntry } from './models';
@@ -20,9 +20,9 @@ export async function createProjectList(pl: PlClient, rid: ResourceId, openedPro
   const tree = await SynchronizedTreeState.init(pl, rid,
     { ...env.ops.defaultTreeOptions, pruning: ProjectsListTreePruningFunction });
 
-  const c = computable(lazyFactory(), {}, a => {
-    const node = a.get(tree.entry()).node();
-    const oProjects = a.get(openedProjects).getValue();
+  const c = Computable.make(ctx => {
+    const node = ctx.accessor(tree.entry()).node();
+    const oProjects = openedProjects.getValue(ctx);
     if (node === undefined)
       return undefined;
     const result: ProjectListEntry[] = [];

@@ -6,10 +6,10 @@ import { AuthorMarker, blockArgsAuthorKey, projectFieldName } from '../model/pro
 import { Pl } from '@milaboratory/pl-client-v2';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
-import { FullBlockState } from './models';
+import { BlockState } from './models';
 import { BlockPackInfo } from '../model/block_pack';
 
-export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): Computable<FullBlockState> {
+export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): Computable<BlockState> {
   return computable(projectEntry, {}, prjA => {
     const prj = prjA.node();
     const ctx = constructBlockContext(prj, id);

@@ -39,11 +39,11 @@ export type ProjectOverview = {
   meta: ProjectMeta;
 
   /** Overview information for each block */
-  blocks: BlockState[];
+  blocks: BlockStateOverview[];
 }
 
 /** Overview of the block state, required for visualization in the left panel */
-export type BlockState = {
+export type BlockStateOverview = {
   /** Block id */
   id: string,
 
@@ -86,7 +86,6 @@ export type ProdState = {
 
   calculationStatus: CalculationStatus
 
-
   stale: boolean
 
   /** Arguments current production was rendered with. */
@@ -97,7 +96,7 @@ export type ProdState = {
 // Block State
 //
 
-export interface FullBlockState {
+export interface BlockState {
   /** Author marker for Args and UI state. Absence of author marker, means that
    * last modifier of the state provided no author marker. */
   author?: AuthorMarker;
@@ -105,7 +104,7 @@ export interface FullBlockState {
   /** Block arguments */
   args: any;
 
-  /** Ui State, i.e. any block state that must be persisted but is not passed
+  /** UI State, i.e. any block state that must be persisted but is not passed
    * to the backend template. */
   ui: any;
 

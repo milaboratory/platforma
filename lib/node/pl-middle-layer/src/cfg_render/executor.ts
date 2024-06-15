@@ -2,9 +2,8 @@ import { ArgumentKey, ArgumentValues, ExecutionEnvironment, Operation, Subroutin
 import Denque from 'denque';
 import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
 import {
-  Computable,
-  computableInstancePosprocessor, ComputableRenderingOps, lazyFactory,
-  TrackedAccessorProvider
+  AccessorProvider,
+  Computable, ComputableRenderingOps
 } from '@milaboratory/computable';
 import { Cfg } from '@milaboratory/sdk-block-config';
 import { renderCfg, resOp } from './renderer';
@@ -171,18 +170,16 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 //
 
 const PostProcessingExecutionEnvironment: ExecutionEnvironment = {
-  accessor<A>(provider: TrackedAccessorProvider<A>): A {
+  accessor<A>(provider: AccessorProvider<A>): A {
     throw new Error('can\'t create accessors in post-processing context');
   },
 };
 
 /** Main method to render configurations */
 export function computableFromCfg(ctx: Record<string, unknown>, cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
-  return computableInstancePosprocessor(lazyFactory(), ops, a => {
+  return Computable.make(c => {
     const env: ExecutionEnvironment = {
-      accessor<A>(provider: TrackedAccessorProvider<A>): A {
-        return a.get(provider);
-      }
+      accessor: provider => c.accessor(provider)
     };
     const stack = zeroStack();
     const computables = execute(env, stack, [{

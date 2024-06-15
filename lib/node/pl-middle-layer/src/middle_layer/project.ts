@@ -10,7 +10,7 @@ import { AuthorMarker } from '../model/project_model';
 import { blockState } from './block';
 import { setTimeout } from 'node:timers/promises';
 import { frontendPath } from './frontend_path';
-import { FullBlockState, ProjectOverview } from './models';
+import { BlockState, ProjectOverview } from './models';
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -20,7 +20,7 @@ export class Project {
   /** Data for the left panel, contain basic information about block status. */
   readonly overview: ComputableStableDefined<ProjectOverview>;
 
-  private readonly blockStates = new Map<string, Computable<FullBlockState>>();
+  private readonly blockStates = new Map<string, Computable<BlockState>>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<string>>();
   private destroyed = false;
   private refreshLoopResult: Promise<void>;
@@ -121,7 +121,7 @@ export class Project {
 
   /** Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state, and ongoing computation status flags. */
-  public getBlockState(blockId: string): Computable<FullBlockState> {
+  public getBlockState(blockId: string): Computable<BlockState> {
     const cached = this.blockStates.get(blockId);
     if (cached === undefined) {
       const state = blockState(this.tree.entry(), blockId, this.env);
