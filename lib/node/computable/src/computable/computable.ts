@@ -1,7 +1,7 @@
 import {
   CellRenderingOps,
   ComputableCtx,
-  ComputableKernel, ComputablePostProcess, ComputableRecoverAction,
+  ComputableKernel, ComputablePostProcess, ComputableRecoverAction, IntermediateRenderingResult,
   UnwrapComputables
 } from './kernel';
 import {
@@ -499,6 +499,35 @@ export class Computable<T, StableT extends T = T> {
     cb: (ctx: ComputableCtx) => IR,
     ops?: Partial<ComputablePostProcess<IR, T>> & Partial<ComputableRecoverAction<T>> & Partial<ComputableRenderingOps>
   ): Computable<T> {
+    return Computable.makeRaw(ctx => {
+      let ir: IR;
+      if (ops?.recover !== undefined) {
+        // here we also catch main callback errors, and passes any errors to
+        // the recovery lambda, raw kernel definition can't give this behaviour
+        // without manual error handling in the code
+        try {
+          ir = cb(ctx);
+        } catch (err: unknown) {
+          return {
+            // this might in tern throw an error, which will be caught by the
+            // computable state machine
+            ir: ops.recover([err]) as any
+          };
+        }
+      } else
+        ir = cb(ctx);
+      return {
+        ir,
+        postprocessValue: ops?.postprocessValue as ((value: unknown, stable: boolean) => Promise<T> | T),
+        recover: ops?.recover
+      };
+    }, ops);
+  }
+
+  public static makeRaw<IR, T>(
+    cb: (ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>,
+    ops?: Partial<ComputableRenderingOps>
+  ): Computable<T> {
     // adding in defaults and creating final ops for the kernel
     const { mode, resetValueOnError } = ops ?? {};
     const renderingOps: CellRenderingOps = {
@@ -510,29 +539,7 @@ export class Computable<T, StableT extends T = T> {
     // creating computable instance
     return new Computable<T>({
       ops: renderingOps, key: ops?.key ?? Computable.nextEphemeralKey(),
-      ___kernel___: ctx => {
-        let ir: IR;
-        if (ops?.recover !== undefined) {
-          // here we also catch main callback errors, and passes any errors to
-          // the recovery lambda, raw kernel definition can't give this behaviour
-          // without manual error handling in the code
-          try {
-            ir = cb(ctx);
-          } catch (err: unknown) {
-            return {
-              // this might in tern throw an error, which will be caught by the
-              // computable state machine
-              ir: ops.recover([err])
-            };
-          }
-        } else
-          ir = cb(ctx);
-        return {
-          ir,
-          postprocessValue: ops?.postprocessValue as ((value: unknown, stable: boolean) => Promise<T> | T),
-          recover: ops?.recover
-        };
-      }
+      ___kernel___: cb
     });
   }
 }
