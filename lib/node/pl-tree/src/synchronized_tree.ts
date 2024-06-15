@@ -3,7 +3,7 @@ import { PlTreeEntry } from './accessors';
 import { PlClient, ResourceId } from '@milaboratory/pl-client-v2';
 import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
 import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
-import { sleep } from '@milaboratory/ts-helpers';
+import * as tp from 'node:timers/promises';
 
 export type SynchronizedTreeOps = {
   finalPredicate?: FinalPredicate,
@@ -142,7 +142,7 @@ export class SynchronizedTreeState {
       if (!this.keepRunning)
         break;
 
-      await sleep(this.pollingInterval);
+      await tp.setTimeout(this.pollingInterval);
     }
 
     // reset only as a very last line

@@ -38,7 +38,7 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
   ) {
   }
 
-  createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
+  public createAccessor(ctx: ComputableCtx, guard: UsageGuard): PlTreeEntryAccessor {
     return new PlTreeEntryAccessor(this.accessorData,
       this.accessorData.treeProvider(), this.rid,
       { ctx, guard });
