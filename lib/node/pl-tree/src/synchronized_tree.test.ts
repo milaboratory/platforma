@@ -1,6 +1,6 @@
 import { field, TestHelpers } from '@milaboratory/pl-client-v2';
 import { TestStructuralResourceType1 } from './test_utils';
-import { Computable, computable } from '@milaboratory/computable';
+import { Computable } from '@milaboratory/computable';
 import { SynchronizedTreeState } from './synchronized_tree';
 
 test('simple synchronized tree test', async () => {
