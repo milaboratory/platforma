@@ -112,3 +112,11 @@ test('raw computable nested test', async () => {
 
   expect(users).toEqual(0);
 });
+
+test('testing wider range of types in computables', async () => {
+  const dateComputable = Computable.make(() => new Date());
+  expect(await dateComputable.getValue()).toBeInstanceOf(Date);
+  expect(await Computable.make(() => Computable.make(() => new Date())).getValue()).toBeInstanceOf(Date);
+  expect(await Computable.make(() => new Uint32Array(12)).getValue()).toBeInstanceOf(Uint32Array);
+  expect(await Computable.make(() => Computable.make(() => new Uint32Array(12))).getValue()).toBeInstanceOf(Uint32Array);
+});

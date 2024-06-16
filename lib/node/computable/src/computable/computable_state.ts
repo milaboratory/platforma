@@ -1,7 +1,7 @@
 import {
   ComputableKernel,
   IntermediateRenderingResult,
-  ComputableCtx, tryExtractComputableKernel
+  ComputableCtx, tryExtractComputableKernel, containComputables
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
@@ -256,17 +256,11 @@ function addChildren(node: unknown, children: Children) {
 
   // TODO do we need protection from recurrent references (i.e. cyclic dependencies) ?
 
+  if (!containComputables(node))
+    return;
+
   const type = typeof node;
   switch (type) {
-    case 'function':
-    case 'bigint':
-    case 'number':
-    case 'string':
-    case 'boolean':
-    case 'symbol':
-    case 'undefined':
-      return;
-
     case 'object':
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined)
@@ -284,8 +278,7 @@ function addChildren(node: unknown, children: Children) {
       return;
 
     default:
-      // exhaustiveness check
-      assertNever(type);
+      throw new Error(`Unexpected type ${type}`);
   }
 }
 
@@ -300,17 +293,11 @@ function calculateNodeValue(
   node: unknown,
   childStates: ChildrenStates
 ): any {
+  if (!containComputables(node))
+    return node;
+
   const type = typeof node;
   switch (type) {
-    case 'function':
-    case 'bigint':
-    case 'number':
-    case 'string':
-    case 'boolean':
-    case 'symbol':
-    case 'undefined':
-      return node;
-
     case 'object':
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined)
@@ -325,8 +312,7 @@ function calculateNodeValue(
       return newNode;
 
     default:
-      // exhaustiveness check
-      assertNever(type);
+      throw new Error(`Unexpected type ${type}`);
   }
 }
 

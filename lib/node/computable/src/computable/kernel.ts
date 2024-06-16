@@ -2,6 +2,7 @@ import { Watcher } from '../watcher';
 import { ComputableHooks } from './computable_hooks';
 import { AccessorProvider } from './accessor_provider';
 import { Computable } from './computable';
+import { assertNever } from '@milaboratory/ts-helpers';
 
 export interface ComputableCtx {
   /** Attaches computable observer to track interactions with resulting computable.
@@ -121,10 +122,68 @@ export function tryExtractComputableKernel(v: unknown): ComputableKernel<unknown
   return undefined;
 }
 
+type NoComputableInside =
+  | DataView
+  | Date
+  | Int8Array
+  | Uint8Array
+  | Uint8ClampedArray
+  | Int16Array
+  | Uint16Array
+  | Int32Array
+  | Uint32Array
+  | Float32Array
+  | Float64Array
+  | BigInt64Array
+  | BigUint64Array
+
+export function containComputables(v: unknown): boolean {
+  const type = typeof v;
+  switch (type) {
+    case 'function':
+    case 'bigint':
+    case 'number':
+    case 'string':
+    case 'boolean':
+    case 'symbol':
+    case 'undefined':
+      return false;
+
+    case 'object':
+
+      const kernel = tryExtractComputableKernel(v);
+      if (kernel !== undefined) {
+        return true;
+      } else if (Array.isArray(v)) {
+        for (const nested of v)
+          if (containComputables(nested))
+            return true;
+      } else if (v instanceof DataView || v instanceof Date
+        || v instanceof Int8Array || v instanceof Uint8Array || v instanceof Uint8ClampedArray
+        || v instanceof Int16Array || v instanceof Uint16Array
+        || v instanceof Int32Array || v instanceof Uint32Array
+        || v instanceof Float32Array || v instanceof Float64Array
+        || v instanceof BigInt64Array || v instanceof BigUint64Array) {
+        return false;
+      } else {
+        for (const [, nested] of Object.entries(v as object))
+          if (nested !== v)
+            if (containComputables(nested))
+              return true;
+      }
+
+      return false;
+
+    default:
+      // exhaustiveness check
+      assertNever(type);
+  }
+}
+
 export type UnwrapComputables<K> = K extends ComputableKernel<infer T>
   ? UnwrapComputables<T>
   : K extends Computable<infer T>
     ? UnwrapComputables<T>
-    : K extends bigint | boolean | null | number | string | symbol | undefined
+    : K extends bigint | boolean | null | number | string | symbol | undefined | NoComputableInside
       ? K
       : { [key in keyof K]: UnwrapComputables<K[key]> }
