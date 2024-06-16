@@ -58,7 +58,7 @@ test('project list manipulations test', async () => {
 
     await projectList.refreshState();
 
-    expect(await projectList.getValue()).toStrictEqual([{
+    expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
       meta: { label: 'Project 1' },
@@ -67,7 +67,7 @@ test('project list manipulations test', async () => {
 
     await ml.openProject(pRid1);
 
-    expect(await projectList.getValue()).toStrictEqual([{
+    expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
       meta: { label: 'Project 1' },
@@ -76,7 +76,7 @@ test('project list manipulations test', async () => {
 
     ml.closeProject(pRid1);
 
-    expect(await projectList.getValue()).toStrictEqual([{
+    expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
       meta: { label: 'Project 1' },
@@ -103,16 +103,20 @@ test('simple project manipulations test', async () => {
     expect(await projectList.awaitStableValue()).toEqual([]);
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await projectList.refreshState();
-    expect(await projectList.getValue()).toStrictEqual([{
+    const projectListValue1 = await projectList.getValue();
+    expect(projectListValue1).toMatchObject([{
       id: 'id1',
       rid: pRid1,
       meta: { label: 'Project 1' },
       opened: false
     }]);
+
+    const lastModInitial = projectListValue1![0].lastModified.valueOf();
+
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
 
     const {
       enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,
@@ -133,6 +137,8 @@ test('simple project manipulations test', async () => {
 
     await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
+
+    expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
@@ -176,7 +182,7 @@ test('block error test', async () => {
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toEqual({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
 
     const {
       enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,

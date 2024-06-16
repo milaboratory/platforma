@@ -2,9 +2,15 @@ import { PruningFunction, SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
 import { TreeAndComputableU } from './types';
 import { Computable, WatchableValue } from '@milaboratory/computable';
-import { ProjectMeta, ProjectMetaKey } from '../model/project_model';
+import {
+  ProjectCreatedTimestamp,
+  ProjectLastModifiedTimestamp,
+  ProjectMeta,
+  ProjectMetaKey
+} from '../model/project_model';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { ProjectList, ProjectListEntry } from './models';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 export const ProjectsField = 'projects';
 export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };
@@ -30,9 +36,17 @@ export async function createProjectList(pl: PlClient, rid: ResourceId, openedPro
       const prj = node.traverse(field);
       if (prj === undefined)
         continue;
-      const meta = prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey)!;
-      result.push({ id: field, rid: prj.id, opened: oProjects.indexOf(prj.id) >= 0, meta });
+      const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
+      const created = notEmpty(prj.getKeyValueAsJson<number>(ProjectCreatedTimestamp));
+      const lastModified = notEmpty(prj.getKeyValueAsJson<number>(ProjectLastModifiedTimestamp));
+      result.push({
+        id: field, rid: prj.id,
+        created: new Date(created),
+        lastModified: new Date(lastModified),
+        opened: oProjects.indexOf(prj.id) >= 0, meta
+      });
     }
+    result.sort(p => -p.lastModified.valueOf());
     return result;
   }).withStableType();
 

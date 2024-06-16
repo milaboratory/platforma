@@ -10,13 +10,17 @@ import { BlockPackSource } from '../model/block_pack_spec';
 /** Represents single entry in the list of projects owned by current user */
 export interface ProjectListEntry {
   /** Project resource ID. */
-  rid: ResourceId,
+  rid: ResourceId;
   /** Internal (user-specific) project id */
-  id: string,
+  id: string;
+  /** Creation timestamp. */
+  created: Date;
+  /** Last modification timestamp. */
+  lastModified: Date;
   /** True if project is opened */
-  opened: boolean,
+  opened: boolean;
   /** Project meta, namely label */
-  meta: ProjectMeta
+  meta: ProjectMeta;
 }
 
 export type ProjectList = ProjectListEntry[];
@@ -37,6 +41,12 @@ export type BlockProductionStatus =
 export type ProjectOverview = {
   /** Metadata, like project label associated with the project */
   meta: ProjectMeta;
+
+  /** Creation timestamp. */
+  created: Date;
+
+  /** Last modification timestamp. */
+  lastModified: Date;
 
   /** Overview information for each block */
   blocks: BlockStateOverview[];

@@ -1,8 +1,8 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
-  BlockRenderingStateKey,
-  projectFieldName,
+  BlockRenderingStateKey, ProjectCreatedTimestamp,
+  projectFieldName, ProjectLastModifiedTimestamp,
   ProjectMeta,
   ProjectMetaKey,
   ProjectRenderingState,
@@ -29,6 +29,9 @@ type BlockInfo = {
 export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableStableDefined<ProjectOverview> {
   return Computable.make(ctx => {
     const prj = ctx.accessor(entry).node();
+
+    const created = notEmpty(prj.getKeyValueAsJson<number>(ProjectCreatedTimestamp));
+    const lastModified = notEmpty(prj.getKeyValueAsJson<number>(ProjectLastModifiedTimestamp));
 
     const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
     const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
@@ -115,6 +118,9 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       };
     });
 
-    return { meta, structureAuthorMarker: structure.authorMarker, blocks };
+    return {
+      meta, created: new Date(created), lastModified: new Date(lastModified),
+      structureAuthorMarker: structure.authorMarker, blocks
+    };
   }).withStableType();
 }

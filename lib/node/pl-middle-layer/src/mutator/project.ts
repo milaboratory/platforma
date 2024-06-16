@@ -21,7 +21,13 @@ import {
   InitialBlockStructure,
   InitialProjectRenderingState,
   ProjectMeta,
-  ProjectMetaKey, InitialBlockMeta, parseBlockFrontendStateKey, blockFrontendStateKey, AuthorMarker, blockArgsAuthorKey
+  ProjectMetaKey,
+  InitialBlockMeta,
+  parseBlockFrontendStateKey,
+  blockFrontendStateKey,
+  AuthorMarker,
+  blockArgsAuthorKey,
+  ProjectLastModifiedTimestamp, ProjectCreatedTimestamp
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
@@ -148,10 +154,12 @@ export class ProjectMutator {
   // Change trackers
   //
 
+  private lastModifiedChanged = false;
   private structureChanged = false;
   private metaChanged = false;
   private renderingStateChanged = false;
   private readonly changedBlockFrontendStates = new Set<string>();
+  private readonly removedBlockFrontendStates = new Set<string>();
 
   /** Set blocks will be assigned current mutator author marker on save */
   private readonly blocksWithChangedInputs = new Set<string>();
@@ -160,6 +168,7 @@ export class ProjectMutator {
               private readonly tx: PlTransaction,
               private readonly author: AuthorMarker | undefined,
               private readonly schema: string,
+              private lastModified: number,
               private meta: ProjectMeta,
               private struct: ProjectStructure,
               private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
@@ -170,14 +179,16 @@ export class ProjectMutator {
   }
 
   get wasModified(): boolean {
-    return this.fieldsChanged
-      || this.metaChanged
+    return this.lastModifiedChanged
+      || this.fieldsChanged
       || this.metaChanged
       || this.renderingStateChanged
-      || this.changedBlockFrontendStates.size > 0;
+      || this.changedBlockFrontendStates.size > 0
+      || this.removedBlockFrontendStates.size > 0;
   }
 
   get structure(): ProjectStructure {
+    // clone
     return JSON.parse(JSON.stringify(this.struct));
   }
 
@@ -251,14 +262,24 @@ export class ProjectMutator {
     this.setBlockFieldObj(blockId, fieldName, { ref, status, value });
   }
 
-  private deleteBlockField(blockId: string, fieldName: keyof BlockFieldStates): boolean {
-    const fields = this.getBlockInfo(blockId).fields;
-    if (!(fieldName in fields))
-      return false;
-    this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName)));
-    delete fields[fieldName];
-    this.fieldsChanged = true;
-    return true;
+  private deleteBlockFields(blockId: string, ...fieldNames: (keyof BlockFieldStates)[]): boolean {
+    let deleted = false;
+    const info = this.getBlockInfo(blockId);
+    for (const fieldName of fieldNames) {
+      const fields = info.fields;
+      if (!(fieldName in fields))
+        continue;
+      this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName)));
+      delete fields[fieldName];
+      this.fieldsChanged = true;
+      deleted = true;
+    }
+    return deleted;
+  }
+
+  private updateLastModified() {
+    this.lastModified = Date.now();
+    this.lastModifiedChanged = true;
   }
 
   //
@@ -275,10 +296,9 @@ export class ProjectMutator {
     if (fields.stagingOutput?.status === 'Ready' && fields.stagingCtx?.status === 'Ready') {
       this.setBlockFieldObj(blockId, 'stagingOutputPrevious', fields.stagingOutput);
       this.setBlockFieldObj(blockId, 'stagingCtxPrevious', fields.stagingCtx);
-      this.deleteBlockField(blockId, 'stagingOutput');
-      this.deleteBlockField(blockId, 'stagingCtx');
     }
-    this.resetStagingRefreshTimestamp();
+    if (this.deleteBlockFields(blockId, 'stagingOutput', 'stagingCtx'))
+      this.resetStagingRefreshTimestamp();
   }
 
   private resetProduction(blockId: string): void {
@@ -286,11 +306,11 @@ export class ProjectMutator {
     if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
       this.setBlockFieldObj(blockId, 'prodOutputPrevious', fields.prodOutput);
       this.setBlockFieldObj(blockId, 'prodCtxPrevious', fields.prodCtx);
-      this.deleteBlockField(blockId, 'prodOutput');
-      this.deleteBlockField(blockId, 'prodCtx');
     }
+    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
   }
 
+  /** Running blocks are reset, already computed moved to limbo */
   private resetOrLimboProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
     if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
@@ -298,39 +318,46 @@ export class ProjectMutator {
       this.blocksInLimbo.add(blockId);
       this.renderingStateChanged = true;
       // doing some gc before refresh
-      this.deleteBlockField(blockId, 'prodOutputPrevious');
-      this.deleteBlockField(blockId, 'prodCtxPrevious');
-    } else {
+      this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious');
+    } else
       // reset
-      this.deleteBlockField(blockId, 'prodOutput');
-      this.deleteBlockField(blockId, 'prodCtx');
-    }
+      this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
   public setArgs(requests: SetArgsRequest[]) {
+    const changed: string[] = [];
     for (const { blockId, args } of requests) {
       const info = this.getBlockInfo(blockId);
-      const parsedInputs = JSON.parse(args);
+      JSON.parse(args); // checking
       const binary = Buffer.from(args);
+      if (Buffer.compare(info.fields.currentArgs!.value!, binary) === 0)
+        continue;
       const argsRef = this.tx.createValue(Pl.JsonObject, binary);
       this.setBlockField(blockId, 'currentArgs', argsRef, 'Ready', binary);
       // will be assigned our author marker
       this.blocksWithChangedInputs.add(blockId);
+      changed.push(blockId);
     }
 
     // resetting staging outputs for all downstream blocks
-    this.getStagingGraph().traverse('downstream', requests.map(e => e.blockId),
+    this.getStagingGraph().traverse('downstream', changed,
       ({ id }) => this.resetStaging(id));
+
+    if (changed.length > 0)
+      this.updateLastModified();
   }
 
   public setUiState(blockId: string, newState: string): void {
     if (this.blockInfos.get(blockId) === undefined)
       throw new Error('no such block');
+    if (this.blockFrontendStates.get(blockId) === newState)
+      return;
     this.blockFrontendStates.set(blockId, newState);
     this.changedBlockFrontendStates.add(blockId);
     // will be assigned our author marker
     this.blocksWithChangedInputs.add(blockId);
+    this.updateLastModified();
   }
 
   private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
@@ -392,7 +419,7 @@ export class ProjectMutator {
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
 
     // saving inputs for which we rendered the production
-    this.setBlockField(blockId, 'prodArgs', info.fields.currentArgs!.ref!, 'NotReady');
+    this.setBlockFieldObj(blockId, 'prodArgs', info.fields.currentArgs!);
 
     // removing block from limbo as we juts rendered fresh production for it
     if (this.blocksInLimbo.delete(blockId))
@@ -420,13 +447,12 @@ export class ProjectMutator {
     // removing blocks
     for (const blockId of stagingDiff.onlyInA) {
       const { fields } = this.getBlockInfo(blockId);
-      for (const fieldName of Object.keys(fields))
-        this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName as ProjectField['fieldName'])));
+      this.deleteBlockFields(blockId, ...(Object.keys(fields) as ProjectField['fieldName'][]));
       this.blockInfos.delete(blockId);
       if (this.blocksInLimbo.delete(blockId))
         this.renderingStateChanged = true;
-      if (this.blockFrontendStates.has(blockId))
-        this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
+      if (this.blockFrontendStates.delete(blockId))
+        this.removedBlockFrontendStates.add(blockId);
     }
 
     // creating new blocks
@@ -461,6 +487,8 @@ export class ProjectMutator {
     this.stagingGraph = undefined;
     this.pendingProductionGraph = undefined;
     this.actualProductionGraph = undefined;
+
+    this.updateLastModified();
   }
 
   //
@@ -531,6 +559,8 @@ export class ProjectMutator {
     if (info.productionRendered)
       this.getActualProductionGraph().traverse('downstream', [blockId],
         ({ id }) => this.resetOrLimboProduction(id));
+
+    this.updateLastModified();
   }
 
   //
@@ -580,6 +610,9 @@ export class ProjectMutator {
       }
     }
 
+    if (rendered.size > 0)
+      this.updateLastModified();
+
     return rendered;
   }
 
@@ -627,14 +660,10 @@ export class ProjectMutator {
   public doRefresh(stagingRenderingRate?: number) {
     this.refreshStagings(stagingRenderingRate);
     this.blockInfos.forEach(blockInfo => {
-      if (blockInfo.fields.prodCtx?.status === 'Ready' && blockInfo.fields.prodOutput?.status === 'Ready') {
-        this.deleteBlockField(blockInfo.id, 'prodOutputPrevious');
-        this.deleteBlockField(blockInfo.id, 'prodCtxPrevious');
-      }
-      if (blockInfo.fields.stagingCtx?.status === 'Ready' && blockInfo.fields.stagingOutput?.status === 'Ready') {
-        this.deleteBlockField(blockInfo.id, 'stagingOutputPrevious');
-        this.deleteBlockField(blockInfo.id, 'stagingCtxPrevious');
-      }
+      if (blockInfo.fields.prodCtx?.status === 'Ready' && blockInfo.fields.prodOutput?.status === 'Ready')
+        this.deleteBlockFields(blockInfo.id, 'prodOutputPrevious', 'prodCtxPrevious');
+      if (blockInfo.fields.stagingCtx?.status === 'Ready' && blockInfo.fields.stagingOutput?.status === 'Ready')
+        this.deleteBlockFields(blockInfo.id, 'stagingOutputPrevious', 'stagingCtxPrevious');
     });
   }
 
@@ -648,6 +677,12 @@ export class ProjectMutator {
   }
 
   public save() {
+    if (!this.wasModified)
+      return;
+
+    if (this.lastModifiedChanged)
+      this.tx.setKValue(this.rid, ProjectLastModifiedTimestamp, JSON.stringify(this.lastModified));
+
     if (this.structureChanged)
       this.tx.setKValue(this.rid, ProjectStructureKey, JSON.stringify(this.struct));
 
@@ -664,6 +699,8 @@ export class ProjectMutator {
 
     for (const blockId of this.changedBlockFrontendStates)
       this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), this.blockFrontendStates.get(blockId)!);
+    for (const blockId of this.removedBlockFrontendStates)
+      this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
 
     this.assignAuthorMarkers();
   }
@@ -680,6 +717,7 @@ export interface ProjectState {
 export async function loadProject(tx: PlTransaction, rid: ResourceId, author?: AuthorMarker): Promise<ProjectMutator> {
   const fullResourceStateP = tx.getResourceData(rid, true);
   const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
+  const lastModifiedP = tx.getKValueJson<number>(rid, ProjectLastModifiedTimestamp);
   const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
   const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
   const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
@@ -688,12 +726,12 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId, author?: A
 
   // loading jsons
   const [fullResourceState,
-    schema, meta, structure,
+    schema, lastModified, meta, structure,
     { stagingRefreshTimestamp, blocksInLimbo },
     allKV
   ] =
     await Promise.all([fullResourceStateP,
-      schemaP, metaP, structureP,
+      schemaP, lastModifiedP, metaP, structureP,
       renderingStateP,
       allKVP]);
   if (schema !== SchemaVersionCurrent)
@@ -771,14 +809,17 @@ export async function loadProject(tx: PlTransaction, rid: ResourceId, author?: A
   });
 
   return new ProjectMutator(rid, tx, author,
-    schema, meta, structure, renderingState, blocksInLimboSet,
+    schema, lastModified, meta, structure, renderingState, blocksInLimboSet,
     blockInfos, blockFrontendStates);
 }
 
 export function createProject(tx: PlTransaction, meta: ProjectMeta = InitialBlockMeta): AnyResourceRef {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
+  const ts = String(Date.now());
   tx.setKValue(prj, SchemaVersionKey, JSON.stringify(SchemaVersionCurrent));
+  tx.setKValue(prj, ProjectCreatedTimestamp, ts);
+  tx.setKValue(prj, ProjectLastModifiedTimestamp, ts);
   tx.setKValue(prj, ProjectMetaKey, JSON.stringify(meta));
   tx.setKValue(prj, ProjectStructureKey, JSON.stringify(InitialBlockStructure));
   tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
@@ -791,14 +832,22 @@ export async function withProject<T>(txOrPl: PlTransaction | PlClient, rid: Reso
 
 export async function withProjectAuthored<T>(txOrPl: PlTransaction | PlClient, rid: ResourceId, author: AuthorMarker | undefined,
                                              cb: (p: ProjectMutator) => T | Promise<T>): Promise<T> {
-  if (txOrPl instanceof PlClient)
+  if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async tx => {
-      const result = await withProject(tx, rid, cb);
+      const mut = await loadProject(tx, rid, author);
+      const result = await cb(mut);
+      if (!mut.wasModified)
+        // skipping save and commit altogether if no modifications were
+        // actually made
+        return result;
+      mut.save();
       await tx.commit();
       return result;
     });
-  const mut = await loadProject(txOrPl, rid, author);
-  const result = await Promise.resolve(cb(mut));
-  mut.save();
-  return result;
+  } else {
+    const mut = await loadProject(txOrPl, rid, author);
+    const result = await cb(mut);
+    mut.save();
+    return result;
+  }
 }

@@ -88,6 +88,8 @@ export const ProjectResourceType: ResourceType = { name: 'UserProject', version:
 export const SchemaVersionKey = 'SchemaVersion';
 export const SchemaVersionCurrent = '1';
 
+export const ProjectCreatedTimestamp = 'ProjectCreated';
+export const ProjectLastModifiedTimestamp = 'ProjectLastModified';
 export const ProjectMetaKey = 'ProjectMeta';
 export const ProjectStructureKey = 'ProjectStructure';
 export const BlockRenderingStateKey = 'BlockRenderingState';
