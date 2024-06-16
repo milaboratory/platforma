@@ -29,7 +29,7 @@ const testStorages: TestStorageTarget[] = [
 ];
 
 const testS3Address = process.env.TEST_S3_ADDRESS;
-if (testStorages !== undefined) {
+if (testS3Address !== undefined) {
   testStorages.push({
     name: 's3',
     storageProvider: () => {
