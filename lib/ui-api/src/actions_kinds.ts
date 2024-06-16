@@ -25,18 +25,11 @@ export interface ActIsolate<Nested extends ConfAction> extends ConfAction {
 }
 
 //
-// Json
+// Json Constructors
 //
 
 export interface ActGetImmediate<T> extends ConfAction {
   new: () => T;
-  isSync: true;
-}
-
-export interface ActGetField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
-  new: (x: this['ctx']) => InferVarTypeSafe<
-    ActionResult<Source, typeof x>,
-    ActionResult<Field, typeof x>>;
   isSync: true;
 }
 
@@ -45,6 +38,24 @@ export interface ActMakeObject<T extends Record<string, ConfAction>> extends Con
     [Key in keyof T]: ActionResult<T[Key], typeof x>
   };
   isSync: IsA<T, Record<string, SyncConfAction>>;
+}
+
+export interface ActMakeArray<T extends ConfAction[]> extends ConfAction {
+  new: (x: this['ctx']) => {
+    [Key in keyof T]: ActionResult<T[Key], typeof x>
+  };
+  isSync: IsA<T, SyncConfAction[]>;
+}
+
+//
+// Json Transformers
+//
+
+export interface ActGetField<Source extends ConfAction, Field extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => InferVarTypeSafe<
+    ActionResult<Source, typeof x>,
+    ActionResult<Field, typeof x>>;
+  isSync: true;
 }
 
 export interface ActMapRecordValues<Source extends ConfAction, Mapping extends ConfAction, ItVar extends string> extends ConfAction {
@@ -61,15 +72,22 @@ export interface ActMapArrayValues<Source extends ConfAction, Mapping extends Co
   isSync: And<IsA<Source, SyncConfAction>, IsA<Mapping, SyncConfAction>>;
 }
 
+export interface ActFlatten<Sources extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Sources, typeof x> extends (infer V)[][]
+    ? V[]
+    : unknown;
+  isSync: IsA<Sources, SyncConfAction[]>;
+}
+
 //
 // Boolean
 //
 
 export interface ActIsEmpty<Source extends ConfAction> extends ConfAction {
-    new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (unknown[] | string | undefined)
-        ? boolean
-        : unknown,
-    isSync: IsA<Source, SyncConfAction>;
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends (unknown[] | string | undefined)
+    ? boolean
+    : unknown,
+  isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActNot<Source extends ConfAction> extends ConfAction {

@@ -7,7 +7,7 @@ import {
   Args, It,
   makeObject,
   mapRecordValues,
-  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson
+  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson, makeArray, flatten
 } from './actions';
 import { BlockConfigBuilder, OutputCell, ResolveOutputsType, StdCtx } from './builder';
 
@@ -85,8 +85,11 @@ test('test config 2', () => {
     .initialArgs({ a: [] })
     .output('cell1', makeObject({
       b: getBlobContentAsString(getResourceField(MainOutputs, 'field1')),
-      c: getBlobContent(getResourceField(MainOutputs, 'field2')),
-      d: getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3'))
+      c: makeArray(getBlobContent(getResourceField(MainOutputs, 'field2')), 'asd'),
+      d: getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3')),
+      e: flatten(makeArray(
+        getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3')),
+        getImmediate(['asd', 'd'] as string[])))
     }))
     .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
@@ -97,8 +100,9 @@ test('test config 2', () => {
   assertType<ResolveOutputsType<typeof blockConfig1>, {
     cell1: OutputCell<{
       b: string,
-      c: Uint8Array,
-      d: string[]
+      c: [Uint8Array, 'asd'],
+      d: string[],
+      e: string[]
     }>
   }>();
 

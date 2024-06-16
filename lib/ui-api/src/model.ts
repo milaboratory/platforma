@@ -4,10 +4,15 @@ export type Cfg =
   | CfgIsolate
 
   | CfgImmediate
-  | CfgGetJsonField
+
   | CfgMakeObject
+  | CfgMakeArray
+
+  | CfgGetJsonField
   | CfgMapRecordValues
   | CfgMapArrayValues
+
+  | CfgFlatten
 
   | CfgIsEmpty
   | CfgNot
@@ -62,6 +67,11 @@ export type CfgMakeObject = {
   template: Record<string, Cfg>
 }
 
+export type CfgMakeArray = {
+  type: 'MakeArray'
+  template: Cfg[]
+}
+
 export type CfgMapRecordValues = {
   type: 'MapRecordValues'
   source: Cfg
@@ -74,6 +84,11 @@ export type CfgMapArrayValues = {
   source: Cfg
   itVar: string
   mapping: Cfg
+}
+
+export type CfgFlatten = {
+  type: 'Flatten'
+  source: Cfg
 }
 
 //
