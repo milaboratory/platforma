@@ -1,9 +1,13 @@
 import { z } from 'zod';
-import { Logger } from './lib/cmd';
-import { BlockRegistry } from './lib/registry';
-import { storageByUrl } from './lib/storage';
-import { FullBlockPackageName } from './lib/v1_repo_schema';
-import { PlRegAddress, SemVer } from './config';
+
+export const PlRegAddress = z.string().regex(/^(?:s3:|file:)/);
+// Regex taken from here:
+//   https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+export const SemVer = z.string()
+  .regex(
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
+    'Wrong version format, please use valid semver'
+  );
 
 export const PlPackageConfigData = z.object({
   organization: z.string(),
@@ -34,30 +38,6 @@ export const PlRegPackageConfigDataShard = PlRegFullPackageConfigData
     files: true
   });
 export type PlRegPackageConfigDataShard = z.infer<typeof PlRegPackageConfigDataShard>
-
-export class PlRegPackageConfig {
-  constructor(public readonly conf: PlRegFullPackageConfigData) {
-  }
-
-  createRegistry(logger?: Logger): BlockRegistry {
-    let address = this.conf.registry;
-    if (!address.startsWith('file:') && !address.startsWith('s3:')) {
-      const regByAlias = this.conf.registries[address];
-      if (!regByAlias)
-        throw new Error(`Registry with alias "${address}" not found`);
-      address = regByAlias;
-    }
-    return new BlockRegistry(storageByUrl(address), logger);
-  }
-
-  get fullPackageName(): FullBlockPackageName {
-    return {
-      organization: this.conf.organization,
-      package: this.conf.package,
-      version: this.conf.version
-    };
-  }
-}
 
 export const PlPackageJsonConfigFile = 'pl.package.json';
 export const PlPackageYamlConfigFile = 'pl.package.yaml';

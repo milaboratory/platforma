@@ -1,4 +1,4 @@
-import { Args, Command, Flags } from '@oclif/core';
+import { Command, Flags } from '@oclif/core';
 import { getConfig } from '../config';
 import { targetFile } from '../flags';
 import fs from 'node:fs';

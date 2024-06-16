@@ -1,4 +1,4 @@
-import { Command } from '@oclif/core/lib/command';
+import { Command } from '@oclif/core';
 
 export interface Logger {
   info(msg: string): void;
