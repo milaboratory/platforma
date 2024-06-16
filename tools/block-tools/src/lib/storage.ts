@@ -51,7 +51,7 @@ export class S3Storage implements RegistryStorage {
 
   async deleteFiles(...files: string[]): Promise<void> {
     // TODO implement support of more than 1000 files
-    await this.client.deleteObjects({
+    const results = await this.client.deleteObjects({
       Bucket: this.bucket,
       Delete: {
         Objects: files.map(file => (
@@ -61,6 +61,8 @@ export class S3Storage implements RegistryStorage {
         ))
       }
     });
+    if (results.Errors !== undefined && results.Errors.length > 0)
+      throw new Error(`Errors encountered while deleting files: ${results.Errors.join('\n')}`);
   }
 }
 

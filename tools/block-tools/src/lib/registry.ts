@@ -119,11 +119,11 @@ export class BlockRegistry {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      const packageOverview = pOverviewContent === undefined ? [] : JSON.parse(pOverviewContent.toString()) as PackageOverview;
+      let packageOverview = pOverviewContent === undefined ? [] : JSON.parse(pOverviewContent.toString()) as PackageOverview;
       this.logger?.info(`Updating ${packageInfo.package.organization}:${packageInfo.package.package} overview, ${packageOverview.length} records`);
 
       // removing versions that we will update
-      packageOverview.filter(e => !packageInfo.versions.has(e.version));
+      packageOverview = packageOverview.filter(e => !packageInfo.versions.has(e.version));
 
       // reading new entries
       for (const [v,] of packageInfo.versions.entries()) {

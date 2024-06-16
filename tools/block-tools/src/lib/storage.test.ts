@@ -53,10 +53,8 @@ if (testS3Address) {
     expect(await storage.getFile('some/deep/file.txt')).toBeUndefined();
     await storage.putFile('some/deep/file.txt', Buffer.from('test1'));
     expect((await storage.getFile('some/deep/file.txt'))?.toString()).toEqual('test1');
-    await storage.client.deleteObjects({
-      Bucket: storage.bucket,
-      Delete: { Objects: [{ Key: `${storage.root}/some/deep/file.txt` }] }
-    });
+    await storage.deleteFiles(`some/deep/file.txt`);
+    expect(await storage.getFile('some/deep/file.txt')).toBeUndefined();
   });
 
   test('test s3 fs list', async () => {
