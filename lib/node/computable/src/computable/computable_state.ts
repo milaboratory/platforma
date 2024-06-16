@@ -37,7 +37,13 @@ class CellComputableContext implements ComputableCtx {
    * during a specific call*/
   public hooks: Set<ComputableHooks> | undefined = undefined;
 
+  private checkForLeak() {
+    if (this._watcher === undefined)
+      throw new Error('Computable context leak.');
+  }
+
   markUnstable(): void {
+    this.checkForLeak();
     this.stable = false;
   }
 
@@ -50,15 +56,18 @@ class CellComputableContext implements ComputableCtx {
   }
 
   get hasOnDestroy(): boolean {
+    this.checkForLeak();
     return this.oldOnDestroy !== undefined;
   }
 
   setOnDestroy(cb: () => void): void {
+    this.checkForLeak();
     this.scheduleAndResetOnDestroy();
     this.oldOnDestroy = cb;
   }
 
   addOnDestroy(cb: () => void): void {
+    this.checkForLeak();
     if (this.currentOnDestroy === undefined)
       this.currentOnDestroy = [cb];
     else
@@ -66,6 +75,7 @@ class CellComputableContext implements ComputableCtx {
   }
 
   get(key: string): unknown | undefined {
+    this.checkForLeak();
     if (this.kv === undefined)
       return undefined;
     this.kv.get(key);
@@ -80,22 +90,26 @@ class CellComputableContext implements ComputableCtx {
   }
 
   has(key: string): boolean {
+    this.checkForLeak();
     return this.kv !== undefined ? this.kv.has(key) : false;
   }
 
   reset(key: string): void {
+    this.checkForLeak();
     if (this.kv === undefined)
       return;
     this.kv.delete(key);
   }
 
   set(key: string, value: unknown): void {
+    this.checkForLeak();
     if (this.kv === undefined)
       this.kv = new Map<string, unknown>();
     this.kv.set(key, value);
   }
 
   attacheHooks(listener: ComputableHooks): void {
+    this.checkForLeak();
     if (this.hooks === undefined)
       this.hooks = new Set();
     this.hooks.add(listener);
@@ -104,9 +118,8 @@ class CellComputableContext implements ComputableCtx {
   private _watcher: Watcher | undefined = undefined;
 
   public get watcher(): Watcher {
-    if (this._watcher === undefined)
-      throw new Error('Unexpected call.');
-    return this._watcher;
+    this.checkForLeak();
+    return this._watcher!;
   }
 
   private guardData: { finished: boolean } | undefined;
@@ -116,6 +129,7 @@ class CellComputableContext implements ComputableCtx {
   private accessors: Map<AccessorProvider<unknown>, unknown> | undefined;
 
   accessor<A>(provider: AccessorProvider<A>): A {
+    this.checkForLeak();
     if (this.accessors === undefined)
       this.accessors = new Map<AccessorProvider<unknown>, unknown>();
     const cached = this.accessors.get(provider);
