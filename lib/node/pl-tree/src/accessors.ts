@@ -8,7 +8,7 @@ import {
   ResourceId,
   resourceIdToString,
   ResourceType, resourceTypesEqual,
-  resourceTypeToString
+  resourceTypeToString, NullResourceId
 } from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 import { CommonFieldTraverseOps, FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
@@ -87,6 +87,12 @@ export class PlTreeEntryAccessor {
   }
 }
 
+/** Helper type to simplify implementation of APIs requiring type information. */
+export type ResourceInfo = {
+  readonly id: ResourceId;
+  readonly type: ResourceType;
+}
+
 /**
  * API contracts:
  *   - API never return {@link NullResourceId}, absence of link is always modeled as `undefined`
@@ -103,16 +109,22 @@ export class PlTreeNodeAccessor {
   }
 
   public get id() {
+    this.instanceData.guard();
     return this.resource.id;
+  }
+
+  public get resourceType(): ResourceType {
+    this.instanceData.guard();
+    return this.resource.type;
+  }
+
+  public get resourceInfo(): ResourceInfo {
+    return { id: this.id, type: this.resourceType };
   }
 
   private getResourceFromTree(rid: ResourceId, ops: ResourceTraversalOps): PlTreeNodeAccessor {
     return getResourceFromTree(this.accessorData, this.tree, this.instanceData,
       rid, ops);
-  }
-
-  public get resourceType(): ResourceType {
-    return this.resource.type;
   }
 
   public traverse(...steps: [Omit<FieldTraversalStep, 'errorIfFieldNotAssigned'> & {
