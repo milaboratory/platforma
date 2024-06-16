@@ -11,13 +11,15 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { ProjectListEntry } from './models';
 import { randomUUID } from 'node:crypto';
+import { MiddleLayerDrivers } from '../cfg_render/operation';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
-  readonly frontendDownloadDriver: DownloadUrlDriver;
+  readonly localSecret: string;
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
-  readonly localSecret: string;
+  readonly frontendDownloadDriver: DownloadUrlDriver;
+  readonly drivers: MiddleLayerDrivers;
 }
 
 /**
@@ -151,8 +153,10 @@ export class MiddleLayer {
       ops.frontendDownloadPath);
     const bpPreparer = new BlockPackPreparer(ops.localSecret);
     const env: MiddleLayerEnvironment = {
-      pl, ops, bpPreparer,
-      frontendDownloadDriver, localSecret: ops.localSecret
+      pl, localSecret: ops.localSecret,
+      ops, bpPreparer,
+      frontendDownloadDriver,
+      drivers: {} as any as MiddleLayerDrivers // TODO !!!!
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

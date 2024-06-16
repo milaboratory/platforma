@@ -1,9 +1,15 @@
-import { ArgumentKey, ArgumentValues, ExecutionEnvironment, Operation, Subroutine } from './operation';
+import {
+  ArgumentKey,
+  ArgumentValues,
+  ExecutionEnvironment,
+  MiddleLayerDrivers,
+  Operation,
+  Subroutine
+} from './operation';
 import Denque from 'denque';
 import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
 import {
-  AccessorProvider,
-  Computable, ComputableRenderingOps
+  Computable, ComputableCtx, ComputableRenderingOps
 } from '@milaboratory/computable';
 import { Cfg } from '@milaboratory/sdk-block-config';
 import { renderCfg, resOp } from './renderer';
@@ -169,18 +175,11 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 // Computable
 //
 
-const PostProcessingExecutionEnvironment: ExecutionEnvironment = {
-  accessor<A>(provider: AccessorProvider<A>): A {
-    throw new Error('can\'t create accessors in post-processing context');
-  }
-};
-
 /** Main method to render configurations */
-export function computableFromCfg(ctx: Record<string, unknown>, cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+export function computableFromCfg(drivers: MiddleLayerDrivers, ctx: Record<string, unknown>,
+                                  cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
   return Computable.makeRaw(c => {
-    const env: ExecutionEnvironment = {
-      accessor: provider => c.accessor(provider)
-    };
+    const env: ExecutionEnvironment = { drivers, cCtx: c };
     const stack = zeroStack();
     const computables = execute(env, stack, [{
       destination: ReturnDestination,
@@ -192,7 +191,13 @@ export function computableFromCfg(ctx: Record<string, unknown>, cfg: Cfg, ops: P
         const resolvedOps: QueuedOperation[] = [];
         for (const mc of value)
           resolvedOps.push({ destination: mc.destination, operation: resOp(mc.computable) });
-        execute(PostProcessingExecutionEnvironment, stack, resolvedOps, false);
+        const postEnv: ExecutionEnvironment = {
+          drivers,
+          get cCtx(): ComputableCtx {
+            throw new Error('asynchronous operations are forbidden in this context');
+          }
+        };
+        execute(postEnv, stack, resolvedOps, false);
         if (!('result' in stack))
           throw new Error('illegal cfg rendering stack state, no result');
         return stack.result;

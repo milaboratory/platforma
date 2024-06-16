@@ -1,5 +1,5 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { computable, ComputableStableDefined } from '@milaboratory/computable';
+import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
   BlockRenderingStateKey,
   projectFieldName,
@@ -27,8 +27,8 @@ type BlockInfo = {
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableStableDefined<ProjectOverview> {
-  return computable(entry, {}, a => {
-    const prj = a.node();
+  return Computable.make(ctx => {
+    const prj = ctx.accessor(entry).node();
 
     const meta = notEmpty(prj.getKeyValueAsJson<ProjectMeta>(ProjectMetaKey));
     const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
@@ -102,8 +102,8 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         blockConf => {
           const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
           return {
-            sections: computableFromCfg(blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
-            canRun: computableFromCfg(blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
+            sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
+            canRun: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
           };
         }) || {};
 

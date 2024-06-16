@@ -1,17 +1,18 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { computable, Computable } from '@milaboratory/computable';
+import { Computable } from '@milaboratory/computable';
 import { constructBlockContext } from './block_ctx';
-import { MiddleLayerEnvironment } from './middle_layer';
 import { AuthorMarker, blockArgsAuthorKey, projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
 import { BlockState } from './models';
 import { BlockPackInfo } from '../model/block_pack';
+import { MiddleLayerEnvironment } from './middle_layer';
 
-export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): Computable<BlockState> {
-  return computable(projectEntry, {}, prjA => {
-    const prj = prjA.node();
+export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
+): Computable<BlockState> {
+  return Computable.make(c => {
+    const prj = c.accessor(projectEntry).node();
     const ctx = constructBlockContext(prj, id);
 
     // block-pack
@@ -26,7 +27,7 @@ export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLay
     const outputs = ifNotUndef(blockCfg, cfg => {
       const outputs: Record<string, Computable<any>> = {};
       for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
-        outputs[cellId] = computableFromCfg(ctx, cellCfg);
+        outputs[cellId] = computableFromCfg(env.drivers, ctx, cellCfg);
       return outputs;
     });
 

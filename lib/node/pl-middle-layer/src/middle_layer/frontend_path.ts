@@ -1,6 +1,6 @@
 import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratory/pl-tree';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { computable, ComputableStableDefined } from '@milaboratory/computable';
+import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import { Pl, resourceTypesEqual } from '@milaboratory/pl-client-v2';
 import {
   FrontendFromFolderData,
@@ -39,29 +39,29 @@ function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined 
 function frontendPathComputable(entry: PlTreeEntry | undefined, env: MiddleLayerEnvironment): ComputableStableDefined<string> | undefined {
   if (entry === undefined)
     return undefined;
-  return computable(entry, {}, a => {
-    return kernel(a, env);
-  }, async v => {
-    if (v === undefined)
-      return undefined;
-    if (typeof v === 'string')
-      return v;
-    if (v.error !== undefined)
-      throw new Error(v.error);
-    return v.path;
+  return Computable.make(c => {
+    return kernel(c.accessor(entry), env);
+  }, {
+    postprocessValue: v => {
+      if (v === undefined)
+        return undefined;
+      if (typeof v === 'string')
+        return v;
+      if (v.error !== undefined)
+        throw new Error(v.error);
+      return v.path;
+    }
   }).withStableType();
 }
 
 export function frontendPath(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): ComputableStableDefined<string> {
-  return computable(projectEntry, {}, prjA => {
-    const prj = prjA.node();
+  return Computable.make(ctx => {
+    const prj = ctx.accessor(projectEntry).node();
     const frontendEntry = prj.traverse(
       { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
       { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
       { field: BlockPackFrontendField, assertFieldType: 'Input' }
     )?.persist();
-    if (frontendEntry === undefined)
-      return undefined;
     return frontendPathComputable(frontendEntry, env);
   }).withStableType();
 }

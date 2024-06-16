@@ -1,10 +1,10 @@
 import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from '@milaboratory/sdk-block-config';
-import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
+import { ArgumentRequests, MiddleLayerDrivers, Operation, OperationAction, Subroutine } from './operation';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfg } from './executor';
 import { assertNever } from '@milaboratory/ts-helpers';
-import { rawComputableWithPostprocess } from '@milaboratory/computable';
+import { Computable } from '@milaboratory/computable';
 
 function res(result: unknown): OperationAction {
   return {
@@ -33,7 +33,7 @@ const SRGetResourceField: Subroutine = args => {
   const field = args.field as string | undefined;
   if (source === undefined || field === undefined)
     return resOp(undefined);
-  return env => res(env.accessor(source).node().traverse(field)?.persist());
+  return ({ cCtx }) => res(cCtx.accessor(source).node().traverse(field)?.persist());
 };
 
 function SRMapArrayValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>): Subroutine {
@@ -120,7 +120,7 @@ const SRResourceValueAsJson: Subroutine = args => {
   const source = args.source as PlTreeEntry | undefined;
   if (source === undefined)
     return resOp(undefined);
-  return env => res(env.accessor(source).node()?.getDataAsJson());
+  return ({ cCtx }) => res(cCtx.accessor(source).node()?.getDataAsJson());
 };
 
 const SRGetJsonField: Subroutine = args => {
@@ -137,10 +137,8 @@ function SRMapResourceFields1(ctx: Record<string, unknown>, ops: Pick<CfgMapReso
     if (source === undefined)
       return resOp(undefined);
 
-    return env => {
-      const accessor = env.accessor(source);
-
-      const node = accessor.node();
+    return ({ cCtx }) => {
+      const node = cCtx.accessor(source).node();
 
       const nextArgs: ArgumentRequests = {};
       for (const fieldName of node.listInputFields()) {
@@ -171,26 +169,22 @@ const SRGetBlobContent: Subroutine = args => {
   if (source === undefined)
     return resOp(undefined);
 
-  return env => {
-    const node = env.accessor(source).node();
-    const driver = env.downloadDriver;
-    if (driver == undefined)
-      return res(undefined);
-
+  return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: rawComputableWithPostprocess(
-        () => driver.getDownloadedBlob({
-          id: node.id,
-          type: node.resourceType,
-        }), {},
-        async (val) => {
-          if (val == undefined)
-            return undefined;
-          return await driver.getContent(val);
+      computable: Computable.make(ctx => {
+          return drivers.downloadDriver.getDownloadedBlob(
+            ctx.accessor(source).node().resourceInfo
+          );
+        }, {
+          postprocessValue: async value => {
+            if (value === undefined)
+              return undefined;
+            return await drivers.downloadDriver.getContent(value);
+          }
         }
       )
-    }
+    };
   };
 };
 
@@ -199,26 +193,23 @@ const SRGetBlobContentAsString: Subroutine = args => {
   if (source === undefined)
     return resOp(undefined);
 
-  return env => {
-    const node = env.accessor(source).node();
-    const driver = env.downloadDriver;
-    if (driver == undefined)
-      return res(undefined);
+  return ({ cCtx, drivers }) => {
+    // getting target resource id and type
+    const resourceInfo = cCtx.accessor(source).node().resourceInfo;
 
     return {
       type: 'ScheduleComputable',
-      computable: rawComputableWithPostprocess(
-        () => driver.getDownloadedBlob({
-          id: node.id,
-          type: node.resourceType,
-        }), {},
-        async (val) => {
-          if (val == undefined)
-            return undefined;
-          return (await driver.getContent(val)).toString();
+      computable: Computable.make(
+        () => drivers.downloadDriver.getDownloadedBlob(resourceInfo),
+        {
+          postprocessValue: async value => {
+            if (value === undefined)
+              return undefined;
+            return (await drivers.downloadDriver.getContent(value)).toString();
+          }
         }
       )
-    }
+    };
   };
 };
 
@@ -227,26 +218,21 @@ const SRGetBlobContentAsJson: Subroutine = args => {
   if (source === undefined)
     return resOp(undefined);
 
-  return env => {
-    const node = env.accessor(source).node();
-    const driver = env.downloadDriver;
-    if (driver == undefined)
-      return res(undefined);
-
+  return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: rawComputableWithPostprocess(
-        () => driver.getDownloadedBlob({
-          id: node.id,
-          type: node.resourceType,
-        }), {},
-        async (val) => {
-          if (val == undefined)
-            return undefined;
-          return JSON.parse((await driver.getContent(val)).toString());
+      computable: Computable.make(
+        c => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
+        {
+          postprocessValue: async value => {
+            if (value == undefined)
+              return undefined;
+            return JSON.parse(Buffer.from(await drivers.downloadDriver.getContent(value))
+              .toString());
+          }
         }
       )
-    }
+    };
   };
 };
 
@@ -258,9 +244,9 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return resOp(ctx[cfg.variable]);
 
     case 'Isolate':
-      return () => ({
+      return ({ drivers }) => ({
         type: 'ScheduleComputable',
-        computable: computableFromCfg(ctx, cfg.cfg)
+        computable: computableFromCfg(drivers, ctx, cfg.cfg)
       });
 
     case 'Immediate':
@@ -325,7 +311,7 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SRAnd,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
-          operand2: renderCfg(ctx, cfg.operand2),
+          operand2: renderCfg(ctx, cfg.operand2)
         }
       });
 
@@ -335,7 +321,7 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         subroutine: SROr,
         args: {
           operand1: renderCfg(ctx, cfg.operand1),
-          operand2: renderCfg(ctx, cfg.operand2),
+          operand2: renderCfg(ctx, cfg.operand2)
         }
       });
 
