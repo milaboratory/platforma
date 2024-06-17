@@ -1,7 +1,7 @@
 import { sliceBy } from '@milaboratory/helpers/collections';
 import type { Component } from 'vue';
 import type { h } from 'vue';
-import { GAP } from './constants';
+import { GAP, WINDOW_DELTA } from './constants';
 
 type TypeMap = {
   integer: number;
@@ -20,6 +20,7 @@ export type TableProps = {
 // Inner table state
 export type TableData = {
   rowIndex: number;
+  loading: boolean;
   columns: readonly ColumnSettings[];
   rows: readonly RowSettings[];
   resize: boolean;
@@ -58,7 +59,6 @@ export type ColumnSettings = {
   sort?: {
     direction: 'DESC' | 'ASC' | undefined;
   };
-  slot?: boolean;
   render?: (_h: typeof h, value: unknown) => Component;
   editable?: boolean;
   valueType?: ValueType;
@@ -80,7 +80,6 @@ export type CellProps = {
   value: unknown;
   class: string;
   editable?: boolean;
-  slot?: boolean;
   width: number;
   style: ColumnStyle;
   control?: boolean;
@@ -118,29 +117,38 @@ export interface DataSource {
   getRows(scrollTop: number, bodyHeight: number): Promise<RowSettings[]>;
 }
 
+const rowsStore = new WeakMap<RawData, RowSettings[]>();
+
 export class RawData implements DataSource {
-  private rows: RowSettings[];
+  private dataHeight: number;
+  private key = Symbol();
 
   constructor(
-    private datum: DataRow[],
+    datum: DataRow[],
     private rowHeight: number,
   ) {
-    this.rows = this.datum.map((dataRow, index) => ({
+    this.dataHeight = datum.length * (this.rowHeight + GAP);
+    const rows = datum.map((dataRow, index) => ({
       dataRow,
       index,
       offset: index * (this.rowHeight + GAP),
       height: rowHeight,
     }));
+    rowsStore.set(this, rows);
+  }
+
+  get rows() {
+    return rowsStore.get(this)!;
   }
 
   async getHeight() {
-    return this.datum.length * (this.rowHeight + GAP);
+    return this.dataHeight;
   }
 
   async getRows(scrollTop: number, bodyHeight: number): Promise<RowSettings[]> {
     return sliceBy(this.rows, (_it, i) => {
       const offset = i * (this.rowHeight + GAP);
-      return scrollTop < offset + this.rowHeight && offset < bodyHeight + scrollTop;
+      return scrollTop < offset + this.rowHeight + WINDOW_DELTA && offset < bodyHeight + scrollTop + WINDOW_DELTA;
     });
   }
 }

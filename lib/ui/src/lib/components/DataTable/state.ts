@@ -1,11 +1,11 @@
 import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, TableSettings, RowSettings, ResizeTh } from './types';
+import type { TableProps, TableData, TableSettings } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
-import { clamp } from '@milaboratory/helpers/utils';
+import { clamp, timer } from '@milaboratory/helpers/utils';
 import { useTableColumns } from './composition/useTableColumns';
 import { useTableRows } from './composition/useTableRows';
-import { GAP } from './constants';
+import { GAP, WINDOW_DELTA } from './constants';
 
 type DataWindow = {
   bodyHeight: number;
@@ -27,6 +27,7 @@ export function createState(props: TableProps) {
   const data = reactive<TableData>({
     rowIndex: -1,
     columns: [],
+    loading: false,
     rows: [],
     resize: false,
     resizeTh: undefined,
@@ -86,6 +87,9 @@ export function createState(props: TableProps) {
     }
   };
 
+  const minOffset = computed(() => data.rows.reduce((off, it) => Math.min(off, it.offset), Number.POSITIVE_INFINITY));
+  const maxOffset = computed(() => data.rows.reduce((off, it) => Math.max(off, it.offset), 0));
+
   const state = {
     data,
     settings,
@@ -113,11 +117,26 @@ export function createState(props: TableProps) {
   watch(
     dataWindow,
     (v) => {
-      loadRows(v).then(({ rows, height }) => {
-        data.rows = rows;
-        data.dataHeight = height;
-        console.log('new height', height);
-      });
+      const t = minOffset.value - v.scrollTop;
+
+      const b = WINDOW_DELTA + maxOffset.value - v.scrollTop - v.bodyHeight;
+
+      const needToLoad = t > 0 || b < 0;
+
+      if (needToLoad && !data.loading) {
+        data.loading = true;
+        const dt = timer();
+        loadRows(v)
+          .then(({ rows, height }) => {
+            data.rows = rows;
+            data.dataHeight = height;
+            console.log('new rows');
+          })
+          .finally(() => {
+            data.loading = false;
+            console.log('dt', dt());
+          });
+      }
     },
     { deep: true, immediate: true },
   );

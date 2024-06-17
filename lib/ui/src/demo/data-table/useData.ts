@@ -13,7 +13,7 @@ export function useData() {
   const data = reactive({
     loading: false,
     numColumns: 15,
-    numRows: 200,
+    numRows: 40000,
     tableData: undefined as DataTable.Types.TableData | undefined,
     rows: [] as Record<string, unknown>[],
   });
@@ -40,7 +40,6 @@ export function useData() {
     return [
       asConst<DataTable.Types.ColumnSettings>({
         id: 'frozen',
-        slot: true,
         label: 'Frozen',
         width: 200,
         frozen: true,

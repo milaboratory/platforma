@@ -86,6 +86,8 @@ const onWheel = (ev: WheelEvent) => {
         </td-cell>
       </tr-body>
     </div>
-    <column-caret v-for="(col, i) in tableColumns" :key="i" :column="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
+    <div class="carets">
+      <column-caret v-for="(col, i) in tableColumns" :key="i" :column="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
+    </div>
   </div>
 </template>
