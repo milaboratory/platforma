@@ -84,10 +84,8 @@ export function treeEntryToResourceInfo(
   res: PlTreeEntry | ResourceInfo,
   ctx: ComputableCtx
 ) {
-  if (res instanceof PlTreeEntry) {
-    const node = res.createAccessor(ctx, () => undefined).node();
-    return { id: node.id, type: node.resourceType };
-  }
+  if (res instanceof PlTreeEntry)
+    return res.createAccessor(ctx, () => undefined).node().resourceInfo;
 
   return res;
 }
