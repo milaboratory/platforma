@@ -16,6 +16,7 @@ const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
 const settings = computed<DataTable.Types.TableSettings>(() => {
   return DataTable.settings({
     columns: columnsRef.value,
+    height: 600,
     dataSource: new RawData(data.rows, 40),
     getPrimaryKey,
     onDeleteRows(rowIds) {
@@ -70,8 +71,8 @@ onMounted(onGenerate);
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
     </div>
-    <div v-if="false" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24 mb-6">
-      {{ data.tableData }}
+    <div v-if="true" style="display: flex; background-color: #fff; align-items: center; overflow: hidden" class="p-12 gap-24 mb-6">
+      {{ data.tableData?.bodyHeight }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
       <data-table-component style="flex: 1" :settings="settings" @update:data="onUpdateData" />

@@ -13,7 +13,7 @@ export function useData() {
   const data = reactive({
     loading: false,
     numColumns: 15,
-    numRows: 40000,
+    numRows: 10,
     tableData: undefined as DataTable.Types.TableData | undefined,
     rows: [] as Record<string, unknown>[],
   });

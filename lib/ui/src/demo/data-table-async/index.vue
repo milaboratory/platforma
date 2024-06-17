@@ -74,7 +74,7 @@ const settings = computed(() => {
     onDeleteRows(_primaryIds) {
       alert('todo delete remote rows');
     },
-    editable: true,
+    height: 600,
     controlColumn: true,
   });
 });

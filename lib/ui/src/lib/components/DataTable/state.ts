@@ -2,7 +2,7 @@ import { computed, provide, reactive, watch } from 'vue';
 import type { TableProps, TableData, TableSettings } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
-import { clamp, timer } from '@milaboratory/helpers/utils';
+import { clamp, tap } from '@milaboratory/helpers/utils';
 import { useTableColumns } from './composition/useTableColumns';
 import { useTableRows } from './composition/useTableRows';
 import { GAP, WINDOW_DELTA } from './constants';
@@ -11,6 +11,7 @@ type DataWindow = {
   bodyHeight: number;
   scrollTop: number;
   settings: TableSettings;
+  loaded: boolean;
 };
 
 const loadRows = async (dataWindow: DataWindow) => {
@@ -56,8 +57,8 @@ export function createState(props: TableProps) {
     return data.columns.reduce((acc, col) => acc + col.width + GAP, 0);
   });
 
-  const maxScrollTop = computed(() => state.data.dataHeight - state.data.bodyHeight);
-  const maxScrollLeft = computed(() => (columnsWidth.value > state.data.bodyWidth ? columnsWidth.value - state.data.bodyWidth : 0));
+  const maxScrollTop = computed(() => tap(state.data.dataHeight - state.data.bodyHeight, (v) => (v > 0 ? v : 0)));
+  const maxScrollLeft = computed(() => tap(columnsWidth.value - state.data.bodyWidth, (v) => (v > 0 ? v : 0)));
 
   const dataWindow = computed<DataWindow>(() => {
     return {
@@ -66,6 +67,7 @@ export function createState(props: TableProps) {
       selectedRows: data.selectedRows,
       settings: settings.value,
       columns: tableColumns.value,
+      loaded: data.rows.length > 0,
     };
   });
 
@@ -97,8 +99,8 @@ export function createState(props: TableProps) {
     tableRows,
     adjustWidth,
     updateOffsets(ev: { deltaY: number; deltaX: number }) {
-      data.scrollTop = clamp(data.scrollTop + ev.deltaY, 0, maxScrollTop.value);
-      data.scrollLeft = clamp(data.scrollLeft + ev.deltaX, 0, maxScrollLeft.value);
+      this.updateScrollTop(data.scrollTop + ev.deltaY);
+      this.updateScrollLeft(data.scrollLeft + ev.deltaX);
     },
     selectRow(primaryId: string) {
       data.selectedRows.add(primaryId);
@@ -112,6 +114,23 @@ export function createState(props: TableProps) {
     unselectColumn(columnId: string) {
       data.selectedColumns.delete(columnId);
     },
+    updateScrollTop(scrollTop: number) {
+      data.scrollTop = clamp(scrollTop, 0, maxScrollTop.value);
+    },
+    updateScrollLeft(scrollLeft: number) {
+      data.scrollLeft = clamp(scrollLeft, 0, maxScrollLeft.value);
+    },
+    updateBodyHeight() {
+      const { height } = props.settings;
+      const { dataHeight } = data;
+      data.bodyHeight = height > dataHeight ? dataHeight : height;
+    },
+    updateDimensions(rect: { height: number; width: number }) {
+      this.updateBodyHeight();
+      state.data.bodyWidth = rect.width;
+      state.adjustWidth();
+      data.rows = [];
+    },
   };
 
   watch(
@@ -121,20 +140,18 @@ export function createState(props: TableProps) {
 
       const b = WINDOW_DELTA + maxOffset.value - v.scrollTop - v.bodyHeight;
 
-      const needToLoad = t > 0 || b < 0;
+      const needToLoad = t > 0 || b < 0 || !v.loaded;
 
       if (needToLoad && !data.loading) {
         data.loading = true;
-        const dt = timer();
         loadRows(v)
           .then(({ rows, height }) => {
             data.rows = rows;
             data.dataHeight = height;
-            console.log('new rows');
           })
           .finally(() => {
             data.loading = false;
-            console.log('dt', dt());
+            state.updateBodyHeight();
           });
       }
     },

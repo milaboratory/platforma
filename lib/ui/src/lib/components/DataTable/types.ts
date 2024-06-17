@@ -39,7 +39,7 @@ export type DataRow = Record<string, unknown>;
 // Table settings
 export type TableSettings = {
   columns: ColumnSettings[];
-  //datum: DataRow[]; // @TODO common inteface
+  height: number;
   dataSource: DataSource;
   getPrimaryKey: (row: DataRow, index: number) => string;
   gap?: number;

@@ -1,20 +1,34 @@
 import type { MaybeRef } from '@/lib/types';
 import { unref } from 'vue';
 import { useEventListener } from '@/lib/composition/useEventListener';
-// import { requestTick } from '@/lib/helpers/utils';
 
 type CustomEvent = {
+  x: number;
+  y: number;
   dx: number;
   dy: number;
   stop?: boolean;
 };
 
-export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undefined>, cb: (ev: CustomEvent) => void) {
-  const state = {
+type CaptureState = {
+  el: HTMLElement | undefined;
+  x: number;
+  y: number;
+};
+
+export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undefined>, cb: (ev: CustomEvent, state: CaptureState) => void) {
+  const state: CaptureState = {
     el: undefined as HTMLElement | undefined,
     x: 0,
     y: 0,
   };
+
+  const createCustom = (ev: MouseEvent) => ({
+    x: ev.x,
+    y: ev.y,
+    dx: ev.x - state.x,
+    dy: ev.y - state.y,
+  });
 
   useEventListener(document, 'mousedown', (ev) => {
     if (ev.target === unref(elRef)) {
@@ -23,6 +37,7 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
       if (ev.preventDefault) ev.preventDefault();
       state.el = unref(elRef);
       state.x = ev.x;
+      state.y = ev.y;
     }
   });
 
@@ -33,21 +48,18 @@ export function useMouseCapture<T extends HTMLElement>(elRef: MaybeRef<T | undef
 
     state.el = undefined;
 
-    cb({
-      dx: ev.x - state.x,
-      dy: ev.y - state.y,
-      stop: true,
-    });
+    cb(
+      {
+        ...createCustom(ev),
+        stop: true,
+      },
+      state,
+    );
   });
-
-  // const handle = requestTick(cb);
 
   useEventListener(document, 'mousemove', (ev) => {
     if (state.el) {
-      cb({
-        dx: ev.x - state.x,
-        dy: ev.y - state.y,
-      });
+      cb(createCustom(ev), state);
     }
   });
 }

@@ -11,7 +11,9 @@ import ColumnCaret from './ColumnCaret.vue';
 import { useEventListener } from '@/lib';
 import { tapIf } from '@milaboratory/helpers/utils';
 import { useResize } from './composition/useResize';
-import CommandMenu from './CommandMenu.vue';
+import RowsCommandMenu from './RowsCommandMenu.vue';
+import ColumnsCommandMenu from './ColumnsCommandMenu.vue';
+import TScroll from './TScroll.vue';
 import { createState } from './state';
 
 const emit = defineEmits<{
@@ -36,10 +38,7 @@ const bodyRef = ref<HTMLElement>();
 
 const updateDimensions = () => {
   tapIf(bodyRef.value, (el) => {
-    const rect = el.getBoundingClientRect();
-    state.data.bodyHeight = rect.height;
-    state.data.bodyWidth = rect.width;
-    state.adjustWidth();
+    state.updateDimensions(el.getBoundingClientRect());
   });
 };
 
@@ -68,7 +67,10 @@ const onWheel = (ev: WheelEvent) => {
 
 <template>
   <div ref="tableRef" class="data-table" @mousedown="mouseDown">
-    <CommandMenu />
+    <div class="command-menu__container">
+      <RowsCommandMenu />
+      <ColumnsCommandMenu />
+    </div>
     <div ref="headRef" class="table-head">
       <tr-head>
         <th-cell v-for="(col, i) in tableColumns" :key="i" :col="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
@@ -89,5 +91,11 @@ const onWheel = (ev: WheelEvent) => {
     <div class="carets">
       <column-caret v-for="(col, i) in tableColumns" :key="i" :column="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
     </div>
+    <t-scroll
+      :offset="state.data.scrollTop"
+      :window-size="state.data.bodyHeight"
+      :data-size="state.data.dataHeight"
+      @change:offset="state.updateScrollTop"
+    />
   </div>
 </template>
