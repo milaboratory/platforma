@@ -1,11 +1,17 @@
-import { ChangeSource, ComputableCtx, TrackedAccessorProvider, UsageGuard, Watcher } from '@milaboratory/computable';
+import {
+  ChangeSource,
+  ComputableCtx,
+  TrackedAccessorProvider,
+  UsageGuard,
+  Watcher
+} from '@milaboratory/computable';
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { CallersCounter, mapGet } from '@milaboratory/ts-helpers';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
-import { ResourceInfo } from '../clients/helpers';
 import { LongUpdater } from './helpers';
+import { ResourceInfo } from '@milaboratory/pl-tree';
 
 export interface LogsSyncReader {
   /** Returns all logs and schedules a job that reads remain logs.
@@ -14,7 +20,7 @@ export interface LogsSyncReader {
     w: Watcher,
     { id, type }: ResourceInfo,
     lines: number,
-    callerId: string,
+    callerId: string
   ): LogResult;
 
   /** Returns a last line that has patternToSearch.
@@ -23,7 +29,7 @@ export interface LogsSyncReader {
     w: Watcher,
     { id, type }: ResourceInfo,
     patternToSearch: string,
-    callerId: string,
+    callerId: string
   ): LogResult;
 
   /** Returns an Id of a smart object, that can read logs directly from
@@ -31,7 +37,7 @@ export interface LogsSyncReader {
   getLogId(
     w: Watcher,
     { id, type }: ResourceInfo,
-    callerId: string,
+    callerId: string
   ): LogId | undefined;
 }
 
@@ -52,13 +58,13 @@ export interface Log {
   lastLines(
     lineCount: number,
     offsetBytes: bigint, // if 0n, then start from the end.
-    searchStr?: string,
+    searchStr?: string
   ): Promise<StreamingAPI_Response | undefined>;
 
   readText(
     lineCount: number,
     offsetBytes: bigint, // if 0n, then start from the beginning.
-    searchStr?: string,
+    searchStr?: string
   ): Promise<StreamingAPI_Response | undefined>;
 }
 
@@ -74,14 +80,10 @@ export class LogsSyncAccessor {
   constructor(
     private readonly w: Watcher,
     private readonly ctx: ComputableCtx,
-    private readonly reader: LogsSyncReader,
+    private readonly reader: LogsSyncReader
   ) {}
 
-  getLastLogs(
-    rInfo: ResourceInfo,
-    lines: number,
-    callerId: string,
-  ): LogResult {
+  getLastLogs(rInfo: ResourceInfo, lines: number, callerId: string): LogResult {
     const logs = this.reader.getLastLogs(this.w, rInfo, lines, callerId);
     this.unstableIfNotEmpty(logs);
     return logs;
@@ -90,49 +92,54 @@ export class LogsSyncAccessor {
   getProgressLog(
     rInfo: ResourceInfo,
     patternToSearch: string,
-    callerId: string,
+    callerId: string
   ): LogResult {
-    const logs = this.reader.getProgressLog(this.w, rInfo, patternToSearch, callerId);
+    const logs = this.reader.getProgressLog(
+      this.w,
+      rInfo,
+      patternToSearch,
+      callerId
+    );
     this.unstableIfNotEmpty(logs);
     return logs;
   }
 
-  getLogId(
-    rInfo: ResourceInfo,
-    callerId: string,
-  ): LogId | undefined {
+  getLogId(rInfo: ResourceInfo, callerId: string): LogId | undefined {
     return this.reader.getLogId(this.w, rInfo, callerId);
   }
 
   private unstableIfNotEmpty(logs: LogResult) {
-    if (logs.log == '')
-      this.ctx.markUnstable();
+    if (logs.log == '') this.ctx.markUnstable();
   }
 }
 
 /** Holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
-export class LogsDriver implements
-TrackedAccessorProvider<LogsSyncAccessor>,
-LogsSyncReader,
-LogsAsyncReader,
-LogsDestroyer {
+export class LogsDriver
+  implements
+    TrackedAccessorProvider<LogsSyncAccessor>,
+    LogsSyncReader,
+    LogsAsyncReader,
+    LogsDestroyer
+{
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
   private readonly idToLastLines: Map<ResourceId, LastLinesGetter> = new Map();
 
   /** Holds a map of StreamManager Resource Id to the last log line of this stream. */
-  private readonly idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
+  private readonly idToProgressLog: Map<ResourceId, LastLinesGetter> =
+    new Map();
 
   /** Holds a map of StreamManager Resource Id to log id smart object. */
   private readonly idToLogId: Map<ResourceId, string> = new Map();
   private readonly logIdToLog: Map<string, LogIdGetter> = new Map();
 
-  constructor(
-    private readonly clientLogs: ClientLogs,
-  ) {
-  }
+  constructor(private readonly clientLogs: ClientLogs) {}
 
-  createInstance(watcher: Watcher, _: UsageGuard, ctx: ComputableCtx): LogsSyncAccessor {
+  createInstance(
+    watcher: Watcher,
+    _: UsageGuard,
+    ctx: ComputableCtx
+  ): LogsSyncAccessor {
     return new LogsSyncAccessor(watcher, ctx, this);
   }
 
@@ -140,7 +147,7 @@ LogsDestroyer {
     w: Watcher,
     rInfo: ResourceInfo,
     lines: number,
-    callerId: string,
+    callerId: string
   ): LogResult {
     const logGetter = this.idToLastLines.get(rInfo.id);
 
@@ -149,15 +156,13 @@ LogsDestroyer {
       this.idToLastLines.set(rInfo.id, newLogGetter);
       const result = newLogGetter.getOrSchedule(w, callerId);
 
-      if (result.error != undefined)
-        return {log: ''};
+      if (result.error != undefined) return { log: '' };
 
       return result;
     }
 
     const result = logGetter.getOrSchedule(w, callerId);
-    if (result.error != undefined)
-      throw result.error;
+    if (result.error != undefined) throw result.error;
 
     return result;
   }
@@ -166,13 +171,16 @@ LogsDestroyer {
     w: Watcher,
     rInfo: ResourceInfo,
     patternToSearch: string,
-    callerId: string,
+    callerId: string
   ): LogResult {
     const logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(
-        this.clientLogs, rInfo, 1, patternToSearch,
+        this.clientLogs,
+        rInfo,
+        1,
+        patternToSearch
       );
       this.idToProgressLog.set(rInfo.id, newLogGetter);
       return newLogGetter.getOrSchedule(w, callerId);
@@ -181,20 +189,16 @@ LogsDestroyer {
     return logGetter.getOrSchedule(w, callerId);
   }
 
-  getLogId(
-    _: Watcher,
-    rInfo: ResourceInfo,
-    callerId: string,
-  ): LogId {
+  getLogId(_: Watcher, rInfo: ResourceInfo, callerId: string): LogId {
     const logId = this.idToLogId.get(rInfo.id);
 
     if (logId == undefined) {
       const newLogGetter = new LogIdGetter(this.clientLogs);
       const newId = newLogGetter.getId(callerId);
       this.idToLogId.set(rInfo.id, newId);
-      this.logIdToLog.set(newId, newLogGetter)
+      this.logIdToLog.set(newId, newLogGetter);
 
-      return { id: newId, rInfo }
+      return { id: newId, rInfo };
     }
 
     return { id: logId, rInfo };
@@ -206,14 +210,12 @@ LogsDestroyer {
 
   async releaseLastLogs(rId: ResourceId, callerId: string) {
     const deleted = this.idToLastLines.get(rId)?.release(callerId);
-    if (deleted)
-      this.idToLastLines.delete(rId);
+    if (deleted) this.idToLastLines.delete(rId);
   }
 
   async releaseProgressLog(rId: ResourceId, callerId: string) {
     const deleted = this.idToProgressLog.get(rId)?.release(callerId);
-    if (deleted)
-      this.idToProgressLog.delete(rId);
+    if (deleted) this.idToProgressLog.delete(rId);
   }
 
   async releaseLogId(rId: ResourceId, callerId: string) {
@@ -235,7 +237,7 @@ LogsDestroyer {
 /** A job that gets last lines from a StreamWorkdir resource. */
 class LastLinesGetter {
   private updater: LongUpdater;
-  private logs: string = "";
+  private logs: string = '';
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
   private error: any | undefined = undefined;
@@ -245,15 +247,12 @@ class LastLinesGetter {
     private readonly rInfo: ResourceInfo,
     private readonly lines: number,
     private readonly patternToSearch?: string,
-    sleepMs = 1000,
+    sleepMs = 1000
   ) {
-    this.updater = new LongUpdater(
-      async () => this.update(),
-      sleepMs,
-    )
+    this.updater = new LongUpdater(async () => this.update(), sleepMs);
   }
 
-  getOrSchedule(w: Watcher, callerId: string): LogResult & {error?: any} {
+  getOrSchedule(w: Watcher, callerId: string): LogResult & { error?: any } {
     this.counter.inc(callerId);
     this.change.attachWatcher(w);
 
@@ -261,7 +260,7 @@ class LastLinesGetter {
 
     return {
       log: this.logs,
-      error: this.error,
+      error: this.error
     };
   }
 
@@ -272,13 +271,15 @@ class LastLinesGetter {
   async update() {
     try {
       const resp = await this.clientLogs.lastLines(
-        this.rInfo, this.lines, 0n, this.patternToSearch,
+        this.rInfo,
+        this.lines,
+        0n,
+        this.patternToSearch
       );
 
       const newLogs = resp.data.toString();
 
-      if (this.logs != newLogs)
-        this.change.markChanged();
+      if (this.logs != newLogs) this.change.markChanged();
       this.logs = newLogs;
 
       return true;
@@ -301,13 +302,9 @@ class LogIdGetter {
   private readonly id = randomUUID();
   private readonly counter: CallersCounter = new CallersCounter();
 
-  constructor(
-    private readonly clientLogs: ClientLogs,
-  ) {}
+  constructor(private readonly clientLogs: ClientLogs) {}
 
-  getId(
-    callerId: string,
-  ) {
+  getId(callerId: string) {
     this.counter.inc(callerId);
     return this.id;
   }
@@ -317,15 +314,15 @@ class LogIdGetter {
       lastLines: async (
         lineCount: number,
         offsetBytes: bigint,
-        searchStr?: string,
+        searchStr?: string
       ) => this.clientLogs.lastLines(rInfo, lineCount, offsetBytes, searchStr),
 
       readText: async (
         lineCount: number,
         offsetBytes: bigint, // if 0n, then start from the beginning.
-        searchStr?: string,
-      ) => this.clientLogs.readText(rInfo, lineCount, offsetBytes, searchStr),
-    }
+        searchStr?: string
+      ) => this.clientLogs.readText(rInfo, lineCount, offsetBytes, searchStr)
+    };
   }
 
   release(callerId: string): boolean {

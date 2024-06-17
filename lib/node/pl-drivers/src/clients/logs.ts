@@ -5,7 +5,7 @@ import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
 import { Dispatcher } from 'undici';
 import { addRTypeToMetadata } from '@milaboratory/pl-client-v2';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import { ResourceInfo } from './helpers';
+import { ResourceInfo } from '@milaboratory/pl-tree';
 
 export class ClientLogs {
   public readonly grpcClient: StreamingClient;
@@ -13,7 +13,7 @@ export class ClientLogs {
   constructor(
     public readonly grpcTransport: GrpcTransport,
     public readonly httpClient: Dispatcher,
-    public readonly logger: MiLogger,
+    public readonly logger: MiLogger
   ) {
     this.grpcClient = new StreamingClient(this.grpcTransport);
   }
@@ -28,14 +28,19 @@ export class ClientLogs {
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the end.
     searchStr?: string,
-    options?: RpcOptions,
+    options?: RpcOptions
   ): Promise<StreamingAPI_Response> {
-    return (await this.grpcClient.lastLines({
-      resourceId: rId,
-      lineCount: lineCount,
-      offset: offsetBytes,
-      search: searchStr,
-    }, addRTypeToMetadata(rType, options))).response;
+    return (
+      await this.grpcClient.lastLines(
+        {
+          resourceId: rId,
+          lineCount: lineCount,
+          offset: offsetBytes,
+          search: searchStr
+        },
+        addRTypeToMetadata(rType, options)
+      )
+    ).response;
   }
 
   /** Reads the file forward and returns the text,
@@ -46,13 +51,18 @@ export class ClientLogs {
     lineCount: number,
     offsetBytes: bigint = 0n, // if 0n, then start from the beginning.
     searchStr?: string,
-    options?: RpcOptions,
+    options?: RpcOptions
   ): Promise<StreamingAPI_Response> {
-    return (await this.grpcClient.readText({
-      resourceId: notEmpty(rId),
-      readLimit: BigInt(lineCount),
-      offset: offsetBytes,
-      search: searchStr,
-    }, addRTypeToMetadata(rType, options))).response;
+    return (
+      await this.grpcClient.readText(
+        {
+          resourceId: notEmpty(rId),
+          readLimit: BigInt(lineCount),
+          offset: offsetBytes,
+          search: searchStr
+        },
+        addRTypeToMetadata(rType, options)
+      )
+    ).response;
   }
 }

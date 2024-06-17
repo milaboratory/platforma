@@ -1,32 +1,39 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { ClientLogs } from "../clients/logs";
-import { LogsDriver } from "./logs_stream";
-import { MiLogger } from "@milaboratory/ts-helpers";
+import { ClientLogs } from '../clients/logs';
+import { LogsDriver } from './logs_stream';
+import { MiLogger } from '@milaboratory/ts-helpers';
 import {
   PlClient,
   ResourceId,
   BasicResourceData,
   isNullResourceId,
   valErr,
-  getField,
-} from "@milaboratory/pl-client-v2";
-import { ResourceInfo, createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient } from "../clients/helpers";
-import { UploadDriver } from "./upload";
+  getField
+} from '@milaboratory/pl-client-v2';
+import {
+  createDownloadClient,
+  createLogsClient,
+  createUploadBlobClient,
+  createUploadProgressClient
+} from '../clients/helpers';
+import { UploadDriver } from './upload';
 import { scheduler } from 'node:timers/promises';
 import { DownloadUrlDriver } from './download_url';
 import { DownloadDriver } from './download_and_logs_blob';
+import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
+import { ComputableCtx } from '@milaboratory/computable';
 
 /** Just a helper to create a driver and all clients. */
 export function createDownloadUrlDriver(
   client: PlClient,
   logger: MiLogger,
   saveDir: string,
-  localStorageIdsToRoot?: Record<string, string>,
+  localStorageIdsToRoot?: Record<string, string>
 ): DownloadUrlDriver {
   return new DownloadUrlDriver(
     logger,
     createDownloadClient(logger, client, localStorageIdsToRoot),
-    saveDir,
+    saveDir
   );
 }
 
@@ -37,7 +44,7 @@ export function createDownloadDriver(
   saveDir: string,
   cacheSoftSizeBytes: number,
   nConcurrentDownloads: number = 10,
-  localStorageIdsToRoot?: Record<string, string>,
+  localStorageIdsToRoot?: Record<string, string>
 ): DownloadDriver {
   return new DownloadDriver(
     logger,
@@ -45,7 +52,7 @@ export function createDownloadDriver(
     createLogsClient(client, logger),
     saveDir,
     cacheSoftSizeBytes,
-    nConcurrentDownloads,
+    nConcurrentDownloads
   );
 }
 
@@ -53,23 +60,36 @@ export function createDownloadDriver(
 export function createUploadDriver(
   client: PlClient,
   logger: MiLogger,
-  signFn: (path: string) => Promise<string>,
+  signFn: (path: string) => Promise<string>
 ): UploadDriver {
   return new UploadDriver(
     logger,
     signFn,
     client,
     createUploadBlobClient(client, logger),
-    createUploadProgressClient(client, logger),
+    createUploadProgressClient(client, logger)
   );
 }
 
 /** Just a helper to create a driver and all clients. */
 export function createLogsDriver(
   client: PlClient,
-  logger: MiLogger,
+  logger: MiLogger
 ): LogsDriver {
   return new LogsDriver(createLogsClient(client, logger));
+}
+
+/** Can be called only when a ctx is provided, because pl tree entry is a computable entity. */
+export function treeEntryToResourceInfo(
+  res: PlTreeEntry | ResourceInfo,
+  ctx: ComputableCtx
+) {
+  if (res instanceof PlTreeEntry) {
+    const node = res.createAccessor(ctx, () => undefined).node();
+    return { id: node.id, type: node.resourceType };
+  }
+
+  return res;
 }
 
 // TODO: remove this when we switch to refreshState.
@@ -80,18 +100,15 @@ export class LongUpdater {
 
   constructor(
     private readonly onUpdate: () => Promise<boolean>,
-    private readonly sleepMs: number,
+    private readonly sleepMs: number
   ) {
-    this.updater = new Updater(
-      async () => {
-        while (true) {
-          const done = await this.onUpdate();
-          if (done)
-            return
-          await scheduler.wait(this.sleepMs);
-        }
+    this.updater = new Updater(async () => {
+      while (true) {
+        const done = await this.onUpdate();
+        if (done) return;
+        await scheduler.wait(this.sleepMs);
       }
-    )
+    });
   }
 
   schedule = () => this.updater.schedule();
@@ -110,11 +127,11 @@ export class Updater {
         try {
           await this.onUpdate();
         } catch (e) {
-          console.log(`error while updating in Updater: ${e}`)
+          console.log(`error while updating in Updater: ${e}`);
         } finally {
           this.updating = undefined;
         }
-      })()
+      })();
     }
   }
 }
@@ -123,19 +140,18 @@ export class Updater {
 
 export async function getStream(
   client: PlClient,
-  streamManagerId: ResourceId,
+  streamManagerId: ResourceId
 ): Promise<BasicResourceData | undefined> {
-  return client.withReadTx("LogsDriverGetStream", async (tx) => {
+  return client.withReadTx('LogsDriverGetStream', async (tx) => {
     const sm = await tx.getResourceData(streamManagerId, true);
     const stream = await valErr(tx, getField(sm, 'stream'));
     if (stream.error != '') {
       throw new Error(`while getting stream: ${stream.error}`);
     }
-    if (isNullResourceId(stream.valueId))
-      return undefined;
+    if (isNullResourceId(stream.valueId)) return undefined;
 
     return await tx.getResourceData(stream.valueId, false);
-  })
+  });
 }
 
 export type MixcrProgressResponse =
@@ -143,15 +159,16 @@ export type MixcrProgressResponse =
   | ({ found: true } & MixcrProgressLine);
 
 export type MixcrProgressLine = {
-  stage: string, // Building pre-clones from tag groups
-  progress: string, // 35.3%
-  eta: string, // ETA: 00:00:07
+  stage: string; // Building pre-clones from tag groups
+  progress: string; // 35.3%
+  eta: string; // ETA: 00:00:07
 };
 
 /** Is set by a template code.
  * Mixcr adds this prefix to every log line that contains a progress. */
 const mixcrProgressPrefix = '8C7#F1328%9E089B3D22';
-const mixcrProgressRegex = /(?<stage>.*):\s*(?<progress>[\d.]+%)\s.*(?<eta>ETA:.*)/g;
+const mixcrProgressRegex =
+  /(?<stage>.*):\s*(?<progress>[\d.]+%)\s.*(?<eta>ETA:.*)/g;
 
 export function lineToProgress(line: string): MixcrProgressLine | undefined {
   const noPrefix = line.replace(mixcrProgressPrefix, '');
@@ -166,16 +183,22 @@ export function lineToProgress(line: string): MixcrProgressLine | undefined {
   return {
     stage, // For example, 'Building pre-clones from tag groups'
     progress, // 35.3%
-    eta, // ETA: 00:00:07
+    eta // ETA: 00:00:07
   };
 }
 
 export async function mixcrProgressFromLogs(
   rInfo: ResourceInfo,
   client: ClientLogs,
-  options?: RpcOptions,
+  options?: RpcOptions
 ): Promise<MixcrProgressResponse> {
-  const lastLines = await client.lastLines(rInfo, 1, 0n, mixcrProgressPrefix, options);
+  const lastLines = await client.lastLines(
+    rInfo,
+    1,
+    0n,
+    mixcrProgressPrefix,
+    options
+  );
   if (lastLines.data == null || lastLines.data.length == 0) {
     return { found: false };
   }

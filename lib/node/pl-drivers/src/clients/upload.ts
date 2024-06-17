@@ -6,7 +6,7 @@ import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/sh
 import { MiLogger } from '@milaboratory/ts-helpers';
 import { Dispatcher, request } from 'undici';
 import { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
-import { ResourceInfo } from './helpers';
+import { ResourceInfo } from '@milaboratory/pl-tree';
 
 export class MTimeError extends Error {}
 
@@ -24,7 +24,7 @@ export class ClientUpload {
     public readonly grpcTransport: GrpcTransport,
     public readonly httpClient: Dispatcher,
     _: PlClient,
-    public readonly logger: MiLogger,
+    public readonly logger: MiLogger
   ) {
     this.grpcClient = new UploadClient(this.grpcTransport);
   }
@@ -33,12 +33,12 @@ export class ClientUpload {
 
   public async initUpload(
     { id, type }: ResourceInfo,
-    options?: RpcOptions,
+    options?: RpcOptions
   ): Promise<bigint[]> {
     const init = await this.grpcClient.init(
       { resourceId: id },
       addRTypeToMetadata(type, options)
-    )
+    );
     return this.partsToUpload(init.response);
   }
 
@@ -47,27 +47,35 @@ export class ClientUpload {
     path: string,
     partNumber: bigint,
     expectedMTimeUnix: bigint,
-    options?: RpcOptions,
+    options?: RpcOptions
   ) {
-    const info = await this.grpcClient.getPartURL({
-      resourceId: id,
-      partNumber: partNumber,
-      uploadedPartSize: 0n, // we update progress as a separate call later.
-    }, addRTypeToMetadata(type, options)).response;
+    const info = await this.grpcClient.getPartURL(
+      {
+        resourceId: id,
+        partNumber: partNumber,
+        uploadedPartSize: 0n // we update progress as a separate call later.
+      },
+      addRTypeToMetadata(type, options)
+    ).response;
 
     const { chunk, mTime } = await this.readChunk(
-      path, info.chunkStart, info.chunkEnd,
+      path,
+      info.chunkStart,
+      info.chunkEnd
     );
     if (mTime > expectedMTimeUnix) {
       throw new MTimeError(
-        'file was modified, expected mtime: ' + expectedMTimeUnix +
-          ', got: ' + mTime + '.',
-      )
+        'file was modified, expected mtime: ' +
+          expectedMTimeUnix +
+          ', got: ' +
+          mTime +
+          '.'
+      );
     }
 
     const { statusCode } = await request(
       info.uploadUrl,
-      this.prepareUploadOpts(info, chunk),
+      this.prepareUploadOpts(info, chunk)
     );
 
     if (statusCode != 200) {
@@ -76,23 +84,30 @@ export class ClientUpload {
 
     this.logger.info('uploaded chunk ' + partNumber + ' of resource: ' + id);
 
-    await this.grpcClient.updateProgress({
-      resourceId: id,
-      bytesProcessed: info.chunkEnd - info.chunkStart,
-    }, addRTypeToMetadata(type, options))
+    await this.grpcClient.updateProgress(
+      {
+        resourceId: id,
+        bytesProcessed: info.chunkEnd - info.chunkStart
+      },
+      addRTypeToMetadata(type, options)
+    );
   }
 
-  public async finalizeUpload({ id, type }: ResourceInfo, options?: RpcOptions) {
+  public async finalizeUpload(
+    { id, type }: ResourceInfo,
+    options?: RpcOptions
+  ) {
     return await this.grpcClient.finalize(
       { resourceId: id },
-      addRTypeToMetadata(type, options),
-    )
+      addRTypeToMetadata(type, options)
+    );
   }
 
   private async readChunk(
     path: string,
-    chunkStart: bigint, chunkEnd: bigint,
-  ): Promise<{ chunk: Buffer, mTime: bigint }> {
+    chunkStart: bigint,
+    chunkEnd: bigint
+  ): Promise<{ chunk: Buffer; mTime: bigint }> {
     let f: fs.FileHandle | undefined;
     try {
       f = await fs.open(path);
@@ -105,26 +120,31 @@ export class ClientUpload {
 
       return {
         chunk: b.subarray(0, bytesRead),
-        mTime: BigInt(Math.floor(stat.mtime.getTime() / 1000)),
+        mTime: BigInt(Math.floor(stat.mtime.getTime() / 1000))
       };
     } finally {
-      f?.close()
+      f?.close();
     }
   }
 
   /** Read len bytes from a given position. The reason the method exists
       is that FileHandle.read can read less bytes than it's needed. */
-  async readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, position: number) {
+  async readBytesFromPosition(
+    f: fs.FileHandle,
+    b: Buffer,
+    len: number,
+    position: number
+  ) {
     let bytesReadTotal = 0;
     while (bytesReadTotal < len) {
       const { bytesRead } = await f.read(
         b,
         bytesReadTotal,
         len - bytesReadTotal,
-        position + bytesReadTotal,
+        position + bytesReadTotal
       );
       if (bytesRead === 0) {
-        throw new UnexpectedEOF('file ended earlier than expected.')
+        throw new UnexpectedEOF('file ended earlier than expected.');
       }
       bytesReadTotal += bytesRead;
     }
@@ -135,31 +155,30 @@ export class ClientUpload {
   /** Calculates parts that need to be uploaded from the parts that were
    * already uploaded. */
   private partsToUpload(info: {
-    partsCount: bigint,
-    uploadedParts: bigint[],
+    partsCount: bigint;
+    uploadedParts: bigint[];
   }): bigint[] {
     const toUpload: bigint[] = [];
     const uploaded = new Set(info.uploadedParts);
 
     for (let i = 1n; i <= info.partsCount; i++) {
-      if (!uploaded.has(i))
-        toUpload.push(i);
+      if (!uploaded.has(i)) toUpload.push(i);
     }
 
-    return toUpload
+    return toUpload;
   }
 
   private prepareUploadOpts(
     info: uploadapi_GetPartURL_Response,
-    chunk: Buffer,
+    chunk: Buffer
   ): any {
-    const headers = info.headers.map(({ name, value }) => [name, value])
+    const headers = info.headers.map(({ name, value }) => [name, value]);
 
     return {
       dispatcher: this.httpClient,
       body: chunk,
       headers: Object.fromEntries(headers),
-      method: info.method.toUpperCase() as Dispatcher.HttpMethod,
-    }
+      method: info.method.toUpperCase() as Dispatcher.HttpMethod
+    };
   }
 }

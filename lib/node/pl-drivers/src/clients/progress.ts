@@ -5,14 +5,14 @@ import { Duration } from '../proto/google/protobuf/duration';
 import { PlClient, addRTypeToMetadata } from '@milaboratory/pl-client-v2';
 import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
 import { Dispatcher } from 'undici';
-import { ResourceInfo } from './helpers';
+import { ResourceInfo } from '@milaboratory/pl-tree';
 
 export type ProgressStatus = {
-  done: boolean
-  progress: number
-  bytesProcessed?: string
-  bytesTotal?: string
-}
+  done: boolean;
+  progress: number;
+  bytesProcessed?: string;
+  bytesTotal?: string;
+};
 
 // ClientProgress holds a grpc connection to the platform
 // but for Progress API service.
@@ -25,7 +25,7 @@ export class ClientProgress {
     public readonly grpcTransport: GrpcTransport,
     _: Dispatcher,
     public readonly client: PlClient,
-    public readonly logger: MiLogger,
+    public readonly logger: MiLogger
   ) {
     this.grpcClient = new ProgressClient(this.grpcTransport);
   }
@@ -35,11 +35,11 @@ export class ClientProgress {
   /** getStatus gets a progress status by given rId and rType. */
   async getStatus(
     { id, type }: ResourceInfo,
-    options?: RpcOptions,
+    options?: RpcOptions
   ): Promise<ProgressStatus> {
     const status = await this.grpcClient.getStatus(
       { resourceId: id },
-      addRTypeToMetadata(type, options),
+      addRTypeToMetadata(type, options)
     );
 
     const report = notEmpty(status.response.report);
@@ -54,10 +54,10 @@ export class ClientProgress {
 
   // realtimeStatus returns a async generator that takes statuses from
   // GRPC stream every updateIntervalMs milliseconds.
-  async* realtimeStatus(
+  async *realtimeStatus(
     { id, type }: ResourceInfo,
     updateIntervalMs: number = 100,
-    options?: RpcOptions,
+    options?: RpcOptions
   ) {
     options = addRTypeToMetadata(type, options);
 
@@ -69,10 +69,13 @@ export class ClientProgress {
     });
 
     try {
-      const { responses } = this.grpcClient.realtimeStatus({
-        resourceId: id,
-        updateInterval: updateInterval
-      }, options);
+      const { responses } = this.grpcClient.realtimeStatus(
+        {
+          resourceId: id,
+          updateInterval: updateInterval
+        },
+        options
+      );
 
       yield* responses;
     } catch (e) {

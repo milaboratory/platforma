@@ -1,4 +1,4 @@
-import { CallersCounter, mapEntries, mapGet } from "@milaboratory/ts-helpers";
+import { CallersCounter, mapEntries, mapGet } from '@milaboratory/ts-helpers';
 
 type PathLike = string;
 
@@ -48,8 +48,7 @@ export class FilesCache<T extends CachedFile> {
     mapEntries(this.cache)
       .filter(([_, file]: [string, T]) => file.counter.isZero())
       .forEach(([path, _]) => {
-        if (this.totalSizeBytes - freedBytes <= this.softSizeBytes)
-          return;
+        if (this.totalSizeBytes - freedBytes <= this.softSizeBytes) return;
         const file = mapGet(this.cache, path);
         freedBytes += file.sizeBytes;
         result.push(file);
@@ -63,11 +62,9 @@ export class FilesCache<T extends CachedFile> {
     this.cache.set(file.path, file);
     file.counter.inc(callerId);
 
-    if (file.sizeBytes <= 0)
-      throw new Error(`empty sizeBytes: ${file}`);
+    if (file.sizeBytes <= 0) throw new Error(`empty sizeBytes: ${file}`);
 
-    if (created)
-      this.totalSizeBytes += file.sizeBytes;
+    if (created) this.totalSizeBytes += file.sizeBytes;
   }
 
   removeCache(file: T) {
@@ -75,4 +72,3 @@ export class FilesCache<T extends CachedFile> {
     this.totalSizeBytes -= file.sizeBytes;
   }
 }
-

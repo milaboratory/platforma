@@ -1,6 +1,24 @@
-import { BasicResourceData, PlClient, ResourceId, ResourceType, stringifyWithResourceId } from '@milaboratory/pl-client-v2';
-import { TrackedAccessorProvider, Watcher, ChangeSource } from '@milaboratory/computable';
-import { MiLogger, JitterOpts, asyncPool, mapGet, notEmpty, TaskProcessor, CallersCounter } from '@milaboratory/ts-helpers';
+import {
+  BasicResourceData,
+  PlClient,
+  ResourceId,
+  ResourceType,
+  stringifyWithResourceId
+} from '@milaboratory/pl-client-v2';
+import {
+  TrackedAccessorProvider,
+  Watcher,
+  ChangeSource
+} from '@milaboratory/computable';
+import {
+  MiLogger,
+  JitterOpts,
+  asyncPool,
+  mapGet,
+  notEmpty,
+  TaskProcessor,
+  CallersCounter
+} from '@milaboratory/ts-helpers';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
 
@@ -9,7 +27,10 @@ export interface UploadReader {
    * @param callerId the caller (e.g. cell) must give their ID for right logic
    * of uploading preregistration. */
   getProgressId(
-    w: Watcher, originalRId: ResourceId, rType: ResourceType, callerId: string,
+    w: Watcher,
+    originalRId: ResourceId,
+    rType: ResourceType,
+    callerId: string
   ): string;
 }
 
@@ -20,10 +41,7 @@ export interface UploadReaderAsync {
 
 /** Every cell must call it on destroy. */
 export interface UploadReleaser {
-  release(
-    uid: string,
-    callerId: string,
-  ): Promise<void>;
+  release(uid: string, callerId: string): Promise<void>;
 }
 
 /** Just binds a watcher to a UploadReader. */
@@ -36,7 +54,7 @@ export class UploadAccessor {
   getProgressId(
     originalRId: ResourceId,
     rType: ResourceType,
-    callerId: string,
+    callerId: string
   ): string {
     return this.reader.getProgressId(this.w, originalRId, rType, callerId);
   }
@@ -47,11 +65,12 @@ export class UploadAccessor {
  * Handles both Index and Upload blobs,
  * the client needs to pass concrete blobs from `handle` field. */
 export class UploadDriver
-implements
-TrackedAccessorProvider<UploadAccessor>,
-UploadReader,
-UploadReaderAsync,
-UploadReleaser {
+  implements
+    TrackedAccessorProvider<UploadAccessor>,
+    UploadReader,
+    UploadReaderAsync,
+    UploadReleaser
+{
   /** Holds a map of Resource Ids to Progress Ids. */
   private readonly rIdToProgressId: Map<ResourceId, string> = new Map();
   /** With the Progress Id the client can get a progress in an async func. */
@@ -90,7 +109,7 @@ UploadReleaser {
     w: Watcher,
     originalRId: ResourceId,
     rType: ResourceType,
-    callerId: string,
+    callerId: string
   ): string {
     const uid = this.rIdToProgressId.get(originalRId);
 
@@ -99,11 +118,14 @@ UploadReleaser {
       const newUid = makeUid(originalRId);
       const value = new ProgressUpdater(
         this.logger,
-        this.client, this.clientBlob, this.clientProgress,
+        this.client,
+        this.clientBlob,
+        this.clientProgress,
         this.opts.nConcurrentPartUploads,
         this.getSignature,
-        originalRId, rType,
-      )
+        originalRId,
+        rType
+      );
 
       this.rIdToProgressId.set(originalRId, newUid);
       this.progressIdToValue.set(newUid, value);
@@ -115,10 +137,11 @@ UploadReleaser {
       if (value.progress.isUpload)
         this.uploadQueue.push({
           fn: () => value.uploadBlobTask(),
-          recoverableErrorPredicate: (e) => !(e instanceof MTimeError || e instanceof UnexpectedEOF),
+          recoverableErrorPredicate: (e) =>
+            !(e instanceof MTimeError || e instanceof UnexpectedEOF)
         });
 
-      return newUid
+      return newUid;
     }
 
     const value = mapGet(this.progressIdToValue, uid);
@@ -153,7 +176,7 @@ UploadReleaser {
 
   /** Must be called when the driver is closing. */
   public async releaseAll() {
-    this.uploadQueue.stop()
+    this.uploadQueue.stop();
   }
 
   private removeProgress(uid: string) {
@@ -180,15 +203,14 @@ class ProgressUpdater {
     private readonly getSignature: (path: string) => Promise<string>,
 
     rId: ResourceId,
-    rType: ResourceType,
+    rType: ResourceType
   ) {
     this.progress = new Progress(rId, rType);
   }
 
   /** Sets a promise that updates a status. */
   scheduleUpdateStatus() {
-    if (this.updatingStatus !== undefined)
-      return;
+    if (this.updatingStatus !== undefined) return;
     this.updatingStatus = this.updateStatus();
   }
 
@@ -203,8 +225,7 @@ class ProgressUpdater {
 
   /** awaits a fulfillment of a status. */
   async waitProgress() {
-    if (this.updatingStatus === undefined)
-      return this.progress;
+    if (this.updatingStatus === undefined) return this.progress;
     await this.updatingStatus;
 
     return this.progress;
@@ -215,19 +236,21 @@ class ProgressUpdater {
     try {
       const r = await this.client.withReadTx(
         'TSUploadDriverGetResource',
-        (tx) => tx.getResourceData(this.progress.id, false),
+        (tx) => tx.getResourceData(this.progress.id, false)
       );
       const data = this.parseUploadData(r);
 
-      const isSignMatch = await this.isSignMatch(data.localPath, data.pathSignature);
+      const isSignMatch = await this.isSignMatch(
+        data.localPath,
+        data.pathSignature
+      );
       this.progress.isUploadSignMatch = isSignMatch;
       if (isSignMatch) {
         await this.uploadBlob(data);
       }
-
     } catch (e) {
       this.logger.error(`error while uploading or indexing a blob: ${e}`);
-      this.progress.setLastError(e)
+      this.progress.setLastError(e);
       this.change.markChanged();
 
       if (e instanceof MTimeError) {
@@ -241,19 +264,25 @@ class ProgressUpdater {
   private parseUploadData(r: BasicResourceData): UploadOpts {
     const data = JSON.parse(notEmpty(r.data).toString());
     if (data.ModificationTime === undefined) {
-      throw new Error('no modification time in data: ' + stringifyWithResourceId(data));
+      throw new Error(
+        'no modification time in data: ' + stringifyWithResourceId(data)
+      );
     }
     if (data.LocalPath === undefined) {
-      throw new Error('no local path in data: ' + stringifyWithResourceId(data));
+      throw new Error(
+        'no local path in data: ' + stringifyWithResourceId(data)
+      );
     }
     if (data.PathSignature === undefined) {
-      throw new Error('no path signature in data: ' + stringifyWithResourceId(data));
+      throw new Error(
+        'no path signature in data: ' + stringifyWithResourceId(data)
+      );
     }
 
     return {
       modificationTime: data.ModificationTime,
       localPath: data.LocalPath,
-      pathSignature: data.PathSignature,
+      pathSignature: data.PathSignature
     };
   }
 
@@ -277,8 +306,10 @@ class ProgressUpdater {
           part,
           upload.modificationTime
         );
-        this.logger.info(`uploaded part ${part} of resource ${this.progress.id}`);
-      },
+        this.logger.info(
+          `uploaded part ${part} of resource ${this.progress.id}`
+        );
+      }
     );
 
     if (this.counter.isZero()) return;
@@ -304,9 +335,9 @@ export class Progress {
 
   constructor(
     public readonly id: ResourceId,
-    public readonly type: ResourceType,
+    public readonly type: ResourceType
   ) {
-    this.isUpload = type.name.startsWith("BlobUpload")
+    this.isUpload = type.name.startsWith('BlobUpload');
   }
 
   public terminateWithError() {
@@ -315,7 +346,7 @@ export class Progress {
   }
 
   public setLastError(e: unknown) {
-    this.lastError = String(e)
+    this.lastError = String(e);
   }
 
   public setStatus(status: ProgressStatus) {
@@ -325,7 +356,7 @@ export class Progress {
       this.lastError = undefined;
     }
   }
-};
+}
 
 /** Options from BlobUpload resource that have to be passed to getProgress. */
 type UploadOpts = {

@@ -5,11 +5,11 @@ import * as path from 'node:path';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { Dispatcher } from 'undici';
-import { text } from "node:stream/consumers";
+import { text } from 'node:stream/consumers';
 import { ClientDownload } from '../clients/download';
 
 test('client download from a local file', async () => {
-  await TestHelpers.withTempRoot(async client => {
+  await TestHelpers.withTempRoot(async (client) => {
     const storageRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
     const fName = 'answer_to_the_ultimate_question.txt';
 
@@ -20,21 +20,26 @@ test('client download from a local file', async () => {
 
     const clientDownload = client.getDriver({
       name: 'ClientDownload',
-      init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+      init: (
+        pl: PlClient,
+        grpcTransport: GrpcTransport,
+        httpDispatcher: Dispatcher
+      ) =>
         new ClientDownload(
           grpcTransport,
           httpDispatcher,
           new ConsoleLoggerAdapter(),
           { tmp: storageRoot }
         )
-    })
+    });
 
-    const localFile = await clientDownload.readLocalFile(`storage://tmp/${fName}`);
+    const localFile = await clientDownload.readLocalFile(
+      `storage://tmp/${fName}`
+    );
 
     expect(localFile.size).toBe(2);
     expect(await text(localFile.content)).toBe('42');
 
     await fs.rm(fPath);
-  })
-})
-
+  });
+});

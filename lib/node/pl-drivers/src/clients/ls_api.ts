@@ -17,7 +17,7 @@ export class ClientLsFiles {
     private readonly client: PlClient,
     public readonly logger: MiLogger,
 
-    public readonly grpcOptions: GrpcOptions,
+    public readonly grpcOptions: GrpcOptions
   ) {
     this.grpcClient = new LSClient(grpcTransport);
   }
@@ -27,34 +27,38 @@ export class ClientLsFiles {
   public async list(
     storageId: string,
     path: string,
-    options?: RpcOptions,
+    options?: RpcOptions
   ): Promise<LsAPI_List_Response> {
     const rType = { name: `LS/${storageId}`, version: '1' };
 
-    return await this.grpcClient.list({
-      resourceId: await this.getStorageResourceId(storageId),
-      location: path,
-    }, addRTypeToMetadata(rType, options)).response;
+    return await this.grpcClient.list(
+      {
+        resourceId: await this.getStorageResourceId(storageId),
+        location: path
+      },
+      addRTypeToMetadata(rType, options)
+    ).response;
   }
-  
+
   // @TODO clean cache by time
-  public async getAndSetAvailableStorageIds(reload: boolean = false): Promise<Record<string, bigint>> {
+  public async getAndSetAvailableStorageIds(
+    reload: boolean = false
+  ): Promise<Record<string, bigint>> {
     if (reload) {
       this.storageIdToResourceId = {};
     }
 
     if (!Object.keys(this.storageIdToResourceId).length) {
-      this.client.withReadTx('GetAvailableStorageIds', async tx => {
+      this.client.withReadTx('GetAvailableStorageIds', async (tx) => {
         const lsProviderId = await tx.getResourceByName('LSProvider');
         const provider = await tx.getResourceData(lsProviderId, true);
 
-        provider.fields.forEach(f => {
-          if (f.type != 'Dynamic' || f.value == 0n)
-            return;
+        provider.fields.forEach((f) => {
+          if (f.type != 'Dynamic' || f.value == 0n) return;
           const storageName = f.name.substring('storage/'.length);
           this.storageIdToResourceId[storageName] = f.value;
         });
-      })
+      });
     }
 
     return this.storageIdToResourceId;
@@ -64,7 +68,7 @@ export class ClientLsFiles {
     await this.getAndSetAvailableStorageIds();
     return notEmpty(
       this.storageIdToResourceId[storageId],
-      `ResourceId not found for storageId ${storageId}`,
+      `ResourceId not found for storageId ${storageId}`
     );
   }
 }
