@@ -1,9 +1,9 @@
 import { CallersCounter, MiLogger, TaskProcessor, notEmpty } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { Writable, Transform } from 'node:stream'
+import { Writable, Transform } from 'node:stream';
 import { ClientDownload, NetworkError400 } from '../clients/download';
-import { ChangeSource, Computable, ComputableCtx, Watcher, rawComputable } from '@milaboratory/computable';
+import { ChangeSource, Computable, ComputableCtx, Watcher } from '@milaboratory/computable';
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
@@ -25,8 +25,7 @@ export interface PathResult {
 
 /** Downloads .tar or .tar.gz archives by given URLs
  * and extracts them into saveDir. */
-export class DownloadUrlDriver implements
-DownloadUrlSyncReader {
+export class DownloadUrlDriver implements DownloadUrlSyncReader {
   private urlToDownload: Map<string, Download> = new Map();
   private downloadQueue: TaskProcessor;
 
@@ -45,46 +44,47 @@ DownloadUrlSyncReader {
     } = {
       cacheSoftSizeBytes: 50 * 1024 * 1024,
       withGunzip: true,
-      nConcurrentDownloads: 50,
+      nConcurrentDownloads: 50
     }
   ) {
     this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
   }
 
+  /** Use to get a path result inside a computable context */
+  getPath(url: URL, ctx: ComputableCtx): PathResult | undefined
+
   /** Returns a Computable that do the work */
-  getPath(url: URL): Computable<PathResult | undefined> {
-    return rawComputable((w: Watcher, ctx: ComputableCtx) => {
-      const callerId = randomUUID();
-      ctx.setOnDestroy(() => this.releasePath(url, callerId));
+  getPath(url: URL): Computable<PathResult | undefined>
 
-      const result = this.getPathNoComputable(w, url, callerId);
-      if (result?.path == undefined)
-        ctx.markUnstable();
+  getPath(url: URL, ctx?: ComputableCtx): Computable<PathResult | undefined> | PathResult | undefined {
+    // wrap result as computable, if we were not given an existing computable context
+    if (ctx === undefined)
+      return Computable.make(c => this.getPath(url, c));
 
-      return result;
-    })
-  }
+    const callerId = randomUUID();
 
-  /** If path is not done, creates a task for downloading. */
-  private getPathNoComputable(
-    w: Watcher, url: URL, callerId: string,
-  ): PathResult | undefined {
+    // read as ~ golang's defer
+    ctx.addOnDestroy(() => this.releasePath(url, callerId));
+
     const key = url.toString();
-    const task = this.urlToDownload.get(key);
+    let task = this.urlToDownload.get(key);
 
-    if (task != undefined) {
-      task.attach(w, callerId);
-      return task.getPath();
+    if (task === undefined) {
+      const newTask = this.setNewTask(ctx.watcher, url, callerId);
+      this.downloadQueue.push({
+        fn: async () => this.downloadUrl(newTask, callerId),
+        recoverableErrorPredicate: (e) => true
+      });
+      task = newTask;
     }
 
-    const newTask = this.setNewTask(w, url, callerId);
-    this.downloadQueue.push({
-      fn: async () => this.downloadUrl(newTask, callerId),
-      recoverableErrorPredicate: (e) => true,
-    })
+    const result = task.getPath();
 
-    return newTask.getPath();
+    if (result?.path === undefined)
+      ctx.markUnstable();
+
+    return result;
   }
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
@@ -92,7 +92,7 @@ DownloadUrlSyncReader {
     await task.download(this.clientDownload, this.opts.withGunzip);
     // Might be undefined if a error happened
     if (task.getPath()?.path != undefined)
-      this.cache.addCache(task, callerId)
+      this.cache.addCache(task, callerId);
   }
 
   /** Removes a directory and aborts a downloading task when all callers
@@ -104,7 +104,7 @@ DownloadUrlSyncReader {
       return;
 
     if (this.cache.existsFile(task.path)) {
-      const toDelete = this.cache.removeFile(task.path, callerId)
+      const toDelete = this.cache.removeFile(task.path, callerId);
 
       await Promise.all(toDelete.map(async (task) => {
         await rmRFDir(task.path);
@@ -112,9 +112,9 @@ DownloadUrlSyncReader {
 
         this.removeTask(
           task, `the task ${JSON.stringify(task)} was removed`
-        + `from cache along with ${JSON.stringify(toDelete)}`,
-        )
-      }))
+          + `from cache along with ${JSON.stringify(toDelete)}`
+        );
+      }));
     } else {
       // The task is still in a downloading queue.
       const deleted = task.counter.dec(callerId);
@@ -133,7 +133,7 @@ DownloadUrlSyncReader {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
-        this.removeTask(task, `the task ${task} was released when the driver was closed`)
+        this.removeTask(task, `the task ${task} was released when the driver was closed`);
       }));
   }
 
@@ -167,8 +167,9 @@ class Download {
 
   constructor(
     readonly path: string,
-    readonly url: URL,
-  ) {}
+    readonly url: URL
+  ) {
+  }
 
   attach(w: Watcher, callerId: string) {
     this.counter.inc(callerId);
@@ -181,8 +182,8 @@ class Download {
       const sizeBytes = await this.downloadAndUntar(
         clientDownload,
         withGunzip,
-        this.signalCtl.signal,
-      )
+        this.signalCtl.signal
+      );
       this.setDone(sizeBytes);
     } catch (e: any) {
       if (e instanceof URLAborted || e instanceof NetworkError400) {
@@ -199,14 +200,14 @@ class Download {
   private async downloadAndUntar(
     clientDownload: ClientDownload,
     withGunzip: boolean,
-    signal: AbortSignal,
+    signal: AbortSignal
   ): Promise<number> {
     if (await fileExists(this.path)) {
       return await dirSize(this.path);
     }
 
     const resp = await clientDownload.downloadRemoteFile(
-      this.url.toString(), {}, signal,
+      this.url.toString(), {}, signal
     );
     let content = resp.content;
 
@@ -246,7 +247,8 @@ class Download {
   }
 }
 
-class URLAborted extends Error {}
+class URLAborted extends Error {
+}
 
 async function fileExists(path: string): Promise<boolean> {
   try {
