@@ -11,7 +11,8 @@ import {
   getDownloadedBlobContent,
   getOnDemandBlobContent
 } from './actions';
-import { BlockConfigBuilder, OutputCell, ResolveOutputsType, StdCtx } from './builder';
+import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
+import { ValueOrErrors } from './common_types';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -75,8 +76,8 @@ test('test config content', () => {
     .build();
 
   assertType<ResolveOutputsType<typeof blockConfig1>, {
-    cell1: OutputCell<{ b: string[] }>,
-    cell2: OutputCell<'v1'[]>
+    cell1: ValueOrErrors<{ b: string[] }>,
+    cell2: ValueOrErrors<'v1'[]>
   }>();
 
   expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
@@ -102,7 +103,7 @@ test('test config 2', () => {
     .build();
 
   assertType<ResolveOutputsType<typeof blockConfig1>, {
-    cell1: OutputCell<{
+    cell1: ValueOrErrors<{
       b: string,
       c: [Uint8Array, 'asd'],
       d: string[],

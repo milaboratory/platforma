@@ -1,6 +1,7 @@
 import { ConfigResult, PlResourceEntry, TypedConfig } from './type_engine';
 import { getImmediate } from './actions';
 import { Checked } from './type_util';
+import { ValueOrErrors } from './common_types';
 
 export type StdCtxArgsOnly<Args, UiState = undefined> = {
   $args: Args,
@@ -89,19 +90,7 @@ export class BlockConfigBuilder<Args, UiState, Outputs extends Record<string, Ty
   }
 }
 
-export type OutputCell<T> = OutputCellOK<T> | OutputCellError;
-
-export type OutputCellError = {
-  ok: false,
-  errors: unknown[]
-}
-
-export type OutputCellOK<T> = {
-  ok: true
-  value: T
-}
-
 export type ResolveOutputsType<T extends BlockConfig<any, any, any>> =
   T extends BlockConfig<infer Args, infer UiState, infer Outputs>
-    ? { [Key in keyof Outputs]: OutputCell<ResolveCfgType<Outputs[Key], Args, UiState>> }
+    ? { [Key in keyof Outputs]: ValueOrErrors<ResolveCfgType<Outputs[Key], Args, UiState>> }
     : never
