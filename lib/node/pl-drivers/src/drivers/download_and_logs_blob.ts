@@ -46,7 +46,7 @@ export interface DownloadedBlobHandle {
 /** You can pass it to DownloadDriver.getContent and gets a content of the blob. */
 export interface OnDemandBlobHandle {
   readonly type: 'OnDemandBlob';
-  readonly handle: string; // is of a form 'blob+remote://driverId/resourceType/resourceVersion/resourceId#signature'
+  readonly handle: string; // is of a form 'blob+remote://download/resourceType/resourceVersion/resourceId#signature'
 }
 
 /** DownloadDriver holds a queue of downloading tasks,
@@ -145,15 +145,11 @@ export class DownloadDriver
   ): Promise<Uint8Array | undefined> {
     if (b.type == 'DownloadedBlob') {
       const result = localHandleToData(b.handle);
-      if (result == undefined) return undefined;
-
       // TODO: what to do with signature?
       return await read(result?.path);
     }
 
     const result = remoteHandleToData(b.handle);
-    if (result == undefined) return undefined;
-
     const { content } = await this.clientDownload.downloadBlob(result.rInfo);
     return await buffer(content);
   }
@@ -172,10 +168,12 @@ export class DownloadDriver
     if (task != undefined) {
       task.attach(w, callerId);
       const result = task.getBlob();
-      if (result?.success == false) {
+      if (result?.success == false)
         throw result.error;
-      }
 
+      if (result?.success)
+        delete result.success;
+      
       return result;
     }
 
@@ -542,7 +540,7 @@ export class Download {
   }
 
   getBlob():
-    | (DownloadedBlobHandle & { success: true })
+    | (DownloadedBlobHandle & { success?: true })
     | { success: false; error: Error }
     | undefined {
     if (this.done)
@@ -592,7 +590,7 @@ const localHandleRegex =
 function localHandleToData(handle: string) {
   const parsed = [...handle.matchAll(localHandleRegex)];
   if (parsed == null || parsed.length != 1 || parsed[0].length != 3)
-    return undefined;
+    throw new Error(`Local handle is malformed: ${handle}, matches: ${parsed}`);
 
   const [_, path, signature] = parsed[0];
 
@@ -616,7 +614,7 @@ const remoteHandleRegex =
 function remoteHandleToData(handle: string) {
   const parsed = [...handle.matchAll(remoteHandleRegex)];
   if (parsed == null || parsed.length != 1 || parsed[0].length != 5)
-    return undefined;
+    throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
 
   const [_, resourceType, resourceVersion, resourceId, signature] = parsed[0];
 
@@ -636,5 +634,5 @@ function dataToRemoteHandle({
   rInfo: ResourceInfo;
   signature: string;
 }): string {
-  return `blob+remote://download/${rInfo.type.name}/${rInfo.type.version}/${rInfo.id}#${signature}`;
+  return `blob+remote://download/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}#${signature}`;
 }

@@ -297,8 +297,7 @@ class ProgressUpdater {
 
     await asyncPool(
       this.nConcurrentPartsUpload,
-      parts,
-      async (part: bigint) => {
+      parts.map(async part => {
         if (this.counter.isZero()) return;
         await this.clientBlob.partUpload(
           this.progress,
@@ -309,7 +308,7 @@ class ProgressUpdater {
         this.logger.info(
           `uploaded part ${part} of resource ${this.progress.id}`
         );
-      }
+      }),
     );
 
     if (this.counter.isZero()) return;
