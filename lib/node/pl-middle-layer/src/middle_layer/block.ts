@@ -9,7 +9,8 @@ import { BlockState } from './models';
 import { BlockPackInfo } from '../model/block_pack';
 import { MiddleLayerEnvironment } from './middle_layer';
 
-export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
+export function blockState(
+  projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
 ): Computable<BlockState> {
   return Computable.make(c => {
     const prj = c.accessor(projectEntry).node();
@@ -27,7 +28,7 @@ export function blockState(projectEntry: PlTreeEntry, id: string, env: MiddleLay
     const outputs = ifNotUndef(blockCfg, cfg => {
       const outputs: Record<string, Computable<any>> = {};
       for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
-        outputs[cellId] = computableFromCfg(env.drivers, ctx, cellCfg);
+        outputs[cellId] = Computable.wrapError(computableFromCfg(env.drivers, ctx, cellCfg));
       return outputs;
     });
 

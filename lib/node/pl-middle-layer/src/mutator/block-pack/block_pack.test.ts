@@ -13,7 +13,7 @@ test.each([
   {
     spec: {
       type: 'from-registry-v1',
-      url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.0'
+      url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1'
     } as BlockPackSpecAny
   },
   {

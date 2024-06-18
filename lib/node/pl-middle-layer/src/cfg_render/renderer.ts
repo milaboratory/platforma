@@ -1,5 +1,5 @@
 import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from '@milaboratory/sdk-block-config';
-import { ArgumentRequests, MiddleLayerDrivers, Operation, OperationAction, Subroutine } from './operation';
+import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfg } from './executor';
@@ -28,20 +28,16 @@ const SRMakeObject: Subroutine = args => {
   return resOp(result);
 };
 
-const SRMakeArray: Subroutine = args => {
-  const result: Array<any> = [];
-  for (const [_, v] of Object.entries(args))
-    result.push(v);
-  return resOp(result);
-};
-
 const SRFlatten: Subroutine = args => {
-  const result: Array<any> = [];
-  for (const [_, v] of Object.entries(args)) {
-    if (v instanceof Array)
-      result.push(...v)
+  const source = args.source as unknown[] | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+  const result: unknown[] = [];
+  for (const nested of source) {
+    if (nested instanceof Array)
+      result.push(...nested);
     else
-      result.push(v)
+      result.push(nested);
   }
   return resOp(result);
 };
@@ -54,26 +50,29 @@ const SRGetResourceField: Subroutine = args => {
   return ({ cCtx }) => res(cCtx.accessor(source).node().traverse(field)?.persist());
 };
 
+function mapArrayToRecord<T, R>(elements: T[], cb: (e: T) => R): Record<string, R> {
+  const result: Record<string, R> = {};
+  const length = elements.length;
+  for (let i = 0; i < length; i++)
+    result[String(i)] = cb(elements[i]);
+  return result;
+}
+
 function SRMapArrayValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>): Subroutine {
   return args => {
     const source = args.source as unknown[] | undefined;
     if (source === undefined)
       return resOp(undefined);
-    const nextArgs: ArgumentRequests = {};
-    const length = source.length;
-    for (let i = 0; i < length; i++) {
-      const newCtx = { ...ctx, [ops.itVar]: source[i] };
-      nextArgs[String(i)] = renderCfg(newCtx, ops.mapping);
-    }
     return () => ({
       type: 'ScheduleSubroutine',
-      subroutine: SRMapArrayValues2(length),
-      args: nextArgs
+      subroutine: SRCollectArrayFromArgs(source.length),
+      args: mapArrayToRecord(source,
+        e => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping))
     });
   };
 }
 
-function SRMapArrayValues2(length: number): Subroutine {
+function SRCollectArrayFromArgs(length: number): Subroutine {
   return args => {
     const result: unknown[] = [];
     for (let i = 0; i < length; i++)
@@ -191,7 +190,7 @@ const SRGetBlobContent: Subroutine = args => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(ctx => {
-        return drivers.downloadDriver.getDownloadedBlob(
+          return drivers.downloadDriver.getDownloadedBlob(
             ctx.accessor(source).node().resourceInfo
           );
         }, {
@@ -265,9 +264,7 @@ const SRGetDownloadedBlobContent: Subroutine = args => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: Computable.make(
-        c => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
-      )
+      computable: drivers.downloadDriver.getDownloadedBlob(source)
     };
   };
 };
@@ -280,9 +277,7 @@ const SRGetOnDemandBlobContent: Subroutine = args => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: Computable.make(
-        c => drivers.downloadDriver.getOnDemandBlob(c.accessor(source).node().resourceInfo),
-      )
+      computable: drivers.downloadDriver.getOnDemandBlob(source)
     };
   };
 };
@@ -341,19 +336,20 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
     case 'MakeArray':
       return () => ({
         type: 'ScheduleSubroutine',
-        subroutine: SRMakeArray,
-        // TODO: 
-        args: undefined as unknown as ArgumentRequests,
+        subroutine: SRCollectArrayFromArgs(cfg.template.length),
+        args: mapArrayToRecord(cfg.template,
+          e => renderCfg(ctx, e))
       });
 
     case 'Flatten':
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRFlatten,
-        // TODO: 
-        args: undefined as unknown as ArgumentRequests,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
       });
-      
+
     case 'IsEmpty':
       return () => ({
         type: 'ScheduleSubroutine',

@@ -5,8 +5,6 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
-import { NewBlockSpec } from '../mutator/project';
-import { BlockPackDev, BlockPackSource } from '../model/block_pack_spec';
 
 // const EnterNumbersSpec = {
 //   type: 'from-registry-v1',
@@ -48,11 +46,11 @@ async function getStandardBlockSpecs() {
 
     downloadFileSpecFromRemote: blocksFromRegistry.find(
       b => b.registryLabel.match(/Central/) && b.package === 'download-file'
-    )!.latestSpec,
-  }
+    )!.latestSpec
+  };
 }
 
-test.skip('project list manipulations test', async () => {
+test('project list manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -63,7 +61,7 @@ test.skip('project list manipulations test', async () => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: 'secret',
-      blobDownloadPath: path.resolve(downloadFolder),
+      blobDownloadPath: path.resolve(downloadFolder)
     });
     const projectList = ml.projectList;
 
@@ -80,12 +78,25 @@ test.skip('project list manipulations test', async () => {
       opened: false
     }]);
 
+    await ml.setProjectMeta(pRid1, { label: 'Project 1A' });
+
+    await projectList.refreshState();
+
+    const listSnapshot1 = await projectList.getValue();
+    expect(listSnapshot1).toMatchObject([{
+      id: 'id1',
+      rid: pRid1,
+      meta: { label: 'Project 1A' },
+      opened: false
+    }]);
+    expect(listSnapshot1![0].lastModified.valueOf()).toBeGreaterThan(listSnapshot1![0].created.valueOf());
+
     await ml.openProject(pRid1);
 
     expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
-      meta: { label: 'Project 1' },
+      meta: { label: 'Project 1A' },
       opened: true
     }]);
 
@@ -94,7 +105,7 @@ test.skip('project list manipulations test', async () => {
     expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
-      meta: { label: 'Project 1' },
+      meta: { label: 'Project 1A' },
       opened: false
     }]);
 
@@ -106,7 +117,7 @@ test.skip('project list manipulations test', async () => {
   });
 });
 
-test.skip('simple project manipulations test', async () => {
+test('simple project manipulations test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -118,7 +129,7 @@ test.skip('simple project manipulations test', async () => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: 'secret',
-      blobDownloadPath: path.resolve(downloadFolder),
+      blobDownloadPath: path.resolve(downloadFolder)
     });
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -163,6 +174,7 @@ test.skip('simple project manipulations test', async () => {
 
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(true);
     });
     console.dir(overviewSnapshot1, { depth: 5 });
 
@@ -187,11 +199,11 @@ test.skip('simple project manipulations test', async () => {
     console.dir(block2StableState, { depth: 5 });
     console.dir(block3StableState, { depth: 5 });
 
-    expect(block3StableState.outputs['sum']).toStrictEqual(18);
+    expect(block3StableState.outputs['sum']).toStrictEqual({ ok: true, value: 18 });
   });
 });
 
-test.skip('block error test', async () => {
+test('block error test', async () => {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -203,7 +215,7 @@ test.skip('block error test', async () => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: 'secret',
-      blobDownloadPath: path.resolve(downloadFolder),
+      blobDownloadPath: path.resolve(downloadFolder)
     });
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -243,8 +255,6 @@ test.skip('block error test', async () => {
     const block3StableState = await prj.getBlockState(block3Id).getValueOrError();
 
     console.dir(block3StableState, { depth: 5 });
-
-    // expect(block3StableState.outputs['sum']).toStrictEqual(18);
   });
 });
 
@@ -259,7 +269,7 @@ test('should create download-file block, render it and gets outputs from its con
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: 'secret',
-      blobDownloadPath: path.resolve(downloadFolder),
+      blobDownloadPath: path.resolve(downloadFolder)
     });
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);

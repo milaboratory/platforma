@@ -119,8 +119,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
     });
 
     return {
-      meta, created: new Date(created), lastModified: new Date(lastModified),
-      structureAuthorMarker: structure.authorMarker, blocks
+      meta, created: new Date(created), lastModified: new Date(lastModified), blocks
     };
   }).withStableType();
 }

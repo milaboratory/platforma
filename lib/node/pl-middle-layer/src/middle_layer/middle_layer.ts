@@ -1,7 +1,7 @@
 import { field, isNullResourceId, PlClient, ResourceId, toGlobalResourceId } from '@milaboratory/pl-client-v2';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { ProjectMeta } from '../model/project_model';
-import { createProject } from '../mutator/project';
+import { AuthorMarker, ProjectMeta } from '../model/project_model';
+import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import { createDownloadDriver, createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
@@ -62,6 +62,13 @@ export class MiddleLayer {
       tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
       await tx.commit();
       return await toGlobalResourceId(prj);
+    });
+  }
+
+  /** Updates project metadata */
+  public async setProjectMeta(rid: ResourceId, meta: ProjectMeta): Promise<void> {
+    await withProject(this.pl, rid, async prj => {
+      prj.setMeta(meta);
     });
   }
 
@@ -151,8 +158,8 @@ export class MiddleLayer {
 
     const logger = new ConsoleLoggerAdapter();
     const frontendDownloadDriver = createDownloadUrlDriver(pl, logger,
-                                                           ops.frontendDownloadPath,
-                                                           ops.localStorageIdsToRoot);
+      ops.frontendDownloadPath,
+      ops.localStorageIdsToRoot);
     const bpPreparer = new BlockPackPreparer(ops.localSecret);
     const env: MiddleLayerEnvironment = {
       pl, localSecret: ops.localSecret,
@@ -164,7 +171,7 @@ export class MiddleLayer {
           ops.blobDownloadPath,
           ops.blobDownloadCacheSizeBytes,
           ops.nConcurrentBlobDownloads,
-          ops.localStorageIdsToRoot,
+          ops.localStorageIdsToRoot
         )
       } as any as MiddleLayerDrivers // TODO: add upload and logs drivers.
     };

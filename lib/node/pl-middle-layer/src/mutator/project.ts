@@ -653,6 +653,17 @@ export class ProjectMutator {
   }
 
   //
+  // Meta
+  //
+
+  /** Updates project metadata */
+  public setMeta(meta: ProjectMeta): void {
+    this.meta = meta;
+    this.metaChanged = true;
+    this.updateLastModified();
+  }
+
+  //
   // Maintenance
   //
 

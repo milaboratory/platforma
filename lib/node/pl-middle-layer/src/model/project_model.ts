@@ -40,9 +40,6 @@ export interface BlockGroup {
 
 /** Root of block structure value */
 export interface ProjectStructure {
-  /** Marker of a "client" who set this structure instance */
-  readonly authorMarker?: AuthorMarker;
-
   /** The structure */
   readonly groups: BlockGroup[];
 }
@@ -67,9 +64,6 @@ export const InitialProjectRenderingState: ProjectRenderingState = {
 };
 
 export interface ProjectMeta {
-  /** Marker of a "client" who set meta instance */
-  readonly authorMarker?: AuthorMarker;
-
   /** Project name */
   readonly label: string;
 }
