@@ -85,7 +85,7 @@ export function treeEntryToResourceInfo(
   ctx: ComputableCtx
 ) {
   if (res instanceof PlTreeEntry)
-    return res.createAccessor(ctx, () => undefined).node().resourceInfo;
+    return ctx.accessor(res).node().resourceInfo;
 
   return res;
 }
@@ -117,7 +117,8 @@ export class LongUpdater {
 export class Updater {
   private updating: Promise<void> | undefined;
 
-  constructor(private readonly onUpdate: () => Promise<void>) {}
+  constructor(private readonly onUpdate: () => Promise<void>) {
+  }
 
   schedule() {
     if (this.updating == undefined) {
