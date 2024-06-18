@@ -71,6 +71,38 @@ test('computable with post-process and recover, error in postprocess', async () 
   expect(await c1.getValue()).toBeUndefined();
 });
 
+test('wrap errors not ok', async () => {
+  const c1 = Computable.wrapError(
+    Computable.make(() => {
+      return 12;
+    }, {
+      postprocessValue: value => {
+        throw new Error();
+        return String(value);
+      }
+    })
+  );
+
+  expect((await c1.getValue()).ok).toEqual(false);
+});
+
+test('wrap errors ok', async () => {
+  const c1 = Computable.wrapError(
+    Computable.make(() => {
+      return 12;
+    }, {
+      postprocessValue: value => {
+        return String(value);
+      }
+    })
+  );
+
+  const v = await c1.getValue();
+  expect(v.ok).toEqual(true);
+  if (v.ok)
+    expect(v.value).toEqual('12');
+});
+
 
 test('nested computable with post-process and recover', async () => {
   const c1 = Computable.make(ctx => {

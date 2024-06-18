@@ -14,6 +14,7 @@ import {
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
+import { formatError } from './error';
 
 /** Represents the most general result of the computable, successful or error */
 export type ComputableResult<T> = ComputableResultErrors | ComputableResultOk<T>;
@@ -87,6 +88,11 @@ export class AggregateComputableError extends AggregateError {
     super(errors, `Computable error: ${errors.map(e => e.message).join(' ; ')}`);
   }
 }
+
+/** Type returned by computables that wrap errors */
+export type ComputableValueOrErrors<T> =
+  | { ok: true, value: T }
+  | { ok: false, errors: string[], moreErrors: boolean }
 
 export interface ComputableRenderingOps extends CellRenderingOps {
   key: string | symbol;
@@ -540,6 +546,23 @@ export class Computable<T, StableT extends T = T> {
     return new Computable<T>({
       ops: renderingOps, key: ops?.key ?? Computable.nextEphemeralKey(),
       ___kernel___: cb
+    });
+  }
+
+  /** Wraps a computable catching all errors, formatting them as string and returning as error-or-value structure. */
+  public static wrapError<T>(computable: Computable<T>, maxErrors: number = 1): Computable<ComputableValueOrErrors<T>> {
+    return Computable.make(() => computable, {
+      postprocessValue: value => ({ ok: true, value: value as T } as ComputableValueOrErrors<T>),
+      recover: (error: unknown[]) => {
+        const formattedErrors: string[] = [];
+        for (let i = 0; i < Math.min(maxErrors, error.length); i++)
+          formattedErrors.push(formatError(error[i]));
+        return {
+          ok: false,
+          errors: formattedErrors,
+          moreErrors: error.length > maxErrors
+        } as ComputableValueOrErrors<T>;
+      }
     });
   }
 }

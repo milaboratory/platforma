@@ -5,7 +5,6 @@ import {
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
-import { assertNever } from '@milaboratory/ts-helpers';
 import { ComputableHooks } from './computable_hooks';
 import { Watcher } from '../watcher';
 import { setImmediate } from 'node:timers';
@@ -492,14 +491,14 @@ function finalizeCellState<T>(
   previousValue?: unknown
 ): CellState<T> {
   const nestedWatchers: HierarchicalWatcher[] = [];
-  const allErrors: unknown[] = [];
+  // const allErrors: unknown[] = [];
   let stable = incompleteState.selfState.ctx.stable;
   let hooks: Set<ComputableHooks> | undefined = undefined;
   for (const { orphan, state } of incompleteState.childrenStates.values()) {
     if (orphan) continue; // iterating over active children only
 
     nestedWatchers.push(state.watcher);
-    allErrors.push(...state.allErrors);
+    // allErrors.push(...state.allErrors);
     stable = stable && state.stable;
 
     if (state.hooks !== undefined) {
@@ -510,8 +509,8 @@ function finalizeCellState<T>(
     }
   }
 
-  if (isExecutionError(incompleteState.selfState.iResult))
-    allErrors.push(incompleteState.selfState.iResult.error);
+  // if (isExecutionError(incompleteState.selfState.iResult))
+  //   allErrors.push(incompleteState.selfState.iResult.error);
 
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
@@ -526,7 +525,7 @@ function finalizeCellState<T>(
     isLatest: true,
     ...incompleteState,
     stable,
-    allErrors,
+    allErrors: [], // will be filled on the second rendering stage
     watcher: new HierarchicalWatcher(nestedWatchers),
 
     hooks,
@@ -547,6 +546,17 @@ async function calculateValue<T>(
       .filter(({ orphan }) => !orphan)
       .map(({ state }) => calculateValue(state))
   );
+
+  // collecting errors after all postProcessing steps are executed for out children
+  const allErrors: unknown[] = [];
+  for (const { orphan, state } of state_.childrenStates.values())
+    if (!orphan)
+      allErrors.push(...state.allErrors);
+  if (isExecutionError(state_.selfState.iResult))
+    allErrors.push(state_.selfState.iResult.error);
+
+  // setting errors for the state
+  (state_ as Writable<typeof state_>).allErrors = allErrors;
 
   const previousValue = state_.value;
   delete state_.value;
