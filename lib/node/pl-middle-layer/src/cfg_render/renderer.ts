@@ -28,6 +28,24 @@ const SRMakeObject: Subroutine = args => {
   return resOp(result);
 };
 
+const SRMakeArray: Subroutine = args => {
+  const result: Array<any> = [];
+  for (const [_, v] of Object.entries(args))
+    result.push(v);
+  return resOp(result);
+};
+
+const SRFlatten: Subroutine = args => {
+  const result: Array<any> = [];
+  for (const [_, v] of Object.entries(args)) {
+    if (v instanceof Array)
+      result.push(...v)
+    else
+      result.push(v)
+  }
+  return resOp(result);
+};
+
 const SRGetResourceField: Subroutine = args => {
   const source = args.source as PlTreeEntry | undefined;
   const field = args.field as string | undefined;
@@ -173,7 +191,7 @@ const SRGetBlobContent: Subroutine = args => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(ctx => {
-          return drivers.downloadDriver.getDownloadedBlob(
+        return drivers.downloadDriver.getDownloadedBlob(
             ctx.accessor(source).node().resourceInfo
           );
         }, {
@@ -205,7 +223,8 @@ const SRGetBlobContentAsString: Subroutine = args => {
           postprocessValue: async value => {
             if (value === undefined)
               return undefined;
-            return (await drivers.downloadDriver.getContent(value)).toString();
+            const content = await drivers.downloadDriver.getContent(value);
+            return content?.toString();
           }
         }
       )
@@ -227,10 +246,42 @@ const SRGetBlobContentAsJson: Subroutine = args => {
           postprocessValue: async value => {
             if (value == undefined)
               return undefined;
-            return JSON.parse(Buffer.from(await drivers.downloadDriver.getContent(value))
-              .toString());
+            const content = await drivers.downloadDriver.getContent(value);
+            if (content == undefined)
+              return undefined;
+            return JSON.parse(Buffer.from(content).toString());
           }
         }
+      )
+    };
+  };
+};
+
+const SRGetDownloadedBlobContent: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: Computable.make(
+        c => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
+      )
+    };
+  };
+};
+
+const SRGetOnDemandBlobContent: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: Computable.make(
+        c => drivers.downloadDriver.getOnDemandBlob(c.accessor(source).node().resourceInfo),
       )
     };
   };
@@ -287,6 +338,22 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         args: mapRecord(cfg.template, c => renderCfg(ctx, c))
       });
 
+    case 'MakeArray':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRMakeArray,
+        // TODO: 
+        args: undefined as unknown as ArgumentRequests,
+      });
+
+    case 'Flatten':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRFlatten,
+        // TODO: 
+        args: undefined as unknown as ArgumentRequests,
+      });
+      
     case 'IsEmpty':
       return () => ({
         type: 'ScheduleSubroutine',
@@ -375,6 +442,24 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRGetBlobContentAsJson,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetDownloadedBlobContent':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetDownloadedBlobContent,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetOnDemandBlobContent':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetOnDemandBlobContent,
         args: {
           source: renderCfg(ctx, cfg.source)
         }
