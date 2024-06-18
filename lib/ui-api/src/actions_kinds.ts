@@ -170,3 +170,17 @@ export interface ActGetBlobContentAsJson<Source extends ConfAction, T> extends C
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
+
+export interface ActGetDownloadedBlobContent<Source extends ConfAction, DownloadedBlobContent> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? DownloadedBlobContent
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActGetOnDemandBlobContent<Source extends ConfAction, GetOnDemandBlobContent> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? GetOnDemandBlobContent
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}

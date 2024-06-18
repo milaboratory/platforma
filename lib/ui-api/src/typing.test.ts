@@ -7,7 +7,9 @@ import {
   Args, It,
   makeObject,
   mapRecordValues,
-  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson, makeArray, flatten
+  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson, makeArray, flatten,
+  getDownloadedBlobContent,
+  getOnDemandBlobContent
 } from './actions';
 import { BlockConfigBuilder, OutputCell, ResolveOutputsType, StdCtx } from './builder';
 
@@ -89,7 +91,9 @@ test('test config 2', () => {
       d: getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3')),
       e: flatten(makeArray(
         getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3')),
-        getImmediate(['asd', 'd'] as string[])))
+        getImmediate(['asd', 'd'] as string[]))),
+      f: getDownloadedBlobContent<number>()(getResourceField(MainOutputs, 'field4')),
+      g: getOnDemandBlobContent<number>()(getResourceField(MainOutputs, 'field5')),
     }))
     .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
@@ -102,7 +106,9 @@ test('test config 2', () => {
       b: string,
       c: [Uint8Array, 'asd'],
       d: string[],
-      e: string[]
+      e: string[],
+      f: number,
+      g: number
     }>
   }>();
 

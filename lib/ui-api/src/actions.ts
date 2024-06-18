@@ -15,7 +15,9 @@ import {
   ActGetBlobContentAsString,
   ActGetBlobContent,
   ActAnd,
-  ActOr, ActMakeArray, ActFlatten
+  ActOr, ActMakeArray, ActFlatten,
+  ActGetDownloadedBlobContent,
+  ActGetOnDemandBlobContent
 } from './actions_kinds';
 import {
   ExtractAction,
@@ -292,6 +294,26 @@ export function getBlobContentAsJson<T>() {
   ): TypedConfig<ActGetBlobContentAsJson<POCExtractAction<Source>, T>> {
     return ({
       type: 'GetBlobContentAsJson', source: primitiveToConfig(source)
+    } as Cfg) as any;
+  };
+}
+
+export function getDownloadedBlobContent<T>() {
+  return function <const Source extends PrimitiveOrConfig>(
+    source: Source
+  ): TypedConfig<ActGetDownloadedBlobContent<POCExtractAction<Source>, T>> {
+    return ({
+      type: 'GetDownloadedBlobContent', source: primitiveToConfig(source)
+    } as Cfg) as any;
+  };
+}
+
+export function getOnDemandBlobContent<T>() {
+  return function <const Source extends PrimitiveOrConfig>(
+    source: Source
+  ): TypedConfig<ActGetOnDemandBlobContent<POCExtractAction<Source>, T>> {
+    return ({
+      type: 'GetOnDemandBlobContent', source: primitiveToConfig(source)
     } as Cfg) as any;
   };
 }
