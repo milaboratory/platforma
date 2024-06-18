@@ -4,7 +4,7 @@ import { ProjectMeta } from '../model/project_model';
 import { createProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
+import { createDownloadDriver, createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
@@ -149,14 +149,24 @@ export class MiddleLayer {
       }
     });
 
-    const frontendDownloadDriver = createDownloadUrlDriver(pl, new ConsoleLoggerAdapter(),
-      ops.frontendDownloadPath);
+    const logger = new ConsoleLoggerAdapter();
+    const frontendDownloadDriver = createDownloadUrlDriver(pl, logger,
+                                                           ops.frontendDownloadPath,
+                                                           ops.localStorageIdsToRoot);
     const bpPreparer = new BlockPackPreparer(ops.localSecret);
     const env: MiddleLayerEnvironment = {
       pl, localSecret: ops.localSecret,
       ops, bpPreparer,
       frontendDownloadDriver,
-      drivers: {} as any as MiddleLayerDrivers // TODO !!!!
+      drivers: {
+        downloadDriver: createDownloadDriver(
+          pl, logger,
+          ops.blobDownloadPath,
+          ops.blobDownloadCacheSizeBytes,
+          ops.nConcurrentBlobDownloads,
+          ops.localStorageIdsToRoot,
+        )
+      } as any as MiddleLayerDrivers // TODO: add upload and logs drivers.
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

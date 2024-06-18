@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -21,7 +21,7 @@
   "dependencies": {
     "@milaboratory/computable": "^2.0.5",
     "@milaboratory/pl-client-v2": "^2.4.0",
-    "@milaboratory/pl-drivers": "^1.0.18",
+    "@milaboratory/pl-drivers": "^1.0.19",
     "@milaboratory/pl-tree": "^1.2.3",
     "@milaboratory/sdk-block-config": "^0.5.2",
     "@milaboratory/ts-helpers": "^1.0.14",

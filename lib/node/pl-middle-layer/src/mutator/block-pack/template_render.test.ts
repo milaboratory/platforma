@@ -25,10 +25,6 @@ import {
 } from '../../test/known_templates';
 import { outputRef } from '../../model/args';
 
-function resourceInFinalState(data: Pick<ResourceData, 'resourceReady' | 'error' | 'originalResourceId'>) {
-  return data.resourceReady || isNotNullResourceId(data.error) || isNotNullResourceId(data.originalResourceId);
-}
-
 describe.each([
   { name: 'explicit', specEnter: TplSpecEnterExplicit, specSum: TplSpecSumExplicit },
   { name: 'from registry', specEnter: TplSpecEnterFromRegistry, specSum: TplSpecSumFromRegistry }
@@ -225,7 +221,7 @@ async function expectResultAndContext(
   const result = await tx.getResourceData(resultId, true);
   const ctx = await tx.getResourceData(ctxId, true);
 
-  if (!resourceInFinalState(result) || !resourceInFinalState(ctx))
+  if (!result.final || !ctx.final)
     return { ok: false };
 
   return { ctx, result, ok: true };
