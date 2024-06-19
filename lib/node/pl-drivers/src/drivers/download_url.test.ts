@@ -16,15 +16,15 @@ test('should download a tar archive and extracts its content and then deleted', 
     const driver = createDownloadUrlDriver(client, logger, dir);
 
     const url = new URL(
-      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.2.1/frontend.tgz'
+      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
     );
 
-    const c = rawComputable(() => driver.getPath(url));
+    const c = driver.getPath(url);
 
     const path1 = await c.getValue();
     expect(path1).toBeUndefined();
 
-    await c.listen();
+    await c.awaitChange();
 
     const path2 = await c.getValue();
     expect(path2).not.toBeUndefined();
@@ -51,7 +51,7 @@ test('should show a error when 403 status code', async () => {
         'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND'
       );
 
-      const c = rawComputable(() => driver.getPath(url));
+      const c = driver.getPath(url);
 
       const path1 = await c.getValue();
       expect(path1).toBeUndefined();
@@ -74,16 +74,16 @@ test('should abort a downloading process when we reset a state of a computable',
     const driver = createDownloadUrlDriver(client, logger, dir);
 
     const url = new URL(
-      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.2.1/frontend.tgz'
+      'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
     );
 
-    const c = rawComputable(() => driver.getPath(url));
+    const c = driver.getPath(url);
 
     const path1 = await c.getValue();
     expect(path1).toBeUndefined();
 
     c.resetState();
-    await c.listen();
+    await c.awaitChange();
 
     const path2 = await c.getValue();
     expect(path2).toBeUndefined();

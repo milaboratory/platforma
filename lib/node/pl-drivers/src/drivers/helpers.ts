@@ -1,7 +1,7 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { ClientLogs } from '../clients/logs';
 import { LogsDriver } from './logs_stream';
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger, Signer } from '@milaboratory/ts-helpers';
 import {
   PlClient,
   ResourceId,
@@ -43,6 +43,7 @@ export function createDownloadDriver(
   logger: MiLogger,
   saveDir: string,
   cacheSoftSizeBytes: number,
+  signer: Signer,
   nConcurrentDownloads: number = 10,
   localStorageIdsToRoot?: Record<string, string>
 ): DownloadDriver {
@@ -51,6 +52,7 @@ export function createDownloadDriver(
     createDownloadClient(logger, client, localStorageIdsToRoot),
     createLogsClient(client, logger),
     saveDir,
+    signer,
     cacheSoftSizeBytes,
     nConcurrentDownloads
   );
@@ -84,8 +86,7 @@ export function treeEntryToResourceInfo(
   res: PlTreeEntry | ResourceInfo,
   ctx: ComputableCtx
 ) {
-  if (res instanceof PlTreeEntry)
-    return ctx.accessor(res).node().resourceInfo;
+  if (res instanceof PlTreeEntry) return ctx.accessor(res).node().resourceInfo;
 
   return res;
 }
@@ -117,8 +118,7 @@ export class LongUpdater {
 export class Updater {
   private updating: Promise<void> | undefined;
 
-  constructor(private readonly onUpdate: () => Promise<void>) {
-  }
+  constructor(private readonly onUpdate: () => Promise<void>) {}
 
   schedule() {
     if (this.updating == undefined) {

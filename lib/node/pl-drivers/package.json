@@ -14,9 +14,9 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.10.9",
     "@milaboratory/computable": "^2.0.6",
-    "@milaboratory/pl-client-v2": "^2.4.0",
+    "@milaboratory/pl-client-v2": "^2.4.1",
     "@milaboratory/pl-tree": "^1.2.3",
-    "@milaboratory/ts-helpers": "^1.0.14",
+    "@milaboratory/ts-helpers": "^1.0.15",
     "@protobuf-ts/grpc-transport": "^2.9.4",
     "@protobuf-ts/plugin": "^2.9.4",
     "denque": "^2.1.0",

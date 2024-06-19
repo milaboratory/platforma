@@ -6,12 +6,12 @@ import {
   UsageGuard,
   Watcher
 } from '@milaboratory/computable';
-import { ResourceId } from '@milaboratory/pl-client-v2';
+import { bigintToResourceId, ResourceId } from '@milaboratory/pl-client-v2';
 import {
   CallersCounter,
   MiLogger,
   TaskProcessor,
-  notEmpty
+  Signer
 } from '@milaboratory/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
@@ -36,6 +36,7 @@ import { randomUUID } from 'node:crypto';
 import { buffer } from 'node:stream/consumers';
 import { Readable } from 'node:stream';
 import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
+import { createHmac } from 'crypto';
 
 export interface DownloadedBlobHandle {
   readonly type: 'DownloadedBlob';
@@ -77,6 +78,7 @@ export class DownloadDriver
     private readonly clientDownload: ClientDownload,
     private readonly clientLogs: ClientLogs,
     private readonly saveDir: string,
+    private readonly signer: Signer,
     cacheSoftSizeBytes: number,
     nConcurrentDownloads: number = 10
   ) {
@@ -135,22 +137,21 @@ export class DownloadDriver
     return this.getOnDemandBlobNoCtx(ctx.watcher, rInfo, callerId);
   }
 
-  getPath(b: DownloadedBlobHandle): string | undefined {
-    // TODO: what to do with signature?
-    return localHandleToData(b.handle)?.path;
+  getPath(b: DownloadedBlobHandle): string {
+    return localHandleToData(b.handle, this.signer).path;
   }
 
   async getContent(
     b: DownloadedBlobHandle | OnDemandBlobHandle
   ): Promise<Uint8Array | undefined> {
     if (b.type == 'DownloadedBlob') {
-      const result = localHandleToData(b.handle);
+      const result = localHandleToData(b.handle, this.signer);
       // TODO: what to do with signature?
       return await read(result?.path);
     }
 
-    const result = remoteHandleToData(b.handle);
-    const { content } = await this.clientDownload.downloadBlob(result.rInfo);
+    const result = remoteHandleToData(b.handle, this.signer);
+    const { content } = await this.clientDownload.downloadBlob(result);
     return await buffer(content);
   }
 
@@ -168,12 +169,10 @@ export class DownloadDriver
     if (task != undefined) {
       task.attach(w, callerId);
       const result = task.getBlob();
-      if (result?.success == false)
-        throw result.error;
+      if (result?.success == false) throw result.error;
 
-      if (result?.success)
-        delete result.success;
-      
+      if (result?.success) delete result.success;
+
       return result;
     }
 
@@ -196,7 +195,12 @@ export class DownloadDriver
     callerId: string
   ) {
     const fPath = this.getFilePath(rInfo.id);
-    const result = new Download(this.clientDownload, rInfo, fPath);
+    const result = new Download(
+      this.clientDownload,
+      rInfo,
+      fPath,
+      dataToLocalHandle(fPath, this.signer)
+    );
     result.attach(w, callerId);
     this.idToDownload.set(rInfo.id, result);
 
@@ -216,7 +220,10 @@ export class DownloadDriver
     const blob = this.idToOnDemand.get(id);
 
     if (blob == undefined) {
-      const newBlob = new OnDemandBlobHolder({ id, type });
+      const newBlob = new OnDemandBlobHolder(
+        { id, type },
+        dataToRemoteHandle({ id, type }, this.signer)
+      );
       newBlob.attach(w, callerId);
       this.idToOnDemand.set(id, newBlob);
 
@@ -236,7 +243,7 @@ export class DownloadDriver
   ): LogResult {
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return { log: '' };
-    const result = localHandleToData(blob.handle);
+    const result = localHandleToData(blob.handle, this.signer);
     if (result == undefined) return { log: '' };
 
     const logGetter = this.idToLastLines.get(rInfo.id);
@@ -261,14 +268,18 @@ export class DownloadDriver
   ): LogResult {
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return { log: '' };
-    const blobPath = localHandleToData(blob.handle);
+    const blobPath = localHandleToData(blob.handle, this.signer);
     if (blobPath == undefined) return { log: '' };
 
     const logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
       // TODO: what to do with signature?
-      const newLogGetter = new LastLinesGetter(blobPath.path, 1, patternToSearch);
+      const newLogGetter = new LastLinesGetter(
+        blobPath.path,
+        1,
+        patternToSearch
+      );
       this.idToProgressLog.set(rInfo.id, newLogGetter);
       const result = newLogGetter.getOrSchedule(w);
       if (result.error) throw result.error;
@@ -380,12 +391,15 @@ class OnDemandBlobHolder {
   private change = new ChangeSource();
   private counter = new CallersCounter();
 
-  constructor(private readonly rInfo: ResourceInfo) {}
+  constructor(
+    private readonly rInfo: ResourceInfo,
+    private readonly handle: string
+  ) {}
 
   get(): OnDemandBlobHandle {
     return {
       type: 'OnDemandBlob',
-      handle: dataToRemoteHandle({ rInfo: this.rInfo, signature: 'sign' })
+      handle: this.handle
     };
   }
 
@@ -503,7 +517,8 @@ export class Download {
   constructor(
     readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceInfo,
-    readonly path: string
+    readonly path: string,
+    readonly handle: string
   ) {}
 
   attach(w: Watcher, callerId: string) {
@@ -547,10 +562,7 @@ export class Download {
       return {
         success: true,
         type: 'DownloadedBlob',
-        handle: dataToLocalHandle({
-          path: notEmpty(this.path),
-          signature: 'sign'
-        }),
+        handle: this.handle,
         sizeBytes: this.sizeBytes
       };
 
@@ -585,54 +597,56 @@ class DownloadAborted extends Error {}
 
 // https://regex101.com/r/kfnBVX/1
 const localHandleRegex =
-  /^blob\+local:\/\/download\/(?<path>.*)#(?<signature>.*)$/g;
+  /^blob\+local:\/\/download\/(?<path>.*)#(?<signature>.*)$/;
 
-function localHandleToData(handle: string) {
-  const parsed = [...handle.matchAll(localHandleRegex)];
-  if (parsed == null || parsed.length != 1 || parsed[0].length != 3)
+function localHandleToData(handle: string, signer: Signer) {
+  const parsed = handle.match(localHandleRegex);
+
+  if (parsed === null)
     throw new Error(`Local handle is malformed: ${handle}, matches: ${parsed}`);
 
-  const [_, path, signature] = parsed[0];
+  const { path, signature } = parsed.groups!;
+
+  signer.verify(
+    path,
+    signature,
+    `Signature verification failed for: ${handle}`
+  );
 
   return { path, signature };
 }
 
-function dataToLocalHandle({
-  path,
-  signature
-}: {
-  path: string;
-  signature: string;
-}) {
-  return `blob+local://download/${path}#${signature}`;
+function dataToLocalHandle(path: string, signer: Signer) {
+  return `blob+local://download/${path}#${signer.sign(path)}`;
 }
 
 // https://regex101.com/r/rvbPZt/1
 const remoteHandleRegex =
-  /^blob\+remote:\/\/download\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)#(?<signature>.*)$/g;
+  /^blob\+remote:\/\/download\/(?<content>(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*))#(?<signature>.*)$/;
 
-function remoteHandleToData(handle: string) {
-  const parsed = [...handle.matchAll(remoteHandleRegex)];
-  if (parsed == null || parsed.length != 1 || parsed[0].length != 5)
-    throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
+function remoteHandleToData(handle: string, signer: Signer): ResourceInfo {
+  const parsed = handle.match(remoteHandleRegex);
+  if (parsed === null)
+    throw new Error(
+      `Remote handle is malformed: ${handle}, matches: ${parsed}`
+    );
 
-  const [_, resourceType, resourceVersion, resourceId, signature] = parsed[0];
+  const { content, resourceType, resourceVersion, resourceId, signature } =
+    parsed.groups!;
+
+  signer.verify(
+    content,
+    signature,
+    `Signature verification failed for ${handle}`
+  );
 
   return {
-    signature: signature,
-    rInfo: {
-      id: BigInt(resourceId),
-      type: { name: resourceType, version: resourceVersion }
-    } as ResourceInfo
+    id: bigintToResourceId(BigInt(resourceId)),
+    type: { name: resourceType, version: resourceVersion }
   };
 }
 
-function dataToRemoteHandle({
-  rInfo,
-  signature
-}: {
-  rInfo: ResourceInfo;
-  signature: string;
-}): string {
-  return `blob+remote://download/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}#${signature}`;
+function dataToRemoteHandle(rInfo: ResourceInfo, signer: Signer): string {
+  const content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;
+  return `blob+remote://download/${content}#${signer.sign(content)}`;
 }
