@@ -25,7 +25,7 @@ export type OptionalAnyResourceId = NullResourceId | ResourceId | LocalResourceI
 
 export const NullResourceId = 0n as NullResourceId;
 
-export function isNullResourceId(resourceId: OptionalAnyResourceId): resourceId is NullResourceId {
+export function isNullResourceId(resourceId: bigint): resourceId is NullResourceId {
   return resourceId === NullResourceId;
 }
 
@@ -150,11 +150,11 @@ const LocalIdMask = BigInt(MaxLocalId);
 // /** Basically removes embedded tx id */
 // const LocalIdCleanMask = 0xFF00000000FFFFFFn;
 
-export function isRootResourceId(id: AnyResourceId) {
+export function isRootResourceId(id: bigint) {
   return (id & ResourceIdRootMask) !== 0n;
 }
 
-export function isLocalResourceId(id: AnyResourceId): id is LocalResourceId {
+export function isLocalResourceId(id: bigint): id is LocalResourceId {
   return (id & ResourceIdLocalMask) !== 0n;
 }
 
@@ -191,6 +191,15 @@ export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
   else
     return (isRootResourceId(resourceId) ? 'R' : 'N') +
       'G:' + (NoFlagsIdMask & resourceId).toString(16);
+}
+
+/** Converts bigint to global resource id */
+export function bigintToResourceId(resourceId: bigint): ResourceId {
+  if (isLocalResourceId(resourceId))
+    throw new Error(`Local resource id: ${resourceIdToString(resourceId)}`);
+  if (isNullResourceId(resourceId))
+    throw new Error(`Null resource id.`);
+  return resourceId as ResourceId;
 }
 
 export function stringifyWithResourceId(object: unknown | undefined): string {
