@@ -11,4 +11,3 @@ export * from './drivers/logs_stream';
 export * from './drivers/download_url';
 export * from './drivers/helpers';
 
-export * from './signature';
