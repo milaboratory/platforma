@@ -4,6 +4,7 @@ import type { OkType } from '@milaboratory/helpers/types';
 import { predicateUnique } from '@milaboratory/helpers/collections';
 import { type PlCore, normalizeInputs, updateInputs } from '@milaboratory/platforma-core';
 import { utils, strings, objects } from '@milaboratory/helpers';
+import type { Result } from '@milaboratory/helpers/types';
 
 const deepClone = objects.deepClone;
 
@@ -131,7 +132,7 @@ export class BlockStore<State extends PlCore.BlockState = PlCore.BlockState> {
     }
   }
 
-  getRefOptions<K extends keyof State['outputMap'], _V extends State['outputMap'][K] & PlCore.Result<PlCore.DataSourceOption[]>>(key: K) {
+  getRefOptions<K extends keyof State['outputMap'], _V extends State['outputMap'][K] & Result<PlCore.DataSourceOption[]>>(key: K) {
     const output = this.getOutputOk(key) as PlCore.DataSourceOption[] | undefined;
 
     return (
