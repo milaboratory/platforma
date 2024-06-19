@@ -11,7 +11,11 @@ import {
   stringifyWithResourceId,
   isNotFoundError
 } from '@milaboratory/pl-client-v2';
-import { ConsoleLoggerAdapter, HmacSha256Signer, MiLogger } from '@milaboratory/ts-helpers';
+import {
+  ConsoleLoggerAdapter,
+  HmacSha256Signer,
+  MiLogger
+} from '@milaboratory/ts-helpers';
 import { Computable, computable } from '@milaboratory/computable';
 import { createDownloadDriver, createLogsDriver } from './helpers';
 import * as os from 'node:os';
@@ -34,7 +38,13 @@ test('should get all logs', async () => {
     });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
-    const download = createDownloadDriver(client, logger, dir, 700 * 1024, new HmacSha256Signer(HmacSha256Signer.generateSecret()));
+    const download = createDownloadDriver(
+      client,
+      logger,
+      dir,
+      700 * 1024,
+      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+    );
 
     const c = computable(
       tree.entry(),
@@ -102,7 +112,13 @@ test('should get last line with a prefix', async () => {
     });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
-    const download = createDownloadDriver(client, logger, dir, 700 * 1024, new HmacSha256Signer(HmacSha256Signer.generateSecret()));
+    const download = createDownloadDriver(
+      client,
+      logger,
+      dir,
+      700 * 1024,
+      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+    );
 
     const c = computable(
       tree.entry(),
@@ -159,7 +175,13 @@ test('should get log smart object and get log lines from that', async () => {
     });
     const logs = createLogsDriver(client, logger);
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
-    const download = createDownloadDriver(client, logger, dir, 700 * 1024, new HmacSha256Signer(HmacSha256Signer.generateSecret()));
+    const download = createDownloadDriver(
+      client,
+      logger,
+      dir,
+      700 * 1024,
+      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+    );
 
     const c = computable(
       tree.entry(),

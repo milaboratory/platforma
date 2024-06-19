@@ -5,21 +5,23 @@ import {
   ResourceId,
   TestHelpers
 } from '@milaboratory/pl-client-v2';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import {
+  ConsoleLoggerAdapter,
+  HmacSha256Signer
+} from '@milaboratory/ts-helpers';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratory/pl-client-v2';
-import { computable } from '@milaboratory/computable';
-import { UploadDriver } from './upload';
-import { makeGetSignatureFn } from '../signature';
 import { poll } from '@milaboratory/pl-client-v2';
 import { createUploadDriver } from './helpers';
+import { UploadDriver } from './upload';
+import { MTimeError } from '../clients/upload';
 
 const callerId = 'callerId';
 
 test('upload a blob', async () => {
-  withTest(
+  await withTest(
     '42',
     async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
       const uploadId = await createBlobUpload(
@@ -31,29 +33,21 @@ test('upload a blob', async () => {
       );
       const handleRes = await getHandleField(client, uploadId);
 
-      const c = computable(
-        uploader,
-        {},
-        (uploader, ctx) =>
-          uploader.getProgressId(handleRes.id, handleRes.type, callerId),
-        (val, stable) => uploader.getProgress(val)
-      );
+      const c = uploader.getProgressId(handleRes);
 
       while (true) {
         const p = await c.getValue();
 
         expect(p.isUpload).toBeTruthy();
+        expect(p.isUploadSignMatch).toBeTruthy();
         if (p.done) {
-          expect(p.isUploadSignMatch).toBeTruthy();
           expect(p.lastError).toBeUndefined();
-          expect(p.uploadingTerminallyFailed).toBeUndefined();
-          expect(p.status?.done).toBeTruthy();
-          expect(p.status?.bytesProcessed).toBe('2');
-          expect(p.status?.bytesTotal).toBe('2');
+          expect(p.status?.bytesProcessed).toBe(2);
+          expect(p.status?.bytesTotal).toBe(2);
           return;
         }
 
-        await c.listen();
+        await c.awaitChange();
       }
     }
   );
@@ -66,7 +60,7 @@ test('upload a big blob', async () => {
   }
   const hugeString = lotsOfNumbers.join(' ');
 
-  withTest(
+  await withTest(
     hugeString,
     async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
       const uploadId = await createBlobUpload(
@@ -78,35 +72,28 @@ test('upload a big blob', async () => {
       );
       const handleRes = await getHandleField(client, uploadId);
 
-      const c = computable(
-        uploader,
-        {},
-        (uploader, ctx) =>
-          uploader.getProgressId(handleRes.id, handleRes.type, callerId),
-        (val, stable) => uploader.getProgress(val)
-      );
+      const c = uploader.getProgressId(handleRes);
 
       while (true) {
         const p = await c.getValue();
+        console.log('got progress of big blob: ', p);
 
         expect(p.isUpload).toBeTruthy();
         if (p.done) {
           expect(p.isUploadSignMatch).toBeTruthy();
           expect(p.lastError).toBeUndefined();
-          expect(p.uploadingTerminallyFailed).toBeUndefined();
-          expect(p.status?.done).toBeTruthy();
           expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
           return;
         }
 
-        await c.listen();
+        await c.awaitChange();
       }
     }
   );
 });
 
 test('upload a blob with wrong modification time', async () => {
-  withTest(
+  await withTest(
     '42',
     async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
       const uploadId = await createBlobUpload(
@@ -118,32 +105,24 @@ test('upload a blob with wrong modification time', async () => {
       );
       const handleRes = await getHandleField(client, uploadId);
 
-      const c = computable(
-        uploader,
-        {},
-        (uploader, ctx) =>
-          uploader.getProgressId(handleRes.id, handleRes.type, callerId),
-        (val, stable) => uploader.getProgress(val)
-      );
+      const c = uploader.getProgressId(handleRes);
 
       while (true) {
-        const p = await c.getValue();
-
-        if (p.uploadingTerminallyFailed) {
-          expect(p?.lastError).not.toBeUndefined();
-          expect(p?.done).toBeFalsy();
-          expect(p?.isUpload).toBeTruthy();
-          return;
+        try {
+          await c.getValue();
+        } catch (e: any) {
+          if (String(e).includes('file was modified')) return;
+          throw e;
         }
 
-        await c.listen();
+        await c.awaitChange();
       }
     }
   );
 });
 
 test('upload a duplicate blob', async () => {
-  withTest(
+  await withTest(
     '42',
     async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
       const uploadId = await createBlobUpload(
@@ -155,21 +134,8 @@ test('upload a duplicate blob', async () => {
       );
       const handleRes = await getHandleField(client, uploadId);
 
-      const cOrig = computable(
-        uploader,
-        {},
-        (uploader, ctx) =>
-          uploader.getProgressId(handleRes.id, handleRes.type, callerId),
-        (val, stable) => uploader.getProgress(val)
-      );
-
-      const cDupl = computable(
-        uploader,
-        {},
-        (uploader, ctx) =>
-          uploader.getProgressId(handleRes.id, handleRes.type, callerId),
-        (val, stable) => uploader.getProgress(val)
-      );
+      const cOrig = uploader.getProgressId(handleRes);
+      const cDupl = uploader.getProgressId(handleRes);
 
       while (true) {
         const pOrig = await cOrig.getValue();
@@ -180,14 +146,12 @@ test('upload a duplicate blob', async () => {
         if (pDupl.done) {
           expect(pDupl.isUploadSignMatch).toBeTruthy();
           expect(pDupl.lastError).toBeUndefined();
-          expect(pDupl.uploadingTerminallyFailed).toBeUndefined();
-          expect(pDupl.status?.done).toBeTruthy();
-          expect(pDupl.status?.bytesProcessed).toBe('2');
-          expect(pDupl.status?.bytesTotal).toBe('2');
+          expect(pDupl.status?.bytesProcessed).toBe(2);
+          expect(pDupl.status?.bytesTotal).toBe(2);
           return;
         }
 
-        await cDupl.listen();
+        await cDupl.awaitChange();
       }
     }
   );
@@ -207,9 +171,12 @@ async function withTest(
   cb: (arg: TestArg) => Promise<void>
 ) {
   await TestHelpers.withTempRoot(async (client) => {
-    const logger = new ConsoleLoggerAdapter();
-    const signFn = await makeGetSignatureFn();
-    const uploader = createUploadDriver(client, logger, signFn);
+    const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
+    const uploader = createUploadDriver(
+      client,
+      new ConsoleLoggerAdapter(),
+      signer
+    );
 
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
     const fPath = path.join(tmpDir, 'testUploadABlob.txt');
@@ -218,10 +185,11 @@ async function withTest(
     const f = await fs.open(fPath);
     const stats = await fs.stat(fPath);
     const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
-    const sign = await signFn(fPath);
+    const sign = signer.sign(fPath);
 
     await cb({ client, uploader, f, fPath, mtime, fileSignature: sign });
 
+    await f.close();
     await uploader.releaseAll();
   });
 }

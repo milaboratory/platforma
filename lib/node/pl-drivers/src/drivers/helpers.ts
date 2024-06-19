@@ -8,7 +8,8 @@ import {
   BasicResourceData,
   isNullResourceId,
   valErr,
-  getField
+  getField,
+  ResourceType
 } from '@milaboratory/pl-client-v2';
 import {
   createDownloadClient,
@@ -16,12 +17,12 @@ import {
   createUploadBlobClient,
   createUploadProgressClient
 } from '../clients/helpers';
-import { UploadDriver } from './upload';
 import { scheduler } from 'node:timers/promises';
 import { DownloadUrlDriver } from './download_url';
 import { DownloadDriver } from './download_and_logs_blob';
 import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
 import { ComputableCtx } from '@milaboratory/computable';
+import { UploadDriver } from './upload';
 
 /** Just a helper to create a driver and all clients. */
 export function createDownloadUrlDriver(
@@ -62,12 +63,11 @@ export function createDownloadDriver(
 export function createUploadDriver(
   client: PlClient,
   logger: MiLogger,
-  signFn: (path: string) => Promise<string>
+  signer: Signer
 ): UploadDriver {
   return new UploadDriver(
     logger,
-    signFn,
-    client,
+    signer,
     createUploadBlobClient(client, logger),
     createUploadProgressClient(client, logger)
   );
@@ -87,6 +87,25 @@ export function treeEntryToResourceInfo(
   ctx: ComputableCtx
 ) {
   if (res instanceof PlTreeEntry) return ctx.accessor(res).node().resourceInfo;
+
+  return res;
+}
+
+export type ResourceWithData = {
+  id: ResourceId;
+  type: ResourceType;
+  data?: Uint8Array;
+};
+
+export function treeEntryToResourceWithData(
+  res: PlTreeEntry | ResourceWithData,
+  ctx: ComputableCtx
+): ResourceWithData {
+  if (res instanceof PlTreeEntry) {
+    const node = ctx.accessor(res).node();
+    const info = node.resourceInfo;
+    return { ...info, data: node.getData() ?? new Uint8Array() };
+  }
 
   return res;
 }

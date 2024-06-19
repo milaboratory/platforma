@@ -13,6 +13,8 @@ import { randomUUID } from 'node:crypto';
 import { LongUpdater } from './helpers';
 import { ResourceInfo } from '@milaboratory/pl-tree';
 
+// TODO: add a driver that connect download and logs driver.
+
 export interface LogsSyncReader {
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
