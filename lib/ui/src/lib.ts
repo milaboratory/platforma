@@ -1,5 +1,6 @@
 import '@/lib/assets/ui.scss';
 import GridTable from '@/lib/components/GridTable/index.vue';
+import * as DataTable from '@/lib/components/DataTable';
 import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
 import type * as GridTableTypes from './lib/components/GridTable/types';
 import type * as ManageModalTypes from './lib/components/ManageModal/types';
@@ -11,6 +12,7 @@ import BtnAccent from '@/lib/components/BtnAccent.vue';
 import BtnGhost from '@/lib/components/BtnGhost.vue';
 import BtnLink from '@/lib/components/BtnLink.vue';
 import TextField from '@/lib/components/TextField.vue';
+import NumberInput from '@/lib/components/NumberInput.vue';
 import SelectInput from '@/lib/components/SelectInput.vue';
 import LineDropdown from '@/lib/components/LineDropdown.vue';
 import MultiDropdown from '@/lib/components/MultiDropdown.vue';
@@ -29,6 +31,7 @@ import Slider from '@/lib/components/Slider.vue';
 import DialogModal from './lib/components/DialogModal.vue';
 import SlideModal from './lib/components/SlideModal.vue';
 import ManageModal from './lib/components/ManageModal/index.vue';
+import { showContextMenu } from './lib/components/contextMenu/index.ts';
 import { usePosition } from '@/lib/composition/usePosition';
 import { useClickOutside } from '@/lib/composition/useClickOuside';
 import { useEventListener } from '@/lib/composition/useEventListener';
@@ -96,6 +99,7 @@ export {
   BtnSecondary,
   BtnAccent,
   TextField,
+  NumberInput,
   SelectInput,
   MultiDropdown,
   LineDropdown,
@@ -112,6 +116,7 @@ export {
   ToggleSwitch,
   MaskIcon,
   GridTable,
+  DataTable,
   ContextProvider,
   Slider,
   DialogModal,
@@ -134,6 +139,9 @@ export {
   useFormState,
   useQuery,
 };
+
+// Helpers
+export { showContextMenu };
 
 // Layout
 export {

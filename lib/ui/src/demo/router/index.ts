@@ -2,13 +2,23 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
+    name: 'Data Table',
+    path: '/',
+    component: () => import('@/demo/data-table/index.vue'),
+  },
+  {
+    name: 'Data Table Async',
+    path: '/data-table-async',
+    component: () => import('@/demo/data-table-async/index.vue'),
+  },
+  {
     name: 'Number input',
     path: '/number-input',
     component: () => import('@/demo/number-input/index.vue'),
   },
   {
     name: 'Form',
-    path: '/',
+    path: '/form',
     component: () => import('@/demo/form/index.vue'),
   },
   {
