@@ -309,6 +309,6 @@ test('should create download-file block, render it and gets outputs from its con
     console.dir(block3StableState, { depth: 5 });
 
     if (block3StableState.type == 'ok')
-      expect(block3StableState.value.outputs['contentAsJson']).toStrictEqual(42);
+      expect(block3StableState.value.outputs['contentAsJson'].value).toStrictEqual(42);
   });
 });
