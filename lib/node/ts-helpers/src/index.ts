@@ -6,6 +6,7 @@ export * from './concurrent/async_queue';
 export * from './concurrent/task_processor';
 export * from './retries';
 export * from './counter';
+export * from './crypto/signer';
 
 export function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);
