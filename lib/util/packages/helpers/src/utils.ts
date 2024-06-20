@@ -244,3 +244,7 @@ export async function resolveAwaited<O extends Record<string, unknown>>(obj: O):
 export function alike(obj: Record<string, unknown>, to: Record<string, unknown>) {
   return Object.keys(to).every(bKey => obj[bKey] === to[bKey]);
 }
+
+export function asConst<const T>(v: T) {
+  return v;
+}

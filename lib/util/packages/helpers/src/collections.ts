@@ -10,7 +10,7 @@ export function pushValueIm<T>(arr: T[], value: T): T[] {
   return [...arr, value];
 }
 
-export function addUnique<T>(arr: T[], value: T): T[] {
+export function addUnique<T>(arr: readonly T[], value: T): T[] {
   if (!arr.includes(value)) {
     return [...arr, value];
   }

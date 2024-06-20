@@ -65,3 +65,7 @@ export type ReturnTupleType<F extends AnyFunction> = ReturnType<F>[number];
 export type AwaitedStruct<O extends Record<string, unknown>> = {
   [P in keyof O]: Awaited<O[P]>
 };
+
+export type DeepReadonly<T> = keyof T extends never
+  ? T
+  : { readonly [k in keyof T]: DeepReadonly<T[k]> };
