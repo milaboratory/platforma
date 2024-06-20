@@ -4,4 +4,5 @@ export * from './actions_kinds';
 export * from './type_engine';
 export * from './builder';
 export * from './util';
+export * from './driver_types';
 export { Checked } from './type_util';
