@@ -4,15 +4,24 @@ import {
   getJsonField,
   getResourceField,
   getResourceValueAsJson,
-  Args, It,
+  Args,
+  It,
   makeObject,
   mapRecordValues,
-  MainOutputs, isEmpty, mapArrayValues, getBlobContentAsString, getBlobContent, getBlobContentAsJson, makeArray, flatten,
+  MainOutputs,
+  isEmpty,
+  mapArrayValues,
+  getBlobContentAsString,
+  getBlobContent,
+  getBlobContentAsJson,
+  makeArray,
+  flatten,
   getDownloadedBlobContent,
   getOnDemandBlobContent
 } from './actions';
 import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
 import { ValueOrErrors } from './common_types';
+import { LocalBlobHandle, RemoteBlobHandle } from './driver_types';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -93,8 +102,8 @@ test('test config 2', () => {
       e: flatten(makeArray(
         getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, 'field3')),
         getImmediate(['asd', 'd'] as string[]))),
-      f: getDownloadedBlobContent<number>()(getResourceField(MainOutputs, 'field4')),
-      g: getOnDemandBlobContent<number>()(getResourceField(MainOutputs, 'field5')),
+      f: getDownloadedBlobContent(getResourceField(MainOutputs, 'field4')),
+      g: getOnDemandBlobContent(getResourceField(MainOutputs, 'field5'))
     }))
     .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
@@ -108,8 +117,8 @@ test('test config 2', () => {
       c: [Uint8Array, 'asd'],
       d: string[],
       e: string[],
-      f: number,
-      g: number
+      f: LocalBlobHandle,
+      g: RemoteBlobHandle
     }>
   }>();
 

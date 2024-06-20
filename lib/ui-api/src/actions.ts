@@ -272,48 +272,44 @@ export function mapResourceFields<
 // Download Blobs
 //
 
-export function getBlobContent<const Source extends PrimitiveOrConfig>(
+export function getBlobContent<const Source extends TypedConfig>(
   source: Source
-): TypedConfig<ActGetBlobContent<POCExtractAction<Source>>> {
+): TypedConfig<ActGetBlobContent<ExtractAction<Source>>> {
   return ({
     type: 'GetBlobContent', source: primitiveToConfig(source)
   } as Cfg) as any;
 }
 
-export function getBlobContentAsString<const Source extends PrimitiveOrConfig>(
+export function getBlobContentAsString<const Source extends TypedConfig>(
   source: Source
-): TypedConfig<ActGetBlobContentAsString<POCExtractAction<Source>>> {
+): TypedConfig<ActGetBlobContentAsString<ExtractAction<Source>>> {
   return ({
     type: 'GetBlobContentAsString', source: primitiveToConfig(source)
   } as Cfg) as any;
 }
 
 export function getBlobContentAsJson<T>() {
-  return function <const Source extends PrimitiveOrConfig>(
+  return function <const Source extends TypedConfig>(
     source: Source
-  ): TypedConfig<ActGetBlobContentAsJson<POCExtractAction<Source>, T>> {
+  ): TypedConfig<ActGetBlobContentAsJson<ExtractAction<Source>, T>> {
     return ({
       type: 'GetBlobContentAsJson', source: primitiveToConfig(source)
     } as Cfg) as any;
   };
 }
 
-export function getDownloadedBlobContent<T>() {
-  return function <const Source extends PrimitiveOrConfig>(
-    source: Source
-  ): TypedConfig<ActGetDownloadedBlobContent<POCExtractAction<Source>, T>> {
-    return ({
-      type: 'GetDownloadedBlobContent', source: primitiveToConfig(source)
-    } as Cfg) as any;
-  };
+export function getDownloadedBlobContent<const Source extends TypedConfig>(
+  source: Source
+): TypedConfig<ActGetDownloadedBlobContent<ExtractAction<Source>>> {
+  return ({
+    type: 'GetDownloadedBlobContent', source: primitiveToConfig(source)
+  } as Cfg) as any;
 }
 
-export function getOnDemandBlobContent<T>() {
-  return function <const Source extends PrimitiveOrConfig>(
-    source: Source
-  ): TypedConfig<ActGetOnDemandBlobContent<POCExtractAction<Source>, T>> {
-    return ({
-      type: 'GetOnDemandBlobContent', source: primitiveToConfig(source)
-    } as Cfg) as any;
-  };
+export function getOnDemandBlobContent<const Source extends TypedConfig>(
+  source: Source
+): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
+  return ({
+    type: 'GetOnDemandBlobContent', source: primitiveToConfig(source)
+  } as Cfg) as any;
 }

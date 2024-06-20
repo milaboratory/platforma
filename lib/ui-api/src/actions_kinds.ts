@@ -5,6 +5,7 @@ import {
   PlResourceEntry
 } from './type_engine';
 import { And, IsA, SyncConfAction } from './type_util';
+import { LocalBlobHandle, RemoteBlobHandle } from './driver_types';
 
 //
 // Context
@@ -171,16 +172,16 @@ export interface ActGetBlobContentAsJson<Source extends ConfAction, T> extends C
   isSync: IsA<Source, SyncConfAction>;
 }
 
-export interface ActGetDownloadedBlobContent<Source extends ConfAction, DownloadedBlobContent> extends ConfAction {
+export interface ActGetDownloadedBlobContent<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
-    ? DownloadedBlobContent
+    ? LocalBlobHandle
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
-export interface ActGetOnDemandBlobContent<Source extends ConfAction, GetOnDemandBlobContent> extends ConfAction {
+export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
-    ? GetOnDemandBlobContent
+    ? RemoteBlobHandle
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }

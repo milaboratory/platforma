@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-block-config",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Block config SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -12,7 +12,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@milaboratory/ts-helpers": "^1.0.13"
+    "@milaboratory/ts-helpers": "^1.0.15"
   },
   "files": [
     "dist/**/*"
