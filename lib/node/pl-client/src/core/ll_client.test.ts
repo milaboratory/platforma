@@ -45,16 +45,18 @@ test('unauthenticated status change', async () => {
     .rejects
     .toThrow(UnauthenticatedError);
 
+  await tp.setImmediate();
+
   expect(client.status).toEqual('Unauthenticated');
 });
 
 test('automatic token update', async () => {
-  const { conf, authInformation } = await getTestClientConf();
+  const { conf, auth } = await getTestClientConf();
   conf.authMaxRefreshSeconds = 1;
   let numberOfAuthUpdates = 0;
   const client = new LLPlClient(conf, {
     auth: {
-      authInformation,
+      authInformation: auth.authInformation,
       onUpdate: (auth) => {
         console.log(auth);
         ++numberOfAuthUpdates;

@@ -125,6 +125,8 @@ export interface AuthOps {
   authInformation: AuthInformation,
   /** Will be executed after successful authorization information refresh */
   readonly onUpdate?: (newInfo: AuthInformation) => void,
+  /** Will be executed if auth-related error happens during normal client operation */
+  readonly onAuthError?: () => void
   /** Will be executed if error encountered during token update */
   readonly onUpdateError?: (error: unknown) => void
 }

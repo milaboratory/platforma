@@ -56,6 +56,19 @@ export function tryGetFileConfig(): [PlConfigFile, string] | undefined {
   return undefined;
 }
 
+function saveAuthInfoCallback(confHash: string, authMaxRefreshSeconds: number): (newAuthInfo: AuthInformation) => void {
+  return (newAuthInfo) => {
+    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
+      confHash, authInformation: newAuthInfo,
+      expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds)
+    } as AuthCache)), 'utf8');
+  };
+}
+
+const cleanAuthInfoCallback = () => {
+  fs.rmSync(AUTH_DATA_FILE);
+};
+
 /** Uses default algorithm to construct a pl client from the environment */
 export async function defaultPlClient(): Promise<PlClient> {
   let config: PlClientConfig | undefined = undefined;
@@ -116,12 +129,10 @@ export async function defaultPlClient(): Promise<PlClient> {
   }
 
   return await PlClient.init(config, {
-    authInformation, onUpdate: newAuthInfo => {
-      fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
-        confHash, authInformation: newAuthInfo,
-        expiration: inferAuthRefreshTime(newAuthInfo, config.authMaxRefreshSeconds)
-      } as AuthCache)), 'utf8');
-    }
+    authInformation,
+    onUpdate: newAuthInfo => saveAuthInfoCallback(confHash, config!.authMaxRefreshSeconds),
+    onUpdateError: cleanAuthInfoCallback,
+    onAuthError: cleanAuthInfoCallback
   });
 }
 

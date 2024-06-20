@@ -10,9 +10,9 @@ test('test client init', async () => {
 
 test('test client alternative root init', async () => {
   const aRootName = 'test_root';
-  const { conf, authInformation } = await getTestClientConf();
-  const clientA = await PlClient.init({ ...conf, alternativeRoot: aRootName }, { authInformation });
-  const clientB = await PlClient.init(conf, { authInformation });
+  const { conf, auth } = await getTestClientConf();
+  const clientA = await PlClient.init({ ...conf, alternativeRoot: aRootName }, auth);
+  const clientB = await PlClient.init(conf, auth);
   const result = await clientB.deleteAlternativeRoot(aRootName);
   expect(result).toBe(true);
 });

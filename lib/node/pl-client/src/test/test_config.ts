@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { LLPlClient } from '../core/ll_client';
-import { AuthInformation, plAddressToConfig, PlClientConfig } from '../core/config';
+import { AuthInformation, AuthOps, plAddressToConfig, PlClientConfig } from '../core/config';
 import { UnauthenticatedPlClient } from '../core/unauth_client';
 import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
@@ -47,7 +47,19 @@ interface AuthCache {
   authInformation: AuthInformation
 }
 
-export async function getTestClientConf(): Promise<{ conf: PlClientConfig, authInformation: AuthInformation }> {
+function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformation) => void {
+  return authInformation =>
+    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
+      conf: tConf, authInformation,
+      expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
+    } as AuthCache)), 'utf8');
+}
+
+const cleanAuthInfoCallback = () => {
+  fs.rmSync(AUTH_DATA_FILE);
+};
+
+export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth: AuthOps }> {
   const tConf = getTestConfig();
 
   let authInformation: AuthInformation | undefined = undefined;
@@ -64,38 +76,47 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, authI
 
   const plConf = plAddressToConfig(tConf.address);
 
-  if (authInformation === undefined) {
-    const client = new UnauthenticatedPlClient(plConf);
+  const uClient = new UnauthenticatedPlClient(plConf);
 
-    if (await client.requireAuth()) {
-      if (tConf.test_user === undefined || tConf.test_password === undefined)
-        throw new Error(`No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`);
-      authInformation = await client.login(tConf.test_user, tConf.test_password);
-    } else {
+  const requireAuth = await uClient.requireAuth();
+
+  if (!requireAuth && (tConf.test_user !== undefined || tConf.test_password !== undefined))
+    throw new Error(`Server require no auth, but test user name or test password are provided via (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`);
+
+  if (requireAuth && (tConf.test_user === undefined || tConf.test_password === undefined))
+    throw new Error(`No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`);
+
+  if (authInformation === undefined) {
+    if (requireAuth)
+      authInformation = await uClient.login(tConf.test_user!, tConf.test_password!);
+    else
       // No authorization is required
       authInformation = {};
-    }
 
     // saving cache
-    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
-      conf: tConf, authInformation,
-      expiration: inferAuthRefreshTime(authInformation, plConf.authMaxRefreshSeconds)
-    } as AuthCache)), 'utf8');
+    saveAuthInfoCallback(tConf)(authInformation);
   }
 
-  return { conf: plConf, authInformation };
+  return {
+    conf: plConf,
+    auth: {
+      authInformation, onUpdate: saveAuthInfoCallback(tConf),
+      onAuthError: cleanAuthInfoCallback,
+      onUpdateError: cleanAuthInfoCallback
+    }
+  };
 }
 
 export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {}) {
-  const { conf, authInformation } = await getTestClientConf();
-  return new LLPlClient({ ...conf, ...confOverrides }, { auth: { authInformation } });
+  const { conf, auth } = await getTestClientConf();
+  return new LLPlClient({ ...conf, ...confOverrides }, { auth });
 }
 
 export async function getTestClient(alternativeRoot?: string) {
-  const { conf, authInformation } = await getTestClientConf();
+  const { conf, auth } = await getTestClientConf();
   if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
     throw new Error('test pl address configured with alternative root');
-  return await PlClient.init({ ...conf, alternativeRoot }, { authInformation });
+  return await PlClient.init({ ...conf, alternativeRoot }, auth);
 }
 
 export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T> {

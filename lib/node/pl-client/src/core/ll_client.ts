@@ -27,6 +27,8 @@ export class LLPlClient {
   private authInformation?: AuthInformation;
   /** Will be executed by the client when it is required */
   private readonly onAuthUpdate?: (newInfo: AuthInformation) => void;
+  /** Will be executed if auth-related error happens during normal client operation */
+  private readonly onAuthError?: () => void;
   /** Will be executed by the client when it is required */
   private readonly onAuthRefreshProblem?: (error: unknown) => void;
   /** Threshold after which auth info refresh is required */
@@ -59,6 +61,7 @@ export class LLPlClient {
       this.authInformation = auth.authInformation;
       this.onAuthUpdate = auth.onUpdate;
       this.onAuthRefreshProblem = auth.onUpdateError;
+      this.onAuthError = auth.onAuthError;
     }
 
     grpcInterceptors.push(this.createErrorInterceptor());
@@ -113,11 +116,15 @@ export class LLPlClient {
   }
 
   private updateStatus(newStatus: PlConnectionStatus) {
-    if (this._status !== newStatus) {
-      this._status = newStatus;
-      if (this.statusListener !== undefined)
-        this.statusListener(this._status);
-    }
+    setImmediate(() => {
+      if (this._status !== newStatus) {
+        this._status = newStatus;
+        if (this.statusListener !== undefined)
+          this.statusListener(this._status);
+        if (this.onAuthError !== undefined)
+          this.onAuthError();
+      }
+    });
   }
 
   public get status(): PlConnectionStatus {
