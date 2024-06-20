@@ -1,9 +1,8 @@
-import { BlockPackSpecNotPrepared } from '../model/block_pack_spec';
+import { BlockPackSpecNotPrepared } from '../model';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
+import { HmacSha256Signer } from '@milaboratory/ts-helpers';
 
-export const TestSecret = 'secret';
-
-export const TestBPPreparer = new BlockPackPreparer(TestSecret);
+export const TestBPPreparer = new BlockPackPreparer(new HmacSha256Signer(HmacSha256Signer.generateSecret()));
 
 export const BPSpecEnterV041NotPrepared: BlockPackSpecNotPrepared = {
   type: 'from-registry-v1',

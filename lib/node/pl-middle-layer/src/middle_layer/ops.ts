@@ -15,7 +15,9 @@ export type MiddleLayerOps = {
   readonly stagingRenderingRate: number;
 
   /** Local secret, that is used to sign and verify different pieces of information
-   * that can be used to access local data, like local paths for ongoing uploads. */
+   * that can be used to access local data, like local paths for ongoing uploads.
+   *
+   * Use {@link MiddleLayer.generateLocalSecret} to generate sufficiently random string. */
   readonly localSecret: string,
 
   /** Common root where to put frontend code. */
@@ -24,9 +26,9 @@ export type MiddleLayerOps = {
   /** Common root where to put downloaded blobs. */
   readonly blobDownloadPath: string;
 
-  /** If the platform is running in local mode and a download driver 
-   * needs to download files from local storage, it will open files 
-   * from the specified directory. Otherwise is should be empty. */
+  /** If the platform is running in local mode and a download driver
+   * needs to download files from local storage, it will open files
+   * from the specified directory. Otherwise, it should be empty. */
   readonly localStorageIdsToRoot: Record<string, string>;
 
   /** The number of downloads that can be done in parallel when downloading blobs. */
@@ -46,16 +48,16 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'localStorageIdsToRoot'
   | 'nConcurrentBlobDownloads'
   | 'blobDownloadCacheSizeBytes'> = {
-    defaultTreeOptions: {
-      pollingInterval: 350,
-      stopPollingDelay: 2500
-    },
-    projectRefreshInterval: 700,
-    stagingRenderingRate: 5,
-    localStorageIdsToRoot: {},
-    nConcurrentBlobDownloads: 10,
-    blobDownloadCacheSizeBytes: 100 * 1024 * 1024 // 100MB
-  };
+  defaultTreeOptions: {
+    pollingInterval: 350,
+    stopPollingDelay: 2500
+  },
+  projectRefreshInterval: 700,
+  stagingRenderingRate: 5,
+  localStorageIdsToRoot: {},
+  nConcurrentBlobDownloads: 10,
+  blobDownloadCacheSizeBytes: 100 * 1024 * 1024 // 100MB
+};
 
 /** Fields with default values are marked as optional here. */
 export type MiddleLayerOpsConstructor =

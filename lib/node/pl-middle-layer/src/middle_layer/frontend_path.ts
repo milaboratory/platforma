@@ -7,11 +7,10 @@ import {
   FrontendFromFolderResourceType,
   FrontendFromUrlData,
   FrontendFromUrlResourceType
-} from '../model/block_pack_spec';
+} from '../model';
 import { PathResult } from '@milaboratory/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
-import { createHmac } from 'node:crypto';
 
 function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined | string | ComputableStableDefined<PathResult> {
   const node = a.node();
@@ -26,10 +25,8 @@ function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined 
     const data = node.getDataAsJson<FrontendFromFolderData>();
     if (data === undefined)
       throw new Error(`No resource data.`);
-    const frontendPathSignature = createHmac('sha256', env.localSecret)
-      .update(data.path).digest('hex');
-    if (frontendPathSignature !== data.signature)
-      throw new Error(`Frontend path signature mismatch: ${data.signature} != ${frontendPathSignature}`);
+    env.signer.verify(data.path, data.signature,
+      `Frontend path signature mismatch for: ${data.path}`);
     return data.path;
   } else {
     throw new Error(`Unsupported resource type: ${JSON.stringify(node.resourceType)}`);

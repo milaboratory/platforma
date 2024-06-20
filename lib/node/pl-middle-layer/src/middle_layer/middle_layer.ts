@@ -1,11 +1,11 @@
 import { field, isNullResourceId, PlClient, ResourceId, toGlobalResourceId } from '@milaboratory/pl-client-v2';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { AuthorMarker, ProjectMeta } from '../model/project_model';
-import { createProject, withProject, withProjectAuthored } from '../mutator/project';
+import { ProjectMeta } from '../model/project_model';
+import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import { createDownloadDriver, createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
@@ -15,7 +15,7 @@ import { MiddleLayerDrivers } from '../cfg_render/operation';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
-  readonly localSecret: string;
+  readonly signer: Signer;
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
   readonly frontendDownloadDriver: DownloadUrlDriver;
@@ -136,8 +136,16 @@ export class MiddleLayer {
     this.openedProjectsByRid.forEach(prj => prj.destroy());
   }
 
+  /** Generates sufficiently random string to be used as local secret for the
+   * middle layer */
+  public static generateLocalSecret(): string {
+    return HmacSha256Signer.generateSecret();
+  }
+
+  /** Initialize middle layer */
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
+    const signer = new HmacSha256Signer(ops.localSecret);
     const projects = await pl.withWriteTx('MLInitialization', async tx => {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, 'Dynamic');
@@ -160,9 +168,9 @@ export class MiddleLayer {
     const frontendDownloadDriver = createDownloadUrlDriver(pl, logger,
       ops.frontendDownloadPath,
       ops.localStorageIdsToRoot);
-    const bpPreparer = new BlockPackPreparer(ops.localSecret);
+    const bpPreparer = new BlockPackPreparer(signer);
     const env: MiddleLayerEnvironment = {
-      pl, localSecret: ops.localSecret,
+      pl, signer,
       ops, bpPreparer,
       frontendDownloadDriver,
       drivers: {
@@ -170,6 +178,7 @@ export class MiddleLayer {
           pl, logger,
           ops.blobDownloadPath,
           ops.blobDownloadCacheSizeBytes,
+          signer,
           ops.nConcurrentBlobDownloads,
           ops.localStorageIdsToRoot
         )

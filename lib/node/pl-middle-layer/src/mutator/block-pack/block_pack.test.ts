@@ -4,10 +4,11 @@ import {
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
 import { BlockPackPreparer, createBlockPack } from './block_pack';
-import { BlockPackSpecAny } from '../../model/block_pack_spec';
+import { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
+import { HmacSha256Signer } from '@milaboratory/ts-helpers';
 
-const preparation = new BlockPackPreparer('secret');
+const preparation = new BlockPackPreparer(new HmacSha256Signer(HmacSha256Signer.generateSecret()));
 
 test.each([
   {

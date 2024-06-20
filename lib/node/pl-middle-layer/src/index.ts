@@ -1,3 +1,3 @@
-export * from './block_registry/index';
-export * from './middle_layer/index';
-export * from './model/index';
+export * from './block_registry';
+export * from './middle_layer';
+export * from './model';

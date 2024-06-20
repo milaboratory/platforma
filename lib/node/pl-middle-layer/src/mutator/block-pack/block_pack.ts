@@ -1,9 +1,8 @@
 import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import { loadTemplate } from './template';
-import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model/block_pack_spec';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
+import { assertNever, Signer } from '@milaboratory/ts-helpers';
 import path from 'node:path';
-import { createHmac } from 'node:crypto';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
@@ -28,7 +27,7 @@ export const DevBlockPackFiles = [
 
 export class BlockPackPreparer {
   constructor(
-    private readonly secret: string | Uint8Array,
+    private readonly signer: Signer,
     private readonly http?: Dispatcher) {
   }
 
@@ -81,8 +80,6 @@ export class BlockPackPreparer {
 
         // frontend
         const frontendPath = path.resolve(spec.folder, ...DevBlockPackFrontendFolder);
-        const frontendPathSignature = createHmac('sha256', this.secret)
-          .update(frontendPath).digest('hex');
 
         return {
           type: 'explicit',
@@ -94,7 +91,7 @@ export class BlockPackPreparer {
           frontend: {
             type: 'local',
             path: frontendPath,
-            signature: frontendPathSignature
+            signature: this.signer.sign(frontendPath)
           },
           source: spec
         };

@@ -4,7 +4,7 @@ import {
   FrontendFromUrlData,
   FrontendFromUrlResourceType,
   FrontendSpec
-} from '../../model/block_pack_spec';
+} from '../../model';
 import { assertNever } from '@milaboratory/ts-helpers';
 
 export function createFrontend(tx: PlTransaction, spec: FrontendSpec): AnyResourceRef {

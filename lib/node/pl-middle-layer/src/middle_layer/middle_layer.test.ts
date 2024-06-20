@@ -6,16 +6,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 
-// const EnterNumbersSpec = {
-//   type: 'from-registry-v1',
-//   url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.0'
-// } as BlockPackSpecAny;
-//
-// const SumNumbersSpec = {
-//   type: 'from-registry-v1',
-//   url: 'https://block.registry.platforma.bio/releases/v1/milaboratory/sum-numbers/0.4.0'
-// } as BlockPackSpecAny;
-
 const registry = new BlockPackRegistry([
   CentralRegistry,
   {
@@ -60,7 +50,7 @@ test('project list manipulations test', async () => {
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: 'secret',
+      localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
     });
     const projectList = ml.projectList;
@@ -128,7 +118,7 @@ test('simple project manipulations test', async () => {
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: 'secret',
+      localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
     });
     const projectList = ml.projectList;
@@ -214,7 +204,7 @@ test('block error test', async () => {
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: 'secret',
+      localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
     });
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -268,7 +258,7 @@ test('should create download-file block, render it and gets outputs from its con
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
       frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: 'secret',
+      localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
     });
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
