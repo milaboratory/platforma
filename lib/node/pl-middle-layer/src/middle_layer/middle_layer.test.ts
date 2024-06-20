@@ -302,9 +302,9 @@ test('should create download-file block, render it and gets outputs from its con
       { block3StableFrontend },
       { depth: 5 });
 
-    const block3StateComputable = await prj.getBlockState(block3Id);
+    const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
-    const block3StableState = await prj.getBlockState(block3Id).getValueOrError();
+    const block3StableState = await block3StateComputable.awaitStableFullValue();
 
     console.dir(block3StableState, { depth: 5 });
 
