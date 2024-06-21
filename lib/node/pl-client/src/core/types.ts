@@ -167,6 +167,10 @@ export function createLocalResourceId(isRoot: boolean, localCounterValue: number
     | (BigInt(localTxId) << LocalResourceIdTxIdOffset)) as LocalResourceId;
 }
 
+export function createGlobalResourceId(isRoot: boolean, unmaskedId: bigint): ResourceId {
+  return ((isRoot ? ResourceIdRootMask : 0n) | unmaskedId) as ResourceId;
+}
+
 export function extractTxId(localResourceId: LocalResourceId): number {
   return Number((localResourceId >> LocalResourceIdTxIdOffset) & TxIdMask);
 }
@@ -183,14 +187,31 @@ export function checkLocalityOfResourceId(
 
 export function resourceIdToString(resourceId: OptionalAnyResourceId): string {
   if (isNullResourceId(resourceId))
-    return 'null-id';
+    return 'XX:0x0';
   if (isLocalResourceId(resourceId))
-    return (isRootResourceId(resourceId) ? 'R' : 'N') + 'L:' +
+    return (isRootResourceId(resourceId) ? 'R' : 'N') + 'L:0x' +
       (LocalIdMask & resourceId).toString(16) +
-      ' [' + extractTxId(resourceId).toString(16) + ']';
+      '[0x' + extractTxId(resourceId).toString(16) + ']';
   else
     return (isRootResourceId(resourceId) ? 'R' : 'N') +
-      'G:' + (NoFlagsIdMask & resourceId).toString(16);
+      'G:0x' + (NoFlagsIdMask & resourceId).toString(16);
+}
+
+const resourceIdRegexp = /^(?:(?<xx>XX)|(?<rn>[XRN])(?<lg>[XLG])):0x(?<rid>[0-9a-fA-F]+)(?:\[0x(?<txid>[0-9a-fA-F]+)])?$/;
+
+export function resourceIdFromString(str: string): OptionalAnyResourceId | undefined {
+  const match = str.match(resourceIdRegexp);
+  if (match === null)
+    return undefined;
+  const { xx, rn, lg, rid, txid } = match.groups!;
+  if (xx)
+    return NullResourceId;
+  if (lg === 'L')
+    return createLocalResourceId(rn === 'R',
+      Number.parseInt(rid, 16),
+      Number.parseInt(txid, 16));
+  else
+    return createGlobalResourceId(rn === 'R', BigInt('0x' + rid));
 }
 
 /** Converts bigint to global resource id */
