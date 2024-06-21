@@ -1,5 +1,6 @@
 export * from './map';
 export * from './log';
+export * from './vore';
 export * from './temporal';
 export * from './concurrent';
 export * from './concurrent/async_queue';
