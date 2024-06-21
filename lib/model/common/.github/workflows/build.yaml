@@ -20,7 +20,7 @@ jobs:
     uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
     with:
       app-name: Pl Middle Layer Model
-      app-name-slug: '@milaboratory/pl-middle-layer-model'
+      app-name-slug: '@milaboratory/sdk-model'
       notify-telegram: true
 
       node-version: '20.x'

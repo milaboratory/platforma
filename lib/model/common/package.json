@@ -1,7 +1,7 @@
 {
-  "name": "@milaboratory/pl-middle-layer-model",
+  "name": "@milaboratory/sdk-model",
   "version": "1.0.0",
-  "description": "Pl Middle Layer Model",
+  "description": "Platforma SDK Model",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
