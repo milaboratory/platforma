@@ -11,7 +11,8 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { ProjectListEntry } from './models';
 import { randomUUID } from 'node:crypto';
-import { MiddleLayerDrivers } from '../cfg_render/operation';
+import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
+import { BlobDriver } from '@milaboratory/sdk-model';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -19,7 +20,11 @@ export interface MiddleLayerEnvironment {
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
   readonly frontendDownloadDriver: DownloadUrlDriver;
-  readonly drivers: MiddleLayerDrivers;
+  readonly drivers: MiddleLayerInternalDrivers;
+}
+
+export interface MiddleLayerDrivers {
+  readonly blob: BlobDriver;
 }
 
 /**
@@ -42,6 +47,7 @@ export class MiddleLayer {
 
   private constructor(
     private readonly env: MiddleLayerEnvironment,
+    public readonly drivers: MiddleLayerDrivers,
     private readonly projectListResourceId: ResourceId,
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
     private readonly projectListTree: SynchronizedTreeState,
@@ -169,26 +175,31 @@ export class MiddleLayer {
       ops.frontendDownloadPath,
       ops.localStorageIdsToRoot);
     const bpPreparer = new BlockPackPreparer(signer);
+    const downloadDriver = createDownloadDriver(
+      pl, logger,
+      ops.blobDownloadPath,
+      ops.blobDownloadCacheSizeBytes,
+      signer,
+      ops.nConcurrentBlobDownloads,
+      ops.localStorageIdsToRoot
+    );
     const env: MiddleLayerEnvironment = {
       pl, signer,
       ops, bpPreparer,
       frontendDownloadDriver,
       drivers: {
-        downloadDriver: createDownloadDriver(
-          pl, logger,
-          ops.blobDownloadPath,
-          ops.blobDownloadCacheSizeBytes,
-          signer,
-          ops.nConcurrentBlobDownloads,
-          ops.localStorageIdsToRoot
-        )
-      } as any as MiddleLayerDrivers // TODO: add upload and logs drivers.
+        downloadDriver
+      } as any as MiddleLayerInternalDrivers // TODO: add upload and logs drivers.
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
-    return new MiddleLayer(env, projects, openedProjects, projectListTC.tree, projectListTC.computable);
+    return new MiddleLayer(env,
+      {
+        blob: downloadDriver
+      },
+      projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }
 }
 

@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -300,5 +301,12 @@ test('should create download-file block, render it and gets outputs from its con
 
     if (block3StableState.type == 'ok')
       expect(block3StableState.value.outputs['contentAsJson'].value).toStrictEqual(42);
+
+    const localBlob = block3StableState.value.outputs['downloadedBlobContent'].value as LocalBlobHandleAndSize;
+    const remoteBlob = block3StableState.value.outputs['onDemandBlobContent'].value as RemoteBlobHandleAndSize;
+
+    expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n')
+
+    expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n')
   });
 });

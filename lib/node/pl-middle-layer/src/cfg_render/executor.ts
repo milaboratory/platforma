@@ -2,7 +2,7 @@ import {
   ArgumentKey,
   ArgumentValues,
   ExecutionEnvironment,
-  MiddleLayerDrivers,
+  MiddleLayerInternalDrivers,
   Operation,
   Subroutine
 } from './operation';
@@ -176,7 +176,7 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 //
 
 /** Main method to render configurations */
-export function computableFromCfg(drivers: MiddleLayerDrivers, ctx: Record<string, unknown>,
+export function computableFromCfg(drivers: MiddleLayerInternalDrivers, ctx: Record<string, unknown>,
                                   cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
   return Computable.makeRaw(c => {
     const env: ExecutionEnvironment = { drivers, cCtx: c };

@@ -197,7 +197,7 @@ const SRGetBlobContent: Subroutine = args => {
           postprocessValue: async value => {
             if (value === undefined)
               return undefined;
-            return await drivers.downloadDriver.getContent(value);
+            return await drivers.downloadDriver.getContent(value.handle);
           }
         }
       )
@@ -222,7 +222,7 @@ const SRGetBlobContentAsString: Subroutine = args => {
           postprocessValue: async value => {
             if (value === undefined)
               return undefined;
-            const content = await drivers.downloadDriver.getContent(value);
+            const content = await drivers.downloadDriver.getContent(value.handle);
             return content?.toString();
           }
         }
@@ -245,7 +245,7 @@ const SRGetBlobContentAsJson: Subroutine = args => {
           postprocessValue: async value => {
             if (value == undefined)
               return undefined;
-            const content = await drivers.downloadDriver.getContent(value);
+            const content = await drivers.downloadDriver.getContent(value.handle);
             if (content == undefined)
               return undefined;
             return JSON.parse(Buffer.from(content).toString());

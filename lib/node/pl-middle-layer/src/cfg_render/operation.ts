@@ -5,7 +5,7 @@ export type ArgumentKey = string;
 
 /** Drivers offered by the middle-layer to internal consumers,
  * like configuration rendering routines */
-export type MiddleLayerDrivers = {
+export type MiddleLayerInternalDrivers = {
   downloadDriver: DownloadDriver;
   uploadDriver: UploadDriver;
   logsDriver: LogsDriver;
@@ -16,7 +16,7 @@ export type ExecutionEnvironment = {
    * context of the computable we are rendering inside. */
   cCtx: ComputableCtx;
   /** Available drivers */
-  drivers: MiddleLayerDrivers;
+  drivers: MiddleLayerInternalDrivers;
 }
 
 export type ArgumentValues = Record<ArgumentKey, unknown>;

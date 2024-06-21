@@ -11,7 +11,7 @@ import { computableFromCfg } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { Computable } from '@milaboratory/computable';
-import { MiddleLayerDrivers } from './operation';
+import { MiddleLayerInternalDrivers } from './operation';
 
 test('local cfg test (no pl)', async () => {
   const args = {
@@ -29,11 +29,11 @@ test('local cfg test (no pl)', async () => {
 
   const ctx = { $args: args };
 
-  const computable1 = computableFromCfg({} as MiddleLayerDrivers, ctx, cfg.outputs['out1']);
+  const computable1 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1']);
   const out1 = (await computable1.getValue()) as ConfigResult<typeof cfg.outputs['out1'], typeof ctx>;
   expect(out1).toEqual('hi');
 
-  const computable2 = computableFromCfg({} as MiddleLayerDrivers, ctx, cfg.outputs['out2']);
+  const computable2 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2']);
   const out2 = (await computable2.getValue()) as ConfigResult<typeof cfg.outputs['out2'], typeof ctx>;
   expect(out2).toStrictEqual([{ theField: 'a' }, { theField: 'b' }, { theField: 'c' }]);
 });
@@ -64,7 +64,7 @@ test('cfg test with pl, simple', async () => {
     };
 
     const computable: Computable<ConfigResult<typeof cfg.outputs['out1'], typeof ctx> | undefined> =
-      computableFromCfg({} as MiddleLayerDrivers, ctx, cfg.outputs['out1']) as any;
+      computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1']) as any;
 
     expect(await computable.getValue()).toBeUndefined();
 
