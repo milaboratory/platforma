@@ -21,7 +21,7 @@ import {
 } from './actions';
 import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
 import { ValueOrErrors } from './common_types';
-import { LocalBlobHandle, RemoteBlobHandle } from './driver_types';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -117,8 +117,8 @@ test('test config 2', () => {
       c: [Uint8Array, 'asd'],
       d: string[],
       e: string[],
-      f: LocalBlobHandle,
-      g: RemoteBlobHandle
+      f: LocalBlobHandleAndSize,
+      g: RemoteBlobHandleAndSize
     }>
   }>();
 

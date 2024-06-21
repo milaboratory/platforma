@@ -5,7 +5,7 @@ import {
   PlResourceEntry
 } from './type_engine';
 import { And, IsA, SyncConfAction } from './type_util';
-import { LocalBlobHandle, RemoteBlobHandle } from './driver_types';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 
 //
 // Context
@@ -174,14 +174,14 @@ export interface ActGetBlobContentAsJson<Source extends ConfAction, T> extends C
 
 export interface ActGetDownloadedBlobContent<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
-    ? LocalBlobHandle
+    ? LocalBlobHandleAndSize
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
 
 export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
-    ? RemoteBlobHandle
+    ? RemoteBlobHandleAndSize
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
