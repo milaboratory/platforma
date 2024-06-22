@@ -19,8 +19,8 @@ jobs:
 
     uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
     with:
-      app-name: Block config SDK
-      app-name-slug: '@milaboratory/sdk-block-config'
+      app-name: Block UI SDK
+      app-name-slug: '@milaboratory/sdk-ui'
       notify-telegram: true
 
       node-version: '20.x'

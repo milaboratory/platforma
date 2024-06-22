@@ -19,9 +19,10 @@ import {
   getDownloadedBlobContent,
   getOnDemandBlobContent
 } from './actions';
-import { BlockConfigBuilder, ResolveOutputsType, StdCtx } from './builder';
+import { PlatformaConfiguration, StdCtx } from './builder';
 import { ValueOrErrors } from './common_types';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { InferOutputsType } from './platforma';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -74,26 +75,26 @@ function typeTest1() {
 }
 
 test('test config content', () => {
-  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>('Heavy')
+  const platforma = PlatformaConfiguration.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
     .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
-      { id: 'main', title: 'Main' }
+      { type: 'main', section: 'main', title: 'Main' }
     ]))
-    .build();
+    .done();
 
-  assertType<ResolveOutputsType<typeof blockConfig1>, {
+  assertType<InferOutputsType<typeof platforma>, {
     cell1: ValueOrErrors<{ b: string[] }>,
     cell2: ValueOrErrors<'v1'[]>
   }>();
 
-  expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
+  expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
 });
 
 test('test config 2', () => {
-  const blockConfig1 = BlockConfigBuilder.create<{ a: string[] }>('Heavy')
+  const platforma = PlatformaConfiguration.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output('cell1', makeObject({
       b: getBlobContentAsString(getResourceField(MainOutputs, 'field1')),
@@ -107,11 +108,11 @@ test('test config 2', () => {
     }))
     .canRun(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
-      { id: 'main', title: 'Main' }
+      { type: 'main', section: 'main', title: 'Main' }
     ]))
-    .build();
+    .done();
 
-  assertType<ResolveOutputsType<typeof blockConfig1>, {
+  assertType<InferOutputsType<typeof platforma>, {
     cell1: ValueOrErrors<{
       b: string,
       c: [Uint8Array, 'asd'],
@@ -122,5 +123,5 @@ test('test config 2', () => {
     }>
   }>();
 
-  expect(JSON.stringify(blockConfig1).length).toBeGreaterThan(20);
+  expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
 });
