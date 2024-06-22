@@ -7,9 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "node ./scripts/save-package-version.js && tsup",
-    "build-watch": "tsup --watch",
-    "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand"
+    "type-check": "node ./scripts/save-package-version.js && tsc --noEmit --composite false",
+    "test": "node ./scripts/save-package-version.js && jest"
   },
   "dependencies": {
     "@milaboratory/ts-helpers": "^1.0.16",
