@@ -1,10 +1,10 @@
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { blockFrontendStateKey, projectFieldName } from '../model/project_model';
-import { PlResourceEntry, StdCtx, StdCtxArgsOnly } from '@milaboratory/sdk-block-config';
+import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-ui';
 
 type SC = StdCtx<unknown, unknown>;
-type SCAO = StdCtxArgsOnly<unknown, unknown>;
+type SCAO = Pick<SC, '$ui' | '$args'>;
 export type MatStdCtxArgsOnly = {
   [Var in keyof SCAO]: SCAO[Var] extends PlResourceEntry
     ? PlTreeEntry | undefined

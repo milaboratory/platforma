@@ -1,6 +1,6 @@
 import { ExplicitTemplate } from './template';
 import { ResourceType } from '@milaboratory/pl-client-v2';
-import { BlockConfig } from '@milaboratory/sdk-block-config';
+import { BlockConfig } from '@milaboratory/sdk-ui';
 
 /** Block pack from local folder, to be used during block development. */
 export interface BlockPackDev {

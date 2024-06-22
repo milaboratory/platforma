@@ -13,7 +13,7 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { Section } from '@milaboratory/sdk-block-config';
+import { BlockSection } from '@milaboratory/sdk-ui';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
@@ -105,7 +105,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         blockConf => {
           const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
           return {
-            sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<Section[]>,
+            sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<BlockSection[]>,
             canRun: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
           };
         }) || {};

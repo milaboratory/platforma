@@ -6,7 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
-import { BlockConfig } from '@milaboratory/sdk-block-config';
+import { BlockConfig } from '@milaboratory/sdk-ui';
 import { PlPackageJsonConfigFile, PlPackageYamlConfigFile } from '@milaboratory/pl-block-registry';
 import { BlockPackInfo } from '../../model/block_pack';
 

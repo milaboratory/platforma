@@ -1,7 +1,7 @@
 import { ResourceId } from '@milaboratory/pl-client-v2';
 import { AuthorMarker, BlockRenderingMode, ProjectMeta } from '../model/project_model';
-import { Section } from '@milaboratory/sdk-block-config';
-import { BlockPackSource } from '../model/block_pack_spec';
+import { BlockSection } from '@milaboratory/sdk-ui';
+import { BlockPackSource } from '../model';
 
 //
 // Project List
@@ -77,7 +77,7 @@ export type BlockStateOverview = {
 
   /** Block sections. May be unavailable, if block-pack for this block is not
    * yet materialized. */
-  sections: Section[] | undefined,
+  sections: BlockSection[] | undefined,
 
   /** True if current block can be executed in terms of
    * {@link Project.runBlock} method. */

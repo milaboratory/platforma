@@ -1,12 +1,11 @@
 import {
-  Args,
-  BlockConfigBuilder,
+  Args, BlockConfig,
   ConfigResult,
   getJsonField, getResourceField, getResourceValueAsJson,
   isolate, It, MainOutputs,
   makeObject,
-  mapArrayValues, PlResourceEntry
-} from '@milaboratory/sdk-block-config';
+  mapArrayValues, PlatformaConfiguration, PlResourceEntry
+} from '@milaboratory/sdk-ui';
 import { computableFromCfg } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
@@ -21,11 +20,11 @@ test('local cfg test (no pl)', async () => {
   };
   const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = BlockConfigBuilder.create<typeof args>('Heavy')
+  const cfg = (PlatformaConfiguration.create<typeof args>('Heavy')
     .initialArgs(args)
     .output('out1', getJsonField(getJsonField(Args, 'a'), theCValue))
     .output('out2', mapArrayValues(getJsonField(Args, 'b'), isolate(makeObject({ theField: It }))))
-    .build();
+    .done() as any).config as BlockConfig;
 
   const ctx = { $args: args };
 
@@ -48,12 +47,12 @@ test('cfg test with pl, simple', async () => {
   };
   const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = BlockConfigBuilder.create<typeof input>('Heavy')
+  const cfg = (PlatformaConfiguration.create<typeof input>('Heavy')
     .initialArgs(input)
     .output('out1', getJsonField(
       getResourceValueAsJson<TestResourceValue>()(getResourceField(MainOutputs, theCValue)),
       'someField'))
-    .build();
+    .done() as any).config as BlockConfig;
 
   await TestHelpers.withTempRoot(async pl => {
     const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, { pollingInterval: 250, stopPollingDelay: 500 });

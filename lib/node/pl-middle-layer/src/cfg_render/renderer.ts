@@ -1,4 +1,4 @@
-import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from '@milaboratory/sdk-block-config';
+import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from '@milaboratory/sdk-ui';
 import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';

@@ -11,7 +11,7 @@ import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
 import {
   Computable, ComputableCtx, ComputableRenderingOps
 } from '@milaboratory/computable';
-import { Cfg } from '@milaboratory/sdk-block-config';
+import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
 
 /** Addresses pending subroutines inside the stack */
