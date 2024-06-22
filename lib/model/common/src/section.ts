@@ -6,7 +6,7 @@ export type BlockSection = BlockSectionMain
 export type BlockSectionMain = {
   /** Potentially there may be multiple section types, i.e. for "+" rows and for
    * sections directly opening html from the outputs. */
-  readonly type: 'normal'
+  readonly type: 'main'
 
   /** Internal block section identifier */
   readonly section: string,
