@@ -20,8 +20,7 @@ import {
   getOnDemandBlobContent
 } from './actions';
 import { PlatformaConfiguration, StdCtx } from './builder';
-import { ValueOrErrors } from './common_types';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize, ValueOrErrors } from '@milaboratory/sdk-model';
 import { InferOutputsType } from './platforma';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]

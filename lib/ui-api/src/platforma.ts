@@ -1,6 +1,5 @@
 import { BlockApi } from './block_api';
-import { ValueOrErrors } from './common_types';
-import { BlobDriver } from '@milaboratory/sdk-model';
+import { BlobDriver, ValueOrErrors } from '@milaboratory/sdk-model';
 import { BlockConfig } from './builder';
 
 /** Defines all methods to interact with the platform environment from within a block UI. */

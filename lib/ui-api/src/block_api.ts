@@ -1,5 +1,4 @@
-import { AuthorMarker, BlockState } from '@milaboratory/sdk-model';
-import { ValueOrErrors } from './common_types';
+import { AuthorMarker, BlockOutputsBase, BlockState, ValueOrErrors } from '@milaboratory/sdk-model';
 
 /**
  * Callback to listen for new states. It is a good idea to make this asynchronous
@@ -36,7 +35,7 @@ export type OnNextStateCb<Args, Outputs extends Record<string, ValueOrErrors<unk
 //  * It is a good idea to make this asynchronous method execution time resemble
 //  * actual time spent in state to DOM propagation.
 //  * */
-// export type OnOutputsChange<Outputs extends Record<string, ValueOrErrors<unknown>>> =
+// export type OnOutputsChange<Outputs extends BlockOutputsBase> =
 //   (outputs: Outputs) => Promise<void>;
 //
 
@@ -46,7 +45,7 @@ export type CancelSubscription = () => void;
 /** Defines methods to read and write current block data. */
 export interface BlockApi<
   Args = unknown,
-  Outputs extends Record<string, ValueOrErrors<unknown>> = Record<string, ValueOrErrors<unknown>>,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown> {
   /**
    * Subscribes to the stream of block states.

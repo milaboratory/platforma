@@ -1,11 +1,10 @@
 import { ConfigResult, PlResourceEntry, TypedConfig } from './type_engine';
 import { getImmediate } from './actions';
 import { Checked } from './type_util';
-import { ValueOrErrors } from './common_types';
 import { Platforma } from './platforma';
 import { PlatformaSDKVersion } from './version';
 import { getPlatformaInstance, isInUI } from './platforma_instance';
-import { BlockRenderingMode, BlockSection } from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
   $args: Args,
