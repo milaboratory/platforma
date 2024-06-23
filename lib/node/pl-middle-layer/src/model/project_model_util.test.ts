@@ -1,8 +1,9 @@
 import { ProjectStructure } from './project_model';
 import { graphDiff, productionGraph, stagingGraph } from './project_model_util';
-import { BlockOutputReference, outputRef } from './args';
+import { outputRef } from './args';
+import { Ref } from '@milaboratory/sdk-ui';
 
-function toRefs(...ids: string[]): BlockOutputReference[] {
+function toRefs(...ids: string[]): Ref[] {
   return ids.map(id => (outputRef(id, '')));
 }
 
@@ -20,7 +21,7 @@ function simpleStructure(...ids: string[]): ProjectStructure {
 
 describe('simple examples', () => {
   const struct1: ProjectStructure = simpleStructure('b1', 'b2', 'b3', 'b4');
-  const inputs = new Map<string, BlockOutputReference[]>();
+  const inputs = new Map<string, Ref[]>();
   inputs.set('b2', toRefs('b1'));
   inputs.set('b4', toRefs('b3'));
   const sGraph1 = stagingGraph(struct1);

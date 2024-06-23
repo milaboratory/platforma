@@ -6,10 +6,18 @@ import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { blockState } from './block';
 import { setTimeout } from 'node:timers/promises';
 import { frontendPath } from './frontend_path';
 import { AuthorMarker, BlockState, ProjectOverview } from '@milaboratory/sdk-model';
+import { blockArgsAndUiState, blockOutputs } from './block';
+import { BlockArgsAndUiState, BlockOutputsBase } from '@milaboratory/sdk-ui';
+import { FrontendData } from '../model/frontend';
+
+type BlockStateComputables = {
+  readonly fullState: Computable<BlockState>;
+  readonly argsAndUiState: Computable<BlockArgsAndUiState>;
+  readonly outputs: ComputableStableDefined<BlockOutputsBase>;
+}
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -19,8 +27,8 @@ export class Project {
   /** Data for the left panel, contain basic information about block status. */
   public readonly overview: ComputableStableDefined<ProjectOverview>;
 
-  private readonly blockStates = new Map<string, Computable<BlockState>>();
-  private readonly blockFrontends = new Map<string, ComputableStableDefined<string>>();
+  private readonly blockComputables = new Map<string, BlockStateComputables>();
+  private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private destroyed = false;
   private refreshLoopResult: Promise<void>;
 
@@ -118,26 +126,48 @@ export class Project {
     });
   }
 
-  /** Returns a computable, that can be used to retrieve and watch full block state,
-   * including outputs, arguments, ui state, and ongoing computation status flags. */
-  public getBlockState(blockId: string): Computable<BlockState> {
-    const cached = this.blockStates.get(blockId);
+  private getBlockComputables(blockId: string): BlockStateComputables {
+    const cached = this.blockComputables.get(blockId);
     if (cached === undefined) {
-      const state = blockState(this.tree.entry(), blockId, this.env);
-      this.blockStates.set(blockId, state);
-      return state;
+      const argsAndUiState = blockArgsAndUiState(this.tree.entry(), blockId, this.env);
+      const outputs = blockOutputs(this.tree.entry(), blockId, this.env);
+      const fullState = Computable.make(() => ({
+        argsAndUiState, outputs
+      }), { postprocessValue: v => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState) });
+      const computables: BlockStateComputables = {
+        argsAndUiState, outputs, fullState
+      };
+      this.blockComputables.set(blockId, computables);
+      return computables;
     }
     return cached;
   }
 
+  /** Returns a computable, that can be used to retrieve and watch full block state,
+   * including outputs, arguments, ui state. */
+  public getBlockState(blockId: string): Computable<BlockState> {
+    return this.getBlockComputables(blockId).fullState;
+  }
+
+  /** Returns a computable, that can be used to retrieve and watch block outputs. */
+  public getBlockOutputs(blockId: string): ComputableStableDefined<BlockOutputsBase> {
+    return this.getBlockComputables(blockId).outputs;
+  }
+
+  /** Returns a computable, that can be used to retrieve and watch block args and
+   * ui state. */
+  public getBlockArgsAndUiState(blockId: string): Computable<BlockArgsAndUiState> {
+    return this.getBlockComputables(blockId).argsAndUiState;
+  }
+
   /** Returns a computable, that can be used to retrieve and watch path of the
    * folder containing frontend code. */
-  public getBlockFrontend(blockId: string): ComputableStableDefined<string> {
+  public getBlockFrontend(blockId: string): ComputableStableDefined<FrontendData> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
-      const path = frontendPath(this.tree.entry(), blockId, this.env);
-      this.blockFrontends.set(blockId, path);
-      return path;
+      const frontendData = frontendPath(this.tree.entry(), blockId, this.env);
+      this.blockFrontends.set(blockId, frontendData);
+      return frontendData;
     }
     return cached;
   }
@@ -147,7 +177,11 @@ export class Project {
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike
     this.overview.resetState();
-    this.blockStates.forEach(c => c.resetState());
+    this.blockComputables.forEach(c => {
+      c.argsAndUiState.resetState();
+      c.outputs.resetState();
+      c.fullState.resetState();
+    });
     this.blockFrontends.forEach(c => c.resetState());
     this.destroyed = true;
   }

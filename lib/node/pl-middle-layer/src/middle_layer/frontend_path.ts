@@ -11,11 +11,11 @@ import {
 import { PathResult } from '@milaboratory/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
+import { getBlockCfg } from './util';
+import { FrontendData } from '../model/frontend';
 
-function kernel(a: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined | string | ComputableStableDefined<PathResult> {
-  const node = a.node();
-  if (node === undefined)
-    return undefined;
+function kernel(frontendRes: PlTreeEntryAccessor, env: MiddleLayerEnvironment): undefined | string | ComputableStableDefined<PathResult> {
+  const node = frontendRes.node();
   if (resourceTypesEqual(node.resourceType, FrontendFromUrlResourceType)) {
     const data = node.getDataAsJson<FrontendFromUrlData>();
     if (data === undefined)
@@ -51,14 +51,15 @@ function frontendPathComputable(entry: PlTreeEntry | undefined, env: MiddleLayer
   }).withStableType();
 }
 
-export function frontendPath(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): ComputableStableDefined<string> {
+export function frontendPath(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): ComputableStableDefined<FrontendData> {
   return Computable.make(ctx => {
     const prj = ctx.accessor(projectEntry).node();
+    const blockCfg = getBlockCfg(prj, id);
     const frontendEntry = prj.traverse(
       { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
       { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
       { field: BlockPackFrontendField, assertFieldType: 'Input' }
     )?.persist();
-    return frontendPathComputable(frontendEntry, env);
-  }).withStableType();
+    return { path: frontendPathComputable(frontendEntry, env), sdkVersion: blockCfg?.sdkVersion };
+  }, { mode: 'StableOnlyLive' }) as ComputableStableDefined<FrontendData>;
 }

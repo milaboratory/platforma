@@ -1,42 +1,43 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { Computable } from '@milaboratory/computable';
-import { constructBlockContext } from './block_ctx';
+import { Computable, ComputableStableDefined, ComputableValueOrErrors } from '@milaboratory/computable';
+import { constructBlockContext, constructBlockContextArgsOnly } from './block_ctx';
 import { blockArgsAuthorKey, projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
 import { BlockPackInfo } from '../model/block_pack';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { AuthorMarker, BlockState } from '@milaboratory/sdk-ui';
+import { AuthorMarker, BlockArgsAndUiState, BlockState } from '@milaboratory/sdk-ui';
+import { getBlockCfg } from './util';
 
-export function blockState(
+export function blockArgsAndUiState(
   projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
-): Computable<BlockState> {
+): Computable<BlockArgsAndUiState> {
+  return Computable.make(c => {
+    const prj = c.accessor(projectEntry).node();
+    const ctx = constructBlockContextArgsOnly(prj, id);
+    return {
+      author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
+      args: ctx.$args,
+      ui: ctx.$ui
+    };
+  }).preCalculateValueTree();
+}
+
+export function blockOutputs(
+  projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
+): ComputableStableDefined<Record<string, ComputableValueOrErrors<unknown>>> {
   return Computable.make(c => {
     const prj = c.accessor(projectEntry).node();
     const ctx = constructBlockContext(prj, id);
 
-    // block-pack
-    const bpInfo = prj.traverse(
-      { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
-      { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-    )?.getDataAsJson<BlockPackInfo>();
+    const blockCfg = getBlockCfg(prj, id);
 
-    const blockCfg = bpInfo?.config;
-
-    // sections
-    const outputs = ifNotUndef(blockCfg, cfg => {
+    return ifNotUndef(blockCfg, cfg => {
       const outputs: Record<string, Computable<any>> = {};
       for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
         outputs[cellId] = Computable.wrapError(computableFromCfg(env.drivers, ctx, cellCfg));
       return outputs;
     });
-
-    return {
-      author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
-      args: ctx.$args,
-      ui: ctx.$ui,
-      outputs
-    };
-  }).preCalculateValueTree();
+  }).preCalculateValueTree().withStableType();
 }

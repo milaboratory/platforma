@@ -1,19 +1,11 @@
 import { assertNever } from '@milaboratory/ts-helpers';
+import { Ref } from '@milaboratory/sdk-ui';
 
-export interface BlockOutputReference {
-  /** Marker of reference. Used to extract all references from block input. */
-  __isRef: true;
-  /** Referenced block id */
-  blockId: string;
-  /** Referenced output name in the block */
-  name: string;
-}
-
-export function outputRef(blockId: string, name: string): BlockOutputReference {
+export function outputRef(blockId: string, name: string): Ref {
   return { __isRef: true, blockId, name };
 }
 
-export function isBlockOutputReference(obj: any): obj is BlockOutputReference {
+export function isBlockOutputReference(obj: any): obj is Ref {
   return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'blockId' in obj && 'name' in obj;
 }
 
