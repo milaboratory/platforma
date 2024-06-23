@@ -5,7 +5,7 @@ import { ValueOrErrors } from './common_types';
 import { Platforma } from './platforma';
 import { PlatformaSDKVersion } from './version';
 import { getPlatformaInstance, isInUI } from './platforma_instance';
-import { BlockSection } from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection } from '@milaboratory/sdk-model';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
   $args: Args,
@@ -28,11 +28,6 @@ type CanRunExpectedType = boolean;
 
 type CanRunChecked<Cfg extends TypedConfig, Args, UiState> =
   Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends CanRunExpectedType ? true : false>
-
-export type BlockRenderingMode =
-  | 'Light'
-  | 'Heavy'
-  | 'DualContextHeavy';
 
 /** This structure is rendered from the configuration*/
 export type BlockConfig<
