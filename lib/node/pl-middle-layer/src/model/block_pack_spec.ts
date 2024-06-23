@@ -1,20 +1,6 @@
-import { ExplicitTemplate } from './template';
+import { ExplicitTemplate } from './workflow';
 import { ResourceType } from '@milaboratory/pl-client-v2';
-import { BlockConfig } from '@milaboratory/sdk-ui';
-
-/** Block pack from local folder, to be used during block development. */
-export interface BlockPackDev {
-  type: 'dev';
-  folder: string;
-  mtime?: string;
-}
-
-/** Block pack from registry with version 1 layout, to be loaded directly
- * from the client. */
-export interface BlockPackFromRegistryV1 {
-  type: 'from-registry-v1';
-  url: string;
-}
+import { BlockConfig, BlockPackSpec } from '@milaboratory/sdk-ui';
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
 
@@ -52,17 +38,11 @@ export interface BlockPackExplicit {
   template: ExplicitTemplate;
   config: BlockConfig;
   frontend: FrontendSpec;
-  source: BlockPackSource;
+  source: BlockPackSpec;
 }
-
-/** Information about block pack source persisted in block pack resource */
-export type BlockPackSource = BlockPackDev | BlockPackFromRegistryV1;
 
 /** Block-pack spec that can be materialized in pl. */
 export type BlockPackSpecPrepared = BlockPackExplicit;
 
-/** Block-pack spec requiring preparation (conversion) before being materialized. */
-export type BlockPackSpecNotPrepared = BlockPackDev | BlockPackFromRegistryV1;
-
 /** All block-pack specs. */
-export type BlockPackSpecAny = BlockPackSpecPrepared | BlockPackSpecNotPrepared;
+export type BlockPackSpecAny = BlockPackSpecPrepared | BlockPackSpec;

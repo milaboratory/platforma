@@ -16,7 +16,7 @@ import {
 import { loadTemplate } from './template';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
 import { notEmpty, sleep } from '@milaboratory/ts-helpers';
-import { TemplateSourcePrepared } from '../../model/template';
+import { TemplateSourcePrepared } from '../../model/workflow';
 import {
   TplSpecEnterExplicit,
   TplSpecEnterFromRegistry,

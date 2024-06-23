@@ -1,6 +1,5 @@
 import { field, isNullResourceId, PlClient, ResourceId, toGlobalResourceId } from '@milaboratory/pl-client-v2';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { ProjectMeta } from '../model/project_model';
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
@@ -9,10 +8,10 @@ import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
-import { ProjectListEntry } from './models';
 import { randomUUID } from 'node:crypto';
 import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
-import { BlobDriver } from '@milaboratory/sdk-model';
+import { BlobDriver, ProjectMeta } from '@milaboratory/sdk-model';
+import { ProjectListEntry } from '../model';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;

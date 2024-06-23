@@ -1,4 +1,4 @@
-import { TemplateSourcePrepared } from '../model/template';
+import { TemplateSourcePrepared } from '../model/workflow';
 import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
 
 export const TplSpecEnterExplicit: TemplateSourcePrepared = {

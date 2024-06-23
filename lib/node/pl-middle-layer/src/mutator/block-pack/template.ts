@@ -1,6 +1,6 @@
 import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import fs from 'node:fs';
-import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from '../../model/template';
+import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from '../../model/workflow';
 import { assertNever } from '@milaboratory/ts-helpers';
 
 export const TengoTemplateGet: ResourceType = { name: 'TengoTemplateGet', version: '1' };

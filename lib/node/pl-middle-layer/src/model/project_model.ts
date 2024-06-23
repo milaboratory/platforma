@@ -1,20 +1,12 @@
-import { ResourceType } from '@milaboratory/pl-client-v2';
+import { ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
+import { BlockRenderingMode, ProjectListEntry as ProjectListEntryFromSDK, ProjectMeta } from '@milaboratory/sdk-ui';
 
-/** Structure to help resolve conflicts if multiple participants writes to the same state */
-export interface AuthorMarker {
-  /** Unique identifier of client or even a specific window that set this particular state */
-  authorId: string;
-
-  /** Sequential version of the state local to the author */
-  localVersion: number;
+export interface ProjectListEntry extends ProjectListEntryFromSDK {
+  /** Project resource ID. */
+  rid: ResourceId;
 }
 
-export type BlockRenderingMode =
-  | 'Light'
-  | 'Heavy'
-  | 'DualContextHeavy';
-
-/** Entry representing single block in block structure */
+/** Entry representing a single block in block structure */
 export interface Block {
   /** Unique block id */
   readonly id: string;
@@ -62,11 +54,6 @@ export const InitialProjectRenderingState: ProjectRenderingState = {
   stagingRefreshTimestamp: 0,
   blocksInLimbo: []
 };
-
-export interface ProjectMeta {
-  /** Project name */
-  readonly label: string;
-}
 
 export const InitialBlockMeta: ProjectMeta = {
   label: 'New Project'

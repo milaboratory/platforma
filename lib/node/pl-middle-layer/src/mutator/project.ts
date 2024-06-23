@@ -20,19 +20,18 @@ import {
   ProjectResourceType,
   InitialBlockStructure,
   InitialProjectRenderingState,
-  ProjectMeta,
   ProjectMetaKey,
   InitialBlockMeta,
   parseBlockFrontendStateKey,
   blockFrontendStateKey,
-  AuthorMarker,
   blockArgsAuthorKey,
   ProjectLastModifiedTimestamp, ProjectCreatedTimestamp
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
-import { BlockPackSpecPrepared } from '../model/block_pack_spec';
+import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { AuthorMarker, ProjectMeta } from '@milaboratory/sdk-model';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 

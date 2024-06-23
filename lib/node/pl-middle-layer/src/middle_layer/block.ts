@@ -1,13 +1,13 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { Computable } from '@milaboratory/computable';
 import { constructBlockContext } from './block_ctx';
-import { AuthorMarker, blockArgsAuthorKey, projectFieldName } from '../model/project_model';
+import { blockArgsAuthorKey, projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
-import { BlockState } from './models';
 import { BlockPackInfo } from '../model/block_pack';
 import { MiddleLayerEnvironment } from './middle_layer';
+import { AuthorMarker, BlockState } from '@milaboratory/sdk-ui';
 
 export function blockState(
   projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
@@ -36,8 +36,7 @@ export function blockState(
       author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
       args: ctx.$args,
       ui: ctx.$ui,
-      outputs,
-      blockPackSource: bpInfo?.source
+      outputs
     };
   }).preCalculateValueTree();
 }

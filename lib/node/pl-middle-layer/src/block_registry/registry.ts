@@ -1,6 +1,6 @@
 import { Dispatcher, request } from 'undici';
 import { RegistrySpec } from './registry_spec';
-import { BlockPackSpecAny } from '../model/block_pack_spec';
+import { BlockPackSpecAny } from '../model';
 import {
   GlobalOverview,
   GlobalOverviewPath,
@@ -83,7 +83,11 @@ export class BlockPackRegistry {
             registryLabel: regSpec.label,
             latestSpec: {
               type: 'from-registry-v1',
-              url: `${regSpec.url}/${packageContentPrefix({ organization, package: pkg, version: latestVersion })}`
+              registryUrl: regSpec.url,
+              organization,
+              package: pkg,
+              version: latestVersion
+              // `${regSpec.url}/${packageContentPrefix({ organization, package: pkg, version: latestVersion })}`
             },
             otherVersions: overviewEntry.allVersions
           });

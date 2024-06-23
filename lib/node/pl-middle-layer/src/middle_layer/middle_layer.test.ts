@@ -166,6 +166,7 @@ test('simple project manipulations test', async () => {
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(true);
+      expect(block.blockPackSource).toBeDefined();
     });
     console.dir(overviewSnapshot1, { depth: 5 });
 
@@ -180,17 +181,14 @@ test('simple project manipulations test', async () => {
       { depth: 5 });
 
     const block1StableState = await prj.getBlockState(block1Id).awaitStableValue();
-    expect(block1StableState.blockPackSource).toBeDefined();
     const block2StableState = await prj.getBlockState(block2Id).awaitStableValue();
-    expect(block2StableState.blockPackSource).toBeDefined();
     const block3StableState = await prj.getBlockState(block3Id).awaitStableValue();
-    expect(block3StableState.blockPackSource).toBeDefined();
 
     console.dir(block1StableState, { depth: 5 });
     console.dir(block2StableState, { depth: 5 });
     console.dir(block3StableState, { depth: 5 });
 
-    expect(block3StableState.outputs['sum']).toStrictEqual({ ok: true, value: 18 });
+    expect(block3StableState.outputs!['sum']).toStrictEqual({ ok: true, value: 18 });
   });
 });
 
@@ -300,13 +298,13 @@ test('should create download-file block, render it and gets outputs from its con
     console.dir(block3StableState, { depth: 5 });
 
     if (block3StableState.type == 'ok')
-      expect(block3StableState.value.outputs['contentAsJson'].value).toStrictEqual(42);
+      expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
 
-    const localBlob = block3StableState.value.outputs['downloadedBlobContent'].value as LocalBlobHandleAndSize;
-    const remoteBlob = block3StableState.value.outputs['onDemandBlobContent'].value as RemoteBlobHandleAndSize;
+    const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any).value as LocalBlobHandleAndSize;
+    const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any).value as RemoteBlobHandleAndSize;
 
-    expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n')
+    expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n');
 
-    expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n')
+    expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n');
   });
 });

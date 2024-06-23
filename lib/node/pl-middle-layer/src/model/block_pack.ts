@@ -1,8 +1,7 @@
-import { BlockConfig } from '@milaboratory/sdk-ui';
-import { BlockPackSource } from './block_pack_spec';
+import { BlockConfig, BlockPackSpec } from '@milaboratory/sdk-ui';
 
 /** Define structure of block-pack data section */
 export interface BlockPackInfo {
-  readonly source: BlockPackSource,
+  readonly source: BlockPackSpec,
   readonly config: BlockConfig,
 }

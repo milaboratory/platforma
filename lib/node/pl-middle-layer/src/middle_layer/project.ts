@@ -2,15 +2,14 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import { isNotFoundError, ResourceId } from '@milaboratory/pl-client-v2';
 import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import { projectOverview } from './project_overview';
-import { BlockPackSpecAny } from '../model/block_pack_spec';
+import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { AuthorMarker } from '../model/project_model';
 import { blockState } from './block';
 import { setTimeout } from 'node:timers/promises';
 import { frontendPath } from './frontend_path';
-import { BlockState, ProjectOverview } from './models';
+import { AuthorMarker, BlockState, ProjectOverview } from '@milaboratory/sdk-model';
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -18,7 +17,7 @@ export class Project {
   public readonly rid: ResourceId;
 
   /** Data for the left panel, contain basic information about block status. */
-  readonly overview: ComputableStableDefined<ProjectOverview>;
+  public readonly overview: ComputableStableDefined<ProjectOverview>;
 
   private readonly blockStates = new Map<string, Computable<BlockState>>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<string>>();

@@ -3,7 +3,6 @@ import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
   BlockRenderingStateKey, ProjectCreatedTimestamp,
   projectFieldName, ProjectLastModifiedTimestamp,
-  ProjectMeta,
   ProjectMetaKey,
   ProjectRenderingState,
   ProjectStructure,
@@ -13,17 +12,33 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { BlockSection } from '@milaboratory/sdk-ui';
+import { BlockProductionStatus, BlockSection, ProjectMeta, ProjectOverview } from '@milaboratory/sdk-ui';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
-import { BlockProductionStatus, ProdState, ProjectOverview } from './models';
 import { BlockPackInfo } from '../model/block_pack';
 
 type BlockInfo = {
   currentArguments: any,
   prod?: ProdState
 }
+
+
+type CalculationStatus =
+  | 'Running'
+  | 'Error'
+  | 'Done'
+
+type ProdState = {
+
+  calculationStatus: CalculationStatus
+
+  stale: boolean
+
+  /** Arguments current production was rendered with. */
+  arguments: any
+}
+
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableStableDefined<ProjectOverview> {

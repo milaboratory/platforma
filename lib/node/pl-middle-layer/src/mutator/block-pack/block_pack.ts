@@ -7,7 +7,11 @@ import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
 import { BlockConfig } from '@milaboratory/sdk-ui';
-import { PlPackageJsonConfigFile, PlPackageYamlConfigFile } from '@milaboratory/pl-block-registry';
+import {
+  packageContentPrefix,
+  PlPackageJsonConfigFile,
+  PlPackageYamlConfigFile
+} from '@milaboratory/pl-block-registry';
 import { BlockPackInfo } from '../../model/block_pack';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
@@ -24,6 +28,14 @@ export const DevBlockPackFiles = [
   DevBlockPackTemplate, DevBlockPackConfig,
   DevBlockPackMetaYaml, DevBlockPackMetaJson
 ];
+
+/** Ensure trailing slash */
+function tSlash(str: string): string {
+  if (str.endsWith('/'))
+    return str;
+  else
+    return `${str}/`;
+}
 
 export class BlockPackPreparer {
   constructor(
@@ -48,8 +60,10 @@ export class BlockPackPreparer {
           ? { dispatcher: this.http }
           : {};
 
+        const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
+
         const configResponse = await request(
-          `${spec.url}/config.json`, httpOptions);
+          `${urlPrefix}/config.json`, httpOptions);
 
         return await configResponse.body.json() as BlockConfig;
       }
@@ -102,15 +116,17 @@ export class BlockPackPreparer {
           ? { dispatcher: this.http }
           : {};
 
+        const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
+
         // template
         const templateResponse = await request(
-          `${spec.url}/template.plj.gz`, httpOptions);
+          `${urlPrefix}/template.plj.gz`, httpOptions);
         const templateContent = new Uint8Array(
           await templateResponse.body.arrayBuffer());
 
         // config
         const configResponse = await request(
-          `${spec.url}/config.json`, httpOptions);
+          `${urlPrefix}/config.json`, httpOptions);
         const config = (await configResponse.body.json()) as BlockConfig;
 
         return {
@@ -122,7 +138,7 @@ export class BlockPackPreparer {
           config,
           frontend: {
             type: 'url',
-            url: `${spec.url}/frontend.tgz`
+            url: `${urlPrefix}/frontend.tgz`
           },
           source: spec
         };
