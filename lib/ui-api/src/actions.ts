@@ -17,7 +17,8 @@ import {
   ActAnd,
   ActOr, ActMakeArray, ActFlatten,
   ActGetDownloadedBlobContent,
-  ActGetOnDemandBlobContent
+  ActGetOnDemandBlobContent,
+  ActUploadBlob
 } from './actions_kinds';
 import {
   ExtractAction,
@@ -311,5 +312,17 @@ export function getOnDemandBlobContent<const Source extends TypedConfig>(
 ): TypedConfig<ActGetOnDemandBlobContent<ExtractAction<Source>>> {
   return ({
     type: 'GetOnDemandBlobContent', source: primitiveToConfig(source)
+  } as Cfg) as any;
+}
+
+//
+// Upload Blobs
+//
+
+export function getUploadBlob<const Source extends TypedConfig>(
+  source: Source
+): TypedConfig<ActUploadBlob<ExtractAction<Source>>> {
+  return ({
+    type: 'GetUploadBlob', source: primitiveToConfig(source)
   } as Cfg) as any;
 }

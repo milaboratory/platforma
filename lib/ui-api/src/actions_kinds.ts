@@ -5,7 +5,7 @@ import {
   PlResourceEntry
 } from './type_engine';
 import { And, IsA, SyncConfAction } from './type_util';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize, UploadProgress } from '@milaboratory/sdk-model';
 
 //
 // Context
@@ -182,6 +182,17 @@ export interface ActGetDownloadedBlobContent<Source extends ConfAction> extends 
 export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? RemoteBlobHandleAndSize
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+//
+// Upload Blobs
+//
+
+export interface ActUploadBlob<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? UploadProgress
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }

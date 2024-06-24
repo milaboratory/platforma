@@ -27,7 +27,9 @@ export type Cfg =
   | CfgBlobContentAsString
   | CfgBlobContentAsJson
   | CfgDownloadedBlobContent
-  | CfgOnDemandBlobContent;
+  | CfgOnDemandBlobContent
+
+  | CfgUploadBlob;
 
 //
 // Isolate / Rendering Mode
@@ -167,5 +169,14 @@ export type CfgDownloadedBlobContent = {
 
 export type CfgOnDemandBlobContent = {
   type: 'GetOnDemandBlobContent'
+  source: Cfg
+}
+
+//
+// Uploads Blobs
+//
+
+export type CfgUploadBlob = {
+  type: 'GetUploadBlob'
   source: Cfg
 }
