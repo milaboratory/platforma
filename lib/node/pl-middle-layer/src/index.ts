@@ -6,3 +6,6 @@ export * from './model';
 
 // explicitly override ProjectListEntry from SDK
 export { ProjectListEntry } from './model';
+
+// needed by users of middle-layer
+export * from '@milaboratory/pl-client-v2';

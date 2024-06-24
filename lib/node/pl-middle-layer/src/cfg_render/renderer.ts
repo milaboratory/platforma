@@ -461,6 +461,9 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         }
       });
 
+    case 'GetUploadBlob':
+      throw new Error('unsupported');
+
     default:
       return assertNever(cfg);
   }

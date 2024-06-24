@@ -347,12 +347,15 @@ export class ProjectMutator {
       this.updateLastModified();
   }
 
-  public setUiState(blockId: string, newState: string): void {
+  public setUiState(blockId: string, newState: string | undefined): void {
     if (this.blockInfos.get(blockId) === undefined)
       throw new Error('no such block');
     if (this.blockFrontendStates.get(blockId) === newState)
       return;
-    this.blockFrontendStates.set(blockId, newState);
+    if (newState === undefined)
+      this.blockFrontendStates.delete(blockId);
+    else
+      this.blockFrontendStates.set(blockId, newState);
     this.changedBlockFrontendStates.add(blockId);
     // will be assigned our author marker
     this.blocksWithChangedInputs.add(blockId);
@@ -707,8 +710,13 @@ export class ProjectMutator {
     if (this.metaChanged)
       this.tx.setKValue(this.rid, ProjectMetaKey, JSON.stringify(this.meta));
 
-    for (const blockId of this.changedBlockFrontendStates)
-      this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), this.blockFrontendStates.get(blockId)!);
+    for (const blockId of this.changedBlockFrontendStates) {
+      const uiState = this.blockFrontendStates.get(blockId);
+      if (uiState === undefined)
+        this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
+      else
+        this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), uiState);
+    }
     for (const blockId of this.removedBlockFrontendStates)
       this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
 

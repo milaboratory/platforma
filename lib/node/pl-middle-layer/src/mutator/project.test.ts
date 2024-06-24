@@ -3,7 +3,7 @@ import {
   TestHelpers,
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
-import { createProject, loadProject } from './project';
+import { createProject, loadProject, withProject } from './project';
 import { outputRef } from '../model/args';
 import {
   blockFrontendStateKey,
@@ -63,6 +63,7 @@ test('simple test #1', async () => {
       const rendered = mut.renderProduction(['block3'], true);
       expect([...rendered]).toEqual(['block3']);
       mut.setUiState('block2', '{"some":1}');
+      mut.setUiState('block3', '{"some":2}');
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -88,6 +89,7 @@ test('simple test #1', async () => {
 
     await pl.withReadTx('CheckFrontendStatePresent', async tx => {
       expect(await tx.getKValueString(prj, blockFrontendStateKey('block2'))).toEqual('{"some":1}');
+      expect(await tx.getKValueString(prj, blockFrontendStateKey('block3'))).toEqual('{"some":2}');
     });
 
     await pl.withWriteTx('DeleteBlock2', async tx => {
@@ -99,6 +101,23 @@ test('simple test #1', async () => {
 
     await pl.withReadTx('CheckFrontendStateAbsent', async tx => {
       expect(await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block2'))).toBeUndefined();
+    });
+
+
+    await withProject(pl, prj, mut => {
+      mut.setUiState('block3', undefined);
+    })
+
+    await pl.withReadTx('CheckFrontendStatePresent', async tx => {
+      expect(await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block3'))).toBeUndefined();
+    });
+
+    await withProject(pl, prj, mut => {
+      mut.setUiState('block3', undefined);
+    })
+
+    await pl.withReadTx('CheckFrontendStatePresent', async tx => {
+      expect(await tx.getKValueStringIfExists(prj, blockFrontendStateKey('block3'))).toBeUndefined();
     });
 
     await poll(pl, async tx => {

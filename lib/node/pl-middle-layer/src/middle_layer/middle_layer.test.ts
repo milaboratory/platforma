@@ -183,15 +183,21 @@ test('simple project manipulations test', async () => {
       { block1StableFrontend, block2StableFrontend, block3StableFrontend },
       { depth: 5 });
 
-    const block1StableState = await prj.getBlockState(block1Id).awaitStableValue();
-    const block2StableState = await prj.getBlockState(block2Id).awaitStableValue();
-    const block3StableState = await prj.getBlockState(block3Id).awaitStableValue();
+    const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
 
-    console.dir(block1StableState, { depth: 5 });
-    console.dir(block2StableState, { depth: 5 });
-    console.dir(block3StableState, { depth: 5 });
+    console.dir(block1StableState1, { depth: 5 });
+    console.dir(block2StableState1, { depth: 5 });
+    console.dir(block3StableState1, { depth: 5 });
 
-    expect(block3StableState.outputs!['sum']).toStrictEqual({ ok: true, value: 18 });
+    expect(block3StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 18 });
+
+    await prj.resetBlockArgsAndUiState(block3Id);
+
+    await prj.getBlockArgsAndUiState(block3Id).refreshState();
+    const block3Inputs = await prj.getBlockArgsAndUiState(block3Id).getValue();
+    expect(block3Inputs.args).toEqual({ sources: [] });
   });
 });
 

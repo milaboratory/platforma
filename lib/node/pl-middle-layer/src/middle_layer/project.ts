@@ -1,17 +1,25 @@
 import { MiddleLayerEnvironment } from './middle_layer';
-import { isNotFoundError, ResourceId } from '@milaboratory/pl-client-v2';
+import {
+  ensureResourceIdNotNull,
+  field,
+  isNotFoundError, Pl,
+  ResourceId
+} from '@milaboratory/pl-client-v2';
 import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
-import { withProject, withProjectAuthored } from '../mutator/project';
+import { ProjectMutator, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { setTimeout } from 'node:timers/promises';
-import { frontendPath } from './frontend_path';
+import { frontendData } from './frontend_path';
 import { AuthorMarker, BlockState, ProjectOverview } from '@milaboratory/sdk-model';
 import { blockArgsAndUiState, blockOutputs } from './block';
 import { BlockArgsAndUiState, BlockOutputsBase } from '@milaboratory/sdk-ui';
 import { FrontendData } from '../model/frontend';
+import { projectFieldName } from '../model/project_model';
+import { notEmpty } from '@milaboratory/ts-helpers';
+import { BlockPackInfo } from '../model/block_pack';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockState>;
@@ -84,7 +92,7 @@ export class Project {
   }
 
   /** Deletes a block with all associated data. */
-  async deleteBlock(blockId: string) {
+  public async deleteBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.deleteBlock(blockId));
   }
@@ -92,7 +100,7 @@ export class Project {
   /** Renders production part of the block starting all connected heavy computations.
    * Upstream blocks of the specified block will be started automatically if in
    * stale state. */
-  async runBlock(blockId: string) {
+  public async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
   }
@@ -101,7 +109,7 @@ export class Project {
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario. */
-  async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
+  public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]));
   }
@@ -110,7 +118,7 @@ export class Project {
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario. */
-  async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
+  public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setUiState(blockId, uiState));
   }
@@ -119,10 +127,30 @@ export class Project {
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario. */
-  async setBlockArgsAndUiState(blockId: string, args: any, uiState: any, author?: AuthorMarker) {
+  public async setBlockArgsAndUiState(blockId: string, args: any, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
       mut.setUiState(blockId, uiState);
+    });
+  }
+
+  /** Resets arguments and ui state of the block to initial state */
+  public async resetBlockArgsAndUiState(blockId: string): Promise<void> {
+    await this.env.pl.withWriteTx('BlockInputsReset', async tx => {
+      // reading default arg values from block pack
+      const bpHolderRid = ensureResourceIdNotNull(
+        (await tx.getField(
+          field(this.rid, projectFieldName(blockId, 'blockPack')
+          ))).value);
+      const bpRid = ensureResourceIdNotNull(
+        (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value);
+      const bpData = await tx.getResourceData(bpRid, false);
+      const bpInfo = JSON.parse(Buffer.from(notEmpty(bpData.data)).toString('utf-8')) as BlockPackInfo;
+      await withProject(tx, this.rid, prj => {
+        prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
+        prj.setUiState(blockId, undefined);
+      });
+      await tx.commit();
     });
   }
 
@@ -165,9 +193,9 @@ export class Project {
   public getBlockFrontend(blockId: string): ComputableStableDefined<FrontendData> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
-      const frontendData = frontendPath(this.tree.entry(), blockId, this.env);
-      this.blockFrontends.set(blockId, frontendData);
-      return frontendData;
+      const fd = frontendData(this.tree.entry(), blockId, this.env);
+      this.blockFrontends.set(blockId, fd);
+      return fd;
     }
     return cached;
   }

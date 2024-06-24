@@ -1,11 +1,9 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { Computable, ComputableStableDefined, ComputableValueOrErrors } from '@milaboratory/computable';
 import { constructBlockContext, constructBlockContextArgsOnly } from './block_ctx';
-import { blockArgsAuthorKey, projectFieldName } from '../model/project_model';
-import { Pl } from '@milaboratory/pl-client-v2';
+import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
-import { BlockPackInfo } from '../model/block_pack';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { AuthorMarker, BlockArgsAndUiState, BlockState } from '@milaboratory/sdk-ui';
 import { getBlockCfg } from './util';

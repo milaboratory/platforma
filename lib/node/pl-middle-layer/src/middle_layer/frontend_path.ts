@@ -51,7 +51,7 @@ function frontendPathComputable(entry: PlTreeEntry | undefined, env: MiddleLayer
   }).withStableType();
 }
 
-export function frontendPath(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): ComputableStableDefined<FrontendData> {
+export function frontendData(projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment): ComputableStableDefined<FrontendData> {
   return Computable.make(ctx => {
     const prj = ctx.accessor(projectEntry).node();
     const blockCfg = getBlockCfg(prj, id);
