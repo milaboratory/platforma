@@ -28,7 +28,7 @@ import {
   LogsSyncReader
 } from './logs_stream';
 import { ClientLogs } from '../clients/logs';
-import { Updater, treeEntryToResourceInfo } from './helpers';
+import * as helper from './helpers';
 import * as readline from 'node:readline/promises';
 import Denque from 'denque';
 import * as os from 'node:os';
@@ -117,7 +117,7 @@ export class DownloadDriver
     if (ctx === undefined)
       return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const rInfo = helper.treeEntryToResourceInfo(res, ctx);
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
@@ -142,7 +142,7 @@ export class DownloadDriver
     if (ctx === undefined)
       return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const rInfo = helper.treeEntryToResourceInfo(res, ctx);
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
@@ -405,7 +405,7 @@ class OnDemandBlobHolder {
 }
 
 class LastLinesGetter {
-  private updater: Updater;
+  private updater: helper.Updater;
   private logs: string = '';
   private readonly change: ChangeSource = new ChangeSource();
   private error: any | undefined = undefined;
@@ -415,7 +415,7 @@ class LastLinesGetter {
     private readonly lines: number,
     private readonly patternToSearch?: string
   ) {
-    this.updater = new Updater(async () => this.update());
+    this.updater = new helper.Updater(async () => this.update());
   }
 
   getOrSchedule(w: Watcher): LogResult & { error?: any } {

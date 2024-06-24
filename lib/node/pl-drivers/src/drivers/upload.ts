@@ -18,6 +18,7 @@ import {
   CallersCounter,
   Signer
 } from '@milaboratory/ts-helpers';
+import * as sdk from '@milaboratory/sdk-model';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
@@ -25,29 +26,6 @@ import { ResourceWithData, treeEntryToResourceWithData } from './helpers';
 import { scheduler } from 'node:timers/promises';
 
 // TODO: add abort signal to Upload Tasks.
-
-export interface Progress {
-  done: boolean;
-  /** Status of indexing/uploading got from platforma gRPC. */
-  status?: Status;
-  /** True if BlobUpload, false if BlobIndex. */
-  readonly isUpload: boolean;
-  /** True if signature matched. */
-  isUploadSignMatch?: boolean;
-  /** Exists when an upload failed and was restarted,
-   * but the error was recoverable.
-   * If the error was non-recoverable,
-   * the driver's computable will throw an error instead. */
-  lastError?: string;
-}
-
-/** Almost direct mapping from proto struct got from gRPC. */
-export interface Status {
-  /** A float from 0 to 1 and is equal to bytesProcessed / bytesTotal. */
-  readonly progress: number;
-  readonly bytesProcessed?: number;
-  readonly bytesTotal?: number;
-}
 
 /** Uploads blobs in a queue and holds counters, so it can stop not-needed
  * uploads.
@@ -99,15 +77,17 @@ export class UploadDriver {
   }
 
   /** Returns a progress id and schedules an upload task if it's necessary. */
-  getProgressId(res: ResourceWithData | PlTreeEntry): Computable<Progress>;
+  getProgressId(
+    res: ResourceWithData | PlTreeEntry
+  ): Computable<sdk.UploadProgress>;
   getProgressId(
     res: ResourceWithData | PlTreeEntry,
     ctx: ComputableCtx
-  ): Progress;
+  ): sdk.UploadProgress;
   getProgressId(
     res: ResourceWithData | PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<Progress> | Progress {
+  ): Computable<sdk.UploadProgress> | sdk.UploadProgress {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getProgressId(res, ctx));
 
@@ -126,7 +106,7 @@ export class UploadDriver {
     w: Watcher,
     res: ResourceWithData,
     callerId: string
-  ): Progress {
+  ): sdk.UploadProgress {
     const value = this.idToProgress.get(res.id);
 
     if (value != undefined) {
@@ -235,7 +215,7 @@ class ProgressUpdater {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
 
-  public progress: Progress;
+  public progress: sdk.UploadProgress;
   private uploadOpts?: UploadOpts;
   public uploadingTerminallyFailed?: boolean;
 
@@ -391,7 +371,7 @@ function dataToUploadOpts(res: ResourceWithData): UploadOpts {
   };
 }
 
-function protoToStatus(proto: ProgressStatus): Status {
+function protoToStatus(proto: ProgressStatus): sdk.UploadStatus {
   return {
     progress: proto.progress ?? 0,
     bytesProcessed: Number(proto.bytesProcessed),
