@@ -1,7 +1,5 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { ClientLogs } from '../clients/logs';
-import { LogsDriver } from './logs_stream';
-import { MiLogger, Signer } from '@milaboratory/ts-helpers';
 import {
   PlClient,
   ResourceId,
@@ -11,75 +9,9 @@ import {
   getField,
   ResourceType
 } from '@milaboratory/pl-client-v2';
-import {
-  createDownloadClient,
-  createLogsClient,
-  createUploadBlobClient,
-  createUploadProgressClient
-} from '../clients/helpers';
 import { scheduler } from 'node:timers/promises';
-import { DownloadUrlDriver } from './download_url';
-import { DownloadDriver } from './download_and_logs_blob';
 import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
 import { ComputableCtx } from '@milaboratory/computable';
-import { UploadDriver } from './upload';
-
-/** Just a helper to create a driver and all clients. */
-export function createDownloadUrlDriver(
-  client: PlClient,
-  logger: MiLogger,
-  saveDir: string,
-  localStorageIdsToRoot?: Record<string, string>
-): DownloadUrlDriver {
-  return new DownloadUrlDriver(
-    logger,
-    createDownloadClient(logger, client, localStorageIdsToRoot),
-    saveDir
-  );
-}
-
-/** Just a helper to create a driver and all clients. */
-export function createDownloadDriver(
-  client: PlClient,
-  logger: MiLogger,
-  saveDir: string,
-  cacheSoftSizeBytes: number,
-  signer: Signer,
-  nConcurrentDownloads: number = 10,
-  localStorageIdsToRoot?: Record<string, string>
-): DownloadDriver {
-  return new DownloadDriver(
-    logger,
-    createDownloadClient(logger, client, localStorageIdsToRoot),
-    createLogsClient(client, logger),
-    saveDir,
-    signer,
-    cacheSoftSizeBytes,
-    nConcurrentDownloads
-  );
-}
-
-/** Just a helper to create a driver and all clients. */
-export function createUploadDriver(
-  client: PlClient,
-  logger: MiLogger,
-  signer: Signer
-): UploadDriver {
-  return new UploadDriver(
-    logger,
-    signer,
-    createUploadBlobClient(client, logger),
-    createUploadProgressClient(client, logger)
-  );
-}
-
-/** Just a helper to create a driver and all clients. */
-export function createLogsDriver(
-  client: PlClient,
-  logger: MiLogger
-): LogsDriver {
-  return new LogsDriver(createLogsClient(client, logger));
-}
 
 /** Can be called only when a ctx is provided, because pl tree entry is a computable entity. */
 export function treeEntryToResourceInfo(

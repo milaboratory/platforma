@@ -16,7 +16,7 @@ export const PL_STORAGE_TO_PATH = process.env.PL_STORAGE_TO_PATH
 export function createDownloadClient(
   logger: MiLogger,
   client: PlClient,
-  localStorageIdsToRoot: Record<string, string> | undefined
+  localStorageIdsToRoot?: Record<string, string>
 ) {
   if (localStorageIdsToRoot === undefined)
     localStorageIdsToRoot = PL_STORAGE_TO_PATH;

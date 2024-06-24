@@ -17,7 +17,6 @@ import {
   MiLogger
 } from '@milaboratory/ts-helpers';
 import { Computable, computable } from '@milaboratory/computable';
-import { createDownloadDriver, createLogsDriver } from './helpers';
 import * as os from 'node:os';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
@@ -25,6 +24,7 @@ import { ResourceInfo, SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { scheduler } from 'node:timers/promises';
 import { LogId, LogsDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
+import { createDownloadClient, createLogsClient } from '../clients/helpers';
 
 const callerId = 'callerId';
 
@@ -36,14 +36,15 @@ test('should get all logs', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = createLogsDriver(client, logger);
+    const logs = new LogsDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
-    const download = createDownloadDriver(
-      client,
+    const download = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
 
     const c = computable(
@@ -110,14 +111,15 @@ test('should get last line with a prefix', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = createLogsDriver(client, logger);
+    const logs = new LogsDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
-    const download = createDownloadDriver(
-      client,
+    const download = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
 
     const c = computable(
@@ -173,14 +175,15 @@ test('should get log smart object and get log lines from that', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = createLogsDriver(client, logger);
+    const logs = new LogsDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
-    const download = createDownloadDriver(
-      client,
+    const download = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
 
     const c = computable(

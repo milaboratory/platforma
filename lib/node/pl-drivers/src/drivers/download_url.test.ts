@@ -1,19 +1,23 @@
 import { TestHelpers } from '@milaboratory/pl-client-v2';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
-import { createDownloadUrlDriver } from './helpers';
 import * as os from 'node:os';
-import { rawComputable } from '@milaboratory/computable';
 import { text } from 'node:stream/consumers';
 import { Readable } from 'node:stream';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
+import { DownloadUrlDriver } from './download_url';
+import { createDownloadClient } from '../clients/helpers';
 
 test('should download a tar archive and extracts its content and then deleted', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
-    const driver = createDownloadUrlDriver(client, logger, dir);
+    const driver = new DownloadUrlDriver(
+      logger,
+      createDownloadClient(logger, client),
+      dir
+    );
 
     const url = new URL(
       'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
@@ -45,7 +49,11 @@ test('should show a error when 403 status code', async () => {
     await TestHelpers.withTempRoot(async (client) => {
       const logger = new ConsoleLoggerAdapter();
       const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
-      const driver = createDownloadUrlDriver(client, logger, dir);
+      const driver = new DownloadUrlDriver(
+        logger,
+        createDownloadClient(logger, client),
+        dir
+      );
 
       const url = new URL(
         'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND'
@@ -71,7 +79,11 @@ test('should abort a downloading process when we reset a state of a computable',
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test2-'));
-    const driver = createDownloadUrlDriver(client, logger, dir);
+    const driver = new DownloadUrlDriver(
+      logger,
+      createDownloadClient(logger, client),
+      dir
+    );
 
     const url = new URL(
       'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'

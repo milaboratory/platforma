@@ -14,9 +14,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratory/pl-client-v2';
 import { poll } from '@milaboratory/pl-client-v2';
-import { createUploadDriver } from './helpers';
 import { UploadDriver } from './upload';
 import { MTimeError } from '../clients/upload';
+import {
+  createUploadBlobClient,
+  createUploadProgressClient
+} from '../clients/helpers';
 
 const callerId = 'callerId';
 
@@ -172,10 +175,12 @@ async function withTest(
 ) {
   await TestHelpers.withTempRoot(async (client) => {
     const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
-    const uploader = createUploadDriver(
-      client,
-      new ConsoleLoggerAdapter(),
-      signer
+    const logger = new ConsoleLoggerAdapter();
+    const uploader = new UploadDriver(
+      logger,
+      signer,
+      createUploadBlobClient(client, logger),
+      createUploadProgressClient(client, logger)
     );
 
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));

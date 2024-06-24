@@ -16,8 +16,9 @@ import {
   BasicResourceData,
   FieldId
 } from '@milaboratory/pl-client-v2';
-import { createDownloadDriver } from './helpers';
 import { scheduler } from 'node:timers/promises';
+import { createDownloadClient, createLogsClient } from '../clients/helpers';
+import { DownloadDriver } from './download_and_logs_blob';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
@@ -25,12 +26,14 @@ test('should download a blob and read its content', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-1-'));
-    const driver = createDownloadDriver(
-      client,
+
+    const driver = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -52,13 +55,15 @@ test('should get on demand blob without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
-    const driver = createDownloadDriver(
-      client,
+    const driver = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
+
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
     const c = driver.getOnDemandBlob(downloadable);
@@ -75,12 +80,13 @@ test('should get undefined when releasing a blob from a small cache and the blob
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-3-'));
-    const driver = createDownloadDriver(
-      client,
+    const driver = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      1,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      1
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -111,12 +117,13 @@ test('should get the blob when releasing a blob, but a cache is big enough and i
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-4-'));
-    const driver = createDownloadDriver(
-      client,
+    const driver = new DownloadDriver(
       logger,
+      createDownloadClient(logger, client),
+      createLogsClient(client, logger),
       dir,
-      700 * 1024,
-      new HmacSha256Signer(HmacSha256Signer.generateSecret())
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      700 * 1024
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
