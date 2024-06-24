@@ -1,4 +1,5 @@
 import { AuthorMarker } from './author_marker';
+import { BlockOutputsBase } from './common_types';
 
 /**
  * @param Args    sets type of block arguments passed to the workflow
@@ -27,7 +28,7 @@ export interface BlockArgsAndUiState<Args = unknown, UiState = unknown> {
  */
 export interface BlockState<
   Args = unknown,
-  Outputs extends Record<string, unknown> = Record<string, unknown>,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown>
   extends BlockArgsAndUiState<Args, UiState> {
   /** Outputs rendered with block config */
