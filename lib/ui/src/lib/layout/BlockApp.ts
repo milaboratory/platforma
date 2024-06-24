@@ -4,6 +4,7 @@ import { ucFirst } from '@milaboratory/helpers/strings';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { notEmpty, errorOptional, type OkType } from '@milaboratory/helpers/utils';
 import { predicateUnique } from '@milaboratory/helpers/collections';
+import type { Result } from '@milaboratory/helpers/types';
 
 export function useBlockInput<S extends PlCore.BlockState, I extends keyof S['inputs']>($block: ComputedRef<BlockApp<S>>, inputName: I) {
   return computed({
@@ -199,7 +200,7 @@ export abstract class BlockApp<S extends PlCore.BlockState = PlCore.BlockState, 
     }
   }
 
-  getRefOptions<K extends keyof S['outputMap'], _V extends S['outputMap'][K] & PlCore.Result<PlCore.DataSourceOption[]>>(key: K) {
+  getRefOptions<K extends keyof S['outputMap'], _V extends S['outputMap'][K] & Result<PlCore.DataSourceOption[]>>(key: K) {
     const output = this.getOutputOk(key) as PlCore.DataSourceOption[] | undefined;
 
     return (
