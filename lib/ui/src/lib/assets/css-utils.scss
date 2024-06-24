@@ -138,3 +138,45 @@
 .border-right-default {
   border-left: 1px solid var(--border-color-default);
 }
+
+@for $i from 1 through 15 {
+  .pa-#{$i} {
+    padding: $i * 2px !important;
+  }
+  .pt-#{$i} {
+    padding-top: $i * 2px !important;
+  }
+  .pr-#{$i} {
+    padding-right: $i * 2px !important;
+  }
+  .pb-#{$i} {
+    padding-bottom: $i * 2px !important;
+  }
+  .pl-#{$i} {
+    padding-left: $i * 2px !important;
+  }
+}
+
+@for $i from 1 through 15 {
+  .ma-#{$i} {
+    margin: $i * 2px !important;
+  }
+  .mt-#{$i} {
+    margin-top: $i * 2px !important;
+  }
+  .mr-#{$i} {
+    margin-right: $i * 2px !important;
+  }
+  .mb-#{$i} {
+    margin-bottom: $i * 2px !important;
+  }
+  .ml-#{$i} {
+    margin-left: $i * 2px !important;
+  }
+}
+
+@for $i from 1 through 15 {
+  .bra-#{$i} {
+    border-radius: $i * 2px !important;
+  }
+}
