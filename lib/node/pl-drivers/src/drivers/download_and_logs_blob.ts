@@ -36,7 +36,11 @@ import { FilesCache } from './files_cache';
 import { randomUUID } from 'node:crypto';
 import { buffer } from 'node:stream/consumers';
 import { Readable } from 'node:stream';
-import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
+import {
+  PlTreeEntry,
+  ResourceInfo,
+  treeEntryToResourceInfo
+} from '@milaboratory/pl-tree';
 import {
   BlobDriver,
   LocalBlobHandle,
@@ -44,23 +48,6 @@ import {
   RemoteBlobHandle,
   RemoteBlobHandleAndSize
 } from '@milaboratory/sdk-model';
-
-// export interface BlobHandleAndSize {
-//   readonly handle: string;
-//   readonly size: number;
-// }
-//
-// export interface DownloadedBlobHandle {
-//   readonly type: 'DownloadedBlob';
-//   readonly handle: string; // is of a form 'blob+local://download/path#signature'
-//   readonly sizeBytes: number;
-// }
-//
-// /** You can pass it to DownloadDriver.getContent and gets a content of the blob. */
-// export interface OnDemandBlobHandle {
-//   readonly type: 'OnDemandBlob';
-//   readonly handle: string; // is of a form 'blob+remote://download/resourceType/resourceVersion/resourceId#signature'
-// }
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
@@ -117,7 +104,7 @@ export class DownloadDriver
     if (ctx === undefined)
       return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
 
-    const rInfo = helper.treeEntryToResourceInfo(res, ctx);
+    const rInfo = treeEntryToResourceInfo(res, ctx);
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
@@ -142,7 +129,7 @@ export class DownloadDriver
     if (ctx === undefined)
       return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
 
-    const rInfo = helper.treeEntryToResourceInfo(res, ctx);
+    const rInfo = treeEntryToResourceInfo(res, ctx);
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));

@@ -12,7 +12,6 @@ import {
 } from '@milaboratory/computable';
 import {
   MiLogger,
-  JitterOpts,
   asyncPool,
   TaskProcessor,
   CallersCounter,
@@ -21,8 +20,11 @@ import {
 import * as sdk from '@milaboratory/sdk-model';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
-import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { ResourceWithData, treeEntryToResourceWithData } from './helpers';
+import {
+  PlTreeEntry,
+  ResourceWithData,
+  treeEntryToResourceWithData
+} from '@milaboratory/pl-tree';
 import { scheduler } from 'node:timers/promises';
 
 // TODO: add abort signal to Upload Tasks.
@@ -91,7 +93,7 @@ export class UploadDriver {
     ctx.addOnDestroy(() => this.release(r.id, callerId));
 
     const result = this.getProgressIdNoCtx(ctx.watcher, r, callerId);
-    if (result == undefined) ctx.markUnstable();
+    if (result == undefined || !result.done) ctx.markUnstable();
 
     return result;
   }
