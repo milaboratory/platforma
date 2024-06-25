@@ -33,9 +33,10 @@ export function treeEntryToResourceWithData(
   res: PlTreeEntry | ResourceWithData,
   ctx: ComputableCtx
 ): ResourceWithData {
-  if (res instanceof PlTreeEntry) {
-    const node = ctx.accessor(res).node();
+  if (res instanceof PlTreeEntry || res.type == undefined) {
+    const node = ctx.accessor(res as PlTreeEntry).node();
     const info = node.resourceInfo;
+
     return { ...info, data: node.getData() ?? new Uint8Array() };
   }
 

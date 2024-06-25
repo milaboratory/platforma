@@ -49,9 +49,6 @@ export class UploadDriver {
       /** How much upload/indexing statuses of blobs can the driver ask
        * from the platform gRPC at once. */
       nConcurrentGetProgresses: number;
-      queueClosingPoolMs: number;
-      nUploadRetries: number;
-      jitterOpts: JitterOpts;
       /** How frequent update statuses. */
       pollingInterval: number;
       /** When to stop a loop. */
@@ -59,9 +56,6 @@ export class UploadDriver {
     } = {
       nConcurrentPartUploads: 10,
       nConcurrentGetProgresses: 10,
-      queueClosingPoolMs: 100,
-      nUploadRetries: 10,
-      jitterOpts: { ms: 50, factor: 0.1 },
       pollingInterval: 1000,
       stopPollingDelay: 1000
     }
