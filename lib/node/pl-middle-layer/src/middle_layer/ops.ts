@@ -38,6 +38,20 @@ export type MiddleLayerOps = {
    * Once exceeded, the download driver will start deleting blobs one by one
    * when they become unneeded. */
   readonly blobDownloadCacheSizeBytes: number;
+
+  /** How much parts of a file can be multipart-uploaded to S3 at once. */
+  nConcurrentPartUploads: number;
+
+  /** How much upload/indexing statuses of blobs can the upload driver ask
+   * from the platform gRPC at once. */
+  nConcurrentGetProgresses: number;
+
+  defaultUploadDriverOptions: {
+    /** How frequent the upload driver should update statuses of progresses. */
+    pollingInterval: number;
+    /** For how long to continue polling after the last derived value access. */
+    stopPollingDelay: number;
+  }
 }
 
 /** Some defaults fot MiddleLayerOps. */
@@ -47,17 +61,26 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'stagingRenderingRate'
   | 'localStorageIdsToRoot'
   | 'nConcurrentBlobDownloads'
-  | 'blobDownloadCacheSizeBytes'> = {
-  defaultTreeOptions: {
-    pollingInterval: 350,
-    stopPollingDelay: 2500
-  },
-  projectRefreshInterval: 700,
-  stagingRenderingRate: 5,
-  localStorageIdsToRoot: {},
-  nConcurrentBlobDownloads: 10,
-  blobDownloadCacheSizeBytes: 100 * 1024 * 1024 // 100MB
-};
+  | 'blobDownloadCacheSizeBytes'
+  | 'defaultUploadDriverOptions'
+  | 'nConcurrentGetProgresses'
+  | 'nConcurrentPartUploads'> = {
+    defaultTreeOptions: {
+      pollingInterval: 350,
+      stopPollingDelay: 2500
+    },
+    projectRefreshInterval: 700,
+    stagingRenderingRate: 5,
+    localStorageIdsToRoot: {},
+    nConcurrentBlobDownloads: 10,
+    blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
+    nConcurrentPartUploads: 10,
+    nConcurrentGetProgresses: 10,
+    defaultUploadDriverOptions: {
+      pollingInterval: 1000,
+      stopPollingDelay: 1000
+    }
+  };
 
 /** Fields with default values are marked as optional here. */
 export type MiddleLayerOpsConstructor =

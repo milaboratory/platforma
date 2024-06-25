@@ -3,7 +3,7 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { createDownloadDriver, createDownloadUrlDriver, DownloadUrlDriver } from '@milaboratory/pl-drivers';
+import { ClientLogs, createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver, DownloadUrlDriver, UploadDriver } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
@@ -48,6 +48,7 @@ export class MiddleLayer {
   private constructor(
     private readonly env: MiddleLayerEnvironment,
     public readonly drivers: MiddleLayerDrivers,
+    public readonly signer: Signer,
     private readonly projectListResourceId: ResourceId,
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
     private readonly projectListTree: SynchronizedTreeState,
@@ -171,25 +172,42 @@ export class MiddleLayer {
     });
 
     const logger = new ConsoleLoggerAdapter();
-    const frontendDownloadDriver = createDownloadUrlDriver(pl, logger,
-      ops.frontendDownloadPath,
-      ops.localStorageIdsToRoot);
     const bpPreparer = new BlockPackPreparer(signer);
-    const downloadDriver = createDownloadDriver(
-      pl, logger,
-      ops.blobDownloadPath,
-      ops.blobDownloadCacheSizeBytes,
-      signer,
-      ops.nConcurrentBlobDownloads,
-      ops.localStorageIdsToRoot
+
+    const downloadClient = createDownloadClient(logger, pl, ops.localStorageIdsToRoot);
+    const logsClient = createLogsClient(pl, logger);
+    const uploadBlobClient = createUploadBlobClient(pl, logger);
+    const uploadProgressClient = createUploadProgressClient(pl, logger);
+
+    const frontendDownloadDriver = new DownloadUrlDriver(
+      logger, downloadClient,
+      ops.frontendDownloadPath,
     );
+    const downloadDriver = new DownloadDriver(
+      logger, downloadClient, logsClient,
+      ops.blobDownloadPath,
+      signer,
+      ops.blobDownloadCacheSizeBytes,
+      ops.nConcurrentBlobDownloads,
+    );
+    const uploadDriver = new UploadDriver(
+      logger, signer, uploadBlobClient, uploadProgressClient,
+      {
+        nConcurrentPartUploads: ops.nConcurrentPartUploads,
+        nConcurrentGetProgresses: ops.nConcurrentGetProgresses,
+        pollingInterval: ops.defaultUploadDriverOptions.pollingInterval,
+        stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay,
+      },
+    )
+
     const env: MiddleLayerEnvironment = {
       pl, signer,
       ops, bpPreparer,
       frontendDownloadDriver,
       drivers: {
-        downloadDriver
-      } as any as MiddleLayerInternalDrivers // TODO: add upload and logs drivers.
+        downloadDriver,
+        uploadDriver
+      } as any as MiddleLayerInternalDrivers // TODO: add logs driver.
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
@@ -199,6 +217,7 @@ export class MiddleLayer {
       {
         blob: downloadDriver
       },
+      signer,
       projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }
 }

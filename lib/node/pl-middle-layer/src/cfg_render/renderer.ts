@@ -282,6 +282,19 @@ const SRGetOnDemandBlobContent: Subroutine = args => {
   };
 };
 
+const SRGetUploadBlob: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.uploadDriver.getProgressId(source)
+    };
+  };
+};
+
 /** Renders configuration into executor's Operation */
 export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
@@ -462,7 +475,13 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       });
 
     case 'GetUploadBlob':
-      throw new Error('unsupported');
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetUploadBlob,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
 
     default:
       return assertNever(cfg);
