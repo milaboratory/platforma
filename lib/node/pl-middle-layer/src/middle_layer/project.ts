@@ -78,7 +78,7 @@ export class Project {
    * @return returns newly created block id
    * */
   public async addBlock(blockLabel: string, blockPackSpec: BlockPackSpecAny,
-                        before?: string, blockId: string = randomUUID()): Promise<string> {
+    before?: string, blockId: string = randomUUID()): Promise<string> {
     const prepared = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
     await withProject(this.env.pl, this.rid, mut =>
@@ -88,6 +88,8 @@ export class Project {
           blockPack: prepared
         }, before
       ));
+    await this.tree.refreshState();
+
     return blockId;
   }
 
@@ -95,6 +97,7 @@ export class Project {
   public async deleteBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.deleteBlock(blockId));
+    await this.tree.refreshState();
   }
 
   /** Renders production part of the block starting all connected heavy computations.
@@ -103,6 +106,7 @@ export class Project {
   public async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
+    await this.tree.refreshState();
   }
 
   /** Sets block args, and changes whole project state accordingly.
@@ -112,6 +116,7 @@ export class Project {
   public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]));
+    await this.tree.refreshState();
   }
 
   /** Sets ui block state associated with the block.
@@ -121,6 +126,7 @@ export class Project {
   public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setUiState(blockId, uiState));
+    await this.tree.refreshState();
   }
 
   /** Sets block args and ui state, and changes the whole project state accordingly.
@@ -132,6 +138,7 @@ export class Project {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
       mut.setUiState(blockId, uiState);
     });
+    await this.tree.refreshState();
   }
 
   /** Resets arguments and ui state of the block to initial state */

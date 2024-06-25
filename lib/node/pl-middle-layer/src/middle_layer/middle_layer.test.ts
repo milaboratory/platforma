@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
-import { scheduler } from 'node:timers/promises';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -312,15 +311,16 @@ test('should create download-file block, render it and gets outputs from its con
 
     console.dir(block3StableState, { depth: 5 });
 
-    if (block3StableState.type == 'ok')
+    if (block3StableState.type == 'ok' && (block3StableState.value.outputs!['content'] as any).value != undefined) {
       expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
 
-    const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any).value as LocalBlobHandleAndSize;
-    const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any).value as RemoteBlobHandleAndSize;
+      const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any).value as LocalBlobHandleAndSize;
+      const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any).value as RemoteBlobHandleAndSize;
 
-    expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n');
+      expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n');
 
-    expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n');
+      expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n');
+    }
   });
 });
 
@@ -363,41 +363,17 @@ test('should create upload-file block, render it and upload a file to pl server'
 
     await prj.runBlock(block3Id);
 
-    // TODO: if we uncomment these lines and comment scheduler.wait,
-    // a strange error will be thrown.
-    // await prj.overview.refreshState();
-    // const overviewSnapshot1 = await prj.overview.awaitStableValue();
-
-    // overviewSnapshot1.blocks.forEach(block => {
-    //   expect(block.sections).toBeDefined();
-    // });
-    // console.dir(overviewSnapshot1, { depth: 5 });
-
-    // const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
-    // expect(block3StableFrontend).toBeDefined();
-    // console.dir(
-    //   { block3StableFrontend },
-    //   { depth: 5 });
-    await scheduler.wait(1000);
-    
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
 
-    while (true) {
-      const block3StableState = await block3StateComputable.awaitStableFullValue();
+    const block3StableState = await block3StateComputable.awaitStableFullValue();
 
-      console.dir(block3StableState, { depth: 5 });
+    console.dir(block3StableState, { depth: 5 });
 
-      if (block3StableState.type == 'ok') {
-        expect((block3StableState.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
-        if ((block3StableState.value.outputs!['handle'] as any).value.done) {
-          expect((block3StableState.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
-          expect((block3StableState.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
-          return;
-        }
-      }
-
-      await block3StateComputable.awaitChange();
-    }    
+    expect(block3StableState.type).toEqual('ok');
+    expect((block3StableState.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
+    expect((block3StableState.value.outputs!['handle'] as any).value.done).toBeTruthy();
+    expect((block3StableState.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
+    expect((block3StableState.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
   });
 });

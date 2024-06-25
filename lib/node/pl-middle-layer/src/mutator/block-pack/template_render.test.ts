@@ -155,7 +155,7 @@ function createEnterNumbers(
 ) {
   const tpl = loadTemplate(tx, template);
 
-  const args = tx.createValue(Pl.JsonObject, jsonToData({ numbers: numbers }));
+  const args = tx.createValue(Pl.JsonObject, jsonToData({ numbers: numbers ?? [] }));
   const blockId = tx.createValue(Pl.JsonString, jsonToData(blockIdData));
   const isProduction = Pl.createPlBool(tx, isProd);
 
