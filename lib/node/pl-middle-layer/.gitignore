@@ -7,3 +7,4 @@ test_config.json
 *.svg
 work
 download-file
+upload-file
