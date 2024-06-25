@@ -49,6 +49,14 @@ export type BlockStateOverview = {
   /** Generalized block calculation status */
   calculationStatus: BlockProductionStatus;
 
+  /** All upstream blocks of this block. In other words all dependencies of this
+   * block, including transitive dependencies. */
+  upstreams: string[],
+
+  /** All downstream blocks of this block. In other words all blocks that depends
+   * on outputs of this block, accounting for transitive dependencies. */
+  downstreams: string[],
+
   /** Block sections. May be unavailable, if block-pack for this block is not
    * yet materialized. */
   sections: BlockSection[] | undefined,
