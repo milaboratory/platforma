@@ -18,8 +18,29 @@ function simpleStructure(...ids: string[]): ProjectStructure {
   };
 }
 
+describe('simple traverse', () => {
+  const struct1: ProjectStructure = simpleStructure('b1', 'b2', 'b3', 'b4', 'b5', 'b6');
+  const inputs = new Map<string, Ref[]>();
+  inputs.set('b2', toRefs('b1'));
+  inputs.set('b4', toRefs('b3'));
+  inputs.set('b5', toRefs('b4'));
+  inputs.set('b6', toRefs('b2', 'b4'));
+  const pGraph1 = productionGraph(struct1, id => inputs.get(id) ?? null);
 
-describe('simple examples', () => {
+  test.each([
+    { roots: ['b2'], expectedUpstreams: ['b1'], expectedDownstreams: ['b6'] },
+    { roots: ['b4'], expectedUpstreams: ['b3'], expectedDownstreams: ['b5', 'b6'] },
+    { roots: ['b5'], expectedUpstreams: ['b3', 'b4'], expectedDownstreams: [] },
+    { roots: ['b6'], expectedUpstreams: ['b1', 'b2', 'b3', 'b4'], expectedDownstreams: [] }
+  ])('$roots', ({ roots, expectedUpstreams, expectedDownstreams }) => {
+    const upstreams = pGraph1.traverseIdsExcludingRoots('upstream', ...roots);
+    const downstreams = pGraph1.traverseIdsExcludingRoots('downstream', ...roots);
+    expect([...upstreams].sort()).toEqual(expectedUpstreams.sort());
+    expect([...downstreams].sort()).toEqual(expectedDownstreams.sort());
+  });
+});
+
+describe('simple diff', () => {
   const struct1: ProjectStructure = simpleStructure('b1', 'b2', 'b3', 'b4');
   const inputs = new Map<string, Ref[]>();
   inputs.set('b2', toRefs('b1'));

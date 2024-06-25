@@ -29,11 +29,26 @@ export class BlockGraph {
     this.nodes = nodes;
   }
 
+  public traverseIds(direction: 'upstream' | 'downstream',
+                     ...rootBlockIds: string[]): Set<string> {
+    const all = new Set<string>();
+    this.traverse(direction, rootBlockIds, node => all.add(node.id));
+    return all;
+  }
+
+  public traverseIdsExcludingRoots(direction: 'upstream' | 'downstream',
+                                   ...rootBlockIds: string[]): Set<string> {
+    const result = this.traverseIds(direction, ...rootBlockIds);
+    for (const r of rootBlockIds)
+      result.delete(r);
+    return result;
+  }
+
   public traverse(direction: 'upstream' | 'downstream',
                   rootBlockIds: string[],
                   cb: (node: BlockGraphNode) => void): void {
-    let unprocessed = rootBlockIds;
-    // used to deduplicate possible downstream blocks and process them only once
+    let unprocessed = [...rootBlockIds];
+    // used to deduplicate possible downstream / upstream blocks and process them only once
     const queued = new Set<string>(unprocessed);
     while (unprocessed.length > 0) {
       let nextUnprocessed: string[] = [];

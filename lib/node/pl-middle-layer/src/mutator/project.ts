@@ -31,7 +31,8 @@ import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
 import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
-import { AuthorMarker, ProjectMeta } from '@milaboratory/sdk-model';
+import { AuthorMarker } from '@milaboratory/sdk-model';
+import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 

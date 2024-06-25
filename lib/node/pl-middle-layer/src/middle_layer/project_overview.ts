@@ -1,5 +1,5 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { Computable, ComputableStableDefined } from '@milaboratory/computable';
+import { Computable, ComputableStableDefined, UnwrapComputables } from '@milaboratory/computable';
 import {
   BlockRenderingStateKey, ProjectCreatedTimestamp,
   projectFieldName, ProjectLastModifiedTimestamp,
@@ -12,17 +12,18 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { BlockProductionStatus, BlockSection, ProjectMeta, ProjectOverview } from '@milaboratory/sdk-ui';
+import { BlockProductionStatus, ProjectMeta, ProjectOverview } from '@milaboratory/pl-middle-layer-model';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
+import { BlockSection } from '@milaboratory/sdk-ui';
 
 type BlockInfo = {
   currentArguments: any,
-  prod?: ProdState
-}
+  prod?: ProdState,
 
+}
 
 type CalculationStatus =
   | 'Running'
@@ -38,7 +39,6 @@ type ProdState = {
   /** Arguments current production was rendered with. */
   arguments: any
 }
-
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment): ComputableStableDefined<ProjectOverview> {
@@ -129,6 +129,8 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         id, label, renderingMode,
         stale: info.prod?.stale !== false,
         missingReference: gNode.missingReferences,
+        upstreams: [...currentGraph.traverseIdsExcludingRoots('upstream', id)],
+        downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
         calculationStatus, sections, canRun, blockPackSource: bpInfo?.source
       };
     });
@@ -136,5 +138,23 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
     return {
       meta, created: new Date(created), lastModified: new Date(lastModified), blocks
     };
+  }, {
+    postprocessValue: (value) => {
+      const cantRun = new Set<string>();
+      const staleBlocks = new Set<string>();
+      return {
+        ...value, blocks: value.blocks.map(b => {
+          if (!b.canRun)
+            cantRun.add(b.id);
+          if (b.stale)
+            staleBlocks.add(b.id);
+          return {
+            ...b,
+            canRun: Boolean(b.canRun) && !b.missingReference && (b.upstreams.findIndex(u => cantRun.has(u)) === -1),
+            stale: b.stale || (b.upstreams.findIndex(u => staleBlocks.has(u)) !== -1)
+          };
+        })
+      };
+    }
   }).withStableType();
 }

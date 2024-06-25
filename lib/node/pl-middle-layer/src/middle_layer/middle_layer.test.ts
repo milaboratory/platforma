@@ -148,6 +148,16 @@ test('simple project manipulations test', async () => {
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
+
+    await prj.overview.refreshState();
+    const overviewSnapshot0 = await prj.overview.awaitStableValue();
+
+    overviewSnapshot0.blocks.forEach(block => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(false);
+      expect(block.blockPackSource).toBeDefined();
+    });
+
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
@@ -166,9 +176,10 @@ test('simple project manipulations test', async () => {
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(true);
+      expect(block.stale).toEqual(false);
       expect(block.blockPackSource).toBeDefined();
     });
-    console.dir(overviewSnapshot1, { depth: 5 });
+    // console.dir(overviewSnapshot1, { depth: 5 });
 
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend.path).toBeDefined();
@@ -179,25 +190,31 @@ test('simple project manipulations test', async () => {
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend.path).toBeDefined();
     expect(block3StableFrontend.sdkVersion).toBeDefined();
-    console.dir(
-      { block1StableFrontend, block2StableFrontend, block3StableFrontend },
-      { depth: 5 });
+    // console.dir(
+    //   { block1StableFrontend, block2StableFrontend, block3StableFrontend },
+    //   { depth: 5 });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
     const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
 
-    console.dir(block1StableState1, { depth: 5 });
-    console.dir(block2StableState1, { depth: 5 });
-    console.dir(block3StableState1, { depth: 5 });
+    // console.dir(block1StableState1, { depth: 5 });
+    // console.dir(block2StableState1, { depth: 5 });
+    // console.dir(block3StableState1, { depth: 5 });
 
     expect(block3StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 18 });
 
-    await prj.resetBlockArgsAndUiState(block3Id);
+    await prj.resetBlockArgsAndUiState(block2Id);
 
-    await prj.getBlockArgsAndUiState(block3Id).refreshState();
-    const block3Inputs = await prj.getBlockArgsAndUiState(block3Id).getValue();
-    expect(block3Inputs.args).toEqual({ sources: [] });
+    await prj.getBlockArgsAndUiState(block2Id).refreshState();
+    const block2Inputs = await prj.getBlockArgsAndUiState(block2Id).getValue();
+    expect(block2Inputs.args).toEqual({ numbers: [] });
+
+    await prj.overview.refreshState();
+    const overviewSnapshot2 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.canRun).toEqual(false);
+    expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.stale).toEqual(true);
+    expect(overviewSnapshot2.blocks.find(b => b.id === block2Id)?.stale).toEqual(true);
   });
 });
 

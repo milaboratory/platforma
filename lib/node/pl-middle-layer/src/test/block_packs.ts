@@ -1,6 +1,6 @@
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import { HmacSha256Signer } from '@milaboratory/ts-helpers';
-import { BlockPackSpec } from '@milaboratory/sdk-model';
+import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 
 export const TestBPPreparer = new BlockPackPreparer(new HmacSha256Signer(HmacSha256Signer.generateSecret()));
 
