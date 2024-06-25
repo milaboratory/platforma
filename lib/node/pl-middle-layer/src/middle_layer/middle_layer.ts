@@ -10,8 +10,9 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
 import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
-import { BlobDriver, ProjectMeta } from '@milaboratory/sdk-model';
+import { BlobDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
+import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;

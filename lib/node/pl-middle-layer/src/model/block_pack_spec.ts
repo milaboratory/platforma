@@ -1,6 +1,7 @@
 import { ExplicitTemplate } from './workflow';
 import { ResourceType } from '@milaboratory/pl-client-v2';
-import { BlockConfig, BlockPackSpec } from '@milaboratory/sdk-ui';
+import { BlockConfig } from '@milaboratory/sdk-ui';
+import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
 

@@ -9,7 +9,7 @@ import {
 } from '../model/project_model';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { notEmpty } from '@milaboratory/ts-helpers';
-import { ProjectMeta } from '@milaboratory/sdk-model';
+import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 
 export const ProjectsField = 'projects';
 export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };

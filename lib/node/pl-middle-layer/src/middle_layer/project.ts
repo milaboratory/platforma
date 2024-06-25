@@ -9,17 +9,18 @@ import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
-import { ProjectMutator, withProject, withProjectAuthored } from '../mutator/project';
+import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { AuthorMarker, BlockState, ProjectOverview } from '@milaboratory/sdk-model';
+import { AuthorMarker, BlockState } from '@milaboratory/sdk-model';
 import { blockArgsAndUiState, blockOutputs } from './block';
 import { BlockArgsAndUiState, BlockOutputsBase } from '@milaboratory/sdk-ui';
 import { FrontendData } from '../model/frontend';
 import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
+import { ProjectOverview } from '@milaboratory/pl-middle-layer-model';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockState>;
