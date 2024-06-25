@@ -93,6 +93,37 @@ export type ResourceInfo = {
   readonly type: ResourceType;
 }
 
+/** Can be called only when a ctx is provided, because pl tree entry is a computable entity. */
+export function treeEntryToResourceInfo(
+  res: PlTreeEntry | ResourceInfo,
+  ctx: ComputableCtx
+) {
+  if (res instanceof PlTreeEntry)
+    return ctx.accessor(res).node().resourceInfo;
+
+  return res;
+}
+
+export type ResourceWithData = {
+  readonly id: ResourceId;
+  readonly type: ResourceType;
+  readonly data?: Uint8Array;
+};
+
+export function treeEntryToResourceWithData(
+  res: PlTreeEntry | ResourceWithData,
+  ctx: ComputableCtx
+): ResourceWithData {
+  if (res instanceof PlTreeEntry) {
+    const node = ctx.accessor(res as PlTreeEntry).node();
+    const info = node.resourceInfo;
+
+    return { ...info, data: node.getData() ?? new Uint8Array() };
+  }
+
+  return res;
+}
+
 /**
  * API contracts:
  *   - API never return {@link NullResourceId}, absence of link is always modeled as `undefined`
