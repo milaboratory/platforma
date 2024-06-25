@@ -1,4 +1,5 @@
 export * from '@milaboratory/sdk-ui';
+export * from '@milaboratory/pl-middle-layer-model';
 
 export * from './block_registry';
 export * from './middle_layer';
