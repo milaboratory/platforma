@@ -8,25 +8,24 @@ import {
   FieldId,
   AnyFieldRef,
   ResourceRef,
-  stringifyWithResourceId,
-  isNotFoundError
+  stringifyWithResourceId
 } from '@milaboratory/pl-client-v2';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer,
-  MiLogger
+  MiLogger,
+  notEmpty
 } from '@milaboratory/ts-helpers';
-import { Computable, computable } from '@milaboratory/computable';
+import { scheduler } from 'node:timers/promises';
+import { Computable } from '@milaboratory/computable';
 import * as os from 'node:os';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { ResourceInfo, SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { scheduler } from 'node:timers/promises';
-import { LogId, LogsDriver } from './logs_stream';
+import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { DownloadDriver } from './download_and_logs_blob';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
-
-const callerId = 'callerId';
+import { LogsStreamDriver } from './logs_stream';
+import { LogsDriver } from './logs';
 
 test('should get all logs', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -36,7 +35,7 @@ test('should get all logs', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = new LogsDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
     const download = new DownloadDriver(
       logger,
@@ -46,41 +45,19 @@ test('should get all logs', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       700 * 1024
     );
+    const logs = new LogsDriver(logsStream, download);
 
-    const c = computable(
-      tree.entry(),
-      { mode: 'StableOnlyRetentive' },
-      (tree) => {
-        const stream = tree.node().traverse('result', 'stream');
-        if (stream == undefined) return undefined;
-
-        const rInfo: ResourceInfo = {
-          id: stream.id,
-          type: stream.resourceType
-        };
-
-        if (stream.resourceType.name.startsWith('StreamWorkdir'))
-          return computable(logs, {}, (driver, ctx) => {
-            try {
-              return {
-                ...driver.getLastLogs(rInfo, 100, callerId),
-                done: false
-              };
-            } catch (e: any) {
-              if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-                ctx.markUnstable();
-                return { log: '', done: false };
-              }
-              throw e;
-            }
-          });
-        else
-          return computable(download, {}, (driver) => ({
-            done: true,
-            ...driver.getLastLogs(rInfo, 100, callerId)
-          }));
+    const c = Computable.make((ctx) => {
+      const stream = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result', 'stream')?.resourceInfo;
+      if (stream == undefined) {
+        ctx.markUnstable();
+        return undefined;
       }
-    );
+      return logs.getLastLogs(stream, 100, ctx);
+    });
 
     expect(await c.getValue()).toBeUndefined();
 
@@ -90,13 +67,12 @@ test('should get all logs', async () => {
     ]);
 
     while (true) {
-      await c.listen();
-
-      const result = await c.getValue();
+      await c.awaitChange();
+      const result = await c.getFullValue();
 
       logger.info(`got result: ${JSON.stringify(result)}`);
-      if (result?.done) {
-        expect(result.log).toStrictEqual('1\n2\n');
+      if (result.stable) {
+        expect(result.value).toStrictEqual('1\n2\n');
         return;
       }
     }
@@ -111,7 +87,7 @@ test('should get last line with a prefix', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = new LogsDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
     const download = new DownloadDriver(
       logger,
@@ -121,31 +97,19 @@ test('should get last line with a prefix', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       700 * 1024
     );
+    const logs = new LogsDriver(logsStream, download);
 
-    const c = computable(
-      tree.entry(),
-      { mode: 'StableOnlyRetentive' },
-      (tree) => {
-        const stream = tree.node().traverse('result', 'stream');
-        if (stream == undefined) return undefined;
-
-        const rInfo: ResourceInfo = {
-          id: stream.id,
-          type: stream.resourceType
-        };
-
-        if (stream.resourceType.name.startsWith('StreamWorkdir'))
-          return computable(logs, {}, (driver) => ({
-            done: false,
-            ...driver.getProgressLog(rInfo, 'PREFIX', callerId)
-          }));
-        else
-          return computable(download, {}, (driver) => ({
-            done: true,
-            ...driver.getProgressLog(rInfo, 'PREFIX', callerId)
-          }));
+    const c = Computable.make((ctx) => {
+      const stream = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result', 'stream')?.resourceInfo;
+      if (stream == undefined) {
+        ctx.markUnstable();
+        return undefined;
       }
-    );
+      return logs.getProgressLog(stream, 'PREFIX', ctx);
+    });
 
     expect(await c.getValue()).toBeUndefined();
 
@@ -155,12 +119,12 @@ test('should get last line with a prefix', async () => {
     ]);
 
     while (true) {
-      await c.listen();
+      await c.awaitChange();
+      const result = await c.getFullValue();
 
-      const result = await c.getValue();
       logger.info(`got result: ${JSON.stringify(result)}`);
-      if (result?.done) {
-        expect(result.log).toStrictEqual('PREFIX4\n');
+      if (result.stable) {
+        expect(result.value).toStrictEqual('PREFIX4\n');
         return;
       }
     }
@@ -175,7 +139,7 @@ test('should get log smart object and get log lines from that', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logs = new LogsDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
     const download = new DownloadDriver(
       logger,
@@ -185,80 +149,50 @@ test('should get log smart object and get log lines from that', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       700 * 1024
     );
+    const logs = new LogsDriver(logsStream, download);
 
-    const c = computable(
-      tree.entry(),
-      { mode: 'StableOnlyRetentive' },
-      (tree) => {
-        const stream = tree.node().traverse('result', 'stream');
-        if (stream == undefined) return undefined;
-
-        const rInfo: ResourceInfo = {
-          id: stream.id,
-          type: stream.resourceType
-        };
-
-        if (stream.resourceType.name.startsWith('StreamWorkdir'))
-          return computable(logs, {}, (driver) => ({
-            logId: driver.getLogId(rInfo, callerId),
-            source: 'logs'
-          }));
-        else
-          return computable(download, {}, (driver) => ({
-            logId: driver.getLogId(rInfo, callerId),
-            source: 'download'
-          }));
+    const c = Computable.make((ctx) => {
+      const stream = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result', 'stream')?.resourceInfo;
+      if (stream == undefined) {
+        ctx.markUnstable();
+        return undefined;
       }
-    );
-
-    // TODO: callerId (maybe in accessor?)
+      return logs.getLogHandle(stream);
+    });
 
     await createRunCommandWithStdoutStream(client, 'bash', [
       '-c',
       'echo 1; sleep 1; echo 2'
     ]);
 
-    let smartObject = await getSmartObject(logger, logs, download, c);
+    let handle = await c.getValue();
 
     while (true) {
-      try {
-        const logs = await smartObject.readText(10, 0n);
-        logger.info(`got size of the result: ${logs?.size}`);
-        if (logs?.data.toString().length == 4) {
-          expect(logs.data.toString()).toStrictEqual('1\n2\n');
-          return;
-        }
-      } catch (e) {
-        smartObject = await getSmartObject(logger, logs, download, c);
+      await c.awaitChange();
+      handle = await c.getValue();
+      if (handle != undefined) break;
+    }
+
+    while (true) {
+      const response = await logs.readText(notEmpty(handle), 100, 0n);
+      logger.info(`got response: ${stringifyWithResourceId(response)}`);
+      if (response.shouldUpdateHandle) {
+        await c.awaitChange();
+        handle = await c.getValue();
+      }
+
+      if (response.response?.data.toString().length == 4) {
+        expect(response.response?.data.toString()).toStrictEqual('1\n2\n');
+        return;
       }
 
       await scheduler.wait(200);
     }
   });
 });
-
-interface LogIdAndSource {
-  logId: LogId | undefined;
-  source: string;
-}
-
-async function getSmartObject(
-  logger: MiLogger,
-  logs: LogsDriver,
-  download: DownloadDriver,
-  c: Computable<LogIdAndSource | undefined>
-) {
-  while (true) {
-    await c.listen();
-
-    const result = await c.getValue();
-    logger.info(`got result: ${stringifyWithResourceId(result)}`);
-    if (result != undefined && result.logId != undefined) {
-      if (result.source == 'logs') return logs.getLog(result.logId);
-      else return download.getLog(result.logId);
-    }
-  }
-}
 
 async function createRunCommandWithStdoutStream(
   client: PlClient,

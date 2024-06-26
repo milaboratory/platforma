@@ -1,9 +1,7 @@
 import {
-  AccessorProvider,
   ChangeSource,
   Computable,
   ComputableCtx,
-  UsageGuard,
   Watcher
 } from '@milaboratory/computable';
 import { bigintToResourceId, ResourceId } from '@milaboratory/pl-client-v2';
@@ -19,14 +17,6 @@ import * as fs from 'fs';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
 import { ClientDownload } from '../clients/download';
-import {
-  Log,
-  LogId,
-  LogResult,
-  LogsAsyncReader,
-  LogsSyncAccessor,
-  LogsSyncReader
-} from './logs_stream';
 import { ClientLogs } from '../clients/logs';
 import * as helper from './helpers';
 import * as readline from 'node:readline/promises';
@@ -48,16 +38,17 @@ import {
   RemoteBlobHandle,
   RemoteBlobHandleAndSize
 } from '@milaboratory/sdk-model';
+import {
+  AnyLogHandle,
+  dataToHandle,
+  handleToData,
+  isReadyLogHandle,
+  StreamingApiResponse
+} from './logs';
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
-export class DownloadDriver
-  implements
-    AccessorProvider<LogsSyncAccessor>,
-    BlobDriver,
-    LogsSyncReader,
-    LogsAsyncReader
-{
+export class DownloadDriver implements BlobDriver {
   /** Represents a Resource Id to the path of a blob as a map. */
   private idToDownload: Map<ResourceId, Download> = new Map();
 
@@ -151,10 +142,6 @@ export class DownloadDriver
     return await buffer(content);
   }
 
-  createAccessor(ctx: ComputableCtx, _: UsageGuard): LogsSyncAccessor {
-    return new LogsSyncAccessor(ctx.watcher, ctx, this);
-  }
-
   private getDownloadedBlobNoCtx(
     w: Watcher,
     rInfo: ResourceInfo,
@@ -224,96 +211,188 @@ export class DownloadDriver
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
   getLastLogs(
+    res: ResourceInfo | PlTreeEntry,
+    lines: number
+  ): Computable<string | undefined>;
+  getLastLogs(
+    res: ResourceInfo | PlTreeEntry,
+    lines: number,
+    ctx: ComputableCtx
+  ): Computable<string | undefined>;
+  getLastLogs(
+    res: ResourceInfo | PlTreeEntry,
+    lines: number,
+    ctx?: ComputableCtx
+  ): Computable<string | undefined> | string | undefined {
+    if (ctx == undefined)
+      return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
+
+    const r = treeEntryToResourceInfo(res, ctx);
+    const callerId = randomUUID();
+    ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
+
+    const result = this.getLastLogsNoCtx(ctx.watcher, r, lines, callerId);
+    if (result == undefined) ctx.markUnstable();
+
+    return result;
+  }
+
+  private getLastLogsNoCtx(
     w: Watcher,
     rInfo: ResourceInfo,
     lines: number,
     callerId: string
-  ): LogResult {
+  ): string | undefined {
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
-    if (blob == undefined) return { log: '' };
+    if (blob == undefined) return undefined;
+
     const path = localHandleToPath(blob.handle, this.signer);
 
-    const logGetter = this.idToLastLines.get(rInfo.id);
+    let logGetter = this.idToLastLines.get(rInfo.id);
 
     if (logGetter == undefined) {
       const newLogGetter = new LastLinesGetter(path, lines);
       this.idToLastLines.set(rInfo.id, newLogGetter);
-      return newLogGetter.getOrSchedule(w);
-    }
-
-    return logGetter.getOrSchedule(w);
-  }
-
-  /** Returns a last line that has patternToSearch.
-   * Notifies when a new line appeared or EOF reached. */
-  getProgressLog(
-    w: Watcher,
-    rInfo: ResourceInfo,
-    patternToSearch: string,
-    callerId: string
-  ): LogResult {
-    const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
-    if (blob == undefined) return { log: '' };
-    const path = localHandleToPath(blob.handle, this.signer);
-
-    const logGetter = this.idToProgressLog.get(rInfo.id);
-
-    if (logGetter == undefined) {
-      // TODO: what to do with signature?
-      const newLogGetter = new LastLinesGetter(path, 1, patternToSearch);
-      this.idToProgressLog.set(rInfo.id, newLogGetter);
-      const result = newLogGetter.getOrSchedule(w);
-      if (result.error) throw result.error;
-
-      return result;
+      logGetter = newLogGetter;
     }
 
     const result = logGetter.getOrSchedule(w);
     if (result.error) throw result.error;
 
+    return result.log;
+  }
+
+  /** Returns a last line that has patternToSearch.
+   * Notifies when a new line appeared or EOF reached. */
+  getProgressLog(
+    res: ResourceInfo | PlTreeEntry,
+    patternToSearch: string
+  ): Computable<string | undefined>;
+  getProgressLog(
+    res: ResourceInfo | PlTreeEntry,
+    patternToSearch: string,
+    ctx: ComputableCtx
+  ): string | undefined;
+  getProgressLog(
+    res: ResourceInfo | PlTreeEntry,
+    patternToSearch: string,
+    ctx?: ComputableCtx
+  ): Computable<string | undefined> | string | undefined {
+    if (ctx == undefined)
+      return Computable.make((ctx) =>
+        this.getProgressLog(res, patternToSearch, ctx)
+      );
+
+    const r = treeEntryToResourceInfo(res, ctx);
+    const callerId = randomUUID();
+    ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
+
+    const result = this.getProgressLogNoCtx(
+      ctx.watcher,
+      r,
+      patternToSearch,
+      callerId
+    );
+    if (result === undefined) ctx.markUnstable();
+
     return result;
+  }
+
+  private getProgressLogNoCtx(
+    w: Watcher,
+    rInfo: ResourceInfo,
+    patternToSearch: string,
+    callerId: string
+  ): string | undefined {
+    const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
+    if (blob == undefined) return undefined;
+    const path = localHandleToPath(blob.handle, this.signer);
+
+    let logGetter = this.idToProgressLog.get(rInfo.id);
+
+    if (logGetter == undefined) {
+      const newLogGetter = new LastLinesGetter(path, 1, patternToSearch);
+      this.idToProgressLog.set(rInfo.id, newLogGetter);
+
+      logGetter = newLogGetter;
+    }
+
+    const result = logGetter.getOrSchedule(w);
+    if (result.error) throw result.error;
+
+    return result.log;
   }
 
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
-  getLogId(
-    w: Watcher,
-    rInfo: ResourceInfo,
-    callerId: string
-  ): LogId | undefined {
-    const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
-    if (blob == undefined) return undefined;
+  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle>;
+  getLogHandle(
+    res: ResourceInfo | PlTreeEntry,
+    ctx: ComputableCtx
+  ): AnyLogHandle;
+  getLogHandle(
+    res: ResourceInfo | PlTreeEntry,
+    ctx?: ComputableCtx
+  ): Computable<AnyLogHandle> | AnyLogHandle {
+    if (ctx == undefined)
+      return Computable.make((ctx) => this.getLogHandle(res, ctx));
+
+    const r = treeEntryToResourceInfo(res, ctx);
+
+    return this.getLogHandleNoCtx(r);
+  }
+
+  private getLogHandleNoCtx(rInfo: ResourceInfo): AnyLogHandle {
+    return dataToHandle(false, rInfo);
+  }
+
+  async lastLines(
+    handle: AnyLogHandle,
+    lineCount: number,
+    offsetBytes: bigint, // if 0n, then start from the end.
+    searchStr?: string
+  ): Promise<StreamingApiResponse> {
+    if (!isReadyLogHandle(handle))
+      throw new Error(
+        `not ready log handle was passed to ready log driver, handle: ${handle}`
+      );
 
     return {
-      id: blob.handle,
-      rInfo: rInfo
+      live: false,
+      shouldUpdateHandle: false,
+      response: await this.clientLogs.lastLines(
+        handleToData(handle),
+        lineCount,
+        offsetBytes,
+        searchStr
+      )
     };
   }
 
-  getLog(logId: LogId): Log {
-    return {
-      lastLines: async (
-        lineCount: number,
-        offsetBytes: bigint,
-        searchStr?: string
-      ) =>
-        this.clientLogs.lastLines(
-          logId.rInfo,
-          lineCount,
-          offsetBytes,
-          searchStr
-        ),
+  async readText(
+    handle: AnyLogHandle,
+    lineCount: number,
+    offsetBytes: bigint, // if 0n, then start from the beginning.
+    searchStr?: string
+  ): Promise<StreamingApiResponse> {
+    if (!isReadyLogHandle(handle))
+      throw new Error(
+        `not ready log handle was passed to ready log driver, handle: ${handle}`
+      );
 
-      readText: async (
-        lineCount: number,
-        offsetBytes: bigint, // if 0n, then start from the beginning.
-        searchStr?: string
-      ) =>
-        this.clientLogs.readText(logId.rInfo, lineCount, offsetBytes, searchStr)
+    return {
+      live: false,
+      shouldUpdateHandle: false,
+      response: await this.clientLogs.lastLines(
+        handleToData(handle),
+        lineCount,
+        offsetBytes,
+        searchStr
+      )
     };
   }
 
-  async releaseBlob(blobId: ResourceId, callerId: string) {
+  private async releaseBlob(blobId: ResourceId, callerId: string) {
     const task = this.idToDownload.get(blobId);
     if (task == undefined) return;
 
@@ -348,7 +427,7 @@ export class DownloadDriver
     this.idToProgressLog.delete(task.rInfo.id);
   }
 
-  async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
+  private async releaseOnDemandBlob(blobId: ResourceId, callerId: string) {
     const deleted = this.idToOnDemand.get(blobId)?.release(callerId) ?? false;
     if (deleted) this.idToOnDemand.delete(blobId);
   }
@@ -393,7 +472,7 @@ class OnDemandBlobHolder {
 
 class LastLinesGetter {
   private updater: helper.Updater;
-  private logs: string = '';
+  private log: string | undefined;
   private readonly change: ChangeSource = new ChangeSource();
   private error: any | undefined = undefined;
 
@@ -405,20 +484,23 @@ class LastLinesGetter {
     this.updater = new helper.Updater(async () => this.update());
   }
 
-  getOrSchedule(w: Watcher): LogResult & { error?: any } {
+  getOrSchedule(w: Watcher): {
+    log: string | undefined;
+    error?: any | undefined;
+  } {
     this.change.attachWatcher(w);
 
     this.updater.schedule();
 
     return {
-      log: this.logs,
+      log: this.log,
       error: this.error
     };
   }
 
   async update(): Promise<void> {
     try {
-      this.logs = await getLastLines(
+      this.log = await getLastLines(
         this.path,
         this.lines,
         this.patternToSearch
@@ -427,7 +509,7 @@ class LastLinesGetter {
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
-        this.logs = '';
+        this.log = '';
         this.error = e;
         this.change.markChanged();
         return;
