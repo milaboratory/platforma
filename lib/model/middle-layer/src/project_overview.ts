@@ -1,7 +1,6 @@
 import { ProjectMeta } from './project';
-import { BlockRenderingMode } from './block';
 import { BlockPackSpec } from './block_pack';
-import { BlockSection } from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection } from '@milaboratory/sdk-model';
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockProductionStatus =
