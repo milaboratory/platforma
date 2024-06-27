@@ -2,6 +2,7 @@ import { Computable, ComputableCtx } from '@milaboratory/computable';
 import {
   PlTreeEntry,
   ResourceInfo,
+  SynchronizedTreeState,
   treeEntryToResourceInfo
 } from '@milaboratory/pl-tree';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
@@ -23,35 +24,39 @@ export type StreamingApiResponse = {
 export class LogsDriver {
   constructor(
     private readonly logsStreamDriver: LogsStreamDriver,
-    private readonly downloadDriver: DownloadDriver
+    private readonly downloadDriver: DownloadDriver,
   ) {}
 
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
   getLastLogs(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     lines: number
   ): Computable<string | undefined>;
   getLastLogs(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     lines: number,
     ctx: ComputableCtx
   ): Computable<string | undefined>;
   getLastLogs(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     lines: number,
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
     if (ctx === undefined)
       return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const stream = streamManagerGetStream(ctx, res);
+    if (stream === undefined) {
+      ctx.markUnstable();
+      return undefined;
+    }
 
-    if (!isStream(rInfo))
-      return this.downloadDriver.getLastLogs(rInfo, lines, ctx);
+    if (isBlob(stream))
+      return this.downloadDriver.getLastLogs(stream, lines, ctx);
 
     try {
-      return this.logsStreamDriver.getLastLogs(rInfo, lines, ctx);
+      return this.logsStreamDriver.getLastLogs(stream, lines, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         ctx.markUnstable();
@@ -64,16 +69,16 @@ export class LogsDriver {
   /** Returns a last line that has patternToSearch.
    * Notifies when a new line appeared or EOF reached. */
   getProgressLog(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     patternToSearch: string
   ): Computable<string | undefined>;
   getProgressLog(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     patternToSearch: string,
     ctx: ComputableCtx
   ): string | undefined;
   getProgressLog(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     patternToSearch: string,
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
@@ -82,13 +87,17 @@ export class LogsDriver {
         this.getProgressLog(res, patternToSearch, ctx)
       );
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const stream = streamManagerGetStream(ctx, res);
+    if (stream === undefined) {
+      ctx.markUnstable();
+      return undefined;
+    }
 
-    if (!isStream(rInfo))
-      return this.downloadDriver.getProgressLog(rInfo, patternToSearch, ctx);
+    if (isBlob(stream))
+      return this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
 
     try {
-      return this.logsStreamDriver.getProgressLog(rInfo, patternToSearch, ctx);
+      return this.logsStreamDriver.getProgressLog(stream, patternToSearch, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         ctx.markUnstable();
@@ -100,22 +109,27 @@ export class LogsDriver {
 
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
-  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle>;
+  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle | undefined>;
   getLogHandle(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     ctx: ComputableCtx
-  ): AnyLogHandle;
+  ): AnyLogHandle | undefined;
   getLogHandle(
-    res: ResourceInfo | PlTreeEntry,
+    res: PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<AnyLogHandle> | AnyLogHandle {
+  ): Computable<AnyLogHandle | undefined> | AnyLogHandle | undefined {
     if (ctx === undefined)
       return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const stream = streamManagerGetStream(ctx, res);
+    if (stream === undefined) {
+      ctx.markUnstable();
+      return undefined;
+    }
 
-    if (!isStream(rInfo)) return this.downloadDriver.getLogHandle(rInfo, ctx);
-    return this.logsStreamDriver.getLogHandle(rInfo, ctx);
+    if (isBlob(stream)) return this.downloadDriver.getLogHandle(stream, ctx);
+
+    return this.logsStreamDriver.getLogHandle(stream, ctx);
   }
 
   async lastLines(
@@ -161,8 +175,12 @@ export class LogsDriver {
   }
 }
 
-function isStream(rInfo: ResourceInfo) {
-  return rInfo.type.name.startsWith('StreamWorkdir');
+function isBlob(rInfo: ResourceInfo) {
+  return !rInfo.type.name.startsWith('StreamWorkdir');
+}
+
+function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {
+  return ctx.accessor(manager).node().traverse('stream')?.resourceInfo
 }
 
 export function handleToData(handle: AnyLogHandle): ResourceInfo {

@@ -8,12 +8,12 @@ import {
   FieldId,
   AnyFieldRef,
   ResourceRef,
-  stringifyWithResourceId
+  stringifyWithResourceId,
+  ResourceId
 } from '@milaboratory/pl-client-v2';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer,
-  MiLogger,
   notEmpty
 } from '@milaboratory/ts-helpers';
 import { scheduler } from 'node:timers/promises';
@@ -47,24 +47,20 @@ test('should get all logs', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    const c = Computable.make((ctx) => {
-      const stream = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result', 'stream')?.resourceInfo;
-      if (stream == undefined) {
-        ctx.markUnstable();
-        return undefined;
-      }
-      return logs.getLastLogs(stream, 100, ctx);
-    });
-
-    expect(await c.getValue()).toBeUndefined();
-
     await createRunCommandWithStdoutStream(client, 'bash', [
       '-c',
       'echo 1; sleep 1; echo 2'
     ]);
+
+    const c = Computable.make(ctx => {
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      if (streamManager === undefined) {
+        ctx.markUnstable()
+        return
+      }
+
+      return logs.getLastLogs(streamManager, 100, ctx);
+    })
 
     while (true) {
       await c.awaitChange();
@@ -99,17 +95,15 @@ test('should get last line with a prefix', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    const c = Computable.make((ctx) => {
-      const stream = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result', 'stream')?.resourceInfo;
-      if (stream == undefined) {
-        ctx.markUnstable();
-        return undefined;
+    const c = Computable.make(ctx => {
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      if (streamManager === undefined) {
+        ctx.markUnstable()
+        return
       }
-      return logs.getProgressLog(stream, 'PREFIX', ctx);
-    });
+
+      return logs.getProgressLog(streamManager, 'PREFIX', ctx);
+    })
 
     expect(await c.getValue()).toBeUndefined();
 
@@ -151,17 +145,15 @@ test('should get log smart object and get log lines from that', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    const c = Computable.make((ctx) => {
-      const stream = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result', 'stream')?.resourceInfo;
-      if (stream == undefined) {
-        ctx.markUnstable();
-        return undefined;
+    const c = Computable.make(ctx => {
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+      if (streamManager === undefined) {
+        ctx.markUnstable()
+        return
       }
-      return logs.getLogHandle(stream);
-    });
+
+      return logs.getLogHandle(streamManager, ctx);
+    })
 
     await createRunCommandWithStdoutStream(client, 'bash', [
       '-c',
@@ -198,7 +190,7 @@ async function createRunCommandWithStdoutStream(
   client: PlClient,
   cmd: string,
   args: string[]
-): Promise<FieldId> {
+): Promise<ResourceId> {
   return await client.withWriteTx(
     'CreateRunCommandWithStreaming',
     async (tx: PlTransaction) => {
@@ -216,7 +208,7 @@ async function createRunCommandWithStdoutStream(
 
       await tx.commit();
 
-      return dynamicId;
+      return await streamManagerId.globalId;
     }
   );
 }
