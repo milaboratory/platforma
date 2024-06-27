@@ -4,7 +4,8 @@ import { Checked } from './type_util';
 import { Platforma } from './platforma';
 import { PlatformaSDKVersion } from './version';
 import { getPlatformaInstance, isInUI } from './platforma_instance';
-import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockRenderingMode } from '@milaboratory/pl-middle-layer-model';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
   $args: Args,
