@@ -42,7 +42,7 @@ export type BlockStateOverview = {
 
   /** Means that current heavy results (or results being calculated at the
    * moment) are not in sync with current arguments. This takes into account
-   * stale state of all upstream blocks as well.*/
+   * stale state of all upstream blocks as well. */
   stale: boolean;
 
   /** Generalized block calculation status */
@@ -60,8 +60,9 @@ export type BlockStateOverview = {
    * yet materialized. */
   sections: BlockSection[] | undefined,
 
-  /** True if current block can be executed. */
-  canRun: boolean | undefined,
+  /** True if current block can be executed. This takes into account can run of
+   * all upstream blocks as well. */
+  canRun: boolean,
 
   /** Information on where the block pack for this block came from */
   blockPackSource: BlockPackSpec | undefined
