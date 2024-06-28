@@ -97,6 +97,39 @@ export type PColumnId = string;
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */
 export interface PColumnIdAndSpec {
-  columnId: PColumnId;
-  spec: PColumnSpec;
+  /** Internal column id within the PFrame */
+  readonly columnId: PColumnId;
+  
+  /** Column spec */
+  readonly spec: PColumnSpec;
+}
+
+/** Information returned by {@link PFrame.listColumns} method */
+export interface PColumnInfo extends PColumnIdAndSpec {
+  /** True if data was associated with this PColumn */
+  readonly hasData: boolean;
+}
+
+export interface AxisId {
+  /** Type of the axis or column value. For an axis should not use non-key
+   * types like float or double. */
+  readonly type: ValueType;
+
+  /** Name of the axis or column */
+  readonly name: string;
+
+  /** Adds auxiliary information to the axis or column name and type to form a
+   * unique identifier */
+  readonly domain?: Record<string, string>;
+}
+
+/** Array of axis ids */
+export type AxesId = AxisId[];
+
+/** Extracts axes ids from axes spec array from column spec */
+export function getAxesId(spec: AxesSpec): AxesId {
+  return spec.map(s => {
+    const { type, name, domain } = s;
+    return { type, name, domain };
+  });
 }

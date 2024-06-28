@@ -1,3 +1,5 @@
+import { ValueType } from './spec';
+
 export const PValueInt32NA = -2147483648;
 export const PValueInt64NA = -9007199254740991n;
 export const PValueFloat32NA = NaN;
@@ -24,8 +26,11 @@ export type PVectorData =
  * may have some of the values "absent", i.e. as a result of missing record in
  * outer join operation. This information is encoded in {@link absent} field. */
 export interface PTableVector {
+  /** Stored data type */
+  readonly type: ValueType;
+
   /** Values for present positions, absent positions have NA values */
-  data: PVectorData;
+  readonly data: PVectorData;
 
   /**
    * Encoded bit array marking some elements of this vector as absent,
@@ -33,14 +38,14 @@ export interface PTableVector {
    * Encoding described here:
    * https://gist.github.com/vadimpiven/45f8279d84f47b9857df845126694c39
    * */
-  absent: Uint8Array;
+  readonly absent: Uint8Array;
 }
 
 /** Used in requests to partially retrieve table's data */
 export type TableRange = {
   /** Index of the first record to retrieve */
-  offset: number;
+  readonly offset: number;
 
   /** Block length */
-  length: number;
+  readonly length: number;
 }
