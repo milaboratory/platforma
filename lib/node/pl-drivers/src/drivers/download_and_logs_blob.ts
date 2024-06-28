@@ -32,18 +32,18 @@ import {
   treeEntryToResourceInfo
 } from '@milaboratory/pl-tree';
 import {
+  AnyLogHandle,
   BlobDriver,
   LocalBlobHandle,
   LocalBlobHandleAndSize,
   RemoteBlobHandle,
-  RemoteBlobHandleAndSize
+  RemoteBlobHandleAndSize,
+  StreamingApiResponse
 } from '@milaboratory/sdk-model';
 import {
-  AnyLogHandle,
   dataToHandle,
   handleToData,
-  isReadyLogHandle,
-  StreamingApiResponse
+  isReadyLogHandle
 } from './logs';
 
 /** DownloadDriver holds a queue of downloading tasks,
@@ -360,12 +360,12 @@ export class DownloadDriver implements BlobDriver {
     return {
       live: false,
       shouldUpdateHandle: false,
-      response: await this.clientLogs.lastLines(
+      ...(await this.clientLogs.lastLines(
         handleToData(handle),
         lineCount,
         offsetBytes,
         searchStr
-      )
+      ))
     };
   }
 
@@ -383,12 +383,12 @@ export class DownloadDriver implements BlobDriver {
     return {
       live: false,
       shouldUpdateHandle: false,
-      response: await this.clientLogs.lastLines(
+      ...(await this.clientLogs.lastLines(
         handleToData(handle),
         lineCount,
         offsetBytes,
         searchStr
-      )
+      ))
     };
   }
 

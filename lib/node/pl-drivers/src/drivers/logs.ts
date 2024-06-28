@@ -2,24 +2,13 @@ import { Computable, ComputableCtx } from '@milaboratory/computable';
 import {
   PlTreeEntry,
   ResourceInfo,
-  SynchronizedTreeState,
-  treeEntryToResourceInfo
 } from '@milaboratory/pl-tree';
-import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import { bigintToResourceId } from '@milaboratory/pl-client-v2';
 import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
-
-export type AnyLogHandle = LiveLogHandle | ReadyLogHandle;
-
-export type LiveLogHandle = `log+live://log/${string}`;
-export type ReadyLogHandle = `log+ready://log/${string}`;
-
-export type StreamingApiResponse = {
-  response?: StreamingAPI_Response;
-  live: boolean;
-  shouldUpdateHandle: boolean;
-};
+import { AnyLogHandle, StreamingApiResponse } from '@milaboratory/sdk-model';
+import { LiveLogHandle } from '@milaboratory/sdk-model';
+import { ReadyLogHandle } from '@milaboratory/sdk-model';
 
 export class LogsDriver {
   constructor(

@@ -174,10 +174,11 @@ test('should get log smart object and get log lines from that', async () => {
       if (response.shouldUpdateHandle) {
         await c.awaitChange();
         handle = await c.getValue();
+        continue
       }
 
-      if (response.response?.data.toString().length == 4) {
-        expect(response.response?.data.toString()).toStrictEqual('1\n2\n');
+      if (response.data.toString().length == 4) {
+        expect(response.data.toString()).toStrictEqual('1\n2\n');
         return;
       }
 

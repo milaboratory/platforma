@@ -15,14 +15,13 @@ import {
   treeEntryToResourceInfo
 } from '@milaboratory/pl-tree';
 import {
-  AnyLogHandle,
-  StreamingApiResponse,
   dataToHandle,
   handleToData,
   isLiveLogHandle
 } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
+import { AnyLogHandle, StreamingApiResponse } from '@milaboratory/sdk-model';
 
 export class LogsStreamDriver {
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
@@ -245,7 +244,7 @@ export class LogsStreamDriver {
       return {
         live: true,
         shouldUpdateHandle: false,
-        response: await method()
+        ...(await method())
       };
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
