@@ -18,7 +18,10 @@ import {
   ActOr, ActMakeArray, ActFlatten,
   ActGetDownloadedBlobContent,
   ActGetOnDemandBlobContent,
-  ActUploadBlob
+  ActUploadBlob,
+  ActGetLastLogs,
+  ActGetProgressLog,
+  ActGetLogHandle
 } from './actions_kinds';
 import {
   ExtractAction,
@@ -324,5 +327,39 @@ export function getUploadBlob<const Source extends TypedConfig>(
 ): TypedConfig<ActUploadBlob<ExtractAction<Source>>> {
   return ({
     type: 'GetUploadBlob', source: primitiveToConfig(source)
+  } as Cfg) as any;
+}
+
+//
+// Logs
+//
+
+export function getLastLogs<const Source extends TypedConfig>(
+  source: Source,
+  lines: number,
+): TypedConfig<ActGetLastLogs<ExtractAction<Source>>> {
+  return ({
+    type: 'GetLastLogs',
+    source: primitiveToConfig(source),
+    lines,
+  } as Cfg) as any;
+}
+
+export function getProgressLog<const Source extends TypedConfig>(
+  source: Source,
+  patternToSearch: string,
+): TypedConfig<ActGetProgressLog<ExtractAction<Source>>> {
+  return ({
+    type: 'GetProgressLog',
+    source: primitiveToConfig(source),
+    patternToSearch,
+  } as Cfg) as any;
+}
+
+export function getLogHandle<const Source extends TypedConfig>(
+  source: Source
+): TypedConfig<ActGetLogHandle<ExtractAction<Source>>> {
+  return ({
+    type: 'GetLogHandle', source: primitiveToConfig(source)
   } as Cfg) as any;
 }

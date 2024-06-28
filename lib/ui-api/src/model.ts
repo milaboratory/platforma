@@ -29,7 +29,11 @@ export type Cfg =
   | CfgDownloadedBlobContent
   | CfgOnDemandBlobContent
 
-  | CfgUploadBlob;
+  | CfgUploadBlob
+
+  | CfgLastLogs
+  | CfgProgressLog
+  | CfgLogHandle;
 
 //
 // Isolate / Rendering Mode
@@ -179,4 +183,25 @@ export type CfgOnDemandBlobContent = {
 export type CfgUploadBlob = {
   type: 'GetUploadBlob'
   source: Cfg
+}
+
+//
+// Logs
+//
+
+export type CfgLastLogs = {
+  type: 'GetLastLogs'
+  source: Cfg,
+  lines: number,
+}
+
+export type CfgProgressLog = {
+  type: 'GetProgressLog'
+  source: Cfg,
+  patternToSearch: string,
+}
+
+export type CfgLogHandle = {
+  type: 'GetLogHandle'
+  source: Cfg,
 }

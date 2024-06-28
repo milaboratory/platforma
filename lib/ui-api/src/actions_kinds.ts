@@ -6,6 +6,7 @@ import {
 } from './type_engine';
 import { And, IsA, SyncConfAction } from './type_util';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize, UploadProgress } from '@milaboratory/sdk-model';
+import { AnyLogHandle } from '@milaboratory/sdk-model';
 
 //
 // Context
@@ -193,6 +194,31 @@ export interface ActGetOnDemandBlobContent<Source extends ConfAction> extends Co
 export interface ActUploadBlob<Source extends ConfAction> extends ConfAction {
   new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
     ? UploadProgress
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+//
+// Logs
+//
+
+export interface ActGetLastLogs<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? string
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActGetProgressLog<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? string
+    : unknown;
+  isSync: IsA<Source, SyncConfAction>;
+}
+
+export interface ActGetLogHandle<Source extends ConfAction> extends ConfAction {
+  new: (x: this['ctx']) => ActionResult<Source, typeof x> extends PlResourceEntry
+    ? AnyLogHandle
     : unknown;
   isSync: IsA<Source, SyncConfAction>;
 }
