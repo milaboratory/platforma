@@ -65,7 +65,7 @@ export type AxesSpec = AxisSpec[];
  *
  * Each element in tuple correspond to the axis having the same index in axesSpec.
  * */
-export interface ColumnSpec {
+export interface PColumnSpec {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */
   readonly kind: 'PColumn';
@@ -92,11 +92,11 @@ export interface ColumnSpec {
 }
 
 /** Type of column id (now string, can be branded in teh future) */
-export type ColumnId = string;
+export type PColumnId = string;
 
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */
-export interface ColumnIdAndSpec {
-  columnId: ColumnId;
-  spec: ColumnSpec;
+export interface PColumnIdAndSpec {
+  columnId: PColumnId;
+  spec: PColumnSpec;
 }
