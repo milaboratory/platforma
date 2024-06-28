@@ -3,7 +3,7 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { ClientLogs, createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver, DownloadUrlDriver, UploadDriver } from '@milaboratory/pl-drivers';
+import { createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver, DownloadUrlDriver, UploadDriver, LogsStreamDriver, LogsDriver } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
@@ -199,6 +199,15 @@ export class MiddleLayer {
         stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay,
       },
     )
+    const logsStreamDriver = new LogsStreamDriver(
+      logsClient,
+      {
+        nConcurrentGetLogs: ops.nConcurrentGetLogs,
+        pollingInterval: ops.defaultStreamLogsDriverOptions.pollingInterval,
+        stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay,
+      }
+    );
+    const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
 
     const env: MiddleLayerEnvironment = {
       pl, signer,
@@ -206,14 +215,16 @@ export class MiddleLayer {
       frontendDownloadDriver,
       drivers: {
         downloadDriver,
-        uploadDriver
-      } as any as MiddleLayerInternalDrivers // TODO: add logs driver.
+        uploadDriver,
+        logsDriver
+      }
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
-    return new MiddleLayer(env,
+    return new MiddleLayer(
+      env,
       {
         blob: downloadDriver
       },

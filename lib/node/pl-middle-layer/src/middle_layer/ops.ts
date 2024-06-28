@@ -52,6 +52,16 @@ export type MiddleLayerOps = {
     /** For how long to continue polling after the last derived value access. */
     stopPollingDelay: number;
   }
+
+  /** How much logs updates can the logs driver ask
+   * from the platform gRPC at once. */
+  nConcurrentGetLogs: number;
+  defaultStreamLogsDriverOptions: {
+    /** How frequent the upload driver should update statuses of progresses. */
+    pollingInterval: number;
+    /** For how long to continue polling after the last derived value access. */
+    stopPollingDelay: number;
+  }
 }
 
 /** Some defaults fot MiddleLayerOps. */
@@ -64,7 +74,9 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'blobDownloadCacheSizeBytes'
   | 'defaultUploadDriverOptions'
   | 'nConcurrentGetProgresses'
-  | 'nConcurrentPartUploads'> = {
+  | 'nConcurrentPartUploads'
+  | 'nConcurrentGetLogs'
+  | 'defaultStreamLogsDriverOptions'> = {
     defaultTreeOptions: {
       pollingInterval: 350,
       stopPollingDelay: 2500
@@ -77,6 +89,11 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
     nConcurrentPartUploads: 10,
     nConcurrentGetProgresses: 10,
     defaultUploadDriverOptions: {
+      pollingInterval: 1000,
+      stopPollingDelay: 1000
+    },
+    nConcurrentGetLogs: 10,
+    defaultStreamLogsDriverOptions: {
       pollingInterval: 1000,
       stopPollingDelay: 1000
     }

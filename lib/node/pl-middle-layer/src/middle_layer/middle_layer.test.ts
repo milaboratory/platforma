@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -42,6 +43,10 @@ async function getStandardBlockSpecs() {
 
     uploadFileSpecFromRemote: blocksFromRegistry.find(
       b => b.registryLabel.match(/Central/) && b.package === 'upload-file'
+    )!.latestSpec,
+
+    readLogsSpecFromRemote: blocksFromRegistry.find(
+      b => b.registryLabel.match(/Central/) && b.package === 'read-logs'
     )!.latestSpec,
   };
 }
@@ -342,7 +347,7 @@ test('should create download-file block, render it and gets outputs from its con
 });
 
 test('should create upload-file block, render it and upload a file to pl server', async () => {
-  const workFolder = path.resolve(`download-file/${randomUUID()}`);
+  const workFolder = path.resolve(`upload-file/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
   await fs.promises.mkdir(frontendFolder, { recursive: true });
@@ -392,5 +397,61 @@ test('should create upload-file block, render it and upload a file to pl server'
     expect((block3StableState.value.outputs!['handle'] as any).value.done).toBeTruthy();
     expect((block3StableState.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
     expect((block3StableState.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
+  });
+});
+
+test('should create read-logs block, render it and read logs from a file', async () => {
+  const workFolder = path.resolve(`read-logs/${randomUUID()}`);
+  const frontendFolder = path.join(workFolder, 'frontend');
+  const downloadFolder = path.join(workFolder, 'download');
+  await fs.promises.mkdir(frontendFolder, { recursive: true });
+  await fs.promises.mkdir(downloadFolder, { recursive: true });
+
+  await TestHelpers.withTempRoot(async pl => {
+    const ml = await MiddleLayer.init(pl, {
+      frontendDownloadPath: path.resolve(frontendFolder),
+      localSecret: MiddleLayer.generateLocalSecret(),
+      blobDownloadPath: path.resolve(downloadFolder)
+    });
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+
+    const { readLogsSpecFromRemote } = await getStandardBlockSpecs();
+    // const readLogsSpecFromDev: BlockPackSpec = {
+    //   type: 'dev',
+    //   folder: '/home/snyssfx/prog/mi/tpls/block-beta-read-logs',
+    // }
+    const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
+
+    await prj.setBlockArgs(block3Id, {
+      storageId: "library",
+      filePath: "maybe_the_number_of_lines_is_the_answer.txt",
+      // args are from here:
+      // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
+      readFileWithSleepArgs: ["file.txt", "PREFIX", "100", "1000"]
+    });
+
+    await prj.runBlock(block3Id);
+
+    const computable = prj.getBlockState(block3Id);
+    await computable.refreshState();
+
+    let i = 0;
+    while (true) {
+      i++;
+      await computable.awaitChange();
+      const state = await computable.getFullValue();
+      console.dir(state, { depth: 5 });
+
+      if (state.stable && state.value.outputs!["lastLogs"].ok && state.value.outputs!["lastLogs"].value != undefined) {
+        expect((state.value.outputs!["progressLog"] as any).value).toContain("PREFIX");
+        expect((state.value.outputs!["progressLog"] as any).value).toContain("bytes read");
+        expect((state.value.outputs!["lastLogs"] as any).value.split("\n").length).toEqual(10 + 1); // 11 because the last element is empty
+        return;
+      }
+    }
   });
 });
