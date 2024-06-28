@@ -28,7 +28,7 @@ export type FilePath = string;
 
 /** Implementation of the storage backend passed to the PFrame to be able to
  * read actual data. */
-export type BlobPathResolver = (filename: PFrameBlobId) => Promise<FilePath>;
+export type BlobPathResolver = (blobId: PFrameBlobId) => Promise<FilePath>;
 
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
@@ -40,5 +40,5 @@ export interface PFrameFactoryAPI {
   setColumnData(
     columnId: PColumnId, dataInfo: DataInfo,
     blobResolver: BlobPathResolver
-  ): Promise<undefined>;
+  ): Promise<void>;
 }

@@ -2,7 +2,7 @@ import { ColumnFilter, PColumnIdAndSpec } from '@milaboratory/sdk-model';
 import { AxisQualification, ColumnAxesWithQualifications } from './common';
 
 export interface FindColumnsRequest {
-  columnSelector: ColumnFilter;
+  columnFilter: ColumnFilter;
   compatibleWith: ColumnAxesWithQualifications[];
   strictlyCompatible: boolean;
 }

@@ -1,13 +1,4 @@
-import { AxisSpec, PColumnId, PColumnSpec, PTableVector, TableRange } from '@milaboratory/sdk-model';
-
-export type PTableColumnSpec = {
-  type: 'axis';
-  spec: AxisSpec;
-} | {
-  type: 'column';
-  id: PColumnId;
-  spec: PColumnSpec;
-}
+import { PTableColumnSpec, PTableVector, TableRange } from '@milaboratory/sdk-model';
 
 /** Unified information about table shape */
 export type PTableShape = {
@@ -56,8 +47,8 @@ export interface PTable {
    *
    * @param columnIndices unified indices of columns to be retrieved
    * @param range optionally limit the range of records to retrieve */
-  getData(columnIndices: number[], range?: TableRange): PTableVector;
+  getData(columnIndices: number[], range?: TableRange): Promise<PTableVector[]>;
 
   /** Sorts the table and returns new PTable instance. */
-  sort(request: PTableSortingRequest[]): PTable;
+  sort(request: PTableSortingRequest[]): Promise<PTable>;
 }

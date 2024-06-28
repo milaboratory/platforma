@@ -1,14 +1,8 @@
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
-import { PColumnId, PColumnIdAndSpec, PColumnSpec } from '@milaboratory/sdk-model';
+import { PColumnId, PColumnInfo, PColumnSpec } from '@milaboratory/sdk-model';
 import { CreateTableRequest } from './create_table';
 import { PTable } from './table';
-
-/** Information returned by {@link PFrameReadAPI.listColumns} method */
-export interface PColumnInfo extends PColumnIdAndSpec {
-  /** True if data was associated with this PColumn */
-  readonly hasData: boolean;
-}
 
 /** Read interface exposed by PFrames library */
 export interface PFrameReadAPI {
