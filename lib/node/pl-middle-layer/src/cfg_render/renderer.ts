@@ -190,17 +190,17 @@ const SRGetBlobContent: Subroutine = args => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(ctx => {
-          return drivers.downloadDriver.getDownloadedBlob(
-            ctx.accessor(source).node().resourceInfo
-          );
-        }, {
-          postprocessValue: async value => {
-            if (value === undefined)
-              return undefined;
-            return await drivers.downloadDriver.getContent(value.handle);
-          }
+        return drivers.downloadDriver.getDownloadedBlob(
+          ctx.accessor(source).node().resourceInfo
+        );
+      }, {
+        postprocessValue: async value => {
+          if (value === undefined)
+            return undefined;
+          return await drivers.downloadDriver.getContent(value.handle);
         }
-      )
+      }
+                                 )
     };
   };
 };
@@ -291,6 +291,45 @@ const SRGetUploadBlob: Subroutine = args => {
     return {
       type: 'ScheduleComputable',
       computable: drivers.uploadDriver.getProgressId(source)
+    };
+  };
+};
+
+const SRGetLastLogs: (lines: number) => Subroutine = lines => (args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.logsDriver.getLastLogs(source, lines)
+    };
+  };
+});
+
+const SRGetProgressLog: (patternToSearch: string) => Subroutine = patternToSearch => (args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.logsDriver.getProgressLog(source, patternToSearch)
+    };
+  };
+});
+
+const SRGetLogHandle: Subroutine = args => {
+  const source = args.source as PlTreeEntry | undefined;
+  if (source === undefined)
+    return resOp(undefined);
+
+  return ({ drivers }) => {
+    return {
+      type: 'ScheduleComputable',
+      computable: drivers.logsDriver.getLogHandle(source)
     };
   };
 };
@@ -478,6 +517,33 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRGetUploadBlob,
+        args: {
+          source: renderCfg(ctx, cfg.source)
+        }
+      });
+
+    case 'GetLastLogs':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetLastLogs(cfg.lines),
+        args: {
+          source: renderCfg(ctx, cfg.source),
+        }
+      });
+
+    case 'GetProgressLog':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetProgressLog(cfg.patternToSearch),
+        args: {
+          source: renderCfg(ctx, cfg.source),
+        }
+      });
+
+    case 'GetLogHandle':
+      return () => ({
+        type: 'ScheduleSubroutine',
+        subroutine: SRGetLogHandle,
         args: {
           source: renderCfg(ctx, cfg.source)
         }
