@@ -1,5 +1,4 @@
-import { AxisSpec } from '@milaboratory/sdk-model';
-import { SingleAxisSelector } from './selectors';
+import { AxisSpec, SingleAxisSelector } from '@milaboratory/sdk-model';
 
 export interface AxisQualification {
   axis: SingleAxisSelector;

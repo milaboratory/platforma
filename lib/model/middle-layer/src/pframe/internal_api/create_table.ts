@@ -1,8 +1,7 @@
-import { SingleAxisSelector, SingleColumnSelector } from './selectors';
 import { AxisQualification } from './common';
-import { AxisSpec, ColumnIdAndSpec } from '@milaboratory/sdk-model';
+import { SingleAxisSelector, SingleColumnSelector } from '@milaboratory/sdk-model';
 
-export interface ColumnWithQualifications {
+export interface ColumnJoinEntry {
   type: 'column';
   columnMatcher: SingleColumnSelector;
   qualifications: AxisQualification[];
@@ -25,7 +24,7 @@ export interface OuterJoin {
 }
 
 export type JoinEntry =
-  | ColumnWithQualifications
+  | ColumnJoinEntry
   | InnerJoin
   | FullJoin
   | OuterJoin;
@@ -37,26 +36,21 @@ export interface FilterPredicate {
   value: string | number;
 }
 
-export interface GetTableColumnFilter {
+export interface CreateTableColumnFilter {
   type: 'byColumnValue';
   columnMatcher: SingleColumnSelector;
   predicate: FilterPredicate;
 }
 
-export interface GetTableAxisFilter {
+export interface CreateTableAxisFilter {
   type: 'byAxisValue';
   axisMatcher: SingleAxisSelector;
   predicate: FilterPredicate;
 }
 
-export type GetTableFilter = GetTableAxisFilter | GetTableColumnFilter;
+export type CreateTableFilter = CreateTableAxisFilter | CreateTableColumnFilter;
 
-export type GetTableOutputFormat = 'JS';
-
-export interface GetTableRequest {
-  type: 'getTable';
+export interface CreateTableRequest {
   src: JoinEntry;
-  filters: GetTableFilter[];
-  outputFormat: GetTableOutputFormat;
+  filters: CreateTableFilter[];
 }
-

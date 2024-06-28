@@ -1,27 +1,27 @@
-import { ColumnFilter, ColumnIdAndSpec } from '@milaboratory/sdk-model';
+import { ColumnFilter, PColumnIdAndSpec } from '@milaboratory/sdk-model';
 import { AxisQualification, ColumnAxesWithQualifications } from './common';
 
-export interface FilterColumnsRequest {
+export interface FindColumnsRequest {
   columnSelector: ColumnFilter;
   compatibleWith: ColumnAxesWithQualifications[];
   strictlyCompatible: boolean;
 }
 
-export interface ColumnResponseQualifications {
+export interface FindColumnResponseQualifications {
   forQueries: AxisQualification[][];
   forHit: AxisQualification[];
 }
 
-export interface MappingVariant {
-  qualifications: ColumnResponseQualifications;
-  distinctiveQualifications: ColumnResponseQualifications;
+export interface FindColumnsMappingVariant {
+  qualifications: FindColumnResponseQualifications;
+  distinctiveQualifications: FindColumnResponseQualifications;
 }
 
-export interface ColumnResponseHit {
-  hit: ColumnIdAndSpec;
-  mappingVariants: MappingVariant[];
+export interface FindColumnsResponseHit {
+  hit: PColumnIdAndSpec;
+  mappingVariants: FindColumnsMappingVariant[];
 }
 
-export interface GetColumnsResponse {
-  hits: ColumnResponseHit[];
+export interface FindColumnsResponse {
+  hits: FindColumnsResponseHit[];
 }

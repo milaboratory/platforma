@@ -1,0 +1,36 @@
+import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
+import { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
+import { PColumnId, PColumnIdAndSpec, PColumnSpec } from '@milaboratory/sdk-model';
+import { CreateTableRequest } from './create_table';
+import { PTable } from './table';
+
+/** Information returned by {@link PFrameReadAPI.listColumns} method */
+export interface PColumnInfo extends PColumnIdAndSpec {
+  /** True if data was associated with this PColumn */
+  readonly hasData: boolean;
+}
+
+/** Read interface exposed by PFrames library */
+export interface PFrameReadAPI {
+  /**
+   * Finds columns given filtering criteria on column name, annotations etc.
+   * and a set of qualified axes specs to find only columns with compatible
+   * axes spec.
+   *
+   * Only column specs are used, this method will work even for columns
+   * with no assigned data.
+   * */
+  findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse>;
+
+  /** To be reviewed in the future */
+  deleteColumn(request: DeleteColumnFromColumnsRequest): Promise<DeleteColumnFromColumnsResponse>;
+
+  /** Retrieve single column spec */
+  getColumnSpec(columnId: PColumnId): Promise<PColumnSpec>;
+
+  /** Retrieve information about all columns currently added to the PFrame */
+  listColumns(): Promise<PColumnInfo[]>;
+
+  /** Calculates data for the table and returns an object to access it */
+  createTable(request: CreateTableRequest): Promise<PTable>;
+}
