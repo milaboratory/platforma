@@ -149,6 +149,12 @@ export class SynchronizedTreeState {
     this.currentLoop = undefined;
   }
 
+  public async awaitSyncLoopTermination(): Promise<void> {
+    if (this.currentLoop === undefined)
+      return;
+    await this.currentLoop;
+  }
+
   public static async init(pl: PlClient, root: ResourceId, ops: SynchronizedTreeOps) {
     const tree = new SynchronizedTreeState(pl, root, ops);
     await tree.refresh();

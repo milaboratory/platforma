@@ -73,6 +73,8 @@ test('simple synchronized tree test', async () => {
       stable: true,
       value: 'hi!'
     });
+
+    await treeState.awaitSyncLoopTermination();
   });
 });
 
@@ -128,5 +130,7 @@ test('synchronized tree test with KV', async () => {
       stable: true,
       value: 'hi!'
     });
+
+    await treeState.awaitSyncLoopTermination();
   });
 });
