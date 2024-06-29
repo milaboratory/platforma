@@ -1,9 +1,9 @@
 import { AxisQualification } from './common';
-import { PTableRecordFilter, SingleColumnSelector } from '@milaboratory/sdk-model';
+import { PColumnId, PTableRecordFilter } from '@milaboratory/sdk-model';
 
 export interface ColumnJoinEntry {
   type: 'column';
-  columnMatcher: SingleColumnSelector;
+  columnId: PColumnId;
   qualifications: AxisQualification[];
 }
 
