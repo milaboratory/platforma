@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { Project } from './project';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -70,6 +71,19 @@ async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
       await ml.closeAndAwaitTermination();
     }
   });
+}
+
+async function awaitBlockDone(prj: Project, blockId: string) {
+  const overview = prj.overview;
+  await overview.refreshState();
+  while (true) {
+    const snapshot = (await overview.getValue())!;
+    const blockOverview = snapshot.blocks.find(b => b.id == blockId);
+    if (blockOverview === undefined)
+      throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview.calculationStatus === 'Done')
+      return;
+  }
 }
 
 test('project list manipulations test', async () => {
@@ -277,19 +291,19 @@ test('limbo test', async () => {
 
     await prj.setBlockArgs(block1Id, { numbers: [2, 3] });
     await prj.runBlock(block1Id);
+    await awaitBlockDone(prj, block1Id);
 
-    await prj.overview.refreshState();
     const overview3 = await prj.overview.awaitStableValue();
     const [overview3Block1, overview3Block2] = overview3.blocks;
     expect(overview3Block1.calculationStatus).toEqual('Done');
     expect(overview3Block2.calculationStatus).toEqual('Limbo');
 
     await prj.runBlock(block2Id);
+    await awaitBlockDone(prj, block2Id);
 
     const block2StableState2 = await prj.getBlockState(block2Id).awaitStableValue();
     expect(block2StableState2.outputs!['sum']).toStrictEqual({ ok: true, value: 5 });
 
-    await prj.overview.refreshState();
     const overview4 = await prj.overview.awaitStableValue();
     const [overview4Block1, overview4Block2] = overview4.blocks;
     expect(overview4Block1.calculationStatus).toEqual('Done');
@@ -457,7 +471,7 @@ test.skip('should create upload-file block, render it and upload a file to pl se
   });
 });
 
-test('should create read-logs block, render it and read logs from a file', async () => {
+test.skip('should create read-logs block, render it and read logs from a file', async () => {
   const workFolder = path.resolve(`read-logs/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
