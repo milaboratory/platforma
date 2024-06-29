@@ -3,7 +3,17 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { createDownloadClient, createLogsClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver, DownloadUrlDriver, UploadDriver, LogsStreamDriver, LogsDriver } from '@milaboratory/pl-drivers';
+import {
+  createDownloadClient,
+  createLogsClient,
+  createUploadBlobClient,
+  createUploadProgressClient,
+  DownloadDriver,
+  DownloadUrlDriver,
+  UploadDriver,
+  LogsStreamDriver,
+  LogsDriver
+} from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
@@ -139,8 +149,19 @@ export class MiddleLayer {
   }
 
   /** Deallocates all runtime resources consumed by this object. */
-  close() {
+  public close() {
     this.openedProjectsByRid.forEach(prj => prj.destroy());
+  }
+
+  /** Deallocates all runtime resources consumed by this object and awaits
+   * actual termination of event loops and other processes associated with
+   * them. */
+  public async closeAndAwaitTermination() {
+    await Promise.all(
+      [...this.openedProjectsByRid.values()]
+        .map(prj => prj.destroyAndAwaitTermination())
+    );
+    await this.projectListTree.awaitSyncLoopTermination();
   }
 
   /** Generates sufficiently random string to be used as local secret for the
@@ -181,14 +202,14 @@ export class MiddleLayer {
 
     const frontendDownloadDriver = new DownloadUrlDriver(
       logger, downloadClient,
-      ops.frontendDownloadPath,
+      ops.frontendDownloadPath
     );
     const downloadDriver = new DownloadDriver(
       logger, downloadClient, logsClient,
       ops.blobDownloadPath,
       signer,
       ops.blobDownloadCacheSizeBytes,
-      ops.nConcurrentBlobDownloads,
+      ops.nConcurrentBlobDownloads
     );
     const uploadDriver = new UploadDriver(
       logger, signer, uploadBlobClient, uploadProgressClient,
@@ -196,15 +217,15 @@ export class MiddleLayer {
         nConcurrentPartUploads: ops.nConcurrentPartUploads,
         nConcurrentGetProgresses: ops.nConcurrentGetProgresses,
         pollingInterval: ops.defaultUploadDriverOptions.pollingInterval,
-        stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay,
-      },
-    )
+        stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay
+      }
+    );
     const logsStreamDriver = new LogsStreamDriver(
       logsClient,
       {
         nConcurrentGetLogs: ops.nConcurrentGetLogs,
         pollingInterval: ops.defaultStreamLogsDriverOptions.pollingInterval,
-        stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay,
+        stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay
       }
     );
     const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);

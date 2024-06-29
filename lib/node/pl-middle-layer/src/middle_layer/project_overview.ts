@@ -1,5 +1,5 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { Computable, ComputableStableDefined, UnwrapComputables } from '@milaboratory/computable';
+import { Computable, ComputableStableDefined } from '@milaboratory/computable';
 import {
   BlockRenderingStateKey, ProjectCreatedTimestamp,
   projectFieldName, ProjectLastModifiedTimestamp,
@@ -12,7 +12,7 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { BlockProductionStatus, ProjectMeta, ProjectOverview } from '@milaboratory/pl-middle-layer-model';
+import { BlockCalculationStatus, ProjectMeta, ProjectOverview } from '@milaboratory/pl-middle-layer-model';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
@@ -22,17 +22,16 @@ import { BlockSection } from '@milaboratory/sdk-ui';
 type BlockInfo = {
   currentArguments: any,
   prod?: ProdState,
-
 }
 
 type CalculationStatus =
   | 'Running'
-  | 'Error'
   | 'Done'
 
 type ProdState = {
+  finished: boolean,
 
-  calculationStatus: CalculationStatus
+  outputError: boolean
 
   stale: boolean
 
@@ -82,11 +81,8 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         prod = {
           arguments: rInputs.getDataAsJson(),
           stale: cInputs.id !== rInputs.id,
-          calculationStatus: result.error !== undefined || ctx.error !== undefined || result.value?.getError() !== undefined || ctx.value?.getError() !== undefined
-            ? 'Error'
-            : (result.value !== undefined && result.value.getIsReadyOrError()) && (ctx.value !== undefined && ctx.value.getIsReadyOrError())
-              ? 'Done'
-              : 'Running'
+          outputError: result.error !== undefined || ctx.error !== undefined || result.value?.getError() !== undefined || ctx.value?.getError() !== undefined,
+          finished: (result.value !== undefined && result.value.getIsReadyOrError()) && (ctx.value !== undefined && ctx.value.getIsReadyOrError())
         };
       }
 
@@ -100,12 +96,12 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
     const blocks = [...allBlocks(structure)].map(({ id, label, renderingMode }) => {
       const info = notEmpty(infos.get(id));
       const gNode = notEmpty(currentGraph.nodes.get(id));
-      let calculationStatus: BlockProductionStatus = 'NotCalculated';
+      let calculationStatus: BlockCalculationStatus = 'NotCalculated';
       if (info.prod !== undefined) {
         if (limbo.has(id))
           calculationStatus = 'Limbo';
         else
-          calculationStatus = info.prod.calculationStatus;
+          calculationStatus = info.prod.finished ? 'Done' : 'Running';
       }
 
       // block-pack
@@ -116,22 +112,23 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
 
       // sections
       const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
-      const { sections, canRun } = ifNotUndef(bpInfo?.config,
+      const { sections, inputsValid } = ifNotUndef(bpInfo?.config,
         blockConf => {
           const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
           return {
             sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<BlockSection[]>,
-            canRun: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
+            inputsValid: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
           };
         }) || {};
 
       return {
         id, label, renderingMode,
-        stale: info.prod?.stale !== false,
+        stale: info.prod?.stale !== false || calculationStatus === 'Limbo',
         missingReference: gNode.missingReferences,
         upstreams: [...currentGraph.traverseIdsExcludingRoots('upstream', id)],
         downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
-        calculationStatus, sections, canRun, blockPackSource: bpInfo?.source
+        calculationStatus, outputErrors: info.prod?.outputError === true,
+        sections, inputsValid, blockPackSource: bpInfo?.source
       };
     });
 
@@ -144,17 +141,21 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       const staleBlocks = new Set<string>();
       return {
         ...value, blocks: value.blocks.map(b => {
-          if (!b.canRun)
+          if (!b.inputsValid)
             cantRun.add(b.id);
           if (b.stale)
             staleBlocks.add(b.id);
           return {
             ...b,
-            canRun: Boolean(b.canRun) && !b.missingReference && (b.upstreams.findIndex(u => cantRun.has(u)) === -1),
-            stale: b.stale || (b.upstreams.findIndex(u => staleBlocks.has(u)) !== -1)
+            canRun:
+              b.calculationStatus !== 'Done'
+              && Boolean(b.inputsValid) && !b.missingReference
+              && (b.upstreams.findIndex(u => cantRun.has(u)) === -1),
+            stale:
+              (b.stale || (b.upstreams.findIndex(u => staleBlocks.has(u)) !== -1))
           };
         })
       };
     }
-  }).withStableType();
+  }).withStableType().preCalculateValueTree();
 }

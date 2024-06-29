@@ -39,11 +39,11 @@ export class Project {
   private readonly blockComputables = new Map<string, BlockStateComputables>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private destroyed = false;
-  private refreshLoopResult: Promise<void>;
+  private readonly refreshLoopResult: Promise<void>;
 
   constructor(private readonly env: MiddleLayerEnvironment,
               rid: ResourceId,
-              private readonly tree: SynchronizedTreeState,
+              private readonly projectTree: SynchronizedTreeState,
               overview: ComputableStableDefined<ProjectOverview>) {
     this.overview = overview;
     this.rid = rid;
@@ -79,7 +79,7 @@ export class Project {
    * @return returns newly created block id
    * */
   public async addBlock(blockLabel: string, blockPackSpec: BlockPackSpecAny,
-    before?: string, blockId: string = randomUUID()): Promise<string> {
+                        before?: string, blockId: string = randomUUID()): Promise<string> {
     const prepared = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
     await withProject(this.env.pl, this.rid, mut =>
@@ -89,7 +89,7 @@ export class Project {
           blockPack: prepared
         }, before
       ));
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
 
     return blockId;
   }
@@ -98,7 +98,7 @@ export class Project {
   public async deleteBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.deleteBlock(blockId));
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
   }
 
   /** Renders production part of the block starting all connected heavy computations.
@@ -107,7 +107,7 @@ export class Project {
   public async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
   }
 
   /** Sets block args, and changes whole project state accordingly.
@@ -117,7 +117,7 @@ export class Project {
   public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]));
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
   }
 
   /** Sets ui block state associated with the block.
@@ -127,7 +127,7 @@ export class Project {
   public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setUiState(blockId, uiState));
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
   }
 
   /** Sets block args and ui state, and changes the whole project state accordingly.
@@ -139,7 +139,7 @@ export class Project {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
       mut.setUiState(blockId, uiState);
     });
-    await this.tree.refreshState();
+    await this.projectTree.refreshState();
   }
 
   /** Resets arguments and ui state of the block to initial state */
@@ -165,8 +165,8 @@ export class Project {
   private getBlockComputables(blockId: string): BlockStateComputables {
     const cached = this.blockComputables.get(blockId);
     if (cached === undefined) {
-      const argsAndUiState = blockArgsAndUiState(this.tree.entry(), blockId, this.env);
-      const outputs = blockOutputs(this.tree.entry(), blockId, this.env);
+      const argsAndUiState = blockArgsAndUiState(this.projectTree.entry(), blockId, this.env);
+      const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(() => ({
         argsAndUiState, outputs
       }), { postprocessValue: v => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState) });
@@ -201,7 +201,7 @@ export class Project {
   public getBlockFrontend(blockId: string): ComputableStableDefined<FrontendData> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
-      const fd = frontendData(this.tree.entry(), blockId, this.env);
+      const fd = frontendData(this.projectTree.entry(), blockId, this.env);
       this.blockFrontends.set(blockId, fd);
       return fd;
     }
@@ -213,13 +213,20 @@ export class Project {
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike
     this.overview.resetState();
+    this.blockFrontends.forEach(c => c.resetState());
     this.blockComputables.forEach(c => {
       c.argsAndUiState.resetState();
       c.outputs.resetState();
       c.fullState.resetState();
     });
-    this.blockFrontends.forEach(c => c.resetState());
+
     this.destroyed = true;
+  }
+
+  public async destroyAndAwaitTermination(): Promise<void> {
+    this.destroy();
+    await this.refreshLoopResult;
+    await this.projectTree.awaitSyncLoopTermination();
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {

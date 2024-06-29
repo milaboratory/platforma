@@ -310,18 +310,27 @@ export class ProjectMutator {
     this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
   }
 
-  /** Running blocks are reset, already computed moved to limbo */
-  private resetOrLimboProduction(blockId: string): void {
+  /** Running blocks are reset, already computed moved to limbo. Returns if
+   * either of the actions were actually performed. */
+  private resetOrLimboProduction(blockId: string): boolean {
     const fields = this.getBlockInfo(blockId).fields;
     if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+      if (this.blocksInLimbo.has(blockId))
+        // we are already in limbo
+        return false;
+
       // limbo
       this.blocksInLimbo.add(blockId);
       this.renderingStateChanged = true;
-      // doing some gc before refresh
+
+      // doing some gc
       this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious');
+
+      return true;
     } else
       // reset
-      this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
+      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx',
+        'prodOutputPrevious', 'prodCtxPrevious');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -478,9 +487,11 @@ export class ProjectMutator {
     for (const blockId of stagingDiff.different)
       this.resetStaging(blockId);
 
-    // applying changes due to topology change in production
-    for (const blockId of prodDiff.different)
-      this.resetOrLimboProduction(blockId);
+    // applying changes due to topology change in production to affected nodes and
+    // all their downstreams
+    currentActualProductionGraph.traverse('downstream', [...prodDiff.different], node => {
+      this.resetOrLimboProduction(node.id);
+    });
 
     if (stagingDiff.onlyInB.size > 0 || stagingDiff.onlyInA.size > 0 || stagingDiff.different.size > 0)
       this.resetStagingRefreshTimestamp();
@@ -612,6 +623,13 @@ export class ProjectMutator {
         rendered.add(block.id);
       }
     }
+
+    // sending to limbo all downstream blocks
+    prodGraph.traverse('downstream', [...rendered], node => {
+      if (rendered.has(node.id)) // don't send to limbo blocks that were just rendered
+        return;
+      this.resetOrLimboProduction(node.id);
+    });
 
     if (rendered.size > 0)
       this.updateLastModified();

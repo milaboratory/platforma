@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
-import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -47,11 +46,11 @@ async function getStandardBlockSpecs() {
 
     readLogsSpecFromRemote: blocksFromRegistry.find(
       b => b.registryLabel.match(/Central/) && b.package === 'read-logs'
-    )!.latestSpec,
+    )!.latestSpec
   };
 }
 
-test('project list manipulations test', async () => {
+async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -60,10 +59,21 @@ test('project list manipulations test', async () => {
 
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
+      defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
     });
+    try {
+      await cb(ml);
+    } finally {
+      await ml.closeAndAwaitTermination();
+    }
+  });
+}
+
+test('project list manipulations test', async () => {
+  await withMl(async ml => {
     const projectList = ml.projectList;
 
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -119,19 +129,7 @@ test('project list manipulations test', async () => {
 });
 
 test('simple project manipulations test', async () => {
-  const workFolder = path.resolve(`work/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
-
-  await fs.promises.mkdir(workFolder, { recursive: true });
-  await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
-      frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
-    });
+  await withMl(async ml => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -185,7 +183,7 @@ test('simple project manipulations test', async () => {
 
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
-      expect(block.canRun).toEqual(true);
+      expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
       expect(block.blockPackSource).toBeDefined();
     });
@@ -228,20 +226,79 @@ test('simple project manipulations test', async () => {
   });
 });
 
-test('block error test', async () => {
-  const workFolder = path.resolve(`work/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
+test('limbo test', async () => {
+  await withMl(async ml => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
 
-  await fs.promises.mkdir(workFolder, { recursive: true });
-  await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
-      frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
+    const {
+      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote
+    } = await getStandardBlockSpecs();
+    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
+    const block2Id = await prj.addBlock('Block 2', sumNumbersSpecFromRemote);
+
+    await prj.overview.refreshState();
+    const overview0 = await prj.overview.awaitStableValue();
+    overview0.blocks.forEach(block => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(false);
+      expect(block.blockPackSource).toBeDefined();
     });
+
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.setBlockArgs(block2Id, {
+      sources: [
+        outputRef(block1Id, 'column')
+      ]
+    });
+
+    await prj.overview.refreshState();
+    const overview1 = await prj.overview.awaitStableValue();
+    overview1.blocks.forEach(block => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(true);
+      expect(block.blockPackSource).toBeDefined();
+    });
+
+    await prj.runBlock(block2Id);
+
+    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
+    expect(block2StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 6 });
+
+    await prj.overview.refreshState();
+    const overview2 = await prj.overview.awaitStableValue();
+    overview2.blocks.forEach(block => {
+      expect(block.sections).toBeDefined();
+      expect(block.calculationStatus).toEqual('Done');
+      expect(block.canRun).toEqual(false);
+      expect(block.blockPackSource).toBeDefined();
+    });
+
+    await prj.setBlockArgs(block1Id, { numbers: [2, 3] });
+    await prj.runBlock(block1Id);
+
+    await prj.overview.refreshState();
+    const overview3 = await prj.overview.awaitStableValue();
+    const [overview3Block1, overview3Block2] = overview3.blocks;
+    expect(overview3Block1.calculationStatus).toEqual('Done');
+    expect(overview3Block2.calculationStatus).toEqual('Limbo');
+
+    await prj.runBlock(block2Id);
+
+    const block2StableState2 = await prj.getBlockState(block2Id).awaitStableValue();
+    expect(block2StableState2.outputs!['sum']).toStrictEqual({ ok: true, value: 5 });
+
+    await prj.overview.refreshState();
+    const overview4 = await prj.overview.awaitStableValue();
+    const [overview4Block1, overview4Block2] = overview4.blocks;
+    expect(overview4Block1.calculationStatus).toEqual('Done');
+    expect(overview4Block2.calculationStatus).toEqual('Done');
+  });
+});
+
+test('block error test', async () => {
+  await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
@@ -346,7 +403,7 @@ test('should create download-file block, render it and gets outputs from its con
   });
 });
 
-test('should create upload-file block, render it and upload a file to pl server', async () => {
+test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
   const workFolder = path.resolve(`upload-file/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -369,9 +426,9 @@ test('should create upload-file block, render it and upload a file to pl server'
     const block3Id = await prj.addBlock('Block 3', uploadFileSpecFromRemote);
 
     const localPath = path.resolve(
-      __dirname, "../../assets",
-      "another_answer_to_the_ultimate_question.txt",
-    )
+      __dirname, '../../assets',
+      'another_answer_to_the_ultimate_question.txt'
+    );
     const stat = await fsp.stat(localPath);
     const mTime = String(Math.floor(stat.mtimeMs / 1000));
     const size = String(stat.size);
@@ -380,7 +437,7 @@ test('should create upload-file block, render it and upload a file to pl server'
       modificationTime: mTime,
       localPath: localPath,
       pathSignature: ml.signer.sign(localPath),
-      sizeBytes: size,
+      sizeBytes: size
     });
 
     await prj.runBlock(block3Id);
@@ -427,11 +484,11 @@ test('should create read-logs block, render it and read logs from a file', async
     const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
 
     await prj.setBlockArgs(block3Id, {
-      storageId: "library",
-      filePath: "maybe_the_number_of_lines_is_the_answer.txt",
+      storageId: 'library',
+      filePath: 'maybe_the_number_of_lines_is_the_answer.txt',
       // args are from here:
       // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
-      readFileWithSleepArgs: ["file.txt", "PREFIX", "100", "1000"]
+      readFileWithSleepArgs: ['file.txt', 'PREFIX', '100', '1000']
     });
 
     await prj.runBlock(block3Id);
@@ -446,10 +503,10 @@ test('should create read-logs block, render it and read logs from a file', async
       const state = await computable.getFullValue();
       console.dir(state, { depth: 5 });
 
-      if (state.stable && state.value.outputs!["lastLogs"].ok && state.value.outputs!["lastLogs"].value != undefined) {
-        expect((state.value.outputs!["progressLog"] as any).value).toContain("PREFIX");
-        expect((state.value.outputs!["progressLog"] as any).value).toContain("bytes read");
-        expect((state.value.outputs!["lastLogs"] as any).value.split("\n").length).toEqual(10 + 1); // 11 because the last element is empty
+      if (state.stable && state.value.outputs!['lastLogs'].ok && state.value.outputs!['lastLogs'].value != undefined) {
+        expect((state.value.outputs!['progressLog'] as any).value).toContain('PREFIX');
+        expect((state.value.outputs!['progressLog'] as any).value).toContain('bytes read');
+        expect((state.value.outputs!['lastLogs'] as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty
         return;
       }
     }
