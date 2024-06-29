@@ -1,25 +1,10 @@
-import { PTableColumnSpec, PTableVector, TableRange } from '@milaboratory/sdk-model';
-
-/** Unified information about table shape */
-export type PTableShape = {
-  /** Number of unified table columns, including all axes and PColumn values */
-  columns: number
-
-  /** Number of rows */
-  rows: number
-}
-
-/** Sorting parameters to be used by {@link PTable.sort} method.  */
-export type PTableSortingRequest = {
-  /** Unified column index */
-  columnIndex: number;
-
-  /** Sorting order */
-  ascending: boolean;
-
-  /** Sorting in respect to NA and absent values */
-  naAndAbsentAreLeastValues: boolean;
-}
+import {
+  PTableColumnSpec,
+  PTableShape,
+  PTableSorting,
+  PTableVector,
+  TableRange
+} from '@milaboratory/sdk-model';
 
 /**
  * Table view returned as a result of create table operation.
@@ -37,6 +22,8 @@ export interface PTable {
    *
    * Data for a specific table column can be retrieved using unified indexing
    * corresponding to elements in this array.
+   *
+   * Axes are always listed first.
    * */
   getSpec(): PTableColumnSpec[];
 
@@ -46,9 +33,10 @@ export interface PTable {
    * ({@link range}).
    *
    * @param columnIndices unified indices of columns to be retrieved
-   * @param range optionally limit the range of records to retrieve */
+   * @param range optionally limit the range of records to retrieve
+   * */
   getData(columnIndices: number[], range?: TableRange): Promise<PTableVector[]>;
 
   /** Sorts the table and returns new PTable instance. */
-  sort(request: PTableSortingRequest[]): Promise<PTable>;
+  sort(request: PTableSorting[]): Promise<PTable>;
 }
