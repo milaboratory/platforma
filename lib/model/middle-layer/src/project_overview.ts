@@ -3,10 +3,9 @@ import { BlockPackSpec } from './block_pack';
 import { BlockRenderingMode, BlockSection } from '@milaboratory/sdk-model';
 
 /** Generalized block status, to be used in block item "styling". */
-export type BlockProductionStatus =
+export type BlockCalculationStatus =
   | 'NotCalculated'
   | 'Running'
-  | 'Error'
   | 'Done'
   | 'Limbo'
 
@@ -42,11 +41,16 @@ export type BlockStateOverview = {
 
   /** Means that current heavy results (or results being calculated at the
    * moment) are not in sync with current arguments. This takes into account
-   * stale state of all upstream blocks as well. */
+   * stale state of all upstream blocks as well. Initial state also considered
+   * stale. */
   stale: boolean;
 
+  /** True if any of the outputs have errors. Errors may appear even before
+   * calculations are finished. */
+  outputErrors: boolean;
+
   /** Generalized block calculation status */
-  calculationStatus: BlockProductionStatus;
+  calculationStatus: BlockCalculationStatus;
 
   /** All upstream blocks of this block. In other words all dependencies of this
    * block, including transitive dependencies. */
@@ -59,6 +63,10 @@ export type BlockStateOverview = {
   /** Block sections. May be unavailable, if block-pack for this block is not
    * yet materialized. */
   sections: BlockSection[] | undefined,
+
+  /** True if inputs of current block are suitable for block execution.
+   * May be unavailable, if block-pack for this block is not yet materialized. */
+  inputsValid: boolean | undefined,
 
   /** True if current block can be executed. This takes into account can run of
    * all upstream blocks as well. */
