@@ -49,3 +49,12 @@ export type TableRange = {
   /** Block length */
   readonly length: number;
 }
+
+/** Unified information about table shape */
+export type PTableShape = {
+  /** Number of unified table columns, including all axes and PColumn values */
+  columns: number
+
+  /** Number of rows */
+  rows: number
+}

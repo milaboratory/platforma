@@ -1,77 +1,31 @@
-import { AxisSpec, PColumnId, PColumnSpec } from './spec';
-import { PTableVector } from './data';
-import { SingleAxisSelector, SingleColumnSelector } from './selectors';
+import { PTableColumnSpec } from './table_common';
+import { PTableShape, PTableVector, TableRange } from './data';
 
-/** Unified spec object for axes and columns */
-export type PTableColumnSpec = {
-  type: 'axis';
-  spec: AxisSpec;
-} | {
-  type: 'column';
-  id: PColumnId;
-  spec: PColumnSpec;
-}
+/**
+ * Table view.
+ * */
+export interface PTable {
+  /** Unified table shape */
+  getShape(): PTableShape;
 
-export interface FullPTableColumnData {
-  /** Unified spec */
-  readonly spec: PTableColumnSpec;
+  /**
+   * Returns ordered array of table axes specs (primary key "columns" in SQL
+   * terms) and data column specs (regular "columns" in SQL terms).
+   *
+   * Data for a specific table column can be retrieved using unified indexing
+   * corresponding to elements in this array.
+   *
+   * Axes are always listed first.
+   * */
+  getSpec(): PTableColumnSpec[];
 
-  /** Data */
-  readonly data: PTableVector;
-}
-
-/** Response for */
-export type GetTableDataResponse = FullPTableColumnData[];
-
-export interface ColumnJoinEntry {
-  type: 'column';
-  columnId: PColumnId;
-}
-
-export interface InnerJoin {
-  type: 'inner';
-  entries: JoinEntry[];
-}
-
-export interface FullJoin {
-  type: 'full';
-  entries: JoinEntry[];
-}
-
-export interface OuterJoin {
-  type: 'outer';
-  primary: JoinEntry;
-  secondary: JoinEntry[];
-}
-
-export type JoinEntry =
-  | ColumnJoinEntry
-  | InnerJoin
-  | FullJoin
-  | OuterJoin;
-
-export type FilterPredicateType = 'Equal';
-
-export interface FilterPredicate {
-  type: FilterPredicateType;
-  value: string | number;
-}
-
-export interface GetTableDataColumnFilter {
-  type: 'byColumnValue';
-  columnId: PColumnId;
-  predicate: FilterPredicate;
-}
-
-export interface GetTableDataAxisFilter {
-  type: 'byAxisValue';
-  axis: SingleAxisSelector;
-  predicate: FilterPredicate;
-}
-
-export type GetTableDataFilter = GetTableDataAxisFilter | GetTableDataColumnFilter;
-
-export interface GetTableDataRequest {
-  src: JoinEntry;
-  filters: GetTableDataFilter[];
+  /**
+   * Retrieve the data from the table. To retrieve only data required, it can be
+   * sliced both horizontally ({@link columnIndices}) and vertically
+   * ({@link range}).
+   *
+   * @param columnIndices unified indices of columns to be retrieved
+   * @param range optionally limit the range of records to retrieve
+   * */
+  getData(columnIndices: number[], range?: TableRange): Promise<PTableVector[]>;
 }
