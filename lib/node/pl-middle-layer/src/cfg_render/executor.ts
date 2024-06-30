@@ -139,18 +139,30 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 
         const argRequests = Object.entries(action.args);
         const initialArgCounter = argRequests.length;
-        for (const [arg, operation] of argRequests)
+
+        if (initialArgCounter === 0)
+
+          // if no pending arguments
           operationQueue.push({
-            destination: { op: newOpKey, arg },
-            operation
+            destination: op.destination,
+            operation: action.subroutine({})
           });
 
-        stack.pendingSubroutines.set(newOpKey, {
-          argCounter: initialArgCounter,
-          args: {},
-          subroutine: action.subroutine,
-          destination: op.destination
-        });
+        else {
+          for (const [arg, operation] of argRequests)
+            operationQueue.push({
+              destination: { op: newOpKey, arg },
+              operation
+            });
+
+          stack.pendingSubroutines.set(newOpKey, {
+            argCounter: initialArgCounter,
+            args: {},
+            subroutine: action.subroutine,
+            destination: op.destination
+          });
+        }
+        
         break;
 
       case 'ScheduleComputable':

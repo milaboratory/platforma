@@ -101,39 +101,58 @@ export class Project {
     await this.projectTree.refreshState();
   }
 
-  /** Renders production part of the block starting all connected heavy computations.
+  /**
+   * Renders production part of the block starting all connected heavy computations.
    * Upstream blocks of the specified block will be started automatically if in
-   * stale state. */
+   * stale state.
+   * */
   public async runBlock(blockId: string) {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
     await this.projectTree.refreshState();
   }
 
-  /** Sets block args, and changes whole project state accordingly.
+  /**
+   * Stops the block if it is running by destroying its production state. All
+   * its downstreams will also be destroyed or moved to limbo if already
+   * calculated.
+   * */
+  public async stopBlock(blockId: string) {
+    await withProject(this.env.pl, this.rid, mut =>
+      mut.stopProduction(blockId));
+    await this.projectTree.refreshState();
+  }
+
+  /**
+   * Sets block args, and changes whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
-   * in collaborative editing scenario. */
+   * in collaborative editing scenario.
+   * */
   public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]));
     await this.projectTree.refreshState();
   }
 
-  /** Sets ui block state associated with the block.
+  /**
+   * Sets ui block state associated with the block.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
-   * in collaborative editing scenario. */
+   * in collaborative editing scenario.
+   * */
   public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut =>
       mut.setUiState(blockId, uiState));
     await this.projectTree.refreshState();
   }
 
-  /** Sets block args and ui state, and changes the whole project state accordingly.
+  /**
+   * Sets block args and ui state, and changes the whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
-   * in collaborative editing scenario. */
+   * in collaborative editing scenario.
+   * */
   public async setBlockArgsAndUiState(blockId: string, args: any, uiState: any, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, mut => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
@@ -160,27 +179,36 @@ export class Project {
       });
       await tx.commit();
     });
+    await this.projectTree.refreshState();
   }
 
   private getBlockComputables(blockId: string): BlockStateComputables {
     const cached = this.blockComputables.get(blockId);
     if (cached === undefined) {
+      // state consists of inputs (args + ui state) and outputs
       const argsAndUiState = blockArgsAndUiState(this.projectTree.entry(), blockId, this.env);
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(() => ({
         argsAndUiState, outputs
       }), { postprocessValue: v => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState) });
+
       const computables: BlockStateComputables = {
-        argsAndUiState, outputs, fullState
+        argsAndUiState: argsAndUiState.withPreCalculatedValueTree(),
+        outputs: outputs.withPreCalculatedValueTree(),
+        fullState: fullState.withPreCalculatedValueTree()
       };
+
       this.blockComputables.set(blockId, computables);
+
       return computables;
     }
     return cached;
   }
 
-  /** Returns a computable, that can be used to retrieve and watch full block state,
-   * including outputs, arguments, ui state. */
+  /**
+   * Returns a computable, that can be used to retrieve and watch full block state,
+   * including outputs, arguments, ui state.
+   * */
   public getBlockState(blockId: string): Computable<BlockState> {
     return this.getBlockComputables(blockId).fullState;
   }
@@ -190,18 +218,23 @@ export class Project {
     return this.getBlockComputables(blockId).outputs;
   }
 
-  /** Returns a computable, that can be used to retrieve and watch block args and
-   * ui state. */
+  /**
+   * Returns a computable, that can be used to retrieve and watch block args and
+   * ui state.
+   * */
   public getBlockArgsAndUiState(blockId: string): Computable<BlockArgsAndUiState> {
     return this.getBlockComputables(blockId).argsAndUiState;
   }
 
-  /** Returns a computable, that can be used to retrieve and watch path of the
-   * folder containing frontend code. */
+  /**
+   * Returns a computable, that can be used to retrieve and watch path of the
+   * folder containing frontend code.
+   * */
   public getBlockFrontend(blockId: string): ComputableStableDefined<FrontendData> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
-      const fd = frontendData(this.projectTree.entry(), blockId, this.env);
+      const fd = frontendData(this.projectTree.entry(), blockId, this.env)
+        .withPreCalculatedValueTree();
       this.blockFrontends.set(blockId, fd);
       return fd;
     }
@@ -231,7 +264,7 @@ export class Project {
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
     const projectTree = await SynchronizedTreeState.init(env.pl, rid, env.ops.defaultTreeOptions);
-    const overview = projectOverview(projectTree.entry(), env);
+    const overview = projectOverview(projectTree.entry(), env).withPreCalculatedValueTree();
     return new Project(env, rid, projectTree, overview);
   }
 }

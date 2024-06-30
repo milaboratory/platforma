@@ -5,7 +5,7 @@ import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { AuthorMarker, BlockArgsAndUiState, BlockState } from '@milaboratory/sdk-ui';
+import { AuthorMarker, BlockArgsAndUiState } from '@milaboratory/sdk-ui';
 import { getBlockCfg } from './util';
 
 export function blockArgsAndUiState(
@@ -19,7 +19,7 @@ export function blockArgsAndUiState(
       args: ctx.$args,
       ui: ctx.$ui
     };
-  }).preCalculateValueTree();
+  });
 }
 
 export function blockOutputs(
@@ -37,5 +37,5 @@ export function blockOutputs(
         outputs[cellId] = Computable.wrapError(computableFromCfg(env.drivers, ctx, cellCfg));
       return outputs;
     });
-  }).preCalculateValueTree().withStableType();
+  }).withStableType();
 }

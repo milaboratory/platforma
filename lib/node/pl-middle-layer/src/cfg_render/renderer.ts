@@ -190,17 +190,17 @@ const SRGetBlobContent: Subroutine = args => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(ctx => {
-        return drivers.downloadDriver.getDownloadedBlob(
-          ctx.accessor(source).node().resourceInfo
-        );
-      }, {
-        postprocessValue: async value => {
-          if (value === undefined)
-            return undefined;
-          return await drivers.downloadDriver.getContent(value.handle);
+          return drivers.downloadDriver.getDownloadedBlob(
+            ctx.accessor(source).node().resourceInfo
+          );
+        }, {
+          postprocessValue: async value => {
+            if (value === undefined)
+              return undefined;
+            return await drivers.downloadDriver.getContent(value.handle);
+          }
         }
-      }
-                                 )
+      )
     };
   };
 };
@@ -339,7 +339,11 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
 
     case 'GetFromCtx':
-      return resOp(ctx[cfg.variable]);
+      const ctxValue = ctx[cfg.variable];
+      if (typeof ctxValue === 'function')
+        return e => res(ctxValue(e.cCtx));
+      else
+        return resOp(ctxValue);
 
     case 'Isolate':
       return ({ drivers }) => ({
@@ -527,7 +531,7 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetLastLogs(cfg.lines),
         args: {
-          source: renderCfg(ctx, cfg.source),
+          source: renderCfg(ctx, cfg.source)
         }
       });
 
@@ -536,7 +540,7 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         type: 'ScheduleSubroutine',
         subroutine: SRGetProgressLog(cfg.patternToSearch),
         args: {
-          source: renderCfg(ctx, cfg.source),
+          source: renderCfg(ctx, cfg.source)
         }
       });
 

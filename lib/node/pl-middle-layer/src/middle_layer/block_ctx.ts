@@ -1,18 +1,18 @@
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
-import { MiddleLayerEnvironment } from './middle_layer';
 import { blockFrontendStateKey, projectFieldName } from '../model/project_model';
 import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-ui';
+import { ComputableCtx } from '@milaboratory/computable';
 
 type SC = StdCtx<unknown, unknown>;
 type SCAO = Pick<SC, '$ui' | '$args'>;
 export type MatStdCtxArgsOnly = {
   [Var in keyof SCAO]: SCAO[Var] extends PlResourceEntry
-    ? PlTreeEntry | undefined
+    ? PlTreeEntry | ((cCtx: ComputableCtx) => PlTreeEntry | undefined) | undefined
     : SCAO[Var];
 }
 export type MatStdCtx = {
   [Var in keyof SC]: SC[Var] extends PlResourceEntry
-    ? PlTreeEntry | undefined
+    ? PlTreeEntry | ((cCtx: ComputableCtx) => PlTreeEntry | undefined) | undefined
     : SC[Var];
 }
 
@@ -29,23 +29,22 @@ export function constructBlockContextArgsOnly(projectNode: PlTreeNodeAccessor, b
 }
 
 export function constructBlockContext(projectNode: PlTreeNodeAccessor, blockId: string): MatStdCtx {
+  const projectEntry = projectNode.persist();
   const argsCtx = constructBlockContextArgsOnly(projectNode, blockId);
-  const prodField = projectNode.traverse({
-    field: projectFieldName(blockId, 'prodOutput'),
-    stableIfNotFound: true,
-    ignoreError: true
-  });
-  const stagingField = projectNode.traverse({
-    field: projectFieldName(blockId, 'stagingOutput'),
-    ignoreError: true
-  });
   return {
     ...argsCtx,
-    $prod: prodField?.persist(),
-    $staging: stagingField?.persist()
+    $prod: (cCtx: ComputableCtx) => {
+      return cCtx.accessor(projectEntry).node().traverse({
+        field: projectFieldName(blockId, 'prodOutput'),
+        stableIfNotFound: true,
+        ignoreError: true
+      })?.persist();
+    },
+    $staging: (cCtx: ComputableCtx) => {
+      return cCtx.accessor(projectEntry).node().traverse({
+        field: projectFieldName(blockId, 'stagingOutput'),
+        ignoreError: true
+      })?.persist();
+    }
   };
-}
-
-export function blockOutputCell(projectEntry: PlTreeEntry, blockId: string, env: MiddleLayerEnvironment) {
-  // return
 }

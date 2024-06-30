@@ -73,7 +73,8 @@ async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
   });
 }
 
-async function awaitBlockDone(prj: Project, blockId: string) {
+async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+  const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   await overview.refreshState();
   while (true) {
@@ -83,6 +84,7 @@ async function awaitBlockDone(prj: Project, blockId: string) {
       throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.calculationStatus === 'Done')
       return;
+    await overview.awaitChange(abortSignal);
   }
 }
 
@@ -189,6 +191,7 @@ test('simple project manipulations test', async () => {
       ]
     });
     await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id);
 
     await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
@@ -216,9 +219,9 @@ test('simple project manipulations test', async () => {
     //   { block1StableFrontend, block2StableFrontend, block3StableFrontend },
     //   { depth: 5 });
 
-    const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
-    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
-    const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
+    const block1StableState1 = await prj.getBlockState(block1Id).getValue();
+    const block2StableState1 = await prj.getBlockState(block2Id).getValue();
+    const block3StableState1 = await prj.getBlockState(block3Id).getValue();
 
     // console.dir(block1StableState1, { depth: 5 });
     // console.dir(block2StableState1, { depth: 5 });
@@ -276,8 +279,9 @@ test('limbo test', async () => {
     });
 
     await prj.runBlock(block2Id);
+    await awaitBlockDone(prj, block2Id);
 
-    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block2StableState1 = await prj.getBlockState(block2Id).getValue();
     expect(block2StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 6 });
 
     await prj.overview.refreshState();
@@ -301,7 +305,7 @@ test('limbo test', async () => {
     await prj.runBlock(block2Id);
     await awaitBlockDone(prj, block2Id);
 
-    const block2StableState2 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block2StableState2 = await prj.getBlockState(block2Id).getValue();
     expect(block2StableState2.outputs!['sum']).toStrictEqual({ ok: true, value: 5 });
 
     const overview4 = await prj.overview.awaitStableValue();
@@ -331,6 +335,7 @@ test('block error test', async () => {
     });
 
     await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id);
 
     await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
@@ -338,35 +343,21 @@ test('block error test', async () => {
     overviewSnapshot1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
     });
-    console.dir(overviewSnapshot1, { depth: 5 });
-
-    const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
-    expect(block3StableFrontend).toBeDefined();
-    console.dir(
-      { block3StableFrontend },
-      { depth: 5 });
+    expect(overviewSnapshot1.blocks[0].outputErrors).toStrictEqual(true);
 
     const block3StateComputable = await prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
-    const block3StableState = await prj.getBlockState(block3Id).getValueOrError();
+    const block3StableState = await prj.getBlockState(block3Id).getValue();
 
-    console.dir(block3StableState, { depth: 5 });
+    const sum = block3StableState.outputs!['sum'];
+    expect(sum.ok).toStrictEqual(false);
+    if (!sum.ok)
+      expect(sum.errors[0]).toContain('tengo-mistd');
   });
 });
 
 test('should create download-file block, render it and gets outputs from its config', async () => {
-  const workFolder = path.resolve(`download-file/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
-
-  await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
-      frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
-    });
+  await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
@@ -383,6 +374,7 @@ test('should create download-file block, render it and gets outputs from its con
     });
 
     await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id);
 
     await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
@@ -400,7 +392,7 @@ test('should create download-file block, render it and gets outputs from its con
 
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
-    const block3StableState = await block3StateComputable.awaitStableFullValue();
+    const block3StableState = await block3StateComputable.getFullValue();
 
     console.dir(block3StableState, { depth: 5 });
 
@@ -418,18 +410,7 @@ test('should create download-file block, render it and gets outputs from its con
 });
 
 test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
-  const workFolder = path.resolve(`upload-file/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
-
-  await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
-      frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
-    });
+  await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
@@ -455,11 +436,12 @@ test.skip('should create upload-file block, render it and upload a file to pl se
     });
 
     await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id);
 
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
 
-    const block3StableState = await block3StateComputable.awaitStableFullValue();
+    const block3StableState = await block3StateComputable.getFullValue();
 
     console.dir(block3StableState, { depth: 5 });
 
@@ -472,18 +454,7 @@ test.skip('should create upload-file block, render it and upload a file to pl se
 });
 
 test.skip('should create read-logs block, render it and read logs from a file', async () => {
-  const workFolder = path.resolve(`read-logs/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
-
-  await TestHelpers.withTempRoot(async pl => {
-    const ml = await MiddleLayer.init(pl, {
-      frontendDownloadPath: path.resolve(frontendFolder),
-      localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
-    });
+  await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);

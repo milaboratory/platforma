@@ -33,6 +33,7 @@ import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { AuthorMarker } from '@milaboratory/sdk-model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import Denque from 'denque';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -329,8 +330,7 @@ export class ProjectMutator {
       return true;
     } else
       // reset
-      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx',
-        'prodOutputPrevious', 'prodCtxPrevious');
+      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -635,6 +635,43 @@ export class ProjectMutator {
       this.updateLastModified();
 
     return rendered;
+  }
+
+  /** Stops running blocks from the list and modify states of other blocks
+   * accordingly */
+  public stopProduction(...blockIds: string[]) {
+    const activeProdGraph = this.getActualProductionGraph();
+
+    // we will stop all blocks listed in request and all their downstreams
+    const queue = new Denque(blockIds);
+    const queued = new Set(blockIds);
+    const stopped: string[] = [];
+
+    while (!queue.isEmpty()) {
+      const blockId = queue.shift()!;
+      const fields = this.getBlockInfo(blockId).fields;
+
+      if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready')
+        // skipping finished blocks
+        continue;
+
+      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx')) {
+        // was actually stopped
+        stopped.push(blockId);
+
+        // will try to stop all its downstreams
+        for (const downstream of activeProdGraph.traverseIdsExcludingRoots('downstream', blockId)) {
+          if (queued.has(downstream))
+            continue;
+          queue.push(downstream);
+          queued.add(downstream);
+        }
+      }
+    }
+
+    // blocks under stopped blocks, but still having results, goes to limbo
+    for (const blockId of activeProdGraph.traverseIdsExcludingRoots('downstream', ...stopped))
+      this.resetOrLimboProduction(blockId);
   }
 
   private traverseWithStagingLag(cb: (blockId: string, lag: number) => void) {

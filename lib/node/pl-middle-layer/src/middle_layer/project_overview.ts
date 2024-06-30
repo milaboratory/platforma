@@ -17,7 +17,7 @@ import { constructBlockContextArgsOnly } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection } from '@milaboratory/sdk-ui';
+import { BlockSection, normalizeBlockConfig } from '@milaboratory/sdk-ui';
 
 type BlockInfo = {
   currentArguments: any,
@@ -82,7 +82,11 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
           arguments: rInputs.getDataAsJson(),
           stale: cInputs.id !== rInputs.id,
           outputError: result.error !== undefined || ctx.error !== undefined || result.value?.getError() !== undefined || ctx.value?.getError() !== undefined,
-          finished: (result.value !== undefined && result.value.getIsReadyOrError()) && (ctx.value !== undefined && ctx.value.getIsReadyOrError())
+          finished:
+            ((result.value !== undefined && result.value.getIsReadyOrError()) ||
+              (result.error !== undefined && result.error.getIsReadyOrError()))
+            && ((ctx.value !== undefined && ctx.value.getIsReadyOrError()) ||
+              (ctx.error !== undefined && ctx.error.getIsReadyOrError()))
         };
       }
 
@@ -113,11 +117,12 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
       // sections
       const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
       const { sections, inputsValid } = ifNotUndef(bpInfo?.config,
-        blockConf => {
+        blockConfU => {
+          const blockConf = normalizeBlockConfig(blockConfU);
           const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
           return {
             sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<BlockSection[]>,
-            inputsValid: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.canRun) as ComputableStableDefined<boolean>
+            inputsValid: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.inputsValid) as ComputableStableDefined<boolean>
           };
         }) || {};
 
@@ -157,5 +162,5 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         })
       };
     }
-  }).withStableType().preCalculateValueTree();
+  }).withStableType();
 }
