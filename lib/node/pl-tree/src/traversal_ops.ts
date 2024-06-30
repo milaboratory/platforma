@@ -1,15 +1,21 @@
 import { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
 
 export type CommonTraversalOps = {
-  /** Don't terminate chain if current resource or field has an error associated
-   * with it, by default resource or field error will be thrown in this case. */
+  /**
+   * Don't terminate chain if current resource or field has an error associated
+   * with, by default resource or field error will be thrown. If field has error
+   * and no value, error will be thrown anyway, because this is the reason
+   * traversal is terminated.
+   * */
   ignoreError?: true;
 }
 
 export type CommonFieldTraverseOps = {
-  /** Valid only if {@link assertFieldType} is defined and equal to 'Input',
+  /**
+   * Valid only if {@link assertFieldType} is defined and equal to 'Input',
    * 'Service' or 'Output'. By default, if field is not found, and corresponding
-   * field list is locked, call will fail with exception. */
+   * field list is locked, call will fail with exception.
+   * */
   allowPermanentAbsence?: true;
 
   /** Will not mark current context as unstable, if field is not found. */
@@ -17,8 +23,10 @@ export type CommonFieldTraverseOps = {
 }
 
 export type ResourceTraversalOps = CommonTraversalOps & {
-  /** Assert resource type of the resource the fields points to. Call will fail
-   * with exception if this assertion is not fulfilled. */
+  /**
+   * Assert resource type of the resource the fields points to. Call will fail
+   * with exception if this assertion is not fulfilled.
+   * */
   assertResourceType?: ResourceType | ResourceType[];
 }
 
@@ -32,8 +40,10 @@ export type GetFieldStep = CommonFieldTraverseOps & {
   /** Field must be assigned a value, if this option is set, instead error will be thrown */
   errorIfFieldNotAssigned?: true;
 
-  /** Assert field type. Call will fail with exception if this assertion is not
-   * fulfilled. */
+  /**
+   * Assert field type. Call will fail with exception if this assertion is not
+   * fulfilled
+   * */
   assertFieldType?: FieldType;
 }
 
