@@ -347,7 +347,7 @@ export class Computable<T, StableT extends T = T> {
    * Creates a copy of this computable with pre-calculated value tree state,
    * without execution of async post-processing steps.
    * */
-  private withPreCalculatedValueTree(): Computable<T, StableT> {
+  public withPreCalculatedValueTree(): Computable<T, StableT> {
     return new Computable<T, StableT>(this.___wrapped_kernel___)._preCalculateValueTree();
   }
 
