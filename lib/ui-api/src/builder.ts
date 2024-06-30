@@ -28,29 +28,58 @@ type CanRunExpectedType = boolean;
 type CanRunChecked<Cfg extends TypedConfig, Args, UiState> =
   Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends CanRunExpectedType ? true : false>
 
-/** This structure is rendered from the configuration*/
-export type BlockConfig<
+/** This structure is rendered from the configuration, type can accommodate any
+ * version of config structure. */
+export type BlockConfigUniversal<
   Args = unknown,
   Outputs extends Record<string, TypedConfig> = Record<string, TypedConfig>> = {
 
   /** SDK version used by the block */
-  sdkVersion: string,
+  readonly sdkVersion: string,
 
   /** Main rendering mode for the block */
-  renderingMode: BlockRenderingMode,
+  readonly renderingMode: BlockRenderingMode,
 
   /** Initial value for the args when block is added to the project */
-  initialArgs: Args,
+  readonly initialArgs: Args,
 
-  /** Configuration to derive whether the block can be executed at current value
-   * of args and state of referenced upstream blocks */
-  canRun: TypedConfig,
+  /** @deprecated */
+  readonly canRun?: TypedConfig,
+
+  /**
+   * Config to determine whether the block can be executed with current
+   * arguments.
+   *
+   * Optional to support earlier SDK version configs.
+   * */
+  readonly inputsValid?: TypedConfig,
 
   /** Configuration to derive list of section for the left overview panel */
-  sections: TypedConfig,
+  readonly sections: TypedConfig,
 
   /** Configuration for the output cells */
-  outputs: Outputs,
+  readonly outputs: Outputs,
+}
+
+/** This structure is rendered from the configuration */
+export type BlockConfig<
+  Args = unknown,
+  Outputs extends Record<string, TypedConfig> = Record<string, TypedConfig>> =
+  Required<Omit<BlockConfigUniversal<Args, Outputs>, 'canRun'>>
+
+/** Takes universal config, and converts it into latest structure */
+export function normalizeBlockConfig<Args, Outputs extends Record<string, TypedConfig>>(
+  cfg: BlockConfigUniversal<Args, Outputs>
+): BlockConfig<Args, Outputs> {
+  if (cfg.inputsValid !== undefined)
+    return cfg as BlockConfig<Args, Outputs>;
+  else {
+    if (cfg.canRun === undefined)
+      throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
+    const latest = { ...cfg, inputsValid: cfg.canRun };
+    delete latest['canRun'];
+    return latest;
+  }
 }
 
 /** Main entry point that each block should use in it's "config" module. Don't forget
@@ -60,7 +89,7 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Type
   private constructor(private readonly _renderingMode: BlockRenderingMode,
                       private readonly _initialArgs: Args | undefined,
                       private readonly _outputs: OutputsCfg,
-                      private readonly _canRun: TypedConfig,
+                      private readonly _inputsValid: TypedConfig,
                       private readonly _sections: TypedConfig) {
   }
 
@@ -83,22 +112,27 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Type
       this._initialArgs, {
         ...this._outputs,
         [key]: cfg
-      }, this._canRun, this._sections);
+      }, this._inputsValid, this._sections);
+  }
+
+  /** @deprecated */
+  public canRun<Cfg extends TypedConfig>(cfg: Cfg & CanRunChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+    return this.inputsValid(cfg as any);
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed */
-  public canRun<Cfg extends TypedConfig>(cfg: Cfg & CanRunChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  public inputsValid<Cfg extends TypedConfig>(cfg: Cfg & CanRunChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState> {
     return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, cfg, this._sections);
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
   public sections<Cfg extends TypedConfig>(cfg: Cfg & SectionsChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState> {
-    return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, this._canRun, cfg);
+    return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, this._inputsValid, cfg);
   }
 
   /** Sets initial args for the block, this value must be specified. */
   public initialArgs(value: Args): PlatformaConfiguration<Args, OutputsCfg, UiState> {
-    return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, value, this._outputs, this._canRun, this._sections);
+    return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, value, this._outputs, this._inputsValid, this._sections);
   }
 
   /** Renders all provided block settings into a pre-configured platforma API
@@ -112,7 +146,7 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Type
       sdkVersion: PlatformaSDKVersion,
       renderingMode: this._renderingMode,
       initialArgs: this._initialArgs,
-      canRun: this._canRun,
+      inputsValid: this._inputsValid,
       sections: this._sections,
       outputs: this._outputs
     };

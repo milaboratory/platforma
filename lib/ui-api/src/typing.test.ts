@@ -78,7 +78,7 @@ test('test config content', () => {
     .initialArgs({ a: [] })
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
-    .canRun(isEmpty(getJsonField(Args, 'a')))
+    .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
       { type: 'main', section: 'main', title: 'Main' }
     ]))
@@ -105,7 +105,7 @@ test('test config 2', () => {
       f: getDownloadedBlobContent(getResourceField(MainOutputs, 'field4')),
       g: getOnDemandBlobContent(getResourceField(MainOutputs, 'field5'))
     }))
-    .canRun(isEmpty(getJsonField(Args, 'a')))
+    .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
       { type: 'main', section: 'main', title: 'Main' }
     ]))
