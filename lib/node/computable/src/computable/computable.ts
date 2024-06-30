@@ -89,13 +89,27 @@ export class AggregateComputableError extends AggregateError {
   }
 }
 
-/** Type returned by computables that wrap errors */
+/** Type returned by computables that wraps errors */
 export type ComputableValueOrErrors<T> =
   | { ok: true, value: T }
   | { ok: false, errors: string[], moreErrors: boolean }
 
 export interface ComputableRenderingOps extends CellRenderingOps {
+  /**
+   * Key allows computable to correlate same computable instances across multiple
+   * incarnations of computable tree. This in turn, allows to preserve computable
+   * context state for nested computables, and implement caching behaviour for
+   * retentive computables (see {@link CellRenderingMode}).
+   * */
   key: string | symbol;
+
+  // /**
+  //  * By default, computable will pre-calculate value tree by executing given
+  //  * kernel callback upon its construction. If this flag is set to true, the
+  //  * computable will be lazy, and first invocation of the kernel will be done
+  //  * only on first getValue or similar method call.
+  //  * */
+  // lazyInitialization: boolean;
 }
 
 const DefaultRenderingOps: CellRenderingOps = {
@@ -310,9 +324,11 @@ export class Computable<T, StableT extends T = T> {
     return result;
   }
 
-  /** Internally creates value tree, but don't execute async post-processing
-   * state. */
-  public preCalculateValueTree(): this {
+  /**
+   * Internally creates value tree, but don't execute async post-processing
+   * state.
+   * */
+  private _preCalculateValueTree(): this {
     if (this.stateCalculation !== undefined)
       throw new Error('Illegal state for pre-calculation.');
     this.state = this.state === undefined
@@ -325,6 +341,19 @@ export class Computable<T, StableT extends T = T> {
         hooks.onGetValue(this);
 
     return this;
+  }
+
+  /**
+   * Creates a copy of this computable with pre-calculated value tree state,
+   * without execution of async post-processing steps.
+   * */
+  private withPreCalculatedValueTree(): Computable<T, StableT> {
+    return new Computable<T, StableT>(this.___wrapped_kernel___)._preCalculateValueTree();
+  }
+
+  /** @deprecated */
+  public preCalculateValueTree(): Computable<T, StableT> {
+    return this.withPreCalculatedValueTree();
   }
 
   /**
