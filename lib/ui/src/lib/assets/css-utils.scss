@@ -115,8 +115,14 @@
   align-items: center;
   justify-content: center;
 }
-.gap-4 {
-  gap: 4px;
+// .gap-4 {
+//   gap: 4px;
+// }
+
+@for $i from 1 through 15 {
+  .gap-#{$i} {
+    gap: $i * 2px !important;
+  }
 }
 
 .cursor-pointer {
@@ -139,7 +145,7 @@
   border-left: 1px solid var(--border-color-default);
 }
 
-@for $i from 1 through 15 {
+@for $i from 0 through 15 {
   .pa-#{$i} {
     padding: $i * 2px !important;
   }
@@ -157,7 +163,7 @@
   }
 }
 
-@for $i from 1 through 15 {
+@for $i from 0 through 15 {
   .ma-#{$i} {
     margin: $i * 2px !important;
   }
@@ -175,7 +181,7 @@
   }
 }
 
-@for $i from 1 through 15 {
+@for $i from 0 through 15 {
   .bra-#{$i} {
     border-radius: $i * 2px !important;
   }

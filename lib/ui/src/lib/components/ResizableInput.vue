@@ -32,7 +32,6 @@ const styles = computed(() => {
 
 function handleInput(event: Event) {
   const value = (event.target as HTMLInputElement).value;
-  emit('input', value);
   emit('update:modelValue', value);
 }
 </script>
@@ -40,6 +39,6 @@ function handleInput(event: Event) {
 <template>
   <div class="resizable-input">
     <span :style="styles" class="resizable-input__size-span">{{ text }}</span>
-    <input v-bind="$attrs" :placeholder="placeholder" :value="props.value" :disabled="props.disabled" :style="styles" @input="handleInput" />
+    <input v-bind="$attrs" :placeholder="placeholder" :value="props.modelValue" :disabled="props.disabled" :style="styles" @input="handleInput" />
   </div>
 </template>
