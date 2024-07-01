@@ -24,9 +24,11 @@ const props = withDefaults(
     error?: string;
     placeholder?: string;
     clearable?: boolean;
+    //FIXME unused property
     required?: boolean;
     disabled?: boolean;
     arrowIcon?: string;
+    //FIXME unused property
     checkOptions?: boolean;
   }>(),
   {
@@ -35,9 +37,11 @@ const props = withDefaults(
     error: undefined,
     placeholder: '...',
     clearable: false,
+    //FIXME unused property
     required: false,
     disabled: false,
     arrowIcon: undefined,
+    //FIXME unused property
     checkOptions: false,
   },
 );
