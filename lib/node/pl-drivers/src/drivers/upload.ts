@@ -344,26 +344,26 @@ function dataToUploadOpts(res: ResourceWithData): UploadOpts {
     );
 
   const opts = JSON.parse(res.data.toString());
-  if (opts.ModificationTime === undefined) {
+  if (opts.modificationTime === undefined) {
     throw new Error(
       'no modification time in data: ' + stringifyWithResourceId(res.data)
     );
   }
-  if (opts.LocalPath === undefined) {
+  if (opts.localPath === undefined) {
     throw new Error(
       'no local path in data: ' + stringifyWithResourceId(res.data)
     );
   }
-  if (opts.PathSignature === undefined) {
+  if (opts.pathSignature === undefined) {
     throw new Error(
       'no path signature in data: ' + stringifyWithResourceId(res.data)
     );
   }
 
   return {
-    modificationTime: opts.ModificationTime,
-    localPath: opts.LocalPath,
-    pathSignature: opts.PathSignature
+    modificationTime: opts.modificationTime,
+    localPath: opts.localPath,
+    pathSignature: opts.pathSignature
   };
 }
 
