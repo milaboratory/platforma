@@ -7,9 +7,11 @@ export type StartStopComputableHooksOps = {
   stopDebounce: number
 };
 
-/** Allows to simplify linkage of computable state request events (i.e. signs
+/**
+ * Allows to simplify linkage of computable state request events (i.e. signs
  * that somebody is interested in its value) to the processes keeping the
- * underlying state fresh, like periodically polling pl. */
+ * underlying state fresh, like periodically polling pl.
+ * */
 export class PollingComputableHooks implements ComputableHooks {
   private readonly stopDebounce: number;
 

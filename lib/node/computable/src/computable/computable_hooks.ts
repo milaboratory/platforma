@@ -8,8 +8,17 @@ export interface ComputableHooks {
 
   onGetValue(instance: Computable<unknown>): void;
 
+  /**
+   * Executed only once for specific Computable, if more subscriptions are
+   * created, Computable instance do ref counting, and then when there are no
+   * subscriptions calls {@link onListenStop}.
+   * */
   onListenStart(instance: Computable<unknown>): void;
 
+  /**
+   * Executed when no subscriptions left for a specific computable instance.
+   * See docs for {@link onListenStart}.
+   * */
   onListenStop(instance: Computable<unknown>): void;
 
   refreshState(instance: Computable<unknown>): Promise<void>;
