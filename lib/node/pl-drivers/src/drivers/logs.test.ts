@@ -169,7 +169,7 @@ test('should get log smart object and get log lines from that', async () => {
     }
 
     while (true) {
-      const response = await logs.readText(notEmpty(handle), 100, 0n);
+      const response = await logs.readText(notEmpty(handle), 100);
       logger.info(`got response: ${stringifyWithResourceId(response)}`);
       if (response.shouldUpdateHandle) {
         await c.awaitChange();

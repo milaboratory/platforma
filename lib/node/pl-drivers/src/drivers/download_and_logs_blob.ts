@@ -36,6 +36,7 @@ import {
   BlobDriver,
   LocalBlobHandle,
   LocalBlobHandleAndSize,
+  LogsDriver,
   RemoteBlobHandle,
   RemoteBlobHandleAndSize,
   StreamingApiResponse
@@ -48,7 +49,7 @@ import {
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
-export class DownloadDriver implements BlobDriver {
+export class DownloadDriver implements BlobDriver, LogsDriver {
   /** Represents a Resource Id to the path of a blob as a map. */
   private idToDownload: Map<ResourceId, Download> = new Map();
 
@@ -349,7 +350,7 @@ export class DownloadDriver implements BlobDriver {
   async lastLines(
     handle: AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint, // if 0n, then start from the end.
+    offsetBytes?: number, // if 0n, then start from the end.
     searchStr?: string
   ): Promise<StreamingApiResponse> {
     if (!isReadyLogHandle(handle))
@@ -357,22 +358,26 @@ export class DownloadDriver implements BlobDriver {
         `not ready log handle was passed to ready log driver, handle: ${handle}`
       );
 
+    const resp = await this.clientLogs.lastLines(
+      handleToData(handle),
+      lineCount,
+      BigInt(offsetBytes ?? 0),
+      searchStr
+    );
+
     return {
       live: false,
       shouldUpdateHandle: false,
-      ...(await this.clientLogs.lastLines(
-        handleToData(handle),
-        lineCount,
-        offsetBytes,
-        searchStr
-      ))
+      data: resp.data,
+      size: Number(resp.size),
+      newOffset: Number(resp.newOffset),
     };
   }
 
   async readText(
     handle: AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint, // if 0n, then start from the beginning.
+    offsetBytes?: number,
     searchStr?: string
   ): Promise<StreamingApiResponse> {
     if (!isReadyLogHandle(handle))
@@ -380,15 +385,19 @@ export class DownloadDriver implements BlobDriver {
         `not ready log handle was passed to ready log driver, handle: ${handle}`
       );
 
+    const resp = await this.clientLogs.lastLines(
+      handleToData(handle),
+      lineCount,
+      BigInt(offsetBytes ?? 0),
+      searchStr
+    );
+
     return {
       live: false,
       shouldUpdateHandle: false,
-      ...(await this.clientLogs.lastLines(
-        handleToData(handle),
-        lineCount,
-        offsetBytes,
-        searchStr
-      ))
+      data: resp.data,
+      size: Number(resp.size),
+      newOffset: Number(resp.newOffset),
     };
   }
 

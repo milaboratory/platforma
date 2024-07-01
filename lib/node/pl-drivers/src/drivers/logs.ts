@@ -6,9 +6,7 @@ import {
 import { bigintToResourceId } from '@milaboratory/pl-client-v2';
 import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
-import { AnyLogHandle, StreamingApiResponse } from '@milaboratory/sdk-model';
-import { LiveLogHandle } from '@milaboratory/sdk-model';
-import { ReadyLogHandle } from '@milaboratory/sdk-model';
+import * as sdk from '@milaboratory/sdk-model';
 
 export class LogsDriver {
   constructor(
@@ -98,15 +96,15 @@ export class LogsDriver {
 
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
-  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle | undefined>;
+  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle | undefined>;
   getLogHandle(
     res: PlTreeEntry,
     ctx: ComputableCtx
-  ): AnyLogHandle | undefined;
+  ): sdk.AnyLogHandle | undefined;
   getLogHandle(
     res: PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<AnyLogHandle | undefined> | AnyLogHandle | undefined {
+  ): Computable<sdk.AnyLogHandle | undefined> | sdk.AnyLogHandle | undefined {
     if (ctx === undefined)
       return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
@@ -122,11 +120,11 @@ export class LogsDriver {
   }
 
   async lastLines(
-    handle: AnyLogHandle,
+    handle: sdk.AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint, // if 0n, then start from the end.
+    offsetBytes?: number,
     searchStr?: string
-  ): Promise<StreamingApiResponse> {
+  ): Promise<sdk.StreamingApiResponse> {
     if (isLiveLogHandle(handle))
       return await this.logsStreamDriver.lastLines(
         handle,
@@ -143,11 +141,11 @@ export class LogsDriver {
   }
 
   async readText(
-    handle: AnyLogHandle,
+    handle: sdk.AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint, // if 0n, then start from the beginning.
+    offsetBytes?: number,
     searchStr?: string
-  ): Promise<StreamingApiResponse> {
+  ): Promise<sdk.StreamingApiResponse> {
     if (isLiveLogHandle(handle))
       return await this.logsStreamDriver.readText(
         handle,
@@ -172,7 +170,7 @@ function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {
   return ctx.accessor(manager).node().traverse('stream')?.resourceInfo
 }
 
-export function handleToData(handle: AnyLogHandle): ResourceInfo {
+export function handleToData(handle: sdk.AnyLogHandle): ResourceInfo {
   let parsed: RegExpMatchArray | null;
 
   if (isLiveLogHandle(handle)) {
@@ -190,24 +188,24 @@ export function handleToData(handle: AnyLogHandle): ResourceInfo {
   };
 }
 
-export function dataToHandle(live: boolean, rInfo: ResourceInfo): AnyLogHandle {
+export function dataToHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
   if (live) {
-    return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as LiveLogHandle;
+    return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as sdk.LiveLogHandle;
   }
 
-  return `log+ready://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as ReadyLogHandle;
+  return `log+ready://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as sdk.ReadyLogHandle;
 }
 
 const liveHandleRegex =
   /^log\+live:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
 
-export function isLiveLogHandle(handle: string): handle is LiveLogHandle {
+export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
   return liveHandleRegex.test(handle);
 }
 
 const readyHandleRegex =
   /^log\+ready:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
 
-export function isReadyLogHandle(handle: string): handle is ReadyLogHandle {
+export function isReadyLogHandle(handle: string): handle is sdk.ReadyLogHandle {
   return readyHandleRegex.test(handle);
 }

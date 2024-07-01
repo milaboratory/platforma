@@ -21,9 +21,9 @@ import {
 } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import { AnyLogHandle, StreamingApiResponse } from '@milaboratory/sdk-model';
+import * as sdk from '@milaboratory/sdk-model';
 
-export class LogsStreamDriver {
+export class LogsStreamDriver implements sdk.LogsDriver {
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
   private readonly idToLastLines: Map<ResourceId, LogGetter> = new Map();
 
@@ -126,7 +126,7 @@ export class LogsStreamDriver {
     if (ctx == undefined)
       return Computable.make((ctx) =>
         this.getProgressLog(res, patternToSearch, ctx)
-      );
+                            );
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
@@ -173,15 +173,15 @@ export class LogsStreamDriver {
     return result.log;
   }
 
-  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle>;
+  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle>;
   getLogHandle(
     res: ResourceInfo | PlTreeEntry,
     ctx: ComputableCtx
-  ): AnyLogHandle;
+  ): sdk.AnyLogHandle;
   getLogHandle(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<AnyLogHandle> | AnyLogHandle {
+  ): Computable<sdk.AnyLogHandle> | sdk.AnyLogHandle {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
@@ -195,63 +195,63 @@ export class LogsStreamDriver {
     return result;
   }
 
-  private getLogHandleNoCtx(rInfo: ResourceInfo): AnyLogHandle {
+  private getLogHandleNoCtx(rInfo: ResourceInfo): sdk.AnyLogHandle {
     return dataToHandle(true, rInfo);
   }
 
   async lastLines(
-    handle: AnyLogHandle,
+    handle: sdk.AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint,
+    offsetBytes?: number,
     searchStr?: string | undefined
   ) {
     return await this.tryWithNotFound(handle, () =>
       this.clientLogs.lastLines(
         handleToData(handle),
         lineCount,
-        offsetBytes,
+        BigInt(offsetBytes ?? 0),
         searchStr
       )
     );
   }
 
   async readText(
-    handle: AnyLogHandle,
+    handle: sdk.AnyLogHandle,
     lineCount: number,
-    offsetBytes: bigint,
+    offsetBytes?: number,
     searchStr?: string | undefined
   ) {
     return await this.tryWithNotFound(handle, () =>
       this.clientLogs.readText(
         handleToData(handle),
         lineCount,
-        offsetBytes,
+        BigInt(offsetBytes ?? 0),
         searchStr
       )
     );
   }
 
   private async tryWithNotFound(
-    handle: AnyLogHandle,
+    handle: sdk.AnyLogHandle,
     method: () => Promise<StreamingAPI_Response>
-  ): Promise<StreamingApiResponse> {
+  ): Promise<sdk.StreamingApiResponse> {
     if (!isLiveLogHandle(handle))
       throw new Error(
         `Not live log handle was passed to live log driver, handle: ${handle}`
       );
 
     try {
+      const resp = await method();
       return {
         live: true,
         shouldUpdateHandle: false,
-        ...(await method())
+        data: resp.data,
+        size: Number(resp.size),
+        newOffset: Number(resp.newOffset),
       };
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-        return {
-          live: true,
-          shouldUpdateHandle: true
-        };
+        return { shouldUpdateHandle: true };
       }
 
       throw e;
