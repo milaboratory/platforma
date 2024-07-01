@@ -35,43 +35,65 @@ export type BlockStateOverview = {
   /** Block rendering mode */
   renderingMode: BlockRenderingMode,
 
-  /** True if block have missing references, e.g. referenced block was deleted
-   * or moved downstream. */
+  /**
+   * True if block have missing references, e.g. referenced block was deleted
+   * or moved downstream.
+   * */
   missingReference: boolean;
 
-  /** Means that current heavy results (or results being calculated at the
+  /**
+   * Means that current heavy results (or results being calculated at the
    * moment) are not in sync with current arguments. This takes into account
    * stale state of all upstream blocks as well. Initial state also considered
-   * stale. */
+   * stale.
+   * */
   stale: boolean;
 
-  /** True if any of the outputs have errors. Errors may appear even before
-   * calculations are finished. */
+  /**
+   * True if any of the outputs have errors. Errors may appear even before
+   * calculations are finished.
+   * */
   outputErrors: boolean;
 
   /** Generalized block calculation status */
   calculationStatus: BlockCalculationStatus;
 
-  /** All upstream blocks of this block. In other words all dependencies of this
-   * block, including transitive dependencies. */
+  /**
+   * All upstream blocks of this block. In other words all dependencies of this
+   * block, including transitive dependencies.
+   * */
   upstreams: string[],
 
-  /** All downstream blocks of this block. In other words all blocks that depends
-   * on outputs of this block, accounting for transitive dependencies. */
+  /**
+   * All downstream blocks of this block. In other words all blocks that depends
+   * on outputs of this block, accounting for transitive dependencies.
+   * */
   downstreams: string[],
 
-  /** Block sections. May be unavailable, if block-pack for this block is not
-   * yet materialized. */
+  /**
+   * Block sections. May be unavailable, if block-pack for this block is not
+   * yet materialized.
+   * */
   sections: BlockSection[] | undefined,
 
-  /** True if inputs of current block are suitable for block execution.
-   * May be unavailable, if block-pack for this block is not yet materialized. */
+  /**
+   * True if inputs of current block are suitable for block execution.
+   * May be unavailable, if block-pack for this block is not yet materialized.
+   * */
   inputsValid: boolean | undefined,
 
-  /** True if current block can be executed. This takes into account can run of
-   * all upstream blocks as well. */
+  /**
+   * True if current block can be executed. This takes into account can run of
+   * all upstream blocks as well.
+   * */
   canRun: boolean,
 
   /** Information on where the block pack for this block came from */
   blockPackSource: BlockPackSpec | undefined
+
+  /**
+   * If block pack update is available this field will contain latest specs to
+   * perform the update
+   * */
+  blockUpdate: BlockPackSpec | undefined
 }
