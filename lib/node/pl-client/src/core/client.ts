@@ -8,6 +8,7 @@ import { createRetryState, nextRetryStateOrError, RetryOptions } from '@milabora
 import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
+import { Dispatcher } from 'undici';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
@@ -64,6 +65,10 @@ export class PlClient {
 
   public get conf(): PlClientConfig {
     return this.ll.conf;
+  }
+
+  public get httpDispatcher(): Dispatcher {
+    return this.ll.httpDispatcher;
   }
 
   private get initialized() {
