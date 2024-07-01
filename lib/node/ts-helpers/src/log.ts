@@ -2,9 +2,9 @@
 export interface MiLogger {
   info(msg: string): void;
 
-  warn(msg: string | Error): void;
+  warn(msg: string | any): void;
 
-  error(msg: string | Error): void;
+  error(msg: string | any): void;
 }
 
 export class ConsoleLoggerAdapter implements MiLogger {
@@ -15,11 +15,11 @@ export class ConsoleLoggerAdapter implements MiLogger {
     this.console.log(msg);
   }
 
-  warn(msg: string | Error): void {
+  warn(msg: string | any): void {
     this.console.warn(msg);
   }
 
-  error(msg: string | Error): void {
+  error(msg: string | any): void {
     this.console.error(msg);
   }
 }
