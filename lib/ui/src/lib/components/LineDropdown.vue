@@ -22,16 +22,16 @@ const props = withDefaults(
     placeholder?: string;
     mode?: 'list' | 'tabs';
     tabsContainerStyles?: StyleValue;
-    inputMaxWidth?: string;
-    inputWidth?: string;
+    // inputMaxWidth?: string;
+    // inputWidth?: string;
     clearable?: boolean;
   }>(),
   {
     mode: 'list',
     placeholder: 'Select..',
     prefix: '',
-    inputMaxWidth: '',
-    inputWidth: '',
+    // inputMaxWidth: '',
+    // inputWidth: '',
     tabsContainerStyles: undefined,
     clearable: false,
   },
@@ -240,14 +240,7 @@ function clearModel() {
   >
     <div class="ui-line-dropdown__prefix">{{ props?.prefix }}</div>
 
-    <ResizableInput
-      v-model="inputModel"
-      :placeholder="placeholderVal"
-      :disabled="props.disabled"
-      :max-width="props.inputMaxWidth"
-      :width="props.inputWidth"
-      class="ui-line-dropdown__input"
-    />
+    <ResizableInput v-model="inputModel" :placeholder="placeholderVal" :disabled="props.disabled" class="ui-line-dropdown__input" />
 
     <div class="ui-line-dropdown__icon-wrapper">
       <div v-show="!canShowClearBtn" class="ui-line-dropdown__icon" />
