@@ -11,11 +11,13 @@ export type PTableColumnSpec = {
   spec: PColumnSpec;
 }
 
-/** Unified PTable column identifier */
-export type PTableColumnId = {
+export type PTableColumnIdAxis = {
   type: 'axis';
   id: AxisId;
-} | {
+}
+export type PTableColumnIdColumn = {
   type: 'column';
   id: PColumnId;
 }
+/** Unified PTable column identifier */
+export type PTableColumnId = PTableColumnIdAxis | PTableColumnIdColumn;
