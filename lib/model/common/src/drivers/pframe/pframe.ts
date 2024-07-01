@@ -1,6 +1,7 @@
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { PColumnId, PColumnIdAndSpec, PColumnSpec } from './spec';
 import { CalculateTableDataRequest, CalculateTableDataResponse } from './table_calculate';
+import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 
 /** Read interface exposed by PFrames library */
 export interface PFrame {
@@ -18,4 +19,7 @@ export interface PFrame {
 
   /** Calculates data for the table and returns complete data representation of it */
   calculateTableData(request: CalculateTableDataRequest): Promise<CalculateTableDataResponse>;
+
+  /** Calculate set of unique values for a specific axis for the filtered set of records */
+  getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse>;
 }
