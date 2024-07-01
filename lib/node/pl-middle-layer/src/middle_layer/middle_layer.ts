@@ -23,6 +23,7 @@ import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
 import { BlobDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { BlockUpdateWatcher } from '../block_registry/watcher';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -31,6 +32,7 @@ export interface MiddleLayerEnvironment {
   readonly bpPreparer: BlockPackPreparer;
   readonly frontendDownloadDriver: DownloadUrlDriver;
   readonly drivers: MiddleLayerInternalDrivers;
+  readonly blockUpdateWatcher: BlockUpdateWatcher;
 }
 
 export interface MiddleLayerDrivers {
@@ -238,17 +240,15 @@ export class MiddleLayer {
         downloadDriver,
         uploadDriver,
         logsDriver
-      }
+      },
+      blockUpdateWatcher: new BlockUpdateWatcher({ http: pl.httpDispatcher })
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
     return new MiddleLayer(
-      env,
-      {
-        blob: downloadDriver
-      },
+      env, { blob: downloadDriver },
       signer,
       projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }

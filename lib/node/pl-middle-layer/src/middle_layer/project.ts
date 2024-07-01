@@ -80,18 +80,35 @@ export class Project {
    * */
   public async addBlock(blockLabel: string, blockPackSpec: BlockPackSpecAny,
                         before?: string, blockId: string = randomUUID()): Promise<string> {
-    const prepared = await this.env.bpPreparer.prepare(blockPackSpec);
+    const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
     await withProject(this.env.pl, this.rid, mut =>
       mut.addBlock({ id: blockId, label: blockLabel, renderingMode: blockCfg.renderingMode },
         {
           args: JSON.stringify(blockCfg.initialArgs),
-          blockPack: prepared
+          blockPack: preparedBp
         }, before
       ));
     await this.projectTree.refreshState();
 
     return blockId;
+  }
+
+  /**
+   * Update block to new block pack, optionally resetting args and ui state to
+   * initial values
+   * */
+  public async updateBlock(blockId: string, blockPackSpec: BlockPackSpecAny,
+                           resetArgs: boolean = false): Promise<void> {
+    const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
+    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
+    await withProject(this.env.pl, this.rid, mut =>
+      mut.migrateBlockPack(blockId, preparedBp,
+        resetArgs
+          ? JSON.stringify(blockCfg.initialArgs)
+          : undefined
+      ));
+    await this.projectTree.refreshState();
   }
 
   /** Deletes a block with all associated data. */

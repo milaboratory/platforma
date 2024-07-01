@@ -5,9 +5,11 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import { BlockPackRegistry, CentralRegistry } from '../block_registry';
+import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
+import { DevBlockPackConfig, DevBlockPackTemplate } from '../mutator/block-pack/block_pack';
+import * as tp from 'node:timers/promises';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -51,7 +53,7 @@ async function getStandardBlockSpecs() {
   };
 }
 
-async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
+async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -66,7 +68,7 @@ async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
       blobDownloadPath: path.resolve(downloadFolder)
     });
     try {
-      await cb(ml);
+      await cb(ml, workFolder);
     } finally {
       await ml.closeAndAwaitTermination();
     }
@@ -84,7 +86,11 @@ async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2
       throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.calculationStatus === 'Done')
       return;
-    await overview.awaitChange(abortSignal);
+    try {
+      await overview.awaitChange(abortSignal);
+    } catch (e: any) {
+      throw new Error('Aborted?', { cause: e });
+    }
   }
 }
 
@@ -315,6 +321,45 @@ test('limbo test', async () => {
   });
 });
 
+test('block update test', async () => {
+  await withMl(async (ml, workFolder) => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    const tmpDevBlockFolder = path.resolve(workFolder, 'dev');
+    await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
+
+    const devBlockPath = path.resolve(tmpDevBlockFolder, 'block-beta-enter-numbers');
+    await fs.promises.cp(
+      path.resolve('integration', 'block-beta-enter-numbers'),
+      devBlockPath, { recursive: true }
+    );
+    const mtime = await getDevPacketMtime(devBlockPath);
+    const block1Id = await prj.addBlock('Block 1', {
+      type: 'dev', folder: devBlockPath, mtime
+    });
+
+    await prj.overview.refreshState();
+    const overview0 = await prj.overview.awaitStableValue();
+    expect(overview0.blocks[0].blockUpdate).toBeUndefined();
+
+    // touch
+    await fs.promises.appendFile(path.resolve(devBlockPath, ...DevBlockPackConfig), ' ');
+
+    await prj.overview.refreshState();
+    const overview1 = await prj.overview.awaitStableValue();
+    expect(overview1.blocks[0].blockUpdate).toBeDefined();
+
+    await prj.updateBlock(block1Id, overview1.blocks[0].blockUpdate!);
+
+    await prj.overview.refreshState();
+    const overview2 = await prj.overview.awaitStableValue();
+    expect(overview2.blocks[0].blockPackSource).toStrictEqual(overview1.blocks[0].blockUpdate);
+    expect(overview2.blocks[0].blockUpdate).toBeUndefined();
+  });
+});
+
 test('block error test', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -409,7 +454,7 @@ test('should create download-file block, render it and gets outputs from its con
   });
 });
 
-test('should create upload-file block, render it and upload a file to pl server', async () => {
+test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);

@@ -26,7 +26,9 @@ export const DevBlockPackFrontendFolder = ['frontend', 'dist'];
 
 export const DevBlockPackFiles = [
   DevBlockPackTemplate, DevBlockPackConfig,
-  DevBlockPackMetaYaml, DevBlockPackMetaJson
+  DevBlockPackMetaYaml, DevBlockPackMetaJson,
+  DevBlockPackTemplate, DevBlockPackConfig,
+  DevBlockPackFrontendFolder
 ];
 
 /** Ensure trailing slash */

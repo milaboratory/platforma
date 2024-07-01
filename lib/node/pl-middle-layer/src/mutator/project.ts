@@ -554,17 +554,20 @@ export class ProjectMutator {
   // Block-pack migration
   //
 
-  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared, newArgs?: string): void {
+  public migrateBlockPack(blockId: string, spec: BlockPackSpecPrepared,
+                          newArgs?: string): void {
     const info = this.getBlockInfo(blockId);
 
     this.setBlockField(blockId, 'blockPack',
       Pl.wrapInHolder(this.tx, createBlockPack(this.tx, spec)),
       'NotReady');
 
-    if (newArgs !== undefined)
+    if (newArgs !== undefined) {
       // this will also reset all downstream stagings
       this.setArgs([{ blockId, args: newArgs }]);
-    else
+      // reset UI state along with args
+      this.setUiState(blockId, undefined);
+    } else
       // resetting staging outputs for all downstream blocks
       this.getStagingGraph().traverse('downstream', [blockId],
         ({ id }) => this.resetStaging(id));

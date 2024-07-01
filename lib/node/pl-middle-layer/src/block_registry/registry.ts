@@ -4,7 +4,6 @@ import { BlockPackSpecAny } from '../model';
 import {
   GlobalOverview,
   GlobalOverviewPath,
-  packageContentPrefix,
   PlPackageConfigData, PlPackageYamlConfigFile
 } from '@milaboratory/pl-block-registry';
 import fs from 'node:fs';
@@ -58,6 +57,19 @@ async function getFileStat(path: string) {
   }
 }
 
+export async function getDevPacketMtime(devPath: string): Promise<string> {
+  let mtime = 0n;
+  for (const f of DevBlockPackFiles) {
+    const fullPath = path.join(devPath, ...f);
+    const stat = await getFileStat(fullPath);
+    if (stat === undefined)
+      continue;
+    if (mtime < stat.mtimeNs)
+      mtime = stat.mtimeNs;
+  }
+  return mtime.toString();
+}
+
 export class BlockPackRegistry {
   constructor(private readonly registrySpecs: RegistrySpec[],
               private readonly http?: Dispatcher) {
@@ -106,15 +118,7 @@ export class BlockPackRegistry {
             continue;
           const config = PlPackageConfigData.parse(YAML.parse(yamlContent));
 
-          let mtime = 0n;
-          for (const f of DevBlockPackFiles) {
-            const fullPath = path.join(devPath, ...f);
-            const stat = await getFileStat(fullPath);
-            if (stat === undefined)
-              continue;
-            if (mtime < stat.mtimeNs)
-              mtime = stat.mtimeNs;
-          }
+          const mtime = await getDevPacketMtime(devPath);
 
           result.push({
             organization: config.organization,
@@ -124,7 +128,7 @@ export class BlockPackRegistry {
             latestSpec: {
               type: 'dev',
               folder: devPath,
-              mtime: mtime.toString()
+              mtime
             },
             otherVersions: []
           });
