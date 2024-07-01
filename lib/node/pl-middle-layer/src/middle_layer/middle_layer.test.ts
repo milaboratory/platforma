@@ -409,7 +409,7 @@ test('should create download-file block, render it and gets outputs from its con
   });
 });
 
-test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
+test('should create upload-file block, render it and upload a file to pl server', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -436,7 +436,8 @@ test.skip('should create upload-file block, render it and upload a file to pl se
     });
 
     await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id);
+    // FIXME: uncomment when overview will trigger getValue of computables
+    // await awaitBlockDone(prj, block3Id);
 
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
@@ -453,7 +454,7 @@ test.skip('should create upload-file block, render it and upload a file to pl se
   });
 });
 
-test.skip('should create read-logs block, render it and read logs from a file', async () => {
+test('should create read-logs block, render it and read logs from a file', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
