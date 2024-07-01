@@ -14,6 +14,9 @@ export type MiddleLayerOps = {
    * second during project maintenance job execution. */
   readonly stagingRenderingRate: number;
 
+  /** How often to check for dev block updates */
+  readonly devBlockUpdateRecheckInterval: number;
+
   /** Local secret, that is used to sign and verify different pieces of information
    * that can be used to access local data, like local paths for ongoing uploads.
    *
@@ -76,28 +79,30 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'nConcurrentGetProgresses'
   | 'nConcurrentPartUploads'
   | 'nConcurrentGetLogs'
-  | 'defaultStreamLogsDriverOptions'> = {
-    defaultTreeOptions: {
-      pollingInterval: 350,
-      stopPollingDelay: 2500
-    },
-    projectRefreshInterval: 700,
-    stagingRenderingRate: 5,
-    localStorageIdsToRoot: {},
-    nConcurrentBlobDownloads: 10,
-    blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
-    nConcurrentPartUploads: 10,
-    nConcurrentGetProgresses: 10,
-    defaultUploadDriverOptions: {
-      pollingInterval: 1000,
-      stopPollingDelay: 1000
-    },
-    nConcurrentGetLogs: 10,
-    defaultStreamLogsDriverOptions: {
-      pollingInterval: 1000,
-      stopPollingDelay: 1000
-    }
-  };
+  | 'defaultStreamLogsDriverOptions'
+  | 'devBlockUpdateRecheckInterval'> = {
+  defaultTreeOptions: {
+    pollingInterval: 350,
+    stopPollingDelay: 2500
+  },
+  devBlockUpdateRecheckInterval: 1000,
+  projectRefreshInterval: 700,
+  stagingRenderingRate: 5,
+  localStorageIdsToRoot: {},
+  nConcurrentBlobDownloads: 10,
+  blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
+  nConcurrentPartUploads: 10,
+  nConcurrentGetProgresses: 10,
+  defaultUploadDriverOptions: {
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  },
+  nConcurrentGetLogs: 10,
+  defaultStreamLogsDriverOptions: {
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  }
+};
 
 /** Fields with default values are marked as optional here. */
 export type MiddleLayerOpsConstructor =

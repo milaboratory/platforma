@@ -241,7 +241,10 @@ export class MiddleLayer {
         uploadDriver,
         logsDriver
       },
-      blockUpdateWatcher: new BlockUpdateWatcher({ http: pl.httpDispatcher })
+      blockUpdateWatcher: new BlockUpdateWatcher({
+        minDelay: ops.devBlockUpdateRecheckInterval,
+        http: pl.httpDispatcher
+      })
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);

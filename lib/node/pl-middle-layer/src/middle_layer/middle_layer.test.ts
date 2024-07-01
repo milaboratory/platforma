@@ -63,6 +63,7 @@ async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
   await TestHelpers.withTempRoot(async pl => {
     const ml = await MiddleLayer.init(pl, {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
+      devBlockUpdateRecheckInterval: 300,
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder)
