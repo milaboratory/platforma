@@ -1,4 +1,4 @@
-import { AxisSpec, ValueType } from '@milaboratory/sdk-model';
+import { AxisId, AxisSpec, ValueType } from '@milaboratory/sdk-model';
 
 export interface SingleAxisSelector {
   name: string;
@@ -8,6 +8,11 @@ export interface SingleAxisSelector {
 
 export interface AxisQualification {
   axis: SingleAxisSelector;
+  additionalDomains: Record<string, string>;
+}
+
+export interface AxisQualificationWithAxisId {
+  axis: AxisId;
   additionalDomains: Record<string, string>;
 }
 

@@ -1,10 +1,10 @@
-import { AxisQualification } from './common';
+import { AxisQualificationWithAxisId } from './common';
 import { PColumnId, PTableRecordFilter } from '@milaboratory/sdk-model';
 
 export interface ColumnJoinEntry {
   type: 'column';
   columnId: PColumnId;
-  qualifications: AxisQualification[];
+  qualifications: AxisQualificationWithAxisId[];
 }
 
 export interface InnerJoin {
