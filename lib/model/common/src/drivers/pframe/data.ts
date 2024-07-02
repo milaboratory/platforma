@@ -1,24 +1,31 @@
 import { ValueType } from './spec';
 
-export const PValueInt32NA = -2147483648;
-export const PValueInt64NA = -9007199254740991n;
-export const PValueFloat32NA = NaN;
-export const PValueFloat64NA = NaN;
+export const PValueIntNA = -2147483648;
+export const PValueLongNA = -9007199254740991n;
+export const PValueFloatNA = NaN;
+export const PValueDoubleNA = NaN;
 export const PValueStringNA = null;
 export const PValueBytesNA = null;
 
-export type PVectorDataInt32 = Int32Array
-export type PVectorDataInt64 = BigInt64Array;
-export type PVectorDataFloat32 = Float32Array;
-export type PVectorDataFloat64 = Float64Array;
-export type PVectorDataString = (string | null)[];
-export type PVectorDataBytes = (Uint8Array | null)[];
+export type PValueInt = number
+export type PValueLong = number // use bigint only if extra integer precision is needed
+export type PValueFloat = number
+export type PValueDouble = number
+export type PValueString = string | null
+export type PValueBytes = Uint8Array | null
+
+export type PVectorDataInt = Int32Array
+export type PVectorDataLong = BigInt64Array;
+export type PVectorDataFloat = Float32Array;
+export type PVectorDataDouble = Float64Array;
+export type PVectorDataString = PValueString[];
+export type PVectorDataBytes = PValueBytes[];
 
 export type PVectorData =
-  | PVectorDataInt32
-  | PVectorDataInt64
-  | PVectorDataFloat32
-  | PVectorDataFloat64
+  | PVectorDataInt
+  | PVectorDataLong
+  | PVectorDataFloat
+  | PVectorDataDouble
   | PVectorDataString
   | PVectorDataBytes
 
