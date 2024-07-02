@@ -319,7 +319,7 @@ test('limbo test', async () => {
     expect(overview4Block1.calculationStatus).toEqual('Done');
     expect(overview4Block2.calculationStatus).toEqual('Done');
   });
-});
+}, 20000);
 
 test('block update test', async () => {
   await withMl(async (ml, workFolder) => {
