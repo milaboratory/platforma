@@ -1,4 +1,5 @@
 import { Computable } from './computable';
+import { WatchableValue } from '../watchable_value';
 
 test('raw computable simple test', async () => {
   let users = 0;
@@ -151,4 +152,57 @@ test('testing wider range of types in computables', async () => {
   expect(await Computable.make(() => Computable.make(() => new Date())).getValue()).toBeInstanceOf(Date);
   expect(await Computable.make(() => new Uint32Array(12)).getValue()).toBeInstanceOf(Uint32Array);
   expect(await Computable.make(() => Computable.make(() => new Uint32Array(12))).getValue()).toBeInstanceOf(Uint32Array);
+});
+
+test('nested computable test 1', async () => {
+  const watchable = new WatchableValue(1);
+  const wc = watchable.asComputable();
+  const c1 = Computable.make(ctx => wc);
+
+  expect(await c1.getValue()).toBe(1);
+
+  watchable.setValue(2);
+
+  expect(await c1.getValue()).toBe(2);
+});
+
+test('nested computable test 2', async () => {
+  const watchable = new WatchableValue(1);
+  const wc = watchable.asComputable();
+  const c1 = Computable.make(ctx => ({ a: wc, b: wc }));
+
+  expect(await c1.getValue()).toEqual({ a: 1, b: 1 });
+
+  watchable.setValue(2);
+
+  expect(await c1.getValue()).toEqual({ a: 2, b: 2 });
+});
+
+test('nested computable test 3', async () => {
+  const watchable = new WatchableValue(1);
+  const wc = watchable.asComputable();
+  const c1 = Computable.make(ctx => ({ a: wc, b: wc }), { postprocessValue: ({ a, b }) => a + b });
+
+  expect(await c1.getValue()).toEqual(2);
+
+  watchable.setValue(2);
+
+  expect(await c1.getValue()).toEqual(4);
+});
+
+test('nested computable test 4', async () => {
+  const watchable = new WatchableValue(1);
+  const wc = watchable.asComputable();
+  const c1 = Computable.make(() =>
+    Computable.make(ctx => ({ a: wc, b: wc }), {
+      postprocessValue: ({ a, b }) => a + b,
+      key: 'a'
+    })
+  );
+
+  expect(await c1.getValue()).toEqual(2);
+
+  watchable.setValue(2);
+
+  expect(await c1.getValue()).toEqual(4);
 });

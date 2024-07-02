@@ -210,7 +210,7 @@ type ChildrenStates = Map<
 
 export interface ChildStateEnvelop<IR, T = IR> {
   /** True if this child originates from a stable result. */
-  readonly stable: boolean;
+  readonly fromStableSelfState: boolean;
 
   /** True if this envelop is kept solely for caching, and not actually referenced in current value incarnation */
   readonly orphan: boolean;
@@ -262,7 +262,7 @@ type IncompleteCellState<T> = Pick<
   'selfState' | 'childrenStates'
 >;
 
-type Children = ComputableKernel<unknown>[];
+type Children = Map<string | symbol, ComputableKernel<unknown>>;
 
 /** Populates children array traversing the node tree */
 function addChildren(node: unknown, children: Children) {
@@ -276,10 +276,12 @@ function addChildren(node: unknown, children: Children) {
   switch (type) {
     case 'object':
       const kernel = tryExtractComputableKernel(node);
-      if (kernel !== undefined)
-        children.push(kernel);
+      if (kernel !== undefined) {
 
-      else if (Array.isArray(node))
+        if (!children.has(kernel.key))
+          children.set(kernel.key, kernel);
+
+      } else if (Array.isArray(node))
         for (const nested of node)
           addChildren(nested, children);
 
@@ -296,8 +298,8 @@ function addChildren(node: unknown, children: Children) {
 }
 
 function getChildren(iResult: IntermediateRenderingResult<unknown, unknown> | ExecutionError): Children {
-  if (isExecutionError(iResult)) return [];
-  const children: Children = [];
+  if (isExecutionError(iResult)) return new Map();
+  const children: Children = new Map();
   addChildren(iResult.ir, children);
   return children;
 }
@@ -421,11 +423,11 @@ export function destroyState(_state: CellState<unknown>) {
 
 /**
  * @param children children of current state
- * @param fromStableState should be set to true if list of children was taken from a stable rendering result
+ * @param fromStableSelfState should be set to true if list of children was taken from a stable rendering result
  * @param cachedChildrenStates cached children states, from previous incarnation, if exist */
 function calculateChildren(
   children: Children,
-  fromStableState: boolean,
+  fromStableSelfState: boolean,
   cachedChildrenStates?: ChildrenStates
 ): ChildrenStates {
   // Tracking which children we transferred to a new state
@@ -435,35 +437,35 @@ function calculateChildren(
   const result: ChildrenStates = new Map();
 
   // Updating or creating child states
-  for (const child of children) {
+  for (const [key, child] of children) {
     const existingState = cachedChildrenStates
-      ? cachedChildrenStates.get(child.key)
+      ? cachedChildrenStates.get(key)
       : undefined;
     if (existingState !== undefined) {
-      result.set(child.key, {
+      result.set(key, {
         state: updateCellStateWithoutValue(
           existingState.state
         ),
-        stable: existingState.stable || fromStableState,
+        fromStableSelfState: existingState.fromStableSelfState || fromStableSelfState,
         orphan: false
       });
-      transferred.add(child.key);
+      transferred.add(key);
     } else
-      result.set(child.key, {
+      result.set(key, {
         state: createCellStateWithoutValue(child),
-        stable: fromStableState,
+        fromStableSelfState: fromStableSelfState,
         orphan: false
       });
   }
 
   // if we are rendering child states for a stable result, we don't transfer anything from the previous cache,
-  // except those children that exist in current incarnation (i.e. in children array)
-  if (!fromStableState && cachedChildrenStates) {
+  // except those children that exist in current incarnation (i.e. in children map)
+  if (!fromStableSelfState && cachedChildrenStates) {
     for (const [oldCacheKey, oldCacheEnvelop] of cachedChildrenStates) {
       // ignore children transferred in the previous loop
       if (transferred.has(oldCacheKey)) continue;
 
-      if (oldCacheEnvelop.stable) {
+      if (oldCacheEnvelop.fromStableSelfState) {
         // note(!): we don't update the state for orphans
         result.set(oldCacheKey, { ...oldCacheEnvelop, orphan: true });
         // adding them to transferred list to prevent calling destroy for these nodes
@@ -473,7 +475,7 @@ function calculateChildren(
   }
 
   // at this point we transferred everything we could, remaining children should be notified about destruction
-  if (cachedChildrenStates) {
+  if (cachedChildrenStates)
     for (const [key, { state }] of cachedChildrenStates) {
       // ignore children transferred in the previous loops
       if (transferred.has(key)) continue;
@@ -481,7 +483,6 @@ function calculateChildren(
       // notify if was requested by the renderer
       destroyState(state);
     }
-  }
 
   return result;
 }
