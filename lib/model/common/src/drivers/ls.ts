@@ -34,7 +34,7 @@ export type LsEntry = {
 
 export interface LsDriver {
   /** remote and local storages */
-  getStorageList(): StorageEntry[];
+  getStorageList(): Promise<StorageEntry[]>;
 
-  listFiles(storage: StorageHandle, path: string): LsEntry[];
+  listFiles(storage: StorageHandle, path: string): Promise<LsEntry[]>;
 }
