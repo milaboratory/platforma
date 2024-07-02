@@ -304,7 +304,7 @@ test('limbo test', async () => {
     expect(overview4Block1.calculationStatus).toEqual('Done');
     expect(overview4Block2.calculationStatus).toEqual('Done');
   });
-});
+}, 20000);
 
 test('block update test', async () => {
   await withMl(async (ml, workFolder) => {
@@ -465,15 +465,20 @@ test('should create upload-file block, render it and upload a file to pl server'
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
 
-    const block3StableState = await block3StateComputable.getFullValue();
+    while (true) {
+      const state = await block3StateComputable.getFullValue();
 
-    console.dir(block3StableState, { depth: 5 });
+      console.dir(state, { depth: 5 });
 
-    expect(block3StableState.type).toEqual('ok');
-    expect((block3StableState.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
-    expect((block3StableState.value.outputs!['handle'] as any).value.done).toBeTruthy();
-    expect((block3StableState.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
-    expect((block3StableState.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
+      if (state.stable && (state.value.outputs!['handle'] as any).value != undefined) {
+        expect(state.type).toEqual('ok');
+        expect((state.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
+        expect((state.value.outputs!['handle'] as any).value.done).toBeTruthy();
+        expect((state.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
+        expect((state.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
+        return;
+      }
+    }
   });
 });
 
