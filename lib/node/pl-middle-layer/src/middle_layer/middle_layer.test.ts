@@ -78,7 +78,6 @@ async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
 async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
-  await overview.refreshState();
   while (true) {
     const snapshot = (await overview.getValue())!;
     const blockOverview = snapshot.blocks.find(b => b.id == blockId);
@@ -102,8 +101,6 @@ test('project list manipulations test', async () => {
 
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
 
-    await projectList.refreshState();
-
     expect(await projectList.getValue()).toMatchObject([{
       id: 'id1',
       rid: pRid1,
@@ -112,8 +109,6 @@ test('project list manipulations test', async () => {
     }]);
 
     await ml.setProjectMeta(pRid1, { label: 'Project 1A' });
-
-    await projectList.refreshState();
 
     const listSnapshot1 = await projectList.getValue();
     expect(listSnapshot1).toMatchObject([{
@@ -144,8 +139,6 @@ test('project list manipulations test', async () => {
 
     await ml.deleteProject('id1');
 
-    await projectList.refreshState();
-
     expect(await projectList.awaitStableValue()).toEqual([]);
   });
 });
@@ -155,7 +148,6 @@ test('simple project manipulations test', async () => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-    await projectList.refreshState();
     const projectListValue1 = await projectList.getValue();
     expect(projectListValue1).toMatchObject([{
       id: 'id1',
@@ -179,7 +171,6 @@ test('simple project manipulations test', async () => {
     const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
 
-    await prj.overview.refreshState();
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
     overviewSnapshot0.blocks.forEach(block => {
@@ -199,7 +190,6 @@ test('simple project manipulations test', async () => {
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
 
-    await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
@@ -237,11 +227,9 @@ test('simple project manipulations test', async () => {
 
     await prj.resetBlockArgsAndUiState(block2Id);
 
-    await prj.getBlockArgsAndUiState(block2Id).refreshState();
     const block2Inputs = await prj.getBlockArgsAndUiState(block2Id).getValue();
     expect(block2Inputs.args).toEqual({ numbers: [] });
 
-    await prj.overview.refreshState();
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
     expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.canRun).toEqual(false);
     expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.stale).toEqual(true);
@@ -261,7 +249,6 @@ test('limbo test', async () => {
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', sumNumbersSpecFromRemote);
 
-    await prj.overview.refreshState();
     const overview0 = await prj.overview.awaitStableValue();
     overview0.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
@@ -276,7 +263,6 @@ test('limbo test', async () => {
       ]
     });
 
-    await prj.overview.refreshState();
     const overview1 = await prj.overview.awaitStableValue();
     overview1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
@@ -290,7 +276,6 @@ test('limbo test', async () => {
     const block2StableState1 = await prj.getBlockState(block2Id).getValue();
     expect(block2StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 6 });
 
-    await prj.overview.refreshState();
     const overview2 = await prj.overview.awaitStableValue();
     overview2.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
@@ -340,20 +325,19 @@ test('block update test', async () => {
       type: 'dev', folder: devBlockPath, mtime
     });
 
-    await prj.overview.refreshState();
     const overview0 = await prj.overview.awaitStableValue();
     expect(overview0.blocks[0].blockUpdate).toBeUndefined();
 
     // touch
     await fs.promises.appendFile(path.resolve(devBlockPath, ...DevBlockPackConfig), ' ');
 
+    // await update watcher
     await prj.overview.refreshState();
     const overview1 = await prj.overview.awaitStableValue();
     expect(overview1.blocks[0].blockUpdate).toBeDefined();
 
     await prj.updateBlock(block1Id, overview1.blocks[0].blockUpdate!);
 
-    await prj.overview.refreshState();
     const overview2 = await prj.overview.awaitStableValue();
     expect(overview2.blocks[0].blockPackSource).toStrictEqual(overview1.blocks[0].blockUpdate);
     expect(overview2.blocks[0].blockUpdate).toBeUndefined();
@@ -382,7 +366,6 @@ test('block error test', async () => {
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
 
-    await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
     overviewSnapshot1.blocks.forEach(block => {
@@ -390,8 +373,6 @@ test('block error test', async () => {
     });
     expect(overviewSnapshot1.blocks[0].outputErrors).toStrictEqual(true);
 
-    const block3StateComputable = await prj.getBlockState(block3Id);
-    await block3StateComputable.refreshState();
     const block3StableState = await prj.getBlockState(block3Id).getValue();
 
     const sum = block3StableState.outputs!['sum'];
@@ -421,7 +402,6 @@ test('should create download-file block, render it and gets outputs from its con
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
 
-    await prj.overview.refreshState();
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
     overviewSnapshot1.blocks.forEach(block => {
@@ -436,7 +416,6 @@ test('should create download-file block, render it and gets outputs from its con
       { depth: 5 });
 
     const block3StateComputable = prj.getBlockState(block3Id);
-    await block3StateComputable.refreshState();
     const block3StableState = await block3StateComputable.getFullValue();
 
     console.dir(block3StableState, { depth: 5 });
@@ -481,8 +460,7 @@ test('should create upload-file block, render it and upload a file to pl server'
     });
 
     await prj.runBlock(block3Id);
-    // FIXME: uncomment when overview will trigger getValue of computables
-    // await awaitBlockDone(prj, block3Id);
+    await awaitBlockDone(prj, block3Id);
 
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
@@ -528,9 +506,10 @@ test('should create read-logs block, render it and read logs from a file', async
     });
 
     await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id, 5000);
 
     const computable = prj.getBlockState(block3Id);
-    await computable.refreshState();
+    // await computable.refreshState();
 
     let i = 0;
     while (true) {

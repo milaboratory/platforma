@@ -76,12 +76,14 @@ export class MiddleLayer {
 
   /** Creates a project with initial state and adds it to project list. */
   public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
-    return await this.pl.withWriteTx('MLCreateProject', async tx => {
+    const resource = await this.pl.withWriteTx('MLCreateProject', async tx => {
       const prj = createProject(tx, meta);
       tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
       await tx.commit();
       return await toGlobalResourceId(prj);
     });
+    await this.projectListTree.refreshState();
+    return resource;
   }
 
   /** Updates project metadata */
@@ -89,6 +91,7 @@ export class MiddleLayer {
     await withProject(this.pl, rid, async prj => {
       prj.setMeta(meta);
     });
+    await this.projectListTree.refreshState();
   }
 
   /** Permanently deletes project from the project list, this will result in
@@ -98,6 +101,7 @@ export class MiddleLayer {
       tx.removeField(field(this.projectListResourceId, id));
       await tx.commit();
     });
+    await this.projectListTree.refreshState();
   }
 
   //

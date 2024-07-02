@@ -21,6 +21,7 @@ import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
 import { ProjectOverview } from '@milaboratory/pl-middle-layer-model';
+import { activeConfigs } from './active_cfg';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockState>;
@@ -38,6 +39,7 @@ export class Project {
 
   private readonly blockComputables = new Map<string, BlockStateComputables>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
+  private readonly activeConfigs: Computable<unknown[]>;
   private destroyed = false;
   private readonly refreshLoopResult: Promise<void>;
 
@@ -48,6 +50,7 @@ export class Project {
     this.overview = overview;
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
+    this.activeConfigs = activeConfigs(projectTree.entry(), env);
   }
 
   private async refreshLoop(): Promise<void> {
@@ -56,6 +59,7 @@ export class Project {
         await withProject(this.env.pl, this.rid, prj => {
           prj.doRefresh(this.env.ops.stagingRenderingRate);
         });
+        await this.activeConfigs.getValue();
       } catch (err: any) {
         if (isNotFoundError(err)) {
           console.warn('project refresh routine terminated, because project was externally deleted');

@@ -13,6 +13,7 @@ import {
 } from '@milaboratory/computable';
 import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
+import canonicalize from 'canonicalize';
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;
@@ -162,7 +163,7 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
             destination: op.destination
           });
         }
-        
+
         break;
 
       case 'ScheduleComputable':
@@ -190,6 +191,11 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 /** Main method to render configurations */
 export function computableFromCfg(drivers: MiddleLayerInternalDrivers, ctx: Record<string, unknown>,
                                   cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+  // const key = canonicalize({
+  //   ctx: Object.fromEntries(Object.entries(ctx).filter(([, v]) => typeof v !== 'function')),
+  //   cfg: cfg
+  // })!;
+  // console.log(key);
   return Computable.makeRaw(c => {
     const env: ExecutionEnvironment = { drivers, cCtx: c };
     const stack = zeroStack();
