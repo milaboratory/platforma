@@ -1,5 +1,4 @@
-import { TypedConfig } from './type_engine';
-import { getJsonField, makeObject } from './actions';
+import { getJsonField, makeObject, TypedConfig } from './config';
 
 export function fromPlRef<Source extends TypedConfig>(source: Source) {
   return makeObject({

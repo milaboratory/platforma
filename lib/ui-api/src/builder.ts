@@ -1,6 +1,4 @@
-import { ConfigResult, PlResourceEntry, TypedConfig } from './type_engine';
-import { getImmediate } from './actions';
-import { Checked } from './type_util';
+import { Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
 import { Platforma } from './platforma';
 import { PlatformaSDKVersion } from './version';
 import { getPlatformaInstance, isInUI } from './platforma_instance';

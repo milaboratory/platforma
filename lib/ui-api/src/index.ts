@@ -1,13 +1,8 @@
-export * from './model';
+export * from './config';
 export * from './block_state_patch';
-export * from './actions';
-export * from './actions_kinds';
-export * from './type_engine';
 export * from './builder';
 export * from './ref_util';
 export * from './platforma';
-
-export { Checked } from './type_util';
 
 // reexporting everything from SDK model
 export * from '@milaboratory/sdk-model';

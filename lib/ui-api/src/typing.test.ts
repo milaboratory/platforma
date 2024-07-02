@@ -1,24 +1,24 @@
-import { ConfigResult } from './type_engine';
 import {
-  getImmediate,
-  getJsonField,
-  getResourceField,
-  getResourceValueAsJson,
   Args,
-  It,
-  makeObject,
-  mapRecordValues,
-  MainOutputs,
-  isEmpty,
-  mapArrayValues,
-  getBlobContentAsString,
+  ConfigResult,
+  flatten,
   getBlobContent,
   getBlobContentAsJson,
-  makeArray,
-  flatten,
+  getBlobContentAsString,
   getDownloadedBlobContent,
-  getOnDemandBlobContent
-} from './actions';
+  getImmediate,
+  getJsonField,
+  getOnDemandBlobContent,
+  getResourceField,
+  getResourceValueAsJson,
+  isEmpty,
+  It,
+  MainOutputs,
+  makeArray,
+  makeObject,
+  mapArrayValues,
+  mapRecordValues
+} from './config';
 import { PlatformaConfiguration, StdCtx } from './builder';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize, ValueOrErrors } from '@milaboratory/sdk-model';
 import { InferOutputsType } from './platforma';

@@ -1,4 +1,4 @@
-import { BlockOutputsBase, BlockState, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState } from '@milaboratory/sdk-model';
 import { BlockStatePatch } from './block_state_patch';
 
 /** Returned by state subscription methods to be able to cancel the subscription. */
