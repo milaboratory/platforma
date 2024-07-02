@@ -4,7 +4,7 @@ import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-ui';
 import { ComputableCtx } from '@milaboratory/computable';
 
 type SC = StdCtx<unknown, unknown>;
-type SCAO = Pick<SC, '$ui' | '$args'>;
+type SCAO = Pick<SC, '$blockId' | '$ui' | '$args'>;
 export type MatStdCtxArgsOnly = {
   [Var in keyof SCAO]: SCAO[Var] extends PlResourceEntry
     ? PlTreeEntry | ((cCtx: ComputableCtx) => PlTreeEntry | undefined) | undefined
@@ -16,6 +16,8 @@ export type MatStdCtx = {
     : SC[Var];
 }
 
+export const NonKeyCtxFields = ['$prod', '$staging'];
+
 export function constructBlockContextArgsOnly(projectNode: PlTreeNodeAccessor, blockId: string): MatStdCtxArgsOnly {
   const args = projectNode.traverse({
     field: projectFieldName(blockId, 'currentArgs'),
@@ -23,6 +25,7 @@ export function constructBlockContextArgsOnly(projectNode: PlTreeNodeAccessor, b
   }).getDataAsJson();
   const ui = projectNode.getKeyValueAsJson(blockFrontendStateKey(blockId));
   return {
+    $blockId: blockId,
     $args: args,
     $ui: ui
   };

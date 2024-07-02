@@ -5,12 +5,12 @@ import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import { computableFromCfg } from '../cfg_render/executor';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { AuthorMarker, BlockArgsAndUiState } from '@milaboratory/sdk-ui';
 import { getBlockCfg } from './util';
+import { AuthorMarker, BlockStateInternal } from '@milaboratory/pl-middle-layer-model';
 
 export function blockArgsAndUiState(
   projectEntry: PlTreeEntry, id: string, env: MiddleLayerEnvironment
-): Computable<BlockArgsAndUiState> {
+): Computable<Omit<BlockStateInternal, 'outputs'>> {
   return Computable.make(c => {
     const prj = c.accessor(projectEntry).node();
     const ctx = constructBlockContextArgsOnly(prj, id);

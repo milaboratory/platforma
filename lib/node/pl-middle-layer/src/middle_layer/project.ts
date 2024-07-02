@@ -13,20 +13,17 @@ import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { AuthorMarker, BlockState } from '@milaboratory/sdk-model';
+import { BlockState } from '@milaboratory/sdk-model';
 import { blockArgsAndUiState, blockOutputs } from './block';
-import { BlockArgsAndUiState, BlockOutputsBase } from '@milaboratory/sdk-ui';
 import { FrontendData } from '../model/frontend';
 import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
-import { ProjectOverview } from '@milaboratory/pl-middle-layer-model';
+import { ProjectOverview, AuthorMarker, BlockStateInternal } from '@milaboratory/pl-middle-layer-model';
 import { activeConfigs } from './active_cfg';
 
 type BlockStateComputables = {
-  readonly fullState: Computable<BlockState>;
-  readonly argsAndUiState: Computable<BlockArgsAndUiState>;
-  readonly outputs: ComputableStableDefined<BlockOutputsBase>;
+  readonly fullState: Computable<BlockStateInternal>;
 }
 
 /** Data access object, to manipulate and read single opened (!) project data. */
@@ -102,8 +99,8 @@ export class Project {
    * Update block to new block pack, optionally resetting args and ui state to
    * initial values
    * */
-  public async updateBlock(blockId: string, blockPackSpec: BlockPackSpecAny,
-                           resetArgs: boolean = false): Promise<void> {
+  public async updateBlockPack(blockId: string, blockPackSpec: BlockPackSpecAny,
+                               resetArgs: boolean = false): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
     await withProject(this.env.pl, this.rid, mut =>
@@ -116,7 +113,7 @@ export class Project {
   }
 
   /** Deletes a block with all associated data. */
-  public async deleteBlock(blockId: string) {
+  public async deleteBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, mut =>
       mut.deleteBlock(blockId));
     await this.projectTree.refreshState();
@@ -127,7 +124,7 @@ export class Project {
    * Upstream blocks of the specified block will be started automatically if in
    * stale state.
    * */
-  public async runBlock(blockId: string) {
+  public async runBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, mut =>
       mut.renderProduction([blockId], true));
     await this.projectTree.refreshState();
@@ -138,7 +135,7 @@ export class Project {
    * its downstreams will also be destroyed or moved to limbo if already
    * calculated.
    * */
-  public async stopBlock(blockId: string) {
+  public async stopBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, mut =>
       mut.stopProduction(blockId));
     await this.projectTree.refreshState();
@@ -214,8 +211,6 @@ export class Project {
       }), { postprocessValue: v => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState) });
 
       const computables: BlockStateComputables = {
-        argsAndUiState: argsAndUiState.withPreCalculatedValueTree(),
-        outputs: outputs.withPreCalculatedValueTree(),
         fullState: fullState.withPreCalculatedValueTree()
       };
 
@@ -230,21 +225,8 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
-  public getBlockState(blockId: string): Computable<BlockState> {
+  public getBlockState(blockId: string): Computable<BlockStateInternal> {
     return this.getBlockComputables(blockId).fullState;
-  }
-
-  /** Returns a computable, that can be used to retrieve and watch block outputs. */
-  public getBlockOutputs(blockId: string): ComputableStableDefined<BlockOutputsBase> {
-    return this.getBlockComputables(blockId).outputs;
-  }
-
-  /**
-   * Returns a computable, that can be used to retrieve and watch block args and
-   * ui state.
-   * */
-  public getBlockArgsAndUiState(blockId: string): Computable<BlockArgsAndUiState> {
-    return this.getBlockComputables(blockId).argsAndUiState;
   }
 
   /**
@@ -269,8 +251,6 @@ export class Project {
     this.overview.resetState();
     this.blockFrontends.forEach(c => c.resetState());
     this.blockComputables.forEach(c => {
-      c.argsAndUiState.resetState();
-      c.outputs.resetState();
       c.fullState.resetState();
     });
 

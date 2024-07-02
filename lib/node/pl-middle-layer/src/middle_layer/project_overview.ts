@@ -126,7 +126,8 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
           };
         }) || {};
 
-      const blockUpdate = ifNotUndef(bpInfo, info => env.blockUpdateWatcher.get(info.source, ctx));
+      const updatedBlockPack = ifNotUndef(bpInfo, info =>
+        env.blockUpdateWatcher.get(info.source, ctx));
 
       return {
         id, label, renderingMode,
@@ -135,7 +136,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
         upstreams: [...currentGraph.traverseIdsExcludingRoots('upstream', id)],
         downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
         calculationStatus, outputErrors: info.prod?.outputError === true,
-        sections, inputsValid, blockPackSource: bpInfo?.source, blockUpdate
+        sections, inputsValid, currentBlockPack: bpInfo?.source, updatedBlockPack
       };
     });
 

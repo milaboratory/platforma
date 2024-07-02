@@ -176,7 +176,7 @@ test('simple project manipulations test', async () => {
     overviewSnapshot0.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
-      expect(block.blockPackSource).toBeDefined();
+      expect(block.currentBlockPack).toBeDefined();
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
@@ -198,7 +198,7 @@ test('simple project manipulations test', async () => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
-      expect(block.blockPackSource).toBeDefined();
+      expect(block.currentBlockPack).toBeDefined();
     });
     // console.dir(overviewSnapshot1, { depth: 5 });
 
@@ -227,7 +227,7 @@ test('simple project manipulations test', async () => {
 
     await prj.resetBlockArgsAndUiState(block2Id);
 
-    const block2Inputs = await prj.getBlockArgsAndUiState(block2Id).getValue();
+    const block2Inputs = await prj.getBlockState(block2Id).getValue();
     expect(block2Inputs.args).toEqual({ numbers: [] });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
@@ -253,7 +253,7 @@ test('limbo test', async () => {
     overview0.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
-      expect(block.blockPackSource).toBeDefined();
+      expect(block.currentBlockPack).toBeDefined();
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
@@ -267,7 +267,7 @@ test('limbo test', async () => {
     overview1.blocks.forEach(block => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(true);
-      expect(block.blockPackSource).toBeDefined();
+      expect(block.currentBlockPack).toBeDefined();
     });
 
     await prj.runBlock(block2Id);
@@ -281,7 +281,7 @@ test('limbo test', async () => {
       expect(block.sections).toBeDefined();
       expect(block.calculationStatus).toEqual('Done');
       expect(block.canRun).toEqual(false);
-      expect(block.blockPackSource).toBeDefined();
+      expect(block.currentBlockPack).toBeDefined();
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [2, 3] });
@@ -326,7 +326,7 @@ test('block update test', async () => {
     });
 
     const overview0 = await prj.overview.awaitStableValue();
-    expect(overview0.blocks[0].blockUpdate).toBeUndefined();
+    expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
 
     // touch
     await fs.promises.appendFile(path.resolve(devBlockPath, ...DevBlockPackConfig), ' ');
@@ -334,13 +334,13 @@ test('block update test', async () => {
     // await update watcher
     await prj.overview.refreshState();
     const overview1 = await prj.overview.awaitStableValue();
-    expect(overview1.blocks[0].blockUpdate).toBeDefined();
+    expect(overview1.blocks[0].updatedBlockPack).toBeDefined();
 
-    await prj.updateBlock(block1Id, overview1.blocks[0].blockUpdate!);
+    await prj.updateBlockPack(block1Id, overview1.blocks[0].updatedBlockPack!);
 
     const overview2 = await prj.overview.awaitStableValue();
-    expect(overview2.blocks[0].blockPackSource).toStrictEqual(overview1.blocks[0].blockUpdate);
-    expect(overview2.blocks[0].blockUpdate).toBeUndefined();
+    expect(overview2.blocks[0].currentBlockPack).toStrictEqual(overview1.blocks[0].updatedBlockPack);
+    expect(overview2.blocks[0].updatedBlockPack).toBeUndefined();
   });
 });
 

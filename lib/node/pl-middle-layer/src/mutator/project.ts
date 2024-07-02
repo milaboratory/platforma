@@ -31,8 +31,7 @@ import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack
 import { allBlocks, BlockGraph, graphDiff, productionGraph, stagingGraph } from '../model/project_model_util';
 import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
-import { AuthorMarker } from '@milaboratory/sdk-model';
-import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import Denque from 'denque';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
