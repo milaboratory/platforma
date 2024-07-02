@@ -89,11 +89,11 @@ export type BlockStateOverview = {
   canRun: boolean,
 
   /** Information on where the block pack for this block came from */
-  blockPackSource: BlockPackSpec | undefined
+  currentBlockPack: BlockPackSpec | undefined
 
   /**
    * If block pack update is available this field will contain latest specs to
    * perform the update
    * */
-  blockUpdate: BlockPackSpec | undefined
+  updatedBlockPack: BlockPackSpec | undefined
 }
