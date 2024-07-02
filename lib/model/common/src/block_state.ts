@@ -1,23 +1,4 @@
-import { AuthorMarker } from './author_marker';
 import { BlockOutputsBase } from './common_types';
-
-/**
- * @param Args    sets type of block arguments passed to the workflow
- * @param UiState data that stores only UI related state, that is not passed
- *                to the workflow
- */
-export interface BlockArgsAndUiState<Args = unknown, UiState = unknown> {
-  /** Author marker for Args and UI State. Absence of author marker, means that
-   * last modifier of the state provided no author marker. */
-  readonly author?: AuthorMarker;
-
-  /** Block arguments passed to the workflow */
-  readonly args: Args;
-
-  /** UI State persisted in the block state but not passed to the backend
-   * template */
-  readonly ui: UiState;
-}
 
 /**
  * @param Args    sets type of block arguments passed to the workflow
@@ -26,11 +7,17 @@ export interface BlockArgsAndUiState<Args = unknown, UiState = unknown> {
  * @param UiState data that stores only UI related state, that is not passed
  *                to the workflow
  */
-export interface BlockState<
+export type BlockState<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown>
-  extends BlockArgsAndUiState<Args, UiState> {
+  UiState = unknown> = {
+  /** Block arguments passed to the workflow */
+  args: Args;
+
+  /** UI State persisted in the block state but not passed to the backend
+   * template */
+  ui: UiState;
+
   /** Outputs rendered with block config */
-  readonly outputs: Outputs | undefined;
+  outputs: Outputs;
 }
