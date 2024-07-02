@@ -6,6 +6,7 @@ import { ClientDownload } from './download';
 import { ClientLogs } from './logs';
 import { ClientProgress } from './progress';
 import { ClientUpload } from './upload';
+import { ClientLs } from './ls_api';
 
 export const PL_STORAGE_TO_PATH = process.env.PL_STORAGE_TO_PATH
   ? Object.fromEntries(
@@ -71,24 +72,13 @@ export function createUploadBlobClient(client: PlClient, logger: MiLogger) {
   });
 }
 
-// TODO: move this logic to a computable that uploads blobs.
-// export class NoHandleFieldError extends Error {}
-
-// export async function getHandleValue(client: PlClient, blobId: AnyResourceRef): Promise<BasicResourceData> {
-//   return await client.withReadTx(
-//     'GetHandleFieldTSUploadDriver',
-//     async (tx: PlTransaction) => {
-//       const f = await tx.getField({
-//         resourceId: blobId,
-//         fieldName: 'handle',
-//       })
-
-//       if (isNullResourceId(f.value)) {
-//         throw new NoHandleFieldError(
-//           'no handle field: resource ' + blobId,
-//         );
-//       }
-
-//       return await tx.getResourceData(f.value, false);
-//     });
-// }
+export function createLsFilesClient(client: PlClient, logger: MiLogger) {
+  return client.getDriver({
+    name: 'LsFiles',
+    init: (
+      _client: PlClient,
+      grpcTransport: GrpcTransport,
+      _httpDispatcher: Dispatcher
+    ) => new ClientLs(grpcTransport, logger)
+  });
+}

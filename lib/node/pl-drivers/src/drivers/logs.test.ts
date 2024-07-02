@@ -52,15 +52,19 @@ test('should get all logs', async () => {
       'echo 1; sleep 1; echo 2'
     ]);
 
-    const c = Computable.make(ctx => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+    const c = Computable.make((ctx) => {
+      const streamManager = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result')
+        ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable()
-        return
+        ctx.markUnstable();
+        return;
       }
 
       return logs.getLastLogs(streamManager, 100, ctx);
-    })
+    });
 
     while (true) {
       await c.awaitChange();
@@ -95,15 +99,19 @@ test('should get last line with a prefix', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    const c = Computable.make(ctx => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+    const c = Computable.make((ctx) => {
+      const streamManager = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result')
+        ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable()
-        return
+        ctx.markUnstable();
+        return;
       }
 
       return logs.getProgressLog(streamManager, 'PREFIX', ctx);
-    })
+    });
 
     expect(await c.getValue()).toBeUndefined();
 
@@ -145,15 +153,19 @@ test('should get log smart object and get log lines from that', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    const c = Computable.make(ctx => {
-      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
+    const c = Computable.make((ctx) => {
+      const streamManager = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse('result')
+        ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable()
-        return
+        ctx.markUnstable();
+        return;
       }
 
       return logs.getLogHandle(streamManager, ctx);
-    })
+    });
 
     await createRunCommandWithStdoutStream(client, 'bash', [
       '-c',
@@ -174,7 +186,7 @@ test('should get log smart object and get log lines from that', async () => {
       if (response.shouldUpdateHandle) {
         await c.awaitChange();
         handle = await c.getValue();
-        continue
+        continue;
       }
 
       if (response.data.toString().length == 4) {

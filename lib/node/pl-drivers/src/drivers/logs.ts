@@ -1,8 +1,5 @@
 import { Computable, ComputableCtx } from '@milaboratory/computable';
-import {
-  PlTreeEntry,
-  ResourceInfo,
-} from '@milaboratory/pl-tree';
+import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
 import { bigintToResourceId } from '@milaboratory/pl-client-v2';
 import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
@@ -11,15 +8,12 @@ import * as sdk from '@milaboratory/sdk-model';
 export class LogsDriver {
   constructor(
     private readonly logsStreamDriver: LogsStreamDriver,
-    private readonly downloadDriver: DownloadDriver,
+    private readonly downloadDriver: DownloadDriver
   ) {}
 
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
-  getLastLogs(
-    res: PlTreeEntry,
-    lines: number
-  ): Computable<string | undefined>;
+  getLastLogs(res: PlTreeEntry, lines: number): Computable<string | undefined>;
   getLastLogs(
     res: PlTreeEntry,
     lines: number,
@@ -96,7 +90,9 @@ export class LogsDriver {
 
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
-  getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle | undefined>;
+  getLogHandle(
+    res: ResourceInfo | PlTreeEntry
+  ): Computable<sdk.AnyLogHandle | undefined>;
   getLogHandle(
     res: PlTreeEntry,
     ctx: ComputableCtx
@@ -167,7 +163,7 @@ function isBlob(rInfo: ResourceInfo) {
 }
 
 function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {
-  return ctx.accessor(manager).node().traverse('stream')?.resourceInfo
+  return ctx.accessor(manager).node().traverse('stream')?.resourceInfo;
 }
 
 export function handleToData(handle: sdk.AnyLogHandle): ResourceInfo {
@@ -188,7 +184,10 @@ export function handleToData(handle: sdk.AnyLogHandle): ResourceInfo {
   };
 }
 
-export function dataToHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
+export function dataToHandle(
+  live: boolean,
+  rInfo: ResourceInfo
+): sdk.AnyLogHandle {
   if (live) {
     return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as sdk.LiveLogHandle;
   }

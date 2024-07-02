@@ -41,11 +41,7 @@ import {
   RemoteBlobHandleAndSize,
   StreamingApiResponse
 } from '@milaboratory/sdk-model';
-import {
-  dataToHandle,
-  handleToData,
-  isReadyLogHandle
-} from './logs';
+import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
@@ -370,7 +366,7 @@ export class DownloadDriver implements BlobDriver, LogsDriver {
       shouldUpdateHandle: false,
       data: resp.data,
       size: Number(resp.size),
-      newOffset: Number(resp.newOffset),
+      newOffset: Number(resp.newOffset)
     };
   }
 
@@ -397,7 +393,7 @@ export class DownloadDriver implements BlobDriver, LogsDriver {
       shouldUpdateHandle: false,
       data: resp.data,
       size: Number(resp.size),
-      newOffset: Number(resp.newOffset),
+      newOffset: Number(resp.newOffset)
     };
   }
 

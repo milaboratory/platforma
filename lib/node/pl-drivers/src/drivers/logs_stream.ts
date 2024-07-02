@@ -14,11 +14,7 @@ import {
   ResourceInfo,
   treeEntryToResourceInfo
 } from '@milaboratory/pl-tree';
-import {
-  dataToHandle,
-  handleToData,
-  isLiveLogHandle
-} from './logs';
+import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratory/sdk-model';
@@ -126,7 +122,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     if (ctx == undefined)
       return Computable.make((ctx) =>
         this.getProgressLog(res, patternToSearch, ctx)
-                            );
+      );
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
@@ -247,7 +243,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         shouldUpdateHandle: false,
         data: resp.data,
         size: Number(resp.size),
-        newOffset: Number(resp.newOffset),
+        newOffset: Number(resp.newOffset)
       };
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
