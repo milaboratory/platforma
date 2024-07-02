@@ -1,6 +1,12 @@
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
-import { PColumnId, PColumnInfo, PColumnSpec } from '@milaboratory/sdk-model';
+import {
+  PColumnId,
+  PColumnInfo,
+  PColumnSpec,
+  UniqueValuesRequest,
+  UniqueValuesResponse
+} from '@milaboratory/sdk-model';
 import { CreateTableRequest } from './create_table';
 import { PTable } from './table';
 
@@ -27,4 +33,7 @@ export interface PFrameReadAPI {
 
   /** Calculates data for the table and returns an object to access it */
   createTable(request: CreateTableRequest): Promise<PTable>;
+
+  /** Calculate set of unique values for a specific axis for the filtered set of records */
+  getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse>;
 }
