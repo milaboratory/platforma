@@ -72,6 +72,8 @@ test('simple tree kv test', async () => {
   const c1 = Computable.make(c =>
     c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
 
+  expect(JSON.stringify(tree.entry())).toMatch(/^"\[ENTRY:/);
+
   expect(c1.isChanged()).toBeTruthy();
   await expect(async () => await c1.getValue())
     .rejects

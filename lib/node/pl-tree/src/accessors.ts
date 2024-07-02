@@ -43,6 +43,14 @@ export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
       this.accessorData.treeProvider(), this.rid,
       { ctx, guard });
   }
+
+  public toJSON(): string {
+    return this.toString();
+  }
+
+  public toString(): string {
+    return `[ENTRY:${resourceIdToString(this.rid)}]`;
+  }
 }
 
 function getResourceFromTree(accessorData: TreeAccessorData,
@@ -139,7 +147,7 @@ export class PlTreeNodeAccessor {
   ) {
   }
 
-  public get id() {
+  public get id(): ResourceId {
     this.instanceData.guard();
     return this.resource.id;
   }
