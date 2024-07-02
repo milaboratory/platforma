@@ -1,4 +1,5 @@
 export * from './model';
+export * from './block_state_patch';
 export * from './actions';
 export * from './actions_kinds';
 export * from './type_engine';
