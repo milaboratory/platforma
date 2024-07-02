@@ -454,7 +454,7 @@ test('should create download-file block, render it and gets outputs from its con
   });
 });
 
-test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
+test('should create upload-file block, render it and upload a file to pl server', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -487,15 +487,20 @@ test.skip('should create upload-file block, render it and upload a file to pl se
     const block3StateComputable = prj.getBlockState(block3Id);
     await block3StateComputable.refreshState();
 
-    const block3StableState = await block3StateComputable.getFullValue();
+    while (true) {
+      const state = await block3StateComputable.getFullValue();
 
-    console.dir(block3StableState, { depth: 5 });
+      console.dir(state, { depth: 5 });
 
-    expect(block3StableState.type).toEqual('ok');
-    expect((block3StableState.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
-    expect((block3StableState.value.outputs!['handle'] as any).value.done).toBeTruthy();
-    expect((block3StableState.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
-    expect((block3StableState.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
+      if (state.stable && (state.value.outputs!['handle'] as any).value != undefined) {
+        expect(state.type).toEqual('ok');
+        expect((state.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
+        expect((state.value.outputs!['handle'] as any).value.done).toBeTruthy();
+        expect((state.value.outputs!['handle'] as any).value.status.bytesTotal).toEqual(7);
+        expect((state.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
+        return;
+      }
+    }
   });
 });
 
