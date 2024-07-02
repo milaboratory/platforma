@@ -33,7 +33,7 @@ export type Shift<A extends ReadonlyArray<unknown>> = A extends [infer V, ...(in
 
 export type AsyncReturnType<T extends AnyFunction> = Promise<Awaited<ReturnType<T>>>;
 
-export type AsyncReturnTypeOptional<T extends AnyFunction> = Promise<Awaited<ReturnType<T>> | void>;
+export type AsyncReturnTypeOptional<T extends AnyFunction> = Promise<Awaited<ReturnType<T>> | undefined>;
 
 export type NonEmpty<T> = T extends null | undefined ? never : T;
 
