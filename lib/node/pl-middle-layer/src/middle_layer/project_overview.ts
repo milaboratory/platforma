@@ -152,15 +152,12 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
             cantRun.add(b.id);
           if (b.stale)
             staleBlocks.add(b.id);
-          return {
-            ...b,
-            canRun:
-              b.calculationStatus !== 'Done'
-              && Boolean(b.inputsValid) && !b.missingReference
-              && (b.upstreams.findIndex(u => cantRun.has(u)) === -1),
-            stale:
-              (b.stale || (b.upstreams.findIndex(u => staleBlocks.has(u)) !== -1))
-          };
+          const stale = (b.stale ||
+            (b.upstreams.findIndex(u => staleBlocks.has(u)) !== -1));
+          const canRun = stale
+            && Boolean(b.inputsValid) && !b.missingReference
+            && (b.upstreams.findIndex(u => cantRun.has(u)) === -1);
+          return { ...b, canRun, stale };
         })
       };
     }

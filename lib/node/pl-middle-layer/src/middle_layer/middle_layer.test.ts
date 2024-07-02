@@ -8,8 +8,7 @@ import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
-import { DevBlockPackConfig, DevBlockPackTemplate } from '../mutator/block-pack/block_pack';
-import * as tp from 'node:timers/promises';
+import { DevBlockPackConfig } from '../mutator/block-pack/block_pack';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
