@@ -7,13 +7,14 @@ import { getPlatformaInstance, isInUI } from './platforma_instance';
 import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
-  $args: Args,
-  $ui: UiState,
+  readonly $blockId: string,
+  readonly $args: Args,
+  readonly $ui: UiState,
 }
 
 export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & {
-  $prod: PlResourceEntry,
-  $staging: PlResourceEntry,
+  readonly $prod: PlResourceEntry,
+  readonly $staging: PlResourceEntry,
 }
 
 type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> = ConfigResult<Cfg, StdCtx<Args, UiState>>

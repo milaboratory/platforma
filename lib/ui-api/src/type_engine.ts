@@ -41,10 +41,10 @@ export type ExtractAction<Cfg extends TypedConfig> = Cfg[typeof __config_action_
 export type POCExtractAction<T extends PrimitiveOrConfig> = ExtractAction<PrimitiveToCfg<T>>
 
 export type InferVarTypeSafe<Ctx, V> = V extends string
-    ? (Ctx extends { [key in V]: infer T }
-        ? T
-        : undefined)
-    : unknown;
+  ? (Ctx extends { [key in V]: infer T }
+    ? T
+    : undefined)
+  : unknown;
 
 export type ConfigResult<Cfg extends TypedConfig, Ctx> = ActionResult<ExtractAction<Cfg>, Ctx>
 
@@ -52,3 +52,5 @@ declare const plResourceEntry: unique symbol;
 
 /** Marks that a certain variable in context is a resource entry */
 export type PlResourceEntry = typeof plResourceEntry;
+
+export type OptionalPlResourceEntry = PlResourceEntry | undefined;
