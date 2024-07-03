@@ -1,10 +1,9 @@
 import {
   Args, BlockConfig,
-  ConfigResult,
-  getJsonField, getResourceField, getResourceValueAsJson,
+  getJsonField, getResourceField, getResourceValueAsJson, InferOutputType,
   isolate, It, MainOutputs,
   makeObject,
-  mapArrayValues, PlatformaConfiguration, PlResourceEntry
+  mapArrayValues, PlatformaConfiguration, PlResourceEntry, TypedConfig
 } from '@milaboratory/sdk-ui';
 import { computableFromCfg } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
@@ -28,12 +27,12 @@ test('local cfg test (no pl)', async () => {
 
   const ctx = { $args: args };
 
-  const computable1 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1']);
-  const out1 = (await computable1.getValue()) as ConfigResult<typeof cfg.outputs['out1'], typeof ctx>;
+  const computable1 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig);
+  const out1 = (await computable1.getValue()) as InferOutputType<typeof cfg.outputs['out1'], typeof args, unknown>;
   expect(out1).toEqual('hi');
 
-  const computable2 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2']);
-  const out2 = (await computable2.getValue()) as ConfigResult<typeof cfg.outputs['out2'], typeof ctx>;
+  const computable2 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2'] as TypedConfig);
+  const out2 = (await computable2.getValue());
   expect(out2).toStrictEqual([{ theField: 'a' }, { theField: 'b' }, { theField: 'c' }]);
 });
 
@@ -62,8 +61,8 @@ test('cfg test with pl, simple', async () => {
       $prod: tree.entry() as any as PlResourceEntry
     };
 
-    const computable: Computable<ConfigResult<typeof cfg.outputs['out1'], typeof ctx> | undefined> =
-      computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1']) as any;
+    const computable: Computable<unknown> =
+      computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig) as any;
 
     expect(await computable.getValue()).toBeUndefined();
 

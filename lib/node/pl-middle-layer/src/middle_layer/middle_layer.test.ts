@@ -52,7 +52,7 @@ async function getStandardBlockSpecs() {
   };
 }
 
-async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
+export async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -75,7 +75,7 @@ async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
   });
 }
 
-async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   while (true) {

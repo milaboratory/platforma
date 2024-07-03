@@ -8,9 +8,7 @@ import {
 } from './operation';
 import Denque from 'denque';
 import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
-import {
-  Computable, ComputableCtx, ComputableRenderingOps
-} from '@milaboratory/computable';
+import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratory/computable';
 import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';

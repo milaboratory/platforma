@@ -6,8 +6,8 @@ import { projectFieldName, ProjectStructure, ProjectStructureKey } from '../mode
 import { allBlocks } from '../model/project_model_util';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockPackInfo } from '../model/block_pack';
-import { hasActiveCfgComponents, ifNotUndef } from '../cfg_render/util';
-import { normalizeBlockConfig } from '@milaboratory/sdk-ui';
+import { hasActiveCfgComponents } from '../cfg_render/util';
+import { Cfg, isFunctionHandle, normalizeBlockConfig } from '@milaboratory/sdk-ui';
 import { constructBlockContext } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 
@@ -32,7 +32,9 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
       const blockConf = normalizeBlockConfig(bpInfo.config);
       const activeOutputConfigs = Object.entries(blockConf.outputs)
         .map(([, cfg]) => cfg)
-        .filter(cfg => hasActiveCfgComponents(cfg));
+        .filter(cfg =>
+          !isFunctionHandle(cfg) && hasActiveCfgComponents(cfg))
+        .map(cfg => cfg as Cfg);
 
       if (activeOutputConfigs.length === 0)
         continue;

@@ -24,6 +24,7 @@ import { BlobDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
+import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -33,6 +34,7 @@ export interface MiddleLayerEnvironment {
   readonly frontendDownloadDriver: DownloadUrlDriver;
   readonly drivers: MiddleLayerInternalDrivers;
   readonly blockUpdateWatcher: BlockUpdateWatcher;
+  readonly quickJs: QuickJSWASMModule;
 }
 
 export interface MiddleLayerDrivers {
@@ -248,7 +250,8 @@ export class MiddleLayer {
       blockUpdateWatcher: new BlockUpdateWatcher({
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: pl.httpDispatcher
-      })
+      }),
+      quickJs: await getQuickJS()
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
