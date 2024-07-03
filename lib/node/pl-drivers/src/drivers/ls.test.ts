@@ -1,4 +1,3 @@
-import * as sdk from '@milaboratory/sdk-model';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
@@ -13,15 +12,13 @@ test('toFileHandle should ok when encode data for UploadBlob', () => {
   const handle = toFileHandle({
     storageName: 'library',
     signer,
-    remote: true,
+    remote: false,
     item: {
       name: 'file.txt',
       size: 20n,
       isDir: false,
       fullName: 'C:\\programFiles\\file.txt',
-      directory: 'programFiles',
-      lastModified: { seconds: 150n, nanos: 260 },
-      version: '1'
+      lastModified: { seconds: 150n, nanos: 260 }
     }
   });
   const got = fromFileHandle(handle);
@@ -37,21 +34,28 @@ test('should ok when get all storages from ls driver', async () => {
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(lsClient, client, signer);
+    const driver = new LsDriver(logger, lsClient, client, signer, {
+      local: '/'
+    });
 
     const got = await driver.getStorageList();
 
     expect(got.length).toBeGreaterThanOrEqual(1);
     expect(got.find((se) => se.name == 'library')?.handle).toContain('library');
+    expect(got.find((se) => se.name == 'local')?.handle).toContain('/');
+
+    console.log('got all storage entries: ', got);
   });
 });
 
-test('should ok when list files from ls driver', async () => {
+test('should ok when list files from remote storage in ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(lsClient, client, signer);
+    const driver = new LsDriver(logger, lsClient, client, signer, {
+      local: '/'
+    });
 
     const storages = await driver.getStorageList();
     const library = storages.find((se) => se.name == 'library')!.handle;
@@ -77,6 +81,23 @@ test('should ok when list files from ls driver', async () => {
     expect(f[0].type).toEqual('file');
     expect(f[0].fullPath).toEqual('/ls_dir_structure_test/abc/42.txt');
     expect(f[0].name).toEqual('42.txt');
-    expect((f[0] as any).handle).toContain('upload://upload/');
+    expect((f[0] as any).handle).toContain('index://index/');
+  });
+});
+
+test('should ok when list files from local storage in ls driver', async () => {
+  const signer = new HmacSha256Signer('abc');
+  const logger = new ConsoleLoggerAdapter();
+  await TestHelpers.withTempRoot(async (client) => {
+    const lsClient = createLsFilesClient(client, logger);
+    const driver = new LsDriver(logger, lsClient, client, signer, {
+      local: '/'
+    });
+
+    const storages = await driver.getStorageList();
+    const local = storages.find((se) => se.name == 'local')!.handle;
+
+    const topLevelDir = await driver.listFiles(local, '');
+    expect(topLevelDir.length).toBeGreaterThan(1);
   });
 });

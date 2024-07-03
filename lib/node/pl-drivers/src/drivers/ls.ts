@@ -6,14 +6,13 @@ import {
   ResourceId,
   ResourceType
 } from '@milaboratory/pl-client-v2';
-import { Signer } from '@milaboratory/ts-helpers';
+import { MiLogger, Signer } from '@milaboratory/ts-helpers';
 import * as sdk from '@milaboratory/sdk-model';
 import { ClientLs } from '../clients/ls_api';
-import { ResourceInfo } from '@milaboratory/pl-tree';
-import {
-  LsAPI_List_Response,
-  LsAPI_ListItem
-} from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
+import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
+import type { Dirent, Stats } from 'node:fs';
+import { Timestamp } from '../proto/google/protobuf/timestamp';
 
 //
 // Driver:
@@ -23,13 +22,18 @@ export class LsDriver implements sdk.LsDriver {
   private storageIdToResourceId?: Record<string, ResourceId>;
 
   constructor(
+    private readonly logger: MiLogger,
     private readonly clientLs: ClientLs,
     private readonly client: PlClient,
-    private readonly signer: Signer
+    private readonly signer: Signer,
+    private readonly localStorageToPath: Record<string, string>
   ) {}
 
   async getStorageList(): Promise<sdk.StorageEntry[]> {
-    return toStorageEntry(await this.getOrSetAvailableStorageIds());
+    return toStorageEntry(
+      this.localStorageToPath,
+      await this.getOrSetAvailableStorageIds()
+    );
   }
 
   async listFiles(
@@ -37,12 +41,14 @@ export class LsDriver implements sdk.LsDriver {
     path: string
   ): Promise<sdk.LsEntry[]> {
     const storage = fromStorageHandle(storageHandle);
-    const rInfo: ResourceInfo = {
-      id: storage.id,
-      type: storageType(storage.name)
-    };
 
-    const list = await this.clientLs.list(rInfo, path);
+    let list: ListResponse;
+
+    if (storage.remote) {
+      list = await this.clientLs.list(storage, path);
+    } else {
+      list = await this.getLocalFiles(this.logger, storage.path, path);
+    }
 
     return toLsEntries({
       storageName: storage.name,
@@ -58,6 +64,47 @@ export class LsDriver implements sdk.LsDriver {
 
     return this.storageIdToResourceId;
   }
+
+  private async getLocalFiles(
+    logger: MiLogger,
+    storagePath: string,
+    pathInStorage: string
+  ): Promise<ListResponse> {
+    const fullPath = path.join(storagePath, pathInStorage);
+    const files = await fs.opendir(fullPath);
+
+    const resp: ListResponse = {
+      items: [],
+      delimiter: path.sep
+    };
+
+    for await (const dirent of files) {
+      const filePath = path.join(dirent.path);
+      const stat = await fs.stat(filePath);
+
+      if (dirent.isFile() || dirent.isDirectory()) {
+        resp.items.push(toListItem(filePath, dirent, stat));
+        continue;
+      }
+
+      logger.warn('tried to get non-dir and non-file ${dirent}, skip it');
+    }
+
+    return resp;
+  }
+}
+
+function toListItem(filePath: string, dirent: Dirent, stat: Stats): ListItem {
+  return {
+    isDir: dirent.isDirectory(),
+    name: dirent.name,
+    fullName: filePath,
+    lastModified: {
+      seconds: BigInt(Math.floor(stat.mtimeMs / 1000)),
+      nanos: 0
+    },
+    size: BigInt(stat.size)
+  };
 }
 
 function storageType(name: string): ResourceType {
@@ -89,56 +136,56 @@ function providerToStorageIds(provider: ResourceData) {
 
 function toLsEntries(info: {
   storageName: string;
-  list: LsAPI_List_Response;
+  list: ListResponse;
   signer: Signer;
   remote: boolean;
 }): sdk.LsEntry[] {
-  return info.list.items.map((e) => {
-    if (e.isDir)
+  return info.list.items.map((item) => {
+    if (item.isDir)
       return {
         type: 'dir',
-        name: e.name,
-        fullPath: e.fullName
+        name: item.name,
+        fullPath: item.fullName
       };
 
     return {
       type: 'file',
-      name: e.name,
-      fullPath: e.fullName,
-      handle: toFileHandle({ item: e, ...info })
+      name: item.name,
+      fullPath: item.fullName,
+      handle: toFileHandle({ item: item, ...info })
     };
   });
 }
 
 export function toFileHandle(info: {
   storageName: string;
-  item: LsAPI_ListItem;
+  item: ListItem;
   signer: Signer;
   remote: boolean;
 }): sdk.ImportFileHandle {
   if (info.remote) {
-    // UploadBlob data
+    // ImportInternal data
     const data = encodeURIComponent(
       JSON.stringify({
-        modificationTimeUnix: String(info.item.lastModified?.seconds),
-        localPath: info.item.fullName,
-        pathSignature: info.signer.sign(info.item.fullName),
-        sizeBytes: String(info.item.size)
+        storageId: info.storageName,
+        path: info.item.fullName
       })
     );
 
-    return `upload://upload/${data}`;
+    return `index://index/${data}`;
   }
 
-  // ImportInternal data
+  // UploadBlob data
   const data = encodeURIComponent(
     JSON.stringify({
-      storageId: info.storageName,
-      path: info.item.fullName
+      modificationTimeUnix: String(info.item.lastModified?.seconds),
+      localPath: info.item.fullName,
+      pathSignature: info.signer.sign(info.item.fullName),
+      sizeBytes: String(info.item.size)
     })
   );
 
-  return `index://index/${data}`;
+  return `upload://upload/${data}`;
 }
 
 export function fromFileHandle(handle: sdk.ImportFileHandle) {
@@ -150,17 +197,31 @@ export function fromFileHandle(handle: sdk.ImportFileHandle) {
 // Storage Handles:
 //
 
-function toStorageEntry(ids: Record<string, ResourceId>) {
-  return Object.entries(ids).map(([name, rId]) => {
+function toStorageEntry(
+  locals: Record<string, string>,
+  remotes: Record<string, ResourceId>
+): sdk.StorageEntry[] {
+  const localEntries: sdk.StorageEntry[] = Object.entries(locals).map(
+    ([name, path]) => {
+      return {
+        name: name,
+        handle: toLocalHandle(name, path)
+      };
+    }
+  );
+
+  const remoteEntries = Object.entries(remotes).map(([name, rId]) => {
     return {
       name: name,
-      handle: toStorageHandle(name, rId, true)
+      handle: toRemoteHandle(name, rId)
     };
   });
+
+  return localEntries.concat(remoteEntries);
 }
 
 const remoteHandleRegex = /^remote:\/\/(?<name>.*)\/(?<resourceId>.*)$/;
-const localHandleRegex = /^local:\/\/(?<name>.*)\/(?<resourceId>.*)$/;
+const localHandleRegex = /^local:\/\/(?<name>.*)\/(?<path>.*)$/;
 
 function isRemoteStorageHandle(
   handle: sdk.StorageHandle
@@ -168,34 +229,64 @@ function isRemoteStorageHandle(
   return remoteHandleRegex.test(handle);
 }
 
-function toStorageHandle(
+function toRemoteHandle(
   name: string,
-  rId: ResourceId,
-  remote: boolean
-): sdk.StorageHandle {
-  if (remote) return `remote://${name}/${BigInt(rId)}`;
-  return `local://${name}/${BigInt(rId)}`;
+  rId: ResourceId
+): sdk.StorageHandleRemote {
+  return `remote://${name}/${BigInt(rId)}`;
 }
 
-function fromStorageHandle(handle: sdk.StorageHandle) {
-  let parsed: RegExpMatchArray | null;
-  let remote: boolean | null;
+function toLocalHandle(name: string, path: string): sdk.StorageHandleLocal {
+  return `local://${name}/${encodeURIComponent(path)}`;
+}
 
+function fromStorageHandle(handle: sdk.StorageHandle):
+  | {
+      remote: true;
+      name: string;
+      id: ResourceId;
+      type: ResourceType;
+    }
+  | {
+      remote: false;
+      name: string;
+      path: string;
+    } {
   if (isRemoteStorageHandle(handle)) {
-    parsed = handle.match(remoteHandleRegex);
-    remote = true;
-  } else {
-    parsed = handle.match(localHandleRegex);
-    remote = false;
+    const parsed = handle.match(remoteHandleRegex);
+    if (parsed == null)
+      throw new Error(`Remote list handle wasn't parsed: ${handle}`);
+    const { name, resourceId } = parsed.groups!;
+
+    return {
+      id: bigintToResourceId(BigInt(resourceId)),
+      type: storageType(name),
+      name,
+      remote: true
+    };
   }
 
-  if (parsed == null) throw new Error(`Ls handle wasn't parsed: ${handle}`);
-
-  const { name, resourceId } = parsed.groups!;
+  const parsed = handle.match(localHandleRegex);
+  if (parsed == null)
+    throw new Error(`Local list handle wasn't parsed: ${handle}`);
+  const { name, path } = parsed.groups!;
 
   return {
-    id: bigintToResourceId(BigInt(resourceId)),
+    path: decodeURIComponent(path),
     name,
-    remote
+    remote: false
   };
+}
+
+interface ListResponse {
+  items: ListItem[];
+  delimiter: string;
+}
+
+interface ListItem {
+  isDir: boolean;
+  name: string;
+  fullName: string;
+  lastModified?: Timestamp;
+  size: bigint;
 }
