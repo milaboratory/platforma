@@ -6,13 +6,15 @@ import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import {
   createDownloadClient,
   createLogsClient,
+  createLsFilesClient,
   createUploadBlobClient,
   createUploadProgressClient,
   DownloadDriver,
   DownloadUrlDriver,
   UploadDriver,
   LogsStreamDriver,
-  LogsDriver
+  LogsDriver,
+  LsDriver
 } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
@@ -20,7 +22,7 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
 import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
-import { BlobDriver } from '@milaboratory/sdk-model';
+import { BlobDriver, LsDriver as SdkLsDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
@@ -37,6 +39,7 @@ export interface MiddleLayerEnvironment {
 
 export interface MiddleLayerDrivers {
   readonly blob: BlobDriver;
+  readonly listFiles: SdkLsDriver,
 }
 
 /**
@@ -179,6 +182,8 @@ export class MiddleLayer {
   /** Initialize middle layer */
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
+    checkStorageNamesDoNotIntersect(ops);
+
     const signer = new HmacSha256Signer(ops.localSecret);
     const projects = await pl.withWriteTx('MLInitialization', async tx => {
       const projectsField = field(tx.clientRoot, ProjectsField);
@@ -201,10 +206,13 @@ export class MiddleLayer {
     const logger = new ConsoleLoggerAdapter();
     const bpPreparer = new BlockPackPreparer(signer);
 
-    const downloadClient = createDownloadClient(logger, pl, ops.localStorageIdsToRoot);
+    const downloadClient = createDownloadClient(
+      logger, pl, ops.platformLocalStorageNameToPath,
+    );
     const logsClient = createLogsClient(pl, logger);
     const uploadBlobClient = createUploadBlobClient(pl, logger);
     const uploadProgressClient = createUploadProgressClient(pl, logger);
+    const lsClient = createLsFilesClient(pl, logger);
 
     const frontendDownloadDriver = new DownloadUrlDriver(
       logger, downloadClient,
@@ -235,6 +243,9 @@ export class MiddleLayer {
       }
     );
     const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
+    const lsDriver = new LsDriver(
+      logger, lsClient, pl, signer, ops.localStorageNameToPath,
+    );
 
     const env: MiddleLayerEnvironment = {
       pl, signer,
@@ -255,9 +266,20 @@ export class MiddleLayer {
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
     return new MiddleLayer(
-      env, { blob: downloadDriver },
+      env, {
+      blob: downloadDriver,
+      listFiles: lsDriver,
+    },
       signer,
       projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }
+}
+
+function checkStorageNamesDoNotIntersect(ops: MiddleLayerOps) {
+  const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
+  const intersected = Object.keys(ops.localStorageNameToPath)
+    .find(name => platformStorages.includes(name));
+  if (intersected)
+    throw new Error(`Platform local storages include one or more local storages: ${intersected}`);
 }
 
