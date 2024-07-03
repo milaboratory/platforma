@@ -16,14 +16,14 @@ export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & 
   readonly $staging: PlResourceEntry,
 }
 
-type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> = ConfigResult<Cfg, StdCtx<Args, UiState>>
+export type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> = ConfigResult<Cfg, StdCtx<Args, UiState>>
 
 type SectionsExpectedType = readonly BlockSection[];
 
 type SectionsCfgChecked<Cfg extends TypedConfig, Args, UiState> =
   Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends SectionsExpectedType ? true : false>
 
-type SectionsRFChecked<RF extends RenderFunction> =
+type SectionsRFChecked<RF extends Function> =
   Checked<RF, InferRenderFunctionReturn<RF> extends SectionsExpectedType ? true : false>
 
 type InputsValidExpectedType = boolean;
@@ -31,7 +31,7 @@ type InputsValidExpectedType = boolean;
 type InputsValidCfgChecked<Cfg extends TypedConfig, Args, UiState> =
   Checked<Cfg, ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>> extends InputsValidExpectedType ? true : false>
 
-type InputsValidRFChecked<RF extends RenderFunction> =
+type InputsValidRFChecked<RF extends Function> =
   Checked<RF, InferRenderFunctionReturn<RF> extends InputsValidExpectedType ? true : false>
 
 export type Code = {
@@ -47,13 +47,17 @@ export type FunctionHandle<Return = unknown> = string & { [__function_handle__]:
 
 export type ExtractFunctionHandleReturn<Func extends FunctionHandle> = Func[typeof __function_handle__]
 
-export type ConfigOrFunctionHandle = TypedConfig | FunctionHandle;
+export type TypedConfigOrFunctionHandle = TypedConfig | FunctionHandle;
+
+export function isFunctionHandle(cfgOrFh: TypedConfigOrFunctionHandle): cfgOrFh is FunctionHandle {
+  return typeof cfgOrFh === 'string';
+}
 
 /** This structure is rendered from the configuration, type can accommodate any
  * version of config structure. */
 export type BlockConfigUniversal<
   Args = unknown,
-  Outputs extends Record<string, ConfigOrFunctionHandle> = Record<string, ConfigOrFunctionHandle>> = {
+  Outputs extends Record<string, TypedConfigOrFunctionHandle> = Record<string, TypedConfigOrFunctionHandle>> = {
 
   /** SDK version used by the block */
   readonly sdkVersion: string,
@@ -65,7 +69,7 @@ export type BlockConfigUniversal<
   readonly initialArgs: Args,
 
   /** @deprecated */
-  readonly canRun?: ConfigOrFunctionHandle,
+  readonly canRun?: TypedConfigOrFunctionHandle,
 
   /**
    * Config to determine whether the block can be executed with current
@@ -73,10 +77,10 @@ export type BlockConfigUniversal<
    *
    * Optional to support earlier SDK version configs.
    * */
-  readonly inputsValid?: ConfigOrFunctionHandle,
+  readonly inputsValid?: TypedConfigOrFunctionHandle,
 
   /** Configuration to derive list of section for the left overview panel */
-  readonly sections: ConfigOrFunctionHandle,
+  readonly sections: TypedConfigOrFunctionHandle,
 
   /** Configuration for the output cells */
   readonly outputs: Outputs,
@@ -88,12 +92,12 @@ export type BlockConfigUniversal<
 /** This structure is rendered from the configuration */
 export type BlockConfig<
   Args = unknown,
-  Outputs extends Record<string, ConfigOrFunctionHandle> = Record<string, ConfigOrFunctionHandle>> =
+  Outputs extends Record<string, TypedConfigOrFunctionHandle> = Record<string, TypedConfigOrFunctionHandle>> =
   Required<Omit<BlockConfigUniversal<Args, Outputs>, 'canRun' | 'code'>>
   & Pick<BlockConfigUniversal<Args, Outputs>, 'code'>
 
 /** Takes universal config, and converts it into latest structure */
-export function normalizeBlockConfig<Args, Outputs extends Record<string, ConfigOrFunctionHandle>>(
+export function normalizeBlockConfig<Args, Outputs extends Record<string, TypedConfigOrFunctionHandle>>(
   cfg: BlockConfigUniversal<Args, Outputs>
 ): BlockConfig<Args, Outputs> {
   if (cfg.inputsValid !== undefined)
@@ -110,12 +114,12 @@ export function normalizeBlockConfig<Args, Outputs extends Record<string, Config
 /** Main entry point that each block should use in it's "config" module. Don't forget
  * to call {@link done()} at the end of configuration. Value returned by this builder must be
  * exported as constant with name "platforma" from the "config" module. */
-export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, ConfigOrFunctionHandle>, UiState> {
+export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>, UiState> {
   private constructor(private readonly _renderingMode: BlockRenderingMode,
                       private readonly _initialArgs: Args | undefined,
                       private readonly _outputs: OutputsCfg,
-                      private readonly _inputsValid: ConfigOrFunctionHandle,
-                      private readonly _sections: ConfigOrFunctionHandle) {
+                      private readonly _inputsValid: TypedConfigOrFunctionHandle,
+                      private readonly _sections: TypedConfigOrFunctionHandle) {
   }
 
   /** Initiates configuration builder */
@@ -133,15 +137,15 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Conf
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key, cfg: Cfg
   ): PlatformaConfiguration<Args, OutputsCfg & { [K in Key]: Cfg }, UiState>
-  public output<const Key extends string, const RF extends RenderFunction>(
-    key: Key, cfg: RF
+  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key, rf: RF
   ): PlatformaConfiguration<Args, OutputsCfg & { [K in Key]: FunctionHandle<InferRenderFunctionReturn<RF>> }, UiState>
   public output(
-    key: string, cfgOrRf: ConfigOrFunctionHandle
+    key: string, cfgOrRf: TypedConfig | Function
   ): PlatformaConfiguration<Args, OutputsCfg, UiState> {
     if (typeof cfgOrRf === 'function') {
       const functionHandle = `output#${key}` as FunctionHandle;
-      tryRegisterCallback(functionHandle, cfgOrRf);
+      tryRegisterCallback(functionHandle, () => cfgOrRf(new RenderCtx()));
       return new PlatformaConfiguration(this._renderingMode,
         this._initialArgs, {
           ...this._outputs,
@@ -162,10 +166,10 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Conf
 
   /** Sets custom configuration predicate on the block args at which block can be executed */
   public inputsValid<Cfg extends TypedConfig>(cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState>
-  public inputsValid<RF extends RenderFunction>(rf: RF & InputsValidRFChecked<RF>): PlatformaConfiguration<Args, OutputsCfg, UiState>
-  public inputsValid(cfgOrRf: TypedConfig | RenderFunction): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  public inputsValid<RF extends RenderFunction<Args, UiState>>(rf: RF & InputsValidRFChecked<RF>): PlatformaConfiguration<Args, OutputsCfg, UiState>
+  public inputsValid(cfgOrRf: TypedConfig | Function): PlatformaConfiguration<Args, OutputsCfg, UiState> {
     if (typeof cfgOrRf === 'function') {
-      tryRegisterCallback('inputsValid', cfgOrRf);
+      tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, 'inputsValid' as FunctionHandle, this._sections);
     } else
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, cfgOrRf, this._sections);
@@ -173,10 +177,10 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Conf
 
   /** Sets the config to generate list of section in the left block overviews panel */
   public sections<Cfg extends TypedConfig>(cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>): PlatformaConfiguration<Args, OutputsCfg, UiState>
-  public sections<RF extends RenderFunction>(rf: RF & SectionsRFChecked<RF>): PlatformaConfiguration<Args, OutputsCfg, UiState>
-  public sections(cfgOrRf: TypedConfig | RenderFunction): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  public sections<RF extends RenderFunction<Args, UiState>>(rf: RF & SectionsRFChecked<RF>): PlatformaConfiguration<Args, OutputsCfg, UiState>
+  public sections(cfgOrRf: TypedConfig | Function): PlatformaConfiguration<Args, OutputsCfg, UiState> {
     if (typeof cfgOrRf === 'function') {
-      tryRegisterCallback('sections', cfgOrRf);
+      tryRegisterCallback('sections', () => cfgOrRf(new RenderCtx()));
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, this._inputsValid, 'sections' as FunctionHandle);
     } else
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(this._renderingMode, this._initialArgs, this._outputs, this._inputsValid, cfgOrRf);
@@ -212,12 +216,13 @@ export class PlatformaConfiguration<Args, OutputsCfg extends Record<string, Conf
   }
 }
 
-type InferOutputsFromConfigs<Args, OutputsCfg extends Record<string, ConfigOrFunctionHandle>, UiState> =
-  {
-    [Key in keyof OutputsCfg]: ValueOrErrors<
-    OutputsCfg[Key] extends TypedConfig
-      ? ResolveCfgType<OutputsCfg[Key], Args, UiState>
-      : OutputsCfg[Key] extends FunctionHandle
-        ? ExtractFunctionHandleReturn<OutputsCfg[Key]>
-        : never>
-  }
+export type InferOutputType<CfgOrFH, Args, UiState> =
+  CfgOrFH extends TypedConfig
+    ? ResolveCfgType<CfgOrFH, Args, UiState>
+    : CfgOrFH extends FunctionHandle
+      ? ExtractFunctionHandleReturn<CfgOrFH>
+      : never
+
+type InferOutputsFromConfigs<Args, OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>, UiState> = {
+  [Key in keyof OutputsCfg]: ValueOrErrors<InferOutputType<OutputsCfg[Key], Args, UiState>>
+}

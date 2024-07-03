@@ -1,13 +1,14 @@
 import { Platforma, PlatformaFactory } from './platforma';
 import { BlockConfig } from './builder';
+import { GlobalCfgRenderCtx } from './render/global_ctx';
 
 declare global {
   /** Global factory method returning platforma instance */
   const getPlatforma: PlatformaFactory;
   const platforma: Platforma;
 
-  /** Global callback registry used in config rendering */
-  const callbackRegistry: Record<string, Function>;
+  /** Global rendering context, present only in rendering environment */
+  const cfgRenderCtx: GlobalCfgRenderCtx;
 }
 
 /** Utility code helping to identify whether the code is running in actual UI environment */
@@ -25,12 +26,26 @@ export function getPlatformaInstance(config: BlockConfig): Platforma {
     throw new Error('Can\'t get platforma instance.');
 }
 
+export function tryGetCfgRenderCtx(): GlobalCfgRenderCtx | undefined {
+  if (typeof cfgRenderCtx !== 'undefined')
+    return cfgRenderCtx;
+  else
+    return undefined;
+}
+
+export function getCfgRenderCtx(): GlobalCfgRenderCtx {
+  if (typeof cfgRenderCtx !== 'undefined')
+    return cfgRenderCtx;
+  else
+    throw new Error('Not in config rendering context');
+}
+
 export function tryRegisterCallback(key: string, callback: (...args: any[]) => any): boolean {
-  if (typeof callbackRegistry !== 'undefined') {
-    if (key in callbackRegistry)
-      throw new Error(`Callback with key ${key} already registered.`);
-    callbackRegistry[key] = callback;
-    return true;
-  } else
+  const ctx = tryGetCfgRenderCtx();
+  if (ctx === undefined)
     return false;
+  if (key in ctx.callbackRegistry)
+    throw new Error(`Callback with key ${key} already registered.`);
+  ctx.callbackRegistry[key] = callback;
+  return true;
 }
