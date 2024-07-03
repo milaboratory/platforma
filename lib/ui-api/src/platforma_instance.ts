@@ -5,6 +5,9 @@ declare global {
   /** Global factory method returning platforma instance */
   const getPlatforma: PlatformaFactory;
   const platforma: Platforma;
+
+  /** Global callback registry used in config rendering */
+  const callbackRegistry: Record<string, Function>;
 }
 
 /** Utility code helping to identify whether the code is running in actual UI environment */
@@ -20,4 +23,14 @@ export function getPlatformaInstance(config: BlockConfig): Platforma {
     return platforma;
   else
     throw new Error('Can\'t get platforma instance.');
+}
+
+export function tryRegisterCallback(key: string, callback: (...args: any[]) => any): boolean {
+  if (typeof callbackRegistry !== 'undefined') {
+    if (key in callbackRegistry)
+      throw new Error(`Callback with key ${key} already registered.`);
+    callbackRegistry[key] = callback;
+    return true;
+  } else
+    return false;
 }

@@ -105,6 +105,7 @@ test('test config 2', () => {
       f: getDownloadedBlobContent(getResourceField(MainOutputs, 'field4')),
       g: getOnDemandBlobContent(getResourceField(MainOutputs, 'field5'))
     }))
+    .output('cell2', () => 42)
     .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([
       { type: 'main', section: 'main', title: 'Main' }
@@ -119,7 +120,8 @@ test('test config 2', () => {
       e: string[],
       f: LocalBlobHandleAndSize,
       g: RemoteBlobHandleAndSize
-    }>
+    }>,
+    cell2: ValueOrErrors<number>
   }>();
 
   expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
