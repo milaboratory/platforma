@@ -29,10 +29,16 @@ export type MiddleLayerOps = {
   /** Common root where to put downloaded blobs. */
   readonly blobDownloadPath: string;
 
-  /** If the platform is running in local mode and a download driver
+  /** If Platforma is running in local mode and a download driver
    * needs to download files from local storage, it will open files
    * from the specified directory. Otherwise, it should be empty. */
-  readonly localStorageIdsToRoot: Record<string, string>;
+  readonly platformLocalStorageNameToPath: Record<string, string>;
+
+  /** If the client wants to upload files from their local machine to Platforma,
+   * this option should be set. Set any unique storage names
+   * to any paths from where the client will upload files,
+   * e.g., {'local': '/'}. */
+  readonly localStorageNameToPath: Record<string, string>;
 
   /** The number of downloads that can be done in parallel when downloading blobs. */
   readonly nConcurrentBlobDownloads: number;
@@ -72,7 +78,8 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'defaultTreeOptions'
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
-  | 'localStorageIdsToRoot'
+  | 'platformLocalStorageNameToPath'
+  | 'localStorageNameToPath'
   | 'nConcurrentBlobDownloads'
   | 'blobDownloadCacheSizeBytes'
   | 'defaultUploadDriverOptions'
@@ -87,21 +94,22 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
-  stagingRenderingRate: 5,
-  localStorageIdsToRoot: {},
-  nConcurrentBlobDownloads: 10,
-  blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
-  nConcurrentPartUploads: 10,
-  nConcurrentGetProgresses: 10,
-  defaultUploadDriverOptions: {
-    pollingInterval: 1000,
-    stopPollingDelay: 1000
-  },
-  nConcurrentGetLogs: 10,
-  defaultStreamLogsDriverOptions: {
-    pollingInterval: 1000,
-    stopPollingDelay: 1000
-  }
+    stagingRenderingRate: 5,
+    platformLocalStorageNameToPath: {},
+    localStorageNameToPath: {},
+    nConcurrentBlobDownloads: 10,
+    blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
+    nConcurrentPartUploads: 10,
+    nConcurrentGetProgresses: 10,
+    defaultUploadDriverOptions: {
+      pollingInterval: 1000,
+      stopPollingDelay: 1000
+    },
+    nConcurrentGetLogs: 10,
+    defaultStreamLogsDriverOptions: {
+      pollingInterval: 1000,
+      stopPollingDelay: 1000
+    }
 };
 
 /** Fields with default values are marked as optional here. */
