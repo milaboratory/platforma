@@ -1,6 +1,6 @@
 import { Platforma, PlatformaFactory } from './platforma';
 import { BlockConfig } from './builder';
-import { GlobalCfgRenderCtx } from './render/global_ctx';
+import { GlobalCfgRenderCtx } from './render/internal';
 
 declare global {
   /** Global factory method returning platforma instance */

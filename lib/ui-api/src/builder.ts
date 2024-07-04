@@ -1,9 +1,9 @@
 import { Cfg, Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
 import { Platforma } from './platforma';
 import { PlatformaSDKVersion } from './version';
-import { getPlatformaInstance, isInUI, tryRegisterCallback } from './platforma_instance';
+import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
-import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render/render_ctx';
+import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
   readonly $blockId: string,
