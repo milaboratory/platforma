@@ -1,6 +1,6 @@
 import { Platforma, PlatformaFactory } from './platforma';
 import { BlockConfig } from './builder';
-import { GlobalCfgRenderCtx } from './render/internal';
+import { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
 declare global {
   /** Global factory method returning platforma instance */
@@ -48,4 +48,18 @@ export function tryRegisterCallback(key: string, callback: (...args: any[]) => a
     throw new Error(`Callback with key ${key} already registered.`);
   ctx.callbackRegistry[key] = callback;
   return true;
+}
+
+const futureResolves = new Map<string, ((value: unknown) => void)[]>();
+
+export function registerFutureAwait(handle: FutureHandle, onResolve: (value: unknown) => void) {
+  if (!(handle in getCfgRenderCtx().callbackRegistry)) {
+    getCfgRenderCtx().callbackRegistry[handle] = (value: unknown) => {
+      for (const res of futureResolves.get(handle)!) {
+        res(value);
+      }
+    };
+    futureResolves.set(handle, []);
+  }
+  futureResolves.get(handle)!.push(onResolve);
 }
