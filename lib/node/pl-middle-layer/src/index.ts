@@ -10,3 +10,4 @@ export { ProjectListEntry } from './model';
 
 // needed by users of middle-layer
 export * from '@milaboratory/pl-client-v2';
+export { FieldType, ResourceType } from '@milaboratory/pl-client-v2';

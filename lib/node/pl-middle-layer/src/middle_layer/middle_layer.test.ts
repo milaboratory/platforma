@@ -4,7 +4,6 @@ import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import fsp from 'node:fs/promises';
 import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
@@ -65,7 +64,8 @@ export async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promis
       devBlockUpdateRecheckInterval: 300,
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
+      blobDownloadPath: path.resolve(downloadFolder),
+      localStorageNameToPath: { 'local': '' },
     });
     try {
       await cb(ml, workFolder);
@@ -442,21 +442,24 @@ test('should create upload-file block, render it and upload a file to pl server'
     expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
 
     const { uploadFileSpecFromRemote } = await getStandardBlockSpecs();
+    // const uploadFileSpecFromDev: BlockPackSpec = {
+    //   type: 'dev',
+    //   folder: '/home/snyssfx/prog/mi/tpls/block-beta-upload-file',
+    // }
+
     const block3Id = await prj.addBlock('Block 3', uploadFileSpecFromRemote);
 
-    const localPath = path.resolve(
-      __dirname, '../../assets',
-      'another_answer_to_the_ultimate_question.txt'
-    );
-    const stat = await fsp.stat(localPath);
-    const mTime = String(Math.floor(stat.mtimeMs / 1000));
-    const size = String(stat.size);
+    const storages = await ml.drivers.listFiles.getStorageList();
+    const local = storages.find(s => s.name == 'local');
+    expect(local).not.toBeUndefined();
+    const fileDir = path.resolve(__dirname, '..', '..', 'assets');
+    const files = await ml.drivers.listFiles.listFiles(local!.handle, fileDir);
+    const ourFile = files.find(f => f.name == 'another_answer_to_the_ultimate_question.txt')
+    expect(ourFile).not.toBeUndefined();
+    expect(ourFile?.type).toBe('file');
 
     await prj.setBlockArgs(block3Id, {
-      modificationTime: mTime,
-      localPath: localPath,
-      pathSignature: ml.signer.sign(localPath),
-      sizeBytes: size
+      importHandle: (ourFile as any).handle,
     });
 
     await prj.runBlock(block3Id);
