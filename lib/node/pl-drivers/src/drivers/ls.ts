@@ -74,9 +74,15 @@ export class LsDriver implements sdk.LsDriver {
     const files = await fs.opendir(fullPath);
     const direntsWithStats: any[] = [];
     for await (const dirent of files) {
+      // We cannot use no dirent.path no dirent.parentPath,
+      // since the former is deprecated
+      // and the later works differently on different versions.
+      const fullName = path.join(fullPath, dirent.name);
+
       direntsWithStats.push({
+        fullName,
         dirent,
-        stat: await fs.stat(dirent.path)
+        stat: await fs.stat(fullName)
       });
     }
 
@@ -94,6 +100,7 @@ export class LsDriver implements sdk.LsDriver {
 function toListItem(
   logger: MiLogger,
   info: {
+    fullName: string;
     dirent: Dirent;
     stat: Stats;
   }
@@ -106,7 +113,7 @@ function toListItem(
   return {
     isDir: info.dirent.isDirectory(),
     name: info.dirent.name,
-    fullName: info.dirent.path,
+    fullName: info.fullName,
     lastModified: {
       seconds: BigInt(Math.floor(info.stat.mtimeMs / 1000)),
       nanos: 0
