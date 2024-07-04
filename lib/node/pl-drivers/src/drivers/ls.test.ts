@@ -23,7 +23,7 @@ test('toFileHandle should ok when encode data for UploadBlob', () => {
   });
   const got = fromFileHandle(handle);
 
-  expect(got.modificationTimeUnix).toEqual('150');
+  expect(got.modificationTime).toEqual('150');
   expect(got.localPath).toEqual('C:\\programFiles\\file.txt');
   expect(got.pathSignature).not.toHaveLength(0);
   expect(got.sizeBytes).toEqual('20');
