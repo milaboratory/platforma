@@ -1,14 +1,17 @@
 import { BlockContextAny } from '../middle_layer/block_ctx';
-import { QuickJSContext, Scope } from 'quickjs-emscripten';
-import { QuickJSHandle } from 'quickjs-emscripten-core';
+import { QuickJSContext, QuickJSHandle, Scope } from 'quickjs-emscripten';
 import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import { ComputableCtx } from '@milaboratory/computable';
-import { unknown } from 'zod';
-import { errorUtil } from 'zod/lib/helpers/errorUtil';
-import errToObj = errorUtil.errToObj;
 import { randomUUID } from 'node:crypto';
+import {
+  CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
+  FieldTraversalStep as FieldTraversalStepFromSDK,
+  ResourceType as ResourceTypeFromSDK,
+  JsRenderInternal
+} from '@milaboratory/sdk-ui';
+import { VmFunctionImplementation } from 'quickjs-emscripten-core';
 
-export class JsExecutionContext {
+export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMethods<string> {
   /** Must be disposed */
   private readonly callbackRegistry: QuickJSHandle;
   private readonly fnJSONStringify: QuickJSHandle;
@@ -52,21 +55,6 @@ export class JsExecutionContext {
       .dispose();
   }
 
-  private exportObject(obj: unknown): QuickJSHandle {
-    return this.vm.newString(JSON.stringify(obj))
-      .consume(json =>
-        this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, json))
-      );
-  }
-
-  private importObject(handle: QuickJSHandle): unknown {
-    return JSON.parse(
-      this.vm.unwrapResult(this.vm.callFunction(
-        this.fnJSONStringify, this.vm.undefined, handle))
-        .consume(strHandle => this.vm.getString(strHandle))
-    );
-  }
-
   public runCallback(cbName: string, ...args: unknown[]): unknown {
     return Scope.withScope(localScope => {
       const targetCallback = localScope.manage(
@@ -76,76 +64,279 @@ export class JsExecutionContext {
         throw new Error(`No such callback: ${cbName}`);
 
       return this.vm.unwrapResult(this.vm.callFunction(targetCallback, this.vm.undefined,
-        ...args.map(arg => localScope.manage(this.exportObject(arg)))))
-        .consume(result => this.importObject(result));
+        ...args.map(arg => localScope.manage(this.exportObjectViaJson(arg)))))
+        .consume(result => this.importObjectViaJson(result));
     });
+  }
+
+  //
+  // Methods for injected ctx object
+  //
+
+  getAccessorHandleByName(name: string): string | undefined {
+    if (this.computableCtx === undefined)
+      throw new Error('Accessors can\'t be used in this context');
+    const wellKnownAccessor = (name: string, ctxKey: 'staging' | 'prod'): string | undefined => {
+      if (!this.accessors.has(name)) {
+        const lambda = this.blockCtx[ctxKey];
+        if (lambda === undefined)
+          throw new Error('Staging context not available');
+        const entry = lambda(this.computableCtx!);
+        if (!entry)
+          this.accessors.set(name, undefined);
+        else
+          this.accessors.set(name, this.computableCtx!.accessor(entry).node());
+      }
+      return this.accessors.get(name) ? name : undefined;
+    };
+    if (name === 'staging')
+      return wellKnownAccessor('staging', 'staging');
+    else if (name === 'main')
+      return wellKnownAccessor('main', 'prod');
+    return undefined;
+  }
+
+  resolveWithCommon(handle: string,
+                    commonOptions: CommonFieldTraverseOpsFromSDK,
+                    ...steps: (FieldTraversalStepFromSDK | string)[]): string | undefined {
+    return this.wrapAccessor(
+      this.getAccessor(handle).traverseWithCommon(commonOptions, ...steps));
+  }
+
+  getResourceType(handle: string): ResourceTypeFromSDK {
+    return this.getAccessor(handle).resourceType;
+  }
+
+  getInputsLocked(handle: string): boolean {
+    return this.getAccessor(handle).getInputsLocked();
+  }
+
+  getOutputsLocked(handle: string): boolean {
+    return this.getAccessor(handle).getOutputsLocked();
+  }
+
+  getIsReadyOrError(handle: string): boolean {
+    return this.getAccessor(handle).getIsReadyOrError();
+  }
+
+  getIsFinal(handle: string): boolean {
+    return this.getAccessor(handle).getIsFinal();
+  }
+
+  getError(handle: string): string | undefined {
+    return this.wrapAccessor(this.getAccessor(handle).getError());
+  }
+
+  listInputFields(handle: string): string[] {
+    return this.getAccessor(handle).listInputFields();
+  }
+
+  listOutputFields(handle: string): string[] {
+    return this.getAccessor(handle).listOutputFields();
+  }
+
+  listDynamicFields(handle: string): string[] {
+    return this.getAccessor(handle).listDynamicFields();
+  }
+
+  getKeyValue(handle: string, key: string): ArrayBuffer | undefined {
+    return this.getAccessor(handle).getKeyValue(key);
+  }
+
+  getKeyValueAsString(handle: string, key: string): string | undefined {
+    return this.getAccessor(handle).getKeyValueAsString(key);
+  }
+
+  getData(handle: string): ArrayBuffer | undefined {
+    return this.getAccessor(handle).getData();
+  }
+
+  getDataAsString(handle: string): string | undefined {
+    return this.getAccessor(handle).getDataAsString();
+  }
+
+  //
+  // Helpers
+  //
+
+  private getAccessor(handle: string): PlTreeNodeAccessor {
+    const accessor = this.accessors.get(handle);
+    if (accessor === undefined)
+      throw new Error('No such accessor');
+    return accessor;
+  }
+
+  private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined {
+    if (accessor === undefined)
+      return undefined;
+    else {
+      const nextHandle = randomUUID();
+      this.accessors.set(nextHandle, accessor);
+      return nextHandle;
+    }
+  }
+
+  //
+  // QuickJS Helpers
+  //
+
+  private exportArrayBuffer(buf: ArrayBuffer | undefined,
+                            scope?: Scope): QuickJSHandle {
+    if (buf === undefined)
+      return this.vm.undefined;
+    else if (scope === undefined)
+      return this.vm.newArrayBuffer(buf);
+    else
+      return scope.manage(this.vm.newArrayBuffer(buf));
+  }
+
+  private exportSingleValue(obj: boolean | number | string | unknown | null,
+                            scope?: Scope): QuickJSHandle {
+    const result = this.tryExportSingleValue(obj);
+    if (result === undefined)
+      throw new Error(`Can't export value: ${obj}`);
+    return result;
+  }
+
+  private tryExportSingleValue(obj: unknown, scope?: Scope): QuickJSHandle | undefined {
+    let handle: QuickJSHandle;
+    let manage = false;
+    switch (typeof obj) {
+      case 'string':
+        handle = this.vm.newString(obj);
+        manage = true;
+        break;
+      case 'number':
+        handle = this.vm.newNumber(obj);
+        manage = true;
+        break;
+      case 'undefined':
+        handle = this.vm.undefined;
+        break;
+      case 'boolean':
+        handle = obj ? this.vm.true : this.vm.false;
+        break;
+      default:
+        if (obj === null) {
+          handle = this.vm.null;
+          break;
+        }
+        return undefined;
+    }
+    return manage && scope != undefined ? scope.manage(handle) : handle;
+  }
+
+  private exportObjectViaJson(obj: unknown): QuickJSHandle {
+    return this.vm.newString(JSON.stringify(obj))
+      .consume(json =>
+        this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, json))
+      );
+  }
+
+  private importObjectViaJson(handle: QuickJSHandle): unknown {
+    return JSON.parse(
+      this.vm.unwrapResult(this.vm.callFunction(
+        this.fnJSONStringify, this.vm.undefined, handle))
+        .consume(strHandle => this.vm.getString(strHandle))
+    );
   }
 
   private injectCtx() {
     Scope.withScope(localScope => {
       const configCtx = localScope.manage(this.vm.newObject());
 
+      // Exporting props
+
       this.vm.setProp(configCtx, 'args', localScope.manage(this.vm.newString(this.blockCtx.args)));
       if (this.blockCtx.uiState !== undefined)
         this.vm.setProp(configCtx, 'uiState', localScope.manage(this.vm.newString(this.blockCtx.args)));
 
-      const getAccessorHandleByName = localScope.manage(
-        this.vm.newFunction('getAccessorHandleByName', (...args) => {
-          if (this.computableCtx === undefined)
-            throw new Error('Accessors can\'t be used in this context');
-          const name = this.vm.getString(args[0]);
-          const wellKnownAccessor = (name: string, ctxKey: 'staging' | 'prod'): QuickJSHandle => {
-            if (!this.accessors.has(name)) {
-              const lambda = this.blockCtx[ctxKey];
-              if (lambda === undefined)
-                throw new Error('Staging context not available');
-              const entry = lambda(this.computableCtx!);
-              if (!entry)
-                this.accessors.set(name, undefined);
-              else
-                this.accessors.set(name, this.computableCtx!.accessor(entry).node());
-            }
-            return this.accessors.get(name) ? this.vm.newString(name) : this.vm.undefined;
-          };
-          if (name === 'staging')
-            return wellKnownAccessor('staging', 'staging');
-          else if (name === 'main')
-            return wellKnownAccessor('main', 'prod');
-          return undefined;
-        }));
-
-      const resolveField = localScope.manage(
-        this.vm.newFunction('resolveField', (...args) => {
-          const accessorId = this.vm.getString(args[0]);
-          const field = this.vm.getString(args[1]);
-          const accessor = this.accessors.get(accessorId);
-          if (accessor === undefined)
-            throw new Error('No such accessor');
-          const newAccessor = accessor.traverse(field);
-          if (newAccessor === undefined)
-            return this.vm.undefined;
-          else {
-            const accessorId = randomUUID();
-            this.accessors.set(accessorId, newAccessor);
-            return this.vm.newString(accessorId);
-          }
-        }));
-
-      const getResourceValueAsString = localScope.manage(
-        this.vm.newFunction('getResourceValueAsString', (...args) => {
-          const accessorId = this.vm.getString(args[0]);
-          const accessor = this.accessors.get(accessorId);
-          if (accessor === undefined)
-            throw new Error('No such accessor');
-          const value = accessor.getDataAsString();
-          return value === undefined ? this.vm.undefined : this.vm.newString(value);
-        }));
-
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
 
-      this.vm.setProp(configCtx, 'getAccessorHandleByName', getAccessorHandleByName);
-      this.vm.setProp(configCtx, 'resolveField', resolveField);
-      this.vm.setProp(configCtx, 'getResourceValueAsString', getResourceValueAsString);
+      // Exporting methods
+
+      const exportCtxFunction = (name: string, fn: VmFunctionImplementation<QuickJSHandle>): void => {
+        this.vm.newFunction(name, fn)
+          .consume(fnh => this.vm.setProp(configCtx, name, fnh));
+      };
+
+      exportCtxFunction('getAccessorHandleByName', (name) => {
+        return this.exportSingleValue(
+          this.getAccessorHandleByName(this.vm.getString(name)));
+      });
+
+      exportCtxFunction('resolveWithCommon', (handle, commonOptions, ...steps) => {
+        return this.exportSingleValue(
+          this.resolveWithCommon(this.vm.getString(handle),
+            this.importObjectViaJson(commonOptions) as CommonFieldTraverseOpsFromSDK,
+            ...steps.map(step =>
+              this.importObjectViaJson(step) as FieldTraversalStepFromSDK | string)));
+      });
+
+      exportCtxFunction('getResourceType', (handle) => {
+        return this.exportObjectViaJson(
+          this.getResourceType(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getInputsLocked', (handle) => {
+        return this.exportSingleValue(
+          this.getInputsLocked(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getOutputsLocked', (handle) => {
+        return this.exportSingleValue(
+          this.getOutputsLocked(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getIsReadyOrError', (handle) => {
+        return this.exportSingleValue(
+          this.getIsReadyOrError(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getIsFinal', (handle) => {
+        return this.exportSingleValue(
+          this.getIsFinal(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getError', (handle) => {
+        return this.exportSingleValue(
+          this.getError(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('listInputFields', (handle) => {
+        return this.exportObjectViaJson(
+          this.listInputFields(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('listOutputFields', (handle) => {
+        return this.exportObjectViaJson(
+          this.listInputFields(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('listDynamicFields', (handle) => {
+        return this.exportObjectViaJson(
+          this.listInputFields(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getKeyValue', (handle, key) => {
+        return this.exportArrayBuffer(
+          this.getKeyValue(this.vm.getString(handle), this.vm.getString(key)));
+      });
+
+      exportCtxFunction('getKeyValueAsString', (handle, key) => {
+        return this.exportSingleValue(
+          this.getKeyValueAsString(this.vm.getString(handle), this.vm.getString(key)));
+      });
+
+      exportCtxFunction('getData', (handle) => {
+        return this.exportArrayBuffer(
+          this.getData(this.vm.getString(handle)));
+      });
+
+      exportCtxFunction('getDataAsString', (handle) => {
+        return this.exportSingleValue(
+          this.getDataAsString(this.vm.getString(handle)));
+      });
 
       this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);
     });

@@ -21,7 +21,7 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
     for (const { id, renderingMode } of allBlocks(structure)) {
       // block-pack
       const blockPack = prj.traverse(
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 

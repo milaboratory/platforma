@@ -110,7 +110,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
 
       // block-pack
       const blockPack = prj.traverse(
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 
