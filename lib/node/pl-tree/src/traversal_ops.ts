@@ -37,8 +37,8 @@ export type GetFieldStep = CommonFieldTraverseOps & {
   /** Field must exist, if this option is set, instead error will be thrown */
   errorIfFieldNotFound?: true;
 
-  /** Field must be assigned a value, if this option is set, instead error will be thrown */
-  errorIfFieldNotAssigned?: true;
+  /** Field must be resolved into resource if this option is set, instead error will be thrown */
+  errorIfFieldNotSet?: true;
 
   /**
    * Assert field type. Call will fail with exception if this assertion is not
