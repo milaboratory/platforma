@@ -72,38 +72,46 @@ export class LsDriver implements sdk.LsDriver {
   ): Promise<ListResponse> {
     const fullPath = path.join(storagePath, pathInStorage);
     const files = await fs.opendir(fullPath);
+    const direntsWithStats: any[] = [];
+    for await (const dirent of files) {
+      direntsWithStats.push({
+        dirent,
+        stat: await fs.stat(dirent.path)
+      });
+    }
 
     const resp: ListResponse = {
-      items: [],
-      delimiter: path.sep
+      delimiter: path.sep,
+      items: direntsWithStats
+        .map((ds) => toListItem(logger, ds))
+        .filter((item) => item != undefined)
     };
-
-    for await (const dirent of files) {
-      const filePath = path.join(dirent.path);
-      const stat = await fs.stat(filePath);
-
-      if (dirent.isFile() || dirent.isDirectory()) {
-        resp.items.push(toListItem(filePath, dirent, stat));
-        continue;
-      }
-
-      logger.warn('tried to get non-dir and non-file ${dirent}, skip it');
-    }
 
     return resp;
   }
 }
 
-function toListItem(filePath: string, dirent: Dirent, stat: Stats): ListItem {
+function toListItem(
+  logger: MiLogger,
+  info: {
+    dirent: Dirent;
+    stat: Stats;
+  }
+): ListItem | undefined {
+  if (!(info.dirent.isFile() || info.dirent.isDirectory())) {
+    logger.warn('tried to get non-dir and non-file ${info.dirent}, skip it');
+    return;
+  }
+
   return {
-    isDir: dirent.isDirectory(),
-    name: dirent.name,
-    fullName: filePath,
+    isDir: info.dirent.isDirectory(),
+    name: info.dirent.name,
+    fullName: info.dirent.path,
     lastModified: {
-      seconds: BigInt(Math.floor(stat.mtimeMs / 1000)),
+      seconds: BigInt(Math.floor(info.stat.mtimeMs / 1000)),
       nanos: 0
     },
-    size: BigInt(stat.size)
+    size: BigInt(info.stat.size)
   };
 }
 
@@ -178,7 +186,7 @@ export function toFileHandle(info: {
   // UploadBlob data
   const data = encodeURIComponent(
     JSON.stringify({
-      modificationTimeUnix: String(info.item.lastModified?.seconds),
+      modificationTime: String(info.item.lastModified?.seconds),
       localPath: info.item.fullName,
       pathSignature: info.signer.sign(info.item.fullName),
       sizeBytes: String(info.item.size)
