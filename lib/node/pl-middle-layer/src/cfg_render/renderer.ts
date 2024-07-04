@@ -223,7 +223,7 @@ const SRGetBlobContentAsString: Subroutine = args => {
             if (value === undefined)
               return undefined;
             const content = await drivers.downloadDriver.getContent(value.handle);
-            return content?.toString();
+            return content.toString();
           }
         }
       )

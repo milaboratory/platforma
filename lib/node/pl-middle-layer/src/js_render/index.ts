@@ -9,12 +9,14 @@ export function computableFromRF(env: MiddleLayerEnvironment, ctx: BlockContextA
                                  fh: FunctionHandle, code: Code, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
   return Computable.makeRaw((cCtx) => {
     const scope = new Scope();
+    cCtx.addOnDestroy(() => scope.dispose());
+
     const runtime = scope.manage(env.quickJs.newRuntime());
     runtime.setMemoryLimit(1024 * 640);
     runtime.setMaxStackSize(1024 * 320);
     const vm = scope.manage(runtime.newContext());
 
-    const rCtx = new JsExecutionContext(scope, vm, ctx, cCtx);
+    const rCtx = new JsExecutionContext(scope, vm, ctx, env, cCtx);
 
     rCtx.evaluateBundle(code.content);
     const result = rCtx.runCallback(fh);
@@ -22,16 +24,14 @@ export function computableFromRF(env: MiddleLayerEnvironment, ctx: BlockContextA
     rCtx.resetComputableCtx();
 
     return {
-      ir: [],
-      recover: (error: unknown[]) => {
-        // finally
-        scope.dispose();
-        throw error[0];
-      },
-      postprocessValue: async value => {
-        // finally
-        scope.dispose();
-        return result;
+      ir: rCtx.computablesToResolve,
+      postprocessValue: async (resolved: Record<string, unknown>) => {
+        // resolving futures
+        for (const [handle, value] of Object.entries(resolved))
+          rCtx.runCallback(handle, value);
+
+        // rendering result
+        return rCtx.importObjectUniversal(result);
       }
     };
   }, ops);
