@@ -56,7 +56,7 @@ export function frontendData(projectEntry: PlTreeEntry, id: string, env: MiddleL
     const prj = ctx.accessor(projectEntry).node();
     const blockCfg = getBlockCfg(prj, id);
     const frontendEntry = prj.traverse(
-      { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+      { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
       { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
       { field: BlockPackFrontendField, assertFieldType: 'Input' }
     )?.persist();

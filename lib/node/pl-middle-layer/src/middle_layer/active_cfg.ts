@@ -6,8 +6,8 @@ import { projectFieldName, ProjectStructure, ProjectStructureKey } from '../mode
 import { allBlocks } from '../model/project_model_util';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockPackInfo } from '../model/block_pack';
-import { hasActiveCfgComponents, ifNotUndef } from '../cfg_render/util';
-import { normalizeBlockConfig } from '@milaboratory/sdk-ui';
+import { hasActiveCfgComponents } from '../cfg_render/util';
+import { Cfg, isFunctionHandle, normalizeBlockConfig } from '@milaboratory/sdk-ui';
 import { constructBlockContext } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 
@@ -21,7 +21,7 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
     for (const { id, renderingMode } of allBlocks(structure)) {
       // block-pack
       const blockPack = prj.traverse(
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 
@@ -32,15 +32,19 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
       const blockConf = normalizeBlockConfig(bpInfo.config);
       const activeOutputConfigs = Object.entries(blockConf.outputs)
         .map(([, cfg]) => cfg)
-        .filter(cfg => hasActiveCfgComponents(cfg));
+        .filter(cfg =>
+          !isFunctionHandle(cfg) && hasActiveCfgComponents(cfg))
+        .map(cfg => cfg as Cfg);
 
       if (activeOutputConfigs.length === 0)
         continue;
 
       const blockCtx = constructBlockContext(prj, id);
 
+      // console.log(blockCtx.prod(ctx));
+
       for (const cfg of activeOutputConfigs)
-        ret.push(computableFromCfg(env.drivers, blockCtx, cfg));
+        ret.push(Computable.wrapError(computableFromCfg(env.drivers, blockCtx, cfg)));
     }
 
     return ret;

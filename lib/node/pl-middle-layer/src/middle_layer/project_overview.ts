@@ -14,10 +14,10 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { BlockCalculationStatus, ProjectMeta, ProjectOverview } from '@milaboratory/pl-middle-layer-model';
 import { constructBlockContextArgsOnly } from './block_ctx';
-import { computableFromCfg } from '../cfg_render/executor';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
 import { BlockSection, normalizeBlockConfig } from '@milaboratory/sdk-ui';
+import { computableFromCfgOrRF } from './render';
 
 type BlockInfo = {
   currentArguments: any,
@@ -110,7 +110,7 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
 
       // block-pack
       const blockPack = prj.traverse(
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotAssigned: true },
+        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 
@@ -121,8 +121,8 @@ export function projectOverview(entry: PlTreeEntry, env: MiddleLayerEnvironment)
           const blockConf = normalizeBlockConfig(blockConfU);
           const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
           return {
-            sections: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.sections) as ComputableStableDefined<BlockSection[]>,
-            inputsValid: computableFromCfg(env.drivers, blockCtxArgsOnly, blockConf.inputsValid) as ComputableStableDefined<boolean>
+            sections: computableFromCfgOrRF(env, blockCtxArgsOnly, blockConf.sections, blockConf.code) as ComputableStableDefined<BlockSection[]>,
+            inputsValid: computableFromCfgOrRF(env, blockCtxArgsOnly, blockConf.inputsValid, blockConf.code) as ComputableStableDefined<boolean>
           };
         }) || {};
 

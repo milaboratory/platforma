@@ -26,6 +26,7 @@ import { BlobDriver, LsDriver as SdkLsDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
+import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -35,6 +36,7 @@ export interface MiddleLayerEnvironment {
   readonly frontendDownloadDriver: DownloadUrlDriver;
   readonly drivers: MiddleLayerInternalDrivers;
   readonly blockUpdateWatcher: BlockUpdateWatcher;
+  readonly quickJs: QuickJSWASMModule;
 }
 
 export interface MiddleLayerDrivers {
@@ -203,11 +205,11 @@ export class MiddleLayer {
       }
     });
 
-    const logger = new ConsoleLoggerAdapter();
+    const logger = new ConsoleLoggerAdapter(console);
     const bpPreparer = new BlockPackPreparer(signer);
 
     const downloadClient = createDownloadClient(
-      logger, pl, ops.platformLocalStorageNameToPath,
+      logger, pl, ops.platformLocalStorageNameToPath
     );
     const logsClient = createLogsClient(pl, logger);
     const uploadBlobClient = createUploadBlobClient(pl, logger);
@@ -244,7 +246,7 @@ export class MiddleLayer {
     );
     const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
     const lsDriver = new LsDriver(
-      logger, lsClient, pl, signer, ops.localStorageNameToPath,
+      logger, lsClient, pl, signer, ops.localStorageNameToPath
     );
 
     const env: MiddleLayerEnvironment = {
@@ -259,7 +261,8 @@ export class MiddleLayer {
       blockUpdateWatcher: new BlockUpdateWatcher({
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: pl.httpDispatcher
-      })
+      }),
+      quickJs: await getQuickJS()
     };
 
     const openedProjects = new WatchableValue<ResourceId[]>([]);
@@ -267,9 +270,9 @@ export class MiddleLayer {
 
     return new MiddleLayer(
       env, {
-      blob: downloadDriver,
-      listFiles: lsDriver,
-    },
+        blob: downloadDriver,
+        listFiles: lsDriver
+      },
       signer,
       projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }

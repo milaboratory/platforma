@@ -8,6 +8,7 @@ import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
 import { DevBlockPackConfig } from '../mutator/block-pack/block_pack';
+import { Computable } from '@milaboratory/computable';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -51,7 +52,7 @@ async function getStandardBlockSpecs() {
   };
 }
 
-async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
+export async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
@@ -65,7 +66,7 @@ async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder),
-      localStorageNameToPath: { 'local': '' },
+      localStorageNameToPath: { 'local': '' }
     });
     try {
       await cb(ml, workFolder);
@@ -75,20 +76,29 @@ async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
   });
 }
 
-async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
+  const state = prj.getBlockState(blockId);
+  // const stateAndOverview = Computable.make(() => ({ overview, state: undefined }));
   while (true) {
-    const snapshot = (await overview.getValue())!;
-    const blockOverview = snapshot.blocks.find(b => b.id == blockId);
+    // const {
+    //   overview: overviewSnapshot,
+    //   state: stateSnapshot
+    // } = await stateAndOverview.getValue();
+    const overviewSnapshot = (await overview.getValue())!;
+    const blockOverview = overviewSnapshot.blocks.find(b => b.id == blockId);
     if (blockOverview === undefined)
       throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview.outputErrors)
+      return;
     if (blockOverview.calculationStatus === 'Done')
       return;
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
-      throw new Error('Aborted?', { cause: e });
+      console.dir(state.getValue(), { depth: 5 });
+      throw new Error('Aborted.', { cause: e });
     }
   }
 }
@@ -454,24 +464,23 @@ test('should create upload-file block, render it and upload a file to pl server'
     expect(local).not.toBeUndefined();
     const fileDir = path.resolve(__dirname, '..', '..', 'assets');
     const files = await ml.drivers.listFiles.listFiles(local!.handle, fileDir);
-    const ourFile = files.find(f => f.name == 'another_answer_to_the_ultimate_question.txt')
+    const ourFile = files.find(f => f.name == 'another_answer_to_the_ultimate_question.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 
     await prj.setBlockArgs(block3Id, {
-      importHandle: (ourFile as any).handle,
+      importHandle: (ourFile as any).handle
     });
 
     await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id);
+    await awaitBlockDone(prj, block3Id, 5000);
 
     const block3StateComputable = prj.getBlockState(block3Id);
-    await block3StateComputable.refreshState();
 
     while (true) {
       const state = await block3StateComputable.getFullValue();
 
-      console.dir(state, { depth: 5 });
+      // console.dir(state, { depth: 5 });
 
       if (state.stable && (state.value.outputs!['handle'] as any).value != undefined) {
         expect(state.type).toEqual('ok');
@@ -481,6 +490,8 @@ test('should create upload-file block, render it and upload a file to pl server'
         expect((state.value.outputs!['handle'] as any).value.status.progress).toBeCloseTo(1);
         return;
       }
+
+      await block3StateComputable.awaitChange();
     }
   });
 });
@@ -517,7 +528,6 @@ test('should create read-logs block, render it and read logs from a file', async
     let i = 0;
     while (true) {
       i++;
-      await computable.awaitChange();
       const state = await computable.getFullValue();
       console.dir(state, { depth: 5 });
 
@@ -527,6 +537,8 @@ test('should create read-logs block, render it and read logs from a file', async
         expect((state.value.outputs!['lastLogs'] as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty
         return;
       }
+
+      await computable.awaitChange();
     }
   });
 });
