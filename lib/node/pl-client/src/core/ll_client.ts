@@ -116,7 +116,7 @@ export class LLPlClient {
   }
 
   private updateStatus(newStatus: PlConnectionStatus) {
-    setImmediate(() => {
+    process.nextTick(() => {
       if (this._status !== newStatus) {
         this._status = newStatus;
         if (this.statusListener !== undefined)

@@ -65,6 +65,7 @@ function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformat
 }
 
 const cleanAuthInfoCallback = () => {
+  console.warn(`Removing: ${getFullAuthDataFilePath()}`);
   fs.rmSync(getFullAuthDataFilePath());
 };
 
