@@ -76,6 +76,29 @@ class BlockInfo {
     public readonly fields: BlockFieldStates) {
   }
 
+  public check() {
+    // state assertions
+
+    if ((this.fields.prodOutput === undefined) !== (this.fields.prodCtx === undefined))
+      throw new Error('inconsistent prod fields');
+
+    if ((this.fields.stagingOutput === undefined) !== (this.fields.stagingCtx === undefined))
+      throw new Error('inconsistent stage fields');
+
+    if ((this.fields.prodOutputPrevious === undefined) !== (this.fields.prodCtxPrevious === undefined))
+      throw new Error('inconsistent prod cache fields');
+
+    if ((this.fields.stagingOutputPrevious === undefined) !== (this.fields.stagingCtxPrevious === undefined))
+      throw new Error('inconsistent stage cache fields');
+
+    if (this.fields.blockPack === undefined)
+      throw new Error('no block pack field');
+
+    if (this.fields.currentArgs === undefined)
+      throw new Error('no current args field');
+
+  }
+
   private readonly currentInputsC = cached(
     () => this.fields.currentArgs!.modCount,
     () => JSON.parse(Buffer.from(this.fields.currentArgs!.value!).toString())
@@ -159,7 +182,6 @@ export class ProjectMutator {
   private metaChanged = false;
   private renderingStateChanged = false;
   private readonly changedBlockFrontendStates = new Set<string>();
-  private readonly removedBlockFrontendStates = new Set<string>();
 
   /** Set blocks will be assigned current mutator author marker on save */
   private readonly blocksWithChangedInputs = new Set<string>();
@@ -178,13 +200,22 @@ export class ProjectMutator {
   ) {
   }
 
+  private fixProblems() {
+    this.blockInfos.forEach(blockInfo => {
+      if (blockInfo.fields.prodArgs === undefined
+        || blockInfo.fields.prodOutput === undefined
+        || blockInfo.fields.prodCtx === undefined)
+        this.deleteBlockFields(blockInfo.id, 'prodArgs', 'prodOutput', 'prodCtx');
+    });
+  }
+
   get wasModified(): boolean {
     return this.lastModifiedChanged
+      || this.structureChanged
       || this.fieldsChanged
       || this.metaChanged
       || this.renderingStateChanged
-      || this.changedBlockFrontendStates.size > 0
-      || this.removedBlockFrontendStates.size > 0;
+      || this.changedBlockFrontendStates.size > 0;
   }
 
   get structure(): ProjectStructure {
@@ -307,7 +338,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, 'prodOutputPrevious', fields.prodOutput);
       this.setBlockFieldObj(blockId, 'prodCtxPrevious', fields.prodCtx);
     }
-    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
+    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs');
   }
 
   /** Running blocks are reset, already computed moved to limbo. Returns if
@@ -329,7 +360,7 @@ export class ProjectMutator {
       return true;
     } else
       // reset
-      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx');
+      return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -463,12 +494,13 @@ export class ProjectMutator {
       if (this.blocksInLimbo.delete(blockId))
         this.renderingStateChanged = true;
       if (this.blockFrontendStates.delete(blockId))
-        this.removedBlockFrontendStates.add(blockId);
+        this.changedBlockFrontendStates.add(blockId);
     }
 
     // creating new blocks
     for (const blockId of stagingDiff.onlyInB) {
-      this.blockInfos.set(blockId, new BlockInfo(blockId, {}));
+      const info = new BlockInfo(blockId, {});
+      this.blockInfos.set(blockId, info);
       const spec = newBlockSpecProvider(blockId);
 
       // block pack
@@ -480,6 +512,9 @@ export class ProjectMutator {
       const binArgs = Buffer.from(spec.args);
       const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
       this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
+
+      // checking structure
+      info.check();
     }
 
     // resetting stagings affected by topology change
@@ -657,7 +692,7 @@ export class ProjectMutator {
         // skipping finished blocks
         continue;
 
-      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx')) {
+      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs')) {
         // was actually stopped
         stopped.push(blockId);
 
@@ -775,10 +810,112 @@ export class ProjectMutator {
       else
         this.tx.setKValue(this.rid, blockFrontendStateKey(blockId), uiState);
     }
-    for (const blockId of this.removedBlockFrontendStates)
-      this.tx.deleteKValue(this.rid, blockFrontendStateKey(blockId));
 
     this.assignAuthorMarkers();
+  }
+
+  public static async load(tx: PlTransaction, rid: ResourceId, author?: AuthorMarker): Promise<ProjectMutator> {
+    const fullResourceStateP = tx.getResourceData(rid, true);
+    const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
+    const lastModifiedP = tx.getKValueJson<number>(rid, ProjectLastModifiedTimestamp);
+    const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
+    const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
+    const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
+
+    const allKVP = tx.listKeyValuesString(rid);
+
+    // loading jsons
+    const [fullResourceState,
+      schema, lastModified, meta, structure,
+      { stagingRefreshTimestamp, blocksInLimbo },
+      allKV
+    ] =
+      await Promise.all([fullResourceStateP,
+        schemaP, lastModifiedP, metaP, structureP,
+        renderingStateP,
+        allKVP]);
+    if (schema !== SchemaVersionCurrent)
+      throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
+
+    // loading field information
+    const blockInfoStates = new Map<string, BlockInfoState>();
+    for (const f of fullResourceState.fields) {
+      const projectField = parseProjectField(f.name);
+
+      // processing only fields with known structure
+      if (projectField === undefined)
+        continue;
+
+      let info = blockInfoStates.get(projectField.blockId);
+      if (info === undefined) {
+        info = {
+          id: projectField.blockId,
+          fields: {}
+        };
+        blockInfoStates.set(projectField.blockId, info);
+      }
+
+      info.fields[projectField.fieldName] = isNullResourceId(f.value)
+        ? { modCount: 0 }
+        : { modCount: 0, ref: f.value };
+    }
+
+    const renderingState = { stagingRefreshTimestamp };
+    const blocksInLimboSet = new Set(blocksInLimbo);
+
+    const blockFrontendStates = new Map<string, string>();
+    for (const kv of allKV) {
+      const blockId = parseBlockFrontendStateKey(kv.key);
+      if (blockId === undefined)
+        continue;
+      blockFrontendStates.set(blockId, kv.value);
+    }
+
+    const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
+    blockInfoStates!.forEach(({ id, fields }) => {
+      for (const [, state] of Object.entries(fields)) {
+        if (state.ref === undefined)
+          continue;
+        if (!isResource(state.ref) || isResourceRef(state.ref))
+          throw new Error('unexpected behaviour');
+        requests.push([state, tx.getResourceData(state.ref, false)]);
+      }
+    });
+    for (const [state, response] of requests) {
+      const result = await response;
+      state.value = result.data;
+      if (isNotNullResourceId(result.error))
+        state.status = 'Error';
+      else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
+        state.status = 'Ready';
+      else
+        state.status = 'NotReady';
+    }
+
+    const blockInfos = new Map<string, BlockInfo>();
+    blockInfoStates.forEach(({ id, fields }) => blockInfos.set(id, new BlockInfo(id, fields)));
+
+    // check consistency of project state
+    const blockInStruct = new Set<string>();
+    for (const b of allBlocks(structure)) {
+      if (!blockInfos.has(b.id))
+        throw new Error(`Inconsistent project structure: no inputs for ${b.id}`);
+      blockInStruct.add(b.id);
+    }
+    blockInfos.forEach(info => {
+      if (!blockInStruct.has(info.id))
+        throw new Error(`Inconsistent project structure: no structure entry for ${info.id}`);
+      // checking structure
+      info.check();
+    });
+
+    const prj = new ProjectMutator(rid, tx, author,
+      schema, lastModified, meta, structure, renderingState, blocksInLimboSet,
+      blockInfos, blockFrontendStates);
+
+    prj.fixProblems();
+
+    return prj;
   }
 }
 
@@ -788,105 +925,6 @@ export interface ProjectState {
   renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>;
   blocksInLimbo: Set<string>;
   blockInfos: Map<string, BlockInfo>;
-}
-
-export async function loadProject(tx: PlTransaction, rid: ResourceId, author?: AuthorMarker): Promise<ProjectMutator> {
-  const fullResourceStateP = tx.getResourceData(rid, true);
-  const schemaP = tx.getKValueJson<string>(rid, SchemaVersionKey);
-  const lastModifiedP = tx.getKValueJson<number>(rid, ProjectLastModifiedTimestamp);
-  const metaP = tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
-  const structureP = tx.getKValueJson<ProjectStructure>(rid, ProjectStructureKey);
-  const renderingStateP = tx.getKValueJson<ProjectRenderingState>(rid, BlockRenderingStateKey);
-
-  const allKVP = tx.listKeyValuesString(rid);
-
-  // loading jsons
-  const [fullResourceState,
-    schema, lastModified, meta, structure,
-    { stagingRefreshTimestamp, blocksInLimbo },
-    allKV
-  ] =
-    await Promise.all([fullResourceStateP,
-      schemaP, lastModifiedP, metaP, structureP,
-      renderingStateP,
-      allKVP]);
-  if (schema !== SchemaVersionCurrent)
-    throw new Error(`Can't act on this project resource because it has a wrong schema version: ${schema}`);
-
-
-  // loading field information
-  const blockInfoStates = new Map<string, BlockInfoState>();
-  for (const f of fullResourceState.fields) {
-    const projectField = parseProjectField(f.name);
-
-    // processing only fields with known structure
-    if (projectField === undefined)
-      continue;
-
-    let info = blockInfoStates.get(projectField.blockId);
-    if (info === undefined) {
-      info = {
-        id: projectField.blockId,
-        fields: {}
-      };
-      blockInfoStates.set(projectField.blockId, info);
-    }
-
-    info.fields[projectField.fieldName] = isNullResourceId(f.value)
-      ? { modCount: 0 }
-      : { modCount: 0, ref: f.value };
-  }
-
-  const renderingState = { stagingRefreshTimestamp };
-  const blocksInLimboSet = new Set(blocksInLimbo);
-
-  const blockFrontendStates = new Map<string, string>();
-  for (const kv of allKV) {
-    const blockId = parseBlockFrontendStateKey(kv.key);
-    if (blockId === undefined)
-      continue;
-    blockFrontendStates.set(blockId, kv.value);
-  }
-
-  const requests: [BlockFieldState, Promise<BasicResourceData>][] = [];
-  blockInfoStates!.forEach(({ id, fields }) => {
-    for (const [, state] of Object.entries(fields)) {
-      if (state.ref === undefined)
-        continue;
-      if (!isResource(state.ref) || isResourceRef(state.ref))
-        throw new Error('unexpected behaviour');
-      requests.push([state, tx.getResourceData(state.ref, false)]);
-    }
-  });
-  for (const [state, response] of requests) {
-    const result = await response;
-    state.value = result.data;
-    if (isNotNullResourceId(result.error))
-      state.status = 'Error';
-    else if (result.resourceReady || isNotNullResourceId(result.originalResourceId))
-      state.status = 'Ready';
-    else
-      state.status = 'NotReady';
-  }
-
-  const blockInfos = new Map<string, BlockInfo>();
-  blockInfoStates.forEach(({ id, fields }) => blockInfos.set(id, new BlockInfo(id, fields)));
-
-  // check consistency of project state
-  const blockInStruct = new Set<string>();
-  for (const b of allBlocks(structure)) {
-    if (!blockInfos.has(b.id))
-      throw new Error(`Inconsistent project structure: no inputs for ${b.id}`);
-    blockInStruct.add(b.id);
-  }
-  blockInfos.forEach(info => {
-    if (!blockInStruct.has(info.id))
-      throw new Error(`Inconsistent project structure: no structure entry for ${info.id}`);
-  });
-
-  return new ProjectMutator(rid, tx, author,
-    schema, lastModified, meta, structure, renderingState, blocksInLimboSet,
-    blockInfos, blockFrontendStates);
 }
 
 export function createProject(tx: PlTransaction, meta: ProjectMeta = InitialBlockMeta): AnyResourceRef {
@@ -910,7 +948,7 @@ export async function withProjectAuthored<T>(txOrPl: PlTransaction | PlClient, r
                                              cb: (p: ProjectMutator) => T | Promise<T>): Promise<T> {
   if (txOrPl instanceof PlClient) {
     return await txOrPl.withWriteTx('ProjectAction', async tx => {
-      const mut = await loadProject(tx, rid, author);
+      const mut = await ProjectMutator.load(tx, rid, author);
       const result = await cb(mut);
       if (!mut.wasModified)
         // skipping save and commit altogether if no modifications were
@@ -921,7 +959,7 @@ export async function withProjectAuthored<T>(txOrPl: PlTransaction | PlClient, r
       return result;
     });
   } else {
-    const mut = await loadProject(txOrPl, rid, author);
+    const mut = await ProjectMutator.load(txOrPl, rid, author);
     const result = await cb(mut);
     mut.save();
     return result;

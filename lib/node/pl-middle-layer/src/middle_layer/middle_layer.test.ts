@@ -8,7 +8,6 @@ import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
 import { DevBlockPackConfig } from '../mutator/block-pack/block_pack';
-import { Computable } from '@milaboratory/computable';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,

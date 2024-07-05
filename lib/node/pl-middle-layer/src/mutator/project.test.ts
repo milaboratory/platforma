@@ -3,7 +3,7 @@ import {
   TestHelpers,
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
-import { createProject, loadProject, withProject } from './project';
+import { createProject, ProjectMutator, withProject } from './project';
 import { outputRef } from '../model/args';
 import {
   blockFrontendStateKey,
@@ -23,7 +23,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('AddBlock1', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.addBlock({ id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [1, 2, 3] }),
@@ -35,7 +35,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('AddBlock2', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.addBlock({ id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [3, 4, 5] }),
@@ -48,7 +48,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('AddBlock3', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.addBlock({ id: 'block3', label: 'Block3', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({
@@ -93,7 +93,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('DeleteBlock2', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.deleteBlock('block2');
       mut.save();
       await tx.commit();
@@ -128,7 +128,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('Refresh', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.doRefresh();
       mut.save();
       await tx.commit();
@@ -145,7 +145,7 @@ test('simple test #1', async () => {
     });
 
     await pl.withWriteTx('RenderProduction', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.renderProduction(['block1', 'block3']);
       mut.doRefresh();
       mut.save();
@@ -175,7 +175,7 @@ test('simple test #2 with bp migration', async () => {
     });
 
     await pl.withWriteTx('AddBlock1', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.addBlock({ id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [1, 2, 3] }),
@@ -224,7 +224,7 @@ test('simple test #2 with bp migration', async () => {
     });
 
     await pl.withWriteTx('MigrateBlock2', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       // TODO change to dev
       mut.migrateBlockPack('block2', await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared));
       mut.save();
@@ -239,7 +239,7 @@ test('simple test #2 with bp migration', async () => {
     });
 
     await pl.withWriteTx('Refresh', async tx => {
-      const mut = await loadProject(tx, prj);
+      const mut = await ProjectMutator.load(tx, prj);
       mut.doRefresh();
       mut.save();
       await tx.commit();
