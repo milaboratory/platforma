@@ -3,7 +3,7 @@ import { Computable, ComputableRenderingOps } from '@milaboratory/computable';
 import { computableFromCfg } from '../cfg_render/executor';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';
-import { BlockContextFull, BlockContextArgsOnly, toCfgContext, BlockContextAny } from './block_ctx';
+import { BlockContextAny } from './block_ctx';
 
 export function computableFromCfgOrRF(env: MiddleLayerEnvironment, ctx: BlockContextAny,
                                       cfgOrFh: TypedConfigOrFunctionHandle, code: Code | undefined,
@@ -13,6 +13,6 @@ export function computableFromCfgOrRF(env: MiddleLayerEnvironment, ctx: BlockCon
       throw new Error('No code bundle.');
     return computableFromRF(env, ctx, cfgOrFh, code, ops);
   } else
-    return computableFromCfg(env.drivers, toCfgContext(ctx), cfgOrFh, ops);
+    return computableFromCfg(env.drivers, ctx, cfgOrFh, ops);
 }
 

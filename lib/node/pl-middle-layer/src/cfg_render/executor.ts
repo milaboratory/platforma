@@ -12,7 +12,7 @@ import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratory
 import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
-import { NonKeyCtxFields } from '../middle_layer/block_ctx';
+import { BlockContextAny, NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx';
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;
@@ -188,8 +188,13 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 //
 
 /** Main method to render configurations */
-export function computableFromCfg(drivers: MiddleLayerInternalDrivers, ctx: Record<string, unknown>,
+export function computableFromCfg(drivers: MiddleLayerInternalDrivers, bCtx: BlockContextAny,
                                   cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+  return computableFromCfgUnsafe(drivers, toCfgContext(bCtx), cfg, ops);
+}
+
+export function computableFromCfgUnsafe(drivers: MiddleLayerInternalDrivers, ctx: Record<string, unknown>,
+                                        cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
   const key = canonicalize({
     ctx: Object.fromEntries(Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1)),
     cfg: cfg
@@ -219,5 +224,5 @@ export function computableFromCfg(drivers: MiddleLayerInternalDrivers, ctx: Reco
         return stack.result;
       }
     };
-  }, { key });
+  }, { ...ops, key });
 }

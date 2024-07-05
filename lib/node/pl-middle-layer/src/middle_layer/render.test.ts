@@ -2,30 +2,56 @@ import { awaitBlockDone, withMl } from './middle_layer.test';
 import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
 import * as tp from 'node:timers/promises';
 
-test('test render', async () => {
+test('test JS render enter numbers', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
     const block1Id = await prj.addBlock('Block 1', {
-      type: 'dev',
-      // folder: '/Volumes/Data/Projects/MiLaboratory/blocks-beta/block-beta-enter-numbers'
-      folder: '/Volumes/Data/Projects/MiLaboratory/blocks-beta/block-beta-download-file'
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      organization: 'milaboratory',
+      package: 'enter-numbers',
+      version: '1.1.1'
     });
 
-    // await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.runBlock(block1Id);
+    await awaitBlockDone(prj, block1Id);
+    const blockState = prj.getBlockState(block1Id);
+    await blockState.awaitStableValue();
+    const stateSnapshot = await blockState.getValue();
+    expect((stateSnapshot.outputs!['dependsOnBlocks1'] as any).value.length).toBeGreaterThan(5);
+  });
+});
+
+test('test JS render download', async () => {
+  await withMl(async ml => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    const block1Id = await prj.addBlock('Block 1', {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      organization: 'milaboratory',
+      package: 'download-file',
+      version: '1.2.0'
+    });
+
     await prj.setBlockArgs(block1Id, {
       storageId: 'library',
       filePath: 'answer_to_the_ultimate_question.txt'
     });
+
     await prj.runBlock(block1Id);
     await awaitBlockDone(prj, block1Id);
-    // await prj.getBlockState(block1Id).awaitStableValue();
-    for (let i = 0; i < 4; ++i) {
-      console.dir(await prj.getBlockState(block1Id).getValue(), { depth: 5 });
-      await tp.setTimeout(100);
-    }
+    const blockState = prj.getBlockState(block1Id);
+    await blockState.awaitStableValue();
+    const stateSnapshot = await blockState.getValue();
+    console.dir(stateSnapshot, { depth: 5 });
+    expect((stateSnapshot.outputs!['contentAsString1'] as any).value.length).toBeGreaterThan(5);
   });
 });
 

@@ -2,7 +2,7 @@ import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from
 import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';
-import { computableFromCfg } from './executor';
+import { computableFromCfgUnsafe } from './executor';
 import { assertNever } from '@milaboratory/ts-helpers';
 import { Computable } from '@milaboratory/computable';
 
@@ -47,7 +47,9 @@ const SRGetResourceField: Subroutine = args => {
   const field = args.field as string | undefined;
   if (source === undefined || field === undefined)
     return resOp(undefined);
-  return ({ cCtx }) => res(cCtx.accessor(source).node().traverse(field)?.persist());
+  return ({ cCtx }) => {
+    return res(cCtx.accessor(source).node().traverse(field)?.persist());
+  };
 };
 
 function mapArrayToRecord<T, R>(elements: T[], cb: (e: T) => R): Record<string, R> {
@@ -342,13 +344,16 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       const ctxValue = ctx[cfg.variable];
       if (typeof ctxValue === 'function')
         return e => res(ctxValue(e.cCtx));
-      else
+      else {
+        if (ctxValue === undefined)
+          console.log('asdasd');
         return resOp(ctxValue);
+      }
 
     case 'Isolate':
       return ({ drivers }) => ({
         type: 'ScheduleComputable',
-        computable: computableFromCfg(drivers, ctx, cfg.cfg)
+        computable: computableFromCfgUnsafe(drivers, ctx, cfg.cfg)
       });
 
     case 'Immediate':

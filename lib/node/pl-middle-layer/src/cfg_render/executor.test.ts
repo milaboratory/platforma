@@ -5,7 +5,7 @@ import {
   makeObject,
   mapArrayValues, PlatformaConfiguration, PlResourceEntry, TypedConfig
 } from '@milaboratory/sdk-ui';
-import { computableFromCfg } from './executor';
+import { computableFromCfg, computableFromCfgUnsafe } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { Computable } from '@milaboratory/computable';
@@ -27,11 +27,11 @@ test('local cfg test (no pl)', async () => {
 
   const ctx = { $args: args };
 
-  const computable1 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig);
+  const computable1 = computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig);
   const out1 = (await computable1.getValue()) as InferOutputType<typeof cfg.outputs['out1'], typeof args, unknown>;
   expect(out1).toEqual('hi');
 
-  const computable2 = computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2'] as TypedConfig);
+  const computable2 = computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2'] as TypedConfig);
   const out2 = (await computable2.getValue());
   expect(out2).toStrictEqual([{ theField: 'a' }, { theField: 'b' }, { theField: 'c' }]);
 });
@@ -62,7 +62,7 @@ test('cfg test with pl, simple', async () => {
     };
 
     const computable: Computable<unknown> =
-      computableFromCfg({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig) as any;
+      computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig) as any;
 
     expect(await computable.getValue()).toBeUndefined();
 

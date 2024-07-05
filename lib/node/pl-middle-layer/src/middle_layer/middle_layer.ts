@@ -205,11 +205,11 @@ export class MiddleLayer {
       }
     });
 
-    const logger = new ConsoleLoggerAdapter();
+    const logger = new ConsoleLoggerAdapter(console);
     const bpPreparer = new BlockPackPreparer(signer);
 
     const downloadClient = createDownloadClient(
-      logger, pl, ops.platformLocalStorageNameToPath,
+      logger, pl, ops.platformLocalStorageNameToPath
     );
     const logsClient = createLogsClient(pl, logger);
     const uploadBlobClient = createUploadBlobClient(pl, logger);
@@ -246,7 +246,7 @@ export class MiddleLayer {
     );
     const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
     const lsDriver = new LsDriver(
-      logger, lsClient, pl, signer, ops.localStorageNameToPath,
+      logger, lsClient, pl, signer, ops.localStorageNameToPath
     );
 
     const env: MiddleLayerEnvironment = {
@@ -270,9 +270,9 @@ export class MiddleLayer {
 
     return new MiddleLayer(
       env, {
-      blob: downloadDriver,
-      listFiles: lsDriver,
-    },
+        blob: downloadDriver,
+        listFiles: lsDriver
+      },
       signer,
       projects, openedProjects, projectListTC.tree, projectListTC.computable);
   }

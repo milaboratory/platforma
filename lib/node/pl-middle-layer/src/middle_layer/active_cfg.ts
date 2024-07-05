@@ -41,8 +41,10 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
 
       const blockCtx = constructBlockContext(prj, id);
 
+      // console.log(blockCtx.prod(ctx));
+
       for (const cfg of activeOutputConfigs)
-        ret.push(computableFromCfg(env.drivers, blockCtx, cfg));
+        ret.push(Computable.wrapError(computableFromCfg(env.drivers, blockCtx, cfg)));
     }
 
     return ret;
