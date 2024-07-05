@@ -3,7 +3,6 @@ import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import {
-  PlError,
   PlErrorCodeNotFound,
   RecoverablePlError,
   rethrowMeaningfulError,
@@ -229,8 +228,6 @@ export class LLPlTransaction {
         }
       }
     } catch (e: any) {
-      const error = e instanceof Error ? e : new Error('error');
-
       return this.assignErrorFactoryIfNotSet(() => {
         rethrowMeaningfulError(e, true);
       }, currentHandler?.reject);

@@ -6,6 +6,7 @@ import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
 import { NullResourceId, OptionalResourceId, ResourceId, resourceIdToString } from '../core/types';
 import { inferAuthRefreshTime } from '../core/auth';
+import * as path from 'node:path';
 
 export interface TestConfig {
   address: string;
@@ -15,7 +16,15 @@ export interface TestConfig {
 }
 
 const CONFIG_FILE = 'test_config.json';
-const AUTH_DATA_FILE = '.test_auth.json';
+// const AUTH_DATA_FILE = '.test_auth.json';
+
+let authDataFilePath: string | undefined;
+
+function getFullAuthDataFilePath() {
+  if (authDataFilePath === undefined)
+    authDataFilePath = path.resolve('.test_auth.json');
+  return authDataFilePath;
+}
 
 export function getTestConfig(): TestConfig {
   let conf: Partial<TestConfig> = {};
@@ -49,14 +58,14 @@ interface AuthCache {
 
 function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformation) => void {
   return authInformation =>
-    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
+    fs.writeFileSync(getFullAuthDataFilePath(), Buffer.from(JSON.stringify({
       conf: tConf, authInformation,
       expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
     } as AuthCache)), 'utf8');
 }
 
 const cleanAuthInfoCallback = () => {
-  fs.rmSync(AUTH_DATA_FILE);
+  fs.rmSync(getFullAuthDataFilePath());
 };
 
 export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth: AuthOps }> {
@@ -65,8 +74,8 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth:
   let authInformation: AuthInformation | undefined = undefined;
 
   // try recover from cache
-  if (fs.existsSync(AUTH_DATA_FILE)) {
-    const cache: AuthCache = JSON.parse(fs.readFileSync(AUTH_DATA_FILE, { encoding: 'utf-8' }));
+  if (fs.existsSync(getFullAuthDataFilePath())) {
+    const cache: AuthCache = JSON.parse(fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }));
     if (cache.conf.address === tConf.address
       && cache.conf.test_user === tConf.test_user
       && cache.conf.test_password === tConf.test_password

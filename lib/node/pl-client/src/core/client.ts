@@ -9,6 +9,7 @@ import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import { Dispatcher } from 'undici';
+import { isUnauthenticated } from './errors';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
@@ -101,6 +102,8 @@ export class PlClient {
       ? AnonymousClientRoot
       : createHash('sha256').update(user).digest('hex');
 
+    this._serverInfo = await this.ping();
+
     this._clientRoot = await this._withTx('initialization', true, NullResourceId,
       async tx => {
         let mainRoot: AnyResourceRef;
@@ -128,7 +131,11 @@ export class PlClient {
         }
       });
 
-    this._serverInfo = await this.ping();
+    // try {
+    //
+    // } catch (error: unknown) {
+    //   if(isUnauthenticated(error) && this.)
+    // }
   }
 
   /** Returns true if field existed */

@@ -170,9 +170,9 @@ export class LLPlClient {
         start: (metadata, listener, next) => {
           next(metadata, {
             onReceiveStatus: (status, next) => {
-              if (status.code === GrpcStatus.UNAUTHENTICATED)
+              if (status.code == GrpcStatus.UNAUTHENTICATED) // (!!!) don't change to "==="
                 this.updateStatus('Unauthenticated');
-              if (status.code === GrpcStatus.UNAVAILABLE)
+              if (status.code == GrpcStatus.UNAVAILABLE) // (!!!) don't change to "==="
                 this.updateStatus('Disconnected');
               next(status);
             }

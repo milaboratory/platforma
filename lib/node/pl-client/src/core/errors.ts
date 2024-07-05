@@ -4,7 +4,7 @@ import { Aborted } from '@milaboratory/ts-helpers';
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
   if (err instanceof DisconnectedError)
     return true;
-  if ((err as any).name === 'RpcError' && (err as any).code === 'UNAVAILABLE')
+  if ((err as any).name == 'RpcError' && (err as any).code == 'UNAVAILABLE')
     return true;
   if ((err as any).cause !== undefined && !nested) // nested limits the depth of search
     return isConnectionProblem((err as any).cause, true);
@@ -14,7 +14,7 @@ export function isConnectionProblem(err: unknown, nested: boolean = false): bool
 export function isUnauthenticated(err: unknown, nested: boolean = false): boolean {
   if (err instanceof UnauthenticatedError)
     return true;
-  if ((err as any).name === 'RpcError' && (err as any).code === 'UNAUTHENTICATED')
+  if ((err as any).name == 'RpcError' && (err as any).code == 'UNAUTHENTICATED')
     return true;
   if ((err as any).cause !== undefined && !nested) // nested limits the depth of search
     return isUnauthenticated((err as any).cause, true);
@@ -22,11 +22,11 @@ export function isUnauthenticated(err: unknown, nested: boolean = false): boolea
 }
 
 export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): boolean {
-  if (err instanceof Aborted)
+  if (err instanceof Aborted || (err as any).name == 'AbortError')
     return true;
-  if ((err as any).code === 'ABORT_ERR')
+  if ((err as any).code == 'ABORT_ERR')
     return true;
-  if ((err as any).name === 'RpcError' && ((err as any).code === 'CANCELLED' || (err as any).code === 'DEADLINE_EXCEEDED'))
+  if ((err as any).name == 'RpcError' && ((err as any).code == 'CANCELLED' || (err as any).code == 'DEADLINE_EXCEEDED'))
     return true;
   if ((err as any).cause !== undefined && !nested) // nested limits the depth of search
     return isTimeoutOrCancelError((err as any).cause, true);
@@ -58,7 +58,7 @@ export class UnrecoverablePlError extends PlError {
 }
 
 export function isNotFoundError(err: unknown, nested: boolean = false): boolean {
-  if ((err as any).name === 'RpcError' && ((err as any).code === 'NOT_FOUND'))
+  if ((err as any).name == 'RpcError' && ((err as any).code == 'NOT_FOUND'))
     return true;
   if ((err as any).cause !== undefined && !nested)
     return isNotFoundError((err as any).cause, true);
