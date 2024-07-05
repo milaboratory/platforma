@@ -12,7 +12,9 @@ const classes = computed(() => (isHovered.value && hasElementEllipsis.value ? 'u
 
 const updateStatus = debounce((val: boolean) => (isHovered.value = val), 500);
 
-const animationTime = computed(() => (span.value ? `${span.value?.innerHTML.length * 0.3}s` : '5s'));
+const animationTime = computed(() => {
+  return span.value ? `${span.value?.innerHTML.length * 0.4}s` : '5s';
+});
 
 function isEllipsisEnabled() {
   const el = notEmpty(span.value, 'span cannot be empty');
@@ -40,7 +42,7 @@ function mouseoutHandler() {
 <style lang="scss">
 .ui-lt-container {
   min-width: 0;
-  color: #13d31f;
+  //color: #13d31f;
   white-space: nowrap;
   overflow: hidden;
   position: relative;

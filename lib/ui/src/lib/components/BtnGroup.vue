@@ -14,8 +14,10 @@ defineProps<{
   modelValue?: unknown;
   options: Readonly<Option[]>;
   label?: string;
-  clearable?: boolean;
-  required?: boolean;
+  //FIXME unused props
+  // clearable?: boolean;
+  //FIXME unused props
+  //required?: boolean;
   disabled?: boolean;
   large?: boolean;
   helper?: string;
