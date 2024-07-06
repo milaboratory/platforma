@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
 import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
-import { artifactNameToString, FullArtifactName, fullNameToString } from './package';
+import { artifactNameToString, FullArtifactName, fullNameToString, typedArtifactNameToString } from './package';
 import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
 import winston from 'winston';
@@ -26,7 +26,7 @@ const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix];
 
-export function createLogger(level : string = 'debug'): winston.Logger {
+export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
     level: level,
     format: winston.format.printf(({ level, message }) => {
@@ -113,7 +113,7 @@ const loadDependencies = (
       if (src.dependencies.length > 0) {
         logger.debug('Dependencies:');
         for (const dep of src.dependencies)
-          logger.debug(`  - ${artifactNameToString(dep)}`);
+          logger.debug(`  - ${typedArtifactNameToString(dep)}`);
       }
     }
   }
@@ -172,7 +172,7 @@ export function parseSources(
     if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
       for (const dep of newSrc.dependencies)
-        logger.debug(`  - ${artifactNameToString(dep)}`);
+        logger.debug(`  - ${typedArtifactNameToString(dep)}`);
     }
 
     sources.push(newSrc)
@@ -181,7 +181,7 @@ export function parseSources(
   return sources
 }
 
-export function newCompiler(logger: winston.Logger, packageInfo: PackageJson) : TengoTemplateCompiler {
+export function newCompiler(logger: winston.Logger, packageInfo: PackageJson): TengoTemplateCompiler {
   const compiler = new TengoTemplateCompiler();
 
   // collect all data (templates and libs) from dependency tree
@@ -197,7 +197,7 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
   if (fileName.endsWith(srcLibSuffix))
     return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcLibSuffix.length), type: 'library' };
-  
+
   if (fileName.endsWith(srcTplSuffix))
     return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcTplSuffix.length), type: 'template' };
 
@@ -207,7 +207,7 @@ function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullA
   return null;
 }
 
-export function compile(logger : winston.Logger) : TemplatesAndLibs {
+export function compile(logger: winston.Logger): TemplatesAndLibs {
   const packageInfo = getPackageInfo()
   const compiler = newCompiler(logger, packageInfo)
   const sources = parseSources(logger, packageInfo, 'src', '')
@@ -231,7 +231,7 @@ export function compile(logger : winston.Logger) : TemplatesAndLibs {
   return compiled
 }
 
-export function savePacks(logger: winston.Logger, compiled : TemplatesAndLibs) {
+export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs) {
   // writing libs
   if (compiled.libs.length > 0) {
     const libOutput = resolveDistLibs('.');

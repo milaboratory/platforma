@@ -20,14 +20,16 @@ export default class Check extends Command {
   ]
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Check)
+    const { flags, argv } = await this.parse(Check)
     const logger = createLogger(flags['log-level'])
 
-    const testerArgs: string[] = (this.argv.length == 0) ? ['./src'] : this.argv
+    const testerArgs: string[] = (argv.length == 0) ? ['./src'] : argv as string[]
+
+    console.dir(testerArgs)
 
     const tester = spawnEmbed(
-      'npx', 'tgo-test', 'check',
-      '--log-level', flags['log-level'],
+      'npm', 'exec', 'tgo-test', '--',
+      'check', '--log-level', flags['log-level'],
       '--artifacts', '-',
       ...testerArgs
     )

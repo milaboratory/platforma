@@ -1,5 +1,6 @@
 import winston from 'winston';
 import { getPackageInfo, newCompiler, parseSources } from '../compiler/main'
+import { typedArtifactNameToString } from '../compiler/package';
 
 export function dumpAll(logger: winston.Logger, stream: NodeJS.WritableStream): void {
     const packageInfo = getPackageInfo()
@@ -7,29 +8,45 @@ export function dumpAll(logger: winston.Logger, stream: NodeJS.WritableStream): 
     const sources = parseSources(logger, packageInfo, 'src', '')
 
     const compiler = newCompiler(logger, packageInfo)
-    for (const src of sources) {
-        if (src.fullName.type === "library") {
-            compiler.addLib(src)
-        }
-    }
 
     // group output by type:
     //  - all libs
     //  - all templates
     //  - all tests
 
+    // Libs
+
     for (const lib of compiler.allLibs()) {
+        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`);
         stream.write(JSON.stringify(lib) + "\n")
     }
 
     for (const src of sources) {
-        if (src.fullName.type === 'template') {
+        if (src.fullName.type === "library") {
+            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`);
             stream.write(JSON.stringify(src) + "\n")
         }
     }
 
+    // Templates
+
+    for (const tpl of compiler.allTemplates()) {
+        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`);
+        stream.write(JSON.stringify(tpl) + "\n")
+    }
+
+    for (const src of sources) {
+        if (src.fullName.type === 'template') {
+            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`);
+            stream.write(JSON.stringify(src) + "\n")
+        }
+    }
+
+    // Tests
+
     for (const src of sources) {
         if (src.fullName.type === 'test') {
+            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`);
             stream.write(JSON.stringify(src) + "\n")
         }
     }
