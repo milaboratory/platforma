@@ -1,7 +1,7 @@
-export interface UploadProgress {
+export interface ImportProgress {
   done: boolean;
   /** Status of indexing/uploading got from platforma gRPC. */
-  status?: UploadStatus;
+  status?: ImportStatus;
   /** True if BlobUpload, false if BlobIndex. */
   readonly isUpload: boolean;
   /** True if signature matched. */
@@ -14,7 +14,7 @@ export interface UploadProgress {
 }
 
 /** Almost direct mapping from proto struct got from gRPC. */
-export interface UploadStatus {
+export interface ImportStatus {
   /** A float from 0 to 1 and is equal to bytesProcessed / bytesTotal. */
   readonly progress: number;
   readonly bytesProcessed?: number;
