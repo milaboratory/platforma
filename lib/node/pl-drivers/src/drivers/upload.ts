@@ -75,15 +75,15 @@ export class UploadDriver {
   /** Returns a progress id and schedules an upload task if it's necessary. */
   getProgressId(
     res: ResourceWithData | PlTreeEntry
-  ): Computable<sdk.UploadProgress>;
+  ): Computable<sdk.ImportProgress>;
   getProgressId(
     res: ResourceWithData | PlTreeEntry,
     ctx: ComputableCtx
-  ): sdk.UploadProgress;
+  ): sdk.ImportProgress;
   getProgressId(
     res: ResourceWithData | PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<sdk.UploadProgress> | sdk.UploadProgress {
+  ): Computable<sdk.ImportProgress> | sdk.ImportProgress {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getProgressId(res, ctx));
 
@@ -102,7 +102,7 @@ export class UploadDriver {
     w: Watcher,
     res: ResourceWithData,
     callerId: string
-  ): sdk.UploadProgress {
+  ): sdk.ImportProgress {
     const value = this.idToProgress.get(res.id);
 
     if (value != undefined) {
@@ -211,7 +211,7 @@ class ProgressUpdater {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
 
-  public progress: sdk.UploadProgress;
+  public progress: sdk.ImportProgress;
   private uploadOpts?: UploadOpts;
   public uploadingTerminallyFailed?: boolean;
 
@@ -367,7 +367,7 @@ function dataToUploadOpts(res: ResourceWithData): UploadOpts {
   };
 }
 
-function protoToStatus(proto: ProgressStatus): sdk.UploadStatus {
+function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
   return {
     progress: proto.progress ?? 0,
     bytesProcessed: Number(proto.bytesProcessed),
