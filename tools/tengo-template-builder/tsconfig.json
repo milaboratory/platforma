@@ -7,7 +7,6 @@
     "strict": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "incremental": true,
     "sourceMap": true,
     "declaration": true,
     "skipLibCheck": true
