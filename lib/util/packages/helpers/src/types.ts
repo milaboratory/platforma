@@ -69,3 +69,10 @@ export type AwaitedStruct<O extends Record<string, unknown>> = {
 export type DeepReadonly<T> = keyof T extends never
   ? T
   : { readonly [k in keyof T]: DeepReadonly<T[k]> };
+
+
+export type Unionize<T extends Record<string, unknown>> = {
+    [K in keyof T]: { key: K; value: T[K] };
+}[keyof T];
+
+export type Objectify<U extends {key: string; value: unknown}> = { [T in U as T['key']]: T['value'] };

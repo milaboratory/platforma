@@ -1,4 +1,4 @@
-import type { Option, AwaitedStruct } from "./types";
+import type { Option, AwaitedStruct, Unionize } from "./types";
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -247,4 +247,11 @@ export function alike(obj: Record<string, unknown>, to: Record<string, unknown>)
 
 export function asConst<const T>(v: T) {
   return v;
+}
+
+export function unionize<K extends keyof O, V, O extends Record<K, V>>(obj: O): Unionize<O>[] {
+  return Object.entries(obj).map(([key, value]) => ({
+    key,
+    value
+  })) as Unionize<O>[];
 }
