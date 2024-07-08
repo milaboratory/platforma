@@ -284,7 +284,7 @@ const SRGetOnDemandBlobContent: Subroutine = args => {
   };
 };
 
-const SRGetUploadBlob: Subroutine = args => {
+const SRGetImportProgress: Subroutine = args => {
   const source = args.source as PlTreeEntry | undefined;
   if (source === undefined)
     return resOp(undefined);
@@ -522,10 +522,10 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
         }
       });
 
-    case 'GetUploadBlob':
+    case 'GetImportProgress':
       return () => ({
         type: 'ScheduleSubroutine',
-        subroutine: SRGetUploadBlob,
+        subroutine: SRGetImportProgress,
         args: {
           source: renderCfg(ctx, cfg.source)
         }

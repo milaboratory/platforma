@@ -38,7 +38,7 @@ export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator
     case 'GetBlobContentAsJson':
     case 'GetDownloadedBlobContent':
     case 'GetOnDemandBlobContent':
-    case 'GetUploadBlob':
+    case 'GetImportProgress':
     case 'GetLastLogs':
     case 'GetProgressLog':
     case 'GetLogHandle':

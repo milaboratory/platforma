@@ -17,7 +17,7 @@ export function ifNotUndef<T, R>(value: T | undefined, cb: (value: T) => R): R |
 
 function isActiveCfg(cfg: Cfg): boolean {
   switch (cfg.type) {
-    case 'GetUploadBlob':
+    case 'GetImportProgress':
       return true;
     default:
       return false;
