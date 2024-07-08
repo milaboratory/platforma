@@ -29,7 +29,7 @@ export type Cfg =
   | CfgDownloadedBlobContent
   | CfgOnDemandBlobContent
 
-  | CfgUploadBlob
+  | CfgImportProgress
 
   | CfgLastLogs
   | CfgProgressLog
@@ -180,8 +180,8 @@ export type CfgOnDemandBlobContent = {
 // Uploads Blobs
 //
 
-export type CfgUploadBlob = {
-  type: 'GetUploadBlob'
+export type CfgImportProgress = {
+  type: 'GetImportProgress'
   source: Cfg
 }
 

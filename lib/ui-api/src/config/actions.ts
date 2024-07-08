@@ -18,7 +18,7 @@ import {
   ActOr, ActMakeArray, ActFlatten,
   ActGetDownloadedBlobContent,
   ActGetOnDemandBlobContent,
-  ActUploadBlob,
+  ActImportProgress,
   ActGetLastLogs,
   ActGetProgressLog,
   ActGetLogHandle
@@ -322,11 +322,11 @@ export function getOnDemandBlobContent<const Source extends TypedConfig>(
 // Upload Blobs
 //
 
-export function getUploadBlob<const Source extends TypedConfig>(
+export function getImportProgress<const Source extends TypedConfig>(
   source: Source
-): TypedConfig<ActUploadBlob<ExtractAction<Source>>> {
+): TypedConfig<ActImportProgress<ExtractAction<Source>>> {
   return ({
-    type: 'GetUploadBlob', source: primitiveToConfig(source)
+    type: 'GetImportProgress', source: primitiveToConfig(source)
   } as Cfg) as any;
 }
 
