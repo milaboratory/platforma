@@ -1,7 +1,8 @@
 {
   "name": "@milaboratory/sdk-test",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Typescript Block Test Helpers",
+  "type": "module",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
   "types": "dist/lib.d.ts",
