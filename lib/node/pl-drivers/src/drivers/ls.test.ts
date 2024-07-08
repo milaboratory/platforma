@@ -2,9 +2,10 @@ import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
 } from '@milaboratory/ts-helpers';
-import { fromFileHandle, LsDriver, toFileHandle } from './ls';
+import { fromFileHandle, LsDriver, toFileHandle, toListItem } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratory/pl-client-v2';
+import type { Dirent, Stats } from 'node:fs';
 
 test('toFileHandle should ok when encode data for UploadBlob', () => {
   const signer = new HmacSha256Signer('abc');
@@ -27,6 +28,32 @@ test('toFileHandle should ok when encode data for UploadBlob', () => {
   expect(got.localPath).toEqual('C:\\programFiles\\file.txt');
   expect(got.pathSignature).not.toHaveLength(0);
   expect(got.sizeBytes).toEqual('20');
+});
+
+test('toListItem should ok', () => {
+  const got = toListItem(new ConsoleLoggerAdapter(), {
+    fullName: 'C:\\programFiles\\file.txt',
+    dirent: {
+      isFile: () => true,
+      isDirectory: () => false,
+      name: 'file.txt'
+    } as Dirent,
+    stat: {
+      mtimeMs: 150000,
+      size: 20
+    } as Stats
+  });
+
+  expect(got).toMatchObject({
+    isDir: false,
+    name: 'file.txt',
+    fullName: 'C:\\programFiles\\file.txt',
+    lastModified: {
+      seconds: 150n,
+      nanos: 0
+    },
+    size: 20n
+  });
 });
 
 test('should ok when get all storages from ls driver', async () => {

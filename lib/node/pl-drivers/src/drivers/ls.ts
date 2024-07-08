@@ -97,7 +97,7 @@ export class LsDriver implements sdk.LsDriver {
   }
 }
 
-function toListItem(
+export function toListItem(
   logger: MiLogger,
   info: {
     fullName: string;

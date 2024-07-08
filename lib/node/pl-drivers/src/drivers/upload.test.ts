@@ -21,8 +21,6 @@ import {
   createUploadProgressClient
 } from '../clients/helpers';
 
-const callerId = 'callerId';
-
 test('upload a blob', async () => {
   await withTest(
     '42',
@@ -160,6 +158,35 @@ test('upload a duplicate blob', async () => {
   );
 });
 
+test('index a blob', async () => {
+  await withTest('', async ({ client, uploader }: TestArg) => {
+    const uploadId = await createBlobIndex(
+      client,
+      'another_answer_to_the_ultimate_question.txt',
+      'library'
+    );
+    const handleRes = await getHandleField(client, uploadId);
+
+    const c = uploader.getProgressId(handleRes);
+
+    while (true) {
+      const p = await c.getValue();
+      console.log('got index progress: ', p);
+
+      expect(p.isUpload).toBeFalsy();
+      expect(p.isUploadSignMatch).toBeUndefined();
+      if (p.done) {
+        expect(p.lastError).toBeUndefined();
+        expect(p.status?.bytesProcessed).toBe(7);
+        expect(p.status?.bytesTotal).toBe(7);
+        return;
+      }
+
+      await c.awaitChange();
+    }
+  });
+});
+
 interface TestArg {
   client: PlClient;
   uploader: UploadDriver;
@@ -228,6 +255,36 @@ async function createBlobUpload(
       await tx.commit();
 
       return await upload.globalId;
+    },
+    {}
+  );
+}
+
+async function createBlobIndex(
+  c: PlClient,
+  path: string,
+  storageId: string
+): Promise<ResourceId> {
+  return await c.withWriteTx(
+    'UploadDriverCreateTest',
+    async (tx: PlTransaction) => {
+      const settings = {
+        storageId: storageId,
+        path: path
+      };
+      const data = new TextEncoder().encode(JSON.stringify(settings));
+      const importInternal = tx.createStruct(
+        { name: 'BlobImportInternal', version: '1' },
+        data
+      );
+      tx.createField(
+        { resourceId: c.clientRoot, fieldName: 'project1' },
+        'Dynamic',
+        importInternal
+      );
+      await tx.commit();
+
+      return await importInternal.globalId;
     },
     {}
   );
