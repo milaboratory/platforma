@@ -1,104 +1,133 @@
 import winston from 'winston';
-import { getPackageInfo, newCompiler, parseSources } from '../compiler/main'
+import { getPackageInfo, newCompiler, parseSources } from '../compiler/main';
 import { typedArtifactNameToString } from '../compiler/package';
 
-export function dumpAll(logger: winston.Logger, stream: NodeJS.WritableStream): void {
-    const packageInfo = getPackageInfo()
+export function dumpAll(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
 
-    const sources = parseSources(logger, packageInfo, 'src', '')
+  const sources = parseSources(logger, packageInfo, 'src', '');
 
-    const compiler = newCompiler(logger, packageInfo)
+  const compiler = newCompiler(logger, packageInfo);
 
-    // group output by type:
-    //  - all libs
-    //  - all templates
-    //  - all tests
+  logger.debug(`UGU!!!!`);
 
-    // Libs
+  // group output by type:
+  //  - all libs
+  //  - all templates
+  //  - all tests
 
-    for (const lib of compiler.allLibs()) {
-        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`);
-        stream.write(JSON.stringify(lib) + "\n")
+  // Libs
+
+  for (const lib of compiler.allLibs()) {
+    logger.debug(
+      `Dumping to pl-tester: ${typedArtifactNameToString(lib.fullName)}`
+    );
+    stream.write(JSON.stringify(lib) + '\n');
+  }
+
+  for (const src of sources) {
+    if (src.fullName.type === 'library') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+      );
+      stream.write(JSON.stringify(src) + '\n');
     }
+  }
 
-    for (const src of sources) {
-        if (src.fullName.type === "library") {
-            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`);
-            stream.write(JSON.stringify(src) + "\n")
-        }
+  // Templates
+
+  for (const tpl of compiler.allTemplates()) {
+    logger.debug(
+      `Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`
+    );
+    stream.write(JSON.stringify(tpl) + '\n');
+  }
+
+  for (const src of sources) {
+    if (src.fullName.type === 'template') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
+          src.srcName
+        }`
+      );
+      stream.write(JSON.stringify(src) + '\n');
     }
+  }
 
-    // Templates
+  // Tests
 
-    for (const tpl of compiler.allTemplates()) {
-        logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(tpl.fullName)}`);
-        stream.write(JSON.stringify(tpl) + "\n")
+  for (const src of sources) {
+    if (src.fullName.type === 'test') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${
+          src.srcName
+        }`
+      );
+      stream.write(JSON.stringify(src) + '\n');
     }
-
-    for (const src of sources) {
-        if (src.fullName.type === 'template') {
-            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`);
-            stream.write(JSON.stringify(src) + "\n")
-        }
-    }
-
-    // Tests
-
-    for (const src of sources) {
-        if (src.fullName.type === 'test') {
-            logger.debug(`Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)} ${src.srcName}`);
-            stream.write(JSON.stringify(src) + "\n")
-        }
-    }
+  }
 }
 
-export function dumpLibs(logger: winston.Logger, dumpDeps: boolean, stream: NodeJS.WritableStream): void {
-    const packageInfo = getPackageInfo()
+export function dumpLibs(
+  logger: winston.Logger,
+  dumpDeps: boolean,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
 
-    const sources = parseSources(logger, packageInfo, 'src', '')
+  const sources = parseSources(logger, packageInfo, 'src', '');
 
-    if (!dumpDeps) {
-        for (const src of sources) {
-            if (src.fullName.type === "library") {
-                stream.write(JSON.stringify(src) + "\n")
-            }
-        }
-
-        return
-    }
-
-    const compiler = newCompiler(logger, packageInfo)
+  if (!dumpDeps) {
     for (const src of sources) {
-        if (src.fullName.type === "library") {
-            compiler.addLib(src)
-        }
+      if (src.fullName.type === 'library') {
+        stream.write(JSON.stringify(src) + '\n');
+      }
     }
 
-    for (const lib of compiler.allLibs()) {
-        stream.write(JSON.stringify(lib) + "\n")
+    return;
+  }
+
+  const compiler = newCompiler(logger, packageInfo);
+  for (const src of sources) {
+    if (src.fullName.type === 'library') {
+      compiler.addLib(src);
     }
+  }
+
+  for (const lib of compiler.allLibs()) {
+    stream.write(JSON.stringify(lib) + '\n');
+  }
 }
 
-export function dumpTemplates(logger: winston.Logger, stream: NodeJS.WritableStream): void {
-    const packageInfo = getPackageInfo()
+export function dumpTemplates(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
 
-    const sources = parseSources(logger, packageInfo, 'src', '')
+  const sources = parseSources(logger, packageInfo, 'src', '');
 
-    for (const src of sources) {
-        if (src.fullName.type === "template") {
-            stream.write(JSON.stringify(src) + "\n")
-        }
+  for (const src of sources) {
+    if (src.fullName.type === 'template') {
+      stream.write(JSON.stringify(src) + '\n');
     }
+  }
 }
 
-export function dumpTests(logger: winston.Logger, stream: NodeJS.WritableStream): void {
-    const packageInfo = getPackageInfo()
+export function dumpTests(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
 
-    const sources = parseSources(logger, packageInfo, 'src', '')
+  const sources = parseSources(logger, packageInfo, 'src', '');
 
-    for (const src of sources) {
-        if (src.fullName.type === 'test') {
-            stream.write(JSON.stringify(src) + "\n")
-        }
+  for (const src of sources) {
+    if (src.fullName.type === 'test') {
+      stream.write(JSON.stringify(src) + '\n');
     }
+  }
 }

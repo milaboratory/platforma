@@ -4,14 +4,19 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
 import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
-import { artifactNameToString, FullArtifactName, fullNameToString, typedArtifactNameToString } from './package';
+import {
+  artifactNameToString,
+  FullArtifactName,
+  fullNameToString,
+  typedArtifactNameToString
+} from './package';
 import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
 import winston from 'winston';
 
 interface PackageJson {
-  'name': string;
-  'version': string;
+  name: string;
+  version: string;
 }
 
 const compiledTplSuffix = '.plj.gz';
@@ -42,8 +47,10 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 }
 
 export function getPackageInfo(): PackageJson {
-  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
-  return packageInfo
+  const packageInfo: PackageJson = JSON.parse(
+    fs.readFileSync('package.json').toString()
+  );
+  return packageInfo;
 }
 
 function resolveDistLibs(root: string) {
@@ -58,16 +65,19 @@ const loadDependencies = (
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
   packageInfo: PackageJson,
-  target: string) => {
+  target: string,
+  isLink: boolean = false
+) => {
   const packageJsonPath = path.resolve(target, 'package.json');
 
   if (pathType(packageJsonPath) !== 'file') {
     // recursively iterate over all folders
     for (const f of fs.readdirSync(target)) {
+      const isLink = pathType(path.join(target, f)) === 'link';
       const file = path.resolve(target, f);
       const type = pathType(file);
       if (type === 'dir')
-        loadDependencies(logger, compiler, packageInfo, file);
+        loadDependencies(logger, compiler, packageInfo, file, isLink);
     }
     return;
   }
@@ -86,14 +96,17 @@ const loadDependencies = (
 
   // we are in tengo dependency folder
 
-  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
+  const packageJson: PackageJson = JSON.parse(
+    fs.readFileSync(packageJsonPath).toString()
+  );
 
   // in a workspace we will find ourselves in node_modules, ignoring
-  if (packageJson.name === packageInfo.name)
-    return;
+  if (packageJson.name === packageInfo.name) return;
 
-  if (pathType(path.resolve(target, 'node_modules')) === 'dir')
-    throw new Error(`nested node_modules is a sign of library dependencies version incompatibility in ${target}`);
+  if (pathType(path.resolve(target, 'node_modules')) === 'dir' && isLink)
+    throw new Error(
+      `nested node_modules is a sign of library dependencies version incompatibility in ${target}`
+    );
 
   if (libFolderExists) {
     // adding libs
@@ -109,7 +122,9 @@ const loadDependencies = (
       };
       const src = parseSourceFile(file, fullName, true);
       compiler.addLib(src);
-      logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+      logger.debug(
+        `Adding dependency ${fullNameToString(fullName)} from ${file}`
+      );
       if (src.dependencies.length > 0) {
         logger.debug('Dependencies:');
         for (const dep of src.dependencies)
@@ -132,38 +147,42 @@ const loadDependencies = (
       };
       const tpl = new Template(fullName, { content: fs.readFileSync(file) });
       compiler.addTemplate(tpl);
-      logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+      logger.debug(
+        `Adding dependency ${fullNameToString(fullName)} from ${file}`
+      );
     }
   }
 };
 
 export function parseSources(
-  logger: winston.Logger, packageInfo: PackageJson,
-  root: string, subdir: string,
+  logger: winston.Logger,
+  packageInfo: PackageJson,
+  root: string,
+  subdir: string
 ): ArtifactSource[] {
-
   const sources: ArtifactSource[] = [];
 
   for (const f of fs.readdirSync(path.join(root, subdir))) {
-    const inRootPath = path.join(subdir, f) // path to item inside given <root>
-    const fullPath = path.join(root, inRootPath) // full path to item from CWD (or abs path, if <root> is abs path)
+    const inRootPath = path.join(subdir, f); // path to item inside given <root>
+    const fullPath = path.join(root, inRootPath); // full path to item from CWD (or abs path, if <root> is abs path)
 
-    if (pathType(fullPath) === "dir") {
+    if (pathType(fullPath) === 'dir') {
       // Just check that no libs or templates reside inside nested directories.
       // We forbid that for now for sake of simplicity.
-      parseSources(logger, packageInfo, root, inRootPath)
-      continue
+      parseSources(logger, packageInfo, root, inRootPath);
+      continue;
     }
 
     const fullName = fullNameFromFileName(packageInfo, inRootPath);
     if (!fullName) {
-      continue // skip unknown file types
+      continue; // skip unknown file types
     }
 
     if (subdir != '') {
+      // prettier-ignore
       throw new Error(`Templates and libraries should reside only inside '${root}' dir.
        You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
-       but regarding ${compilableSuffixes.join(", ")}, the flat file structure is mandatory.`);
+       but regarding ${compilableSuffixes.join(', ')}, the flat file structure is mandatory.`);
     }
 
     const file = path.resolve(root, inRootPath);
@@ -175,51 +194,66 @@ export function parseSources(
         logger.debug(`  - ${typedArtifactNameToString(dep)}`);
     }
 
-    sources.push(newSrc)
+    sources.push(newSrc);
   }
 
-  return sources
+  return sources;
 }
 
-export function newCompiler(logger: winston.Logger, packageInfo: PackageJson): TengoTemplateCompiler {
+export function newCompiler(
+  logger: winston.Logger,
+  packageInfo: PackageJson
+): TengoTemplateCompiler {
   const compiler = new TengoTemplateCompiler();
 
   // collect all data (templates and libs) from dependency tree
-  loadDependencies(
-    logger, compiler, packageInfo,
-    findNodeModules()
-  );
+  loadDependencies(logger, compiler, packageInfo, findNodeModules());
 
-  return compiler
+  return compiler;
 }
 
-function fullNameFromFileName(packageJson: PackageJson, fileName: string): FullArtifactName | null {
+function fullNameFromFileName(
+  packageJson: PackageJson,
+  fileName: string
+): FullArtifactName | null {
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
   if (fileName.endsWith(srcLibSuffix))
-    return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcLibSuffix.length), type: 'library' };
+    return {
+      ...pkgAndVersion,
+      id: fileName.substring(0, fileName.length - srcLibSuffix.length),
+      type: 'library'
+    };
 
   if (fileName.endsWith(srcTplSuffix))
-    return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcTplSuffix.length), type: 'template' };
+    return {
+      ...pkgAndVersion,
+      id: fileName.substring(0, fileName.length - srcTplSuffix.length),
+      type: 'template'
+    };
 
   if (fileName.endsWith(srcTestSuffix))
-    return { ...pkgAndVersion, id: fileName.substring(0, fileName.length - srcTestSuffix.length), type: 'test' };
+    return {
+      ...pkgAndVersion,
+      id: fileName.substring(0, fileName.length - srcTestSuffix.length),
+      type: 'test'
+    };
 
   return null;
 }
 
 export function compile(logger: winston.Logger): TemplatesAndLibs {
-  const packageInfo = getPackageInfo()
-  const compiler = newCompiler(logger, packageInfo)
-  const sources = parseSources(logger, packageInfo, 'src', '')
+  const packageInfo = getPackageInfo();
+  const compiler = newCompiler(logger, packageInfo);
+  const sources = parseSources(logger, packageInfo, 'src', '');
 
   // checking that we have something to do
   if (sources.length === 0) {
-    const lookFor: string[] = []
+    const lookFor: string[] = [];
     for (const suffix of compilableSuffixes) {
-      lookFor.push(`*${suffix}`)
+      lookFor.push(`*${suffix}`);
     }
 
-    logger.error(`Nothing to compile. Looked for ${lookFor.join(", ")}`);
+    logger.error(`Nothing to compile. Looked for ${lookFor.join(', ')}`);
     process.exit(1);
   }
 
@@ -228,7 +262,7 @@ export function compile(logger: winston.Logger): TemplatesAndLibs {
   const compiled = compiler.compileAndAdd(sources);
   logger.info(`Done.`);
 
-  return compiled
+  return compiled;
 }
 
 export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs) {

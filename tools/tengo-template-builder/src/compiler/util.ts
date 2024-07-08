@@ -11,12 +11,10 @@ export function findNodeModules(): string {
   while (currentDir) {
     const possibleNodeModulesPath = path.join(currentDir, 'node_modules');
 
-    if (fs.existsSync(possibleNodeModulesPath))
-      return possibleNodeModulesPath;
+    if (fs.existsSync(possibleNodeModulesPath)) return possibleNodeModulesPath;
 
     const parentDir = path.resolve(currentDir, '..');
-    if (parentDir === currentDir)
-      break; // reached the root directory
+    if (parentDir === currentDir) break; // reached the root directory
 
     currentDir = parentDir;
   }
@@ -24,20 +22,17 @@ export function findNodeModules(): string {
   throw new Error('Unable to find node_modules directory.');
 }
 
-export type PathType = 'absent' | 'file' | 'dir' | 'unknown'
+export type PathType = 'absent' | 'file' | 'dir' | 'link' | 'unknown';
 
 export function pathType(path: string): PathType {
   try {
     const s = fs.statSync(path);
-    if (s.isDirectory())
-      return 'dir';
-    if (s.isFile())
-      return 'file';
+    if (s.isDirectory()) return 'dir';
+    if (s.isFile()) return 'file';
+    if (s.isSymbolicLink()) return 'link';
     return 'unknown';
   } catch (err: any) {
-    if (err.code == 'ENOENT')
-      return 'absent';
-    else
-      throw err;
+    if (err.code == 'ENOENT') return 'absent';
+    else throw err;
   }
 }

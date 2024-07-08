@@ -29,9 +29,10 @@ export default class Test extends Command {
 
     try {
       dumpAll(logger, tester.stdin);
+    } catch (err: unknown) {
+      logger.error(err);
     } finally {
       tester.stdin.end();
-
       const code = await waitFor(tester);
       process.exit(code);
     }
