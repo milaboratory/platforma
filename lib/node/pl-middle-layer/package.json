@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsup",
     "readme": "exec oclif readme",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
   },
   "bin": {
     "pl-state": "./bin/run.js"
