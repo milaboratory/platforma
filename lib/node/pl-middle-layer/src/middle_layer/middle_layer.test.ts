@@ -8,6 +8,7 @@ import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
 import { DevBlockPackConfig } from '../mutator/block-pack/block_pack';
+import { BlockPackSpec } from '..';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -510,9 +511,16 @@ test('should create read-logs block, render it and read logs from a file', async
     // }
     const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
 
+    const storages = await ml.drivers.listFiles.getStorageList();
+    const library = storages.find(s => s.name == 'library');
+    expect(library).not.toBeUndefined();
+    const files = await ml.drivers.listFiles.listFiles(library!.handle, '');
+    const ourFile = files.find(f => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
+    expect(ourFile).not.toBeUndefined();
+    expect(ourFile?.type).toBe('file');
+
     await prj.setBlockArgs(block3Id, {
-      storageId: 'library',
-      filePath: 'maybe_the_number_of_lines_is_the_answer.txt',
+      fileHandle: (ourFile as any).handle,
       // args are from here:
       // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
       readFileWithSleepArgs: ['file.txt', 'PREFIX', '100', '1000']
@@ -524,9 +532,7 @@ test('should create read-logs block, render it and read logs from a file', async
     const computable = prj.getBlockState(block3Id);
     // await computable.refreshState();
 
-    let i = 0;
     while (true) {
-      i++;
       const state = await computable.getFullValue();
       console.dir(state, { depth: 5 });
 
