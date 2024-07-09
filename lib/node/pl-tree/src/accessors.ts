@@ -115,18 +115,28 @@ export function treeEntryToResourceInfo(
 export type ResourceWithData = {
   readonly id: ResourceId;
   readonly type: ResourceType;
+  readonly fields: Map<string, ResourceId | undefined>;
   readonly data?: Uint8Array;
 };
 
 export function treeEntryToResourceWithData(
   res: PlTreeEntry | ResourceWithData,
+  fields: string[],
   ctx: ComputableCtx
 ): ResourceWithData {
   if (res instanceof PlTreeEntry) {
     const node = ctx.accessor(res as PlTreeEntry).node();
     const info = node.resourceInfo;
 
-    return { ...info, data: node.getData() ?? new Uint8Array() };
+    const fValues: [string, ResourceId | undefined][] = fields.map(
+      name => [name, node.getField(name)?.value?.id],
+    );
+
+    return {
+      ...info,
+      fields: new Map(fValues),
+      data: node.getData() ?? new Uint8Array()
+    };
   }
 
   return res;
