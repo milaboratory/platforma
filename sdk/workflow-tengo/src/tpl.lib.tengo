@@ -1,0 +1,107 @@
+/*
+ * Library provides development kit for pure templates
+ */
+
+tx := import("tx")
+plapi := import("plapi")
+tplCommon := import(":tpl-common")
+smart := import(":smart")
+map := import(":map")
+
+//
+// Initialization
+//
+
+// Checking we were imported in compatible render template context
+_renderer := plapi.getTemplate()
+if tx.getResource(_renderer).resType.Name != "RenderTemplate" {
+	tplCommon.panic("pure template can't be executed as ephemeral")
+}
+
+//
+// Definitions and exports
+//
+
+// This map accumulated output definitions
+_definedOutputs := []
+
+/**
+ * Defines current template output(s) names.
+ *
+ * All outputs must be defined before the template body, and only registered outputs can be used
+ * inside.
+ */
+defineOutputs := func(...name) {
+	_definedOutputs = append(_definedOutputs, name)
+}
+
+renderer := smart.resource(_renderer)
+
+_inputs := undefined
+_outputs := undefined
+
+inputs := func() {
+	if _inputs == undefined {
+		_inputs = renderer.get("inputs").inputs()
+	}
+	return _inputs
+}
+
+outputs := func() {
+	if _outputs == undefined {
+		_outputs = {}
+		for _, name in _definedOutputs {
+			_outputs[name] = renderer.get("output/" + name)
+		}
+	}
+	return _outputs
+}
+
+/**
+ * Defines main entry point for current template
+ */
+body := func(bodyFn) {
+	// Checks
+	if len(_definedOutputs) == 0 {
+		tplCommon.panic("please define outputs before template body")
+	}
+
+    //
+	// Rules of pl guarantees that pure template code will be executed twice:
+	//
+	//   (1) once for initialization, at this point it must initialize all outputs, for the
+	//       deduplication and recovery mechanisms to pick them up and, if possible, populate them
+	//       with results from equvalent previous invocations
+	//
+	//   (2) after initialization is done and all deduplication and recovery algorithms did their
+	//       magic, if some (or all) of the outputs, our consumers demand are still absent, main
+	//       body of the template is executed, to calculate them
+	//
+
+	if plapi.isInit {
+		// TODO to be removed later
+		if renderer.data().IsDuplicate {
+			return
+		}
+
+		// Initialization
+		for _, name in _definedOutputs {
+			renderer.createField("output/" + name, "output")
+		}
+		renderer.lockOutputs()
+	} else {
+		if renderer.data().AllOutputsSet {
+			// nothing to calculate
+			return
+		}
+		bodyFn()
+	}
+}
+
+export {
+	panic: tplCommon.panic,
+
+	renderer: renderer,
+	defineOutputs: defineOutputs,
+    body: body
+}

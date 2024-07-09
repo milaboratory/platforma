@@ -1,0 +1,20 @@
+fmt := import("fmt")
+plapi := import("plapi")
+
+// panic panics in a template, prints the error and
+// stops the execution of the template.
+// After that, the controller will set errors to outputs.
+panic := func(msg, ...args) {
+	txt := fmt.sprintf(msg, args...)
+	plapi.print(txt)
+	return plapi.setTemplateError(txt)
+}
+
+templateOutputFieldName := func(prefix, name) {
+	return "output/" + name
+}
+
+export {
+	panic: panic,
+	templateOutputFieldName: templateOutputFieldName
+}

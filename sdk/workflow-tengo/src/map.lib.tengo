@@ -1,0 +1,59 @@
+mapK := func(m, fnK) {
+	newM := {}
+	for k, v in m {
+		newM[fnK(k)] = v
+	}
+
+	return newM
+}
+
+mapV := func(m, fnV) {
+	newM := {}
+	for k, v in m {
+		newM[k] = fnV(v)
+	}
+
+	return newM
+}
+
+mapKV := func(m, fnK, fnV) {
+	newM := {}
+	for k, v in m {
+		newM[fnK(k)] = fnV(v)
+	}
+
+	return newM
+}
+
+mapFilter := func(m, predicateFn) {
+	newM := {}
+	for k, v in m {
+		if predicateFn(k, v) {
+			newM[k] = v
+		}
+	}
+
+	return newM
+}
+
+mapFilterV := func(m, predicateFnV) {
+	return mapFilter(m, func(k, v) { return predicateFnV(v) })
+}
+
+mapFilterK := func(m, predicateFnK) {
+	return mapFilter(m, func(k, v) { return predicateFnK(k) })
+}
+
+mapFilterKV := func(m, predicateFnK, predicateFnV) {
+	return mapFilter(m, func(k, v) { return predicateFnK(k) && predicateFnV(v) })
+}
+
+export {
+	mapK: mapK,
+	mapV: mapV,
+	mapKV: mapKV,
+	mapFilter: mapFilter,
+	mapFilterV: mapFilterV,
+	mapFilterK: mapFilterK,
+	mapFilterKV: mapFilterKV
+}

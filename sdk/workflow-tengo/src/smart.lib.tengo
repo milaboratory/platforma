@@ -1,0 +1,120 @@
+tx := import("tx")
+plapi := import("plapi")
+json := import("json")
+map := import(":map")
+
+field := undefined
+
+/**
+ * @param r either resource id or resource info
+ */
+resource := func(r) {
+	self := undefined
+
+	self = {
+		_type: "resource",
+
+		ID: plapi.isStrictMap(r) ? r.ID : r,
+
+		_info: plapi.isStrictMap(r) ? r : undefined,
+
+		info: func() {
+			if self._info == undefined {
+				self._info = tx.getResource(self.ID)
+			}
+			return self._info
+		},
+
+		_hasField: func(fieldMapName, fieldName) {
+			return self.info()[fieldMapName][fieldName] != undefined
+		},
+
+		hasInputField: func(name) {
+			return self._hasField("Inputs", name)
+		},
+
+		hasOutputField: func(name) {
+			return self._hasField("Outputs", name)
+		},
+
+		hasField: func(name) {
+			return self._hasField("Inputs", name) ||
+			       self._hasField("Outputs", name) ||
+				   self._hasField("DynamicFields", name) ||
+				   self._hasField("OneTimeWritables", name)
+		},
+
+		_inputs: undefined,
+		inputs: func() {
+			if(self._inputs == undefined) {
+				self._inputs = map.mapV(self.data().Inputs, field)
+			}
+			return self._inputs
+		},
+
+		_outputs: undefined,
+		outputs: func() {
+			if(self._outputs == undefined) {
+				self._outputs = map.mapV(self.data().Outputs, field)
+			}
+			return self._outputs
+		},
+
+		createField: func(name, fieldType) {
+			fID := plapi.newFieldID(self.ID, name)
+			tx.createField(fID, fieldType)
+			return field(fID)
+		},
+
+		getField: func(name) {
+			return field(plapi.newFieldID(self.ID, name))
+		},
+
+		getFutureField: func(name, fieldType) {
+			return tx.createFutureFieldID(fieldType, name).ResultFID
+		},
+
+		lockOutputs: func() {
+			tx.lockOutputs(self.ID)
+		},
+
+		get: func(name) {
+			return self.getField(name).get()
+		},
+
+		dataAsJson: func() {
+			return json.decode(self.info().Data);
+		}
+	}
+	return plapi.mapToStrict(self)
+}
+
+field = func(f) {
+	self := undefined
+
+	self = {
+		_type: "field",
+
+		ID: plapi.isStrictMap(f) ? f.ID : f,
+
+		_info: plapi.isStrictMap(f) ? f : undefined,
+
+		info: func() {
+			if self._info == undefined {
+				self._info = tx.getField(self.ID)
+			}
+			return self._info
+		},
+
+		get: func() {
+			return resource(self.info().resFieldValue)
+		}
+	}
+
+	return plapi.mapToStrict(self)
+}
+
+export {
+	resource: resource,
+	field: field
+}

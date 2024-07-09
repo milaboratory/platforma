@@ -1,0 +1,7 @@
+self := import(":tpl")
+
+self.defineOutputs("main")
+
+self.body(func() {
+	self.outputs
+})

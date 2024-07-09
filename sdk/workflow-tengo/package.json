@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-sdk",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Tengo SDK library",
   "homepage": "https://docs.platforma.bio/",
   "author": {
@@ -17,13 +17,20 @@
   ],
   "scripts": {
     "check": "pl-tengo check",
-    "build": "pl-tengo check && pl-tengo build"
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build",
+    "test": "rm -rf dist && pl-tengo check && pl-tengo build && vitest"
   },
   "dependencies": {
-    "@milaboratory/tengo-milib": "1.1.2",
-    "@milaboratory/tengo-mistd": "1.3.4"
+    "@milaboratory/tengo-milib": "1.1.3",
+    "@milaboratory/tengo-mistd": "1.3.5"
   },
   "devDependencies": {
-    "@milaboratory/tengo-template-builder": "^1.7.3"
+    "@milaboratory/tengo-template-builder": "^1.7.6",
+    "@milaboratory/pl-middle-layer": "^1.4.1",
+    "vitest": "^1.6.0"
+  },
+  "peerDependencies": {
+    "@milaboratory/pl-tree": "*",
+    "@milaboratory/computable": "*"
   }
 }

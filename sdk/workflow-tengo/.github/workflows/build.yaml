@@ -22,7 +22,7 @@ jobs:
       app-name-slug: 'tengo-sdk'
       notify-telegram: true
 
-      node-version: '18.x'
+      node-version: '20.x'
       is-electron-application: 'false'
       always-auth: 'true'
 
