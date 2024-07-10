@@ -1,7 +1,11 @@
 import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import fs from 'node:fs';
-import { ExplicitTemplate, TemplateFromRegistry, TemplateSourceAny, TemplateSourcePrepared } from '../../model/workflow';
+import { ExplicitTemplate, TemplateFromRegistry, TemplateSpecAny, TemplateSpecPrepared } from '../../model/template_spec';
 import { assertNever } from '@milaboratory/ts-helpers';
+
+//
+// Resource schema
+//
 
 export const TengoTemplateGet: ResourceType = { name: 'TengoTemplateGet', version: '1' };
 export const TengoTemplateGetRegistry = 'registry';
@@ -9,12 +13,11 @@ export const TengoTemplateGetTemplateURI = 'templateURI';
 export const TengoTemplateGetTemplate = 'template';
 
 export const TengoTemplatePack: ResourceType = { name: 'TengoTemplatePack', version: '1' };
-
 export const TengoTemplatePackConvert: ResourceType = { name: 'TengoTemplatePackConvert', version: '1' };
 export const TengoTemplatePackConvertTemplatePack = 'templatePack';
 export const TengoTemplatePackConvertTemplate = 'template';
 
-export async function prepareTemplateSource(tpl: TemplateSourceAny): Promise<TemplateSourcePrepared> {
+export async function prepareTemplateSource(tpl: TemplateSpecAny): Promise<TemplateSpecPrepared> {
   switch (tpl.type) {
     case 'from-file':
       return {
@@ -54,7 +57,7 @@ function loadTemplateFromExplicit(tx: PlTransaction, spec: ExplicitTemplate): An
   return template;
 }
 
-export function loadTemplate(tx: PlTransaction, spec: TemplateSourcePrepared): AnyRef {
+export function loadTemplate(tx: PlTransaction, spec: TemplateSpecPrepared): AnyRef {
   switch (spec.type) {
     case 'from-registry':
       return loadTemplateFromRegistry(tx, spec);

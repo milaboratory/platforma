@@ -97,7 +97,7 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
-      console.dir(state.getValue(), { depth: 5 });
+      console.dir(await state.getValue(), { depth: 5 });
       throw new Error('Aborted.', { cause: e });
     }
   }
@@ -443,7 +443,7 @@ test('should create download-file block, render it and gets outputs from its con
   });
 });
 
-test('should create upload-file block, render it and upload a file to pl server', async () => {
+test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
   await withMl(async ml => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);

@@ -13,5 +13,5 @@ export * from '@milaboratory/pl-client-v2';
 export { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
 
 // for tests etc..
-export * from './mutator/block-pack/template';
-export * from './model/workflow';
+export * from './mutator/template/template_loading';
+export * from './model/template_spec';

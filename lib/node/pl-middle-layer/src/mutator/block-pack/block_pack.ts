@@ -1,5 +1,5 @@
 import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
-import { loadTemplate } from './template';
+import { loadTemplate } from '../template/template_loading';
 import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
 import { assertNever, Signer } from '@milaboratory/ts-helpers';
 import path from 'node:path';

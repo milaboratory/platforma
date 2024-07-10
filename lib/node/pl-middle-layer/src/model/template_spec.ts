@@ -14,5 +14,5 @@ export interface TemplateFromFile {
   path: string;
 }
 
-export type TemplateSourcePrepared = TemplateFromRegistry | ExplicitTemplate;
-export type TemplateSourceAny = TemplateSourcePrepared | TemplateFromFile;
+export type TemplateSpecPrepared = TemplateFromRegistry | ExplicitTemplate;
+export type TemplateSpecAny = TemplateSpecPrepared | TemplateFromFile;

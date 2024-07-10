@@ -5,7 +5,7 @@ import {
   PlTransaction,
   ResourceId
 } from '@milaboratory/pl-client-v2';
-import { createRenderHeavyBlock, createBContextFromUpstreams } from './block-pack/template_render';
+import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
 import {
   Block,
   BlockRenderingStateKey,

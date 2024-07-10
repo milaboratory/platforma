@@ -1,4 +1,4 @@
-import { ExplicitTemplate } from './workflow';
+import { ExplicitTemplate } from './template_spec';
 import { ResourceType } from '@milaboratory/pl-client-v2';
 import { BlockConfig } from '@milaboratory/sdk-ui';
 import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';

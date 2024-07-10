@@ -13,10 +13,10 @@ import {
   valErr,
   Pl
 } from '@milaboratory/pl-client-v2';
-import { loadTemplate } from './template';
-import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './template_render';
+import { loadTemplate } from './template_loading';
+import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './render_block';
 import { notEmpty, sleep } from '@milaboratory/ts-helpers';
-import { TemplateSourcePrepared } from '../../model/workflow';
+import { TemplateSpecPrepared } from '../../model/template_spec';
 import {
   TplSpecEnterExplicit,
   TplSpecEnterFromRegistry,
@@ -147,7 +147,7 @@ describe.each([
 
 function createEnterNumbers(
   tx: PlTransaction,
-  template: TemplateSourcePrepared,
+  template: TemplateSpecPrepared,
   isProd: boolean,
   blockIdData: string,
   ctx: AnyRef,
@@ -174,7 +174,7 @@ interface Ref {
 
 function createSumNumbers(
   tx: PlTransaction,
-  template: TemplateSourcePrepared,
+  template: TemplateSpecPrepared,
   isProd: boolean,
   blockIdData: string,
   ctx: AnyRef,
