@@ -13,6 +13,7 @@ export const BContextId = 'id';
 export const BContextParent = 'parent';
 export const BContextMultiParentPrefix = 'parent/';
 export const EphRenderTemplate: ResourceType = { name: 'EphRenderTemplate', version: '1' };
+export const RenderTemplate: ResourceType = { name: 'RenderTemplate', version: '1' };
 
 // TODO: add implementation for dual context heavy block.
 // export type BlockType =
