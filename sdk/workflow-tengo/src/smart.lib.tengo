@@ -1,9 +1,14 @@
 tx := import("tx")
 plapi := import("plapi")
 json := import("json")
+proc := import(":proc")
 map := import(":map")
 
 field := undefined
+
+isFieldID := func(val) {
+	return plapi.isStrictMap(val) && plapi.strictToMap(val)["ResourceID"] != undefined
+}
 
 /**
  * @param r either resource id or resource info
@@ -11,18 +16,19 @@ field := undefined
 resource := func(r) {
 	self := undefined
 
+	ID := plapi.isStrictMap(r) ? r.ID : r
+
+	if ID == 0 {
+		proc.panic("null resource id")
+	}
+
 	self = {
 		_type: "resource",
 
-		ID: plapi.isStrictMap(r) ? r.ID : r,
-
-		_info: plapi.isStrictMap(r) ? r : undefined,
+		ID: ID,
 
 		info: func() {
-			if self._info == undefined {
-				self._info = tx.getResource(self.ID)
-			}
-			return self._info
+			return tx.getResource(self.ID)
 		},
 
 		_hasField: func(fieldMapName, fieldName) {
@@ -47,7 +53,12 @@ resource := func(r) {
 		_inputs: undefined,
 		inputs: func() {
 			if(self._inputs == undefined) {
-				self._inputs = map.mapV(self.data().Inputs, field)
+				info := self.info()
+				inputs := map.mapV(info.Inputs, field)
+				if !info.InputsLocked {
+					return inputs
+				}
+				self._inputs = inputs
 			}
 			return self._inputs
 		},
@@ -55,7 +66,12 @@ resource := func(r) {
 		_outputs: undefined,
 		outputs: func() {
 			if(self._outputs == undefined) {
-				self._outputs = map.mapV(self.data().Outputs, field)
+				info := self.info()
+				outputs := map.mapV(info.Outputs, field)
+				if !info.OutputsLocked {
+					return outputs
+				}
+				self._outputs = outputs
 			}
 			return self._outputs
 		},
@@ -79,13 +95,14 @@ resource := func(r) {
 		},
 
 		get: func(name) {
-			return self.getField(name).get()
+			return self.getField(name).getValue()
 		},
 
-		dataAsJson: func() {
+		getDataAsJSON: func() {
 			return json.decode(self.info().Data);
 		}
 	}
+
 	return plapi.mapToStrict(self)
 }
 
@@ -95,19 +112,40 @@ field = func(f) {
 	self = {
 		_type: "field",
 
-		ID: plapi.isStrictMap(f) ? f.ID : f,
-
-		_info: plapi.isStrictMap(f) ? f : undefined,
+		ID: isFieldID(f) ? f : f.ID,
 
 		info: func() {
-			if self._info == undefined {
-				self._info = tx.getField(self.ID)
-			}
-			return self._info
+			return tx.getField(self.ID)
 		},
 
-		get: func() {
-			return resource(self.info().resFieldValue)
+		isSet: func() {
+			return self.info().IsSet
+		},
+
+		isValueSet: func() {
+			return self.info().Value != 0
+		},
+
+		isErrorSet: func() {
+			return self.info().Error != 0
+		},
+
+		getValue: func() {
+			return resource(self.info().Value)
+		},
+
+		getError: func() {
+			return resource(self.info().Error)
+		},
+
+		setJSON: func(value) {
+			encoded := json.encode(value)
+			rID := tx.createValue("json/object", "1", encoded)
+			tx.setFieldToResource(self.ID, rID)
+		},
+
+		getJSON: func() {
+			return self.getValue().getDataAsJSON()
 		}
 	}
 

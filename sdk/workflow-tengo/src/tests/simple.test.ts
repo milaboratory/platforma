@@ -52,22 +52,21 @@ templateTest("test1", async ({ pl }) => {
     const tpl = loadTemplate(tx, src);
     const input = tx.createValue(
       Pl.JsonObject,
-      JSON.stringify({ testValue: 1 })
+      JSON.stringify({ testValue: "Truman" })
     );
-    const outputs = createRenderTemplate(tx, tpl, { input1: input }, [
-      "output1",
-    ]);
-    tx.setField(result, outputs.output1);
+    const outputs = createRenderTemplate(tx, tpl, { input1: input }, ["main"]);
+    tx.setField(result, outputs.main);
     await tx.commit();
-    return result;
   });
   const rootTree = await SynchronizedTreeState.init(pl, pl.clientRoot, {
     pollingInterval: 500,
     stopPollingDelay: 1000,
   });
   const result = Computable.make((ctx) => {
-    ctx.accessor(rootTree.entry()).node().traverse("result")?.getDataAsJson();
+    const res = ctx.accessor(rootTree.entry()).node().traverse("result");
+    if (res === undefined) ctx.markUnstable();
+    return res?.getDataAsJson();
   });
-  await tp.setTimeout(2000);
-  console.dir(await result.getValue(), { depth: 5 });
+  // await tp.setTimeout(3000);
+  console.dir(await result.awaitStableValue(), { depth: 5 });
 });

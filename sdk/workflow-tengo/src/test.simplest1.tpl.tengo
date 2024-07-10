@@ -3,5 +3,6 @@ self := import(":tpl")
 self.defineOutputs("main")
 
 self.body(func() {
-	self.outputs
+	self.outputs().main.setJSON(
+		self.inputs().input1.getJSON().testValue + " Show")
 })

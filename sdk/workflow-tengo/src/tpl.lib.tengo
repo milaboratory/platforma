@@ -4,6 +4,7 @@
 
 tx := import("tx")
 plapi := import("plapi")
+proc := import(":proc")
 tplCommon := import(":tpl-common")
 smart := import(":smart")
 map := import(":map")
@@ -13,9 +14,9 @@ map := import(":map")
 //
 
 // Checking we were imported in compatible render template context
-_renderer := plapi.getTemplate()
-if tx.getResource(_renderer).resType.Name != "RenderTemplate" {
-	tplCommon.panic("pure template can't be executed as ephemeral")
+renderer := smart.resource(plapi.getTemplate())
+if renderer.info().Type.Name != "RenderTemplate" {
+	proc.panic("pure template can't be executed as ephemeral")
 }
 
 //
@@ -32,17 +33,15 @@ _definedOutputs := []
  * inside.
  */
 defineOutputs := func(...name) {
-	_definedOutputs = append(_definedOutputs, name)
+	_definedOutputs = append(_definedOutputs, name...)
 }
-
-renderer := smart.resource(_renderer)
 
 _inputs := undefined
 _outputs := undefined
 
 inputs := func() {
 	if _inputs == undefined {
-		_inputs = renderer.get("inputs").inputs()
+		_inputs = plapi.mapToStrict(renderer.get("inputs").inputs())
 	}
 	return _inputs
 }
@@ -51,8 +50,9 @@ outputs := func() {
 	if _outputs == undefined {
 		_outputs = {}
 		for _, name in _definedOutputs {
-			_outputs[name] = renderer.get("output/" + name)
+			_outputs[name] = renderer.getField(tplCommon.templateOutputPrefix + name)
 		}
+		_outputs = plapi.mapToStrict(_outputs)
 	}
 	return _outputs
 }
@@ -63,7 +63,7 @@ outputs := func() {
 body := func(bodyFn) {
 	// Checks
 	if len(_definedOutputs) == 0 {
-		tplCommon.panic("please define outputs before template body")
+		proc.panic("please define outputs before template body")
 	}
 
     //
@@ -80,17 +80,17 @@ body := func(bodyFn) {
 
 	if plapi.isInit {
 		// TODO to be removed later
-		if renderer.data().IsDuplicate {
+		if renderer.info().IsDuplicate {
 			return
 		}
 
 		// Initialization
 		for _, name in _definedOutputs {
-			renderer.createField("output/" + name, "output")
+			renderer.createField(tplCommon.templateOutputPrefix + name, "output")
 		}
 		renderer.lockOutputs()
 	} else {
-		if renderer.data().AllOutputsSet {
+		if renderer.info().AllOutputsSet {
 			// nothing to calculate
 			return
 		}
@@ -98,10 +98,10 @@ body := func(bodyFn) {
 	}
 }
 
-export {
-	panic: tplCommon.panic,
-
+export plapi.mapToStrict({
 	renderer: renderer,
 	defineOutputs: defineOutputs,
-    body: body
-}
+    body: body,
+	inputs: inputs,
+	outputs: outputs
+})

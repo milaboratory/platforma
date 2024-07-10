@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@milaboratory/tengo-template-builder": "^1.7.6",
-    "@milaboratory/pl-middle-layer": "^1.4.1",
+    "@milaboratory/pl-middle-layer": "^1.5.1",
     "vitest": "^1.6.0"
   },
   "peerDependencies": {
