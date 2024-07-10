@@ -1,5 +1,5 @@
 import {
-  BasicResourceData,
+  isNotNullResourceId,
   PlTransaction,
   PollTxAccessor,
   ResourceId,
@@ -15,11 +15,11 @@ import * as path from 'node:path';
 import { PlClient } from '@milaboratory/pl-client-v2';
 import { poll } from '@milaboratory/pl-client-v2';
 import { UploadDriver } from './upload';
-import { MTimeError } from '../clients/upload';
 import {
   createUploadBlobClient,
   createUploadProgressClient
 } from '../clients/helpers';
+import { ResourceWithData } from '@milaboratory/pl-tree';
 
 test('upload a blob', async () => {
   await withTest(
@@ -293,10 +293,16 @@ async function createBlobIndex(
 async function getHandleField(
   client: PlClient,
   uploadId: ResourceId
-): Promise<BasicResourceData> {
+): Promise<ResourceWithData> {
   return await poll(client, async (tx: PollTxAccessor) => {
     const upload = await tx.get(uploadId);
     const handle = await upload.get('handle');
-    return handle.data;
+
+    const blob = handle.data.fields.find(f => f.name == 'blob')?.value;
+    const fields = new Map<string, ResourceId | undefined>();
+    if (blob != undefined && isNotNullResourceId(blob))
+      fields.set('blob', blob);
+
+    return { ...handle.data, fields };
   });
 }

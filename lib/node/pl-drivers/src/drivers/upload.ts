@@ -87,7 +87,7 @@ export class UploadDriver {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getProgressId(res, ctx));
 
-    const r = treeEntryToResourceWithData(res, ctx);
+    const r = treeEntryToResourceWithData(res, ['blob'], ctx);
     const callerId = randomUUID();
     ctx.attacheHooks(this.hooks);
     ctx.addOnDestroy(() => this.release(r.id, callerId));
@@ -103,11 +103,13 @@ export class UploadDriver {
     res: ResourceWithData,
     callerId: string
   ): sdk.ImportProgress {
+    const blobExists = res.fields.get('blob') != undefined;
+
     const value = this.idToProgress.get(res.id);
 
     if (value != undefined) {
       value.attach(w, callerId);
-      return value.mustGetProgress();
+      return value.mustGetProgress(blobExists);
     }
 
     const newValue = new ProgressUpdater(
@@ -129,7 +131,7 @@ export class UploadDriver {
           !(e instanceof MTimeError || e instanceof UnexpectedEOF)
       });
 
-    return newValue.mustGetProgress();
+    return newValue.mustGetProgress(blobExists);
   }
 
   /** Decrement counters for the file and remove an uploading if counter == 0. */
@@ -244,7 +246,12 @@ class ProgressUpdater {
     };
   }
 
-  public mustGetProgress() {
+  public mustGetProgress(blobExists: boolean) {
+    if (blobExists) {
+      this.setDone(blobExists);
+      return this.progress;
+    }
+    
     if (this.uploadingTerminallyFailed)
       throw new Error(this.progress.lastError);
 
@@ -313,13 +320,19 @@ class ProgressUpdater {
     this.progress.lastError = String(e);
   }
 
+  private setDone(done: boolean) {
+    this.progress.done = done;
+    if (done) this.progress.lastError = undefined;
+  }
+
   async updateStatus() {
     try {
       const status = await this.clientProgress.getStatus(this.res);
+
       const oldStatus = this.progress.status;
       this.progress.status = protoToStatus(status);
-      this.progress.done = status.done;
-      if (status.done) this.progress.lastError = undefined;
+      this.setDone(status.done);
+
       if (status.done || status.progress != oldStatus?.progress)
         this.change.markChanged();
     } catch (e: any) {
@@ -340,7 +353,7 @@ function dataToUploadOpts(res: ResourceWithData): UploadOpts {
   if (res.data == undefined)
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
-        stringifyWithResourceId(res.data)
+      stringifyWithResourceId(res.data)
     );
 
   const opts = JSON.parse(res.data.toString());
