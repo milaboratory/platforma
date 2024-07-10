@@ -61,13 +61,13 @@ function resolveDistTemplates(root: string) {
   return path.resolve(root, 'dist', 'tengo', 'tpl');
 }
 
-const loadDependencies = (
+function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
   packageInfo: PackageJson,
   target: string,
   isLink: boolean = false
-) => {
+): void {
   const packageJsonPath = path.resolve(target, 'package.json');
 
   if (pathType(packageJsonPath) !== 'file') {
@@ -83,7 +83,6 @@ const loadDependencies = (
   }
 
   // we are in package folder
-
   const libFolder = resolveDistLibs(target);
   const tplFolder = resolveDistTemplates(target);
 
@@ -95,7 +94,6 @@ const loadDependencies = (
     return;
 
   // we are in tengo dependency folder
-
   const packageJson: PackageJson = JSON.parse(
     fs.readFileSync(packageJsonPath).toString()
   );
@@ -152,7 +150,7 @@ const loadDependencies = (
       );
     }
   }
-};
+}
 
 export function parseSources(
   logger: winston.Logger,
@@ -167,23 +165,25 @@ export function parseSources(
     const fullPath = path.join(root, inRootPath); // full path to item from CWD (or abs path, if <root> is abs path)
 
     if (pathType(fullPath) === 'dir') {
-      // Just check that no libs or templates reside inside nested directories.
-      // We forbid that for now for sake of simplicity.
-      parseSources(logger, packageInfo, root, inRootPath);
+      const nested = parseSources(logger, packageInfo, root, inRootPath);
+      sources.push(...nested);
       continue;
     }
 
-    const fullName = fullNameFromFileName(packageInfo, inRootPath);
+    const fullName = fullNameFromFileName(
+      packageInfo,
+      inRootPath.replaceAll(path.sep, '.')
+    );
     if (!fullName) {
       continue; // skip unknown file types
     }
 
-    if (subdir != '') {
-      // prettier-ignore
-      throw new Error(`Templates and libraries should reside only inside '${root}' dir.
-       You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
-       but regarding ${compilableSuffixes.join(', ')}, the flat file structure is mandatory.`);
-    }
+    // if (subdir != '') {
+    //   // prettier-ignore
+    //   throw new Error(`Templates and libraries should reside only inside '${root}' dir.
+    //    You are free to have any file and dirs structure inside '${root}' keeping other files where you want,
+    //    but regarding ${compilableSuffixes.join(', ')}, the flat file structure is mandatory.`);
+    // }
 
     const file = path.resolve(root, inRootPath);
     logger.debug(`Parsing ${fullNameToString(fullName)} from ${file}`);
