@@ -1,14 +1,14 @@
 {
-  "name": "sdk-vue-lib",
+  "name": "lib",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "dist/sdk-vue-lib.cjs",
-  "module": "dist/sdk-vue-lib.js",
-  "types": "dist/lib.d.ts",
+  "main": "dist/lib.cjs",
+  "module": "dist/lib.js",
+  "types": "dist/src/lib.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p tsconfig.lib.json",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview"
   }

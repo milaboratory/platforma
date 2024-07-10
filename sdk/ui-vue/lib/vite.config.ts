@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path';
-import dts from 'vite-plugin-dts';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), dts()],
+  plugins: [vue()],
   build: {
     emptyOutDir: false,
     lib: {
@@ -13,7 +12,7 @@ export default defineConfig({
       entry: [resolve(__dirname, 'src/lib.ts')],
       name: 'SdkVueLib',
       // the proper extensions will be added
-      fileName: 'sdk-vue-lib',
+      fileName: 'lib',
     },
     rollupOptions: {
       external: ['vue'],

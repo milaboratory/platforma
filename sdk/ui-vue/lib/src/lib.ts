@@ -1,11 +1,11 @@
 import 'vue';
 import './style.css';
-// import HelloWorld from './components/HelloWorld.vue';
+import HelloWorld from './components/HelloWorld.vue';
 
-// export {
-//   HelloWorld
-// }
+export {
+  HelloWorld
+}
 
-export function hello() {
+export function hello(): void {
   console.log('hello');
 }
