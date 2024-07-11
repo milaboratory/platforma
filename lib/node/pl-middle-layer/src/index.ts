@@ -14,4 +14,5 @@ export { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
 
 // for tests etc..
 export * from './mutator/template/template_loading';
+export * from './mutator/template/render_template';
 export * from './model/template_spec';

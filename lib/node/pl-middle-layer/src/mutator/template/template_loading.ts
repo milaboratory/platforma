@@ -17,7 +17,7 @@ export const TengoTemplatePackConvert: ResourceType = { name: 'TengoTemplatePack
 export const TengoTemplatePackConvertTemplatePack = 'templatePack';
 export const TengoTemplatePackConvertTemplate = 'template';
 
-export async function prepareTemplateSource(tpl: TemplateSpecAny): Promise<TemplateSpecPrepared> {
+export async function prepareTemplateSpec(tpl: TemplateSpecAny): Promise<TemplateSpecPrepared> {
   switch (tpl.type) {
     case 'from-file':
       return {
