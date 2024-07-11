@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer-model",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "Common model between middle layer and non-block UI code",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -14,12 +14,12 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/sdk-model": "^1.1.23",
+    "@milaboratory/sdk-model": "^1.1.24",
     "utility-types": "^3.11.0"
   },
   "devDependencies": {
     "tsup": "^8.1.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.3"
   },
   "tsup": {
     "entry": {
