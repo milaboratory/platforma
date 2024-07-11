@@ -1,0 +1,66 @@
+import {
+  NullResourceId,
+  OptionalResourceId,
+  PlClient,
+  ResourceId,
+  resourceIdToString,
+  TestHelpers
+} from '@milaboratory/pl-middle-layer';
+import {
+  SynchronizedTreeOps,
+  SynchronizedTreeState
+} from '@milaboratory/pl-tree';
+import { randomUUID } from 'crypto';
+import { test } from 'vitest';
+
+export const plTest = test.extend<{
+  pl: PlClient;
+  createTree: (
+    res: ResourceId,
+    ops?: SynchronizedTreeOps
+  ) => Promise<SynchronizedTreeState>;
+  rootTree: SynchronizedTreeState;
+}>({
+  pl: async ({ onTestFailed }, use) => {
+    const altRoot = `test_${Date.now()}_${randomUUID()}`;
+    let altRootId: OptionalResourceId = NullResourceId;
+    const client = await TestHelpers.getTestClient(altRoot);
+    await use(client);
+    const rawClient = await TestHelpers.getTestClient();
+    await rawClient.deleteAlternativeRoot(altRoot);
+    onTestFailed(() => {
+      console.log(
+        `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${altRoot} (${resourceIdToString(
+          altRootId
+        )})`
+      );
+    });
+  },
+
+  createTree: async ({ pl }, use) => {
+    const trees = new Map<ResourceId, Promise<SynchronizedTreeState>>();
+    await use((res, ops) => {
+      let treePromise = trees.get(res);
+      if (treePromise === undefined) {
+        treePromise = SynchronizedTreeState.init(
+          pl,
+          res,
+          ops ?? {
+            pollingInterval: 200,
+            stopPollingDelay: 400
+          }
+        );
+        trees.set(res, treePromise);
+      }
+      return treePromise;
+    });
+    for (const [, treePromise] of trees) {
+      // TODO implement termination
+      (await treePromise).awaitSyncLoopTermination();
+    }
+  },
+
+  rootTree: async ({ pl, createTree: tree }, use) => {
+    await use(await tree(pl.clientRoot));
+  }
+});

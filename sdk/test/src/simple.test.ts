@@ -1,4 +1,4 @@
-import { blockTest } from './block-test';
+import { blockTest } from './test-block';
 
 blockTest('test', { timeout: 60000 }, async ({ expect, rawPrj, helpers }) => {
   const testBlockId = await rawPrj.addBlock('Test Block', {

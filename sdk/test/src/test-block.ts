@@ -12,6 +12,7 @@ import {
   resourceIdToString,
   TestHelpers
 } from '@milaboratory/pl-middle-layer';
+import { plTest } from './test-pl';
 
 async function awaitBlockDone(
   prj: Project,
@@ -41,28 +42,12 @@ export interface RawHelpers {
   awaitBlockDone(blockId: string, timeout?: number): Promise<void>;
 }
 
-export const blockTest = test.extend<{
-  pl: PlClient;
+export const blockTest = plTest.extend<{
   ml: MiddleLayer;
   myBlockSpec: BlockPackSpecAny;
   rawPrj: Project;
   helpers: RawHelpers;
 }>({
-  pl: async ({}, use) => {
-    const altRoot = `test_${Date.now()}_${randomUUID()}`;
-    let altRootId: OptionalResourceId = NullResourceId;
-    try {
-      const client = await TestHelpers.getTestClient(altRoot);
-      await use(client);
-      const rawClient = await TestHelpers.getTestClient();
-      await rawClient.deleteAlternativeRoot(altRoot);
-    } catch (err: any) {
-      console.log(
-        `ALTERNATIVE ROOT: ${altRoot} (${resourceIdToString(altRootId)})`
-      );
-      throw new Error(err.message, { cause: err });
-    }
-  },
   ml: async ({ pl }, use) => {
     const workFolder = path.resolve(`work/${randomUUID()}`);
     const frontendFolder = path.join(workFolder, 'frontend');
