@@ -1,8 +1,10 @@
 import { Optional } from 'utility-types';
 import {
-  BasicResourceData, FieldData,
+  BasicResourceData,
+  FieldData,
   FieldType,
-  NullResourceId, OptionalResourceId,
+  NullResourceId,
+  OptionalResourceId,
   ResourceData,
   ResourceId,
   ResourceType
@@ -54,24 +56,19 @@ export const ResourceReady: Pick<
   final: true
 };
 
-export const InitialStructuralResourceState: Omit<
-  ExtendedResourceData,
-  'id' | 'type' | 'fields'
-> = {
-  kind: 'Structural',
-  originalResourceId: NullResourceId,
-  error: NullResourceId,
-  inputsLocked: false,
-  outputsLocked: false,
-  resourceReady: false,
-  final: false,
-  kv: []
-};
+export const InitialStructuralResourceState: Omit<ExtendedResourceData, 'id' | 'type' | 'fields'> =
+  {
+    kind: 'Structural',
+    originalResourceId: NullResourceId,
+    error: NullResourceId,
+    inputsLocked: false,
+    outputsLocked: false,
+    resourceReady: false,
+    final: false,
+    kv: []
+  };
 
-export const InitialValueResourceState: Omit<
-  ExtendedResourceData,
-  'id' | 'type' | 'data'
-> = {
+export const InitialValueResourceState: Omit<ExtendedResourceData, 'id' | 'type' | 'data'> = {
   kind: 'Value',
   originalResourceId: NullResourceId,
   error: NullResourceId,
@@ -80,35 +77,30 @@ export const InitialValueResourceState: Omit<
   kv: []
 };
 
-export const TestStructuralResourceState1: Omit<ExtendedResourceData, 'id' | 'fields'> =
-  {
-    ...InitialStructuralResourceState,
-    type: TestStructuralResourceType1
-  };
+export const TestStructuralResourceState1: Omit<ExtendedResourceData, 'id' | 'fields'> = {
+  ...InitialStructuralResourceState,
+  type: TestStructuralResourceType1
+};
 
-export const TestStructuralResourceState2: Omit<ExtendedResourceData, 'id' | 'fields'> =
-  {
-    ...InitialStructuralResourceState,
-    type: TestStructuralResourceType2
-  };
+export const TestStructuralResourceState2: Omit<ExtendedResourceData, 'id' | 'fields'> = {
+  ...InitialStructuralResourceState,
+  type: TestStructuralResourceType2
+};
 
-export const TestValueResourceState1: Omit<ExtendedResourceData, 'id' | 'data'> =
-  {
-    ...InitialValueResourceState,
-    type: TestValueResourceType1
-  };
+export const TestValueResourceState1: Omit<ExtendedResourceData, 'id' | 'data'> = {
+  ...InitialValueResourceState,
+  type: TestValueResourceType1
+};
 
-export const TestValueResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> =
-  {
-    ...InitialValueResourceState,
-    type: TestValueResourceType2
-  };
+export const TestValueResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> = {
+  ...InitialValueResourceState,
+  type: TestValueResourceType2
+};
 
-export const TestErrorResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> =
-  {
-    ...InitialValueResourceState,
-    type: TestErrorResourceType1
-  };
+export const TestErrorResourceState2: Omit<ExtendedResourceData, 'id' | 'data'> = {
+  ...InitialValueResourceState,
+  type: TestErrorResourceType1
+};
 
 export const TestDynamicRootId1 = 1000001n as ResourceId;
 export const TestDynamicRootState1: Omit<ExtendedResourceData, 'fields'> = {
@@ -142,12 +134,7 @@ export function field(
     type,
     value,
     error,
-    status:
-      value !== NullResourceId
-        ? 'Resolved'
-        : error !== NullResourceId
-          ? 'Assigned'
-          : 'Empty',
+    status: value !== NullResourceId ? 'Resolved' : error !== NullResourceId ? 'Assigned' : 'Empty',
     valueIsFinal
   };
 }

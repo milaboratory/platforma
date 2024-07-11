@@ -1,12 +1,14 @@
 import { PlTreeState } from './state';
 import {
-  dField, TestErrorResourceType1,
+  dField,
+  TestErrorResourceType1,
   iField,
   ResourceReady,
   TestDynamicRootId1,
   TestDynamicRootState1,
   TestStructuralResourceState1,
-  TestValueResourceState1, TestErrorResourceState2
+  TestValueResourceState1,
+  TestErrorResourceState2
 } from './test_utils';
 import { Computable } from '@milaboratory/computable';
 import { NullResourceId, ResourceId } from '@milaboratory/pl-client-v2';
@@ -17,14 +19,12 @@ function rid(id: bigint): ResourceId {
 
 test('simple tree test 1', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = Computable.make(c =>
+  const c1 = Computable.make((c) =>
     c.accessor(tree.entry()).node().traverse('a', 'b')?.getDataAsString()
   );
 
   expect(c1.isChanged()).toBeTruthy();
-  await expect(async () => await c1.getValue())
-    .rejects
-    .toThrow(/not found/);
+  await expect(async () => await c1.getValue()).rejects.toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [] }]);
@@ -32,16 +32,12 @@ test('simple tree test 1', async () => {
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b')] }
-  ]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('b')] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('b'), dField('a')] }
-  ]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('b'), dField('a')] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
@@ -59,9 +55,7 @@ test('simple tree test 1', async () => {
   expect(await c1.getValue()).toStrictEqual('Test1');
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([
-    { ...TestDynamicRootState1, fields: [dField('a')] }
-  ]);
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [dField('a')] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
@@ -69,15 +63,14 @@ test('simple tree test 1', async () => {
 
 test('simple tree kv test', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = Computable.make(c =>
-    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
+  const c1 = Computable.make((c) =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
+  );
 
   expect(JSON.stringify(tree.entry())).toMatch(/^"\[ENTRY:/);
 
   expect(c1.isChanged()).toBeTruthy();
-  await expect(async () => await c1.getValue())
-    .rejects
-    .toThrow(/not found/);
+  await expect(async () => await c1.getValue()).rejects.toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -123,16 +116,19 @@ test('simple tree kv test', async () => {
 
 test('partial tree update', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = Computable.make(c =>
-    c.accessor(tree.entry()).node().traverse(
-      { field: 'a', assertFieldType: 'Dynamic' },
-      { field: 'b', assertFieldType: 'Dynamic' }
-    )?.getDataAsString());
+  const c1 = Computable.make((c) =>
+    c
+      .accessor(tree.entry())
+      .node()
+      .traverse(
+        { field: 'a', assertFieldType: 'Dynamic' },
+        { field: 'b', assertFieldType: 'Dynamic' }
+      )
+      ?.getDataAsString()
+  );
 
   expect(c1.isChanged()).toBeTruthy();
-  await expect(async () => await c1.getValue())
-    .rejects
-    .toThrow(/not found/);
+  await expect(async () => await c1.getValue()).rejects.toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -148,9 +144,7 @@ test('partial tree update', async () => {
   expect(await c1.getValue()).toStrictEqual('Test1');
   expect(c1.isChanged()).toBeFalsy();
 
-  tree.updateFromResourceData([
-    { ...TestStructuralResourceState1, id: rid(1n), fields: [] }
-  ]);
+  tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }]);
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
   expect(c1.isChanged()).toBeFalsy();
@@ -158,20 +152,21 @@ test('partial tree update', async () => {
 
 test('resource error', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = Computable.make(c =>
-    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey'));
+  const c1 = Computable.make((c) =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
+  );
 
   expect(c1.isChanged()).toBeTruthy();
-  await expect(async () => await c1.getValue())
-    .rejects
-    .toThrow(/not found/);
+  await expect(async () => await c1.getValue()).rejects.toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
     { ...TestDynamicRootState1, error: rid(7n), fields: [] },
     {
-      ...TestErrorResourceState2, id: rid(7n),
-      data: Buffer.from('"error"'), fields: []
+      ...TestErrorResourceState2,
+      id: rid(7n),
+      data: Buffer.from('"error"'),
+      fields: []
     }
   ]);
 
@@ -180,24 +175,24 @@ test('resource error', async () => {
 
 test('field error', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
-  const c1 = Computable.make(c => c.accessor(tree.entry())
-    .node().traverse('b', 'a')?.getKeyValueAsString('thekey'));
+  const c1 = Computable.make((c) =>
+    c.accessor(tree.entry()).node().traverse('b', 'a')?.getKeyValueAsString('thekey')
+  );
 
   expect(c1.isChanged()).toBeTruthy();
-  await expect(async () => await c1.getValue())
-    .rejects
-    .toThrow(/not found/);
+  await expect(async () => await c1.getValue()).rejects.toThrow(/not found/);
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
     {
-      ...TestDynamicRootState1, fields: [
-        dField('b', NullResourceId, rid(7n))
-      ]
+      ...TestDynamicRootState1,
+      fields: [dField('b', NullResourceId, rid(7n))]
     },
     {
-      ...TestErrorResourceState2, id: rid(7n),
-      data: Buffer.from('"error"'), fields: []
+      ...TestErrorResourceState2,
+      id: rid(7n),
+      data: Buffer.from('"error"'),
+      fields: []
     }
   ]);
 
@@ -211,15 +206,14 @@ test('exception - deletion of input field', () => {
     { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
     { ...TestStructuralResourceState1, id: rid(1n), fields: [iField('b', rid(2n))] },
     {
-      ...TestValueResourceState1, id: rid(2n),
+      ...TestValueResourceState1,
+      id: rid(2n),
       data: new TextEncoder().encode('Test1')
     }
   ]);
 
   expect(() =>
-    tree.updateFromResourceData([
-      { ...TestStructuralResourceState1, id: rid(1n), fields: [] }
-    ])
+    tree.updateFromResourceData([{ ...TestStructuralResourceState1, id: rid(1n), fields: [] }])
   ).toThrow(/removal of Input field/);
 });
 

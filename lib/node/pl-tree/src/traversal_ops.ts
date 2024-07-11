@@ -8,7 +8,7 @@ export type CommonTraversalOps = {
    * traversal is terminated.
    * */
   ignoreError?: true;
-}
+};
 
 export type CommonFieldTraverseOps = {
   /**
@@ -20,7 +20,7 @@ export type CommonFieldTraverseOps = {
 
   /** Will not mark current context as unstable, if field is not found. */
   stableIfNotFound?: true;
-}
+};
 
 export type ResourceTraversalOps = CommonTraversalOps & {
   /**
@@ -28,7 +28,7 @@ export type ResourceTraversalOps = CommonTraversalOps & {
    * with exception if this assertion is not fulfilled.
    * */
   assertResourceType?: ResourceType | ResourceType[];
-}
+};
 
 export type GetFieldStep = CommonFieldTraverseOps & {
   /** Field name */
@@ -45,6 +45,6 @@ export type GetFieldStep = CommonFieldTraverseOps & {
    * fulfilled
    * */
   assertFieldType?: FieldType;
-}
+};
 
-export type FieldTraversalStep = GetFieldStep & ResourceTraversalOps
+export type FieldTraversalStep = GetFieldStep & ResourceTraversalOps;

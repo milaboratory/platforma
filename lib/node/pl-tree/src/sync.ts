@@ -9,7 +9,7 @@ import Denque from 'denque';
 import { ExtendedResourceData, PlTreeState } from './state';
 
 /** Applied to list of fields in resource data. */
-export type PruningFunction = (resource: ExtendedResourceData) => FieldData[]
+export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
 
 export interface TreeLoadingRequest {
   /** Resource to prime the traversal algorithm. It is ok, if some of them
@@ -32,19 +32,19 @@ export interface TreeLoadingRequest {
 
 /** Given the current tree state, build the request object to pass to
  * {@link loadTreeState} to load updated state. */
-export function constructTreeLoadingRequest(tree: PlTreeState, pruningFunction?: PruningFunction): TreeLoadingRequest {
+export function constructTreeLoadingRequest(
+  tree: PlTreeState,
+  pruningFunction?: PruningFunction
+): TreeLoadingRequest {
   const seedResources: ResourceId[] = [];
   const finalResources = new Set<ResourceId>();
-  tree.forEachResource(res => {
-    if (res.final)
-      finalResources.add(res.id);
-    else
-      seedResources.push(res.id);
+  tree.forEachResource((res) => {
+    if (res.final) finalResources.add(res.id);
+    else seedResources.push(res.id);
   });
 
   // if tree is empty, seeding tree reconstruction from the specified root
-  if (seedResources.length === 0 && finalResources.size === 0)
-    seedResources.push(tree.root);
+  if (seedResources.length === 0 && finalResources.size === 0) seedResources.push(tree.root);
 
   return { seedResources, finalResources, pruningFunction };
 }
@@ -52,8 +52,10 @@ export function constructTreeLoadingRequest(tree: PlTreeState, pruningFunction?:
 /** Given the transaction (preferably read-only) and loading request, executes
  * the tree traversal algorithm, and collects fresh states of resources
  * to update the tree state. */
-export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadingRequest): Promise<ExtendedResourceData[]> {
-
+export async function loadTreeState(
+  tx: PlTransaction,
+  loadingRequest: TreeLoadingRequest
+): Promise<ExtendedResourceData[]> {
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
   // Main idea of using a queue here is that responses will arrive in the same order as they were
@@ -66,8 +68,7 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
   // tracking resources we already requested
   const requested = new Set<ResourceId>();
   const requestState = (rid: OptionalResourceId) => {
-    if (isNullResourceId(rid) || requested.has(rid) || finalResources.has(rid))
-      return;
+    if (isNullResourceId(rid) || requested.has(rid) || finalResources.has(rid)) return;
 
     // adding the id, so we will not request it's state again if somebody else
     // references the same resource
@@ -78,22 +79,22 @@ export async function loadTreeState(tx: PlTransaction, loadingRequest: TreeLoadi
     const kvData = tx.listKeyValuesIfResourceExists(rid);
 
     // pushing combined promise
-    pending.push((async () => {
-      const resource = await resourceData;
-      const kv = await kvData;
+    pending.push(
+      (async () => {
+        const resource = await resourceData;
+        const kv = await kvData;
 
-      if (resource === undefined)
-        return undefined;
+        if (resource === undefined) return undefined;
 
-      if (kv === undefined)
-        throw new Error('Inconsistent replies');
+        if (kv === undefined) throw new Error('Inconsistent replies');
 
-      return { ...resource, kv };
-    })());
+        return { ...resource, kv };
+      })()
+    );
   };
 
   // sending seed requests
-  seedResources.forEach(rid => requestState(rid));
+  seedResources.forEach((rid) => requestState(rid));
 
   const result: ExtendedResourceData[] = [];
   while (true) {
