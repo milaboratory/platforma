@@ -41,4 +41,8 @@ export interface PFrameFactoryAPI {
     columnId: PColumnId, dataInfo: DataInfo,
     blobResolver: BlobPathResolver
   ): Promise<void>;
+
+  /** Releases all the data previously added to PFrame using methods above,
+   * any interactions with disposed PFrame will result in exception */
+  dispose(): void;
 }
