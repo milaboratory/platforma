@@ -2,7 +2,9 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import {
   ensureResourceIdNotNull,
   field,
-  isNotFoundError, Pl,
+  isNotFoundError,
+  isTimeoutOrCancelError,
+  Pl,
   ResourceId
 } from '@milaboratory/pl-client-v2';
 import { Computable, ComputableStableDefined } from '@milaboratory/computable';
@@ -19,12 +21,16 @@ import { FrontendData } from '../model/frontend';
 import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
-import { ProjectOverview, AuthorMarker, BlockStateInternal } from '@milaboratory/pl-middle-layer-model';
+import {
+  ProjectOverview,
+  AuthorMarker,
+  BlockStateInternal
+} from '@milaboratory/pl-middle-layer-model';
 import { activeConfigs } from './active_cfg';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
-}
+};
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -37,13 +43,17 @@ export class Project {
   private readonly blockComputables = new Map<string, BlockStateComputables>();
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private readonly activeConfigs: Computable<unknown[]>;
-  private destroyed = false;
   private readonly refreshLoopResult: Promise<void>;
 
-  constructor(private readonly env: MiddleLayerEnvironment,
-              rid: ResourceId,
-              private readonly projectTree: SynchronizedTreeState,
-              overview: ComputableStableDefined<ProjectOverview>) {
+  private readonly abortController = new AbortController();
+  private destroyed = false;
+
+  constructor(
+    private readonly env: MiddleLayerEnvironment,
+    rid: ResourceId,
+    private readonly projectTree: SynchronizedTreeState,
+    overview: ComputableStableDefined<ProjectOverview>
+  ) {
     this.overview = overview;
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
@@ -53,18 +63,20 @@ export class Project {
   private async refreshLoop(): Promise<void> {
     while (!this.destroyed) {
       try {
-        await withProject(this.env.pl, this.rid, prj => {
+        await withProject(this.env.pl, this.rid, (prj) => {
           prj.doRefresh(this.env.ops.stagingRenderingRate);
         });
         await this.activeConfigs.getValue();
-      } catch (err: any) {
-        if (isNotFoundError(err)) {
-          console.warn('project refresh routine terminated, because project was externally deleted');
+        await setTimeout(this.env.ops.projectRefreshInterval, this.abortController.signal);
+      } catch (e: any) {
+        if (isNotFoundError(e)) {
+          console.warn(
+            'project refresh routine terminated, because project was externally deleted'
+          );
           break;
-        } else
-          console.error(err);
+        } else if (!isTimeoutOrCancelError(e))
+          throw new Error('Unexpected exception', { cause: e });
       }
-      await setTimeout(this.env.ops.projectRefreshInterval);
     }
   }
 
@@ -79,17 +91,28 @@ export class Project {
    *
    * @return returns newly created block id
    * */
-  public async addBlock(blockLabel: string, blockPackSpec: BlockPackSpecAny,
-                        before?: string, blockId: string = randomUUID()): Promise<string> {
+  public async addBlock(
+    blockLabel: string,
+    blockPackSpec: BlockPackSpecAny,
+    before?: string,
+    blockId: string = randomUUID()
+  ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.addBlock({ id: blockId, label: blockLabel, renderingMode: blockCfg.renderingMode },
+    await withProject(this.env.pl, this.rid, (mut) =>
+      mut.addBlock(
+        {
+          id: blockId,
+          label: blockLabel,
+          renderingMode: blockCfg.renderingMode
+        },
         {
           args: JSON.stringify(blockCfg.initialArgs),
           blockPack: preparedBp
-        }, before
-      ));
+        },
+        before
+      )
+    );
     await this.projectTree.refreshState();
 
     return blockId;
@@ -99,23 +122,26 @@ export class Project {
    * Update block to new block pack, optionally resetting args and ui state to
    * initial values
    * */
-  public async updateBlockPack(blockId: string, blockPackSpec: BlockPackSpecAny,
-                               resetArgs: boolean = false): Promise<void> {
+  public async updateBlockPack(
+    blockId: string,
+    blockPackSpec: BlockPackSpecAny,
+    resetArgs: boolean = false
+  ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.migrateBlockPack(blockId, preparedBp,
-        resetArgs
-          ? JSON.stringify(blockCfg.initialArgs)
-          : undefined
-      ));
+    await withProject(this.env.pl, this.rid, (mut) =>
+      mut.migrateBlockPack(
+        blockId,
+        preparedBp,
+        resetArgs ? JSON.stringify(blockCfg.initialArgs) : undefined
+      )
+    );
     await this.projectTree.refreshState();
   }
 
   /** Deletes a block with all associated data. */
   public async deleteBlock(blockId: string): Promise<void> {
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.deleteBlock(blockId));
+    await withProject(this.env.pl, this.rid, (mut) => mut.deleteBlock(blockId));
     await this.projectTree.refreshState();
   }
 
@@ -125,8 +151,7 @@ export class Project {
    * stale state.
    * */
   public async runBlock(blockId: string): Promise<void> {
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.renderProduction([blockId], true));
+    await withProject(this.env.pl, this.rid, (mut) => mut.renderProduction([blockId], true));
     await this.projectTree.refreshState();
   }
 
@@ -136,8 +161,7 @@ export class Project {
    * calculated.
    * */
   public async stopBlock(blockId: string): Promise<void> {
-    await withProject(this.env.pl, this.rid, mut =>
-      mut.stopProduction(blockId));
+    await withProject(this.env.pl, this.rid, (mut) => mut.stopProduction(blockId));
     await this.projectTree.refreshState();
   }
 
@@ -148,8 +172,9 @@ export class Project {
    * in collaborative editing scenario.
    * */
   public async setBlockArgs(blockId: string, args: any, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.pl, this.rid, author, mut =>
-      mut.setArgs([{ blockId, args: JSON.stringify(args) }]));
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
+      mut.setArgs([{ blockId, args: JSON.stringify(args) }])
+    );
     await this.projectTree.refreshState();
   }
 
@@ -160,8 +185,9 @@ export class Project {
    * in collaborative editing scenario.
    * */
   public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.pl, this.rid, author, mut =>
-      mut.setUiState(blockId, uiState));
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
+      mut.setUiState(blockId, uiState)
+    );
     await this.projectTree.refreshState();
   }
 
@@ -171,8 +197,13 @@ export class Project {
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario.
    * */
-  public async setBlockArgsAndUiState(blockId: string, args: any, uiState: any, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.pl, this.rid, author, mut => {
+  public async setBlockArgsAndUiState(
+    blockId: string,
+    args: any,
+    uiState: any,
+    author?: AuthorMarker
+  ) {
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
       mut.setUiState(blockId, uiState);
     });
@@ -181,17 +212,19 @@ export class Project {
 
   /** Resets arguments and ui state of the block to initial state */
   public async resetBlockArgsAndUiState(blockId: string): Promise<void> {
-    await this.env.pl.withWriteTx('BlockInputsReset', async tx => {
+    await this.env.pl.withWriteTx('BlockInputsReset', async (tx) => {
       // reading default arg values from block pack
       const bpHolderRid = ensureResourceIdNotNull(
-        (await tx.getField(
-          field(this.rid, projectFieldName(blockId, 'blockPack')
-          ))).value);
+        (await tx.getField(field(this.rid, projectFieldName(blockId, 'blockPack')))).value
+      );
       const bpRid = ensureResourceIdNotNull(
-        (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value);
+        (await tx.getField(field(bpHolderRid, Pl.HolderRefField))).value
+      );
       const bpData = await tx.getResourceData(bpRid, false);
-      const bpInfo = JSON.parse(Buffer.from(notEmpty(bpData.data)).toString('utf-8')) as BlockPackInfo;
-      await withProject(tx, this.rid, prj => {
+      const bpInfo = JSON.parse(
+        Buffer.from(notEmpty(bpData.data)).toString('utf-8')
+      ) as BlockPackInfo;
+      await withProject(tx, this.rid, (prj) => {
         prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
         prj.setUiState(blockId, undefined);
       });
@@ -206,9 +239,15 @@ export class Project {
       // state consists of inputs (args + ui state) and outputs
       const argsAndUiState = blockArgsAndUiState(this.projectTree.entry(), blockId, this.env);
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
-      const fullState = Computable.make(() => ({
-        argsAndUiState, outputs
-      }), { postprocessValue: v => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState) });
+      const fullState = Computable.make(
+        () => ({
+          argsAndUiState,
+          outputs
+        }),
+        {
+          postprocessValue: (v) => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState)
+        }
+      );
 
       const computables: BlockStateComputables = {
         fullState: fullState.withPreCalculatedValueTree()
@@ -236,8 +275,11 @@ export class Project {
   public getBlockFrontend(blockId: string): ComputableStableDefined<FrontendData> {
     const cached = this.blockFrontends.get(blockId);
     if (cached === undefined) {
-      const fd = frontendData(this.projectTree.entry(), blockId, this.env)
-        .withPreCalculatedValueTree();
+      const fd = frontendData(
+        this.projectTree.entry(),
+        blockId,
+        this.env
+      ).withPreCalculatedValueTree();
       this.blockFrontends.set(blockId, fd);
       return fd;
     }
@@ -245,22 +287,28 @@ export class Project {
   }
 
   /** Called by middle layer on close */
-  public destroy() {
+  public async destroy(): Promise<void> {
+    // terminating the project service loop
+    this.destroyed = true;
+    this.abortController.abort();
+    await this.refreshLoopResult;
+
+    // terminating the synchronized project tree
+    await this.projectTree.terminate();
+
     // the following will deregister all external resource holders, like
     // downloaded files, running uploads and alike
     this.overview.resetState();
-    this.blockFrontends.forEach(c => c.resetState());
-    this.blockComputables.forEach(c => {
+    this.blockFrontends.forEach((c) => c.resetState());
+    this.blockComputables.forEach((c) => {
       c.fullState.resetState();
     });
-
-    this.destroyed = true;
+    this.activeConfigs.resetState();
   }
 
+  /** @deprecated */
   public async destroyAndAwaitTermination(): Promise<void> {
-    this.destroy();
-    await this.refreshLoopResult;
-    await this.projectTree.awaitSyncLoopTermination();
+    await this.destroy();
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {

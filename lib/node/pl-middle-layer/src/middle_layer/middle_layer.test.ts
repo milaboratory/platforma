@@ -23,55 +23,57 @@ async function getStandardBlockSpecs() {
   const blocksFromRegistry = await registry.getPackagesOverview();
   return {
     enterNumbersSpecFromRemote: blocksFromRegistry.find(
-      b => b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
+      (b) => b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
     )!.latestSpec,
 
     enterNumbersSpecFromDev: blocksFromRegistry.find(
-      b => b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
+      (b) => b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
     )!.latestSpec,
 
     sumNumbersSpecFromRemote: blocksFromRegistry.find(
-      b => b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
+      (b) => b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
     )!.latestSpec,
 
     sumNumbersSpecFromDev: blocksFromRegistry.find(
-      b => b.registryLabel.match(/dev/) && b.package === 'sum-numbers'
+      (b) => b.registryLabel.match(/dev/) && b.package === 'sum-numbers'
     )!.latestSpec,
 
     downloadFileSpecFromRemote: blocksFromRegistry.find(
-      b => b.registryLabel.match(/Central/) && b.package === 'download-file'
+      (b) => b.registryLabel.match(/Central/) && b.package === 'download-file'
     )!.latestSpec,
 
     uploadFileSpecFromRemote: blocksFromRegistry.find(
-      b => b.registryLabel.match(/Central/) && b.package === 'upload-file'
+      (b) => b.registryLabel.match(/Central/) && b.package === 'upload-file'
     )!.latestSpec,
 
     readLogsSpecFromRemote: blocksFromRegistry.find(
-      b => b.registryLabel.match(/Central/) && b.package === 'read-logs'
+      (b) => b.registryLabel.match(/Central/) && b.package === 'read-logs'
     )!.latestSpec
   };
 }
 
-export async function withMl(cb: (ml: MiddleLayer, workFolder: string) => Promise<void>): Promise<void> {
+export async function withMl(
+  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
+): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
   await fs.promises.mkdir(frontendFolder, { recursive: true });
   await fs.promises.mkdir(downloadFolder, { recursive: true });
 
-  await TestHelpers.withTempRoot(async pl => {
+  await TestHelpers.withTempRoot(async (pl) => {
     const ml = await MiddleLayer.init(pl, {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder),
-      localStorageNameToPath: { 'local': '' }
+      localStorageNameToPath: { local: '' }
     });
     try {
       await cb(ml, workFolder);
     } finally {
-      await ml.closeAndAwaitTermination();
+      await ml.close();
     }
   });
 }
@@ -87,13 +89,10 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     //   state: stateSnapshot
     // } = await stateAndOverview.getValue();
     const overviewSnapshot = (await overview.getValue())!;
-    const blockOverview = overviewSnapshot.blocks.find(b => b.id == blockId);
-    if (blockOverview === undefined)
-      throw new Error(`Blocks not found: ${blockId}`);
-    if (blockOverview.outputErrors)
-      return;
-    if (blockOverview.calculationStatus === 'Done')
-      return;
+    const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
+    if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview.outputErrors) return;
+    if (blockOverview.calculationStatus === 'Done') return;
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
@@ -104,48 +103,58 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
 }
 
 test('project list manipulations test', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const projectList = ml.projectList;
 
     expect(await projectList.awaitStableValue()).toEqual([]);
 
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
 
-    expect(await projectList.getValue()).toMatchObject([{
-      id: 'id1',
-      rid: pRid1,
-      meta: { label: 'Project 1' },
-      opened: false
-    }]);
+    expect(await projectList.getValue()).toMatchObject([
+      {
+        id: 'id1',
+        rid: pRid1,
+        meta: { label: 'Project 1' },
+        opened: false
+      }
+    ]);
 
     await ml.setProjectMeta(pRid1, { label: 'Project 1A' });
 
     const listSnapshot1 = await projectList.getValue();
-    expect(listSnapshot1).toMatchObject([{
-      id: 'id1',
-      rid: pRid1,
-      meta: { label: 'Project 1A' },
-      opened: false
-    }]);
-    expect(listSnapshot1![0].lastModified.valueOf()).toBeGreaterThan(listSnapshot1![0].created.valueOf());
+    expect(listSnapshot1).toMatchObject([
+      {
+        id: 'id1',
+        rid: pRid1,
+        meta: { label: 'Project 1A' },
+        opened: false
+      }
+    ]);
+    expect(listSnapshot1![0].lastModified.valueOf()).toBeGreaterThan(
+      listSnapshot1![0].created.valueOf()
+    );
 
     await ml.openProject(pRid1);
 
-    expect(await projectList.getValue()).toMatchObject([{
-      id: 'id1',
-      rid: pRid1,
-      meta: { label: 'Project 1A' },
-      opened: true
-    }]);
+    expect(await projectList.getValue()).toMatchObject([
+      {
+        id: 'id1',
+        rid: pRid1,
+        meta: { label: 'Project 1A' },
+        opened: true
+      }
+    ]);
 
-    ml.closeProject(pRid1);
+    await ml.closeProject(pRid1);
 
-    expect(await projectList.getValue()).toMatchObject([{
-      id: 'id1',
-      rid: pRid1,
-      meta: { label: 'Project 1A' },
-      opened: false
-    }]);
+    expect(await projectList.getValue()).toMatchObject([
+      {
+        id: 'id1',
+        rid: pRid1,
+        meta: { label: 'Project 1A' },
+        opened: false
+      }
+    ]);
 
     await ml.deleteProject('id1');
 
@@ -154,28 +163,35 @@ test('project list manipulations test', async () => {
 });
 
 test('simple project manipulations test', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     const projectListValue1 = await projectList.getValue();
-    expect(projectListValue1).toMatchObject([{
-      id: 'id1',
-      rid: pRid1,
-      meta: { label: 'Project 1' },
-      opened: false
-    }]);
+    expect(projectListValue1).toMatchObject([
+      {
+        id: 'id1',
+        rid: pRid1,
+        meta: { label: 'Project 1' },
+        opened: false
+      }
+    ]);
 
     const lastModInitial = projectListValue1![0].lastModified.valueOf();
 
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
 
     const {
-      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,
-      enterNumbersSpecFromDev, sumNumbersSpecFromDev
+      enterNumbersSpecFromRemote,
+      sumNumbersSpecFromRemote,
+      enterNumbersSpecFromDev,
+      sumNumbersSpecFromDev
     } = await getStandardBlockSpecs();
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
@@ -183,7 +199,7 @@ test('simple project manipulations test', async () => {
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
-    overviewSnapshot0.blocks.forEach(block => {
+    overviewSnapshot0.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
@@ -192,10 +208,7 @@ test('simple project manipulations test', async () => {
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [
-        outputRef(block1Id, 'column'),
-        outputRef(block2Id, 'column')
-      ]
+      sources: [outputRef(block1Id, 'column'), outputRef(block2Id, 'column')]
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -204,7 +217,7 @@ test('simple project manipulations test', async () => {
 
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
-    overviewSnapshot1.blocks.forEach(block => {
+    overviewSnapshot1.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
@@ -233,7 +246,10 @@ test('simple project manipulations test', async () => {
     // console.dir(block2StableState1, { depth: 5 });
     // console.dir(block3StableState1, { depth: 5 });
 
-    expect(block3StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 18 });
+    expect(block3StableState1.outputs!['sum']).toStrictEqual({
+      ok: true,
+      value: 18
+    });
 
     await prj.resetBlockArgsAndUiState(block2Id);
 
@@ -241,26 +257,24 @@ test('simple project manipulations test', async () => {
     expect(block2Inputs.args).toEqual({ numbers: [] });
 
     const overviewSnapshot2 = await prj.overview.awaitStableValue();
-    expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.canRun).toEqual(false);
-    expect(overviewSnapshot2.blocks.find(b => b.id === block3Id)?.stale).toEqual(true);
-    expect(overviewSnapshot2.blocks.find(b => b.id === block2Id)?.stale).toEqual(true);
+    expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.canRun).toEqual(false);
+    expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
+    expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
   });
 });
 
 test('limbo test', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const {
-      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote
-    } = await getStandardBlockSpecs();
+    const { enterNumbersSpecFromRemote, sumNumbersSpecFromRemote } = await getStandardBlockSpecs();
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', sumNumbersSpecFromRemote);
 
     const overview0 = await prj.overview.awaitStableValue();
-    overview0.blocks.forEach(block => {
+    overview0.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
@@ -268,13 +282,11 @@ test('limbo test', async () => {
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, {
-      sources: [
-        outputRef(block1Id, 'column')
-      ]
+      sources: [outputRef(block1Id, 'column')]
     });
 
     const overview1 = await prj.overview.awaitStableValue();
-    overview1.blocks.forEach(block => {
+    overview1.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(true);
       expect(block.currentBlockPack).toBeDefined();
@@ -284,10 +296,13 @@ test('limbo test', async () => {
     await awaitBlockDone(prj, block2Id);
 
     const block2StableState1 = await prj.getBlockState(block2Id).getValue();
-    expect(block2StableState1.outputs!['sum']).toStrictEqual({ ok: true, value: 6 });
+    expect(block2StableState1.outputs!['sum']).toStrictEqual({
+      ok: true,
+      value: 6
+    });
 
     const overview2 = await prj.overview.awaitStableValue();
-    overview2.blocks.forEach(block => {
+    overview2.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
       expect(block.calculationStatus).toEqual('Done');
       expect(block.canRun).toEqual(false);
@@ -307,7 +322,10 @@ test('limbo test', async () => {
     await awaitBlockDone(prj, block2Id);
 
     const block2StableState2 = await prj.getBlockState(block2Id).getValue();
-    expect(block2StableState2.outputs!['sum']).toStrictEqual({ ok: true, value: 5 });
+    expect(block2StableState2.outputs!['sum']).toStrictEqual({
+      ok: true,
+      value: 5
+    });
 
     const overview4 = await prj.overview.awaitStableValue();
     const [overview4Block1, overview4Block2] = overview4.blocks;
@@ -326,13 +344,14 @@ test('block update test', async () => {
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
 
     const devBlockPath = path.resolve(tmpDevBlockFolder, 'block-beta-enter-numbers');
-    await fs.promises.cp(
-      path.resolve('integration', 'block-beta-enter-numbers'),
-      devBlockPath, { recursive: true }
-    );
+    await fs.promises.cp(path.resolve('integration', 'block-beta-enter-numbers'), devBlockPath, {
+      recursive: true
+    });
     const mtime = await getDevPacketMtime(devBlockPath);
     const block1Id = await prj.addBlock('Block 1', {
-      type: 'dev', folder: devBlockPath, mtime
+      type: 'dev',
+      folder: devBlockPath,
+      mtime
     });
 
     const overview0 = await prj.overview.awaitStableValue();
@@ -349,22 +368,55 @@ test('block update test', async () => {
     await prj.updateBlockPack(block1Id, overview1.blocks[0].updatedBlockPack!);
 
     const overview2 = await prj.overview.awaitStableValue();
-    expect(overview2.blocks[0].currentBlockPack).toStrictEqual(overview1.blocks[0].updatedBlockPack);
+    expect(overview2.blocks[0].currentBlockPack).toStrictEqual(
+      overview1.blocks[0].updatedBlockPack
+    );
     expect(overview2.blocks[0].updatedBlockPack).toBeUndefined();
   });
 });
 
+test('project open and close test', async () => {
+  await withMl(async (ml, workFolder) => {
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+    await ml.openProject(pRid1);
+    let prj = ml.getOpenedProject(pRid1);
+
+    const blockId = await prj.addBlock('Test Block', {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      organization: 'milaboratory',
+      package: 'enter-numbers',
+      version: '1.1.1'
+    });
+    await prj.setBlockArgs(blockId, { numbers: [1, 2, 3] });
+    const overview1 = await prj.overview.awaitStableValue();
+    expect(overview1.blocks[0].canRun).toEqual(true);
+
+    ml.closeProject(pRid1);
+    await ml.openProject(pRid1);
+    prj = ml.getOpenedProject(pRid1);
+
+    const overview2 = await prj.overview.awaitStableValue();
+    expect(overview2.blocks[0].canRun).toEqual(true);
+  });
+});
+
 test('block error test', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
 
     const {
-      enterNumbersSpecFromRemote, sumNumbersSpecFromRemote,
-      enterNumbersSpecFromDev, sumNumbersSpecFromDev
+      enterNumbersSpecFromRemote,
+      sumNumbersSpecFromRemote,
+      enterNumbersSpecFromDev,
+      sumNumbersSpecFromDev
     } = await getStandardBlockSpecs();
 
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromDev);
@@ -378,7 +430,7 @@ test('block error test', async () => {
 
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
-    overviewSnapshot1.blocks.forEach(block => {
+    overviewSnapshot1.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
     });
     expect(overviewSnapshot1.blocks[0].outputErrors).toStrictEqual(true);
@@ -387,18 +439,20 @@ test('block error test', async () => {
 
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
-    if (!sum.ok)
-      expect(sum.errors[0]).toContain('tengo-mistd');
+    if (!sum.ok) expect(sum.errors[0]).toContain('tengo-mistd');
   });
 });
 
 test('should create download-file block, render it and gets outputs from its config', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
 
     const { downloadFileSpecFromRemote } = await getStandardBlockSpecs();
 
@@ -414,42 +468,52 @@ test('should create download-file block, render it and gets outputs from its con
 
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
 
-    overviewSnapshot1.blocks.forEach(block => {
+    overviewSnapshot1.blocks.forEach((block) => {
       expect(block.sections).toBeDefined();
     });
     console.dir(overviewSnapshot1, { depth: 5 });
 
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend).toBeDefined();
-    console.dir(
-      { block3StableFrontend },
-      { depth: 5 });
+    console.dir({ block3StableFrontend }, { depth: 5 });
 
     const block3StateComputable = prj.getBlockState(block3Id);
     const block3StableState = await block3StateComputable.getFullValue();
 
     console.dir(block3StableState, { depth: 5 });
 
-    if (block3StableState.type == 'ok' && (block3StableState.value.outputs!['content'] as any).value != undefined) {
+    if (
+      block3StableState.type == 'ok' &&
+      (block3StableState.value.outputs!['content'] as any).value != undefined
+    ) {
       expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
 
-      const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any).value as LocalBlobHandleAndSize;
-      const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any).value as RemoteBlobHandleAndSize;
+      const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any)
+        .value as LocalBlobHandleAndSize;
+      const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any)
+        .value as RemoteBlobHandleAndSize;
 
-      expect(Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')).toEqual('42\n');
+      expect(
+        Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')
+      ).toEqual('42\n');
 
-      expect(Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')).toEqual('42\n');
+      expect(
+        Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')
+      ).toEqual('42\n');
     }
   });
 });
 
 test.skip('should create upload-file block, render it and upload a file to pl server', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
 
     const { uploadFileSpecFromRemote } = await getStandardBlockSpecs();
     // const uploadFileSpecFromDev: BlockPackSpec = {
@@ -460,11 +524,11 @@ test.skip('should create upload-file block, render it and upload a file to pl se
     const block3Id = await prj.addBlock('Block 3', uploadFileSpecFromRemote);
 
     const storages = await ml.drivers.listFiles.getStorageList();
-    const local = storages.find(s => s.name == 'local');
+    const local = storages.find((s) => s.name == 'local');
     expect(local).not.toBeUndefined();
     const fileDir = path.resolve(__dirname, '..', '..', 'assets');
     const files = await ml.drivers.listFiles.listFiles(local!.handle, fileDir);
-    const ourFile = files.find(f => f.name == 'another_answer_to_the_ultimate_question.txt');
+    const ourFile = files.find((f) => f.name == 'another_answer_to_the_ultimate_question.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 
@@ -497,12 +561,15 @@ test.skip('should create upload-file block, render it and upload a file to pl se
 });
 
 test('should create read-logs block, render it and read logs from a file', async () => {
-  await withMl(async ml => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({ meta: { label: 'Project 1' }, blocks: [] });
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'Project 1' },
+      blocks: []
+    });
 
     const { readLogsSpecFromRemote } = await getStandardBlockSpecs();
     // const readLogsSpecFromDev: BlockPackSpec = {
@@ -512,10 +579,10 @@ test('should create read-logs block, render it and read logs from a file', async
     const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
 
     const storages = await ml.drivers.listFiles.getStorageList();
-    const library = storages.find(s => s.name == 'library');
+    const library = storages.find((s) => s.name == 'library');
     expect(library).not.toBeUndefined();
     const files = await ml.drivers.listFiles.listFiles(library!.handle, '');
-    const ourFile = files.find(f => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
+    const ourFile = files.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 
@@ -536,7 +603,11 @@ test('should create read-logs block, render it and read logs from a file', async
       const state = await computable.getFullValue();
       console.dir(state, { depth: 5 });
 
-      if (state.stable && state.value.outputs!['lastLogs'].ok && state.value.outputs!['lastLogs'].value != undefined) {
+      if (
+        state.stable &&
+        state.value.outputs!['lastLogs'].ok &&
+        state.value.outputs!['lastLogs'].value != undefined
+      ) {
         expect((state.value.outputs!['progressLog'] as any).value).toContain('PREFIX');
         expect((state.value.outputs!['progressLog'] as any).value).toContain('bytes read');
         expect((state.value.outputs!['lastLogs'] as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty

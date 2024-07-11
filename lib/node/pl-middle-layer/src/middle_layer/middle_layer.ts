@@ -1,4 +1,10 @@
-import { field, isNullResourceId, PlClient, ResourceId, toGlobalResourceId } from '@milaboratory/pl-client-v2';
+import {
+  field,
+  isNullResourceId,
+  PlClient,
+  ResourceId,
+  toGlobalResourceId
+} from '@milaboratory/pl-client-v2';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
@@ -41,7 +47,7 @@ export interface MiddleLayerEnvironment {
 
 export interface MiddleLayerDrivers {
   readonly blob: BlobDriver;
-  readonly listFiles: SdkLsDriver,
+  readonly listFiles: SdkLsDriver;
 }
 
 /**
@@ -81,7 +87,7 @@ export class MiddleLayer {
 
   /** Creates a project with initial state and adds it to project list. */
   public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
-    const resource = await this.pl.withWriteTx('MLCreateProject', async tx => {
+    const resource = await this.pl.withWriteTx('MLCreateProject', async (tx) => {
       const prj = createProject(tx, meta);
       tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
       await tx.commit();
@@ -93,7 +99,7 @@ export class MiddleLayer {
 
   /** Updates project metadata */
   public async setProjectMeta(rid: ResourceId, meta: ProjectMeta): Promise<void> {
-    await withProject(this.pl, rid, async prj => {
+    await withProject(this.pl, rid, async (prj) => {
       prj.setMeta(meta);
     });
     await this.projectListTree.refreshState();
@@ -102,7 +108,7 @@ export class MiddleLayer {
   /** Permanently deletes project from the project list, this will result in
    * destruction of all attached objects, like files, analysis results etc. */
   public async deleteProject(id: string): Promise<void> {
-    await this.pl.withWriteTx('MLRemoveProject', async tx => {
+    await this.pl.withWriteTx('MLRemoveProject', async (tx) => {
       tx.removeField(field(this.projectListResourceId, id));
       await tx.commit();
     });
@@ -116,37 +122,32 @@ export class MiddleLayer {
   private readonly openedProjectsByRid = new Map<ResourceId, Project>();
 
   private async projectIdToResourceId(id: string): Promise<ResourceId> {
-    return await this.pl.withReadTx('Project id to resource id', async tx => {
+    return await this.pl.withReadTx('Project id to resource id', async (tx) => {
       const rid = (await tx.getField(field(this.projectListResourceId, id))).value;
-      if (isNullResourceId(rid))
-        throw new Error('Unexpected project list structure.');
+      if (isNullResourceId(rid)) throw new Error('Unexpected project list structure.');
       return rid;
     });
   }
 
   private async ensureProjectRid(id: ResourceId | string): Promise<ResourceId> {
-    if (typeof id === 'string')
-      return await this.projectIdToResourceId(id);
-    else
-      return id;
+    if (typeof id === 'string') return await this.projectIdToResourceId(id);
+    else return id;
   }
 
   /** Opens a project, and starts corresponding project maintenance loop. */
   public async openProject(id: ResourceId | string) {
     const rid = await this.ensureProjectRid(id);
-    if (this.openedProjectsByRid.has(rid))
-      throw new Error(`Project ${rid} already opened`);
+    if (this.openedProjectsByRid.has(rid)) throw new Error(`Project ${rid} already opened`);
     this.openedProjectsByRid.set(rid, await Project.init(this.env, rid));
     this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
   }
 
   /** Closes the project, and deallocate all corresponding resources. */
-  public closeProject(rid: ResourceId) {
+  public async closeProject(rid: ResourceId): Promise<void> {
     const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined)
-      throw new Error(`Project ${rid} not found among opened projects`);
+    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
     this.openedProjectsByRid.delete(rid);
-    prj.destroy();
+    await prj.destroy();
     this.openedProjectsList.setValue([...this.openedProjectsByRid.keys()]);
   }
 
@@ -154,25 +155,21 @@ export class MiddleLayer {
    * resource id. */
   public getOpenedProject(rid: ResourceId): Project {
     const prj = this.openedProjectsByRid.get(rid);
-    if (prj === undefined)
-      throw new Error(`Project ${rid} not found among opened projects`);
+    if (prj === undefined) throw new Error(`Project ${rid} not found among opened projects`);
     return prj;
-  }
-
-  /** Deallocates all runtime resources consumed by this object. */
-  public close() {
-    this.openedProjectsByRid.forEach(prj => prj.destroy());
   }
 
   /** Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
    * them. */
+  public async close() {
+    await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
+    await this.projectListTree.terminate();
+  }
+
+  /** @deprecated */
   public async closeAndAwaitTermination() {
-    await Promise.all(
-      [...this.openedProjectsByRid.values()]
-        .map(prj => prj.destroyAndAwaitTermination())
-    );
-    await this.projectListTree.awaitSyncLoopTermination();
+    await this.close();
   }
 
   /** Generates sufficiently random string to be used as local secret for the
@@ -187,7 +184,7 @@ export class MiddleLayer {
     checkStorageNamesDoNotIntersect(ops);
 
     const signer = new HmacSha256Signer(ops.localSecret);
-    const projects = await pl.withWriteTx('MLInitialization', async tx => {
+    const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, 'Dynamic');
       const projectsFieldData = await tx.getField(projectsField);
@@ -208,50 +205,45 @@ export class MiddleLayer {
     const logger = new ConsoleLoggerAdapter(console);
     const bpPreparer = new BlockPackPreparer(signer);
 
-    const downloadClient = createDownloadClient(
-      logger, pl, ops.platformLocalStorageNameToPath
-    );
+    const downloadClient = createDownloadClient(logger, pl, ops.platformLocalStorageNameToPath);
     const logsClient = createLogsClient(pl, logger);
     const uploadBlobClient = createUploadBlobClient(pl, logger);
     const uploadProgressClient = createUploadProgressClient(pl, logger);
     const lsClient = createLsFilesClient(pl, logger);
 
     const frontendDownloadDriver = new DownloadUrlDriver(
-      logger, downloadClient,
+      logger,
+      downloadClient,
       ops.frontendDownloadPath
     );
     const downloadDriver = new DownloadDriver(
-      logger, downloadClient, logsClient,
+      logger,
+      downloadClient,
+      logsClient,
       ops.blobDownloadPath,
       signer,
       ops.blobDownloadCacheSizeBytes,
       ops.nConcurrentBlobDownloads
     );
-    const uploadDriver = new UploadDriver(
-      logger, signer, uploadBlobClient, uploadProgressClient,
-      {
-        nConcurrentPartUploads: ops.nConcurrentPartUploads,
-        nConcurrentGetProgresses: ops.nConcurrentGetProgresses,
-        pollingInterval: ops.defaultUploadDriverOptions.pollingInterval,
-        stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay
-      }
-    );
-    const logsStreamDriver = new LogsStreamDriver(
-      logsClient,
-      {
-        nConcurrentGetLogs: ops.nConcurrentGetLogs,
-        pollingInterval: ops.defaultStreamLogsDriverOptions.pollingInterval,
-        stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay
-      }
-    );
+    const uploadDriver = new UploadDriver(logger, signer, uploadBlobClient, uploadProgressClient, {
+      nConcurrentPartUploads: ops.nConcurrentPartUploads,
+      nConcurrentGetProgresses: ops.nConcurrentGetProgresses,
+      pollingInterval: ops.defaultUploadDriverOptions.pollingInterval,
+      stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay
+    });
+    const logsStreamDriver = new LogsStreamDriver(logsClient, {
+      nConcurrentGetLogs: ops.nConcurrentGetLogs,
+      pollingInterval: ops.defaultStreamLogsDriverOptions.pollingInterval,
+      stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay
+    });
     const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
-    const lsDriver = new LsDriver(
-      logger, lsClient, pl, signer, ops.localStorageNameToPath
-    );
+    const lsDriver = new LsDriver(logger, lsClient, pl, signer, ops.localStorageNameToPath);
 
     const env: MiddleLayerEnvironment = {
-      pl, signer,
-      ops, bpPreparer,
+      pl,
+      signer,
+      ops,
+      bpPreparer,
       frontendDownloadDriver,
       drivers: {
         downloadDriver,
@@ -269,20 +261,25 @@ export class MiddleLayer {
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
 
     return new MiddleLayer(
-      env, {
+      env,
+      {
         blob: downloadDriver,
         listFiles: lsDriver
       },
       signer,
-      projects, openedProjects, projectListTC.tree, projectListTC.computable);
+      projects,
+      openedProjects,
+      projectListTC.tree,
+      projectListTC.computable
+    );
   }
 }
 
 function checkStorageNamesDoNotIntersect(ops: MiddleLayerOps) {
   const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
-  const intersected = Object.keys(ops.localStorageNameToPath)
-    .find(name => platformStorages.includes(name));
+  const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>
+    platformStorages.includes(name)
+  );
   if (intersected)
     throw new Error(`Platform local storages include one or more local storages: ${intersected}`);
 }
-

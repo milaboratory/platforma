@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsup",
     "readme": "exec oclif readme",
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "bin": {
     "pl-state": "./bin/run.js"
@@ -25,7 +26,7 @@
     "@milaboratory/pl-client-v2": "^2.4.6",
     "@milaboratory/pl-drivers": "1.0.38",
     "@milaboratory/pl-middle-layer-model": "^1.0.12",
-    "@milaboratory/pl-tree": "^1.2.9",
+    "@milaboratory/pl-tree": "^1.2.10",
     "@milaboratory/sdk-ui": "^0.9.0",
     "@milaboratory/ts-helpers": "^1.0.16",
     "@oclif/core": "^3.26.9",
@@ -40,7 +41,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.10",
-    "dependency-cruiser": "^16.3.2",
+    "prettier": "^3.3.2",
     "ts-jest": "^29.2.2",
     "tsup": "^8.1.0",
     "typescript": "^5.5.3"

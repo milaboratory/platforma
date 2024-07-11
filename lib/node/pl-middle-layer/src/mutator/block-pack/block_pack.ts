@@ -25,49 +25,44 @@ export const DevBlockPackConfig = ['config', 'dist', 'config.json'];
 export const DevBlockPackFrontendFolder = ['frontend', 'dist'];
 
 export const DevBlockPackFiles = [
-  DevBlockPackTemplate, DevBlockPackConfig,
-  DevBlockPackMetaYaml, DevBlockPackMetaJson,
-  DevBlockPackTemplate, DevBlockPackConfig,
+  DevBlockPackTemplate,
+  DevBlockPackConfig,
+  DevBlockPackMetaYaml,
+  DevBlockPackMetaJson,
+  DevBlockPackTemplate,
+  DevBlockPackConfig,
   DevBlockPackFrontendFolder
 ];
 
 /** Ensure trailing slash */
 function tSlash(str: string): string {
-  if (str.endsWith('/'))
-    return str;
-  else
-    return `${str}/`;
+  if (str.endsWith('/')) return str;
+  else return `${str}/`;
 }
 
 export class BlockPackPreparer {
-  constructor(
-    private readonly signer: Signer,
-    private readonly http?: Dispatcher) {
-  }
+  constructor(private readonly signer: Signer, private readonly http?: Dispatcher) {}
 
   public async getBlockConfig(spec: BlockPackSpecAny): Promise<BlockConfig> {
     switch (spec.type) {
-
       case 'explicit':
         return spec.config;
 
       case 'dev': {
-        const configContent = await fs.promises.readFile(path.resolve(
-          spec.folder, ...DevBlockPackConfig));
+        const configContent = await fs.promises.readFile(
+          path.resolve(spec.folder, ...DevBlockPackConfig)
+        );
         return JSON.parse(configContent.toString()) as BlockConfig;
       }
 
       case 'from-registry-v1': {
-        const httpOptions = this.http !== undefined
-          ? { dispatcher: this.http }
-          : {};
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
         const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
 
-        const configResponse = await request(
-          `${urlPrefix}/config.json`, httpOptions);
+        const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
 
-        return await configResponse.body.json() as BlockConfig;
+        return (await configResponse.body.json()) as BlockConfig;
       }
 
       default:
@@ -77,22 +72,19 @@ export class BlockPackPreparer {
 
   public async prepare(spec: BlockPackSpecAny): Promise<BlockPackSpecPrepared> {
     switch (spec.type) {
-
       case 'explicit':
         return spec;
 
       case 'dev': {
         // template
-        const templateContent =
-          await fs.promises.readFile(path.resolve(
-            spec.folder,
-            ...DevBlockPackTemplate));
+        const templateContent = await fs.promises.readFile(
+          path.resolve(spec.folder, ...DevBlockPackTemplate)
+        );
 
         // config
-        const config =
-          JSON.parse(
-            await fs.promises.readFile(path.resolve(
-              spec.folder, ...DevBlockPackConfig), 'utf-8')) as BlockConfig;
+        const config = JSON.parse(
+          await fs.promises.readFile(path.resolve(spec.folder, ...DevBlockPackConfig), 'utf-8')
+        ) as BlockConfig;
 
         // frontend
         const frontendPath = path.resolve(spec.folder, ...DevBlockPackFrontendFolder);
@@ -114,21 +106,22 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v1': {
-        const httpOptions = this.http !== undefined
-          ? { dispatcher: this.http }
-          : {};
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
         const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
 
+        const templateUrl = `${urlPrefix}/template.plj.gz`;
         // template
-        const templateResponse = await request(
-          `${urlPrefix}/template.plj.gz`, httpOptions);
-        const templateContent = new Uint8Array(
-          await templateResponse.body.arrayBuffer());
+        const templateResponse = await request(templateUrl, httpOptions);
+        if (templateResponse.statusCode !== 200)
+          throw new Error(
+            `Block not found in registry (url = ${templateUrl} ; code = ${templateResponse.statusCode}): ` +
+              JSON.stringify(spec)
+          );
+        const templateContent = new Uint8Array(await templateResponse.body.arrayBuffer());
 
         // config
-        const configResponse = await request(
-          `${urlPrefix}/config.json`, httpOptions);
+        const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
         const config = (await configResponse.body.json()) as BlockConfig;
 
         return {
@@ -155,10 +148,8 @@ export class BlockPackPreparer {
 function createCustomBlockPack(tx: PlTransaction, spec: BlockPackExplicit): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
-  tx.createField(field(bp, BlockPackTemplateField), 'Input',
-    loadTemplate(tx, spec.template));
-  tx.createField(field(bp, BlockPackFrontendField), 'Input',
-    createFrontend(tx, spec.frontend));
+  tx.createField(field(bp, BlockPackTemplateField), 'Input', loadTemplate(tx, spec.template));
+  tx.createField(field(bp, BlockPackFrontendField), 'Input', createFrontend(tx, spec.frontend));
   tx.lock(bp);
 
   return bp;
