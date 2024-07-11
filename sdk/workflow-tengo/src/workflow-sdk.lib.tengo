@@ -1,0 +1,67 @@
+json := import("json")
+rand := import("rand")
+base64 := import("base64")
+tx := import("tx")
+plapi := import("plapi")
+text := import("text")
+fmt := import("fmt")
+times := import("times")
+enum := import("enum")
+
+test := "Hi there!"
+
+export {
+    "test": test
+}
+
+// //
+// // application
+// //
+
+// tpl2 := getTemplate(":tpl2")
+
+// workflow.body(func() {
+//     refToResolvedResource := workflow.resolveRef(workflow.args.someRef)
+
+//     result := mapFrame(refToResolvedResource, tpl2, )
+
+//     return {
+//         outputs: {
+//             result: result
+//         },
+//         exports: {
+//             result: result
+//         }
+//     }
+// })
+
+// workflow.preRun(func() {
+//     result := mapFrame(refToResolvedResource, tpl2, )
+
+//     return {
+//         outputs: {
+//             result: result
+//         },
+//         exports: {
+//             result: result
+//         }
+//     }
+// })
+
+
+// // template 2
+
+// defineOutputs("result")
+
+// body(func() {
+//     exec2 := buildExec().
+//         setCmd("/bin/gzcat").
+//         collectPFrame(...).
+//         addFile("fileName.txt", self.inputs().input)
+
+//     resultFile := exec2.collectFile("fileName")
+
+//     exec2.build()
+
+//     return { result: resultFile }
+// })

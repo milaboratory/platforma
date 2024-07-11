@@ -138,6 +138,10 @@ field = func(f) {
 			return resource(self.info().Error)
 		},
 
+		// set: func(ref) {
+		// 	if ref is Resource
+		// }
+
 		setJSON: func(value) {
 			encoded := json.encode(value)
 			rID := tx.createValue("json/object", "1", encoded)

@@ -1,0 +1,20 @@
+// // panic panics in a template, prints the error and
+// // stops the execution of the template.
+// // After that, the controller will set errors to outputs.
+// panic := func(msg, ...args) {
+// 	txt := fmt.sprintf(msg, args...)
+// 	plapi.print(txt)
+
+// 	// next statement actually terminates the execution
+// 	plapi.setTemplateError(txt)
+// }
+
+/** Docs ... */
+// strict := func(map) {
+// 	plapi.toStrictMap(...)
+// }
+
+export {
+	panic: panic
+	// strict: strict,
+}

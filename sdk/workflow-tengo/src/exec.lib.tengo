@@ -1,0 +1,52 @@
+// buildExec := func() {
+// 	self := undefined
+
+// 	self = {
+// 		setArgs: func() {
+
+// 		},
+
+// 		/** Returns reference to future file (field) */
+// 		collectFile: func(fileName) {
+
+// 		},
+
+// 		/** Returns reference to future file (field) */
+// 		stdout: func() {
+
+// 		},
+
+// 		/** Returns reference to "log" resource */
+// 		stdoutStream: func() {
+
+// 		},
+
+// 		/** */
+// 		collectFiles: func(plugin, settings) {
+
+// 		}
+// 	}
+
+// 	return self
+// }
+
+// binary := importSoftware("asdasdasd@mixcr")
+
+// exec1 := buildExec().
+// 	setCmd(binary).
+//     setArgs("hello")
+
+// myFile := exec1.collectFile("theFile.txt")
+
+// exec1.build()
+
+// exec2 := buildExec().
+// 	setCmd("/bin/gzcat").
+// 	collectPFrame(...).
+//     addFile("fileName.txt", myFile)
+
+// ungzipped := exec2.stdout()
+
+// exec2.build()
+
+// canBePassedToUi := fileToUi(ungzipped)

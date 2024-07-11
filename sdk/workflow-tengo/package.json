@@ -25,12 +25,8 @@
     "@milaboratory/tengo-mistd": "1.3.5"
   },
   "devDependencies": {
-    "@milaboratory/tengo-template-builder": "^1.7.6",
-    "@milaboratory/pl-middle-layer": "^1.5.1",
-    "vitest": "^1.6.0"
-  },
-  "peerDependencies": {
-    "@milaboratory/pl-tree": "*",
-    "@milaboratory/computable": "*"
+    "@milaboratory/tengo-template-builder": "^1.7.7",
+    "@milaboratory/sdk-test": "^1.1.0",
+    "vitest": "^2.0.2"
   }
 }
