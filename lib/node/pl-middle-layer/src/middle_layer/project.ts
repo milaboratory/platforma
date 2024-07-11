@@ -245,7 +245,7 @@ export class Project {
           outputs
         }),
         {
-          postprocessValue: (v) => ({ ...v.argsAndUiState, outputs: v.outputs } as BlockState)
+          postprocessValue: (v) => ({ ...v.argsAndUiState, outputs: v.outputs }) as BlockState
         }
       );
 

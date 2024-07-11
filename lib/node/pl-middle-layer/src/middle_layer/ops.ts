@@ -21,7 +21,7 @@ export type MiddleLayerOps = {
    * that can be used to access local data, like local paths for ongoing uploads.
    *
    * Use {@link MiddleLayer.generateLocalSecret} to generate sufficiently random string. */
-  readonly localSecret: string,
+  readonly localSecret: string;
 
   /** Common root where to put frontend code. */
   readonly frontendDownloadPath: string;
@@ -60,7 +60,7 @@ export type MiddleLayerOps = {
     pollingInterval: number;
     /** For how long to continue polling after the last derived value access. */
     stopPollingDelay: number;
-  }
+  };
 
   /** How much logs updates can the logs driver ask
    * from the platform gRPC at once. */
@@ -70,11 +70,12 @@ export type MiddleLayerOps = {
     pollingInterval: number;
     /** For how long to continue polling after the last derived value access. */
     stopPollingDelay: number;
-  }
-}
+  };
+};
 
 /** Some defaults fot MiddleLayerOps. */
-export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
+export const DefaultMiddleLayerOps: Pick<
+  MiddleLayerOps,
   | 'defaultTreeOptions'
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
@@ -87,32 +88,32 @@ export const DefaultMiddleLayerOps: Pick<MiddleLayerOps,
   | 'nConcurrentPartUploads'
   | 'nConcurrentGetLogs'
   | 'defaultStreamLogsDriverOptions'
-  | 'devBlockUpdateRecheckInterval'> = {
+  | 'devBlockUpdateRecheckInterval'
+> = {
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
-    stagingRenderingRate: 5,
-    platformLocalStorageNameToPath: {},
-    localStorageNameToPath: {},
-    nConcurrentBlobDownloads: 10,
-    blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
-    nConcurrentPartUploads: 10,
-    nConcurrentGetProgresses: 10,
-    defaultUploadDriverOptions: {
-      pollingInterval: 1000,
-      stopPollingDelay: 1000
-    },
-    nConcurrentGetLogs: 10,
-    defaultStreamLogsDriverOptions: {
-      pollingInterval: 1000,
-      stopPollingDelay: 1000
-    }
+  stagingRenderingRate: 5,
+  platformLocalStorageNameToPath: {},
+  localStorageNameToPath: {},
+  nConcurrentBlobDownloads: 10,
+  blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
+  nConcurrentPartUploads: 10,
+  nConcurrentGetProgresses: 10,
+  defaultUploadDriverOptions: {
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  },
+  nConcurrentGetLogs: 10,
+  defaultStreamLogsDriverOptions: {
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  }
 };
 
 /** Fields with default values are marked as optional here. */
-export type MiddleLayerOpsConstructor =
-  Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps>
-  & Partial<typeof DefaultMiddleLayerOps>
+export type MiddleLayerOpsConstructor = Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps> &
+  Partial<typeof DefaultMiddleLayerOps>;

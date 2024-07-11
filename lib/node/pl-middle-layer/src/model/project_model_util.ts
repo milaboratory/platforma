@@ -4,10 +4,8 @@ import { inferAllReferencedBlocks } from './args';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
-    * [Symbol.iterator]() {
-      for (const g of structure.groups)
-        for (const b of g.blocks)
-          yield b;
+    *[Symbol.iterator]() {
+      for (const g of structure.groups) for (const b of g.blocks) yield b;
     }
   };
 }
@@ -29,24 +27,26 @@ export class BlockGraph {
     this.nodes = nodes;
   }
 
-  public traverseIds(direction: 'upstream' | 'downstream',
-                     ...rootBlockIds: string[]): Set<string> {
+  public traverseIds(direction: 'upstream' | 'downstream', ...rootBlockIds: string[]): Set<string> {
     const all = new Set<string>();
-    this.traverse(direction, rootBlockIds, node => all.add(node.id));
+    this.traverse(direction, rootBlockIds, (node) => all.add(node.id));
     return all;
   }
 
-  public traverseIdsExcludingRoots(direction: 'upstream' | 'downstream',
-                                   ...rootBlockIds: string[]): Set<string> {
+  public traverseIdsExcludingRoots(
+    direction: 'upstream' | 'downstream',
+    ...rootBlockIds: string[]
+  ): Set<string> {
     const result = this.traverseIds(direction, ...rootBlockIds);
-    for (const r of rootBlockIds)
-      result.delete(r);
+    for (const r of rootBlockIds) result.delete(r);
     return result;
   }
 
-  public traverse(direction: 'upstream' | 'downstream',
-                  rootBlockIds: string[],
-                  cb: (node: BlockGraphNode) => void): void {
+  public traverse(
+    direction: 'upstream' | 'downstream',
+    rootBlockIds: string[],
+    cb: (node: BlockGraphNode) => void
+  ): void {
     let unprocessed = [...rootBlockIds];
     // used to deduplicate possible downstream / upstream blocks and process them only once
     const queued = new Set<string>(unprocessed);
@@ -55,7 +55,7 @@ export class BlockGraph {
       for (const blockId of unprocessed) {
         const info = this.nodes.get(blockId)!;
         cb(info);
-        info[direction]!.forEach(v => {
+        info[direction]!.forEach((v) => {
           if (!queued.has(v)) {
             queued.add(v);
             nextUnprocessed.push(v);
@@ -68,7 +68,7 @@ export class BlockGraph {
 }
 
 export function stagingGraph(structure: ProjectStructure) {
-  type WNode = Optional<Writable<BlockGraphNode>, 'upstream' | 'downstream'>
+  type WNode = Optional<Writable<BlockGraphNode>, 'upstream' | 'downstream'>;
   const result = new Map<string, WNode>();
 
   // Simple dependency graph from previous to next
@@ -92,13 +92,15 @@ export function stagingGraph(structure: ProjectStructure) {
 
     previous = current;
   }
-  if (previous !== undefined)
-    previous.downstream = new Set<string>();
+  if (previous !== undefined) previous.downstream = new Set<string>();
 
   return new BlockGraph(result as Map<string, BlockGraphNode>);
 }
 
-export function productionGraph(structure: ProjectStructure, argsProvider: (blockId: string) => any | undefined): BlockGraph {
+export function productionGraph(
+  structure: ProjectStructure,
+  argsProvider: (blockId: string) => any | undefined
+): BlockGraph {
   const result = new Map<string, BlockGraphNode>();
 
   // traversing blocks in topological order defined by the project structure
@@ -109,17 +111,17 @@ export function productionGraph(structure: ProjectStructure, argsProvider: (bloc
     const args = argsProvider(id);
 
     // skipping those blocks for which we don't have args
-    if (args === undefined)
-      continue;
+    if (args === undefined) continue;
 
     const upstreams = inferAllReferencedBlocks(args, possibleUpstreams);
     const node: BlockGraphNode = {
-      id, missingReferences: upstreams.missingReferences,
+      id,
+      missingReferences: upstreams.missingReferences,
       upstream: upstreams.upstreams,
       downstream: new Set<string>() // will be populated from downstream blocks
     };
     result.set(id, node);
-    upstreams.upstreams.forEach(dep => result.get(dep)!.downstream.add(id));
+    upstreams.upstreams.forEach((dep) => result.get(dep)!.downstream.add(id));
     possibleUpstreams.add(id);
   }
 
@@ -127,29 +129,23 @@ export function productionGraph(structure: ProjectStructure, argsProvider: (bloc
 }
 
 function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
-  if (a.size !== b.size)
-    return false;
-  for (const e of a)
-    if (!b.has(e))
-      return false;
+  if (a.size !== b.size) return false;
+  for (const e of a) if (!b.has(e)) return false;
   return true;
 }
 
 function intersects<T>(a: Set<T>, b: Set<T>): boolean {
-  if (a.size > b.size)
-    return intersects(b, a);
-  for (const e of a)
-    if (b.has(e))
-      return true;
+  if (a.size > b.size) return intersects(b, a);
+  for (const e of a) if (b.has(e)) return true;
   return false;
 }
 
 export interface GraphDiff {
-  onlyInA: Set<string>,
+  onlyInA: Set<string>;
   /** Nodes that changed the list of their upstreams,
    * and all their downstreams */
-  different: Set<string>,
-  onlyInB: Set<string>
+  different: Set<string>;
+  onlyInB: Set<string>;
 }
 
 export function graphDiff(a: BlockGraph, b: BlockGraph): GraphDiff {
@@ -157,19 +153,16 @@ export function graphDiff(a: BlockGraph, b: BlockGraph): GraphDiff {
   const onlyInA = new Set<string>();
   const onlyInB = new Set<string>();
   const different = new Set<string>();
-  a.nodes.forEach(fromA => {
+  a.nodes.forEach((fromA) => {
     const fromB = b.nodes.get(fromA.id);
-    if (fromB === undefined)
-      onlyInA.add(fromA.id);
+    if (fromB === undefined) onlyInA.add(fromA.id);
     else if (!setsEqual(fromA.upstream, fromB.upstream) || intersects(fromA.upstream, different))
       different.add(fromA.id);
   });
 
-  b.nodes.forEach(fromB => {
-    if (!a.nodes.has(fromB.id))
-      onlyInB.add(fromB.id);
-    else if (intersects(fromB.upstream, different))
-      different.add(fromB.id);
+  b.nodes.forEach((fromB) => {
+    if (!a.nodes.has(fromB.id)) onlyInB.add(fromB.id);
+    else if (intersects(fromB.upstream, different)) different.add(fromB.id);
   });
 
   return { onlyInA, onlyInB, different };

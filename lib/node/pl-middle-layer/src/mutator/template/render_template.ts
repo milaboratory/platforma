@@ -27,9 +27,7 @@ export function createRenderTemplate<O extends string>(
   outputNames: O[]
 ): Record<O, AnyRef> {
   if (outputNames.length === 0) throw new Error('Zero output names provided');
-  const rId = tx.createEphemeral(
-    ephemeral ? EphRenderTemplate : RenderTemplate
-  );
+  const rId = tx.createEphemeral(ephemeral ? EphRenderTemplate : RenderTemplate);
 
   const tplField = field(rId, 'template');
   const inputsField = field(rId, 'inputs');

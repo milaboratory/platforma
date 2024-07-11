@@ -6,8 +6,7 @@ export function mapRecord<T1, T2, Key extends string>(
   mapper: (value: T1) => T2
 ): Record<Key, T2> {
   const result = {} as Record<Key, T2>;
-  for (const [key, value] of Object.entries(obj))
-    result[key as Key] = mapper(value as T1);
+  for (const [key, value] of Object.entries(obj)) result[key as Key] = mapper(value as T1);
   return result;
 }
 
@@ -25,8 +24,6 @@ function isActiveCfg(cfg: Cfg): boolean {
 }
 
 export function hasActiveCfgComponents(cfg: Cfg): boolean {
-  for (const nested of traverseCfg(cfg))
-    if (isActiveCfg(nested))
-      return true;
+  for (const nested of traverseCfg(cfg)) if (isActiveCfg(nested)) return true;
   return false;
 }

@@ -1,5 +1,6 @@
 import {
-  isNullResourceId, poll,
+  isNullResourceId,
+  poll,
   TestHelpers,
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
@@ -33,10 +34,10 @@ test.each([
 
   const specPrepared = await preparation.prepare(spec);
 
-  await TestHelpers.withTempRoot(async pl => {
+  await TestHelpers.withTempRoot(async (pl) => {
     const f0 = { resourceId: pl.clientRoot, fieldName: 'test0' };
 
-    const bp = await pl.withWriteTx('test', async tx => {
+    const bp = await pl.withWriteTx('test', async (tx) => {
       tx.createField(f0, 'Dynamic');
       const bp = createBlockPack(tx, specPrepared);
       tx.setField(f0, bp);
@@ -44,9 +45,8 @@ test.each([
       return await toGlobalResourceId(bp);
     });
 
-    await poll(pl, async a => {
-      const r = await a.get(bp)
-        .then(r => r.final()); // this will await final state
+    await poll(pl, async (a) => {
+      const r = await a.get(bp).then((r) => r.final()); // this will await final state
       expect(isNullResourceId(r.data.error)).toBe(true);
     });
   });

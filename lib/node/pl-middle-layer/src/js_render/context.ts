@@ -16,12 +16,12 @@ function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
 }
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {
-  return data !== undefined
-    ? Buffer.from(data).toString('base64')
-    : undefined;
+  return data !== undefined ? Buffer.from(data).toString('base64') : undefined;
 }
 
-export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
+export class JsExecutionContext
+  implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string>
+{
   private readonly callbackRegistry: QuickJSHandle;
   private readonly fnJSONStringify: QuickJSHandle;
   private readonly fnJSONParse: QuickJSHandle;
@@ -42,16 +42,15 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
     this.callbackRegistry = this.scope.manage(this.vm.newObject());
 
     this.fnJSONStringify = scope.manage(
-      vm.getProp(vm.global, 'JSON')
-        .consume(json => vm.getProp(json, 'stringify')));
+      vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'stringify'))
+    );
     if (vm.typeof(this.fnJSONStringify) !== 'function')
       throw new Error(`JSON.stringify() not found.`);
 
     this.fnJSONParse = scope.manage(
-      vm.getProp(vm.global, 'JSON')
-        .consume(json => vm.getProp(json, 'parse')));
-    if (vm.typeof(this.fnJSONParse) !== 'function')
-      throw new Error(`JSON.parse() not found.`);
+      vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'parse'))
+    );
+    if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
 
     this.injectCtx();
   }
@@ -62,24 +61,25 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
   }
 
   public evaluateBundle(code: string) {
-    this.vm.unwrapResult(
-      this.vm.evalCode(code, undefined, { type: 'global' }))
-      .dispose();
+    this.vm.unwrapResult(this.vm.evalCode(code, undefined, { type: 'global' })).dispose();
   }
 
   public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
-    return Scope.withScope(localScope => {
-      const targetCallback = localScope.manage(
-        this.vm.getProp(this.callbackRegistry, cbName));
+    return Scope.withScope((localScope) => {
+      const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
 
       if (this.vm.typeof(targetCallback) !== 'function')
         throw new Error(`No such callback: ${cbName}`);
 
-      return this.scope.manage(this.vm.unwrapResult(
-        this.vm.callFunction(targetCallback, this.vm.undefined,
-          ...args.map(arg => this.exportObjectUniversal(arg, localScope))
+      return this.scope.manage(
+        this.vm.unwrapResult(
+          this.vm.callFunction(
+            targetCallback,
+            this.vm.undefined,
+            ...args.map((arg) => this.exportObjectUniversal(arg, localScope))
+          )
         )
-      ));
+      );
     });
   }
 
@@ -89,32 +89,28 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
 
   getAccessorHandleByName(name: string): string | undefined {
     if (this.computableCtx === undefined)
-      throw new Error('Accessors can\'t be used in this context');
+      throw new Error("Accessors can't be used in this context");
     const wellKnownAccessor = (name: string, ctxKey: 'staging' | 'prod'): string | undefined => {
       if (!this.accessors.has(name)) {
         const lambda = this.blockCtx[ctxKey];
-        if (lambda === undefined)
-          throw new Error('Staging context not available');
+        if (lambda === undefined) throw new Error('Staging context not available');
         const entry = lambda(this.computableCtx!);
-        if (!entry)
-          this.accessors.set(name, undefined);
-        else
-          this.accessors.set(name, this.computableCtx!.accessor(entry).node());
+        if (!entry) this.accessors.set(name, undefined);
+        else this.accessors.set(name, this.computableCtx!.accessor(entry).node());
       }
       return this.accessors.get(name) ? name : undefined;
     };
-    if (name === 'staging')
-      return wellKnownAccessor('staging', 'staging');
-    else if (name === 'main')
-      return wellKnownAccessor('main', 'prod');
+    if (name === 'staging') return wellKnownAccessor('staging', 'staging');
+    else if (name === 'main') return wellKnownAccessor('main', 'prod');
     return undefined;
   }
 
-  resolveWithCommon(handle: string,
-                    commonOptions: CommonFieldTraverseOpsFromSDK,
-                    ...steps: (FieldTraversalStepFromSDK | string)[]): string | undefined {
-    return this.wrapAccessor(
-      this.getAccessor(handle).traverseWithCommon(commonOptions, ...steps));
+  resolveWithCommon(
+    handle: string,
+    commonOptions: CommonFieldTraverseOpsFromSDK,
+    ...steps: (FieldTraversalStepFromSDK | string)[]
+  ): string | undefined {
+    return this.wrapAccessor(this.getAccessor(handle).traverseWithCommon(commonOptions, ...steps));
   }
 
   getResourceType(handle: string): ResourceTypeFromSDK {
@@ -181,48 +177,54 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
 
   getBlobContentAsString(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
-    return this.registerComputable('getBlobContentAsString', Computable.make(
-      ctx => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
-      {
-        postprocessValue: async value => {
-          if (value === undefined)
-            return undefined;
-          return Buffer
-            .from(await this.env.drivers.downloadDriver.getContent(value.handle))
-            .toString('utf-8');
+    return this.registerComputable(
+      'getBlobContentAsString',
+      Computable.make(
+        (ctx) => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
+        {
+          postprocessValue: async (value) => {
+            if (value === undefined) return undefined;
+            return Buffer.from(
+              await this.env.drivers.downloadDriver.getContent(value.handle)
+            ).toString('utf-8');
+          }
         }
-      }
-    ));
+      )
+    );
   }
 
   getBlobContentAsBase64(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
-    return this.registerComputable('getBlobContentAsBase64', Computable.make(
-      ctx => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
-      {
-        postprocessValue: async value => {
-          if (value === undefined)
-            return undefined;
-          return Buffer
-            .from(await this.env.drivers.downloadDriver.getContent(value.handle))
-            .toString('base64');
+    return this.registerComputable(
+      'getBlobContentAsBase64',
+      Computable.make(
+        (ctx) => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
+        {
+          postprocessValue: async (value) => {
+            if (value === undefined) return undefined;
+            return Buffer.from(
+              await this.env.drivers.downloadDriver.getContent(value.handle)
+            ).toString('base64');
+          }
         }
-      }
-    ));
+      )
+    );
   }
 
   getDownloadedBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getDownloadedBlobContentHandle',
-      this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo));
+      this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo)
+    );
   }
 
   getOnDemandBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
-      this.env.drivers.downloadDriver.getOnDemandBlob(resourceInfo));
+      this.env.drivers.downloadDriver.getOnDemandBlob(resourceInfo)
+    );
   }
 
   //
@@ -231,14 +233,12 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
 
   private getAccessor(handle: string): PlTreeNodeAccessor {
     const accessor = this.accessors.get(handle);
-    if (accessor === undefined)
-      throw new Error('No such accessor');
+    if (accessor === undefined) throw new Error('No such accessor');
     return accessor;
   }
 
   private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined {
-    if (accessor === undefined)
-      return undefined;
+    if (accessor === undefined) return undefined;
     else {
       const nextHandle = randomUUID();
       this.accessors.set(nextHandle, accessor);
@@ -250,11 +250,12 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
   // QuickJS Helpers
   //
 
-  private exportSingleValue(obj: boolean | number | string | null | ArrayBuffer | undefined,
-                            scope: Scope | undefined): QuickJSHandle {
+  private exportSingleValue(
+    obj: boolean | number | string | null | ArrayBuffer | undefined,
+    scope: Scope | undefined
+  ): QuickJSHandle {
     const result = this.tryExportSingleValue(obj, scope);
-    if (result === undefined)
-      throw new Error(`Can't export value: ${obj}`);
+    if (result === undefined) throw new Error(`Can't export value: ${obj}`);
     return result;
   }
 
@@ -293,14 +294,14 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
 
   public exportObjectUniversal(obj: unknown, scope: Scope | undefined): QuickJSHandle {
     const simpleHandle = this.tryExportSingleValue(obj, scope);
-    if (simpleHandle !== undefined)
-      return simpleHandle;
+    if (simpleHandle !== undefined) return simpleHandle;
     return this.exportObjectViaJson(obj, scope);
   }
 
   public exportObjectViaJson(obj: unknown, scope: Scope | undefined): QuickJSHandle {
-    const result = this.vm.newString(JSON.stringify(obj))
-      .consume(json =>
+    const result = this.vm
+      .newString(JSON.stringify(obj))
+      .consume((json) =>
         this.vm.unwrapResult(this.vm.callFunction(this.fnJSONParse, this.vm.undefined, json))
       );
     return scope !== undefined ? scope.manage(result) : result;
@@ -316,148 +317,144 @@ export class JsExecutionContext implements JsRenderInternal.GlobalCfgRenderCtxMe
   }
 
   public importObjectViaJson(handle: QuickJSHandle): unknown {
-    const text = this.vm.unwrapResult(this.vm.callFunction(
-      this.fnJSONStringify, this.vm.undefined, handle))
-      .consume(strHandle => this.vm.getString(strHandle));
-    if (text === 'undefined') // special case with futures
+    const text = this.vm
+      .unwrapResult(this.vm.callFunction(this.fnJSONStringify, this.vm.undefined, handle))
+      .consume((strHandle) => this.vm.getString(strHandle));
+    if (text === 'undefined')
+      // special case with futures
       return undefined;
     return JSON.parse(text);
   }
 
   private injectCtx() {
-    Scope.withScope(localScope => {
+    Scope.withScope((localScope) => {
       const configCtx = localScope.manage(this.vm.newObject());
 
       // Exporting props
 
       this.vm.setProp(configCtx, 'args', localScope.manage(this.vm.newString(this.blockCtx.args)));
       if (this.blockCtx.uiState !== undefined)
-        this.vm.setProp(configCtx, 'uiState', localScope.manage(this.vm.newString(this.blockCtx.args)));
+        this.vm.setProp(
+          configCtx,
+          'uiState',
+          localScope.manage(this.vm.newString(this.blockCtx.args))
+        );
 
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
 
       // Exporting methods
 
-      const exportCtxFunction = (name: string, fn: VmFunctionImplementation<QuickJSHandle>): void => {
-        this.vm.newFunction(name, fn)
-          .consume(fnh => this.vm.setProp(configCtx, name, fnh));
+      const exportCtxFunction = (
+        name: string,
+        fn: VmFunctionImplementation<QuickJSHandle>
+      ): void => {
+        this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
       };
 
       exportCtxFunction('getAccessorHandleByName', (name) => {
         return this.exportSingleValue(
           this.getAccessorHandleByName(this.vm.getString(name)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('resolveWithCommon', (handle, commonOptions, ...steps) => {
         return this.exportSingleValue(
-          this.resolveWithCommon(this.vm.getString(handle),
+          this.resolveWithCommon(
+            this.vm.getString(handle),
             this.importObjectViaJson(commonOptions) as CommonFieldTraverseOpsFromSDK,
-            ...steps.map(step =>
-              this.importObjectViaJson(step) as FieldTraversalStepFromSDK | string)),
-          undefined);
+            ...steps.map(
+              (step) => this.importObjectViaJson(step) as FieldTraversalStepFromSDK | string
+            )
+          ),
+          undefined
+        );
       });
 
       exportCtxFunction('getResourceType', (handle) => {
-        return this.exportObjectViaJson(
-          this.getResourceType(this.vm.getString(handle)),
-          undefined);
+        return this.exportObjectViaJson(this.getResourceType(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getInputsLocked', (handle) => {
-        return this.exportSingleValue(
-          this.getInputsLocked(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getInputsLocked(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getOutputsLocked', (handle) => {
-        return this.exportSingleValue(
-          this.getOutputsLocked(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getOutputsLocked(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getIsReadyOrError', (handle) => {
-        return this.exportSingleValue(
-          this.getIsReadyOrError(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getIsReadyOrError(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getIsFinal', (handle) => {
-        return this.exportSingleValue(
-          this.getIsFinal(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getIsFinal(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getError', (handle) => {
-        return this.exportSingleValue(
-          this.getError(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getError(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('listInputFields', (handle) => {
-        return this.exportObjectViaJson(
-          this.listInputFields(this.vm.getString(handle)),
-          undefined);
+        return this.exportObjectViaJson(this.listInputFields(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('listOutputFields', (handle) => {
-        return this.exportObjectViaJson(
-          this.listInputFields(this.vm.getString(handle)),
-          undefined);
+        return this.exportObjectViaJson(this.listInputFields(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('listDynamicFields', (handle) => {
-        return this.exportObjectViaJson(
-          this.listInputFields(this.vm.getString(handle)),
-          undefined);
+        return this.exportObjectViaJson(this.listInputFields(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getKeyValueBase64', (handle, key) => {
         return this.exportSingleValue(
           this.getKeyValueBase64(this.vm.getString(handle), this.vm.getString(key)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('getKeyValueAsString', (handle, key) => {
         return this.exportSingleValue(
           this.getKeyValueAsString(this.vm.getString(handle), this.vm.getString(key)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('getDataBase64', (handle) => {
-        return this.exportSingleValue(
-          this.getDataBase64(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getDataBase64(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getDataAsString', (handle) => {
-        return this.exportSingleValue(
-          this.getDataAsString(this.vm.getString(handle)),
-          undefined);
+        return this.exportSingleValue(this.getDataAsString(this.vm.getString(handle)), undefined);
       });
 
       exportCtxFunction('getBlobContentAsBase64', (handle) => {
         return this.exportSingleValue(
           this.getBlobContentAsBase64(this.vm.getString(handle)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('getBlobContentAsString', (handle) => {
         return this.exportSingleValue(
           this.getBlobContentAsString(this.vm.getString(handle)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('getDownloadedBlobContentHandle', (handle) => {
         return this.exportSingleValue(
           this.getDownloadedBlobContentHandle(this.vm.getString(handle)),
-          undefined);
+          undefined
+        );
       });
 
       exportCtxFunction('getOnDemandBlobContentHandle', (handle) => {
         return this.exportSingleValue(
           this.getOnDemandBlobContentHandle(this.vm.getString(handle)),
-          undefined);
+          undefined
+        );
       });
 
       this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);

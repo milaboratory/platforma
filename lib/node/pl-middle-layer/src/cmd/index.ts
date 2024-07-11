@@ -1,5 +1,5 @@
-import TestCmd from "./test-cmd";
+import TestCmd from './test-cmd';
 
 export const COMMANDS = {
-    'test-cmd': TestCmd
-}
+  'test-cmd': TestCmd
+};

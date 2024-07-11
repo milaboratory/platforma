@@ -4,7 +4,8 @@ import { BlockPackSpecAny } from '../model';
 import {
   GlobalOverview,
   GlobalOverviewPath,
-  PlPackageConfigData, PlPackageYamlConfigFile
+  PlPackageConfigData,
+  PlPackageYamlConfigFile
 } from '@milaboratory/pl-block-registry';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,24 +17,24 @@ import { DevBlockPackFiles } from '../mutator/block-pack/block_pack';
  * Information specified by the developer of the block.
  * */
 export type BlockPackMeta = {
-  title: string
-  description: string
+  title: string;
+  description: string;
   [metaField: string]: unknown;
-}
+};
 
 /**
  * Information about specific package with specific organization and package names.
  * Mainly contain information about latest version of the package.
  * */
 export type BlockPackPackageOverview = {
-  organization: string,
-  package: string,
-  latestVersion: string,
-  latestMeta: BlockPackMeta,
-  registryLabel: string,
-  latestSpec: BlockPackSpecAny,
-  otherVersions: string[]
-}
+  organization: string;
+  package: string;
+  latestVersion: string;
+  latestMeta: BlockPackMeta;
+  registryLabel: string;
+  latestSpec: BlockPackSpecAny;
+  otherVersions: string[];
+};
 
 async function getFileContent(path: string) {
   try {
@@ -62,35 +63,32 @@ export async function getDevPacketMtime(devPath: string): Promise<string> {
   for (const f of DevBlockPackFiles) {
     const fullPath = path.join(devPath, ...f);
     const stat = await getFileStat(fullPath);
-    if (stat === undefined)
-      continue;
-    if (mtime < stat.mtimeNs)
-      mtime = stat.mtimeNs;
+    if (stat === undefined) continue;
+    if (mtime < stat.mtimeNs) mtime = stat.mtimeNs;
   }
   return mtime.toString();
 }
 
 export class BlockPackRegistry {
-  constructor(private readonly registrySpecs: RegistrySpec[],
-              private readonly http?: Dispatcher) {
-  }
+  constructor(
+    private readonly registrySpecs: RegistrySpec[],
+    private readonly http?: Dispatcher
+  ) {}
 
   private async getPackagesForRoot(regSpec: RegistrySpec): Promise<BlockPackPackageOverview[]> {
     const result: BlockPackPackageOverview[] = [];
     switch (regSpec.type) {
       case 'remote_v1':
-        const httpOptions = this.http !== undefined
-          ? { dispatcher: this.http }
-          : {};
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const overviewResponse = await request(
-          `${regSpec.url}/${GlobalOverviewPath}`, httpOptions);
+        const overviewResponse = await request(`${regSpec.url}/${GlobalOverviewPath}`, httpOptions);
         const overview = (await overviewResponse.body.json()) as GlobalOverview;
         for (const overviewEntry of overview) {
           const { organization, package: pkg, latestMeta, latestVersion } = overviewEntry;
           result.push({
             organization,
-            package: pkg, latestVersion,
+            package: pkg,
+            latestVersion,
             latestMeta: latestMeta as BlockPackMeta,
             registryLabel: regSpec.label,
             latestSpec: {
@@ -108,21 +106,19 @@ export class BlockPackRegistry {
 
       case 'folder_with_dev_packages':
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
-          if (!entry.isDirectory())
-            continue;
+          if (!entry.isDirectory()) continue;
 
           const devPath = path.join(regSpec.path, entry.name);
-          const yamlContent = await getFileContent(
-            path.join(devPath, PlPackageYamlConfigFile));
-          if (yamlContent === undefined)
-            continue;
+          const yamlContent = await getFileContent(path.join(devPath, PlPackageYamlConfigFile));
+          if (yamlContent === undefined) continue;
           const config = PlPackageConfigData.parse(YAML.parse(yamlContent));
 
           const mtime = await getDevPacketMtime(devPath);
 
           result.push({
             organization: config.organization,
-            package: config.package, latestVersion: 'DEV',
+            package: config.package,
+            latestVersion: 'DEV',
             latestMeta: config.meta as BlockPackMeta,
             registryLabel: regSpec.label,
             latestSpec: {
@@ -142,7 +138,7 @@ export class BlockPackRegistry {
   public async getPackagesOverview(): Promise<BlockPackPackageOverview[]> {
     const packages: BlockPackPackageOverview[] = [];
     for (const regSpecs of this.registrySpecs)
-      packages.push(...await this.getPackagesForRoot(regSpecs));
+      packages.push(...(await this.getPackagesForRoot(regSpecs)));
     return packages;
   }
 }

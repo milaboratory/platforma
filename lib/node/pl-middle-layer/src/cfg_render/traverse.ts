@@ -3,8 +3,7 @@ import { assertNever } from '@milaboratory/ts-helpers';
 
 export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator<Cfg> {
   yield cfg;
-  if (guide !== undefined && !guide(cfg))
-    return;
+  if (guide !== undefined && !guide(cfg)) return;
   switch (cfg.type) {
     case 'GetFromCtx':
     case 'Immediate':
@@ -13,12 +12,10 @@ export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator
       yield* traverseCfg(cfg.cfg);
       return;
     case 'MakeObject':
-      for (const [, child] of Object.entries(cfg.template))
-        yield* traverseCfg(child);
+      for (const [, child] of Object.entries(cfg.template)) yield* traverseCfg(child);
       return;
     case 'MakeArray':
-      for (const child of cfg.template)
-        yield* traverseCfg(child);
+      for (const child of cfg.template) yield* traverseCfg(child);
       return;
     case 'GetJsonField':
     case 'GetResourceField':

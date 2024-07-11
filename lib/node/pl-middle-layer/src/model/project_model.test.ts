@@ -3,7 +3,8 @@ import {
   parseBlockFrontendStateKey,
   parseProjectField,
   ProjectField,
-  projectFieldName, ProjectStructureKey
+  projectFieldName,
+  ProjectStructureKey
 } from './project_model';
 import { randomUUID } from 'node:crypto';
 

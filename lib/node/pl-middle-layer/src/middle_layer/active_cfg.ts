@@ -12,8 +12,11 @@ import { constructBlockContext } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 
 /** Returns derived general project state form the project resource */
-export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment): Computable<unknown[]> {
-  return Computable.make(ctx => {
+export function activeConfigs(
+  prjEntry: PlTreeEntry,
+  env: MiddleLayerEnvironment
+): Computable<unknown[]> {
+  return Computable.make((ctx) => {
     const prj = ctx.accessor(prjEntry).node();
 
     const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
@@ -21,23 +24,24 @@ export function activeConfigs(prjEntry: PlTreeEntry, env: MiddleLayerEnvironment
     for (const { id, renderingMode } of allBlocks(structure)) {
       // block-pack
       const blockPack = prj.traverse(
-        { field: projectFieldName(id, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
+        {
+          field: projectFieldName(id, 'blockPack'),
+          assertFieldType: 'Dynamic',
+          errorIfFieldNotSet: true
+        },
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       );
 
       const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
-      if (bpInfo?.config === undefined)
-        continue;
+      if (bpInfo?.config === undefined) continue;
 
       const blockConf = normalizeBlockConfig(bpInfo.config);
       const activeOutputConfigs = Object.entries(blockConf.outputs)
         .map(([, cfg]) => cfg)
-        .filter(cfg =>
-          !isFunctionHandle(cfg) && hasActiveCfgComponents(cfg))
-        .map(cfg => cfg as Cfg);
+        .filter((cfg) => !isFunctionHandle(cfg) && hasActiveCfgComponents(cfg))
+        .map((cfg) => cfg as Cfg);
 
-      if (activeOutputConfigs.length === 0)
-        continue;
+      if (activeOutputConfigs.length === 0) continue;
 
       const blockCtx = constructBlockContext(prj, id);
 

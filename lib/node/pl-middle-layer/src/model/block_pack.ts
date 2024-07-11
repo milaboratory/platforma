@@ -3,6 +3,6 @@ import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 
 /** Define structure of block-pack data section */
 export interface BlockPackInfo {
-  readonly source: BlockPackSpec,
-  readonly config: BlockConfigUniversal,
+  readonly source: BlockPackSpec;
+  readonly config: BlockConfigUniversal;
 }

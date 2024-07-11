@@ -23,7 +23,10 @@ export interface FrontendFromFolderData {
   signature: string;
 }
 
-export const FrontendFromFolderResourceType: ResourceType = { name: 'Frontend/FromFolder', version: '1' };
+export const FrontendFromFolderResourceType: ResourceType = {
+  name: 'Frontend/FromFolder',
+  version: '1'
+};
 
 /** Directs user of the block pack to load frontend from specific local
  * folder. Signature allows to confirm that this is the same client who

@@ -41,7 +41,10 @@ function tSlash(str: string): string {
 }
 
 export class BlockPackPreparer {
-  constructor(private readonly signer: Signer, private readonly http?: Dispatcher) {}
+  constructor(
+    private readonly signer: Signer,
+    private readonly http?: Dispatcher
+  ) {}
 
   public async getBlockConfig(spec: BlockPackSpecAny): Promise<BlockConfig> {
     switch (spec.type) {

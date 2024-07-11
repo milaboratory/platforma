@@ -22,9 +22,9 @@ type SubroutineKey = symbol;
  * determines to which argument of which pending subroutine it should be delivered.
  * See special value for delivery of the final "return" result. */
 type Destination = {
-  op: SubroutineKey,
-  arg: ArgumentKey
-}
+  op: SubroutineKey;
+  arg: ArgumentKey;
+};
 
 /** Special address of operation, see below. */
 const ReturnOpKey: unique symbol = Symbol();
@@ -43,7 +43,7 @@ function isReturnDestination(destination: Destination): Boolean {
 type QueuedOperation = {
   operation: Operation;
   destination: Destination;
-}
+};
 
 /** Queued computation, returned by the first round of config execution. Such
  * computables should be returned in the intermediate representation of the
@@ -53,14 +53,14 @@ type QueuedOperation = {
 type ScheduledComputable = {
   destination: Destination;
   computable: Computable<unknown>;
-}
+};
 
 /** This is what ScheduledComputable transforms from intermediate
  * representation to post-processing. */
 type MaterializedComputable = {
   destination: Destination;
   computable: unknown;
-}
+};
 
 /** Main entry inside the execution stack. */
 type PendingSubroutine = {
@@ -68,15 +68,15 @@ type PendingSubroutine = {
   destination: Destination;
   argCounter: number;
   args: ArgumentValues;
-}
+};
 
 /** Execution stack. The closest concept that this object along with enclosed
  * {@link PendingSubroutine}s represent is a Continuation.
  * https://en.wikipedia.org/wiki/Continuation */
 type ExecutionStack = {
-  result?: unknown
-  pendingSubroutines: Map<SubroutineKey, PendingSubroutine>
-}
+  result?: unknown;
+  pendingSubroutines: Map<SubroutineKey, PendingSubroutine>;
+};
 
 /** Returns initial stack value. */
 function zeroStack(): ExecutionStack {
@@ -89,11 +89,13 @@ function zeroStack(): ExecutionStack {
  * @param operations operations to initiate the execution process
  * @param allowComputables if false, scheduling of async computables will result in error
  * */
-function execute(env: ExecutionEnvironment, stack: ExecutionStack,
-                 operations: QueuedOperation[],
-                 allowComputables: boolean): ScheduledComputable[] {
-  const operationQueue =
-    new Denque<QueuedOperation>(operations);
+function execute(
+  env: ExecutionEnvironment,
+  stack: ExecutionStack,
+  operations: QueuedOperation[],
+  allowComputables: boolean
+): ScheduledComputable[] {
+  const operationQueue = new Denque<QueuedOperation>(operations);
 
   /** Returns false if final result is set as result of this operation,
    * true if we should continue processing. */
@@ -104,8 +106,7 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
     }
 
     const pending = notEmpty(stack.pendingSubroutines.get(destination.op));
-    if (destination.arg in pending.args)
-      throw new Error('argument already set');
+    if (destination.arg in pending.args) throw new Error('argument already set');
     pending.args[destination.arg] = result;
     pending.argCounter--;
     if (pending.argCounter === 0) {
@@ -128,10 +129,8 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
     const op = operationQueue.shift()!;
     const action = op.operation(env);
     switch (action.type) {
-
       case 'ReturnResult':
-        if (!deliverResult(op.destination, action.result))
-          break mainLoop; // this terminates execution
+        if (!deliverResult(op.destination, action.result)) break mainLoop; // this terminates execution
         break; // switch
 
       case 'ScheduleSubroutine':
@@ -141,13 +140,11 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
         const initialArgCounter = argRequests.length;
 
         if (initialArgCounter === 0)
-
           // if no pending arguments
           operationQueue.push({
             destination: op.destination,
             operation: action.subroutine({})
           });
-
         else {
           for (const [arg, operation] of argRequests)
             operationQueue.push({
@@ -176,7 +173,6 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 
       default:
         assertNever(action);
-
     }
   }
 
@@ -188,41 +184,58 @@ function execute(env: ExecutionEnvironment, stack: ExecutionStack,
 //
 
 /** Main method to render configurations */
-export function computableFromCfg(drivers: MiddleLayerInternalDrivers, bCtx: BlockContextAny,
-                                  cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+export function computableFromCfg(
+  drivers: MiddleLayerInternalDrivers,
+  bCtx: BlockContextAny,
+  cfg: Cfg,
+  ops: Partial<ComputableRenderingOps> = {}
+): Computable<unknown> {
   return computableFromCfgUnsafe(drivers, toCfgContext(bCtx), cfg, ops);
 }
 
-export function computableFromCfgUnsafe(drivers: MiddleLayerInternalDrivers, ctx: Record<string, unknown>,
-                                        cfg: Cfg, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+export function computableFromCfgUnsafe(
+  drivers: MiddleLayerInternalDrivers,
+  ctx: Record<string, unknown>,
+  cfg: Cfg,
+  ops: Partial<ComputableRenderingOps> = {}
+): Computable<unknown> {
   const key = canonicalize({
     ctx: Object.fromEntries(Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1)),
     cfg: cfg
   })!;
-  return Computable.makeRaw(c => {
-    const env: ExecutionEnvironment = { drivers, cCtx: c };
-    const stack = zeroStack();
-    const computables = execute(env, stack, [{
-      destination: ReturnDestination,
-      operation: renderCfg(ctx, cfg)
-    }], true);
-    return {
-      ir: computables,
-      async postprocessValue(value: MaterializedComputable[], stable: boolean): Promise<unknown> {
-        const resolvedOps: QueuedOperation[] = [];
-        for (const mc of value)
-          resolvedOps.push({ destination: mc.destination, operation: resOp(mc.computable) });
-        const postEnv: ExecutionEnvironment = {
-          drivers,
-          get cCtx(): ComputableCtx {
-            throw new Error('asynchronous operations are forbidden in this context');
+  return Computable.makeRaw(
+    (c) => {
+      const env: ExecutionEnvironment = { drivers, cCtx: c };
+      const stack = zeroStack();
+      const computables = execute(
+        env,
+        stack,
+        [
+          {
+            destination: ReturnDestination,
+            operation: renderCfg(ctx, cfg)
           }
-        };
-        execute(postEnv, stack, resolvedOps, false);
-        if (!('result' in stack))
-          throw new Error('illegal cfg rendering stack state, no result');
-        return stack.result;
-      }
-    };
-  }, { ...ops, key });
+        ],
+        true
+      );
+      return {
+        ir: computables,
+        async postprocessValue(value: MaterializedComputable[], stable: boolean): Promise<unknown> {
+          const resolvedOps: QueuedOperation[] = [];
+          for (const mc of value)
+            resolvedOps.push({ destination: mc.destination, operation: resOp(mc.computable) });
+          const postEnv: ExecutionEnvironment = {
+            drivers,
+            get cCtx(): ComputableCtx {
+              throw new Error('asynchronous operations are forbidden in this context');
+            }
+          };
+          execute(postEnv, stack, resolvedOps, false);
+          if (!('result' in stack)) throw new Error('illegal cfg rendering stack state, no result');
+          return stack.result;
+        }
+      };
+    },
+    { ...ops, key }
+  );
 }

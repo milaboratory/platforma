@@ -1,9 +1,18 @@
 import {
-  Args, BlockConfig,
-  getJsonField, getResourceField, getResourceValueAsJson, InferOutputType,
-  isolate, It, MainOutputs,
+  Args,
+  BlockConfig,
+  getJsonField,
+  getResourceField,
+  getResourceValueAsJson,
+  InferOutputType,
+  isolate,
+  It,
+  MainOutputs,
   makeObject,
-  mapArrayValues, PlatformaConfiguration, PlResourceEntry, TypedConfig
+  mapArrayValues,
+  PlatformaConfiguration,
+  PlResourceEntry,
+  TypedConfig
 } from '@milaboratory/sdk-ui';
 import { computableFromCfg, computableFromCfgUnsafe } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
@@ -19,26 +28,43 @@ test('local cfg test (no pl)', async () => {
   };
   const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = (PlatformaConfiguration.create<typeof args>('Heavy')
-    .initialArgs(args)
-    .output('out1', getJsonField(getJsonField(Args, 'a'), theCValue))
-    .output('out2', mapArrayValues(getJsonField(Args, 'b'), isolate(makeObject({ theField: It }))))
-    .done() as any).config as BlockConfig;
+  const cfg = (
+    PlatformaConfiguration.create<typeof args>('Heavy')
+      .initialArgs(args)
+      .output('out1', getJsonField(getJsonField(Args, 'a'), theCValue))
+      .output(
+        'out2',
+        mapArrayValues(getJsonField(Args, 'b'), isolate(makeObject({ theField: It })))
+      )
+      .done() as any
+  ).config as BlockConfig;
 
   const ctx = { $args: args };
 
-  const computable1 = computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig);
-  const out1 = (await computable1.getValue()) as InferOutputType<typeof cfg.outputs['out1'], typeof args, unknown>;
+  const computable1 = computableFromCfgUnsafe(
+    {} as MiddleLayerInternalDrivers,
+    ctx,
+    cfg.outputs['out1'] as TypedConfig
+  );
+  const out1 = (await computable1.getValue()) as InferOutputType<
+    (typeof cfg.outputs)['out1'],
+    typeof args,
+    unknown
+  >;
   expect(out1).toEqual('hi');
 
-  const computable2 = computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out2'] as TypedConfig);
-  const out2 = (await computable2.getValue());
+  const computable2 = computableFromCfgUnsafe(
+    {} as MiddleLayerInternalDrivers,
+    ctx,
+    cfg.outputs['out2'] as TypedConfig
+  );
+  const out2 = await computable2.getValue();
   expect(out2).toStrictEqual([{ theField: 'a' }, { theField: 'b' }, { theField: 'c' }]);
 });
 
 type TestResourceValue = {
-  someField: number
-}
+  someField: number;
+};
 
 test('cfg test with pl, simple', async () => {
   const input = {
@@ -46,29 +72,44 @@ test('cfg test with pl, simple', async () => {
   };
   const theCValue = getJsonField(Args, 'theC');
 
-  const cfg = (PlatformaConfiguration.create<typeof input>('Heavy')
-    .initialArgs(input)
-    .output('out1', getJsonField(
-      getResourceValueAsJson<TestResourceValue>()(getResourceField(MainOutputs, theCValue)),
-      'someField'))
-    .done() as any).config as BlockConfig;
+  const cfg = (
+    PlatformaConfiguration.create<typeof input>('Heavy')
+      .initialArgs(input)
+      .output(
+        'out1',
+        getJsonField(
+          getResourceValueAsJson<TestResourceValue>()(getResourceField(MainOutputs, theCValue)),
+          'someField'
+        )
+      )
+      .done() as any
+  ).config as BlockConfig;
 
-  await TestHelpers.withTempRoot(async pl => {
-    const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, { pollingInterval: 250, stopPollingDelay: 500 });
+  await TestHelpers.withTempRoot(async (pl) => {
+    const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, {
+      pollingInterval: 250,
+      stopPollingDelay: 500
+    });
 
     const ctx = {
       $args: input,
       $prod: tree.entry() as any as PlResourceEntry
     };
 
-    const computable: Computable<unknown> =
-      computableFromCfgUnsafe({} as MiddleLayerInternalDrivers, ctx, cfg.outputs['out1'] as TypedConfig) as any;
+    const computable: Computable<unknown> = computableFromCfgUnsafe(
+      {} as MiddleLayerInternalDrivers,
+      ctx,
+      cfg.outputs['out1'] as TypedConfig
+    ) as any;
 
     expect(await computable.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('addingTestResource', async tx => {
-      tx.createField(field(pl.clientRoot, 'c'), 'Dynamic',
-        tx.createValue(Pl.JsonObject, JSON.stringify({ someField: 42 } as TestResourceValue)));
+    await pl.withWriteTx('addingTestResource', async (tx) => {
+      tx.createField(
+        field(pl.clientRoot, 'c'),
+        'Dynamic',
+        tx.createValue(Pl.JsonObject, JSON.stringify({ someField: 42 } as TestResourceValue))
+      );
       await tx.commit();
     });
 

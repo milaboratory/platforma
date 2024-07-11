@@ -34,10 +34,7 @@ export type HeavyBlockOutputs = {
   result: AnyRef;
 };
 
-export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = [
-  'context',
-  'result'
-];
+export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ['context', 'result'];
 
 export function createRenderHeavyBlock(
   tx: PlTransaction,
@@ -72,10 +69,7 @@ export function createBContextEnd(tx: PlTransaction): ResourceRef {
   return tx.createEphemeral(BContextEnd);
 }
 
-export function createBContextFromUpstreams(
-  tx: PlTransaction,
-  upstreamCtxs: AnyRef[]
-): AnyRef {
+export function createBContextFromUpstreams(tx: PlTransaction, upstreamCtxs: AnyRef[]): AnyRef {
   if (upstreamCtxs.length === 0) return createBContextEnd(tx);
 
   if (upstreamCtxs.length === 1) return upstreamCtxs[0];
@@ -83,19 +77,11 @@ export function createBContextFromUpstreams(
   const ctx = tx.createEphemeral(BContext);
 
   // setting id
-  tx.createField(
-    field(ctx, BContextId),
-    'Input',
-    Pl.createPlString(tx, randomUUID())
-  );
+  tx.createField(field(ctx, BContextId), 'Input', Pl.createPlString(tx, randomUUID()));
 
   // setting parents
   for (let i = 0; i < upstreamCtxs.length; i++)
-    tx.createField(
-      field(ctx, `${BContextMultiParentPrefix}${i}`),
-      'Input',
-      upstreamCtxs[i]
-    );
+    tx.createField(field(ctx, `${BContextMultiParentPrefix}${i}`), 'Input', upstreamCtxs[i]);
 
   tx.lock(ctx);
 

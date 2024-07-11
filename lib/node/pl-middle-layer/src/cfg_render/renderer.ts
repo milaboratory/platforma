@@ -1,4 +1,9 @@
-import { Cfg, CfgMapArrayValues, CfgMapRecordValues, CfgMapResourceFields } from '@milaboratory/sdk-ui';
+import {
+  Cfg,
+  CfgMapArrayValues,
+  CfgMapRecordValues,
+  CfgMapResourceFields
+} from '@milaboratory/sdk-ui';
 import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import { mapRecord } from './util';
@@ -21,32 +26,27 @@ export function resOp(result: unknown): Operation {
 // Subroutines
 //
 
-const SRMakeObject: Subroutine = args => {
+const SRMakeObject: Subroutine = (args) => {
   const result: Record<string | symbol, any> = {};
-  for (const [k, v] of Object.entries(args))
-    result[k] = v;
+  for (const [k, v] of Object.entries(args)) result[k] = v;
   return resOp(result);
 };
 
-const SRFlatten: Subroutine = args => {
+const SRFlatten: Subroutine = (args) => {
   const source = args.source as unknown[] | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
   const result: unknown[] = [];
   for (const nested of source) {
-    if (nested instanceof Array)
-      result.push(...nested);
-    else
-      result.push(nested);
+    if (nested instanceof Array) result.push(...nested);
+    else result.push(nested);
   }
   return resOp(result);
 };
 
-const SRGetResourceField: Subroutine = args => {
+const SRGetResourceField: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
   const field = args.field as string | undefined;
-  if (source === undefined || field === undefined)
-    return resOp(undefined);
+  if (source === undefined || field === undefined) return resOp(undefined);
   return ({ cCtx }) => {
     return res(cCtx.accessor(source).node().traverse(field)?.persist());
   };
@@ -55,39 +55,40 @@ const SRGetResourceField: Subroutine = args => {
 function mapArrayToRecord<T, R>(elements: T[], cb: (e: T) => R): Record<string, R> {
   const result: Record<string, R> = {};
   const length = elements.length;
-  for (let i = 0; i < length; i++)
-    result[String(i)] = cb(elements[i]);
+  for (let i = 0; i < length; i++) result[String(i)] = cb(elements[i]);
   return result;
 }
 
-function SRMapArrayValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>): Subroutine {
-  return args => {
+function SRMapArrayValues1(
+  ctx: Record<string, unknown>,
+  ops: Pick<CfgMapArrayValues, 'itVar' | 'mapping'>
+): Subroutine {
+  return (args) => {
     const source = args.source as unknown[] | undefined;
-    if (source === undefined)
-      return resOp(undefined);
+    if (source === undefined) return resOp(undefined);
     return () => ({
       type: 'ScheduleSubroutine',
       subroutine: SRCollectArrayFromArgs(source.length),
-      args: mapArrayToRecord(source,
-        e => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping))
+      args: mapArrayToRecord(source, (e) => renderCfg({ ...ctx, [ops.itVar]: e }, ops.mapping))
     });
   };
 }
 
 function SRCollectArrayFromArgs(length: number): Subroutine {
-  return args => {
+  return (args) => {
     const result: unknown[] = [];
-    for (let i = 0; i < length; i++)
-      result.push(args[String(i)]);
+    for (let i = 0; i < length; i++) result.push(args[String(i)]);
     return resOp(result);
   };
 }
 
-function SRMapRecordValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapRecordValues, 'itVar' | 'mapping'>): Subroutine {
-  return args => {
+function SRMapRecordValues1(
+  ctx: Record<string, unknown>,
+  ops: Pick<CfgMapRecordValues, 'itVar' | 'mapping'>
+): Subroutine {
+  return (args) => {
     const source = args.source as Record<string, unknown> | undefined;
-    if (source === undefined)
-      return resOp(undefined);
+    if (source === undefined) return resOp(undefined);
     const nextArgs: ArgumentRequests = {};
     for (const [k, v] of Object.entries(source)) {
       const newCtx = { ...ctx, [ops.itVar]: v };
@@ -101,60 +102,56 @@ function SRMapRecordValues1(ctx: Record<string, unknown>, ops: Pick<CfgMapRecord
   };
 }
 
-const SRMapRecordValues2: Subroutine = args => {
+const SRMapRecordValues2: Subroutine = (args) => {
   return resOp(args);
 };
 
-const SRIsEmpty: Subroutine = args => {
+const SRIsEmpty: Subroutine = (args) => {
   const arg = args.arg as unknown[] | string | undefined;
-  if (arg === undefined)
-    return resOp(undefined);
+  if (arg === undefined) return resOp(undefined);
   return resOp(arg.length === 0);
 };
 
-const SRNot: Subroutine = args => {
+const SRNot: Subroutine = (args) => {
   const operand = args.operand as boolean | undefined;
-  if (operand === undefined)
-    return resOp(undefined);
+  if (operand === undefined) return resOp(undefined);
   return resOp(!operand);
 };
 
-const SRAnd: Subroutine = args => {
+const SRAnd: Subroutine = (args) => {
   const operand1 = args.operand1 as boolean | undefined;
   const operand2 = args.operand2 as boolean | undefined;
-  if (operand1 === undefined || operand2 === undefined)
-    return resOp(undefined);
+  if (operand1 === undefined || operand2 === undefined) return resOp(undefined);
   return resOp(operand1 && operand2);
 };
 
-const SROr: Subroutine = args => {
+const SROr: Subroutine = (args) => {
   const operand1 = args.operand1 as boolean | undefined;
   const operand2 = args.operand2 as boolean | undefined;
-  if (operand1 === undefined || operand2 === undefined)
-    return resOp(undefined);
+  if (operand1 === undefined || operand2 === undefined) return resOp(undefined);
   return resOp(operand1 || operand2);
 };
 
-const SRResourceValueAsJson: Subroutine = args => {
+const SRResourceValueAsJson: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
   return ({ cCtx }) => res(cCtx.accessor(source).node()?.getDataAsJson());
 };
 
-const SRGetJsonField: Subroutine = args => {
+const SRGetJsonField: Subroutine = (args) => {
   const source = args.source as Record<string, unknown> | undefined;
   const field = args.field as string | undefined;
-  if (source === undefined || field === undefined)
-    return resOp(undefined);
+  if (source === undefined || field === undefined) return resOp(undefined);
   return resOp(source[field]);
 };
 
-function SRMapResourceFields1(ctx: Record<string, unknown>, ops: Pick<CfgMapResourceFields, 'itVar' | 'mapping'>): Subroutine {
-  return args => {
+function SRMapResourceFields1(
+  ctx: Record<string, unknown>,
+  ops: Pick<CfgMapResourceFields, 'itVar' | 'mapping'>
+): Subroutine {
+  return (args) => {
     const source = args.source as PlTreeEntry | undefined;
-    if (source === undefined)
-      return resOp(undefined);
+    if (source === undefined) return resOp(undefined);
 
     return ({ cCtx }) => {
       const node = cCtx.accessor(source).node();
@@ -162,8 +159,7 @@ function SRMapResourceFields1(ctx: Record<string, unknown>, ops: Pick<CfgMapReso
       const nextArgs: ArgumentRequests = {};
       for (const fieldName of node.listInputFields()) {
         const res = node.traverse(fieldName);
-        if (res === undefined)
-          nextArgs[fieldName] = resOp(undefined);
+        if (res === undefined) nextArgs[fieldName] = resOp(undefined);
         else {
           const newCtx = { ...ctx, [ops.itVar]: res.persist() };
           nextArgs[fieldName] = renderCfg(newCtx, ops.mapping);
@@ -179,26 +175,24 @@ function SRMapResourceFields1(ctx: Record<string, unknown>, ops: Pick<CfgMapReso
   };
 }
 
-const SRMapResourceFields2: Subroutine = args => {
+const SRMapResourceFields2: Subroutine = (args) => {
   return resOp(args);
 };
 
-const SRGetBlobContent: Subroutine = args => {
+const SRGetBlobContent: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: Computable.make(ctx => {
-          return drivers.downloadDriver.getDownloadedBlob(
-            ctx.accessor(source).node().resourceInfo
-          );
-        }, {
-          postprocessValue: async value => {
-            if (value === undefined)
-              return undefined;
+      computable: Computable.make(
+        (ctx) => {
+          return drivers.downloadDriver.getDownloadedBlob(ctx.accessor(source).node().resourceInfo);
+        },
+        {
+          postprocessValue: async (value) => {
+            if (value === undefined) return undefined;
             return await drivers.downloadDriver.getContent(value.handle);
           }
         }
@@ -207,10 +201,9 @@ const SRGetBlobContent: Subroutine = args => {
   };
 };
 
-const SRGetBlobContentAsString: Subroutine = args => {
+const SRGetBlobContentAsString: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ cCtx, drivers }) => {
     // getting target resource id and type
@@ -218,38 +211,31 @@ const SRGetBlobContentAsString: Subroutine = args => {
 
     return {
       type: 'ScheduleComputable',
-      computable: Computable.make(
-        () => drivers.downloadDriver.getDownloadedBlob(resourceInfo),
-        {
-          postprocessValue: async value => {
-            if (value === undefined)
-              return undefined;
-            const content = await drivers.downloadDriver.getContent(value.handle);
-            return content.toString();
-          }
+      computable: Computable.make(() => drivers.downloadDriver.getDownloadedBlob(resourceInfo), {
+        postprocessValue: async (value) => {
+          if (value === undefined) return undefined;
+          const content = await drivers.downloadDriver.getContent(value.handle);
+          return content.toString();
         }
-      )
+      })
     };
   };
 };
 
-const SRGetBlobContentAsJson: Subroutine = args => {
+const SRGetBlobContentAsJson: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(
-        c => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
+        (c) => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
         {
-          postprocessValue: async value => {
-            if (value == undefined)
-              return undefined;
+          postprocessValue: async (value) => {
+            if (value == undefined) return undefined;
             const content = await drivers.downloadDriver.getContent(value.handle);
-            if (content == undefined)
-              return undefined;
+            if (content == undefined) return undefined;
             return JSON.parse(Buffer.from(content).toString());
           }
         }
@@ -258,10 +244,9 @@ const SRGetBlobContentAsJson: Subroutine = args => {
   };
 };
 
-const SRGetDownloadedBlobContent: Subroutine = args => {
+const SRGetDownloadedBlobContent: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -271,10 +256,9 @@ const SRGetDownloadedBlobContent: Subroutine = args => {
   };
 };
 
-const SRGetOnDemandBlobContent: Subroutine = args => {
+const SRGetOnDemandBlobContent: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -284,10 +268,9 @@ const SRGetOnDemandBlobContent: Subroutine = args => {
   };
 };
 
-const SRGetImportProgress: Subroutine = args => {
+const SRGetImportProgress: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -297,10 +280,9 @@ const SRGetImportProgress: Subroutine = args => {
   };
 };
 
-const SRGetLastLogs: (lines: number) => Subroutine = lines => (args => {
+const SRGetLastLogs: (lines: number) => Subroutine = (lines) => (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -308,12 +290,11 @@ const SRGetLastLogs: (lines: number) => Subroutine = lines => (args => {
       computable: drivers.logsDriver.getLastLogs(source, lines)
     };
   };
-});
+};
 
-const SRGetProgressLog: (patternToSearch: string) => Subroutine = patternToSearch => (args => {
+const SRGetProgressLog: (patternToSearch: string) => Subroutine = (patternToSearch) => (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -321,12 +302,11 @@ const SRGetProgressLog: (patternToSearch: string) => Subroutine = patternToSearc
       computable: drivers.logsDriver.getProgressLog(source, patternToSearch)
     };
   };
-});
+};
 
-const SRGetLogHandle: Subroutine = args => {
+const SRGetLogHandle: Subroutine = (args) => {
   const source = args.source as PlTreeEntry | undefined;
-  if (source === undefined)
-    return resOp(undefined);
+  if (source === undefined) return resOp(undefined);
 
   return ({ drivers }) => {
     return {
@@ -339,14 +319,11 @@ const SRGetLogHandle: Subroutine = args => {
 /** Renders configuration into executor's Operation */
 export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
   switch (cfg.type) {
-
     case 'GetFromCtx':
       const ctxValue = ctx[cfg.variable];
-      if (typeof ctxValue === 'function')
-        return e => res(ctxValue(e.cCtx));
+      if (typeof ctxValue === 'function') return (e) => res(ctxValue(e.cCtx));
       else {
-        if (ctxValue === undefined)
-          console.log('asdasd');
+        if (ctxValue === undefined) console.log('asdasd');
         return resOp(ctxValue);
       }
 
@@ -391,15 +368,14 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRMakeObject,
-        args: mapRecord(cfg.template, c => renderCfg(ctx, c))
+        args: mapRecord(cfg.template, (c) => renderCfg(ctx, c))
       });
 
     case 'MakeArray':
       return () => ({
         type: 'ScheduleSubroutine',
         subroutine: SRCollectArrayFromArgs(cfg.template.length),
-        args: mapArrayToRecord(cfg.template,
-          e => renderCfg(ctx, e))
+        args: mapArrayToRecord(cfg.template, (e) => renderCfg(ctx, e))
       });
 
     case 'Flatten':

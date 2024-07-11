@@ -1,6 +1,11 @@
 import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
 import fs from 'node:fs';
-import { ExplicitTemplate, TemplateFromRegistry, TemplateSpecAny, TemplateSpecPrepared } from '../../model/template_spec';
+import {
+  ExplicitTemplate,
+  TemplateFromRegistry,
+  TemplateSpecAny,
+  TemplateSpecPrepared
+} from '../../model/template_spec';
 import { assertNever } from '@milaboratory/ts-helpers';
 
 //
@@ -13,7 +18,10 @@ export const TengoTemplateGetTemplateURI = 'templateURI';
 export const TengoTemplateGetTemplate = 'template';
 
 export const TengoTemplatePack: ResourceType = { name: 'TengoTemplatePack', version: '1' };
-export const TengoTemplatePackConvert: ResourceType = { name: 'TengoTemplatePackConvert', version: '1' };
+export const TengoTemplatePackConvert: ResourceType = {
+  name: 'TengoTemplatePackConvert',
+  version: '1'
+};
 export const TengoTemplatePackConvertTemplatePack = 'templatePack';
 export const TengoTemplatePackConvertTemplate = 'template';
 

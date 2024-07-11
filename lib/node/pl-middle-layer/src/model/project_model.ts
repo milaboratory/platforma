@@ -63,7 +63,6 @@ export const InitialBlockMeta: ProjectMeta = {
   label: 'New Project'
 };
 
-
 //
 // Pl Model
 //
@@ -96,8 +95,7 @@ export function blockArgsAuthorKey(blockId: string): string {
 /** Returns block id, or undefined if key does not match the pattern. */
 export function parseBlockFrontendStateKey(key: string): string | undefined {
   const match = key.match(BlockFrontendStateKeyPattern);
-  if (match === null)
-    return undefined;
+  if (match === null) return undefined;
   return match.groups!['blockid'];
 }
 
@@ -105,23 +103,28 @@ export interface ProjectField {
   blockId: string;
   fieldName:
     | 'blockPack'
-    | 'prodArgs' | 'currentArgs'
-    | 'prodCtx' | 'prodOutput'
-    | 'prodCtxPrevious' | 'prodOutputPrevious'
-    | 'stagingCtx' | 'stagingOutput'
-    | 'stagingCtxPrevious' | 'stagingOutputPrevious';
+    | 'prodArgs'
+    | 'currentArgs'
+    | 'prodCtx'
+    | 'prodOutput'
+    | 'prodCtxPrevious'
+    | 'prodOutputPrevious'
+    | 'stagingCtx'
+    | 'stagingOutput'
+    | 'stagingCtxPrevious'
+    | 'stagingOutputPrevious';
 }
 
 export function projectFieldName(blockId: string, fieldName: ProjectField['fieldName']): string {
   return `${blockId}-${fieldName}`;
 }
 
-const projectFieldPattern = /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
+const projectFieldPattern =
+  /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
-  if (match === null)
-    return undefined;
+  if (match === null) return undefined;
   const { blockId, fieldName } = match.groups!;
   return { blockId, fieldName } as ProjectField;
 }

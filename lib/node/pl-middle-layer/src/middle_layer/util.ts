@@ -6,9 +6,17 @@ import { BlockPackInfo } from '../model/block_pack';
 import { normalizeBlockConfig } from '@milaboratory/sdk-ui';
 
 export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string) {
-  return ifNotUndef(prj.traverse(
-      { field: projectFieldName(blockId, 'blockPack'), assertFieldType: 'Dynamic', errorIfFieldNotSet: true },
-      { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-    )?.getDataAsJson<BlockPackInfo>()?.config,
-    cfg => normalizeBlockConfig(cfg));
+  return ifNotUndef(
+    prj
+      .traverse(
+        {
+          field: projectFieldName(blockId, 'blockPack'),
+          assertFieldType: 'Dynamic',
+          errorIfFieldNotSet: true
+        },
+        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
+      )
+      ?.getDataAsJson<BlockPackInfo>()?.config,
+    (cfg) => normalizeBlockConfig(cfg)
+  );
 }

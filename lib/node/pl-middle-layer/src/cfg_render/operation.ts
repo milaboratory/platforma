@@ -9,7 +9,7 @@ export type MiddleLayerInternalDrivers = {
   downloadDriver: DownloadDriver;
   uploadDriver: UploadDriver;
   logsDriver: LogsDriver;
-}
+};
 
 export type ExecutionEnvironment = {
   /** Each configuration is rendered inside a computable callback, this is the
@@ -17,7 +17,7 @@ export type ExecutionEnvironment = {
   cCtx: ComputableCtx;
   /** Available drivers */
   drivers: MiddleLayerInternalDrivers;
-}
+};
 
 export type ArgumentValues = Record<ArgumentKey, unknown>;
 export type ArgumentRequests = Record<ArgumentKey, Operation>;
@@ -25,20 +25,20 @@ export type ArgumentRequests = Record<ArgumentKey, Operation>;
 export type Subroutine = (args: ArgumentValues) => Operation;
 
 export type ScheduleSubroutine = {
-  type: 'ScheduleSubroutine'
-  subroutine: Subroutine,
-  args: ArgumentRequests
-}
+  type: 'ScheduleSubroutine';
+  subroutine: Subroutine;
+  args: ArgumentRequests;
+};
 
 export type ScheduleComputable = {
-  type: 'ScheduleComputable'
-  computable: Computable<unknown>
-}
+  type: 'ScheduleComputable';
+  computable: Computable<unknown>;
+};
 
 export type ReturnResult = {
-  type: 'ReturnResult'
-  result: unknown
-}
+  type: 'ReturnResult';
+  result: unknown;
+};
 
 export type OperationAction = ScheduleSubroutine | ScheduleComputable | ReturnResult;
 

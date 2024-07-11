@@ -5,14 +5,15 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';
 import { BlockContextAny } from './block_ctx';
 
-export function computableFromCfgOrRF(env: MiddleLayerEnvironment, ctx: BlockContextAny,
-                                      cfgOrFh: TypedConfigOrFunctionHandle, code: Code | undefined,
-                                      ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+export function computableFromCfgOrRF(
+  env: MiddleLayerEnvironment,
+  ctx: BlockContextAny,
+  cfgOrFh: TypedConfigOrFunctionHandle,
+  code: Code | undefined,
+  ops: Partial<ComputableRenderingOps> = {}
+): Computable<unknown> {
   if (isFunctionHandle(cfgOrFh)) {
-    if (code === undefined)
-      throw new Error('No code bundle.');
+    if (code === undefined) throw new Error('No code bundle.');
     return computableFromRF(env, ctx, cfgOrFh, code, ops);
-  } else
-    return computableFromCfg(env.drivers, ctx, cfgOrFh, ops);
+  } else return computableFromCfg(env.drivers, ctx, cfgOrFh, ops);
 }
-

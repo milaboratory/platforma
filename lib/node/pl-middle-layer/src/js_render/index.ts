@@ -5,8 +5,13 @@ import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
 import { BlockContextAny } from '../middle_layer/block_ctx';
 
-export function computableFromRF(env: MiddleLayerEnvironment, ctx: BlockContextAny,
-                                 fh: FunctionHandle, code: Code, ops: Partial<ComputableRenderingOps> = {}): Computable<unknown> {
+export function computableFromRF(
+  env: MiddleLayerEnvironment,
+  ctx: BlockContextAny,
+  fh: FunctionHandle,
+  code: Code,
+  ops: Partial<ComputableRenderingOps> = {}
+): Computable<unknown> {
   return Computable.makeRaw((cCtx) => {
     const scope = new Scope();
     cCtx.addOnDestroy(() => scope.dispose());
@@ -27,8 +32,7 @@ export function computableFromRF(env: MiddleLayerEnvironment, ctx: BlockContextA
       ir: rCtx.computablesToResolve,
       postprocessValue: async (resolved: Record<string, unknown>) => {
         // resolving futures
-        for (const [handle, value] of Object.entries(resolved))
-          rCtx.runCallback(handle, value);
+        for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
 
         // rendering result
         return rCtx.importObjectUniversal(result);

@@ -6,7 +6,13 @@ export function outputRef(blockId: string, name: string): Ref {
 }
 
 export function isBlockOutputReference(obj: any): obj is Ref {
-  return typeof obj === 'object' && obj !== null && obj.__isRef === true && 'blockId' in obj && 'name' in obj;
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    obj.__isRef === true &&
+    'blockId' in obj &&
+    'name' in obj
+  );
 }
 
 function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set<string>) {
@@ -22,19 +28,13 @@ function addAllReferencedBlocks(result: BlockUpstreams, node: any, allowed?: Set
       return;
 
     case 'object':
-      if (node === null)
-        return;
+      if (node === null) return;
 
       if (isBlockOutputReference(node)) {
-        if (allowed === undefined || allowed.has(node.blockId))
-          result.upstreams.add(node.blockId);
-        else
-          result.missingReferences = true;
-
+        if (allowed === undefined || allowed.has(node.blockId)) result.upstreams.add(node.blockId);
+        else result.missingReferences = true;
       } else if (Array.isArray(node)) {
-        for (const child of node)
-          addAllReferencedBlocks(result, child, allowed);
-
+        for (const child of node) addAllReferencedBlocks(result, child, allowed);
       } else {
         for (const [, child] of Object.entries(node as object))
           addAllReferencedBlocks(result, child, allowed);

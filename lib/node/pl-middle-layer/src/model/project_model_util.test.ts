@@ -4,15 +4,16 @@ import { outputRef } from './args';
 import { Ref } from '@milaboratory/sdk-ui';
 
 function toRefs(...ids: string[]): Ref[] {
-  return ids.map(id => (outputRef(id, '')));
+  return ids.map((id) => outputRef(id, ''));
 }
 
 function simpleStructure(...ids: string[]): ProjectStructure {
   return {
     groups: [
       {
-        id: 'g1', label: 'G1',
-        blocks: ids.map(id => ({ id: id, label: id, renderingMode: 'Heavy' }))
+        id: 'g1',
+        label: 'G1',
+        blocks: ids.map((id) => ({ id: id, label: id, renderingMode: 'Heavy' }))
       }
     ]
   };
@@ -25,7 +26,7 @@ describe('simple traverse', () => {
   inputs.set('b4', toRefs('b3'));
   inputs.set('b5', toRefs('b4'));
   inputs.set('b6', toRefs('b2', 'b4'));
-  const pGraph1 = productionGraph(struct1, id => inputs.get(id) ?? null);
+  const pGraph1 = productionGraph(struct1, (id) => inputs.get(id) ?? null);
 
   test.each([
     { roots: ['b2'], expectedUpstreams: ['b1'], expectedDownstreams: ['b6'] },
@@ -46,7 +47,7 @@ describe('simple diff', () => {
   inputs.set('b2', toRefs('b1'));
   inputs.set('b4', toRefs('b3'));
   const sGraph1 = stagingGraph(struct1);
-  const pGraph1 = productionGraph(struct1, id => inputs.get(id) ?? null);
+  const pGraph1 = productionGraph(struct1, (id) => inputs.get(id) ?? null);
 
   test.each([
     { struct2a: ['b1', 'b2', 'b3', 'b4'], expectedS: [], expectedP: [] },
@@ -54,13 +55,27 @@ describe('simple diff', () => {
     { struct2a: ['b1', 'b2', 'b4', 'b3'], expectedS: ['b3', 'b4'], expectedP: ['b4'] },
     { struct2a: ['b1', 'b4', 'b2', 'b3'], expectedS: ['b2', 'b3', 'b4'], expectedP: ['b4'] },
     { struct2a: ['b4', 'b1', 'b2', 'b3'], expectedS: ['b1', 'b2', 'b3', 'b4'], expectedP: ['b4'] },
-    { struct2a: ['b4', 'b2', 'b1', 'b3'], expectedS: ['b1', 'b2', 'b3', 'b4'], expectedP: ['b2', 'b4'] },
-    { struct2a: ['b1', 'b2', 'b4', 'b3', 'b5'], expectedS: ['b3', 'b4'], expectedP: ['b4'], onlyB: ['b5'] },
-    { struct2a: ['b2', 'b1', 'b3'], expectedS: ['b1', 'b2', 'b3'], expectedP: ['b2'], onlyA: ['b4'] }
+    {
+      struct2a: ['b4', 'b2', 'b1', 'b3'],
+      expectedS: ['b1', 'b2', 'b3', 'b4'],
+      expectedP: ['b2', 'b4']
+    },
+    {
+      struct2a: ['b1', 'b2', 'b4', 'b3', 'b5'],
+      expectedS: ['b3', 'b4'],
+      expectedP: ['b4'],
+      onlyB: ['b5']
+    },
+    {
+      struct2a: ['b2', 'b1', 'b3'],
+      expectedS: ['b1', 'b2', 'b3'],
+      expectedP: ['b2'],
+      onlyA: ['b4']
+    }
   ])('$struct2a', ({ struct2a, expectedS, expectedP, onlyA, onlyB }) => {
     const struct2: ProjectStructure = simpleStructure(...struct2a);
     const sGraph2 = stagingGraph(struct2);
-    const pGraph2 = productionGraph(struct2, id => inputs.get(id) ?? null);
+    const pGraph2 = productionGraph(struct2, (id) => inputs.get(id) ?? null);
     const sDiff = graphDiff(sGraph1, sGraph2);
     const pDiff = graphDiff(pGraph1, pGraph2);
     expect(sDiff.onlyInA).toEqual(new Set(onlyA ?? []));
@@ -71,4 +86,3 @@ describe('simple diff', () => {
     expect(pDiff.different).toEqual(new Set(expectedP));
   });
 });
-

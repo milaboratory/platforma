@@ -30,9 +30,9 @@ describe.each([
   { name: 'from registry', specEnter: TplSpecEnterFromRegistry, specSum: TplSpecSumFromRegistry }
 ])('test render $name', ({ specEnter, specSum }) => {
   const args: {
-    name: string,
-    createBlocksFn: (tx: PlTransaction) => Promise<HeavyBlockOutputs>,
-    expect: (pl: PlClient, tx: PlTransaction) => Promise<boolean>,
+    name: string;
+    createBlocksFn: (tx: PlTransaction) => Promise<HeavyBlockOutputs>;
+    expect: (pl: PlClient, tx: PlTransaction) => Promise<boolean>;
   }[] = [
     {
       name: 'test render template staging',
@@ -55,7 +55,14 @@ describe.each([
     {
       name: 'test render template production',
       createBlocksFn: async (tx) => {
-        return createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [42, 2, 3, 7]);
+        return createEnterNumbers(
+          tx,
+          specEnter,
+          true,
+          'block1',
+          createBContextEnd(tx),
+          [42, 2, 3, 7]
+        );
       },
       expect: async (pl, tx) => {
         const { ctx, result, ok } = await expectResultAndContext(tx, pl.clientRoot);
@@ -72,8 +79,22 @@ describe.each([
     {
       name: 'test render chain staging',
       createBlocksFn: async (tx) => {
-        const enter1 = createEnterNumbers(tx, specEnter, false, 'block1', createBContextEnd(tx), undefined);
-        const enter2 = createEnterNumbers(tx, specEnter, false, 'block2', enter1.context, undefined);
+        const enter1 = createEnterNumbers(
+          tx,
+          specEnter,
+          false,
+          'block1',
+          createBContextEnd(tx),
+          undefined
+        );
+        const enter2 = createEnterNumbers(
+          tx,
+          specEnter,
+          false,
+          'block2',
+          enter1.context,
+          undefined
+        );
         return createSumNumbers(tx, specSum, false, 'block3', enter2.context, undefined);
       },
 
@@ -100,7 +121,9 @@ describe.each([
     {
       name: 'test render chain production',
       createBlocksFn: async (tx) => {
-        const enter1 = createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [21]);
+        const enter1 = createEnterNumbers(tx, specEnter, true, 'block1', createBContextEnd(tx), [
+          21
+        ]);
         const enter2 = createEnterNumbers(tx, specEnter, true, 'block2', enter1.context, [10, 11]);
         return createSumNumbers(tx, specSum, true, 'block3', enter2.context, [
           outputRef('block1', 'column'), //{ blockId: 'block1', name: 'column' },
@@ -122,26 +145,29 @@ describe.each([
   ];
 
   for (const arg of args) {
-    test(arg.name, async () => {
-      await TestHelpers.withTempRoot(async pl => {
-        const f0 = field(pl.clientRoot, 'result');
-        const f1 = field(pl.clientRoot, 'context');
+    test(
+      arg.name,
+      async () => {
+        await TestHelpers.withTempRoot(async (pl) => {
+          const f0 = field(pl.clientRoot, 'result');
+          const f1 = field(pl.clientRoot, 'context');
 
-        await pl.withWriteTx('test', async tx => {
-          const b = await arg.createBlocksFn(tx);
-          tx.createField(f0, 'Dynamic', b.result);
-          tx.createField(f1, 'Dynamic', b.context);
-          await tx.commit();
+          await pl.withWriteTx('test', async (tx) => {
+            const b = await arg.createBlocksFn(tx);
+            tx.createField(f0, 'Dynamic', b.result);
+            tx.createField(f1, 'Dynamic', b.context);
+            await tx.commit();
+          });
+
+          while (true) {
+            if (await pl.withReadTx('test', (tx) => arg.expect(pl, tx))) break;
+
+            await sleep(30);
+          }
         });
-
-        while (true) {
-          if (await pl.withReadTx('test', (tx) => arg.expect(pl, tx)))
-            break;
-
-          await sleep(30);
-        }
-      });
-    }, 5000);
+      },
+      5000
+    );
   }
 });
 
@@ -168,8 +194,8 @@ function createEnterNumbers(
 }
 
 interface Ref {
-  blockId: string,
-  name: string
+  blockId: string;
+  name: string;
 }
 
 function createSumNumbers(
@@ -198,9 +224,9 @@ async function expectResultAndContext(
   tx: PlTransaction,
   root: AnyResourceRef
 ): Promise<{
-  ctx?: ResourceData,
-  result?: ResourceData,
-  ok: boolean,
+  ctx?: ResourceData;
+  result?: ResourceData;
+  ok: boolean;
 }> {
   const fieldData = await tx.getResourceData(root, true);
   expect(isNullResourceId(fieldData.error)).toBe(true);
@@ -214,24 +240,17 @@ async function expectResultAndContext(
   const ctxId = ctxField.valueId;
   const resultId = resultField.valueId;
 
-  if (isNullResourceId(ctxId) || isNullResourceId(resultId))
-    return { ok: false };
-
+  if (isNullResourceId(ctxId) || isNullResourceId(resultId)) return { ok: false };
 
   const result = await tx.getResourceData(resultId, true);
   const ctx = await tx.getResourceData(ctxId, true);
 
-  if (!result.final || !ctx.final)
-    return { ok: false };
+  if (!result.final || !ctx.final) return { ok: false };
 
   return { ctx, result, ok: true };
 }
 
-async function expectResource(
-  tx: PlTransaction,
-  res: ResourceData,
-  fieldName: string
-) {
+async function expectResource(tx: PlTransaction, res: ResourceData, fieldName: string) {
   const f = getField(res, fieldName);
   const ve = await valErr(tx, f);
   expect(ve.error).toHaveLength(0);
@@ -239,17 +258,12 @@ async function expectResource(
   return await tx.getResourceData(ve.valueId as ResourceId, true);
 }
 
-async function expectData(
-  tx: PlTransaction,
-  result: ResourceData,
-  fieldName: string
-) {
-  return expectResource(tx, result, fieldName)
-    .then(resDataToJson);
+async function expectData(tx: PlTransaction, result: ResourceData, fieldName: string) {
+  return expectResource(tx, result, fieldName).then(resDataToJson);
 }
 
 function expectFields(res: ResourceData, fields: string[]) {
-  const names = res.fields.map(f => f.name);
+  const names = res.fields.map((f) => f.name);
   expect(names.sort()).toStrictEqual(fields.sort());
 }
 
