@@ -121,7 +121,6 @@ const rowsStore = new WeakMap<RawData, RowSettings[]>();
 
 export class RawData implements DataSource {
   private dataHeight: number;
-  private key = Symbol();
 
   constructor(
     datum: DataRow[],

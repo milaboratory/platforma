@@ -13,7 +13,7 @@ const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1
 
 const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
 
-const settings = computed<DataTable.Types.TableSettings>(() => {
+const settings = computed(() => {
   return DataTable.settings({
     columns: columnsRef.value,
     height: 600,
