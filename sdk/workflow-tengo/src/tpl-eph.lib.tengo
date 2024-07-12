@@ -1,5 +1,5 @@
 /*
- * Library provides development kit for pure templates
+ * Library provides development kit for ephemeral templates
  */
 
 tx := import("tx")
@@ -14,32 +14,13 @@ smart := import(":smart")
 
 // Checking we were imported in compatible render template context
 renderer := smart.Resource(ll.getCurrentTemplate())
-if renderer.info().Type.Name != "RenderTemplate" {
-	ll.panic("pure template can't be executed as ephemeral")
+if renderer.info().Type.Name != "EphRenderTemplate" {
+	ll.panic("expected ephemeral render template got pure")
 }
 
 //
 // Definitions and exports
 //
-
-// This map accumulated output definitions
-_definedOutputs := []
-
-/**
- * Defines current template output(s) names.
- *
- * All outputs must be defined before the template body, and only registered outputs can be used
- * inside.
- */
-defineOutputs := func(...name) {
-	if (len(name) == 1 && is_array(name[0])) {
-		for v in name[0] {
-			_definedOutputs = append(_definedOutputs, v)		
-		}
-	} else {
-		_definedOutputs = append(_definedOutputs, name...)
-	}
-}
 
 _inputs := undefined
 _outputs := undefined
@@ -54,9 +35,6 @@ inputs := func() {
 outputs := func() {
 	if _outputs == undefined {
 		_outputs = {}
-		for _, name in _definedOutputs {
-			_outputs[name] = renderer.getField(constants.TEMPLATE_OUTPUT_PREFIX + name)
-		}
 		_outputs = ll.toStrict(_outputs)
 	}
 	return _outputs
@@ -66,11 +44,7 @@ outputs := func() {
  * Defines main entry point for current template
  */
 body := func(bodyFn) {
-	// Checks
-	if len(_definedOutputs) == 0 {
-		ll.panic("please define outputs before template body")
-	}
-
+	
     //
 	// Rules of pl guarantees that pure template code will be executed twice:
 	//
@@ -83,30 +57,22 @@ body := func(bodyFn) {
 	//       body of the template is executed, to calculate them
 	//
 
-	if ll.isInitializing() {
-		// TODO to be removed later
-		if renderer.info().IsDuplicate {
-			return
-		}
 
-		// Initialization
-		for _, name in _definedOutputs {
-			renderer.createField(constants.TEMPLATE_OUTPUT_PREFIX + name, "output")
+    if renderer.into().AllInputsSet {
+		inputMap := plapi.getInputMap()
+		if inputMap.AllInputsSet {
+			bodyFn()
+		} else {
+			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
 		}
-		renderer.lockOutputs()
-	} else {
-		if renderer.info().AllOutputsSet {
-			// nothing to calculate
-			return
-		}
-		bodyFn()
-	}
+	} else if ll.isInitializing() {
+        tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
+	} 
 }
 
 export ll.toStrict({
 	renderer: renderer,
-	defineOutputs: defineOutputs,
-    body: body,
+	body: body,
 	inputs: inputs,
 	outputs: outputs
 })

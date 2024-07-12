@@ -1,48 +1,127 @@
+/*
+ * Library provides smart.Resource and smart.Field primitives.
+ */
+
 tx := import("tx")
-plapi := import("plapi")
+ll := import(":ll")
+maps := import(":maps")
 json := import("json")
-proc := import(":proc")
-map := import(":map")
 
-field := undefined
+//////////////// definitions ///////////////////////////
 
-isFieldID := func(val) {
-	return plapi.isStrictMap(val) && plapi.strictToMap(val)["ResourceID"] != undefined
+/**
+ * A wrapper object around raw platforma resource
+ */
+Resource := undefined
+
+/**
+ * A wrapper object around raw platforma resource field
+ */
+Field := undefined
+
+
+
+////////////////// helpers ///////////////////////////
+
+// internal helper function
+isFieldId := func(val) {
+	return ll.isStrict(val) && ll.fromStrict(val)["ResourceID"] != undefined
 }
+
+/**
+ * Returns true if given object is a smart.Resource
+ */
+isResource := func(f) {
+	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "resource"
+}
+
+/**
+ * Returns true if given object is a smart.Field
+ */
+isField := func(f) {
+	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "field"
+}
+
+
+
+////////////////// implementation ///////////////////////////
 
 /**
  * @param r either resource id or resource info
  */
-resource := func(r) {
+Resource = func(r) {
 	self := undefined
 
-	ID := plapi.isStrictMap(r) ? r.ID : r
+	id := ll.isStrict(r) ? r.ID : r
 
-	if ID == 0 {
-		proc.panic("null resource id")
+	if id == 0 {
+		ll.panic("null resource id")
 	}
 
 	self = {
 		_type: "resource",
 
-		ID: ID,
+		/**
+		 * Resource id (int64)
+		 */
+		id: id,
 
+		/**
+		 * Resource info:
+		 * 
+		 *  ID:            int64
+		 *	Data:          byte[],
+		 *	Type:          { Name: string, Version: string }
+		 *	Inputs:        strict map
+		 *	Outputs:       strict map
+		 *	Dynamic:       strict map
+		 *  OTW:           strict map
+		 *  ResourceReady: bool
+		 *  AllInputsSet:  bool
+		 *  AllOutputsSet: bool
+		 *  IsDuplicate:   bool
+		 *  InputsLocked:  bool
+		 *  OutputsLocked: bool
+		 *  HasErrors:     bool
+		 */  
 		info: func() {
-			return tx.getResource(self.ID)
+			return tx.getResource(self.id)
+		},
+
+		/**
+		 * Get resource data as Json
+		 */ 
+		getDataAsJson: func() {
+			return json.decode(self.info().Data);
 		},
 
 		_hasField: func(fieldMapName, fieldName) {
 			return self.info()[fieldMapName][fieldName] != undefined
 		},
 
+		/**
+		 * Whether ressource has input field with specified name
+		 *
+		 * @param name field name
+		 */	
 		hasInputField: func(name) {
 			return self._hasField("Inputs", name)
 		},
 
+		/**
+		 * Whether ressource has output field with specified name
+		 *
+		 * @param name field name
+		 */	
 		hasOutputField: func(name) {
 			return self._hasField("Outputs", name)
 		},
 
+		/**
+		 * Whether ressource has any field with specified name
+		 *
+		 * @param name field name
+		 */	
 		hasField: func(name) {
 			return self._hasField("Inputs", name) ||
 			       self._hasField("Outputs", name) ||
@@ -51,10 +130,13 @@ resource := func(r) {
 		},
 
 		_inputs: undefined,
+		/**
+		 * Returns resource inputs map name -> smart.Field
+		 */	
 		inputs: func() {
 			if(self._inputs == undefined) {
 				info := self.info()
-				inputs := map.mapV(info.Inputs, field)
+				inputs := maps.mapValues(info.Inputs, Field)
 				if !info.InputsLocked {
 					return inputs
 				}
@@ -64,10 +146,13 @@ resource := func(r) {
 		},
 
 		_outputs: undefined,
+		/**
+		 * Returns resource outputs map name -> smart.Field
+		 */	
 		outputs: func() {
 			if(self._outputs == undefined) {
 				info := self.info()
-				outputs := map.mapV(info.Outputs, field)
+				outputs := maps.mapValues(info.Outputs, Field)
 				if !info.OutputsLocked {
 					return outputs
 				}
@@ -76,87 +161,142 @@ resource := func(r) {
 			return self._outputs
 		},
 
+		/**
+		 * Create new field with given name and field type.
+		 * 
+		 * @param name field name
+		 * @param fieldType field type: input, output
+		 */
 		createField: func(name, fieldType) {
-			fID := plapi.newFieldID(self.ID, name)
+			fID := ll.fieldId(self.id, name)
 			tx.createField(fID, fieldType)
-			return field(fID)
+			return Field(fID)
 		},
 
+		/** 
+		 * Get smart.Field by name
+		 *
+		 * @param name field name
+		 */
 		getField: func(name) {
-			return field(plapi.newFieldID(self.ID, name))
+			return Field(ll.fieldId(self.id, name))
 		},
 
-		getFutureField: func(name, fieldType) {
+		/** 
+		 * Get future field Id given field name and field type.
+		 * 
+		 * @param name field name
+		 * @param fieldType field type: input, output
+		 */
+		getFutureFieldId: func(name, fieldType) {
 			return tx.createFutureFieldID(fieldType, name).ResultFID
 		},
 
+		/**
+		 * Lock resource outputs
+		 */ 
 		lockOutputs: func() {
-			tx.lockOutputs(self.ID)
+			tx.lockOutputs(self.id)
 		},
 
+		/**
+		 * Get value of a resource set in field of a given field name
+		 * 
+		 * @param name field name
+		 */
 		get: func(name) {
 			return self.getField(name).getValue()
-		},
-
-		getDataAsJSON: func() {
-			return json.decode(self.info().Data);
 		}
 	}
 
-	return plapi.mapToStrict(self)
+	return ll.toStrict(self)
 }
 
-field = func(f) {
+Field = func(f) {
 	self := undefined
 
 	self = {
 		_type: "field",
 
-		ID: isFieldID(f) ? f : f.ID,
+		/**
+		 * Field id struct:
+		 *
+		 *  ResourceID: int64
+		 *  Name:       string
+		 *
+         */
+		id: isFieldId(f) ? f : f.ID,
 
+		/**
+		 * Field info:
+		 *
+		 *  ID:    { ResourceId: int64, Name: string }
+		 *  Value: int64 - value resource id 
+		 *  Error: int64 - error resource id
+		 *  IsSet: bool  - whether field is set
+		 */
 		info: func() {
-			return tx.getField(self.ID)
+			return tx.getField(self.id)
 		},
 
+		/**
+		 * Whether field is set to either some resource or future from other field
+		 */
 		isSet: func() {
 			return self.info().IsSet
 		},
 
+		/**
+		 * Whether field is resolved to a value
+		 */
 		isValueSet: func() {
 			return self.info().Value != 0
 		},
 
+		/**
+		 * Whether field is resolved to a error
+		 */
 		isErrorSet: func() {
 			return self.info().Error != 0
 		},
 
+		/**
+		 * Returns a smart.Resource object from the resolved field value 
+		 */
 		getValue: func() {
-			return resource(self.info().Value)
+			return Resource(self.info().Value)
 		},
 
+		/**
+		 * Returns a smart.Resource object from the resolved field error
+		 */
 		getError: func() {
-			return resource(self.info().Error)
+			return Resource(self.info().Error)
 		},
 
-		// set: func(ref) {
-		// 	if ref is Resource
-		// }
-
-		setJSON: func(value) {
+		/**
+		 * Set (resolve) this field to a Json resource
+		 *
+		 * @param value any
+		 */
+		setJson: func(value) {
 			encoded := json.encode(value)
-			rID := tx.createValue("json/object", "1", encoded)
-			tx.setFieldToResource(self.ID, rID)
+			rid := tx.createValue("json/object", "1", encoded)
+			tx.setFieldToResource(self.id, rid)
 		},
 
-		getJSON: func() {
-			return self.getValue().getDataAsJSON()
+		/**
+		 * Returns a json encoded data of the resolved value resource
+		 */
+		getValueAsJson: func() {
+			return self.getValue().getDataAsJson()
 		}
 	}
 
-	return plapi.mapToStrict(self)
+	return ll.toStrict(self)
 }
 
-export {
-	resource: resource,
-	field: field
-}
+export ll.toStrict({
+	Resource: Resource,
+	Field: Field
+})

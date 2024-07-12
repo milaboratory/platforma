@@ -1,0 +1,64 @@
+ll := import(":ll")
+
+// Map keys
+mapKeys := func(map, fnK) {
+	newM := {}
+	for k, v in map {
+		newM[fnK(k)] = v
+	}
+
+	return newM
+}
+
+// Map values
+mapValues := func(map, fnV) {
+	newM := {}
+	for k, v in map {
+		newM[k] = fnV(v)
+	}
+
+	return newM
+}
+
+// Map keys and values
+map := func(map, fnK, fnV) {
+	newM := {}
+	for k, v in map {
+		newM[fnK(k)] = fnV(v)
+	}
+
+	return newM
+}
+
+filter := func(map, predicateFn) {
+	newM := {}
+	for k, v in map {
+		if predicateFn(k, v) {
+			newM[k] = v
+		}
+	}
+
+	return newM
+}
+
+filterValues := func(map, predicateFnV) {
+	return filter(map, func(k, v) { return predicateFnV(v) })
+}
+
+filterKeys := func(map, predicateFnK) {
+	return filter(map, func(k, v) { return predicateFnK(k) })
+}
+
+filterKeysValues := func(map, predicateFnK, predicateFnV) {
+	return filter(map, func(k, v) { return predicateFnK(k) && predicateFnV(v) })
+}
+
+export ll.toStrict({
+	map : map,
+	mapKeys : mapKeys,
+	mapValues : mapValues,
+	filter : filter,
+	filterValues : filterValues,
+	filterKeys : filterKeys,
+	filterKeysValues : filterKeysValues
+})

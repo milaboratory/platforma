@@ -1,0 +1,7 @@
+ll := import(":ll")
+
+TEMPLATE_OUTPUT_PREFIX := "outputs/"
+
+export ll.toStrict({
+    TEMPLATE_OUTPUT_PREFIX : TEMPLATE_OUTPUT_PREFIX
+})

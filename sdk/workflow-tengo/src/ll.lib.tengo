@@ -1,20 +1,84 @@
-// // panic panics in a template, prints the error and
-// // stops the execution of the template.
-// // After that, the controller will set errors to outputs.
-// panic := func(msg, ...args) {
-// 	txt := fmt.sprintf(msg, args...)
-// 	plapi.print(txt)
+plapi := import("plapi")
+fmt := import("fmt")
 
-// 	// next statement actually terminates the execution
-// 	plapi.setTemplateError(txt)
-// }
+/**
+ * Panics in a template, prints the error and
+ * stops the execution of the template.
+ * After that, the controller will set errors to outputs.
+*/
+panic := func(msg, ...args) {
+	txt := fmt.sprintf(msg, args...)
+	plapi.print(txt)
 
-/** Docs ... */
-// strict := func(map) {
-// 	plapi.toStrictMap(...)
-// }
+	// next statement actually terminates the execution
+    plapi.setTemplateError(txt)
+}
+
+/**
+ * Asserts given condition and panics
+ */
+assert := func(condition, msg, ...args) {
+	if !condition {
+		panic("assertion error: condition failed: "+msg, args...)
+	}
+}
+
+/**
+ * Checks whether given object is a strict map
+ */
+isStrict := func(r) {
+	return plapi.isStrictMap(r)
+}
+
+/**
+ * Converts 'strict' map into a normal one
+ */
+fromStrict := func(r) {
+	if(!isStrict(r)) {
+		panic("not a map", r)
+	}
+	
+	return plapi.strictToMap(r)
+}
+
+/**
+ * Converts map into a 'strict' map, which will panic on 
+ * access to non-existing elements.
+ */
+toStrict := func(r) {
+	if(!is_map(r)) {
+		panic("not a map", r)
+	}
+	return plapi.mapToStrict(r) 
+}
+
+/**
+ * Creates a field Id struct from given resource id and field name
+ */
+fieldId := func(resourceId, fieldName) {
+	return plapi.newFieldID(resourceId, fieldName)
+}
+
+/** 
+ * Returns current template info 
+ */
+getCurrentTemplate := func() {
+	return plapi.getTemplate()
+}
+
+/** 
+ * Returns true if current template is initializing (executing for the first time)
+ */
+isInitializing := func() {
+	return plapi.isInit
+}
 
 export {
-	panic: panic
-	// strict: strict,
+	panic: panic,
+	isStrict: isStrict,
+	fromStrict: fromStrict,
+	toStrict: toStrict,
+	fieldId: fieldId,
+	getCurrentTemplate: getCurrentTemplate,
+	isInitializing: isInitializing
 }

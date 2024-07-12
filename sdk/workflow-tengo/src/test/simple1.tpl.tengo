@@ -1,8 +1,16 @@
 self := import(":tpl")
 
-self.defineOutputs("main")
+self.defineOutputs(["main"])
 
 self.body(func() {
-	self.outputs().main.setJSON(
-		self.inputs().input1.getJSON().testValue + " Show")
+
+	// input resource
+	inputResource := self.inputs().input1
+	// input resource value
+	inputValue := inputResource.getValueAsJson()
+	
+	// output resource
+	output := self.outputs().main
+
+	output.setJson(inputValue.testValue + " Show")
 })

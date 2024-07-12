@@ -1,7 +1,0 @@
-plapi := import("plapi")
-
-templateOutputPrefix := "outputs/"
-
-export plapi.mapToStrict({
-	templateOutputPrefix: templateOutputPrefix
-})
