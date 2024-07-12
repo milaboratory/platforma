@@ -9,7 +9,7 @@ jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4
+      - uses: milaboratory/github-ci/actions/context/init@v4-beta
         with:
           version-canonize: false
           branch-versioning: main
@@ -17,7 +17,7 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
+    uses: milaboratory/github-ci-internal/.github/workflows/node-simple-fast.yaml@v4-beta
     with:
       app-name: Typescript Helpers
       app-name-slug: '@milaboratory/ts-helpers'
