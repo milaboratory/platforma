@@ -77,7 +77,7 @@ export class LsDriver implements sdk.LsDriver {
       // We cannot use no dirent.path no dirent.parentPath,
       // since the former is deprecated
       // and the later works differently on different versions.
-      const fullName = path.join(fullPath, dirent.name);
+      const fullName = path.resolve(path.join(fullPath, dirent.name));
 
       direntsWithStats.push({
         fullName,
