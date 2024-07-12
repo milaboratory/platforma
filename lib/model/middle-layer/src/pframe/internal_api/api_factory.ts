@@ -30,6 +30,10 @@ export type FilePath = string;
  * read actual data. */
 export type BlobPathResolver = (blobId: PFrameBlobId) => Promise<FilePath>;
 
+/** Implementation of the storage backend passed to the PFrame via which the framework
+ * will notify the storage about future need of certain blobs. */
+export type BlobPreloadCallback = (blobIds: PFrameBlobId[]) => Promise<void>;
+
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
 export interface PFrameFactoryAPI {
@@ -39,8 +43,9 @@ export interface PFrameFactoryAPI {
   /** Provides data for already added PColumn entry */
   setColumnData(
     columnId: PColumnId, dataInfo: DataInfo,
+    blobPreloader: BlobPreloadCallback,
     blobResolver: BlobPathResolver
-  ): Promise<void>;
+  ): void;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */
