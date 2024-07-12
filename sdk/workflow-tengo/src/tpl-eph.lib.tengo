@@ -1,74 +1,83 @@
-// /*
-//  * Library provides development kit for ephemeral templates
-//  */
-// tx := import("tx")
-// ll := import(":ll")
-// plapi := import("plapi")
+/*
+ * Library provides development kit for ephemeral templates
+ */
+tx := import("tx")
+ll := import(":ll")
+text := import("text")
 
-// constants := import(":constants")
-// smart := import(":smart")
+constants := import(":constants")
+smart := import(":smart")
+maps := import(":maps")
 
-// //
-// // Initialization
-// //
+//
+// Initialization
+//
 
-// // Checking we were imported in compatible render template context
-// renderer := smart.Resource(ll.getCurrentTemplateRenderer())
-// if renderer.info().Type.Name != "EphRenderTemplate" {
-// 	ll.panic("expected ephemeral render template got pure")
-// }
+// Checking we were imported in compatible render template context
+renderer := smart.Resource(ll.getCurrentTemplateRenderer())
+if renderer.info().Type.Name != "EphRenderTemplate" {
+	ll.panic("expected ephemeral render template got pure")
+}
 
-// //
-// // Definitions and exports
-// //
+//
+// Internal function helpers
+//
 
-// _initialOutputs := ll.toStrict(renderer.outputs())
-// _newOutputs := ll.toStrict({})
-// _outpus := {}
+initOutputsList := func() {
+	outputsList := ll.toStrict(renderer.outputs())
+	trimOutputsPrefix := func(outputName) {
+		return text.trim_prefix(constants.TEMPLATE_OUTPUT_PREFIX, outputName)
+	}
 
-// _inputs := undefined
+	return maps.mapKeys(outputsList, trimOutputsPrefix)
+}
 
-// inputs := func() {
-// 	if _inputs == undefined {
-// 		_inputs = ll.toStrict(renderer.get("inputs").inputs())
-// 	}
-// 	return _inputs
-// }
+//
+// Definitions and exports
+//
 
-// outputs := func() {
-// 	if _outputs == undefined {
-//         // TODO
-//         _outputs = _initialOutputs
-// 	}
-// 	return _outputs
-// }
+_outputs := initOutputsList()
+_inputs := undefined
 
-// newOutput := func(name) {
-//     field := smart.Field(ll.filedId(renderer.id, constants.TEMPLATE_OUTPUT_PREFIX + name))
-//     _newOutputs[name] = field
-//     return field
-// }
+inputs := func() {
+	if _inputs == undefined {
+		_inputs = ll.toStrict(renderer.get("inputs").inputs())
+	}
+	return _inputs
+}
 
-// /**
-//  * Defines main entry point for current template
-//  */
-// body := func(bodyFn) {
+outputs := func() {
+	return _outputs
+}
 
-//     if renderer.into().AllInputsSet {
-// 		inputMap := plapi.getInputMap()
-// 		if inputMap.AllInputsSet {
-// 			bodyFn()
-// 		} else {
-// 			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
-// 		}
-// 	} else if ll.isInitializing() {
-//         tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
-// 	} 
-// }
+newOutput := func(name) {
+    field := renderer.createField(constants.TEMPLATE_OUTPUT_PREFIX + name, "output")
+	_outputs[name] = field
 
-// export ll.toStrict({
-// 	renderer: renderer,
-// 	body: body,
-// 	inputs: inputs,
-// 	outputs: outputs
-// })
+    return field
+}
+
+/**
+ * Defines main entry point for current template
+ */
+body := func(bodyFn) {
+    if renderer.info().AllInputsSet {
+		inputMap := renderer.inputs().get("input")
+		if inputMap.AllInputsSet {
+			bodyFn()
+			renderer.lockOutputs()
+		} else {
+			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
+		}
+	} else if ll.isInitializing() {
+		tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
+	}
+}
+
+export ll.toStrict({
+	renderer: renderer,
+	body: body,
+	inputs: inputs,
+	outputs: outputs,
+	newOutput: newOutput
+})
