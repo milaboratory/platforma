@@ -62,7 +62,7 @@ export class FilesCache<T extends CachedFile> {
     this.cache.set(file.path, file);
     file.counter.inc(callerId);
 
-    if (file.sizeBytes <= 0) throw new Error(`empty sizeBytes: ${file}`);
+    if (file.sizeBytes < 0) throw new Error(`empty sizeBytes: ${file}`);
 
     if (created) this.totalSizeBytes += file.sizeBytes;
   }
