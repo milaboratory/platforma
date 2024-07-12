@@ -67,7 +67,7 @@ Resource = func(r) {
 
 		/**
 		 * Resource info:
-		 * 
+		 *
 		 *  ID:            int64
 		 *  Data:          byte[],
 		 *  Type:          { Name: string, Version: string }
@@ -82,14 +82,14 @@ Resource = func(r) {
 		 *  InputsLocked:  bool
 		 *  OutputsLocked: bool
 		 *  HasErrors:     bool
-		 */  
+		 */
 		info: func() {
 			return tx.getResource(self.id)
 		},
 
 		/**
 		 * Get resource data as Json
-		 */ 
+		 */
 		getDataAsJson: func() {
 			return json.decode(self.info().Data);
 		},
@@ -102,7 +102,7 @@ Resource = func(r) {
 		 * Whether ressource has input field with specified name
 		 *
 		 * @param name field name
-		 */	
+		 */
 		hasInputField: func(name) {
 			return self._hasField("Inputs", name)
 		},
@@ -111,7 +111,7 @@ Resource = func(r) {
 		 * Whether ressource has output field with specified name
 		 *
 		 * @param name field name
-		 */	
+		 */
 		hasOutputField: func(name) {
 			return self._hasField("Outputs", name)
 		},
@@ -120,7 +120,7 @@ Resource = func(r) {
 		 * Whether ressource has any field with specified name
 		 *
 		 * @param name field name
-		 */	
+		 */
 		hasField: func(name) {
 			return self._hasField("Inputs", name) ||
 			       self._hasField("Outputs", name) ||
@@ -131,7 +131,7 @@ Resource = func(r) {
 		_inputs: undefined,
 		/**
 		 * Returns resource inputs map name -> smart.Field
-		 */	
+		 */
 		inputs: func() {
 			if(self._inputs == undefined) {
 				info := self.info()
@@ -147,7 +147,7 @@ Resource = func(r) {
 		_outputs: undefined,
 		/**
 		 * Returns resource outputs map name -> smart.Field
-		 */	
+		 */
 		outputs: func() {
 			if(self._outputs == undefined) {
 				info := self.info()
@@ -162,7 +162,7 @@ Resource = func(r) {
 
 		/**
 		 * Create new field with given name and field type.
-		 * 
+		 *
 		 * @param name field name
 		 * @param fieldType field type: input, output
 		 */
@@ -172,7 +172,7 @@ Resource = func(r) {
 			return Field(fID)
 		},
 
-		/** 
+		/**
 		 * Get smart.Field by name
 		 *
 		 * @param name field name
@@ -181,9 +181,9 @@ Resource = func(r) {
 			return Field(ll.fieldId(self.id, name))
 		},
 
-		/** 
+		/**
 		 * Get future field Id given field name and field type.
-		 * 
+		 *
 		 * @param name field name
 		 * @param fieldType field type: input, output
 		 */
@@ -193,14 +193,14 @@ Resource = func(r) {
 
 		/**
 		 * Lock resource outputs
-		 */ 
+		 */
 		lockOutputs: func() {
 			tx.lockOutputs(self.id)
 		},
 
 		/**
 		 * Get a resource set in field of a given field name
-		 * 
+		 *
 		 * @param name field name
 		 */
 		get: func(name) {
@@ -230,7 +230,7 @@ Field = func(f) {
 		 * Field info:
 		 *
 		 *  ID:    { ResourceId: int64, Name: string }
-		 *  Value: int64 - value resource id 
+		 *  Value: int64 - value resource id
 		 *  Error: int64 - error resource id
 		 *  IsSet: bool  - whether field is set
 		 */
@@ -260,7 +260,7 @@ Field = func(f) {
 		},
 
 		/**
-		 * Returns a smart.Resource object from the resolved field value 
+		 * Returns a smart.Resource object from the resolved field value
 		 */
 		getValue: func() {
 			return Resource(self.info().Value)
