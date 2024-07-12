@@ -70,11 +70,11 @@ Resource = func(r) {
 		 * Resource info:
 		 * 
 		 *  ID:            int64
-		 *	Data:          byte[],
-		 *	Type:          { Name: string, Version: string }
-		 *	Inputs:        strict map
-		 *	Outputs:       strict map
-		 *	Dynamic:       strict map
+		 *  Data:          byte[],
+		 *  Type:          { Name: string, Version: string }
+		 *  Inputs:        strict map
+		 *  Outputs:       strict map
+		 *  Dynamic:       strict map
 		 *  OTW:           strict map
 		 *  ResourceReady: bool
 		 *  AllInputsSet:  bool
