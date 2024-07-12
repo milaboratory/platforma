@@ -4,6 +4,7 @@
 
 tx := import("tx")
 ll := import(":ll")
+plapi := import("plapi")
 
 constants := import(":constants")
 smart := import(":smart")
