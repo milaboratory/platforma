@@ -20,7 +20,6 @@ Resource := undefined
 Field := undefined
 
 
-
 ////////////////// helpers ///////////////////////////
 
 // internal helper function
@@ -200,7 +199,7 @@ Resource = func(r) {
 		},
 
 		/**
-		 * Get value of a resource set in field of a given field name
+		 * Get a resource set in field of a given field name
 		 * 
 		 * @param name field name
 		 */

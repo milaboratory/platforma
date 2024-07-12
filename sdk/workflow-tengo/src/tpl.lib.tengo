@@ -13,7 +13,7 @@ smart := import(":smart")
 //
 
 // Checking we were imported in compatible render template context
-renderer := smart.Resource(ll.getCurrentTemplate())
+renderer := smart.Resource(ll.getCurrentTemplateRenderer())
 if renderer.info().Type.Name != "RenderTemplate" {
 	ll.panic("pure template can't be executed as ephemeral")
 }

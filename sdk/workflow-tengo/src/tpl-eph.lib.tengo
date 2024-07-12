@@ -1,79 +1,74 @@
-/*
- * Library provides development kit for ephemeral templates
- */
+// /*
+//  * Library provides development kit for ephemeral templates
+//  */
+// tx := import("tx")
+// ll := import(":ll")
+// plapi := import("plapi")
 
-tx := import("tx")
-ll := import(":ll")
-plapi := import("plapi")
+// constants := import(":constants")
+// smart := import(":smart")
 
-constants := import(":constants")
-smart := import(":smart")
+// //
+// // Initialization
+// //
 
-//
-// Initialization
-//
+// // Checking we were imported in compatible render template context
+// renderer := smart.Resource(ll.getCurrentTemplateRenderer())
+// if renderer.info().Type.Name != "EphRenderTemplate" {
+// 	ll.panic("expected ephemeral render template got pure")
+// }
 
-// Checking we were imported in compatible render template context
-renderer := smart.Resource(ll.getCurrentTemplate())
-if renderer.info().Type.Name != "EphRenderTemplate" {
-	ll.panic("expected ephemeral render template got pure")
-}
+// //
+// // Definitions and exports
+// //
 
-//
-// Definitions and exports
-//
+// _initialOutputs := ll.toStrict(renderer.outputs())
+// _newOutputs := ll.toStrict({})
+// _outpus := {}
 
-_inputs := undefined
-_outputs := undefined
+// _inputs := undefined
 
-inputs := func() {
-	if _inputs == undefined {
-		_inputs = ll.toStrict(renderer.get("inputs").inputs())
-	}
-	return _inputs
-}
+// inputs := func() {
+// 	if _inputs == undefined {
+// 		_inputs = ll.toStrict(renderer.get("inputs").inputs())
+// 	}
+// 	return _inputs
+// }
 
-outputs := func() {
-	if _outputs == undefined {
-		_outputs = {}
-		_outputs = ll.toStrict(_outputs)
-	}
-	return _outputs
-}
+// outputs := func() {
+// 	if _outputs == undefined {
+//         // TODO
+//         _outputs = _initialOutputs
+// 	}
+// 	return _outputs
+// }
 
-/**
- * Defines main entry point for current template
- */
-body := func(bodyFn) {
-	
-    //
-	// Rules of pl guarantees that pure template code will be executed twice:
-	//
-	//   (1) once for initialization, at this point it must initialize all outputs, for the
-	//       deduplication and recovery mechanisms to pick them up and, if possible, populate them
-	//       with results from equvalent previous invocations
-	//
-	//   (2) after initialization is done and all deduplication and recovery algorithms did their
-	//       magic, if some (or all) of the outputs, our consumers demand are still absent, main
-	//       body of the template is executed, to calculate them
-	//
+// newOutput := func(name) {
+//     field := smart.Field(ll.filedId(renderer.id, constants.TEMPLATE_OUTPUT_PREFIX + name))
+//     _newOutputs[name] = field
+//     return field
+// }
 
+// /**
+//  * Defines main entry point for current template
+//  */
+// body := func(bodyFn) {
 
-    if renderer.into().AllInputsSet {
-		inputMap := plapi.getInputMap()
-		if inputMap.AllInputsSet {
-			bodyFn()
-		} else {
-			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
-		}
-	} else if ll.isInitializing() {
-        tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
-	} 
-}
+//     if renderer.into().AllInputsSet {
+// 		inputMap := plapi.getInputMap()
+// 		if inputMap.AllInputsSet {
+// 			bodyFn()
+// 		} else {
+// 			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
+// 		}
+// 	} else if ll.isInitializing() {
+//         tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
+// 	} 
+// }
 
-export ll.toStrict({
-	renderer: renderer,
-	body: body,
-	inputs: inputs,
-	outputs: outputs
-})
+// export ll.toStrict({
+// 	renderer: renderer,
+// 	body: body,
+// 	inputs: inputs,
+// 	outputs: outputs
+// })

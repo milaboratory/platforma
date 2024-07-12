@@ -1,3 +1,6 @@
+/* Low level pl API */
+
+
 plapi := import("plapi")
 fmt := import("fmt")
 
@@ -25,6 +28,8 @@ assert := func(condition, msg, ...args) {
 
 /**
  * Checks whether given object is a strict map
+ *
+ * @param r any 
  */
 isStrict := func(r) {
 	return plapi.isStrictMap(r)
@@ -32,6 +37,8 @@ isStrict := func(r) {
 
 /**
  * Converts 'strict' map into a normal one
+ *
+ * @param r 'strict' map (will panic if not)
  */
 fromStrict := func(r) {
 	if(!isStrict(r)) {
@@ -60,9 +67,9 @@ fieldId := func(resourceId, fieldName) {
 }
 
 /** 
- * Returns current template info 
+ * Returns current template renderer
  */
-getCurrentTemplate := func() {
+getCurrentTemplateRenderer := func() {
 	return plapi.getTemplate()
 }
 
@@ -79,6 +86,6 @@ export {
 	fromStrict: fromStrict,
 	toStrict: toStrict,
 	fieldId: fieldId,
-	getCurrentTemplate: getCurrentTemplate,
+	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing
 }

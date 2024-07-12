@@ -36,6 +36,26 @@
 // 	setCmd(binary).
 //     setArgs("hello")
 
+
+// software.resolve("@xyz/star")
+
+// exec.cmd(...) // string
+
+// exec.setArgs()
+
+// exec.addFile("name", resource)
+
+// exec.stdout() // smart.Field to file
+// exec.stdoutStream() // smart.Field to file
+
+
+
+
+// exec.stderr() // smart.Field
+// exec.stderrStream() // smart.Field to file
+
+
+
 // myFile := exec1.collectFile("theFile.txt")
 
 // exec1.build()
