@@ -76,12 +76,12 @@ export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, Gen
 
 export {
   // Common
+  NumberInput,
   ThemeSwitcher,
   BtnPrimary,
   BtnSecondary,
   BtnAccent,
   TextField,
-  NumberInput,
   SelectInput,
   MultiDropdown,
   LineDropdown,

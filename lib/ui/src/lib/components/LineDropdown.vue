@@ -22,16 +22,16 @@ const props = withDefaults(
     placeholder?: string;
     mode?: 'list' | 'tabs';
     tabsContainerStyles?: StyleValue;
-    inputMaxWidth?: string;
-    inputWidth?: string;
+    // inputMaxWidth?: string;
+    // inputWidth?: string;
     clearable?: boolean;
   }>(),
   {
     mode: 'list',
     placeholder: 'Select..',
     prefix: '',
-    inputMaxWidth: '',
-    inputWidth: '',
+    // inputMaxWidth: '',
+    // inputWidth: '',
     tabsContainerStyles: undefined,
     clearable: false,
   },
@@ -78,18 +78,9 @@ const modelText = computed<string>(() => {
   return '';
 });
 
-const inputValue = computed<string>(() => {
-  if (data.isOpen) {
-    if (searchPhrase.value && searchPhrase.value.length >= inputValue.value.length - 1) {
-      return searchPhrase.value;
-    }
-    return '';
-  }
+const inputModel = ref(modelText.value);
 
-  return modelText.value;
-});
-
-const placeholder = computed(() => {
+const placeholderVal = computed(() => {
   if (data.isOpen) {
     if (searchPhrase.value && searchPhrase.value.length >= modelText.value.length - 1) {
       return searchPhrase.value;
@@ -104,6 +95,17 @@ useClickOutside(container, () => {
     data.isOpen = false;
   }
 });
+
+watch(
+  () => inputModel.value,
+  (val) => {
+    if (modelText.value !== val) {
+      searchPhrase.value = val;
+    } else {
+      searchPhrase.value = '';
+    }
+  },
+);
 
 watch(
   () => data.isOpen,
@@ -134,11 +136,7 @@ function updateSelected() {
     }),
     (v) => (v < 0 ? 0 : v),
   );
-}
-
-function setSearchPhrase(str: string) {
-  searchPhrase.value = str;
-  data.isOpen = true;
+  inputModel.value = modelText.value;
 }
 
 function resetSearchPhrase() {
@@ -230,6 +228,7 @@ function clearModel() {
 </script>
 
 <template>
+  <!-- {{ inputModel }} -->
   <div
     ref="container"
     tabindex="0"
@@ -241,15 +240,7 @@ function clearModel() {
   >
     <div class="ui-line-dropdown__prefix">{{ props?.prefix }}</div>
 
-    <ResizableInput
-      :value="inputValue"
-      :placeholder="placeholder"
-      :disabled="props.disabled"
-      :max-width="props.inputMaxWidth"
-      :width="props.inputWidth"
-      class="ui-line-dropdown__input"
-      @input="setSearchPhrase"
-    />
+    <ResizableInput v-model="inputModel" :placeholder="placeholderVal" :disabled="props.disabled" class="ui-line-dropdown__input" />
 
     <div class="ui-line-dropdown__icon-wrapper">
       <div v-show="!canShowClearBtn" class="ui-line-dropdown__icon" />
