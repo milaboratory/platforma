@@ -1,11 +1,6 @@
-import 'vue';
-import './style.css';
-import HelloWorld from './components/HelloWorld.vue';
+import './assets/block.scss';
+import BlockLayout from './components/BlockLayout.vue';
 
-export {
-  HelloWorld
-}
+export { BlockLayout };
 
-export function hello(): void {
-  console.log('hello');
-}
+export * from './createApp';
