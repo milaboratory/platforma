@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/ts-helpers",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "Useful helpers for our TS projects",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
