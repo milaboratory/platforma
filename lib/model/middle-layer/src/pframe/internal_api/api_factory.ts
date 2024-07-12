@@ -26,26 +26,30 @@ export type DataInfo = JsonDataInfo | BinaryDataInfo;
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
 export type FilePath = string;
 
-/** Implementation of the storage backend passed to the PFrame to be able to
- * read actual data. */
-export type BlobPathResolver = (blobId: PFrameBlobId) => Promise<FilePath>;
+/** Data source allows PFrame to retrieve the data blobs for columns with assigned data info. */
+export type PFrameDataSource = {
+  /** 
+   * PFrame may notify storage backend about its plans to use particular blobs in the future.
+   * Storage backend will do its best to preload specified blob so the subsequence
+   * {@link resolveBlob} will quickly return preloaded file path.
+   */
+  preloadBlob(blobIds: PFrameBlobId[]): Promise<void>;
 
-/** Implementation of the storage backend passed to the PFrame via which the framework
- * will notify the storage about future need of certain blobs. */
-export type BlobPreloadCallback = (blobIds: PFrameBlobId[]) => Promise<void>;
+  /** Allows to read actual data given the blob id from {@link DataInfo}. */
+  resolveBlob(blobId: PFrameBlobId): Promise<FilePath>;
+};
 
 /** API exposed by PFrames library allowing to create and provide data for
  * PFrame objects */
 export interface PFrameFactoryAPI {
+  /** Associates data source with this PFrame */
+  setDataSource(dataSource: PFrameDataSource): void;
+
   /** Adds PColumn without spec */
   addColumnSpec(columnId: PColumnId, columnSpec: PColumnSpec): void;
 
-  /** Provides data for already added PColumn entry */
-  setColumnData(
-    columnId: PColumnId, dataInfo: DataInfo,
-    blobPreloader: BlobPreloadCallback,
-    blobResolver: BlobPathResolver
-  ): void;
+  /** Associates data info with cpecific column */
+  setColumnData(columnId: PColumnId, dataInfo: DataInfo): void;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */
