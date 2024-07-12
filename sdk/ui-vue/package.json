@@ -13,7 +13,7 @@
     "playground"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "exit 0",
     "build": "npm run build -w ./lib",
     "type-check": "npm run type-check -w ./lib",
     "lint": "eslint . --ext js,ts,vue"
