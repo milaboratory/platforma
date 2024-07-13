@@ -2,6 +2,7 @@ export * from './block';
 export * from './block_state';
 export * from './utag';
 export * from './drivers';
+export * from './driver_kit';
 export * from './section';
 export * from './ref';
 export * from './common_types';
