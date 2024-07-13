@@ -1,8 +1,8 @@
 name: Build NPM package
 on:
   push:
-    branches: [ '*' ]
-  workflow_dispatch: { }
+    branches: ['*']
+  workflow_dispatch: {}
 
 jobs:
   init:
@@ -16,7 +16,7 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple.yaml@v4
+    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple-fast.yaml@v4
     with:
       app-name: Pl Middle Layer
       app-name-slug: '@milaboratory/pl-middle-layer'

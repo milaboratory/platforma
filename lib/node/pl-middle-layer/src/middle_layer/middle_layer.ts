@@ -64,6 +64,11 @@ export class MiddleLayer {
     this.pl = this.env.pl;
   }
 
+  /** Returns extended API driver kit used internally by middle layer. */
+  public get internalDriverKit(): MiddleLayerDriverKit {
+    return this.env.driverKit;
+  }
+
   //
   // Project List Manipulation
   //
