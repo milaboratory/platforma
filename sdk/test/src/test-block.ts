@@ -1,9 +1,9 @@
 import path from 'path';
-import { test } from 'vitest';
 import * as fsp from 'node:fs/promises';
 import { randomUUID } from 'crypto';
 import {
   BlockPackSpecAny,
+  ImportFileHandleUpload,
   MiddleLayer,
   NullResourceId,
   OptionalResourceId,
@@ -40,6 +40,7 @@ async function awaitBlockDone(
 
 export interface RawHelpers {
   awaitBlockDone(blockId: string, timeout?: number): Promise<void>;
+  getLocalFileHandle(localPath: string): Promise<ImportFileHandleUpload>;
 }
 
 export const blockTest = plTest.extend<{
@@ -48,10 +49,9 @@ export const blockTest = plTest.extend<{
   rawPrj: Project;
   helpers: RawHelpers;
 }>({
-  ml: async ({ pl }, use) => {
-    const workFolder = path.resolve(`work/${randomUUID()}`);
-    const frontendFolder = path.join(workFolder, 'frontend');
-    const downloadFolder = path.join(workFolder, 'download');
+  ml: async ({ pl, tmpFolder }, use) => {
+    const frontendFolder = path.join(tmpFolder, 'frontend');
+    const downloadFolder = path.join(tmpFolder, 'download');
     await fsp.mkdir(frontendFolder, { recursive: true });
     await fsp.mkdir(downloadFolder, { recursive: true });
 
@@ -63,8 +63,10 @@ export const blockTest = plTest.extend<{
       blobDownloadPath: path.resolve(downloadFolder),
       localStorageNameToPath: { local: '' }
     });
+
     await use(ml);
-    await ml.closeAndAwaitTermination();
+
+    await ml.close();
   },
   myBlockSpec: {
     type: 'dev',
@@ -80,10 +82,15 @@ export const blockTest = plTest.extend<{
     await use(prj);
     ml.closeProject(pRid1);
   },
-  helpers: async ({ rawPrj }, use) => {
+  helpers: async ({ ml, rawPrj }, use) => {
     await use({
       async awaitBlockDone(blockId, timeout) {
         await awaitBlockDone(rawPrj, blockId, timeout);
+      },
+      async getLocalFileHandle(localPath) {
+        return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
+          path.resolve(localPath)
+        );
       }
     });
   }

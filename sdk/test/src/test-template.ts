@@ -7,10 +7,12 @@ import {
   PlTransaction,
   ResourceId,
   toGlobalResourceId,
-  TreeNodeAccessor,
   prepareTemplateSpec,
   loadTemplate,
-  createRenderTemplate
+  createRenderTemplate,
+  MiddleLayerDriverKit,
+  initDriverKit,
+  MiddleLayer
 } from '@milaboratory/pl-middle-layer';
 import { plTest } from './test-pl';
 import {
@@ -23,7 +25,10 @@ import {
   ComputableCtx,
   UnwrapComputables
 } from '@milaboratory/computable';
+import * as fsp from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import path from 'node:path';
 
 export class TestRenderResults<O extends string> {
   constructor(
@@ -99,6 +104,7 @@ export class TplTestHelpers {
 
 export const tplTest = plTest.extend<{
   helper: TplTestHelpers;
+  driverKit: MiddleLayerDriverKit;
 }>({
   helper: async ({ pl, createTree }, use) => {
     const resultMap = await pl.withWriteTx('CreatingHelpers', async (tx) => {
@@ -110,5 +116,13 @@ export const tplTest = plTest.extend<{
     });
     const resultMapTree = await createTree(resultMap);
     await use(new TplTestHelpers(pl, resultMap, resultMapTree));
+  },
+  driverKit: async ({ pl, tmpFolder }, use) => {
+    const downloadFolder = path.join(tmpFolder, 'download');
+    await fsp.mkdir(downloadFolder, { recursive: true });
+    const driverKit = initDriverKit(pl, new ConsoleLoggerAdapter(), {
+      blobDownloadPath: downloadFolder,
+      localSecret: MiddleLayer.generateLocalSecret()
+    });
   }
 });

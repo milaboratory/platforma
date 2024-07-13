@@ -11,6 +11,8 @@ import {
   SynchronizedTreeState
 } from '@milaboratory/pl-tree';
 import { randomUUID } from 'crypto';
+import path from 'path';
+import * as fsp from 'node:fs/promises';
 import { test } from 'vitest';
 
 export const plTest = test.extend<{
@@ -20,7 +22,14 @@ export const plTest = test.extend<{
     ops?: SynchronizedTreeOps
   ) => Promise<SynchronizedTreeState>;
   rootTree: SynchronizedTreeState;
+  tmpFolder: string;
 }>({
+  tmpFolder: async ({}, use) => {
+    const workFolder = path.resolve(`work/${randomUUID()}`);
+    await fsp.mkdir(workFolder, { recursive: true });
+    await use(workFolder);
+    await fsp.rm(workFolder, { recursive: true });
+  },
   pl: async ({ onTestFailed }, use) => {
     const altRoot = `test_${Date.now()}_${randomUUID()}`;
     let altRootId: OptionalResourceId = NullResourceId;
