@@ -2,6 +2,7 @@ import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './int
 import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor } from './accessor';
 import { FutureRef } from './future';
+import { Option, PSpecPredicate } from '@milaboratory/sdk-model';
 
 export class RenderCtx<Args, UiState> {
   private readonly ctx: GlobalCfgRenderCtx;
@@ -27,14 +28,18 @@ export class RenderCtx<Args, UiState> {
   get mainOutput(): TreeNodeAccessor | undefined {
     return this.getNamedAccessor(MainAccessorName);
   }
+
+  calculateOptions(predicate: PSpecPredicate): Option[] {
+    return this.ctx.calculateOptions(predicate);
+  }
 }
 
-export type RenderFunction<Args = unknown, UiState = unknown> =
-  (rCtx: RenderCtx<Args, UiState>) => unknown
+export type RenderFunction<Args = unknown, UiState = unknown> = (
+  rCtx: RenderCtx<Args, UiState>
+) => unknown;
 
-export type InferRenderFunctionReturn<RF extends Function> =
-  RF extends () => infer R
-    ? R extends FutureRef<infer T>
-      ? T
-      : R
-    : never;
+export type InferRenderFunctionReturn<RF extends Function> = RF extends () => infer R
+  ? R extends FutureRef<infer T>
+    ? T
+    : R
+  : never;

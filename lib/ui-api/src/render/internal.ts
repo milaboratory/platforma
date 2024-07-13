@@ -1,6 +1,6 @@
 import { Branded } from '../branding';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { LocalBlobHandleAndSize, Option, PSpecPredicate, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 
 export const StagingAccessorName = 'staging';
 export const MainAccessorName = 'main';
@@ -60,6 +60,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getDownloadedBlobContentHandle(handle: AHandle): FHandle; // LocalBlobHandleAndSize | undefined;
 
   getOnDemandBlobContentHandle(handle: AHandle): FHandle; // RemoteBlobHandleAndSize | undefined;
+
+  // 
+  // Result Pool
+  //
+
+  calculateOptions(predicate: PSpecPredicate): Option[];
 }
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
