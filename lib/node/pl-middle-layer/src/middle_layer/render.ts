@@ -15,5 +15,5 @@ export function computableFromCfgOrRF(
   if (isFunctionHandle(cfgOrFh)) {
     if (code === undefined) throw new Error('No code bundle.');
     return computableFromRF(env, ctx, cfgOrFh, code, ops);
-  } else return computableFromCfg(env.drivers, ctx, cfgOrFh, ops);
+  } else return computableFromCfg(env.driverKit, ctx, cfgOrFh, ops);
 }

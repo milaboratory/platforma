@@ -188,12 +188,12 @@ const SRGetBlobContent: Subroutine = (args) => {
       type: 'ScheduleComputable',
       computable: Computable.make(
         (ctx) => {
-          return drivers.downloadDriver.getDownloadedBlob(ctx.accessor(source).node().resourceInfo);
+          return drivers.blobDriver.getDownloadedBlob(ctx.accessor(source).node().resourceInfo);
         },
         {
           postprocessValue: async (value) => {
             if (value === undefined) return undefined;
-            return await drivers.downloadDriver.getContent(value.handle);
+            return await drivers.blobDriver.getContent(value.handle);
           }
         }
       )
@@ -211,10 +211,10 @@ const SRGetBlobContentAsString: Subroutine = (args) => {
 
     return {
       type: 'ScheduleComputable',
-      computable: Computable.make(() => drivers.downloadDriver.getDownloadedBlob(resourceInfo), {
+      computable: Computable.make(() => drivers.blobDriver.getDownloadedBlob(resourceInfo), {
         postprocessValue: async (value) => {
           if (value === undefined) return undefined;
-          const content = await drivers.downloadDriver.getContent(value.handle);
+          const content = await drivers.blobDriver.getContent(value.handle);
           return content.toString();
         }
       })
@@ -230,11 +230,11 @@ const SRGetBlobContentAsJson: Subroutine = (args) => {
     return {
       type: 'ScheduleComputable',
       computable: Computable.make(
-        (c) => drivers.downloadDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
+        (c) => drivers.blobDriver.getDownloadedBlob(c.accessor(source).node().resourceInfo),
         {
           postprocessValue: async (value) => {
             if (value == undefined) return undefined;
-            const content = await drivers.downloadDriver.getContent(value.handle);
+            const content = await drivers.blobDriver.getContent(value.handle);
             if (content == undefined) return undefined;
             return JSON.parse(Buffer.from(content).toString());
           }
@@ -251,7 +251,7 @@ const SRGetDownloadedBlobContent: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.downloadDriver.getDownloadedBlob(source)
+      computable: drivers.blobDriver.getDownloadedBlob(source)
     };
   };
 };
@@ -263,7 +263,7 @@ const SRGetOnDemandBlobContent: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.downloadDriver.getOnDemandBlob(source)
+      computable: drivers.blobDriver.getOnDemandBlob(source)
     };
   };
 };
@@ -287,7 +287,7 @@ const SRGetLastLogs: (lines: number) => Subroutine = (lines) => (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logsDriver.getLastLogs(source, lines)
+      computable: drivers.logDriver.getLastLogs(source, lines)
     };
   };
 };
@@ -299,7 +299,7 @@ const SRGetProgressLog: (patternToSearch: string) => Subroutine = (patternToSear
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logsDriver.getProgressLog(source, patternToSearch)
+      computable: drivers.logDriver.getProgressLog(source, patternToSearch)
     };
   };
 };
@@ -311,7 +311,7 @@ const SRGetLogHandle: Subroutine = (args) => {
   return ({ drivers }) => {
     return {
       type: 'ScheduleComputable',
-      computable: drivers.logsDriver.getLogHandle(source)
+      computable: drivers.logDriver.getLogHandle(source)
     };
   };
 };

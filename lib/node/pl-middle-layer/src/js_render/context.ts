@@ -179,17 +179,14 @@ export class JsExecutionContext
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsString',
-      Computable.make(
-        (ctx) => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
-        {
-          postprocessValue: async (value) => {
-            if (value === undefined) return undefined;
-            return Buffer.from(
-              await this.env.drivers.downloadDriver.getContent(value.handle)
-            ).toString('utf-8');
-          }
+      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
+        postprocessValue: async (value) => {
+          if (value === undefined) return undefined;
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+            'utf-8'
+          );
         }
-      )
+      })
     );
   }
 
@@ -197,17 +194,14 @@ export class JsExecutionContext
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsBase64',
-      Computable.make(
-        (ctx) => this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo, ctx),
-        {
-          postprocessValue: async (value) => {
-            if (value === undefined) return undefined;
-            return Buffer.from(
-              await this.env.drivers.downloadDriver.getContent(value.handle)
-            ).toString('base64');
-          }
+      Computable.make((ctx) => this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo, ctx), {
+        postprocessValue: async (value) => {
+          if (value === undefined) return undefined;
+          return Buffer.from(await this.env.driverKit.blobDriver.getContent(value.handle)).toString(
+            'base64'
+          );
         }
-      )
+      })
     );
   }
 
@@ -215,7 +209,7 @@ export class JsExecutionContext
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getDownloadedBlobContentHandle',
-      this.env.drivers.downloadDriver.getDownloadedBlob(resourceInfo)
+      this.env.driverKit.blobDriver.getDownloadedBlob(resourceInfo)
     );
   }
 
@@ -223,7 +217,7 @@ export class JsExecutionContext
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
-      this.env.drivers.downloadDriver.getOnDemandBlob(resourceInfo)
+      this.env.driverKit.blobDriver.getOnDemandBlob(resourceInfo)
     );
   }
 

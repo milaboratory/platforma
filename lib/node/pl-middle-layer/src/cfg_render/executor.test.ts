@@ -18,7 +18,7 @@ import { computableFromCfg, computableFromCfgUnsafe } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { Computable } from '@milaboratory/computable';
-import { MiddleLayerInternalDrivers } from './operation';
+import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 test('local cfg test (no pl)', async () => {
   const args = {
@@ -42,7 +42,7 @@ test('local cfg test (no pl)', async () => {
   const ctx = { $args: args };
 
   const computable1 = computableFromCfgUnsafe(
-    {} as MiddleLayerInternalDrivers,
+    {} as MiddleLayerDriverKit,
     ctx,
     cfg.outputs['out1'] as TypedConfig
   );
@@ -54,7 +54,7 @@ test('local cfg test (no pl)', async () => {
   expect(out1).toEqual('hi');
 
   const computable2 = computableFromCfgUnsafe(
-    {} as MiddleLayerInternalDrivers,
+    {} as MiddleLayerDriverKit,
     ctx,
     cfg.outputs['out2'] as TypedConfig
   );
@@ -97,7 +97,7 @@ test('cfg test with pl, simple', async () => {
     };
 
     const computable: Computable<unknown> = computableFromCfgUnsafe(
-      {} as MiddleLayerInternalDrivers,
+      {} as MiddleLayerDriverKit,
       ctx,
       cfg.outputs['out1'] as TypedConfig
     ) as any;

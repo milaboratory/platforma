@@ -9,30 +9,18 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import {
-  createDownloadClient,
-  createLogsClient,
-  createLsFilesClient,
-  createUploadBlobClient,
-  createUploadProgressClient,
-  DownloadDriver,
-  DownloadUrlDriver,
-  UploadDriver,
-  LogsStreamDriver,
-  LogsDriver,
-  LsDriver
-} from '@milaboratory/pl-drivers';
+import { DownloadUrlDriver } from '@milaboratory/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
-import { MiddleLayerInternalDrivers } from '../cfg_render/operation';
-import { BlobDriver, LsDriver as SdkLsDriver } from '@milaboratory/sdk-model';
 import { ProjectListEntry } from '../model';
 import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
+import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
+import { DriverKit } from '@milaboratory/sdk-ui';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -40,14 +28,9 @@ export interface MiddleLayerEnvironment {
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
   readonly frontendDownloadDriver: DownloadUrlDriver;
-  readonly drivers: MiddleLayerInternalDrivers;
   readonly blockUpdateWatcher: BlockUpdateWatcher;
   readonly quickJs: QuickJSWASMModule;
-}
-
-export interface MiddleLayerDrivers {
-  readonly blob: BlobDriver;
-  readonly listFiles: SdkLsDriver;
+  readonly driverKit: MiddleLayerDriverKit;
 }
 
 /**
@@ -70,7 +53,7 @@ export class MiddleLayer {
 
   private constructor(
     private readonly env: MiddleLayerEnvironment,
-    public readonly drivers: MiddleLayerDrivers,
+    public readonly driverKit: DriverKit,
     public readonly signer: Signer,
     private readonly projectListResourceId: ResourceId,
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
@@ -181,9 +164,7 @@ export class MiddleLayer {
   /** Initialize middle layer */
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
-    checkStorageNamesDoNotIntersect(ops);
 
-    const signer = new HmacSha256Signer(ops.localSecret);
     const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, 'Dynamic');
@@ -203,53 +184,24 @@ export class MiddleLayer {
     });
 
     const logger = new ConsoleLoggerAdapter(console);
-    const bpPreparer = new BlockPackPreparer(signer);
 
-    const downloadClient = createDownloadClient(logger, pl, ops.platformLocalStorageNameToPath);
-    const logsClient = createLogsClient(pl, logger);
-    const uploadBlobClient = createUploadBlobClient(pl, logger);
-    const uploadProgressClient = createUploadProgressClient(pl, logger);
-    const lsClient = createLsFilesClient(pl, logger);
+    const driverKit = await initDriverKit(pl, logger, ops);
+
+    const bpPreparer = new BlockPackPreparer(driverKit.signer);
 
     const frontendDownloadDriver = new DownloadUrlDriver(
       logger,
-      downloadClient,
+      pl.httpDispatcher,
       ops.frontendDownloadPath
     );
-    const downloadDriver = new DownloadDriver(
-      logger,
-      downloadClient,
-      logsClient,
-      ops.blobDownloadPath,
-      signer,
-      ops.blobDownloadCacheSizeBytes,
-      ops.nConcurrentBlobDownloads
-    );
-    const uploadDriver = new UploadDriver(logger, signer, uploadBlobClient, uploadProgressClient, {
-      nConcurrentPartUploads: ops.nConcurrentPartUploads,
-      nConcurrentGetProgresses: ops.nConcurrentGetProgresses,
-      pollingInterval: ops.defaultUploadDriverOptions.pollingInterval,
-      stopPollingDelay: ops.defaultUploadDriverOptions.stopPollingDelay
-    });
-    const logsStreamDriver = new LogsStreamDriver(logsClient, {
-      nConcurrentGetLogs: ops.nConcurrentGetLogs,
-      pollingInterval: ops.defaultStreamLogsDriverOptions.pollingInterval,
-      stopPollingDelay: ops.defaultStreamLogsDriverOptions.stopPollingDelay
-    });
-    const logsDriver = new LogsDriver(logsStreamDriver, downloadDriver);
-    const lsDriver = new LsDriver(logger, lsClient, pl, signer, ops.localStorageNameToPath);
 
     const env: MiddleLayerEnvironment = {
       pl,
-      signer,
+      signer: driverKit.signer,
       ops,
       bpPreparer,
       frontendDownloadDriver,
-      drivers: {
-        downloadDriver,
-        uploadDriver,
-        logsDriver
-      },
+      driverKit,
       blockUpdateWatcher: new BlockUpdateWatcher({
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: pl.httpDispatcher
@@ -262,24 +214,12 @@ export class MiddleLayer {
 
     return new MiddleLayer(
       env,
-      {
-        blob: downloadDriver,
-        listFiles: lsDriver
-      },
-      signer,
+      driverKit,
+      driverKit.signer,
       projects,
       openedProjects,
       projectListTC.tree,
       projectListTC.computable
     );
   }
-}
-
-function checkStorageNamesDoNotIntersect(ops: MiddleLayerOps) {
-  const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
-  const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>
-    platformStorages.includes(name)
-  );
-  if (intersected)
-    throw new Error(`Platform local storages include one or more local storages: ${intersected}`);
 }

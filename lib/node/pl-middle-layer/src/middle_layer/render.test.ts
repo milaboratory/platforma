@@ -1,6 +1,5 @@
 import { awaitBlockDone, withMl } from './middle_layer.test';
 import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
-import * as tp from 'node:timers/promises';
 
 test('test JS render enter numbers', async () => {
   await withMl(async (ml) => {

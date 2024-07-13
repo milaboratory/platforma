@@ -494,11 +494,11 @@ test('should create download-file block, render it and gets outputs from its con
         .value as RemoteBlobHandleAndSize;
 
       expect(
-        Buffer.from(await ml.drivers.blob.getContent(localBlob.handle)).toString('utf-8')
+        Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
       ).toEqual('42\n');
 
       expect(
-        Buffer.from(await ml.drivers.blob.getContent(remoteBlob.handle)).toString('utf-8')
+        Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
       ).toEqual('42\n');
     }
   });
@@ -523,11 +523,11 @@ test('should create upload-file block, render it and upload a file to pl server'
 
     const block3Id = await prj.addBlock('Block 3', uploadFileSpecFromRemote);
 
-    const storages = await ml.drivers.listFiles.getStorageList();
+    const storages = await ml.driverKit.lsDriver.getStorageList();
     const local = storages.find((s) => s.name == 'local');
     expect(local).not.toBeUndefined();
     const fileDir = path.resolve(__dirname, '..', '..', 'assets');
-    const files = await ml.drivers.listFiles.listFiles(local!.handle, fileDir);
+    const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
     const ourFile = files.find((f) => f.name == 'another_answer_to_the_ultimate_question.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
@@ -576,10 +576,10 @@ test('should create read-logs block, render it and read logs from a file', async
     // }
     const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
 
-    const storages = await ml.drivers.listFiles.getStorageList();
+    const storages = await ml.driverKit.lsDriver.getStorageList();
     const library = storages.find((s) => s.name == 'library');
     expect(library).not.toBeUndefined();
-    const files = await ml.drivers.listFiles.listFiles(library!.handle, '');
+    const files = await ml.driverKit.lsDriver.listFiles(library!.handle, '');
     const ourFile = files.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');

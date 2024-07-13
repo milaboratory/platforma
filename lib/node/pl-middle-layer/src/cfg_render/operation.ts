@@ -1,22 +1,15 @@
 import { DownloadDriver, LogsDriver, UploadDriver } from '@milaboratory/pl-drivers';
 import { Computable, ComputableCtx } from '@milaboratory/computable';
+import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 export type ArgumentKey = string;
-
-/** Drivers offered by the middle-layer to internal consumers,
- * like configuration rendering routines */
-export type MiddleLayerInternalDrivers = {
-  downloadDriver: DownloadDriver;
-  uploadDriver: UploadDriver;
-  logsDriver: LogsDriver;
-};
 
 export type ExecutionEnvironment = {
   /** Each configuration is rendered inside a computable callback, this is the
    * context of the computable we are rendering inside. */
   cCtx: ComputableCtx;
   /** Available drivers */
-  drivers: MiddleLayerInternalDrivers;
+  drivers: MiddleLayerDriverKit;
 };
 
 export type ArgumentValues = Record<ArgumentKey, unknown>;

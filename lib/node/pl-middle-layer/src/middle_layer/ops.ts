@@ -1,7 +1,107 @@
 import { TemporalSynchronizedTreeOps } from './types';
+import { DownloadDriverOps } from '@milaboratory/pl-drivers';
+import { UploadDriverOps } from '@milaboratory/pl-drivers';
+import { LogsStreamDriverOps } from '@milaboratory/pl-drivers';
+
+/** Options required to initialize full set of middle layer driver kit */
+export type DriverKitOps = {
+  //
+  // Signer
+  //
+
+  /**
+   * Local secret, that is used to sign and verify different pieces of information
+   * that can be used to access local data, like local paths for ongoing uploads.
+   *
+   * Use {@link MiddleLayer.generateLocalSecret} to generate sufficiently random string.
+   * */
+  readonly localSecret: string;
+
+  //
+  // Blob Driver
+  //
+
+  /**
+   * Settings related to the download driver making operations with blobs. This driver is also used
+   * to download logs when source process terminates and log terns into a blob
+   */
+  readonly blobDriverOps: DownloadDriverOps;
+
+  /** Common root where to put downloaded blobs. */
+  readonly blobDownloadPath: string;
+
+  /**
+   * If Platforma is running in local mode and a download driver
+   * needs to download files from local storage, it will open files
+   * from the specified directory. Otherwise, it should be empty.
+   * */
+  readonly platformLocalStorageNameToPath: Record<string, string>;
+
+  //
+  // Upload Driver
+  //
+
+  /**
+   * Settings related to the upload driver that actually performs upload and helps render upload
+   * and indexing progresses from related pl resources.
+   * */
+  readonly uploadDriverOps: UploadDriverOps;
+
+  //
+  // Log streaming ops
+  // (static logs are served via the blob driver)
+  //
+
+  /** Settings related to the streaming log driver */
+  readonly logStreamDriverOps: LogsStreamDriverOps;
+
+  //
+  // LS Driver
+  //
+
+  /**
+   * If the client wants to upload files from their local machine to Platforma,
+   * this option should be set. Set any unique storage names
+   * to any paths from where the client will upload files,
+   * e.g., {'local': '/'}.
+   * */
+  readonly localStorageNameToPath: Record<string, string>;
+};
+
+/** Some defaults fot MiddleLayerOps. */
+export const DefaultDriverKitOps: Pick<
+  DriverKitOps,
+  | 'platformLocalStorageNameToPath'
+  | 'blobDriverOps'
+  | 'uploadDriverOps'
+  | 'logStreamDriverOps'
+  | 'localStorageNameToPath'
+> = {
+  platformLocalStorageNameToPath: {},
+  localStorageNameToPath: {},
+  blobDriverOps: {
+    cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
+    nConcurrentDownloads: 10
+  },
+  uploadDriverOps: {
+    nConcurrentPartUploads: 10,
+    nConcurrentGetProgresses: 10,
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  },
+  logStreamDriverOps: {
+    nConcurrentGetLogs: 10,
+    pollingInterval: 1000,
+    stopPollingDelay: 1000
+  }
+};
+
+/** Fields with default values are marked as optional here. */
+export type DriverKitOpsConstructor = Omit<DriverKitOps, keyof typeof DefaultDriverKitOps> &
+  Partial<typeof DefaultDriverKitOps>;
 
 /** Configuration controlling different aspects of middle layer behaviour. */
-export type MiddleLayerOps = {
+export type MiddleLayerOps = DriverKitOps & {
   /** Contain temporal options controlling how often should pl trees be
    * synchronized with the pl server. */
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
@@ -17,79 +117,21 @@ export type MiddleLayerOps = {
   /** How often to check for dev block updates */
   readonly devBlockUpdateRecheckInterval: number;
 
-  /** Local secret, that is used to sign and verify different pieces of information
-   * that can be used to access local data, like local paths for ongoing uploads.
-   *
-   * Use {@link MiddleLayer.generateLocalSecret} to generate sufficiently random string. */
-  readonly localSecret: string;
-
   /** Common root where to put frontend code. */
   readonly frontendDownloadPath: string;
-
-  /** Common root where to put downloaded blobs. */
-  readonly blobDownloadPath: string;
-
-  /** If Platforma is running in local mode and a download driver
-   * needs to download files from local storage, it will open files
-   * from the specified directory. Otherwise, it should be empty. */
-  readonly platformLocalStorageNameToPath: Record<string, string>;
-
-  /** If the client wants to upload files from their local machine to Platforma,
-   * this option should be set. Set any unique storage names
-   * to any paths from where the client will upload files,
-   * e.g., {'local': '/'}. */
-  readonly localStorageNameToPath: Record<string, string>;
-
-  /** The number of downloads that can be done in parallel when downloading blobs. */
-  readonly nConcurrentBlobDownloads: number;
-
-  /** A soft limit of the amount of blob storage, in bytes.
-   * Once exceeded, the download driver will start deleting blobs one by one
-   * when they become unneeded. */
-  readonly blobDownloadCacheSizeBytes: number;
-
-  /** How much parts of a file can be multipart-uploaded to S3 at once. */
-  nConcurrentPartUploads: number;
-
-  /** How much upload/indexing statuses of blobs can the upload driver ask
-   * from the platform gRPC at once. */
-  nConcurrentGetProgresses: number;
-
-  defaultUploadDriverOptions: {
-    /** How frequent the upload driver should update statuses of progresses. */
-    pollingInterval: number;
-    /** For how long to continue polling after the last derived value access. */
-    stopPollingDelay: number;
-  };
-
-  /** How much logs updates can the logs driver ask
-   * from the platform gRPC at once. */
-  nConcurrentGetLogs: number;
-  defaultStreamLogsDriverOptions: {
-    /** How frequent the upload driver should update statuses of progresses. */
-    pollingInterval: number;
-    /** For how long to continue polling after the last derived value access. */
-    stopPollingDelay: number;
-  };
 };
 
 /** Some defaults fot MiddleLayerOps. */
 export const DefaultMiddleLayerOps: Pick<
   MiddleLayerOps,
+  | keyof typeof DefaultDriverKitOps
   | 'defaultTreeOptions'
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
   | 'platformLocalStorageNameToPath'
-  | 'localStorageNameToPath'
-  | 'nConcurrentBlobDownloads'
-  | 'blobDownloadCacheSizeBytes'
-  | 'defaultUploadDriverOptions'
-  | 'nConcurrentGetProgresses'
-  | 'nConcurrentPartUploads'
-  | 'nConcurrentGetLogs'
-  | 'defaultStreamLogsDriverOptions'
   | 'devBlockUpdateRecheckInterval'
 > = {
+  ...DefaultDriverKitOps,
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500
@@ -98,20 +140,7 @@ export const DefaultMiddleLayerOps: Pick<
   projectRefreshInterval: 700,
   stagingRenderingRate: 5,
   platformLocalStorageNameToPath: {},
-  localStorageNameToPath: {},
-  nConcurrentBlobDownloads: 10,
-  blobDownloadCacheSizeBytes: 100 * 1024 * 1024, // 100MB
-  nConcurrentPartUploads: 10,
-  nConcurrentGetProgresses: 10,
-  defaultUploadDriverOptions: {
-    pollingInterval: 1000,
-    stopPollingDelay: 1000
-  },
-  nConcurrentGetLogs: 10,
-  defaultStreamLogsDriverOptions: {
-    pollingInterval: 1000,
-    stopPollingDelay: 1000
-  }
+  localStorageNameToPath: {}
 };
 
 /** Fields with default values are marked as optional here. */

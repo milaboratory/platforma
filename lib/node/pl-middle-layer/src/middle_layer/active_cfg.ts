@@ -48,7 +48,7 @@ export function activeConfigs(
       // console.log(blockCtx.prod(ctx));
 
       for (const cfg of activeOutputConfigs)
-        ret.push(Computable.wrapError(computableFromCfg(env.drivers, blockCtx, cfg)));
+        ret.push(Computable.wrapError(computableFromCfg(env.driverKit, blockCtx, cfg)));
     }
 
     return ret;

@@ -11,11 +11,11 @@
     "declaration": true,
     "skipLibCheck": true,
     // workaround to simplify working with "npm link" setup
-//    "paths": {
-//      "@milaboratory/*": [
-//        "node_modules/@milaboratory/*"
-//      ]
-//    }
+   "paths": {
+     "@milaboratory/*": [
+       "./node_modules/@milaboratory/*"
+     ]
+   }
   },
   "include": [
     "src/**/*"

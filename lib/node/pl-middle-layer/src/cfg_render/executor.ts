@@ -2,7 +2,6 @@ import {
   ArgumentKey,
   ArgumentValues,
   ExecutionEnvironment,
-  MiddleLayerInternalDrivers,
   Operation,
   Subroutine
 } from './operation';
@@ -13,6 +12,7 @@ import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
 import { BlockContextAny, NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx';
+import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;
@@ -185,7 +185,7 @@ function execute(
 
 /** Main method to render configurations */
 export function computableFromCfg(
-  drivers: MiddleLayerInternalDrivers,
+  drivers: MiddleLayerDriverKit,
   bCtx: BlockContextAny,
   cfg: Cfg,
   ops: Partial<ComputableRenderingOps> = {}
@@ -194,7 +194,7 @@ export function computableFromCfg(
 }
 
 export function computableFromCfgUnsafe(
-  drivers: MiddleLayerInternalDrivers,
+  drivers: MiddleLayerDriverKit,
   ctx: Record<string, unknown>,
   cfg: Cfg,
   ops: Partial<ComputableRenderingOps> = {}
