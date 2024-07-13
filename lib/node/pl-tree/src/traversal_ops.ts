@@ -7,7 +7,7 @@ export type CommonTraversalOps = {
    * and no value, error will be thrown anyway, because this is the reason
    * traversal is terminated.
    * */
-  ignoreError?: true;
+  ignoreError?: boolean;
 };
 
 export type CommonFieldTraverseOps = {
@@ -16,16 +16,16 @@ export type CommonFieldTraverseOps = {
    * 'Service' or 'Output'. By default, if field is not found, and corresponding
    * field list is locked, call will fail with exception.
    * */
-  allowPermanentAbsence?: true;
+  allowPermanentAbsence?: boolean;
 
   /** Will not mark current context as unstable, if field is not found. */
-  stableIfNotFound?: true;
+  stableIfNotFound?: boolean;
 
   /**
    * If encounter field with error and no value, will silently terminate the
    * traversal and return undefined.
    * */
-  pureFieldErrorToUndefined?: true;
+  pureFieldErrorToUndefined?: boolean;
 };
 
 export type ResourceTraversalOps = CommonTraversalOps & {
@@ -41,10 +41,10 @@ export type GetFieldStep = CommonFieldTraverseOps & {
   field: string;
 
   /** Field must exist, if this option is set, instead error will be thrown */
-  errorIfFieldNotFound?: true;
+  errorIfFieldNotFound?: boolean;
 
   /** Field must be resolved into resource if this option is set, instead error will be thrown */
-  errorIfFieldNotSet?: true;
+  errorIfFieldNotSet?: boolean;
 
   /**
    * Assert field type. Call will fail with exception if this assertion is not
