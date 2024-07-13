@@ -1,5 +1,5 @@
-/** Any object returned by the block always have spec attached to it */
-export interface BObjectSpec {
+/** Any object exported into the result pool by the block always have spec attached to it */
+export interface PObjectSpec {
   /** BObject kind discriminator */
   readonly kind: string;
 

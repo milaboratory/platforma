@@ -1,4 +1,4 @@
-import { BObjectSpec } from '../../outputs';
+import { PObjectSpec } from '../../outputs';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType =
@@ -67,7 +67,7 @@ export type AxesSpec = AxisSpec[];
  *
  * Each element in tuple correspond to the axis having the same index in axesSpec.
  * */
-export interface PColumnSpec extends BObjectSpec {
+export interface PColumnSpec extends PObjectSpec {
   /** Defines specific type of BObject, the most generic type of unit of
    * information in Platforma Project. */
   readonly kind: 'PColumn';

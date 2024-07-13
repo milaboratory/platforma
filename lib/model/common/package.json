@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-model",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Platforma SDK Model",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -16,7 +16,7 @@
   "dependencies": {},
   "devDependencies": {
     "tsup": "^8.1.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.3"
   },
   "tsup": {
     "entry": {

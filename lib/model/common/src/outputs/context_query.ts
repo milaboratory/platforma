@@ -1,12 +1,12 @@
 import { PColumnSpec, ValueType } from '../drivers';
-import { BObjectSpec } from './spec';
+import { PObjectSpec } from './spec';
 
-export type BSpecPredicate = {
+export type PSpecPredicate = {
   type: 'and' | 'or',
-  operands: BSpecPredicate[]
+  operands: PSpecPredicate[]
 } | {
   type: 'not',
-  operand: BSpecPredicate
+  operand: PSpecPredicate
 } | {
   type: 'name',
   name: string
@@ -32,7 +32,7 @@ export type AxisId = {
   domains: Record<string, string>
 }
 
-export function isPColumnSpec(spec: BObjectSpec): spec is PColumnSpec {
+export function isPColumnSpec(spec: PObjectSpec): spec is PColumnSpec {
   return spec.kind === 'PColumn';
 }
 
@@ -40,20 +40,20 @@ function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);
 }
 
-export function executeBSpecPredicate(predicate: BSpecPredicate, spec: BObjectSpec): boolean {
+export function executePSpecPredicate(predicate: PSpecPredicate, spec: PObjectSpec): boolean {
   switch (predicate.type) {
     case 'and':
       for (const operator of predicate.operands)
-        if (!executeBSpecPredicate(operator, spec))
+        if (!executePSpecPredicate(operator, spec))
           return false;
       return true;
     case 'or':
       for (const operator of predicate.operands)
-        if (executeBSpecPredicate(operator, spec))
+        if (executePSpecPredicate(operator, spec))
           return true;
       return false;
     case 'not':
-      return !executeBSpecPredicate(predicate.operand, spec);
+      return !executePSpecPredicate(predicate.operand, spec);
     case 'name':
       return isPColumnSpec(spec)
         && spec.name === predicate.name;
