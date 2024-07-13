@@ -26,6 +26,15 @@ import {
   treeEntryToResourceWithData
 } from '@milaboratory/pl-tree';
 import { scheduler } from 'node:timers/promises';
+import { PollingOps } from './polling_ops';
+
+export type UploadDriverOps = PollingOps & {
+  /** How much parts of a file can be multipart-uploaded to S3 at once. */
+  nConcurrentPartUploads: number;
+  /** How much upload/indexing statuses of blobs can the driver ask
+   * from the platform gRPC at once. */
+  nConcurrentGetProgresses: number;
+};
 
 // TODO: add abort signal to Upload Tasks.
 
@@ -45,17 +54,7 @@ export class UploadDriver {
     private readonly signer: Signer,
     private readonly clientBlob: ClientUpload,
     private readonly clientProgress: ClientProgress,
-    private readonly opts: {
-      /** How much parts of a file can be multipart-uploaded to S3 at once. */
-      nConcurrentPartUploads: number;
-      /** How much upload/indexing statuses of blobs can the driver ask
-       * from the platform gRPC at once. */
-      nConcurrentGetProgresses: number;
-      /** How frequent update statuses. */
-      pollingInterval: number;
-      /** When to stop a loop. */
-      stopPollingDelay: number;
-    } = {
+    private readonly opts: UploadDriverOps = {
       nConcurrentPartUploads: 10,
       nConcurrentGetProgresses: 10,
       pollingInterval: 1000,
@@ -251,7 +250,7 @@ class ProgressUpdater {
       this.setDone(blobExists);
       return this.progress;
     }
-    
+
     if (this.uploadingTerminallyFailed)
       throw new Error(this.progress.lastError);
 
@@ -353,7 +352,7 @@ function dataToUploadOpts(res: ResourceWithData): UploadOpts {
   if (res.data == undefined)
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
-      stringifyWithResourceId(res.data)
+        stringifyWithResourceId(res.data)
     );
 
   const opts = JSON.parse(res.data.toString());

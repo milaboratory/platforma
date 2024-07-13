@@ -1,5 +1,4 @@
 import { Readable } from 'node:stream';
-import { ReadableStream } from 'node:stream/web';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
@@ -14,17 +13,14 @@ import {
   DownloadAPI_GetDownloadURL_Response
 } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { ResourceInfo } from '@milaboratory/pl-tree';
+import { DownloadHelper, DownloadResponse } from '../helpers/download';
 
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
 
-export interface DownloadResponse {
-  content: ReadableStream;
-  size: number;
-}
-
 export class ClientDownload {
   public readonly grpcClient: DownloadClient;
+  private readonly downloadHelper: DownloadHelper;
 
   constructor(
     public readonly grpcTransport: GrpcTransport,
@@ -33,6 +29,7 @@ export class ClientDownload {
     private readonly localStorageIdsToRoot: Record<string, string>
   ) {
     this.grpcClient = new DownloadClient(this.grpcTransport);
+    this.downloadHelper = new DownloadHelper(httpClient);
   }
 
   close() {}
@@ -62,7 +59,7 @@ export class ClientDownload {
 
     return this.isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
-      : await this.downloadRemoteFile(
+      : await this.downloadHelper.downloadRemoteFile(
           downloadUrl,
           headersFromProto(headers),
           signal
@@ -95,34 +92,6 @@ export class ClientDownload {
       size
     };
   }
-
-  async downloadRemoteFile(
-    url: string,
-    reqHeaders: Record<string, string>,
-    signal?: AbortSignal
-  ): Promise<DownloadResponse> {
-    const { statusCode, body, headers } = await request(url, {
-      dispatcher: this.httpClient,
-      headers: reqHeaders,
-      signal
-    });
-
-    if (400 <= statusCode && statusCode < 500) {
-      throw new NetworkError400(
-        `Http error: statusCode: ${statusCode} url: ${url.toString()}`
-      );
-    }
-    if (statusCode != 200) {
-      throw Error(
-        `Http error: statusCode: ${statusCode} url: ${url.toString()}`
-      );
-    }
-
-    return {
-      content: Readable.toWeb(body),
-      size: Number(headers['content-length'])
-    };
-  }
 }
 
 export function headersFromProto(
@@ -130,6 +99,3 @@ export function headersFromProto(
 ): Record<string, string> {
   return Object.fromEntries(headers.map(({ name, value }) => [name, value]));
 }
-
-/** Throws when a status code of the downloading URL was in range [400, 500). */
-export class NetworkError400 extends Error {}

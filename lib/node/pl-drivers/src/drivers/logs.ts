@@ -5,7 +5,7 @@ import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
 import * as sdk from '@milaboratory/sdk-model';
 
-export class LogsDriver {
+export class LogsDriver implements sdk.LogsDriver {
   constructor(
     private readonly logsStreamDriver: LogsStreamDriver,
     private readonly downloadDriver: DownloadDriver

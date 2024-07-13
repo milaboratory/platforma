@@ -36,16 +36,30 @@ import {
   BlobDriver,
   LocalBlobHandle,
   LocalBlobHandleAndSize,
-  LogsDriver,
+  ReadyLogHandle,
   RemoteBlobHandle,
   RemoteBlobHandleAndSize,
   StreamingApiResponse
 } from '@milaboratory/sdk-model';
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 
+export type DownloadDriverOps = {
+  /** 
+   * A soft limit of the amount of blob storage, in bytes.
+   * Once exceeded, the download driver will start deleting blobs one by one
+   * when they become unneeded.
+   * */
+  cacheSoftSizeBytes: number;
+  /**
+   * Max number of concurrent downloads while calculating computable states
+   * derived from this driver
+   * */
+  nConcurrentDownloads: number;
+};
+
 /** DownloadDriver holds a queue of downloading tasks,
  * and notifies every watcher when a file were downloaded. */
-export class DownloadDriver implements BlobDriver, LogsDriver {
+export class DownloadDriver implements BlobDriver {
   /** Represents a Resource Id to the path of a blob as a map. */
   private idToDownload: Map<ResourceId, Download> = new Map();
 
@@ -67,11 +81,13 @@ export class DownloadDriver implements BlobDriver, LogsDriver {
     private readonly clientLogs: ClientLogs,
     private readonly saveDir: string,
     private readonly signer: Signer,
-    cacheSoftSizeBytes: number,
-    nConcurrentDownloads: number = 10
+    ops: DownloadDriverOps
   ) {
-    this.cache = new FilesCache(cacheSoftSizeBytes);
-    this.downloadQueue = new TaskProcessor(this.logger, nConcurrentDownloads);
+    this.cache = new FilesCache(ops.cacheSoftSizeBytes);
+    this.downloadQueue = new TaskProcessor(
+      this.logger,
+      ops.nConcurrentDownloads
+    );
   }
 
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
@@ -344,16 +360,11 @@ export class DownloadDriver implements BlobDriver, LogsDriver {
   }
 
   async lastLines(
-    handle: AnyLogHandle,
+    handle: ReadyLogHandle,
     lineCount: number,
     offsetBytes?: number, // if 0n, then start from the end.
     searchStr?: string
   ): Promise<StreamingApiResponse> {
-    if (!isReadyLogHandle(handle))
-      throw new Error(
-        `not ready log handle was passed to ready log driver, handle: ${handle}`
-      );
-
     const resp = await this.clientLogs.lastLines(
       handleToData(handle),
       lineCount,
@@ -371,16 +382,11 @@ export class DownloadDriver implements BlobDriver, LogsDriver {
   }
 
   async readText(
-    handle: AnyLogHandle,
+    handle: ReadyLogHandle,
     lineCount: number,
     offsetBytes?: number,
     searchStr?: string
   ): Promise<StreamingApiResponse> {
-    if (!isReadyLogHandle(handle))
-      throw new Error(
-        `not ready log handle was passed to ready log driver, handle: ${handle}`
-      );
-
     const resp = await this.clientLogs.lastLines(
       handleToData(handle),
       lineCount,

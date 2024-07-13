@@ -7,7 +7,6 @@ import {
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream';
-import { ClientDownload, NetworkError400 } from '../clients/download';
 import {
   ChangeSource,
   Computable,
@@ -18,6 +17,8 @@ import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
 import { FilesCache } from './files_cache';
+import { Dispatcher } from 'undici';
+import { DownloadHelper, NetworkError400 } from '../helpers/download';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -33,9 +34,17 @@ export interface PathResult {
   error?: string;
 }
 
+export type DownloadUrlDriverOps = {
+  cacheSoftSizeBytes: number;
+  withGunzip: boolean;
+  nConcurrentDownloads: number;
+};
+
 /** Downloads .tar or .tar.gz archives by given URLs
  * and extracts them into saveDir. */
 export class DownloadUrlDriver implements DownloadUrlSyncReader {
+  private readonly downloadHelper: DownloadHelper;
+
   private urlToDownload: Map<string, Download> = new Map();
   private downloadQueue: TaskProcessor;
 
@@ -45,13 +54,9 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
   constructor(
     private readonly logger: MiLogger,
-    private readonly clientDownload: ClientDownload,
+    private readonly httpClient: Dispatcher,
     private readonly saveDir: string,
-    private readonly opts: {
-      cacheSoftSizeBytes: number;
-      withGunzip: boolean;
-      nConcurrentDownloads: number;
-    } = {
+    private readonly opts: DownloadUrlDriverOps = {
       cacheSoftSizeBytes: 50 * 1024 * 1024,
       withGunzip: true,
       nConcurrentDownloads: 50
@@ -62,6 +67,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
       this.opts.nConcurrentDownloads
     );
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
+    this.downloadHelper = new DownloadHelper(httpClient);
   }
 
   /** Use to get a path result inside a computable context */
@@ -108,7 +114,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
   async downloadUrl(task: Download, callerId: string) {
-    await task.download(this.clientDownload, this.opts.withGunzip);
+    await task.download(this.downloadHelper, this.opts.withGunzip);
     // Might be undefined if a error happened
     if (task.getPath()?.path != undefined) this.cache.addCache(task, callerId);
   }
@@ -201,7 +207,7 @@ class Download {
     if (!this.done) this.change.attachWatcher(w);
   }
 
-  async download(clientDownload: ClientDownload, withGunzip: boolean) {
+  async download(clientDownload: DownloadHelper, withGunzip: boolean) {
     try {
       const sizeBytes = await this.downloadAndUntar(
         clientDownload,
@@ -222,7 +228,7 @@ class Download {
   }
 
   private async downloadAndUntar(
-    clientDownload: ClientDownload,
+    clientDownload: DownloadHelper,
     withGunzip: boolean,
     signal: AbortSignal
   ): Promise<number> {

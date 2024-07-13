@@ -43,7 +43,7 @@ test('should get all logs', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
     const logs = new LogsDriver(logsStream, download);
 
@@ -95,7 +95,7 @@ test('should get last line with a prefix', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
     const logs = new LogsDriver(logsStream, download);
 
@@ -149,7 +149,7 @@ test('should get log smart object and get log lines from that', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
     const logs = new LogsDriver(logsStream, download);
 

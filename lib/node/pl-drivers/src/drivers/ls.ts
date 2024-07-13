@@ -115,6 +115,7 @@ export class LsDriver implements InternalLsDriver {
       items: direntsWithStats
         .map((ds) => toListItem(logger, ds))
         .filter((item) => item != undefined)
+        .map((item) => item!)
     };
 
     return resp;

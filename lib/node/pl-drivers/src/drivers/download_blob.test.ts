@@ -33,7 +33,7 @@ test('should download a blob and read its content', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      {cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10}
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -61,7 +61,7 @@ test('should get on demand blob without downloading a blob', async () => {
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      {cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10}
     );
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
@@ -86,7 +86,7 @@ test('should get undefined when releasing a blob from a small cache and the blob
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      1
+      {cacheSoftSizeBytes: 1, nConcurrentDownloads: 10}
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 
@@ -123,7 +123,7 @@ test('should get the blob when releasing a blob, but a cache is big enough and i
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
-      700 * 1024
+      {cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10}
     );
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
 

@@ -18,6 +18,12 @@ import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratory/sdk-model';
+import { PollingOps } from './polling_ops';
+
+export type LogsStreamDriverOps = PollingOps & {
+  /** Max number of concurrent requests to log streaming backend while calculating computable states */
+  nConcurrentGetLogs: number;
+};
 
 export class LogsStreamDriver implements sdk.LogsDriver {
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
@@ -31,13 +37,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 
   constructor(
     private readonly clientLogs: ClientLogs,
-    private readonly opts: {
-      nConcurrentGetLogs: number;
-      /** How frequent update statuses. */
-      pollingInterval: number;
-      /** When to stop a loop. */
-      stopPollingDelay: number;
-    } = {
+    private readonly opts: LogsStreamDriverOps = {
       nConcurrentGetLogs: 10,
       pollingInterval: 1000,
       stopPollingDelay: 1000

@@ -13,11 +13,7 @@ test('should download a tar archive and extracts its content and then deleted', 
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
-    const driver = new DownloadUrlDriver(
-      logger,
-      createDownloadClient(logger, client),
-      dir
-    );
+    const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
     const url = new URL(
       'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
@@ -49,11 +45,7 @@ test('should show a error when 403 status code', async () => {
     await TestHelpers.withTempRoot(async (client) => {
       const logger = new ConsoleLoggerAdapter();
       const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test1-'));
-      const driver = new DownloadUrlDriver(
-        logger,
-        createDownloadClient(logger, client),
-        dir
-      );
+      const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
       const url = new URL(
         'https://block.registry.platforma.bio/releases/v1/milaboratory/NOT_FOUND'
@@ -79,11 +71,7 @@ test('should abort a downloading process when we reset a state of a computable',
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test2-'));
-    const driver = new DownloadUrlDriver(
-      logger,
-      createDownloadClient(logger, client),
-      dir
-    );
+    const driver = new DownloadUrlDriver(logger, client.httpDispatcher, dir);
 
     const url = new URL(
       'https://block.registry.platforma.bio/releases/v1/milaboratory/enter-numbers/0.4.1/frontend.tgz'
