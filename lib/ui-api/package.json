@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-ui",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Block UI and configuration SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -8,19 +8,20 @@
   "scripts": {
     "build": "node ./scripts/save-package-version.js && tsup",
     "type-check": "node ./scripts/save-package-version.js && tsc --noEmit --composite false",
-    "test": "node ./scripts/save-package-version.js && jest"
+    "test": "node ./scripts/save-package-version.js && jest",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "dependencies": {
-    "@milaboratory/sdk-model": "^1.1.24",
-    "@milaboratory/ts-helpers": "^1.0.17"
+    "@milaboratory/sdk-model": "^1.2.0"
   },
   "files": [
     "dist/**/*"
   ],
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "prettier": "^3.3.2",
     "jest": "^29.6.4",
-    "ts-jest": "^29.1.5",
+    "ts-jest": "^29.2.2",
     "tsup": "^8.1.0",
     "typescript": "^5.4.5"
   },
