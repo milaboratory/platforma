@@ -356,6 +356,15 @@ export class PlTreeNodeAccessor {
     return JSON.parse(result) as T;
   }
 
+  /**
+   * Can be used to passe a higher level accessor that will wrap the resource and throw its
+   * errors on node resolution.
+   * */
+  public toEntryAccessor(): PlTreeEntryAccessor {
+    return new PlTreeEntryAccessor(this.accessorData, this.tree, this.id, this.instanceData);
+  }
+
+  /** Can be passed to nested computable. */
   public persist(): PlTreeEntry {
     return new PlTreeEntry(this.accessorData, this.resource.id);
   }
