@@ -223,6 +223,9 @@ export class PlTreeNodeAccessor {
 
       if (next === undefined) return undefined;
 
+      if (step.pureFieldErrorToUndefined && next.value === undefined && next.error !== undefined)
+        return undefined;
+
       if ((!step.ignoreError || next.value === undefined) && next.error !== undefined)
         throw new PlError(
           `error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`

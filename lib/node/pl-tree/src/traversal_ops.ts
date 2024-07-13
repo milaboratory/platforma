@@ -20,6 +20,12 @@ export type CommonFieldTraverseOps = {
 
   /** Will not mark current context as unstable, if field is not found. */
   stableIfNotFound?: true;
+
+  /**
+   * If encounter field with error and no value, will silently terminate the
+   * traversal and return undefined.
+   * */
+  pureFieldErrorToUndefined?: true;
 };
 
 export type ResourceTraversalOps = CommonTraversalOps & {
