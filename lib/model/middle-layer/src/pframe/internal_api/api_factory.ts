@@ -20,7 +20,7 @@ export interface BinaryDataInfo<Blob = PFrameBlobId> {
   parts: Record<string, BinaryChunkInfo<Blob>>;
 }
 
-export type DataInfo = JsonDataInfo | BinaryDataInfo;
+export type DataInfo<Blob = PFrameBlobId> = JsonDataInfo<Blob> | BinaryDataInfo<Blob>;
 
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
