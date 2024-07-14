@@ -93,6 +93,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
     const testDir = topLevelDir.find((d) =>
       d.name.includes('ls_dir_structure')
     );
+    expect(testDir).toBeDefined();
     expect(testDir!.type).toEqual('dir');
     expect(testDir!.fullPath).toEqual('/ls_dir_structure_test');
     expect(testDir!.name).toEqual('ls_dir_structure_test');
