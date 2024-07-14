@@ -1,4 +1,5 @@
-import { AxisId, AxisSpec, PColumnId, PColumnSpec } from './spec';
+import { PObjectId } from '../../pool';
+import { AxisId, AxisSpec, PColumnSpec } from './spec';
 
 /** Unified spec object for axes and columns */
 export type PTableColumnSpec = {
@@ -7,7 +8,7 @@ export type PTableColumnSpec = {
   spec: AxisSpec;
 } | {
   type: 'column';
-  id: PColumnId;
+  id: PObjectId;
   spec: PColumnSpec;
 }
 
@@ -17,7 +18,7 @@ export type PTableColumnIdAxis = {
 }
 export type PTableColumnIdColumn = {
   type: 'column';
-  id: PColumnId;
+  id: PObjectId;
 }
 /** Unified PTable column identifier */
 export type PTableColumnId = PTableColumnIdAxis | PTableColumnIdColumn;

@@ -1,5 +1,6 @@
+import { PObjectId } from '../../pool';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { PColumnId, PColumnIdAndSpec, PColumnSpec } from './spec';
+import { PColumnIdAndSpec, PColumnSpec } from './spec';
 import { CalculateTableDataRequest, CalculateTableDataResponse } from './table_calculate';
 import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 
@@ -12,7 +13,7 @@ export interface PFrame {
   findColumns(request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(columnId: PColumnId): Promise<PColumnSpec>;
+  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(): Promise<PColumnIdAndSpec[]>;

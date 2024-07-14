@@ -1,4 +1,4 @@
-import { PObjectSpec } from '../../outputs';
+import { PObjectId, PObjectSpec } from '../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType =
@@ -93,14 +93,11 @@ export interface PColumnSpec extends PObjectSpec {
   readonly axesSpec: AxesSpec;
 }
 
-/** Type of column id (now string, can be branded in teh future) */
-export type PColumnId = string;
-
 /** Columns in a PFrame also have internal identifier, this object represents
  * combination of specs and such id */
 export interface PColumnIdAndSpec {
   /** Internal column id within the PFrame */
-  readonly columnId: PColumnId;
+  readonly columnId: PObjectId;
 
   /** Column spec */
   readonly spec: PColumnSpec;
@@ -130,7 +127,7 @@ export type AxesId = AxisId[];
 
 /** Extracts axes ids from axes spec array from column spec */
 export function getAxesId(spec: AxesSpec): AxesId {
-  return spec.map(s => {
+  return spec.map((s) => {
     const { type, name, domain } = s;
     return { type, name, domain };
   });

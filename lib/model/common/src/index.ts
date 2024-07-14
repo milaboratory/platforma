@@ -6,4 +6,4 @@ export * from './driver_kit';
 export * from './section';
 export * from './ref';
 export * from './common_types';
-export * from './outputs';
+export * from './pool';

@@ -1,4 +1,4 @@
-import { BlobDriver, LogsDriver, LsDriver } from './drivers';
+import { BlobDriver, LogsDriver, LsDriver, PFrameDriver } from './drivers';
 
 /** Set of all drivers exposed in UI SDK via the platforma object. */
 export interface DriverKit {
@@ -17,4 +17,7 @@ export interface DriverKit {
    * converted into blobs using standard workflow library functions.
    * */
   readonly lsDriver: LsDriver;
+
+  /** Driver allowing to instantiate PFrame */
+  readonly pFrameDriver: PFrameDriver;
 }

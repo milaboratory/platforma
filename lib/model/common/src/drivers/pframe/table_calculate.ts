@@ -1,7 +1,6 @@
-import { PColumnId } from './spec';
 import { PTableColumnId, PTableColumnSpec } from './table_common';
 import { PTableVector } from './data';
-
+import { PObjectId } from '../../pool';
 
 /** Defines a terminal column node in the join request tree */
 export interface ColumnJoinEntry {
@@ -9,7 +8,7 @@ export interface ColumnJoinEntry {
   readonly type: 'column';
 
   /** Local column id */
-  readonly columnId: PColumnId;
+  readonly columnId: PObjectId;
 }
 
 /**
@@ -67,11 +66,7 @@ export interface OuterJoin {
  * the PColumns. Common axis are those axis which have equal {@link AxisId} derived
  * from the columns axes spec.
  * */
-export type JoinEntry =
-  | ColumnJoinEntry
-  | InnerJoin
-  | FullJoin
-  | OuterJoin;
+export type JoinEntry = ColumnJoinEntry | InnerJoin | FullJoin | OuterJoin;
 
 /** Container representing whole data stored in specific PTable column. */
 export interface FullPTableColumnData {
@@ -82,8 +77,10 @@ export interface FullPTableColumnData {
   readonly data: PTableVector;
 }
 
-/** Defines how should comparison be made between column or axis value with the
- * reference value. */
+/**
+ * Defines how should comparison be made between column or axis value with the
+ * reference value.
+ * */
 export type SingleValuePredicateOperatorType = 'Equal';
 
 /** Filtering predicate for a single axis or column value */
@@ -124,7 +121,7 @@ export type PTableSorting = {
 
   /** Sorting in respect to NA and absent values */
   naAndAbsentAreLeastValues: boolean;
-}
+};
 
 /** Request to create and retrieve entirety of data of PTable. */
 export interface CalculateTableDataRequest {

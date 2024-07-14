@@ -1,11 +1,11 @@
-import { AxisId, PColumnId } from './spec';
+import { AxisId, PObjectId } from './spec';
 import { PTableRecordFilter } from './table_calculate';
 import { PTableVector } from './data';
 
 /** Calculate set of unique values for a specific axis for the filtered set of records */
 export interface UniqueValuesRequest {
   /** Target axis id */
-  readonly columnId: PColumnId;
+  readonly columnId: PObjectId;
 
   /** Target axis id, if not specified calculates unique column values */
   readonly axis?: AxisId;
