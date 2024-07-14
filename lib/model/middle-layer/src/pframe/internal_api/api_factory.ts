@@ -3,21 +3,21 @@ import { PColumnId, PColumnSpec } from '@milaboratory/sdk-model';
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;
 
-export interface JsonDataInfo {
+export type JsonDataInfo<Blob = PFrameBlobId> = {
   type: 'JsonPartitioned';
   partitionKeyLength: number;
-  parts: Map<string, PFrameBlobId>;
+  parts: Record<string, Blob>;
+};
+
+export interface BinaryChunkInfo<Blob = PFrameBlobId> {
+  index: Blob;
+  values: Blob;
 }
 
-export interface BinaryChunkInfo {
-  index: PFrameBlobId;
-  values: PFrameBlobId;
-}
-
-export interface BinaryDataInfo {
+export interface BinaryDataInfo<Blob = PFrameBlobId> {
   type: 'BinaryPartitioned';
   partitionKeyLength: number;
-  parts: Map<string, BinaryChunkInfo>;
+  parts: Record<string, BinaryChunkInfo<Blob>>;
 }
 
 export type DataInfo = JsonDataInfo | BinaryDataInfo;
@@ -28,9 +28,9 @@ export type FilePath = string;
 
 /** Data source allows PFrame to retrieve the data blobs for columns with assigned data info. */
 export type PFrameDataSource = {
-  /** 
+  /**
    * PFrame may notify storage backend about its plans to use particular blobs in the future.
-   * Storage backend will do its best to preload specified blob so the subsequence
+   * Storage backend will do its best to preload specified blob so the subsequent
    * {@link resolveBlob} will quickly return preloaded file path.
    */
   preloadBlob(blobIds: PFrameBlobId[]): Promise<void>;
