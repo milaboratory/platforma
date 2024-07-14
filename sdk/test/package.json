@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-test",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Typescript Block Test Helpers",
   "type": "module",
   "main": "dist/lib.js",
@@ -15,7 +15,7 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-middle-layer": "^1.6.1",
+    "@milaboratory/pl-middle-layer": "^1.6.2",
     "vitest": "^2.0.2"
   },
   "devDependencies": {
