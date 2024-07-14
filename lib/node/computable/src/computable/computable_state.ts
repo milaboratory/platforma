@@ -404,10 +404,6 @@ function renderSelfState<T>(
 
     return { kernel, ctx, selfWatcher, iResult };
   } catch (error: unknown) {
-    // TODO maybe it is not correct...
-    // all errors are considered unstable
-    ctx.stable = false;
-
     return { kernel, ctx, selfWatcher, iResult: { error } };
   } finally {
     // reset call-specific state
