@@ -3,24 +3,24 @@ import { PTableVector } from './data';
 import { PObjectId } from '../../pool';
 
 /** Defines a terminal column node in the join request tree */
-export interface ColumnJoinEntry {
+export interface ColumnJoinEntry<PColumn> {
   /** Node type discriminator */
   readonly type: 'column';
 
   /** Local column id */
-  readonly columnId: PObjectId;
+  readonly columnId: PColumn;
 }
 
 /**
  * Defines a join request tree node that will output only records present in
  * all child nodes ({@link entries}).
  * */
-export interface InnerJoin {
+export interface InnerJoin<PColumn> {
   /** Node type discriminator */
   readonly type: 'inner';
 
   /** Child nodes to be inner joined */
-  readonly entries: JoinEntry[];
+  readonly entries: JoinEntry<PColumn>[];
 }
 
 /**
@@ -29,12 +29,12 @@ export interface InnerJoin {
  * that lacks corresponding combinations of axis values will be marked as absent,
  * see {@link PTableVector.absent}.
  * */
-export interface FullJoin {
+export interface FullJoin<PColumn> {
   /** Node type discriminator */
   readonly type: 'full';
 
   /** Child nodes to be fully outer joined */
-  readonly entries: JoinEntry[];
+  readonly entries: JoinEntry<PColumn>[];
 }
 
 /**
@@ -47,16 +47,16 @@ export interface FullJoin {
  * This node can be thought as a chain of SQL LEFT JOIN operations starting from
  * the {@link primary} node and adding {@link secondary} nodes one by one.
  * */
-export interface OuterJoin {
+export interface OuterJoin<PColumn> {
   /** Node type discriminator */
   readonly type: 'outer';
 
   /** Primes the join operation. Left part of LEFT JOIN. */
-  readonly primary: JoinEntry;
+  readonly primary: JoinEntry<PColumn>;
 
   /** Driven nodes, giving their values only if primary node have corresponding
    * nodes. Right parts of LEFT JOIN chain. */
-  readonly secondary: JoinEntry[];
+  readonly secondary: JoinEntry<PColumn>[];
 }
 
 /**
@@ -66,7 +66,11 @@ export interface OuterJoin {
  * the PColumns. Common axis are those axis which have equal {@link AxisId} derived
  * from the columns axes spec.
  * */
-export type JoinEntry = ColumnJoinEntry | InnerJoin | FullJoin | OuterJoin;
+export type JoinEntry<PColumn> =
+  | ColumnJoinEntry<PColumn>
+  | InnerJoin<PColumn>
+  | FullJoin<PColumn>
+  | OuterJoin<PColumn>;
 
 /** Container representing whole data stored in specific PTable column. */
 export interface FullPTableColumnData {
@@ -124,9 +128,9 @@ export type PTableSorting = {
 };
 
 /** Request to create and retrieve entirety of data of PTable. */
-export interface CalculateTableDataRequest {
+export interface CalculateTableDataRequest<JPColumn> {
   /** Join tree to populate the PTable */
-  readonly src: JoinEntry;
+  readonly src: JoinEntry<JPColumn>;
 
   /** Record filters */
   readonly filters: PTableRecordFilter[];

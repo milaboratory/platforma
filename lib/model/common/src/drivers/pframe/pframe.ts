@@ -1,7 +1,10 @@
 import { PObjectId } from '../../pool';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { PColumnIdAndSpec, PColumnSpec } from './spec';
-import { CalculateTableDataRequest, CalculateTableDataResponse } from './table_calculate';
+import {
+  CalculateTableDataRequest,
+  CalculateTableDataResponse
+} from './table_calculate';
 import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 
 /** Read interface exposed by PFrames library */
@@ -19,7 +22,9 @@ export interface PFrame {
   listColumns(): Promise<PColumnIdAndSpec[]>;
 
   /** Calculates data for the table and returns complete data representation of it */
-  calculateTableData(request: CalculateTableDataRequest): Promise<CalculateTableDataResponse>;
+  calculateTableData(
+    request: CalculateTableDataRequest<PObjectId>
+  ): Promise<CalculateTableDataResponse>;
 
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse>;

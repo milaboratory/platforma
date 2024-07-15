@@ -9,11 +9,15 @@ export interface PObjectSpec {
   readonly annotations?: Record<string, string>;
 }
 
-/** Stable pobject id */
+/** Stable PObject id */
 export type PObjectId = Branded<string, 'PColumnId'>;
 
-/** Full PObject */
-export interface PObject<DataHandle> {
+/**
+ * Full PObject representation.
+ *
+ * @template Data type of the object referencing or describing the "data" part of the PObject
+ * */
+export interface PObject<Data> {
   /** Fully rendered PObjects are assigned a stable identifier. */
   readonly id: PObjectId;
 
@@ -21,5 +25,5 @@ export interface PObject<DataHandle> {
   readonly spec: PObjectSpec;
 
   /** A handle to data object */
-  readonly data: DataHandle;
+  readonly data: Data;
 }

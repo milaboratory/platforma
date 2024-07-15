@@ -1,6 +1,3 @@
-import { PDataHandle } from './data';
-import { PObject } from './pool';
-
 /** Universal reference type, allowing to set block connections. It is crucial
  * that {@link __isRef} is present and equal to true, internal logic relies on
  * this marker to build block dependency trees. */
@@ -24,10 +21,4 @@ export type Option = {
 
   /** Label to be present for the user in i.e. drop-down list */
   readonly label: string;
-};
-
-/** Result pool entry */
-export type ResultPoolEntry = {
-  readonly ref: Ref;
-  readonly obj: PObject<PDataHandle>;
 };
