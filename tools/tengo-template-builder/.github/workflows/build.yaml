@@ -1,5 +1,9 @@
 name: Build NPM package
 on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - 'main'
   push:
     branches:
       - 'main'
@@ -22,7 +26,7 @@ jobs:
       app-name-slug: 'tengo-template-builder'
       notify-telegram: true
 
-      node-version: '18.x'
+      node-version: '20.x'
       is-electron-application: 'false'
       always-auth: 'true'
 
