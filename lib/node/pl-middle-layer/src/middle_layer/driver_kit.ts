@@ -15,7 +15,8 @@ import { PlClient } from '@milaboratory/pl-client-v2';
 import { createUploadBlobClient } from '@milaboratory/pl-drivers';
 import { createUploadProgressClient } from '@milaboratory/pl-drivers';
 import { createLsFilesClient } from '@milaboratory/pl-drivers';
-import { DownloadUrlDriver } from '@milaboratory/pl-drivers';
+import { BackendDriverKit } from '@milaboratory/pl-middle-layer-model';
+import { PFrameDriver } from '../pframe_driver';
 
 /**
  * Drivers offered by the middle-layer for internal consumers,
@@ -24,13 +25,15 @@ import { DownloadUrlDriver } from '@milaboratory/pl-drivers';
  * This intertface is basically a version of the DriverKit from
  * UI SDK with extended API.
  * */
-export interface MiddleLayerDriverKit extends Sdk.DriverKit {
+export interface MiddleLayerDriverKit extends BackendDriverKit {
   // override with wider interface
   readonly blobDriver: DownloadDriver;
   // override with wider interface
   readonly logDriver: LogsDriver;
   // override with wider interface
   readonly lsDriver: InternalLsDriver;
+  // override with wider interface
+  readonly pFrameDriver: PFrameDriver;
 
   /**
    * Signer is initialized from local secret in drivers initialization routine,
@@ -80,12 +83,15 @@ export async function initDriverKit(
   const logDriver = new LogsDriver(logsStreamDriver, blobDriver);
   const lsDriver = new LsDriver(logger, lsClient, pl, signer, ops.localStorageNameToPath);
 
+  const pFrameDriver = new PFrameDriver(blobDriver);
+
   return {
     blobDriver,
     logDriver,
     lsDriver,
     signer,
-    uploadDriver
+    uploadDriver,
+    pFrameDriver
   };
 }
 

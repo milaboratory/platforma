@@ -7,9 +7,13 @@ import {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
   ResourceType as ResourceTypeFromSDK,
-  JsRenderInternal
+  JsRenderInternal,
+  Option,
+  PSpecPredicate
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
+import { ResultPool } from '../pool/result_pool';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -219,6 +223,29 @@ export class JsExecutionContext
       'getOnDemandBlobContentHandle',
       this.env.driverKit.blobDriver.getOnDemandBlob(resourceInfo)
     );
+  }
+
+  //
+  // Result Pool
+  //
+
+  private _resultPool: ResultPool | undefined = undefined;
+  private get resultPool(): ResultPool {
+    if (this._resultPool === undefined) {
+      if (this.computableCtx === undefined)
+        throw new Error(
+          "can't use result pool in this context (most porbably called from the future mapper)"
+        );
+      this._resultPool = notEmpty(
+        this.blockCtx.getResultsPool,
+        'getResultsPool'
+      )(this.computableCtx);
+    }
+    return this._resultPool;
+  }
+
+  calculateOptions(predicate: PSpecPredicate): Option[] {
+    return this.resultPool.calculateOptions(predicate);
   }
 
   //
@@ -447,6 +474,13 @@ export class JsExecutionContext
       exportCtxFunction('getOnDemandBlobContentHandle', (handle) => {
         return this.exportSingleValue(
           this.getOnDemandBlobContentHandle(this.vm.getString(handle)),
+          undefined
+        );
+      });
+
+      exportCtxFunction('calculateOptions', (predicate) => {
+        return this.exportObjectUniversal(
+          this.calculateOptions(this.importObjectViaJson(predicate) as PSpecPredicate),
           undefined
         );
       });

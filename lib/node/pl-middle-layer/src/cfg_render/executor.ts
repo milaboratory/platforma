@@ -11,8 +11,9 @@ import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratory
 import { Cfg } from '@milaboratory/sdk-ui';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
-import { BlockContextAny, NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx';
+import { BlockContextAny } from '../middle_layer/block_ctx';
 import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import { NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx_unsafe';
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;

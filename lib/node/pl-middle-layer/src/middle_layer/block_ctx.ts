@@ -1,24 +1,9 @@
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import { blockFrontendStateKey, projectFieldName } from '../model/project_model';
-import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-ui';
 import { ComputableCtx } from '@milaboratory/computable';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { Optional } from 'utility-types';
-
-type SC = StdCtx<unknown, unknown>;
-type SCAO = Pick<SC, '$blockId' | '$ui' | '$args'>;
-export type MatStdCtxArgsOnly = {
-  [Var in keyof SCAO]: SCAO[Var] extends PlResourceEntry
-    ? PlTreeEntry | ((cCtx: ComputableCtx) => PlTreeEntry | undefined) | undefined
-    : SCAO[Var];
-};
-export type MatStdCtx = {
-  [Var in keyof SC]: SC[Var] extends PlResourceEntry
-    ? PlTreeEntry | ((cCtx: ComputableCtx) => PlTreeEntry | undefined) | undefined
-    : SC[Var];
-};
-
-export const NonKeyCtxFields = ['$prod', '$staging'];
+import { ResultPool } from '../pool/result_pool';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
@@ -29,19 +14,10 @@ export type BlockContextArgsOnly = {
 export type BlockContextFull = BlockContextArgsOnly & {
   readonly prod: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
   readonly staging: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
+  readonly getResultsPool: (cCtx: ComputableCtx) => ResultPool;
 };
 
-export type BlockContextAny = Optional<BlockContextFull, 'prod' | 'staging'>;
-
-export function toCfgContext(ctx: BlockContextAny): MatStdCtx {
-  return {
-    $blockId: ctx.blockId,
-    $args: JSON.parse(ctx.args),
-    $ui: ctx.uiState !== undefined ? JSON.parse(ctx.uiState) : undefined,
-    $prod: ctx.prod,
-    $staging: ctx.staging
-  };
-}
+export type BlockContextAny = Optional<BlockContextFull, 'prod' | 'staging' | 'getResultsPool'>;
 
 export function constructBlockContextArgsOnly(
   projectNode: PlTreeNodeAccessor,
@@ -86,6 +62,7 @@ export function constructBlockContext(
           ignoreError: true
         })
         ?.persist();
-    }
+    },
+    getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId)
   };
 }
