@@ -11,7 +11,8 @@ import {
   ResourceType,
   resourceTypesEqual,
   resourceTypeToString,
-  NullResourceId
+  NullResourceId,
+  OptionalResourceId
 } from '@milaboratory/pl-client-v2';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 import {
@@ -20,6 +21,7 @@ import {
   GetFieldStep,
   ResourceTraversalOps
 } from './traversal_ops';
+import { ValueOrError } from './value_or_error';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -37,16 +39,6 @@ export type TreeAccessorInstanceData = {
   readonly guard: UsageGuard;
   readonly ctx: ComputableCtx;
 };
-
-export type ValueOrError<V, E> =
-  | {
-      ok: true;
-      value: V;
-    }
-  | {
-      ok: false;
-      error: E;
-    };
 
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
@@ -187,6 +179,11 @@ export class PlTreeNodeAccessor {
   public get id(): ResourceId {
     this.instanceData.guard();
     return this.resource.id;
+  }
+
+  public get originalId(): OptionalResourceId {
+    this.instanceData.guard();
+    return this.resource.originalResourceId;
   }
 
   public get resourceType(): ResourceType {
