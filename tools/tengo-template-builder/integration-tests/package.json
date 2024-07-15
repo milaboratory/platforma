@@ -4,7 +4,8 @@
   "description": "",
   "type": "module",
   "workspaces": [
-    "library-1"
+    "library-1",
+    "library-3"
   ],
   "scripts": {
   },

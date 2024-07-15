@@ -93,7 +93,10 @@ function parseSingleSourceLine(line: string, getTemplateIdRE: Map<string, RegExp
       if (!getTemplateIdRE.has(iInfo.module)) {
         getTemplateIdRE.set(iInfo.module, newGetTemplateIdRE(iInfo.alias))
       }
-      return { line, getTemplateIdRE, artifact: undefined }
+      if (iInfo.module == "plapi") {
+        // No need to search for artifact: this is template module
+        return { line, getTemplateIdRE, artifact: undefined }
+      }
     }
 
     const artifact = parseArtifactName(iInfo.module, 'library', localPackageName)
