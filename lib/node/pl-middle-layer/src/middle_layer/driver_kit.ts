@@ -15,8 +15,7 @@ import { PlClient } from '@milaboratory/pl-client-v2';
 import { createUploadBlobClient } from '@milaboratory/pl-drivers';
 import { createUploadProgressClient } from '@milaboratory/pl-drivers';
 import { createLsFilesClient } from '@milaboratory/pl-drivers';
-import { BackendDriverKit } from '@milaboratory/pl-middle-layer-model';
-import { PFrameDriver } from '../pframe_driver';
+import { PFrameDriver } from '../pool';
 
 /**
  * Drivers offered by the middle-layer for internal consumers,
@@ -25,7 +24,7 @@ import { PFrameDriver } from '../pframe_driver';
  * This intertface is basically a version of the DriverKit from
  * UI SDK with extended API.
  * */
-export interface MiddleLayerDriverKit extends BackendDriverKit {
+export interface MiddleLayerDriverKit extends Sdk.DriverKit {
   // override with wider interface
   readonly blobDriver: DownloadDriver;
   // override with wider interface

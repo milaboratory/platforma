@@ -1,10 +1,15 @@
 import { ComputableCtx } from '@milaboratory/computable';
-import { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import {
   Option,
+  PObject,
   PObjectSpec,
   PSpecPredicate,
   Ref,
+  ResultCollection,
+  ResultPoolEntry,
+  TreeNodeAccessor,
+  ValueOrError,
   executePSpecPredicate
 } from '@milaboratory/sdk-ui';
 import { notEmpty } from '@milaboratory/ts-helpers';
@@ -16,7 +21,8 @@ import {
 } from '../model/project_model';
 import { allBlocks, stagingGraph } from '../model/project_model_util';
 import { Pl } from '@milaboratory/pl-client-v2';
-import { Writable } from 'utility-types';
+import { Optional, Writable } from 'utility-types';
+import { derivePObjectId } from './data';
 
 /** All exported results are addressed  */
 export type ResultKey = Pick<Ref, 'blockId' | 'name'>;
@@ -52,11 +58,11 @@ interface PoolResult {
   readonly spec?: PObjectSpec;
 
   /**
-   * Retrive the data resource acessor, if {@link ignoreError} is true, any errors
-   * will be rendered to undefined, if false, error in data field or data resource
-   * will be thrown by the method.
+   * Returns data accessor, or error, or undefined if data not yet available.
+   * If data fuinction itself is not defined, this means that corresponding context
+   * was not rendered.
    * */
-  data?(ignoreError: boolean): PlTreeNodeAccessor | undefined;
+  data?(): ValueOrError<PlTreeNodeAccessor, string> | undefined;
 }
 
 export interface ExtendedOption extends Option {
@@ -90,6 +96,122 @@ export class ResultPool {
 
   public getBlockLabel(blockId: string): string {
     return notEmpty(this.blocks.get(blockId)?.info?.label, `block "${blockId}" not found`);
+  }
+
+  public getData(): ResultCollection<PObject<PlTreeNodeAccessor>> {
+    const resultWithErrors = this.getDataWithErrors();
+    const entries: ResultPoolEntry<PObject<PlTreeNodeAccessor>>[] = [];
+    for (const res of resultWithErrors.entries)
+      if (res.obj.id !== undefined && res.obj.data.ok)
+        entries.push({
+          ref: res.ref,
+          obj: {
+            id: res.obj.id,
+            spec: res.obj.spec,
+            data: res.obj.data.value
+          }
+        });
+    return { entries, isComplete: resultWithErrors.isComplete };
+  }
+
+  public getDataWithErrors(): ResultCollection<
+    Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
+  > {
+    const entries: ResultPoolEntry<
+      Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
+    >[] = [];
+    let isComplete = true;
+
+    const tryAddEntry = (blockId: string, exportName: string, result: PoolResult) => {
+      if (result.spec !== undefined && result.hasData === true && result.data !== undefined) {
+        const data = result.data();
+        if (data !== undefined) {
+          entries.push({
+            ref: {
+              __isRef: true,
+              blockId,
+              name: exportName
+            },
+            obj: {
+              id: data.ok ? derivePObjectId(result.spec, data.value) : undefined,
+              spec: result.spec,
+              data
+            }
+          });
+        } else isComplete = false; // because data will eventually be resolved
+      }
+    };
+
+    for (const [blockId, block] of this.blocks) {
+      const exportsProcessed = new Set<string>();
+
+      if (block.prod !== undefined) {
+        if (!block.prod.locked) isComplete = false;
+        for (const [exportName, result] of block.prod.results) {
+          // any signal that this expost will be (or already is) present in the prod
+          // will prevent adding it from staging
+          exportsProcessed.add(exportName);
+          tryAddEntry(blockId, exportName, result);
+        }
+      }
+
+      if (block.staging !== undefined) {
+        if (!block.staging.locked) isComplete = false;
+
+        for (const [exportName, result] of block.staging.results) {
+          // trying to add soemthing only if result is absent in prod
+          if (exportsProcessed.has(exportName)) continue;
+          tryAddEntry(blockId, exportName, result);
+        }
+      }
+    }
+
+    return { entries, isComplete };
+  }
+
+  public getSpecs(): ResultCollection<PObjectSpec> {
+    const entries: ResultPoolEntry<PObjectSpec>[] = [];
+    let isComplete = true;
+    for (const [blockId, block] of this.blocks) {
+      const exportsProcessed = new Set<string>();
+      if (block.staging !== undefined) {
+        if (!block.staging.locked) isComplete = false;
+
+        for (const [exportName, result] of block.staging.results)
+          if (result.spec !== undefined) {
+            entries.push({
+              ref: {
+                __isRef: true,
+                blockId,
+                name: exportName
+              },
+              obj: result.spec
+            });
+            exportsProcessed.add(exportName);
+          }
+      } else isComplete = false; // because staging will be inevitably rendered soon
+
+      if (block.prod !== undefined) {
+        if (!block.prod.locked) isComplete = false;
+        for (const [exportName, result] of block.prod.results) {
+          // staging have higher priority when we are interested in specs
+          if (exportsProcessed.has(exportName)) continue;
+
+          if (result.spec !== undefined) {
+            entries.push({
+              ref: {
+                __isRef: true,
+                blockId,
+                name: exportName
+              },
+              obj: result.spec
+            });
+          }
+        }
+      }
+    }
+
+    return { entries, isComplete };
   }
 
   public calculateOptions(predicate: PSpecPredicate): ExtendedOption[] {
@@ -155,6 +277,7 @@ const BContextValueDataSuffix = '.data';
 
 const BContextValuePattern = /^values\/(?<name>.*)\.(?<type>spec|data)$/;
 
+/** Loads single BContext data */
 function loadCtx(ctxHolderAccessor: PlTreeNodeAccessor | undefined): PoolCtx | undefined {
   if (ctxHolderAccessor === undefined) return undefined;
 
@@ -191,11 +314,10 @@ function loadCtx(ctxHolderAccessor: PlTreeNodeAccessor | undefined): PoolCtx | u
         break;
       case 'data':
         result.hasData = true;
-        result.data = (ignoreError) =>
-          ctxNode.traverse({
+        result.data = () =>
+          ctxNode.traverseOrError({
             field: fieldName,
-            ignoreError: ignoreError,
-            pureFieldErrorToUndefined: ignoreError
+            ignoreError: true
           });
       default:
         // other value types planned

@@ -16,7 +16,7 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
 import { ProjectListEntry } from '../model';
-import { BackendDriverKit, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
@@ -53,7 +53,7 @@ export class MiddleLayer {
 
   private constructor(
     private readonly env: MiddleLayerEnvironment,
-    public readonly driverKit: BackendDriverKit,
+    public readonly driverKit: DriverKit,
     public readonly signer: Signer,
     private readonly projectListResourceId: ResourceId,
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
