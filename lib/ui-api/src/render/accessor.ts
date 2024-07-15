@@ -18,18 +18,24 @@ function wrapAccessor(handle: AccessorHandle | undefined): TreeNodeAccessor | un
 
 /** Represent resource tree node accessor */
 export class TreeNodeAccessor {
-  constructor(private readonly handle: AccessorHandle) {
-  }
+  constructor(private readonly handle: AccessorHandle) {}
 
-  public resolve(...steps: [Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
-    errorIfFieldNotAssigned: true
-  }]): TreeNodeAccessor
-  public resolve(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined
+  public resolve(
+    ...steps: [
+      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+        errorIfFieldNotAssigned: true;
+      }
+    ]
+  ): TreeNodeAccessor;
+  public resolve(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
   public resolve(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
     return this.resolveWithCommon({}, ...steps);
   }
 
-  public resolveWithCommon(commonOptions: CommonFieldTraverseOps, ...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
+  public resolveWithCommon(
+    commonOptions: CommonFieldTraverseOps,
+    ...steps: (FieldTraversalStep | string)[]
+  ): TreeNodeAccessor | undefined {
     return wrapAccessor(getCfgRenderCtx().resolveWithCommon(this.handle, commonOptions, ...steps));
   }
 
@@ -75,14 +81,13 @@ export class TreeNodeAccessor {
 
   public getKeyValueAsString(key: string): string | undefined {
     return getCfgRenderCtx().getKeyValueAsString(this.handle, key);
-  };
+  }
 
   public getKeyValueAsJson<T>(key: string): T {
     const content = this.getKeyValueAsString(key);
-    if (content == undefined)
-      throw new Error('Resource has no content.');
+    if (content == undefined) throw new Error('Resource has no content.');
     return JSON.parse(content);
-  };
+  }
 
   public getDataBase64(): string | undefined {
     return getCfgRenderCtx().getDataBase64(this.handle);
@@ -90,14 +95,13 @@ export class TreeNodeAccessor {
 
   public getDataAsString(): string | undefined {
     return getCfgRenderCtx().getDataAsString(this.handle);
-  };
+  }
 
   public getDataAsJson<T>(): T {
     const content = this.getDataAsString();
-    if (content == undefined)
-      throw new Error('Resource has no content.');
+    if (content == undefined) throw new Error('Resource has no content.');
     return JSON.parse(content);
-  };
+  }
 
   public getBlobContentAsBase64(): FutureRef<string | undefined> {
     return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle));

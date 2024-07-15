@@ -5,4 +5,5 @@ import { BlockOutputsBase, BlockState } from '@milaboratory/sdk-model';
 export type BlockStatePatch<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown> = Unionize<BlockState<Args, Outputs, UiState>>;
+  UiState = unknown
+> = Unionize<BlockState<Args, Outputs, UiState>>;

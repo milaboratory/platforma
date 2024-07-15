@@ -8,8 +8,8 @@ export type CancelSubscription = () => void;
 export interface BlockApi<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown> {
-
+  UiState = unknown
+> {
   /**
    * Use this method to retrieve block state during UI initialization. Then use
    * {@link onStateUpdates} method to subscribe for updates.
@@ -33,7 +33,9 @@ export interface BlockApi<
    *
    * @return function that cancels created subscription
    * */
-  onStateUpdates(cb: (updates: BlockStatePatch<Args, Outputs, UiState>[]) => Promise<void>): CancelSubscription;
+  onStateUpdates(
+    cb: (updates: BlockStatePatch<Args, Outputs, UiState>[]) => Promise<void>
+  ): CancelSubscription;
 
   /**
    * Sets block args.

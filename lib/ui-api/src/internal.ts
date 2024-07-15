@@ -18,34 +18,25 @@ export function isInUI() {
 
 /** Utility code helping to retrieve a platforma instance form the environment */
 export function getPlatformaInstance(config: BlockConfig): Platforma {
-  if (typeof getPlatforma === 'function')
-    return getPlatforma(config);
-  else if (typeof platforma !== 'undefined')
-    return platforma;
-  else
-    throw new Error('Can\'t get platforma instance.');
+  if (typeof getPlatforma === 'function') return getPlatforma(config);
+  else if (typeof platforma !== 'undefined') return platforma;
+  else throw new Error("Can't get platforma instance.");
 }
 
 export function tryGetCfgRenderCtx(): GlobalCfgRenderCtx | undefined {
-  if (typeof cfgRenderCtx !== 'undefined')
-    return cfgRenderCtx;
-  else
-    return undefined;
+  if (typeof cfgRenderCtx !== 'undefined') return cfgRenderCtx;
+  else return undefined;
 }
 
 export function getCfgRenderCtx(): GlobalCfgRenderCtx {
-  if (typeof cfgRenderCtx !== 'undefined')
-    return cfgRenderCtx;
-  else
-    throw new Error('Not in config rendering context');
+  if (typeof cfgRenderCtx !== 'undefined') return cfgRenderCtx;
+  else throw new Error('Not in config rendering context');
 }
 
 export function tryRegisterCallback(key: string, callback: (...args: any[]) => any): boolean {
   const ctx = tryGetCfgRenderCtx();
-  if (ctx === undefined)
-    return false;
-  if (key in ctx.callbackRegistry)
-    throw new Error(`Callback with key ${key} already registered.`);
+  if (ctx === undefined) return false;
+  if (key in ctx.callbackRegistry) throw new Error(`Callback with key ${key} already registered.`);
   ctx.callbackRegistry[key] = callback;
   return true;
 }

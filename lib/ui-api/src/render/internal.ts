@@ -1,12 +1,20 @@
+import { Optional } from 'utility-types';
 import { Branded } from '../branding';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
-import { LocalBlobHandleAndSize, Option, PSpecPredicate, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import {
+  Option,
+  PObject,
+  PObjectSpec,
+  PSpecPredicate,
+  ResultCollection,
+  ValueOrError
+} from '@milaboratory/sdk-model';
 
 export const StagingAccessorName = 'staging';
 export const MainAccessorName = 'main';
 
-export type AccessorHandle = Branded<string, 'AccessorHandle'>
-export type FutureHandle = Branded<string, 'FutureHandle'>
+export type AccessorHandle = Branded<string, 'AccessorHandle'>;
+export type FutureHandle = Branded<string, 'FutureHandle'>;
 
 export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = FutureHandle> {
   //
@@ -19,9 +27,11 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Basic resource accessor actions
   //
 
-  resolveWithCommon(handle: AHandle,
-                    commonOptions: CommonFieldTraverseOps,
-                    ...steps: (FieldTraversalStep | string)[]): AHandle | undefined;
+  resolveWithCommon(
+    handle: AHandle,
+    commonOptions: CommonFieldTraverseOps,
+    ...steps: (FieldTraversalStep | string)[]
+  ): AHandle | undefined;
 
   getResourceType(handle: AHandle): ResourceType;
 
@@ -61,9 +71,23 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getOnDemandBlobContentHandle(handle: AHandle): FHandle; // RemoteBlobHandleAndSize | undefined;
 
-  // 
+  //
+  // Blocks
+  //
+
+  getBlockLabel(blockId: string): string;
+
+  //
   // Result Pool
   //
+
+  getDataFromResultPool(): ResultCollection<PObject<AHandle>>;
+
+  getDataWithErrorsFromResultPool(): ResultCollection<
+    Optional<PObject<ValueOrError<AHandle, string>>, 'id'>
+  >;
+
+  getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
 
   calculateOptions(predicate: PSpecPredicate): Option[];
 }
@@ -83,26 +107,17 @@ export function isFutureAwait(obj: unknown): obj is FutureAwait {
 }
 
 function addAllFutureAwaits(set: Set<string>, visited: Set<unknown>, node: unknown) {
-  if (visited.has(node))
-    return;
+  if (visited.has(node)) return;
   visited.add(node);
 
   const type = typeof node;
   if (type === 'object') {
-    if (isFutureAwait(node))
-
-      node.__awaited_futures__.forEach(a => set.add(a));
-
+    if (isFutureAwait(node)) node.__awaited_futures__.forEach((a) => set.add(a));
     else if (Array.isArray(node))
-
-      for (const nested of node)
-        addAllFutureAwaits(set, visited, nested);
-
+      for (const nested of node) addAllFutureAwaits(set, visited, nested);
     else
-
       for (const [, nested] of Object.entries(node as object))
-        if (nested !== node)
-          addAllFutureAwaits(set, visited, nested);
+        if (nested !== node) addAllFutureAwaits(set, visited, nested);
   }
 }
 
