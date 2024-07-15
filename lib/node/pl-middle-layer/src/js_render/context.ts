@@ -9,11 +9,16 @@ import {
   ResourceType as ResourceTypeFromSDK,
   JsRenderInternal,
   Option,
-  PSpecPredicate
+  PSpecPredicate,
+  PObject,
+  PObjectSpec,
+  ResultCollection,
+  ValueOrError
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { ResultPool } from '../pool/result_pool';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { Optional } from 'utility-types';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -246,6 +251,25 @@ export class JsExecutionContext
 
   calculateOptions(predicate: PSpecPredicate): Option[] {
     return this.resultPool.calculateOptions(predicate);
+  }
+
+  //
+  // TODO Implement
+  //
+
+  getBlockLabel(blockId: string): string {
+    throw new Error('Method not implemented.');
+  }
+  getDataFromResultPool(): ResultCollection<PObject<string>> {
+    throw new Error('Method not implemented.');
+  }
+  getDataWithErrorsFromResultPool(): ResultCollection<
+    Optional<PObject<ValueOrError<string, string>>, 'id'>
+  > {
+    throw new Error('Method not implemented.');
+  }
+  getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    throw new Error('Method not implemented.');
   }
 
   //

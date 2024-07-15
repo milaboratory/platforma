@@ -1,6 +1,6 @@
 import { DownloadDriver } from '@milaboratory/pl-drivers';
 import type PFramesType from '@milaboratory/pframes-node';
-import { BackendPFrameDriver, PFrameInternal } from '@milaboratory/pl-middle-layer-model';
+import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
 import { ResourceInfo } from '@milaboratory/pl-tree';
 import { ComputableStableDefined } from '@milaboratory/computable';
 import {
@@ -19,10 +19,11 @@ import {
   PTableVector,
   TableRange,
   UniqueValuesRequest,
-  UniqueValuesResponse
+  UniqueValuesResponse,
+  PFrameDriver as SdkPFrameDriver
 } from '@milaboratory/sdk-ui';
 import { RefCountResourcePool } from './ref_count_pool';
-import { PColumnData, allBlobs, mapBlobs } from './data';
+import { PColumn, PFrameData, allBlobs, mapBlobs, stableKeyFromPFrameData } from './data';
 import { createHash } from 'crypto';
 
 // special way of importing native node module
@@ -30,10 +31,6 @@ const PFrames: PFramesType = require('@milaboratory/pframes-node');
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
-}
-
-function idFromData(data: Map<string, PColumnData>) {
-  const hash = createHash('sha256');
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
@@ -45,9 +42,8 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   >();
 
   constructor(
-    private readonly id: string,
     private readonly blobDriver: DownloadDriver,
-    private readonly data: Map<PObjectId, PColumnData>
+    private readonly data: Map<PObjectId, PColumn>
   ) {
     // pframe initialization
     this.pframe.setDataSource(this);
@@ -89,8 +85,23 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   }
 }
 
-export class PFrameDriver implements BackendPFrameDriver {
-  constructor(private readonly blobDriver: DownloadDriver) {}
+export class PFrameDriver implements SdkPFrameDriver {
+  private readonly pFrames: RefCountResourcePool<PFrameData, PFrameHolder>;
+  constructor(private readonly blobDriver: DownloadDriver) {
+    this.pFrames = new (class extends RefCountResourcePool<PFrameData, PFrameHolder> {
+      constructor(private readonly blobDriver: DownloadDriver) {
+        super();
+      }
+      protected createNewResource(params: PFrameData): PFrameHolder {
+        return new PFrameHolder(this.blobDriver, params);
+      }
+      protected calculateParamsKey(params: PFrameData): string {
+        return stableKeyFromPFrameData(params);
+      }
+    })(this.blobDriver);
+  }
+
+  public createPFRame() {}
 
   findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse> {
     throw new Error('Method not implemented.');
