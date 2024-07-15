@@ -38,6 +38,16 @@ export type TreeAccessorInstanceData = {
   readonly ctx: ComputableCtx;
 };
 
+export type ValueOrError<V, E> =
+  | {
+      ok: true;
+      value: V;
+    }
+  | {
+      ok: false;
+      error: E;
+    };
+
 /** Main entry point for using PlTree in reactive setting */
 export class PlTreeEntry implements AccessorProvider<PlTreeEntryAccessor> {
   constructor(
@@ -204,10 +214,36 @@ export class PlTreeNodeAccessor {
     return this.traverseWithCommon({}, ...steps);
   }
 
+  public traverseOrError(
+    ...steps: [
+      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+        errorIfFieldNotAssigned: true;
+      }
+    ]
+  ): ValueOrError<PlTreeNodeAccessor, string>;
+  public traverseOrError(
+    ...steps: (FieldTraversalStep | string)[]
+  ): ValueOrError<PlTreeNodeAccessor, string> | undefined;
+  public traverseOrError(
+    ...steps: (FieldTraversalStep | string)[]
+  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+    return this.traverseOrErrorWithCommon({}, ...steps);
+  }
+
   public traverseWithCommon(
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
   ): PlTreeNodeAccessor | undefined {
+    const result = this.traverseOrErrorWithCommon(commonOptions, ...steps);
+    if (result === undefined) return undefined;
+    if (!result.ok) throw new PlError(result.error);
+    return result.value;
+  }
+
+  public traverseOrErrorWithCommon(
+    commonOptions: CommonFieldTraverseOps,
+    ...steps: (FieldTraversalStep | string)[]
+  ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
     let current: PlTreeNodeAccessor = this;
 
     for (const _step of steps) {
@@ -227,21 +263,23 @@ export class PlTreeNodeAccessor {
         return undefined;
 
       if ((!step.ignoreError || next.value === undefined) && next.error !== undefined)
-        throw new PlError(
-          `error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`
-        );
+        return {
+          ok: false,
+          error: `error in field ${step.field} of ${resourceIdToString(current.id)}: ${next.error.getDataAsString()}`
+        };
 
       if (next.value === undefined) {
         if (step.errorIfFieldNotSet)
-          throw new PlError(
-            `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`
-          );
+          return {
+            ok: false,
+            error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`
+          };
         return undefined;
       }
 
       current = next.value;
     }
-    return current;
+    return { ok: true, value: current };
   }
 
   private readonly onUnstableLambda = () => this.instanceData.ctx.markUnstable();
