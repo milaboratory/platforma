@@ -7,3 +7,4 @@ export * from './section';
 export * from './ref';
 export * from './common_types';
 export * from './pool';
+export * from './value_or_error';

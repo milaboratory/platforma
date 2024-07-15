@@ -1,16 +1,21 @@
 /** Block section visualized as items in left panel block overview */
-export type BlockSection = BlockSectionMain
+export type BlockSection = BlockSectionLink | BlockSectionDelimiter;
 
 /** Tells the system that specific section from the main UI of this block should
  * be opened */
-export type BlockSectionMain = {
+export type BlockSectionLink = {
   /** Potentially there may be multiple section types, i.e. for "+" rows and for
    * sections directly opening html from the outputs. */
-  readonly type: 'main'
+  readonly type: 'link';
 
   /** Internal block section identifier */
-  readonly section: string,
+  readonly href: string;
 
   /** Visible section title, can also be used in the window header. */
-  readonly title: string
-}
+  readonly label: string;
+};
+
+/** Create a horisontal line between sections */
+export type BlockSectionDelimiter = {
+  readonly type: 'delimiter';
+};

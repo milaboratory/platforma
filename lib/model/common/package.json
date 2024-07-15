@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-model",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Platforma SDK Model",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
