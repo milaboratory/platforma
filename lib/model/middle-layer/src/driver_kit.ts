@@ -1,3 +1,7 @@
-import { DriverKit } from "@milaboratory/sdk-model";
+import { DriverKit } from '@milaboratory/sdk-model';
+import { BackendPFrameDriver, PFrameInternal } from './pframe';
 
-export type BackendDriverKit = Omit<DriverKit| ''>
+/** Driver Kit exposed by the Middle Layer */
+export type BackendDriverKit = Omit<DriverKit, 'pFrameDriver'> & {
+  pFrameDriver: BackendPFrameDriver;
+};

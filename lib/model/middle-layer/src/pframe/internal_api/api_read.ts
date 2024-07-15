@@ -1,9 +1,9 @@
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
 import {
-  PColumnId,
   PColumnInfo,
   PColumnSpec,
+  PObjectId,
   UniqueValuesRequest,
   UniqueValuesResponse
 } from '@milaboratory/sdk-model';
@@ -26,7 +26,7 @@ export interface PFrameReadAPI {
   deleteColumn(request: DeleteColumnFromColumnsRequest): Promise<DeleteColumnFromColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(columnId: PColumnId): Promise<PColumnSpec>;
+  getColumnSpec(columnId: PObjectId): Promise<PColumnSpec>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(): Promise<PColumnInfo[]>;

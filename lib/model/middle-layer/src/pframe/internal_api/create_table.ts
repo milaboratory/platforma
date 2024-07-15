@@ -1,9 +1,9 @@
 import { AxisQualificationWithAxisId } from './common';
-import { PColumnId, PTableRecordFilter } from '@milaboratory/sdk-model';
+import { PObjectId, PTableRecordFilter } from '@milaboratory/sdk-model';
 
 export interface ColumnJoinEntry {
   type: 'column';
-  columnId: PColumnId;
+  columnId: PObjectId;
   qualifications: AxisQualificationWithAxisId[];
 }
 
@@ -23,11 +23,7 @@ export interface OuterJoin {
   secondary: JoinEntry[];
 }
 
-export type JoinEntry =
-  | ColumnJoinEntry
-  | InnerJoin
-  | FullJoin
-  | OuterJoin;
+export type JoinEntry = ColumnJoinEntry | InnerJoin | FullJoin | OuterJoin;
 
 export interface CreateTableRequest {
   src: JoinEntry;

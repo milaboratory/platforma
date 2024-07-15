@@ -1,4 +1,4 @@
-import { PColumnId, PColumnSpec } from '@milaboratory/sdk-model';
+import { PColumnSpec, PObjectId } from '@milaboratory/sdk-model';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;
@@ -20,7 +20,9 @@ export interface BinaryDataInfo<Blob = PFrameBlobId> {
   parts: Record<string, BinaryChunkInfo<Blob>>;
 }
 
-export type DataInfo<Blob = PFrameBlobId> = JsonDataInfo<Blob> | BinaryDataInfo<Blob>;
+export type DataInfo<Blob = PFrameBlobId> =
+  | JsonDataInfo<Blob>
+  | BinaryDataInfo<Blob>;
 
 /** Path of the file containing requested data (blob). This path is returned by
  * {@link BlobPathResolver} as soon as blob materialized in the file system. */
@@ -46,10 +48,10 @@ export interface PFrameFactoryAPI {
   setDataSource(dataSource: PFrameDataSource): void;
 
   /** Adds PColumn without spec */
-  addColumnSpec(columnId: PColumnId, columnSpec: PColumnSpec): void;
+  addColumnSpec(columnId: PObjectId, columnSpec: PColumnSpec): void;
 
   /** Associates data info with cpecific column */
-  setColumnData(columnId: PColumnId, dataInfo: DataInfo): void;
+  setColumnData(columnId: PObjectId, dataInfo: DataInfo): void;
 
   /** Releases all the data previously added to PFrame using methods above,
    * any interactions with disposed PFrame will result in exception */

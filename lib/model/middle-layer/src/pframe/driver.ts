@@ -1,8 +1,11 @@
-import { PFrame, PFrameHandle, PTable, PTableHandle } from '@milaboratory/sdk-model';
+import {
+  PFrame,
+  PFrameHandle,
+  PTable,
+  PTableHandle
+} from '@milaboratory/sdk-model';
 import { AddParameterToAllMethods } from './type_util';
 
-export interface PFrameDriverMiddleLayer extends AddParameterToAllMethods<PFrame, [handle: PFrameHandle]> {
-}
-
-export interface PTableDriverMiddleLayer extends AddParameterToAllMethods<PTable, [handle: PTableHandle]> {
-}
+export interface BackendPFrameDriver
+  extends AddParameterToAllMethods<PFrame, [handle: PFrameHandle]>,
+  AddParameterToAllMethods<PTable, [handle: PTableHandle]> {}
