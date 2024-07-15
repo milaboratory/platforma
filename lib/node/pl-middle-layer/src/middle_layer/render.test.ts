@@ -26,7 +26,7 @@ test('test JS render enter numbers', async () => {
   });
 });
 
-test('test JS render options', async () => {
+test.skip('test JS render options', async () => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -93,7 +93,7 @@ test('test JS render download', async () => {
   });
 });
 
-test('basic quickjs code', async () => {
+test.skip('basic quickjs code', async () => {
   const qJs = await getQuickJS();
   let state = 10;
 

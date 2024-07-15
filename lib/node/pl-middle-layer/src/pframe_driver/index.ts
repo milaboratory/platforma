@@ -1,9 +1,26 @@
 import { DownloadDriver } from '@milaboratory/pl-drivers';
 import type PFramesType from '@milaboratory/pframes-node';
-import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
+import { BackendPFrameDriver, PFrameInternal } from '@milaboratory/pl-middle-layer-model';
 import { ResourceInfo } from '@milaboratory/pl-tree';
 import { ComputableStableDefined } from '@milaboratory/computable';
-import { LocalBlobHandleAndSize } from '@milaboratory/sdk-ui';
+import {
+  CalculateTableDataRequest,
+  CalculateTableDataResponse,
+  FindColumnsRequest,
+  FindColumnsResponse,
+  LocalBlobHandleAndSize,
+  PColumnIdAndSpec,
+  PColumnSpec,
+  PFrameHandle,
+  PObjectId,
+  PTableColumnSpec,
+  PTableHandle,
+  PTableShape,
+  PTableVector,
+  TableRange,
+  UniqueValuesRequest,
+  UniqueValuesResponse
+} from '@milaboratory/sdk-ui';
 import { RefCountResourcePool } from './ref_count_pool';
 import { PColumnData, allBlobs, mapBlobs } from './data';
 import { createHash } from 'crypto';
@@ -17,7 +34,6 @@ function blobKey(res: ResourceInfo): string {
 
 function idFromData(data: Map<string, PColumnData>) {
   const hash = createHash('sha256');
-  hash.update()
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
@@ -31,7 +47,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   constructor(
     private readonly id: string,
     private readonly blobDriver: DownloadDriver,
-    private readonly data: Map<string, PColumnData>
+    private readonly data: Map<PObjectId, PColumnData>
   ) {
     // pframe initialization
     this.pframe.setDataSource(this);
@@ -73,8 +89,48 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   }
 }
 
-export class PFrameDriver {
+export class PFrameDriver implements BackendPFrameDriver {
   constructor(private readonly blobDriver: DownloadDriver) {}
 
-  holders = new (class extends RefCountResourcePool<> {})();
+  findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse> {
+    throw new Error('Method not implemented.');
+  }
+
+  getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
+    throw new Error('Method not implemented.');
+  }
+
+  listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
+    throw new Error('Method not implemented.');
+  }
+
+  calculateTableData(
+    handle: PFrameHandle,
+    request: CalculateTableDataRequest<PObjectId>
+  ): Promise<CalculateTableDataResponse> {
+    throw new Error('Method not implemented.');
+  }
+
+  getUniqueValues(
+    handle: PFrameHandle,
+    request: UniqueValuesRequest
+  ): Promise<UniqueValuesResponse> {
+    throw new Error('Method not implemented.');
+  }
+
+  getShape(handle: PTableHandle): PTableShape {
+    throw new Error('Method not implemented.');
+  }
+
+  getSpec(handle: PTableHandle): PTableColumnSpec[] {
+    throw new Error('Method not implemented.');
+  }
+
+  getData(
+    handle: PTableHandle,
+    columnIndices: number[],
+    range?: TableRange | undefined
+  ): Promise<PTableVector[]> {
+    throw new Error('Method not implemented.');
+  }
 }
