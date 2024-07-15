@@ -2,6 +2,7 @@ import {
   ChangeSource,
   Computable,
   ComputableCtx,
+  ComputableStableDefined,
   Watcher
 } from '@milaboratory/computable';
 import { bigintToResourceId, ResourceId } from '@milaboratory/pl-client-v2';
@@ -44,7 +45,7 @@ import {
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 
 export type DownloadDriverOps = {
-  /** 
+  /**
    * A soft limit of the amount of blob storage, in bytes.
    * Once exceeded, the download driver will start deleting blobs one by one
    * when they become unneeded.
@@ -97,7 +98,7 @@ export class DownloadDriver implements BlobDriver {
   ): LocalBlobHandleAndSize | undefined;
   getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry
-  ): Computable<LocalBlobHandleAndSize | undefined>;
+  ): ComputableStableDefined<LocalBlobHandleAndSize>;
   getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx
@@ -141,14 +142,16 @@ export class DownloadDriver implements BlobDriver {
     return this.getOnDemandBlobNoCtx(ctx.watcher, rInfo, callerId);
   }
 
+  public getLocalPath(handle: LocalBlobHandle): string {
+    return localHandleToPath(handle, this.signer);
+  }
+
   public async getContent(
     handle: LocalBlobHandle | RemoteBlobHandle
   ): Promise<Uint8Array> {
-    if (isLocalBlobHandle(handle)) {
-      const path = localHandleToPath(handle, this.signer);
-      return await read(path);
-    } else if (isRemoteBlobHandle(handle)) {
-    }
+    if (isLocalBlobHandle(handle)) return await read(this.getLocalPath(handle));
+
+    if (!isRemoteBlobHandle(handle)) throw new Error('Malformed remote handle');
 
     const result = remoteHandleToData(handle, this.signer);
     const { content } = await this.clientDownload.downloadBlob(result);
