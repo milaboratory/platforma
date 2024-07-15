@@ -20,6 +20,6 @@ test('test lib 2 parsing', () => {
   expect(libSrc.dependencies).toEqual([
     { type: 'library', pkg: 'package1', id: 'someid' },
     { type: 'template', pkg: 'package2', id: 'template-1' },
-    { type: 'template', pkg: 'current-package', id: 'local-template-2' }
+    { type: 'template', pkg: 'current-package', id: 'local-template-2' },
   ]);
 });
