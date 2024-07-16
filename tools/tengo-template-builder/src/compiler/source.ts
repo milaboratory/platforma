@@ -6,7 +6,7 @@ import { ArtifactMap, createArtifactNameSet } from './artifactset';
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
 
 const functionCallRE = (moduleName: string, fnName: string) => {
-  return new RegExp(`\\b${moduleName}\\.(?<templateUse>(?<fnName>`+fnName+`)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
+  return new RegExp(`\\b${moduleName}\\.(?<templateUse>(?<fnName>` + fnName + `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
 }
 
 const newGetTemplateIdRE = (moduleName: string) => {
@@ -125,7 +125,7 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
     return { line, templateDependencyREs: templateDependencyREs, artifact }
   }
 
-  if (templateDependencyREs.size) {
+  if (templateDependencyREs.size > 0) {
     for (const [key, re] of templateDependencyREs) {
 
       const match = re.exec(line)
@@ -145,17 +145,18 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
         throw Error(`failed to parse artifact name in ${fnName} import statement`)
       }
 
-
       if (globalizeImports) {
-        line = line.replace(templateUse,
-          `${fnName}("${artifact.pkg}:${artifact.id}")`)
-        }
-
-        return { line, templateDependencyREs: templateDependencyREs, artifact }
+        line = line.replace(
+          templateUse,
+          `${fnName}("${artifact.pkg}:${artifact.id}")`
+        )
       }
+
+      return { line, templateDependencyREs, artifact }
+    }
   }
 
-  return { line, templateDependencyREs: templateDependencyREs, artifact: undefined }
+  return { line, templateDependencyREs, artifact: undefined }
 }
 
 interface ImportInfo {
