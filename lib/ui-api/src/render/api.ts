@@ -4,11 +4,18 @@ import { TreeNodeAccessor } from './accessor';
 import { FutureRef } from './future';
 import {
   Option,
+  PColumn,
+  PFrameDef,
+  PFrameHandle,
   PObject,
   PObjectSpec,
   PSpecPredicate,
+  PTableDef,
+  PTableHandle,
   ResultCollection,
   ValueOrError,
+  mapPObjectData,
+  mapPTableDef,
   mapValueInVOE
 } from '@milaboratory/sdk-model';
 import { Optional } from 'utility-types';
@@ -81,6 +88,16 @@ export class RenderCtx<Args, UiState> {
   }
 
   public readonly resultPool = new ResultPool();
+
+  public createPFrame(def: PFrameDef<TreeNodeAccessor>): PFrameHandle {
+    return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
+  }
+
+  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): FutureRef<PTableHandle> {
+    return new FutureRef(
+      this.ctx.createPTable(mapPTableDef(def, (po) => mapPObjectData(po, (d) => d.handle)))
+    );
+  }
 }
 
 export type RenderFunction<Args = unknown, UiState = unknown> = (

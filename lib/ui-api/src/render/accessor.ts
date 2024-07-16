@@ -2,7 +2,12 @@ import { AccessorHandle } from './internal';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 import { getCfgRenderCtx } from '../internal';
 import { FutureRef } from './future';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import {
+  LocalBlobHandleAndSize,
+  PObject,
+  RemoteBlobHandleAndSize,
+  mapPObjectData
+} from '@milaboratory/sdk-model';
 
 function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
@@ -18,7 +23,7 @@ function wrapAccessor(handle: AccessorHandle | undefined): TreeNodeAccessor | un
 
 /** Represent resource tree node accessor */
 export class TreeNodeAccessor {
-  constructor(private readonly handle: AccessorHandle) {}
+  constructor(public readonly handle: AccessorHandle) {}
 
   public resolve(
     ...steps: [
@@ -101,6 +106,12 @@ export class TreeNodeAccessor {
     const content = this.getDataAsString();
     if (content == undefined) throw new Error('Resource has no content.');
     return JSON.parse(content);
+  }
+
+  public parsePObjectCollection(): PObject<TreeNodeAccessor>[] | undefined {
+    const pObjects = getCfgRenderCtx().parsePObjectCollection(this.handle);
+    if (pObjects === undefined) return undefined;
+    return pObjects.map((po) => mapPObjectData(po, (c) => new TreeNodeAccessor(c)));
   }
 
   public getBlobContentAsBase64(): FutureRef<string | undefined> {

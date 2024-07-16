@@ -3,9 +3,14 @@ import { Branded } from '../branding';
 import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 import {
   Option,
+  PColumn,
+  PFrameDef,
+  PFrameHandle,
   PObject,
   PObjectSpec,
   PSpecPredicate,
+  PTableDef,
+  PTableHandle,
   ResultCollection,
   ValueOrError
 } from '@milaboratory/sdk-model';
@@ -59,6 +64,9 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getDataAsString(handle: AHandle): string | undefined;
 
+  /** If not final returns undefined */
+  parsePObjectCollection(handle: AHandle): PObject<AHandle>[] | undefined;
+
   //
   // Blob
   //
@@ -90,6 +98,14 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
 
   calculateOptions(predicate: PSpecPredicate): Option[];
+
+  //
+  // PFrame / PTable
+  //
+
+  createPFrame(def: PFrameDef<AHandle>): PFrameHandle;
+
+  createPTable(def: PTableDef<PColumn<AHandle>>): FHandle; // PTableHandle;
 }
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
