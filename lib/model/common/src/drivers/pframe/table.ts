@@ -6,7 +6,7 @@ import { PTableShape, PTableVector, TableRange } from './data';
  * */
 export interface PTable {
   /** Unified table shape */
-  getShape(): PTableShape;
+  getShape(): Promise<PTableShape>;
 
   /**
    * Returns ordered array of table axes specs (primary key "columns" in SQL
@@ -17,7 +17,7 @@ export interface PTable {
    *
    * Axes are always listed first.
    * */
-  getSpec(): PTableColumnSpec[];
+  getSpec(): Promise<PTableColumnSpec[]>;
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be

@@ -1,4 +1,5 @@
 import { Branded } from '../branding';
+import { PColumn, PColumnSpec } from '../drivers';
 
 /** Any object exported into the result pool by the block always have spec attached to it */
 export interface PObjectSpec {
@@ -26,4 +27,30 @@ export interface PObject<Data> {
 
   /** A handle to data object */
   readonly data: Data;
+}
+
+export function isPColumnSpec(spec: PObjectSpec): spec is PColumnSpec {
+  return spec.kind === 'PColumn';
+}
+
+export function isPColumn<T>(obj: PObject<T>): obj is PColumn<T> {
+  return isPColumnSpec(obj.spec);
+}
+
+export function mapPObjectData<D1, D2>(
+  pObj: PColumn<D1>,
+  cb: (d: D1) => D2
+): PColumn<D2>;
+export function mapPObjectData<D1, D2>(
+  pObj: PObject<D1>,
+  cb: (d: D1) => D2
+): PObject<D2>;
+export function mapPObjectData<D1, D2>(
+  pObj: PObject<D1>,
+  cb: (d: D1) => D2
+): PObject<D2> {
+  return {
+    ...pObj,
+    data: cb(pObj.data)
+  };
 }

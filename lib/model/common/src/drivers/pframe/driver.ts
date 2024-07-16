@@ -60,7 +60,7 @@ export interface PFrameDriver {
   //
 
   /** Unified table shape */
-  getShape(handle: PTableHandle): PTableShape;
+  getShape(handle: PTableHandle): Promise<PTableShape>;
 
   /**
    * Returns ordered array of table axes specs (primary key "columns" in SQL
@@ -71,7 +71,7 @@ export interface PFrameDriver {
    *
    * Axes are always listed first.
    * */
-  getSpec(handle: PTableHandle): PTableColumnSpec[];
+  getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]>;
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be

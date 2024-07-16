@@ -1,5 +1,5 @@
-import { AxisId, PColumnSpec, ValueType } from '../drivers';
-import { PObjectSpec } from './spec';
+import { AxisId } from '../drivers';
+import { PObjectSpec, isPColumnSpec } from './spec';
 
 export type PSpecPredicate =
   | {
@@ -32,10 +32,6 @@ export type PSpecPredicate =
       type: 'has_axes';
       axes: Partial<AxisId>[];
     };
-
-export function isPColumnSpec(spec: PObjectSpec): spec is PColumnSpec {
-  return spec.kind === 'PColumn';
-}
 
 function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);

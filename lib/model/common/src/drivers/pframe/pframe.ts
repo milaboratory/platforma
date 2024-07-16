@@ -1,6 +1,6 @@
 import { PObjectId } from '../../pool';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { PColumnIdAndSpec, PColumnSpec } from './spec';
+import { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec';
 import {
   CalculateTableDataRequest,
   CalculateTableDataResponse
@@ -29,3 +29,6 @@ export interface PFrame {
   /** Calculate set of unique values for a specific axis for the filtered set of records */
   getUniqueValues(request: UniqueValuesRequest): Promise<UniqueValuesResponse>;
 }
+
+/** Information required to instantiate a PFrame. */
+export type PFrameDef<Data> = PColumn<Data>[];

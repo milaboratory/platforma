@@ -1,26 +1,26 @@
 import { PTableColumnId, PTableColumnSpec } from './table_common';
 import { PTableVector } from './data';
-import { PObjectId } from '../../pool';
+import { assertNever } from '../../util';
 
 /** Defines a terminal column node in the join request tree */
-export interface ColumnJoinEntry<PColumn> {
+export interface ColumnJoinEntry<Col> {
   /** Node type discriminator */
   readonly type: 'column';
 
-  /** Local column id */
-  readonly columnId: PColumn;
+  /** Local column */
+  readonly column: Col;
 }
 
 /**
  * Defines a join request tree node that will output only records present in
  * all child nodes ({@link entries}).
  * */
-export interface InnerJoin<PColumn> {
+export interface InnerJoin<Col> {
   /** Node type discriminator */
   readonly type: 'inner';
 
   /** Child nodes to be inner joined */
-  readonly entries: JoinEntry<PColumn>[];
+  readonly entries: JoinEntry<Col>[];
 }
 
 /**
@@ -29,12 +29,12 @@ export interface InnerJoin<PColumn> {
  * that lacks corresponding combinations of axis values will be marked as absent,
  * see {@link PTableVector.absent}.
  * */
-export interface FullJoin<PColumn> {
+export interface FullJoin<Col> {
   /** Node type discriminator */
   readonly type: 'full';
 
   /** Child nodes to be fully outer joined */
-  readonly entries: JoinEntry<PColumn>[];
+  readonly entries: JoinEntry<Col>[];
 }
 
 /**
@@ -47,16 +47,16 @@ export interface FullJoin<PColumn> {
  * This node can be thought as a chain of SQL LEFT JOIN operations starting from
  * the {@link primary} node and adding {@link secondary} nodes one by one.
  * */
-export interface OuterJoin<PColumn> {
+export interface OuterJoin<Col> {
   /** Node type discriminator */
   readonly type: 'outer';
 
   /** Primes the join operation. Left part of LEFT JOIN. */
-  readonly primary: JoinEntry<PColumn>;
+  readonly primary: JoinEntry<Col>;
 
   /** Driven nodes, giving their values only if primary node have corresponding
    * nodes. Right parts of LEFT JOIN chain. */
-  readonly secondary: JoinEntry<PColumn>[];
+  readonly secondary: JoinEntry<Col>[];
 }
 
 /**
@@ -66,11 +66,11 @@ export interface OuterJoin<PColumn> {
  * the PColumns. Common axis are those axis which have equal {@link AxisId} derived
  * from the columns axes spec.
  * */
-export type JoinEntry<PColumn> =
-  | ColumnJoinEntry<PColumn>
-  | InnerJoin<PColumn>
-  | FullJoin<PColumn>
-  | OuterJoin<PColumn>;
+export type JoinEntry<Col> =
+  | ColumnJoinEntry<Col>
+  | InnerJoin<Col>
+  | FullJoin<Col>
+  | OuterJoin<Col>;
 
 /** Container representing whole data stored in specific PTable column. */
 export interface FullPTableColumnData {
@@ -118,19 +118,19 @@ export type PTableRecordFilter = PTableRecordSingleValueFilter;
 /** Sorting parameters for a PTable.  */
 export type PTableSorting = {
   /** Unified column identifier */
-  column: PTableColumnId;
+  readonly column: PTableColumnId;
 
   /** Sorting order */
-  ascending: boolean;
+  readonly ascending: boolean;
 
   /** Sorting in respect to NA and absent values */
-  naAndAbsentAreLeastValues: boolean;
+  readonly naAndAbsentAreLeastValues: boolean;
 };
 
-/** Request to create and retrieve entirety of data of PTable. */
-export interface CalculateTableDataRequest<JPColumn> {
+/** Information required to instantiate a PTable. */
+export interface PTableDef<Col> {
   /** Join tree to populate the PTable */
-  readonly src: JoinEntry<JPColumn>;
+  readonly src: JoinEntry<Col>;
 
   /** Record filters */
   readonly filters: PTableRecordFilter[];
@@ -139,5 +139,42 @@ export interface CalculateTableDataRequest<JPColumn> {
   readonly sorting: PTableSorting[];
 }
 
+/** Request to create and retrieve entirety of data of PTable. */
+export type CalculateTableDataRequest<Col> = PTableDef<Col>;
+
 /** Response for {@link CalculateTableDataRequest} */
 export type CalculateTableDataResponse = FullPTableColumnData[];
+
+export function mapPTableDef<C1, C2>(
+  def: PTableDef<C1>,
+  cb: (c: C1) => C2
+): PTableDef<C2> {
+  return { ...def, src: mapJoinEntry(def.src, cb) };
+}
+
+export function mapJoinEntry<C1, C2>(
+  entry: JoinEntry<C1>,
+  cb: (c: C1) => C2
+): JoinEntry<C2> {
+  switch (entry.type) {
+    case 'column':
+      return {
+        type: 'column',
+        column: cb(entry.column)
+      };
+    case 'inner':
+    case 'full':
+      return {
+        type: entry.type,
+        entries: entry.entries.map((col) => mapJoinEntry(col, cb))
+      };
+    case 'outer':
+      return {
+        type: 'outer',
+        primary: mapJoinEntry(entry.primary, cb),
+        secondary: entry.secondary.map((col) => mapJoinEntry(col, cb))
+      };
+    default:
+      assertNever(entry);
+  }
+}

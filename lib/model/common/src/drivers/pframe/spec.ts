@@ -1,4 +1,4 @@
-import { PObjectId, PObjectSpec } from '../../pool';
+import { PObject, PObjectId, PObjectSpec } from '../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType =
@@ -91,6 +91,11 @@ export interface PColumnSpec extends PObjectSpec {
 
   /** Axes specifications */
   readonly axesSpec: AxesSpec;
+}
+
+export interface PColumn<Data> extends PObject<Data> {
+  /** PColumn spec, allowing it to be found among other PObjects */
+  readonly spec: PColumnSpec;
 }
 
 /** Columns in a PFrame also have internal identifier, this object represents
