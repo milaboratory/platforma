@@ -1,8 +1,8 @@
 import { DownloadDriver } from '@milaboratory/pl-drivers';
 import type PFramesType from '@milaboratory/pframes-node';
 import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
-import { ResourceInfo } from '@milaboratory/pl-tree';
-import { ComputableStableDefined } from '@milaboratory/computable';
+import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratory/pl-tree';
+import { ComputableCtx, ComputableStableDefined } from '@milaboratory/computable';
 import {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
@@ -20,11 +20,21 @@ import {
   TableRange,
   UniqueValuesRequest,
   UniqueValuesResponse,
-  PFrameDriver as SdkPFrameDriver
+  PFrameDriver as SdkPFrameDriver,
+  PColumn,
+  mapPObjectData,
+  PFrameDef,
+  JoinEntry,
+  PTableDef,
+  PObject,
+  mapPTableDef,
+  PTable
 } from '@milaboratory/sdk-ui';
-import { RefCountResourcePool } from './ref_count_pool';
-import { PColumn, PFrameData, allBlobs, mapBlobs, stableKeyFromPFrameData } from './data';
+import { PollResource, RefCountResourcePool, UnrefFn } from './ref_count_pool';
+import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'crypto';
+import { assertNever } from '@milaboratory/ts-helpers';
+import canonicalize from 'canonicalize';
 
 // special way of importing native node module
 const PFrames: PFramesType = require('@milaboratory/pframes-node');
@@ -33,8 +43,10 @@ function blobKey(res: ResourceInfo): string {
   return String(res.id);
 }
 
+type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
+
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  public readonly pframe: PFrameInternal.PFrame = new PFrames.PFrame();
+  public readonly pFrame: PFrameInternal.PFrame = new PFrames.PFrame();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
@@ -43,14 +55,14 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   constructor(
     private readonly blobDriver: DownloadDriver,
-    private readonly data: Map<PObjectId, PColumn>
+    private readonly columns: InternalPFrameData
   ) {
     // pframe initialization
-    this.pframe.setDataSource(this);
-    for (const [columnId, columnData] of data) {
-      this.pframe.addColumnSpec(columnId, columnData.spec);
-      for (const blob of allBlobs(columnData.data)) this.blobIdToResource.set(blobKey(blob), blob);
-      this.pframe.setColumnData(columnId, mapBlobs(columnData.data, blobKey));
+    this.pFrame.setDataSource(this);
+    for (const column of columns) {
+      this.pFrame.addColumnSpec(column.id, column.spec);
+      for (const blob of allBlobs(column.data)) this.blobIdToResource.set(blobKey(blob), blob);
+      this.pFrame.setColumnData(column.id, mapBlobs(column.data, blobKey));
     }
   }
 
@@ -81,27 +93,72 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
-    this.pframe.dispose();
+    this.pFrame.dispose();
   }
 }
 
+type FullPTableDef = {
+  pFrameHandle: PFrameHandle;
+  def: PTableDef<PObjectId>;
+};
+
 export class PFrameDriver implements SdkPFrameDriver {
-  private readonly pFrames: RefCountResourcePool<PFrameData, PFrameHolder>;
+  private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
+  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTable>>;
+
   constructor(private readonly blobDriver: DownloadDriver) {
-    this.pFrames = new (class extends RefCountResourcePool<PFrameData, PFrameHolder> {
+    this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(private readonly blobDriver: DownloadDriver) {
         super();
       }
-      protected createNewResource(params: PFrameData): PFrameHolder {
+      protected createNewResource(params: InternalPFrameData): PFrameHolder {
         return new PFrameHolder(this.blobDriver, params);
       }
-      protected calculateParamsKey(params: PFrameData): string {
+      protected calculateParamsKey(params: InternalPFrameData): string {
         return stableKeyFromPFrameData(params);
       }
     })(this.blobDriver);
+
+    this.pTables = new (class extends RefCountResourcePool<
+      FullPTableDef,
+      Promise<PFrameInternal.PTable>
+    > {
+      constructor(
+        private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>
+      ) {
+        super();
+      }
+      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTable> {
+        const pFrame = this.pFrames.getByKey(params.pFrameHandle);
+        const rawPTable = await pFrame.pFrame.createTable({
+          src: joinEntryToInternal(params.def.src),
+          filters: params.def.filters
+        });
+        return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
+      }
+      protected calculateParamsKey(params: FullPTableDef): string {
+        return stableKeyFromFullPTableDef(params);
+      }
+    })(this.pFrames);
   }
 
-  public createPFRame() {}
+  public createPFrame(def: PFrameDef<PlTreeNodeAccessor>, ctx: ComputableCtx): PFrameHandle {
+    const internalData = def.map((c) => mapPObjectData(c, (d) => parseDataInfoResource(d)));
+    const res = this.pFrames.acquire(internalData);
+    ctx.addOnDestroy(res.unref);
+    return res.key as PFrameHandle;
+  }
+
+  public createPTable(
+    def: PTableDef<PColumn<PlTreeNodeAccessor>>,
+    ctx: ComputableCtx
+  ): PTableHandle {
+    const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
+    const defIds = mapPTableDef(def, (c) => c.id);
+    const res = this.pTables.acquire({ def: defIds, pFrameHandle });
+    ctx.addOnDestroy(res.unref); // in addition to pframe unref added in createPFrame above
+    return res.key as PTableHandle;
+  }
 
   findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse> {
     throw new Error('Method not implemented.');
@@ -129,11 +186,11 @@ export class PFrameDriver implements SdkPFrameDriver {
     throw new Error('Method not implemented.');
   }
 
-  getShape(handle: PTableHandle): PTableShape {
+  getShape(handle: PTableHandle): Promise<PTableShape> {
     throw new Error('Method not implemented.');
   }
 
-  getSpec(handle: PTableHandle): PTableColumnSpec[] {
+  getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
     throw new Error('Method not implemented.');
   }
 
@@ -143,5 +200,74 @@ export class PFrameDriver implements SdkPFrameDriver {
     range?: TableRange | undefined
   ): Promise<PTableVector[]> {
     throw new Error('Method not implemented.');
+  }
+}
+
+function joinEntryToInternal(entry: JoinEntry<PObjectId>): PFrameInternal.JoinEntry {
+  switch (entry.type) {
+    case 'column':
+      return {
+        type: 'column',
+        columnId: entry.column,
+        qualifications: []
+      };
+    case 'inner':
+    case 'full':
+      return {
+        type: entry.type,
+        entries: entry.entries.map((col) => joinEntryToInternal(col))
+      };
+    case 'outer':
+      return {
+        type: 'outer',
+        primary: joinEntryToInternal(entry.primary),
+        secondary: entry.secondary.map((col) => joinEntryToInternal(col))
+      };
+    default:
+      assertNever(entry);
+  }
+}
+
+function stableKeyFromFullPTableDef(data: FullPTableDef): string {
+  const hash = createHash('sha256');
+  hash.update(data.pFrameHandle);
+  hash.update(canonicalize(data.def)!);
+  return hash.digest().toString('hex');
+}
+
+function stableKeyFromPFrameData(data: PColumn<unknown>[]): string {
+  // PObject IDs derived from the PObjects canonical identity, so represents the content
+  const ids = data.map((d) => d.id).sort();
+  const hash = createHash('sha256');
+  let previous = '';
+  for (const id of ids) {
+    if (previous === id) continue; // only unique ids
+    hash.update(id);
+    previous = id;
+  }
+  return hash.digest().toString('hex');
+}
+
+export function extractAllColumns<D>(entry: JoinEntry<PColumn<D>>): PFrameDef<D> {
+  const columns = new Map<PObjectId, PColumn<D>>();
+  addAllColumns(entry, columns);
+  return [...columns.values()];
+}
+
+function addAllColumns<D>(entry: JoinEntry<PColumn<D>>, map: Map<PObjectId, PColumn<D>>): void {
+  switch (entry.type) {
+    case 'column':
+      map.set(entry.column.id, entry.column);
+      return;
+    case 'full':
+    case 'inner':
+      for (const e of entry.entries) addAllColumns(e, map);
+      return;
+    case 'outer':
+      addAllColumns(entry.primary, map);
+      for (const e of entry.secondary) addAllColumns(e, map);
+      return;
+    default:
+      assertNever(entry);
   }
 }

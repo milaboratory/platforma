@@ -13,7 +13,11 @@ import {
   PObject,
   PObjectSpec,
   ResultCollection,
-  ValueOrError
+  ValueOrError,
+  PColumn,
+  PFrameDef,
+  PFrameHandle,
+  PTableDef
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { ResultPool } from '../pool/result_pool';
@@ -184,7 +188,7 @@ export class JsExecutionContext
     return fHandle;
   }
 
-  getBlobContentAsString(handle: string): string {
+  public getBlobContentAsString(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsString',
@@ -199,7 +203,7 @@ export class JsExecutionContext
     );
   }
 
-  getBlobContentAsBase64(handle: string): string {
+  public getBlobContentAsBase64(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsBase64',
@@ -214,7 +218,7 @@ export class JsExecutionContext
     );
   }
 
-  getDownloadedBlobContentHandle(handle: string): string {
+  public getDownloadedBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getDownloadedBlobContentHandle',
@@ -222,7 +226,7 @@ export class JsExecutionContext
     );
   }
 
-  getOnDemandBlobContentHandle(handle: string): string {
+  public getOnDemandBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
@@ -249,7 +253,7 @@ export class JsExecutionContext
     return this._resultPool;
   }
 
-  calculateOptions(predicate: PSpecPredicate): Option[] {
+  public calculateOptions(predicate: PSpecPredicate): Option[] {
     return this.resultPool.calculateOptions(predicate);
   }
 
@@ -269,6 +273,15 @@ export class JsExecutionContext
     throw new Error('Method not implemented.');
   }
   getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    throw new Error('Method not implemented.');
+  }
+  parsePObjectCollection(handle: string): PObject<string>[] | undefined {
+    throw new Error('Method not implemented.');
+  }
+  createPFrame(def: PFrameDef<string>): PFrameHandle {
+    throw new Error('Method not implemented.');
+  }
+  createPTable(def: PTableDef<PColumn<string>>): string {
     throw new Error('Method not implemented.');
   }
 
