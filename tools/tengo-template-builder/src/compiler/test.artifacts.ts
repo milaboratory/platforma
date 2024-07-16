@@ -69,11 +69,11 @@ export const testLocalLib2Src = `
 otherLib := import("package1:someid")
 ll := import("@milaboratory/tengo-sdk:ll")
 
-tplID := ll.getTemplateId("package2:template-1")
+tplID := ll.importTemplate("package2:template-1")
 
 export {
     "some": "value",
-    "template1": ll.getTemplateId("current-package:local-template-2"),
+    "template1": ll.importTemplate("current-package:local-template-2"),
     "template2": tplID,
 }
 `;
