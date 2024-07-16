@@ -1,0 +1,4 @@
+thelib := import(":local-lib")
+ll := import("@milaboratory/tengo-sdk:ll")
+
+tpl1 := ll.getTemplateId(":local-template-1")

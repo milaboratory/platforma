@@ -50,11 +50,11 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
   const lines = src.split('\n');
 
   // processedLines keep all the original lines from <src>.
-  // If <globalizeImport>==true, the parser modifies 'import' and 'getTemplateId' lines 
-  // with Platforma Tengo lib and template usages, resolving local names (":<item>") to 
+  // If <globalizeImport>==true, the parser modifies 'import' and 'getTemplateId' lines
+  // with Platforma Tengo lib and template usages, resolving local names (":<item>") to
   // global ("@milaboratory/pkg:<item>")
   const processedLines: string[] = [];
-  let getTemplateIdRE: RegExp | undefined
+  let getTemplateIdRE = new Map<string, RegExp>()
 
   let lineNo = 0;
   for (const line of lines) {
@@ -63,9 +63,8 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
     try {
       const result = parseSingleSourceLine(line, getTemplateIdRE, fullSourceName.pkg, globalizeImports)
       processedLines.push(result.line)
-      if (result.getTemplateIdRE) {
-        getTemplateIdRE = result.getTemplateIdRE
-      }
+      getTemplateIdRE = result.getTemplateIdRE
+
       if (result.artifact) {
         dependencySet.add(result.artifact)
       }
@@ -80,9 +79,9 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
   }
 }
 
-function parseSingleSourceLine(line: string, getTemplateIdRE: RegExp | undefined, localPackageName: string, globalizeImports: boolean): {
+function parseSingleSourceLine(line: string, getTemplateIdRE: Map<string, RegExp>, localPackageName: string, globalizeImports: boolean): {
   line: string,
-  getTemplateIdRE: RegExp | undefined,
+  getTemplateIdRE: Map<string, RegExp>,
   artifact: TypedArtifactName | undefined,
 } {
   const importInstruction = importRE.exec(line)
@@ -90,9 +89,14 @@ function parseSingleSourceLine(line: string, getTemplateIdRE: RegExp | undefined
   if (importInstruction) {
     const iInfo = parseImport(line)
 
-    if (iInfo.module == "plapi") {
-      getTemplateIdRE = newGetTemplateIdRE(iInfo.alias)
-      return { line, getTemplateIdRE, artifact: undefined }
+    if (["plapi", "@milaboratory/tengo-sdk:ll"].includes(iInfo.module)) {
+      if (!getTemplateIdRE.has(iInfo.module)) {
+        getTemplateIdRE.set(iInfo.module, newGetTemplateIdRE(iInfo.alias))
+      }
+      if (iInfo.module == "plapi") {
+        // No need to search for artifact: this is template module
+        return { line, getTemplateIdRE, artifact: undefined }
+      }
     }
 
     const artifact = parseArtifactName(iInfo.module, 'library', localPackageName)
@@ -109,31 +113,34 @@ function parseSingleSourceLine(line: string, getTemplateIdRE: RegExp | undefined
     return { line, getTemplateIdRE, artifact }
   }
 
-  if (getTemplateIdRE) {
-    const match = getTemplateIdRE.exec(line)
-    if (!match || !match.groups) {
-      return { line, getTemplateIdRE, artifact: undefined }
-    }
+  if (getTemplateIdRE.size) {
+    for (const [key, re] of getTemplateIdRE) {
 
-    const { templateUse, templateName } = match.groups
+      const match = re.exec(line)
+      if (!match || !match.groups) {
+        continue
+      }
 
-    if (!templateUse || !templateName) {
-      throw Error(`failed to parse getTemplateId statement`)
-    }
+      const { templateUse, templateName } = match.groups
 
-    // const artifact
-    const artifact = parseArtifactName(templateName, 'template', localPackageName)
-    if (!artifact) {
-      throw Error(`failed to parse getTemplateId statement`)
-    }
+      if (!templateUse || !templateName) {
+        throw Error(`failed to parse getTemplateId statement`)
+      }
+
+      // const artifact
+      const artifact = parseArtifactName(templateName, 'template', localPackageName)
+      if (!artifact) {
+        throw Error(`failed to parse getTemplateId statement`)
+      }
 
 
-    if (globalizeImports) {
-      line = line.replace(templateUse,
-        `getTemplateId("${artifact.pkg}:${artifact.id}")`)
-    }
+      if (globalizeImports) {
+        line = line.replace(templateUse,
+          `getTemplateId("${artifact.pkg}:${artifact.id}")`)
+        }
 
-    return { line, getTemplateIdRE, artifact }
+        return { line, getTemplateIdRE, artifact }
+      }
   }
 
   return { line, getTemplateIdRE, artifact: undefined }
