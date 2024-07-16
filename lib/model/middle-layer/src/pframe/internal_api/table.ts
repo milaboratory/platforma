@@ -39,4 +39,7 @@ export interface PTable {
 
   /** Sorts the table and returns new PTable instance. */
   sort(request: PTableSorting[]): Promise<PTable>;
+
+  /** Deallocates all underlying resources */
+  dispose(): void;
 }

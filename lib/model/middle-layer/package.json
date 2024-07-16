@@ -14,7 +14,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/sdk-model": "^1.2.5",
+    "@milaboratory/sdk-model": "^1.2.6",
     "utility-types": "^3.11.0"
   },
   "devDependencies": {
