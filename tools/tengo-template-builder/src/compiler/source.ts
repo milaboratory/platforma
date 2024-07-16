@@ -6,7 +6,7 @@ import { ArtifactMap, createArtifactNameSet } from './artifactset';
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
 
 const functionCallRE = (moduleName: string, fnName: string) => {
-  return new RegExp(`\\b${moduleName}\\.(?<templateUse>`+fnName+`\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
+  return new RegExp(`\\b${moduleName}\\.(?<templateUse>(?<fnName>`+fnName+`)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
 }
 
 const newGetTemplateIdRE = (moduleName: string) => {
@@ -133,7 +133,7 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
         continue
       }
 
-      const { templateUse, templateName } = match.groups
+      const { templateUse, templateName, fnName } = match.groups
 
       if (!templateUse || !templateName) {
         throw Error(`failed to parse getTemplateId statement`)
@@ -148,7 +148,7 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
 
       if (globalizeImports) {
         line = line.replace(templateUse,
-          `getTemplateId("${artifact.pkg}:${artifact.id}")`)
+          `${fnName}("${artifact.pkg}:${artifact.id}")`)
         }
 
         return { line, templateDependencyREs: templateDependencyREs, artifact }
