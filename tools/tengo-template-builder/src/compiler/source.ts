@@ -135,14 +135,14 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
 
       const { templateUse, templateName, fnName } = match.groups
 
-      if (!templateUse || !templateName) {
-        throw Error(`failed to parse getTemplateId statement`)
+      if (!templateUse || !templateName || !fnName) {
+        throw Error(`failed to parse template import statement`)
       }
 
       // const artifact
       const artifact = parseArtifactName(templateName, 'template', localPackageName)
       if (!artifact) {
-        throw Error(`failed to parse getTemplateId statement`)
+        throw Error(`failed to parse artifact name in ${fnName} import statement`)
       }
 
 
