@@ -105,7 +105,7 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
     }
 
     if (iInfo.module === "@milaboratory/tengo-sdk:ll" ||
-      (localPackageName == "@milaboratory/tengo-sdk" && iInfo.module == ":ll")) {
+      (localPackageName === "@milaboratory/tengo-sdk" && iInfo.module === ":ll")) {
       if (!templateDependencyREs.has(iInfo.module)) {
         templateDependencyREs.set(iInfo.module, newImportTemplateRE(iInfo.alias))
       }
