@@ -1,0 +1,7 @@
+// l1 := import(":non-existent-library-1")
+// comments should be skipped by compiler
+
+   /*
+   multiline comments also should be ignored
+l2 := import(":non-existent-library-2")
+   */

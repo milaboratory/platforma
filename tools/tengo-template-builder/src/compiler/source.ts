@@ -17,6 +17,9 @@ const newImportTemplateRE = (moduleName: string) => {
   return functionCallRE(moduleName, "importTemplate")
 }
 
+const simpleCommentRE = /^\s*\/\//
+const multilineCommentStartRE = /^\s*\/\*/
+const multilineCommentEndRE = /^\s*\*\//
 const importRE = /\s*:=\s*import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
 const importNameRE = new RegExp(`\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`)
 const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/ // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
@@ -62,16 +65,19 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
   // with Platforma Tengo lib and template usages, resolving local names (":<item>") to
   // global ("@milaboratory/pkg:<item>")
   const processedLines: string[] = [];
-  let templateDependencyREs = new Map<string, RegExp>()
+  let parserContext: sourceParserContext = {
+    isInCommentBlock: false,
+    tplDepREs: new Map<string, RegExp>()
+  }
 
   let lineNo = 0;
   for (const line of lines) {
     lineNo++;
 
     try {
-      const result = parseSingleSourceLine(line, templateDependencyREs, fullSourceName.pkg, globalizeImports)
+      const result = parseSingleSourceLine(line, parserContext, fullSourceName.pkg, globalizeImports)
       processedLines.push(result.line)
-      templateDependencyREs = result.templateDependencyREs
+      parserContext = result.context
 
       if (result.artifact) {
         dependencySet.add(result.artifact)
@@ -87,34 +93,55 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
   }
 }
 
-function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, RegExp>, localPackageName: string, globalizeImports: boolean): {
+interface sourceParserContext {
+  isInCommentBlock: boolean,
+  tplDepREs: Map<string, RegExp>,
+}
+
+function parseSingleSourceLine(line: string, context: sourceParserContext, localPackageName: string, globalizeImports: boolean): {
   line: string,
-  templateDependencyREs: Map<string, RegExp>,
+  context: sourceParserContext,
   artifact: TypedArtifactName | undefined,
 } {
+  if (context.isInCommentBlock) {
+    if (multilineCommentEndRE.exec(line)) {
+      context.isInCommentBlock = false
+    }
+    return { line, context, artifact: undefined }
+  }
+
+  if (simpleCommentRE.exec(line)) {
+    return { line, context, artifact: undefined }
+  }
+
+  if (multilineCommentStartRE.exec(line)) {
+    context.isInCommentBlock = true
+    return { line, context, artifact: undefined }
+  }
+
   const importInstruction = importRE.exec(line)
 
   if (importInstruction) {
     const iInfo = parseImport(line)
 
     if (iInfo.module === "plapi") {
-      if (!templateDependencyREs.has(iInfo.module)) {
-        templateDependencyREs.set(iInfo.module, newGetTemplateIdRE(iInfo.alias))
+      if (!context.tplDepREs.has(iInfo.module)) {
+        context.tplDepREs.set(iInfo.module, newGetTemplateIdRE(iInfo.alias))
       }
-      return { line, templateDependencyREs: templateDependencyREs, artifact: undefined }
+      return { line, context, artifact: undefined }
     }
 
     if (iInfo.module === "@milaboratory/tengo-sdk:ll" ||
       (localPackageName === "@milaboratory/tengo-sdk" && iInfo.module === ":ll")) {
-      if (!templateDependencyREs.has(iInfo.module)) {
-        templateDependencyREs.set(iInfo.module, newImportTemplateRE(iInfo.alias))
+      if (!context.tplDepREs.has(iInfo.module)) {
+        context.tplDepREs.set(iInfo.module, newImportTemplateRE(iInfo.alias))
       }
     }
 
     const artifact = parseArtifactName(iInfo.module, 'library', localPackageName)
     if (!artifact) {
       // not a Platforma Tengo library import
-      return { line, templateDependencyREs: templateDependencyREs, artifact: undefined }
+      return { line, context, artifact: undefined }
     }
 
     if (globalizeImports) {
@@ -122,11 +149,11 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
         ` := import("${artifact.pkg}:${artifact.id}")`)
     }
 
-    return { line, templateDependencyREs: templateDependencyREs, artifact }
+    return { line, context, artifact }
   }
 
-  if (templateDependencyREs.size > 0) {
-    for (const [key, re] of templateDependencyREs) {
+  if (context.tplDepREs.size > 0) {
+    for (const [key, re] of context.tplDepREs) {
 
       const match = re.exec(line)
       if (!match || !match.groups) {
@@ -152,11 +179,11 @@ function parseSingleSourceLine(line: string, templateDependencyREs: Map<string, 
         )
       }
 
-      return { line, templateDependencyREs, artifact }
+      return { line, context, artifact }
     }
   }
 
-  return { line, templateDependencyREs, artifact: undefined }
+  return { line, context, artifact: undefined }
 }
 
 interface ImportInfo {

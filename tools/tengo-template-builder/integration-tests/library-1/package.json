@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "The library-1",
   "scripts": {
-    "build": "pl-tengo-build"
+    "build": "pl-tengo build"
   },
   "license": "UNLICENSED",
   "dependencies": {},

@@ -69,6 +69,10 @@ export const testLocalLib2Src = `
 otherLib := import("package1:someid")
 ll := import("@milaboratory/tengo-sdk:ll")
 
+/* multiline comments should be ignored
+  a := import(":non-existent-library")
+ */
+
 tplID := ll.importTemplate("package2:template-1")
 
 export {
