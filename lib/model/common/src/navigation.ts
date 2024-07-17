@@ -24,6 +24,8 @@ export type BlockSectionDelimiter = {
  * Part of the block state, representing current navigation information
  * (i.e. currently selected section)
  * */
-export type NavigationState<Href extends string = string> = {
-  href: Href;
+export type NavigationState<Href extends `/${string}` = `/${string}`> = {
+  readonly href: Href;
 };
+
+export const DefaultNavigationState: NavigationState = { href: '/' };
