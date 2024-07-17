@@ -10,6 +10,7 @@
     "module": "ESNext",
     "strict": true,
     "noEmit": true,
+    "types": ["@milaboratory/sdk-ui"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
 }
