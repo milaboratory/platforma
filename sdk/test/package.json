@@ -8,7 +8,8 @@
   "types": "dist/lib.d.ts",
   "scripts": {
     "build": "tsup",
-    "test": "vitest"
+    "test": "vitest",
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "files": [
     "dist/**/*"
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.11",
+    "prettier": "^3.2.5",
     "tsup": "^8.1.0",
     "typescript": "^5.5.3"
   },
