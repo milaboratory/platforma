@@ -6,15 +6,18 @@ tx := import("tx")
 ll := import(":ll")
 
 constants := import(":constants")
+tplutil := import(":tpl-util")
 smart := import(":smart")
+sets := import(":sets")
+maps := import(":maps")
 
 //
 // Initialization
 //
 
 // Checking we were imported in compatible render template context
-renderer := smart.Resource(ll.getCurrentTemplateRenderer())
-if renderer.info().Type.Name != "RenderTemplate" {
+renderer := smart.resourceBuilder(ll.getCurrentTemplateRenderer())
+if renderer.info().Type.Name != constants.RTYPE_RENDER_TEMPLATE.Name {
 	ll.panic("pure template can't be executed as ephemeral")
 }
 
@@ -32,9 +35,9 @@ _definedOutputs := []
  * inside.
  */
 defineOutputs := func(...name) {
-	if (len(name) == 1 && is_array(name[0])) {
+	if len(name) == 1 && is_array(name[0]) {
 		for v in name[0] {
-			_definedOutputs = append(_definedOutputs, v)		
+			_definedOutputs = append(_definedOutputs, v)
 		}
 	} else {
 		_definedOutputs = append(_definedOutputs, name...)
@@ -51,17 +54,6 @@ inputs := func() {
 	return _inputs
 }
 
-outputs := func() {
-	if _outputs == undefined {
-		_outputs = {}
-		for _, name in _definedOutputs {
-			_outputs[name] = renderer.getField(constants.TEMPLATE_OUTPUT_PREFIX + name)
-		}
-		_outputs = ll.toStrict(_outputs)
-	}
-	return _outputs
-}
-
 /**
  * Defines main entry point for current template
  */
@@ -71,7 +63,7 @@ body := func(bodyFn) {
 		ll.panic("please define outputs before template body")
 	}
 
-    //
+	//
 	// Rules of pl guarantees that pure template code will be executed twice:
 	//
 	//   (1) once for initialization, at this point it must initialize all outputs, for the
@@ -84,29 +76,28 @@ body := func(bodyFn) {
 	//
 
 	if ll.isInitializing() {
-		// TODO to be removed later
-		if renderer.info().IsDuplicate {
-			return
-		}
-
 		// Initialization
 		for _, name in _definedOutputs {
-			renderer.createField(constants.TEMPLATE_OUTPUT_PREFIX + name, "output")
+			renderer.createOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 		}
 		renderer.lockOutputs()
 	} else {
-		if renderer.info().AllOutputsSet {
-			// nothing to calculate
-			return
-		}
-		bodyFn()
+		// run body func
+		result := bodyFn(inputs())
+
+		ll.assert(ll.isMap(result),
+			"expected map from tpl.body() callback. Did you forget 'return' statement?")
+		ll.assert(sets.fromSlice(_definedOutputs) == sets.fromMapKeys(result),
+			"not all defined outputs were returned from tpl.body() callback. Want ", _definedOutputs, ", got ", maps.getKeys(result))
+
+		// set result to renderer outputs
+		tplutil.setOutputs(renderer, result)
 	}
 }
 
 export ll.toStrict({
 	renderer: renderer,
 	defineOutputs: defineOutputs,
-    body: body,
-	inputs: inputs,
-	outputs: outputs
+	body: body,
+	inputs: inputs
 })

@@ -1,7 +1,17 @@
 ll := import(":ll")
 
-TEMPLATE_OUTPUT_PREFIX := "outputs/"
+// resource types
+
+RTYPE_MAP := { Name: "std/map", Version: "1" }
+RTYPE_JSON := { Name: "json/object", Version: "1" }
+RTYPE_CONTEXT := { Name: "BContext", Version: "1" }
+RTYPE_RENDER_TEMPLATE := { Name: "RenderTemplate", Version: "1" }
+RTYPE_EPH_RENDER_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }
 
 export ll.toStrict({
-    TEMPLATE_OUTPUT_PREFIX : TEMPLATE_OUTPUT_PREFIX
+	RTYPE_JSON                : RTYPE_JSON,
+	RTYPE_MAP                 : RTYPE_MAP,
+	RTYPE_CONTEXT             : RTYPE_CONTEXT,
+	RTYPE_RENDER_TEMPLATE     : RTYPE_RENDER_TEMPLATE,
+	RTYPE_EPH_RENDER_TEMPLATE : RTYPE_EPH_RENDER_TEMPLATE
 })

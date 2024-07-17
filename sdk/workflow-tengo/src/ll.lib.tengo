@@ -8,13 +8,13 @@ fmt := import("fmt")
  * Panics in a template, prints the error and
  * stops the execution of the template.
  * After that, the controller will set errors to outputs.
-*/
+ */
 panic := func(msg, ...args) {
 	txt := fmt.sprintf(msg, args...)
 	plapi.print(txt)
 
 	// next statement actually terminates the execution
-    plapi.setTemplateError(txt)
+	plapi.setTemplateError(txt)
 }
 
 /**
@@ -27,36 +27,49 @@ assert := func(condition, msg, ...args) {
 }
 
 /**
- * Checks whether given object is a strict map
+ * Checks whether the given object is a strict map
  *
- * @param r any 
+ * @param obj any
+ * @return strict: bool - whether obj is a 'strict' map
  */
-isStrict := func(r) {
-	return plapi.isStrictMap(r)
+isStrict := func(obj) {
+	return plapi.isStrictMap(obj)
+}
+
+/**
+ * Checks whether the given object is a map, a strict map or an immutable map.
+ *
+ * @param obj any
+ * @return bool whether obj is any kind of map object (map/immutable map/strict map)
+ */
+isMap := func(obj) {
+	return is_map(obj) || is_immutable_map(obj) || isStrict(obj)
 }
 
 /**
  * Converts 'strict' map into a normal one
  *
  * @param r 'strict' map (will panic if not)
+ * @return map std map
  */
 fromStrict := func(r) {
 	if(!isStrict(r)) {
 		panic("not a map", r)
 	}
-	
+
 	return plapi.strictToMap(r)
 }
 
 /**
- * Converts map into a 'strict' map, which will panic on 
+ * Converts map into a 'strict' map, which will panic on
  * access to non-existing elements.
+ * @return strict map
  */
 toStrict := func(r) {
 	if(!is_map(r)) {
 		panic("not a map", r)
 	}
-	return plapi.mapToStrict(r) 
+	return plapi.mapToStrict(r)
 }
 
 /**
@@ -66,26 +79,28 @@ fieldId := func(resourceId, fieldName) {
 	return plapi.newFieldID(resourceId, fieldName)
 }
 
-/** 
+/**
  * Returns current template renderer
  */
 getCurrentTemplateRenderer := func() {
 	return plapi.getTemplate()
 }
 
-/** 
- * Returns true if current template is initializing (executing for the first time)
+/**
+ * @return isInit: bool - true when current template is initializing (executed for the first time)
  */
 isInitializing := func() {
 	return plapi.isInit
 }
 
-export {
+export toStrict({
 	panic: panic,
+	assert: assert,
 	isStrict: isStrict,
+	isMap: isMap,
 	fromStrict: fromStrict,
 	toStrict: toStrict,
 	fieldId: fieldId,
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing
-}
+})

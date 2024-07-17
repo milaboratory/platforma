@@ -1,6 +1,28 @@
 ll := import(":ll")
+slices := import(":slices")
 
-// Map keys
+/**
+ * Returns a slice of keys of the map.
+ *
+ * @param map map[string]any - map to extract keys from
+ * @return result: string[] - a slice of keys.
+ */
+getKeys := func(map) {
+	res := []
+	for k, _ in map {
+		res = append(res, k)
+	}
+
+	return slices.sortByFn(res, func(elem) { return elem })
+}
+
+/**
+ * Transforms all keys of the map with a function and returns a new map with these keys.
+ *
+ * @param map: map[key]any
+ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.
+ * @return new map: map[newKey]any - a transformed map
+ */
 mapKeys := func(map, fnK) {
 	newM := {}
 	for k, v in map {
@@ -60,5 +82,6 @@ export ll.toStrict({
 	filter : filter,
 	filterValues : filterValues,
 	filterKeys : filterKeys,
-	filterKeysValues : filterKeysValues
+	filterKeysValues : filterKeysValues,
+	getKeys: getKeys
 })

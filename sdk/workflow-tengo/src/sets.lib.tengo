@@ -1,0 +1,67 @@
+/**
+ * Functions for working with sets of elements,
+ * in Tengo they are just maps with truthy values.
+ * Keys of the map can be only either strings or numbers.
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+
+/**
+ * Turns a slice to a set of values.
+ *
+ * @param slice: slice<string|number>
+ * @return result: set<string|number>
+ */
+fromSlice := func(slice) {
+	set := {}
+	for _, elem in slice {
+		set[elem] = true
+	}
+	return set
+}
+
+/**
+ * Checks if a set has an element.
+ *
+ * @param set a set of any elements
+ * @param element any
+ * @return found: bool
+ */
+hasElement := func(set, element) {
+	return !is_undefined(set[element])
+}
+
+/**
+ * Adds elements to the set.
+ *
+ * @param set a set
+ * @param elements a slice of elements
+ * @return: result: set<string|number> - a new set with all old and new elements.
+ */
+add := func(set, elements) {
+	setCopy := copy(set)
+	for _, elem in elements {
+		setCopy[elem] = true
+	}
+
+	return setCopy
+}
+
+/**
+ * Returns a set of key of the map.
+ *
+ * @param map a map
+ * @return result: set<string|number>
+ */
+fromMapKeys := func(map) {
+	keys := maps.getKeys(map)
+	return fromSlice(keys)
+}
+
+export ll.toStrict({
+	fromSlice: fromSlice,
+	hasElement: hasElement,
+	add: add,
+	fromMapKeys: fromMapKeys
+})

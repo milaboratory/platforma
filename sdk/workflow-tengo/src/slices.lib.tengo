@@ -1,0 +1,132 @@
+ll := import(":ll")
+enum := import("enum")
+
+/**
+ * Returns an index of an element in the slice or -1 if it wasn't found.
+ *
+ * @param silce: []any
+ * @param element: any
+ * @return index: int - index of the element or -1
+ */
+findElement := func(slice, element) {
+	for i, elem in slice {
+		if elem == element {
+			return i
+		}
+	}
+
+	return -1
+}
+
+/**
+ * Returns a boolean of whether an element is in a slice.
+ *
+ * @param slice: []any
+ * @param element: any - an element the function searches for.
+ * @return found: bool
+ */
+hasElement := func(slice, element) {
+	return findElement(slice, element) != -1
+}
+
+/**
+ * Removes an element from the slice
+ *
+ * @param slice: []any
+ * @param i: int - an index of the element to remove.
+ * @return nothing
+ */
+removeElement := func(slice, i) {
+	return append(slice[:i], slice[i+1:]...)
+}
+
+/**
+ * Returns a new slice with elements for which a predicate returned true.
+ *
+ * @param slice: []any
+ * @param predicateFn: func(elem): bool - a function that gets an element and returns a truthy or falsy value.
+ * @return new slice: []any - a slice with matched elements.
+ */
+filter := func(slice, predicateFn) {
+	newS := []
+	for _, elem in slice {
+		if predicateFn(elem) {
+			newS = append(newS, elem)
+		}
+	}
+
+	return newS
+}
+
+/**
+ * Transforms each element of the slice to a new one and returns a new slice
+ *
+ * @param slice: []any
+ * @param fn: func(elem): new elem - a function that gets an element and returns a transformed element.
+ * @return new slice: []any - a new slice with transformed elements.
+ */
+map := func(slice, fn) {
+	newS := []
+	for _, elem in slice {
+		newS = append(newS, fn(elem))
+	}
+
+	return newS
+}
+
+/**
+ * Returns the result of applying fn to the first 2 items in the slice, then
+ * applying fn to that result and the 3rd item, etc.
+ * If coll has only 1 item, it is returned and fn is not called.
+ *
+ * @param slice: []any
+ * @param fn: func(any, element): new result.
+ * a function that gets a result got so far and an element and returns a new result.
+ * @return final result: any - the final result
+ */
+reduce := func(slice, fn) {
+	result := undefined
+	for i, elem in slice {
+		if i == 0 {
+			result = elem
+		} else {
+			result = fn(result, elem)
+		}
+	}
+
+	return result
+}
+
+/**
+ * Creates a copy of a slice and sorts it using a stable bubble sort.
+ *
+ * @param notSortedSlice: []any - a slice of elements of any type.
+ * @param fn: func(elem): int - a function that transforms an element to a key.
+ * @return sorted slice: []any
+ *
+ */
+sortByFn := func(notSortedSlice, fn) {
+	s := copy(notSortedSlice)
+
+	for i := 0; i < len(s) - 1; i++ {
+		for j := i+1; j < len(s); j++ {
+			if fn(s[i]) > fn(s[j]) {
+				tmp := s[i]
+				s[i] = s[j]
+				s[j] = tmp
+			}
+		}
+	}
+
+	return s
+}
+
+export ll.toStrict({
+	findElement: findElement,
+	hasElement: hasElement,
+	removeElement: removeElement,
+	filter: filter,
+	map: map,
+	reduce: reduce,
+	sortByFn: sortByFn
+})

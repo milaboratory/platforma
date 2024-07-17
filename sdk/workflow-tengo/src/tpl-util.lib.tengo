@@ -1,0 +1,36 @@
+/* Template utility functions */
+
+smart := import(":smart")
+ll := import(":ll")
+
+TEMPLATE_OUTPUT_PREFIX := "outputs/"
+
+/**
+ * Sets results map to resource output fields. Non-resource objects in the result values
+ * will be automatically converted into Json resources.
+ */
+setOutputs := func(resource, resultMap) {
+	ll.assert(ll.isMap(resultMap), "expected map, got ", resultMap)
+
+	// set outputs
+	for name, value in resultMap {
+
+		output := resource.getField(TEMPLATE_OUTPUT_PREFIX + name)
+
+		// convert to Json non reference objects
+		valueResource := undefined
+		if smart.isReference(value) {
+			// smart.Resource or smart.Field
+			valueResource = value
+		} else {
+			valueResource = smart.createJsonResource(value)
+		}
+		output.set(valueResource)
+	}
+}
+
+export ll.toStrict({
+	TEMPLATE_OUTPUT_PREFIX: TEMPLATE_OUTPUT_PREFIX,
+
+	setOutputs: setOutputs
+})

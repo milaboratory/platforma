@@ -1,67 +1,166 @@
-json := import("json")
-rand := import("rand")
-base64 := import("base64")
+/*
+ * Library provides development kit for workflows
+ */
+
 tx := import("tx")
-plapi := import("plapi")
+ll := import(":ll")
 text := import("text")
-fmt := import("fmt")
-times := import("times")
-enum := import("enum")
 
-test := "Hi there!"
+constants := import(":constants")
+context := import(":context")
+smart := import(":smart")
+maps := import(":maps")
+sets := import(":sets")
+tpl := import(":tpl-eph")
 
-export {
-    "test": test
+//
+// Internal function helpers:
+//
+
+_RESULTS_FIELD_NAME			:= "result"
+_INPUT_CONTEXT_FIELD_NAME	:= "context"
+_OUTPUT_CONTEXT_FIELD_NAME	:= "context"
+
+_isProduction := func() {
+	return tpl.inputs().isProduction.getValueAsJson()
 }
 
-// //
-// // application
-// //
+_isStaging := func() {
+	return !_isProduction()
+}
 
-// tpl2 := getTemplate(":tpl2")
+//
+// Definitions and exports:
+//
 
-// workflow.body(func() {
-//     refToResolvedResource := workflow.resolveRef(workflow.args.someRef)
+_args := undefined
 
-//     result := mapFrame(refToResolvedResource, tpl2, )
+/**
+ * Returns a map of block Json arguments
+ */
+args := func() {
+	if _args == undefined {
+		field := tpl.inputs().args
+		ll.assert(!is_undefined(field), "args are not set in workflow inputs")
 
-//     return {
-//         outputs: {
-//             result: result
-//         },
-//         exports: {
-//             result: result
-//         }
-//     }
-// })
+		_args = ll.toStrict(field.getValueAsJson())
+	}
 
-// workflow.preRun(func() {
-//     result := mapFrame(refToResolvedResource, tpl2, )
+	return _args
+}
 
-//     return {
-//         outputs: {
-//             result: result
-//         },
-//         exports: {
-//             result: result
-//         }
-//     }
-// })
+_blockId := undefined
 
+/**
+ * Id of corresponding block
+ */
+blockId := func() {
+	if _blockId == undefined {
+		_blockId = tpl.inputs().blockId
+		ll.assert(!is_undefined(_blockId), "block id is not set in workflow inputs")
+	}
 
-// // template 2
+	return _blockId
+}
 
-// defineOutputs("result")
+__parentContext := undefined
 
-// body(func() {
-//     exec2 := buildExec().
-//         setCmd("/bin/gzcat").
-//         collectPFrame(...).
-//         addFile("fileName.txt", self.inputs().input)
+/**
+ * Parent context
+ */
+_parentContext := func() {
+	if __parentContext == undefined {
+		__parentContext = tpl.inputs()[_INPUT_CONTEXT_FIELD_NAME]
+		if __parentContext == undefined {
+			ll.panic("parent context is not set in inputs")
+		}
+	}
 
-//     resultFile := exec2.collectFile("fileName")
+	return __parentContext
+}
 
-//     exec2.build()
+/**
+ * Utility function to build final template outputs given block results
+ */
+_buildOutputs := func(results) {
+	ll.assert(ll.isMap(results), "expected to see map result from body function")
+	ll.assert(
+		sets.fromSlice(["results", "exports"]) == sets.fromMapKeys(results),
+		"expected only results and exports in the returned map"
+	)
 
-//     return { result: resultFile }
-// })
+	ll.assert(!is_undefined(results.results), "outputs are not defined in the results")
+	ll.assert(!is_undefined(results.exports), "exports are not defined in the results")
+
+	ll.assert(ll.isMap(results.results), "expected a map in outputs returned from workflow.body")
+	ll.assert(ll.isMap(results.exports), "expected a map in exports returned from workflow.body")
+
+	// block outputs
+	o := results.results
+	// block exports
+	e := results.exports
+
+	// create results map
+	resBuilder := smart.mapBuilder()
+	for name, value in o {
+		if smart.isReference(value) {
+			resBuilder.add(name, value)
+		} else {
+			resBuilder.addJson(name, value)
+		}
+	}
+
+	// create ctx and save exports
+	ctxBuilder := context.contextBuilder(blockId(), _parentContext())
+	for name, value in e {
+		ctxBuilder.add(name, value)
+	}
+
+	// final temlate outputs
+	tplOutputs := {}
+	tplOutputs[_RESULTS_FIELD_NAME] = resBuilder.build()
+	tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = ctxBuilder.build()
+
+	return tplOutputs
+}
+
+/**
+ * Defines main entry point for current workflow
+ */
+body := func(bodyFn) {
+	return tpl.body(func(_) {
+
+		if !_isProduction() {
+			// nothing to do
+			return {}
+		}
+
+		workflowInputArgs := args()
+		result := bodyFn(workflowInputArgs)
+
+		return _buildOutputs(result)
+	})
+}
+
+/**
+ * Defines a pre run entry point for a current workflow
+ */
+preRun := func(preRunFn) {
+	return tpl.body(func(_) {
+
+		if !_isStaging() {
+			// nothing to do
+			return {}
+		}
+
+		workflowInputArgs := args()
+		result := preRunFn(workflowInputArgs)
+
+		return _buildOutputs(result)
+	})
+}
+
+export ll.toStrict({
+	body: body,
+	preRun: preRun
+})

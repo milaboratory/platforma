@@ -6,70 +6,85 @@ ll := import(":ll")
 text := import("text")
 
 constants := import(":constants")
+tplutil := import(":tpl-util")
 smart := import(":smart")
 maps := import(":maps")
 
 //
-// Initialization
+// Initialization:
 //
 
 // Checking we were imported in compatible render template context
-renderer := smart.Resource(ll.getCurrentTemplateRenderer())
-if renderer.info().Type.Name != "EphRenderTemplate" {
+renderer := smart.resourceBuilder(ll.getCurrentTemplateRenderer())
+if ll.fromStrict(renderer.info().Type) != constants.RTYPE_EPH_RENDER_TEMPLATE {
 	ll.panic("expected ephemeral render template got pure")
 }
 
-//
-// Internal function helpers
-//
-
-initOutputsList := func() {
-	outputsList := ll.toStrict(renderer.outputs())
-	trimOutputsPrefix := func(outputName) {
-		return text.trim_prefix(constants.TEMPLATE_OUTPUT_PREFIX, outputName)
-	}
-
-	return maps.mapKeys(outputsList, trimOutputsPrefix)
-}
 
 //
-// Definitions and exports
+// Definitions and exports:
 //
 
-_outputs := initOutputsList()
 _inputs := undefined
 
 inputs := func() {
 	if _inputs == undefined {
-		_inputs = ll.toStrict(renderer.get("inputs").inputs())
+		// get map resource storing template inputs
+		inputMap := renderer.get("inputs")
+		// get all inputs as map
+		_inputs = immutable(inputMap.inputs())
 	}
 	return _inputs
 }
 
+_outputs := undefined
+
+/** Initial outputs */
 outputs := func() {
+	if _outputs == undefined {
+		outs := ll.toStrict(renderer.outputs())
+		trimOutputsPrefix := func(outputName) {
+			return text.trim_prefix(tplutil.TEMPLATE_OUTPUT_PREFIX, outputName)
+		}
+
+		_outputs = immutable(maps.mapKeys(outs, trimOutputsPrefix))
+	}
+
 	return _outputs
-}
-
-newOutput := func(name) {
-    field := renderer.createField(constants.TEMPLATE_OUTPUT_PREFIX + name, "output")
-	_outputs[name] = field
-
-    return field
 }
 
 /**
  * Defines main entry point for current template
  */
 body := func(bodyFn) {
-    if renderer.info().AllInputsSet {
-		inputMap := renderer.inputs().get("input")
-		if inputMap.AllInputsSet {
-			bodyFn()
+	if renderer.info().AllInputsSet {
+
+		// get map resource storing template inputs
+		inputMap := renderer.get("inputs")
+
+		if inputMap.info().AllInputsSet {
+
+			// run body func
+			result := bodyFn(inputs())
+			ll.assert(ll.isMap(result),
+				"expected map from tpl-eph.body() callback. Did you forget 'return' statement?")
+
+			// create new outputs
+			for name, _ in result {
+				renderer.createOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+			}
+
+			// set result to renderer outputs
+			tplutil.setOutputs(renderer, result)
+
+			// finally lock this resource
 			renderer.lockOutputs()
 		} else {
+			// wait until inputs map is ready
 			tx.subscribeTo(inputMap.ID, "InputMapAllInputsSet", {"AllInputsSet": true})
 		}
 	} else if ll.isInitializing() {
+		// wait until inputs map is ready
 		tx.subscribeTo(renderer.id, "MainAllInputsSet", {"AllInputsSet": true})
 	}
 }
@@ -78,6 +93,5 @@ export ll.toStrict({
 	renderer: renderer,
 	body: body,
 	inputs: inputs,
-	outputs: outputs,
-	newOutput: newOutput
+	outputs: outputs
 })
