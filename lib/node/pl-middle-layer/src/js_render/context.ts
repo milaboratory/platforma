@@ -13,12 +13,22 @@ import {
   PObject,
   PObjectSpec,
   ResultCollection,
-  ValueOrError
+  ValueOrError,
+  PColumn,
+  PFrameDef,
+  PFrameHandle,
+  PTableDef,
+  mapPObjectData,
+  mapPTableDef,
+  PTableHandle,
+  mapValueInVOE
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { ResultPool } from '../pool/result_pool';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { Optional } from 'utility-types';
+import { parseFinalPObjectCollection } from '../pool/p_object_collection';
+import { Block } from '../model/project_model';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -40,6 +50,8 @@ export class JsExecutionContext
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
 
+  private readonly meta: Map<string, Block>;
+
   constructor(
     private readonly scope: Scope,
     private readonly vm: QuickJSContext,
@@ -60,6 +72,8 @@ export class JsExecutionContext
       vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'parse'))
     );
     if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
+
+    this.meta = blockCtx.blockMeta(computableCtx);
 
     this.injectCtx();
   }
@@ -113,6 +127,10 @@ export class JsExecutionContext
     else if (name === 'main') return wellKnownAccessor('main', 'prod');
     return undefined;
   }
+
+  //
+  // Accessors
+  //
 
   resolveWithCommon(
     handle: string,
@@ -175,6 +193,25 @@ export class JsExecutionContext
   }
 
   //
+  // Accessor helpers
+  //
+
+  parsePObjectCollection(
+    handle: string,
+    errorOnUnknownField: boolean,
+    prefix: string
+  ): Record<string, PObject<string>> | undefined {
+    const acc = this.getAccessor(handle);
+    if (!acc.getIsReadyOrError()) return undefined;
+    const accResult = parseFinalPObjectCollection(acc, errorOnUnknownField, prefix);
+    const result: Record<string, PObject<string>> = {};
+    for (const [key, obj] of Object.entries(accResult)) {
+      result[key] = mapPObjectData(obj, (d) => this.wrapAccessor(d));
+    }
+    return result;
+  }
+
+  //
   // Blobs
   //
 
@@ -184,7 +221,7 @@ export class JsExecutionContext
     return fHandle;
   }
 
-  getBlobContentAsString(handle: string): string {
+  public getBlobContentAsString(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsString',
@@ -199,7 +236,7 @@ export class JsExecutionContext
     );
   }
 
-  getBlobContentAsBase64(handle: string): string {
+  public getBlobContentAsBase64(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getBlobContentAsBase64',
@@ -214,7 +251,7 @@ export class JsExecutionContext
     );
   }
 
-  getDownloadedBlobContentHandle(handle: string): string {
+  public getDownloadedBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getDownloadedBlobContentHandle',
@@ -222,12 +259,22 @@ export class JsExecutionContext
     );
   }
 
-  getOnDemandBlobContentHandle(handle: string): string {
+  public getOnDemandBlobContentHandle(handle: string): string {
     const resourceInfo = this.getAccessor(handle).resourceInfo;
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
       this.env.driverKit.blobDriver.getOnDemandBlob(resourceInfo)
     );
+  }
+
+  //
+  // Blocks
+  //
+
+  public getBlockLabel(blockId: string): string {
+    const b = this.meta.get(blockId);
+    if (b === undefined) throw new Error(`Block ${blockId} not found.`);
+    return b.label;
   }
 
   //
@@ -249,27 +296,66 @@ export class JsExecutionContext
     return this._resultPool;
   }
 
-  calculateOptions(predicate: PSpecPredicate): Option[] {
+  public calculateOptions(predicate: PSpecPredicate): Option[] {
     return this.resultPool.calculateOptions(predicate);
   }
 
-  //
-  // TODO Implement
-  //
+  public getDataFromResultPool(): ResultCollection<PObject<string>> {
+    const collection = this.resultPool.getData();
+    return {
+      isComplete: collection.isComplete,
+      entries: collection.entries.map((e) => ({
+        ref: e.ref,
+        obj: mapPObjectData(e.obj, (d) => this.wrapAccessor(d))
+      }))
+    };
+  }
 
-  getBlockLabel(blockId: string): string {
-    throw new Error('Method not implemented.');
-  }
-  getDataFromResultPool(): ResultCollection<PObject<string>> {
-    throw new Error('Method not implemented.');
-  }
-  getDataWithErrorsFromResultPool(): ResultCollection<
+  public getDataWithErrorsFromResultPool(): ResultCollection<
     Optional<PObject<ValueOrError<string, string>>, 'id'>
   > {
-    throw new Error('Method not implemented.');
+    const collection = this.resultPool.getDataWithErrors();
+    return {
+      isComplete: collection.isComplete,
+      entries: collection.entries.map((e) => ({
+        ref: e.ref,
+        obj: {
+          id: e.obj.id,
+          spec: e.obj.spec,
+          data: mapValueInVOE(e.obj.data, (d) => this.wrapAccessor(d))
+        }
+      }))
+    };
   }
-  getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
-    throw new Error('Method not implemented.');
+
+  public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    return this.getSpecsFromResultPool();
+  }
+
+  //
+  // PFrames / PTables
+  //
+
+  public createPFrame(def: PFrameDef<string>): PFrameHandle {
+    if (this.computableCtx === undefined)
+      throw new Error(
+        "can't instantiate PFrames from this context (most porbably called from the future mapper)"
+      );
+    return this.env.driverKit.pFrameDriver.createPFrame(
+      def.map((c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      this.computableCtx
+    );
+  }
+
+  public createPTable(def: PTableDef<PColumn<string>>): PTableHandle {
+    if (this.computableCtx === undefined)
+      throw new Error(
+        "can't instantiate PTable from this context (most porbably called from the future mapper)"
+      );
+    return this.env.driverKit.pFrameDriver.createPTable(
+      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      this.computableCtx
+    );
   }
 
   //
@@ -282,6 +368,8 @@ export class JsExecutionContext
     return accessor;
   }
 
+  private wrapAccessor(accessor: PlTreeNodeAccessor): string;
+  private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined;
   private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined {
     if (accessor === undefined) return undefined;
     else {
@@ -356,6 +444,10 @@ export class JsExecutionContext
     switch (this.vm.typeof(handle)) {
       case 'undefined':
         return undefined;
+      case 'boolean':
+      case 'number':
+      case 'string':
+        return this.vm.dump(handle);
       default:
         return this.importObjectViaJson(handle);
     }
@@ -396,12 +488,20 @@ export class JsExecutionContext
         this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
       };
 
+      //
+      // Methods for injected ctx object
+      //
+
       exportCtxFunction('getAccessorHandleByName', (name) => {
         return this.exportSingleValue(
           this.getAccessorHandleByName(this.vm.getString(name)),
           undefined
         );
       });
+
+      //
+      // Accessors
+      //
 
       exportCtxFunction('resolveWithCommon', (handle, commonOptions, ...steps) => {
         return this.exportSingleValue(
@@ -474,6 +574,25 @@ export class JsExecutionContext
         return this.exportSingleValue(this.getDataAsString(this.vm.getString(handle)), undefined);
       });
 
+      //
+      // Accessor helpers
+      //
+
+      exportCtxFunction('parsePObjectCollection', (handle, errorOnUnknownField, prefix) => {
+        return this.exportObjectUniversal(
+          this.parsePObjectCollection(
+            this.vm.getString(handle),
+            this.vm.dump(errorOnUnknownField) as boolean,
+            this.vm.getString(prefix)
+          ),
+          undefined
+        );
+      });
+
+      //
+      // Blobs
+      //
+
       exportCtxFunction('getBlobContentAsBase64', (handle) => {
         return this.exportSingleValue(
           this.getBlobContentAsBase64(this.vm.getString(handle)),
@@ -502,9 +621,51 @@ export class JsExecutionContext
         );
       });
 
+      //
+      // Blocks
+      //
+
+      exportCtxFunction('getBlockLabel', (blockId) => {
+        return this.exportSingleValue(this.getBlockLabel(this.vm.getString(blockId)), undefined);
+      });
+
+      //
+      // Result pool
+      //
+
+      exportCtxFunction('getDataFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getDataFromResultPool(), undefined);
+      });
+
+      exportCtxFunction('getDataWithErrorsFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getDataWithErrorsFromResultPool(), undefined);
+      });
+
+      exportCtxFunction('getSpecsFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
+      });
+
       exportCtxFunction('calculateOptions', (predicate) => {
         return this.exportObjectUniversal(
           this.calculateOptions(this.importObjectViaJson(predicate) as PSpecPredicate),
+          undefined
+        );
+      });
+
+      //
+      // PFrames / PTables
+      //
+
+      exportCtxFunction('createPFrame', (def) => {
+        return this.exportSingleValue(
+          this.createPFrame(this.importObjectViaJson(def) as PFrameDef<string>),
+          undefined
+        );
+      });
+
+      exportCtxFunction('createPTable', (def) => {
+        return this.exportSingleValue(
+          this.createPTable(this.importObjectViaJson(def) as PTableDef<PColumn<string>>),
           undefined
         );
       });

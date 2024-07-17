@@ -1,16 +1,16 @@
-import { PColumnSpec, PObjectId, PObjectSpec } from '@milaboratory/sdk-ui';
+import { PColumn, PColumnSpec, PObject, PObjectId, PObjectSpec } from '@milaboratory/sdk-ui';
 import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratory/pl-tree';
 import { assertNever } from '@milaboratory/ts-helpers';
 import { createHash } from 'crypto';
 import canonicalize from 'canonicalize';
-import { isNullResourceId, resourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
-import { ComputableCtx } from '@milaboratory/computable';
-
-export type PColumn = {
-  spec: PColumnSpec;
-  data: PFrameInternal.DataInfo<ResourceInfo>;
-};
+import {
+  isNullResourceId,
+  resourceType,
+  resourceTypeToString,
+  resourceTypesEqual
+} from '@milaboratory/pl-client-v2';
+import { Writable } from 'utility-types';
 
 export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {
@@ -57,44 +57,76 @@ export function mapBlobs<B1, B2>(
   }
 }
 
-export type PFrameData = Map<PObjectId, PColumn>;
-
 export const PColumnDataJsonPartitioned = resourceType('PColumnData/JsonPartitioned', '1');
 export const PColumnDataBinaryPartitioned = resourceType('PColumnData/BinaryPartitioned', '1');
 export type PColumnDataResourceValue = {
   partitionKeyLength: number;
 };
 
-// TODO <----
-// export function createDataInfo(
-//   ctx: ComputableCtx,
-//   data: PlTreeNodeAccessor
-// ): PFrameInternal.DataInfo<ResourceInfo> {
-//   if (!data.getIsFinal()) throw new Error('Data not ready.');
-//   if (resourceTypesEqual(data.resourceType, PColumnDataJsonPartitioned)) {
-//     const meta = data.getDataAsJson<PColumnDataResourceValue>();
-//     if (meta === undefined) throw new Error('unexpected data info structure, no resource value');
-//     return {
-//       type: 'JsonPartitioned',
-//       partitionKeyLength: meta?.partitionKeyLength,
-//       parts: Object.fromEntries(
-//         data
-//           .listInputFields()
-//           .map((field) => [
-//             field,
-//             data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo
-//           ])
-//       )
-//     };
-//   }
-// }
+export function parseDataInfoResource(
+  data: PlTreeNodeAccessor
+): PFrameInternal.DataInfo<ResourceInfo> {
+  if (!data.getIsReadyOrError()) throw new Error('Data not ready.');
 
-export function stableKeyFromPFrameData(data: PFrameData): string {
-  // PObject IDs derived from the PObjects canonical identity, so represents the content
-  const ids = [...data.keys()].sort();
-  const hash = createHash('sha256');
-  for (const id of ids) hash.update(id);
-  return hash.digest().toString('hex');
+  const meta = data.getDataAsJson<PColumnDataResourceValue>();
+  if (meta === undefined) throw new Error('unexpected data info structure, no resource value');
+
+  if (resourceTypesEqual(data.resourceType, PColumnDataJsonPartitioned)) {
+    const parts = Object.fromEntries(
+      data
+        .listInputFields()
+        .map((field) => [
+          field,
+          data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo
+        ])
+    );
+
+    return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: meta.partitionKeyLength,
+      parts
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
+    const parts: Record<
+      string,
+      Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
+    > = {};
+
+    // parsing the structure
+    for (const field of data.listInputFields()) {
+      if (field.endsWith('.index')) {
+        const partKey = field.slice(0, field.length - 6);
+        let part = parts[partKey];
+        if (part === undefined) {
+          part = {};
+          parts[partKey] = part;
+        }
+        part.index = data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo;
+      } else if (field.endsWith('.values')) {
+        const partKey = field.slice(0, field.length - 7);
+        let part = parts[partKey];
+        if (part === undefined) {
+          part = {};
+          parts[partKey] = part;
+        }
+        part.values = data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo;
+      } else throw new Error(`unrecognized part field name: ${field}`);
+    }
+
+    // structure validation
+    for (const [key, part] of Object.entries(parts)) {
+      if (part.index === undefined) throw new Error(`no index for part ${key}`);
+      if (part.values === undefined) throw new Error(`no values for part ${key}`);
+    }
+
+    return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: meta.partitionKeyLength,
+      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
+    };
+  }
+
+  throw new Error(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
 }
 
 export function derivePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
@@ -102,4 +134,15 @@ export function derivePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PO
   hash.update(canonicalize(spec)!);
   hash.update(String(isNullResourceId(data.originalId) ? data.id : data.originalId));
   return hash.digest().toString('hex') as PObjectId;
+}
+
+export function makePObject(
+  spec: PObjectSpec,
+  data: PlTreeNodeAccessor
+): PObject<PlTreeNodeAccessor> {
+  return {
+    id: derivePObjectId(spec, data),
+    spec,
+    data
+  };
 }
