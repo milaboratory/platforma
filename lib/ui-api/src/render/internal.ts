@@ -65,7 +65,11 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getDataAsString(handle: AHandle): string | undefined;
 
   /** If not final returns undefined */
-  parsePObjectCollection(handle: AHandle): PObject<AHandle>[] | undefined;
+  parsePObjectCollection(
+    handle: AHandle,
+    errorOnUnknownField: boolean,
+    prefix: string
+  ): Record<string, PObject<AHandle>> | undefined;
 
   //
   // Blob

@@ -104,7 +104,7 @@ export type RenderFunction<Args = unknown, UiState = unknown> = (
   rCtx: RenderCtx<Args, UiState>
 ) => unknown;
 
-export type InferRenderFunctionReturn<RF extends Function> = RF extends () => infer R
+export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
   ? R extends FutureRef<infer T>
     ? T
     : R

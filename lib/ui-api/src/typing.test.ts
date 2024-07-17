@@ -118,7 +118,8 @@ test('test config 2', () => {
         g: getOnDemandBlobContent(getResourceField(MainOutputs, 'field5'))
       })
     )
-    .output('cell2', () => 42)
+    .output('cell2', (ctx) => 42)
+    .output('cell3', () => undefined)
     .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections(getImmediate([{ type: 'link', href: 'main', label: 'Main' }]))
     .done();
@@ -135,6 +136,7 @@ test('test config 2', () => {
         g: RemoteBlobHandleAndSize;
       }>;
       cell2: ValueOrErrors<number>;
+      cell3: ValueOrErrors<undefined>;
     }
   >();
 

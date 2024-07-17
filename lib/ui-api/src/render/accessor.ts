@@ -108,10 +108,20 @@ export class TreeNodeAccessor {
     return JSON.parse(content);
   }
 
-  public parsePObjectCollection(): PObject<TreeNodeAccessor>[] | undefined {
-    const pObjects = getCfgRenderCtx().parsePObjectCollection(this.handle);
+  public parsePObjectCollection(
+    errorOnUnknownField: boolean = false,
+    prefix: string = ''
+  ): Record<string, PObject<TreeNodeAccessor>> | undefined {
+    const pObjects = getCfgRenderCtx().parsePObjectCollection(
+      this.handle,
+      errorOnUnknownField,
+      prefix
+    );
     if (pObjects === undefined) return undefined;
-    return pObjects.map((po) => mapPObjectData(po, (c) => new TreeNodeAccessor(c)));
+    const result: Record<string, PObject<TreeNodeAccessor>> = {};
+    for (const [key, value] of Object.entries(pObjects))
+      result[key] = mapPObjectData(value, (c) => new TreeNodeAccessor(c));
+    return result;
   }
 
   public getBlobContentAsBase64(): FutureRef<string | undefined> {
