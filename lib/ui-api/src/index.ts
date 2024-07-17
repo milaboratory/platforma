@@ -1,5 +1,6 @@
 export * from './config';
 export * from './block_state_patch';
+export * from './block_state_util';
 export * from './builder';
 export * from './ref_util';
 export * from './platforma';

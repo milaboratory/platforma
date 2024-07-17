@@ -93,10 +93,8 @@ export class RenderCtx<Args, UiState> {
     return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
   }
 
-  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): FutureRef<PTableHandle> {
-    return new FutureRef(
-      this.ctx.createPTable(mapPTableDef(def, (po) => mapPObjectData(po, (d) => d.handle)))
-    );
+  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle {
+    return this.ctx.createPTable(mapPTableDef(def, (po) => mapPObjectData(po, (d) => d.handle)));
   }
 }
 
