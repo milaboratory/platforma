@@ -9,7 +9,7 @@ export type BlockSectionLink = {
   readonly type: 'link';
 
   /** Internal block section identifier */
-  readonly href: string;
+  readonly href: `/${string}`;
 
   /** Visible section title, can also be used in the window header. */
   readonly label: string;
