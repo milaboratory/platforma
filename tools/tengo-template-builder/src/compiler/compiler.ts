@@ -22,18 +22,26 @@ export class TengoTemplateCompiler {
 
   private populateTemplateDataFromDependencies(fullName: FullArtifactName,
                                                data: TemplateData,
-                                               deps: TypedArtifactName[]) {
+                                               deps: TypedArtifactName[],
+                                               trace: string[]) {
     for (const dep of deps) {
       switch (dep.type) {
         case 'library':
           const lib = this.getLibOrError(dep);
+
+          const recursionStart = trace.indexOf(artifactNameToString(dep))
+          if (recursionStart >= 0) {
+            let errorMessage = `library import recursion detected: ${trace.slice(recursionStart).join(" -> ")} -> ${artifactNameToString(dep)}`
+            throw new Error(errorMessage)
+          }
+
           data.libs[artifactNameToString(dep)] = {
             ...formatArtefactNameAndVersion(lib.fullName),
             src: lib.src
           };
 
           // populate with transient library dependencies
-          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies);
+          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies, [...trace, artifactNameToString(dep)]);
 
           break;
         case 'template':
@@ -69,7 +77,7 @@ export class TengoTemplateCompiler {
     };
 
     // collecting dependencies in output format
-    this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies);
+    this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies, []);
 
     const tpl = new Template(tplSrc.fullName, { data: tplData });
     this.addTemplate(tpl);
