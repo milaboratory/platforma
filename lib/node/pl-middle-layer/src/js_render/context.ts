@@ -18,13 +18,17 @@ import {
   PFrameDef,
   PFrameHandle,
   PTableDef,
-  mapPObjectData
+  mapPObjectData,
+  mapPTableDef,
+  PTableHandle,
+  mapValueInVOE
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { ResultPool } from '../pool/result_pool';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { Optional } from 'utility-types';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
+import { Block } from '../model/project_model';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -46,6 +50,8 @@ export class JsExecutionContext
   private computableCtx: ComputableCtx | undefined;
   private readonly accessors = new Map<string, PlTreeNodeAccessor | undefined>();
 
+  private readonly meta: Map<string, Block>;
+
   constructor(
     private readonly scope: Scope,
     private readonly vm: QuickJSContext,
@@ -66,6 +72,8 @@ export class JsExecutionContext
       vm.getProp(vm.global, 'JSON').consume((json) => vm.getProp(json, 'parse'))
     );
     if (vm.typeof(this.fnJSONParse) !== 'function') throw new Error(`JSON.parse() not found.`);
+
+    this.meta = blockCtx.blockMeta(computableCtx);
 
     this.injectCtx();
   }
@@ -260,6 +268,16 @@ export class JsExecutionContext
   }
 
   //
+  // Blocks
+  //
+
+  public getBlockLabel(blockId: string): string {
+    const b = this.meta.get(blockId);
+    if (b === undefined) throw new Error(`Block ${blockId} not found.`);
+    return b.label;
+  }
+
+  //
   // Result Pool
   //
 
@@ -282,11 +300,43 @@ export class JsExecutionContext
     return this.resultPool.calculateOptions(predicate);
   }
 
+  public getDataFromResultPool(): ResultCollection<PObject<string>> {
+    const collection = this.resultPool.getData();
+    return {
+      isComplete: collection.isComplete,
+      entries: collection.entries.map((e) => ({
+        ref: e.ref,
+        obj: mapPObjectData(e.obj, (d) => this.wrapAccessor(d))
+      }))
+    };
+  }
+
+  public getDataWithErrorsFromResultPool(): ResultCollection<
+    Optional<PObject<ValueOrError<string, string>>, 'id'>
+  > {
+    const collection = this.resultPool.getDataWithErrors();
+    return {
+      isComplete: collection.isComplete,
+      entries: collection.entries.map((e) => ({
+        ref: e.ref,
+        obj: {
+          id: e.obj.id,
+          spec: e.obj.spec,
+          data: mapValueInVOE(e.obj.data, (d) => this.wrapAccessor(d))
+        }
+      }))
+    };
+  }
+
+  public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    return this.getSpecsFromResultPool();
+  }
+
   //
   // PFrames / PTables
   //
 
-  createPFrame(def: PFrameDef<string>): PFrameHandle {
+  public createPFrame(def: PFrameDef<string>): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         "can't instantiate PFrames from this context (most porbably called from the future mapper)"
@@ -297,27 +347,15 @@ export class JsExecutionContext
     );
   }
 
-  createPTable(def: PTableDef<PColumn<string>>): string {
-    throw new Error('Method not implemented.');
-  }
-
-  //
-  // TODO Implement
-  //
-
-  getBlockLabel(blockId: string): string {
-    throw new Error('Method not implemented.');
-  }
-  getDataFromResultPool(): ResultCollection<PObject<string>> {
-    throw new Error('Method not implemented.');
-  }
-  getDataWithErrorsFromResultPool(): ResultCollection<
-    Optional<PObject<ValueOrError<string, string>>, 'id'>
-  > {
-    throw new Error('Method not implemented.');
-  }
-  getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
-    throw new Error('Method not implemented.');
+  public createPTable(def: PTableDef<PColumn<string>>): PTableHandle {
+    if (this.computableCtx === undefined)
+      throw new Error(
+        "can't instantiate PTable from this context (most porbably called from the future mapper)"
+      );
+    return this.env.driverKit.pFrameDriver.createPTable(
+      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      this.computableCtx
+    );
   }
 
   //
@@ -584,8 +622,28 @@ export class JsExecutionContext
       });
 
       //
+      // Blocks
+      //
+
+      exportCtxFunction('getBlockLabel', (blockId) => {
+        return this.exportSingleValue(this.getBlockLabel(this.vm.getString(blockId)), undefined);
+      });
+
+      //
       // Result pool
       //
+
+      exportCtxFunction('getDataFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getDataFromResultPool(), undefined);
+      });
+
+      exportCtxFunction('getDataWithErrorsFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getDataWithErrorsFromResultPool(), undefined);
+      });
+
+      exportCtxFunction('getSpecsFromResultPool', (predicate) => {
+        return this.exportObjectUniversal(this.getSpecsFromResultPool(), undefined);
+      });
 
       exportCtxFunction('calculateOptions', (predicate) => {
         return this.exportObjectUniversal(
@@ -601,6 +659,13 @@ export class JsExecutionContext
       exportCtxFunction('createPFrame', (def) => {
         return this.exportSingleValue(
           this.createPFrame(this.importObjectViaJson(def) as PFrameDef<string>),
+          undefined
+        );
+      });
+
+      exportCtxFunction('createPTable', (def) => {
+        return this.exportSingleValue(
+          this.createPTable(this.importObjectViaJson(def) as PTableDef<PColumn<string>>),
           undefined
         );
       });

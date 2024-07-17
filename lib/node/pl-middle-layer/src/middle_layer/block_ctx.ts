@@ -1,14 +1,22 @@
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
-import { blockFrontendStateKey, projectFieldName } from '../model/project_model';
+import {
+  Block,
+  ProjectStructure,
+  ProjectStructureKey,
+  blockFrontendStateKey,
+  projectFieldName
+} from '../model/project_model';
 import { ComputableCtx } from '@milaboratory/computable';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { Optional } from 'utility-types';
 import { ResultPool } from '../pool/result_pool';
+import { allBlocks } from '../model/project_model_util';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
   readonly args: string;
   readonly uiState: string | undefined;
+  readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
 };
 
 export type BlockContextFull = BlockContextArgsOnly & {
@@ -23,6 +31,7 @@ export function constructBlockContextArgsOnly(
   projectNode: PlTreeNodeAccessor,
   blockId: string
 ): BlockContextArgsOnly {
+  const projectEntry = projectNode.persist();
   const args = notEmpty(
     projectNode
       .traverse({
@@ -32,7 +41,18 @@ export function constructBlockContextArgsOnly(
       .getDataAsString()
   );
   const uiState = projectNode.getKeyValueAsString(blockFrontendStateKey(blockId));
-  return { blockId, args, uiState };
+  return {
+    blockId,
+    args,
+    uiState,
+    blockMeta: (cCtx: ComputableCtx) => {
+      const prj = cCtx.accessor(projectEntry).node();
+      const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
+      const result = new Map<string, Block>();
+      for (const block of allBlocks(structure)) result.set(block.id, block);
+      return result;
+    }
+  };
 }
 
 export function constructBlockContext(

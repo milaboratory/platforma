@@ -142,6 +142,10 @@ export class PFrameDriver implements SdkPFrameDriver {
     })(this.pFrames);
   }
 
+  //
+  // Internal / Config API Methods
+  //
+
   public createPFrame(def: PFrameDef<PlTreeNodeAccessor>, ctx: ComputableCtx): PFrameHandle {
     const internalData = def.map((c) => mapPObjectData(c, (d) => parseDataInfoResource(d)));
     const res = this.pFrames.acquire(internalData);
@@ -160,6 +164,10 @@ export class PFrameDriver implements SdkPFrameDriver {
     return res.key as PTableHandle;
   }
 
+  //
+  // PFrame istance methods
+  //
+
   public async findColumns(
     handle: PFrameHandle,
     request: FindColumnsRequest
@@ -175,8 +183,8 @@ export class PFrameDriver implements SdkPFrameDriver {
     };
   }
 
-  getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    throw new Error('Method not implemented.');
+  public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
+    return this.pFrames.getByKey(handle).pFrame.getColumnSpec(columnId);
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
@@ -197,20 +205,27 @@ export class PFrameDriver implements SdkPFrameDriver {
     return await this.pFrames.getByKey(handle).pFrame.getUniqueValues(request);
   }
 
-  getShape(handle: PTableHandle): Promise<PTableShape> {
-    throw new Error('Method not implemented.');
+  //
+  // PTable istance methods
+  //
+
+  public async getShape(handle: PTableHandle): Promise<PTableShape> {
+    const pTable = await this.pTables.getByKey(handle);
+    return pTable.getShape();
   }
 
-  getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    throw new Error('Method not implemented.');
+  public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
+    const pTable = await this.pTables.getByKey(handle);
+    return pTable.getSpec();
   }
 
-  getData(
+  public async getData(
     handle: PTableHandle,
     columnIndices: number[],
-    range?: TableRange | undefined
+    range?: TableRange
   ): Promise<PTableVector[]> {
-    throw new Error('Method not implemented.');
+    const pTable = await this.pTables.getByKey(handle);
+    return pTable.getData(columnIndices, range);
   }
 }
 
