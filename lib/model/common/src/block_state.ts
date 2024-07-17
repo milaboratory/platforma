@@ -1,16 +1,20 @@
 import { BlockOutputsBase } from './common_types';
+import { NavigationState } from './section';
 
 /**
- * @param Args    sets type of block arguments passed to the workflow
- * @param Outputs type of the outputs returned by the workflow and rendered
- *                according to the output configuration specified for the block
- * @param UiState data that stores only UI related state, that is not passed
- *                to the workflow
+ * @template Args    sets type of block arguments passed to the workflow
+ * @template Outputs type of the outputs returned by the workflow and rendered
+ *                   according to the output configuration specified for the block
+ * @template UiState data that stores only UI related state, that is not passed
+ *                   to the workflow
+ * @template Href    typed href to represent navigation state
  */
 export type BlockState<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown> = {
+  UiState = unknown,
+  Href extends string = string
+> = {
   /** Block arguments passed to the workflow */
   args: Args;
 
@@ -20,4 +24,7 @@ export type BlockState<
 
   /** Outputs rendered with block config */
   outputs: Outputs;
-}
+
+  /** Current navigation state */
+  navigationState: NavigationState<Href>;
+};

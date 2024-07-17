@@ -19,3 +19,11 @@ export type BlockSectionLink = {
 export type BlockSectionDelimiter = {
   readonly type: 'delimiter';
 };
+
+/**
+ * Part of the block state, representing current navigation information
+ * (i.e. currently selected section)
+ * */
+export type NavigationState<Href extends string = string> = {
+  href: Href;
+};
