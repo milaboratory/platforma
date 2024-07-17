@@ -34,6 +34,7 @@ export const plTest = test.extend<{
     const altRoot = `test_${Date.now()}_${randomUUID()}`;
     let altRootId: OptionalResourceId = NullResourceId;
     const client = await TestHelpers.getTestClient(altRoot);
+    altRootId = client.clientRoot;
     await use(client);
     onTestFinished(async (task) => {
       if (task.errors !== undefined) {
