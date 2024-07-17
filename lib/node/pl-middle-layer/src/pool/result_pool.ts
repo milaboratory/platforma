@@ -23,6 +23,11 @@ import { allBlocks, stagingGraph } from '../model/project_model_util';
 import { Pl } from '@milaboratory/pl-client-v2';
 import { Optional, Writable } from 'utility-types';
 import { derivePObjectId } from './data';
+import {
+  RawPObjectCollection,
+  RawPObjectEntry,
+  parseRawPObjectCollection
+} from './p_object_collection';
 
 /** All exported results are addressed  */
 export type ResultKey = Pick<Ref, 'blockId' | 'name'>;
@@ -32,37 +37,9 @@ interface PoolBlock {
   /** Meta information from the project structure */
   readonly info: Block;
   /** Production ctx, if exists. If block's prod was executed, this field is guaranteed to be defined. */
-  readonly prod?: PoolCtx;
+  readonly prod?: RawPObjectCollection;
   /** Staging ctx, if exists. If staging was rendered, this field is guaranteed to be defined. */
-  readonly staging?: PoolCtx;
-}
-
-/** Represents specific staging or prod ctx data */
-interface PoolCtx {
-  /** true if no new results are expected */
-  readonly locked: boolean;
-  /** results by name */
-  readonly results: Map<string, PoolResult>;
-}
-
-/** Single result in a particular ctx */
-interface PoolResult {
-  /**
-   * true - means this result has data field, however it may still be not ready
-   * false - means it can be derived that this result incarnation is spec-only
-   * undefined - means that it is not yet known
-   * */
-  readonly hasData?: boolean;
-
-  /** Result may be added even if there is no data associated with it */
-  readonly spec?: PObjectSpec;
-
-  /**
-   * Returns data accessor, or error, or undefined if data not yet available.
-   * If data fuinction itself is not defined, this means that corresponding context
-   * was not rendered.
-   * */
-  data?(): ValueOrError<PlTreeNodeAccessor, string> | undefined;
+  readonly staging?: RawPObjectCollection;
 }
 
 export interface ExtendedOption extends Option {
@@ -122,7 +99,7 @@ export class ResultPool {
     >[] = [];
     let isComplete = true;
 
-    const tryAddEntry = (blockId: string, exportName: string, result: PoolResult) => {
+    const tryAddEntry = (blockId: string, exportName: string, result: RawPObjectEntry) => {
       if (result.spec !== undefined && result.hasData === true && result.data !== undefined) {
         const data = result.data();
         if (data !== undefined) {
@@ -218,7 +195,7 @@ export class ResultPool {
     const found: ExtendedOption[] = [];
     for (const block of this.blocks.values()) {
       const exportsChecked = new Set<string>();
-      const addToFound = (ctx: PoolCtx) => {
+      const addToFound = (ctx: RawPObjectCollection) => {
         const ret: ExtendedOption[] = [];
         for (const [exportName, result] of ctx.results) {
           if (exportsChecked.has(exportName) || result.spec === undefined) continue;
@@ -271,14 +248,10 @@ export class ResultPool {
   }
 }
 
-const BContextValuePrefix = 'values/';
-const BContextValueSpecSuffix = '.spec';
-const BContextValueDataSuffix = '.data';
-
-const BContextValuePattern = /^values\/(?<name>.*)\.(?<type>spec|data)$/;
-
 /** Loads single BContext data */
-function loadCtx(ctxHolderAccessor: PlTreeNodeAccessor | undefined): PoolCtx | undefined {
+function loadCtx(
+  ctxHolderAccessor: PlTreeNodeAccessor | undefined
+): RawPObjectCollection | undefined {
   if (ctxHolderAccessor === undefined) return undefined;
 
   const ctxNode = ctxHolderAccessor.traverse({
@@ -294,40 +267,5 @@ function loadCtx(ctxHolderAccessor: PlTreeNodeAccessor | undefined): PoolCtx | u
     // from empty unlocked cotext
     return { locked: false, results: new Map() };
 
-  const results = new Map<string, Writable<PoolResult>>();
-  for (const fieldName of ctxNode.listInputFields()) {
-    const match = fieldName.match(BContextValuePattern);
-    if (!match) continue;
-    const name = notEmpty(match.groups?.name);
-    const type = notEmpty(match.groups?.type) as 'spec' | 'data';
-    let result = results.get(name);
-    if (result === undefined) {
-      result = {};
-      results.set(name, result);
-    }
-
-    switch (type) {
-      case 'spec':
-        result.spec = ctxNode
-          .traverse({ field: fieldName, ignoreError: true, pureFieldErrorToUndefined: true })
-          ?.getDataAsJson();
-        break;
-      case 'data':
-        result.hasData = true;
-        result.data = () =>
-          ctxNode.traverseOrError({
-            field: fieldName,
-            ignoreError: true
-          });
-      default:
-        // other value types planned
-        continue;
-    }
-  }
-
-  const ctxLocked = ctxNode.getInputsLocked();
-  if (ctxLocked)
-    for (const [, result] of results) if (result.data === undefined) result.hasData = false;
-
-  return { locked: ctxLocked, results };
+  return parseRawPObjectCollection(ctxNode, false, true, 'values/');
 }

@@ -17,12 +17,14 @@ import {
   PColumn,
   PFrameDef,
   PFrameHandle,
-  PTableDef
+  PTableDef,
+  mapPObjectData
 } from '@milaboratory/sdk-ui';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { ResultPool } from '../pool/result_pool';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { Optional } from 'utility-types';
+import { parseFinalPObjectCollection } from '../pool/p_object_collection';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -118,6 +120,10 @@ export class JsExecutionContext
     return undefined;
   }
 
+  //
+  // Accessors
+  //
+
   resolveWithCommon(
     handle: string,
     commonOptions: CommonFieldTraverseOpsFromSDK,
@@ -176,6 +182,25 @@ export class JsExecutionContext
 
   getDataAsString(handle: string): string | undefined {
     return this.getAccessor(handle).getDataAsString();
+  }
+
+  //
+  // Accessor helpers
+  //
+
+  parsePObjectCollection(
+    handle: string,
+    errorOnUnknownField: boolean,
+    prefix: string
+  ): Record<string, PObject<string>> | undefined {
+    const acc = this.getAccessor(handle);
+    if (!acc.getIsReadyOrError()) return undefined;
+    const accResult = parseFinalPObjectCollection(acc, errorOnUnknownField, prefix);
+    const result: Record<string, PObject<string>> = {};
+    for (const [key, obj] of Object.entries(accResult)) {
+      result[key] = mapPObjectData(obj, (d) => this.wrapAccessor(d));
+    }
+    return result;
   }
 
   //
@@ -258,6 +283,25 @@ export class JsExecutionContext
   }
 
   //
+  // PFrames / PTables
+  //
+
+  createPFrame(def: PFrameDef<string>): PFrameHandle {
+    if (this.computableCtx === undefined)
+      throw new Error(
+        "can't instantiate PFrames from this context (most porbably called from the future mapper)"
+      );
+    return this.env.driverKit.pFrameDriver.createPFrame(
+      def.map((c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      this.computableCtx
+    );
+  }
+
+  createPTable(def: PTableDef<PColumn<string>>): string {
+    throw new Error('Method not implemented.');
+  }
+
+  //
   // TODO Implement
   //
 
@@ -275,15 +319,6 @@ export class JsExecutionContext
   getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
     throw new Error('Method not implemented.');
   }
-  parsePObjectCollection(handle: string): PObject<string>[] | undefined {
-    throw new Error('Method not implemented.');
-  }
-  createPFrame(def: PFrameDef<string>): PFrameHandle {
-    throw new Error('Method not implemented.');
-  }
-  createPTable(def: PTableDef<PColumn<string>>): string {
-    throw new Error('Method not implemented.');
-  }
 
   //
   // Helpers
@@ -295,6 +330,8 @@ export class JsExecutionContext
     return accessor;
   }
 
+  private wrapAccessor(accessor: PlTreeNodeAccessor): string;
+  private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined;
   private wrapAccessor(accessor: PlTreeNodeAccessor | undefined): string | undefined {
     if (accessor === undefined) return undefined;
     else {
@@ -369,6 +406,10 @@ export class JsExecutionContext
     switch (this.vm.typeof(handle)) {
       case 'undefined':
         return undefined;
+      case 'boolean':
+      case 'number':
+      case 'string':
+        return this.vm.dump(handle);
       default:
         return this.importObjectViaJson(handle);
     }
@@ -409,12 +450,20 @@ export class JsExecutionContext
         this.vm.newFunction(name, fn).consume((fnh) => this.vm.setProp(configCtx, name, fnh));
       };
 
+      //
+      // Methods for injected ctx object
+      //
+
       exportCtxFunction('getAccessorHandleByName', (name) => {
         return this.exportSingleValue(
           this.getAccessorHandleByName(this.vm.getString(name)),
           undefined
         );
       });
+
+      //
+      // Accessors
+      //
 
       exportCtxFunction('resolveWithCommon', (handle, commonOptions, ...steps) => {
         return this.exportSingleValue(
@@ -487,6 +536,25 @@ export class JsExecutionContext
         return this.exportSingleValue(this.getDataAsString(this.vm.getString(handle)), undefined);
       });
 
+      //
+      // Accessor helpers
+      //
+
+      exportCtxFunction('parsePObjectCollection', (handle, errorOnUnknownField, prefix) => {
+        return this.exportObjectUniversal(
+          this.parsePObjectCollection(
+            this.vm.getString(handle),
+            this.vm.dump(errorOnUnknownField) as boolean,
+            this.vm.getString(prefix)
+          ),
+          undefined
+        );
+      });
+
+      //
+      // Blobs
+      //
+
       exportCtxFunction('getBlobContentAsBase64', (handle) => {
         return this.exportSingleValue(
           this.getBlobContentAsBase64(this.vm.getString(handle)),
@@ -515,9 +583,24 @@ export class JsExecutionContext
         );
       });
 
+      //
+      // Result pool
+      //
+
       exportCtxFunction('calculateOptions', (predicate) => {
         return this.exportObjectUniversal(
           this.calculateOptions(this.importObjectViaJson(predicate) as PSpecPredicate),
+          undefined
+        );
+      });
+
+      //
+      // PFrames / PTables
+      //
+
+      exportCtxFunction('createPFrame', (def) => {
+        return this.exportSingleValue(
+          this.createPFrame(this.importObjectViaJson(def) as PFrameDef<string>),
           undefined
         );
       });

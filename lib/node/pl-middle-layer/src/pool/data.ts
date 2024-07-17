@@ -66,7 +66,7 @@ export type PColumnDataResourceValue = {
 export function parseDataInfoResource(
   data: PlTreeNodeAccessor
 ): PFrameInternal.DataInfo<ResourceInfo> {
-  if (!data.getIsFinal()) throw new Error('Data not ready.');
+  if (!data.getIsReadyOrError()) throw new Error('Data not ready.');
 
   const meta = data.getDataAsJson<PColumnDataResourceValue>();
   if (meta === undefined) throw new Error('unexpected data info structure, no resource value');

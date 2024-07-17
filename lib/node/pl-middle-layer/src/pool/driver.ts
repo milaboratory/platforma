@@ -81,15 +81,15 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     return computable;
   }
 
-  public async preloadBlob(blobIds: string[]): Promise<void> {
+  public readonly preloadBlob = async (blobIds: string[]): Promise<void> => {
     const computables = blobIds.map((blobId) => this.getOrCreateComputableForBlob(blobId));
     for (const computable of computables) await computable.awaitStableFullValue();
-  }
+  };
 
-  public async resolveBlob(blobId: string): Promise<string> {
+  public readonly resolveBlob = async (blobId: string): Promise<string> => {
     const computable = this.getOrCreateComputableForBlob(blobId);
     return this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
-  }
+  };
 
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
@@ -160,16 +160,27 @@ export class PFrameDriver implements SdkPFrameDriver {
     return res.key as PTableHandle;
   }
 
-  findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse> {
-    throw new Error('Method not implemented.');
+  public async findColumns(
+    handle: PFrameHandle,
+    request: FindColumnsRequest
+  ): Promise<FindColumnsResponse> {
+    const iRequest: PFrameInternal.FindColumnsRequest = {
+      ...request,
+      compatibleWith: [{ axesSpec: request.compatibleWith, qualifications: [] }]
+    };
+    return {
+      hits: (await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest)).hits.map(
+        (h) => h.hit
+      )
+    };
   }
 
   getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
     throw new Error('Method not implemented.');
   }
 
-  listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    throw new Error('Method not implemented.');
+  public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
+    return this.pFrames.getByKey(handle).pFrame.listColumns();
   }
 
   calculateTableData(
@@ -179,11 +190,11 @@ export class PFrameDriver implements SdkPFrameDriver {
     throw new Error('Method not implemented.');
   }
 
-  getUniqueValues(
+  public async getUniqueValues(
     handle: PFrameHandle,
     request: UniqueValuesRequest
   ): Promise<UniqueValuesResponse> {
-    throw new Error('Method not implemented.');
+    return await this.pFrames.getByKey(handle).pFrame.getUniqueValues(request);
   }
 
   getShape(handle: PTableHandle): Promise<PTableShape> {
