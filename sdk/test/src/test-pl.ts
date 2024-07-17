@@ -30,19 +30,22 @@ export const plTest = test.extend<{
     await use(workFolder);
     await fsp.rm(workFolder, { recursive: true });
   },
-  pl: async ({ onTestFailed }, use) => {
+  pl: async ({ onTestFinished }, use) => {
     const altRoot = `test_${Date.now()}_${randomUUID()}`;
     let altRootId: OptionalResourceId = NullResourceId;
     const client = await TestHelpers.getTestClient(altRoot);
     await use(client);
-    const rawClient = await TestHelpers.getTestClient();
-    await rawClient.deleteAlternativeRoot(altRoot);
-    onTestFailed(() => {
-      console.log(
-        `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${altRoot} (${resourceIdToString(
-          altRootId
-        )})`
-      );
+    onTestFinished(async (task) => {
+      if (task.errors !== undefined) {
+        console.log(
+          `TEST FAILED SO ALTERNATIVE ROOT IS PRESETVED IN PL: ${altRoot} (${resourceIdToString(
+            altRootId
+          )})`
+        );
+      } else {
+        const rawClient = await TestHelpers.getTestClient();
+        await rawClient.deleteAlternativeRoot(altRoot);
+      }
     });
   },
 
