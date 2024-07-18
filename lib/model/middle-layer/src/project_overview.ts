@@ -92,6 +92,12 @@ export type BlockStateOverview = {
    * */
   canRun: boolean;
 
+  /**
+   * SDK version the block was compiled with.
+   * Udefined when block-pack for this block is not yet materialized.
+   * */
+  sdkVersion: string | undefined;
+
   /** Information on where the block pack for this block came from */
   currentBlockPack: BlockPackSpec | undefined;
 
