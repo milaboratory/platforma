@@ -16,7 +16,7 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-middle-layer": "^1.8.0",
+    "@milaboratory/pl-middle-layer": "^1.8.4",
     "vitest": "^2.0.3"
   },
   "devDependencies": {
