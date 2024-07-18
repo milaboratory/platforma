@@ -15,7 +15,7 @@ export interface BlockApi<
    * Use this method to retrieve block state during UI initialization. Then use
    * {@link onStateUpdates} method to subscribe for updates.
    * */
-  loadBlockState(): Promise<BlockState<Args, Outputs, UiState>>;
+  loadBlockState(): Promise<BlockState<Args, Outputs, UiState, Href>>;
 
   /**
    * Subscribe to updates of block state.
@@ -35,7 +35,7 @@ export interface BlockApi<
    * @return function that cancels created subscription
    * */
   onStateUpdates(
-    cb: (updates: BlockStatePatch<Args, Outputs, UiState>[]) => Promise<void>
+    cb: (updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>
   ): CancelSubscription;
 
   /**
