@@ -1,13 +1,17 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_pack';
-import { BlockRenderingMode, BlockSection } from '@milaboratory/sdk-model';
+import {
+  BlockRenderingMode,
+  BlockSection,
+  NavigationState
+} from '@milaboratory/sdk-model';
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockCalculationStatus =
   | 'NotCalculated'
   | 'Running'
   | 'Done'
-  | 'Limbo'
+  | 'Limbo';
 
 /** Overview of the whole project state, required to render a left panel. */
 export type ProjectOverview = {
@@ -22,18 +26,18 @@ export type ProjectOverview = {
 
   /** Overview information for each block */
   blocks: BlockStateOverview[];
-}
+};
 
 /** Overview of the block state, required for visualization in the left panel */
 export type BlockStateOverview = {
   /** Block id */
-  id: string,
+  id: string;
 
   /** Blocks label visible to the user */
-  label: string,
+  label: string;
 
   /** Block rendering mode */
-  renderingMode: BlockRenderingMode,
+  renderingMode: BlockRenderingMode;
 
   /**
    * True if block have missing references, e.g. referenced block was deleted
@@ -62,38 +66,41 @@ export type BlockStateOverview = {
    * All upstream blocks of this block. In other words all dependencies of this
    * block, including transitive dependencies.
    * */
-  upstreams: string[],
+  upstreams: string[];
 
   /**
    * All downstream blocks of this block. In other words all blocks that depends
    * on outputs of this block, accounting for transitive dependencies.
    * */
-  downstreams: string[],
+  downstreams: string[];
 
   /**
    * Block sections. May be unavailable, if block-pack for this block is not
    * yet materialized.
    * */
-  sections: BlockSection[] | undefined,
+  sections: BlockSection[] | undefined;
 
   /**
    * True if inputs of current block are suitable for block execution.
    * May be unavailable, if block-pack for this block is not yet materialized.
    * */
-  inputsValid: boolean | undefined,
+  inputsValid: boolean | undefined;
 
   /**
    * True if current block can be executed. This takes into account can run of
    * all upstream blocks as well.
    * */
-  canRun: boolean,
+  canRun: boolean;
 
   /** Information on where the block pack for this block came from */
-  currentBlockPack: BlockPackSpec | undefined
+  currentBlockPack: BlockPackSpec | undefined;
 
   /**
    * If block pack update is available this field will contain latest specs to
    * perform the update
    * */
-  updatedBlockPack: BlockPackSpec | undefined
-}
+  updatedBlockPack: BlockPackSpec | undefined;
+
+  /** Current navigation state of the block */
+  navigationState: NavigationState;
+};
