@@ -1,17 +1,11 @@
-import path from 'path';
-import * as fsp from 'node:fs/promises';
-import { randomUUID } from 'crypto';
 import {
   BlockPackSpecAny,
   ImportFileHandleUpload,
   MiddleLayer,
-  NullResourceId,
-  OptionalResourceId,
-  PlClient,
-  Project,
-  resourceIdToString,
-  TestHelpers
+  Project
 } from '@milaboratory/pl-middle-layer';
+import * as fsp from 'node:fs/promises';
+import path from 'path';
 import { plTest } from './test-pl';
 
 async function awaitBlockDone(
