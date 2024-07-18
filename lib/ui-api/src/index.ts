@@ -5,6 +5,7 @@ export * from './builder';
 export * from './ref_util';
 export * from './platforma';
 export * from './render';
+export * from './sdk_info';
 
 // reexporting everything from SDK model
 export * from '@milaboratory/sdk-model';
