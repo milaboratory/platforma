@@ -1,72 +1,204 @@
-// buildExec := func() {
-// 	self := undefined
 
-// 	self = {
-// 		setArgs: func() {
 
-// 		},
+// _HEAVY_QUEUE := "heavy"
+// _UI_TASKS_QUEUE := "ui-tasks"
 
-// 		/** Returns reference to future file (field) */
-// 		collectFile: func(fileName) {
 
-// 		},
 
-// 		/** Returns reference to future file (field) */
-// 		stdout: func() {
+// execBuilder := exec.builder()
 
-// 		},
+// //
+// mixcr := sw.get("@milaboratory/mixcr") // <- java and friends
+// execBuilder.software(mixcr, "a", "b")
 
-// 		/** Returns reference to "log" resource */
-// 		stdoutStream: func() {
+// //
+// execBuilder.cmd(["/bin/bash", "x", "y"])
 
-// 		},
 
-// 		/** */
-// 		collectFiles: func(plugin, settings) {
 
-// 		}
-// 	}
 
-// 	return self
+// builder := func() {
+
+//     self := undefined
+
+//     _cmd := undefined
+//     _sw := undefined
+//     _args := undefined
+//     _queue := _HEAVY_QUEUE
+
+//     self = {
+
+//         cmd: func(cmd) {
+//             if _cmd != undefined || _sw != undefined {
+//                 ll.panic()
+//             }
+
+//             _cmd = cmd
+//         },
+
+//         software: func(sw) {
+
+//         }
+
+//         args: func(args) {
+//             ///
+//         },
+
+//         env: func(name, value) {
+//             // append
+//         },
+
+//         envMap: func(envMap) {
+//             // for key value
+
+//         },
+
+//         inUiQueue: func() {
+//             // _queue =
+//         },
+
+//         inHeavyQueue: func() {
+//             // _queue =
+//         },
+
+//         cache: func(time) {
+
+//         },
+
+//         inputFile: func(fileName, file) {
+//             // .... file smart.reference !!
+//         },
+
+//         inputFilesMap: func(filesMap) {
+
+//             // ....
+//         },
+
+//         inputValue: func(fileName, data) {
+
+//         },
+
+//         mkDir: func(...dirs) {
+//             // a/b/c/d
+//         },
+
+
+//         outputFile: func(fileName, outputName) {
+
+//         },
+
+//         // later //
+//         outputFiles: func(regex, template, inputs) {
+//             ll.panic("not implemented")
+//         },
+
+
+//         streamFile: func(fileName, outputName) {
+//             ll.panic("not implemented")
+//         },
+
+
+//         printErrStreamToStdout: func() {
+//             // todo later
+//         },
+
+//         build: func() {
+
+//             //// structBuilder()...
+//             ////
+//             ////
+
+//             r := smart.Resource()
+
+//             execResult :=  {
+//                 stdout: func() {
+//                     r.get("stdout")
+//                 },
+
+//                 stderr: func() {
+//                     r.get("stderr")
+//                 }
+
+
+//             }
+
+//             // todo inherit from resource
+
+
+//             return execResult
+//         }
+//     }
 // }
 
-// binary := importSoftware("asdasdasd@mixcr")
+// // buildExec := func() {
+// // 	self := undefined
 
-// exec1 := buildExec().
-// 	setCmd(binary).
-//     setArgs("hello")
+// // 	self = {
+// // 		setArgs: func() {
+
+// // 		},
+
+// // 		/** Returns reference to future file (field) */
+// // 		collectFile: func(fileName) {
+
+// // 		},
+
+// // 		/** Returns reference to future file (field) */
+// // 		stdout: func() {
+
+// // 		},
+
+// // 		/** Returns reference to "log" resource */
+// // 		stdoutStream: func() {
+
+// // 		},
+
+// // 		/** */
+// // 		collectFiles: func(plugin, settings) {
+
+// // 		}
+// // 	}
+
+// // 	return self
+// // }
+
+// // binary := importSoftware("asdasdasd@mixcr")
+
+// // exec1 := buildExec().
+// // 	setCmd(binary).
+// //     setArgs("hello")
 
 
-// software.resolve("@xyz/star")
+// // software.resolve("@xyz/star")
 
-// exec.cmd(...) // string
+// // exec.cmd(...) // string
 
-// exec.setArgs()
+// // exec.setArgs()
 
-// exec.addFile("name", resource)
+// // exec.addFile("name", resource)
 
-// exec.stdout() // smart.Field to file
-// exec.stdoutStream() // smart.Field to file
-
-
-
-
-// exec.stderr() // smart.Field
-// exec.stderrStream() // smart.Field to file
+// // exec.stdout() // smart.Field to file
+// // exec.stdoutStream() // smart.Field to file
 
 
 
-// myFile := exec1.collectFile("theFile.txt")
 
-// exec1.build()
+// // exec.stderr() // smart.Field
+// // exec.stderrStream() // smart.Field to file
 
-// exec2 := buildExec().
-// 	setCmd("/bin/gzcat").
-// 	collectPFrame(...).
-//     addFile("fileName.txt", myFile)
 
-// ungzipped := exec2.stdout()
 
-// exec2.build()
+// // myFile := exec1.collectFile("theFile.txt")
 
-// canBePassedToUi := fileToUi(ungzipped)
+// // exec1.build()
+
+// // exec2 := buildExec().
+// // 	setCmd("/bin/gzcat").
+// // 	collectPFrame(...).
+// //     addFile("fileName.txt", myFile)
+
+// // ungzipped := exec2.stdout()
+
+// // exec2.build()
+
+// // canBePassedToUi := fileToUi(ungzipped)

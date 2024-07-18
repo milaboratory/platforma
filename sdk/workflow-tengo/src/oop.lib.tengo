@@ -9,6 +9,7 @@ ll := import(":ll")
  *
  * @param super a parent from which we get all methods
  * @param self an object in which we set all super methods
+ * @return self
  */
 inherit := func(super, self) {
 	// iherit super methods

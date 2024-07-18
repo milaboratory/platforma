@@ -23,6 +23,7 @@ setOutputs := func(resource, resultMap) {
 			// smart.Resource or smart.Field
 			valueResource = value
 		} else {
+			// TODO add smart conversion
 			valueResource = smart.createJsonResource(value)
 		}
 		output.set(valueResource)

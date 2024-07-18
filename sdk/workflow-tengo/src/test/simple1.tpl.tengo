@@ -9,7 +9,7 @@ self.body(func(inputs) {
 	inputResource := inputs.input1
 	// input resource value
 	inputValue := inputResource.getValueAsJson()
-	
+
 	// output resource
 	result := {
 		main: inputValue.testValue + " Show"

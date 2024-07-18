@@ -1,0 +1,39 @@
+/* Logging */
+
+ll := import(":ll")
+fmt := import("fmt")
+times := import("times")
+
+/**
+ * Creates a logger with a given name
+ */
+create := func(name) {
+	self := undefined
+
+
+	self = ll.toStrict({
+
+		_log: func(level, ...args) {
+			txt := fmt.sprintf(name, " [", level, "] :", args...)
+			ll.print(txt)
+		},
+
+		info: func(...args) {
+			self._log("info", args...)
+		},
+
+		warn: func(...args) {
+			self._log("warn", args...)
+		},
+
+		err: func(...args) {
+			self._log("error", args...)
+		}
+	})
+
+	return self
+}
+
+export ll.toStrict({
+	create: create
+})

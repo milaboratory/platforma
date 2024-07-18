@@ -18,15 +18,16 @@
   "scripts": {
     "check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
-    "test": "rm -rf dist && pl-tengo check && pl-tengo build && vitest"
+    "test": "rm -rf dist && pl-tengo check && pl-tengo build && vitest",
+    "format": "/usr/bin/env emacs --script ./format.el"
   },
   "dependencies": {
     "@milaboratory/tengo-milib": "1.1.3",
     "@milaboratory/tengo-mistd": "1.3.5"
   },
   "devDependencies": {
-    "@milaboratory/tengo-template-builder": "^1.8.0",
-    "@milaboratory/sdk-test": "^1.1.0",
+    "@milaboratory/tengo-template-builder": "^1.8.4",
+    "@milaboratory/sdk-test": "^1.2.3",
     "vitest": "^2.0.2"
   }
 }

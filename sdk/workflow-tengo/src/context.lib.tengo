@@ -15,7 +15,7 @@ _EXPORTS_OUTPUT_PREFIX := "values/"
  * @param block block (smart.Resource)
  * @param parentContext parent context (smart.Resource)
  */
-contextBuilder := func(block, parentContext) {
+builder := func(block, parentContext) {
 
 	super := smart.ephemeralBuilder(constants.RTYPE_CONTEXT)
 
@@ -56,5 +56,5 @@ contextBuilder := func(block, parentContext) {
 }
 
 export ll.toStrict({
-	contextBuilder: contextBuilder
+	builder: builder
 })

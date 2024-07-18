@@ -1,0 +1,27 @@
+ll := import("@milaboratory/tengo-sdk:ll")
+self := import(":tpl")
+smart := import(":smart")
+render := import(":render")
+fmt := import("fmt")
+
+concat_ab := ll.importTemplate(":test.concat_ab")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	// input resource
+	av := inputs.a.getValueAsJson()
+	bv := inputs.b.getValueAsJson()
+
+	run := render.create(concat_ab, {
+		a: av,
+		b: bv
+	})
+
+	// output resource
+	result := {
+		main: run.output("concat")
+	}
+
+	return result
+})

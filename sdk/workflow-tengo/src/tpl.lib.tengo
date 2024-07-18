@@ -45,7 +45,6 @@ defineOutputs := func(...name) {
 }
 
 _inputs := undefined
-_outputs := undefined
 
 inputs := func() {
 	if _inputs == undefined {
@@ -87,6 +86,7 @@ body := func(bodyFn) {
 
 		ll.assert(ll.isMap(result),
 			"expected map from tpl.body() callback. Did you forget 'return' statement?")
+
 		ll.assert(sets.fromSlice(_definedOutputs) == sets.fromMapKeys(result),
 			"not all defined outputs were returned from tpl.body() callback. Want ", _definedOutputs, ", got ", maps.getKeys(result))
 

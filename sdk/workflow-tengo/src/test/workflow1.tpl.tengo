@@ -6,9 +6,9 @@ wf.body(func(args) {
 	result := args.testValue + " Show Run"
 
 	return {
-		results: {
+		outputs: {
 			outputResult: result
-		}, 
+		},
 
 		exports: {
 			exportResult: result
@@ -22,9 +22,9 @@ wf.preRun(func(args) {
 	result := args.testValue + " Show PreRun"
 
 	return {
-		results: {
+		outputs: {
 			outputResult: result
-		}, 
+		},
 
 		exports: {
 			exportResult: result

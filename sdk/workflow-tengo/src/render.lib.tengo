@@ -1,0 +1,63 @@
+/*
+ * Methods for renderring pure template
+ */
+
+tx := import("tx")
+ll := import(":ll")
+smart := import(":smart")
+tplutil := import(":tpl-util")
+constants := import(":constants")
+oop := import(":oop")
+log := import(":log")
+
+
+_TEMPLATE_FIELD := "template"
+_INPUTS_MAP_FIELD := "inputs"
+
+_logger := log.create("render")
+
+
+/**
+ * Creates a render template resource.
+ *
+ * @param tplId: template id (see ll.importTemplate())
+ * @param inputs: a map of inputs to be passed to the template
+ * @return renderer: a smart resource with additional output("name") method
+ */
+create := func(tplId, inputs) {
+	_logger.info("running", tplId, inputs)
+
+	// build renderer resource
+	rbuilder := smart.structBuilder(constants.RTYPE_RENDER_TEMPLATE)
+
+	// template input
+	rbuilder.createInputField(_TEMPLATE_FIELD).set(smart.resource(tplId))
+
+	// inputs input
+	inputsMap := smart.mapBuilder()
+	for name, value in inputs {
+		inputsMap.add(name, value)
+	}
+
+	rbuilder.createInputField(_INPUTS_MAP_FIELD).set(inputsMap.build())
+
+	// build
+	renderer := rbuilder.lockInputsAndBuild()
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(renderer, {
+
+		/**
+		 * Returns an output field with a given name
+		 */
+		output: func(name) {
+			return renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+		}
+	}))
+
+	return self
+}
+
+export ll.toStrict({
+	create: create
+})

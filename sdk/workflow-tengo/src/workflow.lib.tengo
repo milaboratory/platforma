@@ -85,18 +85,18 @@ _parentContext := func() {
 _buildOutputs := func(results) {
 	ll.assert(ll.isMap(results), "expected to see map result from body function")
 	ll.assert(
-		sets.fromSlice(["results", "exports"]) == sets.fromMapKeys(results),
+		sets.fromSlice(["outputs", "exports"]) == sets.fromMapKeys(results),
 		"expected only results and exports in the returned map"
 	)
 
-	ll.assert(!is_undefined(results.results), "outputs are not defined in the results")
+	ll.assert(!is_undefined(results.outputs), "outputs are not defined in the results")
 	ll.assert(!is_undefined(results.exports), "exports are not defined in the results")
 
-	ll.assert(ll.isMap(results.results), "expected a map in outputs returned from workflow.body")
+	ll.assert(ll.isMap(results.outputs), "expected a map in outputs returned from workflow.body")
 	ll.assert(ll.isMap(results.exports), "expected a map in exports returned from workflow.body")
 
 	// block outputs
-	o := results.results
+	o := results.outputs
 	// block exports
 	e := results.exports
 
@@ -106,12 +106,13 @@ _buildOutputs := func(results) {
 		if smart.isReference(value) {
 			resBuilder.add(name, value)
 		} else {
+			// TODO replace with smart conversion
 			resBuilder.addJson(name, value)
 		}
 	}
 
 	// create ctx and save exports
-	ctxBuilder := context.contextBuilder(blockId(), _parentContext())
+	ctxBuilder := context.builder(blockId(), _parentContext())
 	for name, value in e {
 		ctxBuilder.add(name, value)
 	}

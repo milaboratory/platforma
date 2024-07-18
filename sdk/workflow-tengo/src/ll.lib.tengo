@@ -3,6 +3,15 @@
 
 plapi := import("plapi")
 fmt := import("fmt")
+log := import("log")
+
+
+/**
+ * Prints message to the pl log
+ */
+print := func(txt) {
+	plapi.print(txt)
+}
 
 /**
  * Panics in a template, prints the error and
@@ -53,7 +62,7 @@ isMap := func(obj) {
  * @return map std map
  */
 fromStrict := func(r) {
-	if(!isStrict(r)) {
+	if !isStrict(r) {
 		panic("not a map", r)
 	}
 
@@ -93,7 +102,19 @@ isInitializing := func() {
 	return plapi.isInit
 }
 
+/**
+ * Returns internal template identifier for loaded templates
+ *
+ * @param tplName: string - a name of a local template with a starting colon,
+ * e.g. ":directory1/template1"
+ * @return template id: resource id - a resource id of the template.
+ */
+importTemplate := func(tplName) {
+	return plapi.getTemplateId(tplName)
+}
+
 export toStrict({
+	print: print,
 	panic: panic,
 	assert: assert,
 	isStrict: isStrict,
@@ -102,5 +123,6 @@ export toStrict({
 	toStrict: toStrict,
 	fieldId: fieldId,
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
-	isInitializing: isInitializing
+	isInitializing: isInitializing,
+	importTemplate: importTemplate
 })
