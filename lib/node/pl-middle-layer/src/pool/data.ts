@@ -77,7 +77,7 @@ export function parseDataInfoResource(
         .listInputFields()
         .map((field) => [
           field,
-          data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo
+          data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo
         ])
     );
 
@@ -101,7 +101,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.index = data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo;
+        part.index = data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo;
       } else if (field.endsWith('.values')) {
         const partKey = field.slice(0, field.length - 7);
         let part = parts[partKey];
@@ -109,7 +109,7 @@ export function parseDataInfoResource(
           part = {};
           parts[partKey] = part;
         }
-        part.values = data.traverse({ field, errorIfFieldNotAssigned: true }).resourceInfo;
+        part.values = data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo;
       } else throw new Error(`unrecognized part field name: ${field}`);
     }
 

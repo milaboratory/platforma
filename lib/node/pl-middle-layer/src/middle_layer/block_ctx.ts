@@ -36,7 +36,7 @@ export function constructBlockContextArgsOnly(
     projectNode
       .traverse({
         field: projectFieldName(blockId, 'currentArgs'),
-        errorIfFieldNotAssigned: true
+        errorIfFieldNotSet: true
       })
       .getDataAsString()
   );
