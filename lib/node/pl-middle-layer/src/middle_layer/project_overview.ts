@@ -135,7 +135,7 @@ export function projectOverview(
 
         // sections
         const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
-        const { sections, inputsValid } =
+        const { sections, inputsValid, sdkVersion } =
           ifNotUndef(bpInfo?.config, (blockConfU) => {
             const blockConf = normalizeBlockConfig(blockConfU);
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
@@ -151,7 +151,8 @@ export function projectOverview(
                 blockCtxArgsOnly,
                 blockConf.inputsValid,
                 blockConf.code
-              ) as ComputableStableDefined<boolean>
+              ) as ComputableStableDefined<boolean>,
+              sdkVersion: blockConf.sdkVersion
             };
           }) || {};
 
@@ -173,6 +174,7 @@ export function projectOverview(
           inputsValid,
           currentBlockPack: bpInfo?.source,
           updatedBlockPack,
+          sdkVersion,
           navigationState: navigationStates.getState(id)
         };
       });

@@ -201,7 +201,7 @@ export class Project {
   /**
    * Sets navigation state.
    * */
-  public async setNavigationState(blockId: string, state: NavigationState) {
+  public async setNavigationState(blockId: string, state: NavigationState): Promise<void> {
     this.navigationStates.setState(blockId, state);
   }
 
