@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -27,7 +27,7 @@
     "@milaboratory/pl-drivers": "1.1.1",
     "@milaboratory/pl-middle-layer-model": "~1.2.4",
     "@milaboratory/pl-tree": "^1.2.16",
-    "@milaboratory/sdk-ui": "~0.12.4",
+    "@milaboratory/sdk-ui": "~0.12.5",
     "@milaboratory/ts-helpers": "^1.0.18",
     "@oclif/core": "^3.26.9",
     "canonicalize": "^2.0.0",
