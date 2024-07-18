@@ -71,7 +71,7 @@ test('regression should allow to add empty files', () => {
   // this blob should be deleted
   const toDelete = cache.removeFile(blob2.path, callerId1);
   expect(toDelete).toStrictEqual([blob2]);
-  
+
   cache.removeCache(blob2);
 
   // and the the blob with zero size remained

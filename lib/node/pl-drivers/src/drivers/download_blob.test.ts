@@ -18,7 +18,10 @@ import {
 } from '@milaboratory/pl-client-v2';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
-import { DownloadDriver } from './download_and_logs_blob';
+import {
+  DownloadDriver,
+  OnDemandBlobResourceSnapshot
+} from './download_and_logs_blob';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
@@ -65,11 +68,11 @@ test('should get on demand blob without downloading a blob', async () => {
     );
 
     const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
-
     const c = driver.getOnDemandBlob(downloadable);
 
     const blob = await c.getValue();
     expect(blob).toBeDefined();
+    expect(blob.size).toEqual(3);
 
     const content = await driver.getContent(blob!.handle);
     expect(content?.toString()).toStrictEqual('42\n');
@@ -155,7 +158,7 @@ test('should get the blob when releasing a blob, but a cache is big enough and i
 async function makeDownloadableBlobFromAssets(
   client: PlClient,
   fileName: string
-): Promise<BasicResourceData> {
+) {
   await client.withWriteTx(
     'MakeAssetDownloadable',
     async (tx: PlTransaction) => {
@@ -196,9 +199,25 @@ async function makeDownloadableBlobFromAssets(
     }
   );
 
-  return await poll(client, async (tx: PollTxAccessor) => {
+  const [download, kv] = await poll(client, async (tx: PollTxAccessor) => {
     const root = await tx.get(client.clientRoot);
     const download = await root.get('result');
-    return download.data;
+
+    return [
+      download.data,
+      await download.getKValueObj<{ sizeBytes: string }>('ctl/file/blobInfo')
+    ];
   });
+
+  return {
+    id: download.id,
+    type: download.type,
+    data: undefined,
+    fields: undefined,
+    kv: {
+      'ctl/file/blobInfo': {
+        size: Number(kv.sizeBytes)
+      }
+    }
+  } as OnDemandBlobResourceSnapshot;
 }

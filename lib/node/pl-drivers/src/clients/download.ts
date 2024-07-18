@@ -18,6 +18,8 @@ import { DownloadHelper, DownloadResponse } from '../helpers/download';
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
 
+/** Gets URLs for downloading from pl-core, parses them and reads or downloads
+ * files locally and from the web. */
 export class ClientDownload {
   public readonly grpcClient: DownloadClient;
   private readonly downloadHelper: DownloadHelper;

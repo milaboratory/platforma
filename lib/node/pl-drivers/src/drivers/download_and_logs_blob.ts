@@ -28,9 +28,16 @@ import { randomUUID } from 'node:crypto';
 import { buffer } from 'node:stream/consumers';
 import { Readable } from 'node:stream';
 import {
-  PlTreeEntry,
+  InferSnapshot,
   ResourceInfo,
-  treeEntryToResourceInfo
+  PlTreeEntry,
+  ResourceWithMetadata,
+  rsSchema,
+  makeResourceSnapshot,
+  treeEntryToResourceWithMetadata,
+  ResourceSnapshot,
+  treeEntryToResourceInfo,
+  isPlTreeEntry
 } from '@milaboratory/pl-tree';
 import {
   AnyLogHandle,
@@ -43,6 +50,20 @@ import {
   StreamingApiResponse
 } from '@milaboratory/sdk-model';
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
+import { z } from 'zod';
+
+/** ResourceSnapshot that can be passed to OnDemandBlob */
+export const OnDemandBlobResourceSnapshot = rsSchema({
+  kv: {
+    'ctl/file/blobInfo': z.object({
+      size: z.coerce.number()
+    })
+  }
+});
+
+export type OnDemandBlobResourceSnapshot = InferSnapshot<
+  typeof OnDemandBlobResourceSnapshot
+>;
 
 export type DownloadDriverOps = {
   /**
@@ -76,11 +97,13 @@ export class DownloadDriver implements BlobDriver {
   private idToLastLines: Map<ResourceId, LastLinesGetter> = new Map();
   private idToProgressLog: Map<ResourceId, LastLinesGetter> = new Map();
 
+  private readonly saveDir: string;
+
   constructor(
     private readonly logger: MiLogger,
     private readonly clientDownload: ClientDownload,
     private readonly clientLogs: ClientLogs,
-    private readonly saveDir: string,
+    saveDir: string,
     private readonly signer: Signer,
     ops: DownloadDriverOps
   ) {
@@ -89,6 +112,8 @@ export class DownloadDriver implements BlobDriver {
       this.logger,
       ops.nConcurrentDownloads
     );
+
+    this.saveDir = path.resolve(saveDir);
   }
 
   /** Gets a blob by its resource id or downloads a blob and sets it in a cache.*/
@@ -114,32 +139,44 @@ export class DownloadDriver implements BlobDriver {
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
 
-    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo, callerId);
+    const result = this.getDownloadedBlobNoCtx(
+      ctx.watcher,
+      rInfo as ResourceSnapshot,
+      callerId
+    );
     if (result == undefined) ctx.markUnstable();
 
     return result;
   }
 
   getOnDemandBlob(
-    res: ResourceInfo | PlTreeEntry
+    res: OnDemandBlobResourceSnapshot | PlTreeEntry
   ): Computable<RemoteBlobHandleAndSize>;
   getOnDemandBlob(
-    res: ResourceInfo | PlTreeEntry,
+    res: OnDemandBlobResourceSnapshot | PlTreeEntry,
     ctx: ComputableCtx
   ): RemoteBlobHandleAndSize;
   getOnDemandBlob(
-    res: ResourceInfo | PlTreeEntry,
+    res: OnDemandBlobResourceSnapshot | PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<RemoteBlobHandleAndSize> | RemoteBlobHandleAndSize {
+  ):
+    | ComputableStableDefined<RemoteBlobHandleAndSize>
+    | RemoteBlobHandleAndSize
+    | undefined {
     if (ctx === undefined)
       return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
 
-    const rInfo = treeEntryToResourceInfo(res, ctx);
+    const rInfo: OnDemandBlobResourceSnapshot = isPlTreeEntry(res)
+      ? makeResourceSnapshot(res, OnDemandBlobResourceSnapshot, ctx)
+      : res;
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
 
-    return this.getOnDemandBlobNoCtx(ctx.watcher, rInfo, callerId);
+    const result = this.getOnDemandBlobNoCtx(ctx.watcher, rInfo, callerId);
+    if (result == undefined) ctx.markUnstable();
+
+    return result;
   }
 
   public getLocalPath(handle: LocalBlobHandle): string {
@@ -155,12 +192,13 @@ export class DownloadDriver implements BlobDriver {
 
     const result = remoteHandleToData(handle, this.signer);
     const { content } = await this.clientDownload.downloadBlob(result);
+
     return await buffer(content);
   }
 
   private getDownloadedBlobNoCtx(
     w: Watcher,
-    rInfo: ResourceInfo,
+    rInfo: ResourceSnapshot,
     callerId: string
   ): LocalBlobHandleAndSize | undefined {
     let task = this.idToDownload.get(rInfo.id);
@@ -184,7 +222,7 @@ export class DownloadDriver implements BlobDriver {
 
   private setNewDownloadTask(
     w: Watcher,
-    rInfo: ResourceInfo,
+    rInfo: ResourceSnapshot,
     callerId: string
   ) {
     const fPath = this.getFilePath(rInfo.id);
@@ -194,7 +232,6 @@ export class DownloadDriver implements BlobDriver {
       fPath,
       dataToLocalHandle(fPath, this.signer)
     );
-    result.attach(w, callerId);
     this.idToDownload.set(rInfo.id, result);
 
     return result;
@@ -207,21 +244,22 @@ export class DownloadDriver implements BlobDriver {
 
   private getOnDemandBlobNoCtx(
     w: Watcher,
-    { id, type }: ResourceInfo,
+    info: OnDemandBlobResourceSnapshot,
     callerId: string
-  ): RemoteBlobHandleAndSize {
-    let blob = this.idToOnDemand.get(id);
+  ): RemoteBlobHandleAndSize | undefined {
+    let blob = this.idToOnDemand.get(info.id);
 
     if (blob === undefined) {
       blob = new OnDemandBlobHolder(
-        { id, type },
-        dataToRemoteHandle({ id, type }, this.signer)
+        info.kv['ctl/file/blobInfo'].size,
+        dataToRemoteHandle(info, this.signer)
       );
-      blob.attach(w, callerId);
-      this.idToOnDemand.set(id, blob);
+      this.idToOnDemand.set(info.id, blob);
     }
 
-    return { handle: blob.handle, size: blob.size };
+    blob.attach(w, callerId);
+
+    return blob.getHandle();
   }
 
   /** Returns all logs and schedules a job that reads remain logs.
@@ -247,7 +285,12 @@ export class DownloadDriver implements BlobDriver {
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
 
-    const result = this.getLastLogsNoCtx(ctx.watcher, r, lines, callerId);
+    const result = this.getLastLogsNoCtx(
+      ctx.watcher,
+      r as ResourceSnapshot,
+      lines,
+      callerId
+    );
     if (result == undefined) ctx.markUnstable();
 
     return result;
@@ -255,7 +298,7 @@ export class DownloadDriver implements BlobDriver {
 
   private getLastLogsNoCtx(
     w: Watcher,
-    rInfo: ResourceInfo,
+    rInfo: ResourceSnapshot,
     lines: number,
     callerId: string
   ): string | undefined {
@@ -305,7 +348,7 @@ export class DownloadDriver implements BlobDriver {
 
     const result = this.getProgressLogNoCtx(
       ctx.watcher,
-      r,
+      r as ResourceSnapshot,
       patternToSearch,
       callerId
     );
@@ -316,7 +359,7 @@ export class DownloadDriver implements BlobDriver {
 
   private getProgressLogNoCtx(
     w: Watcher,
-    rInfo: ResourceInfo,
+    rInfo: ResourceSnapshot,
     patternToSearch: string,
     callerId: string
   ): string | undefined {
@@ -355,10 +398,10 @@ export class DownloadDriver implements BlobDriver {
 
     const r = treeEntryToResourceInfo(res, ctx);
 
-    return this.getLogHandleNoCtx(r);
+    return this.getLogHandleNoCtx(r as ResourceSnapshot);
   }
 
-  private getLogHandleNoCtx(rInfo: ResourceInfo): AnyLogHandle {
+  private getLogHandleNoCtx(rInfo: ResourceSnapshot): AnyLogHandle {
     return dataToHandle(false, rInfo);
   }
 
@@ -457,21 +500,21 @@ export class DownloadDriver implements BlobDriver {
   }
 
   private getFilePath(rId: ResourceId): string {
-    return path.join(this.saveDir, String(BigInt(rId)));
+    return path.resolve(path.join(this.saveDir, String(BigInt(rId))));
   }
 }
 
 class OnDemandBlobHolder {
-  private change = new ChangeSource();
-  private counter = new CallersCounter();
+  private readonly change = new ChangeSource();
+  private readonly counter = new CallersCounter();
 
   constructor(
-    private readonly rInfo: ResourceInfo,
-    public readonly handle: RemoteBlobHandle
+    private readonly size: number,
+    private readonly handle: RemoteBlobHandle
   ) {}
 
-  get size(): number {
-    return NaN;
+  getHandle(): RemoteBlobHandleAndSize {
+    return { handle: this.handle, size: this.size };
   }
 
   attach(w: Watcher, callerId: string) {
@@ -534,7 +577,7 @@ class LastLinesGetter {
   }
 }
 
-async function fileExists(path: string): Promise<boolean> {
+async function fileOrDirExists(path: string): Promise<boolean> {
   try {
     await fsp.access(path);
     return true;
@@ -590,7 +633,7 @@ export class Download {
 
   constructor(
     readonly clientDownload: ClientDownload,
-    readonly rInfo: ResourceInfo,
+    readonly rInfo: ResourceSnapshot,
     readonly path: string,
     readonly handle: LocalBlobHandle
   ) {}
@@ -607,10 +650,13 @@ export class Download {
         this.rInfo
       );
 
+      if (!(await fileOrDirExists(path.basename(this.path))))
+        fsp.mkdir(path.basename(this.path), { recursive: true });
+
       // check in case we already have a file by this resource id
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
-      if (!(await fileExists(this.path))) {
+      if (!(await fileOrDirExists(this.path))) {
         const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
         await content.pipeTo(fileToWrite);
       }
@@ -730,7 +776,7 @@ function remoteHandleToData(
 }
 
 function dataToRemoteHandle(
-  rInfo: ResourceInfo,
+  rInfo: OnDemandBlobResourceSnapshot,
   signer: Signer
 ): RemoteBlobHandle {
   const content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;

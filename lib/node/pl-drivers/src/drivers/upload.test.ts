@@ -298,7 +298,7 @@ async function getHandleField(
     const upload = await tx.get(uploadId);
     const handle = await upload.get('handle');
 
-    const blob = handle.data.fields.find(f => f.name == 'blob')?.value;
+    const blob = handle.data.fields.find((f) => f.name == 'blob')?.value;
     const fields = new Map<string, ResourceId | undefined>();
     if (blob != undefined && isNotNullResourceId(blob))
       fields.set('blob', blob);
