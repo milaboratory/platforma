@@ -1,12 +1,5 @@
 import { BlockApi } from './block_api';
-import {
-  BlobDriver,
-  BlockOutputsBase,
-  DriverKit,
-  LogsDriver,
-  LsDriver,
-  ValueOrErrors
-} from '@milaboratory/sdk-model';
+import { BlockOutputsBase, DriverKit, ValueOrErrors } from '@milaboratory/sdk-model';
 import { BlockConfig } from './builder';
 
 /** Defines all methods to interact with the platform environment from within a block UI. */
@@ -16,7 +9,10 @@ export interface Platforma<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`
 > extends BlockApi<Args, Outputs, UiState, Href>,
-    DriverKit {}
+    DriverKit {
+  /** The SDK version current platforma was compiled with. */
+  readonly sdkVersion: string;
+}
 
 export type InferOutputsType<Pl extends Platforma> =
   Pl extends Platforma<unknown, infer Outputs> ? Outputs : never;
