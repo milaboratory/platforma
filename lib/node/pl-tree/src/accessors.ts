@@ -51,7 +51,7 @@ export function isPlTreeEntry(obj: unknown): obj is PlTreeEntry {
   );
 }
 
-export function isPlTreeEntryAccessor(obj: unknown): obj is PlTreeEntry {
+export function isPlTreeEntryAccessor(obj: unknown): obj is PlTreeEntryAccessor {
   return (
     typeof obj === 'object' &&
     obj !== null &&
@@ -59,7 +59,7 @@ export function isPlTreeEntryAccessor(obj: unknown): obj is PlTreeEntry {
   );
 }
 
-export function isPlTreeNodeAccessor(obj: unknown): obj is PlTreeEntry {
+export function isPlTreeNodeAccessor(obj: unknown): obj is PlTreeNodeAccessor {
   return (
     typeof obj === 'object' &&
     obj !== null &&
