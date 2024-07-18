@@ -162,6 +162,29 @@ export function treeEntryToResourceWithData(
   return res;
 }
 
+export type ResourceWithMetadata = {
+  readonly id: ResourceId;
+  readonly type: ResourceType;
+  readonly metadata: Record<string, any>;
+};
+
+export function treeEntryToResourceWithMetadata(
+  res: PlTreeEntry | ResourceWithMetadata,
+  mdKeys: string[],
+  ctx: ComputableCtx
+): ResourceWithMetadata {
+  if (!(res instanceof PlTreeEntry)) return res;
+
+  const node = ctx.accessor(res as PlTreeEntry).node();
+  const info = node.resourceInfo;
+  const mdEntries: [string, any][] = mdKeys.map((k) => [k, node.getKeyValue(k)]);
+
+  return {
+    ...info,
+    metadata: Object.fromEntries(mdEntries)
+  };
+}
+
 /**
  * API contracts:
  *   - API never return {@link NullResourceId}, absence of link is always modeled as `undefined`
