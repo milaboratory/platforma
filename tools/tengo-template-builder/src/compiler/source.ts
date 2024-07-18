@@ -17,9 +17,9 @@ const newImportTemplateRE = (moduleName: string) => {
   return functionCallRE(moduleName, "importTemplate")
 }
 
-const simpleCommentRE = /^\s*\/\//
+const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/
 const multilineCommentStartRE = /^\s*\/\*/
-const multilineCommentEndRE = /^\s*\*\//
+const multilineCommentEndRE = /\*\//
 const importRE = /\s*:=\s*import\s*\(\s*"(?<moduleName>[^"]+)"\s*\)/;
 const importNameRE = new RegExp(`\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`)
 const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/ // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
@@ -110,7 +110,7 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
     return { line, context, artifact: undefined }
   }
 
-  if (simpleCommentRE.exec(line)) {
+  if (singlelineCommentRE.exec(line)) {
     return { line, context, artifact: undefined }
   }
 
