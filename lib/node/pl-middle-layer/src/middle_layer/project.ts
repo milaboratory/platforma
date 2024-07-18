@@ -7,7 +7,7 @@ import {
   Pl,
   ResourceId
 } from '@milaboratory/pl-client-v2';
-import { Computable, ComputableStableDefined } from '@milaboratory/computable';
+import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
@@ -15,7 +15,7 @@ import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { BlockState } from '@milaboratory/sdk-model';
+import { NavigationState } from '@milaboratory/sdk-model';
 import { blockArgsAndUiState, blockOutputs } from './block';
 import { FrontendData } from '../model/frontend';
 import { projectFieldName } from '../model/project_model';
@@ -27,6 +27,7 @@ import {
   BlockStateInternal
 } from '@milaboratory/pl-middle-layer-model';
 import { activeConfigs } from './active_cfg';
+import { NavigationStates } from './navigation_states';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -40,7 +41,9 @@ export class Project {
   /** Data for the left panel, contain basic information about block status. */
   public readonly overview: ComputableStableDefined<ProjectOverview>;
 
+  private readonly navigationStates = new NavigationStates();
   private readonly blockComputables = new Map<string, BlockStateComputables>();
+
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
   private readonly activeConfigs: Computable<unknown[]>;
   private readonly refreshLoopResult: Promise<void>;
@@ -51,10 +54,13 @@ export class Project {
   constructor(
     private readonly env: MiddleLayerEnvironment,
     rid: ResourceId,
-    private readonly projectTree: SynchronizedTreeState,
-    overview: ComputableStableDefined<ProjectOverview>
+    private readonly projectTree: SynchronizedTreeState
   ) {
-    this.overview = overview;
+    this.overview = projectOverview(
+      projectTree.entry(),
+      this.navigationStates,
+      env
+    ).withPreCalculatedValueTree();
     this.rid = rid;
     this.refreshLoopResult = this.refreshLoop();
     this.activeConfigs = activeConfigs(projectTree.entry(), env);
@@ -142,6 +148,7 @@ export class Project {
   /** Deletes a block with all associated data. */
   public async deleteBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, (mut) => mut.deleteBlock(blockId));
+    this.navigationStates.deleteBlock(blockId);
     await this.projectTree.refreshState();
   }
 
@@ -192,6 +199,13 @@ export class Project {
   }
 
   /**
+   * Sets navigation state.
+   * */
+  public async setNavigationState(blockId: string, state: NavigationState) {
+    this.navigationStates.setState(blockId, state);
+  }
+
+  /**
    * Sets block args and ui state, and changes the whole project state accordingly.
    * Along with setting arguments one can specify author marker, that will be
    * transactionally associated with the block, to facilitate conflict resolution
@@ -237,15 +251,20 @@ export class Project {
     const cached = this.blockComputables.get(blockId);
     if (cached === undefined) {
       // state consists of inputs (args + ui state) and outputs
-      const argsAndUiState = blockArgsAndUiState(this.projectTree.entry(), blockId, this.env);
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
-        () => ({
-          argsAndUiState,
-          outputs
+        (ctx) => ({
+          argsAndUiState: blockArgsAndUiState(this.projectTree.entry(), blockId, ctx),
+          outputs,
+          navigationState: this.navigationStates.getState(blockId)
         }),
         {
-          postprocessValue: (v) => ({ ...v.argsAndUiState, outputs: v.outputs }) as BlockState
+          postprocessValue: (v) =>
+            ({
+              ...v.argsAndUiState,
+              outputs: v.outputs,
+              navigationState: v.navigationState
+            }) as BlockStateInternal
         }
       );
 
@@ -313,7 +332,6 @@ export class Project {
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
     const projectTree = await SynchronizedTreeState.init(env.pl, rid, env.ops.defaultTreeOptions);
-    const overview = projectOverview(projectTree.entry(), env).withPreCalculatedValueTree();
-    return new Project(env, rid, projectTree, overview);
+    return new Project(env, rid, projectTree);
   }
 }

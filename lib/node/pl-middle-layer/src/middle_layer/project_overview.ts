@@ -24,6 +24,7 @@ import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
 import { BlockSection, normalizeBlockConfig } from '@milaboratory/sdk-ui';
 import { computableFromCfgOrRF } from './render';
+import { NavigationStates } from './navigation_states';
 
 type BlockInfo = {
   currentArguments: any;
@@ -46,6 +47,7 @@ type ProdState = {
 /** Returns derived general project state form the project resource */
 export function projectOverview(
   entry: PlTreeEntry,
+  navigationStates: NavigationStates,
   env: MiddleLayerEnvironment
 ): ComputableStableDefined<ProjectOverview> {
   return Computable.make(
@@ -170,7 +172,8 @@ export function projectOverview(
           sections,
           inputsValid,
           currentBlockPack: bpInfo?.source,
-          updatedBlockPack
+          updatedBlockPack,
+          navigationState: navigationStates.getState(id)
         };
       });
 

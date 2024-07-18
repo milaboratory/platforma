@@ -1,6 +1,7 @@
 import { PlTreeEntry } from '@milaboratory/pl-tree';
 import {
   Computable,
+  ComputableCtx,
   ComputableStableDefined,
   ComputableValueOrErrors
 } from '@milaboratory/computable';
@@ -11,21 +12,36 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import { getBlockCfg } from './util';
 import { AuthorMarker, BlockStateInternal } from '@milaboratory/pl-middle-layer-model';
 import { computableFromCfgOrRF } from './render';
+import { resourceIdToString } from '@milaboratory/pl-client-v2';
+
+export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
 
 export function blockArgsAndUiState(
   projectEntry: PlTreeEntry,
+  id: string
+): Computable<BlockArgsAndUiState>;
+export function blockArgsAndUiState(
+  projectEntry: PlTreeEntry,
   id: string,
-  env: MiddleLayerEnvironment
-): Computable<Omit<BlockStateInternal, 'outputs'>> {
-  return Computable.make((c) => {
-    const prj = c.accessor(projectEntry).node();
-    const ctx = constructBlockContextArgsOnly(prj, id);
-    return {
-      author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
-      args: JSON.parse(ctx.args),
-      ui: ctx.uiState !== undefined ? JSON.parse(ctx.uiState) : undefined
-    };
-  });
+  cCtx: ComputableCtx
+): BlockArgsAndUiState;
+export function blockArgsAndUiState(
+  projectEntry: PlTreeEntry,
+  id: string,
+  cCtx?: ComputableCtx
+): BlockArgsAndUiState | Computable<BlockArgsAndUiState> {
+  return Computable.make(
+    (c) => {
+      const prj = c.accessor(projectEntry).node();
+      const ctx = constructBlockContextArgsOnly(prj, id);
+      return {
+        author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
+        args: JSON.parse(ctx.args),
+        ui: ctx.uiState !== undefined ? JSON.parse(ctx.uiState) : undefined
+      };
+    },
+    { key: 'inputs#' + resourceIdToString(projectEntry.rid) + id }
+  );
 }
 
 export function blockOutputs(
@@ -33,17 +49,22 @@ export function blockOutputs(
   id: string,
   env: MiddleLayerEnvironment
 ): ComputableStableDefined<Record<string, ComputableValueOrErrors<unknown>>> {
-  return Computable.make((c) => {
-    const prj = c.accessor(projectEntry).node();
-    const ctx = constructBlockContext(prj, id);
+  return Computable.make(
+    (c) => {
+      const prj = c.accessor(projectEntry).node();
+      const ctx = constructBlockContext(prj, id);
 
-    const blockCfg = getBlockCfg(prj, id);
+      const blockCfg = getBlockCfg(prj, id);
 
-    return ifNotUndef(blockCfg, (cfg) => {
-      const outputs: Record<string, Computable<any>> = {};
-      for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
-        outputs[cellId] = Computable.wrapError(computableFromCfgOrRF(env, ctx, cellCfg, cfg.code));
-      return outputs;
-    });
-  }).withStableType();
+      return ifNotUndef(blockCfg, (cfg) => {
+        const outputs: Record<string, Computable<any>> = {};
+        for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
+          outputs[cellId] = Computable.wrapError(
+            computableFromCfgOrRF(env, ctx, cellCfg, cfg.code)
+          );
+        return outputs;
+      });
+    },
+    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + id }
+  ).withStableType();
 }

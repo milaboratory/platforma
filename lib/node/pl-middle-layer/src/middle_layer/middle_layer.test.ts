@@ -203,8 +203,10 @@ test('simple project manipulations test', async () => {
       expect(block.sections).toBeDefined();
       expect(block.canRun).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
+      expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
+    await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
@@ -222,6 +224,8 @@ test('simple project manipulations test', async () => {
       expect(block.canRun).toEqual(false);
       expect(block.stale).toEqual(false);
       expect(block.currentBlockPack).toBeDefined();
+      if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: '/section1' });
+      else expect(block.navigationState).toStrictEqual({ href: '/' });
     });
     // console.dir(overviewSnapshot1, { depth: 5 });
 
@@ -242,6 +246,9 @@ test('simple project manipulations test', async () => {
     const block2StableState1 = await prj.getBlockState(block2Id).getValue();
     const block3StableState1 = await prj.getBlockState(block3Id).getValue();
 
+    expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
+    expect(block2StableState1.navigationState).toStrictEqual({ href: '/' });
+    expect(block3StableState1.navigationState).toStrictEqual({ href: '/' });
     // console.dir(block1StableState1, { depth: 5 });
     // console.dir(block2StableState1, { depth: 5 });
     // console.dir(block3StableState1, { depth: 5 });
