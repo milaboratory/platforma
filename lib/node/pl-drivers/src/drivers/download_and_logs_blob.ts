@@ -56,7 +56,7 @@ import { z } from 'zod';
 export const OnDemandBlobResourceSnapshot = rsSchema({
   kv: {
     'ctl/file/blobInfo': z.object({
-      size: z.coerce.number()
+      sizeBytes: z.coerce.number()
     })
   }
 });
@@ -251,7 +251,7 @@ export class DownloadDriver implements BlobDriver {
 
     if (blob === undefined) {
       blob = new OnDemandBlobHolder(
-        info.kv['ctl/file/blobInfo'].size,
+        info.kv['ctl/file/blobInfo'].sizeBytes,
         dataToRemoteHandle(info, this.signer)
       );
       this.idToOnDemand.set(info.id, blob);

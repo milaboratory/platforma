@@ -216,7 +216,7 @@ async function makeDownloadableBlobFromAssets(
     fields: undefined,
     kv: {
       'ctl/file/blobInfo': {
-        size: Number(kv.sizeBytes)
+        sizeBytes: Number(kv.sizeBytes)
       }
     }
   } as OnDemandBlobResourceSnapshot;
