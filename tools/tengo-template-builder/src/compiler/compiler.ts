@@ -22,18 +22,26 @@ export class TengoTemplateCompiler {
 
   private populateTemplateDataFromDependencies(fullName: FullArtifactName,
                                                data: TemplateData,
-                                               deps: TypedArtifactName[]) {
+                                               deps: TypedArtifactName[],
+                                               trace: string[]) {
     for (const dep of deps) {
       switch (dep.type) {
         case 'library':
           const lib = this.getLibOrError(dep);
+
+          const recursionStart = trace.indexOf(artifactNameToString(dep))
+          if (recursionStart >= 0) {
+            let errorMessage = `library import recursion detected: ${trace.slice(recursionStart).join(" -> ")} -> ${artifactNameToString(dep)}`
+            throw new Error(errorMessage)
+          }
+
           data.libs[artifactNameToString(dep)] = {
             ...formatArtefactNameAndVersion(lib.fullName),
             src: lib.src
           };
 
           // populate with transient library dependencies
-          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies);
+          this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies, [...trace, artifactNameToString(dep)]);
 
           break;
         case 'template':
@@ -69,7 +77,7 @@ export class TengoTemplateCompiler {
     };
 
     // collecting dependencies in output format
-    this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies);
+    this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies, []);
 
     const tpl = new Template(tplSrc.fullName, { data: tplData });
     this.addTemplate(tpl);
@@ -84,7 +92,7 @@ export class TengoTemplateCompiler {
       );
   }
 
-  allLibs() : ArtifactSource[] {
+  allLibs(): ArtifactSource[] {
     return this.libs.array
   }
 
@@ -97,7 +105,7 @@ export class TengoTemplateCompiler {
   getLibOrError(name: TypedArtifactName): ArtifactSource {
     const lib = this.getLib(name);
     if (!lib)
-      throw new Error(`library not found ${typedArtifactNameToString(name)}`);
+      throw new Error(`library not found: ${artifactNameToString(name)}`);
     return lib;
   }
 
@@ -109,7 +117,7 @@ export class TengoTemplateCompiler {
       );
   }
 
-  allTemplates() : Template[] {
+  allTemplates(): Template[] {
     return this.templates.array
   }
 
@@ -122,7 +130,7 @@ export class TengoTemplateCompiler {
   getTemplateOrError(name: TypedArtifactName): Template {
     const tpl = this.getTemplate(name);
     if (!tpl)
-      throw new Error(`template not found ${typedArtifactNameToString(name)}`);
+      throw new Error(`template not found: ${artifactNameToString(name)}`);
     return tpl;
   }
 
@@ -155,9 +163,9 @@ export class TengoTemplateCompiler {
 
   compileAndAdd(sources: ArtifactSource[]): TemplatesAndLibs {
     const ret: TemplatesAndLibs = { templates: [], libs: [] };
-    let current : ArtifactSource[] = [];
+    let current: ArtifactSource[] = [];
 
-    for(const src of sources) {
+    for (const src of sources) {
       if (src.fullName.type === 'library') {
         // add libraries first to be able to resolve them as dependencies
         this.addLib(src);
@@ -168,7 +176,7 @@ export class TengoTemplateCompiler {
     }
 
     while (current.length > 0) {
-      const unprocessed: ArtifactSource[] = [];
+      const unprocessed: { src: ArtifactSource, err: Error }[] = [];
 
       for (const src of current) {
         //
@@ -178,12 +186,18 @@ export class TengoTemplateCompiler {
         //
         // This is equivalent to topological sorting of input sources.
         //
-        if (src.dependencies.some(dep =>
+        const unsatisfied = src.dependencies.filter(dep =>
           !this.getArtefact(dep) &&
           // allow self reference for templates
           !(src.fullName.type === 'template' && typedArtifactNamesEquals(src.fullName, dep))
-        )) {
-          unprocessed.push(src);
+        )
+        if (unsatisfied.length > 0) {
+          let errorMessage = `Unsatisfied dependencies in ${fullNameToString(src.fullName)}:\n`
+          for (const dep of unsatisfied) {
+            errorMessage += `  - ${typedArtifactNameToString(dep)}\n`;
+          }
+          unprocessed.push({ src, err: Error(errorMessage) })
+
           continue;
         }
 
@@ -199,8 +213,11 @@ export class TengoTemplateCompiler {
             try {
               const tpl = this.compileAndAddTemplate(src);
               ret.templates.push(tpl);
-            } catch (error: any) {
-              unprocessed.push(src) // one or more dependencies are not resolvable yet
+            } catch (err: any) {
+              let errorMessage = `Unsatisfied dependencies in ${fullNameToString(src.fullName)}:\n`
+              errorMessage += `  - ${err.message}\n`;
+
+              unprocessed.push({ src, err: Error(errorMessage) }) // one or more dependencies are not resolvable yet
             }
             break;
           case 'test':
@@ -216,17 +233,13 @@ export class TengoTemplateCompiler {
       if (current.length === unprocessed.length) {
         let errorMessage = '';
 
-        for (const src of unprocessed) {
-          errorMessage += `\nUnsatisfied dependencies in ${fullNameToString(src.fullName)}\n`;
-          for (const dep of src.dependencies) {
-            if (!this.getArtefact(dep))
-              errorMessage += `  - ${typedArtifactNameToString(dep)}\n`;
-          }
+        for (const u of unprocessed) {
+          errorMessage += `\n${u.err.message}`
         }
         throw new Error(errorMessage);
       }
 
-      current = unprocessed;
+      current = unprocessed.map(({ src: ArtifactSource }) => ArtifactSource);
     }
 
     return ret;
