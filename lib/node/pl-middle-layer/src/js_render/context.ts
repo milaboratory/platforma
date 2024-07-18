@@ -260,10 +260,10 @@ export class JsExecutionContext
   }
 
   public getOnDemandBlobContentHandle(handle: string): string {
-    const resourceInfo = this.getAccessor(handle).resourceInfo;
+    const resource = this.getAccessor(handle).persist();
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
-      this.env.driverKit.blobDriver.getOnDemandBlob(resourceInfo)
+      this.env.driverKit.blobDriver.getOnDemandBlob(resource)
     );
   }
 

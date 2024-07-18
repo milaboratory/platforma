@@ -68,7 +68,7 @@ export function projectOverview(
         const cInputs = prj.traverse({
           field: projectFieldName(id, 'currentArgs'),
           assertFieldType: 'Dynamic',
-          errorIfFieldNotAssigned: true
+          errorIfFieldNotSet: true
         });
 
         let prod: ProdState | undefined = undefined;
