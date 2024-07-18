@@ -22,6 +22,8 @@ import {
   ResourceTraversalOps
 } from './traversal_ops';
 import { ValueOrError } from './value_or_error';
+import { ZodType, z } from 'zod';
+import { Optional, Writable } from 'utility-types';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -131,6 +133,107 @@ export function treeEntryToResourceInfo(res: PlTreeEntry | ResourceInfo, ctx: Co
   return res;
 }
 
+export type ResourceSnapshot<
+  Data = undefined,
+  Fields extends Record<string, ResourceId | undefined> | undefined = undefined,
+  KV extends Record<string, unknown> | undefined = undefined
+> = {
+  readonly id: ResourceId;
+  readonly type: ResourceType;
+  readonly data: Data;
+  readonly fields: Fields;
+  readonly kv: KV;
+};
+
+type ResourceSnapshotGeneric = ResourceSnapshot<
+  unknown,
+  Record<string, ResourceId | undefined> | undefined,
+  Record<string, unknown> | undefined
+>;
+
+export type ResourceSnapshotSchema<
+  Data extends ZodType | 'raw' | undefined = undefined,
+  Fields extends Record<string, boolean> | undefined = undefined,
+  KV extends Record<string, ZodType | 'raw'> | undefined = undefined
+> = {
+  readonly data: Data;
+  readonly fields: Fields;
+  readonly kv: KV;
+};
+
+export function rsSchema<
+  const Data extends ZodType | null | undefined = undefined,
+  const Fields extends Record<string, boolean> | undefined = undefined,
+  const KV extends Record<string, ZodType | null> | undefined = undefined
+>(
+  schema: Optional<ResourceSnapshotSchema<Data, Fields, KV>>
+): ResourceSnapshotSchema<Data, Fields, KV> {
+  return schema as any;
+}
+
+type ResourceSnapshotSchemaGeneric = ResourceSnapshotSchema<
+  ZodType | null | undefined,
+  Record<string, boolean> | undefined,
+  Record<string, ZodType | null> | undefined
+>;
+
+type InferDataType<Data extends ZodType | null | undefined> = Data extends null
+  ? Uint8Array
+  : Data extends ZodType
+    ? z.infer<Data>
+    : undefined;
+
+type InferFieldsType<Fields extends Record<string, boolean> | undefined> = Fields extends undefined
+  ? undefined
+  : {
+      [FieldName in keyof Fields]: Fields[FieldName] extends true
+        ? ResourceId
+        : ResourceId | undefined;
+    };
+
+type InferKVType<KV extends Record<string, ZodType | null> | undefined> = KV extends undefined
+  ? undefined
+  : {
+      [FieldName in keyof KV]: KV[FieldName] extends ZodType ? z.infer<KV[FieldName]> : Uint8Array;
+    };
+
+export type InferSnapshot<S extends ResourceSnapshotSchemaGeneric> = ResourceSnapshot<
+  InferDataType<S['data']>,
+  InferFieldsType<S['fields']>,
+  InferKVType<S['kv']>
+>;
+
+export function getResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
+  ctx: ComputableCtx,
+  res: PlTreeEntry,
+  schema: Schema
+): InferSnapshot<Schema> {
+  const node = ctx.accessor(res).node();
+  const info = node.resourceInfo;
+  const result: Optional<Writable<ResourceSnapshotGeneric>, 'data' | 'fields' | 'kv'> = { ...info };
+  if (schema.data !== undefined) if(schema.data === null) result.data = schema.data.parse(node.getDataAsJson());
+
+  if (schema.fields !== undefined) {
+    const fields: Record<string, ResourceId | undefined> = {};
+    for (const [fieldName, required] of Object.entries(schema.fields))
+      fields[fieldName] = node.traverse({ field: fieldName, errorIfFieldNotSet: required })?.id;
+    result.fields = fields;
+  }
+
+  if (schema.kv !== undefined) {
+    const kv: Record<string, unknown> = {};
+    for (const [fieldName, type] of Object.entries(schema.kv)) {
+      const value = node.getKeyValue(fieldName);
+      if (value === undefined) throw new Error(`Key not found ${fieldName}`);
+      if (type === null) kv[fieldName] = value;
+      else kv[fieldName] = type.parse(JSON.parse(Buffer.from(value).toString('utf-8')));
+    }
+    result.kv = kv;
+  }
+
+  return result as any;
+}
+
 export type ResourceWithData = {
   readonly id: ResourceId;
   readonly type: ResourceType;
@@ -225,7 +328,7 @@ export class PlTreeNodeAccessor {
   public traverse(
     ...steps: [
       Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
-        errorIfFieldNotAssigned: true;
+        errorIfFieldNotSet: true;
       }
     ]
   ): PlTreeNodeAccessor;
@@ -237,7 +340,7 @@ export class PlTreeNodeAccessor {
   public traverseOrError(
     ...steps: [
       Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
-        errorIfFieldNotAssigned: true;
+        errorIfFieldNotSet: true;
       }
     ]
   ): ValueOrError<PlTreeNodeAccessor, string>;
@@ -307,7 +410,7 @@ export class PlTreeNodeAccessor {
   public getField(
     _step:
       | (Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true })
-      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotAssigned: true })
+      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotSet: true })
   ): ValueAndError<PlTreeNodeAccessor>;
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined;
   public getField(_step: GetFieldStep | string): ValueAndError<PlTreeNodeAccessor> | undefined {

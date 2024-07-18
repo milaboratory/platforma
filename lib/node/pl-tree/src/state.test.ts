@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { PlTreeState } from './state';
 import {
   dField,
@@ -12,6 +13,7 @@ import {
 } from './test_utils';
 import { Computable } from '@milaboratory/computable';
 import { NullResourceId, ResourceId } from '@milaboratory/pl-client-v2';
+import { InferSnapshot, ResourceSnapshotSchema, rsSchema } from './accessors';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;
@@ -111,6 +113,57 @@ test('simple tree kv test', async () => {
 
   expect(c1.isChanged()).toBeTruthy();
   expect(await c1.getValue()).toBeUndefined();
+  expect(c1.isChanged()).toBeFalsy();
+});
+
+function a1<T extends Record<string, string>>(a: T): T {
+  return a;
+}
+
+function a2<const T extends Record<string, string>>(a: T): T {
+  return a;
+}
+
+const TestSnapshot1 = rsSchema({ fields: { a: true } });
+type TestSnapshot1 = InferSnapshot<typeof TestSnapshot1>;
+
+test('simple snapshot test', async () => {
+  const tree = new PlTreeState(TestDynamicRootId1);
+
+  const c1 = Computable.make((c) =>
+    c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
+  );
+
+  tree.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
+    {
+      ...TestStructuralResourceState1,
+      id: rid(1n),
+      fields: [iField('b', rid(2n))],
+      data: new TextEncoder().encode(`{"jf":"some"}`)
+    },
+    {
+      ...TestValueResourceState1,
+      id: rid(2n),
+      data: new TextEncoder().encode(`{"jf":"some"}`)
+    }
+  ]);
+
+  expect(c1.isChanged()).toBeTruthy();
+  expect(await c1.getValue()).toBeUndefined();
+  expect(c1.isChanged()).toBeFalsy();
+
+  tree.updateFromResourceData([
+    {
+      ...TestValueResourceState1,
+      id: rid(rid(2n)),
+      data: new TextEncoder().encode('Test1'),
+      kv: [{ key: 'thekey', value: Buffer.from('thevalue') }]
+    }
+  ]);
+
+  expect(c1.isChanged()).toBeTruthy();
+  expect(await c1.getValue()).toEqual('thevalue');
   expect(c1.isChanged()).toBeFalsy();
 });
 
