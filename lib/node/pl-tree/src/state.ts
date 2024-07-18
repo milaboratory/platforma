@@ -137,7 +137,7 @@ export class PlTreeResource implements PlTreeResourceI {
     watcher: Watcher,
     _step:
       | (Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true })
-      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotAssigned: true }),
+      | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotSet: true }),
     onUnstable: () => void
   ): ValueAndError<ResourceId>;
   public getField(
