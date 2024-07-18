@@ -16,12 +16,11 @@ import {
 import { Computable } from '@milaboratory/computable';
 import { NullResourceId, ResourceId } from '@milaboratory/pl-client-v2';
 import {
-  getResourceSnapshot,
+  makeResourceSnapshot,
   InferSnapshot,
   ResourceSnapshotSchema,
   rsSchema,
-  treeEntryToResourceInfo,
-  tryGetResourceSnapshot
+  treeEntryToResourceInfo
 } from './accessors';
 
 function rid(id: bigint): ResourceId {
@@ -125,6 +124,18 @@ test('simple tree kv test', async () => {
   expect(c1.isChanged()).toBeFalsy();
 });
 
+// schema definition
+const MyTestResourceState = rsSchema({
+  data: z.object({
+    jf: z.number()
+  }),
+  fields: { b: true, c: false },
+  kv: { thekey: z.string() }
+});
+
+// type derived from schema for out users and us
+type MyTestResourceState = InferSnapshot<typeof MyTestResourceState>;
+
 test('simple snapshot test', async () => {
   const tree = new PlTreeState(TestDynamicRootId1);
 
@@ -132,20 +143,8 @@ test('simple snapshot test', async () => {
     const accessor = ctx.accessor(tree.entry()).node().traverse('a');
     if (accessor == undefined) return undefined;
 
-    const result = tryGetResourceSnapshot(
-      ctx,
-      accessor.persist(),
-      rsSchema({
-        data: z.object({
-          jf: z.number()
-        }),
-        fields: { b: true, c: false },
-        kv: { thekey: z.string() }
-      })
-    );
-
-    if (!result.ok) return undefined;
-    return result.value;
+    const result: MyTestResourceState = makeResourceSnapshot(accessor, MyTestResourceState);
+    return result;
   });
 
   tree.updateFromResourceData([
@@ -163,7 +162,7 @@ test('simple snapshot test', async () => {
   ]);
 
   expect(c1.isChanged()).toBeTruthy();
-  expect(await c1.getValue()).toBeUndefined();
+  expect((await c1.getValueOrError()).type).toStrictEqual('error');
   expect(c1.isChanged()).toBeFalsy();
 
   tree.updateFromResourceData([
@@ -190,7 +189,21 @@ test('simple snapshot test', async () => {
     kv: {
       thekey: 'thevalue'
     }
-  });
+  } as MyTestResourceState);
+  expect(c1.isChanged()).toBeFalsy();
+
+  tree.updateFromResourceData([
+    {
+      ...TestValueResourceState1,
+      id: rid(1n),
+      fields: [iField('b', rid(2n))],
+      data: new TextEncoder().encode(`{"jf": 0}`),
+      kv: [{ key: 'thekey', value: Buffer.from('123') }] // thekey type changed to number (invalid accordig to zod schema)
+    }
+  ]);
+
+  expect(c1.isChanged()).toBeTruthy();
+  expect((await c1.getValueOrError()).type).toStrictEqual('error');
   expect(c1.isChanged()).toBeFalsy();
 });
 

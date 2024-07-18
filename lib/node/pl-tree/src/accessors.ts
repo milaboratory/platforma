@@ -24,6 +24,7 @@ import {
 import { ValueOrError } from './value_or_error';
 import { ZodType, z } from 'zod';
 import { Optional, Writable } from 'utility-types';
+import { notEmpty } from '@milaboratory/ts-helpers';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -120,20 +121,30 @@ export class PlTreeEntryAccessor {
   }
 }
 
-/** Helper type to simplify implementation of APIs requiring type information. */
+/**
+ * Helper type to simplify implementation of APIs requiring type information.
+ * @deprecated
+ * */
 export type ResourceInfo = {
   readonly id: ResourceId;
   readonly type: ResourceType;
 };
 
-/** Can be called only when a ctx is provided, because pl tree entry is a computable entity. */
+/**
+ * Can be called only when a ctx is provided, because pl tree entry is a computable entity.
+ * @deprecated
+ * */
 export function treeEntryToResourceInfo(res: PlTreeEntry | ResourceInfo, ctx: ComputableCtx) {
   if (res instanceof PlTreeEntry) return ctx.accessor(res).node().resourceInfo;
 
   return res;
 }
 
-/** A DTO that can be got from PlTreeEntry and a ComputableCtx */
+/**
+ * A DTO that can be generated from a tree node to make a snapshot of specific parts of it's state.
+ * Such snapshots can then be used in core that requires this information without the need of
+ * retrieving state from the tree.
+ */
 export type ResourceSnapshot<
   Data = undefined,
   Fields extends Record<string, ResourceId | undefined> | undefined = undefined,
@@ -226,14 +237,26 @@ export type InferSnapshot<S extends ResourceSnapshotSchemaGeneric> = ResourceSna
 >;
 
 /** Gets a ResourceSnapshot from PlTreeEntry. */
-export function getResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
-  ctx: ComputableCtx,
-  res: PlTreeEntry | InferSnapshot<Schema>,
+export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
+  res: PlTreeEntry,
+  schema: Schema,
+  ctx: ComputableCtx
+): InferSnapshot<Schema>;
+export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
+  res: PlTreeEntryAccessor | PlTreeNodeAccessor,
   schema: Schema
+): InferSnapshot<Schema>;
+export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
+  res: PlTreeEntry | PlTreeEntryAccessor | PlTreeNodeAccessor,
+  schema: Schema,
+  ctx?: ComputableCtx
 ): InferSnapshot<Schema> {
-  if (!(res instanceof PlTreeEntry)) return res;
-
-  const node = ctx.accessor(res).node();
+  const node =
+    res instanceof PlTreeEntry
+      ? notEmpty(ctx).accessor(res).node()
+      : res instanceof PlTreeEntryAccessor
+        ? res.node()
+        : res;
   const info = node.resourceInfo;
   const result: Optional<Writable<ResourceSnapshotGeneric>, 'data' | 'fields' | 'kv'> = { ...info };
 
@@ -268,19 +291,7 @@ export function getResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric
   return result as any;
 }
 
-/** Tries to get ResourceSnapshot and returns a error if something went wrong. */
-export function tryGetResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneric>(
-  ctx: ComputableCtx,
-  res: PlTreeEntry | InferSnapshot<Schema>,
-  schema: Schema
-): ValueOrError<InferSnapshot<Schema>, any> {
-  try {
-    return { ok: true, value: getResourceSnapshot(ctx, res, schema) };
-  } catch (e: any) {
-    return { ok: false, error: e };
-  }
-}
-
+/** @deprecated */
 export type ResourceWithData = {
   readonly id: ResourceId;
   readonly type: ResourceType;
@@ -288,6 +299,7 @@ export type ResourceWithData = {
   readonly data?: Uint8Array;
 };
 
+/** @deprecated */
 export function treeEntryToResourceWithData(
   res: PlTreeEntry | ResourceWithData,
   fields: string[],
@@ -312,12 +324,14 @@ export function treeEntryToResourceWithData(
   return res;
 }
 
+/** @deprecated */
 export type ResourceWithMetadata = {
   readonly id: ResourceId;
   readonly type: ResourceType;
   readonly metadata: Record<string, any>;
 };
 
+/** @deprecated */
 export function treeEntryToResourceWithMetadata(
   res: PlTreeEntry | ResourceWithMetadata,
   mdKeys: string[],
