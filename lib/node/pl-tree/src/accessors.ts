@@ -133,7 +133,7 @@ export function treeEntryToResourceInfo(res: PlTreeEntry | ResourceInfo, ctx: Co
   return res;
 }
 
-/** A DTO that can be converted from PlTreeEntry and a ComputableCtx */
+/** A DTO that can be got from PlTreeEntry and a ComputableCtx */
 export type ResourceSnapshot<
   Data = undefined,
   Fields extends Record<string, ResourceId | undefined> | undefined = undefined,
@@ -153,7 +153,7 @@ type ResourceSnapshotGeneric = ResourceSnapshot<
   Record<string, unknown> | undefined
 >;
 
-/** Request we'll pass to getResourceSnapshot function. It builds a type of ResourceSnapshot. */
+/** Request that we'll pass to getResourceSnapshot function. We infer the type of ResourceSnapshot from this. */
 export type ResourceSnapshotSchema<
   Data extends ZodType | 'raw' | undefined = undefined,
   Fields extends Record<string, boolean> | undefined = undefined,
@@ -195,9 +195,9 @@ type InferDataType<Data extends ZodType | 'raw' | undefined> = Data extends 'raw
 
 /**
  * If Fields is a record of field names to booleans,
- * then the value is true, we'll require this field and throw a Error if it wasn't found.
- * If it's not required and doesn't exist, we'll return undefined.
- * If Fields is undefined, we won't set fields at all.
+ * then if the value of the field is true, we'll require this field and throw a Error if it wasn't found.
+ * If it's false and doesn't exist, we'll return undefined.
+ * If Fields type is undefined, we won't set fields at all.
  */
 type InferFieldsType<Fields extends Record<string, boolean> | undefined> = Fields extends undefined
   ? undefined
