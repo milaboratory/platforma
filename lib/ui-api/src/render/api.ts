@@ -98,9 +98,9 @@ export class RenderCtx<Args, UiState> {
   }
 }
 
-export type RenderFunction<Args = unknown, UiState = unknown> = (
+export type RenderFunction<Args = unknown, UiState = unknown, Ret = unknown> = (
   rCtx: RenderCtx<Args, UiState>
-) => unknown;
+) => Ret;
 
 export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
   ? R extends FutureRef<infer T>

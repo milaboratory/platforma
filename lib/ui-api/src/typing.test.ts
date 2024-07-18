@@ -19,13 +19,14 @@ import {
   mapArrayValues,
   mapRecordValues
 } from './config';
-import { PlatformaConfiguration, StdCtx } from './builder';
+import { DeriveHref, PlatformaConfiguration, StdCtx } from './builder';
 import {
+  BlockSection,
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ValueOrErrors
 } from '@milaboratory/sdk-model';
-import { InferOutputsType } from './platforma';
+import { InferHrefType, InferOutputsType } from './platforma';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -79,13 +80,36 @@ function typeTest1() {
   >();
 }
 
+function testCreateSections<const S extends BlockSection[]>(sections: () => S): DeriveHref<S> {
+  return undefined as any;
+}
+
+test('test config content', () => {
+  const s1 = testCreateSections(() => [
+    { type: 'delimiter' },
+    { type: 'link', href: '/a1', label: 'l' },
+    { type: 'link', href: '/a2', label: 'ls' }
+  ]);
+
+  assertType<typeof s1, '/a1' | '/a2'>();
+
+  const s2 = testCreateSections(() => [{ type: 'delimiter' }]);
+
+  assertType<typeof s2, never>();
+});
+
 test('test config content', () => {
   const platforma = PlatformaConfiguration.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
     .inputsValid(isEmpty(getJsonField(Args, 'a')))
-    .sections(getImmediate([{ type: 'link', href: 'main', label: 'Main' }]))
+    .sections((r) => {
+      return [
+        { type: 'link', href: '/', label: 'Main' },
+        { type: 'link', href: '/subsection', label: 'Subsection' }
+      ];
+    })
     .done();
 
   assertType<
@@ -95,6 +119,8 @@ test('test config content', () => {
       cell2: ValueOrErrors<'v1'[]>;
     }
   >();
+
+  assertType<InferHrefType<typeof platforma>, '/' | '/subsection'>();
 
   expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
 });
@@ -121,7 +147,12 @@ test('test config 2', () => {
     .output('cell2', (ctx) => 42)
     .output('cell3', () => undefined)
     .inputsValid(isEmpty(getJsonField(Args, 'a')))
-    .sections(getImmediate([{ type: 'link', href: 'main', label: 'Main' }]))
+    .sections(
+      getImmediate([
+        { type: 'link', href: '/', label: 'Main' },
+        { type: 'link', href: '/subsection', label: 'Subsection' }
+      ])
+    )
     .done();
 
   assertType<
@@ -139,6 +170,8 @@ test('test config 2', () => {
       cell3: ValueOrErrors<undefined>;
     }
   >();
+
+  assertType<InferHrefType<typeof platforma>, '/' | '/subsection'>();
 
   expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
 });

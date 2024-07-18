@@ -1,4 +1,4 @@
-import { BlockOutputsBase, BlockState } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState, NavigationState } from '@milaboratory/sdk-model';
 import { BlockStatePatch } from './block_state_patch';
 
 /** Returned by state subscription methods to be able to cancel the subscription. */
@@ -8,7 +8,8 @@ export type CancelSubscription = () => void;
 export interface BlockApi<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
-  UiState = unknown
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`
 > {
   /**
    * Use this method to retrieve block state during UI initialization. Then use
@@ -66,4 +67,9 @@ export interface BlockApi<
    * values.
    * */
   setBlockArgsAndUiState(args: Args, state: UiState): Promise<void>;
+
+  /**
+   * Sets block navigatiopn state.
+   * */
+  setNavigationState(state: NavigationState<Href>): Promise<void>;
 }

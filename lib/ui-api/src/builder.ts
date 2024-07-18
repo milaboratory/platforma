@@ -65,6 +65,13 @@ export function isFunctionHandle(cfgOrFh: TypedConfigOrFunctionHandle): cfgOrFh 
   return typeof cfgOrFh === 'string';
 }
 
+type OnlyString<S> = S extends string ? S : '';
+
+// prettier-ignore
+export type DeriveHref<S> = S extends readonly BlockSection[] 
+  ? OnlyString<Extract<S[number], { type: 'link' }>['href']>
+  : never;
+
 /** This structure is rendered from the configuration, type can accommodate any
  * version of config structure. */
 export type BlockConfigUniversal<
@@ -135,7 +142,8 @@ export function normalizeBlockConfig<
 export class PlatformaConfiguration<
   Args,
   OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>,
-  UiState
+  UiState,
+  Href extends `/${string}` = '/'
 > {
   private constructor(
     private readonly _renderingMode: BlockRenderingMode,
@@ -168,19 +176,20 @@ export class PlatformaConfiguration<
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key,
     cfg: Cfg
-  ): PlatformaConfiguration<Args, OutputsCfg & { [K in Key]: Cfg }, UiState>;
+  ): PlatformaConfiguration<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
   public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF
   ): PlatformaConfiguration<
     Args,
     OutputsCfg & { [K in Key]: FunctionHandle<InferRenderFunctionReturn<RF>> },
-    UiState
+    UiState,
+    Href
   >;
   public output(
     key: string,
     cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
       const functionHandle = `output#${key}` as FunctionHandle;
       tryRegisterCallback(functionHandle, () => cfgOrRf(new RenderCtx()));
@@ -210,20 +219,20 @@ export class PlatformaConfiguration<
   /** @deprecated */
   public canRun<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
     return this.inputsValid(cfg as any);
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed */
   public inputsValid<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState>;
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href>;
   public inputsValid<RF extends RenderFunction<Args, UiState>>(
     rf: RF & InputsValidRFChecked<RF>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState>;
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href>;
   public inputsValid(
     cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
       tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
@@ -244,15 +253,21 @@ export class PlatformaConfiguration<
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
-  public sections<Cfg extends TypedConfig>(
+  public sections<
+    const Ret extends SectionsExpectedType,
+    const RF extends RenderFunction<Args, UiState, Ret>
+  >(rf: RF): PlatformaConfiguration<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
+  public sections<const Cfg extends TypedConfig>(
     cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState>;
-  public sections<RF extends RenderFunction<Args, UiState>>(
-    rf: RF & SectionsRFChecked<RF>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState>;
+  ): PlatformaConfiguration<
+    Args,
+    OutputsCfg,
+    UiState,
+    DeriveHref<ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>>>
+  >;
   public sections(
     cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState> {
+  ): PlatformaConfiguration<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
       tryRegisterCallback('sections', () => cfgOrRf(new RenderCtx()));
       return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
@@ -273,8 +288,8 @@ export class PlatformaConfiguration<
   }
 
   /** Sets initial args for the block, this value must be specified. */
-  public initialArgs(value: Args): PlatformaConfiguration<Args, OutputsCfg, UiState> {
-    return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
+  public initialArgs(value: Args): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
+    return new PlatformaConfiguration<Args, OutputsCfg, UiState, Href>(
       this._renderingMode,
       value,
       this._outputs,
@@ -286,7 +301,12 @@ export class PlatformaConfiguration<
   /** Renders all provided block settings into a pre-configured platforma API
    * instance, that can be used in frontend to interact with block state, and
    * other features provided by the platforma to the block. */
-  public done(): Platforma<Args, InferOutputsFromConfigs<Args, OutputsCfg, UiState>, UiState> {
+  public done(): Platforma<
+    Args,
+    InferOutputsFromConfigs<Args, OutputsCfg, UiState>,
+    UiState,
+    Href
+  > {
     if (this._initialArgs === undefined) throw new Error('Initial arguments not set.');
 
     const config: BlockConfig<Args, OutputsCfg> = {
