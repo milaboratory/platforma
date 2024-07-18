@@ -44,9 +44,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   );
 
   const save = () => {
-    if (local.value) {
-      options.onSave(validate(local.value));
-    }
+    options.onSave(validate(local.value));
   };
 
   const revert = () => {

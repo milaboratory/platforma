@@ -1,0 +1,47 @@
+@import '@milaboratory/platforma-uikit/src/assets/mixins.scss';
+
+.ls-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 -24px 0;
+  padding: 6px 28px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 12px;
+  letter-spacing: 0.44px;
+  text-transform: uppercase;
+  border-top: 1px solid var(--light-border-div-grey, #e1e3eb);
+  > div {
+    cursor: pointer;
+  }
+}
+
+.ls-container {
+  margin: 0 -24px;
+  padding: 12px 24px 12px 24px;
+  max-height: 400px;
+  @include scrollbarPersistent(true);
+  overflow: auto;
+  > div {
+    font-family: var(--font-family-monospace);
+    padding: 2px 4px;
+    margin: 1px 0;
+    color: var(--color-dis-01);
+    &.isDir {
+      color: #07ad3e;
+      font-weight: 500;
+      cursor: pointer;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+    &.isAllowed {
+      color: var(--color-txt-01);
+      &.selected {
+        background-color: #d0f0c0;
+      }
+    }
+  }
+}

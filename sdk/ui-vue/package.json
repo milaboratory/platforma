@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -16,7 +16,8 @@
     "test": "exit 0",
     "build": "npm run build -w ./lib",
     "type-check": "npm run type-check -w ./lib",
-    "lint": "eslint . --ext js,ts,vue"
+    "lint": "eslint . --ext js,ts,vue",
+    "playground": "npm run dev -w playground"
   },
   "author": "",
   "license": "ISC",

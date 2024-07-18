@@ -1,5 +1,8 @@
 {
   "root": true,
+  "globals": {
+    "platforma": true
+  },
   "env": {
     "es2021": true,
     "node": false,

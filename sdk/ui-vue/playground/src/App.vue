@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue';
+import { reactive } from 'vue';
+import { FileDialog } from 'lib';
+import { BtnPrimary } from '@milaboratory/platforma-uikit';
+import '@milaboratory/platforma-uikit/dist/style.css';
+
+const data = reactive({
+  modalOpen: false,
+});
+
+const onUpdate = (files: unknown) => {
+  console.log('files', files);
+};
 </script>
 
 <template>
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
-  </div>
-  <HelloWorld msg="Vite + Vue" />
+  <FileDialog v-model="data.modalOpen" @update:files="onUpdate" />
+  <BtnPrimary @click.stop="data.modalOpen = true">Open dialog</BtnPrimary>
 </template>
 
 <style scoped>
