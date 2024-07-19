@@ -16,6 +16,7 @@ import { createUploadBlobClient } from '@milaboratory/pl-drivers';
 import { createUploadProgressClient } from '@milaboratory/pl-drivers';
 import { createLsFilesClient } from '@milaboratory/pl-drivers';
 import { PFrameDriver } from '../pool';
+import * as os from 'node:os';
 
 /**
  * Drivers offered by the middle-layer for internal consumers,
@@ -53,7 +54,7 @@ export async function initDriverKit(
   _ops: DriverKitOpsConstructor
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = { ...DefaultDriverKitOps, ..._ops };
-  checkStorageNamesDoNotIntersect(ops);
+  checkStorageNamesDoNotIntersect(logger, ops);
 
   const signer = new HmacSha256Signer(ops.localSecret);
 
@@ -94,11 +95,18 @@ export async function initDriverKit(
   };
 }
 
-function checkStorageNamesDoNotIntersect(ops: DriverKitOps) {
+function checkStorageNamesDoNotIntersect(logger: MiLogger, ops: DriverKitOps) {
+  if (ops.localStorageNameToPath.local != os.homedir())
+    logger.warn(`'local' storage with homedir was overwrote: ${ops.localStorageNameToPath.local}`);
+
   const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
   const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>
     platformStorages.includes(name)
   );
+
   if (intersected)
-    throw new Error(`Platform local storages include one or more local storages: ${intersected}`);
+    throw new Error(
+      `Platform local storages include one or more local storages: ` +
+        ` ${intersected}. Note that we automatically included 'local' storage with user's home directory.`
+    );
 }
