@@ -1,16 +1,18 @@
 import { notEmpty } from '@milaboratory/helpers/utils';
 import { type BlockOutputsBase, type Platforma } from '@milaboratory/sdk-ui';
 import { reactive } from 'vue';
-import { createApp } from './createApp';
+import { createApp, type App } from './createApp';
 import type { LocalState } from './types';
 
-export function defineApp<Args = unknown, Outputs extends BlockOutputsBase = BlockOutputsBase, UiState = unknown>(
-  platforma: Platforma<Args, Outputs, UiState>,
-  cb: () => LocalState,
-) {
-  let app: undefined | ReturnType<typeof createApp<Args, Outputs, UiState>> = undefined;
+export function defineApp<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+>(platforma: Platforma<Args, Outputs, UiState, Href>, cb: () => LocalState<Href>) {
+  let app: undefined | App<Args, Outputs, UiState, Href> = undefined;
 
-  const App = reactive({
+  const BlockApp = reactive({
     loaded: false,
     error: undefined as unknown,
     use() {
@@ -21,12 +23,19 @@ export function defineApp<Args = unknown, Outputs extends BlockOutputsBase = Blo
   platforma
     .loadBlockState()
     .then((state) => {
-      App.loaded = true;
-      app = createApp<Args, Outputs, UiState>(state, platforma, cb);
+      BlockApp.loaded = true;
+      app = createApp<Args, Outputs, UiState, Href>(state, platforma, cb);
     })
     .catch((err) => {
-      App.error = err;
+      BlockApp.error = err;
     });
 
-  return App;
+  return BlockApp;
 }
+
+export type BlockApp<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+> = ReturnType<typeof defineApp<Args, Outputs, UiState, Href>>;

@@ -25,12 +25,12 @@ interface ReadableComputed<T> {
   get: ComputedGetter<T>;
 }
 
-export type Routes = {
-  [key: string]: Component;
+export type Routes<Href extends `/${string}` = `/${string}`> = {
+  [P in Href]: Component;
 };
 
-export type LocalState = {
-  routes: Routes;
+export type LocalState<Href extends `/${string}` = `/${string}`> = {
+  routes: Routes<Href>;
 };
 
 export type ImportedFiles = {

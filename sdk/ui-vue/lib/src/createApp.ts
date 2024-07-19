@@ -1,25 +1,31 @@
 import { deepClone, setProp } from '@milaboratory/helpers/objects';
-import { type BlockOutputsBase, type BlockState, type Platforma } from '@milaboratory/sdk-ui';
+import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import type { UnwrapRef, DeepReadonly } from 'vue';
-import { reactive, nextTick } from 'vue';
-import type { UnwrapValueOrErrors, Routes, LocalState } from './types';
+import { reactive, nextTick, computed, toRefs } from 'vue';
+import type { UnwrapValueOrErrors, LocalState } from './types';
 
-export function createApp<Args = unknown, Outputs extends BlockOutputsBase = BlockOutputsBase, UiState = unknown>(
-  state: BlockState<Args, Outputs, UiState>,
-  platforma: Platforma<Args, Outputs, UiState>,
-  cb: () => LocalState,
-) {
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
+export function createApp<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+>(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => LocalState<Href>) {
   type ReadonlyArgs = DeepReadonly<Args>;
 
   const app = reactive({
     args: state.args as ReadonlyArgs,
     outputs: state.outputs,
     ui: state.ui,
-    navigationState: {
-      href: '/',
-    },
+    navigationState: state.navigationState as NavigationState<Href>,
     cloneArgs() {
       return deepClone(this.args) as Args;
+    },
+    cloneNavigationState() {
+      return deepClone(this.navigationState) as Mutable<NavigationState<Href>>;
     },
     getOutputField(key: keyof Outputs) {
       return this.outputs[key];
@@ -47,6 +53,11 @@ export function createApp<Args = unknown, Outputs extends BlockOutputsBase = Blo
       cb(newArgs);
       platforma.setBlockArgs(newArgs);
     },
+    updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
+      const newState = this.cloneNavigationState();
+      cb(newState);
+      platforma.setNavigationState(newState);
+    },
     setArgField<K extends keyof Args>(key: K, value: Args[K]) {
       platforma.setBlockArgs(setProp(this.cloneArgs(), key, value));
     },
@@ -65,10 +76,21 @@ export function createApp<Args = unknown, Outputs extends BlockOutputsBase = Blo
       if (patch.key === 'outputs') {
         app.outputs = patch.value as UnwrapRef<Outputs>;
       }
+
+      if (patch.key === 'navigationState') {
+        app.navigationState = patch.value as UnwrapRef<NavigationState<Href>>;
+      }
     });
 
     await nextTick(); // @todo remove
   });
 
-  return Object.assign(app, cb());
+  return Object.assign(app, createLocalState());
 }
+
+export type App<
+  Args = unknown,
+  Outputs extends BlockOutputsBase = BlockOutputsBase,
+  UiState = unknown,
+  Href extends `/${string}` = `/${string}`,
+> = ReturnType<typeof createApp<Args, Outputs, UiState, Href>>;

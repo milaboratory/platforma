@@ -37,7 +37,6 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   watch(
     () => options.get(),
     (v) => {
-      console.log('new options.get()');
       local.value = deepClone(v);
     },
     { immediate: true },
