@@ -6,6 +6,7 @@ export * from './ref_util';
 export * from './platforma';
 export * from './render';
 export * from './sdk_info';
+export * from './pframe';
 
 // reexporting everything from SDK model
 export * from '@milaboratory/sdk-model';
