@@ -11,7 +11,7 @@ import * as sdk from '@milaboratory/sdk-model';
 import { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import type { Dirent, Stats } from 'node:fs';
+import { Dirent, Stats } from 'node:fs';
 import { Timestamp } from '../proto/google/protobuf/timestamp';
 
 //
@@ -63,7 +63,7 @@ export class LsDriver implements InternalLsDriver {
   public async listFiles(
     storageHandle: sdk.StorageHandle,
     path: string
-  ): Promise<sdk.LsEntry[]> {
+  ): Promise<sdk.ListFilesResult> {
     const storage = fromStorageHandle(storageHandle);
 
     let list: ListResponse;
@@ -100,8 +100,6 @@ export class LsDriver implements InternalLsDriver {
       ? pathInStorage
       : path.resolve(path.join(storagePath, pathInStorage));
 
-    this.checkPathIsReallyInStorage(fullPath, storagePath);
-
     const files = await fs.opendir(fullPath);
     const direntsWithStats: any[] = [];
     for await (const dirent of files) {
@@ -111,6 +109,7 @@ export class LsDriver implements InternalLsDriver {
       const fullName = path.join(fullPath, dirent.name);
 
       direntsWithStats.push({
+        directory: fullPath,
         fullName,
         dirent,
         stat: await fs.stat(fullName)
@@ -127,20 +126,12 @@ export class LsDriver implements InternalLsDriver {
 
     return resp;
   }
-
-  private checkPathIsReallyInStorage(fullPath: string, storagePath: string) {
-    if (fullPath.startsWith(storagePath)) return;
-
-    throw new Error(
-      `path must be in storage path, ` +
-        `path in storage: ${fullPath}, storagePath: ${storagePath}`
-    );
-  }
 }
 
 export function toListItem(
   logger: MiLogger,
   info: {
+    directory: string;
     fullName: string;
     dirent: Dirent;
     stat: Stats;
@@ -152,6 +143,7 @@ export function toListItem(
   }
 
   return {
+    directory: info.directory,
     isDir: info.dirent.isDirectory(),
     name: info.dirent.name,
     fullName: info.fullName,
@@ -195,22 +187,27 @@ function toLsEntries(info: {
   list: ListResponse;
   signer: Signer;
   remote: boolean;
-}): sdk.LsEntry[] {
-  return info.list.items.map((item) => {
-    if (item.isDir)
-      return {
-        type: 'dir',
-        name: item.name,
-        fullPath: item.fullName
-      };
+}): sdk.ListFilesResult {
+  return {
+    parent:
+      info.list.items.length > 0 ? info.list.items[0]?.directory : undefined,
 
-    return {
-      type: 'file',
-      name: item.name,
-      fullPath: item.fullName,
-      handle: toFileHandle({ item: item, ...info })
-    };
-  });
+    entries: info.list.items.map((item) => {
+      if (item.isDir)
+        return {
+          type: 'dir',
+          name: item.name,
+          fullPath: item.fullName
+        };
+
+      return {
+        type: 'file',
+        name: item.name,
+        fullPath: item.fullName,
+        handle: toFileHandle({ item: item, ...info })
+      };
+    })
+  };
 }
 
 export function toFileHandle(info: {
@@ -284,7 +281,8 @@ function toStorageEntry(
     ([name, path]) => {
       return {
         name: name,
-        handle: toLocalHandle(name, path)
+        handle: toLocalHandle(name, path),
+        initialFullPath: path
       };
     }
   );
@@ -292,7 +290,8 @@ function toStorageEntry(
   const remoteEntries = Object.entries(remotes).map(([name, rId]) => {
     return {
       name: name,
-      handle: toRemoteHandle(name, rId)
+      handle: toRemoteHandle(name, rId),
+      initialFullPath: ''
     };
   });
 
@@ -368,4 +367,5 @@ interface ListItem {
   fullName: string;
   lastModified?: Timestamp;
   size: bigint;
+  directory: string;
 }
