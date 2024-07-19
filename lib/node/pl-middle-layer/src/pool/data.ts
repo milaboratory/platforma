@@ -75,10 +75,7 @@ export function parseDataInfoResource(
     const parts = Object.fromEntries(
       data
         .listInputFields()
-        .map((field) => [
-          field,
-          data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo
-        ])
+        .map((field) => [field, data.traverse({ field, errorIfFieldNotSet: true }).resourceInfo])
     );
 
     return {
