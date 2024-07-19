@@ -6,6 +6,8 @@ import { fromFileHandle, LsDriver, toFileHandle, toListItem } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratory/pl-client-v2';
 import type { Dirent, Stats } from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 test('toFileHandle should ok when encode data for UploadBlob', () => {
   const signer = new HmacSha256Signer('abc');
@@ -62,7 +64,7 @@ test('should ok when get all storages from ls driver', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
     const driver = new LsDriver(logger, lsClient, client, signer, {
-      local: '/'
+      local: os.homedir()
     });
 
     const got = await driver.getStorageList();
@@ -81,7 +83,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
     const driver = new LsDriver(logger, lsClient, client, signer, {
-      local: '/'
+      local: os.homedir()
     });
 
     const storages = await driver.getStorageList();
@@ -119,7 +121,7 @@ test('should ok when list files from local storage in ls driver', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
     const driver = new LsDriver(logger, lsClient, client, signer, {
-      local: '/'
+      local: os.homedir()
     });
 
     const storages = await driver.getStorageList();
@@ -127,5 +129,24 @@ test('should ok when list files from local storage in ls driver', async () => {
 
     const topLevelDir = await driver.listFiles(local, '');
     expect(topLevelDir.length).toBeGreaterThan(1);
+  });
+});
+
+test('should error when list local files not from homedir', async () => {
+  const signer = new HmacSha256Signer('abc');
+  const logger = new ConsoleLoggerAdapter();
+  await TestHelpers.withTempRoot(async (client) => {
+    const lsClient = createLsFilesClient(client, logger);
+    const driver = new LsDriver(logger, lsClient, client, signer, {
+      local: os.homedir()
+    });
+
+    const storages = await driver.getStorageList();
+    const local = storages.find((se) => se.name == 'local')!.handle;
+
+    try {
+      const topLevelDir = await driver.listFiles(local, path.join('..', '..'));
+      fail();
+    } catch (e) {}
   });
 });

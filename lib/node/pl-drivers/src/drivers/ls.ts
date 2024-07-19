@@ -91,17 +91,24 @@ export class LsDriver implements InternalLsDriver {
 
   private async getLocalFiles(
     logger: MiLogger,
-    storagePath: string,
+    _storagePath: string,
     pathInStorage: string
   ): Promise<ListResponse> {
-    const fullPath = path.join(storagePath, pathInStorage);
+    const storagePath = path.resolve(_storagePath);
+
+    const fullPath = path.isAbsolute(pathInStorage)
+      ? pathInStorage
+      : path.resolve(path.join(storagePath, pathInStorage));
+
+    this.checkPathIsReallyInStorage(fullPath, storagePath);
+
     const files = await fs.opendir(fullPath);
     const direntsWithStats: any[] = [];
     for await (const dirent of files) {
       // We cannot use no dirent.path no dirent.parentPath,
       // since the former is deprecated
       // and the later works differently on different versions.
-      const fullName = path.resolve(path.join(fullPath, dirent.name));
+      const fullName = path.join(fullPath, dirent.name);
 
       direntsWithStats.push({
         fullName,
@@ -120,6 +127,15 @@ export class LsDriver implements InternalLsDriver {
 
     return resp;
   }
+
+  private checkPathIsReallyInStorage(fullPath: string, storagePath: string) {
+    if (fullPath.startsWith(storagePath)) return;
+
+    throw new Error(
+      `path must be in storage path, ` +
+        `path in storage: ${fullPath}, storagePath: ${storagePath}`
+    );
+  }
 }
 
 export function toListItem(
@@ -131,7 +147,7 @@ export function toListItem(
   }
 ): ListItem | undefined {
   if (!(info.dirent.isFile() || info.dirent.isDirectory())) {
-    logger.warn('tried to get non-dir and non-file ${info.dirent}, skip it');
+    logger.warn(`tried to get non-dir and non-file ${info.dirent}, skip it`);
     return;
   }
 

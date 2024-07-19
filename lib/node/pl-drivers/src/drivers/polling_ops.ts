@@ -4,4 +4,4 @@ export type PollingOps = {
   pollingInterval: number;
   /** For how long to continue polling after the last derived computable value access. */
   stopPollingDelay: number;
-}
+};
