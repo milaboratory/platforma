@@ -650,8 +650,8 @@ export class Download {
         this.rInfo
       );
 
-      if (!(await fileOrDirExists(path.basename(this.path))))
-        fsp.mkdir(path.basename(this.path), { recursive: true });
+      if (!(await fileOrDirExists(path.dirname(this.path))))
+        fsp.mkdir(path.dirname(this.path), { recursive: true });
 
       // check in case we already have a file by this resource id
       // in the directory. It can happen when we forgot to call removeAll
