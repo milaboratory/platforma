@@ -59,7 +59,6 @@ export async function withMl(
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
   await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
 
   await TestHelpers.withTempRoot(async (pl) => {
     const ml = await MiddleLayer.init(pl, {
