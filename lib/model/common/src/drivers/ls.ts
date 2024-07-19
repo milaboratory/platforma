@@ -1,7 +1,7 @@
-export type ImportFileHandleUpload = `upload://upload/${string}`
-export type ImportFileHandleIndex = `index://index/${string}`
+export type ImportFileHandleUpload = `upload://upload/${string}`;
+export type ImportFileHandleIndex = `index://index/${string}`;
 
-export type ImportFileHandle = ImportFileHandleUpload | ImportFileHandleIndex
+export type ImportFileHandle = ImportFileHandleUpload | ImportFileHandleIndex;
 
 /** Results in upload */
 export type StorageHandleLocal = `local://${string}`;
@@ -12,29 +12,37 @@ export type StorageHandleRemote = `remote://${string}`;
 export type StorageHandle = StorageHandleLocal | StorageHandleRemote;
 
 export type StorageEntry = {
-  name: string,
-  handle: StorageHandle
+  name: string;
+  handle: StorageHandle;
+  initialFullPath: string;
 
   // TODO
   // pathStartsWithDisk
-}
+};
 
-export type LsEntry = {
-  type: 'dir',
-  name: string,
-  fullPath: string
-} | {
-  type: 'file',
-  name: string,
-  fullPath: string,
+export type ListFilesResult = {
+  parent?: string;
+  entries: LsEntry[];
+};
 
-  /** This handle should be set to args... */
-  handle: ImportFileHandle
-}
+export type LsEntry =
+  | {
+      type: 'dir';
+      name: string;
+      fullPath: string;
+    }
+  | {
+      type: 'file';
+      name: string;
+      fullPath: string;
+
+      /** This handle should be set to args... */
+      handle: ImportFileHandle;
+    };
 
 export interface LsDriver {
   /** remote and local storages */
   getStorageList(): Promise<StorageEntry[]>;
 
-  listFiles(storage: StorageHandle, path: string): Promise<LsEntry[]>;
+  listFiles(storage: StorageHandle, fullPath: string): Promise<ListFilesResult>;
 }
