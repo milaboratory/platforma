@@ -1,6 +1,7 @@
 import {
   Computable,
   ComputableCtx,
+  ComputableStableDefined,
   UnwrapComputables
 } from '@milaboratory/computable';
 import {
@@ -62,8 +63,8 @@ export class TestWorkflowResults {
 
 
   /** Returns context id of this workflow */
-  public context(): Computable<ResourceId | undefined> {
-    return this.renderResult.computeOutput("context", (cb) => cb?.id)
+  public context(): ComputableStableDefined<ResourceId> {
+    return this.renderResult.computeOutput("context", (cb) => cb?.id).withStableType()
   }
 
   public export<R>(name: string, cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R) {
