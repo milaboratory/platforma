@@ -149,12 +149,11 @@ export class TplTestHelpers {
 
         let ctx = undefined
         if (parent) {
-          ctx = tx.createEphemeral({ name: 'BContext', version: '1' })
-          if (parent) {
-            tx.createField({ resourceId: ctx, fieldName: "parent" }, 'Input', parent)
-          }
+          ctx = parent
         } else {
           ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' })
+          tx.lockInputs(ctx)
+          tx.lockOutputs(ctx)
         }
 
         return {
