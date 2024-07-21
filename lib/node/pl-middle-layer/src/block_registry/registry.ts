@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratory/ts-helpers';
-import { DevBlockPackFiles } from '../mutator/block-pack/block_pack';
+import { LegacyDevBlockPackFiles } from '../dev';
 
 /**
  * Information specified by the developer of the block.
@@ -60,7 +60,7 @@ async function getFileStat(path: string) {
 
 export async function getDevPacketMtime(devPath: string): Promise<string> {
   let mtime = 0n;
-  for (const f of DevBlockPackFiles) {
+  for (const f of LegacyDevBlockPackFiles) {
     const fullPath = path.join(devPath, ...f);
     const stat = await getFileStat(fullPath);
     if (stat === undefined) continue;
