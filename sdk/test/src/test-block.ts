@@ -13,6 +13,7 @@ import {
   TestHelpers
 } from '@milaboratory/pl-middle-layer';
 import { plTest } from './test-pl';
+import { tryStat } from './util';
 
 async function awaitBlockDone(
   prj: Project,

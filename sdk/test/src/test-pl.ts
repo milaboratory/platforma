@@ -30,6 +30,7 @@ export const plTest = test.extend<{
     await use(workFolder);
     await fsp.rm(workFolder, { recursive: true });
   },
+
   pl: async ({ onTestFinished }, use) => {
     const altRoot = `test_${Date.now()}_${randomUUID()}`;
     let altRootId: OptionalResourceId = NullResourceId;
@@ -69,7 +70,7 @@ export const plTest = test.extend<{
     });
     for (const [, treePromise] of trees) {
       // TODO implement termination
-      (await treePromise).awaitSyncLoopTermination();
+      await (await treePromise).terminate();
     }
   },
 
