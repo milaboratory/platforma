@@ -2,37 +2,17 @@ import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaborator
 import { loadTemplate } from '../template/template_loading';
 import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
 import { assertNever, Signer } from '@milaboratory/ts-helpers';
-import path from 'node:path';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
 import { BlockConfig } from '@milaboratory/sdk-ui';
-import {
-  packageContentPrefix,
-  PlPackageJsonConfigFile,
-  PlPackageYamlConfigFile
-} from '@milaboratory/pl-block-registry';
+import { packageContentPrefix } from '@milaboratory/pl-block-registry';
 import { BlockPackInfo } from '../../model/block_pack';
+import { resolveDevPacket } from '../../dev';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
 export const BlockPackFrontendField = 'frontend';
-
-export const DevBlockPackMetaYaml = [PlPackageYamlConfigFile];
-export const DevBlockPackMetaJson = [PlPackageJsonConfigFile];
-export const DevBlockPackTemplate = ['backend', 'dist', 'tengo', 'tpl', 'main.plj.gz'];
-export const DevBlockPackConfig = ['config', 'dist', 'config.json'];
-export const DevBlockPackFrontendFolder = ['frontend', 'dist'];
-
-export const DevBlockPackFiles = [
-  DevBlockPackTemplate,
-  DevBlockPackConfig,
-  DevBlockPackMetaYaml,
-  DevBlockPackMetaJson,
-  DevBlockPackTemplate,
-  DevBlockPackConfig,
-  DevBlockPackFrontendFolder
-];
 
 /** Ensure trailing slash */
 function tSlash(str: string): string {
@@ -52,10 +32,9 @@ export class BlockPackPreparer {
         return spec.config;
 
       case 'dev': {
-        const configContent = await fs.promises.readFile(
-          path.resolve(spec.folder, ...DevBlockPackConfig)
-        );
-        return JSON.parse(configContent.toString()) as BlockConfig;
+        const devPaths = await resolveDevPacket(spec.folder, false);
+        const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
+        return JSON.parse(configContent) as BlockConfig;
       }
 
       case 'from-registry-v1': {
@@ -79,18 +58,18 @@ export class BlockPackPreparer {
         return spec;
 
       case 'dev': {
+        const devPaths = await resolveDevPacket(spec.folder, false);
+
         // template
-        const templateContent = await fs.promises.readFile(
-          path.resolve(spec.folder, ...DevBlockPackTemplate)
-        );
+        const templateContent = await fs.promises.readFile(devPaths.workflow);
 
         // config
         const config = JSON.parse(
-          await fs.promises.readFile(path.resolve(spec.folder, ...DevBlockPackConfig), 'utf-8')
+          await fs.promises.readFile(devPaths.config, 'utf-8')
         ) as BlockConfig;
 
         // frontend
-        const frontendPath = path.resolve(spec.folder, ...DevBlockPackFrontendFolder);
+        const frontendPath = devPaths.ui;
 
         return {
           type: 'explicit',

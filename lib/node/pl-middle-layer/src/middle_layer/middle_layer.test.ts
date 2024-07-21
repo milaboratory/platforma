@@ -7,8 +7,7 @@ import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
-import { DevBlockPackConfig } from '../mutator/block-pack/block_pack';
-import { BlockPackSpec } from '..';
+import { LegacyDevBlockPackConfig } from '../dev';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
@@ -363,7 +362,7 @@ test('block update test', async () => {
     expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
 
     // touch
-    await fs.promises.appendFile(path.resolve(devBlockPath, ...DevBlockPackConfig), ' ');
+    await fs.promises.appendFile(path.resolve(devBlockPath, ...LegacyDevBlockPackConfig), ' ');
 
     // await update watcher
     await prj.overview.refreshState();
