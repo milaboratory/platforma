@@ -58,7 +58,6 @@ export async function withMl(
   const frontendFolder = path.join(workFolder, 'frontend');
   const downloadFolder = path.join(workFolder, 'download');
   await fs.promises.mkdir(frontendFolder, { recursive: true });
-  await fs.promises.mkdir(downloadFolder, { recursive: true });
 
   await TestHelpers.withTempRoot(async (pl) => {
     const ml = await MiddleLayer.init(pl, {
@@ -66,8 +65,7 @@ export async function withMl(
       devBlockUpdateRecheckInterval: 300,
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder),
-      localStorageNameToPath: { local: '' }
+      blobDownloadPath: path.resolve(downloadFolder)
     });
     try {
       await cb(ml, workFolder);
@@ -534,7 +532,7 @@ test('should create upload-file block, render it and upload a file to pl server'
     expect(local).not.toBeUndefined();
     const fileDir = path.resolve(__dirname, '..', '..', 'assets');
     const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
-    const ourFile = files.find((f) => f.name == 'another_answer_to_the_ultimate_question.txt');
+    const ourFile = files.entries.find((f) => f.name == 'another_answer_to_the_ultimate_question.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 
@@ -586,7 +584,7 @@ test('should create read-logs block, render it and read logs from a file', async
     const library = storages.find((s) => s.name == 'library');
     expect(library).not.toBeUndefined();
     const files = await ml.driverKit.lsDriver.listFiles(library!.handle, '');
-    const ourFile = files.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
+    const ourFile = files.entries.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 

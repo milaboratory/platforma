@@ -2,6 +2,7 @@ import { TemporalSynchronizedTreeOps } from './types';
 import { DownloadDriverOps } from '@milaboratory/pl-drivers';
 import { UploadDriverOps } from '@milaboratory/pl-drivers';
 import { LogsStreamDriverOps } from '@milaboratory/pl-drivers';
+import * as os from 'node:os';
 
 /** Options required to initialize full set of middle layer driver kit */
 export type DriverKitOps = {
@@ -78,7 +79,7 @@ export const DefaultDriverKitOps: Pick<
   | 'localStorageNameToPath'
 > = {
   platformLocalStorageNameToPath: {},
-  localStorageNameToPath: {},
+  localStorageNameToPath: { local: os.homedir() },
   blobDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
     nConcurrentDownloads: 10
@@ -139,8 +140,6 @@ export const DefaultMiddleLayerOps: Pick<
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
   stagingRenderingRate: 5,
-  platformLocalStorageNameToPath: {},
-  localStorageNameToPath: {}
 };
 
 /** Fields with default values are marked as optional here. */

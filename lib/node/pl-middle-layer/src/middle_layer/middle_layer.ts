@@ -152,7 +152,7 @@ export class MiddleLayer {
    * them. */
   public async close() {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
-    this.env.quickJs
+    this.env.quickJs;
     await this.projectListTree.terminate();
   }
 
