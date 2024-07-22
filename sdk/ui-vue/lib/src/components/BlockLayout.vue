@@ -2,32 +2,27 @@
 import '@milaboratory/platforma-uikit/dist/style.css';
 import '../assets/block.scss';
 import { computed } from 'vue';
+import { useBlockApp } from '../defineApp';
+import NotFound from './NotFound.vue';
+import LoaderPage from './LoaderPage.vue';
 
-const errors = computed(() => []); // @TODO global errors
+const sdk = useBlockApp();
 
-const errorMessages = computed(() =>
-  errors.value.map((e) => {
-    try {
-      const structured = JSON.parse(e);
+const CurrentView = computed(() => {
+  if (sdk.loaded) {
+    const app = sdk.use();
+    return app.routes[app.navigationState.href];
+  }
 
-      if ('message' in structured) {
-        return structured.message;
-      }
-    } catch {
-      // do nothing
-    }
-
-    return String(e);
-  }),
-);
+  return undefined;
+});
 </script>
 
 <template>
   <div class="block block__layout">
-    <div v-if="errors.length" class="block__error">
-      <pre v-for="(msg, i) in errorMessages" :key="i">{{ msg }}</pre>
-    </div>
-    <slot />
-    <slot name="actions" />
+    <div v-if="sdk.error">{{ sdk.error }}</div>
+    <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
+    <component :is="CurrentView" v-else-if="CurrentView" />
+    <NotFound v-else />
   </div>
 </template>

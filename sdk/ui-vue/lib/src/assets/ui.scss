@@ -1,3 +1,6 @@
+@use './block.scss';
+@use './file-dialog.scss';
+
 .alert-error {
   background-color: var(--txt-error);
   color: #fff;

@@ -13,9 +13,35 @@
   display: flex;
   flex-direction: column;
 
+  &__not-found {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__loader-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    .loader-container {
+      display: flex;
+      transform: scale(8);
+    }
+    .loader-icon {
+      animation: spin 4s linear infinite;
+      background-color: #ccc;
+      margin: auto;
+    }
+  }
+
   &__layout {
     // border: 1px solid red;
     padding: 12px;
+    // border: 2px solid green;
   }
 
   &__error {

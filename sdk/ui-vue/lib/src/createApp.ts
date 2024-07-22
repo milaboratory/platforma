@@ -1,7 +1,7 @@
 import { deepClone, setProp } from '@milaboratory/helpers/objects';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
-import type { UnwrapRef, DeepReadonly } from 'vue';
-import { reactive, nextTick, computed, toRefs } from 'vue';
+import type { UnwrapRef, DeepReadonly, Component } from 'vue';
+import { reactive, nextTick, markRaw } from 'vue';
 import type { UnwrapValueOrErrors, LocalState } from './types';
 
 type Mutable<T> = {
@@ -85,7 +85,15 @@ export function createApp<
     await nextTick(); // @todo remove
   });
 
-  return Object.assign(app, createLocalState());
+  const local = createLocalState();
+
+  return Object.assign(app, {
+    routes: Object.fromEntries(
+      Object.entries(local.routes).map(([href, component]) => {
+        return [href, markRaw(component as Component)];
+      }),
+    ),
+  } as LocalState<Href>);
 }
 
 export type App<
