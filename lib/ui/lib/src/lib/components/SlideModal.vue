@@ -7,7 +7,7 @@ export default {
 <script lang="ts" setup>
 import { computed, ref, useAttrs } from 'vue';
 import TransitionSlidePanel from '@/lib/components/TransitionSlidePanel.vue';
-import { useClickOutside, useEventListener } from '@/lib';
+import { useClickOutside, useEventListener } from '@/index';
 
 const emit = defineEmits(['update:modelValue']);
 

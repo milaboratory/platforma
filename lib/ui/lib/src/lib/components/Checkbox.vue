@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { UiCheckbox } from '@/lib';
+import { UiCheckbox } from '@/index';
 
 defineEmits(['update:modelValue']);
 

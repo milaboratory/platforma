@@ -11,7 +11,7 @@ import ThCell from './ThCell.vue';
 import TRow from './TRow.vue';
 import { compareRecords } from './domain';
 import { throttle } from '@/lib/helpers/utils';
-import { useEventListener } from '@/lib';
+import { useEventListener } from '@/index';
 
 const minRowHeight = 40;
 

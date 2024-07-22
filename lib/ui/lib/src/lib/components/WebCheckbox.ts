@@ -38,7 +38,7 @@ export default class WebCheckbox extends HTMLElement {
     return ['checked', 'disabled'];
   }
 
-  attributeChangedCallback(name: string, oldValue: unknown, newValue: unknown) {
+  attributeChangedCallback(name: string, _oldValue: unknown, newValue: unknown) {
     if (name === 'checked' && newValue === 'false') {
       this.removeAttribute('checked');
     }

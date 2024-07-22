@@ -2,7 +2,7 @@ import Menu from './Menu.vue';
 import { h, render } from 'vue';
 import type { ContextOption } from './types';
 
-export function showContextMenu<const T>(ev: MouseEvent, options: readonly ContextOption[]) {
+export function showContextMenu(ev: MouseEvent, options: readonly ContextOption[]) {
   ev.preventDefault();
 
   const destroy = () => {

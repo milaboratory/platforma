@@ -13,7 +13,7 @@ defineEmits<{
 }>();
 const activeGroup = ref(props.items[0].group);
 const rightPanel = ref<HTMLElement>();
-const items = ref<ComponentPublicInstance[]>([]);
+const itemsRef = ref<ComponentPublicInstance[]>([]);
 let disableScrollListener = false;
 
 function showItemsForSelectedGroup(group: string) {
@@ -33,7 +33,7 @@ onMounted(() => {
       if (disableScrollListener) {
         return;
       }
-      items.value.forEach((el) => {
+      itemsRef.value.forEach((el) => {
         const rp = rightPanel.value as HTMLElement;
         const rectRp = rp.getBoundingClientRect();
         const rect = (el.$el as HTMLElement).getBoundingClientRect();
@@ -75,7 +75,7 @@ onMounted(() => {
         <template v-for="(groupItem, idx) in props.items" :key="idx">
           <AddGraphItem
             v-for="(item, index) in groupItem.items"
-            ref="items"
+            ref="itemsRef"
             :key="index"
             :item="item"
             :group="groupItem.group"

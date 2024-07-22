@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { BtnPrimary, BtnGhost } from '@/lib';
+import { BtnPrimary, BtnGhost } from '@/index';
 import type { Component } from 'vue';
 import { computed, reactive, watchEffect } from 'vue';
 import type { ColumnSettings, ManageModalSettings, Column } from './types';

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { BtnPrimary, BtnGhost, MaskIcon } from '@/lib';
+import { BtnPrimary, BtnGhost, MaskIcon } from '@/index';
 import { objects } from '@milaboratory/helpers';
 import type { Component } from 'vue';
 import { computed } from 'vue';

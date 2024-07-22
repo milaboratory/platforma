@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { debounce } from '@milaboratory/helpers/functions';
+import { debounce } from '@milaboratory/helpers';
 
 export function useQuery<P extends unknown[], R>(fn: (...args: P) => Promise<R>) {
   const self = reactive({
