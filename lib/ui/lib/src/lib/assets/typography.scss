@@ -1,0 +1,156 @@
+.text-h1 {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 64px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 72px;
+  letter-spacing: -1.28px;
+}
+
+.text-h2 {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 40px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 48px;
+  letter-spacing: -0.8px;
+}
+
+.text-h3 {
+  color: var(--color-txt-01);
+  font-feature-settings: 'clig' off, 'liga' off;
+  font-family: RoadRadio;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 40px;
+}
+
+.text-subtitle-m {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 32px;
+  letter-spacing: -0.56px;
+}
+
+.text-subtitle-s {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.2px;
+}
+
+.text-m {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.text-m-btn {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.text-m-link {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 24px;
+  text-decoration-line: underline;
+}
+
+.text-s {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.text-s-btn {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.text-s-link {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration-line: underline;
+}
+
+.text-mono-m {
+  color: var(--color-txt-01);
+  font-feature-settings: 'ss17' on, 'ss15' on, 'ss11' on;
+  font-family: "Spline Sans Mono";
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.text-mono-s {
+  color: var(--color-txt-01);
+  font-feature-settings: 'ss17' on, 'ss15' on, 'ss11' on;
+  font-family: "Spline Sans Mono";
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.text-caps13 {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.52px;
+  text-transform: uppercase;
+}
+
+.text-caps11 {
+  color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 12px;
+  letter-spacing: 0.44px;
+  text-transform: uppercase;
+}
+
+.text-description {
+  // color: var(--color-txt-01);
+  font-family: var(--font-family-base);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+}

@@ -1,0 +1,78 @@
+.uc-pointer {
+    cursor: pointer;
+}
+
+.d-flex {
+    display: flex;
+}
+
+// @TODO nikolaygiman (naming)
+.d-flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-justify-center {
+    justify-content: center;
+}
+
+.flex-items-start {
+    align-items: flex-start;
+}
+
+.flex-self-start {
+    align-self: flex-start;
+}
+
+.flex-align-center {
+    align-items: center;
+}
+
+.flex-grow {
+    flex-grow: 1;
+}
+
+
+
+.ui-focused-border {
+
+    --contour-color: var(--color-txt-01);
+    --label-color: var(--color-txt-01);
+    --contour-border-width: 1px;
+    --contour-box-shadow: none;
+    --label-offset-left-x: 8px;
+    --label-offset-right-x: 8px;
+    --prefix-color: var(--color-placeholder);
+
+    &.error {
+        --contour-color: var(--color-error);
+    }
+
+    &::after {
+        content: '';
+        position: absolute;
+        pointer-events: none;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        border-radius: var(--border-radius-control);
+        border-width: var(--contour-border-width);
+        border-color: var(--contour-color);
+        border-style: solid;
+        box-shadow: var(--contour-box-shadow);
+    }
+
+    &:focus-within:not(.error) {
+        --label-color: var(--color-txt-focus);
+        --contour-color: var(--color-focus);
+        --contour-border-width: 2px;
+        --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);
+    }
+
+    &:focus-within.error {
+        --contour-border-width: 2px;
+        --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+    }
+}

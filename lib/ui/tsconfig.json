@@ -23,10 +23,6 @@
 
     "declaration": true,
     "declarationMap": true,
-
-    "paths": {
-      "@/*": ["./src/*"]
-    },
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
   "references": [{ "path": "./tsconfig.node.json" }]

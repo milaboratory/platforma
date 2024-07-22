@@ -1,0 +1,99 @@
+@import "./mixins";
+
+.icon {
+  --icon-size: 16px;
+
+  &--clipboard {
+    @include icon(url("./images/16_clipboard.svg"), var(--icon-size));
+  }
+
+  &--attention {
+    @include icon(url("./images/16_attention.svg"), var(--icon-size));
+  }
+
+  &--clear {
+    @include icon(url("./images/16_clear.svg"), var(--icon-size));
+  }
+
+  &--chevron-right {
+    @include icon(url("./images/16_chevron-right.svg"), var(--icon-size));
+  }
+
+  &--chevron-left {
+    @include icon(url("./images/16_chevron-left.svg"), var(--icon-size));
+  }
+
+  &--checkmark {
+    @include icon(url("./images/16_checkmark.svg"), var(--icon-size));
+  }
+
+  &--link {
+    @include icon(url("./images/16_link.svg"), var(--icon-size));
+  }
+
+  // @TODO, there is a bug with keyword "import" in the vue-tsc
+  &--import {
+    @include icon(url("./images/16_import.svg"), var(--icon-size));
+  }
+
+  // instead of 'import'
+  &--download {
+    @include icon(url("./images/16_import.svg"), var(--icon-size));
+  }
+
+  &--add {
+    @include icon(url("./images/16_add.svg"), var(--icon-size));
+  }
+
+  &--play {
+    @include icon(url("./images/16_play.svg"), var(--icon-size));
+  }
+
+  &--loader {
+    @include icon(url("./images/16_loading.svg"), var(--icon-size));
+  }
+
+  &--search-large {
+    --icon-size: 24px;
+    @include icon(url("./images/24_search.svg"), var(--icon-size));
+  }
+
+  &--close-large {
+    --icon-size: 24px;
+    @include icon(url("./images/24_close.svg"), var(--icon-size));
+  }
+
+  &--code-large {
+    --icon-size: 24px;
+    @include icon(url("./images/24_code.svg"), var(--icon-size));
+  }
+
+  &--clips {
+    --icon-size: 24px;
+    @include icon(url("./images/24_clips.svg"), var(--icon-size));
+  }
+
+  &--local {
+    --icon-size: 24px;
+    @include icon(url("./images/24_local.svg"), var(--icon-size));
+  }
+
+  &--server-on {
+    --icon-size: 24px;
+    @include icon(url("./images/24_server-on.svg"), var(--icon-size));
+  }
+
+  /* Deprecated */
+
+  &--search {
+    --icon-size: 24px;
+    @include icon(url("./images/24_search.svg"), var(--icon-size));
+  }
+
+  &--close {
+    --icon-size: 24px;
+    @include icon(url("./images/24_close.svg"), var(--icon-size));
+  }
+
+  /* End of deprecated */
+}
