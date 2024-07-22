@@ -1,0 +1,10 @@
+docker:
+  image: quay.io/milaboratories/my-software:4.3.1
+  # entrypoint: [ ... ] # override entrypoint when running the image
+
+binary:
+  registry: "milaboratories"
+  package: milaboratories/my-software/4.3.1.tgz
+  cmd: "./dist/script.jar" # default command to run
+
+  runEnv: corretto-21.0.2.13.1

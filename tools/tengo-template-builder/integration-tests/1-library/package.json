@@ -1,7 +1,7 @@
 {
-  "name": "@milaboratory/tengo-integration-tests-lib-1",
+  "name": "@milaboratory/tengo-integration-tests-1-library",
   "version": "1.0.0",
-  "description": "The library-1",
+  "description": "The library and template compilation test",
   "scripts": {
     "build": "pl-tengo build"
   },

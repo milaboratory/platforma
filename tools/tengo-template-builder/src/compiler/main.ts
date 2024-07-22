@@ -21,6 +21,7 @@ interface PackageJson {
 
 const compiledTplSuffix = '.plj.gz';
 const compiledLibSuffix = '.lib.tengo';
+const compiledSoftwareSuffix = '.sw.yaml';
 
 // We need to keep track of dependencies for correct tgo-test CLI utility configuraiton.
 // It is much simpler to do this here, than duplicate all tle logic regarding dependencies
@@ -29,7 +30,8 @@ const srcTestSuffix = '.test.tengo';
 
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
-const compilableSuffixes = [srcLibSuffix, srcTplSuffix];
+const srcSoftwareSuffix = '.sw.yaml';
+const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix];
 
 export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
@@ -61,6 +63,10 @@ function resolveDistTemplates(root: string) {
   return path.resolve(root, 'dist', 'tengo', 'tpl');
 }
 
+function resolveDistSoftware(root: string) {
+  return path.resolve(root, 'dist', 'tengo', 'software');
+}
+
 function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
@@ -85,11 +91,13 @@ function loadDependencies(
   // we are in package folder
   const libFolder = resolveDistLibs(target);
   const tplFolder = resolveDistTemplates(target);
+  const softwareFolder = resolveDistSoftware(target);
 
   const libFolderExists = pathType(libFolder) === 'dir';
   const tplFolderExists = pathType(tplFolder) === 'dir';
+  const softwareFolderExists = pathType(softwareFolder) === 'dir';
 
-  if (!libFolderExists && !tplFolderExists)
+  if (!libFolderExists && !tplFolderExists && !softwareFolderExists)
     // if neither of tengo-specific folders detected, skipping package
     return;
 
@@ -111,7 +119,7 @@ function loadDependencies(
     for (const f of fs.readdirSync(libFolder)) {
       const file = path.resolve(libFolder, f);
       if (!f.endsWith(compiledLibSuffix))
-        throw new Error(`unexpected file: ${file}`);
+        throw new Error(`unexpected file in 'lib' folder: ${file}`);
       const fullName: FullArtifactName = {
         type: 'library',
         pkg: packageJson.name,
@@ -136,7 +144,7 @@ function loadDependencies(
     for (const f of fs.readdirSync(tplFolder)) {
       const file = path.resolve(tplFolder, f);
       if (!f.endsWith(compiledTplSuffix))
-        throw new Error(`unexpected file: ${file}`);
+        throw new Error(`unexpected file in 'tpl' folder: ${file}`);
       const fullName: FullArtifactName = {
         type: 'template',
         pkg: packageJson.name,
@@ -148,6 +156,32 @@ function loadDependencies(
       logger.debug(
         `Adding dependency ${fullNameToString(fullName)} from ${file}`
       );
+    }
+  }
+
+  if (softwareFolderExists) {
+    // adding software
+    for (const f of fs.readdirSync(softwareFolder)) {
+      const file = path.resolve(softwareFolder, f);
+      if (!f.endsWith(compiledSoftwareSuffix))
+        throw new Error(`unexpected file in 'software' folder: ${file}`);
+      const fullName: FullArtifactName = {
+        type: 'software',
+        pkg: packageJson.name,
+        id: f.slice(0, f.length - compiledSoftwareSuffix.length),
+        version: packageJson.version
+      };
+
+      const src = parseSourceFile(file, fullName, true);
+      compiler.addSoftware(src);
+      logger.debug(
+        `Adding dependency ${fullNameToString(fullName)} from ${file}`
+      );
+      if (src.dependencies.length > 0) {
+        logger.debug('Dependencies:');
+        for (const dep of src.dependencies)
+          logger.debug(`  - ${typedArtifactNameToString(dep)}`);
+      }
     }
   }
 }
@@ -231,6 +265,13 @@ function fullNameFromFileName(
       type: 'template'
     };
 
+  if (fileName.endsWith(srcSoftwareSuffix))
+    return {
+      ...pkgAndVersion,
+      id: fileName.substring(0, fileName.length - srcSoftwareSuffix.length),
+      type: 'software'
+    };
+
   if (fileName.endsWith(srcTestSuffix))
     return {
       ...pkgAndVersion,
@@ -285,6 +326,17 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs) {
       const file = path.resolve(tplOutput, tpl.fullName.id + compiledTplSuffix);
       logger.info(`Writing ${file}`);
       fs.writeFileSync(file, tpl.content);
+    }
+  }
+
+  // writing software
+  if (compiled.software.length > 0) {
+    const swOutput = resolveDistSoftware('.');
+    fs.mkdirSync(swOutput, { recursive: true });
+    for (const sw of compiled.software) {
+      const file = path.resolve(swOutput, sw.fullName.id + compiledSoftwareSuffix);
+      logger.info(`Writing ${file}`);
+      fs.writeFileSync(file, sw.src);
     }
   }
 }

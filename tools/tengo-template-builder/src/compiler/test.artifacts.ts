@@ -74,6 +74,7 @@ ll := import("@milaboratory/tengo-sdk:ll")
  */
 
 tplID := ll.importTemplate("package2:template-1")
+softwareID := ll.importSoftware("package2:software-1")
 
 export {
     "some": "value",

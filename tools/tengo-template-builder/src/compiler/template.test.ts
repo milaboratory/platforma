@@ -33,9 +33,11 @@ test('template serialization / deserialization', () => {
               }
             },
             templates: {},
+            software: {},
             src: 'src 1...'
           }
         },
+        software: {},
         src: 'src 2 ...'
       }
     }

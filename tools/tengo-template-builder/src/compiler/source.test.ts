@@ -21,6 +21,7 @@ test('test lib 2 parsing', () => {
     { type: 'library', pkg: 'package1', id: 'someid' },
     { type: 'library', pkg: '@milaboratory/tengo-sdk', id: 'll' },
     { type: 'template', pkg: 'package2', id: 'template-1' },
+    { type: 'software', pkg: 'package2', id: 'software-1' },
     { type: 'template', pkg: 'current-package', id: 'local-template-2' },
   ]);
 });

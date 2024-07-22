@@ -16,6 +16,15 @@ export interface TemplateLibData {
   src: string,
 }
 
+export interface TemplateSoftwareData {
+  /** i.e. @milaboratory/mixcr:main */
+  name: string;
+  /** i.e. 4.2.3 */
+  version: string;
+  /** full contents of software dependency description */
+  src: string,
+}
+
 export interface TemplateData {
   /** Discriminator for future use */
   type: 'pl.tengo-template.v2';
@@ -29,6 +38,8 @@ export interface TemplateData {
   libs: Record<string, TemplateLibData>;
   /** i.e. @milaboratory/some-package:some-lib -> to nested template data */
   templates: Record<string, TemplateData>;
+  /** i.e. @milaboratory/mixcr:main -> software metadata */
+  software: Record<string, TemplateSoftwareData>;
   /** Template source code */
   src: string;
 }
