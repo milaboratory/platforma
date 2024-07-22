@@ -1,10 +1,6 @@
-import {strings, objects, utils} from '@milaboratory/helpers';
+import {strings, trimChars, isRegexpValid, extractFileName, iterateByPairs, omit, setProp} from '@milaboratory/helpers';
 import {Arranged} from './types';
 import {sequence} from '@milaboratory/sequences';
-
-const {trimChars, isRegexpValid, extractFileName} = strings;
-const {omit, setProp} = objects;
-const {iterateByPairs} = utils;
 
 function escapeRegExp(string: string) {
   return string ? string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : '';

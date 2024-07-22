@@ -5,6 +5,12 @@ import * as collections from './collections';
 import * as functions from './functions';
 import { prettyBytes } from './prettyBytes';
 
+export * from './utils';
+export * from './strings';
+export * from './objects';
+export * from './collections';
+export * from './functions';
+
 export {
   utils,
   strings,
