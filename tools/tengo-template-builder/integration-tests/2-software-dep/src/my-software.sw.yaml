@@ -8,3 +8,4 @@ binary:
   cmd: "./dist/script.jar" # default command to run
 
   runEnv: corretto-21.0.2.13.1
+ 

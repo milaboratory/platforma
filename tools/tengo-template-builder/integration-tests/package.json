@@ -5,7 +5,8 @@
   "type": "module",
   "workspaces": [
     "1-library",
-    "2-software-dep"
+    "2-software-dep",
+    "3-software-pkg"
   ],
   "scripts": {
   },

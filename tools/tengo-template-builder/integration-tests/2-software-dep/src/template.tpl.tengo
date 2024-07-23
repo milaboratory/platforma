@@ -1,1 +1,4 @@
 thelib := import(":library")
+ll := import("@milaboratory/tengo-sdk:ll")
+
+extSoft := ll.importSoftware("@milaboratory/tengo-integration-tests-3-software-pkg:main")

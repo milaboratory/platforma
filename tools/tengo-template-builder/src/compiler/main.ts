@@ -172,16 +172,11 @@ function loadDependencies(
         version: packageJson.version
       };
 
-      const src = parseSourceFile(file, fullName, true);
-      compiler.addSoftware(src);
+      const software = new ArtifactSource(fullName, fs.readFileSync(file).toString(), file, []);
+      compiler.addSoftware(software);
       logger.debug(
         `Adding dependency ${fullNameToString(fullName)} from ${file}`
       );
-      if (src.dependencies.length > 0) {
-        logger.debug('Dependencies:');
-        for (const dep of src.dependencies)
-          logger.debug(`  - ${typedArtifactNameToString(dep)}`);
-      }
     }
   }
 }
