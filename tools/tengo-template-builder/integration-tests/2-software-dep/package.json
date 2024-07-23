@@ -1,13 +1,13 @@
 {
-  "name": "@milaboratory/tengo-integration-tests-lib-3",
+  "name": "@milaboratory/tengo-integration-tests-2-software-dep",
   "version": "1.0.0",
-  "description": "The library-3",
+  "description": "The software dependency test",
   "scripts": {
     "build": "pl-tengo build"
   },
   "license": "UNLICENSED",
-  "dependencies": {},
   "devDependencies": {
+    "@milaboratory/tengo-sdk": "^0.1.1",
     "@milaboratory/tengo-template-builder": "file:../../."
   }
 }

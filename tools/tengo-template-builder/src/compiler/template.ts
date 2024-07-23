@@ -1,6 +1,7 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
 import {
+  CompileMode,
   FullArtifactName,
   FullArtifactNameWithoutType,
   fullNameWithoutTypeToString,
@@ -13,6 +14,15 @@ export interface TemplateLibData {
   /** i.e. 1.2.3 */
   version: string;
   /** full source code */
+  src: string,
+}
+
+export interface TemplateSoftwareData {
+  /** i.e. @milaboratory/mixcr:main */
+  name: string;
+  /** i.e. 4.2.3 */
+  version: string;
+  /** full contents of software dependency description */
   src: string,
 }
 
@@ -29,6 +39,8 @@ export interface TemplateData {
   libs: Record<string, TemplateLibData>;
   /** i.e. @milaboratory/some-package:some-lib -> to nested template data */
   templates: Record<string, TemplateData>;
+  /** i.e. @milaboratory/mixcr:main -> software metadata */
+  software: Record<string, TemplateSoftwareData>;
   /** Template source code */
   src: string;
 }
@@ -40,11 +52,14 @@ export class Template {
   public readonly data: TemplateData;
   public readonly content: Uint8Array;
 
-  constructor(public readonly fullName: FullArtifactName,
-              body: {
-                data?: TemplateData,
-                content?: Uint8Array
-              }) {
+  constructor(
+    public readonly compileMode: CompileMode,
+    public readonly fullName: FullArtifactName,
+    body: {
+      data?: TemplateData,
+      content?: Uint8Array
+    }
+  ) {
     let { data, content } = body;
     if (data === undefined && content === undefined)
       throw new Error('Neither data nor content is provided for template constructor');

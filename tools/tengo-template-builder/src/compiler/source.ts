@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { TypedArtifactName, FullArtifactName, ArtifactType } from './package';
+import { TypedArtifactName, FullArtifactName, ArtifactType, CompileMode } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
@@ -12,9 +12,15 @@ const functionCallRE = (moduleName: string, fnName: string) => {
 const newGetTemplateIdRE = (moduleName: string) => {
   return functionCallRE(moduleName, "getTemplateId")
 }
+const newGetSoftwareIdRE = (moduleName: string) => {
+  return functionCallRE(moduleName, "getSoftwareId")
+}
 
 const newImportTemplateRE = (moduleName: string) => {
   return functionCallRE(moduleName, "importTemplate")
+}
+const newImportSoftwareRE = (moduleName: string) => {
+  return functionCallRE(moduleName, "importSoftware")
 }
 
 const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/
@@ -27,6 +33,8 @@ const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/ // use it to parse <mo
 
 export class ArtifactSource {
   constructor(
+    /** The mode this artifact was built (dev or dist) */
+    public readonly compileMode: CompileMode,
     /** Full artifact id, including package version */
     public readonly fullName: FullArtifactName,
     /** Normalized source code */
@@ -38,17 +46,17 @@ export class ArtifactSource {
   ) { }
 }
 
-export function parseSourceFile(srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+export function parseSourceFile(mode: CompileMode, srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
   const src = readFileSync(srcFile).toString()
   const { deps, normalized } = parseSourceData(src, fullSourceName, normalize)
 
-  return new ArtifactSource(fullSourceName, normalized, srcFile, deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, srcFile, deps.array);
 }
 
-export function parseSource(src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+export function parseSource(mode: CompileMode, src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
   const { deps, normalized } = parseSourceData(src, fullSourceName, normalize)
 
-  return new ArtifactSource(fullSourceName, normalized, "", deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, "", deps.array);
 }
 
 function parseSourceData(src: string, fullSourceName: FullArtifactName, globalizeImports: boolean): {
@@ -67,7 +75,7 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
   const processedLines: string[] = [];
   let parserContext: sourceParserContext = {
     isInCommentBlock: false,
-    tplDepREs: new Map<string, RegExp>()
+    tplDepREs: new Map<string, [ArtifactType, RegExp][]>()
   }
 
   let lineNo = 0;
@@ -95,7 +103,7 @@ function parseSourceData(src: string, fullSourceName: FullArtifactName, globaliz
 
 interface sourceParserContext {
   isInCommentBlock: boolean,
-  tplDepREs: Map<string, RegExp>,
+  tplDepREs: Map<string, [ArtifactType, RegExp][]>,
 }
 
 function parseSingleSourceLine(line: string, context: sourceParserContext, localPackageName: string, globalizeImports: boolean): {
@@ -126,7 +134,10 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
 
     if (iInfo.module === "plapi") {
       if (!context.tplDepREs.has(iInfo.module)) {
-        context.tplDepREs.set(iInfo.module, newGetTemplateIdRE(iInfo.alias))
+        context.tplDepREs.set(iInfo.module, [
+          ['template', newGetTemplateIdRE(iInfo.alias)],
+          ['software', newGetSoftwareIdRE(iInfo.alias)]
+        ])
       }
       return { line, context, artifact: undefined }
     }
@@ -134,7 +145,10 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
     if (iInfo.module === "@milaboratory/tengo-sdk:ll" ||
       (localPackageName === "@milaboratory/tengo-sdk" && iInfo.module === ":ll")) {
       if (!context.tplDepREs.has(iInfo.module)) {
-        context.tplDepREs.set(iInfo.module, newImportTemplateRE(iInfo.alias))
+        context.tplDepREs.set(iInfo.module, [
+          ['template', newImportTemplateRE(iInfo.alias)],
+          ['software', newImportSoftwareRE(iInfo.alias)]
+        ])
       }
     }
 
@@ -153,33 +167,33 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
   }
 
   if (context.tplDepREs.size > 0) {
-    for (const [key, re] of context.tplDepREs) {
+    for (const [key, artifactRE] of context.tplDepREs) {
+      for (const [artifactType, re] of artifactRE) {
+        const match = re.exec(line)
+        if (!match || !match.groups) {
+          continue
+        }
 
-      const match = re.exec(line)
-      if (!match || !match.groups) {
-        continue
+        const { templateUse, templateName, fnName } = match.groups
+
+        if (!templateUse || !templateName || !fnName) {
+          throw Error(`failed to parse template import statement`)
+        }
+
+        const artifact = parseArtifactName(templateName, artifactType, localPackageName)
+        if (!artifact) {
+          throw Error(`failed to parse artifact name in ${fnName} import statement`)
+        }
+
+        if (globalizeImports) {
+          line = line.replace(
+            templateUse,
+            `${fnName}("${artifact.pkg}:${artifact.id}")`
+          )
+        }
+
+        return { line, context, artifact }
       }
-
-      const { templateUse, templateName, fnName } = match.groups
-
-      if (!templateUse || !templateName || !fnName) {
-        throw Error(`failed to parse template import statement`)
-      }
-
-      // const artifact
-      const artifact = parseArtifactName(templateName, 'template', localPackageName)
-      if (!artifact) {
-        throw Error(`failed to parse artifact name in ${fnName} import statement`)
-      }
-
-      if (globalizeImports) {
-        line = line.replace(
-          templateUse,
-          `${fnName}("${artifact.pkg}:${artifact.id}")`
-        )
-      }
-
-      return { line, context, artifact }
     }
   }
 

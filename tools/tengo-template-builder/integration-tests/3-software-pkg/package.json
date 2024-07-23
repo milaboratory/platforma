@@ -1,10 +1,13 @@
 {
-  "name": "@milaboratory/tengo-integration-tests-lib-1",
+  "name": "@milaboratory/tengo-integration-tests-3-software-pkg",
   "version": "1.0.0",
-  "description": "The library-1",
+  "description": "The software description example",
   "scripts": {
     "build": "pl-tengo build"
   },
+  "files": [
+    "dist/"
+  ],
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {

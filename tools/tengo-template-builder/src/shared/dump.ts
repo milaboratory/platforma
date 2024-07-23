@@ -8,11 +8,9 @@ export function dumpAll(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
-  const compiler = newCompiler(logger, packageInfo);
-
-  logger.debug(`UGU!!!!`);
+  const compiler = newCompiler(logger, packageInfo, 'dist');
 
   // group output by type:
   //  - all libs
@@ -57,6 +55,24 @@ export function dumpAll(
     }
   }
 
+  // Software
+
+  for (const sw of compiler.allSoftware()) {
+    logger.debug(
+      `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`
+    );
+    stream.write(JSON.stringify(sw) + '\n');
+  }
+
+  for (const src of sources) {
+    if (src.fullName.type === 'software') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+      );
+      stream.write(JSON.stringify(src) + '\n');
+    }
+  }
+
   // Tests
 
   for (const src of sources) {
@@ -78,7 +94,7 @@ export function dumpLibs(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   if (!dumpDeps) {
     for (const src of sources) {
@@ -90,7 +106,7 @@ export function dumpLibs(
     return;
   }
 
-  const compiler = newCompiler(logger, packageInfo);
+  const compiler = newCompiler(logger, packageInfo, 'dist');
   for (const src of sources) {
     if (src.fullName.type === 'library') {
       compiler.addLib(src);
@@ -108,10 +124,25 @@ export function dumpTemplates(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   for (const src of sources) {
     if (src.fullName.type === 'template') {
+      stream.write(JSON.stringify(src) + '\n');
+    }
+  }
+}
+
+export function dumpSoftware(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
+
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
+
+  for (const src of sources) {
+    if (src.fullName.type === 'software') {
       stream.write(JSON.stringify(src) + '\n');
     }
   }
@@ -123,7 +154,7 @@ export function dumpTests(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   for (const src of sources) {
     if (src.fullName.type === 'test') {
