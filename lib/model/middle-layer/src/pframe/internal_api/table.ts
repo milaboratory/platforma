@@ -1,4 +1,5 @@
 import {
+  PTableColumnId,
   PTableColumnSpec,
   PTableShape,
   PTableSorting,
@@ -26,6 +27,9 @@ export interface PTable {
    * Axes are always listed first.
    * */
   getSpec(): PTableColumnSpec[];
+
+  /** Transforms unified column identifiers into unified indices of columns. */
+  getColumnIndices(columnIds: PTableColumnId[]): number[];
 
   /**
    * Retrieve the data from the table. To retrieve only data required, it can be
