@@ -133,6 +133,10 @@ export class TengoTemplateCompiler {
       );
   }
 
+  allSoftware(): ArtifactSource[] {
+    return this.software.array(this.compileMode)
+  }
+
   getSoftware(name: TypedArtifactName): ArtifactSource | undefined {
     if (name.type !== 'software')
       throw new Error(`illegal artifact type: got ${name.type} instead of 'software`);

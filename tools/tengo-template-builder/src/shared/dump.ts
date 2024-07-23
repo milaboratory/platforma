@@ -55,6 +55,24 @@ export function dumpAll(
     }
   }
 
+  // Software
+
+  for (const sw of compiler.allSoftware()) {
+    logger.debug(
+      `Dumping to pl-tester: ${typedArtifactNameToString(sw.fullName)}`
+    );
+    stream.write(JSON.stringify(sw) + '\n');
+  }
+
+  for (const src of sources) {
+    if (src.fullName.type === 'software') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+      );
+      stream.write(JSON.stringify(src) + '\n');
+    }
+  }
+
   // Tests
 
   for (const src of sources) {
@@ -110,6 +128,21 @@ export function dumpTemplates(
 
   for (const src of sources) {
     if (src.fullName.type === 'template') {
+      stream.write(JSON.stringify(src) + '\n');
+    }
+  }
+}
+
+export function dumpSoftware(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  const packageInfo = getPackageInfo();
+
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
+
+  for (const src of sources) {
+    if (src.fullName.type === 'software') {
       stream.write(JSON.stringify(src) + '\n');
     }
   }
