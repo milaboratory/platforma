@@ -8,7 +8,7 @@ test('template serialization / deserialization', () => {
     id: 'the-template',
     version: '1.2.3'
   };
-  const template1 = new Template(name,
+  const template1 = new Template('dist', name,
     {
       data: {
         type: 'pl.tengo-template.v2',
@@ -43,7 +43,7 @@ test('template serialization / deserialization', () => {
     }
   );
 
-  const template2 = new Template(
+  const template2 = new Template('dist',
     { type: 'template', pkg: '@milaboratory/some-package', id: 'the-template', version: '1.2.3' },
     { content: template1.content }
   );

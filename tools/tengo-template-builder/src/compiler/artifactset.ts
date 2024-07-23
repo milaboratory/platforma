@@ -1,4 +1,5 @@
-import { TypedArtifactName, artifactKey } from './package';
+import { CompileMode, TypedArtifactName, artifactKey } from './package';
+import { assertNever } from './util';
 
 export class ArtifactMap<T> {
   private readonly map = new Map<string, T>();
@@ -32,4 +33,50 @@ export class ArtifactMap<T> {
 
 export function createArtifactNameSet(): ArtifactMap<TypedArtifactName> {
   return new ArtifactMap<TypedArtifactName>(obj => obj);
+}
+
+export class ArtifactStore<T> {
+  private readonly dev: ArtifactMap<T>
+  private readonly dist: ArtifactMap<T>
+
+  constructor(private readonly nameExtractor: (obj: T) => TypedArtifactName) {
+    this.dev = new ArtifactMap<T>(nameExtractor)
+    this.dist = new ArtifactMap<T>(nameExtractor)
+  }
+
+  add(mode: CompileMode, obj: T, replace: boolean = true): T | undefined {
+    switch (mode) {
+      case 'dev':
+        return this.dev.add(obj, replace)
+
+      case 'dist':
+        return this.dist.add(obj, replace)
+
+      default:
+        assertNever(mode)
+    }
+  }
+
+  get(mode: CompileMode, name: TypedArtifactName): T | undefined {
+    switch (mode) {
+      case 'dev':
+        return this.dev.get(name) ?? this.dist.get(name)
+
+      case 'dist':
+        return this.dist.get(name);
+
+      default:
+        assertNever(mode)
+    }
+  }
+
+  array(mode: CompileMode): T[] {
+    const ret: T[] = [];
+    this.forEach(mode, obj => ret.push(obj));
+    return ret;
+  }
+
+  forEach(mode: CompileMode, callback: (value: T, key: TypedArtifactName) => void) {
+    this.dist.forEach( (obj, k) => callback(this.get(mode, k) ?? obj, k) )
+  }
 }

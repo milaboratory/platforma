@@ -15,8 +15,13 @@ export default class Build extends Command {
     const {flags} = await this.parse(Build)
     const logger = createLogger(flags['log-level'])
 
-    const compiled = compile(logger)
-    savePacks(logger, compiled)
+    const compiledDist = compile(logger, 'dist')
+    savePacks(logger, compiledDist, 'dist')
+    logger.info('')
+
+    const compiledDev = compile(logger, 'dev')
+    savePacks(logger, compiledDev, 'dev')
+    logger.info('')
 
     logger.info("Template Pack build done.")
   }

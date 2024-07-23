@@ -1,6 +1,7 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
 import {
+  CompileMode,
   FullArtifactName,
   FullArtifactNameWithoutType,
   fullNameWithoutTypeToString,
@@ -51,11 +52,14 @@ export class Template {
   public readonly data: TemplateData;
   public readonly content: Uint8Array;
 
-  constructor(public readonly fullName: FullArtifactName,
-              body: {
-                data?: TemplateData,
-                content?: Uint8Array
-              }) {
+  constructor(
+    public readonly compileMode: CompileMode,
+    public readonly fullName: FullArtifactName,
+    body: {
+      data?: TemplateData,
+      content?: Uint8Array
+    }
+  ) {
     let { data, content } = body;
     if (data === undefined && content === undefined)
       throw new Error('Neither data nor content is provided for template constructor');

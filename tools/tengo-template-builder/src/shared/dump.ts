@@ -8,11 +8,9 @@ export function dumpAll(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
-  const compiler = newCompiler(logger, packageInfo);
-
-  logger.debug(`UGU!!!!`);
+  const compiler = newCompiler(logger, packageInfo, 'dist');
 
   // group output by type:
   //  - all libs
@@ -78,7 +76,7 @@ export function dumpLibs(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   if (!dumpDeps) {
     for (const src of sources) {
@@ -90,7 +88,7 @@ export function dumpLibs(
     return;
   }
 
-  const compiler = newCompiler(logger, packageInfo);
+  const compiler = newCompiler(logger, packageInfo, 'dist');
   for (const src of sources) {
     if (src.fullName.type === 'library') {
       compiler.addLib(src);
@@ -108,7 +106,7 @@ export function dumpTemplates(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   for (const src of sources) {
     if (src.fullName.type === 'template') {
@@ -123,7 +121,7 @@ export function dumpTests(
 ): void {
   const packageInfo = getPackageInfo();
 
-  const sources = parseSources(logger, packageInfo, 'src', '');
+  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   for (const src of sources) {
     if (src.fullName.type === 'test') {

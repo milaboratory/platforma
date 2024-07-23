@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { TypedArtifactName, FullArtifactName, ArtifactType } from './package';
+import { TypedArtifactName, FullArtifactName, ArtifactType, CompileMode } from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
@@ -33,6 +33,8 @@ const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/ // use it to parse <mo
 
 export class ArtifactSource {
   constructor(
+    /** The mode this artifact was built (dev or dist) */
+    public readonly compileMode: CompileMode,
     /** Full artifact id, including package version */
     public readonly fullName: FullArtifactName,
     /** Normalized source code */
@@ -44,17 +46,17 @@ export class ArtifactSource {
   ) { }
 }
 
-export function parseSourceFile(srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+export function parseSourceFile(mode: CompileMode, srcFile: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
   const src = readFileSync(srcFile).toString()
   const { deps, normalized } = parseSourceData(src, fullSourceName, normalize)
 
-  return new ArtifactSource(fullSourceName, normalized, srcFile, deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, srcFile, deps.array);
 }
 
-export function parseSource(src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
+export function parseSource(mode: CompileMode, src: string, fullSourceName: FullArtifactName, normalize: boolean): ArtifactSource {
   const { deps, normalized } = parseSourceData(src, fullSourceName, normalize)
 
-  return new ArtifactSource(fullSourceName, normalized, "", deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, "", deps.array);
 }
 
 function parseSourceData(src: string, fullSourceName: FullArtifactName, globalizeImports: boolean): {
