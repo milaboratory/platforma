@@ -1,6 +1,27 @@
+@import './base-btn';
+
+@mixin mask-var($bg) {
+  -webkit-mask-image: $bg;
+  mask-image: $bg;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+  mask-size: var(--mask-size);
+  width: var(--mask-size);
+  height: var(--mask-size);
+}
+
+@mixin vendor-prefix($name, $value) {
+  @each $vendor in ('-webkit-', '-moz-', '-ms-', '-o-', '') {
+    #{$vendor}#{$name}: #{$value};
+  }
+}
+
 @mixin size($w: 24px, $h: null) {
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
   } @else {
     height: $h;
@@ -8,73 +29,141 @@
 }
 
 @mixin icon($bg, $w: 24px, $h: null) {
-  background: $bg;
+  background: $bg no-repeat center;
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
   } @else {
     height: $h;
   }
 }
 
-@mixin mask($bg, $w: 24px, $h: null) {
-  -webkit-mask-image: $bg;
+@mixin theme-icon($bg-light, $bg-dark, $w: 24px, $h: null) {
+  background: $bg-light no-repeat center;
+
   width: $w;
-  @if $h == null {
+
+  @if $h ==null {
     height: $w;
   } @else {
     height: $h;
   }
 }
 
-@mixin scrollbar($y: true, $x: false, $over: overlay) {
-  overflow-y: hidden;
-  overflow-x: hidden;
+@mixin mask($url, $w: 24px, $h: null) {
+  mask-image: $url;
+  -webkit-mask-image: $url;
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-position: center;
+  mask-size: $w;
+  -webkit-mask-size: $w;
+  width: $w;
+
+  @if $h ==null {
+    height: $w;
+  } @else {
+    height: $h;
+  }
+}
+
+@mixin flex($direction: row, $justify: center, $align: center) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+@mixin scrollbar($y: true, $x: false, $over: auto) {
+  //overflow-y: hidden;
+  //overflow-x: hidden;
 
   &::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
     height: 5px;
-    background-color: #cccccc22;
+    padding-right: 5px;
+    background-color: transparent;
     display: block;
   }
+
   &::-webkit-scrollbar-thumb {
-    background: rgb(192, 192, 192);
+    background: var(--color-ic-02);
     border-radius: 5px;
   }
-  &:hover {
-    @if $y {
-      overflow-y: $over;
-    }
-    @if $x {
-      overflow-x: $over;
-    }
-  }
-}
 
-@mixin scrollbarPersistent($y: true, $x: false) {
   @if $y {
-    overflow-y: auto;
-  }
-  @if $x {
-    overflow-x: auto;
+    overflow-y: $over;
   }
 
-  &::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-    background-color: #cccccc22;
-    display: block;
+  @if $x {
+    overflow-x: $over;
   }
-  &::-webkit-scrollbar-thumb {
-    background: rgb(192, 192, 192);
-    border-radius: 5px;
+
+  &:hover {
+    --color-ic-02: var(--color-focus);
   }
+
+  //&:hover {
+  //  @if $y {
+  //    overflow-y: $over;
+  //  }
+  //  @if $x {
+  //    overflow-x: $over;
+  //  }
+  //}
+}
+
+@mixin border-fix($offset: 0) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: $offset;
+    left: $offset;
+    right: $offset;
+    bottom: $offset;
+    pointer-events: none;
+    @content;
+  }
+}
+
+@mixin abs-center-y {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@mixin field-helper {
+  position: relative;
+  font-size: 12px;
+  color: var(--color-txt-03);
+  padding: 2px 0 0;
+  white-space: pre-wrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  line-height: 16px;
+  margin-top: 6px;
+}
+
+@mixin field-error {
+  position: relative;
+  font-size: 12px;
+  color: var(--color-txt-error);
+  padding: 2px 0 0;
+  white-space: pre-wrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  line-height: 16px;
+  margin-top: 6px;
 }
 
 @mixin scrollbarTable($y: true, $x: false) {
   @if $y {
     overflow-y: auto;
   }
+
   @if $x {
     overflow-x: auto;
   }
@@ -82,9 +171,10 @@
   &::-webkit-scrollbar {
     width: 7px;
     height: 8px;
-    background-color: #E1E3EB;
+    background-color: #e1e3eb;
     display: block;
   }
+
   &::-webkit-scrollbar-thumb {
     background: #fff;
     border-radius: 9999px;
@@ -92,32 +182,4 @@
     border: 2px solid transparent;
     border-right: 1px solid transparent;
   }
-}
-
-@mixin scrollbarInvisible($y: true, $x: false) {
-  @if $y {
-    overflow-y: auto;
-  }
-  @if $x {
-    overflow-x: auto;
-  }
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
-  &::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-    background-color: transparent;
-    display: block;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 5px;
-  }
-}
-
-@mixin flexCenter() {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }

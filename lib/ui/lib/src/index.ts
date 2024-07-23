@@ -1,83 +1,83 @@
-import './lib/assets/ui.scss';
-import GridTable from './lib/components/GridTable/index.vue';
-import * as DataTable from './lib/components/DataTable';
-import type { Settings as GridTableSettings } from './lib/components/GridTable/types';
-import type * as GridTableTypes from './lib/components/GridTable/types';
-import type * as ManageModalTypes from './lib/components/ManageModal/types';
-import ThemeSwitcher from './lib/components/ThemeSwitcher.vue';
-import BtnPrimary from './lib/components/BtnPrimary.vue';
-import BtnSecondary from './lib/components/BtnSecondary.vue';
-import BtnAccent from './lib/components/BtnAccent.vue';
-import BtnGhost from './lib/components/BtnGhost.vue';
-import BtnLink from './lib/components/BtnLink.vue';
-import TextField from './lib/components/TextField.vue';
-import NumberInput from './lib/components/NumberInput.vue';
-import SelectInput from './lib/components/SelectInput.vue';
-import LineDropdown from './lib/components/LineDropdown.vue';
-import MultiDropdown from './lib/components/MultiDropdown.vue';
-import DropdownListItem from './lib/components/DropdownListItem.vue';
-import BtnGroup from './lib/components/BtnGroup.vue';
-import UiCheckbox from './lib/components/UiCheckbox.vue';
-import Checkbox from './lib/components/Checkbox.vue';
-import CheckboxGroup from './lib/components/CheckboxGroup.vue';
-import WebCheckbox from './lib/components/WebCheckbox'; // experimental web component
-import Chip from './lib/components/Chip.vue';
-import Tooltip from './lib/components/Tooltip.vue';
-import ToggleSwitch from './lib/components/ToggleSwitch.vue';
-import MaskIcon from './lib/components/MaskIcon.vue';
-import ContextProvider from './lib/components/ContextProvider.vue';
-import Slider from './lib/components/Slider.vue';
-import DialogModal from './lib/components/DialogModal.vue';
-import SlideModal from './lib/components/SlideModal.vue';
-import ManageModal from './lib/components/ManageModal/index.vue';
-import { showContextMenu } from './lib/components/contextMenu/index.ts';
-import { usePosition } from './lib/composition/usePosition';
-import { useClickOutside } from './lib/composition/useClickOuside';
-import { useEventListener } from './lib/composition/useEventListener';
-import { useLabelNotch } from './lib/composition/useLabelNotch';
-import { useScroll } from './lib/composition/useScroll';
-import { useResizeObserver } from './lib/composition/useResizeObserver';
-import { useTheme } from './lib/composition/useTheme';
-import { useLocalStorage } from './lib/composition/useLocalStorage';
-import { useMouseCapture } from './lib/composition/useMouseCapture';
-import { useHover } from './lib/composition/useHover';
-import { useMouse } from './lib/composition/useMouse';
-import { useSortable } from './lib/composition/useSortable';
-import { useInterval } from './lib/composition/useInterval';
-import { useFormState } from './lib/composition/useFormState';
-import { useQuery } from './lib/composition/useQuery.ts';
+import './assets/ui.scss';
+import GridTable from '@/components/GridTable/index.vue';
+import * as DataTable from '@/components/DataTable';
+import type { Settings as GridTableSettings } from './components/GridTable/types';
+import type * as GridTableTypes from './components/GridTable/types';
+import type * as ManageModalTypes from './components/ManageModal/types';
+import ThemeSwitcher from './components/ThemeSwitcher.vue';
+import BtnPrimary from './components/BtnPrimary.vue';
+import BtnSecondary from './components/BtnSecondary.vue';
+import BtnAccent from './components/BtnAccent.vue';
+import BtnGhost from './components/BtnGhost.vue';
+import BtnLink from './components/BtnLink.vue';
+import TextField from './components/TextField.vue';
+import NumberInput from './components/NumberInput.vue';
+import SelectInput from './components/SelectInput.vue';
+import LineDropdown from './components/LineDropdown.vue';
+import MultiDropdown from './components/MultiDropdown.vue';
+import DropdownListItem from './components/DropdownListItem.vue';
+import BtnGroup from './components/BtnGroup.vue';
+import UiCheckbox from './components/UiCheckbox.vue';
+import Checkbox from './components/Checkbox.vue';
+import CheckboxGroup from './components/CheckboxGroup.vue';
+import WebCheckbox from './components/WebCheckbox'; // experimental web component
+import Chip from './components/Chip.vue';
+import Tooltip from './components/Tooltip.vue';
+import ToggleSwitch from './components/ToggleSwitch.vue';
+import MaskIcon from './components/MaskIcon.vue';
+import ContextProvider from './components/ContextProvider.vue';
+import Slider from './components/Slider.vue';
+import DialogModal from './components/DialogModal.vue';
+import SlideModal from './components/SlideModal.vue';
+import ManageModal from './components/ManageModal/index.vue';
+import { showContextMenu } from './components/contextMenu/index.ts';
+import { usePosition } from './composition/usePosition';
+import { useClickOutside } from './composition/useClickOuside';
+import { useEventListener } from './composition/useEventListener';
+import { useLabelNotch } from './composition/useLabelNotch';
+import { useScroll } from './composition/useScroll';
+import { useResizeObserver } from './composition/useResizeObserver';
+import { useTheme } from './composition/useTheme';
+import { useLocalStorage } from './composition/useLocalStorage';
+import { useMouseCapture } from './composition/useMouseCapture';
+import { useHover } from './composition/useHover';
+import { useMouse } from './composition/useMouse';
+import { useSortable } from './composition/useSortable';
+import { useInterval } from './composition/useInterval';
+import { useFormState } from './composition/useFormState';
+import { useQuery } from './composition/useQuery.ts';
 
 //for new version
-import LongText from './lib/components/LongText.vue';
-import SliderRangeTriple from './lib/components/SliderRangeTriple.vue';
-import SliderRange from './lib/components/SliderRange.vue';
-import Scrollable from './lib/components/Scrollable.vue';
-import AddGraph from './lib/components/AddGraph.vue';
-import { useDraggable } from './lib/composition/useDraggable';
+import LongText from './components/LongText.vue';
+import SliderRangeTriple from './components/SliderRangeTriple.vue';
+import SliderRange from './components/SliderRange.vue';
+import Scrollable from './components/Scrollable.vue';
+import AddGraph from './components/AddGraph.vue';
+import { useDraggable } from './composition/useDraggable';
 
 // MiXCR
-import AlphabetType from './lib/components/mixcr/AlphabetType.vue';
-import AbundanceMeasure from './lib/components/mixcr/AbundanceMeasure.vue';
-import AbundanceType from './lib/components/mixcr/AbundanceType.vue';
-import GeneFeatureDropdown from './lib/components/mixcr/GeneFeatureDropdown/index.vue';
-import GeneNameFormat from './lib/components/mixcr/GeneNameFormat.vue';
-import GeneType from './lib/components/mixcr/GeneType.vue';
-import MarkedSequence from './lib/components/mixcr/MarkedSequence.vue';
+import AlphabetType from './components/mixcr/AlphabetType.vue';
+import AbundanceMeasure from './components/mixcr/AbundanceMeasure.vue';
+import AbundanceType from './components/mixcr/AbundanceType.vue';
+import GeneFeatureDropdown from './components/mixcr/GeneFeatureDropdown/index.vue';
+import GeneNameFormat from './components/mixcr/GeneNameFormat.vue';
+import GeneType from './components/mixcr/GeneType.vue';
+import MarkedSequence from './components/mixcr/MarkedSequence.vue';
 
-import icons16 from './lib/assets/icons/icons-16-generated.json';
-import icons24 from './lib/assets/icons/icons-24-generated.json';
+import icons16 from './assets/icons/icons-16-generated.json';
+import icons24 from './assets/icons/icons-24-generated.json';
 
-import { allCssVariables } from './lib/demo-site-data/all-css-variables.ts';
+import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
-export type * from './lib/types';
+export type * from './types';
 
-export { maskIcons } from './lib/types';
+export { maskIcons } from './types';
 
-export * from './lib/helpers/dom';
+export * from './helpers/dom';
 
-export { scrollIntoView } from './lib/helpers/dom';
+export { scrollIntoView } from './helpers/dom';
 
-export { animateInfinite } from './lib/helpers/utils';
+export { animateInfinite } from './helpers/utils';
 
 // MiXCR
 export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };

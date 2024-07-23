@@ -6,12 +6,11 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
   plugins: [vue()],
   define: {
-    APP_VERSION: 'unknown', // @todo
+    APP_VERSION: JSON.stringify('unknown'), // @todo
   },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@icons': fileURLToPath(new URL('./src/lib/assets/icons', import.meta.url)),
     },
   },
 });

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -13,9 +13,10 @@
   "scripts": {
     "dev": "npm run dev -w playground",
     "build:playground": "npm run build -w playground",
-    "build": "npm run build -w lib",
-    "build-watch": "npm run build-watch -w lib",
-    "build-demo": "vite build -c vite.demo.config.ts",
+    "build:lib": "npm run build -w lib",
+    "build-all": "npm run build:lib && npm run build:playground",
+    "build": "npm run build:lib",
+    "watch": "npm run watch -w lib",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "lint": "eslint . --ext js,ts,vue",
@@ -24,9 +25,21 @@
   "files": [
     "lib"
   ],
-  "main": "./lib/dist/pl-uikit.umd.cjs",
-  "module": "./lib/dist/pl-uikit.js",
-  "types": "./lib/dist/lib.d.ts",
+  "main": "lib/dist/pl-uikit.umd.cjs",
+  "module": "lib/dist/pl-uikit.js",
+  "types": "lib/dist/src/index.d.ts",
+  "styles": "lib/dist/style.css",
+  "exports": {
+    ".": {
+      "style": "./lib/styles/main.css",
+      "types": "./lib/dist/src/index.d.ts",
+      "default": "./lib/dist/pl-uikit.js"
+    },
+    "./styles": {
+      "default": "./lib/dist/style.css"
+    },
+    "./*": "./*"
+  },
   "dependencies": {
     "@milaboratory/helpers": "^1.4.0",
     "@milaboratory/platforma-core": "^0.1.2",
@@ -36,6 +49,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.0",
+    "@rollup/plugin-alias": "^5.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.2",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
@@ -48,6 +62,7 @@
     "sass": "^1.69.5",
     "stylelint-config-prettier": "^9.0.5",
     "svgo": "^3.3.2",
+    "tsc-alias": "^1.8.10",
     "typescript": "^5.4.5",
     "vite": "^5.2.0",
     "vite-plugin-dts": "3.6.3",

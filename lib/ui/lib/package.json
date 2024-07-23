@@ -8,12 +8,15 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json",
+    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
+    "___build": "vite build && npm run build:types",
+    "build:types": "tsc --pretty --emitDeclarationOnly -p tsconfig.lib.json",
+    "tsc": "tsc",
     "watch": "vue-tsc && vite build --watch",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.lib.json",
     "preview": "vite preview",
     "parse-icons-folder": "node scripts/parse-icons.js",
-    "minify-icons": "svgo -f src/lib/assets/icons/icon-assets -o src/lib/assets/icons/icon-assets-min",
+    "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
     "generate-icons": "npm run parse-icons-folder && npm run minify-icons"
   }
 }

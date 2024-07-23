@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import { fileURLToPath, URL } from 'node:url';
-// import dts from 'vite-plugin-dts';
+import alias from '@rollup/plugin-alias';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -17,7 +17,9 @@ export default defineConfig({
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
-    // dts({}),
+    alias({
+      entries: [{ find: /^@\/(.*)/, replacement: fileURLToPath(new URL('../AAAAAAAA/$1', import.meta.url)) }],
+    }),
   ],
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),
@@ -25,7 +27,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@icons': fileURLToPath(new URL('./src/lib/assets/icons', import.meta.url)),
+      '@icons': fileURLToPath(new URL('./src/assets/icons', import.meta.url)),
     },
   },
   build: {
