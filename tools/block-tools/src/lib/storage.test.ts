@@ -76,7 +76,8 @@ if (testS3Address) {
     result1.sort();
     expect(result1).toEqual(expected);
     await storage.client.deleteObjects({
-      Bucket: storage.bucket, Delete: {
+      Bucket: storage.bucket,
+      Delete: {
         Objects: [
           { Key: `${storage.root}/some/deep1/file_1.txt` },
           { Key: `${storage.root}/some/deep1/file_2.txt` },

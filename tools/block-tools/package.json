@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsup",
     "readme": "exec oclif readme",
-    "test": "jest"
+    "test": "jest",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -20,9 +21,9 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.617.0",
     "@milaboratory/ts-helpers": "^1.0.18",
     "@milaboratory/ts-helpers-oclif": "^1.1.0",
-    "@aws-sdk/client-s3": "^3.617.0",
     "@oclif/core": "^4.0.14",
     "@types/semver": "^7.5.8",
     "semver": "^7.6.3",
@@ -33,6 +34,7 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.12",
     "oclif": "^4.14.9",
+    "prettier": "^3.3.3",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "tsup": "^8.1.2",

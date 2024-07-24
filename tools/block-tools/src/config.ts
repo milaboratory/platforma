@@ -12,9 +12,11 @@ import { storageByUrl } from './lib/storage';
 import { FullBlockPackageName } from './lib/v1_repo_schema';
 import { MiLogger } from '@milaboratory/ts-helpers';
 
-function mergeConfigs(c1: PlRegPackageConfigDataShard, c2: PlRegPackageConfigDataShard | undefined): PlRegPackageConfigDataShard {
-  if (c2 === undefined)
-    return c1;
+function mergeConfigs(
+  c1: PlRegPackageConfigDataShard,
+  c2: PlRegPackageConfigDataShard | undefined
+): PlRegPackageConfigDataShard {
+  if (c2 === undefined) return c1;
   return {
     ...c1,
     ...c2,
@@ -23,11 +25,15 @@ function mergeConfigs(c1: PlRegPackageConfigDataShard, c2: PlRegPackageConfigDat
   };
 }
 
-async function tryLoadJsonConfigFromFile(file: string): Promise<PlRegPackageConfigDataShard | undefined> {
+async function tryLoadJsonConfigFromFile(
+  file: string
+): Promise<PlRegPackageConfigDataShard | undefined> {
   return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(JSON.parse(buf.toString())));
 }
 
-async function tryLoadYamlConfigFromFile(file: string): Promise<PlRegPackageConfigDataShard | undefined> {
+async function tryLoadYamlConfigFromFile(
+  file: string
+): Promise<PlRegPackageConfigDataShard | undefined> {
   return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(YAML.parse(buf.toString())));
 }
 
@@ -48,24 +54,20 @@ let conf: PlRegPackageConfigDataShard | undefined = undefined;
 let confPromise: Promise<PlRegPackageConfigDataShard> | undefined = undefined;
 
 async function getConfigShard() {
-  if (conf !== undefined)
-    return conf;
-  if (confPromise !== undefined)
-    return await confPromise;
+  if (conf !== undefined) return conf;
+  if (confPromise !== undefined) return await confPromise;
   confPromise = loadConfigShard();
   return await confPromise;
 }
 
 export class PlRegPackageConfig {
-  constructor(public readonly conf: PlRegFullPackageConfigData) {
-  }
+  constructor(public readonly conf: PlRegFullPackageConfigData) {}
 
   createRegistry(logger?: MiLogger): BlockRegistry {
     let address = this.conf.registry;
     if (!address.startsWith('file:') && !address.startsWith('s3:')) {
       const regByAlias = this.conf.registries[address];
-      if (!regByAlias)
-        throw new Error(`Registry with alias "${address}" not found`);
+      if (!regByAlias) throw new Error(`Registry with alias "${address}" not found`);
       address = regByAlias;
     }
     return new BlockRegistry(storageByUrl(address), logger);

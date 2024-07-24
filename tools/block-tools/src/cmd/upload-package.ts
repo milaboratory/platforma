@@ -6,7 +6,8 @@ import YAML from 'yaml';
 import { PlRegPackageConfigDataShard } from '../config_schema';
 import { OclifLoggerAdapter } from '@milaboratory/ts-helpers-oclif';
 
-type BasicConfigField = (keyof PlRegPackageConfigDataShard) & ('registry' | 'organization' | 'package' | 'version')
+type BasicConfigField = keyof PlRegPackageConfigDataShard &
+  ('registry' | 'organization' | 'package' | 'version');
 const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
 
 export default class UploadPackage extends Command {
@@ -63,15 +64,17 @@ export default class UploadPackage extends Command {
     const { flags } = await this.parse(UploadPackage);
     const configFromFlags: PlRegPackageConfigDataShard = PlRegPackageConfigDataShard.parse({});
 
-    for (const field of BasicConfigFields)
-      if (flags[field])
-        configFromFlags[field] = flags[field];
+    for (const field of BasicConfigFields) if (flags[field]) configFromFlags[field] = flags[field];
 
     if (flags.meta) {
       if (flags.meta.endsWith('.json'))
-        configFromFlags.meta = JSON.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
+        configFromFlags.meta = JSON.parse(
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+        );
       else if (flags.meta.endsWith('.yaml'))
-        configFromFlags.meta = YAML.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
+        configFromFlags.meta = YAML.parse(
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+        );
     }
 
     for (const targetFile of flags.file) {
@@ -97,7 +100,6 @@ export default class UploadPackage extends Command {
     await builder.writeMeta(conf.conf.meta);
     await builder.finish();
 
-    if (flags.refresh)
-      await registry.updateIfNeeded();
+    if (flags.refresh) await registry.updateIfNeeded();
   }
 }
