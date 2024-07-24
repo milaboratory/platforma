@@ -1,15 +1,6 @@
 import { Flags } from '@oclif/core';
 import path from 'node:path';
 
-// export const registryFlag = Flags.custom<BlockRegistry>({
-//   char: 'r',
-//   summary: 'full address of the registry or alias from .pl.reg',
-//   helpValue: '<address|alias>',
-//   defaultHelp: 'default',
-//   default: async () => (await getConfig()).createRegistry(),
-//   parse: async (reg) => (await getConfig()).createRegistry(reg)
-// });
-
 export interface TargetFile {
   src: string;
   destName: string;

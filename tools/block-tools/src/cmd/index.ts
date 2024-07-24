@@ -1,5 +1,5 @@
-import UploadPackage from './upload-package';
+import UploadPackageV1 from './upload-package-v1';
 
 export const COMMANDS = {
-  'upload-package': UploadPackage
+  'upload-package-v1': UploadPackageV1
 };

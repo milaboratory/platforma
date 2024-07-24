@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { RegistryStorage, S3Storage, storageByUrl } from './storage';
+import { RegistryStorage, S3Storage, storageByUrl } from '../lib/storage';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
@@ -19,11 +19,12 @@ const testStorages: TestStorageTarget[] = [
     storageProvider: () => {
       const uuid = randomUUID().toString();
       const tmp = path.resolve('tmp');
-      const storage = storageByUrl('file://' + path.resolve(tmp, uuid));
+      const storagePath = path.resolve(tmp, uuid);
+      const storage = storageByUrl('file://' + storagePath);
       return {
         storage,
         teardown: async () => {
-          await fs.promises.rm(tmp, { recursive: true, force: true });
+          await fs.promises.rm(storagePath, { recursive: true, force: true });
         }
       };
     }

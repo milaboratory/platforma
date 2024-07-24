@@ -1,4 +1,4 @@
-import { RegistryStorage } from './storage';
+import { RegistryStorage } from '../lib/storage';
 import { randomUUID } from 'node:crypto';
 import semver from 'semver/preload';
 import {
@@ -242,7 +242,7 @@ export class BlockRegistryPackConstructor {
 
   async finish() {
     if (!this.metaAdded) throw new Error('meta not added');
-    await this.storage.putFile(packageUpdatePath(this.name, this.seed), Buffer.of());
+    await this.storage.putFile(packageUpdatePath(this.name, this.seed), Buffer.of(0));
     await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(this.seed));
   }
 }

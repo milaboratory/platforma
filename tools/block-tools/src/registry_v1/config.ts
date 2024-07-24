@@ -1,5 +1,5 @@
 import YAML from 'yaml';
-import { tryLoadFile } from './util';
+import { tryLoadFile } from '../util';
 import {
   PlPackageJsonConfigFile,
   PlPackageYamlConfigFile,
@@ -7,9 +7,9 @@ import {
   PlRegPackageConfigDataShard
 } from './config_schema';
 import * as os from 'node:os';
-import { BlockRegistry } from './lib/registry';
-import { storageByUrl } from './lib/storage';
-import { FullBlockPackageName } from './lib/v1_repo_schema';
+import { BlockRegistry } from './registry';
+import { storageByUrl } from '../lib/storage';
+import { FullBlockPackageName } from './v1_repo_schema';
 import { MiLogger } from '@milaboratory/ts-helpers';
 
 function mergeConfigs(

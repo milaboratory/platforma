@@ -1,7 +1,7 @@
 {
-  "name": "@milaboratory/pl-block-registry",
-  "version": "1.3.6",
-  "description": "Utility to manipulate Platforma block registry",
+  "name": "@milaboratory/pl-block-tools",
+  "version": "2.0.0",
+  "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "scripts": {
     "build": "tsup",
     "readme": "exec oclif readme",
@@ -12,7 +12,7 @@
   "module": "dist/lib.mjs",
   "types": "dist/lib.d.ts",
   "bin": {
-    "pl-reg": "./bin/run.js"
+    "block-tools": "./bin/run.js"
   },
   "files": [
     "bin/*",
@@ -61,8 +61,8 @@
       "target": "./dist/cli.js",
       "identifier": "COMMANDS"
     },
-    "bin": "pl-reg",
-    "dirname": "pl-reg",
+    "bin": "block-tools",
+    "dirname": "block-tools",
     "topicSeparator": " "
   }
 }
