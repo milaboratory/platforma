@@ -191,11 +191,29 @@ export class PFrameDriver implements SdkPFrameDriver {
     return this.pFrames.getByKey(handle).pFrame.listColumns();
   }
 
-  calculateTableData(
+  public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>
   ): Promise<CalculateTableDataResponse> {
-    throw new Error('Method not implemented.');
+    let table = await this.pFrames.getByKey(handle).pFrame.createTable({
+      src: joinEntryToInternal(request.src),
+      filters: request.filters
+    });
+
+    if (request.sorting.length > 0) {
+      const sortedTable = await table.sort(request.sorting);
+      table.dispose();
+      table = sortedTable;
+    }
+
+    const spec = table.getSpec();
+    const data = await table.getData([...spec.keys()]);
+    table.dispose();
+
+    return spec.map((spec, i) => ({
+      spec: spec,
+      data: data[i]
+    }));
   }
 
   public async getUniqueValues(
