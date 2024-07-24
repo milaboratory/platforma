@@ -19,6 +19,16 @@
   ],
   "keywords": [],
   "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratory/ts-helpers": "^1.0.18",
+    "@milaboratory/ts-helpers-oclif": "^1.1.0",
+    "@aws-sdk/client-s3": "^3.617.0",
+    "@oclif/core": "^4.0.14",
+    "@types/semver": "^7.5.8",
+    "semver": "^7.6.3",
+    "yaml": "^2.4.5",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.12",
@@ -27,14 +37,6 @@
     "ts-node": "^10.9.2",
     "tsup": "^8.1.2",
     "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.617.0",
-    "@oclif/core": "^4.0.14",
-    "@types/semver": "^7.5.8",
-    "semver": "^7.6.3",
-    "yaml": "^2.4.5",
-    "zod": "^3.23.8"
   },
   "tsup": {
     "entry": {

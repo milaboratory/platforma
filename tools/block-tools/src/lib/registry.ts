@@ -1,7 +1,6 @@
 import { RegistryStorage } from './storage';
 import { randomUUID } from 'node:crypto';
 import semver from 'semver/preload';
-import { Logger } from './cmd';
 import {
   BlockPackageNameWithoutVersion,
   FullBlockPackageName, GlobalOverview,
@@ -10,6 +9,7 @@ import {
   packageOverviewPath,
   payloadFilePath
 } from './v1_repo_schema';
+import { MiLogger } from '@milaboratory/ts-helpers';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
@@ -72,7 +72,7 @@ const GlobalUpdateSeedOutFile = '_updates_v1/_global_update_out';
  *
  */
 export class BlockRegistry {
-  constructor(private readonly storage: RegistryStorage, private readonly logger?: Logger) {
+  constructor(private readonly storage: RegistryStorage, private readonly logger?: MiLogger) {
   }
 
   constructNewPackage(pack: FullBlockPackageName): BlockRegistryPackConstructor {

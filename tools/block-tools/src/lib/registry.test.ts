@@ -3,7 +3,7 @@ import path from 'node:path';
 import { RegistryStorage, S3Storage, storageByUrl } from './storage';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
-import { TestLogger } from './cmd';
+import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
 
 type TestStorageInstance = {
   storage: RegistryStorage,
@@ -50,7 +50,7 @@ if (testS3Address !== undefined) {
 
 test.each(testStorages)('basic registry test with $name', async ({ storageProvider }) => {
   const { storage, teardown } = storageProvider();
-  const registry = new BlockRegistry(storage, new TestLogger());
+  const registry = new BlockRegistry(storage, new ConsoleLoggerAdapter());
   await registry.updateIfNeeded();
   const constructor1 = registry.constructNewPackage({ organization: 'org1', package: 'pkg1', version: '1.1.0' });
   await constructor1.writeMeta({ some: 'value1' });
@@ -81,7 +81,7 @@ test.each(testStorages)('basic registry test with $name', async ({ storageProvid
 
 test.each(testStorages)('package modification test with $name', async ({ storageProvider }) => {
   const { storage, teardown } = storageProvider();
-  const registry = new BlockRegistry(storage, new TestLogger());
+  const registry = new BlockRegistry(storage, new ConsoleLoggerAdapter());
   const constructor1 = registry.constructNewPackage({ organization: 'org1', package: 'pkg1', version: '1.1.0' });
   await constructor1.writeMeta({ some: 'value1' });
   await constructor1.finish();

@@ -3,8 +3,8 @@ import { getConfig } from '../config';
 import { targetFile } from '../flags';
 import fs from 'node:fs';
 import YAML from 'yaml';
-import { CmdLoggerAdapter } from '../lib/cmd';
 import { PlRegPackageConfigDataShard } from '../config_schema';
+import { OclifLoggerAdapter } from '@milaboratory/ts-helpers-oclif';
 
 type BasicConfigField = (keyof PlRegPackageConfigDataShard) & ('registry' | 'organization' | 'package' | 'version')
 const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
@@ -82,7 +82,7 @@ export default class UploadPackage extends Command {
 
     this.log(YAML.stringify(conf.conf));
 
-    const registry = conf.createRegistry(new CmdLoggerAdapter(this));
+    const registry = conf.createRegistry(new OclifLoggerAdapter(this));
     const name = conf.fullPackageName;
 
     const builder = registry.constructNewPackage(name);

@@ -7,10 +7,10 @@ import {
   PlRegPackageConfigDataShard
 } from './config_schema';
 import * as os from 'node:os';
-import { Logger } from './lib/cmd';
 import { BlockRegistry } from './lib/registry';
 import { storageByUrl } from './lib/storage';
 import { FullBlockPackageName } from './lib/v1_repo_schema';
+import { MiLogger } from '@milaboratory/ts-helpers';
 
 function mergeConfigs(c1: PlRegPackageConfigDataShard, c2: PlRegPackageConfigDataShard | undefined): PlRegPackageConfigDataShard {
   if (c2 === undefined)
@@ -60,7 +60,7 @@ export class PlRegPackageConfig {
   constructor(public readonly conf: PlRegFullPackageConfigData) {
   }
 
-  createRegistry(logger?: Logger): BlockRegistry {
+  createRegistry(logger?: MiLogger): BlockRegistry {
     let address = this.conf.registry;
     if (!address.startsWith('file:') && !address.startsWith('s3:')) {
       const regByAlias = this.conf.registries[address];
