@@ -14,39 +14,49 @@ export interface RegistryStorage {
 }
 
 export class S3Storage implements RegistryStorage {
-  constructor(public readonly client: S3,
-              public readonly bucket: string,
-              public readonly root: string) {
-  }
+  constructor(
+    public readonly client: S3,
+    public readonly bucket: string,
+    public readonly root: string
+  ) {}
 
   async getFile(file: string): Promise<Buffer | undefined> {
     try {
-      return Buffer.from(await (await this.client.getObject({
-        Bucket: this.bucket,
-        Key: pathPosix.join(this.root, file)
-      })).Body!.transformToByteArray());
+      return Buffer.from(
+        await (
+          await this.client.getObject({
+            Bucket: this.bucket,
+            Key: pathPosix.join(this.root, file)
+          })
+        ).Body!.transformToByteArray()
+      );
     } catch (e: any) {
-      if (e.name === 'NoSuchKey')
-        return undefined;
-      else
-        throw e;
+      if (e.name === 'NoSuchKey') return undefined;
+      else throw e;
     }
   }
 
   async listFiles(prefix: string): Promise<string[]> {
     const listRoot = pathPosix.join(this.root, prefix);
-    const paginator = paginateListObjectsV2({ client: this.client }, {
-      Bucket: this.bucket,
-      Prefix: listRoot
-    });
+    const paginator = paginateListObjectsV2(
+      { client: this.client },
+      {
+        Bucket: this.bucket,
+        Prefix: listRoot
+      }
+    );
     const result: string[] = [];
     for await (const page of paginator)
-      result.push(...(page.Contents!.map(e => pathPosix.relative(listRoot, e.Key!))));
+      result.push(...page.Contents!.map((e) => pathPosix.relative(listRoot, e.Key!)));
     return result;
   }
 
   async putFile(file: string, buffer: Buffer): Promise<void> {
-    await this.client.putObject({ Bucket: this.bucket, Key: pathPosix.join(this.root, file), Body: buffer });
+    await this.client.putObject({
+      Bucket: this.bucket,
+      Key: pathPosix.join(this.root, file),
+      Body: buffer
+    });
   }
 
   async deleteFiles(...files: string[]): Promise<void> {
@@ -54,11 +64,9 @@ export class S3Storage implements RegistryStorage {
     const results = await this.client.deleteObjects({
       Bucket: this.bucket,
       Delete: {
-        Objects: files.map(file => (
-          {
-            Key: pathPosix.join(this.root, file)
-          }
-        ))
+        Objects: files.map((file) => ({
+          Key: pathPosix.join(this.root, file)
+        }))
       }
     });
     if (results.Errors !== undefined && results.Errors.length > 0)
@@ -75,8 +83,7 @@ export class FSStorage implements RegistryStorage {
   }
 
   private toAbsolutePath(localPath: string): string {
-    if (pathPosix.isAbsolute(localPath))
-      throw new Error('absolute path');
+    if (pathPosix.isAbsolute(localPath)) throw new Error('absolute path');
     return path.resolve(this.root, localPath.split(pathPosix.sep).join(path.sep));
   }
 
@@ -84,10 +91,8 @@ export class FSStorage implements RegistryStorage {
     try {
       return await fs.promises.readFile(this.toAbsolutePath(address));
     } catch (err: any) {
-      if (err.code == 'ENOENT')
-        return undefined;
-      else
-        throw new Error('', { cause: err });
+      if (err.code == 'ENOENT') return undefined;
+      else throw new Error('', { cause: err });
     }
   }
 
@@ -95,14 +100,13 @@ export class FSStorage implements RegistryStorage {
     try {
       const listRoot = this.toAbsolutePath(prefix);
       return (await fs.promises.readdir(listRoot, { recursive: true, withFileTypes: true }))
-        .filter(e => e.isFile())
-        .map(e => path.relative(listRoot, path.resolve(e.path, e.name))
-          .split(path.sep).join(pathPosix.sep));
+        .filter((e) => e.isFile())
+        .map((e) =>
+          path.relative(listRoot, path.resolve(e.path, e.name)).split(path.sep).join(pathPosix.sep)
+        );
     } catch (err: any) {
-      if (err.code == 'ENOENT')
-        return [];
-      else
-        throw new Error('', { cause: err });
+      if (err.code == 'ENOENT') return [];
+      else throw new Error('', { cause: err });
     }
   }
 
@@ -114,8 +118,7 @@ export class FSStorage implements RegistryStorage {
 
   async deleteFiles(...files: string[]): Promise<void> {
     // Folders are not removed, deletes issued sequentially
-    for (const file of files)
-      await fs.promises.rm(this.toAbsolutePath(file));
+    for (const file of files) await fs.promises.rm(this.toAbsolutePath(file));
   }
 }
 
@@ -128,8 +131,7 @@ export function storageByUrl(address: string): RegistryStorage {
     case 's3:':
       const options: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
       const region = url.searchParams.get('region');
-      if (region)
-        options.region = region;
+      if (region) options.region = region;
       const bucket = url.hostname;
       return new S3Storage(new S3(options), bucket, url.pathname.replace(/^\//, ''));
     default:

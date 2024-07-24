@@ -16,10 +16,10 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
+    uses: milaboratory/github-ci-internal/.github/workflows/node-simple-fast.yaml@v4
     with:
       app-name: Pl Block Registry
-      app-name-slug: '@milaboratory/pl-block-registry'
+      app-name-slug: '@milaboratory/pl-block-tools'
       notify-telegram: true
 
       node-version: '20.x'

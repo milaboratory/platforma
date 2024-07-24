@@ -1,16 +1,17 @@
 import { Command, Flags } from '@oclif/core';
-import { getConfig } from '../config';
-import { targetFile } from '../flags';
+import { getConfig } from '../registry_v1/config';
+import { targetFile } from '../registry_v1/flags';
 import fs from 'node:fs';
 import YAML from 'yaml';
-import { CmdLoggerAdapter } from '../lib/cmd';
-import { PlRegPackageConfigDataShard } from '../config_schema';
+import { PlRegPackageConfigDataShard } from '../registry_v1/config_schema';
+import { OclifLoggerAdapter } from '@milaboratory/ts-helpers-oclif';
 
-type BasicConfigField = (keyof PlRegPackageConfigDataShard) & ('registry' | 'organization' | 'package' | 'version')
+type BasicConfigField = keyof PlRegPackageConfigDataShard &
+  ('registry' | 'organization' | 'package' | 'version');
 const BasicConfigFields: BasicConfigField[] = ['registry', 'organization', 'package', 'version'];
 
-export default class UploadPackage extends Command {
-  static description = 'Uploads package and refreshes the registry';
+export default class UploadPackageV1 extends Command {
+  static description = 'Uploads V1 package and refreshes the registry';
 
   static flags = {
     registry: Flags.string({
@@ -60,18 +61,20 @@ export default class UploadPackage extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(UploadPackage);
+    const { flags } = await this.parse(UploadPackageV1);
     const configFromFlags: PlRegPackageConfigDataShard = PlRegPackageConfigDataShard.parse({});
 
-    for (const field of BasicConfigFields)
-      if (flags[field])
-        configFromFlags[field] = flags[field];
+    for (const field of BasicConfigFields) if (flags[field]) configFromFlags[field] = flags[field];
 
     if (flags.meta) {
       if (flags.meta.endsWith('.json'))
-        configFromFlags.meta = JSON.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
+        configFromFlags.meta = JSON.parse(
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+        );
       else if (flags.meta.endsWith('.yaml'))
-        configFromFlags.meta = YAML.parse(await fs.promises.readFile(flags.meta, { encoding: 'utf-8' }));
+        configFromFlags.meta = YAML.parse(
+          await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
+        );
     }
 
     for (const targetFile of flags.file) {
@@ -82,7 +85,7 @@ export default class UploadPackage extends Command {
 
     this.log(YAML.stringify(conf.conf));
 
-    const registry = conf.createRegistry(new CmdLoggerAdapter(this));
+    const registry = conf.createRegistry(new OclifLoggerAdapter(this));
     const name = conf.fullPackageName;
 
     const builder = registry.constructNewPackage(name);
@@ -97,7 +100,6 @@ export default class UploadPackage extends Command {
     await builder.writeMeta(conf.conf.meta);
     await builder.finish();
 
-    if (flags.refresh)
-      await registry.updateIfNeeded();
+    if (flags.refresh) await registry.updateIfNeeded();
   }
 }

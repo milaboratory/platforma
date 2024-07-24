@@ -16,17 +16,19 @@ test('file url test #2', async () => {
 test('test local fs read write', async () => {
   const uuid = randomUUID().toString();
   const tmp = path.resolve('tmp');
-  const storage = storageByUrl('file://' + path.resolve(tmp, uuid));
+  const storagePath = path.resolve(tmp, uuid);
+  const storage = storageByUrl('file://' + storagePath);
   expect(await storage.getFile('some/deep/file.txt')).toBeUndefined();
   await storage.putFile('some/deep/file.txt', Buffer.from('test1'));
   expect((await storage.getFile('some/deep/file.txt'))?.toString()).toEqual('test1');
-  await fs.promises.rm(tmp, { recursive: true });
+  await fs.promises.rm(storagePath, { recursive: true });
 });
 
 test('test local fs list', async () => {
   const uuid = randomUUID().toString();
   const tmp = path.resolve('tmp');
-  const storage = storageByUrl('file://' + path.resolve(tmp, uuid));
+  const storagePath = path.resolve(tmp, uuid);
+  const storage = storageByUrl('file://' + storagePath);
   await storage.putFile('some/deep1/file_1.txt', Buffer.from('test1'));
   await storage.putFile('some/deep1/file_2.txt', Buffer.from('test1'));
   await storage.putFile('some/deep2/file_1.txt', Buffer.from('test1'));
@@ -40,7 +42,7 @@ test('test local fs list', async () => {
   const result1 = await storage.listFiles('some');
   result1.sort();
   expect(result1).toEqual(expected);
-  await fs.promises.rm(tmp, { recursive: true });
+  await fs.promises.rm(storagePath, { recursive: true });
 });
 
 const testS3Address = process.env.TEST_S3_ADDRESS;
@@ -76,7 +78,8 @@ if (testS3Address) {
     result1.sort();
     expect(result1).toEqual(expected);
     await storage.client.deleteObjects({
-      Bucket: storage.bucket, Delete: {
+      Bucket: storage.bucket,
+      Delete: {
         Objects: [
           { Key: `${storage.root}/some/deep1/file_1.txt` },
           { Key: `${storage.root}/some/deep1/file_2.txt` },
