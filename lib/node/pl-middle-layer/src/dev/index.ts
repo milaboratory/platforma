@@ -1,9 +1,9 @@
-import { PlPackageJsonConfigFile, PlPackageYamlConfigFile } from '@milaboratory/pl-block-registry';
+import { RegistryV1 } from '@milaboratory/pl-block-tools';
 import path from 'path';
 import { tryStat } from './util';
 
-export const LegacyDevBlockPackMetaYaml = [PlPackageYamlConfigFile];
-export const LegacyDevBlockPackMetaJson = [PlPackageJsonConfigFile];
+export const LegacyDevBlockPackMetaYaml = [RegistryV1.PlPackageYamlConfigFile];
+export const LegacyDevBlockPackMetaJson = [RegistryV1.PlPackageJsonConfigFile];
 export const LegacyDevBlockPackTemplate = ['backend', 'dist', 'tengo', 'tpl', 'main.plj.gz'];
 export const LegacyDevBlockPackConfig = ['config', 'dist', 'config.json'];
 export const LegacyDevBlockPackFrontendFolder = ['frontend', 'dist'];

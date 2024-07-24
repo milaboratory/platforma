@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
 import { BlockConfig } from '@milaboratory/sdk-ui';
-import { packageContentPrefix } from '@milaboratory/pl-block-registry';
+import { RegistryV1 } from '@milaboratory/pl-block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev';
 
@@ -40,7 +40,7 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
 
         const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
 
@@ -90,7 +90,7 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
 
         const templateUrl = `${urlPrefix}/template.plj.gz`;
         // template

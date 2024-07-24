@@ -2,11 +2,8 @@ import { Dispatcher, request } from 'undici';
 import { RegistrySpec } from './registry_spec';
 import { BlockPackSpecAny } from '../model';
 import {
-  GlobalOverview,
-  GlobalOverviewPath,
-  PlPackageConfigData,
-  PlPackageYamlConfigFile
-} from '@milaboratory/pl-block-registry';
+  RegistryV1
+} from '@milaboratory/pl-block-tools';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
@@ -81,8 +78,8 @@ export class BlockPackRegistry {
       case 'remote_v1':
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const overviewResponse = await request(`${regSpec.url}/${GlobalOverviewPath}`, httpOptions);
-        const overview = (await overviewResponse.body.json()) as GlobalOverview;
+        const overviewResponse = await request(`${regSpec.url}/${RegistryV1.GlobalOverviewPath}`, httpOptions);
+        const overview = (await overviewResponse.body.json()) as RegistryV1.GlobalOverview;
         for (const overviewEntry of overview) {
           const { organization, package: pkg, latestMeta, latestVersion } = overviewEntry;
           result.push({
@@ -109,9 +106,9 @@ export class BlockPackRegistry {
           if (!entry.isDirectory()) continue;
 
           const devPath = path.join(regSpec.path, entry.name);
-          const yamlContent = await getFileContent(path.join(devPath, PlPackageYamlConfigFile));
+          const yamlContent = await getFileContent(path.join(devPath, RegistryV1.PlPackageYamlConfigFile));
           if (yamlContent === undefined) continue;
-          const config = PlPackageConfigData.parse(YAML.parse(yamlContent));
+          const config = RegistryV1.PlPackageConfigData.parse(YAML.parse(yamlContent));
 
           const mtime = await getDevPacketMtime(devPath);
 
