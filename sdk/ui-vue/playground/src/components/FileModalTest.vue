@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { FileDialog, usePlugin } from 'lib';
+import { FileDialog } from 'lib';
 import { BtnPrimary } from '@milaboratory/platforma-uikit';
 import '@milaboratory/platforma-uikit/dist/style.css';
-import { BlockApp } from './app';
+import { useApp } from '../app';
 
 const data = reactive({
   modalOpen: false,
@@ -13,11 +13,7 @@ const onUpdate = (files: unknown) => {
   console.log('files', files);
 };
 
-const app = BlockApp.use();
-
-const plugin = usePlugin();
-
-plugin.age = 102;
+const app = useApp();
 </script>
 
 <template>
@@ -26,7 +22,6 @@ plugin.age = 102;
     <FileDialog v-model="data.modalOpen" @update:files="onUpdate" />
     <BtnPrimary @click.stop="data.modalOpen = true">Open dialog</BtnPrimary>
     <blue-input />
-    {{ plugin }}
   </div>
 </template>
 

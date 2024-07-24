@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import { BtnSecondary } from '@milaboratory/platforma-uikit';
-import { useBlockApp } from '../defineApp';
+import { useSdkPlugin } from '../defineApp';
 
-const blockApp = useBlockApp();
+const sdk = useSdkPlugin();
 
-const app = blockApp.use();
+const app = sdk.useApp();
 
 const goToMain = () => {
   app.updateNavigationState((state) => {

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { blockApp } from './app';
+import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
 
-const app = blockApp.use();
+const app = useApp();
 </script>
 
 <template>

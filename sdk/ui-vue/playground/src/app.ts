@@ -3,7 +3,7 @@ import MainPage from './MainPage.vue';
 import SecondPage from './SecondPage.vue';
 import { platforma } from './testApi';
 
-export const blockApp = defineApp(platforma, () => {
+export const sdkPlugin = defineApp(platforma, () => {
   return {
     routes: {
       '/': MainPage,
@@ -11,3 +11,5 @@ export const blockApp = defineApp(platforma, () => {
     },
   };
 });
+
+export const useApp = sdkPlugin.useApp;

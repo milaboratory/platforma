@@ -9,3 +9,5 @@ export * from './defineApp';
 export * from './createModel';
 
 export * from './types';
+
+export * from './defineStore';

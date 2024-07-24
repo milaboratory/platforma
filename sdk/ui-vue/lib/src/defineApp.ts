@@ -7,7 +7,7 @@ import type { LocalState } from './types';
 const pluginKey = Symbol('sdk-vue');
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useBlockApp(): BlockApp {
+export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
 }
 
@@ -19,33 +19,36 @@ export function defineApp<
 >(platforma: Platforma<Args, Outputs, UiState, Href>, cb: () => LocalState<Href>) {
   let app: undefined | App<Args, Outputs, UiState, Href> = undefined;
 
-  const blockApp = reactive({
+  const loadApp = () => {
+    platforma
+      .loadBlockState()
+      .then((state) => {
+        plugin.loaded = true;
+        app = createApp<Args, Outputs, UiState, Href>(state, platforma, cb);
+      })
+      .catch((err) => {
+        plugin.error = err;
+      });
+  };
+
+  const plugin = reactive({
     loaded: false,
     error: undefined as unknown,
-    use() {
+    useApp() {
       return notEmpty(app, 'App is not loaded');
     },
     // @todo type portability issue with Vue
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     install(app: any) {
       app.provide(pluginKey, this);
+      loadApp();
     },
   });
 
-  platforma
-    .loadBlockState()
-    .then((state) => {
-      blockApp.loaded = true;
-      app = createApp<Args, Outputs, UiState, Href>(state, platforma, cb);
-    })
-    .catch((err) => {
-      blockApp.error = err;
-    });
-
-  return blockApp;
+  return plugin;
 }
 
-export type BlockApp<
+export type SdkPlugin<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,

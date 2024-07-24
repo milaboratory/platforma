@@ -1,7 +1,5 @@
 import { unionize } from '@milaboratory/helpers/utils';
 
-// const updates = unionize(state) as BlockStatePatch[];
-
 import type { BlockState, BlockStatePatch, NavigationState, Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
 
 type OnUpdates = (updates: BlockStatePatch<unknown, Record<string, ValueOrErrors<unknown>>, unknown, `/${string}`>[]) => Promise<void>;

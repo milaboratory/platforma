@@ -1,6 +1,6 @@
 import { deepClone, setProp } from '@milaboratory/helpers/objects';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
-import type { UnwrapRef, DeepReadonly, Component } from 'vue';
+import type { UnwrapRef, Component } from 'vue';
 import { reactive, nextTick, markRaw } from 'vue';
 import type { UnwrapValueOrErrors, LocalState } from './types';
 
@@ -14,10 +14,8 @@ export function createApp<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => LocalState<Href>) {
-  type ReadonlyArgs = DeepReadonly<Args>;
-
   const app = reactive({
-    args: state.args as ReadonlyArgs,
+    args: state.args,
     outputs: state.outputs,
     ui: state.ui,
     navigationState: state.navigationState as NavigationState<Href>,
@@ -66,7 +64,7 @@ export function createApp<
   platforma.onStateUpdates(async (updates) => {
     updates.forEach((patch) => {
       if (patch.key === 'args') {
-        app.args = patch.value as UnwrapRef<ReadonlyArgs>;
+        app.args = patch.value as UnwrapRef<Args>;
       }
 
       if (patch.key === 'ui') {

@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import { BtnGroup } from '@milaboratory/platforma-uikit';
-import { blockApp } from '../app';
+import { useApp } from '../app';
 import { computed } from 'vue';
 
-const app = blockApp.use();
+const app = useApp();
 
 const href = computed({
   get() {

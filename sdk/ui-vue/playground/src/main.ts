@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import './style.css';
 import { BlockLayout } from 'lib';
-import { blockApp } from './app';
 import 'lib/dist/style.css';
+import { sdkPlugin } from './app';
 
-createApp(BlockLayout).use(blockApp).mount('#app');
+createApp(BlockLayout).use(sdkPlugin).mount('#app');

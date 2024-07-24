@@ -6,6 +6,7 @@
  */
 const config = {
   test: {
+    environment: 'happy-dom',
     /**
      * By default, vitest search test files in all packages.
      * For e2e tests have sense search only is project root tests folder

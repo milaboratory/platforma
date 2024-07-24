@@ -1,4 +1,4 @@
-@import '@milaboratory/platforma-uikit/src/assets/mixins.scss';
+@import '@milaboratory/platforma-uikit/lib/src/assets/mixins.scss';
 
 .ls-head {
   display: flex;
@@ -22,7 +22,7 @@
   margin: 0 -24px;
   padding: 12px 24px 12px 24px;
   max-height: 400px;
-  @include scrollbarPersistent(true);
+  @include scrollbar(true);
   overflow: auto;
   > div {
     font-family: var(--font-family-monospace);

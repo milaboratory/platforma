@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-import '@milaboratory/platforma-uikit/dist/style.css';
+import '@milaboratory/platforma-uikit/styles';
 import '../assets/block.scss';
 import { computed } from 'vue';
-import { useBlockApp } from '../defineApp';
+import { useSdkPlugin } from '../defineApp';
 import NotFound from './NotFound.vue';
 import LoaderPage from './LoaderPage.vue';
 
-const sdk = useBlockApp();
+const sdk = useSdkPlugin();
 
 const CurrentView = computed(() => {
   if (sdk.loaded) {
-    const app = sdk.use();
+    const app = sdk.useApp();
     return app.routes[app.navigationState.href];
   }
 

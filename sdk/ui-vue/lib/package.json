@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "dist/lib.cjs",
+  "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
   "types": "dist/src/lib.d.ts",
   "scripts": {
