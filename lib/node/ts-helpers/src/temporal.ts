@@ -1,6 +1,7 @@
 export class Aborted extends Error {
   constructor(cause?: unknown) {
     super('aborted', { cause });
+    this.name = 'AbortError';
   }
 }
 
