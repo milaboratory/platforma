@@ -1,7 +1,7 @@
 import { Command, Flags } from '@oclif/core'
 import * as pkg from '../package'
 import { assertNever } from '../util'
-import { spawn } from 'child_process'
+import { spawnSync } from 'child_process'
 import state from '../state'
 
 export default class Stop extends Command {
@@ -21,12 +21,18 @@ export default class Stop extends Command {
 
         switch (lastRun.mode) {
             case 'docker':
-                const child = spawn('docker', ['compose', '--file', lastRun.composePath!, 'down'])
-                state.isActive = false
-                child.on('exit', (code) => {
-                    process.exit(code ?? 0);
-                });
-                break;
+                const result = spawnSync(
+                    'docker',
+                    ['compose', '--file', lastRun.composePath!, 'down'],
+                    {
+                        env: {
+                            ...process.env,
+                            ...lastRun.envs
+                        },
+                        stdio: 'inherit'
+                    },
+                )
+                process.exit(result.status)
 
             default:
                 assertNever(lastRun.mode)
