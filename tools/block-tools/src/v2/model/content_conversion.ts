@@ -1,20 +1,18 @@
 import { z } from 'zod';
 import {
-  ConstructContent,
+  ContentAbsoluteBinaryLocal,
   ContentAbsoluteFile,
   ContentAbsoluteFolder,
   ContentAbsoluteTextLocal,
   ContentAbsoluteUrl,
-  ContentAny,
-  ContentAnyBinaryLocal,
-  ContentAnyBinaryRemote,
   ContentAnyLocal,
-  ContentAnyTextLocal,
-  ContentAnyTextRemote,
+  ContentExplicitBase64,
   ContentRelative
 } from './content_types';
-import { ContentType, ContextType } from './common';
 import path from 'path';
+import fsp from 'node:fs/promises';
+import * as mime from 'mime-types';
+import * as tar from 'tar';
 
 type ContentCtxFs = {
   type: 'local';
@@ -106,7 +104,7 @@ export function mapLocalToAbsolute(
       : (value as Exclude<T, ContentRelative>);
 }
 
-export function mapRemoteToAbsoluteh(
+export function mapRemoteToAbsolute(
   rootUrl: string
 ): <T extends ContentAnyLocal>(value: T) => Exclude<T, ContentRelative> | ContentAbsoluteUrl {
   const rootWithSlash = rootUrl.endsWith('/') ? rootUrl : `${rootUrl}/`;
@@ -116,18 +114,65 @@ export function mapRemoteToAbsoluteh(
       : (value as Exclude<T, ContentRelative>);
 }
 
-export function localizeFile(
+export function absoluteToString(): (value: ContentAbsoluteTextLocal) => Promise<string> {
+  return async (value) => {
+    if (value.type === 'absolute-file')
+      return await fsp.readFile(value.file, { encoding: 'utf-8' });
+    else return value.content;
+  };
+}
+
+// TODO add type and size limitations
+export function absoluteToBase64(): (
+  value: ContentAbsoluteBinaryLocal
+) => Promise<ContentExplicitBase64> {
+  return async (value) => {
+    if (value.type === 'absolute-file') {
+      const mimeType = mime.lookup(value.file);
+      if (!mimeType) throw new Error(`Can't recognize mime type of the file: ${value.file}.`);
+      return {
+        type: 'explicit-base64',
+        mimeType,
+        content: await fsp.readFile(value.file, { encoding: 'base64' })
+      };
+    } else return value;
+  };
+}
+
+export function cpAbsoluteToRelative(
   dstFolder: string,
   fileAccumulator?: string[]
-): <T extends ContentAnyLocal>(
+): <T extends Exclude<ContentAnyLocal, ContentRelative>>(
   value: T
 ) => Promise<Exclude<T, ContentAbsoluteFile> | ContentRelative> {
-  return async <T extends ContentAnyLocal>(value: T) => {
+  return async <T extends Exclude<ContentAnyLocal, ContentRelative>>(value: T) => {
     if (value.type === 'absolute-file') {
       const fileName = path.basename(value.file);
-    }
+      const dst = path.resolve(dstFolder, fileName);
+      fileAccumulator?.push(fileName);
+      await fsp.cp(value.file, dst);
+      return { type: 'relative', path: fileName };
+    } else return value as Exclude<T, ContentAbsoluteFile>;
   };
+}
 
-  // ? { type: 'absolute-file', file: path.resolve(root, value.path) }
-  // : (value as Exclude<T, ContentRelative>);
+export function packFolderToRelativeTgz(
+  dstFolder: string,
+  tgzName: string,
+  fileAccumulator?: string[]
+): (value: ContentAbsoluteFolder) => Promise<ContentRelative> {
+  if (!tgzName.endsWith('.tgz')) throw new Error(`Unexpected tgz file name: ${tgzName}`);
+  return async (value: ContentAbsoluteFolder) => {
+    const dst = path.resolve(dstFolder, tgzName);
+    await tar.create(
+      {
+        gzip: true,
+        file: dst,
+        cwd: value.folder
+      },
+      [value.folder]
+    );
+    fileAccumulator?.push(tgzName);
+    return { type: 'relative', path: tgzName };
+  };
 }

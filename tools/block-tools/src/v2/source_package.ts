@@ -1,11 +1,10 @@
 import path from 'path';
 import { tryLoadFile } from '../util';
 import {
-  BlockPackDescription,
   BlockPackDescriptionFromPackageJsonRaw,
-  ResolvedBlockPackDescriptionFromPackageJson
+  ResolvedBlockPackDescriptionFromPackageJson,
+  BlockPackDescriptionAbsolute
 } from './model';
-import { string } from 'zod';
 import { BlockPackId } from './model/block_pack_id';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { SemVer } from '../common_types';
@@ -25,7 +24,7 @@ export function parsePackageName(packageName: string): Pick<BlockPackId, 'organi
   return { name, organization };
 }
 
-export async function loadPackDescriptionFromSource(srcRoot: string): Promise<BlockPackDescription> {
+export async function loadPackDescriptionFromSource(srcRoot: string): Promise<BlockPackDescriptionAbsolute> {
   const fullPackageJsonPath = path.resolve(srcRoot, 'package.json');
   const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
     JSON.parse(buf.toString('utf-8'))

@@ -1,6 +1,19 @@
 import { z } from 'zod';
-import { ContentAny, ManifestContentBinary } from './content_types';
-import { ResolvedModuleFile, ResolvedModuleFolder } from './content_conversion';
+import {
+  ContentAbsoluteBinaryLocal,
+  ContentAbsoluteFolder,
+  ContentAny,
+  ContentAnyBinaryLocal,
+  ContentRelative,
+  ContentRelativeBinary
+} from './content_types';
+import {
+  ResolvedModuleFile,
+  ResolvedModuleFolder,
+  packFolderToRelativeTgz,
+  cpAbsoluteToRelative,
+  mapRemoteToAbsolute
+} from './content_conversion';
 
 export type BlockPackComponents = {};
 
@@ -43,8 +56,20 @@ export function BlockComponentsDescription(moduleRoot: string) {
 }
 export type BlockComponentsDescription = z.infer<ReturnType<typeof BlockComponentsDescription>>;
 
-export const BlockComponentsManifest = BlockComponents(
-  ManifestContentBinary,
-  ManifestContentBinary
-);
+export function BlockComponentsConsolidate(dstFolder: string, fileAccumulator?: string[]) {
+  return BlockComponents(
+    ContentAbsoluteBinaryLocal.transform(cpAbsoluteToRelative(dstFolder, fileAccumulator)),
+    ContentAbsoluteFolder.transform(packFolderToRelativeTgz(dstFolder, 'ui.tgz', fileAccumulator))
+  ).pipe(BlockComponentsManifest);
+}
+
+export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
 export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
+
+export function BlockComponentsAbsoluteUrl(prefix: string) {
+  return BlockComponents(
+    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix)),
+    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
+  );
+}
+export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;

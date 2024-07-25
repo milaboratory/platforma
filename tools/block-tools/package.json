@@ -26,12 +26,15 @@
     "@milaboratory/ts-helpers-oclif": "^1.1.0",
     "@oclif/core": "^4.0.14",
     "@types/semver": "^7.5.8",
+    "mime-types": "^2.1.35",
     "semver": "^7.6.3",
+    "tar": "^7.4.2",
     "yaml": "^2.4.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
+    "@types/mime-types": "^2.1.4",
     "@types/node": "^20.14.12",
     "oclif": "^4.14.9",
     "prettier": "^3.3.3",

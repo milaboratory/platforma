@@ -1,12 +1,22 @@
-import { title } from 'process';
 import { z } from 'zod';
 import {
+  ContentAbsoluteBinaryLocal,
+  ContentAbsoluteTextLocal,
+  ContentExplicitBase64,
+  ContentExplicitString,
+  ContentRelative,
+  ContentRelativeBinary,
+  ContentRelativeText,
   DescriptionContentBinary,
-  DescriptionContentStirng,
-  ManifestContentBinary,
-  ManifestContentString
+  DescriptionContentText
 } from './content_types';
-import { mapLocalToAbsolute } from './content_conversion';
+import {
+  mapLocalToAbsolute,
+  cpAbsoluteToRelative,
+  mapRemoteToAbsolute,
+  absoluteToString,
+  absoluteToBase64
+} from './content_conversion';
 
 function BlockPackMeta<
   const LongStringType extends z.ZodTypeAny,
@@ -31,22 +41,45 @@ function BlockPackMeta<
 
 // prettier-ignore
 export const BlockPackMetaDescriptionRaw = BlockPackMeta(
-  DescriptionContentStirng,
+  DescriptionContentText,
   DescriptionContentBinary
 );
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
 
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(
-    DescriptionContentStirng.transform(mapLocalToAbsolute(root)),
+    DescriptionContentText.transform(mapLocalToAbsolute(root)),
     DescriptionContentBinary.transform(mapLocalToAbsolute(root))
   );
 }
 export type BlockPackMetaDescription = z.infer<ReturnType<typeof BlockPackMetaDescription>>;
 
+export function BlockPackMetaConsolidate(dstFolder: string, fileAccumulator?: string[]) {
+  return BlockPackMeta(
+    ContentAbsoluteTextLocal.transform(cpAbsoluteToRelative(dstFolder, fileAccumulator)),
+    ContentAbsoluteBinaryLocal.transform(cpAbsoluteToRelative(dstFolder, fileAccumulator))
+  );
+}
+
+export function BlockPackMetaToAbsolute(prefix: string) {
+  return BlockPackMeta(
+    ContentRelativeText.transform(mapRemoteToAbsolute(prefix)),
+    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
+  );
+}
+
 // prettier-ignore
+// export const BlockPackMetaManifest = BlockPackMeta(
+//   z.string(),
+//   ContentExplicitBase64
+// );
 export const BlockPackMetaManifest = BlockPackMeta(
-    ManifestContentString,
-    ManifestContentBinary
+  ContentRelativeText,
+  ContentRelativeBinary
 );
 export type BlockPackMetaManifest = z.infer<typeof BlockPackMetaManifest>;
+
+export const BlockPackMetaToExplicit = BlockPackMeta(
+  ContentAbsoluteTextLocal.transform(absoluteToString()),
+  ContentAbsoluteBinaryLocal.transform(absoluteToBase64())
+).pipe(BlockPackMetaManifest);
