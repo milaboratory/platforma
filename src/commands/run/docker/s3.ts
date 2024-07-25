@@ -28,7 +28,6 @@ export default class S3 extends Command {
       composeS3Path,
       ['up',
         '--detach',
-        '--force-recreate',
         '--remove-orphans',
         '--pull=missing',
         'backend'

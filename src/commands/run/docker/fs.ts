@@ -47,7 +47,6 @@ export default class FS extends Command {
       composeFSPath,
       ['up',
         '--detach',
-        '--force-recreate',
         '--remove-orphans',
         '--pull=missing',
         'backend'
