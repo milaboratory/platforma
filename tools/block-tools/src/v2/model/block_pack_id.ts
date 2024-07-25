@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SemVer } from '../common_types';
+import { SemVer } from '../../common_types';
 
 /** Global identifier of the block */
 export const BlockPackId = z
@@ -10,3 +10,6 @@ export const BlockPackId = z
   })
   .strict();
 export type BlockPackId = z.infer<typeof BlockPackId>;
+
+export const BlockPackIdNoVersion = BlockPackId.omit({ version: true });
+export type BlockPackIdNoVersion = z.infer<typeof BlockPackIdNoVersion>;

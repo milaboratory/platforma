@@ -32,6 +32,9 @@ function BlockComponents<const WfAndModel extends z.ZodTypeAny, const UI extends
   });
 }
 
+export const BlockComponentsDescriptionRaw = BlockComponents(z.string(), z.string());
+export type BlockComponentsDescriptionRaw = z.infer<typeof BlockComponentsDescriptionRaw>;
+
 export function BlockComponentsDescription(moduleRoot: string) {
   return BlockComponents(
     ResolvedModuleFile(moduleRoot),

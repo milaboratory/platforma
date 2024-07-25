@@ -35,6 +35,7 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
   DescriptionContentBinary
 );
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
+
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(
     DescriptionContentStirng.transform(mapLocalToAbsolute(root)),

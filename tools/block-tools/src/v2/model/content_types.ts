@@ -216,18 +216,21 @@ export function ConstructContent(contentType: ContentType, contextType: ContextT
       : ContentAnyBinaryRemote;
 }
 
-export const DescriptionContentBinary = z
-  .string()
-  .transform<ManifestContentBinary>((value, ctx) => {
+export const DescriptionContentBinary = z.union([
+  z.string().transform<ManifestContentBinary>((value, ctx) => {
     if (value.startsWith('file:')) return { type: 'relative', path: value.slice(5) };
     else return { type: 'explicit-base64', content: value };
-  });
+  }),
+  ContentAnyBinaryLocal
+]);
 export type DescriptionContentBinary = z.infer<typeof DescriptionContentBinary>;
 
-export const DescriptionContentStirng = z
-  .string()
-  .transform<ManifestContentString>((value, ctx) => {
+export const DescriptionContentStirng = z.union([
+  z.string().transform<ManifestContentString>((value, ctx) => {
     if (value.startsWith('file:')) return { type: 'relative', path: value.slice(5) };
     else return { type: 'explicit-string', content: value };
-  });
+  }),
+  ContentAnyTextLocal
+]);
+
 export type DescriptionContentStirng = z.infer<typeof DescriptionContentStirng>;

@@ -115,3 +115,19 @@ export function mapRemoteToAbsoluteh(
       ? { type: 'absolute-url', url: rootWithSlash + value.path }
       : (value as Exclude<T, ContentRelative>);
 }
+
+export function localizeFile(
+  dstFolder: string,
+  fileAccumulator?: string[]
+): <T extends ContentAnyLocal>(
+  value: T
+) => Promise<Exclude<T, ContentAbsoluteFile> | ContentRelative> {
+  return async <T extends ContentAnyLocal>(value: T) => {
+    if (value.type === 'absolute-file') {
+      const fileName = path.basename(value.file);
+    }
+  };
+
+  // ? { type: 'absolute-file', file: path.resolve(root, value.path) }
+  // : (value as Exclude<T, ContentRelative>);
+}
