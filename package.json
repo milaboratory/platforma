@@ -1,0 +1,45 @@
+{
+  "name": "@milaboratory/pl-bootstrap",
+  "version": "1.0.0",
+  "pl-version": "0.13.2",
+  
+  "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+
+  "bin": {
+    "pl-service": "./bin/run.js"
+  },
+
+  "files": [
+    "bin/run.cmd",
+    "bin/run.js",
+    "dist",
+    "docker",
+    "postinstall.js"
+  ],
+  
+  "keywords": [],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.10",
+    "ts-jest": "^29.1.5",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "@oclif/core": "^3.26.6",
+    "canonicalize": "^2.0.0",
+    "winston": "^3.13.0"
+  },
+  "oclif": {
+    "bin": "pl-service",
+    "commands": "./dist/commands",
+    "dirname": "pl-service",
+    "topicSeparator": " "
+  }
+}

@@ -1,0 +1,5 @@
+node_modules
+dist/
+pl-storage/
+tsconfig.tsbuildinfo
+state.json

@@ -1,0 +1,62 @@
+name: "platforma"
+
+services:
+  minio:
+    image: quay.io/minio/minio
+    command: server /data --address "0.0.0.0:9000" --console-address "0.0.0.0:9001"
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+
+  backend:
+    image: ${PL_IMAGE}
+    depends_on:
+      - minio
+    ports:
+      - 6345:6345
+      - 9090:9090
+      - 9091:9091
+    tmpfs: [ /tmp ]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "4"
+
+    environment:
+      - "PL_API_ADDR=0.0.0.0:6345"
+      - "PL_MONITORING_ENABLED=true"
+      - "PL_MONITORING_ADDR=0.0.0.0:9090"
+      - "PL_DEBUG_ENABLED=true"
+      - "PL_DEBUG_ADDR=0.0.0.0:9091"
+      - "PL_LOG_LEVEL=info"
+      - "PL_LOG_DESTINATION=stdout"
+      - "PL_LOG_COMMIT_SUMMARY=true"
+      - "PL_LOG_RESOURCE_DATA=false"
+      - "PL_AUTH_ENABLED=true"
+      - "PL_DUMP_CONFIG_BEFORE_RUN=yes"
+      - "PLC_FILE_PRIMARY_TYPE=S3"
+      - "PLC_FILE_PRIMARY_S3_ENDPOINT=http://minio:9000/"
+      - "PLC_FILE_PRIMARY_S3_KEY=static:testuser"
+      - "PLC_FILE_PRIMARY_S3_SECRET=static:testpassword"
+      - "PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT=http://localhost:9000"
+
+    volumes:
+      - platforma-file-primary:/storage/controllers/file/primary
+      - platforma-file-library:/storage/controllers/file/library
+      - platforma-file-work:/storage/controllers/file/work
+      - platforma-runner-software:/storage/controllers/runner/software
+      - platforma-db:/storage/rocksdb
+
+    restart: always
+
+volumes:
+  platforma-file-primary:
+  platforma-file-library:
+  platforma-file-work:
+  platforma-runner-software:
+  platforma-db:

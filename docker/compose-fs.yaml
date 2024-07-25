@@ -1,0 +1,37 @@
+name: "platforma"
+
+services:
+  backend:
+    image: ${PL_IMAGE}
+    ports:
+      - 6345:6345
+      - 9090:9090
+      - 9091:9091
+    tmpfs: [ /tmp ]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "4"
+
+    environment:
+      - "PL_API_ADDR=0.0.0.0:6345"
+      - "PL_MONITORING_ENABLED=true"
+      - "PL_MONITORING_ADDR=0.0.0.0:9090"
+      - "PL_DEBUG_ENABLED=true"
+      - "PL_DEBUG_ADDR=0.0.0.0:9091"
+      - "PL_LOG_LEVEL=info"
+      - "PL_LOG_DESTINATION=stdout"
+      - "PL_LOG_COMMIT_SUMMARY=true"
+      - "PL_LOG_RESOURCE_DATA=false"
+      - "PL_AUTH_ENABLED=true"
+      - "PL_DUMP_CONFIG_BEFORE_RUN=yes"
+      - "PLC_FILE_PRIMARY_TYPE=FS"
+
+    volumes:
+      - type: bind
+        source: ${PL_STORAGE_PATH}
+        target: /storage
+
+    restart: always
