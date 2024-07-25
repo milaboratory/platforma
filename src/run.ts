@@ -1,20 +1,17 @@
 import { spawn, SpawnOptions, ChildProcess } from 'child_process'
-import state from './state';
+import state, { lastRun } from './state';
 import { runMode } from './state'
 
-export function runCompose(composePath: string, args: readonly string[], options: SpawnOptions): ChildProcess {
-    args = [
-        'compose',
-        '--file', composePath,
-        ...args
-    ]
-
+export function runDocker(args: readonly string[], options: SpawnOptions, stateToSave?: Partial<lastRun>): ChildProcess {
     state.lastRun = {
+        ...state.lastRun,
+
         mode: 'docker',
         cmd: 'docker',
-        composePath: composePath,
         args: args,
-        envs: options.env
+        envs: options.env,
+
+        ...stateToSave
     }
 
     options.env = { ...process.env, ...options.env }

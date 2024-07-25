@@ -2,7 +2,7 @@ import { Command, Flags } from '@oclif/core'
 import * as pkg from '../../../package'
 import { mkdirSync } from 'fs'
 import { resolve, join } from 'path'
-import { runCompose } from '../../../run'
+import { runDocker } from '../../../run'
 import state from '../../../state'
 
 
@@ -28,11 +28,8 @@ export default class FS extends Command {
     const { flags } = await this.parse(FS)
 
     const composeFSPath = pkg.path("docker", "compose-fs.yaml")
-    const packageJson = pkg.getPackageJson()
-
-    const version = flags.version ?? packageJson['pl-version']
-    const image = flags.image ?? `quay.io/milaboratories/platforma:${version}`
-    const storage = flags.storage
+    const image = flags.image ?? pkg.plImageTag(flags.version)
+    const storage = resolve(flags.storage)
 
     for (const dir of [
       join(storage, "controllers", "file", "primary"),
@@ -43,20 +40,24 @@ export default class FS extends Command {
       mkdirSync(dir, { recursive: true })
     }
 
-    const child = runCompose(
-      composeFSPath,
-      ['up',
+    const child = runDocker(
+      ['compose', `--file=${composeFSPath}`,
+        'up',
         '--detach',
         '--remove-orphans',
         '--pull=missing',
-        'backend'
-      ],
+        'backend'],
       {
         env: {
           "PL_IMAGE": image,
-          "PL_STORAGE_PATH": resolve(storage)
+          "PL_STORAGE_PATH": storage
         },
         stdio: 'inherit'
+      },
+      {
+        plImage: image,
+        composePath: composeFSPath,
+        storageDir: storage
       }
     );
 

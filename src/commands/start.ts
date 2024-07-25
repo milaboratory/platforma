@@ -4,8 +4,8 @@ import { assertNever } from '../util'
 import { rerunLast } from '../run'
 import state from '../state'
 
-export default class Stop extends Command {
-    static override description = 'Run platforma backend service with \'S3\' primary storage type'
+export default class Start extends Command {
+    static override description = 'Start last run service configuraiton'
 
     static override examples = [
         '<%= config.bin %> <%= command.id %>',

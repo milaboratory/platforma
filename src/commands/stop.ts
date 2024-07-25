@@ -5,7 +5,7 @@ import { spawn } from 'child_process'
 import state from '../state'
 
 export default class Stop extends Command {
-    static override description = 'Run platforma backend service with \'S3\' primary storage type'
+    static override description = 'Stop platforma service'
 
     static override examples = [
         '<%= config.bin %> <%= command.id %>',
@@ -21,7 +21,7 @@ export default class Stop extends Command {
 
         switch (lastRun.mode) {
             case 'docker':
-                const child = spawn('docker', ['compose', '--file', lastRun.composePath, 'down'])
+                const child = spawn('docker', ['compose', '--file', lastRun.composePath!, 'down'])
                 state.isActive = false
                 child.on('exit', (code) => {
                     process.exit(code ?? 0);

@@ -1,17 +1,23 @@
-import { existsSync, writeFileSync } from 'fs'
+import { existsSync, writeFileSync, rmSync } from 'fs'
 import * as pkg from './package'
 import { resolve } from 'path'
 
 export type runMode = 'docker'
 
 export type lastRun = {
+    plImage?: string
+    composePath?: string
+    storageDir?: string
+
     mode: runMode
-    composePath: string
     cmd: string
     args: readonly string[]
-    envs: NodeJS.Dict<string> | undefined
+    envs?: NodeJS.Dict<string>
 }
 
+export function reset() {
+    rmSync(State.getInstance().stateFilePath)
+}
 
 type state = {
     lastRun: lastRun | undefined
@@ -26,7 +32,7 @@ class State {
         isActive: false,
     }
 
-    private stateFilePath: string
+    public readonly stateFilePath: string
 
     constructor() {
         this.stateFilePath = resolve(pkg.path("state.json"))

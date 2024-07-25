@@ -1,6 +1,6 @@
 import { Command, Flags } from '@oclif/core'
 import * as pkg from '../../../package'
-import { runCompose } from '../../../run'
+import { runDocker } from '../../../run'
 import state from '../../../state'
 
 export default class S3 extends Command {
@@ -19,24 +19,24 @@ export default class S3 extends Command {
     const { flags } = await this.parse(S3)
 
     const composeS3Path = pkg.path("docker", "compose-s3.yaml")
-    const packageJson = pkg.getPackageJson()
+    const image = flags.image ?? pkg.plImageTag(flags.version)
 
-    const version = flags.version ?? packageJson['pl-version']
-    const image = flags.image ?? `quay.io/milaboratories/platforma:${version}`
-
-    const child = runCompose(
-      composeS3Path,
-      ['up',
+    const child = runDocker(
+      ['compose', `--file=${composeS3Path}`,
+        'up',
         '--detach',
         '--remove-orphans',
         '--pull=missing',
-        'backend'
-      ],
+        'backend'],
       {
         env: {
           "PL_IMAGE": image,
         },
         stdio: 'inherit'
+      },
+      {
+        plImage: image,
+        composePath: composeS3Path
       }
     );
 
