@@ -8,6 +8,7 @@ import {
 import { BlockPackId } from './model/block_pack_id';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { SemVer } from '../common_types';
+import fsp from 'node:fs/promises';
 
 export const BlockDescriptionPackageJsonField = 'block';
 
@@ -24,11 +25,40 @@ export function parsePackageName(packageName: string): Pick<BlockPackId, 'organi
   return { name, organization };
 }
 
-export async function loadPackDescriptionFromSource(srcRoot: string): Promise<BlockPackDescriptionAbsolute> {
+export async function tryLoadPackDescriptionFromSource(
+  srcRoot: string
+): Promise<BlockPackDescriptionAbsolute | undefined> {
   const fullPackageJsonPath = path.resolve(srcRoot, 'package.json');
-  const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
-    JSON.parse(buf.toString('utf-8'))
-  );
+  try {
+    const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
+      JSON.parse(buf.toString('utf-8'))
+    );
+    if (packageJson === undefined) return undefined;
+    const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
+    if (descriptionNotParsed === undefined) return undefined;
+    const descriptionRaw = {
+      ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
+      id: {
+        ...parsePackageName(
+          notEmpty(packageJson['name'], `"name" not found in ${fullPackageJsonPath}`)
+        ),
+        version: SemVer.parse(packageJson['version'])
+      }
+    };
+    const descriptionParsingResult =
+      await ResolvedBlockPackDescriptionFromPackageJson(srcRoot).safeParseAsync(descriptionRaw);
+    if (descriptionParsingResult.success) return descriptionParsingResult.data;
+    return undefined;
+  } catch (e: any) {
+    return undefined;
+  }
+}
+
+export async function loadPackDescriptionFromSource(
+  srcRoot: string
+): Promise<BlockPackDescriptionAbsolute> {
+  const fullPackageJsonPath = path.resolve(srcRoot, 'package.json');
+  const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' }));
   const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
   if (descriptionNotParsed === undefined)
     throw new Error(
