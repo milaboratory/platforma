@@ -24,7 +24,6 @@ const simpleClone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 
 test('Clone vs structured clone', async () => {
   const a = createRandomObject();
-  console.log('a', a);
 
   call(() => {
     const dt = performanceTimer();
