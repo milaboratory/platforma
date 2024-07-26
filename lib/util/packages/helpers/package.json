@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/helpers",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "",
   "main": "build/index.js",
   "exports": {
@@ -17,7 +17,10 @@
     "build": "tsc --build"
   },
   "files": ["build/**"],
-  "dependencies": {},
+  "dependencies": {
+    "canonicalize": "^2.0.0",
+    "js-md5": "^0.8.3"
+  },
   "devDependencies": {},
   "keywords": [],
   "author": "",
