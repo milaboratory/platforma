@@ -1,6 +1,13 @@
-/** Block pack from local folder, to be used during block development. */
-export interface BlockPackDev {
-  type: 'dev';
+/** Block pack from local folder, to be used during block development. Legacy layout. */
+export interface BlockPackDevV1 {
+  type: 'dev' | 'dev-v1';
+  folder: string;
+  mtime?: string;
+}
+
+/** Block pack from local folder, to be used during block development. New layout. */
+export interface BlockPackDevV2 {
+  type: 'dev-v2';
   folder: string;
   mtime?: string;
 }
@@ -16,4 +23,7 @@ export interface BlockPackFromRegistryV1 {
 }
 
 /** Information about block origin, can be used to instantiate new blocks */
-export type BlockPackSpec = BlockPackDev | BlockPackFromRegistryV1;
+export type BlockPackSpec =
+  | BlockPackDevV1
+  | BlockPackDevV2
+  | BlockPackFromRegistryV1;
