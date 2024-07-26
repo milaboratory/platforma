@@ -20,7 +20,7 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
+    uses: milaboratory/github-ci-internal/.github/workflows/node-simple-fast.yaml@v4
     with:
       app-name: Tengo Template Builder
       app-name-slug: 'tengo-template-builder'

@@ -3,6 +3,7 @@ import { createLogger } from '../compiler/main';
 import { dumpAll } from '../shared/dump';
 import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
+import { TengoTesterBinaryPath } from '@milaboratory/tengo-tester';
 
 export default class Test extends Command {
   static override description = 'run tengo unit tests (.test.tengo)';
@@ -21,7 +22,7 @@ export default class Test extends Command {
 
     // prettier-ignore
     const tester = spawnEmbed(
-      'npm', 'exec', 'tgo-test', '--', 
+      TengoTesterBinaryPath,
       'run', '--log-level', flags['log-level'],
       '--artifacts', '-',
       ...testerArgs,

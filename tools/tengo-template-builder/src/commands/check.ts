@@ -3,6 +3,7 @@ import { createLogger } from '../compiler/main';
 import { dumpAll } from '../shared/dump';
 import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
+import { TengoTesterBinaryPath } from '@milaboratory/tengo-tester';
 
 export default class Check extends Command {
   static override description = 'check tengo sources for language processor an';
@@ -26,7 +27,7 @@ export default class Check extends Command {
 
     // prettier-ignore
     const tester = spawnEmbed(
-      'npm', 'exec', 'tgo-test', '--',
+      TengoTesterBinaryPath,
       'check', '--log-level', flags['log-level'],
       '--artifacts', '-',
       ...testerArgs
