@@ -3,9 +3,14 @@ import Component from './TableComponent.vue';
 import type * as Types from './types';
 import { GAP, WINDOW_DELTA } from './constants';
 import { sliceBy } from './domain';
+import { h } from 'vue';
 
-export function settings<const S extends TableSettings>(settings: S) {
-  return Object.freeze(settings);
+export function settings<const S extends TableSettings>(tableSettings: S) {
+  return Object.freeze(tableSettings);
+}
+
+export function factory<const S extends TableSettings>(tableSettings: S) {
+  return h(Component, { settings: Object.freeze(tableSettings) });
 }
 
 export { Component };
@@ -18,13 +23,15 @@ export class RawData implements Types.DataSource {
   private dataHeight: number;
 
   constructor(
-    datum: Types.DataRow[],
-    private rowHeight: number,
+    public readonly datum: Types.DataRow[],
+    public readonly rowHeight: number,
+    public readonly getPrimaryKey: Types.GetPrimaryKey,
   ) {
     this.dataHeight = datum.length * (this.rowHeight + GAP);
     const rows = datum.map((dataRow, index) => ({
       dataRow,
       index,
+      primaryKey: this.getPrimaryKey(dataRow, index),
       offset: index * (this.rowHeight + GAP),
       height: rowHeight,
     }));
@@ -49,8 +56,9 @@ export class RawData implements Types.DataSource {
 
 export class AsyncData<T extends Types.DataRow> implements Types.DataSource {
   constructor(
-    private api: Types.ExternalApi<T>,
-    private rowHeight: number,
+    public readonly api: Types.ExternalApi<T>,
+    public readonly rowHeight: number,
+    public readonly getPrimaryKey: Types.GetPrimaryKey,
   ) {}
 
   get height() {
@@ -68,6 +76,7 @@ export class AsyncData<T extends Types.DataRow> implements Types.DataSource {
     return rows.map<Types.RowSettings>((dataRow, index) => ({
       dataRow,
       index: offset + index,
+      primaryKey: this.getPrimaryKey(dataRow, offset + index),
       offset: (offset + index) * (this.rowHeight + GAP),
       height: this.rowHeight,
     }));

@@ -1,5 +1,5 @@
 import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, TableSettings } from './types';
+import type { TableProps, TableData, TableSettings, PrimaryKey, RowSettings, ColumnSettings } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
 import { clamp, tap } from '@milaboratory/helpers/utils';
@@ -37,13 +37,14 @@ export function createState(props: TableProps) {
     bodyWidth: 0,
     scrollTop: 0,
     scrollLeft: 0,
-    selectedRows: new Set<string>(),
+    selectedRows: new Set<PrimaryKey>(),
     selectedColumns: new Set<string>(),
   });
 
   watch(
-    () => props.settings.columns,
+    () => props.settings,
     () => {
+      console.log('changed');
       data.columns = deepClone(props.settings.columns);
     },
     { immediate: true },
@@ -76,7 +77,7 @@ export function createState(props: TableProps) {
     settings,
   });
 
-  const tableRows = useTableRows(data, settings, tableColumns);
+  const tableRows = useTableRows(data, tableColumns);
 
   const adjustWidth = () => {
     const newWidth = data.columns.reduce((acc, col) => acc + col.width + GAP, 0);
@@ -102,11 +103,17 @@ export function createState(props: TableProps) {
       this.updateScrollTop(data.scrollTop + ev.deltaY);
       this.updateScrollLeft(data.scrollLeft + ev.deltaX);
     },
-    selectRow(primaryId: string) {
-      data.selectedRows.add(primaryId);
+    getSelectedRows(): RowSettings[] {
+      return data.rows.filter((row) => data.selectedRows.has(row.primaryKey));
     },
-    unselectRow(primaryId: string) {
-      data.selectedRows.delete(primaryId);
+    getSelectedColumns(): ColumnSettings[] {
+      return data.columns.filter((col) => data.selectedColumns.has(col.id));
+    },
+    selectRow(rowId: PrimaryKey) {
+      data.selectedRows.add(rowId);
+    },
+    unselectRow(rowId: PrimaryKey) {
+      data.selectedRows.delete(rowId);
     },
     selectColumn(columnId: string) {
       data.selectedColumns.add(columnId);

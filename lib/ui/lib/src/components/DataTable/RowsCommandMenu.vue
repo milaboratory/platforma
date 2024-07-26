@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { injectState } from './keys';
-import { tapIf, toList } from '@milaboratory/helpers/utils';
+import { tapIf } from '@milaboratory/helpers/utils';
 
 const state = injectState();
 
-const selectedRows = computed(() => toList(state.data.selectedRows));
+const selectedRows = computed(() => state.getSelectedRows());
 
 const isVisible = computed(() => selectedRows.value.length > 0);
 

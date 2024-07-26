@@ -1,6 +1,10 @@
 import type { Component } from 'vue';
 import type { h } from 'vue';
 
+declare const __brand: unique symbol;
+type Brand<B> = { [__brand]: B };
+type Branded<T, B> = T & Brand<B>;
+
 type TypeMap = {
   integer: number;
   float: number;
@@ -28,25 +32,28 @@ export type TableData = {
   bodyWidth: number;
   scrollTop: number;
   scrollLeft: number;
-  selectedRows: Set<string>;
+  selectedRows: Set<PrimaryKey>;
   selectedColumns: Set<string>;
 };
 
 export type DataRow = Record<string, unknown>;
+
+export type PrimaryKey = Branded<string, 'PrimaryKey'>;
+
+export type GetPrimaryKey = (dataRow: DataRow, index: number) => PrimaryKey;
 
 // Table settings
 export type TableSettings = {
   columns: ColumnSettings[];
   height: number;
   dataSource: DataSource;
-  getPrimaryKey: (row: DataRow, index: number) => string;
   gap?: number;
   addColumn?: () => Promise<void>;
   controlColumn?: boolean;
 
-  onDeleteRows?: (primaryIds: string[]) => void;
-  onDeleteColumns?: (columnIds: string[]) => void;
-  onEdit?: (ev: { rowId: string; columnId: string; value: unknown }) => boolean;
+  onDeleteRows?: (rows: RowSettings[]) => void;
+  onDeleteColumns?: (columns: ColumnSettings[]) => void;
+  onEdit?: (cell: TableCell, value: unknown) => boolean;
 };
 
 export type ColumnSettings = {
@@ -70,11 +77,9 @@ export type ResizeTh = {
   right: number;
 };
 
-export type CellProps = {
+export type TableCell = {
   column: ColumnSettings;
-  dataRow: DataRow;
-  primaryKey: string;
-  rowIndex: number;
+  row: RowSettings;
   value: unknown;
   class: string;
   editable?: boolean;
@@ -86,6 +91,7 @@ export type CellProps = {
 export type RowSettings = {
   dataRow: DataRow;
   index: number;
+  primaryKey: PrimaryKey;
   offset: number;
   height: number;
 };
@@ -94,8 +100,8 @@ export type TableRow = {
   style: Record<string, string>;
   offset: number;
   height: number;
-  cells: CellProps[];
-  primaryKey: string;
+  cells: TableCell[];
+  primaryKey: PrimaryKey;
   selected?: boolean;
 };
 

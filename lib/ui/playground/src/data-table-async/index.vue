@@ -4,7 +4,7 @@ import { DataTable } from '@milaboratory/platforma-uikit.lib';
 import { computed } from 'vue';
 import MyWorker from './worker?worker';
 import type { WEvent, Person } from './worker';
-import { Deferred } from '@milaboratory/helpers/utils';
+import { Deferred, objectHash } from '@milaboratory/helpers/utils';
 
 const DataTableComponent = DataTable.Component;
 
@@ -38,8 +38,6 @@ class Api implements DataTable.Types.ExternalApi<Person> {
 const api = new Api();
 
 const settings = computed(() => {
-  const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
-
   return DataTable.settings({
     columns: [
       {
@@ -67,9 +65,8 @@ const settings = computed(() => {
         width: 300,
       },
     ],
-    dataSource: new DataTable.AsyncData(api, 40),
-    getPrimaryKey,
-    onDeleteRows(_primaryIds) {
+    dataSource: new DataTable.AsyncData(api, 40, (row: Record<string, unknown>) => objectHash(row) as DataTable.Types.PrimaryKey),
+    onDeleteRows(_rows) {
       alert('todo delete remote rows');
     },
     height: 600,

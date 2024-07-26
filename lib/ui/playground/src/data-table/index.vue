@@ -3,6 +3,7 @@ import Layout from '@/Layout.vue';
 import { DataTable, NumberInput, BtnSecondary } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted } from 'vue';
 import { useData } from './useData';
+import { objectHash } from '@milaboratory/helpers';
 
 const DataTableComponent = DataTable.Component;
 
@@ -10,24 +11,23 @@ const { data, columnsRef, generate } = useData();
 
 const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
-const getPrimaryKey = (row: Record<string, unknown>) => JSON.stringify(row);
-
 const settings = computed(() => {
+  const dataSource = new DataTable.RawData(data.rows, 40, (row: Record<string, unknown>) => objectHash(row) as DataTable.Types.PrimaryKey);
+
   return DataTable.settings({
     columns: columnsRef.value,
     height: 600,
-    dataSource: new DataTable.RawData(data.rows, 40),
-    getPrimaryKey,
-    onDeleteRows(rowIds: string[]) {
-      data.rows = data.rows.filter((row) => !rowIds.includes(getPrimaryKey(row)));
+    dataSource,
+    onDeleteRows(selectedRows) {
+      data.rows = data.rows.filter((row) => !selectedRows.some((r) => r.primaryKey === objectHash(row)));
     },
-    onDeleteColumns(colIds: string[]) {
-      alert(`Attempt to delete columns: ${colIds.join(',')}`);
+    onDeleteColumns(columns) {
+      alert(`Attempt to delete columns: ${JSON.stringify(columns)}`);
     },
-    onEdit(ev: { rowId: string; columnId: string; value: unknown }) {
-      const row = data.rows.find((r) => getPrimaryKey(r) === ev.rowId);
+    onEdit(cell, value) {
+      const row = data.rows.find((row, index) => dataSource.getPrimaryKey(row, index) === cell.row.primaryKey);
       if (row) {
-        row[ev.columnId] = ev.value;
+        row[cell.column.id] = value;
       }
       return true;
     },

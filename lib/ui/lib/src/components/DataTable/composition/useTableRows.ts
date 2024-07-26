@@ -1,8 +1,8 @@
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
-import type { CellProps, TableColumn, TableData, TableRow, TableSettings } from '../types';
+import type { TableCell, TableColumn, TableData, TableRow } from '../types';
 
-export function useTableRows(data: TableData, settings: ComputedRef<TableSettings>, tableColumns: ComputedRef<TableColumn[]>) {
+export function useTableRows(data: TableData, tableColumns: ComputedRef<TableColumn[]>) {
   const classesRef = computed(() =>
     tableColumns.value.reduce(
       (r, col) => {
@@ -14,17 +14,15 @@ export function useTableRows(data: TableData, settings: ComputedRef<TableSetting
   );
 
   return computed<TableRow[]>(() => {
-    return data.rows.map<TableRow>(({ index, offset, dataRow, height }) => {
-      const primaryKey = settings.value.getPrimaryKey(dataRow, index);
-
+    return data.rows.map<TableRow>((row) => {
       const classes = classesRef.value;
 
-      const cells = tableColumns.value.map<CellProps>((column) => {
+      const { primaryKey, offset, dataRow, height } = row;
+
+      const cells = tableColumns.value.map<TableCell>((column) => {
         return {
-          column: column,
-          dataRow,
-          primaryKey,
-          rowIndex: index,
+          column,
+          row,
           value: dataRow[column.id],
           class: classes[column.id],
           editable: column.editable,

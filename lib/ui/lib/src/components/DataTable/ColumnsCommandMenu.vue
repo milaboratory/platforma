@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { injectState } from './keys';
-import { tapIf, toList } from '@milaboratory/helpers/utils';
+import { tapIf } from '@milaboratory/helpers/utils';
 
 const state = injectState();
 
-const selectedColumns = computed(() => toList(state.data.selectedColumns));
+const selectedColumns = computed(() => state.getSelectedColumns());
 
 const isVisible = computed(() => selectedColumns.value.length > 0);
 

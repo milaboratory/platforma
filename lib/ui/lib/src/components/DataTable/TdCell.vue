@@ -2,11 +2,11 @@
 import { showContextMenu } from '../contextMenu2';
 import type { ContextOption } from '../contextMenu2/types';
 import { injectState } from './keys';
-import type { CellProps } from './types';
+import type { TableCell } from './types';
 import { computed, reactive, ref, h } from 'vue';
 
 const props = defineProps<{
-  cell: CellProps;
+  cell: TableCell;
 }>();
 
 const state = injectState();
@@ -19,11 +19,7 @@ const render = computed(() => props.cell.column.render);
 
 const onInput = (ev: Event) => {
   if (state.settings.value.onEdit) {
-    state.settings.value.onEdit({
-      rowId: props.cell.primaryKey,
-      columnId: props.cell.column.id,
-      value: (ev.target as HTMLInputElement)?.value,
-    });
+    state.settings.value.onEdit(props.cell, (ev.target as HTMLInputElement)?.value);
   }
   data.edit = false;
 };
@@ -43,21 +39,21 @@ const onContextMenu = (ev: MouseEvent) => {
     options.push({
       text: 'Delete row',
       cb() {
-        onDeleteRows([props.cell.primaryKey]);
+        onDeleteRows([props.cell.row]);
       },
     });
 
     options.push({
       text: 'Select row',
       cb() {
-        state.selectRow(state.settings.value.getPrimaryKey(props.cell.dataRow, props.cell.rowIndex));
+        state.selectRow(props.cell.row.primaryKey);
       },
     });
 
     options.push({
       text: 'Deselect row',
       cb() {
-        state.data.selectedRows.delete(state.settings.value.getPrimaryKey(props.cell.dataRow, props.cell.rowIndex));
+        state.data.selectedRows.delete(props.cell.row.primaryKey);
       },
     });
   }
@@ -66,7 +62,7 @@ const onContextMenu = (ev: MouseEvent) => {
     options.push({
       text: 'Delete column',
       cb() {
-        onDeleteColumns([props.cell.column.id]);
+        onDeleteColumns([props.cell.column]);
       },
     });
 
@@ -111,11 +107,11 @@ const DynamicComponent = computed(() => (render.value ? render.value(h, props.ce
     ref="cellRef"
     class="cell"
     :class="{ [cell.class]: true, edit: data.edit }"
-    :data-row-index.attr="cell.rowIndex"
+    :data-row-index.attr="cell.row.index"
     @contextmenu="onContextMenu"
     @click="onClick"
   >
-    <div v-if="cell.control">{{ cell.rowIndex }}</div>
+    <div v-if="cell.control">{{ cell.row.index }}</div>
     <input v-else-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput" />
     <DynamicComponent v-else />
   </div>
