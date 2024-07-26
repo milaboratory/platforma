@@ -10,7 +10,7 @@ import { BlockPackMetaConsolidate, BlockPackMetaDescription } from './model/meta
 import { patch } from 'semver';
 import path from 'node:path';
 
-export async function createBlockPackDist(
+export async function buildBlockPackDist(
   description: BlockPackDescriptionAbsolute,
   dst: string
 ): Promise<BlockPackManifest> {
@@ -19,7 +19,11 @@ export async function createBlockPackDist(
   const descriptionRelative = await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(
     description
   );
-  const manifest: BlockPackManifest = { ...descriptionRelative, files };
+  const manifest: BlockPackManifest = BlockPackManifest.parse({
+    schema: 'v1',
+    ...descriptionRelative,
+    files
+  });
   await fsp.writeFile(path.resolve(dst, BlockPackManifestFile), JSON.stringify(manifest));
   return manifest;
 }

@@ -58,8 +58,9 @@ export const BlockPackDescriptionManifest = CreateBlockPackDescriptionSchema(
 export type BlockPackDescriptionManifest = z.infer<typeof BlockPackDescriptionManifest>;
 
 export const BlockPackManifest = BlockPackDescriptionManifest.extend({
+  schema: z.literal('v1'),
   files: z.array(z.string())
 });
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;
 
-export const BlockPackManifestFile = 'block-manifest.json';
+export const BlockPackManifestFile = 'manifest.json';

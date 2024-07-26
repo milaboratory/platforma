@@ -19,7 +19,7 @@ test('test parsing of convention package names', () => {
   expect(() => parsePackageName('block-template')).toThrow(/Malformed/);
 });
 
-test('full description parsing test', async () => {
+test.skip('full description parsing test', async () => {
   const description = await loadPackDescriptionFromSource(
     '/Volumes/Data/Projects/MiLaboratory/blocks-beta/block-template'
   );
