@@ -4,7 +4,7 @@ import { BtnPrimary, BtnGhost, TextField, SelectInput, DialogModal } from '@mila
 import { debounce } from '@milaboratory/helpers/functions';
 import { between, notEmpty } from '@milaboratory/helpers/utils';
 import type { Option } from '@milaboratory/helpers/types';
-import type { ImportFileHandle, StorageHandle } from '@milaboratory/sdk-ui';
+import type { ImportFileHandle, StorageHandle, ListFilesResult } from '@milaboratory/sdk-ui';
 import type { ImportedFiles } from '../types';
 
 type LsFile = {
@@ -65,7 +65,7 @@ const query = debounce((storageId: StorageHandle, dirPath: string) => {
     .listFiles(storageId, dirPath)
     .then((res) => {
       res = notEmpty(res);
-      data.files = res.map((item, id) => ({
+      data.files = res.entries.map((item, id) => ({
         id,
         path: item.fullPath,
         isDir: item.type === 'dir',
