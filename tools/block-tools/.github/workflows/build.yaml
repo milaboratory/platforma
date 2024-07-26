@@ -1,8 +1,7 @@
 name: Build NPM package
 on:
   push:
-    branches:
-      - 'main'
+    branches: ['*']
 
 jobs:
   init:
@@ -18,7 +17,7 @@ jobs:
 
     uses: milaboratory/github-ci-internal/.github/workflows/node-simple-fast.yaml@v4
     with:
-      app-name: Pl Block Registry
+      app-name: Pl Block Tools
       app-name-slug: '@milaboratory/pl-block-tools'
       notify-telegram: true
 
