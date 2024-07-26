@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
 import { BlockConfig } from '@milaboratory/sdk-ui';
-import { RegistryV1 } from '@milaboratory/pl-block-tools';
+import { loadPackDescriptionFromSource, RegistryV1 } from '@milaboratory/pl-block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev';
 
@@ -31,9 +31,18 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
-      case 'dev': {
+      case 'dev':
+      case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
+        return JSON.parse(configContent) as BlockConfig;
+      }
+
+      case 'dev-v2': {
+        const description = await loadPackDescriptionFromSource(spec.folder);
+        const configContent = await fs.promises.readFile(description.components.model.file, {
+          encoding: 'utf-8'
+        });
         return JSON.parse(configContent) as BlockConfig;
       }
 
@@ -57,7 +66,8 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec;
 
-      case 'dev': {
+      case 'dev':
+      case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
 
         // template
@@ -76,6 +86,31 @@ export class BlockPackPreparer {
           template: {
             type: 'explicit',
             content: templateContent
+          },
+          config,
+          frontend: {
+            type: 'local',
+            path: frontendPath,
+            signature: this.signer.sign(frontendPath)
+          },
+          source: spec
+        };
+      }
+
+      case 'dev-v2': {
+        const description = await loadPackDescriptionFromSource(spec.folder);
+        const config = JSON.parse(
+          await fs.promises.readFile(description.components.model.file, {
+            encoding: 'utf-8'
+          })
+        ) as BlockConfig;
+        const workflowContent = await fs.promises.readFile(description.components.workflow.file);
+        const frontendPath = description.components.ui.folder;
+        return {
+          type: 'explicit',
+          template: {
+            type: 'explicit',
+            content: workflowContent
           },
           config,
           frontend: {

@@ -4,7 +4,7 @@ import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import { BlockPackRegistry, CentralRegistry, getDevPacketMtime } from '../block_registry';
+import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
 import { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev';
@@ -351,7 +351,7 @@ test('block update test', async () => {
     await fs.promises.cp(path.resolve('integration', 'block-beta-enter-numbers'), devBlockPath, {
       recursive: true
     });
-    const mtime = await getDevPacketMtime(devBlockPath);
+    const mtime = await getDevV1PacketMtime(devBlockPath);
     const block1Id = await prj.addBlock('Block 1', {
       type: 'dev',
       folder: devBlockPath,

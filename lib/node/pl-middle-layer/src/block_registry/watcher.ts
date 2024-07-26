@@ -1,7 +1,8 @@
 import { PollComputablePool, PollPoolOps } from '@milaboratory/computable';
 import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 import { Dispatcher } from 'undici';
-import { getDevPacketMtime } from './registry';
+import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
+import { tryLoadPackDescriptionFromSource } from '@milaboratory/pl-block-tools';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
   minDelay: 1500
@@ -25,7 +26,10 @@ export class BlockUpdateWatcher extends PollComputablePool<
   protected getKey(req: BlockPackSpec): string {
     switch (req.type) {
       case 'dev':
-        return `dev_${req.folder}_${req.mtime}`;
+      case 'dev-v1':
+        return `dev_1_${req.folder}_${req.mtime}`;
+      case 'dev-v2':
+        return `dev_2_${req.folder}_${req.mtime}`;
       default:
         return NoUpdatesKey;
     }
@@ -34,9 +38,18 @@ export class BlockUpdateWatcher extends PollComputablePool<
   protected async readValue(req: BlockPackSpec): Promise<BlockPackSpec | undefined> {
     switch (req.type) {
       case 'dev':
-        const mtime = await getDevPacketMtime(req.folder);
+      case 'dev-v1': {
+        const mtime = await getDevV1PacketMtime(req.folder);
         if (mtime === req.mtime) return undefined;
         else return { ...req, mtime };
+      }
+      case 'dev-v2': {
+        const description = await tryLoadPackDescriptionFromSource(req.folder);
+        if (description === undefined) return undefined;
+        const mtime = await getDevV2PacketMtime(description);
+        if (mtime === req.mtime) return undefined;
+        else return { ...req, mtime: mtime };
+      }
       default:
         return undefined;
     }
