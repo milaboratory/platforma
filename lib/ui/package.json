@@ -11,7 +11,7 @@
     "playground"
   ],
   "scripts": {
-    "dev": "npm run dev -w playground",
+    "dev": "npm run build:lib && npm run dev -w playground",
     "build:playground": "npm run build -w playground",
     "build:lib": "npm run build -w lib",
     "build-all": "npm run build:lib && npm run build:playground",
