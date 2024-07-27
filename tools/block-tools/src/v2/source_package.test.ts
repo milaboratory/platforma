@@ -1,4 +1,4 @@
-import { loadPackDescriptionFromSource, parsePackageName } from './source_package';
+import { loadPackDescription, parsePackageName } from './source_package';
 
 test('test parsing of convention package names', () => {
   expect(parsePackageName('@milaboratory/milaboratories.block-template')).toStrictEqual({
@@ -20,7 +20,7 @@ test('test parsing of convention package names', () => {
 });
 
 test.skip('full description parsing test', async () => {
-  const description = await loadPackDescriptionFromSource(
+  const description = await loadPackDescription(
     '/Volumes/Data/Projects/MiLaboratory/blocks-beta/block-template'
   );
   console.dir(description, { depth: 5 });

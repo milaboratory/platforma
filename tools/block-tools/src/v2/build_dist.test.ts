@@ -1,11 +1,11 @@
 import { randomUUID } from 'crypto';
-import { loadPackDescriptionFromSource } from './source_package';
+import { loadPackDescription } from './source_package';
 import path from 'path';
 import fsp from 'node:fs/promises';
 import { buildBlockPackDist } from './build_dist';
 
 test.skip('create dist test', async () => {
-  const description = await loadPackDescriptionFromSource(
+  const description = await loadPackDescription(
     '/Volumes/Data/Projects/MiLaboratory/blocks-beta/block-template'
   );
   console.dir(description, { depth: 5 });

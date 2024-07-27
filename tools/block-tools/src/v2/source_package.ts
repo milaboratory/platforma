@@ -25,10 +25,10 @@ export function parsePackageName(packageName: string): Pick<BlockPackId, 'organi
   return { name, organization };
 }
 
-export async function tryLoadPackDescriptionFromSource(
-  srcRoot: string
+export async function tryLoadPackDescription(
+  moduleRoot: string
 ): Promise<BlockPackDescriptionAbsolute | undefined> {
-  const fullPackageJsonPath = path.resolve(srcRoot, 'package.json');
+  const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
   try {
     const packageJson = await tryLoadFile(fullPackageJsonPath, (buf) =>
       JSON.parse(buf.toString('utf-8'))
@@ -46,7 +46,7 @@ export async function tryLoadPackDescriptionFromSource(
       }
     };
     const descriptionParsingResult =
-      await ResolvedBlockPackDescriptionFromPackageJson(srcRoot).safeParseAsync(descriptionRaw);
+      await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).safeParseAsync(descriptionRaw);
     if (descriptionParsingResult.success) return descriptionParsingResult.data;
     return undefined;
   } catch (e: any) {
@@ -54,10 +54,10 @@ export async function tryLoadPackDescriptionFromSource(
   }
 }
 
-export async function loadPackDescriptionFromSource(
-  srcRoot: string
+export async function loadPackDescription(
+  moduleRoot: string
 ): Promise<BlockPackDescriptionAbsolute> {
-  const fullPackageJsonPath = path.resolve(srcRoot, 'package.json');
+  const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
   const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' }));
   const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
   if (descriptionNotParsed === undefined)
@@ -73,5 +73,5 @@ export async function loadPackDescriptionFromSource(
       version: SemVer.parse(packageJson['version'])
     }
   };
-  return await ResolvedBlockPackDescriptionFromPackageJson(srcRoot).parseAsync(descriptionRaw);
+  return await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).parseAsync(descriptionRaw);
 }
