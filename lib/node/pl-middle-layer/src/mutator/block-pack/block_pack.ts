@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
 import { BlockConfig } from '@milaboratory/sdk-ui';
-import { loadPackDescriptionFromSource, RegistryV1 } from '@milaboratory/pl-block-tools';
+import { loadPackDescription, RegistryV1 } from '@milaboratory/pl-block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev';
 
@@ -39,7 +39,7 @@ export class BlockPackPreparer {
       }
 
       case 'dev-v2': {
-        const description = await loadPackDescriptionFromSource(spec.folder);
+        const description = await loadPackDescription(spec.folder);
         const configContent = await fs.promises.readFile(description.components.model.file, {
           encoding: 'utf-8'
         });
@@ -98,7 +98,7 @@ export class BlockPackPreparer {
       }
 
       case 'dev-v2': {
-        const description = await loadPackDescriptionFromSource(spec.folder);
+        const description = await loadPackDescription(spec.folder);
         const config = JSON.parse(
           await fs.promises.readFile(description.components.model.file, {
             encoding: 'utf-8'

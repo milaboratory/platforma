@@ -2,7 +2,7 @@ import { PollComputablePool, PollPoolOps } from '@milaboratory/computable';
 import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
 import { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
-import { tryLoadPackDescriptionFromSource } from '@milaboratory/pl-block-tools';
+import { tryLoadPackDescription } from '@milaboratory/pl-block-tools';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
   minDelay: 1500
@@ -44,7 +44,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
         else return { ...req, mtime };
       }
       case 'dev-v2': {
-        const description = await tryLoadPackDescriptionFromSource(req.folder);
+        const description = await tryLoadPackDescription(req.folder);
         if (description === undefined) return undefined;
         const mtime = await getDevV2PacketMtime(description);
         if (mtime === req.mtime) return undefined;

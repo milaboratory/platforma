@@ -7,7 +7,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratory/ts-helpers';
 import { LegacyDevBlockPackFiles } from '../dev';
-import { tryLoadPackDescriptionFromSource } from '@milaboratory/pl-block-tools';
+import { tryLoadPackDescription } from '@milaboratory/pl-block-tools';
 
 /**
  * Information specified by the developer of the block.
@@ -144,7 +144,7 @@ export class BlockPackRegistry {
             });
           }
 
-          const v2Description = await tryLoadPackDescriptionFromSource(devPath);
+          const v2Description = await tryLoadPackDescription(devPath);
           if (v2Description !== undefined) {
             const mtime = await getDevV2PacketMtime(v2Description);
             result.push({

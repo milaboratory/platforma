@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -21,34 +21,32 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@milaboratory/computable": "^2.1.0",
-    "@milaboratory/pframes-node": "^0.4.5",
-    "@milaboratory/pl-block-tools": "^2.1.1",
+    "@milaboratory/pframes-node": "^0.4.8",
+    "@milaboratory/pl-block-tools": "^2.1.2",
     "@milaboratory/pl-client-v2": "^2.4.6",
     "@milaboratory/pl-drivers": "1.2.0",
     "@milaboratory/pl-middle-layer-model": "^1.2.6",
     "@milaboratory/pl-tree": "^1.3.2",
-    "@milaboratory/sdk-ui": "^0.12.5",
-    "@milaboratory/ts-helpers": "^1.0.18",
-    "@oclif/core": "^3.26.9",
+    "@milaboratory/sdk-ui": "^0.12.7",
+    "@milaboratory/ts-helpers": "^1.0.19",
     "canonicalize": "^2.0.0",
     "denque": "^2.1.0",
     "quickjs-emscripten": "^0.29.2",
-    "undici": "^6.19.0",
+    "undici": "^6.19.4",
     "utility-types": "^3.11.0",
     "yaml": "^2.4.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.11",
+    "@types/node": "^20.14.12",
     "prettier": "^3.3.3",
-    "ts-jest": "^29.2.2",
+    "ts-jest": "^29.2.3",
     "tsup": "8.1.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.4"
   },
   "tsup": {
     "entry": {
-      "cli": "src/cmd/index.ts",
       "lib": "src/index.ts"
     },
     "splitting": false,
@@ -60,15 +58,5 @@
     "dts": true,
     "minify": false,
     "sourcemap": true
-  },
-  "oclif": {
-    "commands": {
-      "strategy": "explicit",
-      "target": "./dist/cli.js",
-      "identifier": "COMMANDS"
-    },
-    "bin": "pl-state",
-    "dirname": "pl-state",
-    "topicSeparator": " "
   }
 }
