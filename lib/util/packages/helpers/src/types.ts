@@ -70,9 +70,16 @@ export type DeepReadonly<T> = keyof T extends never
   ? T
   : { readonly [k in keyof T]: DeepReadonly<T[k]> };
 
-
+export type DeepMutable<T> = keyof T extends never
+  ? T
+  : { -readonly [k in keyof T]: DeepMutable<T[k]> };
+  
 export type Unionize<T extends Record<string, unknown>> = {
     [K in keyof T]: { key: K; value: T[K] };
 }[keyof T];
 
 export type Objectify<U extends {key: string; value: unknown}> = { [T in U as T['key']]: T['value'] };
+
+declare const __brand: unique symbol
+
+export type Branded<T, B> = T & { readonly [__brand]: B };
