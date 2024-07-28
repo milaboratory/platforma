@@ -235,6 +235,8 @@ export function alike(obj: Record<string, unknown>, to: Record<string, unknown>)
   return Object.keys(to).every(bKey => obj[bKey] === to[bKey]);
 }
 
+export const identity = <T>(v: T): T => v;
+
 export function asConst<const T>(v: T) {
   return v;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/helpers",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "",
   "main": "build/index.js",
   "exports": {
