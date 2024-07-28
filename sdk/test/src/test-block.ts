@@ -1,19 +1,11 @@
 import path from 'path';
 import * as fsp from 'node:fs/promises';
-import { randomUUID } from 'crypto';
 import {
-  BlockPackSpecAny,
   ImportFileHandleUpload,
   MiddleLayer,
-  NullResourceId,
-  OptionalResourceId,
-  PlClient,
-  Project,
-  resourceIdToString,
-  TestHelpers
+  Project
 } from '@milaboratory/pl-middle-layer';
 import { plTest } from './test-pl';
-import { tryStat } from './util';
 
 async function awaitBlockDone(
   prj: Project,
@@ -46,7 +38,6 @@ export interface RawHelpers {
 
 export const blockTest = plTest.extend<{
   ml: MiddleLayer;
-  myBlockSpec: BlockPackSpecAny;
   rawPrj: Project;
   helpers: RawHelpers;
 }>({
@@ -68,10 +59,6 @@ export const blockTest = plTest.extend<{
     await use(ml);
 
     await ml.close();
-  },
-  myBlockSpec: {
-    type: 'dev',
-    folder: path.resolve('..')
   },
   rawPrj: async ({ ml }, use) => {
     const pRid1 = await ml.createProject(
