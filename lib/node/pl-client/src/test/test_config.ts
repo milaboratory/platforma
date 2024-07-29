@@ -134,6 +134,7 @@ export async function withTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promi
   let altRootId: OptionalResourceId = NullResourceId;
   try {
     const client = await getTestClient(altRoot);
+    altRootId = client.clientRoot;
     const value = await body(client);
     const rawClient = await getTestClient();
     await rawClient.deleteAlternativeRoot(altRoot);
