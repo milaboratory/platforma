@@ -107,7 +107,7 @@ resultUnmarshaller := func() {
 
 			ops := resource.get("ops").getDataAsJson()
 
-			if ops.single {
+			if ops.first {
 				// special case, single element
 
 				result  := {

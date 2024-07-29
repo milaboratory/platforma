@@ -20,7 +20,7 @@ wf.prepare(func(args){
 	ops := {
 		data: true,
 		single: true,
-		first: true
+		first: false
 	}
 
 	return {
