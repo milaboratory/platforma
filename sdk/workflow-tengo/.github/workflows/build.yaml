@@ -27,6 +27,7 @@ jobs:
       always-auth: 'true'
 
       build-script-name: 'build'
+      cache-version: 'v2'
 
       test: true
       test-script-name: 'test'
