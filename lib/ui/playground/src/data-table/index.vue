@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { DataTable, NumberInput, BtnSecondary } from '@milaboratory/platforma-uikit.lib';
+import { DataTable, NumberField, BtnSecondary } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted } from 'vue';
 import { useData } from './useData';
 
@@ -73,8 +73,8 @@ onMounted(onGenerate);
 <template>
   <layout>
     <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
-      <number-input v-model="data.numColumns" label="Num columns" />
-      <number-input v-model="data.numRows" label="Num rows" />
+      <NumberField v-model="data.numColumns" label="Num columns" />
+      <NumberField v-model="data.numRows" label="Num rows" />
       <btn-secondary :loading="data.loading" @click="onGenerate">Generate</btn-secondary>
       <span>rows: {{ data.rows.length }}</span>
       <span>cols: {{ data.numColumns }}</span>

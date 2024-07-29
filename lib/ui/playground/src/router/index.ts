@@ -17,7 +17,7 @@ export const routes = [
     component: () => import('@/data-table-async/index.vue'),
   },
   {
-    name: 'Number input',
+    name: 'Number field',
     path: '/number-input',
     component: () => import('@/number-input/index.vue'),
   },

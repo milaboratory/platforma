@@ -15,7 +15,7 @@
 @use './btn-ghost';
 @use './btn-group';
 @use './text-field';
-@use './select-input';
+@use './dropdown';
 @use './multi-dropdown';
 @use './tooltip';
 @use './scroll';
@@ -29,7 +29,7 @@
 @use './toggle-switch';
 @use './input-range.scss';
 @use './sortable';
-@use './number-input.scss';
+@use './number-field.scss';
 @use './layout.scss';
 @use './icons/icons-set.scss';
 @use './css-utils.scss';
