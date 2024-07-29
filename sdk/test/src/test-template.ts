@@ -1,40 +1,41 @@
 import {
+  Computable,
+  ComputableCtx,
+  ComputableStableDefined,
+  UnwrapComputables
+} from '@milaboratory/computable';
+import {
   AnyRef,
+  createRenderTemplate,
   field,
   FieldRef,
+  initDriverKit,
+  loadTemplate,
+  MiddleLayer,
+  MiddleLayerDriverKit,
   Pl,
   PlClient,
   PlTransaction,
-  ResourceId,
-  toGlobalResourceId,
   prepareTemplateSpec,
-  loadTemplate,
-  createRenderTemplate,
-  MiddleLayerDriverKit,
-  initDriverKit,
-  MiddleLayer
+  ResourceId,
+  toGlobalResourceId
 } from '@milaboratory/pl-middle-layer';
-import { plTest } from './test-pl';
 import {
   PlTreeEntry,
   PlTreeNodeAccessor,
   SynchronizedTreeState
 } from '@milaboratory/pl-tree';
-import {
-  Computable,
-  ComputableCtx,
-  UnwrapComputables
-} from '@milaboratory/computable';
-import * as fsp from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
 import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { randomUUID } from 'node:crypto';
+import * as fsp from 'node:fs/promises';
 import path from 'node:path';
+import { plTest } from './test-pl';
 
 export class TestRenderResults<O extends string> {
   constructor(
     public readonly fields: Readonly<Record<O, FieldRef>>,
     public readonly resultEntry: PlTreeEntry
-  ) {}
+  ) { }
 
   public computeOutput<R>(
     name: O,
@@ -54,12 +55,37 @@ export class TestRenderResults<O extends string> {
   }
 }
 
+export class TestWorkflowResults {
+  constructor(
+    public readonly renderResult: TestRenderResults<"context" | "result">,
+    public readonly blockId: string
+  ) { }
+
+
+  /** Returns context id of this workflow */
+  public context(): ComputableStableDefined<ResourceId> {
+    return this.renderResult.computeOutput("context", (cb) => cb?.id).withStableType()
+  }
+
+  public export<R>(name: string, cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R) {
+    return this.renderResult.computeOutput("context", (xcb, xctx) => {
+      return cb(xcb?.getField(`values/${name}`)?.value, xctx);
+    })
+  }
+
+  public output<R>(name: string, cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R) {
+    return this.renderResult.computeOutput("result", (xcb, xctx) => {
+      return cb(xcb?.getField(name)?.value, xctx)
+    })
+  }
+}
+
 export class TplTestHelpers {
   constructor(
     private readonly pl: PlClient,
     private readonly resultRootRid: ResourceId,
     private readonly resultRootTree: SynchronizedTreeState
-  ) {}
+  ) { }
 
   async renderTemplate<const O extends string>(
     ephemeral: boolean,
@@ -81,7 +107,7 @@ export class TplTestHelpers {
         const renderedInputs = await inputs(tx);
         // prettier-ignore
         const futureOutputs = await createRenderTemplate(
-        tx, tpl, ephemeral, renderedInputs, outputs);
+          tx, tpl, ephemeral, renderedInputs, outputs);
         const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);
         tx.createField(field(this.resultRootRid, runId), 'Dynamic', resultMap);
         const resultMapRid = await toGlobalResourceId(resultMap);
@@ -99,6 +125,48 @@ export class TplTestHelpers {
       resultFields,
       this.resultRootTree.entry(resultMapRid)
     );
+  }
+
+  createObject(tx: PlTransaction, value: any) {
+    return tx.createValue(
+      Pl.JsonObject,
+      JSON.stringify(value)
+    )
+  }
+
+  async renderWorkflow(
+    workflowName: string,
+    preRun: boolean,
+    args: Record<string, any> | Promise<Record<string, any>>,
+    parent?: ResourceId
+  ): Promise<TestWorkflowResults> {
+
+    const blockId = randomUUID()
+    const result: TestRenderResults<"result" | "context"> = await this.renderTemplate(
+      true,
+      workflowName,
+      ["result", "context"],
+      (tx) => {
+
+        let ctx = undefined
+        if (parent) {
+          ctx = parent
+        } else {
+          ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' })
+          tx.lockInputs(ctx)
+          tx.lockOutputs(ctx)
+        }
+
+        return {
+          args: this.createObject(tx, args),
+          blockId: this.createObject(tx, blockId),
+          isProduction: this.createObject(tx, !preRun),
+          context: ctx,
+        }
+      }
+    );
+
+    return new TestWorkflowResults(result, blockId)
   }
 }
 

@@ -11,8 +11,8 @@ import {
   SynchronizedTreeState
 } from '@milaboratory/pl-tree';
 import { randomUUID } from 'crypto';
-import path from 'path';
 import * as fsp from 'node:fs/promises';
+import path from 'path';
 import { test } from 'vitest';
 
 export const plTest = test.extend<{
