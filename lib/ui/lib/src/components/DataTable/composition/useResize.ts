@@ -6,7 +6,7 @@ import { MIN_COLUMN_WIDTH, RESIZE_GAP } from '../constants';
 import { useMouse } from '@/composition/useMouse';
 import { useHover } from '@/composition/useHover';
 import { tapIf, clamp } from '@milaboratory/helpers/utils';
-import { identity } from '../domain';
+import { identity } from '@milaboratory/helpers';
 import type { State } from '../state';
 
 type MaybeRef<T> = T | Ref<T>;

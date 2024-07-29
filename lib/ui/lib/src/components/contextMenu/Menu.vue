@@ -1,22 +1,21 @@
 <script lang="ts" setup>
-import type { IOption } from '@/types';
+import type { ContextOption } from './types';
 
 const emit = defineEmits(['close']);
 
-const props = defineProps<{
-  options: readonly IOption[];
-  cb: (value: unknown) => void;
+defineProps<{
+  options: readonly ContextOption[];
 }>();
 
-const onClickOption = (value: unknown) => {
-  props.cb(value);
+const onClickOption = (opt: ContextOption) => {
+  opt.cb();
   emit('close');
 };
 </script>
 
 <template>
   <div class="context-menu">
-    <div v-for="(opt, i) in options" :key="i" @click.stop="onClickOption(opt.value)">
+    <div v-for="(opt, i) in options" :key="i" @click.stop="onClickOption(opt)">
       <span>{{ opt.text }}</span>
     </div>
   </div>
@@ -28,6 +27,7 @@ const onClickOption = (value: unknown) => {
   position: absolute;
   top: 50px;
   left: 50px;
+  z-index: 1001;
 
   margin: 0;
   padding: 3px 0 4px;

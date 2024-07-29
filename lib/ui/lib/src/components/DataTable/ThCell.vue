@@ -1,13 +1,13 @@
 <script lang="ts" setup>
-import { showContextMenu } from '../contextMenu2';
-import type { ContextOption } from '../contextMenu2/types';
+import { showContextMenu } from '../contextMenu';
+import type { ContextOption } from '../contextMenu/types';
 import { rotate } from './domain';
-import type { ColumnSettings } from './types';
+import type { ColumnSpec } from './types';
 
 const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
 
 defineProps<{
-  col: ColumnSettings;
+  col: ColumnSpec;
 }>();
 
 function onContextMenu(ev: MouseEvent) {
@@ -22,7 +22,7 @@ function onContextMenu(ev: MouseEvent) {
   showContextMenu(ev, options);
 }
 
-function onSort(col: ColumnSettings) {
+function onSort(col: ColumnSpec) {
   const v = col.sort?.direction ?? 'DESC';
   emit('change:sort', {
     colId: col.id,

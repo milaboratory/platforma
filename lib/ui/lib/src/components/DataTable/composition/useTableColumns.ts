@@ -1,8 +1,8 @@
-import type { ColumnSettings, TableSettings, TableColumn, TableData } from '../types';
+import type { ColumnSpec, TableSettings, TableColumn, TableData } from '../types';
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 import { sliceBy } from '@milaboratory/helpers/collections';
-import { asConst } from '../domain';
+import { asConst } from '@milaboratory/helpers';
 import { uniqueId } from '@milaboratory/helpers/strings';
 import { GAP } from '../constants';
 
@@ -18,7 +18,7 @@ export function useTableColumns(state: { data: TableData; settings: ComputedRef<
 
     if (settings.value.controlColumn) {
       columns.unshift(
-        asConst<ColumnSettings>({
+        asConst<ColumnSpec>({
           id: controlId,
           label: '#',
           width: 60,

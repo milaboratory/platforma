@@ -66,9 +66,6 @@ const settings = computed(() => {
       },
     ],
     dataSource: new DataTable.AsyncData(api, 40, (row: Record<string, unknown>) => objectHash(row) as DataTable.Types.PrimaryKey),
-    onDeleteRows(_rows) {
-      alert('todo delete remote rows');
-    },
     height: 600,
     controlColumn: true,
   });

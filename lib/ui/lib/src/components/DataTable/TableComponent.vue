@@ -23,7 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const props = defineProps<{
-  settings: TableSettings;
+  settings: Readonly<TableSettings>;
 }>();
 
 const state = createState(props);

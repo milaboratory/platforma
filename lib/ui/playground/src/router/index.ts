@@ -7,6 +7,11 @@ export const routes = [
     component: () => import('@/data-table/index.vue'),
   },
   {
+    name: 'Data Table Simple',
+    path: '/data-table-simple',
+    component: () => import('@/data-table-simple/index.vue'),
+  },
+  {
     name: 'Data Table Async',
     path: '/data-table-async',
     component: () => import('@/data-table-async/index.vue'),

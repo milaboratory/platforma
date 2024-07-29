@@ -9,5 +9,3 @@ export async function* renderSequence(n: number) {
     }
   }
 }
-
-export const asConst = <const T>(v: T): T => v;

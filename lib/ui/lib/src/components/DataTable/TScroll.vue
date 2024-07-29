@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from 'vue';
+import { computed, ref } from 'vue';
 import { useMouseCapture } from '@/composition/useMouseCapture';
 
 const emit = defineEmits<{
@@ -29,11 +29,6 @@ useMouseCapture(handleRef, (ev, state) => {
   emit('change:offset', newOffset);
   state.x = ev.x;
   state.y = ev.y;
-});
-
-watchEffect(() => {
-  console.log('windowSize', props.windowSize);
-  console.log('dataSize', props.dataSize);
 });
 </script>
 

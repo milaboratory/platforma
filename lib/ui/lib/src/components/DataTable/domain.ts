@@ -27,8 +27,6 @@ export function compareRecords(sorts: Record<string, 'ASC' | 'DESC'>, a: Record<
 
 export const identity = <T>(v: T): T => v;
 
-export const asConst = <const T>(v: T) => v;
-
 export function rotate<T>(v: T, lst: T[]) {
   const next = lst.indexOf(v) + 1;
   return lst[next >= lst.length ? 0 : next];

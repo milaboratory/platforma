@@ -1,9 +1,6 @@
 import type { Component } from 'vue';
 import type { h } from 'vue';
-
-declare const __brand: unique symbol;
-type Brand<B> = { [__brand]: B };
-type Branded<T, B> = T & Brand<B>;
+import type { Branded } from '@milaboratory/helpers/types';
 
 type TypeMap = {
   integer: number;
@@ -23,8 +20,8 @@ export type TableProps = {
 export type TableData = {
   rowIndex: number;
   loading: boolean;
-  columns: readonly ColumnSettings[];
-  rows: readonly RowSettings[];
+  columns: readonly ColumnSpec[];
+  rows: readonly Row[];
   resize: boolean;
   resizeTh?: ResizeTh;
   dataHeight: number;
@@ -40,25 +37,35 @@ export type DataRow = Record<string, unknown>;
 
 export type PrimaryKey = Branded<string, 'PrimaryKey'>;
 
-export type GetPrimaryKey = (dataRow: DataRow, index: number) => PrimaryKey;
+export type GetPrimaryKey<D extends DataRow = DataRow> = (dataRow: D, index: number) => PrimaryKey;
 
-// Table settings
-export type TableSettings = {
-  columns: ColumnSettings[];
-  height: number;
-  dataSource: DataSource;
-  gap?: number;
-  addColumn?: () => Promise<void>;
-  controlColumn?: boolean;
-
-  onDeleteRows?: (rows: RowSettings[]) => void;
-  onDeleteColumns?: (columns: ColumnSettings[]) => void;
-  onEdit?: (cell: TableCell, value: unknown) => boolean;
+export type SelectedRowsOperation<D extends DataRow = DataRow> = {
+  label: string;
+  cb: (rows: Row<D>[]) => Promise<void>;
 };
 
-export type ColumnSettings = {
+export type SelectedColumnsOperation<D extends DataRow = DataRow> = {
   label: string;
-  id: string;
+  cb: (rows: ColumnSpec<D>[]) => Promise<void>;
+};
+
+// Table settings
+export type TableSettings<D extends DataRow = DataRow> = {
+  columns: ColumnSpec<D>[];
+  dataSource: DataSource<D>;
+  gap?: number;
+  height: number;
+  addColumn?: () => Promise<void>;
+  controlColumn?: boolean;
+  onSelectedRows?: SelectedRowsOperation<D>[];
+  onSelectedColumns?: SelectedColumnsOperation<D>[];
+
+  onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
+};
+
+export type ColumnSpec<D extends DataRow = DataRow> = {
+  label: string;
+  id: keyof D;
   width: number;
   justify?: 'center' | 'start';
   sort?: {
@@ -77,9 +84,9 @@ export type ResizeTh = {
   right: number;
 };
 
-export type TableCell = {
-  column: ColumnSettings;
-  row: RowSettings;
+export type TableCell<D extends DataRow = DataRow> = {
+  column: ColumnSpec<D>;
+  row: Row<D>;
   value: unknown;
   class: string;
   editable?: boolean;
@@ -88,8 +95,8 @@ export type TableCell = {
   control?: boolean;
 };
 
-export type RowSettings = {
-  dataRow: DataRow;
+export type Row<D extends DataRow = DataRow> = {
+  dataRow: D;
   index: number;
   primaryKey: PrimaryKey;
   offset: number;
@@ -110,15 +117,15 @@ export type ColumnStyle = {
   width: string;
 };
 
-export type TableColumn = ColumnSettings & {
+export type TableColumn = ColumnSpec & {
   style: ColumnStyle;
   offset: number;
   control?: boolean;
 };
 
-export interface DataSource {
+export interface DataSource<D extends DataRow = DataRow> {
   getHeight(): Promise<number>;
-  getRows(scrollTop: number, bodyHeight: number): Promise<RowSettings[]>;
+  getRows(scrollTop: number, bodyHeight: number): Promise<Row<D>[]>;
 }
 
 export type ExternalApi<T extends DataRow> = {

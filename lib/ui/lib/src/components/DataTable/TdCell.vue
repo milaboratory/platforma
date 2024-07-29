@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { showContextMenu } from '../contextMenu2';
-import type { ContextOption } from '../contextMenu2/types';
+import { showContextMenu } from '../contextMenu';
+import type { ContextOption } from '../contextMenu/types';
 import { injectState } from './keys';
 import type { TableCell } from './types';
 import { computed, reactive, ref, h } from 'vue';
@@ -18,8 +18,8 @@ const data = reactive({
 const render = computed(() => props.cell.column.render);
 
 const onInput = (ev: Event) => {
-  if (state.settings.value.onEdit) {
-    state.settings.value.onEdit(props.cell, (ev.target as HTMLInputElement)?.value);
+  if (state.settings.value.onEditValue) {
+    state.settings.value.onEditValue(props.cell, (ev.target as HTMLInputElement)?.value);
   }
   data.edit = false;
 };
@@ -29,20 +29,13 @@ const onContextMenu = (ev: MouseEvent) => {
     ev.preventDefault();
   }
 
-  const settings = state.settings.value ?? {};
+  const settings = state.settings ?? {};
 
   const options = [] as ContextOption[];
 
-  const { onDeleteRows, onDeleteColumns } = settings;
+  const { onSelectedRows, onSelectedColumns } = settings.value;
 
-  if (onDeleteRows) {
-    options.push({
-      text: 'Delete row',
-      cb() {
-        onDeleteRows([props.cell.row]);
-      },
-    });
-
+  if (onSelectedRows && onSelectedRows.length) {
     options.push({
       text: 'Select row',
       cb() {
@@ -58,14 +51,7 @@ const onContextMenu = (ev: MouseEvent) => {
     });
   }
 
-  if (onDeleteColumns) {
-    options.push({
-      text: 'Delete column',
-      cb() {
-        onDeleteColumns([props.cell.column]);
-      },
-    });
-
+  if (onSelectedColumns && onSelectedColumns.length) {
     options.push({
       text: 'Select column',
       cb() {

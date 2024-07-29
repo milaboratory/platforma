@@ -1,10 +1,8 @@
-import type { IOption } from '@/types';
 import Menu from './Menu.vue';
 import { h, render } from 'vue';
+import type { ContextOption } from './types';
 
-//   showOptions<T>(options: readonly (UiOption<T> & {hide?: boolean})[], cb: (value: T) => void): void;
-
-export function showContextMenu<const T>(ev: MouseEvent, options: readonly IOption<T>[], cb: (value: T) => void) {
+export function showContextMenu(ev: MouseEvent, options: readonly ContextOption[]) {
   ev.preventDefault();
 
   const destroy = () => {
@@ -13,7 +11,6 @@ export function showContextMenu<const T>(ev: MouseEvent, options: readonly IOpti
 
   const vNode = h(Menu, {
     options,
-    cb: cb as (value: unknown) => void,
     onClose: () => {
       destroy();
     },
