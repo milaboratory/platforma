@@ -23,7 +23,7 @@ services:
       - "PL_DEBUG_ADDR=0.0.0.0:9091"
       - "PL_LOG_LEVEL=info"
       - "PL_LOG_DESTINATION=stdout"
-      - "PL_LOG_COMMIT_SUMMARY=true"
+      - "PL_LOG_COMMIT_SUMMARY=false"
       - "PL_LOG_RESOURCE_DATA=false"
       - "PL_AUTH_ENABLED=true"
       - "PL_DUMP_CONFIG_BEFORE_RUN=yes"
