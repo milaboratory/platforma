@@ -39,6 +39,11 @@ structBuilder := undefined
 mapBuilder := undefined
 
 /**
+ * Builder for ephemeral map resource
+ */
+ephemeralMapBuilder := undefined
+
+/**
  * Builder for emphemeral resources
  *
  * @param resourceType {Name: "", Version: ""}
@@ -97,6 +102,78 @@ isReference := func(f) {
 	return isField(f) || isResource(f)
 }
 
+/**
+ * Returns true if given object is a StdMap resource
+ */
+isMapResource := func(r) {
+	// @TODO get rid of alt name
+	return isResource(r) && (r.info().Type.Name == constants.RTYPE_MAP.Name ||
+		r.info().Type.Name == constants.RTYPE_MAP_EPH.Name ||
+		r.info().Type.Name == constants.RTYPE_MAP_ALT.Name)
+}
+
+/**
+ * Returns true if given object is a json resource
+ */
+isJsonResource := func(r) {
+	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
+}
+
+// deep check whether map has resources somewhere inside
+_hasResourceValues := func(object) {
+	if ll.isMap(object) {
+		for _, v in object {
+			if isReference(v) {
+				return true
+			}
+			if ll.isMap(v) || is_array(v) {
+				return _hasResourceValues(v)
+			}
+		}
+	} else if is_array(object) {
+		for v in object {
+			if isReference(v) {
+				return true
+			}
+			if ll.isMap(v) || is_array(v) {
+				return _hasResourceValues(v)
+			}
+		}
+	}
+	return false
+}
+
+/**
+ * Convert given object to resource. If object is a true json, then
+ * a simple Json resource will be created, otherwise a resource map.
+ */
+_toRefOrJson := func(object) {
+	if isReference(object) {
+		return object
+	} else if ll.isMap(object) {
+
+		// just json if there are no nested resources
+		if !_hasResourceValues(object)  {
+			return createJsonResource(object)
+		}
+
+		mb := mapBuilder()
+		for k, v in object {
+			mb.add(k, _toRefOrJson(v))
+		}
+
+		return mb.build()
+	} else if is_array(object) {
+
+		// assert we are not having refs inside
+		ll.assert(!_hasResourceValues(object), "array can't contain references")
+
+		return createJsonResource(object)
+	} else {
+		return createJsonResource(object)
+	}
+}
+
 ////////////////// implementation ///////////////////////////
 
 /**
@@ -109,11 +186,11 @@ resource = func(r) {
 	id := ll.isStrict(r) ? r.ID : r
 
 	if !is_int(id) {
-		ll.panic("resource id should be int")
+		ll.panic("resource id should be int for ", r)
 	}
 
 	if id == 0 {
-		ll.panic("null resource id")
+		ll.panic("null resource id for ", r)
 	}
 
 	self = {
@@ -356,6 +433,8 @@ field = func(f) {
 				ll.panic("failed to get the value of field ", field, ", error is not empty: ", err)
 			}
 
+			ll.assert(self.isSet(), "field value is not set; ", self.name())
+
 			return resource(self.info().Value)
 		},
 
@@ -408,12 +487,7 @@ field = func(f) {
 		 * @return nothing
 		 */
 		setRefOrJson: func(refOrJson) {
-			if isReference(refOrJson) {
-				self.set(refOrJson)
-			} else {
-				// TODO deep check for map resource
-				self.set(createJsonResource(refOrJson))
-			}
+			self.set(_toRefOrJson(refOrJson))
 		},
 
 		/**
@@ -560,8 +634,11 @@ structBuilder = func(resourceType, ...data) {
 	return resourceBuilder(id)
 }
 
-mapBuilder = func() {
-	builder := structBuilder(constants.RTYPE_MAP)
+/**
+ * @param isEph: is ephemeral map
+ */
+_mapBuilder := func(isEph) {
+	builder := isEph ? ephemeralBuilder(constants.RTYPE_MAP_EPH) : structBuilder(constants.RTYPE_MAP)
 	// ensure no outputs will be created
 	builder.lockOutputs()
 
@@ -618,6 +695,14 @@ mapBuilder = func() {
 	return self
 }
 
+mapBuilder = func() {
+	return _mapBuilder(false)
+}
+
+ephemeralMapBuilder = func() {
+	return _mapBuilder(true)
+}
+
 ephemeralBuilder = func(resourceType, ...data) {
 	id := undefined
 	if (len(data) > 0) {
@@ -636,6 +721,11 @@ createValueResource = func(resourceType, data) {
 
 createJsonResource = func(value) {
 	ll.assert(value != undefined, "can't create Json value from undefined")
+
+	// important: strict map can't be encoded to JSON
+
+	value = ll.ensureNonStrict(value)
+
 	encoded := json.encode(value)
 	return createValueResource(constants.RTYPE_JSON, encoded)
 }
@@ -654,11 +744,14 @@ export ll.toStrict({
 	isResource: isResource,
 	isField: isField,
 	isReference: isReference,
+	isMapResource: isMapResource,
+	isJsonResource: isJsonResource,
 	resource: resource,
 	field: field,
 	resourceBuilder: resourceBuilder,
 	structBuilder: structBuilder,
 	mapBuilder: mapBuilder,
+	ephemeralMapBuilder: ephemeralMapBuilder,
 	ephemeralBuilder: ephemeralBuilder,
 	createValueResource: createValueResource,
 	createJsonResource: createJsonResource,

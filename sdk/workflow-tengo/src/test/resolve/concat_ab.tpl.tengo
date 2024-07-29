@@ -1,13 +1,13 @@
+// concat_ab
+
 tpl := import(":tpl")
-fmt := import("fmt")
 
 tpl.defineOutputs(["concat"])
 
 tpl.body(func(inputs) {
-	fmt.print("running concat_ab")
 
-	a := inputs.a.getValueAsJson()
-	b := inputs.b.getValueAsJson()
+	a := inputs.a
+	b := inputs.b
 
 	// output resource
 	return {

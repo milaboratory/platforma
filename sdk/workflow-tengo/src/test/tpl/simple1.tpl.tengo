@@ -1,3 +1,5 @@
+// simple1
+
 self := import(":tpl")
 smart := import(":smart")
 
@@ -5,10 +7,8 @@ self.defineOutputs(["main"])
 
 self.body(func(inputs) {
 
-	// input resource
-	inputResource := inputs.input1
 	// input resource value
-	inputValue := inputResource.getValueAsJson()
+	inputValue := inputs.input1
 
 	// output resource
 	result := {

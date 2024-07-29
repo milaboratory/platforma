@@ -4,18 +4,14 @@ smart := import(":smart")
 render := import(":render")
 fmt := import("fmt")
 
-concat_ab := ll.importTemplate(":test.concat_ab")
+concat_ab := ll.importTemplate(":test.import-template.concat_ab")
 
 self.defineOutputs(["main"])
 
 self.body(func(inputs) {
-	// input resource
-	av := inputs.a.getValueAsJson()
-	bv := inputs.b.getValueAsJson()
-
 	run := render.create(concat_ab, {
-		a: av,
-		b: bv
+		a: inputs.a,
+		b: inputs.b
 	})
 
 	// output resource

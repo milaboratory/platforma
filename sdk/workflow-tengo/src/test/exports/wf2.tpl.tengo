@@ -1,0 +1,42 @@
+// workflow with query
+
+ll := import("@milaboratory/tengo-sdk:ll")
+wf := import(":workflow")
+text := import("text")
+
+
+wf.prepare(func(args){
+
+	query := {
+
+		type: "Annotation",
+
+		annotation: "pl7.app/isSpecies",
+
+		value: "true"
+	}
+
+	// query only specs
+	ops := {
+		data: true,
+		single: true,
+		first: true
+	}
+
+	return {
+		query: wf.query(query, ops)
+	}
+})
+
+wf.body(func(args) {
+
+	str := text.join(args.query.data, "")
+
+	return {
+		outputs: {
+			query: args.query,
+			join: str
+		},
+		exports: {}
+	}
+})

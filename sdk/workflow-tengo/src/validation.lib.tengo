@@ -1,0 +1,237 @@
+ll := import(":ll")
+sets := import(":sets")
+fmt := import("fmt")
+text := import("text")
+maps := import(":maps")
+enum := import("enum")
+
+
+// validation success
+_success := { result: true }
+
+// validation fail
+_fail := func(msg, ...args) {
+	return {
+		result: false,
+		message: fmt.sprintf(msg, args...)
+	}
+}
+
+// validate tags when scheme is string
+_validateTags := func(js, tags, ...stack) {
+
+	// split keys "or"
+	keys := sets.fromSlice(text.split(tags.key, "|"))
+	for k, _ in keys {
+		if k == "alphanumeric" {
+			if !((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
+				return _fail("expected alphanumeric, found %s", js)
+			}
+		} else if k == "string" {
+			if !is_string(js) {
+				return _fail("expected string, found %s", js)
+			}
+
+			regex := tags.tags["regex"]
+
+			if regex == undefined {
+				return _fail("no regex rule provided")
+			}
+
+			if !text.re_match(regex, js) {
+				return _fail(stack, "value %q does not conform regex %q", js, regex)
+			}
+		} else if k == "null"  {
+			if !is_undefined(js) {
+				return _fail("expected null, found %s", js)
+			}
+		} else if k == "number" {
+			if !(is_int(js) || is_float(js)) {
+				return _fail("expected number, found %s", js)
+			}
+		} else if k == "bool" {
+			if !is_bool(js) {
+				return _fail("expected bool, found %s", js)
+			}
+		} else {
+			return _fail(stack, "js %q is not one of a type: %s", js, keys)
+		}
+	}
+
+	return _success
+}
+
+/**
+ * Parse json tags from the string rule
+ */
+_parseTags := func(rule) {
+	tagsKV := text.split(rule, ",")
+	key := tagsKV[0]
+	tagsKV = tagsKV[1:]
+
+	tags := {}
+	for _, kv in tagsKV {
+		kAndV := text.split(kv, "=")
+		k := kAndV[0]
+		if len(kAndV) == 1 {
+			tags[k] = true
+		} else {
+			tags[k] = kAndV[1]
+		}
+	}
+
+	return {
+		key: key,
+		tags: tags
+	}
+}
+
+_validateJson := func(js, scheme, ...stack) {
+
+	if is_undefined(scheme) {
+		return _fail("scheme is somehow undefined: %#v, previous elements: %#v", js, stack)
+	}
+
+	// if the scheme is a string, then
+	// we check the predefined type. The type of the json
+	// can be any of the union, e.g. "string|number|null".
+	// We can add custom types here, e.g. "email|ipv6|number"
+	if is_string(scheme) {
+		if scheme == "any" {
+			return _success
+		}
+
+		tags := _parseTags(scheme)
+
+		return _validateTags(js, tags, stack...)
+	}
+
+	// if the scheme is a function, call it
+	// with the element and the path of how we
+	// got this element, i.e. recursion history.
+	if is_function(scheme) {
+		return scheme(js, stack)
+	}
+
+	// if the scheme is an array, then check that every
+	// element of the json has the scheme that is the first element
+	// of the scheme.
+	if is_array(scheme) {
+		if !is_array(js) {
+			return _fail(stack, "js %q must be array", js)
+		}
+
+		scheme = scheme[0]
+		for _, elem in js {
+			r := _validateJson(elem, scheme, js, stack...)
+			if r.result == false {
+				return r
+			}
+		}
+
+		return _success
+	}
+
+	// only map left, since scheme can't be undefined
+	// if the scheme is a map, check that every key
+	// in json-object is in the scheme and vice-versa,
+	// unless there are tags "any" or "omitempty".
+	if !ll.isMap(js) {
+		return _fail(stack, "js %#v must be map", js)
+	}
+
+	// scheme.key -> tags
+	schemeTags := {}
+	// scheme.key -> rule
+	schemeRules := {}
+
+	for k, v in scheme {
+		p := _parseTags(k)
+		schemeTags[p.key] = p.tags
+		schemeRules[p.key] = v
+	}
+
+	// tags that should be applied to all elements
+	any := schemeTags["any"]
+
+	options := schemeTags["__options__" ]
+	if is_undefined(options) {
+		options = {}
+	}
+
+
+	for key, elem in js {
+		if !is_undefined(any) {
+			r := _validateTags(elem, any, stack...)
+			if r.result == false {
+				return r
+			}
+
+			if !is_undefined(any["type"]) {
+				r := _validateTags(elem, any["type"], stack...)
+				if r.result == false {
+					return r
+				}
+			}
+		}
+
+		// tags for the key
+		tags := schemeTags[key]
+
+		if is_undefined(tags) && options["closed"] == true {
+			return _fail(stack, "only keys %v from the scheme must be set, found %q", maps.getKeys(scheme), key)
+		} else {
+			continue
+		}
+
+		if !is_undefined(tags["type"]) {
+			r := _validateJson(key, tags["type"], js, stack...)
+			if r.result == false {
+				return r
+			}
+		}
+
+		if tags["omitempty"] && is_undefined(elem) {
+			continue
+		}
+
+		r := _validateJson(elem, schemeRules[key], js, stack...)
+		if r.result == false {
+			return r
+		}
+	}
+
+	return _success
+}
+
+
+/**
+ * @return { result: bool, message: failReason }
+ */
+validateJson := func(js, scheme) {
+	return _validateJson(js, scheme)
+}
+
+/**
+ * @return { result: bool, message: failReason }
+ */
+isValidJson := func(js, scheme) {
+	r := validateJson(js, scheme)
+	return r.result
+}
+
+/**
+ * @return { result: bool, message: failReason }
+ */
+assertValidJson := func(js, scheme) {
+	r := validateJson(js, scheme)
+	if r.result == false {
+		ll.panic("not a valid json", r.message)
+	}
+}
+
+export ll.toStrict({
+	validateJson: validateJson,
+	isValidJson: isValidJson,
+	assertValidJson: assertValidJson
+})

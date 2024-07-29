@@ -1,0 +1,182 @@
+ll := import(":ll")
+smart := import(":smart")
+constants := import(":constants")
+render := import(":render")
+json := import("json")
+
+
+_CONTEXT_FIELD_NAME := "ctx"
+
+// options scheme for query
+_OPTIONS_SCHEME := {
+	"spec,omitempty": `bool`,
+	"data,omitempty": `bool`,
+	"single,omitempty": `bool`,
+	"first,omitempty": `bool`
+}
+
+// default query options
+_DEFAULT_OPTIONS := {
+	/** Return specs in the results */
+	spec: true,
+	/** Return data in the results */
+	data: true,
+	/** Asserts that the resulting list has one element and returns it */
+	single: false,
+	/** Returns first available result of the query */
+	first: false
+}
+
+/**
+ * Query results pool.
+ *
+ * @param spec: query spec
+ * @param ctx: results pool (context) to query
+ * @param options: an options map
+ * @return result: a list of {ref: spec: data:} objects (data will be absent if not requested)
+ */
+create := func(spec, ctx, ...options) {
+
+	// @TODO validate spec
+
+	ops := copy(_DEFAULT_OPTIONS)
+	if len(options) > 0 {
+		ll.assert(len(options) == 1, "expected map, got array: ", options)
+
+		// @TODO validate options
+
+		// override defaults
+		for k, v in options[0]{
+			ops[k] = v
+		}
+	}
+
+	query := json.encode({
+		"query": spec,
+		"setErrorIfMissing": false
+	})
+
+
+	builder := undefined
+	if ops.first {
+		builder = smart.ephemeralBuilder(constants.RTYPE_BRESOLVE_FIRST, query)
+	} else {
+		// return all query results
+		builder = smart.ephemeralBuilder(constants.RTYPE_BRESOLVE_CHOICE, query)
+	}
+
+	builder.createInputField(_CONTEXT_FIELD_NAME).set(ctx)
+	resolve := builder.lockInputsAndBuild()
+
+
+	// create a special type to store query results
+
+	rb := smart.structBuilder(constants.RTYPE_QUERY_RESULT)
+
+	// save options
+	rb.createInputField("ops").setJson(ops)
+
+	if ops.spec {
+		rb.createInputField("spec").set(resolve.getFutureOutputField("spec"))
+	}
+
+	// pass data only if needed, otherwise we are not waiting for data to complete
+	if ops.data {
+		rb.createInputField("data").set(resolve.getFutureOutputField("data"))
+	}
+
+	// the data structure differs in this case; the single ref, data and spec are stored
+	// directly as result fields
+	if ops.first {
+		rb.createInputField("ref").set(resolve.getFutureOutputField("address"))
+	}
+
+	return rb.lockAndBuild()
+}
+
+/**
+ * Inputs preprocessor used to convert query result into array of {ref: spec: data:} objects
+ */
+resultUnmarshaller := func() {
+	return  {
+		canParse: func(r) {
+			return smart.isResource(r) && r.info().Type.Name == constants.RTYPE_QUERY_RESULT.Name
+		},
+
+		parse: func(resource, parser)  {
+
+			ops := resource.get("ops").getDataAsJson()
+
+			if ops.single {
+				// special case, single element
+
+				result  := {
+					ref: resource.get("ref").getDataAsJson(),
+					spec: resource.get("spec").getDataAsJson()
+				}
+
+				// only if the data is there
+				if resource.hasInputField("data") {
+					result["data"] = parser(resource.get("data"))
+				}
+
+				return result
+			} else {
+				// format list of results
+
+				spec := resource.get("spec").inputs()
+				data := undefined
+				if resource.hasInputField("data") {
+					data = resource.get("data").inputs()
+				}
+
+				result := []
+				for ref, s in spec {
+					r  := {
+						ref: json.decode(ref),
+						spec: s.getValueAsJson()
+					}
+
+					// only if the data is there
+					if !is_undefined(data) {
+						r["data"] = parser(data[ref].getValue())
+					}
+
+					result = append(result, r)
+				}
+
+				if ops.single {
+					ll.assert(len(result) == 1, "expected single element, got ", len(result))
+
+					result = result[0]
+				}
+
+				return result
+			}
+		}
+	}
+}
+
+/**
+ * Query results pool to find spec & data for a given ref.
+ *
+ * @param ref: a ref object ({blockId: name:})
+ * @param ctx: results pool (context) to query
+ * @return result: a {ref: spec: data:} object
+ */
+resolve := func(ref, ctx) {
+
+	spec := {
+		type: "Direct",
+		block_id: ref.blockId, 	// @TODO use consistent naming in pl
+		output_name: ref.name 	// @TODO use consistent naming in pl
+	}
+
+	return create(spec, ctx, { first: true })
+}
+
+export ll.toStrict({
+	create: create,
+	resolve: resolve,
+	resultUnmarshaller: resultUnmarshaller
+})

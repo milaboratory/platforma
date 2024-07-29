@@ -1,13 +1,9 @@
-self := import(":tpl-eph")
+self := import(":tpl")
 
 self.body(func(inputs) {
-	// input resource
-	inputResource := self.inputs().input1
-	// input resource value
-	inputValue := inputResource.getValueAsJson()
 
 	// output resource
 	return {
-		main: inputValue.testValue + " Show"
+		main: inputs.input1.testValue + " Show"
 	}
 })

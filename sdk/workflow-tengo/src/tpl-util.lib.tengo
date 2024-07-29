@@ -1,37 +1,19 @@
-/* Template utility functions */
+/* Templates/renderers utils */
 
-smart := import(":smart")
 ll := import(":ll")
 
+// template field name in renderer resource
+TEMPLATE_FIELD := "template"
+// field name of a resource map with the inputs in renderer resource
+INPUTS_MAP_FIELD := "inputs"
+// prefix of output fields template results in renderer resource
 TEMPLATE_OUTPUT_PREFIX := "outputs/"
-
-/**
- * Sets results map to resource output fields. Non-resource objects in the result values
- * will be automatically converted into Json resources.
- */
-setOutputs := func(resource, resultMap) {
-	ll.assert(ll.isMap(resultMap), "expected map, got ", resultMap)
-
-	// set outputs
-	for name, value in resultMap {
-
-		output := resource.getField(TEMPLATE_OUTPUT_PREFIX + name)
-
-		// convert to Json non reference objects
-		valueResource := undefined
-		if smart.isReference(value) {
-			// smart.Resource or smart.Field
-			valueResource = value
-		} else {
-			// TODO add smart conversion
-			valueResource = smart.createJsonResource(value)
-		}
-		output.set(valueResource)
-	}
-}
+// mark in renderer resource signaling that prepare statements should be omitted
+PREPARE_MARK_FIELD_NAME := "__prepare_done__"
 
 export ll.toStrict({
-	TEMPLATE_OUTPUT_PREFIX: TEMPLATE_OUTPUT_PREFIX,
-
-	setOutputs: setOutputs
+	TEMPLATE_FIELD           : TEMPLATE_FIELD,
+	INPUTS_MAP_FIELD         : INPUTS_MAP_FIELD,
+	TEMPLATE_OUTPUT_PREFIX   : TEMPLATE_OUTPUT_PREFIX,
+	PREPARE_MARK_FIELD_NAME  : PREPARE_MARK_FIELD_NAME
 })

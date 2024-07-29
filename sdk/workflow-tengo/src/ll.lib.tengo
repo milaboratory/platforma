@@ -9,8 +9,8 @@ log := import("log")
 /**
  * Prints message to the pl log
  */
-print := func(txt) {
-	plapi.print(txt)
+print := func(txt, ...args) {
+	plapi.print(txt, args...)
 }
 
 /**
@@ -70,6 +70,20 @@ fromStrict := func(r) {
 }
 
 /**
+ * If input is a strict map, converts it to a normal one, otherwise returns the object as is
+ *
+ * @param r: any object (possible strict map)
+ * @return map: tengo object
+ */
+ensureNonStrict := func(r) {
+	if isStrict(r) {
+		return fromStrict(r)
+	}
+
+	return r
+}
+
+/**
  * Converts map into a 'strict' map, which will panic on
  * access to non-existing elements.
  * @return strict map
@@ -120,6 +134,7 @@ export toStrict({
 	isStrict: isStrict,
 	isMap: isMap,
 	fromStrict: fromStrict,
+	ensureNonStrict: ensureNonStrict,
 	toStrict: toStrict,
 	fieldId: fieldId,
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,

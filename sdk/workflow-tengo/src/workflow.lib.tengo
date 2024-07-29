@@ -5,58 +5,96 @@
 tx := import("tx")
 ll := import(":ll")
 text := import("text")
+json := import("json")
 
 constants := import(":constants")
 context := import(":context")
+render := import(":render")
 smart := import(":smart")
 maps := import(":maps")
 sets := import(":sets")
-tpl := import(":tpl-eph")
+bobject := import(":bobject")
+bquery := import(":bquery")
 
-//
-// Internal function helpers:
-//
 
-_RESULTS_FIELD_NAME			:= "result"
-_INPUT_CONTEXT_FIELD_NAME	:= "context"
-_OUTPUT_CONTEXT_FIELD_NAME	:= "context"
+// instance of this
+self := import(":tpl")
+
+// renderer's output field storing a map with the results
+_RESULTS_FIELD_NAME := "result"
+
+// renderer's inputs map field with the context resource
+_INPUT_CONTEXT_FIELD_NAME := "context"
+
+// renderer's output field with the context resource
+_OUTPUT_CONTEXT_FIELD_NAME := "context"
+
+// renderer's inputs map field which indicates that we are in
+// the inner render of the pre-run template
+_INNER_PRE_RUN := "__inner_pre_run__"
+
+// a field name prefix used in the renderer's inputs map fields
+// that store prepared resources (aka requested in the 'prepare()' method)
+_PREPARED_INPUTS_PREFIX := "prepared/"
+
+
+// define outputs as we know them
+// this is important to unlock 'prepare' functionality
+// as workflow is an eph template
+self.defineOutputs([_RESULTS_FIELD_NAME, _OUTPUT_CONTEXT_FIELD_NAME])
 
 _isProduction := func() {
-	return tpl.inputs().isProduction.getValueAsJson()
+	return self.inputs().isProduction
 }
 
 _isStaging := func() {
 	return !_isProduction()
 }
 
-//
-// Definitions and exports:
-//
+_isInnerPrerun := func() {
+	return self.hasInput(_INNER_PRE_RUN)
+}
+
+// register standard inputs preprocessors
+self.registerUnmarshaller(bquery.resultUnmarshaller())
 
 _args := undefined
 
 /**
- * Returns a map of block Json arguments
+ * Block arguments map
  */
 args := func() {
-	if _args == undefined {
-		field := tpl.inputs().args
-		ll.assert(!is_undefined(field), "args are not set in workflow inputs")
+	if is_undefined(_args) {
+		// template inputs
+		inputs := self.inputs()
 
-		_args = ll.toStrict(field.getValueAsJson())
+		// original args from inputs
+		_args = inputs.args
+
+		// add all prepared 'extra' inputs to the args
+		for k, v in inputs {
+			// those extra inputs are prefixed
+			if text.has_prefix(k, _PREPARED_INPUTS_PREFIX) {
+
+				name := text.trim_prefix(k, _PREPARED_INPUTS_PREFIX)
+
+				ll.assert(is_undefined(_args[name]), "prepare name is already in use in inputs: ", name)
+
+				_args[name] = v
+			}
+		}
 	}
-
 	return _args
 }
 
 _blockId := undefined
 
 /**
- * Id of corresponding block
+ * Id of this block
  */
 blockId := func() {
 	if _blockId == undefined {
-		_blockId = tpl.inputs().blockId
+		_blockId = self.inputs().blockId
 		ll.assert(!is_undefined(_blockId), "block id is not set in workflow inputs")
 	}
 
@@ -70,12 +108,11 @@ __parentContext := undefined
  */
 _parentContext := func() {
 	if __parentContext == undefined {
-		__parentContext = tpl.inputs()[_INPUT_CONTEXT_FIELD_NAME]
+		__parentContext = self.inputs()[_INPUT_CONTEXT_FIELD_NAME]
 		if __parentContext == undefined {
 			ll.panic("parent context is not set in inputs")
 		}
 	}
-
 	return __parentContext
 }
 
@@ -86,7 +123,7 @@ _buildOutputs := func(results) {
 	ll.assert(ll.isMap(results), "expected to see map result from body function")
 	ll.assert(
 		sets.fromSlice(["outputs", "exports"]) == sets.fromMapKeys(results),
-		"expected only results and exports in the returned map"
+		"expected only results and exports in the returned map, found", sets.fromMapKeys(results)
 	)
 
 	ll.assert(!is_undefined(results.outputs), "outputs are not defined in the results")
@@ -103,21 +140,27 @@ _buildOutputs := func(results) {
 	// create results map
 	resBuilder := smart.mapBuilder()
 	for name, value in o {
-		if smart.isReference(value) {
-			resBuilder.add(name, value)
-		} else {
-			// TODO replace with smart conversion
-			resBuilder.addJson(name, value)
-		}
+		resBuilder.add(name, value)
 	}
 
 	// create ctx and save exports
 	ctxBuilder := context.builder(blockId(), _parentContext())
 	for name, value in e {
-		ctxBuilder.add(name, value)
+		// check that value has spec and data
+		ll.assert(
+			sets.fromSlice(["spec", "data"]) == sets.fromMapKeys(value),
+			"expected spec and data export structure"
+		)
+
+		spec := value.spec
+		if !smart.isReference(spec) {
+			spec = bobject.createSpec(spec)
+		}
+		ctxBuilder.add(name + ".spec", spec)
+		ctxBuilder.add(name + ".data", value.data)
 	}
 
-	// final temlate outputs
+	// final template outputs
 	tplOutputs := {}
 	tplOutputs[_RESULTS_FIELD_NAME] = resBuilder.build()
 	tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = ctxBuilder.build()
@@ -126,42 +169,96 @@ _buildOutputs := func(results) {
 }
 
 /**
- * Defines main entry point for current workflow
+ * Query results pool.
+ *
+ * @param spec: query spec
+ * @return result: an array of {ref: spec: data:} objects (data will be absent if not requested)
  */
-body := func(bodyFn) {
-	return tpl.body(func(_) {
+query := func(spec, ...options) {
+	return bquery.create(spec, _parentContext(), options...)
+}
 
-		if !_isProduction() {
-			// nothing to do
-			return {}
+/**
+ * Query results pool to find spec & data for a given ref.
+ *
+ * @param ref: a ref object ({blockId: name:})
+ * @return result: a {ref: spec: data:} object
+ */
+resolve := func(ref) {
+	return bquery.resolve(ref, _parentContext())
+}
+
+
+// template for prerun
+_preRunTpl := undefined
+
+/**
+ * Prepare additional resources for the workflow body. The body function of the workflow will be executed only when the references will be
+ * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+ *
+ * @param cb: a callback function returning a map of references to be resolved
+ */
+prepare := func(cb) {
+	self.prepare(func(_){
+		raw := cb(args())
+		prefixed := {}
+		// mark prepared inputs
+		for k, v in raw {
+			prefixed[_PREPARED_INPUTS_PREFIX + k] = v
 		}
-
-		workflowInputArgs := args()
-		result := bodyFn(workflowInputArgs)
-
-		return _buildOutputs(result)
+		return prefixed
 	})
 }
 
 /**
  * Defines a pre run entry point for a current workflow
  */
-preRun := func(preRunFn) {
-	return tpl.body(func(_) {
+setPreRun := func(tplId) {
+	ll.assert(is_undefined(_preRunTpl), "pre run template is already set")
 
-		if !_isStaging() {
-			// nothing to do
-			return {}
+	ll.assert(!is_undefined(tplId), "prerun template is undefined")
+	_preRunTpl = tplId
+}
+
+/**
+ * Defines main entry point for current workflow
+ */
+body := func(bodyFn) {
+	return self.body(func(_) {
+
+		if _isProduction() || _isInnerPrerun() {
+
+			workflowInputArgs := args()
+			result := bodyFn(workflowInputArgs)
+
+			return _buildOutputs(result)
 		}
 
-		workflowInputArgs := args()
-		result := preRunFn(workflowInputArgs)
+		if !is_undefined(_preRunTpl) {
 
-		return _buildOutputs(result)
+			// render pre-run template
+
+			inputs := self.inputs()
+			inputs[_INNER_PRE_RUN] = "true"
+
+
+			renderer := render.createEphemeral(_preRunTpl, inputs)
+
+			tplOutputs := {}
+			tplOutputs[_RESULTS_FIELD_NAME] = renderer.output(_RESULTS_FIELD_NAME)
+			tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = renderer.output(_OUTPUT_CONTEXT_FIELD_NAME)
+
+			return tplOutputs
+		}
+
+		return {}
 	})
 }
 
 export ll.toStrict({
+	query: query,
+	resolve: resolve,
+	prepare: prepare,
 	body: body,
-	preRun: preRun
+	setPreRun: setPreRun
 })

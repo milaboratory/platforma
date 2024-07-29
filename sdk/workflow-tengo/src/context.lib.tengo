@@ -20,7 +20,7 @@ builder := func(block, parentContext) {
 	super := smart.ephemeralBuilder(constants.RTYPE_CONTEXT)
 
 	// set blockId associated with this context
-	super.createInputField(_BLOCK_ID_FIELD).set(block)
+	super.createInputField(_BLOCK_ID_FIELD).setRefOrJson(block)
 
 	// set parent context
 	super.createInputField(_PARENT_CTX_FIELD).set(parentContext)
@@ -38,11 +38,7 @@ builder := func(block, parentContext) {
 		add: func(name, value) {
 			field := super.createInputField(_EXPORTS_OUTPUT_PREFIX + name)
 
-			if smart.isReference(value) {
-				field.set(value)
-			} else {
-				field.set(smart.createJsonResource(value))
-			}
+			field.setRefOrJson(value)
 
 			return self
 		},

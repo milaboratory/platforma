@@ -1,0 +1,27 @@
+// simple1
+
+
+ll := import(":ll")
+smart := import(":smart")
+
+self := import(":tpl")
+
+self.defineOutputs(["simpleMap", "strictMap"])
+
+self.body(func(inputs) {
+
+	result := {
+
+		simpleMap: {
+			a: "a",
+			b: "b"
+		},
+
+		strictMap: ll.toStrict({
+			a: "a",
+			b: "b"
+		})
+	}
+
+	return result
+})

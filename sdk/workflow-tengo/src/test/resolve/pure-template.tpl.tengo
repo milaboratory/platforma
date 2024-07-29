@@ -1,0 +1,31 @@
+// pure template with resolve
+
+ll := import("@milaboratory/tengo-sdk:ll")
+smart := import(":smart")
+render := import(":render")
+fmt := import("fmt")
+
+self := import(":tpl")
+
+self.defineOutputs(["main"])
+
+self.prepare(func(inputs) {
+
+	concat_ab := ll.importTemplate(":test.resolve.concat_ab")
+	run := render.create(concat_ab, {
+		a: inputs.a,
+		b: inputs.b
+	})
+
+	return {
+		concat: run.output("concat")
+	}
+})
+
+self.body(func(inputs) {
+	result := {
+		main: inputs.concat + "cd"
+	}
+
+	return result
+})

@@ -43,10 +43,11 @@ mapValues := func(map, fnV) {
 }
 
 // Map keys and values
-map := func(map, fnK, fnV) {
+map := func(map, fn) {
 	newM := {}
 	for k, v in map {
-		newM[fnK(k)] = fnV(v)
+		r := fn(k, v)
+		newM[r.key] = r.value
 	}
 
 	return newM

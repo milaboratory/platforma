@@ -12,6 +12,8 @@ ll := import(":ll")
  * @return self
  */
 inherit := func(super, self) {
+	self["super"] = super
+
 	// iherit super methods
 	for k, v in super {
 		if self[k] == undefined {
