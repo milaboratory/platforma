@@ -25,7 +25,7 @@
   "devDependencies": {
     "@milaboratory/tengo-template-builder": "^1.8.4",
     "@milaboratory/pl-middle-layer": "^1.8.4",
-    "@milaboratory/sdk-test": "^1.2.3",
+    "@milaboratory/sdk-test": "^1.4.1",
     "vitest": "^2.0.2"
   }
 }
