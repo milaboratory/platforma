@@ -173,6 +173,7 @@ const refresh = () => {
         storageEntries.find((e) => e.name === 'local'),
         (entry) => {
           data.storageHandle = entry.handle;
+          data.dirPath = entry.initialFullPath;
         },
       );
     })
