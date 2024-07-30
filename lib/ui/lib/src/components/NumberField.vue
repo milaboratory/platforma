@@ -156,10 +156,10 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
 </script>
 
 <template>
-  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-input d-flex-column" @keydown="handleKeyPress($event)">
-    <div class="mi-number-input__main-wrapper d-flex">
-      <DoubleContour class="mi-number-input__contour" />
-      <div class="mi-number-input__wrapper flex-grow d-flex flex-align-center">
+  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-field d-flex-column" @keydown="handleKeyPress($event)">
+    <div class="mi-number-field__main-wrapper d-flex">
+      <DoubleContour class="mi-number-field__contour" />
+      <div class="mi-number-field__wrapper flex-grow d-flex flex-align-center">
         <label v-if="label" class="text-description">
           {{ label }}
           <Tooltip v-if="slots.tooltip" class="info" position="top">
@@ -170,10 +170,10 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
         </label>
         <input ref="input" v-model="computedValue" :disabled="disabled" :placeholder="placeholder" class="text-s flex-grow" />
       </div>
-      <div class="mi-number-input__icons d-flex-column">
+      <div class="mi-number-field__icons d-flex-column">
         <div
           :class="{ disabled: isIncrementDisabled }"
-          class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="increment"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -187,7 +187,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
         </div>
         <div
           :class="{ disabled: isDecrementDisabled }"
-          class="mi-number-input__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="decrement"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -201,6 +201,6 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
         </div>
       </div>
     </div>
-    <div v-if="errors.trim()" class="mi-number-input__hint text-description">{{ errors }}</div>
+    <div v-if="errors.trim()" class="mi-number-field__hint text-description">{{ errors }}</div>
   </div>
 </template>

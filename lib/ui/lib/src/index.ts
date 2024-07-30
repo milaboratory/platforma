@@ -11,8 +11,8 @@ import BtnAccent from './components/BtnAccent.vue';
 import BtnGhost from './components/BtnGhost.vue';
 import BtnLink from './components/BtnLink.vue';
 import TextField from './components/TextField.vue';
-import NumberInput from './components/NumberInput.vue';
-import SelectInput from './components/SelectInput.vue';
+import NumberField from './components/NumberField.vue';
+import Dropdown from './components/Dropdown.vue';
 import LineDropdown from './components/LineDropdown.vue';
 import MultiDropdown from './components/MultiDropdown.vue';
 import DropdownListItem from './components/DropdownListItem.vue';
@@ -84,13 +84,13 @@ export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, Gen
 
 export {
   // Common
-  NumberInput,
+  NumberField,
   ThemeSwitcher,
   BtnPrimary,
   BtnSecondary,
   BtnAccent,
   TextField,
-  SelectInput,
+  Dropdown,
   MultiDropdown,
   LineDropdown,
   DropdownListItem,

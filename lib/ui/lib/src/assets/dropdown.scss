@@ -1,6 +1,6 @@
-@import "./mixins";
+@import './mixins';
 
-.ui-select-input {
+.ui-dropdown {
   $root: &;
 
   --contour-color: var(--color-txt-01);
@@ -12,8 +12,8 @@
   --label-offset-right-x: 8px;
   --label-color: var(--color-txt-01);
 
-  [data-theme="dark"] & {
-    --options-bg: #1B1B1F;
+  [data-theme='dark'] & {
+    --options-bg: #1b1b1f;
   }
 
   position: relative;
@@ -219,7 +219,7 @@
     @include abs-center-y;
     right: 12px;
     background-color: var(--control-mask-fill);
-    @include mask(url("./images/16_chevron-down.svg"), 16px);
+    @include mask(url('./images/16_chevron-down.svg'), 16px);
   }
 
   .arrow-altered {
@@ -234,11 +234,12 @@
     @include abs-center-y;
     right: 36px;
     z-index: 1;
-    @include icon(url("./images/16_clear.svg"), 16px); // @todo mask-image
+    @include icon(url('./images/16_clear.svg'), 16px); // @todo mask-image
     cursor: pointer;
   }
 
-  &.open,&:focus-within {
+  &.open,
+  &:focus-within {
     z-index: 1;
     --label-color: var(--color-txt-focus);
   }

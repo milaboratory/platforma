@@ -229,17 +229,17 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="ui-select-input__envelope">
+  <div class="ui-dropdown__envelope">
     <div
       ref="root"
       :tabindex="tabindex"
-      class="ui-select-input"
+      class="ui-dropdown"
       :class="{ open: data.open, error, disabled }"
       @keydown="handleKeydown"
       @focusout="onBlur"
     >
-      <div class="ui-select-input__container">
-        <div class="ui-select-input__field">
+      <div class="ui-dropdown__container">
+        <div class="ui-dropdown__field">
           <input
             ref="input"
             v-model="data.search"
@@ -265,7 +265,7 @@ watchPostEffect(() => {
 
           <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggle" />
           <div v-else class="arrow" @click.stop="toggle" />
-          <div class="ui-select-input__append">
+          <div class="ui-dropdown__append">
             <div v-if="clearable && hasValue" class="icon icon--clear" @click.stop="clear" />
             <slot name="append" />
           </div>
@@ -278,7 +278,7 @@ watchPostEffect(() => {
             </template>
           </tooltip>
         </label>
-        <div v-if="data.open" ref="list" class="ui-select-input__options">
+        <div v-if="data.open" ref="list" class="ui-dropdown__options">
           <DropdownListItem
             v-for="(item, index) in filteredRef"
             :key="index"
@@ -291,10 +291,10 @@ watchPostEffect(() => {
           />
           <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
         </div>
-        <double-contour class="ui-select-input__contour" />
+        <double-contour class="ui-dropdown__contour" />
       </div>
     </div>
-    <div v-if="helper" class="ui-select-input__helper">{{ helper }}</div>
-    <div v-else-if="error" class="ui-select-input__error">{{ error }}</div>
+    <div v-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
+    <div v-else-if="error" class="ui-dropdown__error">{{ error }}</div>
   </div>
 </template>
