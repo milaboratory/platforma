@@ -26,7 +26,8 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "@milaboratory/platforma-uikit": "^1.0.3",
+    "@milaboratory/helpers": "^1.5.0",
+    "@milaboratory/platforma-uikit": "^1.0.5",
     "@milaboratory/sdk-ui": "^0.12.5"
   },
   "dependencies": {

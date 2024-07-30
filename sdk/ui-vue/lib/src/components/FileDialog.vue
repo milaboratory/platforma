@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { watch, reactive, computed, toRef, watchEffect, onUpdated } from 'vue';
-import { BtnPrimary, BtnGhost, TextField, SelectInput, DialogModal } from '@milaboratory/platforma-uikit';
+import { BtnPrimary, BtnGhost, TextField, Dropdown, DialogModal } from '@milaboratory/platforma-uikit';
 import { debounce } from '@milaboratory/helpers/functions';
 import { between, notEmpty, tapIf } from '@milaboratory/helpers/utils';
 import type { Option } from '@milaboratory/helpers/types';
@@ -193,7 +193,7 @@ onUpdated(refresh);
   <dialog-modal class="split" :model-value="modelValue" width="688px" @update:model-value="closeModal">
     <div v-focus class="form-modal" @click.stop @keyup.enter="submit">
       <div class="form-modal__title">{{ title ?? 'Select files' }}</div>
-      <select-input v-model="data.storageHandle" label="Select storage" :options="data.storageOptions" />
+      <dropdown v-model="data.storageHandle" label="Select storage" :options="data.storageOptions" />
       <text-field v-model="data.dirPath" label="Enter path" />
       <div class="d-flex column">
         <div v-if="data.files.length" class="ls-head">
