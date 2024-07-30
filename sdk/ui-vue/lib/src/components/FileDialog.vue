@@ -2,9 +2,9 @@
 import { watch, reactive, computed, toRef, watchEffect, onUpdated } from 'vue';
 import { BtnPrimary, BtnGhost, TextField, SelectInput, DialogModal } from '@milaboratory/platforma-uikit';
 import { debounce } from '@milaboratory/helpers/functions';
-import { between, notEmpty } from '@milaboratory/helpers/utils';
+import { between, notEmpty, tapIf } from '@milaboratory/helpers/utils';
 import type { Option } from '@milaboratory/helpers/types';
-import type { ImportFileHandle, StorageHandle, ListFilesResult } from '@milaboratory/sdk-ui';
+import type { ImportFileHandle, StorageHandle } from '@milaboratory/sdk-ui';
 import type { ImportedFiles } from '../types';
 
 type LsFile = {
@@ -25,6 +25,8 @@ const emit = defineEmits<{
 const props = defineProps<{
   modelValue: boolean;
   extensions?: string[];
+  multi?: boolean;
+  title?: string;
 }>();
 
 const vFocus = {
@@ -35,7 +37,7 @@ const vFocus = {
 
 const data = reactive({
   dirPath: '',
-  storageId: undefined as StorageHandle | undefined,
+  storageHandle: undefined as StorageHandle | undefined,
   files: [] as LsFile[],
   error: '',
   storageOptions: [] as Option<StorageHandle>[],
@@ -46,15 +48,15 @@ const data = reactive({
 const lookup = computed(() => {
   return {
     dirPath: data.dirPath,
-    storageId: data.storageId,
+    storageHandle: data.storageHandle,
   };
 });
 
-watch(toRef(data, 'storageId'), () => {
+watch(toRef(data, 'storageHandle'), () => {
   data.dirPath = '';
 });
 
-const query = debounce((storageId: StorageHandle, dirPath: string) => {
+const query = debounce((storageHandle: StorageHandle, dirPath: string) => {
   data.error = '';
   data.files = [];
   data.lastSelected = undefined;
@@ -62,7 +64,7 @@ const query = debounce((storageId: StorageHandle, dirPath: string) => {
     return;
   }
   window.platforma.lsDriver
-    .listFiles(storageId, dirPath)
+    .listFiles(storageHandle, dirPath)
     .then((res) => {
       res = notEmpty(res);
       data.files = res.entries.map((item, id) => ({
@@ -78,9 +80,9 @@ const query = debounce((storageId: StorageHandle, dirPath: string) => {
 }, 1000);
 
 watchEffect(() => {
-  const { storageId, dirPath } = lookup.value;
-  if (storageId) {
-    query(storageId, dirPath);
+  const { storageHandle, dirPath } = lookup.value;
+  if (storageHandle) {
+    query(storageHandle, dirPath);
   }
 });
 
@@ -93,9 +95,9 @@ const closeModal = () => {
 };
 
 const submit = () => {
-  if (isReady.value && data.storageId) {
+  if (isReady.value && data.storageHandle) {
     emit('import:files', {
-      storageId: data.storageId,
+      storageHandle: data.storageHandle,
       files: selectedFiles.value.map((f) => f.handle!),
     });
     closeModal();
@@ -105,6 +107,7 @@ const submit = () => {
 const selectFile = (ev: MouseEvent, file: LsFile) => {
   const { shiftKey, metaKey } = ev;
   const { lastSelected } = data;
+  ev.preventDefault();
 
   if (file.isDir) {
     data.dirPath = file.path;
@@ -112,7 +115,15 @@ const selectFile = (ev: MouseEvent, file: LsFile) => {
   }
 
   if (file.isAllowed) {
+    if (!props.multi) {
+      data.files.forEach((f) => (f.selected = false));
+    }
+
     file.selected = true;
+
+    if (!props.multi) {
+      return;
+    }
 
     if (!metaKey && !shiftKey) {
       data.files.forEach((f) => {
@@ -157,6 +168,13 @@ const refresh = () => {
         text: it.name,
         value: it.handle,
       }));
+
+      tapIf(
+        storageEntries.find((e) => e.name === 'local'),
+        (entry) => {
+          data.storageHandle = entry.handle;
+        },
+      );
     })
     .catch((err) => (data.error = String(err)));
 };
@@ -173,13 +191,13 @@ onUpdated(refresh);
 <template>
   <dialog-modal class="split" :model-value="modelValue" width="688px" @update:model-value="closeModal">
     <div v-focus class="form-modal" @click.stop @keyup.enter="submit">
-      <div class="form-modal__title">Select remote files</div>
-      <select-input v-model="data.storageId" label="Select storage" :options="data.storageOptions" />
+      <div class="form-modal__title">{{ title ?? 'Select files' }}</div>
+      <select-input v-model="data.storageHandle" label="Select storage" :options="data.storageOptions" />
       <text-field v-model="data.dirPath" label="Enter path" />
       <div class="d-flex column">
         <div v-if="data.files.length" class="ls-head">
           <span>Selected: {{ selectedFiles.length }}</span>
-          <div class="ml-auto" @click.stop="() => changeAll(true)">Select all</div>
+          <div v-if="multi" class="ml-auto" @click.stop="() => changeAll(true)">Select all</div>
           <span>/</span>
           <div @click.stop="() => changeAll(false)">Deselect all</div>
         </div>

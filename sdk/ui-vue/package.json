@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -21,7 +21,7 @@
     "playground": "npm run dev -w playground",
     "prepare": "husky",
     "verify-package-lock": "tsx scripts/verify-package-lock.ts",
-    "check": "npm run verify-package-lock"
+    "check": "npm run type-check && npm run lint && npm run verify-package-lock"
   },
   "author": "",
   "license": "ISC",

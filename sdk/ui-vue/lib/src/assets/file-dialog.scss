@@ -24,6 +24,7 @@
   max-height: 400px;
   @include scrollbar(true);
   overflow: auto;
+  user-select: none;
   > div {
     font-family: var(--font-family-monospace);
     padding: 2px 4px;

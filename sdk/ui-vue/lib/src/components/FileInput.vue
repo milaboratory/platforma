@@ -1,5 +1,12 @@
 <script lang="ts" setup>
 import { BtnSecondary, MaskIcon } from '@milaboratory/platforma-uikit';
+import FileDialog from './FileDialog.vue';
+import { reactive } from 'vue';
+import type { ImportedFiles } from '../types';
+
+const data = reactive({
+  fileDialogOpen: false,
+});
 
 function extractFileName(filePath: string) {
   return filePath.replace(/^.*[\\/]/, '');
@@ -41,18 +48,9 @@ function extractPaths(e: DragEvent, extensions?: string[]) {
 
 const emit = defineEmits(['update:modelValue']);
 
-const props = withDefaults(
-  defineProps<{
-    modelValue: string;
-    openFile: () => Promise<string | undefined>;
-  }>(),
-  {
-    modelValue: '',
-    openFile: () => {
-      throw Error('Inject openFile implementation');
-    },
-  },
-);
+defineProps<{
+  modelValue: string | undefined;
+}>();
 
 async function onDrop(e: DragEvent) {
   e.preventDefault();
@@ -64,10 +62,18 @@ async function onDrop(e: DragEvent) {
   }
 }
 
+const openFileDialog = () => {
+  data.fileDialogOpen = true;
+};
+
+const onImport = (v: ImportedFiles) => {
+  if (v.files.length) {
+    emit('update:modelValue', v.files[0]);
+  }
+};
+
 function onClickSelect() {
-  props.openFile().then((filePath) => {
-    emit('update:modelValue', filePath);
-  });
+  openFileDialog();
 }
 
 function clear() {
@@ -87,4 +93,5 @@ function clear() {
       <btn-secondary @click.stop="onClickSelect">Select file</btn-secondary>
     </div>
   </div>
+  <file-dialog v-model="data.fileDialogOpen" multi @import:files="onImport" />
 </template>

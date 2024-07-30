@@ -34,7 +34,7 @@ export type LocalState<Href extends `/${string}` = `/${string}`> = {
 };
 
 export type ImportedFiles = {
-  storageId: StorageHandle;
+  storageHandle: StorageHandle;
   files: ImportFileHandle[];
 };
 
