@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -41,7 +41,7 @@
     "./*": "./*"
   },
   "dependencies": {
-    "@milaboratory/helpers": "^1.4.4",
+    "@milaboratory/helpers": "^1.5.0",
     "@milaboratory/platforma-core": "^0.1.2",
     "js-yaml": "^4.1.0",
     "vue": "^3.4.27",
