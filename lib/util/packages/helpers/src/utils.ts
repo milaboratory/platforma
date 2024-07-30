@@ -1,6 +1,4 @@
 import type { Option, AwaitedStruct, Unionize } from "./types";
-import canonicalize from 'canonicalize';
-import { md5 } from 'js-md5';
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -246,14 +244,4 @@ export function unionize<K extends keyof O, V, O extends Record<K, V>>(obj: O): 
     key,
     value
   })) as Unionize<O>[];
-}
-
-export function md5Hash(message: Buffer | string): string {
-  const hash = md5.create();
-  hash.update(message);
-  return hash.hex();
-}
-
-export function objectHash(value: unknown) {
-  return md5Hash(canonicalize(value) ?? '');
 }
