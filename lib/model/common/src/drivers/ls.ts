@@ -45,4 +45,7 @@ export interface LsDriver {
   getStorageList(): Promise<StorageEntry[]>;
 
   listFiles(storage: StorageHandle, fullPath: string): Promise<ListFilesResult>;
+
+  /** Gets a file path from an import handle. */
+  getFilePathFromHandle(handle: ImportFileHandle): Promise<string>;
 }
