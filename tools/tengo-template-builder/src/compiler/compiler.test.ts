@@ -5,6 +5,8 @@ import {
   testPackage1,
   testPackage1Lib1Name,
   testPackage1Lib1Src, testPackage1Lib2Name, testPackage1Lib2Src,
+  testPackage1Soft1Name,
+  testPackage1Soft1Src,
   testPackage1Tpl3CompiledBase64, testPackage1Tpl3Name
 } from './test.artifacts';
 import { artifactNameToString } from './package';
@@ -30,6 +32,7 @@ test('compile main source set', () => {
   // emulate adding compiled artifacts
   compiler.addLib(parseSource('dist', testPackage1Lib1Src, testPackage1Lib1Name, true));
   compiler.addLib(parseSource('dist', testPackage1Lib2Src, testPackage1Lib2Name, true));
+  compiler.addSoftware(parseSource('dist', testPackage1Soft1Src, testPackage1Soft1Name, true));
   compiler.addTemplate(new Template('dist', testPackage1Tpl3Name, { content: Buffer.from(testPackage1Tpl3CompiledBase64, 'base64') }));
 
   // all elements in the context must have all their dependencies met

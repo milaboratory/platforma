@@ -6,14 +6,14 @@ import { ArtifactMap, createArtifactNameSet } from './artifactset';
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';
 
 const functionCallRE = (moduleName: string, fnName: string) => {
-  return new RegExp(`\\b${moduleName}\\.(?<templateUse>(?<fnName>` + fnName + `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
+  return new RegExp(`\\b${moduleName}\\.(?<fnCall>(?<fnName>` + fnName + `)\\s*\\(\\s*"(?<templateName>[^"]+)"\\s*\\))`)
 }
 
 const newGetTemplateIdRE = (moduleName: string) => {
   return functionCallRE(moduleName, "getTemplateId")
 }
-const newGetSoftwareIdRE = (moduleName: string) => {
-  return functionCallRE(moduleName, "getSoftwareId")
+const newGetSoftwareInfoRE = (moduleName: string) => {
+  return functionCallRE(moduleName, "getSoftwareInfo")
 }
 
 const newImportTemplateRE = (moduleName: string) => {
@@ -136,7 +136,7 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
       if (!context.tplDepREs.has(iInfo.module)) {
         context.tplDepREs.set(iInfo.module, [
           ['template', newGetTemplateIdRE(iInfo.alias)],
-          ['software', newGetSoftwareIdRE(iInfo.alias)]
+          ['software', newGetSoftwareInfoRE(iInfo.alias)]
         ])
       }
       return { line, context, artifact: undefined }
@@ -174,9 +174,9 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
           continue
         }
 
-        const { templateUse, templateName, fnName } = match.groups
+        const { fnCall, templateName, fnName } = match.groups
 
-        if (!templateUse || !templateName || !fnName) {
+        if (!fnCall || !templateName || !fnName) {
           throw Error(`failed to parse template import statement`)
         }
 
@@ -187,7 +187,7 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
 
         if (globalizeImports) {
           line = line.replace(
-            templateUse,
+            fnCall,
             `${fnName}("${artifact.pkg}:${artifact.id}")`
           )
         }

@@ -6,6 +6,7 @@ test('test lib 1 parsing', () => {
   expect(libSrc.src).toEqual(testLocalLib1SrcNormalized)
   expect(libSrc.dependencies).toEqual([
     { type: 'library', pkg: 'package1', id: 'other-lib-2' },
+    { type: 'software', pkg: 'current-package', id: 'software-1' },
     { type: 'template', pkg: 'current-package', id: 'local-template-2' },
     { type: 'template', pkg: 'package1', id: 'template-3' }
   ]);

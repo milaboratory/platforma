@@ -44,6 +44,7 @@ plapiCustomName := import("plapi" )
 notplapiCustomName.getTemplateId( "some other:parameter")
 
 plapiCustomName.getTemplateIdAnother("sss:kkk" )
+plapiCustomName.getSoftwareInfo(":software-1")
 
 export {
     "some": "value",
@@ -58,6 +59,7 @@ plapiCustomName := import("plapi" )
 notplapiCustomName.getTemplateId( "some other:parameter")
 
 plapiCustomName.getTemplateIdAnother("sss:kkk" )
+plapiCustomName.getSoftwareInfo("current-package:software-1")
 
 export {
     "some": "value",
@@ -137,6 +139,16 @@ export const testPackage1Lib1Src = `
 export {
     "some": "value1"
 }
+`;
+
+export const testPackage1Soft1Name: FullArtifactName = {
+  type: 'software',
+  pkg: 'current-package',
+  id: 'software-1',
+  version: '1.2.3'
+};
+export const testPackage1Soft1Src = `
+some software contents. Template builder should pass it 'as-is'
 `;
 
 export const testPackage1Lib2Name: FullArtifactName = {
