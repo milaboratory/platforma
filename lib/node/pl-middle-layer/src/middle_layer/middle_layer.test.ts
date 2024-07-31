@@ -582,10 +582,10 @@ test('should create read-logs block, render it and read logs from a file', async
 
     const storages = await ml.driverKit.lsDriver.getStorageList();
     const library = storages.find((s) => s.name == 'library');
-    expect(library).not.toBeUndefined();
+    expect(library).toBeDefined();
     const files = await ml.driverKit.lsDriver.listFiles(library!.handle, '');
     const ourFile = files.entries.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
-    expect(ourFile).not.toBeUndefined();
+    expect(ourFile).toBeDefined();
     expect(ourFile?.type).toBe('file');
 
     await prj.setBlockArgs(block3Id, {

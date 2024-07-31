@@ -9,6 +9,7 @@ import { BlockConfig } from '@milaboratory/sdk-ui';
 import { loadPackDescription, RegistryV1 } from '@milaboratory/pl-block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev';
+import { getDevV2PacketMtime } from '../../block_registry';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -106,6 +107,10 @@ export class BlockPackPreparer {
         ) as BlockConfig;
         const workflowContent = await fs.promises.readFile(description.components.workflow.file);
         const frontendPath = description.components.ui.folder;
+        const source = { ...spec };
+        if (spec.mtime === undefined)
+          // if absent, calculating the mtime here, so the block will correctly show whether it can be updated
+          source.mtime = await getDevV2PacketMtime(description);
         return {
           type: 'explicit',
           template: {
@@ -118,7 +123,7 @@ export class BlockPackPreparer {
             path: frontendPath,
             signature: this.signer.sign(frontendPath)
           },
-          source: spec
+          source
         };
       }
 

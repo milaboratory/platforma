@@ -83,27 +83,41 @@ export class JsExecutionContext
     this.accessors.clear();
   }
 
+  private static cleanErrorContext(error: unknown): void {
+    if (typeof error === 'object' && error !== null && 'context' in error) delete error['context'];
+  }
+
   public evaluateBundle(code: string) {
-    this.vm.unwrapResult(this.vm.evalCode(code, undefined, { type: 'global' })).dispose();
+    try {
+      this.vm.unwrapResult(this.vm.evalCode(code, "bundle.js", { type: 'global' })).dispose();
+    } catch (err: unknown) {
+      JsExecutionContext.cleanErrorContext(err);
+      throw err;
+    }
   }
 
   public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
-    return Scope.withScope((localScope) => {
-      const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
+    try {
+      return Scope.withScope((localScope) => {
+        const targetCallback = localScope.manage(this.vm.getProp(this.callbackRegistry, cbName));
 
-      if (this.vm.typeof(targetCallback) !== 'function')
-        throw new Error(`No such callback: ${cbName}`);
+        if (this.vm.typeof(targetCallback) !== 'function')
+          throw new Error(`No such callback: ${cbName}`);
 
-      return this.scope.manage(
-        this.vm.unwrapResult(
-          this.vm.callFunction(
-            targetCallback,
-            this.vm.undefined,
-            ...args.map((arg) => this.exportObjectUniversal(arg, localScope))
+        return this.scope.manage(
+          this.vm.unwrapResult(
+            this.vm.callFunction(
+              targetCallback,
+              this.vm.undefined,
+              ...args.map((arg) => this.exportObjectUniversal(arg, localScope))
+            )
           )
-        )
-      );
-    });
+        );
+      });
+    } catch (err: unknown) {
+      JsExecutionContext.cleanErrorContext(err);
+      throw err;
+    }
   }
 
   //

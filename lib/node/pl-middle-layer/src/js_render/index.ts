@@ -20,7 +20,6 @@ export function computableFromRF(
     runtime.setMemoryLimit(1024 * 640);
     runtime.setMaxStackSize(1024 * 320);
     const vm = scope.manage(runtime.newContext());
-
     const rCtx = new JsExecutionContext(scope, vm, ctx, env, cCtx);
 
     rCtx.evaluateBundle(code.content);
