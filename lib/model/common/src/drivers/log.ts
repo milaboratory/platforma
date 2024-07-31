@@ -71,9 +71,9 @@ export type StreamingApiResponseOk = {
   size: number;
   /** Offset in bytes from the beginning of a file. */
   newOffset: number;
-}
+};
 
 /** The handle should be issued again, this one is done. */
 export type StreamingApiResponseHandleOutdated = {
   shouldUpdateHandle: true;
-}
+};

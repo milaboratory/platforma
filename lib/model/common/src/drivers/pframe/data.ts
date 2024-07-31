@@ -7,14 +7,14 @@ export const PValueDoubleNA = NaN;
 export const PValueStringNA = null;
 export const PValueBytesNA = null;
 
-export type PValueInt = number
-export type PValueLong = number // use bigint only if extra integer precision is needed
-export type PValueFloat = number
-export type PValueDouble = number
-export type PValueString = string | null
-export type PValueBytes = Uint8Array | null
+export type PValueInt = number;
+export type PValueLong = number; // use bigint only if extra integer precision is needed
+export type PValueFloat = number;
+export type PValueDouble = number;
+export type PValueString = string | null;
+export type PValueBytes = Uint8Array | null;
 
-export type PVectorDataInt = Int32Array
+export type PVectorDataInt = Int32Array;
 export type PVectorDataLong = BigInt64Array;
 export type PVectorDataFloat = Float32Array;
 export type PVectorDataDouble = Float64Array;
@@ -27,7 +27,7 @@ export type PVectorData =
   | PVectorDataFloat
   | PVectorDataDouble
   | PVectorDataString
-  | PVectorDataBytes
+  | PVectorDataBytes;
 
 /** Table column data in comparison to the data stored in a separate PColumn
  * may have some of the values "absent", i.e. as a result of missing record in
@@ -55,13 +55,13 @@ export type TableRange = {
 
   /** Block length */
   readonly length: number;
-}
+};
 
 /** Unified information about table shape */
 export type PTableShape = {
   /** Number of unified table columns, including all axes and PColumn values */
-  columns: number
+  columns: number;
 
   /** Number of rows */
-  rows: number
-}
+  rows: number;
+};

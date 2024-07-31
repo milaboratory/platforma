@@ -2,16 +2,18 @@ import { Branded } from '../branding';
 
 /** Handle of locally downloaded blob. This handle is issued only after the
  * blob's content is downloaded locally, and ready for quick access. */
-export type LocalBlobHandle = Branded<string, 'LocalBlobHandle'>
+export type LocalBlobHandle = Branded<string, 'LocalBlobHandle'>;
 
 /** Handle of remote blob. This handle is issued as soon as the data becomes
  * available on the remote server. */
-export type RemoteBlobHandle = Branded<string, 'RemoteBlobHandle'>
+export type RemoteBlobHandle = Branded<string, 'RemoteBlobHandle'>;
 
 /** Being configured inside the output structure provides information about
  * blob's content and means to retrieve it when needed. */
 export interface BlobHandleAndSize<
-  H extends LocalBlobHandle | RemoteBlobHandle = LocalBlobHandle | RemoteBlobHandle
+  H extends LocalBlobHandle | RemoteBlobHandle =
+    | LocalBlobHandle
+    | RemoteBlobHandle
 > {
   /** Handle to retrieve block content using {@link BlobDriver.getContent()} */
   readonly handle: H;

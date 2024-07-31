@@ -1,16 +1,20 @@
-import { assertNever } from "../util";
+import { assertNever } from '../util';
 
 export type ImportFileHandleUpload = `upload://upload/${string}`;
 export type ImportFileHandleIndex = `index://index/${string}`;
 
 export type ImportFileHandle = ImportFileHandleUpload | ImportFileHandleIndex;
 
-export function isImportFileHandleUpload(handle: ImportFileHandle): handle is ImportFileHandleUpload {
-  return handle.startsWith("upload://upload/");
+export function isImportFileHandleUpload(
+  handle: ImportFileHandle
+): handle is ImportFileHandleUpload {
+  return handle.startsWith('upload://upload/');
 }
 
-export function isImportFileHandleIndex(handle: ImportFileHandle): handle is ImportFileHandleIndex {
-  return handle.startsWith("index://index/");
+export function isImportFileHandleIndex(
+  handle: ImportFileHandle
+): handle is ImportFileHandleIndex {
+  return handle.startsWith('index://index/');
 }
 
 /** Results in upload */
@@ -37,18 +41,18 @@ export type ListFilesResult = {
 
 export type LsEntry =
   | {
-    type: 'dir';
-    name: string;
-    fullPath: string;
-  }
+      type: 'dir';
+      name: string;
+      fullPath: string;
+    }
   | {
-    type: 'file';
-    name: string;
-    fullPath: string;
+      type: 'file';
+      name: string;
+      fullPath: string;
 
-    /** This handle should be set to args... */
-    handle: ImportFileHandle;
-  };
+      /** This handle should be set to args... */
+      handle: ImportFileHandle;
+    };
 
 export interface LsDriver {
   /** remote and local storages */
