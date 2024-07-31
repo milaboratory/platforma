@@ -37,7 +37,9 @@ export type DataRow = Record<string, unknown>;
 
 export type PrimaryKey = Branded<string, 'PrimaryKey'>;
 
-export type GetPrimaryKey<D extends DataRow = DataRow> = (dataRow: D, index: number) => PrimaryKey;
+export type ResolvePrimaryKey<D extends DataRow = DataRow> = (dataRow: D, index: number) => string;
+
+export type ResolveRowHeight<D extends DataRow = DataRow> = (dataRow: D, index: number) => number;
 
 export type SelectedRowsOperation<D extends DataRow = DataRow> = {
   label: string;
@@ -59,6 +61,20 @@ export type TableSettings<D extends DataRow = DataRow> = {
   controlColumn?: boolean;
   onSelectedRows?: SelectedRowsOperation<D>[];
   onSelectedColumns?: SelectedColumnsOperation<D>[];
+
+  onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
+};
+
+export type RawTableSettings<D extends DataRow = DataRow> = {
+  columns: ColumnSpec<D>[];
+  gap?: number;
+  height: number;
+  addColumn?: () => Promise<void>;
+  controlColumn?: boolean;
+  onSelectedRows?: SelectedRowsOperation<D>[];
+  onSelectedColumns?: SelectedColumnsOperation<D>[];
+  resolvePrimaryKey: ResolvePrimaryKey<D>;
+  resolveRowHeight: ResolveRowHeight<D>;
 
   onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
 };
@@ -104,7 +120,10 @@ export type Row<D extends DataRow = DataRow> = {
 };
 
 export type TableRow = {
-  style: Record<string, string>;
+  style: {
+    top: `${number}px`;
+    height: `${number}px`;
+  };
   offset: number;
   height: number;
   cells: TableCell[];

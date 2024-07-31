@@ -1,10 +1,12 @@
 import type { TableSettings } from './types';
 import Component from './TableComponent.vue';
 import type * as Types from './types';
-import type { DataRow, GetPrimaryKey, Row } from './types';
-import { GAP, WINDOW_DELTA } from './constants';
-import { sliceBy } from './domain';
-import { h } from 'vue';
+import type { DataRow, Row, RawTableSettings } from './types';
+import { GAP } from './constants';
+import type { ComputedRef } from 'vue';
+import { computed, h, reactive, unref } from 'vue';
+import { RawData } from './adapters/RawData';
+import type { MaybeRef } from '@/types';
 
 export function settings<D extends Types.DataRow>(tableSettings: Readonly<TableSettings<D>>): Readonly<TableSettings> {
   return Object.freeze(tableSettings) as Readonly<TableSettings>;
@@ -18,48 +20,37 @@ export { Component };
 
 export { Types };
 
-const rowsStore = new WeakMap<WeakKey, Row[]>();
+export function fromRawData<D extends Types.DataRow>(rows: D[], rawSettings: Types.RawTableSettings<D>): Readonly<TableSettings> {
+  const dataSource = new RawData<D>(rows, rawSettings.resolveRowHeight, rawSettings.resolvePrimaryKey);
+  return { ...rawSettings, dataSource } as Readonly<TableSettings>;
+}
 
-export class RawData<D extends DataRow = DataRow> implements Types.DataSource {
-  private dataHeight: number;
+export function useRawData<D extends Types.DataRow>(rows: ComputedRef<D[]>, raw: MaybeRef<RawTableSettings<D>>) {
+  const settings = computed(() => {
+    console.log('computed settings updated');
+    return fromRawData(rows.value, unref(raw));
+  });
 
-  constructor(
-    public readonly datum: D[],
-    public readonly rowHeight: number,
-    public readonly getPrimaryKey: GetPrimaryKey<D>,
-  ) {
-    this.dataHeight = datum.length * (this.rowHeight + GAP);
-    const rows = datum.map((dataRow, index) => ({
-      dataRow,
-      index,
-      primaryKey: this.getPrimaryKey(dataRow, index),
-      offset: index * (this.rowHeight + GAP),
-      height: rowHeight,
-    }));
-    rowsStore.set(this, rows);
-  }
+  const props = reactive({
+    settings,
+  });
 
-  get rows(): Row<D>[] {
-    return rowsStore.get(this)! as Row<D>[];
-  }
+  // watch(
+  //   props,
+  //   () => {
+  //     console.log('props changed');
+  //   },
+  //   { deep: true },
+  // );
 
-  async getHeight() {
-    return this.dataHeight;
-  }
-
-  async getRows(scrollTop: number, bodyHeight: number): Promise<Row<D>[]> {
-    return sliceBy(this.rows, (_it, i) => {
-      const offset = i * (this.rowHeight + GAP);
-      return scrollTop < offset + this.rowHeight + WINDOW_DELTA && offset < bodyHeight + scrollTop + WINDOW_DELTA;
-    });
-  }
+  return computed(() => h(Component, props));
 }
 
 export class AsyncData<D extends DataRow> implements Types.DataSource {
   constructor(
     public readonly api: Types.ExternalApi<D>,
     public readonly rowHeight: number,
-    public readonly getPrimaryKey: Types.GetPrimaryKey,
+    public readonly resolvePrimaryKey: Types.ResolvePrimaryKey,
   ) {}
 
   get height() {
@@ -77,7 +68,7 @@ export class AsyncData<D extends DataRow> implements Types.DataSource {
     return rows.map<Types.Row>((dataRow, index) => ({
       dataRow,
       index: offset + index,
-      primaryKey: this.getPrimaryKey(dataRow, offset + index),
+      primaryKey: this.resolvePrimaryKey(dataRow, offset + index) as Types.PrimaryKey,
       offset: (offset + index) * (this.rowHeight + GAP),
       height: this.rowHeight,
     }));

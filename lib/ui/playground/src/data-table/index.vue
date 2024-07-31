@@ -11,12 +11,15 @@ const { data, columnsRef, generate } = useData();
 const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
 const settings = computed(() => {
-  const dataSource = new DataTable.RawData(data.rows, 40, (_: Record<string, unknown>, index) => String(index) as DataTable.Types.PrimaryKey);
-
-  return DataTable.settings({
+  return DataTable.fromRawData(data.rows, {
     columns: columnsRef.value,
     height: 600,
-    dataSource,
+    resolvePrimaryKey(_, index) {
+      return String(index);
+    },
+    resolveRowHeight() {
+      return 40;
+    },
     onSelectedRows: [
       {
         label: 'Delete rows',
@@ -40,7 +43,7 @@ const settings = computed(() => {
       },
     ],
     onEditValue(cell, value) {
-      const row = data.rows.find((row, index) => dataSource.getPrimaryKey(row, index) === cell.row.primaryKey);
+      const row = data.rows.find((_, index) => String(index) === cell.row.primaryKey);
       if (row) {
         row[cell.column.id] = value;
       }

@@ -52,12 +52,11 @@ const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpec<
 });
 
 const settings = computed(() => {
-  const dataSource = new DataTable.RawData<DataRecord>(data.rows, 40, (row: DataRecord) => String(row.id) as DataTable.Types.PrimaryKey);
-
-  return DataTable.settings<DataRecord>({
+  return DataTable.fromRawData<DataRecord>(data.rows, {
     columns: data.columns,
     height: 600,
-    dataSource,
+    resolvePrimaryKey: (row: DataRecord) => String(row.id),
+    resolveRowHeight: () => 40,
     onSelectedRows: [
       {
         label: 'Delete',
@@ -74,8 +73,8 @@ const settings = computed(() => {
         },
       },
     ],
-    onEdit(cell, value) {
-      const row = data.rows.find((row, index) => dataSource.getPrimaryKey(row, index) === cell.row.primaryKey);
+    onEditValue(cell, value) {
+      const row = data.rows.find((row) => String(row.id) === cell.row.primaryKey);
       if (row) {
         const id = cell.column.id;
         if (id === 'id') {

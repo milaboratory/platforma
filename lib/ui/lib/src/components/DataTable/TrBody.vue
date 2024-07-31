@@ -7,7 +7,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="tr-body" :style="row.style" :class="{ selected: row.selected }">
+  <div class="tr-body" :title="JSON.stringify(row.style)" :style="row.style" :class="{ selected: row.selected }">
     <slot />
   </div>
 </template>

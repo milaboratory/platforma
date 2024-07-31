@@ -4,7 +4,7 @@ import { DataTable } from '@milaboratory/platforma-uikit.lib';
 import { computed } from 'vue';
 import MyWorker from './worker?worker';
 import type { WEvent, Person } from './worker';
-import { Deferred, objectHash } from '@milaboratory/helpers/utils';
+import { Deferred } from '@milaboratory/helpers/utils';
 
 const DataTableComponent = DataTable.Component;
 
@@ -65,7 +65,7 @@ const settings = computed(() => {
         width: 300,
       },
     ],
-    dataSource: new DataTable.AsyncData(api, 40, (row: Record<string, unknown>) => objectHash(row) as DataTable.Types.PrimaryKey),
+    dataSource: new DataTable.AsyncData(api, 40, (row: Record<string, unknown>) => String(row.id)),
     height: 600,
     controlColumn: true,
   });

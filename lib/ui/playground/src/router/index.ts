@@ -12,6 +12,11 @@ export const routes = [
     component: () => import('@/data-table-simple/index.vue'),
   },
   {
+    name: 'Data Table Raw',
+    path: '/data-table-raw',
+    component: () => import('@/data-table-raw/index.vue'),
+  },
+  {
     name: 'Data Table Async',
     path: '/data-table-async',
     component: () => import('@/data-table-async/index.vue'),

@@ -1,6 +1,7 @@
 import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 import type { TableCell, TableColumn, TableData, TableRow } from '../types';
+import { identity } from '@milaboratory/helpers';
 
 export function useTableRows(data: TableData, tableColumns: ComputedRef<TableColumn[]>) {
   const classesRef = computed(() =>
@@ -32,16 +33,17 @@ export function useTableRows(data: TableData, tableColumns: ComputedRef<TableCol
         };
       });
 
-      return {
+      return identity<TableRow>({
         style: {
           top: `${offset - data.scrollTop}px`,
+          height: `${row.height}px`,
         },
         primaryKey,
         offset,
         height,
         cells,
         selected: data.selectedRows.has(primaryKey),
-      };
+      });
     });
   });
 }
