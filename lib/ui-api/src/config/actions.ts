@@ -299,7 +299,7 @@ export function mapResourceFields<
 >(
   source: Source,
   mapping: Mapping
-): TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>;
+): TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, '$it'>>;
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
@@ -308,7 +308,7 @@ export function mapResourceFields<
   source: Source,
   mapping: Mapping,
   itVar: ItVar
-): TypedConfig<ActMapRecordValues<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>;
+): TypedConfig<ActMapResourceFields<ExtractAction<Source>, ExtractAction<Mapping>, ItVar>>;
 export function mapResourceFields<
   const Source extends TypedConfig,
   const Mapping extends TypedConfig,
