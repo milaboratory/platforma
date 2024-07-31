@@ -22,7 +22,7 @@ interface PackageJson {
 
 const compiledTplSuffix = '.plj.gz';
 const compiledLibSuffix = '.lib.tengo';
-const compiledSoftwareSuffix = '.sw.yaml';
+const compiledSoftwareSuffix = '.sw.json';
 
 // We need to keep track of dependencies for correct tgo-test CLI utility configuraiton.
 // It is much simpler to do this here, than duplicate all tle logic regarding dependencies
@@ -31,7 +31,7 @@ const srcTestSuffix = '.test.tengo';
 
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
-const srcSoftwareSuffix = '.sw.yaml';
+const srcSoftwareSuffix = '.sw.json';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix];
 
 export function createLogger(level: string = 'debug'): winston.Logger {

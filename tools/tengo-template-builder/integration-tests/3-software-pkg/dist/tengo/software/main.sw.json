@@ -1,0 +1,15 @@
+{
+  "docker": {
+    "image": "quay.io/milaboratory/some-software:1.0.0",
+    "entrypoint": [
+      ",,,"
+    ]
+  },
+  "binary": {
+    "registry": "milaboratory",
+    "package": "milaboratory/some-software/1.0.0.tgz",
+    "cmd": "./script.py",
+    "runEnv": "python-3.12",
+    "requirements": "./requirements.txt"
+  }
+}

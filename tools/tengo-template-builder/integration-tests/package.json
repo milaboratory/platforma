@@ -9,6 +9,9 @@
     "3-software-pkg"
   ],
   "scripts": {
+      "build:lib1": "npm run -w 1-library build",
+      "build:sw-1": "npm run -w 2-software-dep build",
+      "test": "npm run build:lib1 && npm run build:sw-1"
   },
   "devDependencies": {
   }
