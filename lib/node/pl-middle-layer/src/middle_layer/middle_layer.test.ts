@@ -619,4 +619,5 @@ test('should create read-logs block, render it and read logs from a file', async
       await computable.awaitChange();
     }
   });
-});
+  // The timeout is higher here because pl-core must download a software for this test.
+}, 20000);
