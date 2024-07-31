@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -27,7 +27,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@milaboratory/helpers": "^1.5.0",
-    "@milaboratory/platforma-uikit": "^1.0.5",
+    "@milaboratory/platforma-uikit": "^1.0.6",
     "@milaboratory/sdk-ui": "^0.12.5"
   },
   "dependencies": {
