@@ -26,7 +26,7 @@ import {
   treeEntryToResourceWithData
 } from '@milaboratory/pl-tree';
 import { scheduler } from 'node:timers/promises';
-import { PollingOps } from './polling_ops';
+import { PollingOps } from './helpers/polling_ops';
 
 export type UploadDriverOps = PollingOps & {
   /** How much parts of a file can be multipart-uploaded to S3 at once. */

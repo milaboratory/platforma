@@ -1,5 +1,5 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { ClientLogs } from '../clients/logs';
+import { ClientLogs } from '../../clients/logs';
 import {
   PlClient,
   ResourceId,

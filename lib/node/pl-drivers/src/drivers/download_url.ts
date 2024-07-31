@@ -16,7 +16,7 @@ import {
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
-import { FilesCache } from './files_cache';
+import { FilesCache } from './helpers/files_cache';
 import { Dispatcher } from 'undici';
 import { DownloadHelper, NetworkError400 } from '../helpers/download';
 
@@ -54,7 +54,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
   constructor(
     private readonly logger: MiLogger,
-    private readonly httpClient: Dispatcher,
+    httpClient: Dispatcher,
     private readonly saveDir: string,
     private readonly opts: DownloadUrlDriverOps = {
       cacheSoftSizeBytes: 50 * 1024 * 1024,

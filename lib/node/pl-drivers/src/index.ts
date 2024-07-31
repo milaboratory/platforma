@@ -11,5 +11,5 @@ export * from './drivers/logs_stream';
 export * from './drivers/logs';
 export * from './drivers/download_url';
 export * from './drivers/ls';
-export * from './drivers/helpers';
-export * from './drivers/polling_ops';
+export * from './drivers/helpers/helpers';
+export * from './drivers/helpers/polling_ops';

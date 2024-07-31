@@ -18,7 +18,7 @@ import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratory/sdk-model';
-import { PollingOps } from './polling_ops';
+import { PollingOps } from './helpers/polling_ops';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
