@@ -68,12 +68,6 @@ useEventListener(document, 'keydown', (evt: KeyboardEvent) => {
   z-index: 3;
   padding: 24px;
 
-  &.collapse-padding {
-    padding: 0;
-    border-radius: 0;
-    border-top: 0;
-  }
-
   will-change: transform;
 
   background-color: #fff;
@@ -94,6 +88,12 @@ useEventListener(document, 'keydown', (evt: KeyboardEvent) => {
     &:hover {
       background-color: var(--main-dark-color);
     }
+  }
+
+  &.collapse-padding {
+    padding: 0;
+    border-radius: 0;
+    border-top: 0;
   }
 
   &__content {

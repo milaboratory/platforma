@@ -34,8 +34,8 @@
         overflow: auto;
         display: flex;
         flex-direction: column;
-        @include scrollbarTable;
         padding-top: 0;
+        @include scrollbarTable;
     }
 
     &__right {

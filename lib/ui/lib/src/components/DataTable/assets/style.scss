@@ -88,16 +88,6 @@
   }
 
   .command-menu {
-    &__container {
-      position: absolute;
-      top: -45px;
-      left: 0;
-      width: 100%;
-      z-index: 1000;
-      display: flex;
-      gap: 12px;
-    }
-
     display: inline-flex;
     height: 40px;
     align-items: center;
@@ -124,6 +114,16 @@
       font-weight: 600;
       color: #fff;
       cursor: pointer;
+    }
+
+    &__container {
+      position: absolute;
+      top: -45px;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      display: flex;
+      gap: 12px;
     }
   }
 

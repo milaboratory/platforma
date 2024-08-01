@@ -2,7 +2,7 @@
 import Layout from '@/Layout.vue';
 import { faker } from '@faker-js/faker';
 import { randomInt } from '@milaboratory/helpers';
-import { DataTable } from '@milaboratory/platforma-uikit.lib';
+import { DataTable, DialogModal } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted, reactive } from 'vue';
 
 type DataRecord = {
@@ -11,7 +11,8 @@ type DataRecord = {
   size: number;
 };
 
-const data = reactive<{ rows: DataRecord[] }>({
+const data = reactive<{ rows: DataRecord[], modal: boolean }>({
+  modal: false,
   rows: [
     {
       id: 1,
@@ -54,7 +55,7 @@ const MyTable = DataTable.useRawData(rowsRef, {
   ],
   height: 600,
   resolvePrimaryKey(row) {
-    return String(row.id) as DataTable.Types.PrimaryKey;
+    return String(row.id);
   },
   resolveRowHeight(_row) {
     return _row.size;
@@ -102,7 +103,9 @@ onMounted(() => {
     <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
       <my-table style="flex: 1" />
     </div>
+    <button @click="data.modal = true">Click me</button>
   </layout>
+  <dialog-modal v-model="data.modal" />
 </template>
 
 <style lang="scss">

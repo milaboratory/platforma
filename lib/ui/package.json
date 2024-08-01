@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -44,7 +44,7 @@
     "@milaboratory/helpers": "^1.5.0",
     "@milaboratory/platforma-core": "^0.1.2",
     "js-yaml": "^4.1.0",
-    "vue": "^3.4.27",
+    "vue": "^3.4.29",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
@@ -59,7 +59,7 @@
     "eslint-plugin-prettier": "^5.1.3",
     "eslint-plugin-vue": "^9.26.0",
     "prettier": "^3.2.4",
-    "sass": "^1.69.5",
+    "sass": "1.77.2",
     "stylelint-config-prettier": "^9.0.5",
     "svgo": "^3.3.2",
     "tsc-alias": "^1.8.10",

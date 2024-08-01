@@ -39,7 +39,7 @@ function onClickShadow(ev: Event) {
 </script>
 
 <template>
-  <Teleport v-if="modelValue" to="body">
+  <Teleport to="body">
     <Transition name="dialog">
       <div v-if="modelValue" class="dialog-modal__shadow" @click="onClickShadow" @keyup.esc="emit('update:modelValue', false)">
         <div v-bind="$attrs" ref="modal" class="dialog-modal" :class="[type]" :style="{ width, height, minHeight }">
