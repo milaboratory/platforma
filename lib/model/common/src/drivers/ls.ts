@@ -44,18 +44,18 @@ export type ListFilesResult = {
 
 export type LsEntry =
   | {
-    type: 'dir';
-    name: string;
-    fullPath: string;
-  }
+      type: 'dir';
+      name: string;
+      fullPath: string;
+    }
   | {
-    type: 'file';
-    name: string;
-    fullPath: string;
+      type: 'file';
+      name: string;
+      fullPath: string;
 
-    /** This handle should be set to args... */
-    handle: ImportFileHandle;
-  };
+      /** This handle should be set to args... */
+      handle: ImportFileHandle;
+    };
 
 export interface LsDriver {
   /** remote and local storages */
