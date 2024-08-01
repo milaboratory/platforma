@@ -81,19 +81,118 @@ export interface FullPTableColumnData {
   readonly data: PTableVector;
 }
 
-/**
- * Defines how should comparison be made between column or axis value with the
- * reference value.
- * */
-export type SingleValuePredicateOperatorType = 'Equal';
-
-/** Filtering predicate for a single axis or column value */
-export interface SingleValuePredicate {
+export interface SingleValueIsNAPredicate {
   /** Comparison operator */
-  readonly operator: SingleValuePredicateOperatorType;
-  /** Reference value */
+  readonly operator: 'IsNA';
+}
+
+export interface SingleValueEqualPredicate {
+  /** Comparison operator */
+  readonly operator: 'Equal';
+
+  /** Reference value, NA values will not match */
   readonly reference: string | number;
 }
+
+export interface SingleValueLessPredicate {
+  /** Comparison operator */
+  readonly operator: 'Less';
+
+  /** Reference value, NA values will not match */
+  readonly reference: string | number;
+}
+
+export interface SingleValueLessOrEqualPredicate {
+  /** Comparison operator */
+  readonly operator: 'LessOrEqual';
+
+  /** Reference value, NA values will not match */
+  readonly reference: string | number;
+}
+
+export interface SingleValueGreaterPredicate {
+  /** Comparison operator */
+  readonly operator: 'Greater';
+
+  /** Reference value, NA values will not match */
+  readonly reference: string | number;
+}
+
+export interface SingleValueGreaterOrEqualPredicate {
+  /** Comparison operator */
+  readonly operator: 'GreaterOrEqual';
+
+  /** Reference value, NA values will not match */
+  readonly reference: string | number;
+}
+
+export interface SingleValueStringContainsPredicate {
+  /** Comparison operator */
+  readonly operator: 'StringContains';
+
+  /** Reference substring, NA values are skipped */
+  readonly substring: string;
+}
+
+export interface SingleValueMatchesPredicate {
+  /** Comparison operator */
+  readonly operator: 'Matches';
+
+  /** Regular expression, NA values are skipped */
+  readonly regex: string;
+}
+
+export interface SingleValueSimilarPredicate {
+  /** Comparison operator */
+  readonly operator: 'Similar';
+
+  /** Reference value, NA values are skipped */
+  readonly reference: string;
+
+  /** Integer specifying the upper bound of Levenshtein distance between
+   * reference and actual value.
+   * @see https://en.wikipedia.org/wiki/Levenshtein_distance */
+  readonly maxEdits: number;
+}
+
+export interface SingleValueNotPredicate {
+  /** Comparison operator */
+  readonly operator: 'Not';
+
+  /** Operand to negate */
+  readonly operand: SingleValuePredicate;
+}
+
+export interface SingleValueAndPredicate {
+  /** Comparison operator */
+  readonly operator: 'And';
+
+  /** Operands to combine */
+  readonly operands: SingleValuePredicate[];
+}
+
+export interface SingleValueOrPredicate {
+  /** Comparison operator */
+  readonly operator: 'Or';
+
+  /** Operands to combine */
+  readonly operands: SingleValuePredicate[];
+}
+
+/** Filtering predicate for a single axis or column value */
+export type SingleValuePredicate =
+  | SingleValueIsNAPredicate
+  | SingleValueEqualPredicate
+  | SingleValueLessPredicate
+  | SingleValueLessOrEqualPredicate
+  | SingleValueGreaterPredicate
+  | SingleValueGreaterOrEqualPredicate
+  | SingleValueStringContainsPredicate
+  | SingleValueMatchesPredicate
+  | SingleValueSimilarPredicate
+  | SingleValueNotPredicate
+  | SingleValueAndPredicate
+  | SingleValueOrPredicate;
 
 /**
  * Filter PTable records based on specific axis or column value. If this is an
