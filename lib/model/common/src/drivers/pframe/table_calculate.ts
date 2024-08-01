@@ -149,7 +149,7 @@ export interface SingleValueStringContainsFuzzyPredicate {
   /** Reference value, NA values are skipped */
   readonly reference: string;
 
-  /** 
+  /**
    * Integer, specifying the upper bound of number of substitutions allowed
    * during the search.
    */
@@ -160,7 +160,7 @@ export interface SingleValueStringContainsFuzzyPredicate {
    * allowed during the search.
    */
   readonly maxIndels: number;
-  
+
   /**
    * Integer specifying the upper bound of Levenshtein distance between
    * reference and actual value.
@@ -203,7 +203,7 @@ export type SingleValuePredicate =
   | SingleValueGreaterOrEqualPredicate
   | SingleValueStringContainsPredicate
   | SingleValueMatchesPredicate
-  | SingleValueSimilarPredicate
+  | SingleValueStringContainsFuzzyPredicate
   | SingleValueNotPredicate
   | SingleValueAndPredicate
   | SingleValueOrPredicate;
