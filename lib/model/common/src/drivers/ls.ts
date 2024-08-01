@@ -1,5 +1,8 @@
 import { assertNever } from '../util';
 
+const uploadPrefix = 'upload://upload/';
+const indexPrefix = 'index://index/';
+
 export type ImportFileHandleUpload = `upload://upload/${string}`;
 export type ImportFileHandleIndex = `index://index/${string}`;
 
@@ -8,13 +11,13 @@ export type ImportFileHandle = ImportFileHandleUpload | ImportFileHandleIndex;
 export function isImportFileHandleUpload(
   handle: ImportFileHandle
 ): handle is ImportFileHandleUpload {
-  return handle.startsWith('upload://upload/');
+  return handle.startsWith(uploadPrefix);
 }
 
 export function isImportFileHandleIndex(
   handle: ImportFileHandle
 ): handle is ImportFileHandleIndex {
-  return handle.startsWith('index://index/');
+  return handle.startsWith(indexPrefix);
 }
 
 /** Results in upload */
@@ -41,18 +44,18 @@ export type ListFilesResult = {
 
 export type LsEntry =
   | {
-      type: 'dir';
-      name: string;
-      fullPath: string;
-    }
+    type: 'dir';
+    name: string;
+    fullPath: string;
+  }
   | {
-      type: 'file';
-      name: string;
-      fullPath: string;
+    type: 'file';
+    name: string;
+    fullPath: string;
 
-      /** This handle should be set to args... */
-      handle: ImportFileHandle;
-    };
+    /** This handle should be set to args... */
+    handle: ImportFileHandle;
+  };
 
 export interface LsDriver {
   /** remote and local storages */
@@ -63,15 +66,14 @@ export interface LsDriver {
 
 /** Gets a file path from an import handle. */
 export function getFilePathFromHandle(handle: ImportFileHandle): string {
-  const url = new URL(handle);
-  const data = JSON.parse(decodeURIComponent(url.pathname.substring(1)));
-
-  if (isImportFileHandleUpload(handle)) {
-    return data.localPath;
-  }
-
   if (isImportFileHandleIndex(handle)) {
+    const trimmed = handle.slice(indexPrefix.length);
+    const data = JSON.parse(decodeURIComponent(trimmed));
     return data.path;
+  } else if (isImportFileHandleUpload(handle)) {
+    const trimmed = handle.slice(uploadPrefix.length);
+    const data = JSON.parse(decodeURIComponent(trimmed));
+    return data.localPath;
   }
 
   assertNever(handle);
