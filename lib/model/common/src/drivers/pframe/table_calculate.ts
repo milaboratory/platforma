@@ -142,16 +142,30 @@ export interface SingleValueMatchesPredicate {
   readonly regex: string;
 }
 
-export interface SingleValueSimilarPredicate {
+export interface SingleValueStringContainsFuzzyPredicate {
   /** Comparison operator */
-  readonly operator: 'Similar';
+  readonly operator: 'StringContainsFuzzy';
 
   /** Reference value, NA values are skipped */
   readonly reference: string;
 
-  /** Integer specifying the upper bound of Levenshtein distance between
+  /** 
+   * Integer, specifying the upper bound of number of substitutions allowed
+   * during the search.
+   */
+  readonly maxSubstitutions: number;
+
+  /**
+   * Integer, specifying the upper bound of number of insertions and deletions
+   * allowed during the search.
+   */
+  readonly maxIndels: number;
+  
+  /**
+   * Integer specifying the upper bound of Levenshtein distance between
    * reference and actual value.
-   * @see https://en.wikipedia.org/wiki/Levenshtein_distance */
+   * @see https://en.wikipedia.org/wiki/Levenshtein_distance
+   */
   readonly maxEdits: number;
 }
 
