@@ -26,6 +26,13 @@ export function fromRawData<D extends Types.DataRow>(rows: D[], rawSettings: Typ
 }
 
 export function useRawData<D extends Types.DataRow>(rows: ComputedRef<D[]>, raw: MaybeRef<RawTableSettings<D>>) {
+  return computed(() => {
+    console.log('computed settings updated');
+    return fromRawData(rows.value, unref(raw));
+  });
+}
+
+export function useRawDataComponent<D extends Types.DataRow>(rows: ComputedRef<D[]>, raw: MaybeRef<RawTableSettings<D>>) {
   const settings = computed(() => {
     console.log('computed settings updated');
     return fromRawData(rows.value, unref(raw));
@@ -34,14 +41,6 @@ export function useRawData<D extends Types.DataRow>(rows: ComputedRef<D[]>, raw:
   const props = reactive({
     settings,
   });
-
-  // watch(
-  //   props,
-  //   () => {
-  //     console.log('props changed');
-  //   },
-  //   { deep: true },
-  // );
 
   return computed(() => h(Component, props));
 }

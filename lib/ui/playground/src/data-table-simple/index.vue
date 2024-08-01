@@ -11,7 +11,7 @@ type DataRecord = {
   age: number;
 };
 
-const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpec<DataRecord>[] }>({
+const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpecForData<DataRecord>[] }>({
   rows: [
     {
       id: 1,

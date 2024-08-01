@@ -1,6 +1,6 @@
 import type { Component } from 'vue';
 import type { h } from 'vue';
-import type { Branded } from '@milaboratory/helpers/types';
+import type { Branded, Values } from '@milaboratory/helpers/types';
 
 type TypeMap = {
   integer: number;
@@ -48,12 +48,12 @@ export type SelectedRowsOperation<D extends DataRow = DataRow> = {
 
 export type SelectedColumnsOperation<D extends DataRow = DataRow> = {
   label: string;
-  cb: (rows: ColumnSpec<D>[]) => Promise<void>;
+  cb: (columns: ColumnSpecForData<D>[]) => Promise<void>;
 };
 
 // Table settings
 export type TableSettings<D extends DataRow = DataRow> = {
-  columns: ColumnSpec<D>[];
+  columns: ColumnSpecForData<D>[];
   dataSource: DataSource<D>;
   gap?: number;
   height: number;
@@ -66,7 +66,7 @@ export type TableSettings<D extends DataRow = DataRow> = {
 };
 
 export type RawTableSettings<D extends DataRow = DataRow> = {
-  columns: ColumnSpec<D>[];
+  columns: ColumnSpecForData<D>[];
   gap?: number;
   height: number;
   addColumn?: () => Promise<void>;
@@ -79,29 +79,26 @@ export type RawTableSettings<D extends DataRow = DataRow> = {
   onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
 };
 
-export type ColumnSpec<D extends DataRow = DataRow> = {
+export type ColumnSpec<ID = string, Value = unknown> = {
   label: string;
-  id: keyof D;
+  id: ID;
   width: number;
   justify?: 'center' | 'start';
   sort?: {
     direction: 'DESC' | 'ASC' | undefined;
   };
-  render?: (_h: typeof h, value: unknown) => Component;
+  render?: (_h: typeof h, value: Value) => Component;
   editable?: boolean;
   valueType?: ValueType;
   frozen?: boolean;
 };
 
-export type ResizeTh = {
-  colId: string;
-  width: number;
-  x: number;
-  right: number;
-};
+export type ColumnSpecForData<D extends DataRow> = Values<{
+  [P in keyof D]: ColumnSpec<P, D[P]>;
+}>;
 
 export type TableCell<D extends DataRow = DataRow> = {
-  column: ColumnSpec<D>;
+  column: ColumnSpecForData<D>;
   row: Row<D>;
   value: unknown;
   class: string;
@@ -150,4 +147,11 @@ export interface DataSource<D extends DataRow = DataRow> {
 export type ExternalApi<T extends DataRow> = {
   query(options: { offset: number; limit: number }): Promise<T[]>;
   count(): Promise<number>;
+};
+
+export type ResizeTh = {
+  colId: string;
+  width: number;
+  x: number;
+  right: number;
 };

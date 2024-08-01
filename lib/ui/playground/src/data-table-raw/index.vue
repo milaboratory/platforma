@@ -11,7 +11,7 @@ type DataRecord = {
   size: number;
 };
 
-const data = reactive<{ rows: DataRecord[], modal: boolean }>({
+const data = reactive<{ rows: DataRecord[]; modal: boolean }>({
   modal: false,
   rows: [
     {
@@ -32,7 +32,7 @@ const createRandomRecord = () => {
 
 const rowsRef = computed(() => data.rows);
 
-const MyTable = DataTable.useRawData(rowsRef, {
+const MyTable = DataTable.useRawDataComponent(rowsRef, {
   columns: [
     {
       id: 'id',
@@ -107,7 +107,3 @@ onMounted(() => {
   </layout>
   <dialog-modal v-model="data.modal" />
 </template>
-
-<style lang="scss">
-//
-</style>
