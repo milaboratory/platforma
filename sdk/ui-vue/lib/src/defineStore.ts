@@ -11,9 +11,9 @@ function initStore<S extends object>(key: symbol, cb: () => S) {
     });
 
     return reactive(cb());
-  }) as S & Disposable;
+  }) as S;
 
-  store[Symbol.dispose] = () => {
+  (store as Disposable)[Symbol.dispose] = () => {
     scope.stop();
   };
 
