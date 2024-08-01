@@ -224,6 +224,13 @@ resource = func(r) {
 		},
 
 		/**
+		 * Resource is ready when all inputs are set to the terminal values.
+		 */
+		isReady: func() {
+			return self.info().ResourceReady
+		},
+
+		/**
 		 * Get resource data as Json
 		 */
 		getDataAsJson: func() {

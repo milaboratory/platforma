@@ -8,12 +8,12 @@ TEMPLATE_FIELD := "template"
 INPUTS_MAP_FIELD := "inputs"
 // prefix of output fields template results in renderer resource
 TEMPLATE_OUTPUT_PREFIX := "outputs/"
-// mark in renderer resource signaling that prepare statements should be omitted
-PREPARE_MARK_FIELD_NAME := "__prepare_done__"
+// input field containing a map with resources to prepare for the body
+PREPARE_MAP_FIELD_NAME := "__prepare__"
 
 export ll.toStrict({
 	TEMPLATE_FIELD           : TEMPLATE_FIELD,
 	INPUTS_MAP_FIELD         : INPUTS_MAP_FIELD,
 	TEMPLATE_OUTPUT_PREFIX   : TEMPLATE_OUTPUT_PREFIX,
-	PREPARE_MARK_FIELD_NAME  : PREPARE_MARK_FIELD_NAME
+	PREPARE_MAP_FIELD_NAME   : PREPARE_MAP_FIELD_NAME
 })

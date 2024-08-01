@@ -34,10 +34,10 @@ tplTest(
     );
 
 
-    // const query = await wf2.output("query", (a) => a?.getDataAsJson()).awaitStableValue()
-    // console.dir(query, { depth: 5 })
+    const query = await wf2.output("query", (a) => a?.getDataAsJson()).awaitStableValue()
+    console.dir(query, { depth: 5 })
 
-    // const join = await wf2.output("join", (a) => a?.getDataAsJson()).awaitStableValue()    
-    // expect(join).eq("ab");
+    const join = await wf2.output("join", (a) => a?.getDataAsJson()).awaitStableValue()    
+    expect(join).eq("ab");
   
   });

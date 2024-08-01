@@ -127,6 +127,13 @@ importTemplate := func(tplName) {
 	return plapi.getTemplateId(tplName)
 }
 
+/**
+ * Returns current execution context, which cab be used is a simple kv-store associated with the renderer instance.
+ */
+getCtx := func() {
+	return plapi.getCtx()
+}
+
 export toStrict({
 	print: print,
 	panic: panic,
@@ -139,5 +146,6 @@ export toStrict({
 	fieldId: fieldId,
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing,
-	importTemplate: importTemplate
+	importTemplate: importTemplate,
+	getCtx: getCtx
 })

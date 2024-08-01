@@ -61,7 +61,9 @@ tpl := func() {
 
 	_isEphemeral := _rendererType.Name == constants.RTYPE_RENDER_EPH_TEMPLATE.Name
 
-	_ignorePrepare := _renderer.get(tplutil.INPUTS_MAP_FIELD).hasField(tplutil.PREPARE_MARK_FIELD_NAME)
+	_hasPrepared := _renderer.get(tplutil.INPUTS_MAP_FIELD).hasField(tplutil.PREPARE_MAP_FIELD_NAME)
+
+	_preparedMap := _hasPrepared ? _renderer.get(tplutil.INPUTS_MAP_FIELD).get(tplutil.PREPARE_MAP_FIELD_NAME) : undefined
 
 	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
 
@@ -88,9 +90,7 @@ tpl := func() {
 			return _templateId
 		},
 
-		_inputs: undefined,
-
-		_inputsPreprocessors: [],
+		_unmarshallers: [],
 
 		/**
 		 * Register a preprocessor of input resource. The preprocessor must have two
@@ -99,15 +99,29 @@ tpl := func() {
 		 */
 		registerUnmarshaller: func(preproc) {
 			ll.assert(is_undefined(self._inputs), "input preprocessors must be registered before getting inputs")
-			self._inputsPreprocessors = append(self._inputsPreprocessors, preproc)
+			self._unmarshallers = append(self._unmarshallers, preproc)
 		},
+
+		_inputs: undefined,
 
 		/**
 		 * @return map: a map of the template inputs
 		 */
 		inputs: func() {
 			if self._inputs == undefined {
-				self._inputs = _unmarshal(self.renderer().get(tplutil.INPUTS_MAP_FIELD), self._inputsPreprocessors)
+				inputs := _unmarshal(self.renderer().get(tplutil.INPUTS_MAP_FIELD), self._unmarshallers)
+
+				// if we have prepared inputs, flatten them
+				pp := inputs[tplutil.PREPARE_MAP_FIELD_NAME]
+				if !is_undefined(pp) {
+					delete(inputs, tplutil.PREPARE_MAP_FIELD_NAME)
+					for k, v in pp {
+						ll.assert(is_undefined(inputs[k]), k, " key already exists in inputs map")
+						inputs[k] = v
+					}
+				}
+
+				self._inputs = inputs
 			}
 			return self._inputs
 		},
@@ -142,12 +156,19 @@ tpl := func() {
 		 * True means we are in the inner render cycle, when all "to be prepared" fields are passed
 		 * already to inputs and no need to call prepare callbacks again.
 		 */
-		ignorePrepare: _ignorePrepare,
+		ignorePrepare: _hasPrepared,
 
 		/**
-		 * A queue of references to be prepared before the body run
+		 * Resource map with the resources passed
 		 */
-		toPrepare : [],
+		preparedMapResource: func() {
+			return _preparedMap
+		},
+
+		/**
+		 * A queue of 'prepare' callbacks
+		 */
+		prepareQueue : [],
 
 		/**
 		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references will be
@@ -160,9 +181,9 @@ tpl := func() {
 				return
 			}
 
-			ll.assert(len(self.toPrepare) == 0, "multiple prepare statements are not supported yet")
+			ll.assert(len(self.prepareQueue) == 0, "multiple prepare statements are not supported yet")
 
-			self.toPrepare = append(self.toPrepare, codeFn)
+			self.prepareQueue = append(self.prepareQueue, codeFn)
 		},
 
 		/**
@@ -177,7 +198,9 @@ tpl := func() {
 			// create new inputs map
 			newInputs := copy(inputs)
 
-			for cb in self.toPrepare {
+			// build a prepare map
+			builder := smart.mapBuilder()
+			for cb in self.prepareQueue {
 				// run callback
 				r := cb(inputs)
 
@@ -185,19 +208,20 @@ tpl := func() {
 
 				for name, ref in r {
 					ll.assert(smart.isReference(ref), "expected reference, got ", ref)
-					ll.assert(is_undefined(newInputs[name]), "prepare name is already in use in inputs: ", name)
+					ll.assert(is_undefined(newInputs[name]), "prepare name is already in use: ", name)
 
-					newInputs[name] = ref
+					builder.add(name, ref)
 				}
 			}
-			// inner renderer should ignore prepare calls
-			newInputs[tplutil.PREPARE_MARK_FIELD_NAME] = "true"
+			newInputs[tplutil.PREPARE_MAP_FIELD_NAME] = builder.build()
 
 			// re-render self
-			renderer := self.isEphemeral() ?
-			render.createEphemeral(self.templateId(), newInputs) :
-			render.create(self.templateId(), newInputs)
-
+			renderer := undefined
+			if self.isEphemeral() {
+				renderer = render.createEphemeral(self.templateId(), newInputs)
+			} else {
+				renderer = render.create(self.templateId(), newInputs)
+			}
 			// set outputs
 			for output in self.definedOutputs {
 				self.getOutputField(output).set(renderer.output(output))
@@ -275,7 +299,7 @@ tpl := func() {
 			} else {
 
 				// processing resolves
-				if len(self.toPrepare) != 0 {
+				if len(self.prepareQueue) != 0 {
 
 					// re-render self to
 					self.renderPrepare()
@@ -306,13 +330,23 @@ tpl := func() {
 
 				if inputMap.info().AllInputsSet {
 
-					if len(self.toPrepare) > 0 {
+					if len(self.prepareQueue) > 0 {
 						ll.assert(len(self.definedOutputs) > 0, "outputs should be defined prior to prepare")
 
 						self.createOutputsAndLock(self.definedOutputs)
 
 						self.renderPrepare()
 					} else {
+
+						// if we have prepared map resource, we need to await for its readiness
+						pp := self.preparedMapResource()
+						if !is_undefined(pp) {
+							if !pp.isReady() {
+								tx.subscribeTo(pp.id, "PrepareIsReady", {"ResourceReady": true})
+								return
+							}
+						}
+
 						// run body func
 						result := bodyFn(self.inputs())
 						ll.assert(ll.isMap(result),
