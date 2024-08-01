@@ -19,7 +19,7 @@
     transition-duration: 0.3s;
     width: 24px;
     height: 24px;
-    background: url('./icons/24_edit.svg') no-repeat;
+    // background: url('./icons/24_edit.svg') no-repeat;
   }
   &:hover {
     .icon {

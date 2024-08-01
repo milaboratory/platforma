@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { BtnSecondary, MaskIcon } from '@milaboratory/platforma-uikit';
 import FileDialog from './FileDialog.vue';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import type { ImportedFiles } from '../types';
+import type { ImportFileHandle } from '@milaboratory/sdk-ui';
+import { getFilePathFromHandle } from '@milaboratory/sdk-ui';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -48,9 +50,19 @@ function extractPaths(e: DragEvent, extensions?: string[]) {
 
 const emit = defineEmits(['update:modelValue']);
 
-defineProps<{
+const props = defineProps<{
   modelValue: string | undefined;
 }>();
+
+const fileName = computed(() => {
+  if (props.modelValue) {
+    return props.modelValue;
+    // @todo (getFilePathFromHandle not working in browser)
+    // return getFilePathFromHandle(props.modelValue as ImportFileHandle);
+  }
+
+  return '';
+});
 
 async function onDrop(e: DragEvent) {
   e.preventDefault();
@@ -85,7 +97,7 @@ function clear() {
   <div class="file-input">
     <div v-if="modelValue" class="file-input__file">
       <mask-icon name="paper-clip" />
-      <span>{{ modelValue }}</span>
+      <span>{{ fileName }}</span>
       <mask-icon name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
