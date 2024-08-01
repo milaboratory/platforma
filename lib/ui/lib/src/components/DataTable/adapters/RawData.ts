@@ -49,7 +49,6 @@ export class RawData<D extends DataRow = DataRow> implements Types.DataSource {
   }
 
   async getRows(scrollTop: number, bodyHeight: number): Promise<Row<D>[]> {
-    console.log('getRows', JSON.stringify({ scrollTop, bodyHeight }));
     return sliceBy(this.rows, (it) => {
       const offset = it.offset;
       return scrollTop < offset + it.height + WINDOW_DELTA && offset < bodyHeight + scrollTop + WINDOW_DELTA;
