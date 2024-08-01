@@ -56,9 +56,12 @@ const props = defineProps<{
 
 const fileName = computed(() => {
   if (props.modelValue) {
-    return props.modelValue;
-    // @todo (getFilePathFromHandle not working in browser)
-    // return getFilePathFromHandle(props.modelValue as ImportFileHandle);
+    try {
+      return getFilePathFromHandle(props.modelValue as ImportFileHandle);
+    } catch (e) {
+      console.error(e);
+      return props.modelValue;
+    }
   }
 
   return '';
