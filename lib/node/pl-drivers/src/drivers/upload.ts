@@ -36,7 +36,7 @@ import { z } from 'zod';
 const UploadOptsSchema = z.object({
   localPath: z.string(),
   pathSignature: z.string(),
-  modificationTime: z.coerce.bigint()
+  modificationTime: z.string()
 });
 
 const ImportOptsSchema = z.union([UploadOptsSchema, z.object({})]);
@@ -333,7 +333,7 @@ class ProgressUpdater {
           this.res,
           this.uploadOpts!.localPath,
           part,
-          this.uploadOpts!.modificationTime
+          BigInt(this.uploadOpts!.modificationTime)
         );
       })
     );
