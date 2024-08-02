@@ -1,4 +1,5 @@
 node_modules/
 dist/
+dev/
 test_config.json
 .test_auth.json
