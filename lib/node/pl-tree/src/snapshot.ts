@@ -133,7 +133,11 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
   if (schema.fields !== undefined) {
     const fields: Record<string, ResourceId | undefined> = {};
     for (const [fieldName, required] of Object.entries(schema.fields))
-      fields[fieldName] = node.traverse({ field: fieldName, errorIfFieldNotSet: required })?.id;
+      fields[fieldName] = node.traverse({
+        field: fieldName,
+        errorIfFieldNotSet: required,
+        stableIfNotFound: !required
+      })?.id;
     result.fields = fields;
   }
 
