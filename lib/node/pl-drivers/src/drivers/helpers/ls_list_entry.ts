@@ -132,7 +132,9 @@ export function toListItem(
   }
 ): ListItem | undefined {
   if (!(info.dirent.isFile() || info.dirent.isDirectory())) {
-    logger.warn(`tried to get non-dir and non-file ${info.dirent}, skip it`);
+    logger.warn(
+      `tried to get non-dir and non-file ${info.dirent.name}, skip it`
+    );
     return;
   }
 

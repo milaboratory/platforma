@@ -41,7 +41,7 @@ const UploadOptsSchema = z.object({
 
 const ImportOptsSchema = z.union([UploadOptsSchema, z.object({})]);
 
-type UploadOpts = z.infer<typeof UploadOptsSchema>;
+export type UploadOpts = z.infer<typeof UploadOptsSchema>;
 
 /** ResourceSnapshot that can be passed to GetProgressID */
 export const UploadResourceSnapshot = rsSchema({
@@ -376,14 +376,14 @@ class ProgressUpdater {
   }
 }
 
-function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
-  if (res.data == undefined)
+export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
+  if (res.data == undefined || !('modificationTime' in res.data))
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
         stringifyWithResourceId(res.data)
     );
 
-  const opts = JSON.parse(res.data.toString());
+  const opts = res.data;
   if (opts.modificationTime === undefined) {
     throw new Error(
       'no modification time in data: ' + stringifyWithResourceId(res.data)

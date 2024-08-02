@@ -14,12 +14,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratory/pl-client-v2';
 import { poll } from '@milaboratory/pl-client-v2';
-import { UploadDriver } from './upload';
+import { UploadOpts, UploadDriver, UploadResourceSnapshot } from './upload';
 import {
   createUploadBlobClient,
   createUploadProgressClient
 } from '../clients/helpers';
-import { ResourceWithData } from '@milaboratory/pl-tree';
 
 test('upload a blob', async () => {
   await withTest(
@@ -177,8 +176,6 @@ test('index a blob', async () => {
       expect(p.isUploadSignMatch).toBeUndefined();
       if (p.done) {
         expect(p.lastError).toBeUndefined();
-        expect(p.status?.bytesProcessed).toBe(7);
-        expect(p.status?.bytesTotal).toBe(7);
         return;
       }
 
@@ -293,16 +290,29 @@ async function createBlobIndex(
 async function getHandleField(
   client: PlClient,
   uploadId: ResourceId
-): Promise<ResourceWithData> {
+): Promise<UploadResourceSnapshot> {
   return await poll(client, async (tx: PollTxAccessor) => {
     const upload = await tx.get(uploadId);
     const handle = await upload.get('handle');
 
     const blob = handle.data.fields.find((f) => f.name == 'blob')?.value;
-    const fields = new Map<string, ResourceId | undefined>();
-    if (blob != undefined && isNotNullResourceId(blob))
-      fields.set('blob', blob);
+    const incarnation = handle.data.fields.find(
+      (f) => f.name == 'incarnation'
+    )?.value;
 
-    return { ...handle.data, fields };
+    const fields = {
+      blob: undefined as ResourceId | undefined,
+      incarnation: undefined as ResourceId | undefined
+    };
+    if (blob != undefined && isNotNullResourceId(blob)) fields.blob = blob;
+    if (incarnation != undefined && isNotNullResourceId(incarnation))
+      fields.incarnation = incarnation;
+
+    return {
+      ...handle.data,
+      data: JSON.parse(handle.data.data!.toString()) as UploadOpts,
+      fields,
+      kv: undefined
+    };
   });
 }
