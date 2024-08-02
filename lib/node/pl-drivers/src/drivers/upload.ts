@@ -21,12 +21,40 @@ import * as sdk from '@milaboratory/sdk-model';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
 import {
+  InferSnapshot,
+  isPlTreeEntry,
+  makeResourceSnapshot,
   PlTreeEntry,
-  ResourceWithData,
-  treeEntryToResourceWithData
+  rsSchema
 } from '@milaboratory/pl-tree';
 import { scheduler } from 'node:timers/promises';
 import { PollingOps } from './helpers/polling_ops';
+import { z } from 'zod';
+
+/** Options from BlobUpload resource that have to be passed to getProgress. */
+
+const UploadOptsSchema = z.object({
+  localPath: z.string(),
+  pathSignature: z.string(),
+  modificationTime: z.bigint()
+});
+
+const ImportOptsSchema = z.union([UploadOptsSchema, z.object({})]);
+
+type UploadOpts = z.infer<typeof UploadOptsSchema>;
+
+/** ResourceSnapshot that can be passed to GetProgressID */
+export const UploadResourceSnapshot = rsSchema({
+  data: ImportOptsSchema,
+  fields: {
+    blob: false, // for BlobUpload
+    incarnation: false // for BlobIndex
+  }
+});
+
+export type UploadResourceSnapshot = InferSnapshot<
+  typeof UploadResourceSnapshot
+>;
 
 export type UploadDriverOps = PollingOps & {
   /** How much parts of a file can be multipart-uploaded to S3 at once. */
@@ -73,36 +101,42 @@ export class UploadDriver {
 
   /** Returns a progress id and schedules an upload task if it's necessary. */
   getProgressId(
-    res: ResourceWithData | PlTreeEntry
+    res: UploadResourceSnapshot | PlTreeEntry
   ): Computable<sdk.ImportProgress>;
   getProgressId(
-    res: ResourceWithData | PlTreeEntry,
+    res: UploadResourceSnapshot | PlTreeEntry,
     ctx: ComputableCtx
   ): sdk.ImportProgress;
   getProgressId(
-    res: ResourceWithData | PlTreeEntry,
+    res: UploadResourceSnapshot | PlTreeEntry,
     ctx?: ComputableCtx
   ): Computable<sdk.ImportProgress> | sdk.ImportProgress {
     if (ctx == undefined)
       return Computable.make((ctx) => this.getProgressId(res, ctx));
 
-    const r = treeEntryToResourceWithData(res, ['blob'], ctx);
+    const rInfo: UploadResourceSnapshot = isPlTreeEntry(res)
+      ? makeResourceSnapshot(res, UploadResourceSnapshot, ctx)
+      : res;
+
     const callerId = randomUUID();
     ctx.attacheHooks(this.hooks);
-    ctx.addOnDestroy(() => this.release(r.id, callerId));
+    ctx.addOnDestroy(() => this.release(rInfo.id, callerId));
 
-    const result = this.getProgressIdNoCtx(ctx.watcher, r, callerId);
-    if (result == undefined || !result.done) ctx.markUnstable();
+    const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
+    if (result == undefined || !result.done) {
+      ctx.markUnstable();
+    }
 
     return result;
   }
 
   private getProgressIdNoCtx(
     w: Watcher,
-    res: ResourceWithData,
+    res: UploadResourceSnapshot,
     callerId: string
   ): sdk.ImportProgress {
-    const blobExists = res.fields.get('blob') != undefined;
+    const blobExists =
+      res.fields.blob != undefined || res.fields.incarnation != undefined;
 
     const value = this.idToProgress.get(res.id);
 
@@ -223,12 +257,12 @@ class ProgressUpdater {
     private readonly nConcurrentPartsUpload: number,
     signer: Signer,
 
-    public readonly res: ResourceWithData
+    public readonly res: UploadResourceSnapshot
   ) {
     const isUpload = res.type.name.startsWith('BlobUpload');
     let isUploadSignMatch: boolean | undefined;
     if (isUpload) {
-      this.uploadOpts = dataToUploadOpts(res);
+      this.uploadOpts = importToUploadOpts(res);
       isUploadSignMatch = isSignMatch(
         signer,
         this.uploadOpts.localPath,
@@ -248,6 +282,7 @@ class ProgressUpdater {
   public mustGetProgress(blobExists: boolean) {
     if (blobExists) {
       this.setDone(blobExists);
+
       return this.progress;
     }
 
@@ -341,14 +376,7 @@ class ProgressUpdater {
   }
 }
 
-/** Options from BlobUpload resource that have to be passed to getProgress. */
-type UploadOpts = {
-  localPath: string;
-  pathSignature: string;
-  modificationTime: bigint;
-};
-
-function dataToUploadOpts(res: ResourceWithData): UploadOpts {
+function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
   if (res.data == undefined)
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
