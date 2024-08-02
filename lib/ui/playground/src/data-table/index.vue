@@ -42,10 +42,10 @@ const settings = computed(() => {
         },
       },
     ],
-    onEditValue(cell, value) {
+    onEditValue(cell) {
       const row = data.rows.find((_, index) => String(index) === cell.row.primaryKey);
       if (row) {
-        row[cell.column.id] = value;
+        row[cell.column.id] = cell.value;
       }
       return true;
     },
@@ -96,7 +96,3 @@ onMounted(onGenerate);
     </div>
   </layout>
 </template>
-
-<style lang="scss">
-//
-</style>

@@ -1,5 +1,5 @@
 import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, TableSettings, PrimaryKey, Row, ColumnSpec } from './types';
+import type { TableProps, TableData, TableSettings, PrimaryKey, Row, ColumnSpecSettings } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
 import { clamp, tap } from '@milaboratory/helpers/utils';
@@ -105,7 +105,7 @@ export function createState(props: TableProps) {
     getSelectedRows(): Row[] {
       return data.rows.filter((row) => data.selectedRows.has(row.primaryKey));
     },
-    getSelectedColumns(): ColumnSpec[] {
+    getSelectedColumns(): ColumnSpecSettings[] {
       return data.columns.filter((col) => data.selectedColumns.has(col.id));
     },
     selectRow(rowId: PrimaryKey) {

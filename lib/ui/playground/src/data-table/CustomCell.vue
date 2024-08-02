@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  value: unknown;
+  modelValue: unknown;
   info: string;
 }>();
 </script>
@@ -8,7 +8,7 @@ defineProps<{
 <template>
   <div>
     <b>custom:</b>
-    <span>{{ value }}</span>
+    <span>{{ modelValue }}</span>
     <span class="my-info">({{ info }})</span>
   </div>
 </template>

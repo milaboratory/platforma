@@ -22,6 +22,7 @@ export function useTableRows(data: TableData, tableColumns: ComputedRef<TableCol
 
       const cells = tableColumns.value.map<TableCell>((column) => {
         return {
+          id: column.id,
           column,
           row,
           value: dataRow[column.id],

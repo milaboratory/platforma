@@ -2,13 +2,16 @@
 import Layout from '@/Layout.vue';
 import { faker } from '@faker-js/faker';
 import { randomInt } from '@milaboratory/helpers';
-import { DataTable, DialogModal } from '@milaboratory/platforma-uikit.lib';
+import { DataTable } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted, reactive } from 'vue';
+
+const MyTable = DataTable.Component;
 
 type DataRecord = {
   id: number;
   name: string;
   size: number;
+  user: { name: string } | undefined;
 };
 
 const data = reactive<{ rows: DataRecord[]; modal: boolean }>({
@@ -18,6 +21,9 @@ const data = reactive<{ rows: DataRecord[]; modal: boolean }>({
       id: 1,
       name: 'Ivan',
       size: 100,
+      user: {
+        name: 'Ivan',
+      },
     },
   ],
 });
@@ -27,30 +33,46 @@ const createRandomRecord = () => {
     id: data.rows.length + 1,
     name: faker.person.fullName(),
     size: randomInt(50, 80),
+    user: {
+      name: faker.person.fullName(),
+    },
   });
 };
 
 const rowsRef = computed(() => data.rows);
 
-const MyTable = DataTable.useRawDataComponent(rowsRef, {
+const settings = DataTable.useRawData(rowsRef, {
   columns: [
     {
       id: 'id',
       label: 'ID',
       width: 60,
       valueType: 'integer',
+      editable: true,
     },
     {
       id: 'name',
       label: 'Name',
       width: 120,
       valueType: 'string',
+      editable: true,
     },
     {
       id: 'size',
       label: 'Size',
       width: 120,
       valueType: 'integer',
+      editable: true,
+    },
+    {
+      id: 'user',
+      label: 'User',
+      width: 120,
+      valueType: 'unknown',
+      render(h, value) {
+        return h('div', value + '');
+      },
+      editable: true,
     },
   ],
   height: 600,
@@ -58,7 +80,7 @@ const MyTable = DataTable.useRawDataComponent(rowsRef, {
     return String(row.id);
   },
   resolveRowHeight(_row) {
-    return _row.size;
+    return 60;
   },
   onSelectedRows: [
     {
@@ -68,17 +90,29 @@ const MyTable = DataTable.useRawDataComponent(rowsRef, {
       },
     },
   ],
-  onEditValue(cell, value) {
+  onEditValue(cell) {
+    console.log('cell.value', cell.value);
     const row = data.rows.find((row) => String(row.id) === cell.row.primaryKey);
     if (row) {
-      const id = cell.column.id;
-      if (id === 'id') {
-        row[id] = value as number;
+      if (cell.id === 'id') {
+        row[cell.id] = cell.value;
+      }
+
+      if (cell.id === 'name') {
+        row[cell.id] = cell.value;
+      }
+
+      if (cell.id === 'size') {
+        row[cell.id] = cell.value;
+      }
+
+      if (cell.id === 'user') {
+        row[cell.id] = cell.value;
       }
     }
     return true;
   },
-  controlColumn: true,
+  // controlColumn: true,
 });
 
 onMounted(() => {
@@ -101,9 +135,8 @@ onMounted(() => {
       <span>last record: {{ data.rows[data.rows.length - 1] }}</span>
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
-      <my-table style="flex: 1" />
+      <my-table :settings="settings" style="flex: 1" />
     </div>
-    <button @click="data.modal = true">Click me</button>
+    <pre>{{ data.rows }}</pre>
   </layout>
-  <dialog-modal v-model="data.modal" />
 </template>

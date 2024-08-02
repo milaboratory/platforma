@@ -1,12 +1,12 @@
 <script setup lang="ts">
 defineProps<{
-  value: number;
+  modelValue: number;
 }>();
 </script>
 
 <template>
   <div>
-    <b>{{ value }}</b>
+    <b>{{ modelValue }}</b>
   </div>
 </template>
 

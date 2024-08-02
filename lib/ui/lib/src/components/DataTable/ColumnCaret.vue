@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { ColumnSpec } from './types';
+import type { ColumnSpecSettings } from './types';
 import { injectState } from './keys';
 
 const state = injectState();
 
 const props = defineProps<{
-  column: ColumnSpec;
+  column: ColumnSpecSettings;
 }>();
 
 const selected = computed(() => state.data.selectedColumns.has(props.column.id));

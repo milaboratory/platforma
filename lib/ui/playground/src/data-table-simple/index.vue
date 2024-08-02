@@ -11,7 +11,7 @@ type DataRecord = {
   age: number;
 };
 
-const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpecForData<DataRecord>[] }>({
+const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpec<DataRecord>[] }>({
   rows: [
     {
       id: 1,
@@ -73,12 +73,11 @@ const settings = computed(() => {
         },
       },
     ],
-    onEditValue(cell, value) {
+    onEditValue(cell) {
       const row = data.rows.find((row) => String(row.id) === cell.row.primaryKey);
       if (row) {
-        const id = cell.column.id;
-        if (id === 'id') {
-          row[id] = value as number;
+        if (cell.id === 'id') {
+          row[cell.id] = cell.value;
         }
       }
       return true;

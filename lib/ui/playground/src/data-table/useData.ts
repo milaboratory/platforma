@@ -3,9 +3,7 @@ import { randomString, uniqueId } from '@milaboratory/helpers/strings';
 import { arrayFrom, randomInt } from '@milaboratory/helpers/utils';
 import { reactive, computed } from 'vue';
 import { faker } from '@faker-js/faker';
-import CustomNumber from './CustomNumber.vue';
 import { asConst, renderSequence } from './helpers';
-import CustomCell from './CustomCell.vue';
 
 export function useData() {
   const lorem = randomString(40);
@@ -28,12 +26,6 @@ export function useData() {
         valueType,
         width: 200,
         editable: true,
-        render:
-          valueType === 'integer'
-            ? (h, value) => {
-                return h(CustomNumber, { value: value as number });
-              }
-            : undefined,
       } as DataTable.Types.TableSettings['columns'][number];
     });
 
@@ -43,9 +35,6 @@ export function useData() {
         label: 'Frozen',
         width: 200,
         frozen: true,
-        render(h, value) {
-          return h(CustomCell, { value, info: 'Test' });
-        },
       }),
       ...rest,
     ];

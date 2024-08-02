@@ -2,12 +2,12 @@
 import { showContextMenu } from '../contextMenu';
 import type { ContextOption } from '../contextMenu/types';
 import { rotate } from './domain';
-import type { ColumnSpec } from './types';
+import type { ColumnSpecSettings } from './types';
 
 const emit = defineEmits(['delete:column', 'expand:column', 'change:sort']);
 
 defineProps<{
-  col: ColumnSpec;
+  col: ColumnSpecSettings;
 }>();
 
 function onContextMenu(ev: MouseEvent) {
@@ -22,7 +22,7 @@ function onContextMenu(ev: MouseEvent) {
   showContextMenu(ev, options);
 }
 
-function onSort(col: ColumnSpec) {
+function onSort(col: ColumnSpecSettings) {
   const v = col.sort?.direction ?? 'DESC';
   emit('change:sort', {
     colId: col.id,

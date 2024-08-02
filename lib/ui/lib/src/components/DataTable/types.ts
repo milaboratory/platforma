@@ -1,6 +1,6 @@
 import type { Component } from 'vue';
 import type { h } from 'vue';
-import type { Branded, Values } from '@milaboratory/helpers/types';
+import type { Branded, Equal, Expect, Values } from '@milaboratory/helpers/types';
 
 type TypeMap = {
   integer: number;
@@ -20,7 +20,7 @@ export type TableProps = {
 export type TableData = {
   rowIndex: number;
   loading: boolean;
-  columns: readonly ColumnSpec[];
+  columns: readonly ColumnSpecSettings[];
   rows: readonly Row[];
   resize: boolean;
   resizeTh?: ResizeTh;
@@ -48,12 +48,12 @@ export type SelectedRowsOperation<D extends DataRow = DataRow> = {
 
 export type SelectedColumnsOperation<D extends DataRow = DataRow> = {
   label: string;
-  cb: (columns: ColumnSpecForData<D>[]) => Promise<void>;
+  cb: (columns: ColumnSpec<D>[]) => Promise<void>;
 };
 
 // Table settings
 export type TableSettings<D extends DataRow = DataRow> = {
-  columns: ColumnSpecForData<D>[];
+  columns: ColumnSpec<D>[];
   dataSource: DataSource<D>;
   gap?: number;
   height: number;
@@ -62,11 +62,11 @@ export type TableSettings<D extends DataRow = DataRow> = {
   onSelectedRows?: SelectedRowsOperation<D>[];
   onSelectedColumns?: SelectedColumnsOperation<D>[];
 
-  onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
+  onEditValue?: (cell: TableCell<D>) => boolean;
 };
 
 export type RawTableSettings<D extends DataRow = DataRow> = {
-  columns: ColumnSpecForData<D>[];
+  columns: ColumnSpec<D>[];
   gap?: number;
   height: number;
   addColumn?: () => Promise<void>;
@@ -76,10 +76,10 @@ export type RawTableSettings<D extends DataRow = DataRow> = {
   resolvePrimaryKey: ResolvePrimaryKey<D>;
   resolveRowHeight: ResolveRowHeight<D>;
 
-  onEditValue?: (cell: TableCell<D>, value: unknown) => boolean;
+  onEditValue?: (cell: TableCell<D>) => boolean;
 };
 
-export type ColumnSpec<ID = string, Value = unknown> = {
+export type ColumnSpecSettings<ID = string, Value = unknown> = {
   label: string;
   id: ID;
   width: number;
@@ -93,20 +93,23 @@ export type ColumnSpec<ID = string, Value = unknown> = {
   frozen?: boolean;
 };
 
-export type ColumnSpecForData<D extends DataRow> = Values<{
-  [P in keyof D]: ColumnSpec<P, D[P]>;
+export type ColumnSpec<D extends DataRow = DataRow> = Values<{
+  [P in keyof D]: ColumnSpecSettings<P, D[P]>;
 }>;
 
-export type TableCell<D extends DataRow = DataRow> = {
-  column: ColumnSpecForData<D>;
-  row: Row<D>;
-  value: unknown;
-  class: string;
-  editable?: boolean;
-  width: number;
-  style: ColumnStyle;
-  control?: boolean;
-};
+export type TableCell<D extends DataRow = DataRow> = Values<{
+  [P in keyof D]: {
+    id: P;
+    column: ColumnSpecSettings<P, D[P]>;
+    row: Row<D>;
+    value: D[P];
+    class: string;
+    editable?: boolean;
+    width: number;
+    style: ColumnStyle;
+    control?: boolean;
+  };
+}>;
 
 export type Row<D extends DataRow = DataRow> = {
   dataRow: D;
@@ -133,7 +136,7 @@ export type ColumnStyle = {
   width: string;
 };
 
-export type TableColumn = ColumnSpec & {
+export type TableColumn = ColumnSpecSettings & {
   style: ColumnStyle;
   offset: number;
   control?: boolean;
@@ -155,3 +158,16 @@ export type ResizeTh = {
   x: number;
   right: number;
 };
+
+/*** Static tests  ***/
+
+type _cell = TableCell<{ age: number; name: string; payload: unknown }>;
+
+type _age = Extract<_cell, { id: 'age' }>;
+
+type _cases = [
+  Expect<Equal<number, Extract<_cell, { id: 'age' }>['value']>>,
+  Expect<Equal<string, Extract<_cell, { id: 'name' }>['value']>>,
+  Expect<Equal<unknown, Extract<_cell, { id: 'payload' }>['value']>>,
+  Expect<Equal<_age['column']['id'], 'age'>>,
+];

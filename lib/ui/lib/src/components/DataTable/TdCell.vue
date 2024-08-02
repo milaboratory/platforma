@@ -1,9 +1,11 @@
 <script lang="ts" setup>
+import { tapIf } from '@milaboratory/helpers';
 import { showContextMenu } from '../contextMenu';
 import type { ContextOption } from '../contextMenu/types';
 import { injectState } from './keys';
 import type { TableCell } from './types';
-import { computed, reactive, ref, h } from 'vue';
+import { computed, ref, h } from 'vue';
+import BaseCellComponent from './BaseCellComponent.vue';
 
 const props = defineProps<{
   cell: TableCell;
@@ -11,17 +13,14 @@ const props = defineProps<{
 
 const state = injectState();
 
-const data = reactive({
-  edit: false as boolean,
-});
-
 const render = computed(() => props.cell.column.render);
 
-const onInput = (ev: Event) => {
-  if (state.settings.value.onEditValue) {
-    state.settings.value.onEditValue(props.cell, (ev.target as HTMLInputElement)?.value);
-  }
-  data.edit = false;
+const valueTypeRef = computed(() => props.cell.column.valueType);
+
+const onInput = (value: unknown) => {
+  tapIf(state.settings.value.onEditValue, (f) => {
+    f({ ...props.cell, value });
+  });
 };
 
 const onContextMenu = (ev: MouseEvent) => {
@@ -76,29 +75,13 @@ const onContextMenu = (ev: MouseEvent) => {
 
 const cellRef = ref<HTMLElement>();
 
-const onClick = () => {
-  if (props.cell.column.editable) {
-    data.edit = true;
-    requestAnimationFrame(() => {
-      cellRef.value?.querySelector('input')?.focus();
-    });
-  }
-};
-
-const DynamicComponent = computed(() => (render.value ? render.value(h, props.cell.value) : h('div', props.cell.value + '')));
+const DynamicComponent = computed(() => (render.value ? render.value(h, props.cell.value) : undefined));
 </script>
 
 <template>
-  <div
-    ref="cellRef"
-    class="cell"
-    :class="{ [cell.class]: true, edit: data.edit }"
-    :data-row-index.attr="cell.row.index"
-    @contextmenu="onContextMenu"
-    @click="onClick"
-  >
+  <div ref="cellRef" class="cell" :class="{ [cell.class]: true }" :data-row-index.attr="cell.row.index" @contextmenu="onContextMenu">
     <div v-if="cell.control">{{ cell.row.index }}</div>
-    <input v-else-if="data.edit" :value="cell.value" @focusout="data.edit = false" @change="onInput" />
-    <DynamicComponent v-else />
+    <DynamicComponent v-if="DynamicComponent" />
+    <BaseCellComponent v-else :model-value="cell.value" :value-type="valueTypeRef" :editable="cell.column.editable" @update:model-value="onInput" />
   </div>
 </template>
