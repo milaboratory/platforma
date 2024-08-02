@@ -36,7 +36,7 @@ import { z } from 'zod';
 const UploadOptsSchema = z.object({
   localPath: z.string(),
   pathSignature: z.string(),
-  modificationTime: z.bigint()
+  modificationTime: z.coerce.bigint()
 });
 
 const ImportOptsSchema = z.union([UploadOptsSchema, z.object({})]);
@@ -377,11 +377,12 @@ class ProgressUpdater {
 }
 
 export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
-  if (res.data == undefined || !('modificationTime' in res.data))
+  if (res.data == undefined || !('modificationTime' in res.data)) {
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
         stringifyWithResourceId(res.data)
     );
+  }
 
   const opts = res.data;
   if (opts.modificationTime === undefined) {
