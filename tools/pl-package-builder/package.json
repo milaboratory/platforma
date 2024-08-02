@@ -1,0 +1,40 @@
+{
+  "name": "@milaboratory/pl-package-builder",
+  "version": "0.0.1",
+  "description": "MiLaboratories Platforma Package builder",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "bin": {
+    "pl-pkg": "./bin/run.js"
+  },
+  "files": [
+    "bin/run.cmd",
+    "bin/run.js",
+    "dist"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.10",
+    "ts-jest": "^29.1.5",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.5.3",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
+  },
+  "dependencies": {
+    "@oclif/core": "^3.26.6",
+    "canonicalize": "^2.0.0",
+    "winston": "^3.13.0"
+  },
+  "oclif": {
+    "bin": "pl-pkg",
+    "commands": "./dist/commands",
+    "dirname": "pl-pkg",
+    "topicSeparator": " "
+  }
+}
