@@ -17,7 +17,6 @@ import TScroll from './TScroll.vue';
 import { createState } from './state';
 
 const emit = defineEmits<{
-  (e: 'click:cell', cell: unknown): void;
   (e: 'update:data', value: TableData): void;
   (e: 'change:sort', value: unknown): void;
 }>();
@@ -84,8 +83,7 @@ const onWheel = (ev: WheelEvent) => {
         </div>
       </div>
       <tr-body v-for="(row, i) in tableRows" :key="i" :row="row">
-        <td-cell v-for="cell in row.cells" :key="cell.column.id + i" :cell="cell" :style="cell.style" @click.stop="$emit('click:cell', cell)">
-        </td-cell>
+        <td-cell v-for="cell in row.cells" :key="cell.column.id + ':' + i" :cell="cell" :style="cell.style" />
       </tr-body>
     </div>
     <div class="carets">

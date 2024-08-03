@@ -49,8 +49,7 @@ export function useResize(state: State, tableRef: Ref<HTMLElement | undefined>) 
     },
   );
 
-  function mouseDown(e: MouseEvent) {
-    e.preventDefault();
+  const mouseDown = (e: MouseEvent) => {
     if (data.resizeTh) {
       data.resize = true;
       resize.start({
@@ -58,7 +57,7 @@ export function useResize(state: State, tableRef: Ref<HTMLElement | undefined>) 
         width: data.resizeTh.width,
       });
     }
-  }
+  };
 
   watchEffect(() => {
     if (!isHovered.value) {

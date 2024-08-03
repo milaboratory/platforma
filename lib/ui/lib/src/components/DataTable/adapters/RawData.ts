@@ -14,7 +14,6 @@ export class RawData<D extends DataRow = DataRow> implements Types.DataSource {
     public readonly resolveHeight: ResolveRowHeight<D>,
     public readonly resolvePrimaryKey: ResolvePrimaryKey<D>,
   ) {
-    console.log('new rawdata.length', datum.length);
     const offsets = datum.reduce(
       (dict, it, index) => {
         dict.indices.set(index, dict.total);

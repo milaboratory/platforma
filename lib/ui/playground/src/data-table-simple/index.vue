@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import { DataTable } from '@milaboratory/platforma-uikit.lib';
-import { computed, reactive } from 'vue';
+import { reactive } from 'vue';
 
 const DataTableComponent = DataTable.Component;
 
@@ -51,39 +51,34 @@ const data = reactive<{ rows: DataRecord[]; columns: DataTable.Types.ColumnSpec<
   ],
 });
 
-const settings = computed(() => {
-  return DataTable.fromRawData<DataRecord>(data.rows, {
-    columns: data.columns,
-    height: 600,
-    resolvePrimaryKey: (row: DataRecord) => String(row.id),
-    resolveRowHeight: () => 40,
-    onSelectedRows: [
-      {
-        label: 'Delete',
-        cb: async (rows) => {
-          data.rows = data.rows.filter((row) => !rows.some((r) => r.primaryKey === String(row.id)));
-        },
+const settings = DataTable.useRawData<DataRecord>(data.rows, {
+  columns: data.columns,
+  height: 600,
+  resolvePrimaryKey: (row: DataRecord) => String(row.id),
+  resolveRowHeight: () => 40,
+  onSelectedRows: [
+    {
+      label: 'Delete',
+      cb: async (rows) => {
+        data.rows = data.rows.filter((row) => !rows.some((r) => r.primaryKey === String(row.id)));
       },
-    ],
-    onSelectedColumns: [
-      {
-        label: 'Delete',
-        cb: async (columns) => {
-          data.columns = data.columns.filter((col) => !columns.some((c) => c.id === col.id));
-        },
-      },
-    ],
-    onEditValue(cell) {
-      const row = data.rows.find((row) => String(row.id) === cell.row.primaryKey);
-      if (row) {
-        if (cell.id === 'id') {
-          row[cell.id] = cell.value;
-        }
-      }
-      return true;
     },
-    controlColumn: true,
-  });
+  ],
+  onSelectedColumns: [
+    {
+      label: 'Delete',
+      cb: async (columns) => {
+        data.columns = data.columns.filter((col) => !columns.some((c) => c.id === col.id));
+      },
+    },
+  ],
+  onUpdatedRow(tableRow) {
+    const row = data.rows.find((row) => String(row.id) === tableRow.primaryKey);
+    if (row) {
+      Object.assign(row, tableRow.dataRow);
+    }
+  },
+  controlColumn: true,
 });
 </script>
 

@@ -11,7 +11,7 @@ const { data, columnsRef, generate } = useData();
 const lastId = computed(() => (data.rows.length ? data.rows[data.rows.length - 1]['ID'] : undefined));
 
 const settings = computed(() => {
-  return DataTable.fromRawData(data.rows, {
+  return DataTable.rawDataSettings(data.rows, {
     columns: columnsRef.value,
     height: 600,
     resolvePrimaryKey(_, index) {
@@ -42,13 +42,13 @@ const settings = computed(() => {
         },
       },
     ],
-    onEditValue(cell) {
-      const row = data.rows.find((_, index) => String(index) === cell.row.primaryKey);
-      if (row) {
-        row[cell.column.id] = cell.value;
-      }
-      return true;
-    },
+    // onEditValue(cell) {
+    //   const row = data.rows.find((_, index) => String(index) === cell.row.primaryKey);
+    //   if (row) {
+    //     row[cell.column.id] = cell.value;
+    //   }
+    //   return true;
+    // },
     controlColumn: true,
   });
 });

@@ -154,6 +154,7 @@
       font-size: 14px;
       user-select: none;
       white-space: nowrap;
+      padding: 8px 12px;
 
       .integer {
         @include icon(url(./16_cell-type-num.svg), 16px);
@@ -269,11 +270,14 @@
     display: flex;
     align-items: center;
     height: 100%;
-    user-select: text;
     padding: 1px;
 
     &.justify-center {
       justify-content: center;
+    }
+
+    .control-cell {
+      padding: 8px 12px;
     }
 
     .base-cell {
@@ -284,6 +288,7 @@
       height: 100%;
       display: flex;
       align-items: center;
+      user-select: text;
       input {
         border: none;
         outline: none;

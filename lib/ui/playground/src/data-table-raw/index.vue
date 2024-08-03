@@ -4,6 +4,7 @@ import { faker } from '@faker-js/faker';
 import { randomInt } from '@milaboratory/helpers';
 import { DataTable } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted, reactive } from 'vue';
+import UserForm from './UserForm.vue';
 
 const MyTable = DataTable.Component;
 
@@ -58,20 +59,18 @@ const settings = DataTable.useRawData(rowsRef, {
       editable: true,
     },
     {
+      id: 'user',
+      label: 'User',
+      width: 420,
+      valueType: 'unknown',
+      component: () => UserForm,
+      editable: true,
+    },
+    {
       id: 'size',
       label: 'Size',
       width: 120,
       valueType: 'integer',
-      editable: true,
-    },
-    {
-      id: 'user',
-      label: 'User',
-      width: 120,
-      valueType: 'unknown',
-      render(h, value) {
-        return h('div', value + '');
-      },
       editable: true,
     },
   ],
@@ -90,29 +89,14 @@ const settings = DataTable.useRawData(rowsRef, {
       },
     },
   ],
-  onEditValue(cell) {
-    console.log('cell.value', cell.value);
-    const row = data.rows.find((row) => String(row.id) === cell.row.primaryKey);
+  onUpdatedRow(r) {
+    const row = data.rows.find((row) => String(row.id) === r.primaryKey);
+    console.log('dataRow', r.dataRow);
     if (row) {
-      if (cell.id === 'id') {
-        row[cell.id] = cell.value;
-      }
-
-      if (cell.id === 'name') {
-        row[cell.id] = cell.value;
-      }
-
-      if (cell.id === 'size') {
-        row[cell.id] = cell.value;
-      }
-
-      if (cell.id === 'user') {
-        row[cell.id] = cell.value;
-      }
+      Object.assign(row, r.dataRow);
     }
-    return true;
   },
-  // controlColumn: true,
+  controlColumn: true,
 });
 
 onMounted(() => {
@@ -126,9 +110,6 @@ onMounted(() => {
 
 <template>
   <layout>
-    <div v-if="false" style="display: flex">
-      <pre>{{}}</pre>
-    </div>
     <div style="display: flex" class="gap-12">
       <button @click="createRandomRecord">Create random</button>
       <span>last id: {{ data.rows.length }}</span>

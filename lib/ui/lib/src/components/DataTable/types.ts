@@ -1,5 +1,4 @@
 import type { Component } from 'vue';
-import type { h } from 'vue';
 import type { Branded, Equal, Expect, Values } from '@milaboratory/helpers/types';
 
 type TypeMap = {
@@ -51,8 +50,7 @@ export type SelectedColumnsOperation<D extends DataRow = DataRow> = {
   cb: (columns: ColumnSpec<D>[]) => Promise<void>;
 };
 
-// Table settings
-export type TableSettings<D extends DataRow = DataRow> = {
+export type TableSettings<D extends DataRow = DataRow> = Readonly<{
   columns: ColumnSpec<D>[];
   dataSource: DataSource<D>;
   gap?: number;
@@ -62,24 +60,10 @@ export type TableSettings<D extends DataRow = DataRow> = {
   onSelectedRows?: SelectedRowsOperation<D>[];
   onSelectedColumns?: SelectedColumnsOperation<D>[];
 
-  onEditValue?: (cell: TableCell<D>) => boolean;
-};
+  onUpdatedRow?: (row: Row<D>) => void;
+}>;
 
-export type RawTableSettings<D extends DataRow = DataRow> = {
-  columns: ColumnSpec<D>[];
-  gap?: number;
-  height: number;
-  addColumn?: () => Promise<void>;
-  controlColumn?: boolean;
-  onSelectedRows?: SelectedRowsOperation<D>[];
-  onSelectedColumns?: SelectedColumnsOperation<D>[];
-  resolvePrimaryKey: ResolvePrimaryKey<D>;
-  resolveRowHeight: ResolveRowHeight<D>;
-
-  onEditValue?: (cell: TableCell<D>) => boolean;
-};
-
-export type ColumnSpecSettings<ID = string, Value = unknown> = {
+export type ColumnSpecSettings<ID = string, _Value = unknown> = {
   label: string;
   id: ID;
   width: number;
@@ -87,7 +71,7 @@ export type ColumnSpecSettings<ID = string, Value = unknown> = {
   sort?: {
     direction: 'DESC' | 'ASC' | undefined;
   };
-  render?: (_h: typeof h, value: Value) => Component;
+  component?: () => Component;
   editable?: boolean;
   valueType?: ValueType;
   frozen?: boolean;
@@ -158,6 +142,22 @@ export type ResizeTh = {
   x: number;
   right: number;
 };
+
+/*** Adapters ***/
+
+export type RawTableSettings<D extends DataRow = DataRow> = Readonly<{
+  columns: ColumnSpec<D>[];
+  gap?: number;
+  height: number;
+  addColumn?: () => Promise<void>;
+  controlColumn?: boolean;
+  onSelectedRows?: SelectedRowsOperation<D>[];
+  onSelectedColumns?: SelectedColumnsOperation<D>[];
+  resolvePrimaryKey: ResolvePrimaryKey<D>;
+  resolveRowHeight: ResolveRowHeight<D>;
+
+  onUpdatedRow?: (row: Row<D>) => void;
+}>;
 
 /*** Static tests  ***/
 
