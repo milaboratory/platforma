@@ -43,8 +43,9 @@ export default class BuildModel extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildModel);
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
-    const { model } = require(modulePath);
+    let { model, platforma } = require(modulePath);
 
+    if (!model) model = platforma;
     if (!model) throw new Error('"model" export not found');
 
     const { config } = model;
