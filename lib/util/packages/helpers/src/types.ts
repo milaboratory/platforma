@@ -70,6 +70,10 @@ export type DeepReadonly<T> = keyof T extends never
   ? T
   : { readonly [k in keyof T]: DeepReadonly<T[k]> };
 
+export type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
 export type DeepMutable<T> = keyof T extends never
   ? T
   : { -readonly [k in keyof T]: DeepMutable<T[k]> };
