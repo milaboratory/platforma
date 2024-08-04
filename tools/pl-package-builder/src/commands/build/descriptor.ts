@@ -44,7 +44,7 @@ export default class Descriptor extends Command {
         }
         logger.debug("Rendering software descriptor for sources: " + JSON.stringify(sources))
 
-        const swJson = sw.render(sources)
+        const swJson = sw.render(...sources)
         sw.write(swJson)
     }
 }

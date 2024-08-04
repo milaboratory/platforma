@@ -52,3 +52,13 @@ binary:
   runEnv: python@3.12
   requirements: ./requirements.txt
 `
+
+export const PlPackageYamlCrossplatform: string = `
+binary:
+  registry: "${PlBinaryRegistry}"
+  name: "${PlBinaryCustomName}"
+  version: "${PlBinaryCustomVersion}"
+  crossplatform: true
+
+  root: ./src
+`

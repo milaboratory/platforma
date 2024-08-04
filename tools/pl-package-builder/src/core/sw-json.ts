@@ -74,7 +74,7 @@ export class SoftwareDescriptor {
         private mode: BuildMode,
     ) { }
 
-    public render(sources: readonly softwareSource[]): SoftwareInfo {
+    public render(...sources: readonly softwareSource[]): SoftwareInfo {
         this.logger.info("Rendering software descriptor...")
 
         if (sources.length === 0) {
