@@ -1,9 +1,10 @@
 import { readdirSync, statSync, existsSync, mkdirSync, stat } from 'fs';
 import { createHash, Hash } from 'crypto';
 import * as path from 'path';
-import { start } from 'repl';
+import * as tar from 'tar';
+import winston from 'winston';
 
-export function assertNever(a : never) {}
+export function assertNever(a: never) { }
 
 export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
     const hash = hasher ? hasher : createHash('sha256');
@@ -36,7 +37,7 @@ export function ensureDirsExist(dirPath: string) {
     mkdirSync(dirPath);
 }
 
-export function findPackageRoot(startPath?: string) : string {
+export function findPackageRoot(startPath?: string): string {
     if (!startPath) {
         startPath = process.cwd()
     }
@@ -46,7 +47,7 @@ export function findPackageRoot(startPath?: string) : string {
     return searchPathUp(startPath, startPath, packageFileName)
 }
 
-function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: string) : string {
+function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: string): string {
     const itemPath = path.resolve(pathToCheck, itemToCheck)
 
     if (existsSync(itemPath)) {
@@ -55,8 +56,39 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
 
     const parentDir = path.dirname(pathToCheck)
     if (parentDir === pathToCheck || pathToCheck === "") {
-        throw new Error (`failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`)
+        throw new Error(`failed to find '${itemToCheck}' file in any of parent directories starting from '${startPath}'`)
     }
 
     return searchPathUp(startPath, parentDir, itemToCheck)
+}
+
+export function packagePath(packageRootDir: string, packageName: string, packageVersion: string) : string {
+    return path.resolve(packageRootDir, `pkg-${packageName}-${packageVersion}.tgz`)
+}
+
+export function packPackage(pkgContentRoot: string, dstArchivePath: string) {
+    tar.c(
+        {
+            gzip: true,
+            file: dstArchivePath,
+            cwd: pkgContentRoot,
+            sync: true
+        },
+        ['.']
+    );
+}
+
+export function createLogger(level: string = 'debug'): winston.Logger {
+    return winston.createLogger({
+        level: level,
+        format: winston.format.printf(({ level, message }) => {
+            return `${level.padStart(6, ' ')}: ${message}`;
+        }),
+        transports: [
+            new winston.transports.Console({
+                stderrLevels: ['error', 'warn', 'info', 'debug'],
+                handleExceptions: true
+            })
+        ]
+    });
 }

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'yaml';
+import winston from 'winston';
 
 import { z } from 'zod';
 
@@ -27,7 +28,7 @@ const binaryConfigSchema = z.object({
     root: z.string().min(1),
     entrypoint: z.array(z.string()).optional(),
     cmd: z.string().optional(),
-    runEnv: z.string().regex(/@/, {message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1"}).optional(),
+    runEnv: z.string().regex(/@/, { message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1" }).optional(),
 
     // python-specific options
     requirements: z.string().optional(), // path to requirements.txt
@@ -58,52 +59,85 @@ const packageJsonSchema = z.object({
 })
 type packageJson = z.infer<typeof packageJsonSchema>
 
+const plPackageYamlName = "pl.package.yaml"
+const packageJsonName = "package.json"
+
+/*
+ * pl.package.yaml content structure example:
+ *
+ * docker:
+ *   registry: "quay.io"
+ *   name: "milaboratories/python-example-docker"
+ *   version: "1.2.3-awe"
+ *
+ * binary:
+ *   registry: "milaboratories"
+ *   name: "milaboratories/python-example-binary"
+ *   version: "1.2.3"
+ *
+ *   root: "./src"
+ *   cmd: "./script1.py"
+ *
+ *   runEnv: "python@3.12"
+ *   requirements: "./requirements.txt"
+ */
 export class PackageInfo {
-    private readonly _packageRootDir: string
-    private readonly _pkgYaml: plPackageYaml
-    private readonly _pkgJson: packageJson
+    private readonly pkgYaml: plPackageYaml
+    private readonly pkgJson: packageJson
 
     private _docker: DockerConfig | undefined
     private _binary: BinaryConfig | undefined
 
-    constructor(packageRootDir: string, options?: { plPkgYamlData?: string, pkgJsonData?: string }) {
-        this._packageRootDir = packageRootDir
+    constructor(
+        private logger: winston.Logger,
+        private packageRootDir: string,
+        options?: { plPkgYamlData?: string, pkgJsonData?: string }
+    ) {
+        this.logger.info("Reading package information...")
 
         if (options?.plPkgYamlData) {
-            this._pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
+            this.pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
         } else {
-            const pkgYamlPath = path.resolve(packageRootDir, "pl.package.yaml")
-            this._pkgYaml = readPlPackageYaml(pkgYamlPath)
+            const pkgYamlPath = path.resolve(packageRootDir, plPackageYamlName)
+            this.logger.debug(`  - loading '${pkgYamlPath}'`)
+            this.pkgYaml = readPlPackageYaml(pkgYamlPath)
+            this.logger.debug("    " + JSON.stringify(this.pkgYaml))
         }
 
         if (options?.pkgJsonData) {
-            this._pkgJson = parsePackageJson(options.pkgJsonData)
+            this.pkgJson = parsePackageJson(options.pkgJsonData)
         } else {
-            const pkgJsonPath = path.resolve(packageRootDir, "package.json")
-            this._pkgJson = readPackageJson(pkgJsonPath)
+            const pkgJsonPath = path.resolve(packageRootDir, packageJsonName)
+            this.logger.debug(`  - loading '${pkgJsonPath}'`)
+            this.pkgJson = readPackageJson(pkgJsonPath)
+            this.logger.debug("    " + JSON.stringify(this.pkgJson))
         }
+
+        logger.debug('  package information loaded successfully.')
     }
 
-    get name() : string {
-        return this._pkgYaml.name ?? "main"
+    get name(): string {
+        return this.pkgYaml.name ?? "main"
     }
 
     get packageRoot(): string {
-        return this._packageRootDir
+        return this.packageRootDir
     }
 
     get hasDocker(): boolean {
-        return this._pkgYaml.docker !== undefined
+        return this.pkgYaml.docker !== undefined
     }
 
     get docker(): DockerConfig {
         if (!this._docker) {
-            const registry = this._pkgYaml.docker!.registry
-            const name = this.getName(this._pkgYaml.docker?.name)
-            const version = this.getVersion(this._pkgYaml.docker?.version)
+            this.logger.debug("  generating docker config from package info")
+
+            const registry = this.pkgYaml.docker!.registry
+            const name = this.getName(this.pkgYaml.docker?.name)
+            const version = this.getVersion(this.pkgYaml.docker?.version)
 
             this._docker = {
-                ...this._pkgYaml.docker,
+                ...this.pkgYaml.docker,
                 registry,
                 name,
                 version,
@@ -118,18 +152,20 @@ export class PackageInfo {
     }
 
     get hasBinary(): boolean {
-        return this._pkgYaml.binary !== undefined
+        return this.pkgYaml.binary !== undefined
     }
 
     get binary(): BinaryConfig {
-        const pkgRoot = this._packageRootDir
         if (!this._binary) {
-            const registry = this._pkgYaml.binary!.registry
-            const name = this.getName(this._pkgYaml.binary?.name)
-            const version = this.getVersion(this._pkgYaml.binary?.version)
+            this.logger.debug("  generating binary config from package info")
+
+            const pkgRoot = this.packageRootDir
+            const registry = this.pkgYaml.binary!.registry
+            const name = this.getName(this.pkgYaml.binary?.name)
+            const version = this.getVersion(this.pkgYaml.binary?.version)
 
             this._binary = {
-                ...this._pkgYaml.binary!,
+                ...this.pkgYaml.binary!,
                 registry,
                 name,
                 version,
@@ -152,11 +188,11 @@ export class PackageInfo {
             return pkgName!
         }
 
-        if (this._pkgJson.name.startsWith("@")) {
-            return this._pkgJson.name.substring(1)
+        if (this.pkgJson.name.startsWith("@")) {
+            return this.pkgJson.name.substring(1)
         }
 
-        return this._pkgJson.name
+        return this.pkgJson.name
     }
 
     private getVersion(pkgVersion: string | undefined): string {
@@ -164,7 +200,7 @@ export class PackageInfo {
             return pkgVersion!
         }
 
-        return this._pkgJson.version
+        return this.pkgJson.version
     }
 }
 
@@ -173,23 +209,3 @@ const parsePlPackageYaml = (data: string) => plPackageYamlSchema.parse(yaml.pars
 
 const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
 const parsePackageJson = (data: string) => packageJsonSchema.parse(JSON.parse(data)) as packageJson;
-
-
-/*
-docker:
-  # The parts of final docker image tag: <registry>/<name>:<version>
-  registry: "quay.io" # required
-  name: "milaboratories/python-example" # defaults to the name from package.json with leading '@' dropped
-  # version: 1.2.3 # defaults to the version from package.json
-
-binary:
-  registry: "milaboratories"
-  name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
-  # version: 1.2.3 #defaults to the version in package.json
-
-  root: "./src" # resolve relative paths starting from this directory when building and executing the package
-  cmd: "./script1.py"
-
-  runEnv: python-3.12
-  requirements: "./requirements.txt"
- */

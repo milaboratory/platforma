@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-package-builder",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "build": "tsc",
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.10",
+    "tar": "^7.4.3",
     "ts-jest": "^29.1.5",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",

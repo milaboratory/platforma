@@ -9,7 +9,7 @@ docker:
 export const PlPackageYamlBinaryMinimal: string = `
 binary:
   registry: "${PlBinaryRegistry}"
-  root: ./
+  root: .
 `
 
 export const PlPackageYamlAllMinimal: string = `
@@ -18,7 +18,7 @@ docker:
 
 binary:
   registry: "${PlBinaryRegistry}"
-  root: ./
+  root: .
 `
 
 export const PackageVersion: string = '1.2.3'
@@ -32,7 +32,7 @@ export const PackageJson = `
 `
 export const PlDockerImageName: string = "custom-docker-image-name"
 export const PlDockerCustomVersion: string = "5.5.5"
-export const PlBinaryName: string = "custom-binary-package-name"
+export const PlBinaryCustomName: string = "custom-binary-package-name"
 export const PlBinaryCustomVersion: string = "4.4.4"
 
 export const PlPackageYamlCustomSettings: string = `
@@ -41,11 +41,11 @@ docker:
   name: "${PlDockerImageName}"
   version: "${PlDockerCustomVersion}"
   entrypoint: [ "/usr/bin/env", "printf" ]
-  cmd: [ "Hello, world!\\n" ]
+  cmd: [ "Hello, world!" ]
 
 binary:
   registry: "${PlBinaryRegistry}"
-  name: "${PlBinaryName}"
+  name: "${PlBinaryCustomName}"
   version: "${PlBinaryCustomVersion}"
   root: ./src
   cmd: ./script1.py

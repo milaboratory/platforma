@@ -1,7 +1,7 @@
 import { Command, Args, Flags } from '@oclif/core'
-import { BuildFlags, BuildMode, modeFromFlag } from '../../core/flags';
+import { BuildFlags, BuildMode, GlobalFlags, modeFromFlag } from '../../core/flags';
 import { PackageInfo } from '../../core/package-info';
-import { findPackageRoot } from '../../core/util';
+import { createLogger, findPackageRoot } from '../../core/util';
 import { SoftwareDescriptor, allSoftwareSources, softwareSource } from '../../core/sw-json';
 // import * as pkg from '../../core/files'
 // import { assertNever } from '../util'
@@ -24,21 +24,29 @@ export default class Descriptor extends Command {
         '<%= config.bin %> <%= command.id %>',
     ]
 
-    static override flags = { ...BuildFlags };
+    static override flags = {
+        ...GlobalFlags,
+        ...BuildFlags,
+    };
 
     public async run(): Promise<void> {
         const { args, flags } = await this.parse(Descriptor);
-
         const mode: BuildMode = modeFromFlag(flags.dev)
 
+        const logger = createLogger(flags['log-level'])
+
+        logger.debug(`Detecting package root...`)
         const pkgRoot = findPackageRoot()
-        const pkg = new PackageInfo(pkgRoot)
-        const sw = new SoftwareDescriptor(pkg, mode)
+        logger.debug(`  package root found at '${pkgRoot}'`)
+
+        const pkg = new PackageInfo(logger, pkgRoot)
+        const sw = new SoftwareDescriptor(logger, pkg, mode)
 
         var sources: readonly softwareSource[] = allSoftwareSources
         if (args.sources) {
             sources = [args.sources] as readonly softwareSource[]
         }
+        logger.debug("Rendering software descriptor for sources: " + JSON.stringify(sources))
 
         const swJson = sw.render(sources)
         sw.write(swJson)

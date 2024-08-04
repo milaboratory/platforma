@@ -5,6 +5,7 @@ import { assertNever, ensureDirsExist, hashDirMetaSync } from './util';
 import { writeFileSync } from 'fs';
 import path from 'path';
 import { BuildMode } from './flags';
+import winston from 'winston';
 
 const dockerSchema = z.object({
     image: z.string().
@@ -68,27 +69,49 @@ export type softwareSource = (typeof allSoftwareSources)[number];
 
 export class SoftwareDescriptor {
     constructor(
+        private logger: winston.Logger,
         private packageInfo: PackageInfo,
         private mode: BuildMode,
     ) { }
 
-    public render(blocks: readonly softwareSource[]): SoftwareInfo {
+    public render(sources: readonly softwareSource[]): SoftwareInfo {
+        this.logger.info("Rendering software descriptor...")
+
+        if (sources.length === 0) {
+            this.logger.error("list of software sources to be put into software descriptor is empty")
+            throw new Error("empty list of software sources")
+        }
+
         const info: SoftwareInfo = {}
 
-        if (blocks.includes('docker')) {
-            info.docker = this.renderDockerInfo()
-        }
-        if (blocks.includes('binary')) {
-            if (this.mode === 'dev-local') {
-                info.local = this.renderLocalInfo()
-            } else {
-                info.binary = this.renderBinaryInfo()
+        for (const source of sources) {
+            switch (source) {
+                case 'docker':
+                    this.logger.debug("  rendering 'docker' source...")
+                    info.docker = this.renderDockerInfo()
+                    break
+
+                case 'binary':
+                    if (this.mode === 'dev-local') {
+                        this.logger.debug("  rendering 'local' source...")
+                        info.local = this.renderLocalInfo()
+                    } else {
+                        this.logger.debug("  rendering 'binary' source...")
+                        info.binary = this.renderBinaryInfo()
+                    }
+                    break
+
+                default:
+                    assertNever(source)
             }
         }
 
         if (Object.values(info).length === 0)  {
-            throw new Error("SoftwareInfo is empty after rendering")
+            this.logger.error("software descriptor is empty after rendering")
+            throw new Error("software descriptor is empty after rendering")
         }
+
+        this.logger.debug("    " + JSON.stringify(info))
 
         return info
     }
@@ -98,6 +121,8 @@ export class SoftwareDescriptor {
             this.packageInfo.packageRoot,
             "dist", "tengo", "software", `${this.packageInfo.name}.sw.json`,
         )
+
+        this.logger.info(`Writing software descriptor to '${dstSwInfoPath}'`)
 
         const encoded = JSON.stringify(info)
 
