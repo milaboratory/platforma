@@ -22,14 +22,18 @@ interface DockerConfig extends dockerConfig {
 }
 
 const binaryConfigSchema = z.object({
-    registry: z.string(),
+    registry: z.object({
+        name: z.string().min(1),
+    }),
     name: z.string().optional(),
     version: z.string().optional(),
     crossplatform: z.boolean().default(false),
     root: z.string().min(1),
     entrypoint: z.array(z.string()).optional(),
     cmd: z.string().optional(),
-    runEnv: z.string().regex(/@/, { message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1" }).optional(),
+    runEnv: z.string().
+        regex(/@/, { message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1" }).
+        optional(),
 
     // python-specific options
     requirements: z.string().optional(), // path to requirements.txt

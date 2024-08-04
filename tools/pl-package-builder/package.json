@@ -4,7 +4,7 @@
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "rm -rf ./dist && npm run build && jest"
   },
   "bin": {
     "pl-pkg": "./bin/run.js"

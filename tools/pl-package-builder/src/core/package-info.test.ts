@@ -17,7 +17,7 @@ test("PackageInfo loads correctly on minimal required data", () => {
     expect(all.docker.tag).toEqual(`${artifacts.PlDockerRegistry}/${artifacts.PackageName.substring(1)}:${artifacts.PackageVersion}`)
 
     expect(all.hasBinary).toBeTruthy()
-    expect(all.binary.registry).toEqual(artifacts.PlBinaryRegistry)
+    expect(all.binary.registry.name).toEqual(artifacts.PlBinaryRegistry)
     expect(all.binary.name).toEqual(artifacts.PackageName.substring(1))
     expect(all.binary.version).toEqual(artifacts.PackageVersion)
     expect(all.binary.root).toEqual(".")
@@ -56,7 +56,7 @@ test("PackageInfo considers custom version and package", () => {
     expect(i.docker.cmd).toEqual(["Hello, world!"])
 
     expect(i.hasBinary).toBeTruthy()
-    expect(i.binary.registry).toEqual(artifacts.PlBinaryRegistry)
+    expect(i.binary.registry.name).toEqual(artifacts.PlBinaryRegistry)
     expect(i.binary.name).toEqual(artifacts.PlBinaryCustomName)
     expect(i.binary.version).toEqual(artifacts.PlBinaryCustomVersion)
     expect(i.binary.root).toEqual("./src")

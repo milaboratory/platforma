@@ -3,7 +3,9 @@ docker:
   name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
 
 binary:
-  registry: "milaboratories"
+  registry:
+    name: "milaboratories"
+
   name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
   crossplatform: true
   # version: 1.2.3 #defaults to the version in package.json

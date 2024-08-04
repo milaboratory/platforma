@@ -8,7 +8,8 @@ docker:
 
 export const PlPackageYamlBinaryMinimal: string = `
 binary:
-  registry: "${PlBinaryRegistry}"
+  registry:
+    name: "${PlBinaryRegistry}"
   root: .
 `
 
@@ -17,7 +18,8 @@ docker:
   registry: "${PlDockerRegistry}"
 
 binary:
-  registry: "${PlBinaryRegistry}"
+  registry:
+    name: "${PlBinaryRegistry}"
   root: .
 `
 
@@ -44,7 +46,8 @@ docker:
   cmd: [ "Hello, world!" ]
 
 binary:
-  registry: "${PlBinaryRegistry}"
+  registry:
+    name: "${PlBinaryRegistry}"
   name: "${PlBinaryCustomName}"
   version: "${PlBinaryCustomVersion}"
   root: ./src
@@ -55,7 +58,8 @@ binary:
 
 export const PlPackageYamlCrossplatform: string = `
 binary:
-  registry: "${PlBinaryRegistry}"
+  registry:
+    name: "${PlBinaryRegistry}"
   name: "${PlBinaryCustomName}"
   version: "${PlBinaryCustomVersion}"
   crossplatform: true
