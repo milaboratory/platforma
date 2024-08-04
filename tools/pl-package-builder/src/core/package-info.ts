@@ -25,6 +25,7 @@ const binaryConfigSchema = z.object({
     registry: z.string(),
     name: z.string().optional(),
     version: z.string().optional(),
+    crossplatform: z.boolean().default(false),
     root: z.string().min(1),
     entrypoint: z.array(z.string()).optional(),
     cmd: z.string().optional(),
@@ -42,7 +43,7 @@ export interface BinaryConfig extends binaryConfig {
     name: string
     version: string
     package: string
-    path: string
+    contentRoot: string // absolute path to package's content root
 }
 
 const plPackageYamlSchema = z.object({
@@ -129,6 +130,11 @@ export class PackageInfo {
     }
 
     get docker(): DockerConfig {
+        if (!this.hasDocker) {
+            this.logger.error(`No 'docker' configuration in ${plPackageYamlName} file`)
+            throw new Error("no 'docker' configuration")
+        }
+
         if (!this._docker) {
             this.logger.debug("  generating docker config from package info")
 
@@ -156,10 +162,17 @@ export class PackageInfo {
     }
 
     get binary(): BinaryConfig {
+        if (!this.hasBinary) {
+            this.logger.error(`No 'binary' configuration in ${plPackageYamlName} file`)
+            throw new Error("no 'binary' configuration")
+        }
+
         if (!this._binary) {
             this.logger.debug("  generating binary config from package info")
 
             const pkgRoot = this.packageRootDir
+            const crossplatform = this.pkgYaml.binary!.crossplatform
+
             const registry = this.pkgYaml.binary!.registry
             const name = this.getName(this.pkgYaml.binary?.name)
             const version = this.getVersion(this.pkgYaml.binary?.version)
@@ -171,10 +184,13 @@ export class PackageInfo {
                 version,
 
                 get package(): string {
-                    return `${this.name}/${this.version}.tgz`
+                    if (crossplatform) {
+                        return `${this.name}/${this.version}.tgz`
+                    }
+                    return `${this.name}/${this.version}-{os}-{arch}.tgz`
                 },
 
-                get path(): string {
+                get contentRoot(): string {
                     return path.resolve(pkgRoot, this.root)
                 }
             }

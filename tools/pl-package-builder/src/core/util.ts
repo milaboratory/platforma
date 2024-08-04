@@ -62,22 +62,6 @@ function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: strin
     return searchPathUp(startPath, parentDir, itemToCheck)
 }
 
-export function packagePath(packageRootDir: string, packageName: string, packageVersion: string) : string {
-    return path.resolve(packageRootDir, `pkg-${packageName}-${packageVersion}.tgz`)
-}
-
-export function packPackage(pkgContentRoot: string, dstArchivePath: string) {
-    tar.c(
-        {
-            gzip: true,
-            file: dstArchivePath,
-            cwd: pkgContentRoot,
-            sync: true
-        },
-        ['.']
-    );
-}
-
 export function createLogger(level: string = 'debug'): winston.Logger {
     return winston.createLogger({
         level: level,
@@ -92,3 +76,9 @@ export function createLogger(level: string = 'debug'): winston.Logger {
         ]
     });
 }
+
+export const OSes = ['linux', 'macosx', 'windows'] as const;
+export type OStype = (typeof OSes)[number];
+
+export const Archs = ['x64', 'aarch64'] as const
+export type ArchType = (typeof Archs)[number];

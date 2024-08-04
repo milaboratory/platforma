@@ -3,10 +3,6 @@ import { BuildFlags, BuildMode, GlobalFlags, modeFromFlag } from '../../core/fla
 import { PackageInfo } from '../../core/package-info';
 import { createLogger, findPackageRoot } from '../../core/util';
 import { SoftwareDescriptor, allSoftwareSources, softwareSource } from '../../core/sw-json';
-// import * as pkg from '../../core/files'
-// import { assertNever } from '../util'
-// import { rerunLast } from '../run'
-// import state from '../state'
 
 export default class Descriptor extends Command {
     static override description = 'build *.sw.json from pl.package.yaml'

@@ -148,7 +148,7 @@ export class SoftwareDescriptor {
         }
 
         const binary = this.packageInfo.binary
-        const rootDir = binary.path
+        const rootDir = binary.contentRoot
         const hash = hashDirMetaSync(rootDir)
 
         return {

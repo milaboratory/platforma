@@ -5,6 +5,7 @@ docker:
 binary:
   registry: "milaboratories"
   name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
+  crossplatform: true
   # version: 1.2.3 #defaults to the version in package.json
  
   root: "./src" # resolve relative paths starting from this directory when building and executing the package
