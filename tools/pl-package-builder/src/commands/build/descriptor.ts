@@ -1,0 +1,46 @@
+import { Command, Args, Flags } from '@oclif/core'
+import { BuildFlags, BuildMode, modeFromFlag } from '../../core/flags';
+import { PackageInfo } from '../../core/package-info';
+import { findPackageRoot } from '../../core/util';
+import { SoftwareDescriptor, allSoftwareSources, softwareSource } from '../../core/sw-json';
+// import * as pkg from '../../core/files'
+// import { assertNever } from '../util'
+// import { rerunLast } from '../run'
+// import state from '../state'
+
+export default class Descriptor extends Command {
+    static override description = 'build *.sw.json from pl.package.yaml'
+
+    static args = {
+        'sources': Args.string({
+            name: 'sources',
+            required: false,
+            description: 'List of sources to be avaliable in generated *.sw.json descriptor',
+            options: (allSoftwareSources as unknown) as string[],
+        })
+    };
+
+    static override examples = [
+        '<%= config.bin %> <%= command.id %>',
+    ]
+
+    static override flags = { ...BuildFlags };
+
+    public async run(): Promise<void> {
+        const { args, flags } = await this.parse(Descriptor);
+
+        const mode: BuildMode = modeFromFlag(flags.dev)
+
+        const pkgRoot = findPackageRoot()
+        const pkg = new PackageInfo(pkgRoot)
+        const sw = new SoftwareDescriptor(pkg, mode)
+
+        var sources: readonly softwareSource[] = allSoftwareSources
+        if (args.sources) {
+            sources = [args.sources] as readonly softwareSource[]
+        }
+
+        const swJson = sw.render(sources)
+        sw.write(swJson)
+    }
+}

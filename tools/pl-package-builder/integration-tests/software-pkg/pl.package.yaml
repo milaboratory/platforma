@@ -1,0 +1,14 @@
+docker:
+  registry: "quay.io" # required
+  name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
+
+binary:
+  registry: "milaboratories"
+  name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
+  # version: 1.2.3 #defaults to the version in package.json
+ 
+  root: "./src" # resolve relative paths starting from this directory when building and executing the package
+  cmd: "./script1.py"
+
+  runEnv: python@3.12
+  requirements: "./requirements.txt"

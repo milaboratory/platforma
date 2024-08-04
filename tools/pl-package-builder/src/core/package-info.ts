@@ -14,11 +14,10 @@ const dockerConfigSchema = z.object({
 });
 
 type dockerConfig = z.infer<typeof dockerConfigSchema>;
-export type DockerConfig = dockerConfig & {
-    name: string;
-    version: string;
-
-    tag: string // <registry>/<name>:<version>
+interface DockerConfig extends dockerConfig {
+    name: string
+    version: string
+    tag: string
 }
 
 const binaryConfigSchema = z.object({
@@ -26,23 +25,28 @@ const binaryConfigSchema = z.object({
     name: z.string().optional(),
     version: z.string().optional(),
     root: z.string().min(1),
+    entrypoint: z.array(z.string()).optional(),
     cmd: z.string().optional(),
-    runEnv: z.string().optional(),
+    runEnv: z.string().regex(/@/, {message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1"}).optional(),
 
     // python-specific options
-    requirements: z.string().optional(),
+    requirements: z.string().optional(), // path to requirements.txt
 
     // R-specific options
-    lockFile: z.string().optional(),
+    renvLock: z.string().optional(), // path to renv.lock
 });
 
 type binaryConfig = z.infer<typeof binaryConfigSchema>
-export type BinaryConfig = binaryConfig & {
+export interface BinaryConfig extends binaryConfig {
     name: string
     version: string
+    package: string
+    path: string
 }
 
 const plPackageYamlSchema = z.object({
+    name: z.string().optional().
+        describe("name of software descriptor for imports (ll.importSoftware('<package>:<NAME>')"),
     docker: dockerConfigSchema.optional(),
     binary: binaryConfigSchema.optional()
 })
@@ -55,28 +59,37 @@ const packageJsonSchema = z.object({
 type packageJson = z.infer<typeof packageJsonSchema>
 
 export class PackageInfo {
+    private readonly _packageRootDir: string
     private readonly _pkgYaml: plPackageYaml
     private readonly _pkgJson: packageJson
 
     private _docker: DockerConfig | undefined
     private _binary: BinaryConfig | undefined
 
-    constructor(packageRootDir: string);
-    constructor(plPkgYamlData: string, pkgJsonData: string);
-    constructor(plPkgYamlData: string, pkgJsonData?: string) {
-        if (pkgJsonData) {
-            this._pkgYaml = parsePlPackageYaml(plPkgYamlData)
-            this._pkgJson = parsePackageJson(pkgJsonData)
-            return
+    constructor(packageRootDir: string, options?: { plPkgYamlData?: string, pkgJsonData?: string }) {
+        this._packageRootDir = packageRootDir
+
+        if (options?.plPkgYamlData) {
+            this._pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
+        } else {
+            const pkgYamlPath = path.resolve(packageRootDir, "pl.package.yaml")
+            this._pkgYaml = readPlPackageYaml(pkgYamlPath)
         }
 
-        const packageRootDir = plPkgYamlData
+        if (options?.pkgJsonData) {
+            this._pkgJson = parsePackageJson(options.pkgJsonData)
+        } else {
+            const pkgJsonPath = path.resolve(packageRootDir, "package.json")
+            this._pkgJson = readPackageJson(pkgJsonPath)
+        }
+    }
 
-        const pkgYamlPath = path.resolve(packageRootDir, "pl.package.yaml")
-        const pkgJsonPath = path.resolve(packageRootDir, "package.json")
+    get name() : string {
+        return this._pkgYaml.name ?? "main"
+    }
 
-        this._pkgYaml = readPlPackageYaml(pkgYamlPath)
-        this._pkgJson = readPackageJson(pkgJsonPath)
+    get packageRoot(): string {
+        return this._packageRootDir
     }
 
     get hasDocker(): boolean {
@@ -94,7 +107,10 @@ export class PackageInfo {
                 registry,
                 name,
                 version,
-                tag: `${registry}/${name}:${version}`
+
+                get tag(): string {
+                    return `${this.registry}/${this.name}:${this.version}`
+                }
             }
         }
 
@@ -106,6 +122,7 @@ export class PackageInfo {
     }
 
     get binary(): BinaryConfig {
+        const pkgRoot = this._packageRootDir
         if (!this._binary) {
             const registry = this._pkgYaml.binary!.registry
             const name = this.getName(this._pkgYaml.binary?.name)
@@ -116,6 +133,14 @@ export class PackageInfo {
                 registry,
                 name,
                 version,
+
+                get package(): string {
+                    return `${this.name}/${this.version}.tgz`
+                },
+
+                get path(): string {
+                    return path.resolve(pkgRoot, this.root)
+                }
             }
         }
 

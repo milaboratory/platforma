@@ -1,0 +1,17 @@
+{
+  "name": "@milaboratory/pl-package-builder-integration-1",
+  "version": "1.0.0",
+  "description": "The software description example",
+  "scripts": {
+    "build:descriptor": "pl-pkg build descriptor",
+    "build": "pl-pkg build"
+  },
+  "files": [
+    "dist/"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratory/pl-package-builder": "file:../../."
+  }
+}
