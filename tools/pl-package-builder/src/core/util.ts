@@ -37,14 +37,17 @@ export function ensureDirsExist(dirPath: string) {
     mkdirSync(dirPath);
 }
 
-export function findPackageRoot(startPath?: string): string {
+export function findPackageRoot(logger: winston.Logger, startPath?: string): string {
     if (!startPath) {
         startPath = process.cwd()
     }
-
     const packageFileName = "package.json"
 
-    return searchPathUp(startPath, startPath, packageFileName)
+    logger.debug(`Detecting package root...`)
+    const pkgRoot = searchPathUp(startPath, startPath, packageFileName)
+    logger.debug(`  package root found at '${pkgRoot}'`)
+
+    return pkgRoot
 }
 
 function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: string): string {

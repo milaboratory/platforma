@@ -64,7 +64,7 @@ const swJsonSchema = z.object({
 })
 export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
-export const allSoftwareSources = ['docker', 'binary'] as const;
+export const allSoftwareSources = ['binary'] as const; // add 'docker', '<whatever>' here when supported
 export type softwareSource = (typeof allSoftwareSources)[number];
 
 export class SoftwareDescriptor {
@@ -76,6 +76,7 @@ export class SoftwareDescriptor {
 
     public render(...sources: readonly softwareSource[]): SoftwareInfo {
         this.logger.info("Rendering software descriptor...")
+        this.logger.debug("  sources: " + JSON.stringify(sources))
 
         if (sources.length === 0) {
             this.logger.error("list of software sources to be put into software descriptor is empty")
@@ -86,10 +87,10 @@ export class SoftwareDescriptor {
 
         for (const source of sources) {
             switch (source) {
-                case 'docker':
-                    this.logger.debug("  rendering 'docker' source...")
-                    info.docker = this.renderDockerInfo()
-                    break
+                // case 'docker':
+                //     this.logger.debug("  rendering 'docker' source...")
+                //     info.docker = this.renderDockerInfo()
+                //     break
 
                 case 'binary':
                     if (this.mode === 'dev-local') {

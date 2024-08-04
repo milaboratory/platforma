@@ -31,9 +31,7 @@ export default class Descriptor extends Command {
 
         const logger = createLogger(flags['log-level'])
 
-        logger.debug(`Detecting package root...`)
-        const pkgRoot = findPackageRoot()
-        logger.debug(`  package root found at '${pkgRoot}'`)
+        const pkgRoot = findPackageRoot(logger)
 
         const pkg = new PackageInfo(logger, pkgRoot)
         const sw = new SoftwareDescriptor(logger, pkg, mode)
@@ -42,7 +40,6 @@ export default class Descriptor extends Command {
         if (args.sources) {
             sources = [args.sources] as readonly softwareSource[]
         }
-        logger.debug("Rendering software descriptor for sources: " + JSON.stringify(sources))
 
         const swJson = sw.render(...sources)
         sw.write(swJson)
