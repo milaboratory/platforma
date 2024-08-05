@@ -5,7 +5,7 @@ export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, {
 
 export interface ArgsModelOptions<A, T = A> {
   transform?: (v: A) => T;
-  validate: (v: unknown) => A;
+  validate?: (v: unknown) => A;
 }
 
 export interface ModelOptions<M, V = M> extends ReadableComputed<M> {

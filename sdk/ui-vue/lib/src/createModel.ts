@@ -43,7 +43,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   );
 
   const save = () => {
-    options.onSave(validate(local.value));
+    options.onSave(validate(deepClone(local.value)));
   };
 
   const revert = () => {

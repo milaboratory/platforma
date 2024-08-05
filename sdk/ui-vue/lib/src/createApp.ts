@@ -51,7 +51,7 @@ export function createApp<
   const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
-    createArgsModel<T = Args>(options: ArgsModelOptions<Args, T>) {
+    createArgsModel<T = Args>(options: ArgsModelOptions<Args, T> = {}) {
       return createModel<T, Args>({
         get() {
           if (options.transform) {
