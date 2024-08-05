@@ -4,16 +4,16 @@ on:
     types: [opened, reopened, synchronize]
     branches:
       - 'main'
-
   push:
     branches:
       - 'main'
+  workflow_dispatch: {}
 
 jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4-beta
+      - uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
@@ -21,7 +21,7 @@ jobs:
     needs:
       - init
 
-    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple-k8s.yaml@v4-beta
+    uses: milaboratory/github-ci-internal/.github/workflows/node-docker-simple.yaml@v4
     with:
       app-name: Tengo SDK
       app-name-slug: 'tengo-sdk'
@@ -34,18 +34,9 @@ jobs:
       build-script-name: 'build'
       cache-version: 'v2'
 
-      test-pl-client-release-matrix-k8s: true
-      test-pl-client-latest-k8s: true
+      test: true
       test-script-name: 'test'
-      test-pl-major-versions: '1'
-      test-pl-minor-versions: '1'
-      test-pl-repo-branch: 'main'
 
     secrets:
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
       TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
-      METADATA_DB_HOST: ${{ secrets.COUCHDB_HOST }}
-      METADATA_DB_URL: ${{ secrets.COUCHDB_URL }}
-      METADATA_DB_USER: ${{ secrets.COUCHDB_USER }}
-      METADATA_DB_PASSWORD: ${{ secrets.COUCHDB_PASSWORD }}
-      GH_PAT: ${{ secrets.GH_PAT_BLOCKS }}
