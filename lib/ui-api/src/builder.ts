@@ -1,9 +1,9 @@
-import { Cfg, Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
-import { Platforma } from './platforma';
-import { PlatformaSDKVersion } from './version';
-import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
+import { Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
+import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
+import { Platforma } from './platforma';
 import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render';
+import { PlatformaSDKVersion } from './version';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {
   readonly $blockId: string;
@@ -68,7 +68,7 @@ export function isFunctionHandle(cfgOrFh: TypedConfigOrFunctionHandle): cfgOrFh 
 type OnlyString<S> = S extends string ? S : '';
 
 // prettier-ignore
-export type DeriveHref<S> = S extends readonly BlockSection[] 
+export type DeriveHref<S> = S extends readonly BlockSection[]
   ? OnlyString<Extract<S[number], { type: 'link' }>['href']>
   : never;
 
@@ -139,7 +139,7 @@ export function normalizeBlockConfig<
 /** Main entry point that each block should use in it's "config" module. Don't forget
  * to call {@link done()} at the end of configuration. Value returned by this builder must be
  * exported as constant with name "platforma" from the "config" module. */
-export class PlatformaConfiguration<
+export class BlockModel<
   Args,
   OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>,
   UiState,
@@ -151,13 +151,13 @@ export class PlatformaConfiguration<
     private readonly _outputs: OutputsCfg,
     private readonly _inputsValid: TypedConfigOrFunctionHandle,
     private readonly _sections: TypedConfigOrFunctionHandle
-  ) {}
+  ) { }
 
   /** Initiates configuration builder */
   public static create<Args, UiState = undefined>(
     renderingMode: BlockRenderingMode
-  ): PlatformaConfiguration<Args, {}, UiState> {
-    return new PlatformaConfiguration<Args, {}, UiState>(
+  ): BlockModel<Args, {}, UiState> {
+    return new BlockModel<Args, {}, UiState>(
       renderingMode,
       undefined,
       {},
@@ -176,11 +176,11 @@ export class PlatformaConfiguration<
   public output<const Key extends string, const Cfg extends TypedConfig>(
     key: Key,
     cfg: Cfg
-  ): PlatformaConfiguration<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
+  ): BlockModel<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
   public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF
-  ): PlatformaConfiguration<
+  ): BlockModel<
     Args,
     OutputsCfg & { [K in Key]: FunctionHandle<InferRenderFunctionReturn<RF>> },
     UiState,
@@ -189,11 +189,11 @@ export class PlatformaConfiguration<
   public output(
     key: string,
     cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
       const functionHandle = `output#${key}` as FunctionHandle;
       tryRegisterCallback(functionHandle, () => cfgOrRf(new RenderCtx()));
-      return new PlatformaConfiguration(
+      return new BlockModel(
         this._renderingMode,
         this._initialArgs,
         {
@@ -204,7 +204,7 @@ export class PlatformaConfiguration<
         this._sections
       );
     } else
-      return new PlatformaConfiguration(
+      return new BlockModel(
         this._renderingMode,
         this._initialArgs,
         {
@@ -219,23 +219,23 @@ export class PlatformaConfiguration<
   /** @deprecated */
   public canRun<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
     return this.inputsValid(cfg as any);
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed */
   public inputsValid<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href>;
+  ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public inputsValid<RF extends RenderFunction<Args, UiState>>(
     rf: RF & InputsValidRFChecked<RF>
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, Href>;
+  ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public inputsValid(
     cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, `/${string}`> {
+  ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
       tryRegisterCallback('inputsValid', () => cfgOrRf(new RenderCtx()));
-      return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
+      return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
         this._outputs,
@@ -243,7 +243,7 @@ export class PlatformaConfiguration<
         this._sections
       );
     } else
-      return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
+      return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
         this._outputs,
@@ -253,24 +253,27 @@ export class PlatformaConfiguration<
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
+  public sections<const S extends SectionsExpectedType,>(rf: S): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, UiState, Ret>
-  >(rf: RF): PlatformaConfiguration<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
+  >(rf: RF): BlockModel<Args, OutputsCfg, UiState, DeriveHref<ReturnType<RF>>>;
   public sections<const Cfg extends TypedConfig>(
     cfg: Cfg & SectionsCfgChecked<Cfg, Args, UiState>
-  ): PlatformaConfiguration<
+  ): BlockModel<
     Args,
     OutputsCfg,
     UiState,
     DeriveHref<ConfigResult<Cfg, StdCtxArgsOnly<Args, UiState>>>
   >;
   public sections(
-    cfgOrRf: TypedConfig | Function
-  ): PlatformaConfiguration<Args, OutputsCfg, UiState, `/${string}`> {
-    if (typeof cfgOrRf === 'function') {
-      tryRegisterCallback('sections', () => cfgOrRf(new RenderCtx()));
-      return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
+    arrOrCfgOrRf: SectionsExpectedType | TypedConfig | Function
+  ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
+    if (Array.isArray(arrOrCfgOrRf)){
+      return this.sections(getImmediate(arrOrCfgOrRf))
+    } else if (typeof arrOrCfgOrRf === 'function') {
+      tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
+      return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
         this._outputs,
@@ -278,18 +281,19 @@ export class PlatformaConfiguration<
         'sections' as FunctionHandle
       );
     } else
-      return new PlatformaConfiguration<Args, OutputsCfg, UiState>(
+      return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
         this._outputs,
         this._inputsValid,
-        cfgOrRf
+        arrOrCfgOrRf as TypedConfig
       );
   }
 
+
   /** Sets initial args for the block, this value must be specified. */
-  public initialArgs(value: Args): PlatformaConfiguration<Args, OutputsCfg, UiState, Href> {
-    return new PlatformaConfiguration<Args, OutputsCfg, UiState, Href>(
+  public initialArgs(value: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
       this._renderingMode,
       value,
       this._outputs,
@@ -325,6 +329,8 @@ export class PlatformaConfiguration<
     else return getPlatformaInstance(config) as any;
   }
 }
+
+const PlatformaConfiguration = BlockModel;
 
 export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
   ? ResolveCfgType<CfgOrFH, Args, UiState>

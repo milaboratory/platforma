@@ -1,7 +1,3 @@
-import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
-import { getCfgRenderCtx } from '../internal';
-import { TreeNodeAccessor } from './accessor';
-import { FutureRef } from './future';
 import {
   Option,
   PColumn,
@@ -19,6 +15,10 @@ import {
   mapValueInVOE
 } from '@milaboratory/sdk-model';
 import { Optional } from 'utility-types';
+import { getCfgRenderCtx } from '../internal';
+import { TreeNodeAccessor } from './accessor';
+import { FutureRef } from './future';
+import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -79,13 +79,27 @@ export class RenderCtx<Args, UiState> {
     return accessorId ? new TreeNodeAccessor(accessorId) : undefined;
   }
 
-  public get stagingOutput(): TreeNodeAccessor | undefined {
+  public get precalc():  TreeNodeAccessor | undefined {
     return this.getNamedAccessor(StagingAccessorName);
   }
 
-  public get mainOutput(): TreeNodeAccessor | undefined {
+  /**
+   * @deprecated use precalc
+   */
+  public get stagingOutput(): TreeNodeAccessor | undefined {
+    return this.precalc
+  }
+
+  public get outputs():  TreeNodeAccessor | undefined {
     return this.getNamedAccessor(MainAccessorName);
   }
+  
+  /**
+   * @deprecated use outputs
+   */
+  public get mainOutput(): TreeNodeAccessor | undefined {
+    return this.outputs
+  }  
 
   public readonly resultPool = new ResultPool();
 

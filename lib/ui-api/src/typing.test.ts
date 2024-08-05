@@ -1,4 +1,11 @@
 import {
+  BlockSection,
+  LocalBlobHandleAndSize,
+  RemoteBlobHandleAndSize,
+  ValueOrErrors
+} from '@milaboratory/sdk-model';
+import { BlockModel, DeriveHref, StdCtx } from './builder';
+import {
   Args,
   ConfigResult,
   flatten,
@@ -19,13 +26,6 @@ import {
   mapArrayValues,
   mapRecordValues
 } from './config';
-import { DeriveHref, PlatformaConfiguration, StdCtx } from './builder';
-import {
-  BlockSection,
-  LocalBlobHandleAndSize,
-  RemoteBlobHandleAndSize,
-  ValueOrErrors
-} from '@milaboratory/sdk-model';
 import { InferHrefType, InferOutputsType } from './platforma';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
@@ -99,7 +99,7 @@ test('test config content', () => {
 });
 
 test('test config content', () => {
-  const platforma = PlatformaConfiguration.create<{ a: string[] }>('Heavy')
+  const platforma = BlockModel.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
@@ -126,7 +126,7 @@ test('test config content', () => {
 });
 
 test('test config 2', () => {
-  const platforma = PlatformaConfiguration.create<{ a: string[] }>('Heavy')
+  const platforma = BlockModel.create<{ a: string[] }>('Heavy')
     .initialArgs({ a: [] })
     .output(
       'cell1',
