@@ -1,7 +1,7 @@
+import * as path from 'path';
+import * as os from 'os';
 import { readdirSync, statSync, existsSync, mkdirSync, stat } from 'fs';
 import { createHash, Hash } from 'crypto';
-import * as path from 'path';
-import * as tar from 'tar';
 import winston from 'winston';
 
 export function assertNever(a: never) { }
@@ -83,5 +83,31 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 export const OSes = ['linux', 'macosx', 'windows'] as const;
 export type OStype = (typeof OSes)[number];
 
-export const Archs = ['x64', 'aarch64'] as const
-export type ArchType = (typeof Archs)[number];
+export function currentOS(): OStype {
+    const platform = os.platform()
+    switch (platform) {
+        case 'darwin':
+            return 'macosx';
+        case 'linux':
+            return 'linux';
+        case 'win32':
+            return 'windows';
+        default:
+            throw new Error(`operating system '${platform}' is not currently supported by Platforma ecosystem. The list of OSes supported: ` + JSON.stringify(OSes))
+    }
+}
+
+export const Arches = ['x64', 'aarch64'] as const
+export type ArchType = (typeof Arches)[number];
+
+export function currentArch(): ArchType {
+    const arch = os.arch()
+    switch (arch) {
+        case 'arm64':
+            return 'aarch64'
+        case 'x64':
+            return 'x64'
+        default:
+            throw new Error(`processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` + JSON.stringify(Arches))
+    }
+}

@@ -4,7 +4,8 @@
   "description": "The software description example",
   "scripts": {
     "build:descriptor": "pl-pkg build descriptor",
-    "build": "pl-pkg build"
+    "build": "rm -rf dist && pl-pkg build",
+    "publish": "pl-pkg publish"
   },
   "files": [
     "dist/"

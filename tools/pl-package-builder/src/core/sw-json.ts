@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import { PackageInfo } from './package-info';
 import { assertNever, ensureDirsExist, hashDirMetaSync } from './util';
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { BuildMode } from './flags';
 import winston from 'winston';
@@ -64,6 +64,13 @@ const swJsonSchema = z.object({
 })
 export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
+export function readSoftwareInfo(packageRoot: string, swName: string) : SoftwareInfo {
+    const filePath = swJsonPath(packageRoot, swName)
+    const swJsonContent = readFileSync(filePath)
+
+    return swJsonSchema.parse(JSON.parse(swJsonContent.toString()))
+}
+
 export const allSoftwareSources = ['binary'] as const; // add 'docker', '<whatever>' here when supported
 export type softwareSource = (typeof allSoftwareSources)[number];
 
@@ -118,10 +125,7 @@ export class SoftwareDescriptor {
     }
 
     public write(info: SoftwareInfo) {
-        const dstSwInfoPath = path.resolve(
-            this.packageInfo.packageRoot,
-            "dist", "tengo", "software", `${this.packageInfo.name}.sw.json`,
-        )
+        const dstSwInfoPath = swJsonPath(this.packageInfo.packageRoot, this.packageInfo.name)
 
         this.logger.info(`Writing software descriptor to '${dstSwInfoPath}'`)
 
@@ -218,4 +222,11 @@ export class SoftwareDescriptor {
             cmd: docker.cmd,
         }
     }
+}
+
+function swJsonPath(packageRoot: string, swName: string) : string {
+    return path.resolve(
+        packageRoot,
+        "dist", "tengo", "software", `${swName}.sw.json`,
+    )
 }
