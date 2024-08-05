@@ -26,9 +26,5 @@ const data = toList(range(0, 20000)).map((id) => ({
 onmessage = (e: { data: WEvent }) => {
   const { offset, limit } = e.data;
   const workerResult = data.slice(offset, offset + limit);
-  console.log(
-    `offset ${offset} limit ${limit}`,
-    workerResult.map((p) => p.id),
-  );
   postMessage(workerResult);
 };

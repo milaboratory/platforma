@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import './assets/style.scss';
-import { ref, unref, onMounted, nextTick, watchPostEffect, watch } from 'vue';
+import './assets/data-table-style.scss';
+import { ref, unref, onMounted, nextTick, watchPostEffect, watch, computed } from 'vue';
 import TdCell from './TdCell.vue';
 import type { TableSettings, TableData } from './types';
 import TableIcon from './assets/TableIcon.vue';
@@ -26,6 +26,12 @@ const props = defineProps<{
 }>();
 
 const state = createState(props);
+
+const hasNoData = computed(() => state.data.rows.length === 0);
+
+const tableBodyStyle = computed(() => ({
+  height: hasNoData.value ? '212px' /* css value */ : state.data.bodyHeight + 'px',
+}));
 
 watch(state.data, (v) => emit('update:data', v), { deep: true });
 
@@ -75,8 +81,8 @@ const onWheel = (ev: WheelEvent) => {
         <th-cell v-for="(col, i) in tableColumns" :key="i" :col="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
       </tr-head>
     </div>
-    <div ref="bodyRef" class="table-body" :style="{ height: state.data.bodyHeight + 'px' }" @wheel="onWheel">
-      <div v-if="state.data.rows.length === 0" class="table-body__no-data">
+    <div ref="bodyRef" class="table-body" :style="tableBodyStyle" @wheel="onWheel">
+      <div v-if="hasNoData" class="table-body__no-data">
         <div>
           <table-icon />
           <div>No Data To Show</div>

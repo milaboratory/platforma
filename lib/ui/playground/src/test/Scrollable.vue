@@ -11,7 +11,7 @@ const options = generate(100, (i) => ({
 }));
 
 function onScroll(_e: unknown) {
-  // console.log('e', e);
+  //
 }
 
 let id = 0;

@@ -1,18 +1,21 @@
 import { computed, provide, reactive, watch } from 'vue';
 import type { TableProps, TableData, DataWindow, PrimaryKey, Row, ColumnSpecSettings, DataSource } from './types';
-import { deepClone } from '@milaboratory/helpers/objects';
+import { deepClone, deepEqual } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
-import { clamp, resolveAwaited, tap } from '@milaboratory/helpers/utils';
+import { clamp, delay, resolveAwaited, tap } from '@milaboratory/helpers/utils';
 import { useTableColumns } from './composition/useTableColumns';
 import { useTableRows } from './composition/useTableRows';
 import { GAP, WINDOW_DELTA } from './constants';
 
-const loadRows = async (w: { scrollTop: number; bodyHeight: number }, dataSource: DataSource) => {
-  const { scrollTop, bodyHeight } = w;
+const loadRows = async (dataWindow: { scrollTop: number; bodyHeight: number }, dataSource: DataSource) => {
+  const { scrollTop, bodyHeight } = dataWindow;
+
+  await delay(0);
 
   return resolveAwaited({
     rows: dataSource.getRows(scrollTop, bodyHeight),
     height: dataSource.getHeight(),
+    dataWindow,
   });
 };
 
@@ -20,13 +23,13 @@ export function createState(props: TableProps) {
   const data = reactive<TableData>({
     rowIndex: -1,
     columns: [],
-    loading: false,
-    window: undefined,
+    pendingLoads: 0,
+    currentWindow: undefined,
     rows: [],
     resize: false,
     resizeTh: undefined,
     dataHeight: 0,
-    bodyHeight: props.settings.height, // @TODO
+    bodyHeight: props.settings.height,
     bodyWidth: 0,
     scrollTop: 0,
     scrollLeft: 0,
@@ -38,6 +41,7 @@ export function createState(props: TableProps) {
     () => props.settings,
     () => {
       data.columns = deepClone(props.settings.columns);
+      data.currentWindow = undefined;
     },
     { immediate: true },
   );
@@ -53,11 +57,11 @@ export function createState(props: TableProps) {
   const maxScrollTop = computed(() => tap(state.data.dataHeight - state.data.bodyHeight, (v) => (v > 0 ? v : 0)));
   const maxScrollLeft = computed(() => tap(columnsWidth.value - state.data.bodyWidth, (v) => (v > 0 ? v : 0)));
 
-  const dataWindow = computed<DataWindow>(() => {
+  const dataDimensions = computed<DataWindow & { current?: DataWindow }>(() => {
     return {
       bodyHeight: data.bodyHeight,
       scrollTop: data.scrollTop,
-      loaded: data.rows.length > 0,
+      current: data.currentWindow,
     };
   });
 
@@ -78,9 +82,6 @@ export function createState(props: TableProps) {
       last.width = last.width + (rightOffset - newWidth);
     }
   };
-
-  const minOffset = computed(() => data.rows.reduce((off, it) => Math.min(off, it.offset), Number.POSITIVE_INFINITY));
-  const maxOffset = computed(() => data.rows.reduce((off, it) => Math.max(off, it.offset), 0));
 
   const state = {
     data,
@@ -119,43 +120,39 @@ export function createState(props: TableProps) {
     updateBodyHeight() {
       const { height } = props.settings;
       const { dataHeight } = data;
-      data.bodyHeight = height > dataHeight ? dataHeight : height;
+      const bodyHeight = height > dataHeight ? dataHeight : height;
+      data.bodyHeight = bodyHeight;
     },
     updateDimensions(rect: { height: number; width: number }) {
       this.updateBodyHeight();
       state.data.bodyWidth = rect.width;
       state.adjustWidth();
       data.rows = [];
+      data.currentWindow = undefined;
     },
   };
 
   watch(
-    dataWindow,
-    (w) => {
-      const t = minOffset.value - w.scrollTop;
+    dataDimensions,
+    (n, _o) => {
+      const current = n.current;
 
-      const b = maxOffset.value - w.scrollTop - w.bodyHeight;
+      const needToLoad = !current || n.scrollTop < current.scrollTop || n.scrollTop + n.bodyHeight > current.bodyHeight + current.scrollTop;
 
-      const needToLoad = t > 0 || b < 0 || !w.loaded;
-
-      const loadWindow: DataWindow = {
-        scrollTop: w.scrollTop - WINDOW_DELTA,
-        bodyHeight: w.bodyHeight + WINDOW_DELTA * 2,
-        loaded: true,
-      };
-
-      if (needToLoad && !data.loading) {
-        data.loading = true;
-        loadRows(loadWindow, settings.value.dataSource)
-          .then(({ rows, height }) => {
+      if (needToLoad) {
+        data.currentWindow = {
+          scrollTop: n.scrollTop - WINDOW_DELTA,
+          bodyHeight: n.bodyHeight + WINDOW_DELTA * 2,
+        };
+        loadRows(deepClone(data.currentWindow), settings.value.dataSource).then(({ rows, height, dataWindow }) => {
+          if (deepEqual(data.currentWindow, dataWindow)) {
             data.rows = rows;
             data.dataHeight = height;
-            data.window = loadWindow;
-          })
-          .finally(() => {
-            data.loading = false;
-            state.updateBodyHeight();
-          });
+            setTimeout(() => {
+              state.updateBodyHeight();
+            }, 1);
+          }
+        });
       }
     },
     { deep: true, immediate: true },

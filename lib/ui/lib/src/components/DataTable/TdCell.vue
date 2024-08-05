@@ -81,9 +81,9 @@ const CustomComponent = computed(() => (props.cell.column.component ? props.cell
 </script>
 
 <template>
-  <div ref="cellRef" class="cell" :class="{ [cell.class]: true }" :data-row-index.attr="cell.row.index" @contextmenu="onContextMenu">
+  <div ref="cellRef" class="td-cell" :class="{ [cell.class]: true }" :data-row-index.attr="cell.row.index" @contextmenu="onContextMenu">
     <div v-if="cell.control" class="control-cell">{{ cell.row.index }}</div>
-    <component :is="CustomComponent" v-if="CustomComponent" :model-value="cell.value" @update:model-value="onInput" />
+    <component :is="CustomComponent" v-else-if="CustomComponent" :model-value="cell.value" @update:model-value="onInput" />
     <BaseCellComponent v-else :model-value="cell.value" :value-type="valueTypeRef" :editable="cell.column.editable" @update:model-value="onInput" />
   </div>
 </template>

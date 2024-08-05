@@ -8,8 +8,6 @@ import { todoListKey, defaultState } from './keys';
 
 const todoApp1 = reactive<TodoState>(defaultState());
 const todoApp2 = reactive<TodoState>(defaultState());
-
-console.log('td', todoListKey);
 </script>
 
 <template>

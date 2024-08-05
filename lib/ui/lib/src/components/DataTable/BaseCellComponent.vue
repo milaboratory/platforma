@@ -53,7 +53,7 @@ const onClick = () => {
 </script>
 
 <template>
-  <div ref="baseRef" class="base-cell" :class="{ edit: data.edit }" @click="onClick">
+  <div ref="baseRef" class="base-cell" :class="{ 'base-cell__edit': data.edit }" @click="onClick">
     <input v-if="data.edit" :value="modelValue" @focusout="data.edit = false" @change="onInput" />
     <div v-else>{{ modelValue }}</div>
   </div>

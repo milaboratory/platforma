@@ -147,7 +147,7 @@
       overflow: hidden;
     }
 
-    .cell {
+    .th-cell {
       position: absolute;
       background-color: #F7F8FA;
       font-weight: 600;
@@ -155,6 +155,10 @@
       user-select: none;
       white-space: nowrap;
       padding: 8px 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      height: 100%;
 
       .integer {
         @include icon(url(./16_cell-type-num.svg), 16px);
@@ -210,6 +214,7 @@
 
     .tr-body {
       position: absolute;
+      left: 0;
       max-width: 100%;
       overflow: hidden;
       display: flex;
@@ -221,7 +226,7 @@
       &.selected {
         background-color: #fff;
         outline: 1px solid var(--color-focus);
-        .cell {
+        .td-cell {
           &::after {
             position: absolute;
             top: 0;
@@ -236,16 +241,12 @@
       }
     }
 
-    .cell {
-      position: absolute;
-    }
-
     &__no-data {
+      height: 212px;
       background-color: #F7F8FA;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 64px 0;
 
       color: var(--color-txt-mask);
       font-size: 28px;
@@ -263,8 +264,8 @@
     }
   }
 
-  .cell {
-    position: relative;
+  .td-cell {
+    position: absolute;
     background-color: #fff;
     overflow: hidden;
     display: flex;
@@ -289,6 +290,7 @@
       display: flex;
       align-items: center;
       user-select: text;
+      overflow: hidden;
       input {
         border: none;
         outline: none;
@@ -298,7 +300,7 @@
         width: 100%;
         padding: 0;
       }
-      &.edit {
+      &__edit {
         outline: 1px solid var(--color-focus);
       }
     }

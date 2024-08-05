@@ -18,16 +18,15 @@ export type TableProps = {
 export type DataWindow = {
   bodyHeight: number;
   scrollTop: number;
-  loaded: boolean;
 };
 
 // Inner table state
 export type TableData = {
   rowIndex: number;
-  loading: boolean;
+  pendingLoads: number;
   columns: readonly ColumnSpecSettings[];
   rows: readonly Row[];
-  window?: DataWindow;
+  currentWindow?: DataWindow;
   resize: boolean;
   resizeTh?: ResizeTh;
   dataHeight: number;
