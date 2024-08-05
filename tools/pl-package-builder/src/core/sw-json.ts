@@ -192,7 +192,7 @@ export class SoftwareDescriptor {
         const binary = this.packageInfo.binary
         return {
             registry: binary.registry.name,
-            package: binary.fullName,
+            package: binary.addressPattern,
             entrypoint: binary.entrypoint,
             cmd: binary.cmd,
             runEnv: binary.runEnv,

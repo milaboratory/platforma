@@ -4,7 +4,7 @@ import * as yaml from 'yaml';
 import winston from 'winston';
 
 import { z } from 'zod';
-import { findPackageRoot } from './util';
+import * as util from './util';
 
 const dockerConfigSchema = z.object({
     registry: z.string(), // name of the registry (e.g. quay.io)
@@ -48,7 +48,8 @@ type binaryConfig = z.infer<typeof binaryConfigSchema>
 export interface BinaryConfig extends binaryConfig {
     name: string
     version: string
-    fullName: string // full package name inside registry (common/corretto/21.2.0.4.1.tgz)
+    fullName: (os: util.OSType, arch: util.ArchType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+    addressPattern: string // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
     contentRoot: string // absolute path to package's content root
 }
 
@@ -105,7 +106,7 @@ export class PackageInfo {
     ) {
         this.logger.info("Reading package information...")
 
-        this.packageRoot = packageRoot ?? findPackageRoot(logger)
+        this.packageRoot = packageRoot ?? util.findPackageRoot(logger)
 
         if (options?.plPkgYamlData) {
             this.pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
@@ -200,7 +201,14 @@ export class PackageInfo {
                 name,
                 version,
 
-                get fullName(): string {
+                fullName(os: util.OSType, arch: util.ArchType): string {
+                    if (crossplatform) {
+                        return `${this.name}/${this.version}.tgz`
+                    }
+                    return `${this.name}/${this.version}-${os}-${arch}.tgz`
+                },
+
+                get addressPattern(): string {
                     if (crossplatform) {
                         return `${this.name}/${this.version}.tgz`
                     }

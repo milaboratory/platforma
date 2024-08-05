@@ -81,9 +81,9 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 }
 
 export const OSes = ['linux', 'macosx', 'windows'] as const;
-export type OStype = (typeof OSes)[number];
+export type OSType = (typeof OSes)[number];
 
-export function currentOS(): OStype {
+export function currentOS(): OSType {
     const platform = os.platform()
     switch (platform) {
         case 'darwin':

@@ -32,7 +32,7 @@ export default class Package extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
-        c.targetOS = flags.os as util.OStype
+        c.targetOS = flags.os as util.OSType
         c.targetArch = flags.arch as util.ArchType
 
         c.publishPackage({

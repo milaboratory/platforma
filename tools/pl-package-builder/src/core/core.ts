@@ -5,7 +5,7 @@ import { SoftwareDescriptor, softwareSource, readSoftwareInfo } from "./sw-json"
 import { BuildMode } from "./flags";
 import * as archive from "./archive";
 import * as storage from "./storage";
-import { ArchType, currentArch, currentOS, OStype } from "./util";
+import { ArchType, currentArch, currentOS, OSType } from "./util";
 import { createReadStream } from "fs";
 
 export class Core {
@@ -13,7 +13,7 @@ export class Core {
     public readonly pkg: PackageInfo
     public readonly descriptor: SoftwareDescriptor
     public buildMode: BuildMode
-    public targetOS: OStype
+    public targetOS: OSType
     public targetArch: ArchType
 
     constructor(
@@ -102,7 +102,7 @@ export class Core {
 
         const s = storage.initByUrl(publishURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
-        s.putFile(this.pkg.binary.fullName, archive)
+        s.putFile(this.pkg.binary.fullName(this.targetOS, this.targetArch), archive)
     }
 
     private get archiveOptions(): archive.archiveOptions {

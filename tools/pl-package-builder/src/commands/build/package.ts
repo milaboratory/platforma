@@ -23,7 +23,7 @@ export default class Package extends Command {
         const core = new Core(logger)
 
         core.buildMode = modeFromFlag(flags.dev)
-        core.targetOS = flags.os as util.OStype
+        core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
         core.buildPackage()

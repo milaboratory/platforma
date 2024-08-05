@@ -10,11 +10,11 @@ export type archiveOptions = {
     packageVersion: string,
 
     crossplatform: boolean,
-    os: util.OStype,
+    os: util.OSType,
     arch: util.ArchType
 }
 
-export function optionsForPackage(pkg: PackageInfo, os?: util.OStype, arch?: util.ArchType): archiveOptions {
+export function optionsForPackage(pkg: PackageInfo, os?: util.OSType, arch?: util.ArchType): archiveOptions {
     return {
         packageRoot: pkg.packageRoot,
         packageName: pkg.binary.name,
