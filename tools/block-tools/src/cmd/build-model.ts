@@ -1,6 +1,6 @@
 import { Command, Flags } from '@oclif/core';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 async function getFileContent(path: string) {
   try {
@@ -43,15 +43,16 @@ export default class BuildModel extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildModel);
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
-    const { platforma } = require(modulePath);
+    let { model, platforma } = require(modulePath);
 
-    if (!platforma) throw new Error('"platforma" export not found');
+    if (!model) model = platforma;
+    if (!model) throw new Error('"model" export not found');
 
-    const { config } = platforma;
+    const { config } = model;
 
     if (!config)
       throw new Error(
-        'Malformed "platforma" object, check it is created with "PlatformaConfiguration" ' +
+        'Malformed "model" object, check it is created with "BlockModel" ' +
           'and ".done()" is executed as the call in the chain.'
       );
 
