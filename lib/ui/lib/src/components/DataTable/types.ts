@@ -15,12 +15,19 @@ export type TableProps = {
   settings: TableSettings;
 };
 
+export type DataWindow = {
+  bodyHeight: number;
+  scrollTop: number;
+  loaded: boolean;
+};
+
 // Inner table state
 export type TableData = {
   rowIndex: number;
   loading: boolean;
   columns: readonly ColumnSpecSettings[];
   rows: readonly Row[];
+  window?: DataWindow;
   resize: boolean;
   resizeTh?: ResizeTh;
   dataHeight: number;

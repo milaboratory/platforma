@@ -1,6 +1,7 @@
 import type * as Types from '../types';
 import type { DataRow, Row } from '../types';
 import { GAP } from '../constants';
+import { clamp } from '@milaboratory/helpers';
 
 export class AsyncData<D extends DataRow> implements Types.DataSource {
   constructor(
@@ -18,7 +19,7 @@ export class AsyncData<D extends DataRow> implements Types.DataSource {
   }
 
   async getRows(scrollTop: number, bodyHeight: number): Promise<Row[]> {
-    const offset = Math.floor(scrollTop / this.height);
+    const offset = clamp(Math.floor(scrollTop / this.height), 0, Number.POSITIVE_INFINITY);
     const limit = Math.ceil(bodyHeight + 40 / this.height); // @TODO safe window
     const rows = await this.api.query({ offset, limit });
     return rows.map<Types.Row>((dataRow, index) => ({

@@ -1,6 +1,6 @@
 import type * as Types from '../types';
 import type { DataRow, ResolvePrimaryKey, Row, ResolveRowHeight } from '../types';
-import { GAP, WINDOW_DELTA } from '../constants';
+import { GAP } from '../constants';
 import { sliceBy } from '../domain';
 import { notEmpty } from '@milaboratory/helpers';
 
@@ -50,7 +50,7 @@ export class RawData<D extends DataRow = DataRow> implements Types.DataSource {
   async getRows(scrollTop: number, bodyHeight: number): Promise<Row<D>[]> {
     return sliceBy(this.rows, (it) => {
       const offset = it.offset;
-      return scrollTop < offset + it.height + WINDOW_DELTA && offset < bodyHeight + scrollTop + WINDOW_DELTA;
+      return scrollTop < offset + it.height && offset < bodyHeight + scrollTop;
     });
   }
 }

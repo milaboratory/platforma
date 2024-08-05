@@ -1,27 +1,19 @@
 import { computed, provide, reactive, watch } from 'vue';
-import type { TableProps, TableData, TableSettings, PrimaryKey, Row, ColumnSpecSettings } from './types';
+import type { TableProps, TableData, DataWindow, PrimaryKey, Row, ColumnSpecSettings, DataSource } from './types';
 import { deepClone } from '@milaboratory/helpers/objects';
 import { stateKey } from './keys';
-import { clamp, tap } from '@milaboratory/helpers/utils';
+import { clamp, resolveAwaited, tap } from '@milaboratory/helpers/utils';
 import { useTableColumns } from './composition/useTableColumns';
 import { useTableRows } from './composition/useTableRows';
 import { GAP, WINDOW_DELTA } from './constants';
 
-type DataWindow = {
-  bodyHeight: number;
-  scrollTop: number;
-  settings: TableSettings;
-  loaded: boolean;
-};
+const loadRows = async (w: { scrollTop: number; bodyHeight: number }, dataSource: DataSource) => {
+  const { scrollTop, bodyHeight } = w;
 
-const loadRows = async (dataWindow: DataWindow) => {
-  const { bodyHeight, scrollTop, settings } = dataWindow;
-
-  const rows = await settings.dataSource.getRows(scrollTop, bodyHeight);
-
-  const height = await settings.dataSource.getHeight();
-
-  return { rows, height };
+  return resolveAwaited({
+    rows: dataSource.getRows(scrollTop, bodyHeight),
+    height: dataSource.getHeight(),
+  });
 };
 
 export function createState(props: TableProps) {
@@ -29,11 +21,12 @@ export function createState(props: TableProps) {
     rowIndex: -1,
     columns: [],
     loading: false,
+    window: undefined,
     rows: [],
     resize: false,
     resizeTh: undefined,
     dataHeight: 0,
-    bodyHeight: 600, // @TODO
+    bodyHeight: props.settings.height, // @TODO
     bodyWidth: 0,
     scrollTop: 0,
     scrollLeft: 0,
@@ -64,9 +57,6 @@ export function createState(props: TableProps) {
     return {
       bodyHeight: data.bodyHeight,
       scrollTop: data.scrollTop,
-      selectedRows: data.selectedRows,
-      settings: settings.value,
-      columns: tableColumns.value,
       loaded: data.rows.length > 0,
     };
   });
@@ -141,19 +131,26 @@ export function createState(props: TableProps) {
 
   watch(
     dataWindow,
-    (v) => {
-      const t = minOffset.value - v.scrollTop;
+    (w) => {
+      const t = minOffset.value - w.scrollTop;
 
-      const b = WINDOW_DELTA + maxOffset.value - v.scrollTop - v.bodyHeight;
+      const b = maxOffset.value - w.scrollTop - w.bodyHeight;
 
-      const needToLoad = t > 0 || b < 0 || !v.loaded;
+      const needToLoad = t > 0 || b < 0 || !w.loaded;
+
+      const loadWindow: DataWindow = {
+        scrollTop: w.scrollTop - WINDOW_DELTA,
+        bodyHeight: w.bodyHeight + WINDOW_DELTA * 2,
+        loaded: true,
+      };
 
       if (needToLoad && !data.loading) {
         data.loading = true;
-        loadRows(v)
+        loadRows(loadWindow, settings.value.dataSource)
           .then(({ rows, height }) => {
             data.rows = rows;
             data.dataHeight = height;
+            data.window = loadWindow;
           })
           .finally(() => {
             data.loading = false;

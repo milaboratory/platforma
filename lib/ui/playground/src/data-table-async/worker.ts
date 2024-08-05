@@ -15,7 +15,7 @@ export type Person = {
   job: string;
 };
 
-const data = toList(range(0, 200)).map((id) => ({
+const data = toList(range(0, 20000)).map((id) => ({
   id,
   name: faker.person.fullName(),
   age: faker.number.int(),

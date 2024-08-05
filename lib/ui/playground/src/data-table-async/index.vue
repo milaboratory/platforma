@@ -25,7 +25,7 @@ class Api implements DataTable.Types.ExternalApi<Person> {
   }
 
   async count(): Promise<number> {
-    return 200;
+    return 20000;
   }
 
   sendMessage(ev: WEvent): Promise<Person[]> {
