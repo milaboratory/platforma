@@ -79,3 +79,11 @@ export const wrapFunction = <T extends unknown[], U>(
     return fn(...args);
   };
 };
+
+export function pipe<A, B>(cb: (a: A) => B) {
+  const fn = (a: A) => cb(a);
+
+  fn.pipe = <C,>(next: (b: B) => C) => pipe((a: A) => next(cb(a)))
+
+  return fn;
+}
