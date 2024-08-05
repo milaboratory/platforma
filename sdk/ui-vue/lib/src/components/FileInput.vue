@@ -105,5 +105,5 @@ const clear = () => emit('update:modelValue', undefined);
       <btn-secondary @click.stop="openFileDialog">Select file</btn-secondary>
     </div>
   </div>
-  <file-dialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" multi @import:files="onImport" />
+  <file-dialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" @import:files="onImport" />
 </template>
