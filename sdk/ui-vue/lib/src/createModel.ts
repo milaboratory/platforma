@@ -68,7 +68,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
     }
   };
 
-  const modelValue = computed<M>({
+  const model = computed<M>({
     get: () => {
       return local.value as M;
     },
@@ -97,7 +97,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   const errorString = computed(() => (error.value ? error.value.message : ''));
 
   return reactive({
-    modelValue,
+    model: model,
     valid,
     isChanged,
     error,

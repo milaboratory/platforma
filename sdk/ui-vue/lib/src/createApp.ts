@@ -1,12 +1,10 @@
-import { deepClone, setProp } from '@milaboratory/helpers/objects';
+import { deepClone, setProp } from '@milaboratory/helpers';
+import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
-import type { UnwrapRef, Component } from 'vue';
-import { reactive, nextTick, markRaw } from 'vue';
-import type { UnwrapValueOrErrors, LocalState } from './types';
-
-type Mutable<T> = {
-  -readonly [P in keyof T]: T[P];
-};
+import type { Component } from 'vue';
+import { reactive, nextTick, markRaw, computed } from 'vue';
+import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions } from './types';
+import { createModel } from './createModel';
 
 export function createApp<
   Args = unknown,
@@ -14,19 +12,63 @@ export function createApp<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => LocalState<Href>) {
-  const app = reactive({
-    args: state.args,
-    outputs: state.outputs,
-    ui: state.ui,
+  const innerState = reactive({
+    args: Object.freeze(state.args),
+    outputs: Object.freeze(state.outputs),
+    ui: Object.freeze(state.ui),
     navigationState: state.navigationState as NavigationState<Href>,
-    cloneArgs() {
-      return deepClone(this.args) as Args;
-    },
-    cloneNavigationState() {
-      return deepClone(this.navigationState) as Mutable<NavigationState<Href>>;
+  }) as {
+    args: Readonly<Args>;
+    outputs: Readonly<Outputs>;
+    ui: Readonly<UiState>;
+    navigationState: Readonly<NavigationState<Href>>;
+  };
+
+  platforma.onStateUpdates(async (updates) => {
+    updates.forEach((patch) => {
+      if (patch.key === 'args') {
+        innerState.args = Object.freeze(patch.value);
+      }
+
+      if (patch.key === 'ui') {
+        innerState.ui = Object.freeze(patch.value);
+      }
+
+      if (patch.key === 'outputs') {
+        innerState.outputs = Object.freeze(patch.value);
+      }
+
+      if (patch.key === 'navigationState') {
+        innerState.navigationState = Object.freeze(patch.value);
+      }
+    });
+
+    await nextTick(); // @todo remove
+  });
+
+  const cloneArgs = () => deepClone(innerState.args) as Args;
+
+  const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
+
+  const methods = {
+    createArgsModel<T = Args>(options: ArgsModelOptions<Args, T>) {
+      return createModel<T, Args>({
+        get() {
+          if (options.transform) {
+            return options.transform(innerState.args);
+          }
+
+          return innerState.args as T;
+        },
+        validate: options.validate,
+        autoSave: true,
+        onSave(newArgs) {
+          platforma.setBlockArgs(newArgs);
+        },
+      });
     },
     getOutputField(key: keyof Outputs) {
-      return this.outputs[key];
+      return innerState.outputs[key];
     },
     getOutputFieldOkOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
       const result = this.getOutputField(key);
@@ -47,41 +89,41 @@ export function createApp<
       return undefined;
     },
     updateArgs(cb: (args: Args) => void) {
-      const newArgs = this.cloneArgs();
+      const newArgs = cloneArgs();
       cb(newArgs);
       platforma.setBlockArgs(newArgs);
     },
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
-      const newState = this.cloneNavigationState();
+      const newState = cloneNavigationState();
       cb(newState);
       platforma.setNavigationState(newState);
     },
     setArgField<K extends keyof Args>(key: K, value: Args[K]) {
-      platforma.setBlockArgs(setProp(this.cloneArgs(), key, value));
+      platforma.setBlockArgs(setProp(cloneArgs(), key, value));
     },
-  });
+  };
 
-  platforma.onStateUpdates(async (updates) => {
-    updates.forEach((patch) => {
-      if (patch.key === 'args') {
-        app.args = patch.value as UnwrapRef<Args>;
-      }
+  const getters = {
+    args: computed(() => innerState.args),
+    outputs: computed(() => innerState.outputs),
+    ui: computed(() => innerState.ui),
+    navigationState: computed(() => innerState.navigationState),
+    hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
+    testOutputs: computed(() => innerState.outputs),
+    outputsErrors: computed(() => {
+      return Object.entries(innerState.outputs)
+        .filter((e) => !e[1].value?.ok)
+        .reduce(
+          (acc, it) => {
+            acc[it[0]] = it[1];
+            return acc;
+          },
+          {} as Record<string, unknown>,
+        ) as OutputsErrors<Outputs>;
+    }),
+  };
 
-      if (patch.key === 'ui') {
-        app.ui = patch.value as UnwrapRef<UiState>;
-      }
-
-      if (patch.key === 'outputs') {
-        app.outputs = patch.value as UnwrapRef<Outputs>;
-      }
-
-      if (patch.key === 'navigationState') {
-        app.navigationState = patch.value as UnwrapRef<NavigationState<Href>>;
-      }
-    });
-
-    await nextTick(); // @todo remove
-  });
+  const app = reactive(Object.assign(methods, getters));
 
   const local = createLocalState();
 

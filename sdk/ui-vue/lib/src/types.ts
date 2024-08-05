@@ -1,10 +1,15 @@
-import type { ImportFileHandle, Platforma, StorageHandle, ValueOrErrors } from '@milaboratory/sdk-ui';
+import type { BlockOutputsBase, ImportFileHandle, Platforma, StorageHandle, ValueOrErrors } from '@milaboratory/sdk-ui';
 import type { Component, ComputedGetter } from 'vue';
 
 export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, { ok: true }>['value'];
 
-export interface ModelOptions<T, V = T> extends ReadableComputed<T> {
-  get(): T;
+export interface ArgsModelOptions<A, T = A> {
+  transform?: (v: A) => T;
+  validate: (v: unknown) => A;
+}
+
+export interface ModelOptions<M, V = M> extends ReadableComputed<M> {
+  get(): M;
   validate?(v: unknown): V;
   onSave(v: V): void;
   autoSave?: boolean;
@@ -12,7 +17,7 @@ export interface ModelOptions<T, V = T> extends ReadableComputed<T> {
 }
 
 export type Model<T> = {
-  modelValue: T;
+  model: T;
   valid: boolean;
   isChanged: boolean;
   error: Error | undefined;
@@ -38,6 +43,9 @@ export type ImportedFiles = {
   files: ImportFileHandle[];
 };
 
+export type OutputsErrors<Outputs extends BlockOutputsBase> = {
+  [P in keyof Outputs]?: Extract<Outputs[P], { ok: false }>;
+};
 declare global {
   const platforma: Platforma | undefined;
   interface Window {
