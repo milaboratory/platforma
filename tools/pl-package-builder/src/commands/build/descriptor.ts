@@ -1,8 +1,8 @@
 import { Command, Flags } from '@oclif/core'
-import { BuildFlags, BuildMode, GlobalFlags, modeFromFlag } from '../../core/flags';
-import { createLogger } from '../../core/util';
+import { BuildFlags, GlobalFlags, modeFromFlag } from '../../core/flags';
+import * as util from '../../core/util';
 import { allSoftwareSources, softwareSource } from '../../core/sw-json';
-import * as actions from '../../actions'
+import { Core } from '../../core/core';
 
 export default class Descriptor extends Command {
     static override description = 'build *.sw.json from pl.package.yaml'
@@ -15,8 +15,7 @@ export default class Descriptor extends Command {
         ...GlobalFlags,
         ...BuildFlags,
 
-        'sources': Flags.string({
-            name: "source",
+        'source': Flags.string({
             description: "add only selected sources to *.sw.json descriptor",
             options: (allSoftwareSources as unknown) as string[],
             multiple: true,
@@ -27,11 +26,15 @@ export default class Descriptor extends Command {
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Descriptor);
-        const mode: BuildMode = modeFromFlag(flags.dev)
-        const sources = (flags.sources) as readonly softwareSource[]
+        var sources = (flags.source) as softwareSource[]
+        if (sources.length === 0) {
+            sources = [...allSoftwareSources]
+        }
 
-        const logger = createLogger(flags['log-level'])
+        const logger = util.createLogger(flags['log-level'])
 
-        actions.build.descriptor(logger, mode, sources)
+        const c = new Core(logger)
+        c.buildMode = modeFromFlag(flags.dev)
+        c.buildDescriptor(sources)
     }
 }

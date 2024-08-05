@@ -20,13 +20,13 @@ export const BuildFlags = {
 
 export const ArchFlags = {
     "os": Flags.string({
-        description: "OS supported by software (for binary package)",
+        description: "OS supported by software. Has no effect on cross-platform packages",
         default: util.currentOS(),
         options: util.OSes,
     }),
 
     "arch": Flags.string({
-        description: "architecture supported by software (for binary package)",
+        description: "architecture supported by software. Has no effect on cross-platform packages",
         default: util.currentArch(),
         options: util.Arches,
     })

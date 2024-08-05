@@ -60,7 +60,8 @@ type localInfo = z.infer<typeof localSchema>
 const swJsonSchema = z.object({
     docker: dockerSchema.optional(),
     binary: binarySchema.optional(),
-    local: localSchema.optional()
+    local: localSchema.optional(),
+    isDev: z.boolean().optional(),
 })
 export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
@@ -78,10 +79,9 @@ export class SoftwareDescriptor {
     constructor(
         private logger: winston.Logger,
         private packageInfo: PackageInfo,
-        private mode: BuildMode,
     ) { }
 
-    public render(...sources: readonly softwareSource[]): SoftwareInfo {
+    public render(mode: BuildMode, sources: readonly softwareSource[]): SoftwareInfo {
         this.logger.info("Rendering software descriptor...")
         this.logger.debug("  sources: " + JSON.stringify(sources))
 
@@ -92,6 +92,10 @@ export class SoftwareDescriptor {
 
         const info: SoftwareInfo = {}
 
+        if (mode !== 'release') {
+            info.isDev = true
+        }
+
         for (const source of sources) {
             switch (source) {
                 // case 'docker':
@@ -100,12 +104,12 @@ export class SoftwareDescriptor {
                 //     break
 
                 case 'binary':
-                    if (this.mode === 'dev-local') {
+                    if (mode === 'dev-local') {
                         this.logger.debug("  rendering 'local' source...")
-                        info.local = this.renderLocalInfo()
+                        info.local = this.renderLocalInfo(mode)
                     } else {
                         this.logger.debug("  rendering 'binary' source...")
-                        info.binary = this.renderBinaryInfo()
+                        info.binary = this.renderBinaryInfo(mode)
                     }
                     break
 
@@ -135,12 +139,12 @@ export class SoftwareDescriptor {
         writeFileSync(dstSwInfoPath, encoded)
     }
 
-    private renderLocalInfo(): localInfo {
+    private renderLocalInfo(mode: BuildMode): localInfo {
         if (!this.packageInfo.hasBinary) {
             throw new Error(`pl.package.yaml file does not contain definition for binary package`)
         }
 
-        switch (this.mode) {
+        switch (mode) {
             case 'release':
                 throw new Error(`'*.sw.json' generator logic error`)
                 break
@@ -149,7 +153,7 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(this.mode)
+                assertNever(mode)
         }
 
         const binary = this.packageInfo.binary
@@ -168,12 +172,12 @@ export class SoftwareDescriptor {
         }
     }
 
-    private renderBinaryInfo(): binaryInfo {
+    private renderBinaryInfo(mode: BuildMode): binaryInfo {
         if (!this.packageInfo.hasBinary) {
             throw new Error(`pl.package.yaml file does not contain definition for binary package`)
         }
 
-        switch (this.mode) {
+        switch (mode) {
             case 'release':
                 break
 
@@ -182,13 +186,13 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(this.mode)
+                assertNever(mode)
         }
 
         const binary = this.packageInfo.binary
         return {
             registry: binary.registry.name,
-            package: binary.package,
+            package: binary.fullName,
             entrypoint: binary.entrypoint,
             cmd: binary.cmd,
             runEnv: binary.runEnv,
@@ -197,14 +201,14 @@ export class SoftwareDescriptor {
         }
     }
 
-    private renderDockerInfo(): dockerInfo {
+    private renderDockerInfo(mode: BuildMode): dockerInfo {
         if (!this.packageInfo.hasDocker) {
             throw new Error(`pl.package.yaml file does not contain definition for docker image`)
         }
 
         const docker = this.packageInfo.docker
 
-        switch (this.mode) {
+        switch (mode) {
             case 'release':
                 break
 
@@ -213,7 +217,7 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(this.mode)
+                assertNever(mode)
         }
 
         return {

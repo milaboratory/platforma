@@ -11,8 +11,8 @@ test("software descriptor crossplatform", () => {
         pkgJsonData: artifacts.PackageJson,
     })
 
-    const sw = new SoftwareDescriptor(l, i, 'release')
-    const descriptor = sw.render('binary')
+    const sw = new SoftwareDescriptor(l, i)
+    const descriptor = sw.render('release', ['binary'])
 
     expect(descriptor.binary!.package).toEqual(`${artifacts.PlBinaryCustomName}/${artifacts.PlBinaryCustomVersion}.tgz`)
 })
@@ -25,8 +25,8 @@ test("software descriptor {os}-{arch}", () => {
         pkgJsonData: artifacts.PackageJson,
     })
 
-    const sw = new SoftwareDescriptor(l, i, 'release')
-    const descriptor = sw.render('binary')
+    const sw = new SoftwareDescriptor(l, i)
+    const descriptor = sw.render('release', ['binary'])
 
     expect(descriptor.binary!.package).toEqual(`${artifacts.PlBinaryCustomName}/${artifacts.PlBinaryCustomVersion}-{os}-{arch}.tgz`)
 })

@@ -5,8 +5,9 @@ docker:
 binary:
   registry:
     name: "milaboratories"
+    publishURL: s3://<bucket>/some-prefix-for-keys?region=eu-central-1 # for 'pl-pkg publish package'
 
-  name: "milaboratories/python-example" # defaults to package name with leading '@' dropped
+  name: "python-example" # defaults to package name with leading '@' dropped
   crossplatform: true
   # version: 1.2.3 #defaults to the version in package.json
  

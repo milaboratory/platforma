@@ -1,7 +1,8 @@
 import * as path from 'path';
 import * as tar from 'tar';
-import { ArchType, OStype } from './util';
+import * as util from './util';
 import winston from 'winston';
+import { PackageInfo } from './package-info';
 
 export type archiveOptions = {
     packageRoot: string,
@@ -9,8 +10,20 @@ export type archiveOptions = {
     packageVersion: string,
 
     crossplatform: boolean,
-    os: OStype,
-    arch: ArchType
+    os: util.OStype,
+    arch: util.ArchType
+}
+
+export function optionsForPackage(pkg: PackageInfo, os?: util.OStype, arch?: util.ArchType): archiveOptions {
+    return {
+        packageRoot: pkg.packageRoot,
+        packageName: pkg.binary.name,
+        packageVersion: pkg.binary.version,
+
+        crossplatform: pkg.binary!.crossplatform,
+        os: os ?? util.currentOS(),
+        arch: arch ?? util.currentArch(),
+    }
 }
 
 export function getPath(
@@ -45,7 +58,7 @@ export function pack(
     const archivePath = getPath(options)
 
     logger.info("Packing software into a package")
-    if (!options || !options.crossplatform) {
+    if (options.crossplatform) {
         logger.info(`  package is marked as cross-platform, generating single package for all platforms`)
     } else {
         logger.info(`  generating package for os='${options.os}', arch='${options.arch}'`)

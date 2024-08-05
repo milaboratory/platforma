@@ -4,6 +4,7 @@ import * as yaml from 'yaml';
 import winston from 'winston';
 
 import { z } from 'zod';
+import { findPackageRoot } from './util';
 
 const dockerConfigSchema = z.object({
     registry: z.string(), // name of the registry (e.g. quay.io)
@@ -24,6 +25,7 @@ interface DockerConfig extends dockerConfig {
 const binaryConfigSchema = z.object({
     registry: z.object({
         name: z.string().min(1),
+        publishURL: z.string().optional(),
     }),
     name: z.string().optional(),
     version: z.string().optional(),
@@ -46,7 +48,7 @@ type binaryConfig = z.infer<typeof binaryConfigSchema>
 export interface BinaryConfig extends binaryConfig {
     name: string
     version: string
-    package: string
+    fullName: string // full package name inside registry (common/corretto/21.2.0.4.1.tgz)
     contentRoot: string // absolute path to package's content root
 }
 
@@ -76,7 +78,9 @@ const packageJsonName = "package.json"
  *   version: "1.2.3-awe"
  *
  * binary:
- *   registry: "milaboratories"
+ *   registry:
+ *      name: "milaboratories"
+ *      publishURL: s3://<bucketName>/<some-path-prefix>?region=<region>
  *   name: "milaboratories/python-example-binary"
  *   version: "1.2.3"
  *
@@ -89,22 +93,30 @@ const packageJsonName = "package.json"
 export class PackageInfo {
     private readonly pkgYaml: plPackageYaml
     private readonly pkgJson: packageJson
+    public readonly packageRoot: string
 
     private _docker: DockerConfig | undefined
     private _binary: BinaryConfig | undefined
 
     constructor(
         private logger: winston.Logger,
-        private packageRootDir: string,
+        packageRoot?: string,
         options?: { plPkgYamlData?: string, pkgJsonData?: string }
     ) {
         this.logger.info("Reading package information...")
 
+        this.packageRoot = packageRoot ?? findPackageRoot(logger)
+
         if (options?.plPkgYamlData) {
             this.pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
         } else {
-            const pkgYamlPath = path.resolve(packageRootDir, plPackageYamlName)
+            const pkgYamlPath = path.resolve(this.packageRoot, plPackageYamlName)
             this.logger.debug(`  - loading '${pkgYamlPath}'`)
+            if (!fs.existsSync(pkgYamlPath)) {
+                this.logger.error(`no '${plPackageYamlName}' file found at '${this.packageRoot}'`)
+                throw new Error("not a platform software package directory")
+            }
+
             this.pkgYaml = readPlPackageYaml(pkgYamlPath)
             this.logger.debug("    " + JSON.stringify(this.pkgYaml))
         }
@@ -112,8 +124,13 @@ export class PackageInfo {
         if (options?.pkgJsonData) {
             this.pkgJson = parsePackageJson(options.pkgJsonData)
         } else {
-            const pkgJsonPath = path.resolve(packageRootDir, packageJsonName)
+            const pkgJsonPath = path.resolve(this.packageRoot, packageJsonName)
             this.logger.debug(`  - loading '${pkgJsonPath}'`)
+            if (!fs.existsSync(pkgJsonPath)) {
+                this.logger.error(`no '${packageJsonName}' file found at '${this.packageRoot}'`)
+                throw new Error("not a platform software package directory")
+            }
+
             this.pkgJson = readPackageJson(pkgJsonPath)
             this.logger.debug("    " + JSON.stringify(this.pkgJson))
         }
@@ -123,10 +140,6 @@ export class PackageInfo {
 
     get name(): string {
         return this.pkgYaml.name ?? "main"
-    }
-
-    get packageRoot(): string {
-        return this.packageRootDir
     }
 
     get hasDocker(): boolean {
@@ -174,7 +187,7 @@ export class PackageInfo {
         if (!this._binary) {
             this.logger.debug("  generating binary config from package info")
 
-            const pkgRoot = this.packageRootDir
+            const pkgRoot = this.packageRoot
             const crossplatform = this.pkgYaml.binary!.crossplatform
 
             const registry = this.pkgYaml.binary!.registry
@@ -187,7 +200,7 @@ export class PackageInfo {
                 name,
                 version,
 
-                get package(): string {
+                get fullName(): string {
                     if (crossplatform) {
                         return `${this.name}/${this.version}.tgz`
                     }
