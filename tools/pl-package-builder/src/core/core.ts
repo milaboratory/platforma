@@ -100,6 +100,10 @@ export class Core {
             throw new Error("binary.registry.publishURL is empty. Set it as command option or in 'pl.package.yaml' file")
         }
 
+        this.logger.info(`Publishing package '${this.pkg.binary.name}' into registry '${this.pkg.binary.registry.name}'`)
+        this.logger.debug(`  registry publish URL: '${publishURL}'`)
+        this.logger.debug(`  archive to publish: '${archivePath}'`)
+
         const s = storage.initByUrl(publishURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
         s.putFile(this.pkg.binary.fullName(this.targetOS, this.targetArch), archive)
