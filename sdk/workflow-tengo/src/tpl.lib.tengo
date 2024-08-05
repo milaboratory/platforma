@@ -237,7 +237,10 @@ tpl := func() {
 
 			// set outputs
 			for name, value in resultMap {
-				self.getOutputField(name).setRefOrJson(value)
+				f := self.getOutputField(name)
+				if !f.isSet() {
+					f.setRefOrJson(value)
+				}
 			}
 		},
 
@@ -359,11 +362,11 @@ tpl := func() {
 					}
 				} else {
 					// wait until inputs map is ready
-					tx.subscribeTo(inputMap.id, "InputMapAllInputsSet", {"AllInputsSet": true})
+					tx.subscribeTo(inputMap.id, "InputMapAllInputsSet", {"AllInputsSet": true })
 				}
 			} else if ll.isInitializing() {
 				// wait until inputs map is ready
-				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", {"AllInputsSet": true})
+				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", {"AllInputsSet": true })
 			}
 		}
 	}

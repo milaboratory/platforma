@@ -3,3 +3,6 @@ dist/
 dev/
 test_config.json
 .test_auth.json
+
+// remove if code migrated to pnpm
+pnpm-lock.yaml

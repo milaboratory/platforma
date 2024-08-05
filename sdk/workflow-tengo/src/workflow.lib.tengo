@@ -260,5 +260,6 @@ export ll.toStrict({
 	resolve: resolve,
 	prepare: prepare,
 	body: body,
-	setPreRun: setPreRun
+	setPreRun: setPreRun,
+	blockId: blockId
 })

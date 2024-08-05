@@ -1,0 +1,107 @@
+/**
+ * Functions to work with blobs / files.
+ *
+ * Allowing to create resources to import files from configured storages
+ * as well as creation of resources to facilitate file upload from the
+ * users machine.
+ *
+ * This library exposes rather high level functions working with
+ * ImportFileHandle, encoding user intent to import a file from a pl-wide
+ * configured storage or to upload file from users side in a universal
+ * string representation.
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+validation := import(":validation")
+
+json := import("json")
+
+//
+// Constants
+//
+
+_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }
+_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }
+_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
+
+createBlobImportInternal := func(settings) {
+	validation.validateJson(settings, {
+		"path": "string",
+		"storageId": "string",
+		"maxSpeedBytes,omitempty": "number",
+		"dataVersion,omitempty": "string"
+	})
+
+	importer := smart.structBuilder(_RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
+
+	return ll.toStrict({
+		file: importer.getField("blob"),
+		handle: importer.getField("handle")
+	})
+}
+
+createBlobUpload := func(settings) {
+	validation.validateJson(settings, {
+		"modificationTime": "string",
+		"localPath": "string",
+		"pathSignature": "string",
+		"sizeBytes": "string"
+	})
+
+	uploader := smart.structBuilder(_RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
+
+	return ll.toStrict({
+		file: uploader.getField("blob"),
+		handle: uploader.getField("handle")
+	})
+}
+
+/**
+ * Imports an external file into the workflow, either from pre-configured storage,
+ * available from the pl instance, or from the client machine via upload.
+ *
+ * @param importFileHandle string a string file import handle, in most cases obtained via the
+ *                         LS controller in UI
+ *
+ * @return a structure with two field references
+ *         {
+ *             file: field,
+ *             handle: field
+ *         }
+ */
+importFile := func(importFileHandle) {
+	url := ll.parseUrl(importFileHandle)
+	path := url.Path[1:] // trim  "/"
+
+	settings := json.decode(path)
+
+	if url.Scheme == "upload" {
+		ll.assert(url.Host == "upload", "unexpected host while parsing import file handle, expected upload found ", url.Host)
+		return createBlobUpload(settings)
+	} else if url.Scheme == "index" {
+		ll.assert(url.Host == "index", "unexpected host while parsing import file handle, expected index found ", url.Host)
+		return createBlobImportInternal(settings)
+	} else {
+		ll.panic("Unknown file import handle schema: ", url.Scheme)
+	}
+}
+
+/**
+ * Given a reference to the file, converts it into resource that can be
+ * downloaded from the UI side.
+ */
+exportFile := func(blob) {
+	builder := smart.structBuilder(_RTYPE_BLOB_DOWNLOAD)
+
+	builder.createInputField("blob").set(blob)
+
+	downloader := builder.lockAndBuild()
+
+	return downloader.getField("downloadable")
+}
+
+export ll.toStrict({
+	importFile: importFile,
+	exportFile: exportFile
+})

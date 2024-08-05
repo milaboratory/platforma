@@ -27,7 +27,7 @@ panic := func(msg, ...args) {
 }
 
 /**
- * Asserts given condition and panics
+ * Asserts a given condition and panics if it is not met
  */
 assert := func(condition, msg, ...args) {
 	if !condition {
@@ -86,6 +86,7 @@ ensureNonStrict := func(r) {
 /**
  * Converts map into a 'strict' map, which will panic on
  * access to non-existing elements.
+ *
  * @return strict map
  */
 toStrict := func(r) {
@@ -128,6 +129,35 @@ importTemplate := func(tplName) {
 }
 
 /**
+ * Parses URL and returns a structure containing separe parts of the URL.
+ *
+ * The general form represented is:
+ *
+ *   [scheme:][//[userinfo@]host][/]path[?query][#fragment]
+ *
+ * URLs that do not start with a slash after the scheme are interpreted as:
+ *
+ *   scheme:opaque[?query][#fragment]
+ *
+ * Returns the floowing structure:
+ *
+ *   {
+ *     Scheme: string,
+ *     Host: string,
+ *     Port: number,
+ *     Path: string,
+ *     RawPath: string,
+ *     Query: string
+ *   }
+ *
+ * @param url: string with the url
+ * @return url structure: (see above)
+ */
+parseUrl := func(url) {
+	return plapi.urlParse(url)
+}
+
+/**
  * Returns current execution context, which cab be used is a simple kv-store associated with the renderer instance.
  */
 getCtx := func() {
@@ -147,5 +177,6 @@ export toStrict({
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing,
 	importTemplate: importTemplate,
+	parseUrl: parseUrl,
 	getCtx: getCtx
 })
