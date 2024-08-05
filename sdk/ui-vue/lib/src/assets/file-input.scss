@@ -79,6 +79,9 @@
     gap: 6px;
     height: 40px;
     border-bottom: 1px solid var(--color-border-default);
+    > span {
+      user-select: none;
+    }
     .mask {
       background-color: #333;
     }

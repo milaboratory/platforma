@@ -52,6 +52,8 @@ const emit = defineEmits(['update:modelValue']);
 
 const props = defineProps<{
   modelValue: string | undefined;
+  extensions?: string[];
+  fileDialogTitle?: string;
 }>();
 
 const fileName = computed(() => {
@@ -87,26 +89,20 @@ const onImport = (v: ImportedFiles) => {
   }
 };
 
-function onClickSelect() {
-  openFileDialog();
-}
-
-function clear() {
-  emit('update:modelValue', undefined);
-}
+const clear = () => emit('update:modelValue', undefined);
 </script>
 
 <template>
   <div class="file-input">
     <div v-if="modelValue" class="file-input__file">
       <mask-icon name="paper-clip" />
-      <span>{{ fileName }}</span>
+      <span @click.stop="openFileDialog">{{ fileName }}</span>
       <mask-icon name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
       Drag & drop CSV, TSV or XLS file here or
-      <btn-secondary @click.stop="onClickSelect">Select file</btn-secondary>
+      <btn-secondary @click.stop="openFileDialog">Select file</btn-secondary>
     </div>
   </div>
-  <file-dialog v-model="data.fileDialogOpen" multi @import:files="onImport" />
+  <file-dialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" multi @import:files="onImport" />
 </template>
