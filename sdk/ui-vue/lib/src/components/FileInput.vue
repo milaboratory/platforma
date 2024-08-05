@@ -54,6 +54,7 @@ const props = defineProps<{
   modelValue: string | undefined;
   extensions?: string[];
   fileDialogTitle?: string;
+  placeholder?: string;
 }>();
 
 const fileName = computed(() => {
@@ -100,7 +101,7 @@ const clear = () => emit('update:modelValue', undefined);
       <mask-icon name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
-      Drag & drop CSV, TSV or XLS file here or
+      {{ placeholder ?? 'Drag & drop file here or' }}
       <btn-secondary @click.stop="openFileDialog">Select file</btn-secondary>
     </div>
   </div>
