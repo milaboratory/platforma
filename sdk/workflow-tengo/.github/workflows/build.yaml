@@ -36,7 +36,7 @@ jobs:
 
       test-pl-client-release-matrix-k8s: true
       test-pl-client-latest-k8s: true
-      test-pl-client-repo-ref: 'feat-new-ci-wf'
+      test-pl-client-repo-ref: 'main'
       test-script-name: 'test'
       test-pl-major-versions: '1'
       test-pl-minor-versions: '1'
