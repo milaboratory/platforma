@@ -1,0 +1,619 @@
+# Default values for generic-application.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+#
+nameOverride: ""
+fullnameOverride: ""
+githubRunID: ""
+#
+rbac:
+  create: true
+  annotations: {}
+  extraLabels: {}
+serviceAccount:
+  # -- Create service account.
+  create: true
+  # name:
+  extraLabels: {}
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+  automountServiceAccountToken: true
+hook:
+  scale:
+    # -- Hook's scale up/down container name
+    name: kubectl
+    image:
+      repository: bitnami/kubectl
+      tag: "1.28"
+      pullPolicy: IfNotPresent
+    restartPolicy: Never
+    backoffLimit: 2
+  data:
+    # -- Hook's data init/backup container name
+    name: handler
+    image:
+      repository: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl-data-handler
+      tag: "0.1.5"
+      pullPolicy: IfNotPresent
+    restartPolicy: Never
+    backoffLimit: 1
+    imagePullSecrets:
+      - name: regcred
+    env:
+      AWS_REGION: eu-central-1
+      GITHUB_RUN_ID: ""
+      PL_VERSION: ""
+      VERSION_TYPE: ""
+      COUCHDB_DB_NAME: "pl-ci-dumps"
+    envValueFrom:
+      COUCHDB_USER:
+        secretKeyRef:
+          name: pl-ci-couchdb-secrets
+          key: couchdb-user
+      COUCHDB_PASSWD:
+        secretKeyRef:
+          name: pl-ci-couchdb-secrets
+          key: couchdb-passwd
+      COUCHDB_HOST:
+        secretKeyRef:
+          name: pl-ci-couchdb-secrets
+          key: couchdb-host
+      AWS_ACCESS_KEY_ID:
+        secretKeyRef:
+          name: pl-ci-aws-secrets
+          key: aws-access-key-id
+      AWS_SECRET_ACCESS_KEY:
+        secretKeyRef:
+          name: pl-ci-aws-secrets
+          key: aws-secret-access-key
+    configMountPath: /etc/pl-data-handler/config.yaml
+    mode:
+      init:
+        enabled: false
+      backup:
+        enabled: true
+app:
+  enabled: true
+  # -- Server container name
+  name: app
+  image:
+    # -- Image repository
+    repository: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl
+    # -- Tag to override with, will default to the application version
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Override command for the container
+    command: ""
+    # -- Argument list for the command
+    args: []
+  # -- Deployment init container
+  initContainer:
+    name: prestop-hook-check
+    image:
+      repository: busybox
+      tag: "latest"
+      pullPolicy: IfNotPresent
+  # -- Container restart policy
+  restartPolicy: Always
+  # -- Deployment additional labels
+  extraLabels: {}
+  #-- Deployment annotations
+  annotations: {}
+  # -- Name of Priority Class
+  priorityClassName: ""
+  #  Use an alternate scheduler, e.g. "stork".
+  #  ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  schedulerName: ""
+  # -- Only Pod's additional labels
+  podLabels: {}
+  # -- Only Pod's annotations
+  podAnnotations: {}
+  # prometheus.io/scrape: "false"
+  # prometheus.io/port: "9090"
+  # prometheus.io/scheme: "http"
+  # -- Pod's management policy
+  podManagementPolicy: OrderedReady
+  # Deployment strategy ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  strategy:
+    #rollingUpdate:
+    #  maxSurge: 1
+    #  maxUnavailable: 0
+    #type: RollingUpdate
+    type: Recreate
+  # -- Depoyment's (continer level) security context
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    runAsNonRoot: false
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+  # -- Pod's security context.
+  # ref: [https://kubernetes.io/docs/tasks/configure-pod-container/security-context/](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
+  podSecurityContext:
+    fsGroup: 3000
+  # -- Prometheus metrics settings
+  metrics:
+    # If you enable Prometheus metrics for an application,
+    # add proper annotations; see podAnnotations for an example.
+    # You need to add them manually as a compatible layer with istio metrics.
+    # Add another reason that we have auto scraping enabled based on Prometheus annotations.
+    enabled: false
+    targetPort: 9090
+    portName: metrics-server
+  # Number of old ReplicaSets to retain
+  #
+  replicaCount: 0
+  #
+  containerWorkingDir: "/app"
+  # -- See `kubectl explain poddisruptionbudget.spec` for more.
+  # ref: [https://kubernetes.io/docs/tasks/run-application/configure-pdb/](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
+  podDisruptionBudget:
+    enabled: false
+    #minAvailable: 1
+    #maxUnavailable: 1
+    extraLabels: {}
+  # Inject Kubernetes services as environment variables.
+  # See https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#environment-variables
+  enableServiceLinks: true
+  # -- Image pull secrets.
+  # ref. https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  imagePullSecrets:
+    - name: regcred
+  # -- Node tolerations for server scheduling to nodes with taints.
+  # ref: [https://kubernetes.io/docs/concepts/configuration/assign-pod-node/](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/)
+  tolerations: []
+  # -- Pod's node selector.
+  # ref: [https://kubernetes.io/docs/user-guide/node-selection/](https://kubernetes.io/docs/user-guide/node-selection/)
+  nodeSelector: {}
+  # -- Pod affinity
+  affinity: {}
+  # -- Topology Spread Constraints ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  topologySpreadConstraints: []
+  # -- Env variables
+  # -- Additional environment variables (ex.: secret tokens, flags)
+  env:
+    AWS_REGION: eu-central-1
+  envValueFrom:
+    AWS_ACCESS_KEY_ID:
+      secretKeyRef:
+        name: pl-ci-aws-secrets
+        key: aws-access-key-id
+    AWS_SECRET_ACCESS_KEY:
+      secretKeyRef:
+        name: pl-ci-aws-secrets
+        key: aws-secret-access-key
+  # -- External secrets. (AWS Secrets Manager)
+  externalSecret:
+    enabled: false
+    awsRegion: eu-central-1
+    # -- ExternalSecret annotations
+    annotations: {}
+    # -- ExternalSecret extraLabels
+    extraLabels: {}
+    # -- SecretsStore target
+    secretRefreshInterval: 24h
+    secretStoreTarget: general-application-secrets
+    secretDataFrom: {}
+  # -- volumeMounts
+  volumeMounts: []
+  # example:
+  #  - mountPath: /cache
+  #    name: cache-volume
+  # --  volumes
+  volumes: []
+  # example: persistent volume
+  #  - name: cache-volume
+  #    persistentVolumeClaim:
+  #      claimName: release-name-generic-application
+  # example: inmemory
+  #  - name: cache-volume
+  #    emptyDir:
+  #      medium: Memory
+  #      sizeLimit: 2Gi
+  structuredConfig: {}
+  config: |
+    logging:
+      level: "info"
+
+    debug:
+      listen: "0.0.0.0:9091"
+    grpcServer:
+      listen: "0.0.0.0:6345"
+
+    core:
+      logging:
+        extendedInfo: true
+        apiLevel: "info"
+        dbLevel: "info"
+
+      authEnabled: {{ .Values.app.coreConfig.auth.enabled }}
+      auth:
+        {{- if eq .Values.app.coreConfig.auth.type "htpasswd" }}
+        - driver: htpasswd
+          path: /etc/platforma-ci/users.htpasswd
+        {{- else if eq .Values.app.coreConfig.auth.type "ldap" }}
+        - driver: ldap
+          serverUrl: "ldap://ldap.mixcr.io:3893"
+          defaultDN: "cn=%u,ou=users,ou=users,dc=mixcr,dc=io"
+        {{- end }}
+        - driver: jwt
+          key: "be2e30ed04e9e520e5eb0718a471bb6c3c548825e7822fdc3b901691ad27fc77"
+
+      db:
+        path: {{ .Values.app.coreConfig.db.pl_config.path }}
+
+    controllers:
+      common:
+        timeouts:
+          request: 10s
+          init: 1m
+          stop: 30s
+
+      file:
+        main:
+          {{- with .Values.app.fileConfig.common }}
+          {{- toYaml . | nindent 6 }}
+          {{- end }}
+          storages:
+            {{- include "platforma-ci.mainStoragesConfig" . | nindent 8 }}
+          transfers:
+            {{- include "platforma-ci.mainTransfersConfig" . | nindent 8 }}
+        storages:
+          {{- include "plaforma-ci.storagesConfig" . | nindent 8 }}
+        transfers:
+          {{- include "platforma-ci.transfersConfig" . | nindent 8 }}
+
+      runner:
+        main:
+          storages: [ "work" ]
+
+        executor:
+          id: "work"
+          storageRoot: "/data/work"
+          defaultQueueName: "heavy"
+          queues:
+            - name: "heavy"
+              maxConcurrency: 1
+            - name: "ui-tasks"
+              maxConcurrency: 50
+          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+
+        softwareLoader:
+          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+          registries:
+          - name: "milaboratories"
+            endpoints:
+              - type: "local"
+                path: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+              - type: "url"
+                url: "https://bin.registry.platforma.bio/"
+
+      templates: {}
+
+  # -- Data Management config
+  structuredDataHandlerConfig: {}
+  dataHandlerConfig: |
+    {{- with .Values.app.dataHandler.download }}
+    download:
+      {{- tpl (. | toYaml) $ | nindent 4 }}
+    {{- end }}
+    {{- with .Values.app.dataHandler.upload }}
+    upload:
+      {{- tpl (. | toYaml) $ | nindent 4 }}
+    {{- end }}
+    {{- $dbMountPath := .Values.app.coreConfig.db.pl_config.path -}}
+    {{- with .Values.app.coreConfig.db.data_handler_config }}
+    database:
+       pl_config:
+        type: "FS"
+        rootPath: "{{ $dbMountPath }}"
+       data_handler:
+        dumpPrefix: "{{ .dumpPrefix }}"
+        restoreTo: "{{ .restoreTo }}"
+    {{- end }}
+    {{- $softwareLoaderMountPath := .Values.app.runnersConfig.softwareLoader.pl_config.path -}}
+    {{- with .Values.app.runnersConfig.softwareLoader.data_handler_config }}
+    softwareLoader:
+       pl_config:
+        type: "FS"
+        rootPath: "{{ $softwareLoaderMountPath }}"
+       data_handler:
+        dumpPrefix: "{{ .dumpPrefix }}"
+        restoreTo: "{{ .restoreTo }}"
+    {{- end }}
+    storages:
+    {{- include "plaforma-ci.dataHandlerStoragesConfig" . | nindent 6 }}
+  # -- Templating parts of the platforma config
+  # The file storage configuration also includes additional options needed for the
+  # platform's data management pod, which is responsible for initializing or
+  # backing up the data.
+  dataHandler:
+    download:
+      archivePath: ""
+      bucketName: milab-euce1-prod-data-s3-platforma-ci-dumps
+      region: eu-central-1
+    upload:
+      bucketName: milab-euce1-prod-data-s3-platforma-ci-dumps
+      region: eu-central-1
+      keyPrefix: fresh-dumps/
+  coreConfig:
+    auth:
+      enabled: true
+      type: ldap
+    db:
+      pl_config:
+        path: "/db"
+      data_handler_config:
+        dumpPrefix: "db"
+        restoreTo: FS
+      pvc_config:
+        mountPath: "/db"
+        accessModes:
+          - ReadWriteOnce
+        storageClass: local-path
+        reclaimPolicy: ""
+        size: 20Gi
+        existingClaim: ""
+        annotations: {}
+        extraLabels: {}
+        matchLabels: {}
+  runnersConfig:
+    softwareLoader:
+      pl_config:
+        path: "/storage/controllers/software-loader"
+      data_handler_config:
+        dumpPrefix: "softwareloader"
+        restoreTo: FS
+      pvc_config:
+        mountPath: "/storage/controllers/software-loader"
+        accessModes:
+          - ReadWriteOnce
+        storageClass: local-path
+        reclaimPolicy: ""
+        size: 10Gi
+        existingClaim: ""
+        annotations: {}
+        extraLabels: {}
+        matchLabels: {}
+  fileConfig:
+    common:
+      workdirManager: work
+      uploadManager: primary
+      defaultDownloadable: primary
+    storages:
+      - pl_config:
+          id: "primary"
+          type: S3
+          region: "eu-central-1"
+          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
+          keyPrefix: "platforma-ci-primary/"
+          mode: primary
+          downloadable: true
+        data_handler_config:
+          dumpPrefix: "primary"
+          restoreTo: S3
+      - pl_config:
+          id: "raw"
+          type: S3
+          region: "eu-central-1"
+          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
+          keyPrefix: "corp-library/"
+          mode: passive
+          downloadable: false
+        data_handler_config:
+          dumpPrefix: ""
+      - pl_config:
+          id: "test-assets"
+          type: S3
+          region: "eu-central-1"
+          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
+          keyPrefix: "test-assets/"
+          mode: passive
+          downloadable: false
+        data_handler_config:
+          dumpPrefix: ""
+      - pl_config:
+          id: "work"
+          type: FS
+          indexCachePeriod: "1m"
+          rootPath: "/data/work"
+          mode: active
+          downloadable: false
+        data_handler_config:
+          dumpPrefix: "work"
+          restoreTo: FS
+        pvc_config:
+          mountPath: "/data/work"
+          accessModes:
+            - ReadWriteOnce
+          storageClass: local-path
+          reclaimPolicy: ""
+          size: 100Gi
+          existingClaim: ""
+          annotations: {}
+          extraLabels: {}
+          matchLabels: {}
+    transfers:
+      - src: primary
+        dest: work
+      - src: work
+        dest: primary
+      - src: test-assets
+        dest: work
+      - src: raw
+        dest: work
+  # -- Resource object.
+  # ref: [http://kubernetes.io/docs/user-guide/compute-resources/](http://kubernetes.io/docs/user-guide/compute-resources/
+  resources: {}
+  # Indicates whether the Container is ready to service requests. If the readiness probe fails, the endpoints controller removes the Pod's IP address from the endpoints of all Services that match the Pod. The default state of readiness before the initial delay is Failure. If a Container does not provide a readiness probe, the default state is Success.
+  readinessProbe:
+    grpc:
+      port: 6345
+    initialDelaySeconds: 15
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+  # Indicates whether the Container is running. If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy. If a Container does not provide a liveness probe, the default state is Success.
+  livenessProbe:
+    grpc:
+      port: 6345
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 10
+  # Indicates whether the Container is done with potentially costly initialization. If set it is executed first. If it fails Container is restarted. If it succeeds liveness and readiness probes takes over.
+  startupProbe: {}
+  #startupProbe:
+  #  tcpSocket:
+  #    port: http
+  #  failureThreshold: 30
+  #  periodSeconds: 15
+  #  successThreshold: 1
+  #  timeoutSeconds: 5
+  #
+  # Istio
+  istio:
+    enabled: false
+    gateway:
+      ingressGatewayName: ingressgateway
+      port: 80
+      portName: http-istio
+      protocol: HTTP
+      extraLabels: {}
+    virtualService:
+      pathPrefix: /
+      extraLabels: {}
+    hosts:
+      - chart.local
+    ingressGateway:
+      backends:
+        controller:
+          name: istio-ingressgateway
+          portNumber: 80
+          path: /
+          pathType: Prefix
+  ingress:
+    # -- Enable deployment of ingress for server component
+    enabled: false
+    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
+    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
+    # ingressClassName: nginx
+    ingressClassName: nginx
+    # -- Ingress annotations
+    annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # -- Ingress extra labels
+    extraLabels: {}
+    # -- Array of host objects
+    path: /
+    hosts:
+      - chart-example.local
+    pathType: Prefix
+    # Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
+    extraPaths: []
+    # -- Array of TLS objects
+    #tls: []
+    #  - secretName: chart-example-tls
+    #     hosts:
+    #       - chart-example.local
+  service:
+    # -- Service annotations
+    annotations: {}
+    # -- Service labels
+    extraLabels: {}
+    # -- Service ClusterIP
+    clusterIP: ""
+    # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
+    externalIPs: []
+    # -- Service load balacner IP
+    loadBalancerIP: ""
+    # -- Load balancer source range
+    loadBalancerSourceRanges: []
+    # -- Service port
+    port: 6345
+    # -- Container port name
+    portName: plgrpc
+    # -- Container port
+    targetPort: 6345
+    # -- Node port
+    # nodePort: 30000
+    # -- Service type
+    type: ClusterIP
+    # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+    # externalTrafficPolicy: "local"
+    # healthCheckNodePort: 0
+
+    # Container Lifecycle Hooks. Execute a specific bash command or make an HTTP request
+    lifecycleHooks: {}
+    # postStart:
+    #   exec:
+    #     command: []
+  debug:
+    ingress:
+      # -- Enable deployment of ingress for debug component of the server
+      enabled: false
+      # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
+      # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
+      # ingressClassName: nginx
+      ingressClassName: nginx
+      # -- Ingress annotations
+      annotations: {}
+      # -- Ingress extra labels
+      extraLabels: {}
+      # -- Array of host objects
+      path: /
+      hosts:
+        - chart-debug-example.local
+      pathType: Prefix
+      # Extra paths to prepend to every host configuration. This is useful when working with annotation based services.
+      extraPaths: []
+      # -- Array of TLS objects
+      #tls: []
+      #  - secretName: chart-example-tls
+      #     hosts:
+      #       - chart-example.local
+    service:
+      # -- Service annotations
+      annotations: {}
+      # -- Service labels
+      extraLabels: {}
+      # -- Service ClusterIP
+      clusterIP: ""
+      # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
+      externalIPs: []
+      # -- Service load balacner IP
+      loadBalancerIP: ""
+      # -- Load balancer source range
+      loadBalancerSourceRanges: []
+      # -- Service port
+      port: 9091
+      # -- Container port name
+      portName: pldebug
+      # -- Container port
+      targetPort: 9091
+      # -- Node port
+      # nodePort: 30000
+      # -- Service type
+      type: ClusterIP
+      # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+      # externalTrafficPolicy: "local"
+      # healthCheckNodePort: 0
+  # -- Pod's termination grace period in seconds
+  terminationGracePeriodSeconds: 30
+  # Overrides pod.spec.hostAliases in the generic-application deployment's pods
+  hostAliases: []
+  # - ip: "1.2.3.4"
+  #   hostnames:
+  #     - "my.host.com"
+
+  # Enable direct access to the network interfaces of the host machine where the pod was started
+  hostNetwork: false
+  # dnsPolicy and dnsConfig for Deployments if you want non-default settings.
+  # These will be passed directly to the PodSpec of same.
+  dnsPolicy: ""
+  dnsConfig: ""

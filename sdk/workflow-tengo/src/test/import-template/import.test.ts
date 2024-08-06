@@ -17,7 +17,14 @@ tplTest("test import template in pure template", /*{timeout: 10000},*/ async ({ 
       )
     })
   );
-  const mainResult = result.computeOutput("main", (a) => a?.getDataAsJson());
+  const mainResult = result.computeOutput("main", (a, ctx) => {
+    const result = a?.getDataAsJson();
+    if (result === undefined) {
+      ctx.markUnstable();
+    }
+
+    return result;
+  });
 
   expect(await mainResult.awaitStableValue()).eq("AB");
 });
@@ -32,7 +39,12 @@ tplTest("test import template in workflow", /*{timeout: 10000},*/ async ({ helpe
     { a: "c", b: "d" }
   );
 
-  const output = wf.output("main", (a) => a?.getDataAsJson());
+  const output = wf.output("main", (a, ctx) => {
+    const result = a?.getDataAsJson();
+    if (result === undefined)
+      ctx.markUnstable();
+    return result;
+  });
 
 
   expect(await output.awaitStableValue()).eq("cd");
