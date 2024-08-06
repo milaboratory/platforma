@@ -25,6 +25,10 @@ export default class Build extends Command {
             default: [],
             required: false,
         }),
+
+        "content-root": Flags.directory({
+            description: "path to directory with contents of software package. Overrides settings in pl.package.yaml"
+        }),
     };
 
     public async run(): Promise<void> {
@@ -46,7 +50,7 @@ export default class Build extends Command {
         for (const source of sources) {
             switch (source) {
                 case 'binary':
-                    core.buildPackage()
+                    core.buildPackage({contentRoot: flags['content-root']})
                     break
 
                 // case 'docker':

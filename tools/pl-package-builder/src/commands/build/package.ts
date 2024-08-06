@@ -1,4 +1,4 @@
-import { Command } from '@oclif/core'
+import { Command, Flags } from '@oclif/core'
 import { ArchFlags, BuildFlags, GlobalFlags, modeFromFlag, } from '../../core/flags';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
@@ -14,6 +14,10 @@ export default class Package extends Command {
         ...GlobalFlags,
         ...BuildFlags,
         ...ArchFlags,
+
+        "content-root": Flags.directory({
+            description: "path to directory with contents of software package. Overrides settings in pl.package.yaml"
+        })
     };
 
     public async run(): Promise<void> {
@@ -26,6 +30,6 @@ export default class Package extends Command {
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
-        core.buildPackage()
+        core.buildPackage({contentRoot: flags['content-root']})
     }
 }
