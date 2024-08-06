@@ -71,18 +71,18 @@ type packageJson = z.infer<typeof packageJsonSchema>
  * pl.package.yaml content structure example:
  *
  * docker:
- *   registry: "quay.io"
- *   name: "milaboratories/python-example-docker"
- *   version: "1.2.3-awe"
+ *   registry: "quay.io"          # required
+ *   name: "my-org/example-image" # defaults to full npm package name without leading '@'
+ *   version: "1.2.3-awe"         # defaults to npm package version
  *
  * binary:
  *   registry:
- *      name: "milaboratories"
  *      publishURL: s3://<bucketName>/<some-path-prefix>?region=<region>
- *   name: "python-example-binary"
- *   version: "1.2.3"
+ *      name: "my-org"      # defaults to 'scope' of npm package without leading '@'
+ *   name: "example-binary" # defaults to name of npm package (without scope, if any)
+ *   version: "1.2.3"       # defaults to npm package version
  *
- *   root: "./src"
+ *   root: "./src" # required. Path to package's content root
  *   cmd: "./script1.py"
  *
  *   runEnv: "python@3.12"
