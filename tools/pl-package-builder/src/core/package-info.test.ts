@@ -5,7 +5,7 @@ import { createLogger } from './util'
 test("PackageInfo loads correctly on minimal required data", () => {
     const l = createLogger('error')
 
-    const all = new PackageInfo(l, "", {
+    const all = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlAllMinimal,
         pkgJsonData: artifacts.PackageJson,
     })
@@ -18,11 +18,11 @@ test("PackageInfo loads correctly on minimal required data", () => {
 
     expect(all.hasBinary).toBeTruthy()
     expect(all.binary.registry.name).toEqual(artifacts.PlBinaryRegistry)
-    expect(all.binary.name).toEqual(artifacts.PackageName.substring(1))
+    expect(all.binary.name).toEqual(artifacts.PackageName.split("/")[1])
     expect(all.binary.version).toEqual(artifacts.PackageVersion)
     expect(all.binary.root).toEqual(".")
 
-    const docker = new PackageInfo(l, "", {
+    const docker = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlDockerMinimal,
         pkgJsonData: artifacts.PackageJson,
     })
@@ -30,19 +30,19 @@ test("PackageInfo loads correctly on minimal required data", () => {
     expect(docker.docker).toEqual(all.docker)
     expect(docker.hasBinary).toBeFalsy()
 
-    const binary = new PackageInfo(l, "", {
+    const binary = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlBinaryMinimal,
         pkgJsonData: artifacts.PackageJson,
     })
     expect(binary.hasDocker).toBeFalsy()
     expect(binary.hasBinary).toBeTruthy()
-    expect(binary.binary).toEqual(all.binary)
+    expect(JSON.stringify(binary.binary)).toEqual(JSON.stringify(all.binary))
 })
 
 test("PackageInfo considers custom version and package", () => {
     const l = createLogger('error')
 
-    const i = new PackageInfo(l, "", {
+    const i = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlCustomSettings,
         pkgJsonData: artifacts.PackageJson,
     })

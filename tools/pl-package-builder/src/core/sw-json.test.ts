@@ -6,7 +6,7 @@ import { createLogger } from './util'
 test("software descriptor crossplatform", () => {
     const l = createLogger('error')
 
-    const i = new PackageInfo(l, "", {
+    const i = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlCrossplatform,
         pkgJsonData: artifacts.PackageJson,
     })
@@ -20,7 +20,7 @@ test("software descriptor crossplatform", () => {
 test("software descriptor {os}-{arch}", () => {
     const l = createLogger('error')
 
-    const i = new PackageInfo(l, "", {
+    const i = new PackageInfo(l, {
         plPkgYamlData: artifacts.PlPackageYamlCustomSettings,
         pkgJsonData: artifacts.PackageJson,
     })

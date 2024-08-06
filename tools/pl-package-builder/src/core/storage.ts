@@ -1,7 +1,7 @@
 import pathPosix from 'node:path/posix';
 import { S3 } from '@aws-sdk/client-s3';
 import path from 'path';
-import { assertNever } from './util';
+import * as util from './util';
 import { Readable } from 'stream';
 
 export const supportedTypes = ['S3'] as const; // add other types when we support them
@@ -12,7 +12,7 @@ export function typeToURLScheme(sType: storageType): string {
         case 'S3':
             return 's3'
         default:
-            assertNever(sType)
+            util.assertNever(sType)
     }
 
     throw new Error(`no schema defined for storage type ${sType}`) // just to calm down TS type analyzer
@@ -46,16 +46,9 @@ export function initByUrl(address: string, pkgRoot: string): RegistryStorage {
             const region = url.searchParams.get('region');
             if (region) options.region = region;
             const bucket = url.hostname;
-            return new S3Storage(new S3(options), bucket, trimPrefix(url.pathname, "/"));
+            return new S3Storage(new S3(options), bucket, util.trimPrefix(url.pathname, "/"));
 
         default:
             throw new Error(`Protocol ${url.protocol} is not supported for software registries yet. Use your own tooling for package upload`);
     }
-}
-
-function trimPrefix(str: string, prefix: string): string {
-    if (str.startsWith(prefix)) {
-        return str.slice(prefix.length);
-    }
-    return str;
 }

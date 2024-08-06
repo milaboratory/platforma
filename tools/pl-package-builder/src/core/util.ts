@@ -4,7 +4,17 @@ import { readdirSync, statSync, existsSync, mkdirSync, stat } from 'fs';
 import { createHash, Hash } from 'crypto';
 import winston from 'winston';
 
+export const packageJsonName = "package.json"
+export const plPackageYamlName = "pl.package.yaml"
+
 export function assertNever(a: never) { }
+
+export function trimPrefix(str: string, prefix: string): string {
+    if (str.startsWith(prefix)) {
+        return str.slice(prefix.length);
+    }
+    return str;
+}
 
 export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
     const hash = hasher ? hasher : createHash('sha256');
@@ -41,10 +51,8 @@ export function findPackageRoot(logger: winston.Logger, startPath?: string): str
     if (!startPath) {
         startPath = process.cwd()
     }
-    const packageFileName = "package.json"
-
     logger.debug(`Detecting package root...`)
-    const pkgRoot = searchPathUp(startPath, startPath, packageFileName)
+    const pkgRoot = searchPathUp(startPath, startPath, packageJsonName)
     logger.debug(`  package root found at '${pkgRoot}'`)
 
     return pkgRoot

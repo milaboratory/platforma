@@ -24,7 +24,7 @@ interface DockerConfig extends dockerConfig {
 
 const binaryConfigSchema = z.object({
     registry: z.object({
-        name: z.string().min(1),
+        name: z.string().optional(),
         publishURL: z.string().optional(),
     }),
     name: z.string().optional(),
@@ -67,9 +67,6 @@ const packageJsonSchema = z.object({
 })
 type packageJson = z.infer<typeof packageJsonSchema>
 
-const plPackageYamlName = "pl.package.yaml"
-const packageJsonName = "package.json"
-
 /*
  * pl.package.yaml content structure example:
  *
@@ -82,7 +79,7 @@ const packageJsonName = "package.json"
  *   registry:
  *      name: "milaboratories"
  *      publishURL: s3://<bucketName>/<some-path-prefix>?region=<region>
- *   name: "milaboratories/python-example-binary"
+ *   name: "python-example-binary"
  *   version: "1.2.3"
  *
  *   root: "./src"
@@ -101,20 +98,23 @@ export class PackageInfo {
 
     constructor(
         private logger: winston.Logger,
-        packageRoot?: string,
-        options?: { plPkgYamlData?: string, pkgJsonData?: string }
+        options?: {
+            packageRoot?: string,
+            plPkgYamlData?: string,
+            pkgJsonData?: string,
+        }
     ) {
         this.logger.info("Reading package information...")
 
-        this.packageRoot = packageRoot ?? util.findPackageRoot(logger)
+        this.packageRoot = options?.packageRoot ?? util.findPackageRoot(logger)
 
         if (options?.plPkgYamlData) {
             this.pkgYaml = parsePlPackageYaml(options.plPkgYamlData)
         } else {
-            const pkgYamlPath = path.resolve(this.packageRoot, plPackageYamlName)
+            const pkgYamlPath = path.resolve(this.packageRoot, util.plPackageYamlName)
             this.logger.debug(`  - loading '${pkgYamlPath}'`)
             if (!fs.existsSync(pkgYamlPath)) {
-                this.logger.error(`no '${plPackageYamlName}' file found at '${this.packageRoot}'`)
+                this.logger.error(`no '${util.plPackageYamlName}' file found at '${this.packageRoot}'`)
                 throw new Error("not a platform software package directory")
             }
 
@@ -125,10 +125,10 @@ export class PackageInfo {
         if (options?.pkgJsonData) {
             this.pkgJson = parsePackageJson(options.pkgJsonData)
         } else {
-            const pkgJsonPath = path.resolve(this.packageRoot, packageJsonName)
+            const pkgJsonPath = path.resolve(this.packageRoot, util.packageJsonName)
             this.logger.debug(`  - loading '${pkgJsonPath}'`)
             if (!fs.existsSync(pkgJsonPath)) {
-                this.logger.error(`no '${packageJsonName}' file found at '${this.packageRoot}'`)
+                this.logger.error(`no '${util.packageJsonName}' file found at '${this.packageRoot}'`)
                 throw new Error("not a platform software package directory")
             }
 
@@ -149,7 +149,7 @@ export class PackageInfo {
 
     get docker(): DockerConfig {
         if (!this.hasDocker) {
-            this.logger.error(`No 'docker' configuration in ${plPackageYamlName} file`)
+            this.logger.error(`No 'docker' configuration in ${util.plPackageYamlName} file`)
             throw new Error("no 'docker' configuration")
         }
 
@@ -181,7 +181,7 @@ export class PackageInfo {
 
     get binary(): BinaryConfig {
         if (!this.hasBinary) {
-            this.logger.error(`No 'binary' configuration in ${plPackageYamlName} file`)
+            this.logger.error(`No 'binary' configuration in ${util.plPackageYamlName} file`)
             throw new Error("no 'binary' configuration")
         }
 
@@ -192,7 +192,8 @@ export class PackageInfo {
             const crossplatform = this.pkgYaml.binary!.crossplatform
 
             const registry = this.pkgYaml.binary!.registry
-            const name = this.getName(this.pkgYaml.binary?.name)
+            var name: string
+            [name, registry.name] = this.binaryNameAndRegistry()
             const version = this.getVersion(this.pkgYaml.binary?.version)
 
             this._binary = {
@@ -229,11 +230,7 @@ export class PackageInfo {
             return pkgName!
         }
 
-        if (this.pkgJson.name.startsWith("@")) {
-            return this.pkgJson.name.substring(1)
-        }
-
-        return this.pkgJson.name
+        return util.trimPrefix(this.pkgJson.name, "@")
     }
 
     private getVersion(pkgVersion: string | undefined): string {
@@ -242,6 +239,32 @@ export class PackageInfo {
         }
 
         return this.pkgJson.version
+    }
+
+    /*
+     * When binary.registry.name is empty - use scope from npm package name (without @ prefix)
+     * When binary.name is also empty - use name part from npm package name (cut scope prefix)
+     */
+    private binaryNameAndRegistry() : [string, string] {
+        const name = this.pkgYaml.binary!.name
+        const registry = this.pkgYaml.binary!.registry
+        if (name && registry.name) {
+            return [name, registry.name]
+        }
+
+        const npmNameParts = this.pkgJson.name.split("/")
+        const npmScope = (npmNameParts.length === 2) ? npmNameParts[0] : ""
+        const npmName = (npmNameParts.length === 2) ? npmNameParts[1] : this.pkgJson.name
+
+        if (!registry.name) {
+            if (npmScope === "") {
+                // Require scope in npm package name only when we do not have registry name in binary settings
+                throw new Error(`Can't get software registry name for descriptor: no 'binary.registry.name' is set in '${util.plPackageYamlName}' and 'name' in '${util.packageJsonName}' has no scope`)
+            }
+            registry.name = util.trimPrefix(npmScope, '@')
+        }
+
+        return [name ?? npmName, registry.name]
     }
 }
 
