@@ -343,7 +343,7 @@ export class JsExecutionContext
   }
 
   public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
-    return this.getSpecsFromResultPool();
+    return this.resultPool.getSpecs();
   }
 
   //
