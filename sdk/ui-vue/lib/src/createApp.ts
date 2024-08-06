@@ -11,7 +11,8 @@ export function createApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => LocalState<Href>) {
+  Local extends LocalState<Href> = LocalState<Href>,
+>(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => Local) {
   const innerState = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
@@ -79,11 +80,11 @@ export function createApp<
 
       return undefined;
     },
-    getOutputFieldErrorsOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
+    getOutputFieldErrorsOptional<K extends keyof Outputs>(key: K): string[] | undefined {
       const result = this.getOutputField(key);
 
-      if (result.ok) {
-        return result.value as UnwrapValueOrErrors<Outputs[K]>;
+      if (!result.ok) {
+        return result.errors;
       }
 
       return undefined;
@@ -127,13 +128,16 @@ export function createApp<
 
   const local = createLocalState();
 
-  return Object.assign(app, {
-    routes: Object.fromEntries(
-      Object.entries(local.routes).map(([href, component]) => {
-        return [href, markRaw(component as Component)];
-      }),
-    ),
-  } as LocalState<Href>);
+  return reactive(
+    Object.assign(app, {
+      ...local,
+      routes: Object.fromEntries(
+        Object.entries(local.routes).map(([href, component]) => {
+          return [href, markRaw(component as Component)];
+        }),
+      ),
+    } as Local),
+  );
 }
 
 export type App<
@@ -141,4 +145,5 @@ export type App<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof createApp<Args, Outputs, UiState, Href>>;
+  Local extends LocalState<Href> = LocalState<Href>,
+> = ReturnType<typeof createApp<Args, Outputs, UiState, Href, Local>>;

@@ -16,15 +16,16 @@ export function defineApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(platforma: Platforma<Args, Outputs, UiState, Href>, cb: () => LocalState<Href>) {
-  let app: undefined | App<Args, Outputs, UiState, Href> = undefined;
+  Local extends LocalState<Href> = LocalState<Href>,
+>(platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => Local) {
+  let app: undefined | App<Args, Outputs, UiState, Href, Local> = undefined;
 
   const loadApp = () => {
     platforma
       .loadBlockState()
       .then((state) => {
         plugin.loaded = true;
-        app = createApp<Args, Outputs, UiState, Href>(state, platforma, cb);
+        app = createApp<Args, Outputs, UiState, Href, Local>(state, platforma, createLocalState);
       })
       .catch((err) => {
         plugin.error = err;
