@@ -1,13 +1,13 @@
-import { AccessorHandle } from './internal';
-import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
-import { getCfgRenderCtx } from '../internal';
-import { FutureRef } from './future';
 import {
   LocalBlobHandleAndSize,
   PObject,
   RemoteBlobHandleAndSize,
   mapPObjectData
 } from '@milaboratory/sdk-model';
+import { getCfgRenderCtx } from '../internal';
+import { FutureRef } from './future';
+import { AccessorHandle } from './internal';
+import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 
 function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
@@ -124,12 +124,32 @@ export class TreeNodeAccessor {
     return result;
   }
 
-  public getBlobContentAsBase64(): FutureRef<string | undefined> {
+  public getFileContentAsBase64(): FutureRef<string | undefined> {
     return new FutureRef(getCfgRenderCtx().getBlobContentAsBase64(this.handle));
   }
 
-  public getBlobContentAsString(): FutureRef<string | undefined> {
+  public getFileContentAsString(): FutureRef<string | undefined> {
     return new FutureRef(getCfgRenderCtx().getBlobContentAsString(this.handle));
+  }
+
+  public getFileContentAsJson<T>(): FutureRef<T | undefined> {
+    return new FutureRef<string | undefined>(
+      getCfgRenderCtx().getBlobContentAsString(this.handle)
+    ).mapDefined((v) => JSON.parse(v) as T);
+  }
+
+  /**
+   * @deprecated use getFileContentAsBase64
+   */
+  public getBlobContentAsBase64(): FutureRef<string | undefined> {
+    return this.getFileContentAsBase64();
+  }
+
+  /**
+   * @deprecated use getFileContentAsString
+   */
+  public getBlobContentAsString(): FutureRef<string | undefined> {
+    return this.getFileContentAsString();
   }
 
   public getDownloadedBlobHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
