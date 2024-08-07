@@ -30,8 +30,12 @@ interface ReadableComputed<T> {
   get: ComputedGetter<T>;
 }
 
+export type StripLastSlash<S extends string> = S extends `${infer Stripped}/` ? Stripped : S;
+
+export type ParsePath<S extends string> = S extends `${infer Path}?${string}` ? StripLastSlash<Path> : S;
+
 export type Routes<Href extends `/${string}` = `/${string}`> = {
-  [P in Href]: Component;
+  [P in Href as ParsePath<P>]: Component;
 };
 
 export type LocalState<Href extends `/${string}` = `/${string}`> = {
