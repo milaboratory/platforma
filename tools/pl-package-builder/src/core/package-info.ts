@@ -234,6 +234,10 @@ export class PackageInfo {
     }
 
     private getVersion(pkgVersion: string | undefined): string {
+        if (process.env["PL_PKG_VERSION"]) {
+            return process.env["PL_PKG_VERSION"]
+        }
+
         if (pkgVersion) {
             return pkgVersion!
         }
