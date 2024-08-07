@@ -286,8 +286,12 @@ class ProgressUpdater {
       return this.progress;
     }
 
-    if (this.uploadingTerminallyFailed)
+    if (this.uploadingTerminallyFailed) {
+      this.logger.error(
+        `Uploading terminally failed: ${this.progress.lastError}`
+      );
       throw new Error(this.progress.lastError);
+    }
 
     return this.progress;
   }
@@ -305,8 +309,20 @@ class ProgressUpdater {
   async uploadBlobTask() {
     try {
       await this.uploadBlob();
-    } catch (e) {
-      this.logger.error(`error while uploading or indexing a blob: ${e}`);
+    } catch (e: any) {
+      if (
+        e.name == 'RpcError' &&
+        (e.code == 'NOT_FOUND' ||
+          e.code == 'ABORTED' ||
+          e.code == 'ALREADY_EXISTS')
+      ) {
+        this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
+        this.setDone(true);
+
+        return;
+      }
+
+      this.logger.error(`error while uploading a blob: ${e}`);
       this.setLastError(e);
       this.change.markChanged();
 

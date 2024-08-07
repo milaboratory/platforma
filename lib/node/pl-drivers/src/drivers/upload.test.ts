@@ -1,4 +1,5 @@
 import {
+  FieldId,
   isNotNullResourceId,
   PlTransaction,
   PollTxAccessor,
@@ -157,6 +158,71 @@ test('upload a duplicate blob', async () => {
   );
 });
 
+test('upload lots of duplicate blobs concurrently', async () => {
+  await TestHelpers.withTempRoot(async (client) => {
+    const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
+    const logger = new ConsoleLoggerAdapter();
+    const uploader = new UploadDriver(
+      logger,
+      signer,
+      createUploadBlobClient(client, logger),
+      createUploadProgressClient(client, logger)
+    );
+
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
+    const n = 100;
+
+    const settings: any[] = [];
+    for (let i = 0; i < n; i++) {
+      const fPath = path.join(tmpDir, `testUploadABlob_${i}.txt`);
+      const data = Buffer.from(
+        new TextEncoder().encode('DuplicateBlobsFileContent')
+      );
+      await fs.writeFile(fPath, data);
+      const f = await fs.open(fPath);
+      const stats = await fs.stat(fPath);
+      const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
+      const sign = signer.sign(fPath);
+      await f.close();
+
+      settings.push({
+        path: fPath,
+        sizeBytes: 25n,
+        signature: signer.sign(fPath),
+        mTime: mtime
+      });
+    }
+
+    const { mapId, uploadIds } = await createMapOfUploads(client, n, settings);
+
+    const handles = await Promise.all(
+      uploadIds.map((id) => getHandleField(client, id))
+    );
+    const computables = handles.map((handle) => uploader.getProgressId(handle));
+
+    console.log('HERE: ', handles);
+    console.log('HERE2: ', computables);
+    console.log('HERE: ', uploader);
+    for (const c of computables) {
+      while (true) {
+        const p = await c.getValue();
+
+        if (p.done) {
+          expect(p.isUploadSignMatch).toBeTruthy();
+          expect(p.lastError).toBeUndefined();
+          expect(p.status?.bytesProcessed).toBe(25);
+          expect(p.status?.bytesTotal).toBe(25);
+          return;
+        }
+
+        await c.awaitChange();
+      }
+    }
+
+    await uploader.releaseAll();
+  });
+});
+
 test('index a blob', async () => {
   await withTest('', async ({ client, uploader }: TestArg) => {
     const uploadId = await createBlobIndex(
@@ -223,6 +289,52 @@ async function withTest(
   });
 }
 
+async function createMapOfUploads(
+  c: PlClient,
+  n: number,
+  settings: {
+    path: string;
+    sizeBytes: bigint;
+    signature: string;
+    mTime: bigint;
+  }[]
+) {
+  return await c.withWriteTx(
+    'UploaderCreateMapOfUploads',
+    async (tx: PlTransaction) => {
+      const uploads: ResourceId[] = [];
+
+      const mapId = tx.createStruct({ name: 'StdMap', version: '1' });
+      for (let i = 0; i < n; i++) {
+        const uploadId = await createBlobUploadTx(
+          tx,
+          settings[i].path,
+          settings[i].sizeBytes,
+          settings[i].signature,
+          settings[i].mTime
+        );
+        uploads.push(uploadId);
+        const fId = { resourceId: mapId, fieldName: String(i) };
+        tx.createField(fId, 'Input');
+        tx.setField(fId, uploadId);
+      }
+
+      tx.createField(
+        { resourceId: c.clientRoot, fieldName: 'project1' },
+        'Dynamic',
+        mapId
+      );
+      await tx.commit();
+
+      return {
+        mapId: await mapId.globalId,
+        uploadIds: uploads
+      };
+    },
+    {}
+  );
+}
+
 async function createBlobUpload(
   c: PlClient,
   path: string,
@@ -233,28 +345,44 @@ async function createBlobUpload(
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
-      const settings = {
-        modificationTime: mTime.toString(),
-        localPath: path,
-        pathSignature: signature,
-        sizeBytes: sizeBytes.toString()
-      };
-      const data = new TextEncoder().encode(JSON.stringify(settings));
-      const upload = tx.createStruct(
-        { name: 'BlobUpload', version: '1' },
-        data
+      const uploadId = await createBlobUploadTx(
+        tx,
+        path,
+        sizeBytes,
+        signature,
+        mTime
       );
+
       tx.createField(
         { resourceId: c.clientRoot, fieldName: 'project1' },
         'Dynamic',
-        upload
+        uploadId
       );
       await tx.commit();
 
-      return await upload.globalId;
+      return uploadId;
     },
     {}
   );
+}
+
+async function createBlobUploadTx(
+  tx: PlTransaction,
+  path: string,
+  sizeBytes: bigint,
+  signature: string,
+  mTime: bigint
+): Promise<ResourceId> {
+  const settings = {
+    modificationTime: mTime.toString(),
+    localPath: path,
+    pathSignature: signature,
+    sizeBytes: sizeBytes.toString()
+  };
+  const data = new TextEncoder().encode(JSON.stringify(settings));
+  const upload = tx.createStruct({ name: 'BlobUpload', version: '1' }, data);
+
+  return await upload.globalId;
 }
 
 async function createBlobIndex(
