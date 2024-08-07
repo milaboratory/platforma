@@ -35,8 +35,9 @@ export function defineApp<
   const plugin = reactive({
     loaded: false,
     error: undefined as unknown,
-    useApp() {
-      return notEmpty(app, 'App is not loaded');
+    // Href to get typed query parameters for a specific route
+    useApp<H extends Href = Href>() {
+      return notEmpty(app, 'App is not loaded') as App<Args, Outputs, UiState, H, Local>;
     },
     // @todo type portability issue with Vue
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

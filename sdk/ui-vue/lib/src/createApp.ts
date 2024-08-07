@@ -5,6 +5,7 @@ import type { Component } from 'vue';
 import { reactive, nextTick, markRaw, computed } from 'vue';
 import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions } from './types';
 import { createModel } from './createModel';
+import { parseQuery } from './urls';
 
 export function createApp<
   Args = unknown,
@@ -93,19 +94,24 @@ export function createApp<
     updateArgs(cb: (args: Args) => void) {
       const newArgs = cloneArgs();
       cb(newArgs);
-      platforma.setBlockArgs(newArgs);
+      return platforma.setBlockArgs(newArgs);
     },
     updateUiState(cb: (args: UiState) => UiState) {
       const newUiState = cloneUiState();
-      platforma.setBlockUiState(cb(newUiState));
+      return platforma.setBlockUiState(cb(newUiState));
     },
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
       const newState = cloneNavigationState();
       cb(newState);
-      platforma.setNavigationState(newState);
+      return platforma.setNavigationState(newState);
+    },
+    navigateTo(href: Href) {
+      const newState = cloneNavigationState();
+      newState.href = href;
+      return platforma.setNavigationState(newState);
     },
     setArgField<K extends keyof Args>(key: K, value: Args[K]) {
-      platforma.setBlockArgs(setProp(cloneArgs(), key, value));
+      return platforma.setBlockArgs(setProp(cloneArgs(), key, value));
     },
   };
 
@@ -114,6 +120,8 @@ export function createApp<
     outputs: computed(() => innerState.outputs),
     ui: computed(() => innerState.ui),
     navigationState: computed(() => innerState.navigationState),
+    href: computed(() => innerState.navigationState.href),
+    queryParams: computed(() => parseQuery<Href>(innerState.navigationState.href)),
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
     testOutputs: computed(() => innerState.outputs),
     outputsErrors: computed(() => {

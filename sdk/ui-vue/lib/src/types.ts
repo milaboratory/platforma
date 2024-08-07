@@ -32,10 +32,22 @@ interface ReadableComputed<T> {
 
 export type StripLastSlash<S extends string> = S extends `${infer Stripped}/` ? Stripped : S;
 
-export type ParsePath<S extends string> = S extends `${infer Path}?${string}` ? StripLastSlash<Path> : S;
+export type ParsePathnamePart<S extends string> = S extends `${infer Path}?${string}` ? StripLastSlash<Path> : S;
+
+export type ParseQueryPart<S extends string> = S extends `${string}?${infer Query}` ? Query : '';
+
+export type QueryChunks<S extends string> = S extends `${infer Chunk}&${infer Rest}` ? Chunk | QueryChunks<Rest> : S;
+
+export type SplitChunks<S extends string> = S extends `${infer Key}=${infer Value}` ? [Key, Value] : never;
+
+export type ParseQuery<QueryString extends string> = { [T in SplitChunks<QueryChunks<ParseQueryPart<QueryString>>> as T[0]]: T[1] };
 
 export type Routes<Href extends `/${string}` = `/${string}`> = {
-  [P in Href as ParsePath<P>]: Component;
+  [P in Href as ParsePathnamePart<P>]: Component;
+};
+
+export type RouteParams<Href extends `/${string}` = `/${string}`> = {
+  [P in Href as ParsePathnamePart<P>]: ParseQuery<P>;
 };
 
 export type LocalState<Href extends `/${string}` = `/${string}`> = {
