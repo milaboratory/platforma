@@ -13,7 +13,7 @@ export function createApp<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends LocalState<Href> = LocalState<Href>,
->(state: BlockState<Args, Outputs, UiState>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => Local) {
+>(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => Local) {
   const innerState = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
@@ -33,6 +33,7 @@ export function createApp<
       }
 
       if (patch.key === 'ui') {
+        console.log('got my ui state', patch.value);
         innerState.ui = Object.freeze(patch.value);
       }
 
@@ -98,7 +99,9 @@ export function createApp<
     },
     updateUiState(cb: (args: UiState) => UiState) {
       const newUiState = cloneUiState();
-      return platforma.setBlockUiState(cb(newUiState));
+      return platforma.setBlockUiState(cb(newUiState)).then(() => {
+        console.log('push uiState');
+      });
     },
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
       const newState = cloneNavigationState();
