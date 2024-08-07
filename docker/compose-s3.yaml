@@ -11,6 +11,9 @@ services:
       MINIO_ROOT_USER: testuser
       MINIO_ROOT_PASSWORD: testpassword
 
+    volumes:
+      - minio-data:/data
+
   backend:
     image: ${PL_IMAGE}
     depends_on:
@@ -46,17 +49,19 @@ services:
       - "PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT=http://localhost:9000"
 
     volumes:
-      - platforma-file-primary:/storage/controllers/file/primary
-      - platforma-file-library:/storage/controllers/file/library
-      - platforma-file-work:/storage/controllers/file/work
-      - platforma-runner-software:/storage/controllers/runner/software
-      - platforma-db:/storage/rocksdb
+      - file-primary:/storage/controllers/file/primary
+      - file-library:/storage/controllers/file/library
+      - file-work:/storage/controllers/file/work
+      - runner-software:/storage/controllers/runner/software
+      - db:/storage/rocksdb
 
     restart: always
 
 volumes:
-  platforma-file-primary:
-  platforma-file-library:
-  platforma-file-work:
-  platforma-runner-software:
-  platforma-db:
+  file-primary:
+  file-library:
+  file-work:
+  runner-software:
+  db:
+
+  minio-data:
