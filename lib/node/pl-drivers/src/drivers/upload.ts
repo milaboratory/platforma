@@ -317,6 +317,7 @@ class ProgressUpdater {
             e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
+        this.change.markChanged();
         this.setDone(true);
 
         return;
@@ -392,7 +393,8 @@ class ProgressUpdater {
           (e.code == 'NOT_FOUND' ||
             e.code == 'ABORTED')
       ) {
-        this.logger.warn(`resource was not found while updating a status of BlobIndex: ${e}`);
+        this.logger.warn(`resource was not found while updating a status of BlobIndex: ${e}, ${stringifyWithResourceId(this.res)}`);
+        this.change.markChanged();
         this.setDone(true);
         return;
       }
