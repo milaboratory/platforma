@@ -488,7 +488,7 @@ export class JsExecutionContext
         this.vm.setProp(
           configCtx,
           'uiState',
-          localScope.manage(this.vm.newString(this.blockCtx.args))
+          localScope.manage(this.vm.newString(this.blockCtx.uiState))
         );
 
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
