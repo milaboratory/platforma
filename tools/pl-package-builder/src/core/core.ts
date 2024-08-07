@@ -90,23 +90,26 @@ export class Core {
 
     public publishPackage(options?: {
         archivePath?: string,
-        publishURL?: string,
+        storageURL?: string,
     }) {
         const archivePath = options?.archivePath ?? this.archivePath
-        const publishURL = options?.publishURL ?? this.pkg.binary.registry.publishURL
+        const storageURL = options?.storageURL ?? this.pkg.binary.registry.storageURL
 
-        if (!publishURL) {
-            this.logger.error(`no publish URL is set for registry ${this.pkg.binary.registry.name}`)
-            throw new Error("binary.registry.publishURL is empty. Set it as command option or in 'pl.package.yaml' file")
+        if (!storageURL) {
+            this.logger.error(`no storage URL is set for registry ${this.pkg.binary.registry.name}`)
+            throw new Error("binary.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
         }
 
         this.logger.info(`Publishing package '${this.pkg.binary.name}' into registry '${this.pkg.binary.registry.name}'`)
-        this.logger.debug(`  registry publish URL: '${publishURL}'`)
+        this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
 
-        const s = storage.initByUrl(publishURL, this.pkg.packageRoot)
+        const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
-        s.putFile(this.pkg.binary.fullName(this.targetOS, this.targetArch), archive)
+        const dstName = this.pkg.binary.fullName(this.targetOS, this.targetArch)
+        s.putFile(dstName, archive)
+
+        this.logger.info(`Package '${this.pkg.binary.name}' was published to '${this.pkg.binary.registry.name}:${dstName}'`)
     }
 
     private get archiveOptions(): archive.archiveOptions {

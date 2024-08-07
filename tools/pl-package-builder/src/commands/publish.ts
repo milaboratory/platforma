@@ -46,7 +46,7 @@ export default class Publish extends Command {
         if (swInfo.binary || flags.archive) {
             c.publishPackage({
                 archivePath: flags.archive,
-                publishURL: flags.publishURL,
+                storageURL: flags.publishURL,
             })
         }
         

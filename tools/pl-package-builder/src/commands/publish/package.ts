@@ -16,11 +16,13 @@ export default class Package extends Command {
         ...ArchFlags,
 
         "archive": Flags.file({
+            env: "PL_PKG_ARCHIVE",
             description: "path to archive with the pacakge to be uploaded to registry. Overrides <os> and <arch> options",
             required: false,
         }),
 
-        "publish-url": Flags.string({
+        "storage-url": Flags.string({
+            env: "PL_PKG_STORAGE_URL",
             description: "publish package archive into given registry, specified by URL, e.g. s3://<bucket>/<some-path-prefix>?region=<region>"
         }),
     };
@@ -37,7 +39,7 @@ export default class Package extends Command {
 
         c.publishPackage({
             archivePath: flags.archive,
-            publishURL: flags['publish-url'],
+            storageURL: flags['storage-url'],
         })
     }
 }

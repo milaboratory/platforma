@@ -15,7 +15,14 @@ export default class Package extends Command {
         ...BuildFlags,
         ...ArchFlags,
 
+        "archive": Flags.file({
+            env: "PL_PKG_ARCHIVE",
+            description: "path to archive with the pacakge to be uploaded to registry. Overrides <os> and <arch> options",
+            required: false,
+        }),
+
         "content-root": Flags.directory({
+            env: "PL_PKG_CONTENT_ROOT",
             description: "path to directory with contents of software package. Overrides settings in pl.package.yaml"
         })
     };
@@ -30,6 +37,6 @@ export default class Package extends Command {
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
-        core.buildPackage({contentRoot: flags['content-root']})
+        core.buildPackage({archivePath: flags.archive, contentRoot: flags['content-root']})
     }
 }

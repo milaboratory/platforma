@@ -25,7 +25,7 @@ interface DockerConfig extends dockerConfig {
 const binaryConfigSchema = z.object({
     registry: z.object({
         name: z.string().optional(),
-        publishURL: z.string().optional(),
+        storageURL: z.string().optional(),
     }),
     name: z.string().optional(),
     version: z.string().optional(),
@@ -77,7 +77,7 @@ type packageJson = z.infer<typeof packageJsonSchema>
  *
  * binary:
  *   registry:
- *      publishURL: s3://<bucketName>/<some-path-prefix>?region=<region>
+ *      storageURL: s3://<bucket>/<some-prefix>?region=<region-name>
  *      name: "my-org"      # defaults to 'scope' of npm package without leading '@'
  *   name: "example-binary" # defaults to name of npm package (without scope, if any)
  *   version: "1.2.3"       # defaults to npm package version
