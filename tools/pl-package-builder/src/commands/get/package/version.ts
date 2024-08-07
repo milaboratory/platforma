@@ -1,8 +1,7 @@
 import { Command } from '@oclif/core'
-import { ArchFlags, GlobalFlags, modeFromFlag } from '../../../core/flags';
+import { GlobalFlags } from '../../../core/flags';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
-import { c } from 'tar';
 
 export default class Version extends Command {
     static override description = 'get version of software package to be built and published'

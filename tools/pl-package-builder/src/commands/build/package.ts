@@ -1,5 +1,5 @@
-import { Command, Flags } from '@oclif/core'
-import { ArchFlags, BuildFlags, GlobalFlags, modeFromFlag, } from '../../core/flags';
+import { Command } from '@oclif/core'
+import * as flags from '../../core/flags';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
@@ -11,20 +11,12 @@ export default class Package extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...BuildFlags,
-        ...ArchFlags,
+        ...flags.GlobalFlags,
+        ...flags.BuildFlags,
+        ...flags.ArchFlags,
 
-        "archive": Flags.file({
-            env: "PL_PKG_ARCHIVE",
-            description: "path to archive with the pacakge to be uploaded to registry. Overrides <os> and <arch> options",
-            required: false,
-        }),
-
-        "content-root": Flags.directory({
-            env: "PL_PKG_CONTENT_ROOT",
-            description: "path to directory with contents of software package. Overrides settings in pl.package.yaml"
-        })
+        ...flags.ArchiveFlag,
+        ...flags.ContentRootFlag,
     };
 
     public async run(): Promise<void> {
@@ -33,7 +25,7 @@ export default class Package extends Command {
 
         const core = new Core(logger)
 
-        core.buildMode = modeFromFlag(flags.dev)
+        core.buildMode = flags.modeFromFlag(flags.dev as flags.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 

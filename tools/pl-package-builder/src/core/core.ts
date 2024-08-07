@@ -1,8 +1,8 @@
 import { spawn } from "child_process";
 import winston from "winston";
 import { PackageInfo } from "./package-info";
-import { SoftwareDescriptor, softwareSource, readSoftwareInfo } from "./sw-json";
-import { BuildMode } from "./flags";
+import { SoftwareDescriptor, readSoftwareInfo } from "./sw-json";
+import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 import { ArchType, currentArch, currentOS, OSType } from "./util";
@@ -12,7 +12,7 @@ export class Core {
     private readonly logger: winston.Logger
     public readonly pkg: PackageInfo
     public readonly descriptor: SoftwareDescriptor
-    public buildMode: BuildMode
+    public buildMode: util.BuildMode
     public targetOS: OSType
     public targetArch: ArchType
 
@@ -33,7 +33,7 @@ export class Core {
         return archive.getPath(this.archiveOptions)
     }
 
-    public buildDescriptor(sources: softwareSource[]) {
+    public buildDescriptor(sources: util.SoftwareSource[]) {
         const swJson = this.descriptor.render(this.buildMode, sources)
         this.descriptor.write(swJson)
     }

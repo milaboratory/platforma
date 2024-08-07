@@ -1,7 +1,6 @@
-import { Command, Flags } from '@oclif/core'
-import { BuildFlags, GlobalFlags, modeFromFlag } from '../../core/flags';
+import { Command } from '@oclif/core'
+import * as flags from '../../core/flags';
 import * as util from '../../core/util';
-import { allSoftwareSources, softwareSource } from '../../core/sw-json';
 import { Core } from '../../core/core';
 
 export default class Descriptor extends Command {
@@ -12,29 +11,23 @@ export default class Descriptor extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...BuildFlags,
+        ...flags.GlobalFlags,
+        ...flags.BuildFlags,
 
-        'source': Flags.string({
-            description: "add only selected sources to *.sw.json descriptor",
-            options: (allSoftwareSources as unknown) as string[],
-            multiple: true,
-            default: [],
-            required: false,
-        }),
+        ...flags.SourceFlag,
     };
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Descriptor);
-        var sources = (flags.source) as softwareSource[]
+        var sources = (flags.source) as util.SoftwareSource[]
         if (sources.length === 0) {
-            sources = [...allSoftwareSources]
+            sources = [...util.AllSoftwareSources]
         }
 
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
-        c.buildMode = modeFromFlag(flags.dev)
+        c.buildMode = flags.modeFromFlag(flags.dev as flags.devModeName)
         c.buildDescriptor(sources)
     }
 }

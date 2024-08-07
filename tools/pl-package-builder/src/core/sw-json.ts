@@ -1,11 +1,10 @@
 
-import { z } from 'zod';
-import { PackageInfo } from './package-info';
-import { assertNever, ensureDirsExist, hashDirMetaSync } from './util';
-import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
-import { BuildMode } from './flags';
 import winston from 'winston';
+import { z } from 'zod';
+import { readFileSync, writeFileSync } from 'fs';
+import { PackageInfo } from './package-info';
+import * as util from './util';
 
 const dockerSchema = z.object({
     image: z.string().
@@ -65,15 +64,12 @@ const swJsonSchema = z.object({
 })
 export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
-export function readSoftwareInfo(packageRoot: string, swName: string) : SoftwareInfo {
+export function readSoftwareInfo(packageRoot: string, swName: string): SoftwareInfo {
     const filePath = swJsonPath(packageRoot, swName)
     const swJsonContent = readFileSync(filePath)
 
     return swJsonSchema.parse(JSON.parse(swJsonContent.toString()))
 }
-
-export const allSoftwareSources = ['binary'] as const; // add 'docker', '<whatever>' here when supported
-export type softwareSource = (typeof allSoftwareSources)[number];
 
 export class SoftwareDescriptor {
     constructor(
@@ -81,7 +77,7 @@ export class SoftwareDescriptor {
         private packageInfo: PackageInfo,
     ) { }
 
-    public render(mode: BuildMode, sources: readonly softwareSource[]): SoftwareInfo {
+    public render(mode: util.BuildMode, sources: readonly util.SoftwareSource[]): SoftwareInfo {
         this.logger.info("Rendering software descriptor...")
         this.logger.debug("  sources: " + JSON.stringify(sources))
 
@@ -114,11 +110,11 @@ export class SoftwareDescriptor {
                     break
 
                 default:
-                    assertNever(source)
+                    util.assertNever(source)
             }
         }
 
-        if (Object.values(info).length === 0)  {
+        if (Object.values(info).length === 0) {
             this.logger.error("software descriptor is empty after rendering")
             throw new Error("software descriptor is empty after rendering")
         }
@@ -135,11 +131,11 @@ export class SoftwareDescriptor {
 
         const encoded = JSON.stringify(info)
 
-        ensureDirsExist(path.dirname(dstSwInfoPath))
+        util.ensureDirsExist(path.dirname(dstSwInfoPath))
         writeFileSync(dstSwInfoPath, encoded)
     }
 
-    private renderLocalInfo(mode: BuildMode): localInfo {
+    private renderLocalInfo(mode: util.BuildMode): localInfo {
         if (!this.packageInfo.hasBinary) {
             throw new Error(`pl.package.yaml file does not contain definition for binary package`)
         }
@@ -153,12 +149,12 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(mode)
+                util.assertNever(mode)
         }
 
         const binary = this.packageInfo.binary
         const rootDir = binary.contentRoot
-        const hash = hashDirMetaSync(rootDir)
+        const hash = util.hashDirMetaSync(rootDir)
 
         return {
             hash: hash.toString('hex'),
@@ -172,7 +168,7 @@ export class SoftwareDescriptor {
         }
     }
 
-    private renderBinaryInfo(mode: BuildMode): binaryInfo {
+    private renderBinaryInfo(mode: util.BuildMode): binaryInfo {
         if (!this.packageInfo.hasBinary) {
             throw new Error(`pl.package.yaml file does not contain definition for binary package`)
         }
@@ -186,7 +182,7 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(mode)
+                util.assertNever(mode)
         }
 
         const binary = this.packageInfo.binary
@@ -201,7 +197,7 @@ export class SoftwareDescriptor {
         }
     }
 
-    private renderDockerInfo(mode: BuildMode): dockerInfo {
+    private renderDockerInfo(mode: util.BuildMode): dockerInfo {
         if (!this.packageInfo.hasDocker) {
             throw new Error(`pl.package.yaml file does not contain definition for docker image`)
         }
@@ -217,7 +213,7 @@ export class SoftwareDescriptor {
                 break
 
             default:
-                assertNever(mode)
+                util.assertNever(mode)
         }
 
         return {
@@ -228,7 +224,7 @@ export class SoftwareDescriptor {
     }
 }
 
-function swJsonPath(packageRoot: string, swName: string) : string {
+function swJsonPath(packageRoot: string, swName: string): string {
     return path.resolve(
         packageRoot,
         "dist", "tengo", "software", `${swName}.sw.json`,

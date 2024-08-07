@@ -1,6 +1,5 @@
-import * as path from 'path';
-import { Command, Flags } from '@oclif/core'
-import { ArchFlags, GlobalFlags } from '../../core/flags';
+import { Command } from '@oclif/core'
+import * as flags from '../../core/flags';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
@@ -12,19 +11,11 @@ export default class Package extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...ArchFlags,
+        ...flags.GlobalFlags,
+        ...flags.ArchFlags,
 
-        "archive": Flags.file({
-            env: "PL_PKG_ARCHIVE",
-            description: "path to archive with the pacakge to be uploaded to registry. Overrides <os> and <arch> options",
-            required: false,
-        }),
-
-        "storage-url": Flags.string({
-            env: "PL_PKG_STORAGE_URL",
-            description: "publish package archive into given registry, specified by URL, e.g. s3://<bucket>/<some-path-prefix>?region=<region>"
-        }),
+        ...flags.ArchiveFlag,
+        ...flags.StorageURLFlag,
     };
 
     static strict: boolean = false;

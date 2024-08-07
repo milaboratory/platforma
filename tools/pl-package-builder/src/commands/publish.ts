@@ -1,9 +1,8 @@
-import * as path from 'path';
-import { Command, Flags } from '@oclif/core'
-import { ArchFlags, GlobalFlags } from '../core/flags';
+import { Command } from '@oclif/core'
+import * as flags from '../core/flags';
 import * as util from '../core/util';
 import { Core } from '../core/core';
-import { allSoftwareSources, readSoftwareInfo } from '../core/sw-json';
+import { readSoftwareInfo } from '../core/sw-json';
 
 export default class Publish extends Command {
     static override description = 'publish software package archive to its registry'
@@ -13,19 +12,11 @@ export default class Publish extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...ArchFlags,
+        ...flags.GlobalFlags,
+        ...flags.ArchFlags,
 
-        "archive": Flags.file({
-            name: "archive",
-            description: "path to archive with the pacakge to be uploaded to registry. Overrides <os> and <arch> options",
-            required: false,
-        }),
-
-        "publish-url": Flags.string({
-            name: "publishURL",
-            description: "publish package archive into given registry, specified by URL, e.g. s3://<bucket>/<some-path-prefix>?region=<region>"
-        }),
+        ...flags.ArchiveFlag,
+        ...flags.StorageURLFlag,
     };
 
     static strict: boolean = false;
@@ -50,6 +41,6 @@ export default class Publish extends Command {
             })
         }
         
-        // TODO: add more to publish
+        // TODO: don't forget to add docker here, when we support it
     }
 }

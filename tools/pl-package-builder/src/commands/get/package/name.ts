@@ -1,8 +1,7 @@
 import { Command } from '@oclif/core'
-import { ArchFlags, GlobalFlags, modeFromFlag } from '../../../core/flags';
+import { ArchFlags, GlobalFlags } from '../../../core/flags';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
-import { c } from 'tar';
 
 export default class Name extends Command {
     static override description = 'get the name of software package to be built and published'

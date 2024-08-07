@@ -1,9 +1,6 @@
-import { Command, Args, Flags } from '@oclif/core'
-import { ArchFlags, BuildFlags, GlobalFlags, BuildMode, modeFromFlag } from '../core/flags';
-import { PackageInfo } from '../core/package-info';
-import { SoftwareDescriptor, allSoftwareSources, softwareSource } from '../core/sw-json';
+import { Command } from '@oclif/core'
+import * as flags from '../core/flags';
 import * as util from '../core/util';
-import * as archive from '../core/archive';
 import { Core } from '../core/core';
 
 export default class Build extends Command {
@@ -14,34 +11,25 @@ export default class Build extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...BuildFlags,
-        ...ArchFlags,
+        ...flags.GlobalFlags,
+        ...flags.BuildFlags,
+        ...flags.ArchFlags,
 
-        'source': Flags.string({
-            description: "add only selected sources to *.sw.json descriptor",
-            options: (allSoftwareSources as unknown) as string[],
-            multiple: true,
-            default: [],
-            required: false,
-        }),
-
-        "content-root": Flags.directory({
-            description: "path to directory with contents of software package. Overrides settings in pl.package.yaml"
-        }),
+        ...flags.ArchiveFlag,
+        ...flags.ContentRootFlag,
     };
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Build);
-        var sources = (flags.source) as softwareSource[]
+        var sources = (flags.source) as util.SoftwareSource[]
         if (sources.length === 0) {
-            sources = [...allSoftwareSources] // we need to iterate over the list to build all targets
+            sources = [...util.AllSoftwareSources] // we need to iterate over the list to build all targets
         }
 
         const logger = util.createLogger(flags['log-level'])
         const core = new Core(logger)
 
-        core.buildMode = modeFromFlag(flags.dev)
+        core.buildMode = flags.modeFromFlag(flags.dev as flags.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
@@ -50,7 +38,7 @@ export default class Build extends Command {
         for (const source of sources) {
             switch (source) {
                 case 'binary':
-                    core.buildPackage({contentRoot: flags['content-root']})
+                    core.buildPackage({ archivePath: flags.archive, contentRoot: flags['content-root'] })
                     break
 
                 // case 'docker':

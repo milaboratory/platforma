@@ -7,7 +7,9 @@ import winston from 'winston';
 export const packageJsonName = "package.json"
 export const plPackageYamlName = "pl.package.yaml"
 
-export function assertNever(a: never) { }
+export function assertNever(a: never) {
+    throw new Error("code logic error: assertNever() call")
+}
 
 export function trimPrefix(str: string, prefix: string): string {
     if (str.startsWith(prefix)) {
@@ -119,3 +121,8 @@ export function currentArch(): ArchType {
             throw new Error(`processor architecture '${arch}' is not currently supported by Platforma ecosystem. The list of architectures supported: ` + JSON.stringify(Arches))
     }
 }
+
+export const AllSoftwareSources = ['binary'] as const; // add 'docker', '<whatever>' here when supported
+export type SoftwareSource = (typeof AllSoftwareSources)[number];
+
+export type BuildMode = 'dev-local' | 'release'

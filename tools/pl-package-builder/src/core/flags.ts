@@ -1,40 +1,82 @@
 import { Flags } from '@oclif/core'
 import * as util from './util'
+import * as envs from './envs'
 
 export const GlobalFlags = {
     "log-level": Flags.string({
         description: "logging level",
         default: "info",
         options: ["error", "warn", "info", "debug"],
+        required: false,
     })
 }
 
+const devModeValues = ['local'] as const;
+export type devModeName = (typeof devModeValues)[number];
+
 export const BuildFlags = {
     "dev": Flags.string({
+        env: envs.PL_PKG_DEV,
         name: "dev",
         description: "build dev version of descriptor",
-        options: ['local'],
+        options: devModeValues,
         required: false,
     }),
 }
 
 export const ArchFlags = {
     "os": Flags.string({
-        env: "PL_PKG_OS",
+        env: envs.PL_PKG_OS,
         description: "OS supported by software. Has no effect on cross-platform packages",
         default: util.currentOS(),
         options: util.OSes,
+        required: false,
     }),
 
     "arch": Flags.string({
-        env: "PL_PKG_ARCH",
+        env: envs.PL_PKG_ARCH,
         description: "architecture supported by software. Has no effect on cross-platform packages",
         default: util.currentArch(),
         options: util.Arches,
+        required: false,
     })
 }
 
-export function modeFromFlag(dev?: string): BuildMode {
+export const ArchiveFlag = {
+    "archive": Flags.file({
+        env: envs.PL_PKG_ARCHIVE,
+        description: "path to archive with the pacakge to be built/published. Overrides <os> and <arch> options",
+        required: false,
+    })
+}
+
+export const StorageURLFlag = {
+    "storage-url": Flags.string({
+        env: envs.PL_PKG_STORAGE_URL,
+        description: "publish package archive into given registry, specified by URL, e.g. s3://<bucket>/<some-path-prefix>?region=<region>",
+        required: false,
+    }),
+}
+
+export const ContentRootFlag = {
+    "content-root": Flags.directory({
+        env: envs.PL_PKG_CONTENT_ROOT,
+        description: "path to directory with contents of software package. Overrides settings in pl.package.yaml",
+        required: false,
+    }),
+}
+
+export const SourceFlag = {
+    'source': Flags.string({
+        description: "add only selected sources to *.sw.json descriptor",
+        options: (util.AllSoftwareSources as unknown) as string[],
+        multiple: true,
+        default: [],
+        required: false,
+    }),
+}
+
+export function modeFromFlag(dev?: devModeName): util.BuildMode {
     switch (dev) {
         case 'local':
             return 'dev-local'
@@ -43,8 +85,7 @@ export function modeFromFlag(dev?: string): BuildMode {
             return 'release'
 
         default:
-            return 'release'
+            util.assertNever(dev)
+            throw new Error("unknown dev mode") // just to calm down TS type analyzer
     }
 }
-
-export type BuildMode = 'dev-local' | 'release'
