@@ -312,9 +312,9 @@ class ProgressUpdater {
     } catch (e: any) {
       if (
         e.name == 'RpcError' &&
-        (e.code == 'NOT_FOUND' ||
-          e.code == 'ABORTED' ||
-          e.code == 'ALREADY_EXISTS')
+          (e.code == 'NOT_FOUND' ||
+            e.code == 'ABORTED' ||
+            e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.setDone(true);
@@ -387,6 +387,16 @@ class ProgressUpdater {
       if (status.done || status.progress != oldStatus?.progress)
         this.change.markChanged();
     } catch (e: any) {
+      if (
+        e.name == 'RpcError' &&
+          (e.code == 'NOT_FOUND' ||
+            e.code == 'ABORTED')
+      ) {
+        this.logger.warn(`resource was not found while updating a status of BlobIndex: ${e}`);
+        this.setDone(true);
+        return;
+      }
+
       this.logger.error(`error while updating a status of BlobIndex: ${e}`);
       this.terminateWithError(e);
     }
