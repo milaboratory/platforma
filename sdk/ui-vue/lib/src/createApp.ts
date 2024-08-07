@@ -48,6 +48,7 @@ export function createApp<
   });
 
   const cloneArgs = () => deepClone(innerState.args) as Args;
+  const cloneUiState = () => deepClone(innerState.ui) as UiState;
 
   const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
 
@@ -93,6 +94,11 @@ export function createApp<
       const newArgs = cloneArgs();
       cb(newArgs);
       platforma.setBlockArgs(newArgs);
+    },
+    updateUiState(cb: (args: UiState) => void) {
+      const newUiState = cloneUiState();
+      cb(newUiState);
+      platforma.setBlockUiState(newUiState);
     },
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
       const newState = cloneNavigationState();
