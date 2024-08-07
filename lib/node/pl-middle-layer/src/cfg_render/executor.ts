@@ -231,9 +231,13 @@ export function computableFromCfgUnsafe(
               throw new Error('asynchronous operations are forbidden in this context');
             }
           };
-          execute(postEnv, stack, resolvedOps, false);
-          if (!('result' in stack)) throw new Error('illegal cfg rendering stack state, no result');
-          return stack.result;
+
+          // Post process can be called several times, that's why it must be a side-effect-free function.
+          // But `execute` modifies a stack, so we have to defensively copy it here.
+          const copiedStack = {...stack};
+          execute(postEnv, copiedStack, resolvedOps, false);
+          if (!('result' in copiedStack)) throw new Error('illegal cfg rendering stack state, no result');
+          return copiedStack.result;
         }
       };
     },
