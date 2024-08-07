@@ -200,9 +200,6 @@ test('upload lots of duplicate blobs concurrently', async () => {
     );
     const computables = handles.map((handle) => uploader.getProgressId(handle));
 
-    console.log('HERE: ', handles);
-    console.log('HERE2: ', computables);
-    console.log('HERE: ', uploader);
     for (const c of computables) {
       while (true) {
         const p = await c.getValue();

@@ -326,7 +326,7 @@ class ProgressUpdater {
       this.setLastError(e);
       this.change.markChanged();
 
-      if (e instanceof MTimeError) this.terminateWithError();
+      if (e instanceof MTimeError) this.terminateWithError(e);
 
       throw e;
     }
@@ -361,7 +361,8 @@ class ProgressUpdater {
     this.change.markChanged();
   }
 
-  private terminateWithError() {
+  private terminateWithError(e: unknown) {
+    this.progress.lastError = String(e);
     this.progress.done = false;
     this.uploadingTerminallyFailed = true;
   }
@@ -386,8 +387,8 @@ class ProgressUpdater {
       if (status.done || status.progress != oldStatus?.progress)
         this.change.markChanged();
     } catch (e: any) {
-      this.setLastError(e);
-      this.terminateWithError();
+      this.logger.error(`error while updating a status of BlobIndex: ${e}`);
+      this.terminateWithError(e);
     }
   }
 }
