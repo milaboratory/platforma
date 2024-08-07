@@ -8,10 +8,20 @@ import LoaderPage from './LoaderPage.vue';
 
 const sdk = useSdkPlugin();
 
+const parsePathname = (href: `/${string}`) => {
+  try {
+    return new URL(href, 'http://dummy').pathname as `/${string}`;
+  } catch (err) {
+    console.error('Invalid href', href);
+    return undefined;
+  }
+};
+
 const CurrentView = computed(() => {
   if (sdk.loaded) {
     const app = sdk.useApp();
-    return app.routes[app.navigationState.href];
+    const pathname = parsePathname(app.navigationState.href);
+    return pathname ? app.routes[pathname] : undefined;
   }
 
   return undefined;
