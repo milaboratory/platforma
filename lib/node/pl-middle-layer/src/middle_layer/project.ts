@@ -191,9 +191,9 @@ export class Project {
    * transactionally associated with the block, to facilitate conflict resolution
    * in collaborative editing scenario.
    * */
-  public async setUiState(blockId: string, uiState: any, author?: AuthorMarker) {
+  public async setUiState(blockId: string, uiState: unknown, author?: AuthorMarker) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
-      mut.setUiState(blockId, uiState)
+      mut.setUiState(blockId, uiState === undefined ? undefined : JSON.stringify(uiState))
     );
     await this.projectTree.refreshState();
   }

@@ -1,6 +1,7 @@
 import {
   Args,
   BlockConfig,
+  BlockModel,
   getJsonField,
   getResourceField,
   getResourceValueAsJson,
@@ -10,7 +11,6 @@ import {
   MainOutputs,
   makeObject,
   mapArrayValues,
-  PlatformaConfiguration,
   PlResourceEntry,
   TypedConfig
 } from '@milaboratory/sdk-ui';
@@ -29,7 +29,7 @@ test('local cfg test (no pl)', async () => {
   const theCValue = getJsonField(Args, 'theC');
 
   const cfg = (
-    PlatformaConfiguration.create<typeof args>('Heavy')
+    BlockModel.create<typeof args>('Heavy')
       .initialArgs(args)
       .output('out1', getJsonField(getJsonField(Args, 'a'), theCValue))
       .output(
@@ -73,7 +73,7 @@ test('cfg test with pl, simple', async () => {
   const theCValue = getJsonField(Args, 'theC');
 
   const cfg = (
-    PlatformaConfiguration.create<typeof input>('Heavy')
+    BlockModel.create<typeof input>('Heavy')
       .initialArgs(input)
       .output(
         'out1',
