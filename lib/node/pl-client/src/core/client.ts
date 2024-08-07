@@ -9,7 +9,6 @@ import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import { Dispatcher } from 'undici';
-import { isUnauthenticated } from './errors';
 
 export type TxOps = PlCallOps & {
   sync: boolean,
