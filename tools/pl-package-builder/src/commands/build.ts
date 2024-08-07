@@ -29,7 +29,7 @@ export default class Build extends Command {
         const logger = util.createLogger(flags['log-level'])
         const core = new Core(logger)
 
-        core.buildMode = flags.modeFromFlag(flags.dev as cmdOpts.devModeName)
+        core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 

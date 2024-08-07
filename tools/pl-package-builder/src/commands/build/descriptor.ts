@@ -27,7 +27,7 @@ export default class Descriptor extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
-        c.buildMode = flags.modeFromFlag(flags.dev as cmdOpts.devModeName)
+        c.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         c.buildDescriptor(sources)
     }
 }
