@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import { GlobalFlags } from '../../../core/flags';
+import { GlobalFlags } from '../../../core/cmd-opts';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
 

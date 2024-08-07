@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import * as flags from '../../core/flags';
+import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
@@ -11,11 +11,11 @@ export default class Package extends Command {
     ]
 
     static override flags = {
-        ...flags.GlobalFlags,
-        ...flags.ArchFlags,
+        ...cmdOpts.GlobalFlags,
+        ...cmdOpts.ArchFlags,
 
-        ...flags.ArchiveFlag,
-        ...flags.StorageURLFlag,
+        ...cmdOpts.ArchiveFlag,
+        ...cmdOpts.StorageURLFlag,
     };
 
     static strict: boolean = false;

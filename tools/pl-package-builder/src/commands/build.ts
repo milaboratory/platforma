@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import * as flags from '../core/flags';
+import * as cmdOpts from '../core/cmd-opts';
 import * as util from '../core/util';
 import { Core } from '../core/core';
 
@@ -11,12 +11,12 @@ export default class Build extends Command {
     ]
 
     static override flags = {
-        ...flags.GlobalFlags,
-        ...flags.BuildFlags,
-        ...flags.ArchFlags,
+        ...cmdOpts.GlobalFlags,
+        ...cmdOpts.BuildFlags,
+        ...cmdOpts.ArchFlags,
 
-        ...flags.ArchiveFlag,
-        ...flags.ContentRootFlag,
+        ...cmdOpts.ArchiveFlag,
+        ...cmdOpts.ContentRootFlag,
     };
 
     public async run(): Promise<void> {
@@ -29,7 +29,7 @@ export default class Build extends Command {
         const logger = util.createLogger(flags['log-level'])
         const core = new Core(logger)
 
-        core.buildMode = flags.modeFromFlag(flags.dev as flags.devModeName)
+        core.buildMode = flags.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 

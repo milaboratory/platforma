@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import * as flags from '../../core/flags';
+import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
@@ -11,10 +11,10 @@ export default class Descriptor extends Command {
     ]
 
     static override flags = {
-        ...flags.GlobalFlags,
-        ...flags.BuildFlags,
+        ...cmdOpts.GlobalFlags,
+        ...cmdOpts.BuildFlags,
 
-        ...flags.SourceFlag,
+        ...cmdOpts.SourceFlag,
     };
 
     public async run(): Promise<void> {
@@ -27,7 +27,7 @@ export default class Descriptor extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
-        c.buildMode = flags.modeFromFlag(flags.dev as flags.devModeName)
+        c.buildMode = flags.modeFromFlag(flags.dev as cmdOpts.devModeName)
         c.buildDescriptor(sources)
     }
 }
