@@ -21,10 +21,11 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.620.0",
+    "@milaboratory/pl-middle-layer-model": "1.2.11",
+    "@aws-sdk/client-s3": "^3.626.0",
     "@milaboratory/ts-helpers": "^1.0.19",
     "@milaboratory/ts-helpers-oclif": "^1.1.0",
-    "@oclif/core": "^4.0.16",
+    "@oclif/core": "^4.0.17",
     "@types/semver": "^7.5.8",
     "mime-types": "^2.1.35",
     "semver": "^7.6.3",
@@ -36,11 +37,11 @@
     "@types/jest": "^29.5.12",
     "@types/mime-types": "^2.1.4",
     "@types/node": "^20.14.12",
-    "oclif": "^4.14.9",
+    "oclif": "^4.14.15",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.3",
     "ts-node": "^10.9.2",
-    "tsup": "^8.1.2",
+    "tsup": "~8.1.2",
     "typescript": "^5.5.4"
   },
   "tsup": {

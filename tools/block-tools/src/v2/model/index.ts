@@ -1,40 +1,14 @@
-import { ZodTypeAny, z } from 'zod';
+import { z } from 'zod';
+import { BlockComponentsConsolidate, BlockComponentsDescription } from './block_components';
 import {
-  BlockComponentsConsolidate,
-  BlockComponentsDescription,
-  BlockComponentsDescriptionRaw,
-  BlockComponentsManifest
-} from './block_components';
-import { BlockPackId } from './block_pack_id';
-import {
-  BlockPackMetaConsolidate,
-  BlockPackMetaDescription,
-  BlockPackMetaDescriptionRaw,
-  BlockPackMetaManifest
-} from './meta';
+  BlockComponentsManifest,
+  BlockPackMetaManifest,
+  CreateBlockPackDescriptionSchema
+} from '@milaboratory/pl-middle-layer-model';
+import { BlockPackMetaConsolidate, BlockPackMetaDescription } from './meta';
 
-export * from './block_components'
-export * from './block_pack_id'
-export * from './common'
-export * from './content_conversion'
-export * from './content_types'
-export * from './meta'
-
-export const BlockPackDescriptionFromPackageJsonRaw = z.object({
-  components: BlockComponentsDescriptionRaw,
-  meta: BlockPackMetaDescriptionRaw
-});
-
-function CreateBlockPackDescriptionSchema<Components extends ZodTypeAny, Meta extends ZodTypeAny>(
-  components: Components,
-  meta: Meta
-) {
-  return z.object({
-    id: BlockPackId,
-    components,
-    meta
-  });
-}
+export * from './block_components';
+export * from './content_conversion';
 
 export function ResolvedBlockPackDescriptionFromPackageJson(root: string) {
   return CreateBlockPackDescriptionSchema(
