@@ -4,9 +4,7 @@ import { mapRemoteToAbsolute } from './content_conversion';
 
 export type BlockPackComponents = {};
 
-export function Workflow<const Content extends z.ZodTypeAny>(
-  contentType: Content
-) {
+export function Workflow<const Content extends z.ZodTypeAny>(contentType: Content) {
   return z.union([
     // string is converted to v1 workflow
     contentType.transform((value) => ({
@@ -23,7 +21,7 @@ export function Workflow<const Content extends z.ZodTypeAny>(
   ]);
 }
 
-function BlockComponents<
+export function BlockComponents<
   const WfAndModel extends z.ZodTypeAny,
   const UI extends z.ZodTypeAny
 >(wfAndModel: WfAndModel, ui: UI) {
@@ -34,18 +32,10 @@ function BlockComponents<
   });
 }
 
-export const BlockComponentsDescriptionRaw = BlockComponents(
-  z.string(),
-  z.string()
-);
-export type BlockComponentsDescriptionRaw = z.infer<
-  typeof BlockComponentsDescriptionRaw
->;
+export const BlockComponentsDescriptionRaw = BlockComponents(z.string(), z.string());
+export type BlockComponentsDescriptionRaw = z.infer<typeof BlockComponentsDescriptionRaw>;
 
-export const BlockComponentsManifest = BlockComponents(
-  ContentRelative,
-  ContentRelative
-);
+export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
 export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
 
 export function BlockComponentsAbsoluteUrl(prefix: string) {
@@ -54,6 +44,4 @@ export function BlockComponentsAbsoluteUrl(prefix: string) {
     ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
   );
 }
-export type BlockComponentsAbsolute = z.infer<
-  ReturnType<typeof BlockComponentsAbsoluteUrl>
->;
+export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;

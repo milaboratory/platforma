@@ -40,12 +40,14 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
 
 // prettier-ignore
-// export const BlockPackMetaManifest = BlockPackMeta(
-//   z.string(),
-//   ContentExplicitBase64
-// );
 export const BlockPackMetaManifest = BlockPackMeta(
   ContentRelativeText,
   ContentRelativeBinary
 );
 export type BlockPackMetaManifest = z.infer<typeof BlockPackMetaManifest>;
+
+// prettier-ignore
+export const BlockPackMetaEmbeddedContent = BlockPackMeta(
+  z.string(),
+  ContentExplicitBase64
+);

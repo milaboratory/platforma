@@ -14,13 +14,14 @@ export * from './block_pack_id'
 export * from './common'
 export * from './content_types'
 export * from './meta'
+export * from './semver'
 
 export const BlockPackDescriptionFromPackageJsonRaw = z.object({
   components: BlockComponentsDescriptionRaw,
   meta: BlockPackMetaDescriptionRaw
 });
 
-function CreateBlockPackDescriptionSchema<Components extends ZodTypeAny, Meta extends ZodTypeAny>(
+export function CreateBlockPackDescriptionSchema<Components extends ZodTypeAny, Meta extends ZodTypeAny>(
   components: Components,
   meta: Meta
 ) {
@@ -36,6 +37,12 @@ export const BlockPackDescriptionManifest = CreateBlockPackDescriptionSchema(
   BlockPackMetaManifest
 );
 export type BlockPackDescriptionManifest = z.infer<typeof BlockPackDescriptionManifest>;
+
+export const BlockPackDescriptionRaw = CreateBlockPackDescriptionSchema(
+  BlockComponentsDescriptionRaw,
+  BlockPackMetaDescriptionRaw
+);
+export type BlockPackDescriptionRaw = z.infer<typeof BlockPackDescriptionRaw>;
 
 export const BlockPackManifest = BlockPackDescriptionManifest.extend({
   schema: z.literal('v1'),
