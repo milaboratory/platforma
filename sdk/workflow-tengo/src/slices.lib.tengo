@@ -2,6 +2,61 @@ ll := import(":ll")
 enum := import("enum")
 
 /**
+ * Returns length of the collection even if it's nil.
+ * It's a one of rare differences of Tengo and Go.
+ *
+ * @param slice: []any | undefined - a slice
+ * @return: length: int
+ */
+length := func(slice) {
+	if is_undefined(slice) {
+		return 0
+	}
+	return len(slice)
+}
+
+/**
+ * Returns a slice of the array, but you can give negative from and to,
+ * in which case it slices from the end like in Python.
+ * Example: slice([1, 2, 3], 0, -1) == [1, 2]
+ *
+ * @param array: []any - a slice
+ * @param from: number - an index we starts from
+ * @param to: number - an index the slice will end
+ * @return slice: []any - a sliced array.
+ */
+slice := func(array, from, to) {
+	len := length(array)
+	if from < 0 {
+		from = len + from
+	}
+	if to < 0 {
+		to = len + to
+	}
+
+	return array[from:to]
+}
+
+/**
+ * Appends slices safely even some of them are nil.
+ * It's one of rare differences of Tengo and Go.
+ *
+ * @param slice: []any - a slice
+ * @param toAppend: ...any - elements we'll append to the slice
+ * @return new slice: []any - the same slice but with appended elements.
+ */
+safeAppend := func(slice, ...toAppend) {
+	if is_undefined(slice) {
+		slice = []
+	}
+	if length(toAppend) == 0 {
+		return slice // slice is of any length here.
+	}
+
+	return append(slice, toAppend...)
+}
+
+/**
  * Returns an index of an element in the slice or -1 if it wasn't found.
  *
  * @param silce: []any
@@ -37,7 +92,7 @@ hasElement := func(slice, element) {
  * @return nothing
  */
 removeElement := func(slice, i) {
-	return append(slice[:i], slice[i+1:]...)
+	return safeAppend(slice[:i], slice[i+1:]...)
 }
 
 /**
@@ -108,8 +163,8 @@ reduce := func(slice, fn) {
 sortByFn := func(notSortedSlice, fn) {
 	s := copy(notSortedSlice)
 
-	for i := 0; i < len(s) - 1; i++ {
-		for j := i+1; j < len(s); j++ {
+	for i := 0; i < length(s) - 1; i++ {
+		for j := i+1; j < length(s); j++ {
 			if fn(s[i]) > fn(s[j]) {
 				tmp := s[i]
 				s[i] = s[j]
@@ -121,12 +176,27 @@ sortByFn := func(notSortedSlice, fn) {
 	return s
 }
 
+/**
+ * Creates a slice from a set of elements
+ *
+ * @param set: map[element]any - a set
+ * @return slice: []element - a slice of elements from the set, sorted by an element.
+ */
+fromSet := func(set) {
+	slice := enum.map(set, func(k, _) { return k })
+	return sortByFn(slice, func(elem) { return elem })
+}
+
 export ll.toStrict({
+	length: length,
+	safeAppend: safeAppend,
 	findElement: findElement,
 	hasElement: hasElement,
 	removeElement: removeElement,
 	filter: filter,
 	map: map,
 	reduce: reduce,
-	sortByFn: sortByFn
+	sortByFn: sortByFn,
+	fromSet: fromSet,
+	slice: slice
 })

@@ -415,7 +415,7 @@ app:
           bucketName: "milab-euce1-prod-data-s3-platforma-ci"
           keyPrefix: "test-assets/"
           mode: passive
-          downloadable: false
+          downloadable: true
         data_handler_config:
           dumpPrefix: ""
       - pl_config:

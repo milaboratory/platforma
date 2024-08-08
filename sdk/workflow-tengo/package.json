@@ -18,14 +18,19 @@
   "scripts": {
     "check": "pl-tengo check",
     "build": "rm -rf dist && pl-tengo check && pl-tengo build",
-    "test": "rm -rf dist && pl-tengo check && pl-tengo build && vitest",
-    "format": "/usr/bin/env emacs --script ./format.el"
+    "test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test && vitest",
+    "format": "/usr/bin/env emacs --quick --script ./format.el",
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
+    "vscode-tags": "bash -c \"shopt -s globstar; ctags -f .tags --langdef=tengo --map-tengo=+.tengo --kinddef-tengo=f,function,function --regex-tengo='/^(.*)(:| :=| =) ?func.*/\\1/f/' -R ../**/src/**/*.tengo\"",
+    "emacs-tags": "bash -c \"shopt -s globstar; ctags -e -f ../TAGS --langdef=tengo --map-tengo=+.tengo --kinddef-tengo=f,function,function --regex-tengo='/^(.*)(:| :=| =) ?func.*/\\1/f/' -R ../**/src/**/*.tengo\""
   },
-  "dependencies": {},
+  "dependencies": {
+  },
   "devDependencies": {
+    "prettier": "^3.3.3",
     "@types/node": "~20.14.12",
-    "@milaboratory/tengo-template-builder": "^1.10.0",
-    "@milaboratory/pl-middle-layer": "^1.9.7",
+    "@milaboratory/tengo-template-builder": "^1.10.x",
+    "@milaboratory/pl-middle-layer": "^1.9.12",
     "@milaboratory/sdk-test": "^1.4.3",
     "vitest": "^2.0.5"
   }

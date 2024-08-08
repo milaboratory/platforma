@@ -37,15 +37,14 @@ hasElement := func(set, element) {
  *
  * @param set a set
  * @param elements a slice of elements
- * @return: result: set<string|number> - a new set with all old and new elements.
+ * @return: result: set<string|number> - a changed old set with all old and new elements.
  */
-add := func(set, elements) {
-	setCopy := copy(set)
+add := func(set, ...elements) {
 	for _, elem in elements {
-		setCopy[elem] = true
+		set[elem] = true
 	}
 
-	return setCopy
+	return set
 }
 
 /**
@@ -59,9 +58,21 @@ fromMapKeys := func(map) {
 	return fromSlice(keys)
 }
 
+/**
+ * Transforms all keys of the map with a function and returns a new map with these keys.
+ *
+ * @param set: set
+ * @param fn: func(elem): newElem - a function that gets an element and returns a new element.
+ * @return new set: map[newElem]any - a transformed set
+ */
+map := func(set, fn) {
+	return maps.mapKeys(set, fn)
+}
+
 export ll.toStrict({
 	fromSlice: fromSlice,
 	hasElement: hasElement,
 	add: add,
-	fromMapKeys: fromMapKeys
+	fromMapKeys: fromMapKeys,
+	map: map
 })

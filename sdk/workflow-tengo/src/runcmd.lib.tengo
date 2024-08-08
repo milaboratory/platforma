@@ -1,0 +1,200 @@
+/** A library that creates RunCommand resource. */
+
+ll := import(":ll")
+maps := import(":maps")
+oop := import(":oop")
+smart := import(":smart")
+json := import("json")
+
+_RTYPE_RUN_COMMAND := { Name: "RunCommand", Version: "1" }
+_RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
+_RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
+_RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
+_RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }
+
+/**
+ * Creates a simple argument for the command.
+ *
+ * @param argument: string - the argument to create.
+ */
+_createSimpleArg := func(argument) {
+	return {
+		type: "string",
+		value: argument
+	}
+}
+
+/**
+ * Creates an executable argument for the command.
+ *
+ * @param executableName: string - the name of the executable.
+ * @param pathToBinary: string|undefined - the path to the binary.
+ */
+_createExecutableArg := func(executableName, pathToBinary) {
+	return {
+		type: "executableRef",
+		value: executableName,
+		execPath: pathToBinary // maybe null
+	}
+}
+
+/**
+ * Builder function for creating a RunCommand resource.
+ *
+ * @param workdir: string - the working directory for the command.
+ * @return builder - the builder object with methods for configuring and building the RunCommand resource.
+ */
+builder := func(workdir) {
+	res := smart.ephemeralBuilder(_RTYPE_RUN_COMMAND)
+	res.getField("workdirIn").set(workdir)
+
+	self := undefined
+
+	cmd := undefined
+	args := []
+	envs := {}
+	queue := ""
+	execRefs := {}
+
+	stdout := "stdout.txt"
+	stderr := "stderr.txt"
+	nErrorLines := 200
+
+	self = ll.toStrict(oop.inherit(res, {
+		/**
+		 * Sets the command, e.g. /usr/bin/env or sh.
+		 *
+		 * @param commandName: string - the name of the command.
+		 */
+		cmd: func(commandName) {
+			cmd = _createSimpleArg(commandName)
+			return self
+		},
+
+		/**
+		 * Sets the command executable.
+		 *
+		 * @param commandName: string - the name of the command.
+		 * @param pathToBinary: string - the path to the binary.
+		 */
+		cmdExecutable: func(commandName, pathToBinary) {
+			cmd = _createExecutableArg(commandName, pathToBinary)
+			// TODO: should we add BinaryGet resource?
+			// execRefs[commandName] =
+			return self
+		},
+
+		/**
+		 * Adds an argument to the command.
+		 *
+		 * @param arg: string - the argument to add.
+		 */
+		arg: func(arg) {
+			args = append(args, _createSimpleArg(arg))
+			return self
+		},
+
+		/**
+		 * Adds an executable argument to the command.
+		 *
+		 * @param arg: string - the argument to add.
+		 * @param pathToBinary: string - the path to the binary.
+		 */
+		argExecutable: func(arg, pathToBinary) {
+			args = append(args, _createExecutableArg(arg, pathToBinary))
+			return self
+		},
+
+		/**
+		 * Sets an environment variable for the command.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param value: string - the value of the environment variable.
+		 */
+		env: func(name, value) {
+			envs[name] = value
+			return self
+		},
+
+		/**
+		 * Sets the queue name for the command.
+		 *
+		 * @param queueName: string - the name of the queue.
+		 */
+		inQueue: func(queueName) {
+			queue = queueName
+			return self
+		},
+
+		/**
+		 * Sets the stdout file name for the command.
+		 *
+		 * @param fileName: string - the name of the stdout file.
+		 */
+		stdout: func(fileName) {
+			stdout = fileName
+			return self
+		},
+
+		/**
+		 * Sets the stderr file name for the command.
+		 *
+		 * @param fileName: string - the name of the stderr file.
+		 */
+		stderr: func(fileName) {
+			stderr = fileName
+			return self
+		},
+
+		/**
+		 * Sets the number of error lines for the command.
+		 *
+		 * @param number: int - the number of error lines.
+		 */
+		nErrorLines: func(number) {
+			nErrorLines = number
+			return self
+		},
+
+		/**
+		 * Builds the RunCommand resource.
+		 *
+		 * @return object - the built RunCommand resource.
+		 */
+		build: func() {
+			// TODO: add assertions about the state
+
+			execRefsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, execRefs)
+			self.getField("refs").set(execRefsRes)
+
+			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(cmd))
+			self.getField("cmd").set(cmdRes)
+
+			options := {
+				queueName: queue,
+				nErrorLines: nErrorLines,
+				redirectStdout: stdout,
+				redirectStderr: stderr,
+				env: envs
+			}
+			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
+			self.getField("options").set(optionsRes)
+
+			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(args))
+			self.getField("args").set(argsRes)
+
+			res := ll.toStrict(oop.inherit(self.lockAndBuild(), {
+				"workdirOut": self.outputs().workdirOut,
+				"options": options
+			}))
+
+			return res
+		}
+	}))
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder
+})

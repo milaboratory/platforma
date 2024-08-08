@@ -1,10 +1,10 @@
 /* Low level pl API */
 
-
 plapi := import("plapi")
+json := import("json")
 fmt := import("fmt")
 log := import("log")
-
+text := import("text")
 
 /**
  * Prints message to the pl log
@@ -120,13 +120,86 @@ isInitializing := func() {
 /**
  * Returns internal template identifier for loaded templates
  *
- * @param tplName: string - a name of a local template with a starting colon,
- * e.g. ":directory1/template1"
+ * @param tplName: string - full name of a template, including namespace (package name).
+ * Local templates (within the same package) can omit namespace part and start the name with colon:
+ *  - "@company/package:someTemplateName"
+ *  - ":myLocalTemplate"
+ #
  * @return template id: resource id - a resource id of the template.
- */
+*/
 importTemplate := func(tplName) {
 	return plapi.getTemplateId(tplName)
 }
+
+/**
+ * Returns software description suitable for 'exec' operations.
+ *
+ * @param swName: string - full name of the software description, including namespace (package name).
+ * Local software definitions (within the same package) can omit namespace part and start the name with colon:
+ *  - "@company/package:some-oftware"
+ *  - ":my-local-software"
+ #
+ * @return softwareInfo: softwareInfo - structure with software info
+*/
+importSoftware := func(swName) {
+	sw := plapi.getSoftwareInfo(swName)
+	return {
+		_type: "softwareDescriptor",
+
+		id: sw.id,
+		name: sw.name,
+		version: sw.version,
+		blobRef: sw.blobRef,
+		descriptor: json.decode(sw.descriptor)
+	}
+}
+
+/**
+ * Get the list of executors available in current Platforma installation.
+ *
+ * @return executors: []string - list of executors, say ['executor', 'docker', ...]
+ */
+getExecutorsList := func() {
+	return plapi.getExecutors()
+}
+
+/**
+ * Joins path elements into a single path.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathJoin := func(...elems) {
+	return plapi.filepathJoin(elems...)
+}
+
+/**
+ * Like filepathJoin, joins elements to a single path,
+ * but can be used safely in regexps.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathRegexpJoin := func(...elems) {
+	escapedSeparator := plapi.regexpQuoteMeta(plapi.osSeparator)
+	return text.join(elems, escapedSeparator)
+}
+
+/**
+ * Joins elements of the filepath and canonizes it, i.e.
+ * semantically resolves ../ and ./ and changes slash
+ * to a pathSeparator.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathCanonize := func(...elem) {
+	return plapi.filepathCanonize(elem...)
+}
+
+/**
+ * Returns a path separator. "/" on Unix-like systems, "\\" on Windows.
+ *
+ * @return separator: string
+ */
+pathSeparator := plapi.osSeparator
 
 /**
  * Parses URL and returns a structure containing separe parts of the URL.
@@ -177,6 +250,12 @@ export toStrict({
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing,
 	importTemplate: importTemplate,
+	importSoftware: importSoftware,
+	getExecutorsList: getExecutorsList,
+	filepathJoin: filepathJoin,
+	filepathRegexpJoin: filepathRegexpJoin,
+	pathSeparator: pathSeparator,
+	filepathCanonize: filepathCanonize,
 	parseUrl: parseUrl,
 	getCtx: getCtx
 })
