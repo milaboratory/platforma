@@ -40,7 +40,6 @@ jobs:
       test-script-name: 'test'
       test-pl-major-versions: '1'
       test-pl-minor-versions: '1'
-      test-pl-repo-branch: 'main'
       test-pl-client-k8s-delay-time: '180'
 
     secrets:
