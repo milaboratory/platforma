@@ -1,0 +1,163 @@
+ll := import(":ll")
+text := import("text")
+slices := import(":slices")
+validation := import(":validation")
+
+/**
+ * Joins path elements into a single path.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+join := func(...elems) {
+	validation.assertJsonSchema(elems, ["string"])
+	return ll.filepathJoin(elems...)
+}
+
+/**
+ * Like join, joins elements to a single path,
+ * but can be used safely in regexps.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+regexpJoin := func(...elems) {
+	validation.assertJsonSchema(elems, ["string"])
+	return ll.filepathRegexpJoin(elems...)
+}
+
+/**
+ * Joins elements of the filepath and canonizes it, i.e.
+ * semantically resolves ../ and ./ and changes slash
+ * to a pathSeparator.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+canonize := func(...elems) {
+	validation.assertJsonSchema(elems, ["string"])
+	return ll.filepathCanonize(elems...)
+}
+
+/**
+ * Returns a path separator. "/" on Unix-like systems, "\\" on Windows.
+ *
+ * @return separator: string
+ */
+separator := ll.pathSeparator
+
+/**
+ * Trims a beginning of the file path following by a path separator.
+ *
+ * @param path: string - a file path
+ * @param prefix: string - the beginning of the file path
+ * @return trimmed path: string - a path without the beginning and a path separator.
+ */
+trimPrefix := func(path, prefix) {
+	validation.assertJsonSchema([path, prefix], ["string"])
+	return text.trim_prefix(path, prefix+separator)
+}
+
+_sepOrDefault := func(...sep) {
+	if slices.length(sep) == 0 {
+		return separator
+	}
+
+	return sep[0]
+}
+
+/**
+ * Splits a path to path components.
+ * If it was a file name, the last component will be this name.
+ *
+ * @param path: string - the path
+ * @param sep: string - an optional path separator.
+ * @return components: []string - all directories and a file name at the end.
+ */
+split := func(path, ...sep) {
+	sep = _sepOrDefault(sep...)
+
+	return text.split(path, sep)
+}
+
+/**
+ * Gets all directories with their ancestors from the root.
+ * For example, for dir1/dir2/dir3/abc.txt it gives:
+ * ["dir1", "dir1/dir2", "dir1/dir2/dir3", "dir1/dir2/dir3/abc.txt"]
+ *
+ * @param path: string - the path
+ * @param separator: string - an optional separator.
+ * @return components: []string - all directories and a file name at the end from their root.
+ */
+getBasenameDirs := func(path, ...sep) {
+	validation.assertJsonSchema(path, "string")
+	sep = _sepOrDefault(sep...)
+
+	dirs := split(path, sep)
+
+	dirTails := []
+	for i := 1; i <= len(dirs); i++ {
+		dirTails = append(dirTails, text.join(dirs[:i], sep))
+	}
+
+	return dirTails
+}
+
+/**
+ * Gets an extension to the last "." symbol,
+ * or, if the name contains ".gz" or any other archive suffix,
+ * then till the next from the last "." symbol.
+ *
+ * @param path: string - a path
+ * @return extension: string - the extension without the leading "."
+ */
+getExtension := func(path, ...sep) {
+	validation.assertJsonSchema(path, "string")
+	ext := ""
+	sep = _sepOrDefault(sep...)
+
+	nPoints := 1
+	if text.re_match(`\.(gz|xz|bzip|zstd)$`, path) {
+		nPoints = 2
+	}
+
+	for i := len(path) - 1; i >= 0 && path[i] != sep; i-- {
+		if path[i] == '.' {
+			ext = path[i:]
+			nPoints--
+			if nPoints == 0 {
+				break
+			}
+		}
+	}
+
+	if len(ext) > 0 {
+		ext = ext[1:] // remove leading "."
+	}
+
+	return ext
+}
+
+/**
+ * Checks if the path is correct.
+ *
+ * @param path: string - a path
+ */
+assertIsValid := func(path) {
+	validation.assertJsonSchema(path, "string")
+	if text.contains(path, "/") {
+		ll.assert(
+			text.contains(path, separator),
+			"path to a file must be separated by OS's specific path separator. " +
+				"Did you forget to use 'path.join' or 'path.regexpJoin'?")
+	}
+}
+
+export ll.toStrict({
+	join: join,
+	regexpJoin: regexpJoin,
+	canonize: canonize,
+	separator: separator,
+	trimPrefix: trimPrefix,
+	split: split,
+	getBasenameDirs: getBasenameDirs,
+	getExtension: getExtension,
+	assertIsValid: assertIsValid
+})

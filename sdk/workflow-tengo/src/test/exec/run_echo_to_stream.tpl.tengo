@@ -1,0 +1,22 @@
+/** Runs a simple echo and returns stdout */
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("echo Hello from bash").
+		run()
+
+	result := {
+		main: run.getStdoutStream()
+	}
+
+	return result
+})

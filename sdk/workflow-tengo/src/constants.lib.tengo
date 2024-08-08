@@ -1,16 +1,21 @@
 ll := import(":ll")
 
 // resource types
+RTYPE_JSON := { Name: "json/object", Version: "1" }
 
 RTYPE_MAP := { Name: "std/map", Version: "1" }
 // @TODO this should be deleted once we align on map type name
 RTYPE_MAP_ALT := { Name: "StdMap", Version: "1" }
 RTYPE_MAP_EPH := { Name: "EphStdMap", Version: "1" }
-RTYPE_JSON := { Name: "json/object", Version: "1" }
+
+RTYPE_BINARY_MAP := { Name: "BinaryMap", Version: "1" }
+RTYPE_BLOB_MAP := { Name: "BlobMap", Version: "1" }
+
 RTYPE_CONTEXT := { Name: "BContext", Version: "1" }
 RTYPE_CONTEXT_END := { Name: "BContextEnd", Version: "1" }
 RTYPE_RENDER_TEMPLATE := { Name: "RenderTemplate", Version: "1" }
 RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }
+
 RTYPE_BOBJECT_SPEC := { Name: "BObjectSpec", Version: "1" }
 RTYPE_BRESOLVE_CHOICE := { Name: "BResolveChoice", Version: "1" }
 RTYPE_BRESOLVE_FIRST := { Name: "BResolveSingle", Version: "1" }
@@ -18,16 +23,18 @@ RTYPE_BRESOLVE_FIRST := { Name: "BResolveSingle", Version: "1" }
 RTYPE_QUERY_RESULT := { Name: "BQueryResult", Version: "1" }
 
 export ll.toStrict({
-	RTYPE_JSON                : RTYPE_JSON,
-	RTYPE_MAP                 : RTYPE_MAP,
-	RTYPE_MAP_ALT             : RTYPE_MAP_ALT,
-	RTYPE_MAP_EPH             : RTYPE_MAP_EPH,
-	RTYPE_CONTEXT             : RTYPE_CONTEXT,
-	RTYPE_CONTEXT_END         : RTYPE_CONTEXT_END,
-	RTYPE_RENDER_TEMPLATE     : RTYPE_RENDER_TEMPLATE,
-	RTYPE_RENDER_EPH_TEMPLATE : RTYPE_RENDER_EPH_TEMPLATE,
-	RTYPE_BOBJECT_SPEC        : RTYPE_BOBJECT_SPEC,
-	RTYPE_BRESOLVE_CHOICE     : RTYPE_BRESOLVE_CHOICE,
-	RTYPE_BRESOLVE_FIRST      : RTYPE_BRESOLVE_FIRST,
-	RTYPE_QUERY_RESULT        : RTYPE_QUERY_RESULT
+	RTYPE_BINARY_MAP            : RTYPE_BINARY_MAP,
+	RTYPE_BLOB_MAP              : RTYPE_BLOB_MAP,
+	RTYPE_BOBJECT_SPEC          : RTYPE_BOBJECT_SPEC,
+	RTYPE_BRESOLVE_CHOICE       : RTYPE_BRESOLVE_CHOICE,
+	RTYPE_BRESOLVE_FIRST        : RTYPE_BRESOLVE_FIRST,
+	RTYPE_CONTEXT               : RTYPE_CONTEXT,
+	RTYPE_CONTEXT_END           : RTYPE_CONTEXT_END,
+	RTYPE_JSON                  : RTYPE_JSON,
+	RTYPE_MAP                   : RTYPE_MAP,
+	RTYPE_MAP_ALT               : RTYPE_MAP_ALT,
+	RTYPE_MAP_EPH               : RTYPE_MAP_EPH,
+	RTYPE_QUERY_RESULT          : RTYPE_QUERY_RESULT,
+	RTYPE_RENDER_EPH_TEMPLATE   : RTYPE_RENDER_EPH_TEMPLATE,
+	RTYPE_RENDER_TEMPLATE       : RTYPE_RENDER_TEMPLATE
 })

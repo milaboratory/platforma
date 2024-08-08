@@ -7,6 +7,8 @@ smart := import(":smart")
 tplutil := import(":tpl-util")
 constants := import(":constants")
 oop := import(":oop")
+validation := import(":validation")
+tx := import("tx")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -30,7 +32,6 @@ _create := func(tplId, isEph, inputs) {
 	}
 
 	if isEph {
-		// TODO why? @Gleb
 		// create internal subscription field
 		rbuilder.createField(_SUBSCRIPTION_FIELD, "OTW")
 	}
@@ -54,8 +55,15 @@ _create := func(tplId, isEph, inputs) {
 		/**
 		 * Returns an output field with a given name
 		 */
-		output: func(name) {
-			return renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+		output: func(name, ...cache) {
+			validation.assertJsonSchema(cache, ["number"])
+			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+			if len(cache) > 0 && cache[0] > 0 {
+				cache = cache[0]
+				tx.setCacheToField(out.id, cache)
+			}
+
+			return out
 		}
 	}))
 

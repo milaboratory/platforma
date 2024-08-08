@@ -18,7 +18,7 @@ validation := import(":validation")
 json := import("json")
 
 //
-// Constants
+// Constants:
 //
 
 _RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }
@@ -26,7 +26,7 @@ _RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }
 _RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
 
 createBlobImportInternal := func(settings) {
-	validation.validateJson(settings, {
+	validation.assertJsonSchema(settings, {
 		"path": "string",
 		"storageId": "string",
 		"maxSpeedBytes,omitempty": "number",
@@ -42,7 +42,7 @@ createBlobImportInternal := func(settings) {
 }
 
 createBlobUpload := func(settings) {
-	validation.validateJson(settings, {
+	validation.assertJsonSchema(settings, {
 		"modificationTime": "string",
 		"localPath": "string",
 		"pathSignature": "string",

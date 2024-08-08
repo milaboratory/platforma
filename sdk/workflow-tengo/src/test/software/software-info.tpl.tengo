@@ -1,0 +1,20 @@
+ll := import(":ll")
+self := import(":tpl")
+
+sw := ll.importSoftware(":test.software.my-software")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	result := {
+		main: {
+			name: sw.name,
+			version: sw.version,
+			descriptor: sw.descriptor,
+			blobRef: ll.fromStrict(sw.blobRef),
+			execs: ll.getExecutorsList()
+		}
+	}
+
+	return result
+})

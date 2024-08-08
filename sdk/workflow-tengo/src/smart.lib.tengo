@@ -29,7 +29,7 @@ resourceBuilder := undefined
 /**
  * Builder for structural resource
  *
- * @param resourceType {Name: "", Version: ""}
+ * @param resourceType { Name: "", Version: "" }
  */
 structBuilder := undefined
 
@@ -46,14 +46,14 @@ ephemeralMapBuilder := undefined
 /**
  * Builder for emphemeral resources
  *
- * @param resourceType {Name: "", Version: ""}
+ * @param resourceType { Name: "", Version: "" }
  */
 ephemeralBuilder := undefined
 
 /**
  * Create value resource
  *
- * @param resourceType {Name: "", Version: ""}
+ * @param resourceType { Name: "", Version: "" }
  * @param data optional data
  */
 createValueResource := undefined
@@ -68,11 +68,26 @@ createJsonResource := undefined
 /**
  * Create map resource
  *
- * @param map string -> smart resource or field
+ * @param keyToValue: map[string]anyResource
+ * @return resource
  */
 createMapResource := undefined
 
+/**
+ * Create binary map resource
+ *
+ * @param keyToValue: map[string]valueResource
+ * @return resource
+ */
+createBinaryMapResource := undefined
 
+/**
+ * Create blob map resource
+ *
+ * @param keyToValue: map[string]blobResource
+ * @return resource
+ */
+createBlobMapResource := undefined
 
 ////////////////// helpers ///////////////////////////
 
@@ -100,6 +115,24 @@ isField := func(f) {
  */
 isReference := func(f) {
 	return isField(f) || isResource(f)
+}
+
+/**
+ * Gets future field by given field name and field type.
+ *
+ * @param from: reference - whether a resource or a field we get a field from.
+ * @param name: field name
+ * @param fieldType: field type: input, output
+ * @return field: smart field
+ */
+_getFutureField := func(from, name, fieldType) {
+	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+
+	futureField := tx.createFutureFieldID(fieldType, name)
+	f := field(futureField.ResourceFID)
+	f.set(from)
+
+	return field(futureField.ResultFID)
 }
 
 /**
@@ -327,11 +360,7 @@ resource = func(r) {
 		 * @return field: smart field
 		 */
 		getFutureField: func(name, fieldType) {
-			futureField := tx.createFutureFieldID(fieldType, name)
-			f := field(futureField.ResourceFID)
-			f.set(strictSelf)
-
-			return field(futureField.ResultFID)
+			return _getFutureField(strictSelf, name, fieldType)
 		},
 
 		/**
@@ -371,8 +400,9 @@ resource = func(r) {
 
 field = func(f) {
 	self := undefined
+	strictSelf := undefined
 
-	self = ll.toStrict({
+	self = {
 		_type: "field",
 
 		/**
@@ -502,10 +532,43 @@ field = func(f) {
 		 */
 		getValueAsJson: func() {
 			return self.getValue().getDataAsJson()
-		}
-	})
+		},
 
-	return self
+		/**
+		 * Get future field given field name and field type.
+		 *
+		 * @param name: field name
+		 * @param fieldType: field type: input, output
+		 * @return field: smart field
+		 */
+		getFutureField: func(name, fieldType) {
+			return _getFutureField(strictSelf, name, fieldType)
+		},
+
+		/**
+		 * Get future input field given field name
+		 *
+		 * @param name field name
+		 * @return field: smart field
+		 */
+		getFutureInputField: func(name) {
+			return self.getFutureField(name, "input")
+		},
+
+		/**
+		 * Get future output field given field name
+		 *
+		 * @param name field name
+		 * @return field: smart field
+		 */
+		getFutureOutputField: func(name) {
+			return self.getFutureField(name, "output")
+		}
+	}
+
+	strictSelf = ll.toStrict(self)
+
+	return strictSelf
 }
 
 
@@ -526,7 +589,6 @@ resourceBuilder = func(r) {
 	}
 
 	self = ll.toStrict(oop.inherit(super, {
-
 		/**
 		 * Create new field with given name and field type.
 		 *
@@ -737,14 +799,26 @@ createJsonResource = func(value) {
 	return createValueResource(constants.RTYPE_JSON, encoded)
 }
 
-createMapResource = func(keyToValue) {
-	builder := structBuilder(constants.RTYPE_MAP)
+createMapResourceWithType := func(resourceType, keyToValue) {
+	builder := structBuilder(resourceType)
 
 	for key, value in keyToValue {
 		builder.createInputField(key).set(value)
 	}
 
 	return builder.lockAndBuild()
+}
+
+createMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_MAP, keyToValue)
+}
+
+createBinaryMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_BINARY_MAP, keyToValue)
+}
+
+createBlobMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_BLOB_MAP, keyToValue)
 }
 
 export ll.toStrict({
@@ -762,5 +836,8 @@ export ll.toStrict({
 	ephemeralBuilder: ephemeralBuilder,
 	createValueResource: createValueResource,
 	createJsonResource: createJsonResource,
-	createMapResource: createMapResource
+	createMapResourceWithType: createMapResourceWithType,
+	createMapResource: createMapResource,
+	createBinaryMapResource: createBinaryMapResource,
+	createBlobMapResource: createBlobMapResource
 })
