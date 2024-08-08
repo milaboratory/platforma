@@ -1,14 +1,15 @@
 import path from 'path';
 import { tryLoadFile } from '../util';
+import { ResolvedBlockPackDescriptionFromPackageJson, BlockPackDescriptionAbsolute } from './model';
+import { notEmpty } from '@milaboratory/ts-helpers';
+import fsp from 'node:fs/promises';
 import {
   BlockPackDescriptionFromPackageJsonRaw,
-  ResolvedBlockPackDescriptionFromPackageJson,
-  BlockPackDescriptionAbsolute
-} from './model';
-import { BlockPackId } from './model/block_pack_id';
-import { notEmpty } from '@milaboratory/ts-helpers';
-import { SemVer } from '../common_types';
-import fsp from 'node:fs/promises';
+  BlockPackDescriptionRaw,
+  BlockPackId,
+  BlockPackMetaDescriptionRaw,
+  SemVer
+} from '@milaboratory/pl-middle-layer-model';
 
 export const BlockDescriptionPackageJsonField = 'block';
 
@@ -54,9 +55,7 @@ export async function tryLoadPackDescription(
   }
 }
 
-export async function loadPackDescription(
-  moduleRoot: string
-): Promise<BlockPackDescriptionAbsolute> {
+export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockPackDescriptionRaw> {
   const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
   const packageJson = JSON.parse(await fsp.readFile(fullPackageJsonPath, { encoding: 'utf-8' }));
   const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
@@ -64,7 +63,7 @@ export async function loadPackDescription(
     throw new Error(
       `Block description (field ${BlockDescriptionPackageJsonField}) not found in ${fullPackageJsonPath}.`
     );
-  const descriptionRaw = {
+  return {
     ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
     id: {
       ...parsePackageName(
@@ -73,5 +72,11 @@ export async function loadPackDescription(
       version: SemVer.parse(packageJson['version'])
     }
   };
+}
+
+export async function loadPackDescription(
+  moduleRoot: string
+): Promise<BlockPackDescriptionAbsolute> {
+  const descriptionRaw = await loadPackDescriptionRaw(moduleRoot);
   return await ResolvedBlockPackDescriptionFromPackageJson(moduleRoot).parseAsync(descriptionRaw);
 }

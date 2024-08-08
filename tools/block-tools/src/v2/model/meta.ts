@@ -1,50 +1,18 @@
-import { z } from 'zod';
 import {
+  BlockPackMeta,
   ContentAbsoluteBinaryLocal,
   ContentAbsoluteTextLocal,
-  ContentExplicitBase64,
-  ContentExplicitString,
-  ContentRelative,
-  ContentRelativeBinary,
-  ContentRelativeText,
   DescriptionContentBinary,
   DescriptionContentText
-} from './content_types';
+} from '@milaboratory/pl-middle-layer-model';
 import {
-  mapLocalToAbsolute,
-  cpAbsoluteToRelative,
-  mapRemoteToAbsolute,
+  absoluteToBase64,
   absoluteToString,
-  absoluteToBase64
+  cpAbsoluteToRelative,
+  mapLocalToAbsolute
 } from './content_conversion';
-
-function BlockPackMeta<
-  const LongStringType extends z.ZodTypeAny,
-  const BinaryType extends z.ZodTypeAny
->(longString: LongStringType, binary: BinaryType) {
-  return z.object({
-    title: z.string(),
-    description: z.string(),
-    longDescription: longString.optional(),
-    logo: binary.optional(),
-    url: z.string().url().optional(),
-    docs: z.string().url().optional(),
-    support: z.union([z.string().url(), z.string().email()]).optional(),
-    tags: z.array(z.string()).optional(),
-    organization: z.object({
-      name: z.string(),
-      url: z.string().url(),
-      logo: binary.optional()
-    })
-  });
-}
-
-// prettier-ignore
-export const BlockPackMetaDescriptionRaw = BlockPackMeta(
-  DescriptionContentText,
-  DescriptionContentBinary
-);
-export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
+import { z } from 'zod';
+import { BlockPackMetaEmbeddedContent } from '@milaboratory/pl-middle-layer-model';
 
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(
@@ -61,25 +29,8 @@ export function BlockPackMetaConsolidate(dstFolder: string, fileAccumulator?: st
   );
 }
 
-export function BlockPackMetaToAbsolute(prefix: string) {
-  return BlockPackMeta(
-    ContentRelativeText.transform(mapRemoteToAbsolute(prefix)),
-    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
-  );
-}
-
-// prettier-ignore
-// export const BlockPackMetaManifest = BlockPackMeta(
-//   z.string(),
-//   ContentExplicitBase64
-// );
-export const BlockPackMetaManifest = BlockPackMeta(
-  ContentRelativeText,
-  ContentRelativeBinary
-);
-export type BlockPackMetaManifest = z.infer<typeof BlockPackMetaManifest>;
-
-export const BlockPackMetaToExplicit = BlockPackMeta(
+export const BlockPackMetaEmbed = BlockPackMeta(
   ContentAbsoluteTextLocal.transform(absoluteToString()),
   ContentAbsoluteBinaryLocal.transform(absoluteToBase64())
-).pipe(BlockPackMetaManifest);
+).pipe(BlockPackMetaEmbeddedContent);
+export type BlockPackMetaEmbed = z.infer<typeof BlockPackMetaEmbed>;
