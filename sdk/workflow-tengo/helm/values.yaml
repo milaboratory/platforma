@@ -178,6 +178,7 @@ app:
   # -- Additional environment variables (ex.: secret tokens, flags)
   env:
     AWS_REGION: eu-central-1
+    PL_DUMP_CONFIG_BEFORE_RUN: yes
   envValueFrom:
     AWS_ACCESS_KEY_ID:
       secretKeyRef:
