@@ -11,7 +11,7 @@ import {
   DescriptionContentText
 } from './content_types';
 
-function BlockPackMeta<
+export function BlockPackMeta<
   const LongStringType extends z.ZodTypeAny,
   const BinaryType extends z.ZodTypeAny
 >(longString: LongStringType, binary: BinaryType) {

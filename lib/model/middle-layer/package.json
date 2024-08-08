@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer-model",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Common model between middle layer and non-block UI code",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
