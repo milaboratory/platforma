@@ -51,3 +51,4 @@ export const BlockPackMetaEmbeddedContent = BlockPackMeta(
   z.string(),
   ContentExplicitBase64
 );
+export type BlockPackMetaEmbeddedContent = z.infer<typeof BlockPackMetaEmbeddedContent>;
