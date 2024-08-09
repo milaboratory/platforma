@@ -16,3 +16,6 @@ export { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
 export * from './mutator/template/template_loading';
 export * from './mutator/template/render_template';
 export * from './model/template_spec';
+
+// TODO change to rich meta information from V2 registry
+export { BlockPackMeta } from './block_registry';
