@@ -48,6 +48,7 @@ export const maskIcons = [
   'close',
   'columns',
   'restart',
+  'stop',
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];
