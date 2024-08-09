@@ -15,20 +15,25 @@ function nextEphemeralKey(): string {
 }
 
 const DefaultRenderingOps: CellRenderingOps = {
-  mode: 'Live', resetValueOnError: true
+  mode: 'Live',
+  resetValueOnError: true
 };
 
-function noopPostprocessValue<IR>(): (value: UnwrapComputables<IR>, stable: boolean) => Promise<UnwrapComputables<IR>> {
-  return async v => v;
+function noopPostprocessValue<IR>(): (
+  value: UnwrapComputables<IR>,
+  stable: boolean
+) => Promise<UnwrapComputables<IR>> {
+  return async (v) => v;
 }
 
 interface ComputableRenderingOps extends CellRenderingOps {
   key: string;
 }
 
-function toTrackedAccessProvider<A>(ap: TrackedAccessorProvider<A> | AccessorProvider<A>): TrackedAccessorProvider<A> {
-  if ('createInstance' in ap)
-    return ap;
+function toTrackedAccessProvider<A>(
+  ap: TrackedAccessorProvider<A> | AccessorProvider<A>
+): TrackedAccessorProvider<A> {
+  if ('createInstance' in ap) return ap;
   else {
     return {
       createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): A {
@@ -52,7 +57,8 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   _ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IR,
-  postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>): Computable<T> {
+  postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+): Computable<T> {
   const ap = toTrackedAccessProvider(_ap);
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
@@ -61,16 +67,23 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
     ...(resetValueOnError !== undefined && { resetValueOnError })
   };
   return new Computable<T>({
-    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    ___kernel___: ctx => {
-      const ir = cb(ctx.accessor({
-        createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
-          return ap.createInstance(ctx.watcher, guard, ctx);
-        }
-      }), ctx);
+    ops: renderingOps,
+    key: ops.key ?? nextEphemeralKey(),
+    ___kernel___: (ctx) => {
+      const ir = cb(
+        ctx.accessor({
+          createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
+            return ap.createInstance(ctx.watcher, guard, ctx);
+          }
+        }),
+        ctx
+      );
       return {
         ir,
-        postprocessValue: (postprocessValue ?? noopPostprocessValue<IR>()) as (value: unknown, stable: boolean) => Promise<T> | T
+        postprocessValue: (postprocessValue ?? noopPostprocessValue<IR>()) as (
+          value: unknown,
+          stable: boolean
+        ) => Promise<T> | T
       };
     }
   });
@@ -80,7 +93,8 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
 export function computableInstancePostprocessor<A, IR, T>(
   _ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
-  cb: (a: A, ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>): Computable<T> {
+  cb: (a: A, ctx: ComputableCtx) => IntermediateRenderingResult<IR, T>
+): Computable<T> {
   const ap = toTrackedAccessProvider(_ap);
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
@@ -89,13 +103,17 @@ export function computableInstancePostprocessor<A, IR, T>(
     ...(resetValueOnError !== undefined && { resetValueOnError })
   };
   return new Computable<T>({
-    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    ___kernel___: ctx => {
-      return cb(ctx.accessor({
-        createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
-          return ap.createInstance(ctx.watcher, guard, ctx);
-        }
-      }), ctx);
+    ops: renderingOps,
+    key: ops.key ?? nextEphemeralKey(),
+    ___kernel___: (ctx) => {
+      return cb(
+        ctx.accessor({
+          createAccessor(ctx: ComputableCtx, guard: UsageGuard): A {
+            return ap.createInstance(ctx.watcher, guard, ctx);
+          }
+        }),
+        ctx
+      );
     }
   });
 }
@@ -105,7 +123,6 @@ export function rawComputable<IR>(
   cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<UnwrapComputables<IR>> {
-
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
     ...DefaultRenderingOps,
@@ -114,12 +131,16 @@ export function rawComputable<IR>(
   };
 
   return new Computable<UnwrapComputables<IR>>({
-    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    ___kernel___: ctx => {
+    ops: renderingOps,
+    key: ops.key ?? nextEphemeralKey(),
+    ___kernel___: (ctx) => {
       const result = cb(ctx.watcher, ctx);
       return {
         ir: result,
-        postprocessValue: noopPostprocessValue<IR>() as (value: unknown, stable: boolean) => Promise<UnwrapComputables<IR>> | UnwrapComputables<IR>
+        postprocessValue: noopPostprocessValue<IR>() as (
+          value: unknown,
+          stable: boolean
+        ) => Promise<UnwrapComputables<IR>> | UnwrapComputables<IR>
       };
     }
   });
@@ -131,7 +152,6 @@ export function rawComputableWithPostprocess<IR, T>(
   ops: Partial<ComputableRenderingOps> = {},
   postprocessValue: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
 ): Computable<T> {
-
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
     ...DefaultRenderingOps,
@@ -140,10 +160,14 @@ export function rawComputableWithPostprocess<IR, T>(
   };
 
   return new Computable({
-    ops: renderingOps, key: ops.key ?? nextEphemeralKey(),
-    ___kernel___: ctx => {
+    ops: renderingOps,
+    key: ops.key ?? nextEphemeralKey(),
+    ___kernel___: (ctx) => {
       const result = cb(ctx.watcher, ctx);
-      return { ir: result, postprocessValue: postprocessValue as (value: unknown, stable: boolean) => Promise<T> | T };
+      return {
+        ir: result,
+        postprocessValue: postprocessValue as (value: unknown, stable: boolean) => Promise<T> | T
+      };
     }
   });
 }

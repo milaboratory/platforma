@@ -31,7 +31,6 @@ export interface AccessorProvider<A> {
 // Utils
 //
 
-
 type ExtractTrackedAccessorTypes<T> = {
   [K in keyof T]: T[K] extends TrackedAccessorProvider<infer I> ? I : never;
 };
@@ -42,9 +41,15 @@ type ExtractTrackedAccessorTypes<T> = {
  * accessors are produced by corresponding providers.
  * @deprecated
  * */
-export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<ExtractTrackedAccessorTypes<PP>> {
+export function combineProviders<PP>(
+  providers: PP
+): TrackedAccessorProvider<ExtractTrackedAccessorTypes<PP>> {
   return {
-    createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): ExtractTrackedAccessorTypes<PP> {
+    createInstance(
+      watcher: Watcher,
+      guard: UsageGuard,
+      ctx: ComputableCtx
+    ): ExtractTrackedAccessorTypes<PP> {
       const result: Record<string, unknown> = {};
       for (const key in providers) {
         const drv = providers[key];
@@ -54,8 +59,11 @@ export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<Ext
           'createInstance' in drv &&
           typeof drv['createInstance'] === 'function'
         )
-          result[key] = (drv as TrackedAccessorProvider<unknown>)
-            .createInstance(watcher, guard, ctx);
+          result[key] = (drv as TrackedAccessorProvider<unknown>).createInstance(
+            watcher,
+            guard,
+            ctx
+          );
       }
       return result as unknown as ExtractTrackedAccessorTypes<PP>;
     }
@@ -66,16 +74,16 @@ export function combineProviders<PP>(providers: PP): TrackedAccessorProvider<Ext
 export class LazyAccessorFactory {
   private accessors = new Map<TrackedAccessorProvider<any>, any>();
 
-  constructor(private readonly watcher: Watcher,
-              private readonly guard: UsageGuard,
-              private readonly ctx: ComputableCtx) {
-  }
+  constructor(
+    private readonly watcher: Watcher,
+    private readonly guard: UsageGuard,
+    private readonly ctx: ComputableCtx
+  ) {}
 
   public get<A>(provider: TrackedAccessorProvider<A>): A {
     this.guard();
     const cached = this.accessors.get(provider);
-    if (cached !== undefined)
-      return cached as A;
+    if (cached !== undefined) return cached as A;
     const acc = provider.createInstance(this.watcher, this.guard, this.ctx);
     this.accessors.set(provider, acc);
     return acc;

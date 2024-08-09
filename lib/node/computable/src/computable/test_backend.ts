@@ -14,8 +14,7 @@ export class FakeTreeAccessor {
     private readonly watcher: Watcher,
     private readonly guard: UsageGuard,
     private readonly ctx: ComputableCtx
-  ) {
-  }
+  ) {}
 
   get uuid(): string {
     return this.node.uuid;
@@ -23,8 +22,7 @@ export class FakeTreeAccessor {
 
   private access() {
     this.guard();
-    if (!this.isLocked())
-      this.ctx.markUnstable();
+    if (!this.isLocked()) this.ctx.markUnstable();
   }
 
   listChildren(): string[] {
@@ -100,8 +98,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
 
   deleteChild(key: string): void {
     if (!(key in this.children)) return;
-    if (this.locked)
-      throw new Error('Can\'t change field list after locked.');
+    if (this.locked) throw new Error("Can't change field list after locked.");
     const child = this.children[key];
     delete this.children[key];
     child.nodeDeleteChange.markChanged();
@@ -111,8 +108,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   getOrCreateChild(key: string): FakeTreeNodeWriter {
     let child = this.children[key];
     if (child) return child;
-    if (this.locked)
-      throw new Error('Can\'t change field list after locked.');
+    if (this.locked) throw new Error("Can't change field list after locked.");
     child = new FakeTreeBranch();
     this.children[key] = child;
     this.childrenListChange.markChanged();
@@ -120,8 +116,7 @@ class FakeTreeBranch implements FakeTreeNodeWriter, FakeTreeNodeReader {
   }
 
   setValue(value: string): void {
-    if (this.locked)
-      throw new Error('Can\'t set value after locked.');
+    if (this.locked) throw new Error("Can't set value after locked.");
     this.value = value;
     this.valueChange.markChanged();
   }
@@ -187,4 +182,3 @@ export class FakeTreeDriver {
 interface FakeBackendSystem {
   tree: FakeTreeDriver;
 }
-

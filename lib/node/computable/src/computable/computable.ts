@@ -1,7 +1,10 @@
 import {
   CellRenderingOps,
   ComputableCtx,
-  ComputableKernel, ComputablePostProcess, ComputableRecoverAction, IntermediateRenderingResult,
+  ComputableKernel,
+  ComputablePostProcess,
+  ComputableRecoverAction,
+  IntermediateRenderingResult,
   UnwrapComputables
 } from './kernel';
 import {
@@ -9,7 +12,8 @@ import {
   createCellState,
   createCellStateWithoutValue,
   destroyState,
-  updateCellState, updateCellStateWithoutValue
+  updateCellState,
+  updateCellStateWithoutValue
 } from './computable_state';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { randomUUID } from 'node:crypto';
@@ -66,10 +70,8 @@ export interface ComputableResultOk<T> {
 
 /** Throws an appropriate computable error based on the number of errors */
 function throwComputableError(errors: unknown[]): never {
-  if (errors.length === 1)
-    throw new ComputableError(errors[0]);
-  else
-    throw new AggregateComputableError(errors);
+  if (errors.length === 1) throw new ComputableError(errors[0]);
+  else throw new AggregateComputableError(errors);
 }
 
 /** Represents any computable error, single or multiple */
@@ -85,14 +87,14 @@ export class ComputableError extends Error {
 /** Error class for multiple errors encountered simultaneously during computable calculation */
 export class AggregateComputableError extends AggregateError {
   constructor(public readonly errors: any[]) {
-    super(errors, `Computable error: ${errors.map(e => e.message).join(' ; ')}`);
+    super(errors, `Computable error: ${errors.map((e) => e.message).join(' ; ')}`);
   }
 }
 
 /** Type returned by computables that wraps errors */
 export type ComputableValueOrErrors<T> =
-  | { ok: true, value: T }
-  | { ok: false, errors: string[], moreErrors: boolean }
+  | { ok: true; value: T }
+  | { ok: false; errors: string[]; moreErrors: boolean };
 
 export interface ComputableRenderingOps extends CellRenderingOps {
   /**
@@ -113,14 +115,15 @@ export interface ComputableRenderingOps extends CellRenderingOps {
 }
 
 const DefaultRenderingOps: CellRenderingOps = {
-  mode: 'Live', resetValueOnError: true
+  mode: 'Live',
+  resetValueOnError: true
 };
 
 /** This runs state cleanup logic */
 // TODO TBD
-const computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>(
-  c =>
-    c.resetState());
+const computableFinalizationRegistry = new FinalizationRegistry<Computable<unknown>>((c) =>
+  c.resetState()
+);
 
 export type ComputableStableDefined<T> = Computable<T | undefined, T>;
 
@@ -161,10 +164,12 @@ export class Computable<T, StableT extends T = T> {
   }
 
   private _changed(uTag?: string): boolean {
-    return this.state === undefined
-      || this.state.watcher.isChanged
-      || this.state.valueNotCalculated
-      || (uTag !== undefined && this.uTag !== uTag);
+    return (
+      this.state === undefined ||
+      this.state.watcher.isChanged ||
+      this.state.valueNotCalculated ||
+      (uTag !== undefined && this.uTag !== uTag)
+    );
   }
 
   /** This is a noop helper method to add stable type to the
@@ -186,13 +191,10 @@ export class Computable<T, StableT extends T = T> {
    * moment this method was entered. */
   public async refreshState(): Promise<void> {
     const hooks = this.state?.hooks;
-    if (hooks === undefined)
-      return;
+    if (hooks === undefined) return;
     const promises: Promise<void>[] = [];
-    for (const h of hooks)
-      promises.push(h.refreshState(this));
-    if (promises.length === 0)
-      return;
+    for (const h of hooks) promises.push(h.refreshState(this));
+    if (promises.length === 0) return;
     await Promise.all(promises);
   }
 
@@ -206,9 +208,7 @@ export class Computable<T, StableT extends T = T> {
   public isChanged(uTag?: string): boolean {
     // reporting to observers
     const hooks = this.state?.hooks;
-    if (hooks !== undefined)
-      for (const h of hooks)
-        h.onChangedRequest(this);
+    if (hooks !== undefined) for (const h of hooks) h.onChangedRequest(this);
 
     return this._changed(uTag);
   }
@@ -243,9 +243,7 @@ export class Computable<T, StableT extends T = T> {
     if (this._changed(uTag)) {
       // this counts as "changed flag" polling
       const hooks = this.state?.hooks;
-      if (hooks !== undefined)
-        for (const h of hooks)
-          h.onChangedRequest(this);
+      if (hooks !== undefined) for (const h of hooks) h.onChangedRequest(this);
 
       await setImmediate(undefined, { signal: abortSignal });
 
@@ -256,16 +254,12 @@ export class Computable<T, StableT extends T = T> {
     const lPromise = this.state!.watcher.awaitChange(abortSignal);
     const hooks = this.state?.hooks;
     if (hooks !== undefined) {
-      if (this.listenCounter === 0)
-        for (const h of hooks)
-          h.onListenStart(this);
+      if (this.listenCounter === 0) for (const h of hooks) h.onListenStart(this);
       this.listenCounter++;
       try {
         return await lPromise;
       } finally {
-        if (--this.listenCounter === 0)
-          for (const h of hooks)
-            h.onListenStop(this);
+        if (--this.listenCounter === 0) for (const h of hooks) h.onListenStop(this);
       }
     } else {
       return await lPromise;
@@ -278,11 +272,12 @@ export class Computable<T, StableT extends T = T> {
    *
    * @param abortSignal Optional signal to abort the pending operation.
    */
-  public async awaitStableFullValue(abortSignal?: AbortSignal): Promise<ComputableResultOk<StableT>> {
+  public async awaitStableFullValue(
+    abortSignal?: AbortSignal
+  ): Promise<ComputableResultOk<StableT>> {
     while (true) {
       const value = await this.getFullValue();
-      if (value.stable)
-        return value as ComputableResultOk<StableT>;
+      if (value.stable) return value as ComputableResultOk<StableT>;
       await this.awaitChange(abortSignal);
     }
   }
@@ -308,8 +303,7 @@ export class Computable<T, StableT extends T = T> {
    */
   public async getValue(): Promise<T> {
     const result = await this.getValueOrError();
-    if (result.type === 'error')
-      throwComputableError(result.errors);
+    if (result.type === 'error') throwComputableError(result.errors);
     return result.value;
   }
 
@@ -319,8 +313,7 @@ export class Computable<T, StableT extends T = T> {
    * */
   public async getFullValue(): Promise<ComputableResultOk<T>> {
     const result = await this.getValueOrError();
-    if (result.type === 'error')
-      throwComputableError(result.errors);
+    if (result.type === 'error') throwComputableError(result.errors);
     return result;
   }
 
@@ -329,16 +322,15 @@ export class Computable<T, StableT extends T = T> {
    * state.
    * */
   private _preCalculateValueTree(): this {
-    if (this.stateCalculation !== undefined)
-      throw new Error('Illegal state for pre-calculation.');
-    this.state = this.state === undefined
-      ? createCellStateWithoutValue(this.___wrapped_kernel___)
-      : updateCellStateWithoutValue(this.state);
+    if (this.stateCalculation !== undefined) throw new Error('Illegal state for pre-calculation.');
+    this.state =
+      this.state === undefined
+        ? createCellStateWithoutValue(this.___wrapped_kernel___)
+        : updateCellStateWithoutValue(this.state);
 
     // calling this method is equivalent to value request
     if (this.state.hooks !== undefined)
-      for (const hooks of this.state.hooks)
-        hooks.onGetValue(this);
+      for (const hooks of this.state.hooks) hooks.onGetValue(this);
 
     return this;
   }
@@ -366,21 +358,21 @@ export class Computable<T, StableT extends T = T> {
     const ourEpoch = this.epoch;
 
     if (this.stateCalculation !== undefined) {
-
       // waiting for stat to update in case update was triggered elsewhere
       await this.stateCalculation;
-
-    } else if (this.state === undefined
-      || this.state.watcher.isChanged
-      || this.state.valueNotCalculated) {
-
+    } else if (
+      this.state === undefined ||
+      this.state.watcher.isChanged ||
+      this.state.valueNotCalculated
+    ) {
       // starting async state update
       this.stateCalculation = (async () => {
         try {
           // awaiting new state
-          const newState = this.state === undefined
-            ? await createCellState(this.___wrapped_kernel___)
-            : await updateCellState(this.state);
+          const newState =
+            this.state === undefined
+              ? await createCellState(this.___wrapped_kernel___)
+              : await updateCellState(this.state);
 
           // check that reset state didn't happen
           if (this.epoch !== ourEpoch) {
@@ -390,8 +382,7 @@ export class Computable<T, StableT extends T = T> {
           }
 
           // important state assertion
-          if (this.listenCounter !== 0)
-            throw new Error('Concurrent listening and state update.');
+          if (this.listenCounter !== 0) throw new Error('Concurrent listening and state update.');
 
           // updating the state
           this.state = newState;
@@ -415,14 +406,11 @@ export class Computable<T, StableT extends T = T> {
     const state = notEmpty(this.state);
 
     // reporting to observers
-    if (state.hooks !== undefined)
-      for (const hooks of state.hooks)
-        hooks.onGetValue(this);
+    if (state.hooks !== undefined) for (const hooks of state.hooks) hooks.onGetValue(this);
 
     if (state.allErrors.length === 0)
       return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };
-    else
-      return { type: 'error', errors: state.allErrors, uTag: this.uTag };
+    else return { type: 'error', errors: state.allErrors, uTag: this.uTag };
   }
 
   /**
@@ -430,8 +418,7 @@ export class Computable<T, StableT extends T = T> {
    * onDestroy callbacks down the state tree.
    */
   public resetState(): void {
-    if (this.state === undefined && this.stateCalculation === undefined)
-      return;
+    if (this.state === undefined && this.stateCalculation === undefined) return;
     if (this.stateCalculation !== undefined) {
       this.stateCalculation = undefined;
       // no need to destroy current state, state updater will do it for us
@@ -458,9 +445,7 @@ export class Computable<T, StableT extends T = T> {
    * @param cb main computable callback
    * @returns the computable instance
    * */
-  public static make<IR>(
-    cb: (ctx: ComputableCtx) => IR
-  ): Computable<UnwrapComputables<IR>>
+  public static make<IR>(cb: (ctx: ComputableCtx) => IR): Computable<UnwrapComputables<IR>>;
 
   /**
    * Creates a computable with post-processing and recover actions,
@@ -473,8 +458,10 @@ export class Computable<T, StableT extends T = T> {
    */
   public static make<IR, T>(
     cb: (ctx: ComputableCtx) => IR,
-    ops: ComputablePostProcess<UnwrapComputables<IR>, T> & ComputableRecoverAction<T> & Partial<ComputableRenderingOps>
-  ): Computable<T>
+    ops: ComputablePostProcess<UnwrapComputables<IR>, T> &
+      ComputableRecoverAction<T> &
+      Partial<ComputableRenderingOps>
+  ): Computable<T>;
 
   /**
    * Creates a computable with recover actions and additional rendering options.
@@ -488,7 +475,7 @@ export class Computable<T, StableT extends T = T> {
   public static make<IR, T>(
     cb: (ctx: ComputableCtx) => IR,
     ops: ComputableRecoverAction<T> & Partial<ComputableRenderingOps>
-  ): Computable<UnwrapComputables<IR> | T>
+  ): Computable<UnwrapComputables<IR> | T>;
 
   /**
    * Creates a computable with post-processing and rendering options. This allows
@@ -502,7 +489,7 @@ export class Computable<T, StableT extends T = T> {
   public static make<IR, T>(
     cb: (ctx: ComputableCtx) => IR,
     ops: ComputablePostProcess<IR, T> & Partial<ComputableRenderingOps>
-  ): Computable<T>
+  ): Computable<T>;
 
   /**
    * Creates a computable with just rendering options. This constructor allows
@@ -515,7 +502,7 @@ export class Computable<T, StableT extends T = T> {
   public static make<IR>(
     cb: (ctx: ComputableCtx) => IR,
     ops: Partial<ComputableRenderingOps>
-  ): Computable<UnwrapComputables<IR>>
+  ): Computable<UnwrapComputables<IR>>;
 
   /**
    * Recommended way to construct a computable instance. Post-processing and
@@ -532,9 +519,11 @@ export class Computable<T, StableT extends T = T> {
    * */
   public static make<IR, T = UnwrapComputables<IR>>(
     cb: (ctx: ComputableCtx) => IR,
-    ops?: Partial<ComputablePostProcess<IR, T>> & Partial<ComputableRecoverAction<T>> & Partial<ComputableRenderingOps>
+    ops?: Partial<ComputablePostProcess<IR, T>> &
+      Partial<ComputableRecoverAction<T>> &
+      Partial<ComputableRenderingOps>
   ): Computable<T> {
-    return Computable.makeRaw(ctx => {
+    return Computable.makeRaw((ctx) => {
       let ir: IR;
       if (ops?.recover !== undefined) {
         // here we also catch main callback errors, and passes any errors to
@@ -549,11 +538,13 @@ export class Computable<T, StableT extends T = T> {
             ir: ops.recover([err]) as any
           };
         }
-      } else
-        ir = cb(ctx);
+      } else ir = cb(ctx);
       return {
         ir,
-        postprocessValue: ops?.postprocessValue as ((value: unknown, stable: boolean) => Promise<T> | T),
+        postprocessValue: ops?.postprocessValue as (
+          value: unknown,
+          stable: boolean
+        ) => Promise<T> | T,
         recover: ops?.recover
       };
     }, ops);
@@ -573,15 +564,19 @@ export class Computable<T, StableT extends T = T> {
 
     // creating computable instance
     return new Computable<T>({
-      ops: renderingOps, key: ops?.key ?? Computable.nextEphemeralKey(),
+      ops: renderingOps,
+      key: ops?.key ?? Computable.nextEphemeralKey(),
       ___kernel___: cb
     });
   }
 
   /** Wraps a computable catching all errors, formatting them as string and returning as error-or-value structure. */
-  public static wrapError<T>(computable: Computable<T>, maxErrors: number = 1): Computable<ComputableValueOrErrors<T>> {
+  public static wrapError<T>(
+    computable: Computable<T>,
+    maxErrors: number = 1
+  ): Computable<ComputableValueOrErrors<T>> {
     return Computable.make(() => computable, {
-      postprocessValue: value => ({ ok: true, value: value as T } as ComputableValueOrErrors<T>),
+      postprocessValue: (value) => ({ ok: true, value: value as T }) as ComputableValueOrErrors<T>,
       recover: (error: unknown[]) => {
         const formattedErrors: string[] = [];
         for (let i = 0; i < Math.min(maxErrors, error.length); i++)

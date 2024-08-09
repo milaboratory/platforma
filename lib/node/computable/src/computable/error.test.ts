@@ -17,7 +17,7 @@ test('Errors to string', () => {
     f2();
   } catch (e: any) {
     const formatted = formatError(e);
-    expect(formatted).toContain('Error2')
-    expect(formatted).toContain('Error1')
+    expect(formatted).toContain('Error2');
+    expect(formatted).toContain('Error1');
   }
 });

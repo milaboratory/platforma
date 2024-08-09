@@ -1,7 +1,9 @@
 import {
   ComputableKernel,
   IntermediateRenderingResult,
-  ComputableCtx, tryExtractComputableKernel, containComputables
+  ComputableCtx,
+  tryExtractComputableKernel,
+  containComputables
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
@@ -15,12 +17,16 @@ interface ExecutionError {
   error: unknown;
 }
 
-function isExecutionError(r: IntermediateRenderingResult<unknown, unknown> | ExecutionError): r is ExecutionError {
+function isExecutionError(
+  r: IntermediateRenderingResult<unknown, unknown> | ExecutionError
+): r is ExecutionError {
   return 'error' in r;
 }
 
 /** To prevent leaking of other fields */
-export function cleanIntermediateRenderingResult<IR, T>(r: IntermediateRenderingResult<IR, T>): IntermediateRenderingResult<IR, T> {
+export function cleanIntermediateRenderingResult<IR, T>(
+  r: IntermediateRenderingResult<IR, T>
+): IntermediateRenderingResult<IR, T> {
   const { ir, postprocessValue, recover } = r;
   return { ir, postprocessValue, ...(recover !== undefined && { recover }) };
 }
@@ -28,7 +34,7 @@ export function cleanIntermediateRenderingResult<IR, T>(r: IntermediateRendering
 class CellComputableContext implements ComputableCtx {
   public stable: boolean = false;
   /** @deprecated */
-  private oldOnDestroy?: (() => void);
+  private oldOnDestroy?: () => void;
   private currentOnDestroy: (() => void)[] | undefined = undefined;
   private previousOnDestroy: (() => void)[] | undefined = undefined;
   private kv?: Map<string, unknown>;
@@ -37,8 +43,7 @@ class CellComputableContext implements ComputableCtx {
   public hooks: Set<ComputableHooks> | undefined = undefined;
 
   private checkForLeak() {
-    if (this._watcher === undefined)
-      throw new Error('Computable context leak.');
+    if (this._watcher === undefined) throw new Error('Computable context leak.');
   }
 
   markUnstable(): void {
@@ -47,8 +52,7 @@ class CellComputableContext implements ComputableCtx {
   }
 
   scheduleAndResetOnDestroy(): void {
-    if (this.oldOnDestroy === undefined)
-      return;
+    if (this.oldOnDestroy === undefined) return;
     // Scheduling execution in background
     setImmediate(this.oldOnDestroy);
     this.oldOnDestroy = undefined;
@@ -67,22 +71,18 @@ class CellComputableContext implements ComputableCtx {
 
   addOnDestroy(cb: () => void): void {
     this.checkForLeak();
-    if (this.currentOnDestroy === undefined)
-      this.currentOnDestroy = [cb];
-    else
-      this.currentOnDestroy.push(cb);
+    if (this.currentOnDestroy === undefined) this.currentOnDestroy = [cb];
+    else this.currentOnDestroy.push(cb);
   }
 
   get(key: string): unknown | undefined {
     this.checkForLeak();
-    if (this.kv === undefined)
-      return undefined;
+    if (this.kv === undefined) return undefined;
     this.kv.get(key);
   }
 
   getOrCreate<T>(key: string, initializer: () => T): T {
-    if (this.has(key))
-      return this.get(key) as T;
+    if (this.has(key)) return this.get(key) as T;
     const v = initializer();
     this.set(key, v);
     return v;
@@ -95,22 +95,19 @@ class CellComputableContext implements ComputableCtx {
 
   reset(key: string): void {
     this.checkForLeak();
-    if (this.kv === undefined)
-      return;
+    if (this.kv === undefined) return;
     this.kv.delete(key);
   }
 
   set(key: string, value: unknown): void {
     this.checkForLeak();
-    if (this.kv === undefined)
-      this.kv = new Map<string, unknown>();
+    if (this.kv === undefined) this.kv = new Map<string, unknown>();
     this.kv.set(key, value);
   }
 
   attacheHooks(listener: ComputableHooks): void {
     this.checkForLeak();
-    if (this.hooks === undefined)
-      this.hooks = new Set();
+    if (this.hooks === undefined) this.hooks = new Set();
     this.hooks.add(listener);
   }
 
@@ -132,8 +129,7 @@ class CellComputableContext implements ComputableCtx {
     if (this.accessors === undefined)
       this.accessors = new Map<AccessorProvider<unknown>, unknown>();
     const cached = this.accessors.get(provider);
-    if (cached !== undefined)
-      return cached as A;
+    if (cached !== undefined) return cached as A;
     const acc = provider.createAccessor(this, this.guard!);
     this.accessors.set(provider, acc);
     return acc;
@@ -203,10 +199,7 @@ interface SelfCellState<T> {
   readonly selfWatcher: HierarchicalWatcher;
 }
 
-type ChildrenStates = Map<
-  string | symbol,
-  ChildStateEnvelop<unknown, unknown>
->;
+type ChildrenStates = Map<string | symbol, ChildStateEnvelop<unknown, unknown>>;
 
 export interface ChildStateEnvelop<IR, T = IR> {
   /** True if this child originates from a stable result. */
@@ -257,42 +250,28 @@ export interface CellState<T> {
   value?: unknown;
 }
 
-type IncompleteCellState<T> = Pick<
-  CellState<T>,
-  'selfState' | 'childrenStates'
->;
+type IncompleteCellState<T> = Pick<CellState<T>, 'selfState' | 'childrenStates'>;
 
 type Children = Map<string | symbol, ComputableKernel<unknown>>;
 
 /** Populates children array traversing the node tree */
 function addChildren(node: unknown, children: Children) {
-
   // TODO do we need protection from recurrent references (i.e. cyclic dependencies) ?
 
-  if (!containComputables(node))
-    return;
+  if (!containComputables(node)) return;
 
   const type = typeof node;
   switch (type) {
     case 'object':
+      if (node === null) return;
 
-      if(node === null)
-        return;
-      
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined) {
-
-        if (!children.has(kernel.key))
-          children.set(kernel.key, kernel);
-
-      } else if (Array.isArray(node))
-        for (const nested of node)
-          addChildren(nested, children);
-
+        if (!children.has(kernel.key)) children.set(kernel.key, kernel);
+      } else if (Array.isArray(node)) for (const nested of node) addChildren(nested, children);
       else
         for (const [, nested] of Object.entries(node as object))
-          if (nested !== node)
-            addChildren(nested, children);
+          if (nested !== node) addChildren(nested, children);
 
       return;
 
@@ -301,29 +280,25 @@ function addChildren(node: unknown, children: Children) {
   }
 }
 
-function getChildren(iResult: IntermediateRenderingResult<unknown, unknown> | ExecutionError): Children {
+function getChildren(
+  iResult: IntermediateRenderingResult<unknown, unknown> | ExecutionError
+): Children {
   if (isExecutionError(iResult)) return new Map();
   const children: Children = new Map();
   addChildren(iResult.ir, children);
   return children;
 }
 
-function calculateNodeValue(
-  node: unknown,
-  childStates: ChildrenStates
-): any {
-  if (!containComputables(node))
-    return node;
+function calculateNodeValue(node: unknown, childStates: ChildrenStates): any {
+  if (!containComputables(node)) return node;
 
   const type = typeof node;
   switch (type) {
     case 'object':
       const kernel = tryExtractComputableKernel(node);
-      if (kernel !== undefined)
-        return childStates.get(kernel.key)!.state.value;
+      if (kernel !== undefined) return childStates.get(kernel.key)!.state.value;
 
-      if (Array.isArray(node))
-        return node.map(child => calculateNodeValue(child, childStates));
+      if (Array.isArray(node)) return node.map((child) => calculateNodeValue(child, childStates));
 
       const newNode: any = {};
       for (const [key, child] of Object.entries(node as object))
@@ -335,33 +310,30 @@ function calculateNodeValue(
   }
 }
 
-async function runPostprocessing<IR, T>(iResult: IntermediateRenderingResult<IR, T>,
-                                        childrenStates: ChildrenStates,
-                                        stable: boolean): Promise<T> {
-  const iv = calculateNodeValue(
-    iResult.ir,
-    childrenStates
-  );
-  return iResult.postprocessValue === undefined
-    ? iv
-    : await iResult.postprocessValue(iv, stable);
+async function runPostprocessing<IR, T>(
+  iResult: IntermediateRenderingResult<IR, T>,
+  childrenStates: ChildrenStates,
+  stable: boolean
+): Promise<T> {
+  const iv = calculateNodeValue(iResult.ir, childrenStates);
+  return iResult.postprocessValue === undefined ? iv : await iResult.postprocessValue(iv, stable);
 }
 
-async function fillCellValue<T>(
-  state: Writable<CellState<T>>,
-  previousValue?: T
-): Promise<void> {
+async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T): Promise<void> {
   // assert !('value' in state)
   const ops = state.selfState.kernel.ops;
 
   let value = ops.mode === 'StableOnlyRetentive' ? previousValue : undefined;
   if (!isExecutionError(state.selfState.iResult)) {
     if (state.stable || ops.mode === 'Live') {
-
       // check that there are errors for nested computed instances
       if (state.allErrors.length === 0) {
         try {
-          value = await runPostprocessing(state.selfState.iResult, state.childrenStates, state.stable);
+          value = await runPostprocessing(
+            state.selfState.iResult,
+            state.childrenStates,
+            state.stable
+          );
         } catch (e: unknown) {
           // Adding postprocess error
           state.allErrors.push(e);
@@ -416,8 +388,7 @@ function renderSelfState<T>(
 }
 
 export function destroyState(_state: CellState<unknown>) {
-  for (const { state } of _state.childrenStates.values())
-    destroyState(state);
+  for (const { state } of _state.childrenStates.values()) destroyState(state);
   _state.selfState.ctx.destroy();
 }
 
@@ -438,14 +409,10 @@ function calculateChildren(
 
   // Updating or creating child states
   for (const [key, child] of children) {
-    const existingState = cachedChildrenStates
-      ? cachedChildrenStates.get(key)
-      : undefined;
+    const existingState = cachedChildrenStates ? cachedChildrenStates.get(key) : undefined;
     if (existingState !== undefined) {
       result.set(key, {
-        state: updateCellStateWithoutValue(
-          existingState.state
-        ),
+        state: updateCellStateWithoutValue(existingState.state),
         fromStableSelfState: existingState.fromStableSelfState || fromStableSelfState,
         orphan: false
       });
@@ -503,10 +470,8 @@ function finalizeCellState<T>(
     stable = stable && state.stable;
 
     if (state.hooks !== undefined) {
-      if (hooks === undefined)
-        hooks = new Set();
-      for (const h of state.hooks)
-        hooks.add(h);
+      if (hooks === undefined) hooks = new Set();
+      for (const h of state.hooks) hooks.add(h);
     }
   }
 
@@ -516,10 +481,8 @@ function finalizeCellState<T>(
   nestedWatchers.push(incompleteState.selfState.selfWatcher);
 
   if (incompleteState.selfState.ctx.hooks !== undefined) {
-    if (hooks === undefined)
-      hooks = new Set();
-    for (const h of incompleteState.selfState.ctx.hooks)
-      hooks.add(h);
+    if (hooks === undefined) hooks = new Set();
+    for (const h of incompleteState.selfState.ctx.hooks) hooks.add(h);
   }
 
   return {
@@ -537,9 +500,7 @@ function finalizeCellState<T>(
   };
 }
 
-async function calculateValue<T>(
-  state_: CellState<T>
-): Promise<void> {
+async function calculateValue<T>(state_: CellState<T>): Promise<void> {
   if (!state_.valueNotCalculated) return;
 
   await Promise.all(
@@ -551,10 +512,8 @@ async function calculateValue<T>(
   // collecting errors after all postProcessing steps are executed for out children
   const allErrors: unknown[] = [];
   for (const { orphan, state } of state_.childrenStates.values())
-    if (!orphan)
-      allErrors.push(...state.allErrors);
-  if (isExecutionError(state_.selfState.iResult))
-    allErrors.push(state_.selfState.iResult.error);
+    if (!orphan) allErrors.push(...state.allErrors);
+  if (isExecutionError(state_.selfState.iResult)) allErrors.push(state_.selfState.iResult.error);
 
   // setting errors for the state
   (state_ as Writable<typeof state_>).allErrors = allErrors;
@@ -565,38 +524,26 @@ async function calculateValue<T>(
 }
 
 /** First (sync) stage of rendering pipeline */
-export function createCellStateWithoutValue<T>(
-  core: ComputableKernel<T>
-): CellState<T> {
+export function createCellStateWithoutValue<T>(core: ComputableKernel<T>): CellState<T> {
   const selfState = renderSelfState(core);
 
   const children = getChildren(selfState.iResult);
 
-  const childrenStates = calculateChildren(
-    children,
-    selfState.ctx.stable
-  );
+  const childrenStates = calculateChildren(children, selfState.ctx.stable);
 
-  return finalizeCellState(
-    { selfState, childrenStates }
-  );
+  return finalizeCellState({ selfState, childrenStates });
 }
 
-export async function createCellState<T>(
-  core: ComputableKernel<T>
-): Promise<CellState<T>> {
+export async function createCellState<T>(core: ComputableKernel<T>): Promise<CellState<T>> {
   const state = createCellStateWithoutValue(core);
   await calculateValue(state);
   return state;
 }
 
 /** First (sync) stage of rendering pipeline */
-export function updateCellStateWithoutValue<T>(
-  cell: CellState<T>
-): CellState<T> {
+export function updateCellStateWithoutValue<T>(cell: CellState<T>): CellState<T> {
   // checking the chaining rule
-  if (!cell.isLatest)
-    throw new Error('Can\'t update state, that was already updated.');
+  if (!cell.isLatest) throw new Error("Can't update state, that was already updated.");
 
   // checking any changes were registered for the
   if (!cell.watcher.isChanged) return cell;
@@ -608,17 +555,10 @@ export function updateCellStateWithoutValue<T>(
 
   // recalculating children states
   const children = getChildren(selfState.iResult);
-  const childrenStates = calculateChildren(
-    children,
-    selfState.ctx.stable,
-    cell.childrenStates
-  );
+  const childrenStates = calculateChildren(children, selfState.ctx.stable, cell.childrenStates);
 
   // calculating the final state
-  const newState = finalizeCellState(
-    { selfState, childrenStates },
-    cell.value
-  );
+  const newState = finalizeCellState({ selfState, childrenStates }, cell.value);
 
   // invalidating previous state (at this point we know that this call will produce no exceptions)
   cell.isLatest = false;
@@ -626,9 +566,7 @@ export function updateCellStateWithoutValue<T>(
   return newState;
 }
 
-export async function updateCellState<T>(
-  cell: CellState<T>
-): Promise<CellState<T>> {
+export async function updateCellState<T>(cell: CellState<T>): Promise<CellState<T>> {
   const state = updateCellStateWithoutValue(cell);
   await calculateValue(state);
   return state;

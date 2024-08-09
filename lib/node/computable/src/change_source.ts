@@ -20,8 +20,9 @@ export class ChangeSource {
   /** Used to track array recheck period */
   private modCount: number = 0;
 
-  public constructor(private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD) {
-  }
+  public constructor(
+    private readonly recheckPeriod: number = DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD
+  ) {}
 
   /** Attach a watcher to the change source. Periodically this method performs
    * garbage collection that cost O(N) in theory, though in real cases there
@@ -30,8 +31,7 @@ export class ChangeSource {
     if (this.watcherSet === undefined) {
       this.watchers = [];
       this.watcherSet = new WeakSet();
-    } else if (this.watcherSet.has(watcher))
-      return;
+    } else if (this.watcherSet.has(watcher)) return;
 
     this.modCount++;
     if (this.modCount == this.recheckPeriod) this.refresh();
@@ -41,8 +41,7 @@ export class ChangeSource {
 
   /** Marks all watchers as changed and clears current watcher list. */
   public markChanged() {
-    if (this.watchers === undefined)
-      return;
+    if (this.watchers === undefined) return;
 
     this.watchers.forEach((w) => w.deref()?.markChanged());
 
@@ -54,16 +53,14 @@ export class ChangeSource {
   /** Returns actual number of watchers in this source. For that GC round is
    * executed, so beware, complexity of this method is O(N). */
   public get size(): number {
-    if (this.watchers === undefined)
-      return 0;
+    if (this.watchers === undefined) return 0;
     this.refresh();
     return this.watchers.length;
   }
 
   /** Performs GC. */
   private refresh() {
-    if (this.modCount === 0 || this.watchers === undefined)
-      return;
+    if (this.modCount === 0 || this.watchers === undefined) return;
     this.modCount = 0;
     this.watchers = this.watchers.filter((ref) => {
       const w = ref.deref();

@@ -4,7 +4,7 @@ import { ComputableHooks } from './computable_hooks';
 export type StartStopComputableHooksOps = {
   /** How long to wait after last computable request to send stopUpdating
    * request to the data source. */
-  stopDebounce: number
+  stopDebounce: number;
 };
 
 /**
@@ -17,20 +17,27 @@ export class PollingComputableHooks implements ComputableHooks {
 
   private sourceActivated = false;
 
-  constructor(private readonly startUpdating: () => void,
-              private readonly stopUpdating: () => void,
-              ops: StartStopComputableHooksOps,
-              private readonly scheduleOnNextFreshState?: (resolve: () => void, reject: (error: unknown) => void) => void) {
+  constructor(
+    private readonly startUpdating: () => void,
+    private readonly stopUpdating: () => void,
+    ops: StartStopComputableHooksOps,
+    private readonly scheduleOnNextFreshState?: (
+      resolve: () => void,
+      reject: (error: unknown) => void
+    ) => void
+  ) {
     this.stopDebounce = ops.stopDebounce;
   }
 
   private stopCountdown: NodeJS.Timeout | undefined;
 
   private scheduleStopIfNeeded(): void {
-    if (this.sourceActivated
-      && this.listening.size === 0
-      && this.awaitingRefresh.size === 0
-      && this.stopCountdown === undefined)
+    if (
+      this.sourceActivated &&
+      this.listening.size === 0 &&
+      this.awaitingRefresh.size === 0 &&
+      this.stopCountdown === undefined
+    )
       this.stopCountdown = setTimeout(() => {
         this.stopUpdating();
         this.sourceActivated = false;
@@ -65,8 +72,7 @@ export class PollingComputableHooks implements ComputableHooks {
   private readonly awaitingRefresh = new Set<symbol>();
 
   refreshState(): Promise<void> {
-    if (this.scheduleOnNextFreshState === undefined)
-      return Promise.resolve();
+    if (this.scheduleOnNextFreshState === undefined) return Promise.resolve();
 
     const uniqueSymbol = Symbol();
     const result = new Promise<void>((resolve, reject) =>
@@ -81,7 +87,8 @@ export class PollingComputableHooks implements ComputableHooks {
           this.scheduleStopIfNeeded();
           reject(err);
         }
-      ));
+      )
+    );
     this.awaitingRefresh.add(uniqueSymbol);
     this.startIfNeeded();
     return result;

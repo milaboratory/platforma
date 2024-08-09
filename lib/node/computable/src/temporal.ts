@@ -1,9 +1,8 @@
 import { Watcher } from './watcher';
 
-const watcherGCRegistry =
-  new FinalizationRegistry<NodeJS.Timeout>(timerRef => {
-    clearTimeout(timerRef);
-  });
+const watcherGCRegistry = new FinalizationRegistry<NodeJS.Timeout>((timerRef) => {
+  clearTimeout(timerRef);
+});
 
 function markChangedAfterDelay(watcher: Watcher, ms: number) {
   const watcherRef = new WeakRef(watcher);

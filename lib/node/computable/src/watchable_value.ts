@@ -13,8 +13,7 @@ export class WatchableValue<T> implements AccessorProvider<ObservableAccessor<T>
   private readonly key: symbol = Symbol();
   private readonly change = new ChangeSource();
 
-  constructor(private value: T) {
-  }
+  constructor(private value: T) {}
 
   public setValue(value: T): void {
     this.value = value;
@@ -27,10 +26,14 @@ export class WatchableValue<T> implements AccessorProvider<ObservableAccessor<T>
   }
 
   public asComputable() {
-    return Computable.make(ctx => this.getValue(ctx), { key: this.key });
+    return Computable.make((ctx) => this.getValue(ctx), { key: this.key });
   }
 
-  public createInstance(watcher: Watcher, guard: UsageGuard, ctx: ComputableCtx): ObservableAccessor<T> {
+  public createInstance(
+    watcher: Watcher,
+    guard: UsageGuard,
+    ctx: ComputableCtx
+  ): ObservableAccessor<T> {
     return {
       getValue: () => {
         guard();

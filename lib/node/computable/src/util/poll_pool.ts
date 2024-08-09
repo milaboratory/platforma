@@ -12,9 +12,9 @@ export interface PollPoolOps {
 }
 
 type PollActorWrapper<A extends PollActor> = {
-  readonly actor: WeakRef<A>,
+  readonly actor: WeakRef<A>;
   lastPauseRequest: symbol | undefined;
-}
+};
 
 /**
  * Provides a building block to create joined pool of polling agent sharing the
@@ -28,15 +28,16 @@ export class PollPool<A extends PollActor = PollActor> {
   private terminated: boolean = false;
   private readonly mainLoopHandle: Promise<void>;
 
-  constructor(private readonly ops: PollPoolOps,
-              private readonly logger: MiLogger = new ConsoleLoggerAdapter()) {
+  constructor(
+    private readonly ops: PollPoolOps,
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
+  ) {
     this.mainLoopHandle = this.mainLoop();
   }
 
   private async mainLoop() {
     while (true) {
-      if (this.terminated)
-        break;
+      if (this.terminated) break;
 
       // select actors for this iteration and cleaning up the pool
 
@@ -49,8 +50,10 @@ export class PollPool<A extends PollActor = PollActor> {
         }
 
         // actor was collected by GC
-        if (actor.pollPauseRequest !== undefined
-          && wrapper.lastPauseRequest === actor.pollPauseRequest)
+        if (
+          actor.pollPauseRequest !== undefined &&
+          wrapper.lastPauseRequest === actor.pollPauseRequest
+        )
           continue;
 
         // saving last pause request, to check if it remains the same on the next cycle
@@ -92,14 +95,12 @@ export class PollPool<A extends PollActor = PollActor> {
         }
       }
 
-      if (this.terminated)
-        break;
+      if (this.terminated) break;
 
       try {
         const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
         await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
-      } catch {
-      }
+      } catch {}
     }
   }
 
@@ -107,8 +108,7 @@ export class PollPool<A extends PollActor = PollActor> {
     const wrapper = this.actors.get(key);
     if (wrapper !== undefined) {
       const actor = wrapper.actor.deref();
-      if (actor !== undefined)
-        return actor;
+      if (actor !== undefined) return actor;
 
       // previous incarnation was collected by GC
       this.actors.delete(key);
@@ -159,14 +159,13 @@ export interface PollActor {
 type RefreshListener = {
   resolve: () => void;
   reject: (error: unknown) => void;
-}
+};
 
 class PollPoolPauseComputableAdapter implements ComputableHooks {
   // initiated in paused state, because nobody listen to us yet
   private _pollPauseRequest: symbol | undefined = Symbol();
 
-  constructor() {
-  }
+  constructor() {}
 
   /** Return this in {@link PollActor.pollPauseRequest} */
   public get pollPauseRequest(): symbol | undefined {
@@ -179,8 +178,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
 
   /** (!) Must be called by the enclosing Computable before each poll operation */
   public retrieveRefreshListeners(): RefreshListener[] | undefined {
-    if (this.refreshListeners === undefined)
-      return undefined;
+    if (this.refreshListeners === undefined) return undefined;
     const result = this.refreshListeners;
     this.refreshListeners = undefined;
     this.refreshPauseRequestIfNeeded();
@@ -188,8 +186,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
   }
 
   private refreshPauseRequestIfNeeded() {
-    if (this.listening.size !== 0 || this.refreshListeners !== undefined)
-      return;
+    if (this.listening.size !== 0 || this.refreshListeners !== undefined) return;
     this._pollPauseRequest = Symbol();
     this.pollPauseRequestChange.markChanged();
   }
@@ -216,8 +213,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
   }
 
   refreshState(instance: Computable<unknown>): Promise<void> {
-    if (this.refreshListeners === undefined)
-      this.refreshListeners = [];
+    if (this.refreshListeners === undefined) this.refreshListeners = [];
     const result = new Promise<void>((resolve, reject) => {
       this.refreshListeners!.push({ resolve, reject });
     });
@@ -236,7 +232,10 @@ interface PollComputablePoolEntry<Res> extends PollActor {
 export abstract class PollComputablePool<Req, Res> {
   private readonly pool: PollPool<PollComputablePoolEntry<Res>>;
 
-  protected constructor(ops: PollPoolOps, private readonly logger: MiLogger = new ConsoleLoggerAdapter()) {
+  protected constructor(
+    ops: PollPoolOps,
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
+  ) {
     this.pool = new PollPool(ops, logger);
   }
 
@@ -253,7 +252,7 @@ export abstract class PollComputablePool<Req, Res> {
   private createEntry(req: Req): PollComputablePoolEntry<Res> {
     const watcher = new HierarchicalWatcher();
     const parent = this;
-    return new class implements PollComputablePoolEntry<Res> {
+    return new (class implements PollComputablePoolEntry<Res> {
       value: Res | undefined = undefined;
       readonly change = new ChangeSource();
 
@@ -270,34 +269,33 @@ export abstract class PollComputablePool<Req, Res> {
       async poll(): Promise<void> {
         const listeners = this.hooks.retrieveRefreshListeners();
         try {
-
           const newValue = await parent.readValue(req);
-          if (!(newValue === undefined && this.value === undefined) &&
-            (newValue === undefined || this.value === undefined
-              || !parent.resultsEqual(this.value, newValue))) {
+          if (
+            !(newValue === undefined && this.value === undefined) &&
+            (newValue === undefined ||
+              this.value === undefined ||
+              !parent.resultsEqual(this.value, newValue))
+          ) {
             this.value = newValue;
             this.change.markChanged();
           }
-
         } catch (e: unknown) {
-          if (listeners !== undefined)
-            for (const listener of listeners)
-              listener.reject(e);
+          if (listeners !== undefined) for (const listener of listeners) listener.reject(e);
           throw e;
         }
 
-        if (listeners !== undefined)
-          for (const listener of listeners)
-            listener.resolve();
+        if (listeners !== undefined) for (const listener of listeners) listener.resolve();
       }
-    };
+    })();
   }
 
   public get(req: Req, ctx: ComputableCtx): Res | undefined;
   public get(req: Req): Computable<UnwrapComputables<Res> | undefined>;
-  public get(req: Req, ctx?: ComputableCtx): (Res | undefined) | Computable<UnwrapComputables<Res> | undefined> {
-    if (ctx === undefined)
-      return Computable.make(ctx1 => this.get(req, ctx1));
+  public get(
+    req: Req,
+    ctx?: ComputableCtx
+  ): (Res | undefined) | Computable<UnwrapComputables<Res> | undefined> {
+    if (ctx === undefined) return Computable.make((ctx1) => this.get(req, ctx1));
 
     const key = this.getKey(req);
     const entry = this.pool.createIfAbsent(key, () => this.createEntry(req));

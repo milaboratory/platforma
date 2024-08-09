@@ -5,15 +5,12 @@ test('simple observable', async () => {
   const obs1 = new WatchableValue(1);
   const obs2 = new WatchableValue(2);
 
-  const c = Computable.make(
-    ctx => {
-      const o1 = ctx.accessor(obs1);
-      const o2 = ctx.accessor(obs2);
-      if (o1.getValue() % 2 === 0)
-        return o1.getValue();
-      else
-        return o2.getValue();
-    });
+  const c = Computable.make((ctx) => {
+    const o1 = ctx.accessor(obs1);
+    const o2 = ctx.accessor(obs2);
+    if (o1.getValue() % 2 === 0) return o1.getValue();
+    else return o2.getValue();
+  });
 
   expect(c.isChanged()).toEqual(true);
   expect(await c.getValue()).toEqual(2);
@@ -25,8 +22,7 @@ test('simple observable', async () => {
   obs1.setValue(2);
   expect(c.isChanged()).toEqual(true);
   const fullValue = await c.getValueOrError();
-  if (fullValue.type !== 'ok')
-    fail();
+  if (fullValue.type !== 'ok') fail();
   expect(fullValue.value).toEqual(2);
 
   obs2.setValue(1);

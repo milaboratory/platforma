@@ -57,7 +57,7 @@ export interface ComputableCtx {
 }
 
 export type CellRenderingMode =
-/** value will be rendered for any cell state */
+  /** value will be rendered for any cell state */
   | 'Live'
   /** value will be rendered only when current and all child states reach stable state, any unstable state
    *  will be not rendered, so the value will be  */
@@ -88,7 +88,9 @@ export interface ComputablePostProcess<IR, T> {
 }
 
 /** Returned by a successful execution of rendering function */
-export interface IntermediateRenderingResult<IR, T> extends Partial<ComputableRecoverAction<T>>, Partial<ComputablePostProcess<IR, T>> {
+export interface IntermediateRenderingResult<IR, T>
+  extends Partial<ComputableRecoverAction<T>>,
+    Partial<ComputablePostProcess<IR, T>> {
   /** Rendering result, may be absent if rendering result is marked with error. */
   readonly ir: IR;
 }
@@ -102,22 +104,20 @@ export interface IntermediateRenderingResult<IR, T> extends Partial<ComputableRe
 export interface ComputableKernel<T> {
   /** Uniquely identifies this computable. Used to correlate same nested computables
    * between multiple incarnations of intermediate representations. */
-  readonly key: string | symbol,
+  readonly key: string | symbol;
 
   /** Controls the rendering process */
-  readonly ops: CellRenderingOps,
+  readonly ops: CellRenderingOps;
 
   /** Computable calculation code. Symbol is use here to facilitate easy identification
    * of computable kernels in arbitrary object trees. */
-  ___kernel___(ctx: ComputableCtx): IntermediateRenderingResult<unknown, T>
+  ___kernel___(ctx: ComputableCtx): IntermediateRenderingResult<unknown, T>;
 }
 
 export function tryExtractComputableKernel(v: unknown): ComputableKernel<unknown> | undefined {
   if (typeof v === 'object' && v !== null) {
-    if ('___kernel___' in v)
-      return v as ComputableKernel<unknown>;
-    if ('___wrapped_kernel___' in v)
-      return v['___wrapped_kernel___'] as ComputableKernel<unknown>;
+    if ('___kernel___' in v) return v as ComputableKernel<unknown>;
+    if ('___wrapped_kernel___' in v) return v['___wrapped_kernel___'] as ComputableKernel<unknown>;
   }
   return undefined;
 }
@@ -135,7 +135,7 @@ type NoComputableInside =
   | Float32Array
   | Float64Array
   | BigInt64Array
-  | BigUint64Array
+  | BigUint64Array;
 
 export function containComputables(v: unknown): boolean {
   const type = typeof v;
@@ -150,29 +150,32 @@ export function containComputables(v: unknown): boolean {
       return false;
 
     case 'object':
-      
-      if(v === null)
-        return false;
+      if (v === null) return false;
 
       const kernel = tryExtractComputableKernel(v);
       if (kernel !== undefined) {
         return true;
       } else if (Array.isArray(v)) {
-        for (const nested of v)
-          if (containComputables(nested))
-            return true;
-      } else if (v instanceof DataView || v instanceof Date
-        || v instanceof Int8Array || v instanceof Uint8Array || v instanceof Uint8ClampedArray
-        || v instanceof Int16Array || v instanceof Uint16Array
-        || v instanceof Int32Array || v instanceof Uint32Array
-        || v instanceof Float32Array || v instanceof Float64Array
-        || v instanceof BigInt64Array || v instanceof BigUint64Array) {
+        for (const nested of v) if (containComputables(nested)) return true;
+      } else if (
+        v instanceof DataView ||
+        v instanceof Date ||
+        v instanceof Int8Array ||
+        v instanceof Uint8Array ||
+        v instanceof Uint8ClampedArray ||
+        v instanceof Int16Array ||
+        v instanceof Uint16Array ||
+        v instanceof Int32Array ||
+        v instanceof Uint32Array ||
+        v instanceof Float32Array ||
+        v instanceof Float64Array ||
+        v instanceof BigInt64Array ||
+        v instanceof BigUint64Array
+      ) {
         return false;
       } else {
         for (const [, nested] of Object.entries(v as object))
-          if (nested !== v)
-            if (containComputables(nested))
-              return true;
+          if (nested !== v) if (containComputables(nested)) return true;
       }
 
       return false;
@@ -183,10 +186,19 @@ export function containComputables(v: unknown): boolean {
   }
 }
 
-export type UnwrapComputables<K> = K extends ComputableKernel<infer T>
-  ? UnwrapComputables<T>
-  : K extends Computable<infer T>
+export type UnwrapComputables<K> =
+  K extends ComputableKernel<infer T>
     ? UnwrapComputables<T>
-    : K extends bigint | boolean | null | number | string | symbol | undefined | NoComputableInside
-      ? K
-      : { [key in keyof K]: UnwrapComputables<K[key]> }
+    : K extends Computable<infer T>
+      ? UnwrapComputables<T>
+      : K extends
+            | bigint
+            | boolean
+            | null
+            | number
+            | string
+            | symbol
+            | undefined
+            | NoComputableInside
+        ? K
+        : { [key in keyof K]: UnwrapComputables<K[key]> };

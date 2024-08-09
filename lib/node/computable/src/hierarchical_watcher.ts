@@ -25,9 +25,7 @@ export class HierarchicalWatcher implements Watcher {
 
   private changed: boolean = false;
 
-  constructor(
-    children: HierarchicalWatcher[] = []
-  ) {
+  constructor(children: HierarchicalWatcher[] = []) {
     this.children = children;
 
     if (this.children.some((c) => c.changed)) this.changed = true;
@@ -39,10 +37,8 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   private setParent(parent: HierarchicalWatcher) {
-    if (this.changed)
-      throw new Error('parent can\'t be set to changed watcher');
-    if (this.parent !== undefined)
-      throw new Error('parent can be set only if it wasn\'t reset');
+    if (this.changed) throw new Error("parent can't be set to changed watcher");
+    if (this.parent !== undefined) throw new Error("parent can be set only if it wasn't reset");
     this.parent = parent;
   }
 
@@ -58,7 +54,7 @@ export class HierarchicalWatcher implements Watcher {
 
     // triggering change event for those who listen
     if (this.onChangeCallbacks !== undefined) {
-      this.onChangeCallbacks.forEach(cb => cb());
+      this.onChangeCallbacks.forEach((cb) => cb());
       this.onChangeCallbacks = undefined; // for gc
     }
 
@@ -74,8 +70,7 @@ export class HierarchicalWatcher implements Watcher {
   }
 
   public awaitChange(abortSignal?: AbortSignal): Promise<void> {
-    if (this.changed)
-      return Promise.resolve();
+    if (this.changed) return Promise.resolve();
 
     // lazy creating a map to hold change callbacks if not yet created
     if (this.onChangeCallbacks === undefined)
@@ -116,7 +111,7 @@ export class HierarchicalWatcher implements Watcher {
         callbacks.set(callId, resolveCb);
       });
     else
-      return new Promise(resolve =>
+      return new Promise((resolve) =>
         // adding the resolve callback forever until the watcher is marked as changed
         callbacks.set(callId, resolve)
       );
