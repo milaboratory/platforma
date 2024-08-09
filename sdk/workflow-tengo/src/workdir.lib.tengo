@@ -128,12 +128,10 @@ _fill := func(workdir) {
 		 * Adds a file with a content to the workdir.
 		 *
 		 * @param fileName: string - the name of the file.
-		 * @param contentRef: reference - the content as a reference to add.
+		 * @param contentRef: reference|any - the content as a reference to add or the content itself.
 		 */
 		writeFile: func(fileName, contentRef) {
 			validation.assertJsonSchema(fileName, "string")
-			validation.assertJsonSchema(contentRef, validation.reference)
-
 			values[fileName] = contentRef
 			self._addDirs(fileName)
 
@@ -143,7 +141,7 @@ _fill := func(workdir) {
 		/**
 		 * Adds multiple files with contents to the workdir.
 		 *
-		 * @param contentRefMap: map[string]reference - a map of references to a content.
+		 * @param contentMap: map[string]any|reference - a map of references to a content or to a content itself.
 		 */
 		writeFiles: func(contentRefMap) {
 			enum.each(contentRefMap, self.writeFile)

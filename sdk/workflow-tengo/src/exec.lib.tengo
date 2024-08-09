@@ -201,15 +201,11 @@ builder := func() {
 		 * Writes a file with a given content.
 		 *
 		 * @param fileName: string - the name of the content.
-		 * @param data: bytes|reference - data in bytes or a reference to
+		 * @param data: any|reference - a primitive tengo value (map or array) or a reference to
 		 *        a resource from which data we create a file.
 		 */
 		writeFile: func(fileName, data) {
 			fileName = path.canonize(fileName)
-
-			if !smart.isReference(data) {
-				data = smart.createJsonResource(data)
-			}
 			values[fileName] = data
 
 			return self

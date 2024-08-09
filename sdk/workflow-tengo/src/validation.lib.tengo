@@ -78,38 +78,41 @@ _validateTypes := func(js, tags, ...stack) {
 	// split keys "or"
 	keys := sets.fromSlice(text.split(tags.key, "|"))
 	for k, _ in keys {
-		if k == "alphanumeric" {
-			if !((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
-				return fail(stack, "expected alphanumeric, found %s", js)
-			}
-		} else if k == "string" {
-			if !is_string(js) {
-				return fail(stack, "expected string, found %s", js)
-			}
+		if k == "alphanumeric" && ((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
+			return success
+		}
 
+		if k == "string" && is_string(js) {
 			regex := tags.tags["regex"]
-
 			if !is_undefined(regex) && !text.re_match(regex, js) {
 				return fail(stack, stack, "value %q does not conform regex %q", js, regex)
 			}
-		} else if k == "null" {
-			if !is_undefined(js) {
-				return fail(stack, "expected null, found %s", js)
-			}
-		} else if k == "number" {
-			if !(is_int(js) || is_float(js)) {
-				return fail(stack, "expected number, found %s", js)
-			}
-		} else if k == "bool" {
-			if !is_bool(js) {
-				return fail(stack, "expected bool, found %s", js)
-			}
-		} else {
-			return fail(stack, "key %q is unknown", k)
+
+			return success
+		}
+
+		if k == "char" && is_char(js) {
+			return success
+		}
+
+		if k == "bytes" && is_bytes(js) {
+			return success
+		}
+
+		if k == "null" && is_undefined(js) {
+			return success
+		}
+
+		if k == "number" && (is_int(js) || is_float(js)) {
+			return success
+		}
+
+		if k == "bool" && is_bool(js) {
+			return success
 		}
 	}
 
-	return success
+	return fail("js %q is not one of a type: %s", js, keys)
 }
 
 /**
@@ -171,7 +174,7 @@ _validateJson := func(js, scheme, ...stack) {
 	// if the scheme is a function, call it
 	// with the element and the path of how we
 	// got this element, i.e. recursion history.
-	if is_function(scheme) {
+	if is_callable(scheme) {
 		return scheme(js, stack)
 	}
 
