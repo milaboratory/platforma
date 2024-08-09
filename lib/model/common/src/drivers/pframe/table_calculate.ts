@@ -150,23 +150,25 @@ export interface SingleValueStringContainsFuzzyPredicate {
   readonly reference: string;
 
   /**
-   * Integer, specifying the upper bound of number of substitutions allowed
-   * during the search.
-   */
-  readonly maxSubstitutions: number;
-
-  /**
-   * Integer, specifying the upper bound of number of insertions and deletions
-   * allowed during the search.
-   */
-  readonly maxIndels: number;
-
-  /**
-   * Integer specifying the upper bound of Levenshtein distance between
+   * Integer specifying the upper bound of edit distance between
    * reference and actual value.
+   * When {@link substitutionsOnly} is not defined or set to false
+   * Levenshtein distance is used (substitutions and indels)
    * @see https://en.wikipedia.org/wiki/Levenshtein_distance
+   * When {@link substitutionsOnly} is set to true
+   * Hamming distance is used (substitutions only)
+   * @see https://en.wikipedia.org/wiki/Hamming_distance
    */
   readonly maxEdits: number;
+
+  /** Changes the type of edit distance in {@link maxEdits} */
+  readonly substitutionsOnly?: boolean;
+
+  /**
+   * Some character in {@link reference} that will match any
+   * single character in searched text.
+   */
+  readonly wildcard?: string;
 }
 
 export interface SingleValueNotPredicate {
