@@ -39,8 +39,7 @@ function bytesToBase64(data: Uint8Array | undefined): string | undefined {
 }
 
 export class JsExecutionContext
-  implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string>
-{
+implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
   private readonly callbackRegistry: QuickJSHandle;
   private readonly fnJSONStringify: QuickJSHandle;
   private readonly fnJSONParse: QuickJSHandle;
@@ -278,6 +277,46 @@ export class JsExecutionContext
     return this.registerComputable(
       'getOnDemandBlobContentHandle',
       this.env.driverKit.blobDriver.getOnDemandBlob(resource)
+    );
+  }
+
+  //
+  // Import progress
+  //
+
+  getImportProgress(handle: string): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'getImportProgress',
+      this.env.driverKit.uploadDriver.getProgressId(resource)
+    );
+  }
+
+  //
+  // Logs
+  //
+
+  getLastLogs(handle: string, nLines: number): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'getLastLogs',
+      this.env.driverKit.logDriver.getLastLogs(resource, nLines)
+    );
+  }
+
+  getProgressLog(handle: string, patternToSearch: string): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'getProgressLog',
+      this.env.driverKit.logDriver.getProgressLog(resource, patternToSearch)
+    );
+  }
+
+  getLogHandle(handle: string): string {
+    const resource = this.getAccessor(handle).persist();
+    return this.registerComputable(
+      'getLogHandle',
+      this.env.driverKit.logDriver.getLogHandle(resource)
     );
   }
 
