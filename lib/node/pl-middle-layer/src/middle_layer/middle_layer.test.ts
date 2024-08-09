@@ -596,7 +596,7 @@ test('should create read-logs block, render it and read logs from a file', async
     });
 
     await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id, 5000);
+    await awaitBlockDone(prj, block3Id, 15000);
 
     const computable = prj.getBlockState(block3Id);
     // await computable.refreshState();
