@@ -71,3 +71,20 @@ tplTest(
     expect(await mainResult.awaitStableValue()).eq('42');
   }
 );
+
+tplTest(
+  'should run bash from the template, cat a file created by content and gets a content from stdout',
+  async ({ driverKit, helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'test.exec.run_cat_on_value',
+      ['main'],
+      (tx) => ({})
+    );
+
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString());
+
+    expect(await mainResult.awaitStableValue()).eq('42');
+  }
+);

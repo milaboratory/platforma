@@ -803,7 +803,7 @@ createMapResourceWithType := func(resourceType, keyToValue) {
 	builder := structBuilder(resourceType)
 
 	for key, value in keyToValue {
-		builder.createInputField(key).set(value)
+		builder.createInputField(key).setRefOrJson(value)
 	}
 
 	return builder.lockAndBuild()

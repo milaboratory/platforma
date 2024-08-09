@@ -71,6 +71,11 @@ createBlobUpload := func(settings) {
  *         }
  */
 importFile := func(importFileHandle) {
+	validation.assertJsonSchema(
+		importFileHandle,
+		`string,regex=^(upload://upload/.*|index://index/.*)`
+	)
+
 	url := ll.parseUrl(importFileHandle)
 	path := url.Path[1:] // trim  "/"
 

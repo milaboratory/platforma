@@ -29,7 +29,7 @@ self.body(func(inputs) {
 
 	validation.assertJsonSchema(inputs, {
 		files: { any: validation.resource },
-		values: { any: validation.resource },
+		values: { any: "any" },
 		dirs: ["string"],
 		runOptions: {
 			cmd: cmdScheme,
