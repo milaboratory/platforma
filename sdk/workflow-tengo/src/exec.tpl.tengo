@@ -1,5 +1,9 @@
-/** Creates and fill a workdir, runs a command on it
- * and saves a chosen resulted files from this dir. */
+// exec.tpl
+
+/** 
+ * Creates and fill a workdir, runs a command on it
+ * and saves a chosen resulted files from this dir.
+ */
 
 ll := import(":ll")
 self := import(":tpl")
