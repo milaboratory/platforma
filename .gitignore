@@ -1,5 +1,6 @@
-node_modules
-dist/
-pl-storage/
-tsconfig.tsbuildinfo
-state.json
+/.vscode/
+/node_modules/
+/binaries/
+/dist/
+/tsconfig.tsbuildinfo
+/state/

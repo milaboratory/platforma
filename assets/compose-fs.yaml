@@ -1,4 +1,4 @@
-name: "platforma"
+name: "platforma-fs"
 
 services:
   backend:
@@ -30,8 +30,29 @@ services:
       - "PLC_FILE_PRIMARY_TYPE=FS"
 
     volumes:
-      - type: bind
-        source: ${PL_STORAGE_PATH}
-        target: /storage
+      - primary:/storage/controllers/file/primary
+      - library:/storage/controllers/file/library
+      - work:/storage/controllers/file/work
+      - software:/storage/controllers/runner/software
+      - db:/storage/rocksdb
 
     restart: always
+
+volumes:
+  primary:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${PL_STORAGE_PRIMARY}'
+
+  library:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${PL_STORAGE_LIBRARY}'
+
+  work:
+  software:
+  db:

@@ -1,8 +1,7 @@
-import { Command, Flags } from '@oclif/core'
-import * as pkg from '../package'
-import { assertNever } from '../util'
-import { spawnSync } from 'child_process'
-import state from '../state'
+import { Command } from '@oclif/core'
+import Core from '../core'
+import * as cmdOpts from '../cmd-opts'
+import * as util from '../util'
 
 export default class Stop extends Command {
     static override description = 'Stop platforma service'
@@ -11,31 +10,16 @@ export default class Stop extends Command {
         '<%= config.bin %> <%= command.id %>',
     ]
 
+    static override flags = {
+        ...cmdOpts.GlobalFlags,
+    }
+
     public async run(): Promise<void> {
-        if (!state.isActive) {
-            console.log("no running service detected")
-            return
-        }
+        const { flags } = await this.parse(Stop)
 
-        const lastRun = state.lastRun!
+        const logger = util.createLogger(flags['log-level'])
+        const core = new Core(logger)
 
-        switch (lastRun.mode) {
-            case 'docker':
-                const result = spawnSync(
-                    'docker',
-                    ['compose', '--file', lastRun.composePath!, 'down'],
-                    {
-                        env: {
-                            ...process.env,
-                            ...lastRun.envs
-                        },
-                        stdio: 'inherit'
-                    },
-                )
-                process.exit(result.status)
-
-            default:
-                assertNever(lastRun.mode)
-        }
+        core.stop()
     }
 }

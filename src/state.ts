@@ -1,22 +1,34 @@
-import { existsSync, writeFileSync, rmSync } from 'fs'
+import fs from 'fs'
+import path from 'path'
 import * as pkg from './package'
-import { resolve } from 'path'
 
-export type runMode = 'docker'
+export type runMode = 'docker' | 'process'
 
-export type lastRun = {
+export type dockerRunInfo = {
     plImage?: string
     composePath?: string
-    storageDir?: string
+    libraryPath?: string
+    primaryPath?: string
+}
+
+export type processRunInfo = {
+    pid?: number
+    storagePath?: string
+}
+
+export type lastRun = {
+    docker?: dockerRunInfo
+    process?: processRunInfo
 
     mode: runMode
     cmd: string
     args: readonly string[]
+    workdir?: string
     envs?: NodeJS.Dict<string>
 }
 
 export function reset() {
-    rmSync(State.getInstance().stateFilePath)
+    fs.rmSync(State.getInstance().filePath)
 }
 
 type state = {
@@ -32,13 +44,20 @@ class State {
         isActive: false,
     }
 
-    public readonly stateFilePath: string
+    public readonly filePath: string
+    public readonly dirPath: string
 
     constructor() {
-        this.stateFilePath = resolve(pkg.path("state.json"))
+        this.dirPath = path.resolve(pkg.state())
+        this.filePath = path.resolve(pkg.state("state.json"))
 
-        if (existsSync(this.stateFilePath)) {
-            this.state = JSON.parse(pkg.readFileSync(this.stateFilePath).toString())
+
+        if (!fs.existsSync(this.dirPath)) {
+            fs.mkdirSync(this.dirPath, { recursive: true })
+        }
+
+        if (fs.existsSync(this.filePath)) {
+            this.state = JSON.parse(pkg.readFileSync(this.filePath).toString())
         }
     }
 
@@ -51,7 +70,7 @@ class State {
     }
 
     private writeState() {
-        writeFileSync(this.stateFilePath, JSON.stringify(this.state))
+        fs.writeFileSync(this.filePath, JSON.stringify(this.state))
     }
 
     get isActive(): boolean {

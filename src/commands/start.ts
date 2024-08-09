@@ -1,8 +1,7 @@
 import { Command, Flags } from '@oclif/core'
-import * as pkg from '../package'
-import { assertNever } from '../util'
-import { rerunLast } from '../run'
-import state from '../state'
+import Core from '../core'
+import * as cmdOpts from '../cmd-opts'
+import * as util from '../util'
 
 export default class Start extends Command {
     static override description = 'Start last run service configuraiton'
@@ -11,10 +10,16 @@ export default class Start extends Command {
         '<%= config.bin %> <%= command.id %>',
     ]
 
+    static override flags = {
+        ...cmdOpts.GlobalFlags,
+    }
+
     public async run(): Promise<void> {
-        const child = rerunLast({stdio: 'inherit'})
-        child.on('exit', (code) => {
-            process.exit(code ?? 0)
-        })
+        const { flags } = await this.parse(Start)
+
+        const logger = util.createLogger(flags['log-level'])
+        const core = new Core(logger)
+
+        core.startLast()
     }
 }

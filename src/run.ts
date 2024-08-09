@@ -1,39 +1,73 @@
+import fs from 'fs'
 import { spawn, SpawnOptions, ChildProcess } from 'child_process'
-import state, { lastRun } from './state';
-import { runMode } from './state'
+import state, { dockerRunInfo, processRunInfo } from './state';
+import winston from 'winston';
 
-export function runDocker(args: readonly string[], options: SpawnOptions, stateToSave?: Partial<lastRun>): ChildProcess {
+export function runDocker(logger: winston.Logger, args: readonly string[], options: SpawnOptions, stateToSave?: dockerRunInfo): ChildProcess {
     state.lastRun = {
         ...state.lastRun,
 
         mode: 'docker',
         cmd: 'docker',
         args: args,
+        workdir: options.cwd as string,
         envs: options.env,
 
-        ...stateToSave
+        docker: {
+            ...state.lastRun?.docker, 
+            ...stateToSave,
+        }
     }
 
-    options.env = { ...process.env, ...options.env }
-
-    return spawn('docker', args, options,)
+    return run(logger, 'docker', args, options)
 }
 
-export function rerunLast(options: SpawnOptions): ChildProcess {
+export function runProcess(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions, stateToSave?: processRunInfo): ChildProcess {
+    state.lastRun = {
+        ...state.lastRun,
+
+        mode: 'process',
+        cmd: cmd,
+        args: args,
+        workdir: options.cwd as string,
+        envs: options.env,
+
+        process: {
+            ...state.lastRun?.process,
+            ...stateToSave,
+        }
+    }
+
+    const child = run(logger, cmd, args, options)
+    state.lastRun.process = {
+        ...state.lastRun.process,
+        pid: child.pid
+    }
+    return child
+}
+
+export function rerunLast(logger: winston.Logger, options: SpawnOptions): ChildProcess {
     if (!state.lastRun) {
         throw new Error("no previous run info found: this is the first run after package installation")
     }
 
     options = {
-        ...options,
+        cwd: state.lastRun.workdir,
         env: {
-            ...process.env,
             ...state.lastRun.envs,
             ...options.env
-        }
+        },
+        ...options,
     }
 
-    console.log(`Running:\n  env: ${JSON.stringify(state.lastRun.envs)}\n  cmd: ${JSON.stringify([state.lastRun.cmd, ...state.lastRun.args])}`, )
+    return run(logger, state.lastRun.cmd, state.lastRun.args, options)
+}
 
-    return spawn(state.lastRun.cmd, state.lastRun.args, options)
+function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
+    logger.info(`Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`,)
+
+    options.env = { ...process.env, ...options.env }
+    return spawn(cmd, args, options)
+
+
 }

@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { readFileSync as fsReadFileSync, readdirSync } from "fs";
+import fs from 'fs';
 
 export function path(...p: string[]): string {
     return resolve(__dirname, "..", ...p)
@@ -9,19 +9,27 @@ export function dist(...p: string[]): string {
     return path("dist", ...p)
 }
 
-export function docker(...p: string[]): string {
-    return path("docker", ...p)
+export function assets(...p: string[]): string {
+    return path("assets", ...p)
+}
+
+export function binaries(...p: string[]): string {
+    return path("binaries", ...p)
+}
+
+export function state(...p: string[]): string {
+    return path("state", ...p)
 }
 
 export function composeFiles(): string[] {
-    const dockerDirEntries = readdirSync(docker())
+    const dockerDirEntries = fs.readdirSync(assets())
     return dockerDirEntries.filter((entry) => {
-        return entry.endsWith(".yaml")
-    }).map((value) => docker(value))
+        return entry.startsWith("compose-") && entry.endsWith(".yaml")
+    }).map((value) => assets(value))
 }
 
 export function readFileSync(...p: string[]): Buffer {
-    return fsReadFileSync(path(...p))
+    return fs.readFileSync(path(...p))
 }
 
 export type packageJson = {

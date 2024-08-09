@@ -1,4 +1,4 @@
-name: "platforma"
+name: "platforma-s3"
 
 services:
   minio:
@@ -12,7 +12,7 @@ services:
       MINIO_ROOT_PASSWORD: testpassword
 
     volumes:
-      - minio-data:/data
+      - primary:/data
 
   backend:
     image: ${PL_IMAGE}
@@ -49,19 +49,16 @@ services:
       - "PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT=http://localhost:9000"
 
     volumes:
-      - file-primary:/storage/controllers/file/primary
-      - file-library:/storage/controllers/file/library
-      - file-work:/storage/controllers/file/work
-      - runner-software:/storage/controllers/runner/software
+      - library:/storage/controllers/file/library
+      - work:/storage/controllers/file/work
+      - software:/storage/controllers/runner/software
       - db:/storage/rocksdb
 
     restart: always
 
 volumes:
-  file-primary:
-  file-library:
-  file-work:
-  runner-software:
+  primary:
+  library:
+  work:
+  software:
   db:
-
-  minio-data:
