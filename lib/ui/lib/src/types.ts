@@ -47,6 +47,7 @@ export const maskIcons = [
   'server-on',
   'close',
   'columns',
+  'restart',
 ] as const;
 
 export type MaskIconName = (typeof maskIcons)[number];
