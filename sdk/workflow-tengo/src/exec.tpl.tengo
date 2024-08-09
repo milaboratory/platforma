@@ -1,6 +1,6 @@
 // exec.tpl
 
-/** 
+/**
  * Creates and fill a workdir, runs a command on it
  * and saves a chosen resulted files from this dir.
  */
@@ -52,8 +52,13 @@ self.body(func(inputs) {
 	// create and fill the workdir with files that were passed from inputs.
 	builder := workdir.builder()
 	builder.addFiles(inputs.files)
-	builder.writeFiles(inputs.values)
 	slices.map(inputs.dirs, builder.mkDir)
+
+	// Pass values as fields for saving the topology in pl-core
+	// and avoiding deduplication issues.
+	rawInputs := self.rawInputs()
+	builder.writeFiles(rawInputs.values.getValue().inputs())
+
 	wd := builder.build()
 
 	// creates a runcmd builder

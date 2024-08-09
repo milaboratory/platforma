@@ -324,8 +324,8 @@ builder := func() {
 			}
 
 			tpl := render.create(ll.importTemplate(":exec"), {
-				files: files,
-				values: values,
+				files: smart.createMapResource(files),
+				values: smart.createMapResource(values),
 				dirs: slices.fromSet(dirs),
 				runOptions: {
 					cmd: _argToExec(cmd, false, undefined),

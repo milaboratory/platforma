@@ -102,6 +102,13 @@ tpl := func() {
 			self._unmarshallers = append(self._unmarshallers, preproc)
 		},
 
+		/**
+		 * @return map[string]field: - a map of inputs to the fields of the input map.
+		 */
+		rawInputs: func() {
+			return self.renderer().get(tplutil.INPUTS_MAP_FIELD).inputs()
+		},
+
 		_inputs: undefined,
 
 		/**
@@ -345,7 +352,7 @@ tpl := func() {
 						pp := self.preparedMapResource()
 						if !is_undefined(pp) {
 							if !pp.isReady() {
-								tx.subscribeTo(pp.id, "PrepareIsReady", {"ResourceReady": true})
+								tx.subscribeTo(pp.id, "PrepareIsReady", { "ResourceReady": true })
 								return
 							}
 						}
@@ -362,11 +369,11 @@ tpl := func() {
 					}
 				} else {
 					// wait until inputs map is ready
-					tx.subscribeTo(inputMap.id, "InputMapAllInputsSet", {"AllInputsSet": true })
+					tx.subscribeTo(inputMap.id, "InputMapAllInputsSet", { "AllInputsSet": true })
 				}
 			} else if ll.isInitializing() {
 				// wait until inputs map is ready
-				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", {"AllInputsSet": true })
+				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", { "AllInputsSet": true })
 			}
 		}
 	}
@@ -379,11 +386,12 @@ tpl := func() {
 instance := tpl()
 
 export ll.toStrict({
-	renderer: instance.renderer,
-	registerUnmarshaller : instance.registerUnmarshaller,
-	hasInput: instance.hasInput,
-	inputs: instance.inputs,
-	defineOutputs : instance.defineOutputs,
-	prepare: instance.prepare,
-	body: instance.body
+	renderer                : instance.renderer,
+	registerUnmarshaller    : instance.registerUnmarshaller,
+	rawInputs               : instance.rawInputs,
+	hasInput                : instance.hasInput,
+	inputs                  : instance.inputs,
+	defineOutputs           : instance.defineOutputs,
+	prepare                 : instance.prepare,
+	body                    : instance.body
 })
