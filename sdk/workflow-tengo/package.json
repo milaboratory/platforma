@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-sdk",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Tengo SDK library",
   "homepage": "https://docs.platforma.bio/",
   "author": {
@@ -21,8 +21,8 @@
     "test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test && vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "vscode-tags": "./create_tags.sh .tags",
-    "emacs-tags": "./create_tags.sh ../TAGS -e"
+    "vscode-tags": "./create_tags.sh .tags false",
+    "emacs-tags": "./create_tags.sh ../TAGS false -e"
   },
   "dependencies": {
   },

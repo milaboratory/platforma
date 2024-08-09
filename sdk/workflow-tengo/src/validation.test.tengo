@@ -6,7 +6,7 @@ assert := func(got, want, ...msg) {
 	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
 }
 
-TestValidateJSON := func() {
+TestValidateJSONGeneral := func() {
 	schema := {
 		"__options__,closed": "",
 		"settings,omitempty": {
@@ -53,5 +53,13 @@ TestValidateJSON := func() {
 
 	got := validation.checkJson(js, schema)
 
-	assert(got, { result: true })
+	assert(got, validation.success)
+}
+
+TestValidateJSONOrArrays := func() {
+	schema := ["or", "bytes", "string", validation.reference]
+
+	assert(validation.checkJson("aString", schema), validation.success)
+	assert(validation.checkJson(bytes("bytes"), schema), validation.success)
+	assert(validation.isValid(42, schema), false)
 }

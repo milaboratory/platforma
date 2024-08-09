@@ -34,6 +34,10 @@ fail := func(stack, msg, ...args) {
 	}
 }
 
+isSuccess := func(r) {
+	return r.result == true
+}
+
 /**
  * Returns true if the validation failed.
  *
@@ -71,48 +75,46 @@ check := func(condition, stack, msg, ...args) {
  * @param stack: ...any - the current stack state.
  */
 _validateTypes := func(js, tags, ...stack) {
-	if tags.key == "any" {
-		return
+	k := tags.key
+
+	if k == "any" {
+		return success
 	}
 
-	// split keys "or"
-	keys := sets.fromSlice(text.split(tags.key, "|"))
-	for k, _ in keys {
-		if k == "alphanumeric" && ((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
-			return success
-		}
-
-		if k == "string" && is_string(js) {
-			regex := tags.tags["regex"]
-			if !is_undefined(regex) && !text.re_match(regex, js) {
-				return fail(stack, stack, "value %q does not conform regex %q", js, regex)
-			}
-
-			return success
-		}
-
-		if k == "char" && is_char(js) {
-			return success
-		}
-
-		if k == "bytes" && is_bytes(js) {
-			return success
-		}
-
-		if k == "null" && is_undefined(js) {
-			return success
-		}
-
-		if k == "number" && (is_int(js) || is_float(js)) {
-			return success
-		}
-
-		if k == "bool" && is_bool(js) {
-			return success
-		}
+	if k == "alphanumeric" && ((is_string(js) && text.re_match("^[[:alnum:]]*$", js)) || is_int(js)) {
+		return success
 	}
 
-	return fail("js %q is not one of a type: %s", js, keys)
+	if k == "string" && is_string(js) {
+		regex := tags.tags["regex"]
+		if !is_undefined(regex) && !text.re_match(regex, js) {
+			return fail(stack, stack, "value %q does not conform regex %q", js, regex)
+		}
+
+		return success
+	}
+
+	if k == "char" && is_char(js) {
+		return success
+	}
+
+	if k == "bytes" && is_bytes(js) {
+		return success
+	}
+
+	if k == "null" && is_undefined(js) {
+		return success
+	}
+
+	if k == "number" && (is_int(js) || is_float(js)) {
+		return success
+	}
+
+	if k == "bool" && is_bool(js) {
+		return success
+	}
+
+	return fail(stack, "js %q is not one of a type: %s", js, tags.key)
 }
 
 /**
@@ -159,9 +161,7 @@ _validateJson := func(js, scheme, ...stack) {
 	}
 
 	// if the scheme is a string, then
-	// we check the predefined type. The type of the json
-	// can be any of the union, e.g. "string|number|null".
-	// We can add custom types here, e.g. "email|ipv6|number"
+	// we check the predefined type.
 	if is_string(scheme) {
 		if scheme == "any" {
 			return success
@@ -176,6 +176,20 @@ _validateJson := func(js, scheme, ...stack) {
 	// got this element, i.e. recursion history.
 	if is_callable(scheme) {
 		return scheme(js, stack)
+	}
+
+	// if the scheme is an array with "or" at the beginning,
+	// we should check if the element is succesed with
+	// any of the following elements.
+	if is_array(scheme) && len(scheme) > 0 && scheme[0] == "or" {
+		for _, elem in scheme[1:] {
+			r := _validateJson(js, elem, stack...)
+			if isSuccess(r) {
+				return r
+			}
+		}
+
+		return fail(stack, "js %q does not fit any of the following rules: %q", js, scheme)
 	}
 
 	// if the scheme is an array, then check that every
@@ -330,6 +344,8 @@ reference := func(elem, stack) {
 export ll.toStrict({
 	success: success,
 	fail: fail,
+	isSuccess: isSuccess,
+	isFail: isFail,
 	checkJson: checkJson,
 	isValid: isValid,
 	assertJsonSchema: assertJsonSchema,

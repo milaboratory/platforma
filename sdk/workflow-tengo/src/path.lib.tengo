@@ -56,7 +56,7 @@ trimPrefix := func(path, prefix) {
 }
 
 _sepOrDefault := func(...sep) {
-	validation.assertJsonSchema(sep, ["string|char|null"])
+	validation.assertJsonSchema(sep, [["or", "string", "char", "null"]])
 
 	if slices.length(sep) == 0 {
 		return separator

@@ -4,6 +4,7 @@ self := import(":tpl")
 smart := import(":smart")
 exec := import(":exec")
 file := import(":file")
+json := import("json")
 
 self.defineOutputs(["main"])
 
@@ -13,7 +14,7 @@ self.body(func(inputs) {
 		arg("bash").
 		arg("-c").
 		arg("cat input.txt").
-		writeFile("input.txt", 42).
+		writeFile("input.txt", ">asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n").
 		saveStdoutContent().
 		run()
 

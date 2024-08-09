@@ -85,6 +85,6 @@ tplTest(
     const mainResult = result.computeOutput('main', (a) =>
       a?.getDataAsString());
 
-    expect(await mainResult.awaitStableValue()).eq('42');
+    expect(await mainResult.awaitStableValue()).eq(">asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n");
   }
 );
