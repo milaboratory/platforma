@@ -9,6 +9,7 @@ RTYPE_MAP_ALT := { Name: "StdMap", Version: "1" }
 RTYPE_MAP_EPH := { Name: "EphStdMap", Version: "1" }
 
 RTYPE_BINARY_MAP := { Name: "BinaryMap", Version: "1" }
+RTYPE_BINARY_VALUE := { Name: "BinaryValue", Version: "1" }
 RTYPE_BLOB_MAP := { Name: "BlobMap", Version: "1" }
 
 RTYPE_CONTEXT := { Name: "BContext", Version: "1" }
@@ -24,6 +25,7 @@ RTYPE_QUERY_RESULT := { Name: "BQueryResult", Version: "1" }
 
 export ll.toStrict({
 	RTYPE_BINARY_MAP            : RTYPE_BINARY_MAP,
+	RTYPE_BINARY_VALUE          : RTYPE_BINARY_VALUE,
 	RTYPE_BLOB_MAP              : RTYPE_BLOB_MAP,
 	RTYPE_BOBJECT_SPEC          : RTYPE_BOBJECT_SPEC,
 	RTYPE_BRESOLVE_CHOICE       : RTYPE_BRESOLVE_CHOICE,

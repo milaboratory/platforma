@@ -12,6 +12,7 @@ render := import(":render")
 enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
+constants := import(":constants")
 
 _HEAVY_QUEUE := "heavy"
 _UI_TASKS_QUEUE := "ui-tasks"
@@ -201,11 +202,17 @@ builder := func() {
 		 * Writes a file with a given content.
 		 *
 		 * @param fileName: string - the name of the content.
-		 * @param data: any|reference - a primitive tengo value (map or array) or a reference to
+		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to
 		 *        a resource from which data we create a file.
 		 */
 		writeFile: func(fileName, data) {
+			validation.assertJsonSchema(data, ["or",
+				"string",
+				"bytes",
+				validation.reference])
+
 			fileName = path.canonize(fileName)
+
 			values[fileName] = data
 
 			return self
@@ -323,9 +330,17 @@ builder := func() {
 				sets.add(outputValues, stderr)
 			}
 
+			// We don't want these values to be encoded as JSON's since
+			// values are pure bytes.
+			// Thus, we create a resource with a custom type here manually.
+			valueRefs := maps.mapValues(values, func(v) {
+				if smart.isReference(v) { return v }
+				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
+			})
+
 			tpl := render.create(ll.importTemplate(":exec"), {
 				files: smart.createMapResource(files),
-				values: smart.createMapResource(values),
+				values: smart.createMapResource(valueRefs),
 				dirs: slices.fromSet(dirs),
 				runOptions: {
 					cmd: _argToExec(cmd, false, undefined),
