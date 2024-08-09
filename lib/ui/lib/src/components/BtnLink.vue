@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { MaskIconName, Size } from '@/types';
+import type { MaskIconName16, Size } from '@/types';
 import BtnSecondary from '@/components/BtnSecondary.vue';
 import { ref } from 'vue';
 
@@ -8,7 +8,7 @@ const props = defineProps<{
   small?: boolean;
   large?: boolean;
   size?: Size;
-  icon: MaskIconName;
+  icon: MaskIconName16;
   reverse?: boolean;
   justifyCenter?: boolean;
   disabled?: boolean;

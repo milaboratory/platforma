@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import type { MaskIconName, Size } from '@/types';
-import MaskIcon from '@/components/MaskIcon.vue';
+import type { MaskIconName16, Size } from '@/types';
+import MaskIcon16 from '@/components/MaskIcon16.vue';
 import { computed, ref, useSlots } from 'vue';
 import { useRipple } from '@/composition/useRipple';
 
@@ -11,7 +11,7 @@ const props = withDefaults(
     large?: boolean;
     size?: Size;
     round?: boolean;
-    icon?: MaskIconName;
+    icon?: MaskIconName16;
     reverse?: boolean;
     justifyCenter?: boolean;
     hover?: boolean;
@@ -44,7 +44,7 @@ useRipple(btn);
     <span v-if="slots.default">
       <slot />
     </span>
-    <mask-icon v-if="loading" name="loader" />
-    <mask-icon v-else-if="icon" :name="icon" />
+    <MaskIcon16 v-if="loading" name="loading" :size="size" />
+    <MaskIcon16 v-else-if="icon" :name="icon" :size="size" />
   </button>
 </template>

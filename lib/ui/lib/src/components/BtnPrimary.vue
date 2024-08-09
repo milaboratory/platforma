@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { MaskIconName, Size } from '@/types';
+import type { MaskIconName16, Size } from '@/types';
 import BtnBase from '@/components/btn/BtnBase.vue';
 
 const props = defineProps<{
@@ -8,7 +8,7 @@ const props = defineProps<{
   large?: boolean;
   size?: Size;
   round?: boolean;
-  icon?: MaskIconName;
+  icon?: MaskIconName16;
   reverse?: boolean;
   justifyCenter?: boolean;
 }>();

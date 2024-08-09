@@ -30,6 +30,9 @@ export type IOption<T = unknown> = {
   value: T;
 };
 
+/**
+ * @deprecated
+ */
 export const maskIcons = [
   'checkmark',
   'download',
@@ -51,6 +54,30 @@ export const maskIcons = [
   'stop',
 ] as const;
 
+/**
+ * @deprecated
+ */
 export type MaskIconName = (typeof maskIcons)[number];
+
+export const maskIcons16 = [
+  'checkmark',
+  'import',
+  'clear',
+  'chevron-right',
+  'add',
+  'play',
+  'loading',
+  'arrow-right',
+  'clipboard',
+  'link',
+  'comp',
+  'close',
+  'restart',
+  'stop',
+] as const;
+
+export type MaskIconName16 = (typeof maskIcons16)[number];
+
+// @todo MaskIcons24
 
 export type SliderMode = 'input' | 'text';

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
-import { BtnPrimary, BtnSecondary, BtnAccent, BtnGroup, BtnLink, BtnGhost, maskIcons, type Size } from '@milaboratory/platforma-uikit.lib';
+import { BtnPrimary, BtnSecondary, BtnAccent, BtnGroup, BtnLink, BtnGhost, type Size, maskIcons16 } from '@milaboratory/platforma-uikit.lib';
 import Split from '@/Split.vue';
 
 const props = reactive({
@@ -57,10 +57,10 @@ function onClick() {
           <btn-ghost icon="arrow-right" v-bind="props">{{ text }}</btn-ghost>
           <btn-ghost icon="add" v-bind="props">{{ text }}</btn-ghost>
           <btn-ghost icon="clipboard" v-bind="props" />
-          <btn-ghost icon="settings-2" v-bind="props">Settings</btn-ghost>
+          <btn-ghost icon="import" v-bind="props">Settings</btn-ghost>
         </div>
         <div>
-          <btn-ghost v-for="icon in maskIcons" :key="icon" :icon="icon">Icon: {{ icon }}</btn-ghost>
+          <btn-ghost v-for="icon in maskIcons16" :key="icon" :icon="icon">Icon: {{ icon }}</btn-ghost>
         </div>
       </div>
     </split>

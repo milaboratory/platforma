@@ -27,6 +27,7 @@ import Chip from './components/Chip.vue';
 import Tooltip from './components/Tooltip.vue';
 import ToggleSwitch from './components/ToggleSwitch.vue';
 import MaskIcon from './components/MaskIcon.vue';
+import MaskIcon16 from './components/MaskIcon16.vue';
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
 import DialogModal from './components/DialogModal.vue';
@@ -73,7 +74,7 @@ import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
 export type * from './types';
 
-export { maskIcons } from './types';
+export { maskIcons, maskIcons16 } from './types';
 
 export * from './helpers/dom';
 
@@ -109,6 +110,7 @@ export {
   Tooltip,
   ToggleSwitch,
   MaskIcon,
+  MaskIcon16,
   GridTable,
   DataTable,
   ContextProvider,

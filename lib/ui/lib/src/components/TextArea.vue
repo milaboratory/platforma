@@ -35,10 +35,6 @@ const value = computed({
 
 const nonEmpty = computed(() => !!props.modelValue);
 
-function clear() {
-  emit('update:modelValue', undefined);
-}
-
 useLabelNotch(root);
 
 function adjustHeight() {
