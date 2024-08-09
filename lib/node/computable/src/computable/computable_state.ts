@@ -275,6 +275,10 @@ function addChildren(node: unknown, children: Children) {
   const type = typeof node;
   switch (type) {
     case 'object':
+
+      if(node === null)
+        return;
+      
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined) {
 

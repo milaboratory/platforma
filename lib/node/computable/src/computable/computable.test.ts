@@ -25,6 +25,14 @@ test('computable with post-process', async () => {
   expect(await c1.getValue()).toEqual('12');
 });
 
+test('computable with null value', async () => {
+  const c1 = Computable.make(ctx => {
+    return null;
+  });
+
+  expect(await c1.getValue()).toBeNull();
+});
+
 test('nested computable with post-process', async () => {
   const c1 = Computable.make(ctx => {
     return Computable.make(ctx => 12);

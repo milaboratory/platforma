@@ -150,6 +150,9 @@ export function containComputables(v: unknown): boolean {
       return false;
 
     case 'object':
+      
+      if(v === null)
+        return false;
 
       const kernel = tryExtractComputableKernel(v);
       if (kernel !== undefined) {
