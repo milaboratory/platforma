@@ -84,6 +84,22 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getOnDemandBlobContentHandle(handle: AHandle): FHandle; // RemoteBlobHandleAndSize | undefined;
 
   //
+  // Import progress
+  //
+
+  getImportProgress(handle: AHandle): FHandle; // ImportProgress;
+
+  //
+  // Logs
+  //
+
+  getLastLogs(handle: AHandle, nLines: number): FHandle; // string | undefined;
+
+  getProgressLog(handle: AHandle, patternToSearch: string): FHandle; // string | undefined;
+
+  getLogHandle(handle: AHandle): FHandle; // AnyLogHandle | undefined;
+
+  //
   // Blocks
   //
 

@@ -1,4 +1,6 @@
 import {
+  AnyLogHandle,
+  ImportProgress,
   LocalBlobHandleAndSize,
   PObject,
   RemoteBlobHandleAndSize,
@@ -158,5 +160,21 @@ export class TreeNodeAccessor {
 
   public getOnDemandBlobHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
     return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle));
+  }
+
+  public getImportProgress(): FutureRef<ImportProgress> {
+    return new FutureRef(getCfgRenderCtx().getImportProgress(this.handle));
+  }
+
+  public getLastLogs(nLines: number): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getLastLogs(this.handle, nLines));
+  }
+
+  public getProgressLog(patternToSearch: string): FutureRef<string | undefined> {
+    return new FutureRef(getCfgRenderCtx().getProgressLog(this.handle, patternToSearch));
+  }
+
+  public getLogHandle(): FutureRef<AnyLogHandle | undefined> {
+    return new FutureRef(getCfgRenderCtx().getLogHandle(this.handle));
   }
 }
