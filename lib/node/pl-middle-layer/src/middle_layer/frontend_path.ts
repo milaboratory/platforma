@@ -70,8 +70,7 @@ export function frontendData(
         .traverse(
           {
             field: projectFieldName(id, 'blockPack'),
-            assertFieldType: 'Dynamic',
-            errorIfFieldNotSet: true
+            assertFieldType: 'Dynamic'
           },
           { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true },
           { field: BlockPackFrontendField, assertFieldType: 'Input' }

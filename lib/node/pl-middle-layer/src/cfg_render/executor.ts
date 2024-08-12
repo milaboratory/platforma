@@ -234,9 +234,16 @@ export function computableFromCfgUnsafe(
 
           // Post process can be called several times, that's why it must be a side-effect-free function.
           // But `execute` modifies a stack, so we have to defensively copy it here.
-          const copiedStack = {...stack};
+          const copyOfPendingSubrotines = new Map<SubroutineKey, PendingSubroutine>();
+          for (const [key, value] of stack.pendingSubroutines)
+            copyOfPendingSubrotines.set(key, { ...value });
+          const copiedStack: ExecutionStack = {
+            result: stack.result,
+            pendingSubroutines: copyOfPendingSubrotines
+          };
           execute(postEnv, copiedStack, resolvedOps, false);
-          if (!('result' in copiedStack)) throw new Error('illegal cfg rendering stack state, no result');
+          if (!('result' in copiedStack))
+            throw new Error('illegal cfg rendering stack state, no result');
           return copiedStack.result;
         }
       };
