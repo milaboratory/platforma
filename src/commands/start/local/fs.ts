@@ -32,7 +32,7 @@ export default class FS extends Command {
 
     const workdir = flags['pl-workdir'] ?? "."
     const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined
-    const logFile = flags['pl-log-file'] ? path.resolve(flags['pl-log-file']) : 'stdout'
+    const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout'
 
     const startOptions: startLocalFSOptions = {
       binaryPath: flags['pl-binary'],

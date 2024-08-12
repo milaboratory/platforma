@@ -23,13 +23,15 @@ export default class Core {
 
     public startLocal(options?: startLocalOptions): ChildProcess {
         const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, "binaries", "platforma")
+        var configPath = options?.configPath
+        const workdir: string = options?.workdir ?? (configPath ? process.cwd() : pkg.state())
 
         if (options?.primaryURL) {
             options.configOptions = {
                 ...options.configOptions,
                 storages: {
                     ...options.configOptions?.storages,
-                    primary: plCfg.storageSettingsFromURL(options.primaryURL, options.workdir),
+                    primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir),
                 }
             }
         }
@@ -38,7 +40,7 @@ export default class Core {
                 ...options.configOptions,
                 storages: {
                     ...options.configOptions?.storages,
-                    library: plCfg.storageSettingsFromURL(options.libraryURL, options.workdir),
+                    library: plCfg.storageSettingsFromURL(options.libraryURL, workdir),
                 }
             }
         }
@@ -74,12 +76,7 @@ export default class Core {
             }
         }
 
-        var workdir: string
-        var configPath = options?.configPath
-        if (configPath) {
-            workdir = options?.workdir ?? process.cwd()
-        } else {
-            workdir = options?.workdir ?? pkg.state()
+        if (!configPath) {
             configPath = pkg.state("config-lastrun.yaml")
             fs.writeFileSync(configPath, plCfg.render(configOptions))
         }
