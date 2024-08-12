@@ -13,6 +13,7 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@milaboratory/pl-package-builder": "file:../../."
+    "@milaboratory/pl-package-builder": "file:../../.",
+    "pl-package-builder-runenv-1": "file:../runenv"
   }
 }

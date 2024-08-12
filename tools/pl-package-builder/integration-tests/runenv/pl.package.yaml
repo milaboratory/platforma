@@ -1,0 +1,10 @@
+environment:
+  type: java
+  registry:
+    name: "example"
+
+  name: "common/example"
+  crossplatform: false
+ 
+  root: "./src"
+  entrypoint: [ 'false' ]

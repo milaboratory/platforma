@@ -14,6 +14,7 @@ export default class Package extends Command {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.ArchFlags,
 
+        ...cmdOpts.VersionFlag,
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.StorageURLFlag,
     };
@@ -25,6 +26,7 @@ export default class Package extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
+        c.pkg.version = flags.version
         c.targetOS = flags.os as util.OSType
         c.targetArch = flags.arch as util.ArchType
 

@@ -7,12 +7,11 @@ binary:
     name: "milaboratories"
     storageURL: s3://<bucket>/<some-prefix>?region=<s3-region-name> # for 'pl-pkg publish package'
 
-  name: "python-example" # defaults to package name with leading '@' dropped
+  name: "common/java-example" # defaults to package name with leading '@' dropped
   crossplatform: true
   # version: 1.2.3 #defaults to the version in package.json
  
   root: "./src" # resolve relative paths starting from this directory when building and executing the package
-  cmd: "./script1.py"
+  cmd: "./script1.jar"
 
-  runEnv: python@3.12
-  requirements: "./requirements.txt"
+  runEnv: "pl-package-builder-runenv-1:1.2.3"

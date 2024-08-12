@@ -15,6 +15,7 @@ export default class Package extends Command {
         ...cmdOpts.BuildFlags,
         ...cmdOpts.ArchFlags,
 
+        ...cmdOpts.VersionFlag,
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.ContentRootFlag,
     };
@@ -25,6 +26,7 @@ export default class Package extends Command {
 
         const core = new Core(logger)
 
+        core.pkg.version = flags.version
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType

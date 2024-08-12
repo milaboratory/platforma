@@ -5,11 +5,12 @@ import winston from 'winston';
 
 import { z } from 'zod';
 import * as util from './util';
+import * as envs from './envs';
 
 const dockerConfigSchema = z.object({
-    registry: z.string(), // name of the registry (e.g. quay.io)
-    name: z.string().optional(), // name of docker image inside the registry without version
-    version: z.string().optional(), // version of docker image
+    registry: z.string().describe("name of the registry, i.e. 'quay.io'"),
+    imageName: z.string().optional().describe("name of docker image inside the registry: <registry>/<imageName>:<version>"),
+    version: z.string().optional().describe("version part of docker image tag: <registry>/<imageName>:<version>"),
 
     entrypoint: z.array(z.string()).optional(), // entrypoint override
     cmd: z.array(z.string()).optional(), // use custom default command
@@ -17,24 +18,46 @@ const dockerConfigSchema = z.object({
 
 type dockerConfig = z.infer<typeof dockerConfigSchema>;
 interface DockerConfig extends dockerConfig {
-    name: string
+    imageName: string
     version: string
     tag: string
 }
 
-const binaryConfigSchema = z.object({
-    registry: z.object({
-        name: z.string().optional(),
-        storageURL: z.string().optional(),
-    }),
+const registrySchema = z.object({
+    name: z.string().optional(),
+    storageURL: z.string().optional(),
+})
+type registry = z.infer<typeof registrySchema>
+
+// common fields both for 'environment' and 'binary'
+const commonBinaryConfigSchema = z.object({
+    registry: registrySchema,
     name: z.string().optional(),
     version: z.string().optional(),
     crossplatform: z.boolean().default(false),
     root: z.string().min(1),
-    entrypoint: z.array(z.string()).optional(),
+    entrypoint: z.array(z.string()),
+})
+
+type commonBinaryConfig = z.infer<typeof commonBinaryConfigSchema>
+export interface CommonBinaryConfig extends commonBinaryConfig {
+    name: string
+    version: string
+    fullName: (os: util.OSType, arch: util.ArchType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+    addressPattern: string // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
+    contentRoot: string // absolute path to package's content root
+}
+
+const binaryConfigSchema = z.object({
+    ...commonBinaryConfigSchema.shape,
+
+    entrypoint: commonBinaryConfigSchema.shape.entrypoint.
+        optional().
+        describe("like in docker - final command to be executed will be '<entrypoint> <command from user>'"),
     cmd: z.string().optional(),
+
     runEnv: z.string().
-        regex(/@/, { message: "runEnv must have <envType>@<envVersion> format, e.g. corretto@21.0.2.13.1" }).
+        regex(/:/, { message: "runEnv must have <envPackage>:<ID> format, e.g milaboratory/runenv-java-corretto:main" }).
         optional(),
 
     // python-specific options
@@ -51,14 +74,46 @@ export interface BinaryConfig extends binaryConfig {
     fullName: (os: util.OSType, arch: util.ArchType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
     addressPattern: string // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
     contentRoot: string // absolute path to package's content root
+    entrypoint: string[]
+}
+
+export const runEnvironmentTypes = ['java', 'python', 'R', 'conda'] as const;
+export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
+
+const runEnvironmentConfigSchema = z.object({
+    type: z.enum(runEnvironmentTypes).
+        describe("run environment type"),
+
+    ...commonBinaryConfigSchema.shape,
+
+    entrypoint: commonBinaryConfigSchema.shape.entrypoint.
+        describe("the command to be used as starting point when executing code in this run environment (relative to <root>)"),
+});
+
+type runEnvironmentConfig = z.infer<typeof runEnvironmentConfigSchema>
+export interface RunEnvironmentConfig extends runEnvironmentConfig {
+    type: runEnvironmentType
+    name: string
+    version: string
+    fullName: (os: util.OSType, arch: util.ArchType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+    addressPattern: string // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
+    contentRoot: string // absolute path to package's content root
 }
 
 const plPackageYamlSchema = z.object({
     name: z.string().optional().
         describe("name of software descriptor for imports (ll.importSoftware('<package>:<NAME>')"),
+
     docker: dockerConfigSchema.optional(),
-    binary: binaryConfigSchema.optional()
-})
+    binary: binaryConfigSchema.optional(),
+    environment: runEnvironmentConfigSchema.optional(),
+}).refine(
+    data => (!(data.binary && data.environment) && (data.binary || data.environment)),
+    {
+        message: "software package can provide either binary for execution, either execution environment. Never both",
+        path: ['binary', 'environment']
+    }
+)
 type plPackageYaml = z.infer<typeof plPackageYamlSchema>
 
 const packageJsonSchema = z.object({
@@ -83,18 +138,21 @@ type packageJson = z.infer<typeof packageJsonSchema>
  *   version: "1.2.3"       # defaults to npm package version
  *
  *   root: "./src" # required. Path to package's content root
- *   cmd: "./script1.py"
+ *   cmd: ["./script1.jar"]
  *
- *   runEnv: "python@3.12"
- *   requirements: "./requirements.txt"
+ *   runEnv: "runenv-java-corretto:21.0.2.13.1"
  */
 export class PackageInfo {
     private readonly pkgYaml: plPackageYaml
     private readonly pkgJson: packageJson
     public readonly packageRoot: string
 
+    private _versionOverride: string | undefined
+    private _descriptorNameOverride: string | undefined
+
     private _docker: DockerConfig | undefined
     private _binary: BinaryConfig | undefined
+    private _environment: RunEnvironmentConfig | undefined
 
     constructor(
         private logger: winston.Logger,
@@ -139,7 +197,15 @@ export class PackageInfo {
         logger.debug('  package information loaded successfully.')
     }
 
-    get name(): string {
+    set descriptorName(n: string | undefined) {
+        this._descriptorNameOverride = n
+    }
+
+    get descriptorName(): string {
+        if (this._descriptorNameOverride) {
+            return this._descriptorNameOverride
+        }
+
         return this.pkgYaml.name ?? "main"
     }
 
@@ -157,17 +223,17 @@ export class PackageInfo {
             this.logger.debug("  generating docker config from package info")
 
             const registry = this.pkgYaml.docker!.registry
-            const name = this.getName(this.pkgYaml.docker?.name)
+            const imageName = this.getName(this.pkgYaml.docker?.imageName)
             const version = this.getVersion(this.pkgYaml.docker?.version)
 
             this._docker = {
                 ...this.pkgYaml.docker,
                 registry,
-                name,
+                imageName,
                 version,
 
                 get tag(): string {
-                    return `${this.registry}/${this.name}:${this.version}`
+                    return `${this.registry}/${this.imageName}:${this.version}`
                 }
             }
         }
@@ -179,9 +245,13 @@ export class PackageInfo {
         return this.pkgYaml.binary !== undefined
     }
 
+    get hasEnvironment(): boolean {
+        return this.pkgYaml.environment !== undefined
+    }
+
     get binary(): BinaryConfig {
         if (!this.hasBinary) {
-            this.logger.error(`No 'binary' configuration in ${util.plPackageYamlName} file`)
+            this.logger.error(`no 'binary' configuration in ${util.plPackageYamlName} file`)
             throw new Error("no 'binary' configuration")
         }
 
@@ -193,7 +263,7 @@ export class PackageInfo {
 
             const registry = this.pkgYaml.binary!.registry
             var name: string
-            [name, registry.name] = this.binaryNameAndRegistry()
+            [name, registry.name] = this.binaryNameAndRegistry(this.pkgYaml.binary!)
             const version = this.getVersion(this.pkgYaml.binary?.version)
 
             this._binary = {
@@ -201,19 +271,14 @@ export class PackageInfo {
                 registry,
                 name,
                 version,
+                entrypoint: this.pkgYaml.binary!.entrypoint ?? [],
 
                 fullName(os: util.OSType, arch: util.ArchType): string {
-                    if (crossplatform) {
-                        return `${this.name}/${this.version}.tgz`
-                    }
-                    return `${this.name}/${this.version}-${os}-${arch}.tgz`
+                    return binaryPackageFullName(crossplatform, this.name, this.version, os, arch)
                 },
 
                 get addressPattern(): string {
-                    if (crossplatform) {
-                        return `${this.name}/${this.version}.tgz`
-                    }
-                    return `${this.name}/${this.version}-{os}-{arch}.tgz`
+                    return binaryPackageAddressPattern(crossplatform, this.name, this.version)
                 },
 
                 get contentRoot(): string {
@@ -225,7 +290,51 @@ export class PackageInfo {
         return this._binary
     }
 
+    get environment(): RunEnvironmentConfig {
+        if (!this.hasEnvironment) {
+            this.logger.error(`No 'environment' configuration in ${util.plPackageYamlName} file`)
+            throw new Error("no 'environment' configuration")
+        }
+
+        if (!this._environment) {
+            this.logger.debug("  generating environment config from package info")
+
+            const pkgRoot = this.packageRoot
+            const crossplatform = this.pkgYaml.environment!.crossplatform
+
+            const registry = this.pkgYaml.environment!.registry
+            var name: string
+            [name, registry.name] = this.binaryNameAndRegistry(this.pkgYaml.environment!)
+            const version = this.getVersion(this.pkgYaml.environment?.version)
+
+            this._environment = {
+                ...this.pkgYaml.environment!,
+                registry,
+                name,
+                version,
+
+                fullName(os: util.OSType, arch: util.ArchType): string {
+                    return binaryPackageFullName(crossplatform, this.name, this.version, os, arch)
+                },
+
+                get addressPattern(): string {
+                    return binaryPackageAddressPattern(crossplatform, this.name, this.version)
+                },
+
+                get contentRoot(): string {
+                    return path.resolve(pkgRoot, this.root)
+                }
+            }
+        }
+
+        return this._environment
+    }
+
     private getName(pkgName: string | undefined): string {
+        if (process.env[envs.PL_PKG_NAME]) {
+            return process.env[envs.PL_PKG_NAME]
+        }
+
         if (pkgName) {
             return pkgName!
         }
@@ -233,9 +342,17 @@ export class PackageInfo {
         return util.trimPrefix(this.pkgJson.name, "@")
     }
 
+    public set version(v: string | undefined) {
+        this._versionOverride = v
+    }
+
     private getVersion(pkgVersion: string | undefined): string {
-        if (process.env["PL_PKG_VERSION"]) {
-            return process.env["PL_PKG_VERSION"]
+        if (this._versionOverride) {
+            return this._versionOverride
+        }
+
+        if (process.env[envs.PL_PKG_VERSION]) {
+            return process.env[envs.PL_PKG_VERSION]
         }
 
         if (pkgVersion) {
@@ -249,9 +366,9 @@ export class PackageInfo {
      * When binary.registry.name is empty - use scope from npm package name (without @ prefix)
      * When binary.name is also empty - use name part from npm package name (cut scope prefix)
      */
-    private binaryNameAndRegistry() : [string, string] {
-        const name = this.pkgYaml.binary!.name
-        const registry = this.pkgYaml.binary!.registry
+    private binaryNameAndRegistry(desc: { name?: string, registry: registry }): [string, string] {
+        const name = desc.name
+        const registry = desc.registry
         if (name && registry.name) {
             return [name, registry.name]
         }
@@ -277,3 +394,19 @@ const parsePlPackageYaml = (data: string) => plPackageYamlSchema.parse(yaml.pars
 
 const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
 const parsePackageJson = (data: string) => packageJsonSchema.parse(JSON.parse(data)) as packageJson;
+
+function binaryPackageFullName(crossplatform: boolean, name: string, version: string, os: util.OSType, arch: util.ArchType): string {
+    if (crossplatform) {
+        return `${name}/${version}.tgz`
+    }
+
+    return `${name}/${version}-${os}-${arch}.tgz`
+}
+
+function binaryPackageAddressPattern(crossplatform: boolean, name: string, version: string): string {
+    if (crossplatform) {
+        return `${name}/${version}.tgz`
+    }
+
+    return `${name}/${version}-{os}-{arch}.tgz`
+}

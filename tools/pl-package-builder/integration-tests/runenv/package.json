@@ -1,0 +1,16 @@
+{
+  "name": "pl-package-builder-runenv-1",
+  "version": "1.0.0",
+  "description": "Example of software to be used as runenv",
+  "scripts": {
+    "build": "rm -rf dist && pl-pkg build --descriptor-name=1.2.3 --version=1.2.3"
+  },
+  "files": [
+    "dist/"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratory/pl-package-builder": "file:../../."
+  }
+}

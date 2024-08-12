@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as os from 'os';
-import { readdirSync, statSync, existsSync, mkdirSync, stat } from 'fs';
+import fs from 'fs';
 import { createHash, Hash } from 'crypto';
 import winston from 'winston';
 
@@ -20,13 +20,13 @@ export function trimPrefix(str: string, prefix: string): string {
 
 export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
     const hash = hasher ? hasher : createHash('sha256');
-    const info = readdirSync(folder, { withFileTypes: true });
+    const info = fs.readdirSync(folder, { withFileTypes: true });
 
     for (let item of info) {
         const fullPath = path.join(folder, item.name);
 
         if (item.isFile()) {
-            const statInfo = statSync(fullPath);
+            const statInfo = fs.statSync(fullPath);
             const fileInfo = `${fullPath}:${statInfo.size}:${statInfo.mtimeMs}`;
             hash.update(fileInfo);
         } else if (item.isDirectory()) {
@@ -41,12 +41,12 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
 // Creates all intermediate directories down to given <dirPath>.
 // 
 export function ensureDirsExist(dirPath: string) {
-    if (existsSync(dirPath)) {
+    if (fs.existsSync(dirPath)) {
         return;
     }
     const parentDir = path.dirname(dirPath);
     ensureDirsExist(parentDir);
-    mkdirSync(dirPath);
+    fs.mkdirSync(dirPath);
 }
 
 export function findPackageRoot(logger: winston.Logger, startPath?: string): string {
@@ -60,10 +60,32 @@ export function findPackageRoot(logger: winston.Logger, startPath?: string): str
     return pkgRoot
 }
 
+export function findNodeModules(logger: winston.Logger, startPath?: string): string {
+    if (!startPath) {
+        startPath = process.cwd()
+    }
+    logger.debug(`Detecting 'node_modules' directory...`)
+    const nodeModules = searchPathUp(startPath, startPath, 'node_modules')
+    logger.debug(`  'node_modules' found at '${nodeModules}'`)
+
+    return path.join(nodeModules, 'node_modules')
+}
+
+export function findInstalledModule(logger: winston.Logger, packageName: string, startPath?: string): string {
+    const nodeModules = findNodeModules(logger, startPath)
+    const packagePath = path.resolve(nodeModules, packageName)
+
+    if (!fs.existsSync(packagePath)) {
+        throw new Error(`package '${packageName}' not found in '${nodeModules}'. Did you forget to add it as a dependency?`)
+    }
+
+    return packagePath
+}
+
 function searchPathUp(startPath: string, pathToCheck: string, itemToCheck: string): string {
     const itemPath = path.resolve(pathToCheck, itemToCheck)
 
-    if (existsSync(itemPath)) {
+    if (fs.existsSync(itemPath)) {
         return pathToCheck
     }
 
@@ -89,6 +111,18 @@ export function createLogger(level: string = 'debug'): winston.Logger {
         ]
     });
 }
+
+export function rSplit(input: string, delimiter: string, limit?: number): string[] {
+    const parts = input.split(delimiter);
+    if (!limit || parts.length <= limit) {
+        return parts;
+    }
+
+    return [
+        parts.slice(0, -limit + 1).join(delimiter),
+        ...parts.slice(-limit + 1)
+    ];
+};
 
 export const OSes = ['linux', 'macosx', 'windows'] as const;
 export type OSType = (typeof OSes)[number];

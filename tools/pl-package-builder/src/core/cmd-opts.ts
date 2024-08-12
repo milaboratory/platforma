@@ -17,9 +17,24 @@ export type devModeName = (typeof devModeValues)[number];
 export const BuildFlags = {
     "dev": Flags.string({
         env: envs.PL_PKG_DEV,
-        name: "dev",
         description: "build dev version of descriptor",
         options: devModeValues,
+        required: false,
+    }),
+}
+
+export const DescriptorNameFlag = {
+    "descriptor-name": Flags.string({
+        // env: envs.PL_PKG_NAME, // !! this env is used 'globally' right inside package-info.ts !!
+        description: "override name of package descriptor (<name>.sw.json) to be generated",
+        required: false,
+    }),
+}
+
+export const VersionFlag = {
+    "version": Flags.string({
+        // env: envs.PL_PKG_VERSION, // !! this env is used 'globally' right inside package-info.ts !!
+        description: "override version of package to be built (ignore versions in pl.package.yaml and package.json)",
         required: false,
     }),
 }

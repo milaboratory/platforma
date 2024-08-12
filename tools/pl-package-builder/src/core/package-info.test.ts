@@ -12,7 +12,7 @@ test("PackageInfo loads correctly on minimal required data", () => {
 
     expect(all.hasDocker).toBeTruthy()
     expect(all.docker.registry).toEqual(artifacts.PlDockerRegistry)
-    expect(all.docker.name).toEqual(artifacts.PackageName.substring(1))
+    expect(all.docker.imageName).toEqual(artifacts.PackageName.substring(1))
     expect(all.docker.version).toEqual(artifacts.PackageVersion)
     expect(all.docker.tag).toEqual(`${artifacts.PlDockerRegistry}/${artifacts.PackageName.substring(1)}:${artifacts.PackageVersion}`)
 
@@ -49,7 +49,7 @@ test("PackageInfo considers custom version and package", () => {
 
     expect(i.hasDocker).toBeTruthy()
     expect(i.docker.registry).toEqual(artifacts.PlDockerRegistry)
-    expect(i.docker.name).toEqual(artifacts.PlDockerImageName)
+    expect(i.docker.imageName).toEqual(artifacts.PlDockerImageName)
     expect(i.docker.version).toEqual(artifacts.PlDockerCustomVersion)
     expect(i.docker.tag).toEqual(`${artifacts.PlDockerRegistry}/${artifacts.PlDockerImageName}:${artifacts.PlDockerCustomVersion}`)
     expect(i.docker.entrypoint).toEqual(["/usr/bin/env", "printf"])

@@ -32,7 +32,7 @@ export default class Publish extends Command {
 
         c.publishDescriptor()
 
-        const swInfo = readSoftwareInfo(c.pkg.packageRoot, c.pkg.name)
+        const swInfo = readSoftwareInfo(c.pkg.packageRoot, c.pkg.descriptorName)
         
         if (swInfo.binary || flags.archive) {
             c.publishPackage({

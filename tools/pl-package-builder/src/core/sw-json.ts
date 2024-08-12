@@ -1,9 +1,10 @@
 
 import path from 'path';
+import fs from 'fs';
 import winston from 'winston';
 import { z } from 'zod';
 import { readFileSync, writeFileSync } from 'fs';
-import { PackageInfo } from './package-info';
+import { PackageInfo, runEnvironmentTypes } from './package-info';
 import * as util from './util';
 
 const dockerSchema = z.object({
@@ -17,6 +18,20 @@ const dockerSchema = z.object({
 });
 type dockerInfo = z.infer<typeof dockerSchema>;
 
+const binaryLocationSchema = z.object({
+    registry: z.string().
+        describe("name of the registry to use for package download"),
+    package: z.string().
+        describe("full package path in registry, e.g. 'common/jdk/21.0.2.13.1-{os}-{arch}.tgz"),
+})
+
+const runEnvironmentSchema = z.object({
+    type: z.enum(runEnvironmentTypes),
+    ...binaryLocationSchema.shape,
+    entrypoint: z.array(z.string()),
+})
+type runEnvInfo = z.infer<typeof runEnvironmentSchema>
+
 const binarySettingsSchema = z.object({
     entrypoint: z.array(z.string()).optional().
         describe("the same as in 'docker': thing to be prepended to the final command before runnning it"),
@@ -24,8 +39,8 @@ const binarySettingsSchema = z.object({
         describe("prepend custom default command before args (can be overriden in particular workflow)"),
     // the final command to be executed is: <entrypoint> <cmd> <args>
 
-    runEnv: z.string().optional().
-        describe("name of run env requirement in format <envType>@<version> (e.g. corretto@21.0.2.13.1)"),
+    runEnv: runEnvironmentSchema.optional().
+        describe("run environment requirement to be provided for software when executed in binary mode (locally on server)"),
 
     // python-specific options
     requirements: z.string().optional().
@@ -37,11 +52,7 @@ const binarySettingsSchema = z.object({
 })
 
 const binarySchema = z.object({
-    registry: z.string().
-        describe("name of the registry to use for package download"),
-    package: z.string().
-        describe("full package path in registry, e.g. 'common/jdk/21.0.2.13.1-{os}-{arch}.tgz"),
-
+    ...binaryLocationSchema.shape,
     ...binarySettingsSchema.shape,
 })
 type binaryInfo = z.infer<typeof binarySchema>
@@ -59,6 +70,7 @@ type localInfo = z.infer<typeof localSchema>
 const swJsonSchema = z.object({
     docker: dockerSchema.optional(),
     binary: binarySchema.optional(),
+    runEnv: runEnvironmentSchema.optional(),
     local: localSchema.optional(),
     isDev: z.boolean().optional(),
 })
@@ -69,6 +81,15 @@ export function readSoftwareInfo(packageRoot: string, swName: string): SoftwareI
     const swJsonContent = readFileSync(filePath)
 
     return swJsonSchema.parse(JSON.parse(swJsonContent.toString()))
+}
+
+export function listSoftwareIDs(packageRoot: string): string[] {
+    const swDir = swJsonPath(packageRoot)
+    const items = fs.readdirSync(swDir)
+
+    return items.
+        filter((fName: string) => fName.endsWith(".sw.json")).
+        map((fName: string) => fName.slice(0, -".sw.json".length))
 }
 
 export class SoftwareDescriptor {
@@ -105,7 +126,11 @@ export class SoftwareDescriptor {
                         info.local = this.renderLocalInfo(mode)
                     } else {
                         this.logger.debug("  rendering 'binary' source...")
-                        info.binary = this.renderBinaryInfo(mode)
+                        if (this.packageInfo.hasEnvironment) {
+                            info.runEnv = this.renderRunEnvInfo(mode)
+                        } else {
+                            info.binary = this.renderBinaryInfo(mode)
+                        }
                     }
                     break
 
@@ -125,14 +150,14 @@ export class SoftwareDescriptor {
     }
 
     public write(info: SoftwareInfo) {
-        const dstSwInfoPath = swJsonPath(this.packageInfo.packageRoot, this.packageInfo.name)
+        const dstSwInfoPath = swJsonPath(this.packageInfo.packageRoot, this.packageInfo.descriptorName)
 
         this.logger.info(`Writing software descriptor to '${dstSwInfoPath}'`)
 
         const encoded = JSON.stringify(info)
 
         util.ensureDirsExist(path.dirname(dstSwInfoPath))
-        writeFileSync(dstSwInfoPath, encoded)
+        writeFileSync(dstSwInfoPath, encoded+"\n")
     }
 
     private renderLocalInfo(mode: util.BuildMode): localInfo {
@@ -153,6 +178,7 @@ export class SoftwareDescriptor {
         }
 
         const binary = this.packageInfo.binary
+        const env = this.renderRunEnvDep(binary.runEnv)
         const rootDir = binary.contentRoot
         const hash = util.hashDirMetaSync(rootDir)
 
@@ -162,7 +188,7 @@ export class SoftwareDescriptor {
 
             entrypoint: binary.entrypoint,
             cmd: binary.cmd,
-            runEnv: binary.runEnv,
+            runEnv: env,
             requirements: binary.requirements,
             renvLock: binary.renvLock,
         }
@@ -186,14 +212,42 @@ export class SoftwareDescriptor {
         }
 
         const binary = this.packageInfo.binary
+        const env = this.renderRunEnvDep(binary.runEnv)
+
         return {
             registry: binary.registry.name!,
             package: binary.addressPattern,
             entrypoint: binary.entrypoint,
             cmd: binary.cmd,
-            runEnv: binary.runEnv,
+            runEnv: env,
             requirements: binary.requirements,
             renvLock: binary.renvLock,
+        }
+    }
+
+    private renderRunEnvInfo(mode: util.BuildMode): runEnvInfo {
+        if (!this.packageInfo.hasEnvironment) {
+            throw new Error(`pl.package.yaml file does not contain definition for execution environment`)
+        }
+
+        switch (mode) {
+            case 'release':
+                break
+
+            case 'dev-local':
+                throw new Error(`run environments do not support 'local' dev build mode yet`)
+
+            default:
+                util.assertNever(mode)
+        }
+
+        const env = this.packageInfo.environment
+
+        return {
+            type: env.type,
+            registry: env.registry.name!,
+            package: env.addressPattern,
+            entrypoint: env.entrypoint,
         }
     }
 
@@ -222,11 +276,37 @@ export class SoftwareDescriptor {
             cmd: docker.cmd,
         }
     }
+
+    private resolveDependency(name: string, softwareID: string): SoftwareInfo {
+        const modulePath = util.findInstalledModule(this.logger, name, this.packageInfo.packageRoot)
+        return readSoftwareInfo(modulePath, softwareID)
+    }
+
+    private renderRunEnvDep(envName?: string): runEnvInfo | undefined {
+        if (!envName) {
+            return undefined
+        }
+
+        const [pkgName, id] = util.rSplit(envName, ':', 2)
+        const swDescriptor = this.resolveDependency(pkgName, id)
+
+        if (!swDescriptor.runEnv) {
+            throw new Error(`software '${envName}' cannot be used as run environment (no 'runEnv' section in descriptor)`)
+        }
+
+        return {
+            type: swDescriptor.runEnv.type,
+            registry: swDescriptor.runEnv.registry,
+            package: swDescriptor.runEnv.package,
+            entrypoint: swDescriptor.runEnv.entrypoint,
+        }
+    }
 }
 
-function swJsonPath(packageRoot: string, swName: string): string {
-    return path.resolve(
-        packageRoot,
-        "dist", "tengo", "software", `${swName}.sw.json`,
-    )
+export function swJsonPath(packageRoot: string, swName?: string): string {
+    if (!swName) {
+        return path.resolve(packageRoot, "dist", "tengo", "software")
+    }
+
+    return path.resolve(packageRoot, "dist", "tengo", "software", `${swName}.sw.json`)
 }

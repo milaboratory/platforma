@@ -14,20 +14,22 @@ export default class Descriptor extends Command {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.BuildFlags,
 
+        name: cmdOpts.DescriptorNameFlag['descriptor-name'],
         ...cmdOpts.SourceFlag,
     };
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Descriptor);
-        var sources = (flags.source) as util.SoftwareSource[]
-        if (sources.length === 0) {
-            sources = [...util.AllSoftwareSources]
-        }
+        const sources: util.SoftwareSource[] = (flags.source) ?
+            (flags.source as util.SoftwareSource[]) :
+            [...util.AllSoftwareSources] // we need to iterate over the list to build all targets
 
         const logger = util.createLogger(flags['log-level'])
 
         const c = new Core(logger)
         c.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
+        c.pkg.descriptorName = flags['descriptor-name']
+
         c.buildDescriptor(sources)
     }
 }

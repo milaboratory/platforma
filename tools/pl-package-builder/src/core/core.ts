@@ -1,7 +1,7 @@
-import { spawn } from "child_process";
+import { spawnSync } from "child_process";
 import winston from "winston";
-import { PackageInfo } from "./package-info";
-import { SoftwareDescriptor, readSoftwareInfo } from "./sw-json";
+import { PackageInfo, CommonBinaryConfig } from "./package-info";
+import { SoftwareDescriptor, listSoftwareIDs, readSoftwareInfo } from "./sw-json";
 import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
@@ -39,7 +39,7 @@ export class Core {
     }
 
     public buildPackage(options?: { archivePath?: string, contentRoot?: string }) {
-        if (!this.pkg.hasBinary) {
+        if (!this.pkg.hasBinary && !this.pkg.hasEnvironment) {
             this.logger.error("no 'binary' configuration found: package build is impossible for given 'pl.package.yaml' file")
             throw new Error("no 'binary' configuration")
         }
@@ -49,11 +49,12 @@ export class Core {
             return
         }
 
+        const desc = this.binaryDescriptor
         const archivePath = options?.archivePath ?? this.archivePath
-        const contentRoot = options?.contentRoot ?? this.pkg.binary.contentRoot
+        const contentRoot = options?.contentRoot ?? desc.contentRoot
 
         this.logger.info("Packing software into a package")
-        if (this.pkg.binary.crossplatform) {
+        if (desc.crossplatform) {
             this.logger.info(`  package is marked as cross-platform, generating single package for all platforms`)
         } else {
             this.logger.info(`  generating package for os='${this.targetOS}', arch='${this.targetArch}'`)
@@ -69,10 +70,18 @@ export class Core {
     public publishDescriptor(options?: {
         npmPublishArgs?: string[],
     }) {
-        const swInfo = readSoftwareInfo(this.pkg.packageRoot, this.pkg.name)
-        if (swInfo.isDev) {
-            this.logger.error("You are trying to publish software descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
-            throw new Error("attempt to publish 'dev' software descriptor")
+        const names = listSoftwareIDs(this.pkg.packageRoot)
+
+        if (names.length === 0) {
+            throw new Error(`No descriptors found in package during 'publish descriptor' action. Nothing to publish`)
+        }
+
+        for (const swName of names) {
+            const swInfo = readSoftwareInfo(this.pkg.packageRoot, swName)
+            if (swInfo.isDev) {
+                this.logger.error("You are trying to publish software descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
+                throw new Error("attempt to publish 'dev' software descriptor")
+            }
         }
 
         this.logger.info("Running 'npm publish' to publish NPM package with software descriptors...")
@@ -82,10 +91,13 @@ export class Core {
             args.push(...options!.npmPublishArgs!)
         }
 
-        const child = spawn("npm", args, { stdio: 'inherit', cwd: this.pkg.packageRoot })
-        child.on('exit', (code) => {
-            process.exit(code ?? 0);
-        });
+        const result = spawnSync("npm", args, { stdio: 'inherit', cwd: this.pkg.packageRoot })
+        if (result.error) {
+            throw result.error
+        }
+        if (result.status !== 0) {
+            throw new Error("'npm publish' failed with non-zero exit code")
+        }
     }
 
     public publishPackage(options?: {
@@ -112,13 +124,19 @@ export class Core {
         this.logger.info(`Package '${this.pkg.binary.name}' was published to '${this.pkg.binary.registry.name}:${dstName}'`)
     }
 
+    private get binaryDescriptor() : CommonBinaryConfig {
+        return this.pkg.hasEnvironment ? this.pkg.environment! : this.pkg.binary!
+    }
+
     private get archiveOptions(): archive.archiveOptions {
+        const desc = this.binaryDescriptor
+
         return {
             packageRoot: this.pkg.packageRoot,
-            packageName: this.pkg.binary.name,
-            packageVersion: this.pkg.binary.version,
+            packageName: desc.name,
+            packageVersion: desc.version,
 
-            crossplatform: this.pkg.binary.crossplatform,
+            crossplatform: desc.crossplatform,
             os: this.targetOS,
             arch: this.targetArch,
         }
