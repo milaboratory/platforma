@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import BtnPrimary from '../components/BtnPrimary.vue';
 
-describe('HelloWorld', () => {
+describe('BtnPrimary', () => {
   it('renders properly', () => {
     const wrapper = mount(BtnPrimary, {
       slots: {
