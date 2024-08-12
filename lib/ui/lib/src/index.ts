@@ -12,7 +12,7 @@ import BtnGhost from './components/BtnGhost.vue';
 import BtnLink from './components/BtnLink.vue';
 import TextField from './components/TextField.vue';
 import TextArea from './components/TextArea.vue';
-import Loader from './components/Loader.vue';
+import ProgressBar from './components/ProgressBar.vue';
 import NumberField from './components/NumberField.vue';
 import Dropdown from './components/Dropdown.vue';
 import LineDropdown from './components/LineDropdown.vue';
@@ -87,7 +87,7 @@ export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, Gen
 
 export {
   // Common
-  Loader,
+  ProgressBar,
   TextArea,
   NumberField,
   ThemeSwitcher,
