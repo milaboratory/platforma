@@ -46,6 +46,13 @@ volumes:
       o: 'bind'
       device: '${PL_STORAGE_PRIMARY}'
 
+  work:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '${PL_STORAGE_WORK}'
+
   library:
     driver: local
     driver_opts:
@@ -53,6 +60,5 @@ volumes:
       o: 'bind'
       device: '${PL_STORAGE_LIBRARY}'
 
-  work:
   software:
   db:

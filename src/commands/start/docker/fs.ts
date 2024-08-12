@@ -11,10 +11,12 @@ export default class FS extends Command {
   ]
 
   static override flags = {
+    ...cmdOpts.GlobalFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
-    ...cmdOpts.StoragePrimaryFlag,
-    ...cmdOpts.StorageLibraryFlag,
+    ...cmdOpts.StoragePrimaryPathFlag,
+    ...cmdOpts.StorageWorkPathFlag,
+    ...cmdOpts.StorageLibraryPathFlag,
   }
 
   public async run(): Promise<void> {
@@ -24,8 +26,9 @@ export default class FS extends Command {
     const core = new Core(logger)
     core.startDockerFS({
       primaryStorage: flags['storage-primary'],
+      workStorage: flags['storage-work'],
       libraryStorage: flags['storage-library'],
-      
+
       image: flags.image,
       version: flags.version,
     })

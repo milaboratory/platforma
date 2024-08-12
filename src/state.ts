@@ -7,8 +7,10 @@ export type runMode = 'docker' | 'process'
 export type dockerRunInfo = {
     plImage?: string
     composePath?: string
-    libraryPath?: string
+
     primaryPath?: string
+    workPath?: string
+    libraryPath?: string
 }
 
 export type processRunInfo = {

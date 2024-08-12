@@ -1,61 +1,90 @@
-import { spawnSync } from 'child_process'
+import { ChildProcess, SpawnSyncReturns, spawn, spawnSync } from 'child_process'
 import yaml from 'yaml';
 import fs from 'fs'
 import path from 'path'
 import * as pkg from './package'
 import * as run from './run'
-import * as plCfg from './templates/config-local'
+import * as plCfg from './templates/pl-config'
 import * as platforma from './platforma'
+import * as types from './templates/types'
 import state from './state'
 import * as util from './util'
 import winston from 'winston'
 
 export default class Core {
-    private readonly assetsDirName: string = "assets"
-
     constructor(
         private readonly logger: winston.Logger,
     ) { }
 
     public startLast() {
-        const child = run.rerunLast(this.logger, { stdio: 'inherit' })
-        child.on('exit', (code) => {
-            state.isActive = code === 0
-            process.exit(code ?? 0)
-        })
+        const result = run.rerunLast(this.logger, { stdio: 'inherit' })
+        this.checkRunError(result, "failed to bring back Platforma Backend in the last started configuration")
     }
 
-    public startLocal(options?: {
-        version?: string,
-        binaryPath?: string
-        configPath?: string,
-        configOptions?: plCfg.configOptions,
-        workdir?: string,
-    }) {
+    public startLocal(options?: startLocalOptions): ChildProcess {
         const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, "binaries", "platforma")
-        var workdir = options?.workdir ?? pkg.state()
-        const storageDir = options?.configOptions?.storage ?? pkg.state('./local-pl')
 
-        for (const dir of [
-            `${storageDir}/storages/main`,
-            `${storageDir}/storages/library`,
-            `${storageDir}/storages/work`,
-            `${storageDir}/software/installed`,
-            `${storageDir}/software/local`,
-            `${storageDir}/blocks/local`,
-        ]) {
-            fs.mkdirSync(dir, { recursive: true })
+        if (options?.primaryURL) {
+            options.configOptions = {
+                ...options.configOptions,
+                storages: {
+                    ...options.configOptions?.storages,
+                    primary: plCfg.storageSettingsFromURL(options.primaryURL, options.workdir),
+                }
+            }
+        }
+        if (options?.libraryURL) {
+            options.configOptions = {
+                ...options.configOptions,
+                storages: {
+                    ...options.configOptions?.storages,
+                    library: plCfg.storageSettingsFromURL(options.libraryURL, options.workdir),
+                }
+            }
         }
 
+        const configOptions = plCfg.loadDefaults(options?.configOptions)
+
+        const storageDirs: string[] = [
+            `${configOptions.localRoot}/software/installed`,
+            `${configOptions.localRoot}/software/local`,
+            `${configOptions.localRoot}/blocks/local`,
+        ]
+        if (configOptions.storages.primary.type === 'FS') {
+            storageDirs.push(configOptions.storages.primary.rootPath)
+        }
+        if (configOptions.storages.library.type === 'FS') {
+            storageDirs.push(configOptions.storages.library.rootPath)
+        }
+        if (configOptions.storages.work.type === 'FS') {
+            storageDirs.push(configOptions.storages.work.rootPath)
+        }
+
+        for (const dir of storageDirs) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true })
+            }
+        }
+
+        for (const drv of configOptions.core.auth.drivers) {
+            if (drv.driver === 'htpasswd') {
+                if (!fs.existsSync(drv.path)) {
+                    fs.copyFileSync(pkg.assets("users.htpasswd"), drv.path)
+                }
+            }
+        }
+
+        var workdir: string
         var configPath = options?.configPath
         if (configPath) {
-            workdir = process.cwd()
+            workdir = options?.workdir ?? process.cwd()
         } else {
+            workdir = options?.workdir ?? pkg.state()
             configPath = pkg.state("config-lastrun.yaml")
-            fs.writeFileSync(configPath, plCfg.render(options?.configOptions))
+            fs.writeFileSync(configPath, plCfg.render(configOptions))
         }
 
-        const child = run.runProcess(
+        return run.runProcess(
             this.logger,
             cmd,
             ["-config", configPath],
@@ -64,15 +93,81 @@ export default class Core {
                 stdio: 'inherit',
             },
             {
-                storagePath: options?.configOptions?.storage,
+                storagePath: configOptions.localRoot,
             }
         )
+    }
 
-        child.on('exit', (code) => {
-            console.log("exited")
-            state.isActive = code === 0
-            process.exit(code ?? 0)
-        })
+    public startLocalFS(options?: startLocalFSOptions): ChildProcess {
+        return this.startLocal(options)
+    }
+
+    public startLocalS3(options?: startLocalOptions): ChildProcess {
+        if (!options?.libraryURL || !options?.primaryURL) {
+            this.startMinio()
+        }
+
+        if (!options?.primaryURL) {
+            options = {
+                ...options,
+                primaryURL: "s3e://testuser:testpassword@localhost:9000/main-bucket/region=fake-region"
+            }
+        }
+        if (!options?.libraryURL) {
+            options = {
+                ...options,
+                libraryURL: "s3e://testuser:testpassword@localhost:9000/library-bucket/region=fake-region"
+            }
+        }
+
+        return this.startLocal(options)
+    }
+
+    public startMinio(options?: {
+        storage?: string,
+        image?: string,
+        version?: string,
+    }) {
+        var composeMinioSrc = pkg.assets("compose-minio.yaml")
+        var composeMinioDst = pkg.state("compose-minio.yaml")
+
+        const version = options?.version ? `:${options.version!}` : ""
+        const image = options?.image ?? `quay.io/minio/minio${version}`
+
+        const storage = options?.storage
+
+        const envs = {
+            "MINIO_IMAGE": image,
+            "MINIO_STORAGE": "",
+        }
+        const compose = this.readComposeFile(composeMinioSrc)
+
+        if (storage) {
+            fs.mkdirSync(path.resolve(storage), { recursive: true })
+            envs["MINIO_STORAGE"] = path.resolve(storage)
+        } else {
+            compose.volumes.storage = null
+        }
+
+        this.writeComposeFile(composeMinioDst, compose)
+
+        const result = spawnSync(
+            'docker',
+            ['compose', `--file=${composeMinioDst}`,
+                'up',
+                '--detach',
+                '--remove-orphans',
+                '--pull=missing'],
+            {
+                env: {
+                    ...process.env,
+                    ...envs
+                },
+                stdio: 'inherit'
+            },
+        )
+
+        this.checkRunError(result, "failed to start MinIO service in docker")
     }
 
     public startDockerS3(options?: {
@@ -82,7 +177,7 @@ export default class Core {
         const composeS3Path = pkg.assets("compose-s3.yaml")
         const image = options?.image ?? pkg.plImageTag(options?.version)
 
-        const child = run.runDocker(
+        const result = run.runDocker(
             this.logger,
             ['compose', `--file=${composeS3Path}`,
                 'up',
@@ -102,22 +197,22 @@ export default class Core {
             }
         );
 
-        child.on('exit', (code) => {
-            state.isActive = code === 0
-            process.exit(code ?? 0);
-        });
+        this.checkRunError(result, "failed to start Platforma Backend in Docker")
+        state.isActive = true
     }
 
     public startDockerFS(options?: {
         primaryStorage?: string,
+        workStorage?: string,
         libraryStorage?: string,
         image?: string,
         version?: string,
     }) {
         var composeFSPath = pkg.assets("compose-fs.yaml")
-        var composeRunPath = pkg.state("compose-lastrun.yaml")
+        var composeRunPath = pkg.state("compose-fs.yaml")
         const image = options?.image ?? pkg.plImageTag(options?.version)
         const primaryStorage = options?.primaryStorage ?? state.lastRun?.docker?.primaryPath
+        const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath
         const libraryStorage = options?.libraryStorage ?? state.lastRun?.docker?.libraryPath
 
         this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath)
@@ -126,6 +221,7 @@ export default class Core {
         const envs = {
             "PL_IMAGE": image,
             "PL_STORAGE_PRIMARY": "",
+            "PL_STORAGE_WORK": "",
             "PL_STORAGE_LIBRARY": ""
         }
         const compose = this.readComposeFile(composeFSPath)
@@ -137,6 +233,13 @@ export default class Core {
             compose.volumes.primary = null
         }
 
+        if (workStorage) {
+            fs.mkdirSync(path.resolve(workStorage), { recursive: true })
+            envs["PL_STORAGE_PRIMARY"] = path.resolve(workStorage)
+        } else {
+            compose.volumes.work = null
+        }
+
         if (libraryStorage) {
             envs["PL_STORAGE_LIBRARY"] = path.resolve(libraryStorage)
         } else {
@@ -145,7 +248,7 @@ export default class Core {
 
         this.writeComposeFile(composeRunPath, compose)
 
-        const child = run.runDocker(
+        const result = run.runDocker(
             this.logger,
             ['compose', `--file=${composeFSPath}`,
                 'up',
@@ -161,14 +264,13 @@ export default class Core {
                 plImage: image,
                 composePath: composeFSPath,
                 primaryPath: primaryStorage ? path.resolve(primaryStorage) : "",
+                workPath: workStorage ? path.resolve(workStorage) : "",
                 libraryPath: libraryStorage ? path.resolve(libraryStorage) : "",
             }
         );
 
-        child.on('exit', (code) => {
-            state.isActive = code === 0
-            process.exit(code ?? 0);
-        });
+        this.checkRunError(result, "failed to start Platforma Backend in Docker")
+        state.isActive = true
     }
 
     public stop() {
@@ -193,12 +295,13 @@ export default class Core {
                     },
                 )
                 state.isActive = false
-                process.exit(result.status)
+                if (result.status !== 0) process.exit(result.status)
+                return
 
             case 'process':
                 state.isActive = false
                 process.kill(lastRun.process!.pid!)
-                process.exit(0)
+                return
 
             default:
                 util.assertNever(lastRun.mode)
@@ -217,8 +320,8 @@ export default class Core {
         if (state.lastRun?.process?.storagePath) {
             dirsToRemove.push(state.lastRun!.process!.storagePath!)
         }
-        const storageWarns = dirsToRemove.length > 0 ? 
-        `  - storages (you'll loose all projects and calculation results stored in the service instance):\n    - ${dirsToRemove.join('\n    - ')}` : ''
+        const storageWarns = dirsToRemove.length > 0 ?
+            `  - storages (you'll loose all projects and calculation results stored in the service instance):\n    - ${dirsToRemove.join('\n    - ')}` : ''
 
         var warnMessage = `
 You are going to reset the state of platforma service
@@ -263,13 +366,14 @@ ${storageWarns}
                     "PL_IMAGE": "scratch",
                     "PL_STORAGE_PRIMARY": "",
                     "PL_STORAGE_LIBRARY": "",
+
+                    "MINIO_IMAGE": "scratch",
+                    "MINIO_STORAGE": "",
                 },
                 stdio: 'inherit'
             })
 
-        if (result.status! > 0) {
-            process.exit(result.status)
-        }
+        if (result.status !== 0) process.exit(result.status)
     }
 
     private checkVolumeConfig(volumeID: string, newPath?: string, lastRunPath?: string) {
@@ -298,6 +402,31 @@ ${storageWarns}
         return yaml.parse(yamlData.toString())
     }
     private writeComposeFile(fPath: string, data: any) {
-        const yamlData = fs.writeFileSync(fPath, yaml.stringify(data))
+        fs.writeFileSync(fPath, yaml.stringify(data))
     }
+
+    private checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
+        if (result.error) {
+            throw result.error
+        }
+
+        const msg = message ?? "failed to run command"
+
+        if (result.status !== 0) {
+            throw new Error(`${msg}, process exited with code '${result.status}'`)
+        }
+    }
+}
+
+export type startLocalFSOptions = {
+    version?: string,
+    binaryPath?: string
+    configPath?: string,
+    configOptions?: plCfg.plOptions,
+    workdir?: string,
+}
+
+export type startLocalOptions = startLocalFSOptions & {
+    primaryURL?: string,
+    libraryURL?: string,
 }

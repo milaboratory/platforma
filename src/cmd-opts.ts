@@ -27,20 +27,64 @@ export const StorageFlag = {
     })
 }
 
+export const PlLogFileFlag = {
+    ['pl-log-file']: Flags.file({
+        description: "specify path for Platforma Backend log file",
+    })
+}
+
+export const PlWorkdirFlag = {
+    ['pl-workdir']: Flags.file({
+        description: "specify working directory for Platforma Backend process",
+    })
+}
+
+export const PlBinaryFlag = {
+    ['pl-binary']: Flags.file({
+        description: "start given Platforma Backend binary instead of automatically downloaded version",
+    })
+}
+
 export const ConfigFlag = {
     config: Flags.string({
         description: "use custom Platforma Backend config",
     })
 }
 
-export const StoragePrimaryFlag = {
-    'storage-primary': Flags.string({
-        description: "specify path on host to be mounted to platforma docker container as 'primary' storage",
+export const StoragePrimaryPathFlag = {
+    'storage-primary': Flags.file({
+        description: "specify path on host to be used as 'primary' storage",
     })
 }
 
-export const StorageLibraryFlag = {
+export const StorageWorkPathFlag = {
+    'storage-work': Flags.file({
+        description: "specify path on host to be used as 'work' storage",
+    })
+}
+
+export const StorageLibraryPathFlag = {
+    'storage-primary': Flags.file({
+        description: "specify path on host to be used as 'library' storage",
+    })
+}
+
+export const StoragePrimaryURLFlag = {
+    'storage-primary': Flags.string({
+        description: "specify 'primary' storage destination URL.\n" +
+            "\tfile:/path/to/dir for directory on local FS\n" +
+            "\ts3://<bucket>/?region=<name> for real AWS bucket\n" +
+            "\ts3e://<endpoint>/<bucket>/?region=<name> for bucket behind custom endpoint via http\n" +
+            "\ts3es://<endpoint>/<bucket>/?region=<name> for bucket behind custom endpoint via https"
+    })
+}
+
+export const StorageLibraryURLFlag = {
     'storage-library': Flags.string({
-        description: "specify path on host to be mounted to platforma docker container as 'library' storage",
+        description: "specify 'library' storage destination URL.\n" +
+            "\tfile:/path/to/dir for directory on local FS\n" +
+            "\ts3://<bucket>/?region=<name> for real AWS bucket\n" +
+            "\ts3e://<endpoint>/<bucket>/?region=<name> for bucket behind custom endpoint via http\n" +
+            "\ts3es://<endpoint>/<bucket>/?region=<name> for bucket behind custom endpoint via https"
     })
 }

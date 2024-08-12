@@ -1,9 +1,9 @@
 import fs from 'fs'
-import { spawn, SpawnOptions, ChildProcess } from 'child_process'
+import { spawnSync, SpawnOptions, SpawnSyncReturns, ChildProcess, spawn } from 'child_process'
 import state, { dockerRunInfo, processRunInfo } from './state';
 import winston from 'winston';
 
-export function runDocker(logger: winston.Logger, args: readonly string[], options: SpawnOptions, stateToSave?: dockerRunInfo): ChildProcess {
+export function runDocker(logger: winston.Logger, args: readonly string[], options: SpawnOptions, stateToSave?: dockerRunInfo) {
     state.lastRun = {
         ...state.lastRun,
 
@@ -14,12 +14,12 @@ export function runDocker(logger: winston.Logger, args: readonly string[], optio
         envs: options.env,
 
         docker: {
-            ...state.lastRun?.docker, 
+            ...state.lastRun?.docker,
             ...stateToSave,
         }
     }
 
-    return run(logger, 'docker', args, options)
+    return runSync(logger, 'docker', args, options)
 }
 
 export function runProcess(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions, stateToSave?: processRunInfo): ChildProcess {
@@ -38,15 +38,15 @@ export function runProcess(logger: winston.Logger, cmd: string, args: readonly s
         }
     }
 
-    const child = run(logger, cmd, args, options)
+    const result = run(logger, cmd, args, options)
     state.lastRun.process = {
         ...state.lastRun.process,
-        pid: child.pid
+        pid: result.pid
     }
-    return child
+    return result
 }
 
-export function rerunLast(logger: winston.Logger, options: SpawnOptions): ChildProcess {
+export function rerunLast(logger: winston.Logger, options: SpawnOptions) : SpawnSyncReturns<Buffer> {
     if (!state.lastRun) {
         throw new Error("no previous run info found: this is the first run after package installation")
     }
@@ -60,7 +60,7 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): ChildP
         ...options,
     }
 
-    return run(logger, state.lastRun.cmd, state.lastRun.args, options)
+    return runSync(logger, state.lastRun.cmd, state.lastRun.args, options)
 }
 
 function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
@@ -68,6 +68,11 @@ function run(logger: winston.Logger, cmd: string, args: readonly string[], optio
 
     options.env = { ...process.env, ...options.env }
     return spawn(cmd, args, options)
+}
 
+function runSync(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): SpawnSyncReturns<Buffer> {
+    logger.info(`Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`,)
 
+    options.env = { ...process.env, ...options.env }
+    return spawnSync(cmd, args, options)
 }
