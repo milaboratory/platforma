@@ -10,6 +10,8 @@
     "dev": "vite",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
     "___build": "vite build && npm run build:types",
+    "test:unit": "vitest run",
+    "test": "npm run test:unit",
     "build:types": "tsc --pretty --emitDeclarationOnly -p tsconfig.lib.json",
     "tsc": "tsc",
     "watch": "vue-tsc && vite build --watch",
@@ -18,5 +20,11 @@
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
     "generate-icons": "npm run parse-icons-folder && npm run minify-icons"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^24.1.1",
+    "resize-observer-polyfill": "^1.5.1",
+    "vitest": "^2.0.5"
   }
 }
