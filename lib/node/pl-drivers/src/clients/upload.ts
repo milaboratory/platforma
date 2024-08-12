@@ -126,7 +126,7 @@ export class ClientUpload {
 
       return {
         chunk: b.subarray(0, bytesRead),
-        mTime: BigInt(Math.floor(stat.mtime.getTime() / 1000))
+        mTime: BigInt(Math.floor(stat.mtimeMs / 1000))
       };
     } finally {
       f?.close();
