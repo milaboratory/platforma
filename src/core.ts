@@ -107,13 +107,13 @@ export default class Core {
         if (!options?.primaryURL) {
             options = {
                 ...options,
-                primaryURL: "s3e://testuser:testpassword@localhost:9000/main-bucket/region=fake-region"
+                primaryURL: "s3e://testuser:testpassword@localhost:9000/main-bucket/?region=fake-region"
             }
         }
         if (!options?.libraryURL) {
             options = {
                 ...options,
-                libraryURL: "s3e://testuser:testpassword@localhost:9000/library-bucket/region=fake-region"
+                libraryURL: "s3e://testuser:testpassword@localhost:9000/library-bucket/?region=fake-region"
             }
         }
 

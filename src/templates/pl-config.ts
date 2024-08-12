@@ -6,7 +6,7 @@ import * as pkg from '../package';
 export { plOptions } from './types';
 
 export function storageSettingsFromURL(storageURL: string, baseDir?: string): types.storageOptions {
-  const url = new URL(storageURL, baseDir);
+  const url = new URL(storageURL);
 
   switch (url.protocol) {
     case 's3:':
