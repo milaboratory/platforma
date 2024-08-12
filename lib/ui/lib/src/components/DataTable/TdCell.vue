@@ -3,7 +3,7 @@ import { tapIf } from '@milaboratory/helpers';
 import { showContextMenu } from '../contextMenu';
 import type { ContextOption } from '../contextMenu/types';
 import { injectState } from './keys';
-import type { TableCell } from './types';
+import type { Row, TableCell } from './types';
 import { computed, ref } from 'vue';
 import BaseCellComponent from './BaseCellComponent.vue';
 
@@ -25,9 +25,18 @@ const onInput = (value: unknown) => {
   });
 };
 
-const onContextMenu = (ev: MouseEvent) => {
+const onClick = (ev: MouseEvent) => {
+  if (ev.metaKey) {
+    state.selectRow(props.cell.row.primaryKey);
+  }
+};
+
+const onContextMenu = (ev: MouseEvent, row: Row) => {
+  console.log('ev', ev);
   if (ev.type === 'contextmenu') {
     ev.preventDefault();
+  } else {
+    return;
   }
 
   const settings = state.settings ?? {};
@@ -36,20 +45,24 @@ const onContextMenu = (ev: MouseEvent) => {
 
   const { onSelectedRows, onSelectedColumns } = settings.value;
 
-  if (onSelectedRows && onSelectedRows.length) {
-    options.push({
-      text: 'Select row',
-      cb() {
-        state.selectRow(props.cell.row.primaryKey);
-      },
-    });
+  const isSelected = state.data.selectedRows.has(row.primaryKey);
 
-    options.push({
-      text: 'Deselect row',
-      cb() {
-        state.data.selectedRows.delete(props.cell.row.primaryKey);
-      },
-    });
+  if (onSelectedRows && onSelectedRows.length) {
+    if (isSelected) {
+      options.push({
+        text: 'Deselect row',
+        cb() {
+          state.data.selectedRows.delete(props.cell.row.primaryKey);
+        },
+      });
+    } else {
+      options.push({
+        text: 'Select row',
+        cb() {
+          state.selectRow(props.cell.row.primaryKey);
+        },
+      });
+    }
   }
 
   if (onSelectedColumns && onSelectedColumns.length) {
@@ -81,7 +94,14 @@ const CustomComponent = computed(() => (props.cell.column.component ? props.cell
 </script>
 
 <template>
-  <div ref="cellRef" class="td-cell" :class="{ [cell.class]: true }" :data-row-index.attr="cell.row.index" @contextmenu="onContextMenu">
+  <div
+    ref="cellRef"
+    class="td-cell"
+    :class="{ [cell.class]: true }"
+    :data-row-index.attr="cell.row.index"
+    @click="onClick"
+    @contextmenu="(ev) => onContextMenu(ev, cell.row)"
+  >
     <div v-if="cell.control" class="control-cell">{{ cell.row.index }}</div>
     <component :is="CustomComponent" v-else-if="CustomComponent" :model-value="cell.value" @update:model-value="onInput" />
     <BaseCellComponent v-else :model-value="cell.value" :value-type="valueTypeRef" :editable="cell.column.editable" @update:model-value="onInput" />

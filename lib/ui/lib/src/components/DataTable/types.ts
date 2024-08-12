@@ -36,6 +36,8 @@ export type TableData = {
   scrollLeft: number;
   selectedRows: Set<PrimaryKey>;
   selectedColumns: Set<string>;
+
+  error?: unknown;
 };
 
 export type DataRow = Record<string, unknown>;

@@ -42,8 +42,8 @@ const onInput = (ev: Event) => {
 
 const baseRef = ref<HTMLElement>();
 
-const onClick = () => {
-  if (props.editable) {
+const onClick = (ev: MouseEvent) => {
+  if (!ev.metaKey && props.editable) {
     data.edit = true;
     requestAnimationFrame(() => {
       baseRef.value?.querySelector('input')?.focus();

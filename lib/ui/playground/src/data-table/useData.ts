@@ -5,9 +5,22 @@ import { reactive, computed } from 'vue';
 import { faker } from '@faker-js/faker';
 import { asConst, renderSequence } from './helpers';
 
-export function useData() {
-  const lorem = randomString(40);
+const lorem = (() => {
+  let i = 0;
 
+  const d = new Map<number, string>();
+
+  return function () {
+    i++;
+    const j = i % 100;
+    if (!d.has(j)) {
+      d.set(j, randomString(40));
+    }
+    return d.get(j)!;
+  };
+})();
+
+export function useData() {
   const data = reactive({
     loading: false,
     numColumns: 15,
@@ -49,7 +62,7 @@ export function useData() {
             return [col.id, id];
           }
 
-          return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem];
+          return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem()];
         }),
       );
       rows.push(row);

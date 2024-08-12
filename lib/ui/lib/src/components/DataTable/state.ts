@@ -14,7 +14,6 @@ const loadRows = async (dataWindow: { scrollTop: number; bodyHeight: number }, d
 
   return resolveAwaited({
     rows: dataSource.getRows(scrollTop, bodyHeight),
-    height: dataSource.getHeight(),
     dataWindow,
   });
 };
@@ -39,9 +38,16 @@ export function createState(props: TableProps) {
 
   watch(
     () => props.settings,
-    () => {
-      data.columns = deepClone(props.settings.columns);
+    (newSettings) => {
+      data.columns = deepClone(newSettings.columns);
       data.currentWindow = undefined;
+      newSettings.dataSource
+        .getHeight()
+        .then((dataHeight) => {
+          data.dataHeight = dataHeight;
+          state.updateBodyHeight();
+        })
+        .catch((err) => (data.error = err));
     },
     { immediate: true },
   );
@@ -144,13 +150,9 @@ export function createState(props: TableProps) {
           scrollTop: n.scrollTop - WINDOW_DELTA,
           bodyHeight: n.bodyHeight + WINDOW_DELTA * 2,
         };
-        loadRows(deepClone(data.currentWindow), settings.value.dataSource).then(({ rows, height, dataWindow }) => {
+        loadRows(deepClone(data.currentWindow), settings.value.dataSource).then(({ rows, dataWindow }) => {
           if (deepEqual(data.currentWindow, dataWindow)) {
             data.rows = rows;
-            data.dataHeight = height;
-            setTimeout(() => {
-              state.updateBodyHeight();
-            }, 1);
           }
         });
       }
