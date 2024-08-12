@@ -675,6 +675,42 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       });
 
       //
+      // ImportProgress
+      //
+
+      exportCtxFunction('getImportProgress', (handle) => {
+        return this.exportSingleValue(
+          this.getImportProgress(this.vm.getString(handle)),
+          undefined
+        );
+      });
+
+      //
+      // Logs
+      //
+
+      exportCtxFunction('getLastLogs', (handle, nLines) => {
+        return this.exportSingleValue(
+          this.getLastLogs(this.vm.getString(handle), this.vm.getNumber(nLines)),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getProgressLog', (handle, patternToSearch) => {
+        return this.exportSingleValue(
+          this.getProgressLog(this.vm.getString(handle), this.vm.getString(patternToSearch)),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getLogHandle', (handle) => {
+        return this.exportSingleValue(
+          this.getLogHandle(this.vm.getString(handle)),
+          undefined
+        );
+      });
+
+      //
       // Blocks
       //
 
