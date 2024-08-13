@@ -88,3 +88,35 @@ export const StorageLibraryURLFlag = {
             "\ts3es://<endpoint>/<bucket>/?region=<name> for bucket behind custom endpoint via https"
     })
 }
+
+export const AuthEnabledFlag = {
+    'auth-enabled': Flags.boolean({
+        description: 'enable authorization'
+    })
+}
+
+export const HTPasswdFileFlag = {
+    'auth-htpasswd-file': Flags.file({
+        description: 'path to .htpasswd file with Platforma users (static user DB auth source)'
+    })
+}
+
+export const LDAPAddressFlag = {
+    'auth-ldap-server': Flags.string({
+        description: 'address of LDAP server to use for auth in Platforma (auth source)'
+    })
+}
+
+export const LDAPDefaultDNFlag = {
+    'auth-ldap-default-dn': Flags.string({
+        description: 'DN to use when checking user with LDAP bind operation: e.g. cn=%u,ou=users,dc=example,dc=com'
+    })
+}
+
+export const AuthFlags = {
+    ...AuthEnabledFlag,
+    ...HTPasswdFileFlag,
+
+    ...LDAPAddressFlag,
+    ...LDAPDefaultDNFlag,
+}

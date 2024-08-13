@@ -4,6 +4,7 @@ import Core, { startLocalFSOptions } from '../../../core'
 import * as cmdOpts from '../../../cmd-opts'
 import * as platforma from '../../../platforma'
 import * as util from '../../../util'
+import { flagsToAuthDriversList } from './s3'
 
 export default class FS extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)'
@@ -22,6 +23,7 @@ export default class FS extends Command {
     ...cmdOpts.PlLogFileFlag,
     ...cmdOpts.PlWorkdirFlag,
     ...cmdOpts.PlBinaryFlag,
+    ...cmdOpts.AuthFlags,
   }
 
   public async run(): Promise<void> {
@@ -34,6 +36,8 @@ export default class FS extends Command {
     const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined
     const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout'
 
+    const authDrivers = flagsToAuthDriversList(flags, workdir)
+
     const startOptions: startLocalFSOptions = {
       binaryPath: flags['pl-binary'],
       version: flags.version,
@@ -43,7 +47,7 @@ export default class FS extends Command {
       configOptions: {
         log: { path: logFile, },
         localRoot: storage,
-        core: { auth: { enabled: true } },
+        core: { auth: { enabled: flags['auth-enabled'], drivers: authDrivers } },
         storages: {
           primary: { type: 'FS', rootPath: flags['storage-primary'], },
           work: { type: 'FS', rootPath: flags['storage-work'], },

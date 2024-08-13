@@ -1,4 +1,5 @@
 import winston from "winston";
+import { randomBytes } from 'crypto';
 
 const readlineSync = require('readline-sync');
 
@@ -35,4 +36,8 @@ export function createLogger(level: string = 'debug'): winston.Logger {
             })
         ]
     });
+}
+
+export function randomStr(len: number): string {
+    return randomBytes(Math.ceil(len / 2)).toString('hex').slice(0, len);
 }
