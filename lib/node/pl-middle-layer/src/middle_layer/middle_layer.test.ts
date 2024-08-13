@@ -267,6 +267,65 @@ test('simple project manipulations test', async () => {
   });
 });
 
+test('reorder blocks', async () => {
+  await withMl(async (ml) => {
+    const projectList = ml.projectList;
+    expect(await projectList.awaitStableValue()).toEqual([]);
+    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
+
+    await ml.openProject(pRid1);
+    const prj = ml.getOpenedProject(pRid1);
+
+    const {
+      enterNumbersSpecFromRemote,
+      sumNumbersSpecFromRemote,
+      enterNumbersSpecFromDev,
+      sumNumbersSpecFromDev
+    } = await getStandardBlockSpecs();
+    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
+    const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
+
+    const overviewSnapshot0 = await prj.overview.awaitStableValue();
+
+    overviewSnapshot0.blocks.forEach((block) => {
+      expect(block.sections).toBeDefined();
+      expect(block.canRun).toEqual(false);
+      expect(block.currentBlockPack).toBeDefined();
+      expect(block.navigationState).toStrictEqual({ href: '/' });
+    });
+
+    await prj.setNavigationState(block1Id, { href: '/section1' });
+    await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
+    await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
+    await prj.setBlockArgs(block3Id, {
+      sources: [outputRef(block1Id, 'column'), outputRef(block2Id, 'column')]
+    });
+    await prj.runBlock(block3Id);
+    await awaitBlockDone(prj, block3Id);
+
+    const overviewSnapshot1 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot1).toMatchObject({
+      blocks: [
+        { id: block1Id, calculationStatus: 'Done' },
+        { id: block2Id, calculationStatus: 'Done' },
+        { id: block3Id, calculationStatus: 'Done' }
+      ]
+    });
+
+    await prj.reorderBlocks([block2Id, block3Id, block1Id]);
+
+    const overviewSnapshot2 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot2).toMatchObject({
+      blocks: [
+        { id: block2Id, calculationStatus: 'Done' },
+        { id: block3Id, calculationStatus: 'Limbo' },
+        { id: block1Id, calculationStatus: 'Done' }
+      ]
+    });
+  });
+});
+
 test('limbo test', async () => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
@@ -532,7 +591,9 @@ test('should create upload-file block, render it and upload a file to pl server'
     expect(local).not.toBeUndefined();
     const fileDir = path.resolve(__dirname, '..', '..', 'assets');
     const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
-    const ourFile = files.entries.find((f) => f.name == 'another_answer_to_the_ultimate_question.txt');
+    const ourFile = files.entries.find(
+      (f) => f.name == 'another_answer_to_the_ultimate_question.txt'
+    );
     expect(ourFile).not.toBeUndefined();
     expect(ourFile?.type).toBe('file');
 
@@ -584,7 +645,9 @@ test('should create read-logs block, render it and read logs from a file', async
     const library = storages.find((s) => s.name == 'library');
     expect(library).toBeDefined();
     const files = await ml.driverKit.lsDriver.listFiles(library!.handle, '');
-    const ourFile = files.entries.find((f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt');
+    const ourFile = files.entries.find(
+      (f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt'
+    );
     expect(ourFile).toBeDefined();
     expect(ourFile?.type).toBe('file');
 

@@ -18,7 +18,7 @@ import { frontendData } from './frontend_path';
 import { NavigationState } from '@milaboratory/sdk-model';
 import { blockArgsAndUiState, blockOutputs } from './block';
 import { FrontendData } from '../model/frontend';
-import { projectFieldName } from '../model/project_model';
+import { projectFieldName, ProjectStructure } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
 import {
@@ -149,6 +149,39 @@ export class Project {
   public async deleteBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, (mut) => mut.deleteBlock(blockId));
     this.navigationStates.deleteBlock(blockId);
+    await this.projectTree.refreshState();
+  }
+
+  /**
+   * Updates block order according to the given array of block ids.
+   * 
+   * Provided array must contain exactly the same set of ids current project cosists of,
+   * an error will be thrown instead.
+   */
+  public async reorderBlocks(blocks: string[]): Promise<void> {
+    await withProject(this.env.pl, this.rid, (mut) => {
+      const currentStructure = mut.structure;
+      if (currentStructure.groups.length !== 1)
+        throw new Error('Unexpected project structure, non-sinular block group');
+      const currentGroup = currentStructure.groups[0];
+      if (currentGroup.blocks.length !== blocks.length)
+        throw new Error(`Lengh mismatch: ${currentGroup.blocks.length} !== ${blocks.length}`);
+      if (new Set<string>(blocks).size !== blocks.length) throw new Error(`Repeated block ids`);
+      const newStructure: ProjectStructure = {
+        groups: [
+          {
+            id: currentGroup.id,
+            label: currentGroup.label,
+            blocks: blocks.map((blockId) => {
+              const block = currentGroup.blocks.find((b) => b.id === blockId);
+              if (block === undefined) throw new Error(`Can't find block: ${blockId}`);
+              return block;
+            })
+          }
+        ]
+      };
+      mut.updateStructure(newStructure);
+    });
     await this.projectTree.refreshState();
   }
 
