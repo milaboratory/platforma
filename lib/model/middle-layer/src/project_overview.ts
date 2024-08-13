@@ -1,17 +1,10 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_pack';
-import {
-  BlockRenderingMode,
-  BlockSection,
-  NavigationState
-} from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratory/sdk-model';
+import { AuthorMarker } from './author_marker';
 
 /** Generalized block status, to be used in block item "styling". */
-export type BlockCalculationStatus =
-  | 'NotCalculated'
-  | 'Running'
-  | 'Done'
-  | 'Limbo';
+export type BlockCalculationStatus = 'NotCalculated' | 'Running' | 'Done' | 'Limbo';
 
 /** Overview of the whole project state, required to render a left panel. */
 export type ProjectOverview = {
@@ -23,6 +16,14 @@ export type ProjectOverview = {
 
   /** Last modification timestamp. */
   lastModified: Date;
+
+  /**
+   * Marker of the party last doing modification of the project structure
+   *   - block reordering
+   *   - block renaming
+   *   - blockPackUpdate
+   * */
+  authorMarker?: AuthorMarker;
 
   /** Overview information for each block */
   blocks: BlockStateOverview[];
