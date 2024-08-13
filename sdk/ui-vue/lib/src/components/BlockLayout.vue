@@ -17,6 +17,8 @@ const parsePathname = (href: `/${string}`) => {
   }
 };
 
+const href = computed(() => (sdk.loaded ? sdk.useApp().href : undefined));
+
 const CurrentView = computed(() => {
   if (sdk.loaded) {
     const app = sdk.useApp();
@@ -32,7 +34,7 @@ const CurrentView = computed(() => {
   <div class="block block__layout">
     <div v-if="sdk.error">{{ sdk.error }}</div>
     <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
-    <component :is="CurrentView" v-else-if="CurrentView" />
+    <component :is="CurrentView" v-else-if="CurrentView" :key="href" />
     <NotFound v-else />
   </div>
 </template>
