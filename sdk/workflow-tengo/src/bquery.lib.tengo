@@ -12,7 +12,8 @@ _OPTIONS_SCHEME := {
 	"spec,omitempty": `bool`,
 	"data,omitempty": `bool`,
 	"single,omitempty": `bool`,
-	"first,omitempty": `bool`
+	"first,omitempty": `bool`,
+	"errIfMissing,omitempty": `bool`
 }
 
 // default query options
@@ -24,7 +25,9 @@ _DEFAULT_OPTIONS := {
 	/** Asserts that the resulting list has one element and returns it */
 	single: false,
 	/** Returns first available result of the query */
-	first: false
+	first: false,
+	/** Throw error if no results found */
+	errIfMissing: false
 }
 
 /**
@@ -52,8 +55,8 @@ create := func(spec, ctx, ...options) {
 	}
 
 	query := json.encode({
-		"query": spec,
-		"setErrorIfMissing": false
+		query: spec,
+		setErrorIfMissing: ops.errIfMissing
 	})
 
 
@@ -110,6 +113,15 @@ resultUnmarshaller := func() {
 			if ops.first {
 				// special case, single element
 
+				// is no result
+				isNR := func(r) {
+					return r.info().Type.Name == constants.RTYPE_BRESOLVE_NO_RESULT.Name
+				}
+
+				if isNR(resource.get("ref")) {
+					return undefined
+				}
+
 				result  := {
 					ref: resource.get("ref").getDataAsJson(),
 					spec: resource.get("spec").getDataAsJson()
@@ -117,7 +129,13 @@ resultUnmarshaller := func() {
 
 				// only if the data is there
 				if resource.hasInputField("data") {
-					result["data"] = parser(resource.get("data"))
+
+					// even if spec is present, the data may be still not available
+					if isNR(resource.get("data")) {
+						result["data"] = undefined
+					} else {
+						result["data"] = parser(resource.get("data"))
+					}
 				}
 
 				return result
@@ -164,7 +182,7 @@ resultUnmarshaller := func() {
  * @param ctx: results pool (context) to query
  * @return result: a {ref: spec: data:} object
  */
-resolve := func(ref, ctx) {
+resolve := func(ref, ctx, ...options) {
 
 	spec := {
 		type: "Direct",
@@ -172,7 +190,15 @@ resolve := func(ref, ctx) {
 		output_name: ref.name 	// @TODO use consistent naming in pl
 	}
 
-	return create(spec, ctx, { first: true })
+	ops := {}
+
+	if len(options) > 0 {
+		ops = options[0]
+	}
+
+	ops.first = true
+
+	return create(spec, ctx, ops)
 }
 
 export ll.toStrict({

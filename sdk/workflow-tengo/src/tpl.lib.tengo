@@ -375,6 +375,36 @@ tpl := func() {
 				// wait until inputs map is ready
 				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", { "AllInputsSet": true })
 			}
+		},
+
+		/**
+		 * Delegates itself to the specified template, i.e. runs specified template and 
+		 * saves its outputs to this.
+		 * 
+		 * @param tpl: template - specified template
+	 	 * @param extraInputs: map - additional inputs to pass to the template
+		 * @param outputs: array - array of expected outputs to save
+		 */
+		routeDelegate: func(tpl, extraInputs, outputs) {
+			inputs := self.rawInputs()
+			for k, v in extraInputs {
+				inputs[k] = v
+			}
+
+			renderer := undefined
+			if self.isEphemeral() {
+				renderer = render.createEphemeral(tpl, inputs)
+			} else {
+				renderer = render.create(tpl, inputs)
+			}
+
+			tplOutputs := {}
+			for o in outputs {
+				tplOutputs[o] = renderer.output(o)
+			}
+
+			self.createOutputsAndLock(outputs)
+			self.setOutputs(tplOutputs)
 		}
 	}
 	return ll.toStrict(self)
@@ -393,5 +423,6 @@ export ll.toStrict({
 	inputs                  : instance.inputs,
 	defineOutputs           : instance.defineOutputs,
 	prepare                 : instance.prepare,
+	delegate                : instance.routeDelegate,
 	body                    : instance.body
 })

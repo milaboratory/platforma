@@ -29,10 +29,6 @@ _INPUT_CONTEXT_FIELD_NAME := "context"
 // renderer's output field with the context resource
 _OUTPUT_CONTEXT_FIELD_NAME := "context"
 
-// renderer's inputs map field which indicates that we are in
-// the inner render of the pre-run template
-_INNER_PRE_RUN := "__inner_pre_run__"
-
 // a field name prefix used in the renderer's inputs map fields
 // that store prepared resources (aka requested in the 'prepare()' method)
 _PREPARED_INPUTS_PREFIX := "prepared/"
@@ -44,15 +40,12 @@ _PREPARED_INPUTS_PREFIX := "prepared/"
 self.defineOutputs([_RESULTS_FIELD_NAME, _OUTPUT_CONTEXT_FIELD_NAME])
 
 _isProduction := func() {
-	return self.inputs().isProduction
+	// using low level api to avoid unnecessary unmarshalling etc
+	return self.rawInputs().isProduction.getValueAsJson() == true
 }
 
 _isStaging := func() {
 	return !_isProduction()
-}
-
-_isInnerPrerun := func() {
-	return self.hasInput(_INNER_PRE_RUN)
 }
 
 // register standard inputs preprocessors
@@ -140,6 +133,7 @@ _buildOutputs := func(results) {
 	// create results map
 	resBuilder := smart.mapBuilder()
 	for name, value in o {
+		ll.assert(!is_undefined(value), "value is undefined for output ", name)
 		resBuilder.add(name, value)
 	}
 
@@ -184,8 +178,8 @@ query := func(spec, ...options) {
  * @param ref: a ref object ({blockId: name:})
  * @return result: a {ref: spec: data:} object
  */
-resolve := func(ref) {
-	return bquery.resolve(ref, _parentContext())
+resolve := func(ref, ...options) {
+	return bquery.resolve(ref, _parentContext(), options...)
 }
 
 
@@ -224,35 +218,24 @@ setPreRun := func(tplId) {
  * Defines main entry point for current workflow
  */
 body := func(bodyFn) {
-	return self.body(func(_) {
 
-		if _isProduction() || _isInnerPrerun() {
+	if _isProduction() {
+
+		self.body(func(_) {
 
 			workflowInputArgs := args()
 			result := bodyFn(workflowInputArgs)
 
 			return _buildOutputs(result)
-		}
+		})
+	}
 
-		if !is_undefined(_preRunTpl) {
+	if !is_undefined(_preRunTpl) {
 
-			// render pre-run template
+		// staging; render pre-run template
 
-			inputs := self.inputs()
-			inputs[_INNER_PRE_RUN] = "true"
-
-
-			renderer := render.createEphemeral(_preRunTpl, inputs)
-
-			tplOutputs := {}
-			tplOutputs[_RESULTS_FIELD_NAME] = renderer.output(_RESULTS_FIELD_NAME)
-			tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = renderer.output(_OUTPUT_CONTEXT_FIELD_NAME)
-
-			return tplOutputs
-		}
-
-		return {}
-	})
+		self.delegate(_preRunTpl, { isProduction: true }, [_RESULTS_FIELD_NAME, _OUTPUT_CONTEXT_FIELD_NAME])
+	}
 }
 
 export ll.toStrict({
