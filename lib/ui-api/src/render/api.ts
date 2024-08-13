@@ -79,7 +79,7 @@ export class RenderCtx<Args, UiState> {
     return accessorId ? new TreeNodeAccessor(accessorId) : undefined;
   }
 
-  public get precalc():  TreeNodeAccessor | undefined {
+  public get precalc(): TreeNodeAccessor | undefined {
     return this.getNamedAccessor(StagingAccessorName);
   }
 
@@ -87,19 +87,19 @@ export class RenderCtx<Args, UiState> {
    * @deprecated use precalc
    */
   public get stagingOutput(): TreeNodeAccessor | undefined {
-    return this.precalc
+    return this.precalc;
   }
 
-  public get outputs():  TreeNodeAccessor | undefined {
+  public get outputs(): TreeNodeAccessor | undefined {
     return this.getNamedAccessor(MainAccessorName);
   }
-  
+
   /**
    * @deprecated use outputs
    */
   public get mainOutput(): TreeNodeAccessor | undefined {
-    return this.outputs
-  }  
+    return this.outputs;
+  }
 
   public readonly resultPool = new ResultPool();
 
@@ -109,6 +109,10 @@ export class RenderCtx<Args, UiState> {
 
   public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle {
     return this.ctx.createPTable(mapPTableDef(def, (po) => mapPObjectData(po, (d) => d.handle)));
+  }
+
+  public getBlockLabel(blockId: string): string {
+    return this.ctx.getBlockLabel(blockId);
   }
 }
 
