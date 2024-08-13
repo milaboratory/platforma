@@ -80,14 +80,16 @@ export class ClientUpload {
 
     const body = await (await resp.body.blob()).text();
     this.logger.info(
-      `uploaded chunk ${partNumber} of resource: ${id},`
-        + ` response: ${body}, `
-        + `status code: ${resp.statusCode}, url: ${info.uploadUrl}`);
+      `uploaded chunk ${partNumber} of resource: ${id},` +
+        ` response: ${body}, ` +
+        `status code: ${resp.statusCode}, url: ${info.uploadUrl}`
+    );
 
     if (resp.statusCode != 200) {
       throw new NetworkError(
-        `response is not ok, status code: ${resp.statusCode},`
-          + ` body: ${body}, headers: ${resp.headers}`);
+        `response is not ok, status code: ${resp.statusCode},` +
+          ` body: ${body}, headers: ${resp.headers}`
+      );
     }
 
     await this.grpcClient.updateProgress(

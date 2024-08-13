@@ -123,7 +123,7 @@ export class UploadDriver {
     ctx.addOnDestroy(() => this.release(rInfo.id, callerId));
 
     const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
-    if (result == undefined || !result.done) {
+    if (result == undefined || !isProgressStable(result)) {
       ctx.markUnstable();
     }
 
@@ -234,7 +234,7 @@ export class UploadDriver {
 
   private getAllNotDoneProgresses(): Array<ProgressUpdater> {
     return Array.from(this.idToProgress.entries())
-      .filter(([_, p]) => !p.progress.done)
+      .filter(([_, p]) => !isProgressStable(p.progress))
       .map(([_, p]) => p);
   }
 }
@@ -312,9 +312,9 @@ class ProgressUpdater {
     } catch (e: any) {
       if (
         e.name == 'RpcError' &&
-          (e.code == 'NOT_FOUND' ||
-            e.code == 'ABORTED' ||
-            e.code == 'ALREADY_EXISTS')
+        (e.code == 'NOT_FOUND' ||
+          e.code == 'ABORTED' ||
+          e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.change.markChanged();
@@ -390,10 +390,11 @@ class ProgressUpdater {
     } catch (e: any) {
       if (
         e.name == 'RpcError' &&
-          (e.code == 'NOT_FOUND' ||
-            e.code == 'ABORTED')
+        (e.code == 'NOT_FOUND' || e.code == 'ABORTED')
       ) {
-        this.logger.warn(`resource was not found while updating a status of BlobIndex: ${e}, ${stringifyWithResourceId(this.res)}`);
+        this.logger.warn(
+          `resource was not found while updating a status of BlobIndex: ${e}, ${stringifyWithResourceId(this.res)}`
+        );
         this.change.markChanged();
         this.setDone(true);
         return;
@@ -403,6 +404,15 @@ class ProgressUpdater {
       this.terminateWithError(e);
     }
   }
+}
+
+function isProgressStable(p: sdk.ImportProgress) {
+  return (
+    p.done &&
+    p.status !== undefined &&
+    p.status !== null &&
+    p.status.progress >= 1.0
+  );
 }
 
 export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
