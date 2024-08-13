@@ -181,6 +181,19 @@ test('simple project manipulations test', async () => {
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'Project 1' },
+      authorMarker: undefined,
+      blocks: []
+    });
+
+    await ml.setProjectMeta(
+      pRid1,
+      { label: 'New Project Label' },
+      { authorId: 'test_author', localVersion: 1 }
+    );
+    await prj.overview.refreshState();
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'New Project Label' },
+      authorMarker: { authorId: 'test_author', localVersion: 1 },
       blocks: []
     });
 
@@ -193,6 +206,11 @@ test('simple project manipulations test', async () => {
     const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
     const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
     const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
+
+    expect(await prj.overview.awaitStableValue()).toMatchObject({
+      meta: { label: 'New Project Label' },
+      authorMarker: undefined
+    });
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
@@ -267,7 +285,7 @@ test('simple project manipulations test', async () => {
   });
 });
 
-test('reorder blocks', async () => {
+test('reorder & rename blocks', async () => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -320,6 +338,16 @@ test('reorder blocks', async () => {
       blocks: [
         { id: block2Id, calculationStatus: 'Done' },
         { id: block3Id, calculationStatus: 'Limbo' },
+        { id: block1Id, calculationStatus: 'Done' }
+      ]
+    });
+
+    await prj.setBlockLabel(block3Id, 'New Block Label');
+    const overviewSnapshot3 = await prj.overview.awaitStableValue();
+    expect(overviewSnapshot3).toMatchObject({
+      blocks: [
+        { id: block2Id, calculationStatus: 'Done' },
+        { id: block3Id, calculationStatus: 'Limbo', label: 'New Block Label' },
         { id: block1Id, calculationStatus: 'Done' }
       ]
     });

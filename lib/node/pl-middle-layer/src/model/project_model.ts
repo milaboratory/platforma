@@ -92,6 +92,8 @@ export function blockArgsAuthorKey(blockId: string): string {
   return `${BlockArgsAuthorKeyPrefix}${blockId}`;
 }
 
+export const ProjectStructureAuthorKey = 'ProjectStructureAuthor';
+
 /** Returns block id, or undefined if key does not match the pattern. */
 export function parseBlockFrontendStateKey(key: string): string | undefined {
   const match = key.match(BlockFrontendStateKeyPattern);

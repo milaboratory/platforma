@@ -33,7 +33,8 @@ import {
   blockFrontendStateKey,
   blockArgsAuthorKey,
   ProjectLastModifiedTimestamp,
-  ProjectCreatedTimestamp
+  ProjectCreatedTimestamp,
+  ProjectStructureAuthorKey
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import {
@@ -425,6 +426,21 @@ export class ProjectMutator {
     this.updateLastModified();
   }
 
+  /** Update block label */
+  public setBlockLabel(blockId: string, label: string): void {
+    const newStructure = this.structure;
+    let ok = false;
+    for (const block of allBlocks(newStructure))
+      if (block.id === blockId) {
+        block.label = label;
+        ok = true;
+        break;
+      }
+    if (!ok) throw new Error(`block ${blockId} not found`);
+    this.updateStructure(newStructure);
+    this.updateLastModified();
+  }
+
   private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
     const upstreamContexts: AnyRef[] = [];
     upstream.forEach((id) => {
@@ -809,10 +825,16 @@ export class ProjectMutator {
   }
 
   private assignAuthorMarkers() {
-    const markerStr = JSON.stringify(this.author);
+    const markerStr = this.author ? JSON.stringify(this.author) : undefined;
+    
     for (const blockId of this.blocksWithChangedInputs)
-      if (this.author === undefined) this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
+      if (markerStr === undefined) this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
       else this.tx.setKValue(this.rid, blockArgsAuthorKey(blockId), markerStr);
+
+    if (this.metaChanged || this.structureChanged) {
+      if (markerStr === undefined) this.tx.deleteKValue(this.rid, ProjectStructureAuthorKey);
+      else this.tx.setKValue(this.rid, ProjectStructureAuthorKey, markerStr);
+    }
   }
 
   public save() {

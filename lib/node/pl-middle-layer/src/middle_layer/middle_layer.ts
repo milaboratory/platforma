@@ -6,7 +6,7 @@ import {
   toGlobalResourceId
 } from '@milaboratory/pl-client-v2';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
-import { createProject, withProject } from '../mutator/project';
+import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratory/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import { DownloadUrlDriver } from '@milaboratory/pl-drivers';
@@ -16,7 +16,7 @@ import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
 import { ProjectListEntry } from '../model';
-import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
@@ -86,8 +86,8 @@ export class MiddleLayer {
   }
 
   /** Updates project metadata */
-  public async setProjectMeta(rid: ResourceId, meta: ProjectMeta): Promise<void> {
-    await withProject(this.pl, rid, async (prj) => {
+  public async setProjectMeta(rid: ResourceId, meta: ProjectMeta, author?: AuthorMarker): Promise<void> {
+    await withProjectAuthored(this.pl, rid, author, async (prj) => {
       prj.setMeta(meta);
     });
     await this.projectListTree.refreshState();

@@ -8,6 +8,7 @@ import {
   ProjectMetaKey,
   ProjectRenderingState,
   ProjectStructure,
+  ProjectStructureAuthorKey,
   ProjectStructureKey
 } from '../model/project_model';
 import { notEmpty } from '@milaboratory/ts-helpers';
@@ -15,6 +16,7 @@ import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratory/pl-client-v2';
 import {
+  AuthorMarker,
   BlockCalculationStatus,
   ProjectMeta,
   ProjectOverview
@@ -183,6 +185,7 @@ export function projectOverview(
         meta,
         created: new Date(created),
         lastModified: new Date(lastModified),
+        authorMarker: prj.getKeyValueAsJson<AuthorMarker>(ProjectStructureAuthorKey),
         blocks
       };
     },

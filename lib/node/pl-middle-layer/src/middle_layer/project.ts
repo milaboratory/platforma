@@ -101,11 +101,12 @@ export class Project {
     blockLabel: string,
     blockPackSpec: BlockPackSpecAny,
     before?: string,
+    author: AuthorMarker | undefined = undefined,
     blockId: string = randomUUID()
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
-    await withProject(this.env.pl, this.rid, (mut) =>
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.addBlock(
         {
           id: blockId,
@@ -131,11 +132,12 @@ export class Project {
   public async updateBlockPack(
     blockId: string,
     blockPackSpec: BlockPackSpecAny,
-    resetArgs: boolean = false
+    resetArgs: boolean = false,
+    author?: AuthorMarker
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
-    await withProject(this.env.pl, this.rid, (mut) =>
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
         preparedBp,
@@ -146,20 +148,20 @@ export class Project {
   }
 
   /** Deletes a block with all associated data. */
-  public async deleteBlock(blockId: string): Promise<void> {
-    await withProject(this.env.pl, this.rid, (mut) => mut.deleteBlock(blockId));
+  public async deleteBlock(blockId: string, author?: AuthorMarker): Promise<void> {
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => mut.deleteBlock(blockId));
     this.navigationStates.deleteBlock(blockId);
     await this.projectTree.refreshState();
   }
 
   /**
    * Updates block order according to the given array of block ids.
-   * 
+   *
    * Provided array must contain exactly the same set of ids current project cosists of,
    * an error will be thrown instead.
    */
-  public async reorderBlocks(blocks: string[]): Promise<void> {
-    await withProject(this.env.pl, this.rid, (mut) => {
+  public async reorderBlocks(blocks: string[], author?: AuthorMarker): Promise<void> {
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
       const currentStructure = mut.structure;
       if (currentStructure.groups.length !== 1)
         throw new Error('Unexpected project structure, non-sinular block group');
@@ -202,6 +204,14 @@ export class Project {
    * */
   public async stopBlock(blockId: string): Promise<void> {
     await withProject(this.env.pl, this.rid, (mut) => mut.stopProduction(blockId));
+    await this.projectTree.refreshState();
+  }
+
+  /** Update block label. */
+  public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
+    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
+      mut.setBlockLabel(blockId, label);
+    });
     await this.projectTree.refreshState();
   }
 
@@ -258,7 +268,7 @@ export class Project {
   }
 
   /** Resets arguments and ui state of the block to initial state */
-  public async resetBlockArgsAndUiState(blockId: string): Promise<void> {
+  public async resetBlockArgsAndUiState(blockId: string, author?: AuthorMarker): Promise<void> {
     await this.env.pl.withWriteTx('BlockInputsReset', async (tx) => {
       // reading default arg values from block pack
       const bpHolderRid = ensureResourceIdNotNull(
@@ -271,7 +281,7 @@ export class Project {
       const bpInfo = JSON.parse(
         Buffer.from(notEmpty(bpData.data)).toString('utf-8')
       ) as BlockPackInfo;
-      await withProject(tx, this.rid, (prj) => {
+      await withProjectAuthored(tx, this.rid, author, (prj) => {
         prj.setArgs([{ blockId, args: JSON.stringify(bpInfo.config.initialArgs) }]);
         prj.setUiState(blockId, undefined);
       });
