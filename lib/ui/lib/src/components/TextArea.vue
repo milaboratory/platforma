@@ -16,6 +16,7 @@ const props = defineProps<{
   helper?: string;
   placeholder?: string;
   disabled?: boolean;
+  readonly?: boolean;
   dashed?: boolean;
   rows?: number;
   autogrow?: boolean;
@@ -64,9 +65,9 @@ function adjustHeight() {
       <textarea
         ref="input"
         v-model="value"
+        :readonly="readonly"
         :rows="rows"
         :disabled="disabled"
-        type="text"
         :placeholder="placeholder || '...'"
         spellcheck="false"
         @input="adjustHeight"
