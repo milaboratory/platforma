@@ -20,6 +20,7 @@ RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }
 RTYPE_BOBJECT_SPEC := { Name: "BObjectSpec", Version: "1" }
 RTYPE_BRESOLVE_CHOICE := { Name: "BResolveChoice", Version: "1" }
 RTYPE_BRESOLVE_FIRST := { Name: "BResolveSingle", Version: "1" }
+RTYPE_BRESOLVE_NO_RESULT := { Name: "BResolveSingleNoResult", Version: "1" }
 
 RTYPE_QUERY_RESULT := { Name: "BQueryResult", Version: "1" }
 
@@ -30,6 +31,7 @@ export ll.toStrict({
 	RTYPE_BOBJECT_SPEC          : RTYPE_BOBJECT_SPEC,
 	RTYPE_BRESOLVE_CHOICE       : RTYPE_BRESOLVE_CHOICE,
 	RTYPE_BRESOLVE_FIRST        : RTYPE_BRESOLVE_FIRST,
+	RTYPE_BRESOLVE_NO_RESULT    : RTYPE_BRESOLVE_NO_RESULT,
 	RTYPE_CONTEXT               : RTYPE_CONTEXT,
 	RTYPE_CONTEXT_END           : RTYPE_CONTEXT_END,
 	RTYPE_JSON                  : RTYPE_JSON,

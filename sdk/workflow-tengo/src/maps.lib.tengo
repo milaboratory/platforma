@@ -17,6 +17,19 @@ getKeys := func(map) {
 }
 
 /**
+ * Returns true if map contains specified key. Note: current implementation is O(N)
+ */
+containsKey := func(map, key) {
+	for k, _ in map {
+		if key == k {
+			return true
+		}
+	}
+
+	return false
+}
+
+/**
  * Transforms all keys of the map with a function and returns a new map with these keys.
  *
  * @param map: map[key]any
@@ -84,5 +97,6 @@ export ll.toStrict({
 	filterValues : filterValues,
 	filterKeys : filterKeys,
 	filterKeysValues : filterKeysValues,
-	getKeys: getKeys
+	getKeys: getKeys,
+	containsKey: containsKey
 })
