@@ -236,7 +236,7 @@ export function computableFromCfgUnsafe(
           // But `execute` modifies a stack, so we have to defensively copy it here.
           const copyOfPendingSubrotines = new Map<SubroutineKey, PendingSubroutine>();
           for (const [key, value] of stack.pendingSubroutines)
-            copyOfPendingSubrotines.set(key, { ...value });
+            copyOfPendingSubrotines.set(key, { ...value, args: { ...value.args } });
           const copiedStack: ExecutionStack = {
             result: stack.result,
             pendingSubroutines: copyOfPendingSubrotines
