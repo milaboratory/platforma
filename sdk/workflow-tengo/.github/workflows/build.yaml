@@ -28,18 +28,21 @@ jobs:
       notify-telegram: true
 
       node-version: '20.x'
-      is-electron-application: 'false'
       always-auth: 'true'
 
       build-script-name: 'build'
       cache-version: 'v2'
+
+      aws-iam-role-to-assume: 'arn:aws:iam::511903394050:role/milab-euce1-prod-github-oidc-role-platforma-ci-simple'
+      aws-region: 'eu-central-1'
+      helm-chart-atomic-upgrade: 'false'
+      helm-chart-wait-timeout: '40m'
 
       test-pl-client-release-matrix-k8s: true
       test-pl-client-latest-k8s: true
       test-script-name: 'test'
       test-pl-major-versions: '1'
       test-pl-minor-versions: '1'
-      test-pl-client-k8s-delay-time: '180'
 
     secrets:
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
@@ -48,4 +51,3 @@ jobs:
       METADATA_DB_URL: ${{ secrets.COUCHDB_URL }}
       METADATA_DB_USER: ${{ secrets.COUCHDB_USER }}
       METADATA_DB_PASSWORD: ${{ secrets.COUCHDB_PASSWORD }}
-      GH_PAT: ${{ secrets.GH_PAT_BLOCKS }}
