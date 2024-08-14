@@ -1,6 +1,7 @@
 import { defineApp } from 'lib';
 import MainPage from './MainPage.vue';
 import SecondPage from './SecondPage.vue';
+import ThirdPage from './ThirdPage.vue';
 import { platforma } from './testApi';
 import type { Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
 
@@ -14,6 +15,7 @@ export const sdkPlugin = defineApp<unknown, Outputs>(platforma as Platforma<unkn
     routes: {
       '/': MainPage,
       '/second': SecondPage,
+      '/third': ThirdPage,
     },
   };
 });

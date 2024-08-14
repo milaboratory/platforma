@@ -35,7 +35,7 @@ const sumOptional = computed(() => {
 
 <template>
   <div class="test-container">
-    <h3>Hi, I am Second Page</h3>
+    <h3>Outputs basics</h3>
     <Navigate />
 
     <div>Sum or error: {{ sumOrError }}</div>

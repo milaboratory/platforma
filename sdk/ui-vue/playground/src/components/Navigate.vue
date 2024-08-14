@@ -26,11 +26,11 @@ const href = computed({
         value: '/',
       },
       {
-        text: 'Second Page',
+        text: 'Outputs basics',
         value: '/second',
       },
       {
-        text: 'Third Page',
+        text: 'ValueOrError',
         value: '/third',
       },
     ]"
