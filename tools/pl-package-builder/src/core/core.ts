@@ -124,9 +124,10 @@ export class Core {
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
         const dstName = desc.fullName(this.targetOS, this.targetArch)
-        s.putFile(dstName, archive)
 
-        this.logger.info(`Package '${desc.name}' was published to '${desc.registry.name}:${dstName}'`)
+        s.putFile(dstName, archive).then(
+            () => this.logger.info(`Package '${desc.name}' was published to '${desc.registry.name}:${dstName}'`)
+        )
     }
 
     private get binaryDescriptor(): CommonBinaryConfig {
