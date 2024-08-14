@@ -40,6 +40,10 @@ type ProdState = {
 
   outputError: boolean;
 
+  outputsError?: string;
+
+  exportsError?: string;
+
   stale: boolean;
 
   /** Arguments current production was rendered with. */
@@ -101,6 +105,9 @@ export function projectOverview(
               ctx.error !== undefined ||
               result.value?.getError() !== undefined ||
               ctx.value?.getError() !== undefined,
+            outputsError:
+              result.error?.getDataAsString() ?? result.value?.getError()?.getDataAsString(),
+            exportsError: ctx.error?.getDataAsString() ?? ctx.value?.getError()?.getDataAsString(),
             finished:
               ((result.value !== undefined && result.value.getIsReadyOrError()) ||
                 (result.error !== undefined && result.error.getIsReadyOrError())) &&
@@ -172,6 +179,8 @@ export function projectOverview(
           downstreams: [...currentGraph.traverseIdsExcludingRoots('downstream', id)],
           calculationStatus,
           outputErrors: info.prod?.outputError === true,
+          outputsError: info.prod?.outputsError,
+          exportsError: info.prod?.exportsError,
           sections,
           inputsValid,
           currentBlockPack: bpInfo?.source,
