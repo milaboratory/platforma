@@ -19,9 +19,10 @@ export type ProjectOverview = {
 
   /**
    * Marker of the party last doing modification of the project structure
-   *   - block reordering
+   *   - whole project renamed
+   *   - blocks reordering
    *   - block renaming
-   *   - blockPackUpdate
+   *   - block-pack update
    * */
   authorMarker?: AuthorMarker;
 
@@ -59,6 +60,18 @@ export type BlockStateOverview = {
    * calculations are finished.
    * */
   outputErrors: boolean;
+
+  /**
+   * If outputs have errors, this field will contain the error message extracted
+   * from the outputs map.
+   * */
+  outputsError?: string;
+
+  /**
+   * If exports context have errors, this field will contain the error message
+   * extracted from the exports context resource.
+   * */
+  exportsError?: string;
 
   /** Generalized block calculation status */
   calculationStatus: BlockCalculationStatus;
