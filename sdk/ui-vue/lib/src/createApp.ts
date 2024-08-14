@@ -2,10 +2,11 @@ import { deepClone, setProp } from '@milaboratory/helpers';
 import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import type { Component } from 'vue';
-import { reactive, nextTick, markRaw, computed } from 'vue';
-import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions } from './types';
+import { reactive, nextTick, markRaw, computed, watch } from 'vue';
+import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult } from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
+import { unwrapValueOrErrors } from './utils';
 
 export function createApp<
   Args = unknown,
@@ -21,7 +22,7 @@ export function createApp<
     navigationState: state.navigationState as NavigationState<Href>,
   }) as {
     args: Readonly<Args>;
-    outputs: Readonly<Outputs>;
+    outputs: Partial<Readonly<Outputs>>;
     ui: Readonly<UiState>;
     navigationState: Readonly<NavigationState<Href>>;
   };
@@ -33,7 +34,6 @@ export function createApp<
       }
 
       if (patch.key === 'ui') {
-        console.log('got my ui state', patch.value);
         innerState.ui = Object.freeze(patch.value);
       }
 
@@ -71,13 +71,54 @@ export function createApp<
         },
       });
     },
+    /**
+     * Note: Don't forget to list the output names, like: useOutputs('output1', 'output2', ...etc)
+     * @param keys - List of output names
+     * @returns {OptionalResult<UnwrapOutputs<Outputs, K>>}
+     */
+    useOutputs<K extends keyof Outputs>(...keys: K[]): OptionalResult<UnwrapOutputs<Outputs, K>> {
+      const data = reactive({
+        errors: undefined,
+        value: undefined,
+      });
+
+      watch(
+        () => innerState.outputs,
+        () => {
+          try {
+            Object.assign(data, {
+              value: this.unwrapOutputs<K>(...keys),
+              errors: undefined,
+            });
+          } catch (error) {
+            Object.assign(data, {
+              value: undefined,
+              errors: [String(error)],
+            });
+          }
+        },
+        { immediate: true, deep: true },
+      );
+
+      return data as OptionalResult<UnwrapOutputs<Outputs, K>>;
+    },
+    /**
+     * @throws Error
+     * @param keys
+     * @returns
+     */
+    unwrapOutputs<K extends keyof Outputs>(...keys: K[]): UnwrapOutputs<Outputs, K> {
+      const outputs = innerState.outputs;
+      const entries = keys.map((key) => [key, unwrapValueOrErrors(outputs[key])]);
+      return Object.fromEntries(entries);
+    },
     getOutputField(key: keyof Outputs) {
       return innerState.outputs[key];
     },
     getOutputFieldOkOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
       const result = this.getOutputField(key);
 
-      if (result.ok) {
+      if (result && result.ok) {
         return result.value;
       }
 
@@ -86,7 +127,7 @@ export function createApp<
     getOutputFieldErrorsOptional<K extends keyof Outputs>(key: K): string[] | undefined {
       const result = this.getOutputField(key);
 
-      if (!result.ok) {
+      if (result && !result.ok) {
         return result.errors;
       }
 
@@ -124,6 +165,7 @@ export function createApp<
     ui: computed(() => innerState.ui),
     navigationState: computed(() => innerState.navigationState),
     href: computed(() => innerState.navigationState.href),
+
     queryParams: computed(() => parseQuery<Href>(innerState.navigationState.href)),
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
     testOutputs: computed(() => innerState.outputs),

@@ -1,3 +1,4 @@
+import type { Equal, Expect } from '@milaboratory/helpers/types';
 import type { BlockOutputsBase, ImportFileHandle, Platforma, StorageHandle, ValueOrErrors } from '@milaboratory/sdk-ui';
 import type { Component, ComputedGetter } from 'vue';
 
@@ -59,12 +60,48 @@ export type ImportedFiles = {
   files: ImportFileHandle[];
 };
 
+// Results (ValueOrErrors)
+
 export type OutputsErrors<Outputs extends BlockOutputsBase> = {
   [P in keyof Outputs]?: Extract<Outputs[P], { ok: false }>;
 };
+
+export type UnwrapValueOrError<W> = W extends {
+  ok: true;
+  value: infer V;
+}
+  ? V
+  : never;
+
+export type UnwrapOutputs<Outputs extends BlockOutputsBase, K extends keyof Outputs = keyof Outputs> = {
+  [P in K]: UnwrapValueOrError<Outputs[P]>;
+};
+
+// Draft
+export type ModelResult<T, E = unknown> =
+  | {
+      ok: true;
+      model: T;
+    }
+  | {
+      ok: false;
+      error: E;
+    };
+
+export type OptionalResult<T> =
+  | {
+      errors?: undefined;
+      value?: T; // I make this optional (wip)
+    }
+  | {
+      value?: undefined;
+      errors: string[];
+    };
 declare global {
   const platforma: Platforma | undefined;
   interface Window {
     platforma: Platforma | undefined;
   }
 }
+
+type _cases = [Expect<Equal<number, UnwrapValueOrError<ValueOrErrors<number>>>>];

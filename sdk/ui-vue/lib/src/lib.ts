@@ -12,3 +12,7 @@ export * from './createModel';
 export * from './types';
 
 export * from './defineStore';
+
+export * from './utils';
+
+export * from './computedResult';

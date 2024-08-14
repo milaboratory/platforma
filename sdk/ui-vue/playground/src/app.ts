@@ -2,8 +2,14 @@ import { defineApp } from 'lib';
 import MainPage from './MainPage.vue';
 import SecondPage from './SecondPage.vue';
 import { platforma } from './testApi';
+import type { Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
 
-export const sdkPlugin = defineApp(platforma, () => {
+type Outputs = {
+  x: ValueOrErrors<number>;
+  y: ValueOrErrors<number>;
+};
+
+export const sdkPlugin = defineApp<unknown, Outputs>(platforma as Platforma<unknown, Outputs>, () => {
   return {
     routes: {
       '/': MainPage,

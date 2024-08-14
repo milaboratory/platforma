@@ -1,4 +1,5 @@
 import { unionize } from '@milaboratory/helpers/utils';
+import { wrapValueOrErrors } from 'lib';
 
 import type { BlockState, BlockStatePatch, NavigationState, Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
 
@@ -8,12 +9,34 @@ const state: BlockState<unknown, Record<string, ValueOrErrors<unknown>>, unknown
   args: undefined,
   ui: undefined,
   navigationState: {
-    href: '/',
+    href: '/second',
   },
   outputs: {},
 };
 
 const onUpdateListeners: OnUpdates[] = [];
+
+const setPatches = async (updates: BlockStatePatch[]) => await Promise.all(onUpdateListeners.map((cb) => cb(updates)));
+
+let x = 1;
+
+const testError = {
+  ok: false,
+  errors: ['y contains an unknown error'],
+  moreErrors: false,
+} as ValueOrErrors<number>;
+
+setInterval(() => {
+  setPatches([
+    {
+      key: 'outputs',
+      value: {
+        x: wrapValueOrErrors(++x),
+        y: x % 5 === 0 ? testError : wrapValueOrErrors(2),
+      },
+    },
+  ]);
+}, 2000);
 
 export const platforma: Platforma = {
   sdkInfo: {
