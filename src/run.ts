@@ -46,7 +46,7 @@ export function runProcess(logger: winston.Logger, cmd: string, args: readonly s
     return result
 }
 
-export function rerunLast(logger: winston.Logger, options: SpawnOptions) : SpawnSyncReturns<Buffer> {
+export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnSyncReturns<Buffer> {
     if (!state.lastRun) {
         throw new Error("no previous run info found: this is the first run after package installation")
     }
@@ -67,7 +67,27 @@ function run(logger: winston.Logger, cmd: string, args: readonly string[], optio
     logger.info(`Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`,)
 
     options.env = { ...process.env, ...options.env }
-    return spawn(cmd, args, options)
+    const child = spawn(cmd, args, options)
+    var exitAfterChild: boolean = false
+
+    //
+    // Ensure Ctrl+C causes right finalization order: first stop child process, then stop the parent.
+    //
+    const sigintHandler = () => {
+        child.kill('SIGINT');
+        exitAfterChild = true
+    };
+
+    process.on('SIGINT', sigintHandler);
+
+    child.on('close', (code) => {
+        process.removeListener('SIGINT', sigintHandler);
+        if (exitAfterChild) {
+            process.exit(code)
+        }
+    });
+
+    return child
 }
 
 function runSync(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): SpawnSyncReturns<Buffer> {
