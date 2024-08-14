@@ -49,24 +49,3 @@ export function create(contentRoot: string, dstArchivePath: string) {
         ['.']
     );
 }
-
-export function pack(
-    logger: winston.Logger,
-    contentRoot: string,
-    options: archiveOptions,
-) {
-    const archivePath = getPath(options)
-
-    logger.info("Packing software into a package")
-    if (options.crossplatform) {
-        logger.info(`  package is marked as cross-platform, generating single package for all platforms`)
-    } else {
-        logger.info(`  generating package for os='${options.os}', arch='${options.arch}'`)
-    }
-    logger.debug(`  package content root: '${contentRoot} '`)
-    logger.debug(`  package destination archive: '${archivePath}'`)
-
-    create(contentRoot, archivePath)
-
-    logger.info(`Software package was written to '${archivePath}'`)
-}

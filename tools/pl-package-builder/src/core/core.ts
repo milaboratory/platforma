@@ -55,7 +55,7 @@ export class Core {
 
         this.logger.info("Packing software into a package")
         if (desc.crossplatform) {
-            this.logger.info(`  package is marked as cross-platform, generating single package for all platforms`)
+            this.logger.info(`  generating cross-platform package`)
         } else {
             this.logger.info(`  generating package for os='${this.targetOS}', arch='${this.targetArch}'`)
         }
