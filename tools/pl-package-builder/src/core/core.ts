@@ -104,27 +104,32 @@ export class Core {
         archivePath?: string,
         storageURL?: string,
     }) {
+        const desc = this.binaryDescriptor
         const archivePath = options?.archivePath ?? this.archivePath
-        const storageURL = options?.storageURL ?? this.pkg.binary.registry.storageURL
+        const storageURL = options?.storageURL ?? desc.registry.storageURL
 
         if (!storageURL) {
-            this.logger.error(`no storage URL is set for registry ${this.pkg.binary.registry.name}`)
-            throw new Error("binary.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
+            this.logger.error(`no storage URL is set for registry ${desc.registry.name}`)
+            if (this.pkg.hasEnvironment) {
+                throw new Error("environment.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
+            } else {
+                throw new Error("environment.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
+            }
         }
 
-        this.logger.info(`Publishing package '${this.pkg.binary.name}' into registry '${this.pkg.binary.registry.name}'`)
+        this.logger.info(`Publishing package '${desc.name}' into registry '${desc.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
-        const dstName = this.pkg.binary.fullName(this.targetOS, this.targetArch)
+        const dstName = desc.fullName(this.targetOS, this.targetArch)
         s.putFile(dstName, archive)
 
-        this.logger.info(`Package '${this.pkg.binary.name}' was published to '${this.pkg.binary.registry.name}:${dstName}'`)
+        this.logger.info(`Package '${desc.name}' was published to '${desc.registry.name}:${dstName}'`)
     }
 
-    private get binaryDescriptor() : CommonBinaryConfig {
+    private get binaryDescriptor(): CommonBinaryConfig {
         return this.pkg.hasEnvironment ? this.pkg.environment! : this.pkg.binary!
     }
 
