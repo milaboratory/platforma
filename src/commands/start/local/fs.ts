@@ -37,6 +37,7 @@ export default class FS extends Command {
     const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout'
 
     const authDrivers = flagsToAuthDriversList(flags, workdir)
+    const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined
 
     const startOptions: startLocalFSOptions = {
       binaryPath: flags['pl-binary'],
@@ -47,7 +48,7 @@ export default class FS extends Command {
       configOptions: {
         log: { path: logFile, },
         localRoot: storage,
-        core: { auth: { enabled: flags['auth-enabled'], drivers: authDrivers } },
+        core: { auth: { enabled: authEnabled, drivers: authDrivers } },
         storages: {
           primary: { type: 'FS', rootPath: flags['storage-primary'], },
           work: { type: 'FS', rootPath: flags['storage-work'], },

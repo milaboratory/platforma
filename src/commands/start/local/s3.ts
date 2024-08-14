@@ -38,6 +38,7 @@ export default class FS extends Command {
     const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout'
 
     const authDrivers = flagsToAuthDriversList(flags, workdir)
+    const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined
 
     const startOptions: startLocalOptions = {
       binaryPath: flags['pl-binary'],
@@ -52,7 +53,7 @@ export default class FS extends Command {
         log: { path: logFile },
         localRoot: storage,
         core: {
-          auth: { enabled: flags['auth-enabled'], drivers: authDrivers }
+          auth: { enabled: authEnabled, drivers: authDrivers }
         },
         storages: {
           work: { type: 'FS', rootPath: flags['storage-work'], },
@@ -82,15 +83,16 @@ export function flagsToAuthDriversList(flags: {
       path: path.resolve(workdir, flags['auth-htpasswd-file']),
     })
   }
-  if (flags['auth-ldap-server']) {
-    if (!flags['auth-ldap-default-dn']) {
-      throw new Error("LDAP auth also requires 'default DN' option to be set")
-    }
 
+  if (Boolean(flags['auth-ldap-server']) !== Boolean(flags['auth-ldap-default-dn'])) {
+    throw new Error("LDAP auth settings require both 'server' and 'default DN' options to be set")
+  }
+
+  if (flags['auth-ldap-server']) {
     authDrivers.push({
       driver: 'ldap',
       serverUrl: flags['auth-ldap-server'],
-      defaultDN: flags['auth-ldap-default-dn'],
+      defaultDN: flags['auth-ldap-default-dn']!,
     })
   }
 
