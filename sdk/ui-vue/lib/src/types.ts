@@ -97,6 +97,11 @@ export type OptionalResult<T> =
       value?: undefined;
       errors: string[];
     };
+
+export type OutputsValues<Outputs extends BlockOutputsBase> = {
+  [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
+};
+
 declare global {
   const platforma: Platforma | undefined;
   interface Window {

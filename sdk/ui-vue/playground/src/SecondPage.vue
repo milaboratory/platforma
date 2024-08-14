@@ -35,6 +35,16 @@ const sum2 = computedResult(() => {
     <div v-if="partial.value">(Partial) Sum: {{ partial.value.x }} + {{ partial.value.y }} = {{ partial.value.x + partial.value.y }}</div>
     <div v-else class="alert-error">Error: {{ partial.errors }}</div>
 
+    <fieldset v-if="app.outputsValues.x">
+      <legend>x</legend>
+      {{ app.outputsValues.x }}
+    </fieldset>
+
+    <fieldset v-if="app.outputsValues.y">
+      <legend>y</legend>
+      {{ app.outputsValues.y }}
+    </fieldset>
+
     <fieldset>
       <legend>Sum 2</legend>
       <div v-if="sum2.value">

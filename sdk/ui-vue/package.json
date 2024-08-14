@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",

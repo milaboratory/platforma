@@ -3,7 +3,7 @@ import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import type { Component } from 'vue';
 import { reactive, nextTick, markRaw, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult } from './types';
+import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputsValues } from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
 import { unwrapValueOrErrors } from './utils';
@@ -165,6 +165,17 @@ export function createApp<
     ui: computed(() => innerState.ui),
     navigationState: computed(() => innerState.navigationState),
     href: computed(() => innerState.navigationState.href),
+
+    /**
+     * Also we can add separate "outputErrors"
+     */
+    outputsValues: computed<OutputsValues<Outputs>>(() => {
+      const entries = Object.entries(innerState.outputs).map(([k, vOrErr]) => [
+        k,
+        vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined,
+      ]);
+      return Object.fromEntries(entries);
+    }),
 
     queryParams: computed(() => parseQuery<Href>(innerState.navigationState.href)),
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
