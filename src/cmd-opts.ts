@@ -17,7 +17,7 @@ export const ImageFlag = {
 
 export const VersionFlag = {
     version: Flags.string({
-        description: 'use custom platforma release (official docker image of custom version)'
+        description: 'use custom platforma release (official docker image or binary package)'
     })
 }
 
