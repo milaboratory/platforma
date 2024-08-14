@@ -98,8 +98,12 @@ export type OptionalResult<T> =
       errors: string[];
     };
 
-export type OutputsValues<Outputs extends BlockOutputsBase> = {
+export type OutputValues<Outputs extends BlockOutputsBase> = {
   [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
+};
+
+export type OutputErrors<Outputs extends BlockOutputsBase> = {
+  [P in keyof Outputs]?: Error;
 };
 
 declare global {

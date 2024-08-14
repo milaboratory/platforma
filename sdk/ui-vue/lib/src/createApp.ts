@@ -3,10 +3,19 @@ import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import type { Component } from 'vue';
 import { reactive, nextTick, markRaw, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, LocalState, OutputsErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputsValues } from './types';
+import type {
+  UnwrapValueOrErrors,
+  LocalState,
+  OutputsErrors,
+  ArgsModelOptions,
+  UnwrapOutputs,
+  OptionalResult,
+  OutputValues,
+  OutputErrors,
+} from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
-import { unwrapValueOrErrors } from './utils';
+import { MultiError, unwrapValueOrErrors } from './utils';
 
 export function createApp<
   Args = unknown,
@@ -112,9 +121,17 @@ export function createApp<
       const entries = keys.map((key) => [key, unwrapValueOrErrors(outputs[key])]);
       return Object.fromEntries(entries);
     },
+    /**
+     * @deprecated use app.outputs.[fieldName] instead
+     * @see outputs
+     */
     getOutputField(key: keyof Outputs) {
       return innerState.outputs[key];
     },
+    /**
+     * @deprecated use outputValues instead
+     * @see outputValues
+     */
     getOutputFieldOkOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
       const result = this.getOutputField(key);
 
@@ -166,14 +183,16 @@ export function createApp<
     navigationState: computed(() => innerState.navigationState),
     href: computed(() => innerState.navigationState.href),
 
-    /**
-     * Also we can add separate "outputErrors"
-     */
-    outputsValues: computed<OutputsValues<Outputs>>(() => {
+    outputValues: computed<OutputValues<Outputs>>(() => {
       const entries = Object.entries(innerState.outputs).map(([k, vOrErr]) => [
         k,
         vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined,
       ]);
+      return Object.fromEntries(entries);
+    }),
+
+    outputErrors: computed<OutputErrors<Outputs>>(() => {
+      const entries = Object.entries(innerState.outputs).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
       return Object.fromEntries(entries);
     }),
 

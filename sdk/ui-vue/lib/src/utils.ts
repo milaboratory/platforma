@@ -53,3 +53,7 @@ export function unwrapOptionalResult<V>(result: OptionalResult<V>): V {
 
   return result.value;
 }
+
+export function isDefined<T>(v: T | undefined): v is T {
+  return v !== undefined;
+}

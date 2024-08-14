@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
-import { computedResult } from 'lib';
+import { computedResult, isDefined } from 'lib';
 
 const app = useApp();
 
@@ -21,6 +21,16 @@ const sum2 = computedResult(() => {
 
   return x + y;
 });
+
+const sumOptional = computed(() => {
+  const { x, y } = app.outputValues;
+
+  if (isDefined(x) && isDefined(y)) {
+    return x + y;
+  }
+
+  return undefined;
+});
 </script>
 
 <template>
@@ -35,14 +45,19 @@ const sum2 = computedResult(() => {
     <div v-if="partial.value">(Partial) Sum: {{ partial.value.x }} + {{ partial.value.y }} = {{ partial.value.x + partial.value.y }}</div>
     <div v-else class="alert-error">Error: {{ partial.errors }}</div>
 
-    <fieldset v-if="app.outputsValues.x">
+    <fieldset v-if="app.outputValues.x !== undefined">
       <legend>x</legend>
-      {{ app.outputsValues.x }}
+      {{ app.outputValues.x }}
     </fieldset>
 
-    <fieldset v-if="app.outputsValues.y">
+    <fieldset v-if="app.outputValues.y !== undefined">
       <legend>y</legend>
-      {{ app.outputsValues.y }}
+      {{ app.outputValues.y }}
+    </fieldset>
+
+    <fieldset v-if="app.outputErrors.y !== undefined" class="alert-error">
+      <legend>y error:</legend>
+      {{ app.outputErrors.y }}
     </fieldset>
 
     <fieldset>
@@ -54,6 +69,8 @@ const sum2 = computedResult(() => {
         {{ sum2.errors }}
       </div>
     </fieldset>
+
+    <div>sum optional: {{ sumOptional }}</div>
 
     <div>{{ app.outputs.x }}</div>
 
