@@ -30,9 +30,9 @@ export default class Build extends Command {
         const logger = util.createLogger(flags['log-level'])
         const core = new Core(logger)
 
+        core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.pkg.descriptorName = flags['descriptor-name']
         core.pkg.version = flags.version
-        core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 

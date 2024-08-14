@@ -86,7 +86,6 @@ export const SourceFlag = {
         description: "add only selected sources to *.sw.json descriptor",
         options: (util.AllSoftwareSources as unknown) as string[],
         multiple: true,
-        default: [],
         required: false,
     }),
 }
