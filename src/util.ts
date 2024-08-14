@@ -1,3 +1,6 @@
+import os from 'os';
+import path from 'path';
+
 import winston from "winston";
 import { randomBytes } from 'crypto';
 
@@ -40,4 +43,11 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 
 export function randomStr(len: number): string {
     return randomBytes(Math.ceil(len / 2)).toString('hex').slice(0, len);
+}
+
+export function resolveTilde(p: string): string {
+    if (p.startsWith('~')) {
+        return path.join(os.homedir(), p.slice(1));
+    }
+    return p;
 }

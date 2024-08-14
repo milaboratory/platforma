@@ -1,11 +1,12 @@
 import { randomBytes } from 'crypto';
 import * as types from './types'
-import { assertNever } from '../util';
+import { assertNever, resolveTilde} from '../util';
 import * as pkg from '../package';
 
 export { plOptions } from './types';
 
 export function storageSettingsFromURL(storageURL: string, baseDir?: string): types.storageOptions {
+  storageURL = resolveTilde(storageURL)
   const url = new URL(storageURL, `file:${baseDir}`);
 
   switch (url.protocol) {
@@ -95,7 +96,7 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
       throw new Error("work storage MUST have 'FS' type as it is used for working directories management")
   }
 
-  const library = defaultStorageSettings('library', `${localRoot}/storages/library`, 'library-bucket')
+  const library = defaultStorageSettings('library', `${localRoot}/storages/library`, 'library-bucket', options?.storages?.library)
 
   const monitoring: types.monitoringSettings = {
     enabled: defaultBool(options?.monitoring?.enabled, true),
