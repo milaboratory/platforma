@@ -25,7 +25,6 @@ export const BuildFlags = {
 
 export const DescriptorNameFlag = {
     "descriptor-name": Flags.string({
-        // env: envs.PL_PKG_NAME, // !! this env is used 'globally' right inside package-info.ts !!
         description: "override name of package descriptor (<name>.sw.json) to be generated",
         required: false,
     }),
