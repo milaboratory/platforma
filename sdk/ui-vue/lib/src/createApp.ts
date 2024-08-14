@@ -3,16 +3,7 @@ import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import type { Component } from 'vue';
 import { reactive, nextTick, markRaw, computed, watch } from 'vue';
-import type {
-  UnwrapValueOrErrors,
-  LocalState,
-  OutputsErrors,
-  ArgsModelOptions,
-  UnwrapOutputs,
-  OptionalResult,
-  OutputValues,
-  OutputErrors,
-} from './types';
+import type { UnwrapValueOrErrors, LocalState, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
 import { MultiError, unwrapValueOrErrors } from './utils';
@@ -198,18 +189,6 @@ export function createApp<
 
     queryParams: computed(() => parseQuery<Href>(innerState.navigationState.href)),
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
-    testOutputs: computed(() => innerState.outputs),
-    outputsErrors: computed(() => {
-      return Object.entries(innerState.outputs)
-        .filter((e) => !e[1].value?.ok)
-        .reduce(
-          (acc, it) => {
-            acc[it[0]] = it[1];
-            return acc;
-          },
-          {} as Record<string, unknown>,
-        ) as OutputsErrors<Outputs>;
-    }),
   };
 
   const app = reactive(Object.assign(methods, getters));

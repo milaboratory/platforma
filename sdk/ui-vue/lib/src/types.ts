@@ -62,10 +62,6 @@ export type ImportedFiles = {
 
 // Results (ValueOrErrors)
 
-export type OutputsErrors<Outputs extends BlockOutputsBase> = {
-  [P in keyof Outputs]?: Extract<Outputs[P], { ok: false }>;
-};
-
 export type UnwrapValueOrError<W> = W extends {
   ok: true;
   value: infer V;
