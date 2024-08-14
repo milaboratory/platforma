@@ -17,3 +17,5 @@ export * from './defineStore';
 export * from './utils';
 
 export * from './computedResult';
+
+export * from './composition/useWatchResult';
