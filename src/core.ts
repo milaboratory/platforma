@@ -1,15 +1,15 @@
 import { ChildProcess, SpawnSyncReturns, spawn, spawnSync } from 'child_process'
 import yaml from 'yaml';
-import fs from 'fs'
-import path from 'path'
-import * as pkg from './package'
-import * as run from './run'
-import * as plCfg from './templates/pl-config'
-import * as platforma from './platforma'
-import * as types from './templates/types'
-import state from './state'
-import * as util from './util'
-import winston from 'winston'
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import * as pkg from './package';
+import * as run from './run';
+import * as plCfg from './templates/pl-config';
+import * as platforma from './platforma';
+import state from './state';
+import * as util from './util';
+import winston from 'winston';
 
 export default class Core {
     constructor(
@@ -165,6 +165,29 @@ export default class Core {
         )
 
         this.checkRunError(result, "failed to start MinIO service in docker")
+    }
+
+    public buildPlatforma(options: {
+        repoRoot: string
+        binPath?: string
+    }) : string {
+        const cmdPath: string = path.resolve(options.repoRoot, "cmd", "platforma")
+        const binPath: string = options.binPath ?? path.join(os.tmpdir(), "platforma-local-build")
+
+        this.logger.info("Building Platforma Backend binary from sources")
+        this.logger.info(`  sources path: ${options.repoRoot}`)
+        this.logger.info(`  binary path: ${binPath}`)
+
+        const result = spawnSync(
+            'go', ['build', "-o", binPath, "."],
+            {
+                cwd: cmdPath,
+                stdio: 'inherit'
+            },
+        )
+
+        this.checkRunError(result, "failed to build platforma binary from sources using 'go build' command")
+        return binPath
     }
 
     public startDockerS3(options?: {

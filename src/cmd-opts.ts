@@ -45,6 +45,12 @@ export const PlBinaryFlag = {
     })
 }
 
+export const PlSourcesFlag = {
+    ['pl-sources']: Flags.file({
+        description: "path to pl repository root: build Platforma Backend from sources and start the resulting binary",
+    })
+}
+
 export const ConfigFlag = {
     config: Flags.string({
         description: "use custom Platforma Backend config",

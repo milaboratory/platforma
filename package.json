@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-bootstrap",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "pl-version": "0.14.6",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {

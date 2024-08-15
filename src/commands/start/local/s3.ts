@@ -15,15 +15,19 @@ export default class FS extends Command {
 
   static override flags = {
     ...cmdOpts.VersionFlag,
-    ...cmdOpts.StorageFlag,
+
+    ...cmdOpts.PlBinaryFlag,
+    ...cmdOpts.PlSourcesFlag,
+
     ...cmdOpts.ConfigFlag,
+
+    ...cmdOpts.StorageFlag,
     ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
     ...cmdOpts.StorageLibraryURLFlag,
-    ...cmdOpts.ConfigFlag,
+
     ...cmdOpts.PlLogFileFlag,
     ...cmdOpts.PlWorkdirFlag,
-    ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.AuthFlags,
   }
 
@@ -40,8 +44,13 @@ export default class FS extends Command {
     const authDrivers = flagsToAuthDriversList(flags, workdir)
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined
 
+    var binaryPath = flags['pl-binary']
+    if (flags['pl-sources']) {
+      binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] })
+    }
+
     const startOptions: startLocalOptions = {
-      binaryPath: flags['pl-binary'],
+      binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,
       workdir: flags['pl-workdir'],
@@ -56,7 +65,7 @@ export default class FS extends Command {
           auth: { enabled: authEnabled, drivers: authDrivers }
         },
         storages: {
-          work: { type: 'FS', rootPath: flags['storage-work'], },
+          work: { type: 'FS', rootPath: flags['storage-work'] },
         }
       }
     }
