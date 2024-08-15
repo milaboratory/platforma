@@ -464,7 +464,7 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-              `from cache along with ${toDelete.map((d) => d.path)}`
+            `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );
@@ -557,12 +557,15 @@ class LastLinesGetter {
 
   async update(): Promise<void> {
     try {
-      this.log = await getLastLines(
+      const newLogs = await getLastLines(
         this.path,
         this.lines,
         this.patternToSearch
       );
-      this.change.markChanged();
+
+      if (this.log != newLogs)
+        this.change.markChanged();
+      this.log = newLogs;
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
