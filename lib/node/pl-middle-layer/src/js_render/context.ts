@@ -1,34 +1,34 @@
-import { BlockContextAny } from '../middle_layer/block_ctx';
-import { QuickJSContext, QuickJSHandle, Scope, VmFunctionImplementation } from 'quickjs-emscripten';
-import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import { Computable, ComputableCtx } from '@milaboratory/computable';
-import { randomUUID } from 'node:crypto';
+import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
 import {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
-  ResourceType as ResourceTypeFromSDK,
   JsRenderInternal,
   Option,
-  PSpecPredicate,
-  PObject,
-  PObjectSpec,
-  ResultCollection,
-  ValueOrError,
   PColumn,
   PFrameDef,
   PFrameHandle,
+  PObject,
+  PObjectSpec,
+  PSpecPredicate,
   PTableDef,
+  PTableHandle,
+  ResourceType as ResourceTypeFromSDK,
+  ResultCollection,
+  ValueOrError,
   mapPObjectData,
   mapPTableDef,
-  PTableHandle,
   mapValueInVOE
 } from '@milaboratory/sdk-ui';
-import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { ResultPool } from '../pool/result_pool';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { randomUUID } from 'node:crypto';
+import { QuickJSContext, QuickJSHandle, Scope, VmFunctionImplementation } from 'quickjs-emscripten';
 import { Optional } from 'utility-types';
-import { parseFinalPObjectCollection } from '../pool/p_object_collection';
+import { BlockContextAny } from '../middle_layer/block_ctx';
+import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { Block } from '../model/project_model';
+import { parseFinalPObjectCollection } from '../pool/p_object_collection';
+import { ResultPool } from '../pool/result_pool';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -132,7 +132,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         if (lambda === undefined) throw new Error('Staging context not available');
         const entry = lambda(this.computableCtx!);
         if (!entry) this.accessors.set(name, undefined);
-        else this.accessors.set(name, this.computableCtx!.accessor(entry).node());
+        else this.accessors.set(name, this.computableCtx!.accessor(entry).node({ ignoreError: true }));
       }
       return this.accessors.get(name) ? name : undefined;
     };
