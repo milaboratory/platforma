@@ -1,4 +1,7 @@
+import { ComputableCtx } from '@milaboratory/computable';
 import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { notEmpty } from '@milaboratory/ts-helpers';
+import { Optional } from 'utility-types';
 import {
   Block,
   ProjectStructure,
@@ -6,11 +9,8 @@ import {
   blockFrontendStateKey,
   projectFieldName
 } from '../model/project_model';
-import { ComputableCtx } from '@milaboratory/computable';
-import { notEmpty } from '@milaboratory/ts-helpers';
-import { Optional } from 'utility-types';
-import { ResultPool } from '../pool/result_pool';
 import { allBlocks } from '../model/project_model_util';
+import { ResultPool } from '../pool/result_pool';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
@@ -65,7 +65,7 @@ export function constructBlockContext(
     prod: (cCtx: ComputableCtx) => {
       return cCtx
         .accessor(projectEntry)
-        .node()
+        .node({ ignoreError: true })
         .traverse({
           field: projectFieldName(blockId, 'prodOutput'),
           stableIfNotFound: true,
@@ -76,7 +76,7 @@ export function constructBlockContext(
     staging: (cCtx: ComputableCtx) => {
       return cCtx
         .accessor(projectEntry)
-        .node()
+        .node({ ignoreError: true })
         .traverse({
           field: projectFieldName(blockId, 'stagingOutput'),
           ignoreError: true
