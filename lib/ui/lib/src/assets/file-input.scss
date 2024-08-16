@@ -1,0 +1,39 @@
+.pl-file-input {
+  padding: 12px 24px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color-div-grey);
+  background: var(--bg-base-light);
+
+  &.dragging,
+  &.active {
+    background: rgba(99, 224, 36, 0.12);
+    border: 1px dashed var(--border-color-focus);
+  }
+
+  &.disabled {
+    border: 1px dashed var(--border-color-div-grey);
+    background: var(--bg-base-light);
+    pointer-events: none;
+    * {
+      color: var(--dis-01);
+    }
+  }
+
+  input {
+    display: none;
+  }
+
+  &__file {
+    max-width: 100%;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color-default);
+  }
+
+  &__file-name {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    display: inline-block;
+  }
+}

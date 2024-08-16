@@ -18,7 +18,14 @@ export default defineConfig({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
     alias({
-      entries: [{ find: /^@\/(.*)/, replacement: fileURLToPath(new URL('../AAAAAAAA/$1', import.meta.url)) }],
+      entries: [
+        {
+          find: /^@\/(.*)/,
+          replacement: fileURLToPath(
+            new URL('../AAAAAAAA/$1', import.meta.url),
+          ),
+        },
+      ],
     }),
   ],
   define: {
@@ -31,6 +38,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: process.env.DEV_SOURCE_MAP === '1',
     emptyOutDir: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points

@@ -34,9 +34,10 @@
   outline: none;
   user-select: none;
 
-  transition: box-shadow .05s ease-in-out;
+  transition: box-shadow 0.05s ease-in-out;
 
-  box-shadow: var(--focus-shadow), var(--append-shadow), var(--shape-shadow), var(--active-shadow), var(--drop-shadow);
+  box-shadow: var(--focus-shadow), var(--append-shadow), var(--shape-shadow),
+    var(--active-shadow), var(--drop-shadow);
 
   // @todo
   &.justifyCenter {
@@ -71,6 +72,9 @@
 
   &:disabled {
     --color-text: var(--color-dis-00);
+    * {
+      color: var(--color-text);
+    }
   }
 
   &:not([disabled]) {
