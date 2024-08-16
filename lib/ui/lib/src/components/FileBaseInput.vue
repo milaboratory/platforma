@@ -89,7 +89,7 @@ function deleteFile(file: File) {
 <template>
   <div
     :class="{ dragging: dragging, active: hasFiles, disabled }"
-    class="pl-file-input"
+    class="pl-file-base-input"
     @dragover.prevent="dragging = true"
     @dragenter.prevent
     @dragleave="dragging = false"
@@ -97,13 +97,13 @@ function deleteFile(file: File) {
     @click="triggerFileInput"
   >
     <div class="d-flex">
-      <div class="pl-file-input__text flex-grow-1">
-        <div class="pl-file-input__title text-subtitle-s">{{ title }}</div>
-        <div class="pl-file-input__description text-description">
+      <div class="pl-file-base-input__text flex-grow-1">
+        <div class="pl-file-base-input__title text-subtitle-s">{{ title }}</div>
+        <div class="pl-file-base-input__description text-description">
           {{ description }}
         </div>
       </div>
-      <div class="pl-file-input__buttons d-flex gap-2">
+      <div class="pl-file-base-input__buttons d-flex gap-2">
         <input
           ref="fileInput"
           :multiple="multiple"
@@ -122,9 +122,9 @@ function deleteFile(file: File) {
       <div
         v-for="file in modelValue"
         :key="file.name"
-        class="pl-file-input__file d-flex align-center"
+        class="pl-file-base-input__file d-flex align-center"
       >
-        <div class="pl-file-input__file-name text-m">
+        <div class="pl-file-base-input__file-name text-m">
           {{ file.name }}
         </div>
         <BtnGhost
