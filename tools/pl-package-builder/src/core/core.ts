@@ -33,6 +33,15 @@ export class Core {
         return archive.getPath(this.archiveOptions)
     }
 
+    public set packageName(v: string) {
+        if (this.pkg.hasBinary) {
+            this.pkg.binary.name = v
+        }
+        if (this.pkg.hasEnvironment) {
+            this.pkg.environment.name = v
+        }
+    }
+
     public buildDescriptor(sources: util.SoftwareSource[]) {
         const swJson = this.descriptor.render(this.buildMode, sources)
         this.descriptor.write(swJson)

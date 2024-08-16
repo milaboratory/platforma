@@ -30,6 +30,14 @@ export const DescriptorNameFlag = {
     }),
 }
 
+export const PackageNameFlag = {
+    "package-name": Flags.string({
+        env: envs.PL_PKG_NAME,
+        description: "override name of package (<name>.tgz) to be uploaded to the binary registry",
+        required: false,
+    }),
+}
+
 export const VersionFlag = {
     "version": Flags.string({
         // env: envs.PL_PKG_VERSION, // !! this env is used 'globally' right inside package-info.ts !!

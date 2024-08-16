@@ -14,9 +14,11 @@ export default class Build extends Command {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.BuildFlags,
         ...cmdOpts.ArchFlags,
+        ...cmdOpts.VersionFlag,
 
         ...cmdOpts.DescriptorNameFlag,
-        ...cmdOpts.VersionFlag,
+        ...cmdOpts.PackageNameFlag,
+
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.ContentRootFlag,
     };
@@ -32,6 +34,7 @@ export default class Build extends Command {
 
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.pkg.descriptorName = flags['descriptor-name']
+        if (flags['package-name']) core.packageName = flags['package-name']
         core.pkg.version = flags.version
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType

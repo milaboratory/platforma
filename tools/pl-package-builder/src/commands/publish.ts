@@ -14,9 +14,12 @@ export default class Publish extends Command {
     static override flags = {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.ArchFlags,
+        ...cmdOpts.VersionFlag,
 
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.StorageURLFlag,
+
+        ...cmdOpts.PackageNameFlag,
     };
 
     static strict: boolean = false;
@@ -26,16 +29,18 @@ export default class Publish extends Command {
         
         const logger = util.createLogger(flags['log-level'])
 
-        const c = new Core(logger)
-        c.targetOS = flags.os as util.OSType
-        c.targetArch = flags.arch as util.ArchType
+        const core = new Core(logger)
+        core.pkg.version = flags.version
+        core.targetOS = flags.os as util.OSType
+        core.targetArch = flags.arch as util.ArchType
+        if (flags['package-name']) core.packageName = flags['package-name']
 
-        c.publishDescriptor()
+        core.publishDescriptor()
 
-        const swInfo = readSoftwareInfo(c.pkg.packageRoot, c.pkg.descriptorName)
+        const swInfo = readSoftwareInfo(core.pkg.packageRoot, core.pkg.descriptorName)
         
         if (swInfo.binary || flags.archive) {
-            c.publishPackage({
+            core.publishPackage({
                 archivePath: flags.archive,
                 storageURL: flags.publishURL,
             })

@@ -29,7 +29,7 @@ export function optionsForPackage(pkg: PackageInfo, os?: util.OSType, arch?: uti
 export function getPath(
     options: archiveOptions
 ): string {
-    const packageName = path.basename(options.packageName)
+    const packageName = options.packageName.replaceAll("/", "-").replaceAll("\\", "-")
 
     if (options && !options.crossplatform) {
         return path.resolve(options.packageRoot, `pkg-${packageName}-${options.packageVersion}-${options.os}-${options.arch}.tgz`)

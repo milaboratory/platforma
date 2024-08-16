@@ -15,6 +15,7 @@ export default class Descriptor extends Command {
         ...cmdOpts.BuildFlags,
 
         name: cmdOpts.DescriptorNameFlag['descriptor-name'],
+        ...cmdOpts.PackageNameFlag,
         ...cmdOpts.VersionFlag,
         ...cmdOpts.SourceFlag,
     };
@@ -27,11 +28,12 @@ export default class Descriptor extends Command {
 
         const logger = util.createLogger(flags['log-level'])
 
-        const c = new Core(logger)
-        c.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
-        c.pkg.descriptorName = flags['name']
-        c.pkg.version = flags.version
+        const core = new Core(logger)
+        core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
+        core.pkg.descriptorName = flags['name']
+        core.pkg.version = flags.version
+        if (flags['package-name']) core.packageName = flags['package-name']
 
-        c.buildDescriptor(sources)
+        core.buildDescriptor(sources)
     }
 }
