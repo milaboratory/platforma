@@ -89,7 +89,7 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
     case 'FS':
       work = types.emptyFSSettings('work')
       work.rootPath = options?.storages?.work?.rootPath ?? `${localRoot}/storages/work`
-      work.indexCachePeriod = work?.indexCachePeriod ?? '1m'
+      work.indexCachePeriod = options?.storages?.work?.indexCachePeriod ?? '1m'
       break;
 
     default:
