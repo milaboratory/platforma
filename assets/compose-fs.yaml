@@ -25,11 +25,12 @@ services:
       - "PL_LOG_DESTINATION=stdout"
       - "PL_LOG_COMMIT_SUMMARY=false"
       - "PL_LOG_RESOURCE_DATA=false"
-      - "PL_AUTH_ENABLED=true"
-      - "PL_DUMP_CONFIG_BEFORE_RUN=yes"
+      - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
+      - "PL_DUMP_CONFIG_BEFORE_RUN=true"
       - "PLC_FILE_PRIMARY_TYPE=FS"
 
     volumes:
+      - ${PL_AUTH_HTPASSWD_PATH}:/etc/platforma/users.htpasswd
       - primary:/storage/controllers/file/primary
       - library:/storage/controllers/file/library
       - work:/storage/controllers/file/work

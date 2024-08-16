@@ -2,6 +2,7 @@ import { Command } from '@oclif/core'
 import Core from '../../../core'
 import * as cmdOpts from '../../../cmd-opts'
 import * as util from '../../../util'
+import * as types from '../../../templates/types'
 
 export default class FS extends Command {
   static override description = 'Run platforma backend service with \'FS\' primary storage type'
@@ -12,8 +13,12 @@ export default class FS extends Command {
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
+
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
+
+    ...cmdOpts.AuthFlags,
+
     ...cmdOpts.StoragePrimaryPathFlag,
     ...cmdOpts.StorageWorkPathFlag,
     ...cmdOpts.StorageLibraryPathFlag,
@@ -24,6 +29,13 @@ export default class FS extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+
+    const authEnabled = flags['auth-enabled']
+    const authOptions: types.authOptions | undefined = authEnabled ? {
+      enabled: authEnabled,
+      drivers: core.initAuthDriversList(flags, '.')
+    } : undefined
+
     core.startDockerFS({
       primaryStorage: flags['storage-primary'],
       workStorage: flags['storage-work'],
@@ -31,6 +43,8 @@ export default class FS extends Command {
 
       image: flags.image,
       version: flags.version,
+
+      auth: authOptions,
     })
   }
 }

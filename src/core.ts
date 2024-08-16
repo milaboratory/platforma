@@ -6,6 +6,7 @@ import path from 'path';
 import * as pkg from './package';
 import * as run from './run';
 import * as plCfg from './templates/pl-config';
+import * as types from './templates/types';
 import * as platforma from './platforma';
 import state from './state';
 import * as util from './util';
@@ -170,7 +171,7 @@ export default class Core {
     public buildPlatforma(options: {
         repoRoot: string
         binPath?: string
-    }) : string {
+    }): string {
         const cmdPath: string = path.resolve(options.repoRoot, "cmd", "platforma")
         const binPath: string = options.binPath ?? path.join(os.tmpdir(), "platforma-local-build")
 
@@ -193,9 +194,47 @@ export default class Core {
     public startDockerS3(options?: {
         image?: string,
         version?: string,
+        primaryURL?: string,
+        auth?: types.authOptions,
     }) {
         const composeS3Path = pkg.assets("compose-s3.yaml")
         const image = options?.image ?? pkg.plImageTag(options?.version)
+
+        const envs: NodeJS.ProcessEnv = {
+            "PL_IMAGE": image,
+            'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
+        }
+
+        if (options?.auth) {
+            if (options.auth.enabled) {
+                envs['PL_AUTH_ENABLED'] = "true"
+            }
+            if (options.auth.drivers) {
+                for (const drv of options.auth.drivers) {
+                    if (drv.driver === 'htpasswd') {
+                        envs['PL_AUTH_HTPASSWD_PATH'] = path.resolve(drv.path)
+                        drv.path = '/etc/platforma/users.htpasswd'
+                    }
+                }
+                envs['PL_AUTH_DRIVERS'] = JSON.stringify(options.auth.drivers)
+            }
+        }
+
+        if (options?.primaryURL) {
+            const primary = plCfg.storageSettingsFromURL(options.primaryURL, '.')
+
+            if (primary.type === 'S3') {
+                envs['PLC_FILE_PRIMARY_S3_BUCKET'] = primary.bucketName!
+
+                if (primary.endpoint) envs['PLC_FILE_PRIMARY_S3_ENDPOINT'] = primary.endpoint
+                if (primary.presignEndpoint) envs['PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT'] = primary.presignEndpoint
+                if (primary.key) envs['PLC_FILE_PRIMARY_S3_KEY'] = primary.key
+                if (primary.secret) envs['PLC_FILE_PRIMARY_S3_SECRET'] = primary.secret
+                if (primary.region) envs['PLC_FILE_PRIMARY_S3_REGION'] = primary.region
+            } else {
+                throw new Error("primary storage must have 'S3' type in 'docker s3' configuration")
+            }
+        }
 
         const result = run.runDocker(
             this.logger,
@@ -206,9 +245,7 @@ export default class Core {
                 '--pull=missing',
                 'backend'],
             {
-                env: {
-                    "PL_IMAGE": image,
-                },
+                env: envs,
                 stdio: 'inherit'
             },
             {
@@ -227,6 +264,7 @@ export default class Core {
         libraryStorage?: string,
         image?: string,
         version?: string,
+        auth?: types.authOptions,
     }) {
         var composeFSPath = pkg.assets("compose-fs.yaml")
         var composeRunPath = pkg.state("compose-fs.yaml")
@@ -238,13 +276,26 @@ export default class Core {
         this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath)
         this.checkVolumeConfig('library', libraryStorage, state.lastRun?.docker?.libraryPath)
 
-        const envs = {
+        const envs: NodeJS.ProcessEnv = {
             "PL_IMAGE": image,
-            "PL_STORAGE_PRIMARY": "",
-            "PL_STORAGE_WORK": "",
-            "PL_STORAGE_LIBRARY": ""
+            'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
         }
         const compose = this.readComposeFile(composeFSPath)
+
+        if (options?.auth) {
+            if (options.auth.enabled) {
+                envs['PL_AUTH_ENABLED'] = "true"
+            }
+            if (options.auth.drivers) {
+                for (const drv of options.auth.drivers) {
+                    if (drv.driver === 'htpasswd') {
+                        envs['PL_AUTH_HTPASSWD_PATH'] = path.resolve(drv.path)
+                        drv.path = '/etc/platforma/users.htpasswd'
+                    }
+                }
+                envs['PL_AUTH_DRIVERS'] = JSON.stringify(options.auth.drivers)
+            }
+        }
 
         if (primaryStorage) {
             fs.mkdirSync(path.resolve(primaryStorage), { recursive: true })
@@ -374,6 +425,42 @@ ${storageWarns}
         fs.rmSync(pkg.state(), { recursive: true, force: true })
 
         this.logger.info(`\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`)
+    }
+
+    public initAuthDriversList(flags: {
+        'auth-htpasswd-file'?: string,
+
+        'auth-ldap-server'?: string,
+        'auth-ldap-default-dn'?: string,
+    }, workdir: string): types.authDriver[] | undefined {
+        var authDrivers: types.authDriver[] = []
+        if (flags['auth-htpasswd-file']) {
+            authDrivers.push({
+                driver: 'htpasswd',
+                path: path.resolve(workdir, flags['auth-htpasswd-file']),
+            })
+        }
+
+        if (Boolean(flags['auth-ldap-server']) !== Boolean(flags['auth-ldap-default-dn'])) {
+            throw new Error("LDAP auth settings require both 'server' and 'default DN' options to be set")
+        }
+
+        if (flags['auth-ldap-server']) {
+            authDrivers.push({
+                driver: 'ldap',
+                serverUrl: flags['auth-ldap-server'],
+                defaultDN: flags['auth-ldap-default-dn']!,
+            })
+        }
+
+        if (authDrivers.length === 0) {
+            return undefined
+        }
+
+        return [
+            { driver: 'jwt', key: util.randomStr(32) },
+            ...authDrivers,
+        ] as types.authDriver[]
     }
 
     private destroyDocker(composePath: string, image: string) {

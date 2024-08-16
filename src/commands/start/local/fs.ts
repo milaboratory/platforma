@@ -4,7 +4,6 @@ import Core, { startLocalFSOptions } from '../../../core'
 import * as cmdOpts from '../../../cmd-opts'
 import * as platforma from '../../../platforma'
 import * as util from '../../../util'
-import { flagsToAuthDriversList } from './s3'
 
 export default class FS extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)'
@@ -41,7 +40,7 @@ export default class FS extends Command {
     const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined
     const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout'
 
-    const authDrivers = flagsToAuthDriversList(flags, workdir)
+    const authDrivers = core.initAuthDriversList(flags, workdir)
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined
 
     var binaryPath = flags['pl-binary']

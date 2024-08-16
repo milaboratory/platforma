@@ -40,15 +40,16 @@ services:
       - "PL_LOG_DESTINATION=stdout"
       - "PL_LOG_COMMIT_SUMMARY=false"
       - "PL_LOG_RESOURCE_DATA=false"
-      - "PL_AUTH_ENABLED=true"
-      - "PL_DUMP_CONFIG_BEFORE_RUN=yes"
+      - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
+      - "PL_DUMP_CONFIG_BEFORE_RUN=true"
       - "PLC_FILE_PRIMARY_TYPE=S3"
-      - "PLC_FILE_PRIMARY_S3_ENDPOINT=http://minio:9000/"
-      - "PLC_FILE_PRIMARY_S3_KEY=static:testuser"
-      - "PLC_FILE_PRIMARY_S3_SECRET=static:testpassword"
-      - "PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT=http://localhost:9000"
+      - "PLC_FILE_PRIMARY_S3_ENDPOINT=${PLC_FILE_PRIMARY_S3_ENDPOINT:-http://minio:9000/}"
+      - "PLC_FILE_PRIMARY_S3_KEY=${PLC_FILE_PRIMARY_S3_KEY:-static:testuser}"
+      - "PLC_FILE_PRIMARY_S3_SECRET=${PLC_FILE_PRIMARY_S3_SECRET:-static:testpassword}"
+      - "PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT=${PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT:-http://localhost:9000}"
 
     volumes:
+      - ${PL_AUTH_HTPASSWD_PATH}:/etc/platforma/users.htpasswd
       - library:/storage/controllers/file/library
       - work:/storage/controllers/file/work
       - software:/storage/controllers/runner/software
