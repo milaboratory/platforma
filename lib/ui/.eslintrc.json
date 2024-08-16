@@ -30,8 +30,7 @@
     "@typescript-eslint/consistent-type-imports": "error",
     "vue/multi-word-component-names": "off",
     "@typescript-eslint/no-explicit-any": "error",
-
-  /**
+    /**
    * Having a semicolon helps the optimizer interpret your code correctly.
    * This avoids rare errors in optimized code.
    * @see https://twitter.com/alex_kozack/status/1364210394328408066
@@ -40,14 +39,13 @@
       "warn",
       "always"
     ],
-
     /**
      * Just for beauty
      */
     "quotes": [
-      "warn", "single"
+      "warn",
+      "single"
     ],
-
     "@typescript-eslint/no-unused-vars": [
       "warn",
       {

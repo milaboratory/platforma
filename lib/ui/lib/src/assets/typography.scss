@@ -20,7 +20,9 @@
 
 .text-h3 {
   color: var(--color-txt-01);
-  font-feature-settings: 'clig' off, 'liga' off;
+  font-feature-settings:
+    'clig' off,
+    'liga' off;
   font-family: RoadRadio;
   font-size: 48px;
   font-style: normal;
@@ -106,8 +108,11 @@
 
 .text-mono-m {
   color: var(--color-txt-01);
-  font-feature-settings: 'ss17' on, 'ss15' on, 'ss11' on;
-  font-family: "Spline Sans Mono";
+  font-feature-settings:
+    'ss17' on,
+    'ss15' on,
+    'ss11' on;
+  font-family: 'Spline Sans Mono';
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
@@ -116,8 +121,11 @@
 
 .text-mono-s {
   color: var(--color-txt-01);
-  font-feature-settings: 'ss17' on, 'ss15' on, 'ss11' on;
-  font-family: "Spline Sans Mono";
+  font-feature-settings:
+    'ss17' on,
+    'ss15' on,
+    'ss11' on;
+  font-family: 'Spline Sans Mono';
   font-size: 12px;
   font-style: normal;
   font-weight: 400;
@@ -147,7 +155,7 @@
 }
 
 .text-description {
-  // color: var(--color-txt-01);
+  color: var(--color-txt-01);
   font-family: var(--font-family-base);
   font-size: 12px;
   font-style: normal;
