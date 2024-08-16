@@ -12,7 +12,7 @@ import BtnGhost from './components/BtnGhost.vue';
 import BtnLink from './components/BtnLink.vue';
 import TextField from './components/TextField.vue';
 import TextArea from './components/TextArea.vue';
-import FileInput from './components/FileInput.vue';
+import FileBaseInput from './components/FileBaseInput.vue';
 import ProgressBar from './components/ProgressBar.vue';
 import NumberField from './components/NumberField.vue';
 import Dropdown from './components/Dropdown.vue';
@@ -84,11 +84,19 @@ export { scrollIntoView } from './helpers/dom';
 export { animateInfinite } from './helpers/utils';
 
 // MiXCR
-export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };
+export {
+  AlphabetType,
+  AbundanceMeasure,
+  AbundanceType,
+  GeneFeatureDropdown,
+  GeneNameFormat,
+  GeneType,
+  MarkedSequence,
+};
 
 export {
   // Common
-  FileInput,
+  FileBaseInput,
   ProgressBar,
   TextArea,
   NumberField,
@@ -148,7 +156,14 @@ export { showContextMenu };
 export type { GridTableSettings, GridTableTypes, ManageModalTypes };
 
 //move to new version pl-uikit
-export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
+export {
+  LongText,
+  SliderRangeTriple,
+  SliderRange,
+  Scrollable,
+  AddGraph,
+  useDraggable,
+};
 
 const DemoData = { allCssVariables: allCssVariables(), icons16, icons24 };
 export { DemoData };
