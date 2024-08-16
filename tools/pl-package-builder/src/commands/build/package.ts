@@ -18,6 +18,7 @@ export default class Package extends Command {
         ...cmdOpts.VersionFlag,
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.ContentRootFlag,
+        ...cmdOpts.PackageNameFlag,
     };
 
     public async run(): Promise<void> {
@@ -30,6 +31,7 @@ export default class Package extends Command {
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
+        if (flags['package-name']) core.packageName = flags['package-name']
 
         core.buildPackage({archivePath: flags.archive, contentRoot: flags['content-root']})
     }
