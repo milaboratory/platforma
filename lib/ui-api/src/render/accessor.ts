@@ -154,12 +154,32 @@ export class TreeNodeAccessor {
     return this.getFileContentAsString();
   }
 
-  public getDownloadedBlobHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
+  /**
+   * @returns downloaded file handle
+   */
+  public getFileHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
     return new FutureRef(getCfgRenderCtx().getDownloadedBlobContentHandle(this.handle));
   }
 
-  public getOnDemandBlobHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
+  /**
+   * @deprecated use getFileHandle
+   */
+  public getDownloadedBlobHandle(): FutureRef<LocalBlobHandleAndSize | undefined> {
+    return this.getFileHandle();
+  }
+
+  /**
+   * @returns downloaded file handle
+   */
+  public getRemoteFileHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
     return new FutureRef(getCfgRenderCtx().getOnDemandBlobContentHandle(this.handle));
+  }
+
+  /**
+   * @deprecated use getRemoteFileHandle
+   */
+  public getOnDemandBlobHandle(): FutureRef<RemoteBlobHandleAndSize | undefined> {
+    return this.getRemoteFileHandle();
   }
 
   public getImportProgress(): FutureRef<ImportProgress> {
