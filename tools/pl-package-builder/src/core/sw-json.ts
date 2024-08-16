@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import winston from 'winston';
 import { z } from 'zod';
-import { readFileSync, writeFileSync } from 'fs';
 import { PackageInfo, runEnvironmentTypes } from './package-info';
 import * as util from './util';
 
@@ -78,7 +77,7 @@ export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
 export function readSoftwareInfo(packageRoot: string, swName: string): SoftwareInfo {
     const filePath = swJsonPath(packageRoot, swName)
-    const swJsonContent = readFileSync(filePath)
+    const swJsonContent = fs.readFileSync(filePath)
 
     return swJsonSchema.parse(JSON.parse(swJsonContent.toString()))
 }
@@ -157,7 +156,7 @@ export class SoftwareDescriptor {
         const encoded = JSON.stringify(info)
 
         util.ensureDirsExist(path.dirname(dstSwInfoPath))
-        writeFileSync(dstSwInfoPath, encoded+"\n")
+        fs.writeFileSync(dstSwInfoPath, encoded+"\n")
     }
 
     private renderLocalInfo(mode: util.BuildMode): localInfo {

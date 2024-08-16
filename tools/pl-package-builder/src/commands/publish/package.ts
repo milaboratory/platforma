@@ -14,11 +14,11 @@ export default class Package extends Command {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.ArchFlags,
 
-        ...cmdOpts.VersionFlag,
-        ...cmdOpts.ArchiveFlag,
-
-        ...cmdOpts.StorageURLFlag,
         ...cmdOpts.PackageNameFlag,
+        ...cmdOpts.VersionFlag,
+
+        ...cmdOpts.ArchiveFlag,
+        ...cmdOpts.StorageURLFlag,
     };
 
     static strict: boolean = false;

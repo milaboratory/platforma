@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { spawnSync } from "child_process";
 import winston from "winston";
 import { PackageInfo, CommonBinaryConfig } from "./package-info";
@@ -61,6 +63,11 @@ export class Core {
         const desc = this.binaryDescriptor
         const archivePath = options?.archivePath ?? this.archivePath
         const contentRoot = options?.contentRoot ?? desc.contentRoot
+
+        this.logger.info("Rendering 'package.sw.json' to be embedded into package archive")
+        const swInfo = this.descriptor.render(this.buildMode, ['binary'])
+        const swInfoPath = path.resolve(contentRoot, "package.sw.json")
+        fs.writeFileSync(swInfoPath, JSON.stringify(swInfo))
 
         this.logger.info("Packing software into a package")
         if (desc.crossplatform) {
