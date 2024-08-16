@@ -2,7 +2,9 @@ import type { Expect, Equal } from '@milaboratory/helpers/types';
 import { z } from 'zod';
 import type { ModelOptions, Model } from './types';
 import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma } from '@milaboratory/sdk-ui';
-import type { App, createApp } from './createApp';
+import type { BaseApp, createApp } from './createApp';
+import type { App } from './defineApp';
+import { computed, type Component } from 'vue';
 
 declare function __createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M>;
 
@@ -41,8 +43,30 @@ type InferUiState<Pl extends Platforma> = Pl extends Platforma<unknown, BlockOut
 
 export type TestApp<P extends Platforma> = ReturnType<typeof createApp<InferArgs<P>, InferOutputsType<P>, InferUiState<P>, InferHrefType<P>>>;
 
-type _App1 = App<1, BlockOutputsBase, unknown, '/'>;
+type _App1 = BaseApp<1, BlockOutputsBase, unknown, '/'>;
 type _App2 = TestApp<Platforma<1, BlockOutputsBase, unknown, '/'>>;
+
+const local = () => {
+  const counter = computed(() => 1);
+  const label = computed(() => 'aaaa');
+
+  const method = () => 100;
+
+  return {
+    counter,
+    label,
+    method,
+    routes: {
+      '/': undefined as unknown as Component,
+    },
+  };
+};
+
+type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof local>>;
+
+declare const app: ExtApp;
+
+app.counter;
 
 type __cases = [
   Expect<Equal<Model<string>, typeof __model1>>,
@@ -50,4 +74,7 @@ type __cases = [
   Expect<Equal<Model<string>, typeof __model1>>,
   Expect<Equal<Model<number>, typeof __model2>>,
   Expect<Equal<_App1, _App2>>,
+  Expect<Equal<ExtApp['counter'], number>>,
+  Expect<Equal<ExtApp['label'], string>>,
+  Expect<Equal<ExtApp['method'], () => number>>,
 ];

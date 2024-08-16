@@ -1,9 +1,8 @@
-import { deepClone, setProp } from '@milaboratory/helpers';
+import { deepClone } from '@milaboratory/helpers';
 import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
-import type { Component } from 'vue';
-import { reactive, nextTick, markRaw, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, LocalState, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
+import { reactive, nextTick, computed, watch } from 'vue';
+import type { UnwrapValueOrErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
 import { MultiError, unwrapValueOrErrors } from './utils';
@@ -13,13 +12,12 @@ export function createApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-  Local extends LocalState<Href> = LocalState<Href>,
->(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>, createLocalState: () => Local) {
+>(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>) {
   const innerState = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
     ui: Object.freeze(state.ui),
-    navigationState: state.navigationState as NavigationState<Href>,
+    navigationState: Object.freeze(state.navigationState) as NavigationState<Href>,
   }) as {
     args: Readonly<Args>;
     outputs: Partial<Readonly<Outputs>>;
@@ -51,7 +49,6 @@ export function createApp<
 
   const cloneArgs = () => deepClone(innerState.args) as Args;
   const cloneUiState = () => deepClone(innerState.ui) as UiState;
-
   const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
@@ -162,9 +159,6 @@ export function createApp<
       newState.href = href;
       return platforma.setNavigationState(newState);
     },
-    setArgField<K extends keyof Args>(key: K, value: Args[K]) {
-      return platforma.setBlockArgs(setProp(cloneArgs(), key, value));
-    },
   };
 
   const getters = {
@@ -191,26 +185,12 @@ export function createApp<
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
   };
 
-  const app = reactive(Object.assign(methods, getters));
-
-  const local = createLocalState();
-
-  return reactive(
-    Object.assign(app, {
-      ...local,
-      routes: Object.fromEntries(
-        Object.entries(local.routes).map(([href, component]) => {
-          return [href, markRaw(component as Component)];
-        }),
-      ),
-    } as Local),
-  );
+  return reactive(Object.assign(methods, getters));
 }
 
-export type App<
+export type BaseApp<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-  Local extends LocalState<Href> = LocalState<Href>,
-> = ReturnType<typeof createApp<Args, Outputs, UiState, Href, Local>>;
+> = ReturnType<typeof createApp<Args, Outputs, UiState, Href>>;

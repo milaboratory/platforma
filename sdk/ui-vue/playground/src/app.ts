@@ -21,3 +21,5 @@ export const sdkPlugin = defineApp<unknown, Outputs>(platforma as Platforma<unkn
 });
 
 export const useApp = sdkPlugin.useApp;
+
+// const app = useApp;
