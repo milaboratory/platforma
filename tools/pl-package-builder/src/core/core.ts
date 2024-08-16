@@ -116,6 +116,7 @@ export class Core {
         const desc = this.binaryDescriptor
         const archivePath = options?.archivePath ?? this.archivePath
         const storageURL = options?.storageURL ?? desc.registry.storageURL
+        const dstName = desc.fullName(this.targetOS, this.targetArch)
 
         if (!storageURL) {
             this.logger.error(`no storage URL is set for registry ${desc.registry.name}`)
@@ -129,10 +130,10 @@ export class Core {
         this.logger.info(`Publishing package '${desc.name}' into registry '${desc.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
+        this.logger.debug(`  target package name: '${dstName}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
         const archive = createReadStream(archivePath)
-        const dstName = desc.fullName(this.targetOS, this.targetArch)
 
         s.putFile(dstName, archive).then(
             () => this.logger.info(`Package '${desc.name}' was published to '${desc.registry.name}:${dstName}'`)
