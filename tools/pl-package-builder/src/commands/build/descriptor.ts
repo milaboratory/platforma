@@ -22,11 +22,11 @@ export default class Descriptor extends Command {
 
     public async run(): Promise<void> {
         const { flags } = await this.parse(Descriptor);
+        const logger = util.createLogger(flags['log-level'])
+
         const sources: util.SoftwareSource[] = (flags.source) ?
             (flags.source as util.SoftwareSource[]) :
             [...util.AllSoftwareSources] // we need to iterate over the list to build all targets
-
-        const logger = util.createLogger(flags['log-level'])
 
         const core = new Core(logger)
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
