@@ -472,7 +472,9 @@ ${storageWarns}
                     ...process.env,
                     "PL_IMAGE": "scratch",
                     "PL_STORAGE_PRIMARY": "",
+                    "PL_STORAGE_WORK": "",
                     "PL_STORAGE_LIBRARY": "",
+                    "PL_AUTH_HTPASSWD_PATH": ".",
 
                     "MINIO_IMAGE": "scratch",
                     "MINIO_STORAGE": "",
