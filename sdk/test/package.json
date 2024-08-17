@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-test",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Typescript Block Test Helpers",
   "type": "module",
   "main": "dist/lib.js",
@@ -16,14 +16,14 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-middle-layer": "^ 1.9.3",
+    "@milaboratory/pl-middle-layer": "^1.9.25",
     "vitest": "^2.0.5",
-    "@milaboratory/pl-tree": "^1.3.2",
-    "@milaboratory/computable": "^2.1.0",
+    "@milaboratory/pl-tree": "^1.3.3",
+    "@milaboratory/computable": "^2.1.1",
     "@milaboratory/ts-helpers": "^1.0.19"
   },
   "devDependencies": {
-    "@types/node": "~20.14.12",
+    "@types/node": "~20.14.15",
     "prettier": "^3.2.5",
     "tsup": "~8.1.2",
     "typescript": "^5.5.4"
