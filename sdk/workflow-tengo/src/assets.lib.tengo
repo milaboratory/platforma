@@ -43,7 +43,23 @@ importSoftware := func(swName) {
 	}
 }
 
+/**
+ * Checks if given item is a software info
+ *
+ * @param toCheck: any - item to check
+ *
+ * @return isSoftware: boolean - true for software info, loaded with importSoftware()
+ */
+isSoftwareInfo := func(toCheck) {
+	if !ll.isMap(toCheck) {
+		return false
+	}
+
+	return (ll.fromStrict(toCheck)._type) == "softwareDescriptor"
+}
+
 export ll.toStrict({
 	importTemplate: importTemplate,
-	importSoftware: importSoftware
+	importSoftware: importSoftware,
+	isSoftwareInfo: isSoftwareInfo
 })

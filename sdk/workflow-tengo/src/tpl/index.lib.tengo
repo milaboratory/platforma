@@ -81,6 +81,7 @@ tpl := func() {
 	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
 
 	_stateRequests := []
+	_delegatedOutputs := []
 
 	self = {
 
@@ -99,9 +100,9 @@ tpl := func() {
 		},
 
 		/**
-		 * The template id of this template
+		 * Current template resource
 		 */
-		template: func() {
+		resource: func() {
 			return smart.resource(_templateId)
 		},
 
@@ -416,8 +417,11 @@ tpl := func() {
 					ll.assert(ll.isMap(result),
 						"expected map from tpl.body() callback. Did you forget 'return' statement?")
 
-					ll.assert(sets.fromSlice(self.definedOutputs) == sets.fromMapKeys(result),
-						"not all defined outputs were returned from tpl.body() callback. Want ", self.definedOutputs, ", got ", maps.getKeys(result))
+					outputsWithValues := sets.fromMapKeys(result)
+					outputsWithValues = sets.add(outputsWithValues, _delegatedOutputs...)
+
+					ll.assert(sets.fromSlice(self.definedOutputs) == outputsWithValues,
+						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s", self.definedOutputs, sets.toSlice(outputsWithValues))
 
 					// set result to self outputs
 					self.setOutputs(result)
@@ -483,6 +487,8 @@ tpl := func() {
 		 * @param outputs: array - array of expected outputs to save
 		 */
 		routeDelegate: func(tpl, extraInputs, outputs) {
+			_delegatedOutputs = outputs
+
 			inputs := self.rawInputs()
 			for k, v in extraInputs {
 				inputs[k] = v
@@ -523,5 +529,6 @@ export ll.toStrict({
 	awaitState              : instance.awaitState,
 	delegate                : instance.routeDelegate,
 	validateInputs          : instance.validateInputs,
-	body                    : instance.body
+	body                    : instance.body,
+	resource                : instance.template
 })

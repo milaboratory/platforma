@@ -48,6 +48,7 @@ _argToExec := func(arg, isExec, pathToBinary) {
 builder := func() {
 	self := undefined
 
+	soft := undefined
 	cmd := undefined
 	args := []
 	entrypointSet := false
@@ -97,20 +98,25 @@ builder := func() {
 		 */
 		cmd: func(commandName) {
 			assertEntrypointNotSet()
-			cmd = commandName
 			entrypointSet = true
+
+			cmd = commandName
 			return self
 		},
 
 		/**
 		 * Sets the software to be executed.
 		 *
-		 * @param software: string - the software to execute.
+		 * @param software: softwareInfo - the software to execute.
 		 */
-		software: func(software) {
+		software: func(sw) {
 			assertEntrypointNotSet()
-			ll.panic("exec.builder.software is not implemented")
+			ll.assert(ll.isSoftwareInfo(sw),
+				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
+			)
 			entrypointSet = true
+
+			soft = sw
 			return self
 		},
 
@@ -385,6 +391,7 @@ builder := func() {
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
 				runOptions: {
+					soft: soft.descriptor,
 					cmd: _argToExec(cmd, false, undefined),
 					args: slices.map(args, func(a) { return _argToExec(a, false, undefined) }),
 					envs: envs,

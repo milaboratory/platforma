@@ -14,12 +14,38 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 stream := import(":exec.stream")
 sets := import(":sets")
+validation := import(":validation")
 
 self.defineOutputs(
 	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
 )
 
 self.body(func(inputs) {
+	// assert we have inputs we expect.
+	cmdScheme := {
+		isExec: "bool",
+		value: "string",
+		"pathToBinary,omitempty": "string"
+	}
+
+	validation.assertJsonSchema(inputs, {
+		files: { any: validation.resource },
+		values: { any: "any" },
+		dirs: ["string"],
+		runOptions: {
+			soft: software.descriptorScheme,
+			cmd: cmdScheme,
+			args: [cmdScheme],
+			envs: { any: "string" },
+			queue: "string",
+			stdout: "string",
+			stderr: "string",
+			nErrorLines: "number"
+		},
+		saveFiles: ["string"],
+		saveFilesContents: ["string"],
+		streams: ["string"]
+	})
 
 	//
 	// Create and fill the workdir with files that were passed from inputs.
@@ -37,7 +63,6 @@ self.body(func(inputs) {
 	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
 	// working directory with input files added; before run
 	wdBefore := wdBuilder.build()
-
 
 	//
 	// Build runcmd resource

@@ -1,0 +1,31 @@
+ll := import(":ll")
+self := import(":tpl")
+pkg := import(":package")
+render := import(":render")
+maps := import(":maps")
+json := import("json")
+
+sw := ll.importSoftware(":test.software.sleep")
+
+self.defineOutputs(["installed", "descriptor"])
+
+self.body(func(inputs) {
+	if (maps.containsKey(inputs, "software")) {
+		software := inputs["software"]
+
+		return {
+			installed: software.kvGetAsJson("ctl/runner/software/installation"),
+			descriptor: software.kvGetAsJson(pkg.META_KEY_DESCRIPTOR)
+		}
+	}
+
+	archive := pkg.get(sw).archive()
+
+	self.delegate(
+		self.resource(),
+		{ software: pkg.install(archive).software() },
+		["installed", "descriptor"]
+	)
+
+	return {}
+})
