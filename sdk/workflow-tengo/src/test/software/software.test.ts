@@ -17,7 +17,8 @@ tplTest("software-info-loads", async ({ helper, expect }) => {
     execs: string[]
    }
 
-  expect(val.name).eq("@milaboratory/tengo-sdk:test.software.my-software")
+
+  expect(val.name).eq("@milaboratory/tengo-sdk:test.software.sleep")
   expect(val.version).not.eq("")
   expect(val.execs.length).gt(0)
   expect(val).toHaveProperty("blobRef")

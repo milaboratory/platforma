@@ -9,7 +9,7 @@ json := import("json")
 constants := import(":constants")
 oop := import(":oop")
 
-//////////////// definitions ///////////////////////////
+//////////////// definitions ////////////////
 
 /**
  * A read-only wrapper object around raw platforma resource
@@ -389,7 +389,7 @@ resource = func(r) {
 		outputs: func() {
 			if(self._outputs == undefined) {
 				info := self.info()
-				outputs := maps.mapValues(info.Outputs, field)
+				outputs := ll.toStrict(maps.mapValues(info.Outputs, field))
 				if !info.OutputsLocked {
 					return outputs
 				}
@@ -722,7 +722,7 @@ resourceBuilder = func(r) {
 		 * Create new field with given name and field type.
 		 *
 		 * @param name field name
-		 * @param fieldType field type: input, output, dynamic, service, OTW (one-time writable)
+		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use F_TYPE_* constants.
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()

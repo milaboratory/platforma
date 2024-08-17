@@ -8,7 +8,8 @@
 # Usage for emacs: ./create_tags.sh TAGS true -e
 
 # turn on for debug
-# set -x
+set -o nounset
+set -o errexit
 
 # This turns on `**` functionality in glob patterns
 shopt -s globstar
@@ -16,7 +17,7 @@ shopt -s globstar
 # the name of the file
 tags_file_name=${1:-.tags}
 
-# should create tags from .. (if true) or from . (if fals)
+# should create tags from .. (if true) or from . (if false)
 if [[ "${2:-false}" == "true" ]]; then
     from_parent_root=..
 else
