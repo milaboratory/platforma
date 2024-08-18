@@ -37,6 +37,7 @@ class CellComputableContext implements ComputableCtx {
   private oldOnDestroy?: () => void;
   private currentOnDestroy: (() => void)[] | undefined = undefined;
   private previousOnDestroy: (() => void)[] | undefined = undefined;
+  public unstableMarker?: string;
   private kv?: Map<string, unknown>;
   /** Must be reset to "undefined", to only accumulate those observers injected
    * during a specific call*/
@@ -46,9 +47,10 @@ class CellComputableContext implements ComputableCtx {
     if (this._watcher === undefined) throw new Error('Computable context leak.');
   }
 
-  markUnstable(): void {
+  markUnstable(marker?: string): void {
     this.checkForLeak();
     this.stable = false;
+    if (marker !== undefined && this.unstableMarker === undefined) this.unstableMarker = marker;
   }
 
   scheduleAndResetOnDestroy(): void {
@@ -231,6 +233,9 @@ export interface CellState<T> {
 
   /** All errors for the tree rooted in this node. Includes self error and all child errors. */
   readonly allErrors: unknown[];
+
+  /** Top-most unstable marker */
+  readonly unstableMarker: string | undefined;
 
   /** Includes selfWatcher and all children watchers. It is passed to parent Cells. */
   readonly watcher: HierarchicalWatcher;
@@ -490,6 +495,7 @@ function finalizeCellState<T>(
     ...incompleteState,
     stable,
     allErrors: [], // will be filled on the second rendering stage
+    unstableMarker: undefined, // will be filled on the second rendering stage
     watcher: new HierarchicalWatcher(nestedWatchers),
 
     hooks,
@@ -511,12 +517,19 @@ async function calculateValue<T>(state_: CellState<T>): Promise<void> {
 
   // collecting errors after all postProcessing steps are executed for out children
   const allErrors: unknown[] = [];
-  for (const { orphan, state } of state_.childrenStates.values())
+  let unstableMarker: string | undefined = undefined;
+  for (const { orphan, state } of state_.childrenStates.values()) {
     if (!orphan) allErrors.push(...state.allErrors);
+    if (!orphan && unstableMarker === undefined && state.unstableMarker !== undefined)
+      unstableMarker = state.unstableMarker;
+  }
   if (isExecutionError(state_.selfState.iResult)) allErrors.push(state_.selfState.iResult.error);
+  if (unstableMarker === undefined && state_.selfState.ctx.unstableMarker !== undefined)
+    unstableMarker = state_.selfState.ctx.unstableMarker;
 
   // setting errors for the state
   (state_ as Writable<typeof state_>).allErrors = allErrors;
+  (state_ as Writable<typeof state_>).unstableMarker = unstableMarker;
 
   const previousValue = state_.value;
   delete state_.value;

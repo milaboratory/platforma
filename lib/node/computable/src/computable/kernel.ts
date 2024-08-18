@@ -11,7 +11,17 @@ export interface ComputableCtx {
    * listeners low for a tree. */
   attacheHooks(listener: ComputableHooks): void;
 
-  /** If called during construction, this result will be considered as unstable */
+  /**
+   * If called during construction, this result will be considered as unstable.
+   * Parameter allows to set a string marker, to identify source of instability
+   * of complex computables.
+   * */
+  markUnstable(marker: string): void;
+
+  /**
+   * If called during construction, this result will be considered as unstable
+   * @deprecated
+   * */
   markUnstable(): void;
 
   /** Executes and resets current onDestroy helper

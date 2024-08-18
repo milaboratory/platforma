@@ -66,6 +66,9 @@ export interface ComputableResultOk<T> {
    * A result is considered stable only if all its nested computables are stable.
    */
   stable: boolean;
+
+  /** First encountered unstable markers, specified when this or nested computable was marked as unstable. */
+  unstableMarker: string | undefined;
 }
 
 /** Throws an appropriate computable error based on the number of errors */
@@ -409,7 +412,13 @@ export class Computable<T, StableT extends T = T> {
     if (state.hooks !== undefined) for (const hooks of state.hooks) hooks.onGetValue(this);
 
     if (state.allErrors.length === 0)
-      return { type: 'ok', value: state.value as T, stable: state.stable, uTag: this.uTag };
+      return {
+        type: 'ok',
+        value: state.value as T,
+        stable: state.stable,
+        uTag: this.uTag,
+        unstableMarker: state.unstableMarker
+      };
     else return { type: 'error', errors: state.allErrors, uTag: this.uTag };
   }
 

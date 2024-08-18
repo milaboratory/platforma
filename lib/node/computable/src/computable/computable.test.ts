@@ -176,6 +176,21 @@ test('raw computable nested test', async () => {
   expect(users).toEqual(0);
 });
 
+test('nested unstable state', async () => {
+  const c1 = Computable.make((ctx) => {
+    ctx.markUnstable('unstable_marker');
+    return 12;
+  });
+
+  const c2 = Computable.make((ctx) => {
+    return c1;
+  });
+
+  const fullValue = await c1.getFullValue();
+  expect(fullValue.stable).toEqual(false);
+  expect(fullValue.unstableMarker).toEqual('unstable_marker');
+});
+
 test('testing wider range of types in computables', async () => {
   const dateComputable = Computable.make(() => new Date());
   expect(await dateComputable.getValue()).toBeInstanceOf(Date);

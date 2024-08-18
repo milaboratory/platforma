@@ -22,7 +22,7 @@ export class FakeTreeAccessor {
 
   private access() {
     this.guard();
-    if (!this.isLocked()) this.ctx.markUnstable();
+    if (!this.isLocked()) this.ctx.markUnstable('not_locked');
   }
 
   listChildren(): string[] {
