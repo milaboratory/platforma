@@ -5,17 +5,18 @@
  * and saves a chosen resulted files from this dir.
  */
 
-ll := import(":ll")
 self := import(":tpl")
+
+ll := import(":ll")
 smart := import(":smart")
+render := import(":render")
 workdir := import(":workdir")
 runcmd := import(":runcmd")
 stream := import(":stream")
 sets := import(":sets")
-validation := import(":validation")
 
 self.defineOutputs(
-	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams"
+	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
 )
 
 self.body(func(inputs) {
@@ -71,7 +72,25 @@ self.body(func(inputs) {
 	run := runBuilder.build()
 	// get the workdir containing all the files, including produced by the run command
 	wdAfter := run.workdir
+
+	//
+	// Run workdir processors
+	//
+
+	wdProcessorsResults := {}
+	for name, p in inputs.wdProcessors {
+		tpl := p.tpl
+		tplInputs := {
+			workdir: wdAfter,
+			args: p.tplArgs
+		}
 	
+		// render template & get results
+		r := render.createEphemeral(tpl, tplInputs)
+		
+		wdProcessorsResults[name] = r.output("result")	
+		wdAfter = r.output("workdir")
+	}
 
 	//
 	// Save data from the workdir
@@ -111,6 +130,7 @@ self.body(func(inputs) {
 		fileSets : wdResult.fileSets,
 		fileSetsContent : wdResult.fileSetsContent,
 		fileStreams: streams.build(),
+		wdProcessors: wdProcessorsResults, 
 		progress: wdResult.progress
 	}
 })

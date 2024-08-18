@@ -1,0 +1,158 @@
+/** A library providing workdir save resource builder */
+
+ll := import(":ll")
+oop := import(":oop")
+json := import("json")
+sets := import(":sets")
+smart := import(":smart")
+constants := import(":constants")
+
+_WORKDIR_IN_FIELD := "workdirIn"
+_RULES_FIELD := "rules"
+_SAVED_FILES_FIELD := "blobsOut"
+_SAVED_CONTENT_FIELD := "dataOut"
+_WORKDIR_AFTER_FIELD := "workdirOut"
+_PROGRESS_FIELD := "progress"
+
+
+/**
+ * Generates a file save rule for a given file name.
+ *
+ * @param fileName: string - the name of the file.
+ * @return rule: map - the file save rule.
+ */
+getFileSaveRule := func(fileName) {
+	return {
+		blobKey: fileName,
+		type: "file",
+		filePath: fileName
+	}
+}
+
+/**
+ * Generates a value save rule for a given file name.
+ *
+ * @param fileName: string - the name of the file.
+ * @return rule: map - the value save rule.
+ */
+getContentSaveRule := func(fileName) {
+	return {
+		blobKey: fileName,
+		type: "content",
+		contentPath: fileName
+	}
+}
+
+/**
+ * Creates a builder for workdir save resource
+ */
+builder := func(wdBefore) {
+
+	super := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_SAVE)
+	// set input wd
+	super.getField(_WORKDIR_IN_FIELD).set(wdBefore)
+
+	// file save rules
+	fRules := {}
+	// content save rules
+	cRules := {}
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(super, {
+
+		/**
+		 * Save file.
+		 *
+		 * @param fName: string - file name
+		 *
+		 */
+		saveFile: func(fName) {
+			fRules = sets.add(fRules, fName)
+			return self
+		},
+
+		/**
+		 * Save file content.
+		 *
+		 * @param fName: string - file name
+		 *
+		 */
+		saveFileContent: func(fName) {
+			cRules = sets.add(cRules, fName)
+			return self
+		},
+
+		/**
+		 * Get field pointing to saved files map resource
+		 */
+		getSavedFiles: func() {
+			return self.getField(_SAVED_FILES_FIELD)
+		},
+
+		/**
+		 * Get field pointing to saved files content map resource
+		 */
+		getSavedFilesContent: func() {
+			return self.getField(_SAVED_CONTENT_FIELD)
+		},
+
+		/**
+		 * Get field pointing to workdir after resource
+		 */
+		getWorkdirAfter: func() {
+			return self.getField(_WORKDIR_AFTER_FIELD)
+		},
+
+		/**
+		 * Get field pointing to progress resource
+		 */
+		getProgress: func() {
+			return self.getField(_PROGRESS_FIELD)
+		},
+
+		/**
+		 * Get future field pointing to saved file resource
+		 */
+		getSavedFile: func(fName) {
+			return self.getSavedFiles().getFutureInputField(fName)
+		},
+
+		/**
+		 * Get future field pointing to saved file content value resource
+		 */
+		getSavedFileContent: func(fName) {
+			return self.getSavedFilesContent().getFutureInputField(fName)
+		},
+
+		/**
+		 * Build resource
+		 */
+		build: func() {
+			rules := []
+			for fName, _ in fRules {
+				rules = append(rules, getFileSaveRule(fName))
+			}
+			for fName, _ in cRules {
+				rules = append(rules, getContentSaveRule(fName))
+			}
+			
+			super.getField(_RULES_FIELD).set(
+				smart.createValueResource(
+					constants.RTYPE_WORKDIR_SAVE_RULES,
+					json.encode(rules)
+				)
+			)
+			
+			resource := super.lockAndBuild()
+			
+			// still return self to have all the methods
+			return self
+		}
+	}))
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder
+})

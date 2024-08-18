@@ -1,107 +1,144 @@
 // workdir processor tpl
 
 tpl := import(":tpl")
-workdir := import(":workdir")
+ll := import(":ll")
+wdSave := import(":workdir-save")
 
+// the template has a defined outputs
+tpl.defineOutputs(["result", "workdir"])
 
 proc := func() {
 	self := undefined
 
 	self = {
 
-		// cached
-		_wd: undefined,
-		
+		_wdBefore: undefined,
 		/**
-		 * @return wd: resource - working directory resource
+		 * @return wd: resource - initial working directory resource
 		 */
-		wd: func() {
-			if is_undefined(self._wd) {
-				self._wd = tpl.inputs().wd
+		wdBefore: func() {
+			if is_undefined(self._wdBefore) {
+				self._wdBefore = tpl.inputs().workdir
 			}
-			return self._wd
+			return self._wdBefore
 		},
 
 		_filesInWd: undefined,
-
 		/**
 		 * @return fileNames: string[] - list of file paths currently existing in the working directory
 		 */
 		filesInWd: func() {
 			if is_undefined(self._filesInWd) {
-				self._filesInWd = self.wd().getDataAsJson().files
+				self._filesInWd = self.wdBefore().getDataAsJson().files
 			}
 
 			return self._filesInWd
 		},
 
+		_wdAfterReadFiles: undefined,
 		/**
+		 * @return wd: resource - working directory resource after "readFiles" is done
+		 */
+		wdAfterReadFiles: func() {
+			if is_undefined(self._wdAfterReadFiles) {
+
+				if !is_undefined(tpl.inputs().wdAfterReadFiles) {
+				
+					//
+					// this means readFiles was used and we are actually 
+					// in the 'prepare' render
+					//
+					self._wdAfterReadFiles = tpl.inputs().wdAfterReadFiles
+				} else {
+
+					// no readFiles 
+					self._wdAfterReadFiles = self.wdBefore()
+				}
+			} 
+
+			return self._wdAfterReadFiles
+		},
+
+		/**
+		 * Select files to read their content and pass it to the body function
 		 *
+		 * @param cb: callback - a callback which takes a list of file names (paths) existing in the working directory and 
+		 *  returning a map of key -> file name containing files to get content from; each file content will be available in 
+		 *  the body inputs with the corresponding key
 		 */
 		readFiles: func(cb) {
 			tpl.prepare(func(_){
 				// key -> file name
 				files := cb(self.filesInWd())
 
-				sb := workdir.save(self.wd())
+				wdBuilder := wdSave.builder(self.wdBefore())
 				for _, fName in files {
-					sb.saveFileContent(fName)
+					wdBuilder.saveFileContent(fName)
 				}
-				saveRes := sb.build()
-
+				wd := wdBuilder.build()
+				
 				// run prepare to get file contents in the inputs
 				preps := {}
 				for key, fName in files {
-					preps[key] = saveRes.filesContent.getFutureInputField(fName)
+					preps[key] = wd.getSavedFileContent(fName)
 				}
+
+				preps.wdAfterReadFiles = wd.getWorkdirAfter()
 				
 				return preps
 			})
 		},
 
+		_wdFinalBuilder: undefined,
+		/**
+		 * Final workdir builder, after prepare
+         */
+		wdFinalBuilder: func() {
+			if is_undefined(self._wdFinalBuilder) {
+				self._wdFinalBuilder = wdSave.builder(self.wdAfterReadFiles())
+			}
+			return self._wdFinalBuilder
+		},
+
+		/**
+		 * Save given file.
+		 *
+		 * @return ref: reference - a reference to saved file resource
+         */
 		saveFile: func(fName) {
-			sb := workdir.save(self.wd())
-			sb.saveFile(fName)
-			return sb.build().files.getFutureInputField(fName)
+			self.wdFinalBuilder().saveFile(fName)
+			return self.wdFinalBuilder().getSavedFile(fName)
 		},
 
+		/**
+		 * Save content of a given file.
+		 *
+		 * @return ref: reference - a reference to saved file content value resource
+         */
 		saveFileContent: func(fName) {
-			sb := workdir.save(self.wd())
-			sb.saveFileContent(fName)
-			return sb.build().filesContent.getFutureInputField(fName)
+			self.wdFinalBuilder().saveFileContent(fName)
+			return self.wdFinalBuilder().getSavedFileContent(fName)
 		},
 
-		_saveFiles: func(fMap, fn, field) {
-			sb := workdir.save(self.wd())
-			for key, fName in fMap {
-				sb[fn](fName)
-			}
-			saveRes := sb.build()
-
-			r := {}
-			for key, fName in fMap {
-				r[key] = saveRes[field].getFutureInputField(fName)
-			}
-			return r
-		},
-
-		saveFiles: func(fMap) {
-			return self._saveFiles(fMap, "saveFile", "files")
-		},
-
-		saveFilesContent: func(fMap) {
-			return self._saveFiles(fMap, "saveFileContent", "filesContent")
-		},
-
+		/**
+		 * Template body function
+         */
 		body: func(cb) {
 			tpl.body(func(inputs) {
 
 				inputs.files = self.filesInWd()
-				
-				return cb(inputs)
+				result := cb(inputs)
+				wd := self.wdFinalBuilder().build()
+
+				return {
+					result: result,
+					workdir: wd.getWorkdirAfter()
+				}
 			})
 		}
 	}
+
+	return ll.toStrict(self)
 }
 
 /** singleton instance  */
@@ -111,7 +148,5 @@ export ll.toStrict({
 	readFiles: instance.readFiles,
 	saveFile: instance.saveFile,
 	saveFileContent: instance.saveFileContent,
-	saveFiles: instance.saveFiles,
-	saveFilesContent: instance.saveFilesContent,
 	body: instance.body
 })

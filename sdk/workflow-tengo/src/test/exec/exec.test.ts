@@ -97,7 +97,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.save_file_set',
+      'test.exec.run_and_save_file_set',
       ['p', 'x', 'all'],
       (tx) => ({})
     );
@@ -115,5 +115,31 @@ tplTest(
     expect(p?.sort()).toEqual(['p1', 'p2', 'p3', 'p4'].sort());
     expect(x?.sort()).toEqual(['x1', 'x2'].sort());
     //expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
+  }
+);
+
+tplTest(
+  'should run workdir processor',
+  async ({ driverKit, helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'test.exec.run_with_wd_processor',
+      ['p'],
+      (tx) => ({})
+    );
+
+    const p = await result
+      .computeOutput('p', (p) => p?.listInputFields())
+      .awaitStableValue();
+
+    const data = await result
+      .computeOutput('p', (p) => p?.traverse('data')?.getDataAsString())
+      .awaitStableValue();
+
+    // const file = await result
+    //   .computeOutput('p', (p) => driverKit.blobDriver.get p?.traverse('file')?.)
+    //   .awaitStableValue();
+
+    expect(data).eq('text1\n');
   }
 );

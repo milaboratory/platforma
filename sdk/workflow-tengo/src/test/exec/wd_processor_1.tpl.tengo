@@ -1,0 +1,29 @@
+// test wd processor
+
+self := import(":workdir-proc")
+ll := import(":ll")
+slices := import(":slices")
+
+self.readFiles(func(list) {
+    i := slices.findElement(list, "file1.txt")
+    ll.assert(i != -1, "file1.txt is not found in working directory")
+
+    return {
+        "data": "file1.txt"
+    }
+})
+
+
+self.body(func(inputs) {
+    i := slices.findElement(inputs.files, "file2.txt")
+    ll.assert(i != -1, "file2.txt is not found in working directory")
+
+    inputs.files
+    inputs.data
+    
+
+    return {
+        data: inputs.data,
+        file: self.saveFile("file2.txt")
+    }
+})

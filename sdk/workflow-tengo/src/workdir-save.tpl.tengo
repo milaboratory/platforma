@@ -2,44 +2,11 @@
 
 self := import(":tpl")
 text := import("text")
-json := import("json")
-ll := import(":ll")
-smart := import(":smart")
-constants := import(":constants")
-
-
-
-/**
- * Generates a file save rule for a given file name.
- *
- * @param fileName: string - the name of the file.
- * @return rule: map - the file save rule.
- */
-_getFileSaveRule := func(fileName) {
-	return {
-		blobKey: fileName,
-		type: "file",
-		filePath: fileName
-	}
-}
-
-/**
- * Generates a value save rule for a given file name.
- *
- * @param fileName: string - the name of the file.
- * @return rule: map - the value save rule.
- */
-_getContentSaveRule := func(fileName) {
-	return {
-		blobKey: fileName,
-		type: "content",
-		contentPath: fileName
-	}
-}
+wdSave := import(":workdir-save")
 
 self.body(func(inputs) {
 
-	workdir := inputs.workdir
+	wdBefore := inputs.workdir
 	
 	// simple 'save' rules
 	files := inputs.files
@@ -49,15 +16,13 @@ self.body(func(inputs) {
 	fileSets := inputs.fileSets
 	fileSetsContent := inputs.fileSetsContent
 
-	// file & content save rules; using maps to avoid duplicated rules
-	fRules := {}
-	cRules := {}
+	wdBuilder := wdSave.builder(wdBefore)
 
 	for file, _ in files {
-		fRules[file] = _getFileSaveRule(file)
+		wdBuilder.saveFile(file)
 	}
 	for content, _ in filesContent {
-		cRules[content] = _getContentSaveRule(content)
+		wdBuilder.saveFileContent(content)
 	}
 	
 	// calculate actual file sets:
@@ -76,7 +41,7 @@ self.body(func(inputs) {
 			fileSetsContentMatch[k] = []
 		}
 
-		files := workdir.getDataAsJson()["files"]
+		files := wdBefore.getDataAsJson()["files"]
 
 		for name in files {	
 			for fSetName, regex in fileSets {
@@ -94,37 +59,21 @@ self.body(func(inputs) {
 
 		for _, list in fileSetsMatch {
 			for file in list {
-				fRules[file] = _getFileSaveRule(file)
+				wdBuilder.saveFile(file)
 			}
 		}
 
 		for _, list in fileSetsContentMatch {
 			for file in list {
-				cRules[file] = _getContentSaveRule(file)
+				wdBuilder.saveFileContent(file)
 			}
 		}
 	}
 
-	rules := []
-	for _, r in fRules {
-		rules = append(rules, r)
-	}
-	for _, r in cRules {
-		rules = append(rules, r)
-	}
-	
-	rulesRes := smart.createValueResource(
-		constants.RTYPE_WORKDIR_SAVE_RULES,
-		json.encode(rules)
-	)
+	wd := wdBuilder.build()
 
-	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_SAVE)
-	wd.getField("workdirIn").set(workdir)
-	wd.getField("rules").set(rulesRes)
-	wd = wd.lockAndBuild()
-
-	filesResult := wd.getField("blobsOut")
-	filesContentResult := wd.getField("dataOut")
+	filesResult := wd.getSavedFiles()
+	filesContentResult := wd.getSavedFilesContent()
 
 	fileSetsResult := {}
 	for fSetName, list in fileSetsMatch {
@@ -148,7 +97,7 @@ self.body(func(inputs) {
 		filesContent    : filesContentResult,
 		fileSets        : fileSetsResult,
 		fileSetsContent : fileSetsContentResult,
-		workdir         : wd.getField("workdirOut"),
-		progress        : wd.getField("progress")
+		workdir         : wd.getWorkdirAfter(),
+		progress        : wd.getProgress()
 	}
 })

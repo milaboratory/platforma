@@ -78,6 +78,8 @@ builder := func() {
 	fileSetsContentToSave := {}
 	// files to stream from the workdir
 	filesToStream := {}
+	// workdir processors
+	wdProcessors := {}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -262,7 +264,6 @@ builder := func() {
 			return self
 		},
 
-
 		/**
 		 * Saves files from the exec workdir using regex.
 		 *
@@ -271,6 +272,17 @@ builder := func() {
 		 */
 		saveFileSet: func(name, regex) {
 			fileSetsToSave[name] = regex
+			return self
+		},
+
+		/**
+		 * Run specified 
+		 */
+		processWorkdir: func(name, tpl, tplArgs) {
+			wdProcessors[name] = {
+				tpl: tpl,
+				tplArgs: tplArgs
+			}
 			return self
 		},
 
@@ -297,12 +309,18 @@ builder := func() {
 			return self
 		},
 
+		/**
+		 * Set stdout file name
+		 */
 		stdoutFileName: func(fileName) {
 			fileName = path.canonize(fileName)
 			stdout = fileName
 			return self
 		},
 
+		/**
+		 * Set stderr file name
+		 */
 		stderrFileName: func(fileName) {
 			fileName = path.canonize(fileName)
 			stderr = fileName
@@ -377,7 +395,8 @@ builder := func() {
 				filesContentToSave: slices.fromSet(filesContentToSave),
 				fileSetsToSave: fileSetsToSave,
 				fileSetsContentToSave: fileSetsContentToSave,
-				filesToStream: slices.fromSet(filesToStream)
+				filesToStream: slices.fromSet(filesToStream),
+				wdProcessors: wdProcessors
 			})
 
 			self := undefined
@@ -419,7 +438,7 @@ builder := func() {
 				 * @return field - a reference to the map resource with files
 				 */
 				getFileSet: func(fileSetName) {
-					return tpl.output("fileSets").getFutureInputField(fileSetName)
+					return tpl.output("fileSets", cache).getFutureInputField(fileSetName)
 				},
 
 				/**
@@ -429,7 +448,11 @@ builder := func() {
 				 * @return field - a reference to the map resource with files
 				 */
 				getFileSetContent: func(fileSetName) {
-					return tpl.output("fileSetsContent").getFutureInputField(fileSetName)
+					return tpl.output("fileSetsContent", cache).getFutureInputField(fileSetName)
+				},
+
+				getProcessorResult: func(procName) {
+					return tpl.output("wdProcessors", cache).getFutureInputField(procName)
 				},
 
 				/**
