@@ -56,7 +56,7 @@ _create := func(tplId, isEph, inputs) {
 		 * Returns an output field with a given name
 		 */
 		output: func(name, ...cache) {
-			validation.assertJsonSchema(cache, ["number"])
+			ll.assert(len(cache) == 0 || is_int(cache[0]), "cache should be a number (milliseconds)")
 			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 			if len(cache) > 0 && cache[0] > 0 {
 				cache = cache[0]

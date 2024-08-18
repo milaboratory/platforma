@@ -206,7 +206,13 @@ tpl := func() {
 			newInputs := copy(inputs)
 
 			// build a prepare map
-			builder := smart.mapBuilder()
+			builder := undefined
+			if self.isEphemeral() {
+				builder = smart.ephemeralMapBuilder()
+			} else {
+				builder = smart.mapBuilder()
+			}
+			
 			for cb in self.prepareQueue {
 				// run callback
 				r := cb(inputs)
