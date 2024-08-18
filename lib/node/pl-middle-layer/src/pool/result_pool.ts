@@ -230,7 +230,8 @@ export class ResultPool {
         prj.traverse({
           field: projectFieldName(blockInfo.id, 'prodCtx'),
           ignoreError: true,
-          pureFieldErrorToUndefined: true
+          pureFieldErrorToUndefined: true,
+          stableIfNotFound: true
         })
       );
       const staging = loadCtx(

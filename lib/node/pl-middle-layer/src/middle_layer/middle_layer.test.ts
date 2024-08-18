@@ -221,6 +221,10 @@ test('simple project manipulations test', async () => {
       expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
+    const block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
+
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
@@ -257,9 +261,9 @@ test('simple project manipulations test', async () => {
     //   { block1StableFrontend, block2StableFrontend, block3StableFrontend },
     //   { depth: 5 });
 
-    const block1StableState1 = await prj.getBlockState(block1Id).getValue();
-    const block2StableState1 = await prj.getBlockState(block2Id).getValue();
-    const block3StableState1 = await prj.getBlockState(block3Id).getValue();
+    const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
+    const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
+    const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
 
     expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
     expect(block2StableState1.navigationState).toStrictEqual({ href: '/' });

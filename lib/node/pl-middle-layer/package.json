@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.9.26",
+  "version": "1.9.27",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
