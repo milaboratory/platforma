@@ -61,12 +61,23 @@ builder := func() {
 	cache := 0
 	nErrorLines := 200
 
-	files := {}
-	values := {}
-	dirs := {}
-	outputFiles := {}
-	outputValues := {}
-	streams := {}
+	// files to be added in wordir
+	filesToAdd := {}
+	// files to be created in the wordir with the content from resources
+	filesToWrite := {}
+	// directories to create in the workdir
+	dirsToCreate := {}
+
+	// files to save from the workdir
+	filesToSave := {}
+	// files which content to save from the workdir
+	filesContentToSave := {}
+	// file sets to save by regex
+	fileSetsToSave := {}
+	// file sets to save by regex (save file content)
+	fileSetsContentToSave := {}
+	// files to stream from the workdir
+	filesToStream := {}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -184,7 +195,7 @@ builder := func() {
 		 */
 		addFile: func(fileName, file) {
 			fileName = path.canonize(fileName)
-			files[fileName] = file
+			filesToAdd[fileName] = file
 			return self
 		},
 
@@ -213,7 +224,7 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 
-			values[fileName] = data
+			filesToWrite[fileName] = data
 
 			return self
 		},
@@ -225,7 +236,7 @@ builder := func() {
 		 */
 		mkDir: func(dir) {
 			dir = path.canonize(dir)
-			dirs = sets.add(dirs, dir)
+			dirsToCreate = sets.add(dirsToCreate, dir)
 			return self
 		},
 
@@ -236,7 +247,7 @@ builder := func() {
 		 */
 		saveFile: func(fileName) {
 			fileName = path.canonize(fileName)
-			sets.add(outputFiles, fileName)
+			sets.add(filesToSave, fileName)
 			return self
 		},
 
@@ -247,7 +258,42 @@ builder := func() {
 		 */
 		saveFileContent: func(fileName) {
 			fileName = path.canonize(fileName)
-			sets.add(outputValues, fileName)
+			sets.add(filesContentToSave, fileName)
+			return self
+		},
+
+
+		/**
+		 * Saves files from the exec workdir using regex.
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex pattern
+		 */
+		saveFileSet: func(name, regex) {
+			fileSetsToSave[name] = regex
+			return self
+		},
+
+		/**
+		 * Saves files content from the exec workdir using regex.
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex pattern
+		 */
+		saveFileSetContent: func(name, regex) {
+			fileSetsContentToSave[name] = regex
+			return self
+		},
+
+		/**
+		 * A command to stream a file by a given file name.
+		 *
+		 * @param fileName: string - the name of the file to stream.
+		 */
+		streamFile: func(fileName) {
+			fileName = path.canonize(fileName)
+			sets.add(filesToStream, fileName)
+
 			return self
 		},
 
@@ -279,30 +325,6 @@ builder := func() {
 		},
 
 		/**
-		 * Saves output files using a regex and template.
-		 *
-		 * @param regex: string - the regex pattern.
-		 * @param template: template
-		 * @param inputs: map[string]any - the inputs of the template.
-		 */
-		saveFileSet: func(regex, template, inputs) {
-			ll.panic("not implemented")
-			return self
-		},
-
-		/**
-		 * A command to stream a file by a given file name.
-		 *
-		 * @param fileName: string - the name of the file to stream.
-		 */
-		streamFile: func(fileName) {
-			fileName = path.canonize(fileName)
-			sets.add(streams, fileName)
-
-			return self
-		},
-
-		/**
 		 * Redirects stderr output to stdout.
 		 */
 		printErrStreamToStdout: func() {
@@ -319,29 +341,29 @@ builder := func() {
 			if stderrToStdout {
 				stderr = stdout
 			}
-			sets.add(streams, stdout)
-			sets.add(streams, stderr)
-			sets.add(outputFiles, stdout)
-			sets.add(outputFiles, stderr)
+			sets.add(filesToStream, stdout)
+			sets.add(filesToStream, stderr)
+			sets.add(filesToSave, stdout)
+			sets.add(filesToSave, stderr)
 			if stdoutToValue {
-				sets.add(outputValues, stdout)
+				sets.add(filesContentToSave, stdout)
 			}
 			if stderrToValue {
-				sets.add(outputValues, stderr)
+				sets.add(filesContentToSave, stderr)
 			}
 
 			// We don't want these values to be encoded as JSON's since
 			// values are pure bytes.
 			// Thus, we create a resource with a custom type here manually.
-			valueRefs := maps.mapValues(values, func(v) {
+			filesToWriteRefs := maps.mapValues(filesToWrite, func(v) {
 				if smart.isReference(v) { return v }
 				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
 			})
 
 			tpl := render.create(ll.importTemplate(":exec"), {
-				files: smart.createMapResource(files),
-				values: smart.createMapResource(valueRefs),
-				dirs: slices.fromSet(dirs),
+				filesToAdd: smart.createMapResource(filesToAdd),
+				filesToWrite: smart.createMapResource(filesToWriteRefs),
+				dirsToCreate: slices.fromSet(dirsToCreate),
 				runOptions: {
 					cmd: _argToExec(cmd, false, undefined),
 					args: slices.map(args, func(a) { return _argToExec(a, false, undefined) }),
@@ -351,9 +373,11 @@ builder := func() {
 					stderr: stderr,
 					nErrorLines: nErrorLines
 				},
-				saveFiles: slices.fromSet(outputFiles),
-				saveFilesContents: slices.fromSet(outputValues),
-				streams: slices.fromSet(streams)
+				filesToSave: slices.fromSet(filesToSave),
+				filesContentToSave: slices.fromSet(filesContentToSave),
+				fileSetsToSave: fileSetsToSave,
+				fileSetsContentToSave: fileSetsContentToSave,
+				filesToStream: slices.fromSet(filesToStream)
 			})
 
 			self := undefined
@@ -388,8 +412,24 @@ builder := func() {
 					return tpl.output("fileStreams", cache).getFutureInputField(fileName)
 				},
 
-				getFileSet: func(setName) {
-					ll.panic("not implemented")
+				/**
+				 * Retrieves a file set resource.
+				 *
+				 * @param fileSetName: string - name of a file set
+				 * @return field - a reference to the map resource with files
+				 */
+				getFileSet: func(fileSetName) {
+					return tpl.output("fileSets").getFutureInputField(fileSetName)
+				},
+
+				/**
+				 * Retrieves a file set content resource.
+				 *
+				 * @param fileSetName: string - name of a file set
+				 * @return field - a reference to the map resource with files
+				 */
+				getFileSetContent: func(fileSetName) {
+					return tpl.output("fileSetsContent").getFutureInputField(fileSetName)
 				},
 
 				/**

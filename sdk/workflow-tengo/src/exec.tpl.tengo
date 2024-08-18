@@ -8,104 +8,109 @@
 ll := import(":ll")
 self := import(":tpl")
 smart := import(":smart")
-render := import(":render")
-fmt := import("fmt")
 workdir := import(":workdir")
-enum := import("enum")
 runcmd := import(":runcmd")
 stream := import(":stream")
-slices := import(":slices")
 sets := import(":sets")
 validation := import(":validation")
-maps := import(":maps")
 
 self.defineOutputs(
-	"files", "filesContent", "progress", "fileStreams"
+	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams"
 )
 
 self.body(func(inputs) {
-	// assert we have inputs we expect.
-	cmdScheme := {
-		isExec: "bool",
-		value: "string",
-		"pathToBinary,omitempty": "string"
-	}
+	
+	//
+	// Create and fill the workdir with files that were passed from inputs.
+	//
 
-	validation.assertJsonSchema(inputs, {
-		files: { any: validation.resource },
-		values: { any: "any" },
-		dirs: ["string"],
-		runOptions: {
-			cmd: cmdScheme,
-			args: [cmdScheme],
-			envs: { any: "string" },
-			queue: "string",
-			stdout: "string",
-			stderr: "string",
-			nErrorLines: "number"
-		},
-		saveFiles: ["string"],
-		saveFilesContents: ["string"],
-		streams: ["string"]
-	})
+	wdBuilder := workdir.builder()
+	// add files
+	wdBuilder.addFiles(inputs.filesToAdd)
+	// create dirs
+	for dir in inputs.dirsToCreate {
+		wdBuilder.mkDir(dir)
+	}	
+	// pass values as fields for saving the topology in pl-core
+	// and avoiding deduplication issues:
+	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
+	// working directory with input files added; before run
+	wdBefore := wdBuilder.build()
 
-	// create and fill the workdir with files that were passed from inputs.
-	builder := workdir.builder()
-	builder.addFiles(inputs.files)
-	slices.map(inputs.dirs, builder.mkDir)
 
-	// Pass values as fields for saving the topology in pl-core
-	// and avoiding deduplication issues.
-	rawInputs := self.rawInputs()
-	builder.writeFiles(rawInputs.values.getValue().inputs())
+	//
+	// Build runcmd resource
+	//
 
-	wd := builder.build()
-
-	// creates a runcmd builder
-	opts := inputs.runOptions
-	run := runcmd.builder(wd)
-
-	// sets a command to the builder.
-	if opts.cmd.isExec {
-		run.cmdExecutable(opts.cmd.cmd, opts.cmd.pathToBinary)
+	runBuilder := runcmd.builder(wdBefore)
+	// options
+	ops := inputs.runOptions
+	// exec command
+	if ops.cmd.isExec {
+		runBuilder.cmdExecutable(ops.cmd.cmd, ops.cmd.pathToBinary)
 	} else {
-		run.cmd(opts.cmd.value)
+		runBuilder.cmd(ops.cmd.value)
 	}
-
-	// sets arguments to the builder.
-	for name, arg in opts.args {
+	// cmd args
+	for name, arg in ops.args {
 		if arg.isExec {
-			run.argExecutable(arg.arg, arg.pathToBinary)
+			runBuilder.argExecutable(arg.arg, arg.pathToBinary)
 		} else {
-			run.arg(arg.value)
+			runBuilder.arg(arg.value)
 		}
 	}
+	// env vars
+	for name, value in ops.envs {
+		runBuilder.env(name, value)
+	}
+	// other options
+	runBuilder.inQueue(ops.queue)
+	runBuilder.stdout(ops.stdout)
+	runBuilder.stderr(ops.stderr)
+	runBuilder.nErrorLines(ops.nErrorLines)
+	run := runBuilder.build()
+	// get the workdir containing all the files, including produced by the run command
+	wdAfter := run.workdir
+	
 
-	// sets all other options.
-	enum.each(opts.envs, run.env)
-	run.inQueue(opts.queue)
-	run.stdout(opts.stdout)
-	run.stderr(opts.stderr)
-	run.nErrorLines(opts.nErrorLines)
-	runRes := run.build()
+	//
+	// Save data from the workdir
+	//
 
-	// saves all requested files as value resources and blob resources.
-	save := workdir.save(runRes.workdirOut)
-	slices.map(inputs.saveFiles, save.saveFile)
-	slices.map(inputs.saveFilesContents, save.saveFileContent)
-	saveRes := save.build()
+	// saver resource
+	wdSaver := workdir.save(wdAfter)
+	// save files
+	for fName in inputs.filesToSave {
+		wdSaver.saveFile(fName)
+	}
+	// save files content
+	for fName in inputs.filesContentToSave {
+		wdSaver.saveFileContent(fName)
+	}
+	// save file sets
+	for name, regex in inputs.fileSetsToSave {
+		wdSaver.saveFileSet(name, regex)
+	}
+	// save file sets content
+	for name, regex in inputs.fileSetsContentToSave {
+		wdSaver.saveFileSetContent(name, regex)
+	}
+
+	// resulting wd
+	wdResult := wdSaver.build()
 
 	// create streams for all requested file streams.
 	streams := smart.mapBuilder()
-	for file, _ in sets.fromSlice(inputs.streams) {
-		s := stream.create(wd, saveRes, file)
-		streams.add(file, s)
+	for fName in inputs.filesToStream {
+		streams.add(fName, stream.create(wdBefore, wdResult, fName))
 	}
 
 	return {
-		files: saveRes.files,
-		filesContent: saveRes.filesContent,
+		files: wdResult.files,
+		filesContent: wdResult.filesContent,
+		fileSets : wdResult.fileSets,
+		fileSetsContent : wdResult.fileSetsContent,
 		fileStreams: streams.build(),
-		progress: saveRes.progress
+		progress: wdResult.progress
 	}
 })

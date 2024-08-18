@@ -1,0 +1,25 @@
+/** Runs a simple echo and returns stdout */
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+
+self.defineOutputs(["p", "x", "all"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("touch p1 p2 p3 p4 x1 x2").
+		saveFileSet("p", "^p.*").
+		saveFileSet("x", "^x.*").
+		saveFileSet("all", ".*").
+		run()
+
+	return {
+		p: run.getFileSet("p"),
+		x: run.getFileSet("x"),
+		all: run.getFileSet("all")
+	}
+})
