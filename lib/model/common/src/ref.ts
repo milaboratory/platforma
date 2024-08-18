@@ -1,16 +1,25 @@
-/** Universal reference type, allowing to set block connections. It is crucial
- * that {@link __isRef} is present and equal to true, internal logic relies on
- * this marker to build block dependency trees. */
-export type Ref = {
-  /** Crucial marker for the block dependency tree reconstruction */
-  readonly __isRef: true;
+import { z } from 'zod';
 
-  /** Upstream block id */
-  readonly blockId: string;
-
-  /** Name of the output provided to the upstream block's output context */
-  readonly name: string;
-};
+export const Ref = z
+  .object({
+    __isRef: z
+      .literal(true)
+      .describe('Crucial marker for the block dependency tree reconstruction'),
+    blockId: z.string().describe('Upstream block id'),
+    name: z
+      .string()
+      .describe(
+        "Name of the output provided to the upstream block's output context"
+      )
+  })
+  .describe(
+    'Universal reference type, allowing to set block connections. It is crucial that ' +
+      '{@link __isRef} is present and equal to true, internal logic relies on this marker ' +
+      'to build block dependency trees.'
+  )
+  .strict()
+  .readonly();
+export type Ref = z.infer<typeof Ref>;
 
 /** Standard way how to communicate possible connections given specific
  * requirements for incoming data. */
