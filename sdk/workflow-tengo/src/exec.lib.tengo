@@ -365,7 +365,7 @@ builder := func() {
 				 * @return field - a reference to the file resource.
 				 */
 				getFile: func(fileName) {
-					return tpl.output("filesMap", cache).getFutureInputField(fileName)
+					return tpl.output("files", cache).getFutureInputField(fileName)
 				},
 
 				/**
@@ -375,7 +375,7 @@ builder := func() {
 				 * @return field - a reference to the file content resource.
 				 */
 				getFileContent: func(fileName) {
-					return tpl.output("dataMap", cache).getFutureInputField(fileName)
+					return tpl.output("filesContent", cache).getFutureInputField(fileName)
 				},
 
 				/**
@@ -385,7 +385,7 @@ builder := func() {
 				 * @return field - a reference to the file stream resource.
 				 */
 				getFileStream: func(fileName) {
-					return tpl.output("filesStreams", cache).getFutureInputField(fileName)
+					return tpl.output("fileStreams", cache).getFutureInputField(fileName)
 				},
 
 				getFileSet: func(setName) {

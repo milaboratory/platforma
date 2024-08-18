@@ -1,0 +1,89 @@
+// helper template to save files in a working dir by regex
+
+self := import(":tpl")
+text := import("text")
+json := import("json")
+ll := import(":ll")
+smart := import(":smart")
+constants := import(":constants")
+
+
+
+/**
+ * Generates a file save rule for a given file name.
+ *
+ * @param fileName: string - the name of the file.
+ * @return rule: map - the file save rule.
+ */
+_getFileSaveRule := func(fileName) {
+	return {
+		blobKey: fileName,
+		type: "file",
+		filePath: fileName
+	}
+}
+
+/**
+ * Generates a value save rule for a given file name.
+ *
+ * @param fileName: string - the name of the file.
+ * @return rule: map - the value save rule.
+ */
+_getContentSaveRule := func(fileName) {
+	return {
+		blobKey: fileName,
+		type: "content",
+		contentPath: fileName
+	}
+}
+
+self.body(func(inputs) {
+
+	workdir := inputs.workdir
+	files := inputs.files
+	filesContent := inputs.filesContent
+	filesRegex := inputs.filesRegex
+	filesContentRegex := inputs.filesContentRegex
+
+	rules := []
+	for file, _ in files {
+		rules = append(rules, _getFileSaveRule(file))
+	}
+	for content, _ in filesContent {
+		rules = append(rules, _getContentSaveRule(content))
+	}
+	rulesRes := smart.createValueResource(
+		constants.RTYPE_WORKDIR_SAVE_RULES,
+		json.encode(rules)
+	)
+
+	if len(filesRegex) > 0 || len(filesContentRegex) > 0 {
+		files := workdir.getDataAsJson()["files"]
+
+		for name in files {	
+			for fr, _ in filesRegex {
+				if text.re_match(fr, name) {
+					rules = append(rules, _getFileSaveRule(name))
+				}
+			}
+
+			for fr, _ in filesContentRegex {
+				if text.re_match(fr, name) {
+					rules = append(rules, _getContentSaveRule(name))
+				}
+			}
+		}
+	}
+	
+	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_SAVE)
+	wd.getField("workdirIn").set(workdir)
+	wd.getField("rules").set(rulesRes)
+	wd = wd.lockAndBuild()
+
+	return {
+		files: wd.getField("blobsOut"),
+		filesContent: wd.getField("dataOut"),
+		workdir: wd.getField("workdirOut"),
+		progress: wd.getField("progress")
+	}
+})
