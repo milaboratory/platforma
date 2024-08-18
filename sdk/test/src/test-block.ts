@@ -10,13 +10,15 @@ import {
   Project
 } from '@milaboratory/pl-middle-layer';
 import { plTest } from './test-pl';
+import { awaitStableState } from './util';
 
 async function awaitBlockDone(
   prj: Project,
   blockId: string,
   timeout: number | AbortSignal = 2000
 ) {
-  const abortSignal = typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
+  const abortSignal =
+    typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
   while (true) {
@@ -36,8 +38,14 @@ async function awaitBlockDone(
 }
 
 export interface RawHelpers {
-  awaitBlockDone(blockId: string, timeout?: number | AbortSignal): Promise<void>;
-  awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(blockId: string, timeout?: number | AbortSignal): Promise<InferBlockState<Pl>>;
+  awaitBlockDone(
+    blockId: string,
+    timeout?: number | AbortSignal
+  ): Promise<void>;
+  awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(
+    blockId: string,
+    timeout?: number | AbortSignal
+  ): Promise<InferBlockState<Pl>>;
   getLocalFileHandle(localPath: string): Promise<ImportFileHandleUpload>;
 }
 
@@ -80,15 +88,17 @@ export const blockTest = plTest.extend<{
       async awaitBlockDone(blockId, timeout) {
         await awaitBlockDone(rawPrj, blockId, timeout);
       },
-      awaitBlockDoneAndGetStableBlockState: async <Pl extends Platforma>(blockId: string, timeout?: number | AbortSignal) => {
-        const abortSignal = typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
+      awaitBlockDoneAndGetStableBlockState: async <Pl extends Platforma>(
+        blockId: string,
+        timeout?: number | AbortSignal
+      ) => {
+        const abortSignal =
+          typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
         await awaitBlockDone(rawPrj, blockId, abortSignal);
-        try {
-          return (await rawPrj.getBlockState(blockId).awaitStableValue(abortSignal)) as InferBlockState<Pl>;
-        } catch (e: any) {
-          console.dir(await rawPrj.getBlockState(blockId).getValue(), { depth: 5 });
-          throw new Error('Aborted.', { cause: e });
-        }
+        return (await awaitStableState(
+          rawPrj.getBlockState(blockId),
+          abortSignal
+        )) as InferBlockState<Pl>;
       },
       async getLocalFileHandle(localPath) {
         return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
