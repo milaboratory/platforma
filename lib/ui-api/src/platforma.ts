@@ -15,8 +15,15 @@ export interface Platforma<
   readonly sdkInfo: SdkInfo;
 }
 
+export type InferArgsType<Pl extends Platforma> = Pl extends Platforma<infer Args> ? Args : never;
+
 export type InferOutputsType<Pl extends Platforma> =
   Pl extends Platforma<unknown, infer Outputs> ? Outputs : never;
+
+export type InferUiState<Pl extends Platforma> =
+  Pl extends Platforma<unknown, Record<string, ValueOrErrors<unknown>>, infer UiState>
+    ? UiState
+    : never;
 
 export type InferHrefType<Pl extends Platforma> =
   Pl extends Platforma<unknown, BlockOutputsBase, unknown, infer Href> ? Href : never;
