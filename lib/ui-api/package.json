@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-ui",
-  "version": "0.12.15",
+  "version": "0.12.17",
   "description": "Block UI and configuration SDK",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

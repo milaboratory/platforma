@@ -227,8 +227,8 @@ export class BlockModel<
   public inputsValid<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
-  public inputsValid<RF extends RenderFunction<Args, UiState>>(
-    rf: RF & InputsValidRFChecked<RF>
+  public inputsValid<RF extends RenderFunction<Args, UiState, boolean>>(
+    rf: RF
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
   public inputsValid(
     cfgOrRf: TypedConfig | Function
