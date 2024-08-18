@@ -11,10 +11,8 @@ blockTest('test', { timeout: 60000 }, async ({ expect, rawPrj, helpers }) => {
 
   await rawPrj.setBlockArgs(testBlockId, { numbers: [1, 2, 3] });
   await rawPrj.runBlock(testBlockId);
-  await helpers.awaitBlockDone(testBlockId);
-  const blockState = rawPrj.getBlockState(testBlockId);
-  await blockState.awaitStableValue();
-  const stateSnapshot = await blockState.getValue();
+  const stateSnapshot =
+    await helpers.awaitBlockDoneAndGetStableBlockState(testBlockId);
   expect(
     (stateSnapshot.outputs!['dependsOnBlocks1'] as any).value.length
   ).toBeGreaterThan(5);

@@ -1,8 +1,12 @@
 import path from 'path';
 import * as fsp from 'node:fs/promises';
 import {
+  BlockModel,
+  BlockState,
   ImportFileHandleUpload,
+  InferBlockState,
   MiddleLayer,
+  Platforma,
   Project
 } from '@milaboratory/pl-middle-layer';
 import { plTest } from './test-pl';
@@ -10,9 +14,9 @@ import { plTest } from './test-pl';
 async function awaitBlockDone(
   prj: Project,
   blockId: string,
-  timeout: number = 2000
+  timeout: number | AbortSignal = 2000
 ) {
-  const abortSignal = AbortSignal.timeout(timeout);
+  const abortSignal = typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
   while (true) {
@@ -32,7 +36,8 @@ async function awaitBlockDone(
 }
 
 export interface RawHelpers {
-  awaitBlockDone(blockId: string, timeout?: number): Promise<void>;
+  awaitBlockDone(blockId: string, timeout?: number | AbortSignal): Promise<void>;
+  awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(blockId: string, timeout?: number | AbortSignal): Promise<InferBlockState<Pl>>;
   getLocalFileHandle(localPath: string): Promise<ImportFileHandleUpload>;
 }
 
@@ -74,6 +79,16 @@ export const blockTest = plTest.extend<{
     await use({
       async awaitBlockDone(blockId, timeout) {
         await awaitBlockDone(rawPrj, blockId, timeout);
+      },
+      awaitBlockDoneAndGetStableBlockState: async <Pl extends Platforma>(blockId: string, timeout?: number | AbortSignal) => {
+        const abortSignal = typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
+        await awaitBlockDone(rawPrj, blockId, abortSignal);
+        try {
+          return (await rawPrj.getBlockState(blockId).awaitStableValue(abortSignal)) as InferBlockState<Pl>;
+        } catch (e: any) {
+          console.dir(await rawPrj.getBlockState(blockId).getValue(), { depth: 5 });
+          throw new Error('Aborted.', { cause: e });
+        }
       },
       async getLocalFileHandle(localPath) {
         return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
