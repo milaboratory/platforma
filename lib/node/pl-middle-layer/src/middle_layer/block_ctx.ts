@@ -82,7 +82,7 @@ export function constructBlockContext(
           ignoreError: true
         })
         ?.persist();
-      if (result === undefined) cCtx.markUnstable();
+      if (result === undefined) cCtx.markUnstable('staging_not_rendered');
       return result;
     },
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId)
