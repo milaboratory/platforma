@@ -138,17 +138,17 @@ export class PlTreeResource implements PlTreeResourceI {
     _step:
       | (Omit<GetFieldStep, 'errorIfFieldNotFound'> & { errorIfFieldNotFound: true })
       | (Omit<GetFieldStep, 'errorIfFieldNotSet'> & { errorIfFieldNotSet: true }),
-    onUnstable: () => void
+    onUnstable: (marker: string) => void
   ): ValueAndError<ResourceId>;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
-    onUnstable: () => void
+    onUnstable: (marker: string) => void
   ): ValueAndError<ResourceId> | undefined;
   public getField(
     watcher: Watcher,
     _step: string | GetFieldStep,
-    onUnstable: () => void = () => {}
+    onUnstable: (marker: string) => void = () => {}
   ): ValueAndError<ResourceId> | undefined {
     const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
 
@@ -176,7 +176,7 @@ export class PlTreeResource implements PlTreeResourceI {
       }
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
-      if (!this._final && !step.stableIfNotFound) onUnstable();
+      if (!this._final && !step.stableIfNotFound) onUnstable('field_not_found:' + step.field);
 
       return undefined;
     } else {
@@ -242,7 +242,7 @@ export class PlTreeResource implements PlTreeResourceI {
     this.fields.forEach((field, name) => {
       if (field.type === 'Input' || field.type === 'Service') ret.push(name);
     });
-    this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
+    if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
 
     return ret;
   }
@@ -252,7 +252,7 @@ export class PlTreeResource implements PlTreeResourceI {
     this.fields.forEach((field, name) => {
       if (field.type === 'Output') ret.push(name);
     });
-    this.outputFieldListChanged?.attachWatcher(watcher);
+    if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
 
     return ret;
   }

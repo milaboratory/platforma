@@ -280,7 +280,7 @@ export class PlTreeNodeAccessor {
             error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`
           };
         // existing but unpopulated field is unstable because it must be resolved at some point
-        this.onUnstableLambda();
+        this.onUnstableLambda('unpopulated_field:' + step.field);
         return undefined;
       }
 
@@ -289,7 +289,9 @@ export class PlTreeNodeAccessor {
     return { ok: true, value: current };
   }
 
-  private readonly onUnstableLambda = () => this.instanceData.ctx.markUnstable();
+  private readonly onUnstableLambda = (marker: string) => {
+    this.instanceData.ctx.markUnstable(marker);
+  };
 
   public getField(
     _step:
@@ -311,21 +313,22 @@ export class PlTreeNodeAccessor {
   public getInputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getInputsLocked(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable();
+    if (!result) 
+      this.instanceData.ctx.markUnstable("inputs_unlocked:" + this.resourceType.name);
     return result;
   }
 
   public getOutputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getOutputsLocked(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable();
+    if (!result) this.instanceData.ctx.markUnstable("outputs_unlocked:" + this.resourceType.name);
     return result;
   }
 
   public getIsReadyOrError(): boolean {
     this.instanceData.guard();
     const result = this.resource.getIsReadyOrError(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable();
+    if (!result) this.instanceData.ctx.markUnstable("not_ready:" + this.resourceType.name);
     return result;
   }
 
@@ -357,11 +360,13 @@ export class PlTreeNodeAccessor {
 
   public listInputFields(): string[] {
     this.instanceData.guard();
+    this.getInputsLocked(); // will set unstable if not locked
     return this.resource.listInputFields(this.instanceData.ctx.watcher);
   }
 
   public listOutputFields(): string[] {
     this.instanceData.guard();
+    this.getOutputsLocked(); // will set unstable if not locked
     return this.resource.listOutputFields(this.instanceData.ctx.watcher);
   }
 
@@ -373,7 +378,8 @@ export class PlTreeNodeAccessor {
   public getKeyValue(key: string, unstableIfNotFound: boolean = false): Uint8Array | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.ctx.watcher, key);
-    if (result === undefined && unstableIfNotFound) this.instanceData.ctx.markUnstable();
+    if (result === undefined && unstableIfNotFound)
+      this.instanceData.ctx.markUnstable("key_not_found_b:" + key);
     return result;
   }
 
@@ -385,7 +391,8 @@ export class PlTreeNodeAccessor {
   public getKeyValueAsString(key: string, unstableIfNotFound: boolean = false): string | undefined {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
-    if (result === undefined && unstableIfNotFound) this.instanceData.ctx.markUnstable();
+    if (result === undefined && unstableIfNotFound)
+      this.instanceData.ctx.markUnstable("key_not_found_s:" + key);
     return result;
   }
 
@@ -395,7 +402,8 @@ export class PlTreeNodeAccessor {
   ): T | undefined {
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
-      if (unstableIfNotFound) this.instanceData.ctx.markUnstable();
+      if (unstableIfNotFound) 
+        this.instanceData.ctx.markUnstable("key_not_found_j:" + key);
       return undefined;
     }
     return JSON.parse(result) as T;
