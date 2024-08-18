@@ -378,11 +378,11 @@ tpl := func() {
 		},
 
 		/**
-		 * Delegates itself to the specified template, i.e. runs specified template and 
+		 * Delegates itself to the specified template, i.e. runs specified template and
 		 * saves its outputs to this.
-		 * 
+		 *
 		 * @param tpl: template - specified template
-	 	 * @param extraInputs: map - additional inputs to pass to the template
+		 * @param extraInputs: map - additional inputs to pass to the template
 		 * @param outputs: array - array of expected outputs to save
 		 */
 		routeDelegate: func(tpl, extraInputs, outputs) {

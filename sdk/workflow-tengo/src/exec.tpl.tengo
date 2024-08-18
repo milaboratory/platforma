@@ -20,7 +20,7 @@ validation := import(":validation")
 maps := import(":maps")
 
 self.defineOutputs(
-	"filesMap", "dataMap", "progressMap", "filesStreams"
+	"files", "filesContent", "progress", "fileStreams"
 )
 
 self.body(func(inputs) {
@@ -103,9 +103,9 @@ self.body(func(inputs) {
 	}
 
 	return {
-		filesMap: saveRes.files,
-		dataMap: saveRes.data,
-		progressMap: saveRes.progress,
-		filesStreams: streams.build()
+		files: saveRes.files,
+		filesContent: saveRes.filesContent,
+		fileStreams: streams.build(),
+		progress: saveRes.progress
 	}
 })

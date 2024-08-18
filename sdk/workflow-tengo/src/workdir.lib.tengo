@@ -14,17 +14,10 @@ slices := import(":slices")
 path := import(":path")
 enum := import("enum")
 validation := import(":validation")
-
-_RTYPE_WORKDIR_CREATE := { Name: "WorkdirCreate", Version: "1" }
-
-_RTYPE_WORKDIR_FILL := { Name: "WorkdirFill", Version: "1" }
-_RTYPE_WORKDIR_FILL_RULES := { Name: "WorkdirFill/rules", Version: "1" }
-
-_RTYPE_WORKDIR_SAVE := { Name: "WorkdirSave", Version: "1" }
-_RTYPE_WORKDIR_SAVE_RULES := { Name: "WorkdirSave/rules", Version: "1" }
+render := import(":render")
 
 _create := func() {
-	wd := smart.ephemeralBuilder(_RTYPE_WORKDIR_CREATE).lockAndBuild()
+	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
 	return wd.getField("workdir")
 }
 
@@ -79,7 +72,7 @@ _getDirFillRule := func(dir) {
 _fill := func(workdir) {
 	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
 
-	wd := smart.ephemeralBuilder(_RTYPE_WORKDIR_FILL)
+	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
 	wd.getField("workdirIn").set(workdir)
 
 	files := {}
@@ -176,7 +169,7 @@ _fill := func(workdir) {
 			}
 
 			rulesRes := smart.createValueResource(
-				_RTYPE_WORKDIR_FILL_RULES,
+				constants.RTYPE_WORKDIR_FILL_RULES,
 				json.encode(rules)
 			)
 			self.getField("rules").set(rulesRes)
@@ -201,34 +194,6 @@ builder := func() {
 }
 
 /**
- * Generates a file save rule for a given file name.
- *
- * @param fileName: string - the name of the file.
- * @return rule: map - the file save rule.
- */
-_getFileSaveRule := func(fileName) {
-	return {
-		blobKey: fileName,
-		type: "file",
-		filePath: fileName
-	}
-}
-
-/**
- * Generates a value save rule for a given file name.
- *
- * @param fileName: string - the name of the file.
- * @return rule: map - the value save rule.
- */
-_getContentSaveRule := func(fileName) {
-	return {
-		blobKey: fileName,
-		type: "content",
-		contentPath: fileName
-	}
-}
-
-/**
  * Saves a workdir.
  *
  * @param workdir: reference - a reference to the workdir to save.
@@ -237,14 +202,17 @@ _getContentSaveRule := func(fileName) {
 save := func(workdir) {
 	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
 
-	wd := smart.ephemeralBuilder(_RTYPE_WORKDIR_SAVE)
-	wd.getField("workdirIn").set(workdir)
-
+	// files to save
 	files := {}
-	values := {}
+	// files to save their content
+	filesContent := {}
+	// files to save by regex
+	filesRegex := {}
+	// files to save their content by regex
+	filesContentRegex := {}
 
 	self := undefined
-	self = ll.toStrict(oop.inherit(wd, {
+	self = ll.toStrict({
 		/**
 		 * Saves a file from the workdir.
 		 *
@@ -263,7 +231,29 @@ save := func(workdir) {
 		 */
 		saveFileContent: func(fileName) {
 			validation.assertJsonSchema(fileName, "string")
-			sets.add(values, fileName)
+			sets.add(filesContent, fileName)
+			return self
+		},
+
+		/**
+		 * Save files which names satisfy given regex rule
+		 *
+		 * @param regex: string - regex
+		 */
+		saveFiles: func(regex) {
+			validation.assertJsonSchema(regex, "string")
+			sets.add(filesRegex, regex)
+			return self
+		},
+
+		/**
+		 * Save files content which names satisfy given regex rule
+		 *
+		 * @param regex: string - regex		
+		 */
+		saveFilesContent: func(regex) {
+			validation.assertJsonSchema(regex, "string")
+			sets.add(filesContentRegex, regex)
 			return self
 		},
 
@@ -273,26 +263,26 @@ save := func(workdir) {
 		 * @return wd: reference - the saved workdir with additional fields.
 		 */
 		build: func() {
-			rules := []
-			for file, _ in files {
-				rules = append(rules, _getFileSaveRule(file))			}
-			for value, _ in values {
-				rules = append(rules, _getContentSaveRule(value))
-			}
-			rulesRes := smart.createValueResource(
-				_RTYPE_WORKDIR_SAVE_RULES,
-				json.encode(rules)
-			)
-			self.getField("rules").set(rulesRes)
 
-			return ll.toStrict(oop.inherit(self.lockAndBuild(), {
-				files: self.getField("blobsOut"),
-				data: self.getField("dataOut"),
-				progress: self.getField("progress"),
-				output: self.getField("workdirOut")
-			}))
+			tpl := ll.importTemplate(":workdir-save")
+			inputs := {
+				workdir: workdir,
+				files: files,
+				filesContent: filesContent,
+				filesRegex: filesRegex,
+				filesContentRegex: filesContentRegex
+			}
+
+			wds := render.createEphemeral(tpl, inputs)
+
+			return ll.toStrict({
+				files: wds.output("files"),
+				filesContent: wds.output("filesContent"),				
+				workdir: wds.output("workdir"),
+				progress: wds.output("progress")
+			})
 		}
-	}))
+	})
 
 	return self
 }
