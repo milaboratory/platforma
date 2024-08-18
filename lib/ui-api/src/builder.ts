@@ -330,8 +330,6 @@ export class BlockModel<
   }
 }
 
-const PlatformaConfiguration = BlockModel;
-
 export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
   ? ResolveCfgType<CfgOrFH, Args, UiState>
   : CfgOrFH extends FunctionHandle

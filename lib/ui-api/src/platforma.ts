@@ -1,7 +1,8 @@
 import { BlockApi } from './block_api';
-import { BlockOutputsBase, DriverKit, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratory/sdk-model';
 import { BlockConfig } from './builder';
 import { SdkInfo } from './sdk_info';
+import { BlockStatePatch } from './block_state_patch';
 
 /** Defines all methods to interact with the platform environment from within a block UI. */
 export interface Platforma<
@@ -29,3 +30,17 @@ export type InferHrefType<Pl extends Platforma> =
   Pl extends Platforma<unknown, BlockOutputsBase, unknown, infer Href> ? Href : never;
 
 export type PlatformaFactory = (config: BlockConfig) => Platforma;
+
+export type InferBlockState<Pl extends Platforma> = BlockState<
+  InferArgsType<Pl>,
+  InferOutputsType<Pl>,
+  InferUiState<Pl>,
+  InferHrefType<Pl>
+>;
+
+export type InferBlockStatePatch<Pl extends Platforma> = BlockStatePatch<
+  InferArgsType<Pl>,
+  InferOutputsType<Pl>,
+  InferUiState<Pl>,
+  InferHrefType<Pl>
+>;
