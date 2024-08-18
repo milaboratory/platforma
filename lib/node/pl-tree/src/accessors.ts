@@ -279,6 +279,8 @@ export class PlTreeNodeAccessor {
             ok: false,
             error: `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`
           };
+        // existing but unpopulated field is unstable because it must be resolved at some point
+        this.onUnstableLambda();
         return undefined;
       }
 
