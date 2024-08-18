@@ -74,7 +74,7 @@ export function constructBlockContext(
         ?.persist();
     },
     staging: (cCtx: ComputableCtx) => {
-      return cCtx
+      const result = cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
         .traverse({
@@ -82,6 +82,8 @@ export function constructBlockContext(
           ignoreError: true
         })
         ?.persist();
+      if (result === undefined) cCtx.markUnstable();
+      return result;
     },
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId)
   };
