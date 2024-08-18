@@ -139,7 +139,7 @@ export const DefaultMiddleLayerOps: Pick<
   },
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 700,
-  stagingRenderingRate: 5,
+  stagingRenderingRate: 5
 };
 
 /** Fields with default values are marked as optional here. */

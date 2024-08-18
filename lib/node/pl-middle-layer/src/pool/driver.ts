@@ -174,9 +174,10 @@ export class PFrameDriver implements SdkPFrameDriver {
   ): Promise<FindColumnsResponse> {
     const iRequest: PFrameInternal.FindColumnsRequest = {
       ...request,
-      compatibleWith: request.compatibleWith.length !== 0
-        ? [{ axesSpec: request.compatibleWith, qualifications: [] }]
-        : []
+      compatibleWith:
+        request.compatibleWith.length !== 0
+          ? [{ axesSpec: request.compatibleWith, qualifications: [] }]
+          : []
     };
     return {
       hits: (await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest)).hits.map(

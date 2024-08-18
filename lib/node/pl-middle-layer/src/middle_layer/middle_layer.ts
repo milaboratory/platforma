@@ -86,7 +86,11 @@ export class MiddleLayer {
   }
 
   /** Updates project metadata */
-  public async setProjectMeta(rid: ResourceId, meta: ProjectMeta, author?: AuthorMarker): Promise<void> {
+  public async setProjectMeta(
+    rid: ResourceId,
+    meta: ProjectMeta,
+    author?: AuthorMarker
+  ): Promise<void> {
     await withProjectAuthored(this.pl, rid, author, async (prj) => {
       prj.setMeta(meta);
     });

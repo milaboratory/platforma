@@ -36,22 +36,26 @@ export class BlockUpdateWatcher extends PollComputablePool<
   }
 
   protected async readValue(req: BlockPackSpec): Promise<BlockPackSpec | undefined> {
-    switch (req.type) {
-      case 'dev':
-      case 'dev-v1': {
-        const mtime = await getDevV1PacketMtime(req.folder);
-        if (mtime === req.mtime) return undefined;
-        else return { ...req, mtime };
+    try {
+      switch (req.type) {
+        case 'dev':
+        case 'dev-v1': {
+          const mtime = await getDevV1PacketMtime(req.folder);
+          if (mtime === req.mtime) return undefined;
+          else return { ...req, mtime };
+        }
+        case 'dev-v2': {
+          const description = await tryLoadPackDescription(req.folder);
+          if (description === undefined) return undefined;
+          const mtime = await getDevV2PacketMtime(description);
+          if (mtime === req.mtime) return undefined;
+          else return { ...req, mtime: mtime };
+        }
+        default:
+          return undefined;
       }
-      case 'dev-v2': {
-        const description = await tryLoadPackDescription(req.folder);
-        if (description === undefined) return undefined;
-        const mtime = await getDevV2PacketMtime(description);
-        if (mtime === req.mtime) return undefined;
-        else return { ...req, mtime: mtime };
-      }
-      default:
-        return undefined;
+    } catch (e: unknown) {
+      return undefined;
     }
   }
 

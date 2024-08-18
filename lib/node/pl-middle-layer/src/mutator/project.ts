@@ -826,7 +826,7 @@ export class ProjectMutator {
 
   private assignAuthorMarkers() {
     const markerStr = this.author ? JSON.stringify(this.author) : undefined;
-    
+
     for (const blockId of this.blocksWithChangedInputs)
       if (markerStr === undefined) this.tx.deleteKValue(this.rid, blockArgsAuthorKey(blockId));
       else this.tx.setKValue(this.rid, blockArgsAuthorKey(blockId), markerStr);

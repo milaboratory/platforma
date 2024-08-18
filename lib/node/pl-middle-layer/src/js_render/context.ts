@@ -39,7 +39,8 @@ function bytesToBase64(data: Uint8Array | undefined): string | undefined {
 }
 
 export class JsExecutionContext
-implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
+  implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string>
+{
   private readonly callbackRegistry: QuickJSHandle;
   private readonly fnJSONStringify: QuickJSHandle;
   private readonly fnJSONParse: QuickJSHandle;
@@ -88,7 +89,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
 
   public evaluateBundle(code: string) {
     try {
-      this.vm.unwrapResult(this.vm.evalCode(code, "bundle.js", { type: 'global' })).dispose();
+      this.vm.unwrapResult(this.vm.evalCode(code, 'bundle.js', { type: 'global' })).dispose();
     } catch (err: unknown) {
       JsExecutionContext.cleanErrorContext(err);
       throw err;
@@ -132,7 +133,8 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
         if (lambda === undefined) throw new Error('Staging context not available');
         const entry = lambda(this.computableCtx!);
         if (!entry) this.accessors.set(name, undefined);
-        else this.accessors.set(name, this.computableCtx!.accessor(entry).node({ ignoreError: true }));
+        else
+          this.accessors.set(name, this.computableCtx!.accessor(entry).node({ ignoreError: true }));
       }
       return this.accessors.get(name) ? name : undefined;
     };
@@ -679,10 +681,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       //
 
       exportCtxFunction('getImportProgress', (handle) => {
-        return this.exportSingleValue(
-          this.getImportProgress(this.vm.getString(handle)),
-          undefined
-        );
+        return this.exportSingleValue(this.getImportProgress(this.vm.getString(handle)), undefined);
       });
 
       //
@@ -704,10 +703,7 @@ implements JsRenderInternal.GlobalCfgRenderCtxMethods<string, string> {
       });
 
       exportCtxFunction('getLogHandle', (handle) => {
-        return this.exportSingleValue(
-          this.getLogHandle(this.vm.getString(handle)),
-          undefined
-        );
+        return this.exportSingleValue(this.getLogHandle(this.vm.getString(handle)), undefined);
       });
 
       //
