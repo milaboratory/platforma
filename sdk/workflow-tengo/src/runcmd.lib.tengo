@@ -184,7 +184,7 @@ builder := func(workdir) {
 			self.getField("args").set(argsRes)
 
 			res := ll.toStrict(oop.inherit(self.lockAndBuild(), {
-				"workdirOut": self.outputs().workdirOut,
+				"workdir": self.outputs().workdirOut,
 				"options": options
 			}))
 

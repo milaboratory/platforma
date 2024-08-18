@@ -206,10 +206,10 @@ save := func(workdir) {
 	files := {}
 	// files to save their content
 	filesContent := {}
-	// files to save by regex
-	filesRegex := {}
-	// files to save their content by regex
-	filesContentRegex := {}
+	// file sets to save by regex
+	fileSets := {}
+	// file sets to save their content by regex
+	fileSetsContent := {}
 
 	self := undefined
 	self = ll.toStrict({
@@ -238,22 +238,26 @@ save := func(workdir) {
 		/**
 		 * Save files which names satisfy given regex rule
 		 *
+		 * @param name: string - a name to refer this file set in the outputs
 		 * @param regex: string - regex
 		 */
-		saveFiles: func(regex) {
+		saveFileSet: func(name, regex) {
 			validation.assertJsonSchema(regex, "string")
-			sets.add(filesRegex, regex)
+			ll.assert(is_undefined(fileSets[name]), "file set with name '", name, "' is already in added")
+			fileSets[name] = regex
 			return self
 		},
 
 		/**
 		 * Save files content which names satisfy given regex rule
 		 *
+		 * @param name: string - a name to refer this file set in the outputs
 		 * @param regex: string - regex		
 		 */
-		saveFilesContent: func(regex) {
+		saveFileSetContent: func(name, regex) {
 			validation.assertJsonSchema(regex, "string")
-			sets.add(filesContentRegex, regex)
+			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
+			sets.add(fileSetsContent, regex)
 			return self
 		},
 
@@ -269,8 +273,8 @@ save := func(workdir) {
 				workdir: workdir,
 				files: files,
 				filesContent: filesContent,
-				filesRegex: filesRegex,
-				filesContentRegex: filesContentRegex
+				fileSets: fileSets,
+				fileSetsContent: fileSetsContent
 			}
 
 			wds := render.createEphemeral(tpl, inputs)
@@ -278,6 +282,8 @@ save := func(workdir) {
 			return ll.toStrict({
 				files: wds.output("files"),
 				filesContent: wds.output("filesContent"),				
+				fileSets : wds.output("fileSets"),
+				fileSetsContent : wds.output("fileSetsContent"),
 				workdir: wds.output("workdir"),
 				progress: wds.output("progress")
 			})

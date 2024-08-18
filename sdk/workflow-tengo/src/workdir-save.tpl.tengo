@@ -40,50 +40,115 @@ _getContentSaveRule := func(fileName) {
 self.body(func(inputs) {
 
 	workdir := inputs.workdir
+	
+	// simple 'save' rules
 	files := inputs.files
 	filesContent := inputs.filesContent
-	filesRegex := inputs.filesRegex
-	filesContentRegex := inputs.filesContentRegex
+	
+	// regex 'save' rules
+	fileSets := inputs.fileSets
+	fileSetsContent := inputs.fileSetsContent
 
-	rules := []
+	// file & content save rules; using maps to avoid duplicated rules
+	fRules := {}
+	cRules := {}
+
 	for file, _ in files {
-		rules = append(rules, _getFileSaveRule(file))
+		fRules[file] = _getFileSaveRule(file)
 	}
 	for content, _ in filesContent {
-		rules = append(rules, _getContentSaveRule(content))
+		cRules[content] = _getContentSaveRule(content)
 	}
+	
+	// calculate actual file sets:
+	// 
+	//    name -> list of files
+	//
+	fileSetsMatch := {}
+	fileSetsContentMatch := {}
+
+	if len(fileSets) > 0 || len(fileSetsContent) > 0 {
+		for k, _ in fileSets {
+			fileSetsMatch[k] = []
+		}
+
+		for k, _ in fileSetsContent {
+			fileSetsContentMatch[k] = []
+		}
+
+		files := workdir.getDataAsJson()["files"]
+
+		for name in files {	
+			for fSetName, regex in fileSets {
+				if text.re_match(regex, name) {
+					fileSetsMatch[fSetName] = append(fileSetsMatch[fSetName], name)
+				}
+			}
+
+			for fSetName, regex in fileSetsContent {
+				if text.re_match(regex, name) {
+					fileSetsContentMatch[fSetName] = append(fileSetsContentMatch[fSetName], name)
+				}
+			}
+		}
+
+		for _, list in fileSetsMatch {
+			for file in list {
+				fRules[file] = _getFileSaveRule(file)
+			}
+		}
+
+		for _, list in fileSetsContentMatch {
+			for file in list {
+				cRules[file] = _getContentSaveRule(file)
+			}
+		}
+	}
+
+	rules := []
+	for _, r in fRules {
+		rules = append(rules, r)
+	}
+	for _, r in cRules {
+		rules = append(rules, r)
+	}
+	
 	rulesRes := smart.createValueResource(
 		constants.RTYPE_WORKDIR_SAVE_RULES,
 		json.encode(rules)
 	)
 
-	if len(filesRegex) > 0 || len(filesContentRegex) > 0 {
-		files := workdir.getDataAsJson()["files"]
-
-		for name in files {	
-			for fr, _ in filesRegex {
-				if text.re_match(fr, name) {
-					rules = append(rules, _getFileSaveRule(name))
-				}
-			}
-
-			for fr, _ in filesContentRegex {
-				if text.re_match(fr, name) {
-					rules = append(rules, _getContentSaveRule(name))
-				}
-			}
-		}
-	}
-	
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_SAVE)
 	wd.getField("workdirIn").set(workdir)
 	wd.getField("rules").set(rulesRes)
 	wd = wd.lockAndBuild()
 
+	filesResult := wd.getField("blobsOut")
+	filesContentResult := wd.getField("dataOut")
+
+	fileSetsResult := {}
+	for fSetName, list in fileSetsMatch {
+		r := {}
+		for f in list {
+			r[f] = filesResult.getFutureInputField(f)
+		}
+		fileSetsResult[fSetName] = r
+	}
+	fileSetsContentResult := {}
+	for fSetName, list in fileSetsContentMatch {
+		r := {}
+		for f in list {
+			r[f] = filesContentResult.getFutureInputField(f)
+		}
+		fileSetsContentResult[fSetName] = r
+	}
+
 	return {
-		files: wd.getField("blobsOut"),
-		filesContent: wd.getField("dataOut"),
-		workdir: wd.getField("workdirOut"),
-		progress: wd.getField("progress")
+		files           : filesResult,
+		filesContent    : filesContentResult,
+		fileSets        : fileSetsResult,
+		fileSetsContent : fileSetsContentResult,
+		workdir         : wd.getField("workdirOut"),
+		progress        : wd.getField("progress")
 	}
 })

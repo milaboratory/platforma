@@ -1,0 +1,117 @@
+// workdir processor tpl
+
+tpl := import(":tpl")
+workdir := import(":workdir")
+
+
+proc := func() {
+	self := undefined
+
+	self = {
+
+		// cached
+		_wd: undefined,
+		
+		/**
+		 * @return wd: resource - working directory resource
+		 */
+		wd: func() {
+			if is_undefined(self._wd) {
+				self._wd = tpl.inputs().wd
+			}
+			return self._wd
+		},
+
+		_filesInWd: undefined,
+
+		/**
+		 * @return fileNames: string[] - list of file paths currently existing in the working directory
+		 */
+		filesInWd: func() {
+			if is_undefined(self._filesInWd) {
+				self._filesInWd = self.wd().getDataAsJson().files
+			}
+
+			return self._filesInWd
+		},
+
+		/**
+		 *
+		 */
+		readFiles: func(cb) {
+			tpl.prepare(func(_){
+				// key -> file name
+				files := cb(self.filesInWd())
+
+				sb := workdir.save(self.wd())
+				for _, fName in files {
+					sb.saveFileContent(fName)
+				}
+				saveRes := sb.build()
+
+				// run prepare to get file contents in the inputs
+				preps := {}
+				for key, fName in files {
+					preps[key] = saveRes.filesContent.getFutureInputField(fName)
+				}
+				
+				return preps
+			})
+		},
+
+		saveFile: func(fName) {
+			sb := workdir.save(self.wd())
+			sb.saveFile(fName)
+			return sb.build().files.getFutureInputField(fName)
+		},
+
+		saveFileContent: func(fName) {
+			sb := workdir.save(self.wd())
+			sb.saveFileContent(fName)
+			return sb.build().filesContent.getFutureInputField(fName)
+		},
+
+		_saveFiles: func(fMap, fn, field) {
+			sb := workdir.save(self.wd())
+			for key, fName in fMap {
+				sb[fn](fName)
+			}
+			saveRes := sb.build()
+
+			r := {}
+			for key, fName in fMap {
+				r[key] = saveRes[field].getFutureInputField(fName)
+			}
+			return r
+		},
+
+		saveFiles: func(fMap) {
+			return self._saveFiles(fMap, "saveFile", "files")
+		},
+
+		saveFilesContent: func(fMap) {
+			return self._saveFiles(fMap, "saveFileContent", "filesContent")
+		},
+
+		body: func(cb) {
+			tpl.body(func(inputs) {
+
+				inputs.files = self.filesInWd()
+				
+				return cb(inputs)
+			})
+		}
+	}
+}
+
+/** singleton instance  */
+instance := proc()
+
+export ll.toStrict({
+	readFiles: instance.readFiles,
+	saveFile: instance.saveFile,
+	saveFileContent: instance.saveFileContent,
+	saveFiles: instance.saveFiles,
+	saveFilesContent: instance.saveFilesContent,
+	body: instance.body
+})

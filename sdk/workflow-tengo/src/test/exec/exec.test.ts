@@ -83,8 +83,37 @@ tplTest(
     );
 
     const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString());
+      a?.getDataAsString()
+    );
 
-    expect(await mainResult.awaitStableValue()).eq(">asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n");
+    expect(await mainResult.awaitStableValue()).eq(
+      '>asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n'
+    );
+  }
+);
+
+tplTest(
+  'should save file set by regex',
+  async ({ driverKit, helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      'test.exec.save_file_set',
+      ['p', 'x', 'all'],
+      (tx) => ({})
+    );
+
+    const p = await result
+      .computeOutput('p', (p) => p?.listInputFields())
+      .awaitStableValue();
+    const x = await result
+      .computeOutput('x', (x) => x?.listInputFields())
+      .awaitStableValue();
+    const all = await result
+      .computeOutput('all', (all) => all?.listInputFields())
+      .awaitStableValue();
+
+    expect(p?.sort()).toEqual(['p1', 'p2', 'p3', 'p4'].sort());
+    expect(x?.sort()).toEqual(['x1', 'x2'].sort());
+    //expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
   }
 );
