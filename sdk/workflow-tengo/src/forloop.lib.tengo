@@ -28,9 +28,27 @@ _forLoopSettingsSchema := {
 	bodyData: ["or", "bytes", "null"],
 	dynamicArgFieldName: "string",
 	mode: `string,regex=nested|usual`,
+
 	"nestedFieldName,omitempty": "string"
 }
 
+/**
+ * Clients can create ForLoop resources, with settings and input fields,
+ * and the controller creates resources by the given "schema" from settings
+ * and for each output creates a map with results by each dynamic arg.
+
+ * ForLoop gets or creates a map for each output defined in settings.
+ * For example, if the body resource creates 3 outputs a, b and c,
+ * ForLoop resource will have 3 outputs a, b and c as well, but every output
+ * will be a map with results from different bodies: a/dynamicArg1, b/dynamicArg1, c/dynamicArg1 etc.
+ *
+ * Mode specifies whether ForLoop works in a usual or nested mode:
+ *    - In the usual mode, all static arguments are passed to the body as inputs, and the dynamic argument is also passed in inputs.
+ *    - In the nested mode, all static arguments are passed to the body as inputs except the nested argument, that is a map. The dynamic arguments will be set as input in this nested map, and then the nested map will be passed
+ *	  to the body.
+ *        - Think of RenderTemplates that have inputMap as arguments and we have to set a dynamic argument to the inputMap.
+ *
+*/
 builder := func() {
 	outputNames := []
 	bodyEphemeral := false
@@ -46,12 +64,22 @@ builder := func() {
 
 	self := undefined
 	self = ll.toStrict({
+		/**
+		 * Adds an output name to the list of output names.
+		 *
+		 * @param name: string - the name to be added.
+		 */
 		addOutputName: func(name) {
 			ll.assert(is_string(name), "the name %q should be a string", name)
 			outputNames = append(outputNames, name)
 			return self
 		},
 
+		/**
+		 * Adds multiple output names to the list of output names.
+		 *
+		 * @param names: []string - the names to be added.
+		 */
 		addOutputNames: func(names) {
 			for _, name in names {
 				self.addOutputName(name)
@@ -59,35 +87,66 @@ builder := func() {
 			return self
 		},
 
+		/**
+		 * Sets whether the body of the forloop must be ephemeral.
+		 *
+		 * @param isEphemeral: bool - indicates if the body is ephemeral.
+		 */
 		setEphemeral: func(isEphemeral) {
 			ll.assert(is_bool(isEphemeral), "the flag isEphemeral should be bool")
 			bodyEphemeral = isEphemeral
 			return self
 		},
 
+		/**
+		 * Sets the body resource type.
+		 *
+		 * @param resourceType: resourceType - the resource type to be set.
+		 */
 		setBodyResourceType: func(resourceType) {
 			ll.assert(is_string(resourceType.Name) && is_string(resourceType.Version), "resourceType must be a resource type")
 			bodyResourceType = resourceType
 			return self
 		},
 
+		/**
+		 * Sets the body data as bytes (they should be base64 encoded to string by tengo).
+		 *
+		 * @param data: bytes - the data to be set.
+		 */
 		setBodyData: func(data) {
 			ll.assert(is_bytes(data), "the data should be bytes")
 			bodyData = data
 			return self
 		},
 
+		/**
+		 * Sets how the field with the dynamic argument will be named in the body of the forloop.
+		 *
+		 * @param fieldName: string - the field name of the dynamic argument.
+		 */
 		setDynamicArgumentFieldName: func(fieldName) {
 			ll.assert(is_string(fieldName), "the field name of the dynamic argument must be a string")
 			dynamicArgFieldName = fieldName
 			return self
 		},
 
+		/**
+		 * Adds a dynamic argument by which the iteration should run.
+		 *
+		 * @param name: string - the name of the dynamic argument.
+		 * @param value: any - the value of the dynamic argument.
+		 */
 		addDynamicArgument: func(name, value) {
 			dynamicArgs[name] = value
 			return self
 		},
 
+		/**
+		 * Adds multiple dynamic arguments.
+		 *
+		 * @param nameToValue: map[string]any - a map of dynamic argument names to their values.
+		 */
 		addDynamicArgumentMap: func(nameToValue) {
 			for name, value in nameToValue {
 				self.addDynamicArgument(name, value)
@@ -95,11 +154,22 @@ builder := func() {
 			return self
 		},
 
+		/**
+		 * Adds a static argument that will be passed to the body as-is.
+		 *
+		 * @param name: string - the name of the static argument.
+		 * @param value: any - the value of the static argument.
+		 */
 		addStaticArgument: func(name, value) {
 			staticArgs[name] = value
 			return self
 		},
 
+		/**
+		 * Adds multiple static arguments.
+		 *
+		 * @param nameToValue: map[string]any - a map of static argument names to their values.
+		 */
 		addStaticArgumentMap: func(nameToValue) {
 			for name, value in nameToValue {
 				self.addStaticArgument(name, value)
@@ -107,11 +177,22 @@ builder := func() {
 			return self
 		},
 
+		/**
+		 * Sets the mode to "usual".
+		 *
+		 * @return self - The current builder instance.
+		 */
 		setUsualMode: func() {
 			mode = _MODE_USUAL
 			return self
 		},
 
+		/**
+		 * Sets the mode to "nested" and sets the nested field name.
+		 *
+		 * @param fieldName: string - The name of the nested field.
+		 * @return self - The current builder instance.
+		 */
 		setNestedMode: func(fieldName) {
 			mode = _MODE_NESTED
 			ll.assert(is_string(fieldName), "the name of the nested field must be a string")
@@ -119,6 +200,11 @@ builder := func() {
 			return self
 		},
 
+		/**
+		 * Builds the For Loop resource.
+		 *
+		 * @return self - The built For Loop resource.
+		 */
 		build: func() {
 			settings := {
 				outputNames: outputNames,
@@ -144,6 +230,12 @@ builder := func() {
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(result, {
+				/**
+				 * Retrieves the output field for a given output name.
+				 *
+				 * @param name: string - The name of the output.
+				 * @return FutureOutputField - The future output field for the specified name.
+				 */
 				getOutput: func(name) {
 					return result.getFutureOutputField(_OUTPUTS_PREFIX + name)
 				}
@@ -156,6 +248,11 @@ builder := func() {
 	return self
 }
 
+/**
+ * Runs a For Loop for templates.
+ *
+ * @param tplId: string - The ID of the template to run with.
+ */
 runWithTemplate := func(tplId) {
 	res := builder().
 		setEphemeral(false).
@@ -167,21 +264,42 @@ runWithTemplate := func(tplId) {
 
 	self := undefined
 	self = ll.toStrict(oop.inherit(res, {
+		/**
+		 * Sets the dynamic input field name.
+		 *
+		 * @param name: string - the name of the dynamic input field.
+		 */
 		setDynamicInputName: func(name) {
 			self.setDynamicArgumentFieldName(name)
 			return self
 		},
 
+		/**
+		 * Adds a template output name.
+		 *
+		 * @param name: string - the name of the template output.
+		 */
 		addTemplateOutput: func(name) {
 			self.addOutputName(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 			return self
 		},
 
+		/**
+		 * Adds a static input.
+		 *
+		 * @param name: string - the name of the static input.
+		 * @param value: any - the value of the static input.
+		 */
 		addStaticInput: func(name, value) {
 			inputs[name] = value
 			return self
 		},
 
+		/**
+		 * Adds multiple static inputs.
+		 *
+		 * @param nameToValue: map[string]any - a map of static input names to their values.
+		 */
 		addStaticInputMap: func(nameToValue) {
 			for name, value in nameToValue {
 				self.addStaticInput(nameToValue)
@@ -189,21 +307,41 @@ runWithTemplate := func(tplId) {
 			return self
 		},
 
+		/**
+		 * Adds a dynamic input.
+		 *
+		 * @param name: string - the name of the dynamic input.
+		 * @param value: any - the value of the dynamic input.
+		 */
 		addDynamicInput: func(name, value) {
 			self.addDynamicArgument(name, value)
 			return self
 		},
 
+		/**
+		 * Adds multiple dynamic inputs.
+		 *
+		 * @param nameToValue: map[string]any - a map of dynamic input names to their values.
+		 */
 		addDynamicInputMap: func(nameToValue) {
 			self.addDynamicArgumentMap(nameToValue)
 			return self
 		},
 
+		/**
+		 * Builds the For Loop resource with the configured inputs.
+		 */
 		build: func() {
 			res.addStaticArgument(tplutil.INPUTS_MAP_FIELD, smart.createMapResource(inputs))
 
 			super := res.build()
 			self := ll.toStrict(oop.inherit(super, {
+				/**
+				 * Retrieves the output field for a given template output name.
+				 *
+				 * @param name: string - the name of the template output.
+				 * @return FutureOutputField - the future output field for the specified name.
+				 */
 				getOutput: func(name) {
 					return super.getOutput(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 				}
