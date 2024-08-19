@@ -112,12 +112,8 @@ builder := func() {
 			return self
 		},
 
-		setNestedMode: func() {
+		setNestedMode: func(fieldName) {
 			mode = _MODE_NESTED
-			return self
-		},
-
-		setNestedFieldName: func(fieldName) {
 			ll.assert(is_string(fieldName), "the name of the nested field must be a string")
 			nestedFieldName = fieldName
 			return self
@@ -135,7 +131,7 @@ builder := func() {
 				dynamicArgFieldName: dynamicArgFieldName,
 				mode: mode
 			}
-			if nestedFieldName != undefined {
+			if !is_undefined(nestedFieldName) {
 				settings.nestedFieldName = nestedFieldName
 			}
 			validation.assertJsonSchema(settings, _forLoopSettingsSchema)
@@ -164,7 +160,7 @@ runWithTemplate := func(tplId) {
 	res := builder().
 		setEphemeral(false).
 		setBodyResourceType(constants.RTYPE_RENDER_TEMPLATE).
-		setNestedFieldName(tplutil.INPUTS_MAP_FIELD).
+		setNestedMode(tplutil.INPUTS_MAP_FIELD).
 		addStaticArgument(tplutil.TEMPLATE_FIELD, smart.resource(tplId))
 
 	inputs := {}
@@ -204,7 +200,7 @@ runWithTemplate := func(tplId) {
 		},
 
 		build: func() {
-			res.addStaticArgument(tplutil.INPUTS_MAP_FIELD, inputs)
+			res.addStaticArgument(tplutil.INPUTS_MAP_FIELD, smart.createMapResource(inputs))
 
 			super := res.build()
 			self := ll.toStrict(oop.inherit(super, {
