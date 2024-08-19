@@ -1,0 +1,17 @@
+// concat_ab
+
+tpl := import(":tpl")
+
+tpl.defineOutputs(["concat", "concatReversed"])
+
+tpl.body(func(inputs) {
+
+	a := inputs.a
+	b := inputs.b
+	c := inputs.c
+
+	return {
+		concat: "" + a +"_"+ b +"_"+ c,
+		concatReversed: "" + c +"_"+ b +"_"+ a
+	}
+})

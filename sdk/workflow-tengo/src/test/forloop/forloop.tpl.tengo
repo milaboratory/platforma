@@ -1,0 +1,31 @@
+// forloop
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+file := import(":file")
+forloop := import(":forloop")
+ll := import(":ll")
+
+self.defineOutputs(["concat", "concatReversed"])
+
+self.body(func(inputs) {
+	loop := forloop.runWithTemplate(
+		ll.importTemplate(":test.forloop.concat_abc")).
+		addTemplateOutput("concat").
+		addTemplateOutput("concatReversed").
+		addStaticInput("a", "astring").
+		addStaticInput("b", "bstring").
+		setDynamicInputName("c").
+		addDynamicInput("c1", "c11").
+		addDynamicInput("c2", "c22").
+		addDynamicInput("c3", "c33").
+		build()
+
+	result := {
+		concat: loop.getOutput("concat"),
+		concatReversed: loop.getOutput("concatReversed")
+	}
+
+	return result
+})

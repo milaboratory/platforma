@@ -1,0 +1,226 @@
+/**
+ * A library that helps to create For Loop resources
+ */
+ll := import(":ll")
+smart := import(":smart")
+times := import("times")
+maps := import(":maps")
+sets := import(":sets")
+slices := import(":slices")
+path := import(":path")
+render := import(":render")
+enum := import("enum")
+oop := import(":oop")
+validation := import(":validation")
+constants := import(":constants")
+tplutil := import(":tpl-util")
+json := import("json")
+
+_MODE_NESTED := "nested"
+_MODE_USUAL := "usual"
+_RTYPE_FOR_LOOP := { Name: "ForLoop", Version: "1" }
+_OUTPUTS_PREFIX := "outputs/"
+
+_forLoopSettingsSchema := {
+	outputNames: ["string"],
+	bodyEphemeral: "bool",
+	bodyResourceType: { "name": "string", "version": "string" },
+	bodyData: ["or", "bytes", "null"],
+	dynamicArgFieldName: "string",
+	mode: `string,regex=nested|usual`,
+	"nestedFieldName,omitempty": "string"
+}
+
+builder := func() {
+	outputNames := []
+	bodyEphemeral := false
+	bodyResourceType := undefined
+	bodyData := undefined
+	dynamicArgFieldName := ""
+	mode := _MODE_USUAL
+	nestedFieldName := undefined
+
+	dynamicArgs := {}
+	staticArgs := {}
+	outputs := []
+
+	self := undefined
+	self = ll.toStrict({
+		addOutputName: func(name) {
+			ll.assert(is_string(name), "the name %q should be a string", name)
+			outputNames = append(outputNames, name)
+			return self
+		},
+
+		addOutputNames: func(names) {
+			for _, name in names {
+				self.addOutputName(name)
+			}
+			return self
+		},
+
+		setEphemeral: func(isEphemeral) {
+			ll.assert(is_bool(isEphemeral), "the flag isEphemeral should be bool")
+			bodyEphemeral = isEphemeral
+			return self
+		},
+
+		setBodyResourceType: func(resourceType) {
+			ll.assert(is_string(resourceType.Name) && is_string(resourceType.Version), "resourceType must be a resource type")
+			bodyResourceType = resourceType
+			return self
+		},
+
+		setBodyData: func(data) {
+			ll.assert(is_bytes(data), "the data should be bytes")
+			bodyData = data
+			return self
+		},
+
+		setDynamicArgumentFieldName: func(fieldName) {
+			ll.assert(is_string(fieldName), "the field name of the dynamic argument must be a string")
+			dynamicArgFieldName = fieldName
+			return self
+		},
+
+		addDynamicArgument: func(name, value) {
+			dynamicArgs[name] = value
+			return self
+		},
+
+		addDynamicArgumentMap: func(nameToValue) {
+			for name, value in nameToValue {
+				self.addDynamicArgument(name, value)
+			}
+			return self
+		},
+
+		addStaticArgument: func(name, value) {
+			staticArgs[name] = value
+			return self
+		},
+
+		addStaticArgumentMap: func(nameToValue) {
+			for name, value in nameToValue {
+				self.addStaticArgument(name, value)
+			}
+			return self
+		},
+
+		setUsualMode: func() {
+			mode = _MODE_USUAL
+			return self
+		},
+
+		setNestedMode: func() {
+			mode = _MODE_NESTED
+			return self
+		},
+
+		setNestedFieldName: func(fieldName) {
+			ll.assert(is_string(fieldName), "the name of the nested field must be a string")
+			nestedFieldName = fieldName
+			return self
+		},
+
+		build: func() {
+			settings := {
+				outputNames: outputNames,
+				bodyEphemeral: bodyEphemeral,
+				bodyResourceType: {
+					name: bodyResourceType.Name,
+					version: bodyResourceType.Version
+				},
+				bodyData: bodyData,
+				dynamicArgFieldName: dynamicArgFieldName,
+				mode: mode
+			}
+			if nestedFieldName != undefined {
+				settings.nestedFieldName = nestedFieldName
+			}
+			validation.assertJsonSchema(settings, _forLoopSettingsSchema)
+
+			res := smart.ephemeralBuilder(_RTYPE_FOR_LOOP, json.encode(settings))
+			res.createInputField("staticArgs").setRefOrJson(smart.createMapResource(staticArgs))
+			res.createInputField("dynamicArgs").set(smart.createMapResource(dynamicArgs))
+			res.createField("subscription", "OTW")
+			result := res.lockInputsAndBuild()
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(result, {
+				getOutput: func(name) {
+					return result.getFutureOutputField(_OUTPUTS_PREFIX + name)
+				}
+			}))
+
+			return self
+		}
+	})
+
+	return self
+}
+
+runWithTemplate := func(tplId) {
+	res := builder().
+		setEphemeral(false).
+		setBodyResourceType(constants.RTYPE_RENDER_TEMPLATE).
+		setNestedFieldName(tplutil.INPUTS_MAP_FIELD).
+		addStaticArgument(tplutil.TEMPLATE_FIELD, smart.resource(tplId))
+
+	inputs := {}
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(res, {
+		setDynamicInputName: func(name) {
+			self.setDynamicArgumentFieldName(name)
+			return self
+		},
+
+		addTemplateOutput: func(name) {
+			self.addOutputName(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+			return self
+		},
+
+		addStaticInput: func(name, value) {
+			inputs[name] = value
+			return self
+		},
+
+		addStaticInputMap: func(nameToValue) {
+			for name, value in nameToValue {
+				self.addStaticInput(nameToValue)
+			}
+			return self
+		},
+
+		addDynamicInput: func(name, value) {
+			self.addDynamicArgument(name, value)
+			return self
+		},
+
+		addDynamicInputMap: func(nameToValue) {
+			self.addDynamicArgumentMap(nameToValue)
+			return self
+		},
+
+		build: func() {
+			res.addStaticArgument(tplutil.INPUTS_MAP_FIELD, inputs)
+
+			super := res.build()
+			self := ll.toStrict(oop.inherit(super, {
+				getOutput: func(name) {
+					return super.getOutput(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+				}
+			}))
+
+			return self
+		}
+	}))
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder,
+	runWithTemplate: runWithTemplate
+})
