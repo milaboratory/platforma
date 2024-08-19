@@ -18,7 +18,7 @@ export function trimPrefix(str: string, prefix: string): string {
     return str;
 }
 
-export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
+export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
     const hash = hasher ? hasher : createHash('sha256');
     const info = fs.readdirSync(folder, { withFileTypes: true });
 
@@ -34,7 +34,7 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Buffer {
         }
     }
 
-    return hash.digest();
+    return hash
 }
 
 //

@@ -191,7 +191,7 @@ export class SoftwareDescriptor {
         const hash = util.hashDirMetaSync(rootDir)
 
         return {
-            hash: hash.toString('hex'),
+            hash: hash.digest().toString('hex'),
             path: rootDir,
 
             entrypoint: binary.entrypoint,
