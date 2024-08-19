@@ -24,7 +24,7 @@ export async function awaitStableState<S>(
     );
   } catch (e: unknown) {
     if (isTimeoutOrCancelError(e)) {
-      console.dir(await computable.getValue(), { depth: 5 });
+      console.dir(await computable.getFullValue(), { depth: 5 });
       throw new Error('Aborted.', { cause: e });
     } else throw e;
   }

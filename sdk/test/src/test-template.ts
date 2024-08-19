@@ -68,6 +68,13 @@ export class TestWorkflowResults {
       .withStableType();
   }
 
+  /** Returns context id of this workflow */
+  public result(): ComputableStableDefined<ResourceId> {
+    return this.renderResult
+      .computeOutput('result', (cb) => cb?.id)
+      .withStableType();
+  }
+
   public export<R>(
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
