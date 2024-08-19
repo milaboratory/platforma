@@ -36,7 +36,6 @@ const commonBinaryConfigSchema = z.object({
     version: z.string().optional(),
     crossplatform: z.boolean().default(false),
     root: z.string().min(1),
-    entrypoint: z.array(z.string()),
 })
 
 type commonBinaryConfig = z.infer<typeof commonBinaryConfigSchema>
@@ -51,7 +50,7 @@ export interface CommonBinaryConfig extends commonBinaryConfig {
 const binaryConfigSchema = z.object({
     ...commonBinaryConfigSchema.shape,
 
-    entrypoint: commonBinaryConfigSchema.shape.entrypoint.optional().
+    entrypoint: z.array(z.string()).optional().
         describe("the same as in 'docker': thing to be prepended to the final command before runnning it"),
     cmd: z.string().optional().
         describe("prepend custom default command before args (can be overriden for particular exec)"),
@@ -86,8 +85,8 @@ const runEnvironmentConfigSchema = z.object({
 
     ...commonBinaryConfigSchema.shape,
 
-    entrypoint: commonBinaryConfigSchema.shape.entrypoint.
-        describe("the command to be used as starting point when executing code in this run environment (relative to <root>)"),
+    binDir: z.string().
+        describe("path to 'bin' directory to be added to PATH when software uses this run environment"),
 });
 
 type runEnvironmentConfig = z.infer<typeof runEnvironmentConfigSchema>

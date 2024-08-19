@@ -7,4 +7,4 @@ environment:
   crossplatform: false
  
   root: "./src"
-  entrypoint: [ 'false' ]
+  binDir: "."

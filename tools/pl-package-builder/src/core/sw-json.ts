@@ -25,7 +25,7 @@ const binaryLocationSchema = z.object({
 const runEnvironmentSchema = z.object({
     type: z.enum(runEnvironmentTypes),
     ...binaryLocationSchema.shape,
-    entrypoint: z.array(z.string()),
+    binDir: z.string(),
 })
 type runEnvInfo = z.infer<typeof runEnvironmentSchema>
 
@@ -255,7 +255,7 @@ export class SoftwareDescriptor {
             type: env.type,
             registry: env.registry.name!,
             package: env.addressPattern,
-            entrypoint: env.entrypoint,
+            binDir: env.binDir,
         }
     }
 
@@ -308,7 +308,7 @@ export class SoftwareDescriptor {
             type: swDescriptor.runEnv.type,
             registry: swDescriptor.runEnv.registry,
             package: swDescriptor.runEnv.package,
-            entrypoint: swDescriptor.runEnv.entrypoint,
+            binDir: swDescriptor.runEnv.binDir,
         }
     }
 }
