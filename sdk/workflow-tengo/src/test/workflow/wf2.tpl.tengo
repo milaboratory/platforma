@@ -1,0 +1,18 @@
+// simple wf without pre-run
+
+wf := import(":workflow")
+ll := import(":ll")
+
+wf.body(func(args) {
+	testValue := args.testValue
+
+	result := args.testValue + " Show Run"
+
+	return {
+		outputs: {
+			outputResult: result
+		},
+
+		exports: {}
+	}
+})
