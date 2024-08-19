@@ -19,7 +19,9 @@ self.body(func(inputs) {
 		}
 	}
 
-	archive := pkg.get(sw).archive()
+	binaryDescriptor := sw.descriptor.binary
+
+	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
 
 	self.delegate(
 		self.resource(),

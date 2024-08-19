@@ -238,6 +238,10 @@ resource = func(r) {
 	self := undefined
 	strictSelf := undefined
 
+	if isResource(r) {
+		return r
+	}
+
 	id := ll.isStrict(r) ? r.ID : r
 
 	if !is_int(id) {

@@ -1,0 +1,111 @@
+
+logging:
+  level: 'info'
+  destinations:
+    - path: 'stdout'
+
+monitoring:
+  listen: '127.0.0.1:9090'
+
+debug:
+  listen: '127.0.0.1:9091'
+
+grpcServer:
+  listen: 'localhost:6345'
+
+  tls disabled:
+    clientAuthMode: 'NoAuth'
+    certificates:
+      - certFile: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/certs/server-cert.pem'
+        keyFile: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/certs/server-key.pem'
+
+core:
+  logging:
+    extendedInfo: true
+    dumpResourceData: true
+
+  authEnabled: true
+  auth: [{"driver":"jwt","key":"fedf71cc8d8b90f4b0e63ead127246571b64b9661ab3a6ab162932ad7b08f5d3"},{"driver":"htpasswd","path":"/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/users.htpasswd"}]
+  db:
+    path: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/db'
+
+controllers:
+  data:
+    main:
+      storages:
+          main:
+              mode: primary
+              downloadable: true
+
+          library:
+              mode: passive
+              downloadable: true
+
+          work:
+              mode: active
+              downloadable: false
+
+      workdirManager: work
+      uploadManager: main
+      defaultDownloadable: main
+
+    storages:
+      - &mainStorage      {"id":"main","type":"S3","indexCachePeriod":"0s","endpoint":"http://localhost:9000/","region":"","presignEndpoint":"http://localhost:9000","bucketName":"main-bucket","createBucket":true,"key":"static:testuser","secret":"static:testpassword","accessPrefixes":[""],"uploadKeyPrefix":""}
+      - &libraryStorage   {"id":"library","type":"FS","indexCachePeriod":"0s","rootPath":"/Users/denkoren/work/milaboratory/platforma/tengo/tengo-sdk/assets/"}
+      - &workStorage      {"id":"work","type":"FS","indexCachePeriod":"1m","rootPath":"/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/storages/work"}
+        
+    transfers:
+      - src: *mainStorage
+        dst:
+          <<: *workStorage
+          useHardlinks: 'auto'
+
+      - src: *workStorage
+        dst:
+          <<: *mainStorage
+          useHardlinks: 'auto'
+
+      - src: *libraryStorage
+        dst:
+          <<: *workStorage
+          useHardlinks: 'auto'
+
+      - src: *libraryStorage
+        dst:
+          <<: *mainStorage
+          useHardlinks: 'auto'
+
+  runner:
+    main:
+      storages: [ 'work' ]
+
+    executor:
+      id: 'work'
+      storageRoot: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/storages/work'
+      softwareRoot: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/software/installed'
+      queues:
+        - name: 'heavy'
+          maxConcurrency: 1
+        - name: 'ui-tasks'
+          maxConcurrency: 50
+
+    softwareLoader:
+      softwareRoot: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/software/installed'
+      registries:
+        - name: 'milaboratories'
+          endpoints:
+            - type: 'local'
+              path: '/Users/denkoren/work/milaboratory/tmp/software'
+            - type: 'url'
+              url: 'https://bin.registry.platforma.bio/'
+
+  templates:
+    registries:
+      - name: 'milaboratories'
+        endpoints:
+          - type: 'local'
+            path: '/Users/denkoren/.local/share/fnm/node-versions/v20.15.1/installation/lib/node_modules/@milaboratory/pl-bootstrap/state/local-pl/blocks/local'
+          - type: 'url'
+            url: 'https://block.registry.platforma.bio/'
+
+  

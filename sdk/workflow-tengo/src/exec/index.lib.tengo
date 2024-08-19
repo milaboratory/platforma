@@ -19,23 +19,15 @@ _HEAVY_QUEUE := "heavy"
 _UI_TASKS_QUEUE := "ui-tasks"
 
 /**
- * Converts an argument into an executable or non-executable format.
+ * Provides structured argument info for simple string command arg
  *
- * @param arg: string - the argument to convert.
- * @param isExec: bool - a boolean indicating if the argument is executable.
- * @param pathToBinary: string|undefined - the path to the binary if the argument is executable.
- * @return A map representing the argument.
+ * @param arg: string - the argument value
+ *
+ * @return argInfo: object - argument in format expected by 'exec' template.
  */
-_argToExec := func(arg, isExec, pathToBinary) {
-	if isExec {
-		return {
-			isExec: true,
-			value: arg,
-			pathToBinary: pathToBinary
-		}
-	}
+_simpleArg := func(arg) {
 	return {
-		isExec: false,
+		isRef: false,
 		value: arg
 	}
 }
@@ -111,7 +103,7 @@ builder := func() {
 		 */
 		software: func(sw) {
 			assertEntrypointNotSet()
-			ll.assert(ll.isSoftwareInfo(sw),
+			ll.assert(assets.isSoftwareInfo(sw),
 				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
 			)
 			entrypointSet = true
@@ -386,14 +378,12 @@ builder := func() {
 				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
 			})
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), {
+			execInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
 				runOptions: {
-					soft: soft.descriptor,
-					cmd: _argToExec(cmd, false, undefined),
-					args: slices.map(args, func(a) { return _argToExec(a, false, undefined) }),
+					args: slices.map(args, _simpleArg),
 					envs: envs,
 					queue: queue,
 					stdout: stdout,
@@ -406,7 +396,20 @@ builder := func() {
 				fileSetsContentToSave: fileSetsContentToSave,
 				filesToStream: slices.fromSet(filesToStream),
 				wdProcessors: wdProcessors
-			})
+			}
+
+			if is_undefined(soft) {
+				execInputs.runOptions.cmd = cmd
+			} else {
+				execInputs.softwareInfo = soft.resource
+				execInputs.runOptions.software = {
+					name: soft.name,
+					version: soft.version,
+					descriptor: ll.fromStrict(soft.descriptor)
+				}
+			}
+
+			tpl := render.create(assets.importTemplate(":exec.exec"), execInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {

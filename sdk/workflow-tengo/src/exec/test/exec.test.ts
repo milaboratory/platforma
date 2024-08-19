@@ -3,19 +3,65 @@ import { tplTest } from '@milaboratory/sdk-test';
 import * as env from '../../test/env';
 
 tplTest(
-  'should run bash from the template, echo a string to stdout and returns a value resource',
+  'run-hello-world-go',
   async ({ helper, expect }) => {
+    const helloText = "Hello from go!"
+
     const result = await helper.renderTemplate(
       false,
+<<<<<<< HEAD:src/exec/test/exec.test.ts
       'exec.test.run_echo_to_value',
+=======
+      'test.exec.run_hello_go',
+>>>>>>> 228d886 (feat: software load works for go binary (no run env dependency)):src/test/exec/exec.test.ts
       ['main'],
-      (tx) => ({})
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+      })
     );
     const mainResult = result.computeOutput('main', (a) =>
       a?.getDataAsString()
     );
 
-    expect(await mainResult.awaitStableValue()).eq('Hello from bash\n');
+    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  }
+);
+
+// tplTest(
+//   'hello-world-java',
+//   async ({ helper, expect }) => {
+//     const result = await helper.renderTemplate(
+//       false,
+//       'test.exec.run_java',
+//       ['main'],
+//       (tx) => ({})
+//     );
+//     const mainResult = result.computeOutput('main', (a) =>
+//       a?.getDataAsString()
+//     );
+
+//     expect(await mainResult.awaitStableValue()).eq('Hello world!\n');
+//   }
+// );
+
+tplTest(
+  'should run bash from the template, echo a string to stdout and returns a value resource',
+  async ({ helper, expect }) => {
+    const helloText = "Hello from bash"
+
+    const result = await helper.renderTemplate(
+      false,
+      'test.exec.run_echo_to_value',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+      })
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString()
+    );
+
+    expect(await mainResult.awaitStableValue()).eq(helloText);
   }
 );
 

@@ -1,0 +1,43 @@
+ll := import(":ll")
+
+runEnvScheme := {
+	registry: "string",
+	package: "string",
+	type: "string",
+	entrypoint: [ "string" ]
+}
+
+binaryScheme := {
+	registry: "string",
+	package: "string",
+	entrypoint: ["string"],
+	cmd: "string",
+	runEnv: runEnvScheme
+}
+
+localScheme := {
+	hash: "string",
+	path: "string",
+	entrypoint: ["string"],
+	cmd: "string",
+	runEnv: runEnvScheme
+}
+
+descriptorScheme := {
+	"isDev,omitempty": "bool",
+	"binary,omitempty": binaryScheme,
+	"local,omitempty": localScheme
+}
+
+infoScheme := {
+	"name": "string",
+	"version": "string",
+	"descriptor": descriptorScheme
+}
+
+export ll.toStrict({
+	infoScheme: infoScheme,
+	binaryScheme: binaryScheme,
+	localScheme: localScheme,
+	runEnvScheme: runEnvScheme
+})

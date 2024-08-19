@@ -3,6 +3,7 @@
 self := import(":tpl")
 smart := import(":smart")
 exec := import(":exec")
+fmt := import("fmt")
 
 self.defineOutputs(["main"])
 
@@ -11,7 +12,7 @@ self.body(func(inputs) {
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
-		arg("echo Hello from bash").
+		arg("printf '%s' " + fmt.sprintf("%q", inputs.text)).
 		saveStdoutContent().
 		run()
 

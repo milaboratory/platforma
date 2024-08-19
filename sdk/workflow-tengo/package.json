@@ -34,6 +34,7 @@
     "@milaboratory/tengo-template-builder": "^1.13.0",
     "@milaboratory/pl-middle-layer": "^1.10.0",
     "@milaboratory/sdk-test": "^1.5.0",
+    "@milaboratory/small-binaries": "^1.6.0",
     "vitest": "^2.0.5"
   }
 }
