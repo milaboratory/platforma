@@ -51,10 +51,10 @@ export interface CommonBinaryConfig extends commonBinaryConfig {
 const binaryConfigSchema = z.object({
     ...commonBinaryConfigSchema.shape,
 
-    entrypoint: commonBinaryConfigSchema.shape.entrypoint.
-        optional().
-        describe("like in docker - final command to be executed will be '<entrypoint> <command from user>'"),
-    cmd: z.string().optional(),
+    entrypoint: commonBinaryConfigSchema.shape.entrypoint.optional().
+        describe("the same as in 'docker': thing to be prepended to the final command before runnning it"),
+    cmd: z.string().optional().
+        describe("prepend custom default command before args (can be overriden for particular exec)"),
 
     runEnv: z.string().
         regex(/:/, { message: "runEnv must have <envPackage>:<ID> format, e.g milaboratory/runenv-java-corretto:main" }).
@@ -207,6 +207,11 @@ export class PackageInfo {
         }
 
         return this.pkgYaml.name ?? "main"
+    }
+
+    // Name to be used when importing this package as a software dependency of tengo script
+    get dependencyName(): string {
+        return `${this.pkgJson.name}:${this.descriptorName}`
     }
 
     get hasDocker(): boolean {

@@ -1,1 +1,1 @@
-{"runEnv":{"type":"java","registry":"example","package":"common/example/1.2.3-{os}-{arch}.tgz","entrypoint":["false"]}}
+{"name":"pl-package-builder-runenv-1:1.2.3","runEnv":{"type":"java","registry":"example","package":"common/example/1.2.3-{os}-{arch}.tgz","entrypoint":["false"]}}

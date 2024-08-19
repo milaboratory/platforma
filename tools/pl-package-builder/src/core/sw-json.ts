@@ -9,10 +9,8 @@ import * as util from './util';
 const dockerSchema = z.object({
     image: z.string().
         describe("full tag name for 'docker pull'"),
-    entrypoint: z.array(z.string()).optional().
-        describe("use custom entrypoint for docker container"),
-    cmd: z.array(z.string()).optional().
-        describe("prepend custom default command before args (can be overriden in particular workflow)"),
+    entrypoint: z.array(z.string()).optional(),
+    cmd: z.array(z.string()).optional(),
     // the final command to be executed is: <entrypoint> <cmd> <args>
 });
 type dockerInfo = z.infer<typeof dockerSchema>;
@@ -31,14 +29,21 @@ const runEnvironmentSchema = z.object({
 })
 type runEnvInfo = z.infer<typeof runEnvironmentSchema>
 
+const runDependencySchema = z.object({
+    ...runEnvironmentSchema.shape,
+
+    name: z.string().describe("name was used to import this package as software dependency of tengo script"),
+})
+type runDepInfo = z.infer<typeof runDependencySchema>
+
 const binarySettingsSchema = z.object({
-    entrypoint: z.array(z.string()).optional().
+    entrypoint: z.array(z.string()).
         describe("the same as in 'docker': thing to be prepended to the final command before runnning it"),
     cmd: z.string().optional().
         describe("prepend custom default command before args (can be overriden in particular workflow)"),
     // the final command to be executed is: <entrypoint> <cmd> <args>
 
-    runEnv: runEnvironmentSchema.optional().
+    runEnv: runDependencySchema.optional().
         describe("run environment requirement to be provided for software when executed in binary mode (locally on server)"),
 
     // python-specific options
@@ -67,11 +72,13 @@ const localSchema = z.object({
 type localInfo = z.infer<typeof localSchema>
 
 const swJsonSchema = z.object({
+    name: z.string().describe("name to be used when importing this package as software dependency of tengo script"),
+    isDev: z.boolean().optional(),
+
     docker: dockerSchema.optional(),
     binary: binarySchema.optional(),
     runEnv: runEnvironmentSchema.optional(),
     local: localSchema.optional(),
-    isDev: z.boolean().optional(),
 })
 export type SoftwareInfo = z.infer<typeof swJsonSchema>
 
@@ -106,7 +113,9 @@ export class SoftwareDescriptor {
             throw new Error("empty list of software sources")
         }
 
-        const info: SoftwareInfo = {}
+        const info: SoftwareInfo = {
+            name: this.packageInfo.dependencyName,
+        }
 
         if (mode !== 'release') {
             info.isDev = true
@@ -156,7 +165,7 @@ export class SoftwareDescriptor {
         const encoded = JSON.stringify(info)
 
         util.ensureDirsExist(path.dirname(dstSwInfoPath))
-        fs.writeFileSync(dstSwInfoPath, encoded+"\n")
+        fs.writeFileSync(dstSwInfoPath, encoded + "\n")
     }
 
     private renderLocalInfo(mode: util.BuildMode): localInfo {
@@ -281,7 +290,7 @@ export class SoftwareDescriptor {
         return readSoftwareInfo(modulePath, softwareID)
     }
 
-    private renderRunEnvDep(envName?: string): runEnvInfo | undefined {
+    private renderRunEnvDep(envName?: string): runDepInfo | undefined {
         if (!envName) {
             return undefined
         }
@@ -294,6 +303,8 @@ export class SoftwareDescriptor {
         }
 
         return {
+            name: envName,
+
             type: swDescriptor.runEnv.type,
             registry: swDescriptor.runEnv.registry,
             package: swDescriptor.runEnv.package,
