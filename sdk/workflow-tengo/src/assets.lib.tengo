@@ -5,7 +5,6 @@ json := import("json")
 ll := import(":ll")
 smart := import(":smart")
 
-
 /**
  * Returns internal template identifier for loaded templates
  *
@@ -13,9 +12,9 @@ smart := import(":smart")
  * Local templates (within the same package) can omit namespace part and start the name with colon:
  *  - "@company/package:someTemplateName"
  *  - ":myLocalTemplate"
- #
- * @return template id: resource id - a resource id of the template.
-*/
+ *
+ * @return template: smart.resource - resource of tengo template with given name.
+ */
 importTemplate := func(tplName) {
 	return smart.resource(plapi.getTemplateId(tplName))
 }
@@ -27,20 +26,20 @@ importTemplate := func(tplName) {
  * Local software definitions (within the same package) can omit namespace part and start the name with colon:
  *  - "@company/package:some-oftware"
  *  - ":my-local-software"
- #
+ *
  * @return softwareInfo: softwareInfo - structure with software info
-*/
+ */
 importSoftware := func(swName) {
 	sw := plapi.getSoftwareInfo(swName)
-	return {
+	return ll.toStrict({
 		_type: "softwareDescriptor",
 
-		id: sw.id,
+		resource: smart.resource(sw.id),
 		name: sw.name,
 		version: sw.version,
 		blobRef: sw.blobRef,
-		descriptor: json.decode(sw.descriptor)
-	}
+		descriptor: ll.toStrict(json.decode(sw.descriptor)) // raw sw.json data with software entrypoint descriptor
+	})
 }
 
 /**

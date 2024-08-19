@@ -530,5 +530,5 @@ export ll.toStrict({
 	delegate                : instance.routeDelegate,
 	validateInputs          : instance.validateInputs,
 	body                    : instance.body,
-	resource                : instance.template
+	resource                : instance.resource
 })

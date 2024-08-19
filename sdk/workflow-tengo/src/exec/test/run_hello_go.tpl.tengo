@@ -1,18 +1,19 @@
-/** Runs a simple echo and returns stdout */
+/** Runs a cat on the file and returns it's content as a value resource. */
 
 self := import(":tpl")
+ll := import(":ll")
 smart := import(":smart")
 exec := import(":exec")
-fmt := import("fmt")
+file := import(":file")
 
 self.defineOutputs(["main"])
 
+sw := ll.importSoftware("@milaboratory/small-binaries:hello-world")
+
 self.body(func(inputs) {
 	run := exec.builder().
-		cmd("/usr/bin/env").
-		arg("bash").
-		arg("-c").
-		arg("printf '%s' " + fmt.sprintf("%q", inputs.text)).
+        software(sw).
+		arg(inputs.text).
 		saveStdoutContent().
 		run()
 

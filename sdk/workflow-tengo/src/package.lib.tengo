@@ -14,12 +14,11 @@ _RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall/exec", Version: "1" }
 _INPUT_PACKAGE := "package"
 _OUTPUT_SOFTWARE := "software"
 
-_getFromSource := func(binarySource, descriptor) {
+get := func(registryName, pkgName) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
 
-	res.inputs()[_INPUT_REGISTRY].setRefOrJson(binarySource.registry)
-	res.inputs()[_INPUT_PACKAGE_NAME].setRefOrJson(binarySource.package)
-	res.kvSetJson(META_KEY_DESCRIPTOR, ll.fromStrict(descriptor))
+	res.inputs()[_INPUT_REGISTRY].setRefOrJson(registryName)
+	res.inputs()[_INPUT_PACKAGE_NAME].setRefOrJson(pkgName)
 
 	self := undefined
 	self = oop.inherit(res, {
@@ -34,26 +33,6 @@ _getFromSource := func(binarySource, descriptor) {
 	})
 
 	return self
-}
-
-get := func(soft) {
-	ll.assert(ll.isSoftwareInfo(soft),
-		"package.get: <soft> must be software info. Get it from ll.importSoftware()")
-
-	descriptor := soft.descriptor
-
-	if (maps.containsKey(descriptor, "runEnv")) {
-		return _getFromSource(descriptor.runEnv, descriptor)
-	}
-
-	if (maps.containsKey(descriptor, "binary")) {
-		return _getFromSource(descriptor.binary, descriptor)
-	}
-
-	ll.panic(
-		"software '%s v%s' is not available in binary format (no 'binary' or 'runEnv' sources in software descriptor)\n\t%s",
-		soft.name, soft.version, descriptor
-	)
 }
 
 install := func(pkg) {

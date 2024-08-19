@@ -1,0 +1,142 @@
+ll := import(":ll")
+oop := import(":oop")
+maps := import(":maps")
+path := import(":path")
+pkg := import(":package")
+
+_formatArg := func(isRef, key, value) {
+	return {
+		isRef: isRef,
+		key: key,
+		value: value
+	}
+}
+
+_directCallOptions := func(runOptions) {
+	cmd := _formatArg(false, "", runOptions.cmd)
+	args := []
+
+	for name, arg in runOptions.args {
+		ll.assert(!arg.isRef,
+			"'exec-ref' argument is invalid in this command: no software info was given to exec.builder()")
+		args = append(args, _formatArg(false, "", arg.value))
+	}
+
+	return oop.inherit(runOptions, {
+		packages: [],
+		cmd: cmd,
+		args: args
+	})
+}
+
+_devPackageCallOptions := func(runOptions) {
+	software := runOptions.software
+	descriptor := software.descriptor.local
+
+	ll.panic("unable to run software %s v%s: 'local' execution mode is not implemented", software.name, software.version)
+}
+
+_binPackageCallOptions := func(runOptions) {
+	software := runOptions.software
+	descriptor := software.descriptor.binary
+
+	cmdName := runOptions.cmd
+	if (is_undefined(cmdName)) {
+		// Use default 'cmd' from descriptor, if caller did not specify custom cmd
+		cmdName = descriptor.cmd
+	}
+	if (is_undefined(cmdName)) {
+		ll.panic(
+			"unable to run software %s v%s: 'cmd' is required for 'binary' execution mode of this package",
+			software.name, software.version
+		)
+	}
+
+	packages := [{
+		descriptor: descriptor,
+
+		name: software.name,
+		registry: descriptor.registry,
+		package: descriptor.package
+	}]
+	args := []
+
+	// Real command shoule be:
+	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
+	if (maps.containsKey(descriptor, "runEnv")) {
+		ll.panic("unable to run software %s v%s: runEnv for 'binary' execution mode is not implemented",
+			software.name, software.version
+		)
+
+		runEnv := descriptor.runEnv
+
+		packages = append(packages, {
+			descriptor: descriptor,
+
+			name: runEnv.name,
+			registry: runEnv.registry,
+			package: runEnv.package
+		})
+	}
+
+	if (len(descriptor.entrypoint) > 0) {
+		entrypoint := descriptor.entrypoint
+
+		args = append(args, _formatArg(true, software.name, entrypoint[0]))
+		for i := 1; i < len(entrypoint); i++ {
+			args = append(args, _formatArg(false, "", entrypoint[i]))
+		}
+	}
+
+	args = append(args, _formatArg(true, software.name, cmdName))
+	for name, arg in runOptions.args {
+		args = append(args, _formatArg(arg.isRef, software.name, arg.value))
+	}
+
+	cmd := args[0]
+	args = splice(args, 1) // cut 1st element from args, so args = [args[1], args[2], ...]
+
+	return oop.inherit(runOptions, {
+		packages: packages,
+		cmd: cmd,
+		args: args
+	})
+}
+
+binaryRunOptions := func(runOptions) {
+	// {
+	//   cmdName: {isExecRef: bool, value: string},
+	//   args: [{isExecRef: bool, value: string}],
+	//   softwareName: string
+	// }
+
+	if (is_undefined(runOptions.software)) {
+		//
+		// Simple local command run, no software pacakges involved (backward compatibility)
+		//
+		return _directCallOptions(runOptions)
+	}
+
+	software := runOptions.software
+	descriptor := software.descriptor
+
+	if (maps.containsKey(descriptor, "local")) {
+		return _devPackageCallOptions(runOptions)
+	}
+
+	if (maps.containsKey(descriptor, "binary")) {
+		return _binPackageCallOptions(runOptions)
+	}
+
+	ll.panic("Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor", software.name, software.version)
+}
+
+installSoftware := func(pkgInfo) {
+    archive := pkg.get(pkgInfo.registry, pkgInfo.package).archive()
+    return pkg.install(archive).software()
+}
+
+export {
+	binaryRunOptions: binaryRunOptions,
+    installSoftware: installSoftware
+}
