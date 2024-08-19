@@ -237,7 +237,7 @@ controllers:
     executor:
       id: 'work'
       storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
-      softwareRoot: '${options.localRoot}/software/installed'
+      softwareRoot: '${options.localRoot}/software'
       queues:
         - name: 'heavy'
           maxConcurrency: 1
@@ -245,12 +245,12 @@ controllers:
           maxConcurrency: 50
 
     softwareLoader:
-      softwareRoot: '${options.localRoot}/software/installed'
+      softwareRoot: '${options.localRoot}/software'
       registries:
         - name: 'milaboratories'
           endpoints:
             - type: 'local'
-              path: '${options.localRoot}/software/local'
+              path: '${options.localRoot}/software-local'
             - type: 'url'
               url: 'https://bin.registry.platforma.bio/'
 

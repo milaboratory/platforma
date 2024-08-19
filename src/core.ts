@@ -49,8 +49,8 @@ export default class Core {
         const configOptions = plCfg.loadDefaults(options?.configOptions)
 
         const storageDirs: string[] = [
-            `${configOptions.localRoot}/software/installed`,
-            `${configOptions.localRoot}/software/local`,
+            `${configOptions.localRoot}/software`,
+            `${configOptions.localRoot}/software-local`,
             `${configOptions.localRoot}/blocks/local`,
         ]
         if (configOptions.storages.primary.type === 'FS') {
