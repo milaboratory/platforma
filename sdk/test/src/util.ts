@@ -24,8 +24,12 @@ export async function awaitStableState<S>(
     );
   } catch (e: unknown) {
     if (isTimeoutOrCancelError(e)) {
-      console.dir(await computable.getFullValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: e });
+      const fullValue = await computable.getFullValue();
+      console.dir(fullValue, { depth: 5 });
+      throw new Error(
+        `Aborted while awaiting stable value. Unstable marker: ${fullValue.unstableMarker}`,
+        { cause: e }
+      );
     } else throw e;
   }
 }

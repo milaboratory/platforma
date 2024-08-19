@@ -28,11 +28,16 @@ async function awaitBlockDone(
       throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.outputErrors) return;
     if (blockOverview.calculationStatus === 'Done') return;
+    if (blockOverview.calculationStatus !== 'Running')
+      throw new Error(
+        `Unexpected block status, block not calculating anything at the moment: ${blockOverview.calculationStatus}`
+      );
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
+      console.dir(blockOverview, { depth: 5 });
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error('Aborted.', { cause: e });
+      throw new Error('Aborted while awaiting block done.', { cause: e });
     }
   }
 }
