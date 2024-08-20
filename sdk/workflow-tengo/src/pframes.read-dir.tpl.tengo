@@ -21,7 +21,6 @@ self.readFiles(func(inputs) {
     }
 
     // @TODO assert .datainfo files are contained in the args
-    ll.assert(len(dInfo) > 0, "kakogo huya")
     return dInfo
 })
 
@@ -47,34 +46,6 @@ self.readFiles(func(inputs) {
 //   "type": "BinaryPartitioned"
 // }
 
-
-dInfoSchema := {
-    partitionKeyLength: "number",
-
-    parts: {
-        any: {
-
-        }
-    }
-    values: { any: "any" },
-    dirs: ["string"],
-    runOptions: {
-        cmd: cmdScheme,
-        args: [cmdScheme],
-        envs: { any: "string" },
-        queue: "string",
-        stdout: "string",
-        stderr: "string",
-        nErrorLines: "number"
-    },
-    saveFiles: ["string"],
-    saveFilesContents: ["string"],
-    streams: ["string"]
-}
-
-// validation.assertJsonSchema(inputs, )
-
-
 self.body(func(inputs) {
 
     args := inputs.args
@@ -83,9 +54,9 @@ self.body(func(inputs) {
     outputs := {}
     for c in args.columns {
         
-        name := c.column // @TODO switch to c.name
+        name := c.name
         
-        dInfo := inputs["out/" + c.column + ".datainfo"].getDataAsJson() // @TODO switch to c.id 
+        dInfo := inputs["out/" + c.id + ".datainfo"].getDataAsJson()
     
         // @TODO validate dInfo!
         

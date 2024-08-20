@@ -23,6 +23,6 @@ self.body(func(inputs){
     params := inputs.params
 
     return {
-        pf: pframes.readCsv(csvFile, "csv", params)
+        pf: pframes.readXsv(csvFile, "csv", params)
     }
 })

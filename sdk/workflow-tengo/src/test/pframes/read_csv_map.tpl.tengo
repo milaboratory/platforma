@@ -1,0 +1,36 @@
+// read_pf_from_csv.tpl
+
+self := import(":tpl")
+exec := import(":exec")
+json := import("json")
+pframes := import(":pframes")
+pframes2 := import(":pframes2")
+smart := import(":smart")
+
+self.defineOutputs("pf")
+
+self.body(func(inputs){
+
+    // map with csv as text
+    csvDataMap := inputs.csvMap
+
+    csvMap := smart.structBuilder({ Name: "PColumnData", Version: "1" }, json.encode({ keyLength: 1 }))
+    for k, csv in csvDataMap {
+        e := exec.builder().
+            cmd("env").
+            writeFile("data.csv", csv).
+            saveFile("data.csv").
+            run()
+
+        csvMap.createInputField(k).set(e.getFile("data.csv"))
+    }
+    csvMap = csvMap.lockAndBuild()
+
+
+    // pfconv params 
+    params := inputs.params
+
+    return {
+        pf: pframes2.readXsvMap(csvMap, "csv", params)
+    }
+})
