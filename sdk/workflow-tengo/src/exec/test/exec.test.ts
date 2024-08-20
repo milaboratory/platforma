@@ -27,23 +27,6 @@ tplTest(
   }
 );
 
-// tplTest(
-//   'hello-world-java',
-//   async ({ helper, expect }) => {
-//     const result = await helper.renderTemplate(
-//       false,
-//       'test.exec.run_java',
-//       ['main'],
-//       (tx) => ({})
-//     );
-//     const mainResult = result.computeOutput('main', (a) =>
-//       a?.getDataAsString()
-//     );
-
-//     expect(await mainResult.awaitStableValue()).eq('Hello world!\n');
-//   }
-// );
-
 tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {

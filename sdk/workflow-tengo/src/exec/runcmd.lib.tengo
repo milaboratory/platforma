@@ -28,13 +28,13 @@ _createSimpleArg := func(argument) {
  * Creates an executable argument for the command.
  *
  * @param executableName: string - the name of the executable.
- * @param pathToBinary: string|undefined - the path to the binary.
+ * @param pathInsidePackage: string|undefined - the path to the binary.
  */
-_createExecutableArg := func(executableName, pathToBinary) {
+_createExecutableArg := func(executableName, pathInsidePackage) {
 	return {
 		type: "executableRef",
 		value: executableName,
-		execPath: pathToBinary // maybe null
+		execPath: pathInsidePackage
 	}
 }
 
@@ -55,6 +55,7 @@ builder := func(workdir) {
 	envs := {}
 	queue := ""
 	refs := {}
+	customPaths := []
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -74,29 +75,25 @@ builder := func(workdir) {
 		/**
 		 * Sets the command executable.
 		 *
-		 * @param softwareName: string - name of software from .softwareRef()
+		 * @param refKey: string - name of software, added as reference via .ref() call
 		 * @param targetPath: string - path inside software package.
 		 */
-		cmdExecutable: func(softwareName, targetPath) {
-			ll.assert(maps.containsKey(refs, softwareName),
-				"runcmd.builder().cmdExecutable(): attempt to refer to unknown software %q", softwareName)
+		cmdExecutable: func(refKey, targetPath) {
+			ll.assert(maps.containsKey(refs, refKey),
+				"runcmd.builder().cmdExecutable(): attempt to refer to unknown software %q", refKey)
 
-			cmd = _createExecutableArg(softwareName, targetPath)
+			cmd = _createExecutableArg(refKey, targetPath)
 			return self
 		},
 
-		/**
-		 * Use given installed software when running the command.
-		 *
-		 * @param softwareName: string - key, cmdExecutable() and argExecutable() could use to refer this software on host when running
-		 */
-		useSoftware: func(softwareName, reference) {
-			ll.assert(smart.isReference(reference),
-				"runcmd.builder().softwareRef() must be a reference to installed software")
-			ll.assert(!maps.containsKey(refs, softwareName),
-				"attempt to override software reference %q", softwareName)
-
-			refs[softwareName] = reference
+		ref: func(refKey, ref) {
+			ll.assert(smart.isReference(ref),
+				"runcmd.builder().ref() must be a reference (valid field or resource)")
+			
+			ll.assert(!maps.containsKey(refs, refKey),
+				"attempt to override existing reference %q", refKey)
+			
+			refs[refKey] = ref
 		},
 
 		/**
@@ -112,14 +109,14 @@ builder := func(workdir) {
 		/**
 		 * Adds an argument, that points to some file inside installed software package
 		 *
-		 * @param softwareName: string - name of software from .softwareRef()
+		 * @param refKey: string - name of software, added as reference via .ref() call
 		 * @param targetPath: string - path inside software package.
 		 */
-		argExecutable: func(softwareName, targetPath) {
-			ll.assert(maps.containsKey(refs, softwareName),
-				"runcmd.builder().argExecutable(): attempt to refer to unknown software %q", softwareName)
+		argExecutable: func(refKey, targetPath) {
+			ll.assert(maps.containsKey(refs, refKey),
+				"runcmd.builder().argExecutable(): attempt to refer to unknown software %q", refKey)
 
-			args = append(args, _createExecutableArg(softwareName, targetPath))
+			args = append(args, _createExecutableArg(refKey, targetPath))
 			return self
 		},
 
@@ -132,6 +129,26 @@ builder := func(workdir) {
 		env: func(name, value) {
 			envs[name] = value
 			return self
+		},
+
+		/**
+		 * Sets environment variable to the path inside software package.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param value: string - the value of the environment variable.
+		 */
+		envExecutable: func(name, refKey, targetPath) {
+			envs[name] = _createExecutableArg(refKey, targetPath)
+		},
+
+		/*
+		 * Patch 'PATH' environment variable, adding software path to it.
+		 *
+		 * @param refKey: string - name of software, added as reference via .ref() call
+		 * @param targetPath: string - path inside software package to be added to PATH variable
+		 */
+		addToPath: func(refKey, targetPath) {
+			customPaths = append(customPaths, _createExecutableArg(refKey, targetPath))
 		},
 
 		/**
@@ -193,8 +210,10 @@ builder := func(workdir) {
 				errorLines: nErrorLines,
 				redirectStdout: stdout,
 				redirectStderr: stderr,
-				env: envs
+				env: envs,
+				addToPath: customPaths
 			}
+
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
 			self.getField("options").set(optionsRes)
 

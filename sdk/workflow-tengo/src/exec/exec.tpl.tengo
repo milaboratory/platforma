@@ -48,8 +48,14 @@ _runBinaryCommand := func(inputs) {
 	
 	opts := execInternal.binaryRunOptions(inputs.runOptions)
 
+	// Attach installed software to the command
 	for pkgInfo in opts.packages {
-		runBuilder.useSoftware(pkgInfo.name, pkgInfo.reference)
+		runBuilder.ref(pkgInfo.name, pkgInfo.reference)
+	}
+
+	// Patch command's PATH env variable
+	for p in opts.customPaths {
+		runBuilder.addToPath(p.key, p.value)
 	}
 
 	// exec command
