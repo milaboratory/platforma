@@ -1,4 +1,4 @@
-// helper template to save files in a working dir by regex
+// helper template to save files in a working dir
 
 self := import(":tpl")
 text := import("text")

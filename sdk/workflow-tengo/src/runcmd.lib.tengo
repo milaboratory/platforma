@@ -172,7 +172,7 @@ builder := func(workdir) {
 
 			options := {
 				queueName: queue,
-				nErrorLines: nErrorLines,
+				errorLines: nErrorLines,
 				redirectStdout: stdout,
 				redirectStderr: stderr,
 				env: envs
