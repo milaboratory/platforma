@@ -5,11 +5,18 @@ maps := import(":maps")
 path := import(":path")
 pkg := import(":package")
 
-_formatArg := func(isRef, key, value) {
+_newArg := func(isRef, key, value) {
 	return {
 		isRef: isRef,
 		key: key,
 		value: value
+	}
+}
+
+_newPackageRef := func(name, reference) {
+	return{
+		name: name,
+		reference: reference
 	}
 }
 
@@ -19,46 +26,65 @@ _installSoftware := func(registry, pkgName) {
 }
 
 _directCallOptions := func(runOptions) {
-	cmd := _formatArg(false, "", runOptions.cmd)
+	cmd := _newArg(false, "", runOptions.cmd)
 	args := []
 
 	for name, arg in runOptions.args {
 		ll.assert(!arg.isRef,
 			"'exec-ref' argument is invalid in this command: no software info was given to exec.builder()")
-		args = append(args, _formatArg(false, "", arg.value))
+		args = append(args, _newArg(false, "", arg.value))
 	}
 
 	return oop.inherit(runOptions, {
 		packages: [],
+		customPaths: [],
 		cmd: cmd,
 		args: args
 	})
 }
 
+_loadJavaRunEnvironment := func(runEnvDescriptor) {
+	return {
+		package: _newPackageRef(
+			runEnvDescriptor.name,
+			_installSoftware(runEnvDescriptor.registry, runEnvDescriptor.package)
+		),
+		args: [
+			_newArg(true, runEnvDescriptor.name, path.join(runEnvDescriptor.binDir, "java")),
+			_newArg(false, "", "-jar")
+			],
+		customPaths: [ _newArg(true, runEnvDescriptor.name, runEnvDescriptor.binDir) ]
+	}
+}
+
+_loadRunEnvironment := func(runEnvDescriptor) {
+	if runEnvDescriptor.type == "java" {
+		return _loadJavaRunEnvironment(runEnvDescriptor)
+	}
+
+	ll.panic("run environment type %q is not currently supported by tengo-sdk", runEnvDescriptor.type)
+}
+
 _binPackageCallOptions := func(runOptions, packages, software, descriptor) {
 	args := []
+	customPaths := []
 
 	// Real command shoule be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
-		ll.panic("unable to run software %s v%s: runEnv for 'binary' execution mode is not implemented",
-			software.name, software.version
-		)
+		runEnvInfo := _loadRunEnvironment(descriptor.runEnv)
 
-		runEnv := descriptor.runEnv
-
-		packages = append(packages, {
-			name: runEnv.name,
-			reference: _installSoftware(runEnv.registry, runEnv.package)
-		})
+		packages = append(packages, runEnvInfo.package)
+		args = append(args, runEnvInfo.args...)
+		customPaths = append(customPaths, runEnvInfo.customPaths...)
 	}
 
 	if (len(descriptor.entrypoint) > 0) {
 		entrypoint := descriptor.entrypoint
 
-		args = append(args, _formatArg(true, software.name, entrypoint[0]))
+		args = append(args, _newArg(true, software.name, entrypoint[0]))
 		for i := 1; i < len(entrypoint); i++ {
-			args = append(args, _formatArg(false, "", entrypoint[i]))
+			args = append(args, _newArg(false, "", entrypoint[i]))
 		}
 	}
 
@@ -74,9 +100,9 @@ _binPackageCallOptions := func(runOptions, packages, software, descriptor) {
 		)
 	}
 
-	args = append(args, _formatArg(true, software.name, cmdName))
+	args = append(args, _newArg(true, software.name, cmdName))
 	for name, arg in runOptions.args {
-		args = append(args, _formatArg(arg.isRef, software.name, arg.value))
+		args = append(args, _newArg(arg.isRef, software.name, arg.value))
 	}
 
 	cmd := args[0]
@@ -84,6 +110,7 @@ _binPackageCallOptions := func(runOptions, packages, software, descriptor) {
 
 	return oop.inherit(runOptions, {
 		packages: packages,
+		customPaths: customPaths,
 		cmd: cmd,
 		args: args
 	})
@@ -93,9 +120,9 @@ _devLocalPackageCallOptions := func(runOptions) {
 	software := runOptions.software
 	localDescriptor := software.descriptor.local
 
-	packages := [{
-		name: software.name,
-		reference: pkg.use({
+	packages := [_newPackageRef(
+		software.name,
+		pkg.use({
 			hash: localDescriptor.hash,
 			path: localDescriptor.path,
 			descriptor: json.encode(ll.fromStrict(software.descriptor)),
@@ -105,7 +132,7 @@ _devLocalPackageCallOptions := func(runOptions) {
 				packageName: software.descriptor.name
 			}
 		}).software()
-	}]
+	)]
 
 	return _binPackageCallOptions(runOptions, packages, software, localDescriptor)
 }
@@ -114,10 +141,10 @@ _remotePackageCallOptions := func(runOptions) {
 	software := runOptions.software
 	binaryDescriptor := software.descriptor.binary
 
-	packages := [{
-		name: software.name,
-		reference: _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
-	}]
+	packages := [_newPackageRef(
+		software.name,
+		_installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
+	)]
 
 	return _binPackageCallOptions(runOptions, packages, software, binaryDescriptor)
 }
