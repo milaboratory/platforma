@@ -4,6 +4,41 @@ oop := import(":oop")
 maps := import(":maps")
 validation := import(":validation")
 
+runEnvDescriptorScheme := {
+	registry: "string",
+	package: "string",
+	type: "string",
+	binDir: "string"
+}
+
+binaryDescriptorScheme := {
+	registry: "string",
+	package: "string",
+	entrypoint: ["string"],
+	cmd: "string",
+	runEnv: runEnvDescriptorScheme
+}
+
+localDescriptorScheme := {
+	hash: "string",
+	path: "string",
+	entrypoint: ["string"],
+	cmd: "string",
+	runEnv: runEnvDescriptorScheme
+}
+
+descriptorScheme := {
+	"isDev,omitempty": "bool",
+	"binary,omitempty": binaryDescriptorScheme,
+	"local,omitempty": localDescriptorScheme
+}
+
+softwareInfoScheme := {
+	"name": "string",
+	"version": "string",
+	"descriptor": descriptorScheme
+}
+
 META_KEY_DESCRIPTOR := "ctl/runner/software/descriptor"
 
 _RTYPE_PACKAGE_GET := { Name: "PackageGet/exec", Version: "1" }
@@ -102,6 +137,11 @@ use := func(settings) {
 }
 
 export ll.toStrict({
+	softwareInfoScheme                 : softwareInfoScheme,
+	binaryDescriptorScheme             : binaryDescriptorScheme,
+	localDescriptorScheme              : localDescriptorScheme,
+	runEnvDescriptorScheme             : runEnvDescriptorScheme,
+
 	META_KEY_DESCRIPTOR                : META_KEY_DESCRIPTOR,
 
 	get                                : get,

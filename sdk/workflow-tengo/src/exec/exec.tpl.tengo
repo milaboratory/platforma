@@ -14,7 +14,7 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 stream := import(":exec.stream")
 execInternal := import(":exec.internal")
-software := import(":software")
+pkg := import(":exec.package")
 sets := import(":sets")
 validation := import(":validation")
 
@@ -162,7 +162,7 @@ self.body(func(inputs) {
 		values: { any: "any" },
 		dirs: ["string"],
 		runOptions: {
-			"software,omitempty": software.infoScheme,
+			"software,omitempty": pkg.softwareInfoScheme,
 			"cmd,omitempty": "string",
 			"args,omitempty": [cmdScheme],
 			envs: { any: "string" },
