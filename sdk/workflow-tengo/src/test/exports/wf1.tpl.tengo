@@ -18,6 +18,8 @@ wf.body(func(args) {
 		data: ["a", "b"]
 	}
 
+	exports["z"] = smar
+
 	return {
 		outputs: outputs,
 		exports: exports

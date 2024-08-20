@@ -1,0 +1,53 @@
+// process map of xsv files into the into p-frames
+
+ll := import(":ll")
+self := import(":tpl")
+json := import("json")
+smart := import(":smart")
+pframes := import(":pframes")
+
+self.awaitState("xsvMap", "InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+
+    // resource with xsv files in values
+    xsvMap := inputs.xsvMap
+    // csv or tsv
+    xsvType := inputs.xsvType
+    // pfconv params
+    params := inputs.params
+
+    // @TODO validate params 
+
+                
+    result := {}
+    for c in params.columns {
+        superKeyLength := xsvMap.getDataAsJson().keyLength
+        ll.assert(!is_undefined(superKeyLength), "key length must be defined")
+
+        rData := { 
+            superPartitionKeyLength: superKeyLength,
+            partitionKeyLength: params.partitionKeyLength 
+        }
+        rType := { Name: "PColumnData/Partitioned/" + params.storageFormat + "Partitioned", Version: "1" }
+        
+        result[c.name] = smart.structBuilder(rType, json.encode(rData))
+    }
+
+    for key, xsvFile in xsvMap.inputs() {
+        
+        p := pframes.readXsv(xsvFile, xsvType, params)
+
+        for c in params.columns {
+            result[c.name].createInputField(key).set(p.getFutureInputField(c.name))
+        }
+    }    
+
+    for c in params.columns {
+        result[c.name] = result[c.name].lockAndBuild()
+    }
+    
+
+    return result
+})
