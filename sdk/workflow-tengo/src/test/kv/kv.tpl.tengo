@@ -1,0 +1,26 @@
+// read-kv
+
+self := import(":tpl")
+smart := import(":smart")
+ll := import(":ll")
+
+self.defineOutputs(["output1"])
+
+_RTYPE_TEST_EPH := { Name: "TestEph", Version: "1" }
+
+self.body(func(inputs) {
+	inputEph := inputs.input1
+
+	a := inputEph.kvGetAsString("a")
+	if is_undefined(a) {
+		a = "undefined"
+	}
+
+	b := smart.ephemeralBuilder(_RTYPE_TEST_EPH).lockAndBuild()
+	b.kvSet("b", "The Value")
+
+	return {
+		output1: a,
+		output2: b
+	}
+})
