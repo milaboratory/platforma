@@ -1,0 +1,38 @@
+/** 
+* Working with p-frames
+*/
+
+smart := import(":smart")
+exec := import(":exec")
+json := import("json")
+ll := import(":ll")
+
+readCsv := func(file, type, params) {
+    ll.assert(type == "csv" || type == "tsv", "expected one of [tsv, csv] types")
+    
+    // @TODO: validate params
+
+    xsvFileName := "file." + type
+
+    // convert csv to p-frame and read resulting data
+	pf := exec.builder().
+                cmd("pfconv").	
+				arg("importCsv").
+				arg(xsvFileName).
+				arg("-p").arg("params.json").
+				arg("-o").arg("out").
+				addFile(xsvFileName, file).
+				writeFile("params.json", json.encode(params)).
+				processWorkdir("pf", ll.importTemplate(":pframes.read-dir"), params).
+                run()
+
+    return pf.getProcessorResult("pf")
+}
+
+readCsvMap := func(map, type, params) {
+    
+}
+
+export ll.toStrict({
+    readCsv: readCsv
+})

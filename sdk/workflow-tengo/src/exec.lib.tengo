@@ -61,9 +61,9 @@ builder := func() {
 	cache := 0
 	nErrorLines := 200
 
-	// files to be added in wordir
+	// files to be added in workdir
 	filesToAdd := {}
-	// files to be created in the wordir with the content from resources
+	// files to be created in the workdir with the content from resources
 	filesToWrite := {}
 	// directories to create in the workdir
 	dirsToCreate := {}
@@ -340,6 +340,7 @@ builder := func() {
 		 */
 		saveStderrContent: func() {
 			stderrToValue = true
+			return self
 		},
 
 		/**

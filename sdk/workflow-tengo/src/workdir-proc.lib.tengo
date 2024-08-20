@@ -1,4 +1,4 @@
-// workdir processor tpl
+/** Library for workdir processor templates */
 
 tpl := import(":tpl")
 ll := import(":ll")
@@ -67,9 +67,10 @@ proc := func() {
 		 *  the body inputs with the corresponding key
 		 */
 		readFiles: func(cb) {
-			tpl.prepare(func(_){
+			tpl.prepare(func(inputs){
+				inputs.files = self.filesInWd()
 				// key -> file name
-				files := cb(self.filesInWd())
+				files := cb(inputs)
 
 				wdBuilder := wdSave.builder(self.wdBefore())
 				for _, fName in files {
@@ -122,6 +123,11 @@ proc := func() {
 
 		/**
 		 * Template body function
+		 * 
+		 * @param cb: func - a callback function to run in template body; the inputs passed to the body will have the following fields:
+		 *   files: string[] - list of files in workdir
+		 *   args: map - additional arguments of the template processor
+		 *   ...filesContent: resources - fields with the content of files specified in 'readFiles' 
          */
 		body: func(cb) {
 			tpl.body(func(inputs) {

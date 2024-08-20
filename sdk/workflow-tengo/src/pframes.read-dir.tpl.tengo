@@ -1,0 +1,117 @@
+// read p-frame processor
+
+self := import(":workdir-proc")
+ll := import(":ll")
+text := import("text")
+slices := import(":slices")
+smart := import(":smart")
+json := import("json")
+
+
+self.readFiles(func(inputs) {
+    dInfo := {}
+
+    args := inputs.args
+
+    // search for .datainfo files
+    for f in inputs.files {
+        if text.has_suffix(f, ".datainfo") {
+            dInfo[f] = f
+        }
+    }
+
+    // @TODO assert .datainfo files are contained in the args
+    ll.assert(len(dInfo) > 0, "kakogo huya")
+    return dInfo
+})
+
+// {
+//   "partitionKeyLength": 0,
+//   "parts": {
+//     "[]": {
+//       "index": "common_index_0.bin",
+//       "values": "nSeqCDR3_data_0.bin"
+//     }
+//   },
+//   "type": "BinaryPartitioned"
+// }
+//
+// {
+//   "partitionKeyLength": 0,
+//   "parts": {
+//     "[]": {
+//       "index": "common_index_0.bin",
+//       "values": "nSeqCDR3_data_0.bin"
+//     }
+//   },
+//   "type": "BinaryPartitioned"
+// }
+
+
+dInfoSchema := {
+    partitionKeyLength: "number",
+
+    parts: {
+        any: {
+
+        }
+    }
+    values: { any: "any" },
+    dirs: ["string"],
+    runOptions: {
+        cmd: cmdScheme,
+        args: [cmdScheme],
+        envs: { any: "string" },
+        queue: "string",
+        stdout: "string",
+        stderr: "string",
+        nErrorLines: "number"
+    },
+    saveFiles: ["string"],
+    saveFilesContents: ["string"],
+    streams: ["string"]
+}
+
+// validation.assertJsonSchema(inputs, )
+
+
+self.body(func(inputs) {
+
+    args := inputs.args
+
+    // columns
+    outputs := {}
+    for c in args.columns {
+        
+        name := c.column // @TODO switch to c.name
+        
+        dInfo := inputs["out/" + c.column + ".datainfo"].getDataAsJson() // @TODO switch to c.id 
+    
+        // @TODO validate dInfo!
+        
+        // p-column resource builder
+        rType := { Name: "PColumnData/" + dInfo.type, Version: "1" }
+        rData := { partitionKeyLength: dInfo.partitionKeyLength }
+        rBuilder := smart.structBuilder(rType, json.encode(rData))
+        
+        for part, data in dInfo.parts {
+            if dInfo.type == "BinaryPartitioned" {
+
+                // pf data is always exported in out dir
+                indexFile := self.saveFile("out/" + data.index) 
+                valuesFile := self.saveFile("out/" + data.values)
+
+                rBuilder.createInputField(part + ".index").set(indexFile)
+                rBuilder.createInputField(part + ".values").set(valuesFile)
+            } else if dInfo.type == "JsonPartitioned" {
+
+                valuesFile := self.saveFile("out/" + data)
+                rBuilder.createInputField(part).set(valuesFile)
+            }
+        }
+
+        outputs[name] = rBuilder.lockAndBuild()
+    }
+
+    return outputs
+})

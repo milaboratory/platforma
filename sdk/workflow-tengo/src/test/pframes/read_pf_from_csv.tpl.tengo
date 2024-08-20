@@ -1,0 +1,28 @@
+// read_pf_from_csv.tpl
+
+self := import(":tpl")
+exec := import(":exec")
+pframes := import(":pframes")
+
+self.defineOutputs("pf")
+
+self.body(func(inputs){
+
+    // csv as text
+    csv := inputs.csv
+
+    e := exec.builder().
+        cmd("env").
+        writeFile("data.csv", csv).
+        saveFile("data.csv").
+        run()
+
+    csvFile := e.getFile("data.csv")
+
+    // pfconv params 
+    params := inputs.params
+
+    return {
+        pf: pframes.readCsv(csvFile, "csv", params)
+    }
+})
