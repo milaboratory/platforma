@@ -8,3 +8,4 @@ export const PL_PKG_ARCHIVE = "PL_PKG_ARCHIVE"
 export const PL_PKG_STORAGE_URL = "PL_PKG_STORAGE_URL"
 
 export const PL_PKG_DEV = "PL_PKG_DEV"
+export const PL_PKG_FULL_HASH = "PL_PKG_FULL_HASH"

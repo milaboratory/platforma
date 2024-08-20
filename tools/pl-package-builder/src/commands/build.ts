@@ -18,6 +18,7 @@ export default class Build extends Command {
 
         ...cmdOpts.DescriptorNameFlag,
         ...cmdOpts.PackageNameFlag,
+        ...cmdOpts.DirHashFlag,
 
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.ContentRootFlag,
@@ -39,6 +40,7 @@ export default class Build extends Command {
         core.pkg.version = flags.version
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
+        core.fullDirHash = flags['full-dir-hash']
 
         core.buildDescriptor(sources)
 

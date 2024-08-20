@@ -104,7 +104,7 @@ export class SoftwareDescriptor {
         private packageInfo: PackageInfo,
     ) { }
 
-    public render(mode: util.BuildMode, sources: readonly util.SoftwareSource[]): SoftwareInfo {
+    public render(mode: util.BuildMode, sources: readonly util.SoftwareSource[], fullDirHash: boolean = false): SoftwareInfo {
         this.logger.info("Rendering software descriptor...")
         this.logger.debug("  sources: " + JSON.stringify(sources))
 
@@ -131,7 +131,7 @@ export class SoftwareDescriptor {
                 case 'binary':
                     if (mode === 'dev-local') {
                         this.logger.debug("  rendering 'local' source...")
-                        info.local = this.renderLocalInfo(mode)
+                        info.local = this.renderLocalInfo(mode, fullDirHash)
                     } else {
                         this.logger.debug("  rendering 'binary' source...")
                         if (this.packageInfo.hasEnvironment) {
@@ -168,7 +168,7 @@ export class SoftwareDescriptor {
         fs.writeFileSync(dstSwInfoPath, encoded + "\n")
     }
 
-    private renderLocalInfo(mode: util.BuildMode): localInfo {
+    private renderLocalInfo(mode: util.BuildMode, fullDirHash: boolean = false): localInfo {
         if (!this.packageInfo.hasBinary) {
             throw new Error(`pl.package.yaml file does not contain definition for binary package`)
         }
@@ -188,7 +188,7 @@ export class SoftwareDescriptor {
         const binary = this.packageInfo.binary
         const env = this.renderRunEnvDep(binary.runEnv)
         const rootDir = binary.contentRoot
-        const hash = util.hashDirMetaSync(rootDir)
+        const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir)
 
         return {
             hash: hash.digest().toString('hex'),

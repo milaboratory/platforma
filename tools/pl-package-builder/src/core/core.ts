@@ -17,6 +17,7 @@ export class Core {
     public buildMode: util.BuildMode
     public targetOS: OSType
     public targetArch: ArchType
+    public fullDirHash: boolean
 
     constructor(
         logger: winston.Logger,
@@ -29,6 +30,8 @@ export class Core {
         this.buildMode = 'release'
         this.targetOS = currentOS()
         this.targetArch = currentArch()
+
+        this.fullDirHash = false
     }
 
     public get archivePath(): string {
@@ -45,7 +48,7 @@ export class Core {
     }
 
     public buildDescriptor(sources: util.SoftwareSource[]) {
-        const swJson = this.descriptor.render(this.buildMode, sources)
+        const swJson = this.descriptor.render(this.buildMode, sources, this.fullDirHash)
         this.descriptor.write(swJson)
     }
 
@@ -65,7 +68,7 @@ export class Core {
         const contentRoot = options?.contentRoot ?? desc.contentRoot
 
         this.logger.info("Rendering 'package.sw.json' to be embedded into package archive")
-        const swInfo = this.descriptor.render(this.buildMode, ['binary'])
+        const swInfo = this.descriptor.render(this.buildMode, ['binary'], this.fullDirHash)
         const swInfoPath = path.resolve(contentRoot, "package.sw.json")
         fs.writeFileSync(swInfoPath, JSON.stringify(swInfo))
 

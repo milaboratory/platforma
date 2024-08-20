@@ -37,6 +37,36 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
     return hash
 }
 
+export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Hash {
+    const hash = hasher ? hasher : createHash('sha256');
+    const folder = path.join(rootDir, subdir ?? ".")
+
+    const info = fs.readdirSync(folder, { withFileTypes: true });
+
+    for (let item of info) {
+        const relPath = path.join(subdir ?? ".", item.name)
+        const fullPath = path.join(folder, item.name);
+
+        hash.update(relPath);
+
+        if (item.isFile()) {
+            const fileDescriptor = fs.openSync(fullPath, 'r');
+            const buffer = Buffer.alloc(65536);
+            let bytesRead: number;
+
+            while ((bytesRead = fs.readSync(fileDescriptor, buffer, 0, buffer.length, null)) !== 0) {
+                hash.update(buffer.subarray(0, bytesRead));
+            }
+
+            fs.closeSync(fileDescriptor);
+        } else if (item.isDirectory()) {
+            hashDirSync(fullPath, hash);
+        }
+    }
+
+    return hash
+}
+
 //
 // Creates all intermediate directories down to given <dirPath>.
 // 

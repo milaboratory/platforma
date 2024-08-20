@@ -23,6 +23,16 @@ export const BuildFlags = {
     }),
 }
 
+export const DirHashFlag = {
+    "full-dir-hash": Flags.boolean({
+        env: envs.PL_PKG_FULL_HASH,
+        description: "when calculating software hash in dev=local mode, hash file contents instead of metadata.\n"+
+            "This makes descriptor file generation slower, but makes Platforma deduplication to work better, restarting"+
+            " calculations only when they readlly should be.",
+        default: false
+    })
+}
+
 export const DescriptorNameFlag = {
     "descriptor-name": Flags.string({
         description: "override name of package descriptor (<name>.sw.json) to be generated",

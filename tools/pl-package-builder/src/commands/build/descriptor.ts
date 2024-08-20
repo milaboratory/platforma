@@ -15,6 +15,7 @@ export default class Descriptor extends Command {
         ...cmdOpts.BuildFlags,
 
         name: cmdOpts.DescriptorNameFlag['descriptor-name'],
+        ...cmdOpts.DirHashFlag,
         ...cmdOpts.PackageNameFlag,
         ...cmdOpts.VersionFlag,
         ...cmdOpts.SourceFlag,
@@ -32,6 +33,7 @@ export default class Descriptor extends Command {
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
         core.pkg.descriptorName = flags['name']
         core.pkg.version = flags.version
+        core.fullDirHash = flags['full-dir-hash']
         if (flags['package-name']) core.packageName = flags['package-name']
 
         core.buildDescriptor(sources)
