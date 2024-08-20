@@ -8,6 +8,7 @@ sets := import(":sets")
 maps := import(":maps")
 tplutil := import(":tpl-util")
 constants := import(":constants")
+stateAwait := import(":state-await")
 
 /**
  * Unmarshal resource according by:
@@ -66,6 +67,8 @@ tpl := func() {
 	_preparedMap := _hasPrepared ? _renderer.get(tplutil.INPUTS_MAP_FIELD).get(tplutil.PREPARE_MAP_FIELD_NAME) : undefined
 
 	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
+
+	_stateRequests := []
 
 	self = {
 
@@ -157,6 +160,46 @@ tpl := func() {
 			} else {
 				self.definedOutputs = append(self.definedOutputs, name...)
 			}
+		},
+
+		/**
+		 * In ephemeral template, body will only be executed when corresponding input staet is
+		 * reached.
+		 *
+		 * Signature:
+		 *   awaitState(path..., requestedState)
+		 *
+		 * Usage examples:
+		 *   awaitState("AllInputsSet") - all inputs of the inputs map must be set
+		 *   awaitState("inputName1", "ResourceReady") - resource in the input inputName1 must be ready
+		 *   awaitState("inputName1", "nestedField", "Set") - nested input field in the input inputName1 must exist and point to some resource
+		 *
+		 * Allowed states:
+		 *   Exists - field exists
+		 *   Set - field points to existing resource
+		 *   InputsLocked - field points to resource with locked inputs
+		 *   AllInputsSet - field points to resource with all inputs set
+		 *   ResourceReady - field points to ready resource
+		 */
+		awaitState: func(...pathAndState) {
+			if !self.isEphemeral() {
+				ll.panic("awaitState allowed only in ephemeral templates")
+			}
+			path := pathAndState[:len(pathAndState) - 1]
+			state := pathAndState[len(pathAndState) - 1]
+			// if len(self.prepareQueue) == 0 {
+			_stateRequests = append(_stateRequests, {
+				path: path,
+				state: state
+			})
+			// } else if len(self.prepareQueue) == 1 {
+			// 	_stateRequestsAfterPrepare = append(_stateRequestsAfterPrepare, {
+			// 		path: path,
+			// 		state: state
+			// 	})
+			// } else {
+			// 	ll.panic("Multiple prepare are not supported")
+			// }
 		},
 
 		/**
@@ -338,48 +381,48 @@ tpl := func() {
 		/**
 		 * Routes ephemeral template.
 		 */
-		routeEph: func(bodyFn){
-			if self.renderer().info().AllInputsSet {
+		routeEph: func(bodyFn) {
 
-				// get map resource storing template inputs
-				inputMap := self.renderer().get(tplutil.INPUTS_MAP_FIELD)
+			if len(_stateRequests) == 0 {
+				_stateRequests = [{
+					path: [],
+					state: "AllInputsSet"
+				}]
+			}
 
-				if inputMap.info().AllInputsSet {
+			if _hasPrepared {
+				_stateRequests = append(_stateRequests, {
+					path: [tplutil.PREPARE_MAP_FIELD_NAME],
+					state: "ResourceReady"
+				})
+			}
 
-					if len(self.prepareQueue) > 0 {
-						ll.assert(len(self.definedOutputs) > 0, "outputs should be defined prior to prepare")
+			stateReached := stateAwait.await(
+				_renderer.getField(tplutil.INPUTS_MAP_FIELD),
+				_renderer,
+				_stateRequests
+			)
 
-						self.createOutputsAndLock(self.definedOutputs)
+			if stateReached {
 
-						self.renderPrepare()
-					} else {
+				if len(self.prepareQueue) > 0 {
+					ll.assert(len(self.definedOutputs) > 0, "outputs should be defined prior to prepare")
 
-						// if we have prepared map resource, we need to await for its readiness
-						pp := self.preparedMapResource()
-						if !is_undefined(pp) {
-							if !pp.isReady() {
-								tx.subscribeTo(pp.id, "PrepareIsReady", { "ResourceReady": true })
-								return
-							}
-						}
+					self.createOutputsAndLock(self.definedOutputs)
 
-						// run body func
-						result := bodyFn(self.inputs())
-						ll.assert(ll.isMap(result),
-							"expected map from tpl-eph.body() callback. Did you forget 'return' statement?")
-
-						self.createOutputsAndLock(maps.getKeys(result))
-
-						// set result to self outputs
-						self.setOutputs(result)
-					}
+					self.renderPrepare()
 				} else {
-					// wait until inputs map is ready
-					tx.subscribeTo(inputMap.id, "InputMapAllInputsSet", { "AllInputsSet": true })
+
+					// run body func
+					result := bodyFn(self.inputs())
+					ll.assert(ll.isMap(result),
+						"expected map from tpl-eph.body() callback. Did you forget 'return' statement?")
+
+					self.createOutputsAndLock(maps.getKeys(result))
+
+					// set result to self outputs
+					self.setOutputs(result)
 				}
-			} else if ll.isInitializing() {
-				// wait until inputs map is ready
-				tx.subscribeTo(self.renderer().id, "MainAllInputsSet", { "AllInputsSet": true })
 			}
 		},
 
@@ -429,6 +472,7 @@ export ll.toStrict({
 	inputs                  : instance.inputs,
 	defineOutputs           : instance.defineOutputs,
 	prepare                 : instance.prepare,
+	awaitState              : instance.awaitState,
 	delegate                : instance.routeDelegate,
 	body                    : instance.body
 })

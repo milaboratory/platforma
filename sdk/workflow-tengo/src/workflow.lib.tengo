@@ -228,13 +228,24 @@ body := func(bodyFn) {
 
 			return _buildOutputs(result)
 		})
-	}
 
-	if !is_undefined(_preRunTpl) {
+	} else if !is_undefined(_preRunTpl) {
 
 		// staging; render pre-run template
 
 		self.delegate(_preRunTpl, { isProduction: true }, [_RESULTS_FIELD_NAME, _OUTPUT_CONTEXT_FIELD_NAME])
+
+	} else {
+
+		// staging; pre-run template not specified; noop
+
+		self.body(func(_) {
+			return _buildOutputs({
+				outputs: {},
+				exports: {}
+			})
+		})
+
 	}
 }
 

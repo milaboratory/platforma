@@ -6,9 +6,23 @@ maps := import(":maps")
 enum := import("enum")
 smart := import(":smart")
 
+json := import("json")
+
 //
 // Tools for implementing your own checks:
 //
+
+_formatKeyPath := func(current, format, key) {
+	if current == "" {
+		if !is_string(key) {
+			return fmt.sprintf("[%d]", key)
+		}
+
+		return key
+	}
+
+	return fmt.sprintf(format, current, key)
+}
 
 /**
  * Validation success result.
@@ -18,19 +32,14 @@ success := { result: true }
 /**
  * Validation failure result with a message.
  *
- * @param stack: any - the current stack state.
+ * @param keyPath: string - the current stack state.
  * @param msg: string - the failure message.
  * @param args: ...any - additional arguments for the message.
  */
-fail := func(stack, msg, ...args) {
-	if is_undefined(args) || len(args) == 0 {
-		args = []
-	}
-	args = append(args, stack)
-
+fail := func(keyPath, msg, ...args) {
 	return {
 		result: false,
-		message: fmt.sprintf(msg + ", previous elements: %#v", args...)
+		message: keyPath + ": " + fmt.sprintf(msg, args...)
 	}
 }
 
@@ -55,12 +64,12 @@ isFail := func(r) {
  * @param msg: string - the failure message if the condition is false.
  * @param args: variadic any - additional arguments for the message.
  */
-check := func(condition, stack, msg, ...args) {
+check := func(condition, keyPath, msg, ...args) {
 	if condition {
 		return success
 	}
 
-	return fail(stack, msg, args...)
+	return fail(keyPath, msg, args...)
 }
 
 //
@@ -74,7 +83,7 @@ check := func(condition, stack, msg, ...args) {
  * @param tags: { key: string, tags: []tag } - the tags to validate against.
  * @param stack: ...any - the current stack state.
  */
-_validateTypes := func(js, tags, ...stack) {
+_validateTypes := func(js, tags, keyPath, ...stack) {
 	k := tags.key
 
 	if k == "any" {
@@ -88,7 +97,7 @@ _validateTypes := func(js, tags, ...stack) {
 	if k == "string" && is_string(js) {
 		regex := tags.tags["regex"]
 		if !is_undefined(regex) && !text.re_match(regex, js) {
-			return fail(stack, stack, "value %q does not conform regex %q", js, regex)
+			return fail(keyPath, "value %q does not conform regex %q", js, regex)
 		}
 
 		return success
@@ -114,7 +123,7 @@ _validateTypes := func(js, tags, ...stack) {
 		return success
 	}
 
-	return fail(stack, "js %q is not one of a type: %s", js, tags.key)
+	return fail(keyPath, "js %q is not one of a type: %s", js, tags.key)
 }
 
 /**
@@ -153,11 +162,15 @@ _parseTags := func(rule) {
  * @param stack: ...any - the current stack state.
  * @return either fail or success
  */
-_validateJson := func(js, scheme, ...stack) {
-	// ll.print("validateJSON debug: json: ", js, "_______________ scheme: ", scheme)
+_validateJson := func(js, scheme, keyPath, ...stack) {
+	// ll.print(fmt.sprintf("validateJSON debug: json: %s, keyPath: %s, scheme %s", json.encode(js), keyPath, json.encode(scheme)))
 
 	if is_undefined(scheme) {
-		return fail(stack, "scheme is somehow undefined: %#v, previous elements: %#v", js, stack)
+		if len(stack) == 0 {
+			return fail(keyPath, "key is not defined by scheme, but exists in the JSON")
+		}
+
+		return fail(keyPath, "key is not defined by scheme, but exists in the JSON. Validated item: %#v", stack[0])
 	}
 
 	// if the scheme is a string, then
@@ -168,28 +181,28 @@ _validateJson := func(js, scheme, ...stack) {
 		}
 		tags := _parseTags(scheme)
 
-		return _validateTypes(js, tags, stack...)
+		return _validateTypes(js, tags, keyPath, stack...)
 	}
 
 	// if the scheme is a function, call it
 	// with the element and the path of how we
 	// got this element, i.e. recursion history.
 	if is_callable(scheme) {
-		return scheme(js, stack)
+		return scheme(js, keyPath, stack)
 	}
 
 	// if the scheme is an array with "or" at the beginning,
 	// we should check if the element is succesed with
 	// any of the following elements.
 	if is_array(scheme) && len(scheme) > 0 && scheme[0] == "or" {
-		for _, elem in scheme[1:] {
-			r := _validateJson(js, elem, stack...)
+		for i, elem in scheme[1:] {
+			r := _validateJson(js, elem, keyPath, stack...)
 			if isSuccess(r) {
 				return r
 			}
 		}
 
-		return fail(stack, "js %q does not fit any of the following rules: %q", js, scheme)
+		return fail(keyPath, "js %q does not fit any of the following rules: %q", js, scheme)
 	}
 
 	// if the scheme is an array, then check that every
@@ -197,12 +210,12 @@ _validateJson := func(js, scheme, ...stack) {
 	// of the scheme.
 	if is_array(scheme) {
 		if !is_array(js) {
-			return fail(stack, "js %q must be array", js)
+			return fail(keyPath, "js %q must be array", js)
 		}
 
 		scheme = scheme[0]
-		for _, elem in js {
-			r := _validateJson(elem, scheme, js, stack...)
+		for i, elem in js {
+			r := _validateJson(elem, scheme, _formatKeyPath(keyPath, "%s[%d]", i), js, stack...)
 			if isFail(r) {
 				return r
 			}
@@ -216,7 +229,7 @@ _validateJson := func(js, scheme, ...stack) {
 	// in json-object is in the scheme and vice-versa,
 	// unless there are tags "any" or "omitempty".
 	if !ll.isMap(js) {
-		return fail(stack, "js %#v must be map", js)
+		return fail(keyPath, "js %#v must be map", js)
 	}
 
 	// scheme.key -> tags
@@ -240,13 +253,13 @@ _validateJson := func(js, scheme, ...stack) {
 
 	for _key, elem in js {
 		if any {
-			r := _validateJson(elem, schemeRules["any"], stack...)
+			r := _validateJson(elem, schemeRules["any"], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
 			if isFail(r) {
 				return r
 			}
 
 			if !is_undefined(any.tags["type"]) {
-				r := _validateJson(_key, any.tags["type"], stack...)
+				r := _validateJson(_key, any.tags["type"], keyPath, stack...)
 				if isFail(r) {
 					return r
 				}
@@ -258,12 +271,16 @@ _validateJson := func(js, scheme, ...stack) {
 		// tags for the key
 		key := schemeTags[_key]
 
-		if is_undefined(key) && options.tags["closed"] == true {
-			return fail(stack, "only keys %v from the scheme must be set, found %q", maps.getKeys(scheme), _key)
+		if is_undefined(key) {
+			if options.tags["closed"] == true {
+				return fail(keyPath, "only keys %v from the scheme must be set, found %q", maps.getKeys(scheme), _key)
+			}
+
+			continue
 		}
 
 		if key.tags["type"] {
-			r := _validateJson(_key, key.tags["type"], js, stack...)
+			r := _validateJson(_key, key.tags["type"], keyPath, stack...)
 			if isFail(r) {
 				return r
 			}
@@ -273,7 +290,7 @@ _validateJson := func(js, scheme, ...stack) {
 			continue
 		}
 
-		r := _validateJson(elem, schemeRules[_key], js, stack...)
+		r := _validateJson(elem, schemeRules[_key], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
 		if isFail(r) {
 			return r
 		}
@@ -290,7 +307,7 @@ _validateJson := func(js, scheme, ...stack) {
  * @return either fail or success
  */
 checkJson := func(js, scheme) {
-	return _validateJson(js, scheme)
+	return _validateJson(js, scheme, "")
 }
 
 /**
@@ -301,7 +318,7 @@ checkJson := func(js, scheme) {
  * @return result: bool - the result of the validation (true/false).
  */
 isValid := func(js, scheme) {
-	return _validateJson(js, scheme).result
+	return _validateJson(js, scheme, "").result
 }
 
 /**
@@ -311,9 +328,9 @@ isValid := func(js, scheme) {
  * @param scheme: any - the scheme to assert against.
  */
 assertJsonSchema := func(js, scheme) {
-	r := _validateJson(js, scheme)
+	r := _validateJson(js, scheme, "")
 	if isFail(r) {
-		ll.panic("not a valid json: %s", r.message)
+		ll.panic("JSON validation error: %s", r.message)
 	}
 }
 
@@ -327,8 +344,8 @@ assertJsonSchema := func(js, scheme) {
  * @param elem: any - the element to check.
  * @param stack: any - the current stack state.
  */
-resource := func(elem, stack) {
-	return check(smart.isResource(elem), stack, "the element " + elem + " must be a resource")
+resource := func(elem, keyPath, stack) {
+	return check(smart.isResource(elem), keyPath, "the element " + elem + " must be a resource")
 }
 
 /**
@@ -337,8 +354,8 @@ resource := func(elem, stack) {
  * @param elem: any - the element to check.
  * @param stack: any - the current stack state.
  */
-reference := func(elem, stack) {
-	return check(smart.isReference(elem), stack, "the element " + elem + " must be a resource or a field")
+reference := func(elem, keyPath, stack) {
+	return check(smart.isReference(elem), keyPath, "the element " + elem + " must be a resource or a field")
 }
 
 export ll.toStrict({
