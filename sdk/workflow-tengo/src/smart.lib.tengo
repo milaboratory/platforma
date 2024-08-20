@@ -390,6 +390,70 @@ resource = func(r) {
 		 */
 		get: func(name) {
 			return self.getField(name).getValue()
+		},
+
+		/**
+		 * Gets value from key value storage associated with resource if corresponding
+		 * record exists.
+		 *
+		 * @param key string key
+		 * @return bytes or undefined
+		 */
+		kvGet: func(key) {
+			return tx.resourceKeyValueGet(self.id, key)
+		},
+
+		/**
+		 * Sets bytes or string value to a key value storage associated
+		 * with resource.
+		 *
+		 * @param key string key
+		 * @param value to be set
+		 */
+		kvSet: func(key, value) {
+			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Gets value as string from key value storage associated with resource if
+		 * corresponding record exists.
+		 *
+		 * @param key string key
+		 * @return string or undefined
+		 */
+		kvGetAsString: func(key) {
+			value := tx.resourceKeyValueGet(self.id, key)
+			if is_undefined(value) {
+				return undefined
+			} else {
+				return string(value)
+			}
+		},
+
+		/**
+		 * Gets value from key value storage associated with resource and
+		 * decodes as json if corresponding record exists.
+		 *
+		 * @param key string key
+		 * @return value or undefined
+		 */
+		kvGetAsJson: func(key) {
+			bytes := self.kvGet(key)
+			if is_undefined(bytes){
+				return undefined
+			} else {
+				return json.decode(bytes)
+			}
+		},
+
+		/**
+		 * Sets json value to a key value storage associated with resource.
+		 *
+		 * @param key string key
+		 * @param value to be set
+		 */
+		kvSetJson: func(key, value) {
+			self.kvSet(key, json.encode(value))
 		}
 	}
 

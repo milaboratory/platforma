@@ -60,7 +60,7 @@ _create := func(tplId, isEph, inputs) {
 			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 			if len(cache) > 0 && cache[0] > 0 {
 				cache = cache[0]
-				tx.setCacheToField(out.id, cache)
+				tx.cacheSetToField(out.id, cache)
 			}
 
 			return out
