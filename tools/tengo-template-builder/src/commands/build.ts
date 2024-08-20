@@ -19,9 +19,9 @@ export default class Build extends Command {
     savePacks(logger, compiledDist, 'dist')
     logger.info('')
 
-    const compiledDev = compile(logger, 'dev')
-    savePacks(logger, compiledDev, 'dev')
-    logger.info('')
+    // const compiledDev = compile(logger, 'dev')
+    // savePacks(logger, compiledDev, 'dev')
+    // logger.info('')
 
     logger.info("Template Pack build done.")
   }
