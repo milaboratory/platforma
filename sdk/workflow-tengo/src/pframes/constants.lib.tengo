@@ -17,12 +17,6 @@ VALUE_FIELD_NAME := "__value__"
   */
 KEY_FIELD_NAME := "__key__"
 
-/**
-  * Name of the output field under which the mapping or aggregation result is returned from the
-  * itration body template.
-  */
-RESULT_FIELD_NAME := "result"
-
 P_COLUMN_DATA_TYPE_PREFIX := "PColumnData/"
 
 RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "ResourceMap", Version: "1" }
@@ -30,7 +24,6 @@ RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Resourc
 export ll.toStrict({
 	VALUE_FIELD_NAME: VALUE_FIELD_NAME,
   KEY_FIELD_NAME: KEY_FIELD_NAME,
-  RESULT_FIELD_NAME: RESULT_FIELD_NAME,
   P_COLUMN_DATA_TYPE_PREFIX: P_COLUMN_DATA_TYPE_PREFIX,
   RTYPE_P_COLUMN_DATA_RESOURCE_MAP: RTYPE_P_COLUMN_DATA_RESOURCE_MAP
 })

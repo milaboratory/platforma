@@ -18,6 +18,7 @@ self.body(func(inputs) {
     // parameters of aggragation
 	//   indices: int[]
 	//   eph: bool
+	//   outputs: string[]
     params := inputs.params
 
 	if is_undefined(params) {
@@ -30,6 +31,11 @@ self.body(func(inputs) {
 
 	indices := params.indices
 	eph := params.eph
+	outputs := params.outputs
+
+	if !is_array(outputs) || len(outputs) == 0 {
+		ll.panic("Absent, empty or malformed outputs list")
+	}
 
     // map of resources to aggregate over
     data := inputs.data
@@ -94,10 +100,14 @@ self.body(func(inputs) {
 			group.createInputField(sInGroupKey).set(field)
 		}
 
-		outputMap := smart.structBuilder(
-			constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-			json.encode({ keyLength: len(groupIndices) })
-		)
+		outputMaps := {}
+
+		for output in outputs {
+			outputMaps[output] = smart.structBuilder(
+				constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+				json.encode({ keyLength: len(groupIndices) })
+			)
+		}
 
 		for sGroupKey, group in groups {
 			group = group.lockAndBuild()
@@ -108,12 +118,16 @@ self.body(func(inputs) {
 				renderInputs[name] = field
 			}
 			renderResult := render.createUniversal(body, eph, renderInputs)
-			outputMap.createInputField(sGroupKey).set(renderResult.output(constants.RESULT_FIELD_NAME))
+			for output in outputs {
+				outputMaps[output].createInputField(sGroupKey).set(renderResult.output(output))
+			}
 		}
 
-		return {
-			result: outputMap.lockAndBuild()
+		for output in outputs {
+			outputMaps[output] = outputMaps[output].lockAndBuild()
 		}
+
+		return outputMaps
 	} else {
 		ll.panic("Unexpected input resource type: %v", data.info().Type)
 	}
