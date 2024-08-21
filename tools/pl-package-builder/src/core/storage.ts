@@ -62,12 +62,12 @@ export function getStoragePreset(registryName: string): storagePreset {
     const preset: storagePreset = {}
     const regNameUpper = registryName.toUpperCase()
 
-    const uploadTo = process.env[`PL_REGISTRY_UPLOAD_${regNameUpper}_URL`]
+    const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
     if (uploadTo) {
         preset.UploadURL = uploadTo
     }
 
-    const downloadFrom = process.env[`PL_REGISTRY_DOWNLOAD_${regNameUpper}_URL`]
+    const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`]
     if (downloadFrom) {
         preset.DownloadURL = downloadFrom
     }
