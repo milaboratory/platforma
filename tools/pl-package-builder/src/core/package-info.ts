@@ -288,10 +288,12 @@ export class PackageInfo {
                 }
 
                 if (binConfig.name) {
-                    if (uniquePackageNames.has(binConfig.name)) {
-                        throw new Error(`found two packages with the same name '${binConfig.name}'`)
+                    const verson = binConfig.version ?? this.pkgJson.version
+                    const uniqueName = `${binConfig.name}-${verson}`
+                    if (uniquePackageNames.has(uniqueName)) {
+                        throw new Error(`found two packages with the same name '${binConfig.name}' and version '${verson}'`)
                     }
-                    uniquePackageNames.add(binConfig.name)
+                    uniquePackageNames.add(uniqueName)
                 }
 
                 for (const e of Object.keys(binConfig.entrypoints)) {
