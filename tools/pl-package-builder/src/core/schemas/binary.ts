@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const runEnvironmentTypes = ['java', 'python', 'R', 'conda'] as const;
 export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
 
-export const registrySchema = z.object({
+export const registrySchema = z.strictObject({
     name: z.string(),
     storageURL: z.string().optional(),
 })

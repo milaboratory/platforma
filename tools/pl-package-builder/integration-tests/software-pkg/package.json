@@ -8,12 +8,16 @@
     "publish": "pl-pkg publish"
   },
   "block-software": {
+    "registries": {
+      "binary": {
+        "milaboratories": {"storageURL": "s3://milab-euce1-prod-pkgs-s3-platforma-registry/pub/?region=eu-central-1"}
+      }
+    },
     "packages": {
       "p1": {
         "binary": {
           "registry": {
-            "name": "milaboratories",
-            "storageURL": "s3://<bucket>/<some-prefix>?region=<s3-region-name>"
+            "name": "milaboratories"
           },
 
           "root": "./src",

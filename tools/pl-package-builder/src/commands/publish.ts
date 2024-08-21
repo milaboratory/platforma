@@ -21,8 +21,6 @@ export default class Publish extends Command {
         ...cmdOpts.PackageIDFlag,
     };
 
-    static strict: boolean = false;
-
     public async run(): Promise<void> {
         const { argv, flags } = await this.parse(Publish);
         const logger = util.createLogger(flags['log-level'])

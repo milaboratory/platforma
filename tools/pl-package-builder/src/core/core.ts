@@ -177,9 +177,10 @@ export class Core {
         }
     }
 
-    public publishPackages(options?: {
+    public async publishPackages(options?: {
         ids?: string[],
         forcePublish?: boolean,
+        forceReupload?: boolean,
 
         archivePath?: string,
         storageURL?: string,
@@ -191,30 +192,38 @@ export class Core {
             throw new Error("attempt to publish several packages using the same software package archive")
         }
 
+        const uploads: Promise<void>[] = []
         for (const pkgID of packagesToPublish) {
-            this.publishPackage(pkgID, options)
+            uploads.push(this.publishPackage(pkgID, options))
         }
+
+        return Promise.all(uploads)
     }
 
-    public publishPackage(pkgID: string, options?: {
+    public async publishPackage(pkgID: string, options?: {
         archivePath?: string,
         storageURL?: string,
+        forceReupload?: boolean
     }) {
         const pkg = this.getPackage(pkgID)
         const descriptor = pkg.environment ?? pkg.binary!
-        const storagePreset = storage.getStoragePreset(descriptor.registry.name)
+        const storageSettings = getStorageSettings({
+            customStorageURL: options?.storageURL,
+            registry: descriptor.registry,
+            pkgInfo: this.pkg,
+        })
 
         const archivePath = options?.archivePath ?? this.archivePath(pkgID)
-        const storageURL = options?.storageURL ?? storagePreset.UploadURL ?? descriptor.registry.storageURL
+        const storageURL = storageSettings.UploadURL
         const dstName = descriptor.fullName(this.targetOS, this.targetArch)
 
         if (!storageURL) {
             this.logger.error(`no storage URL is set for registry ${descriptor.registry.name}`)
             if (pkg.environment) {
                 throw new Error(`environment.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
-            } else {
-                throw new Error(`binary.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
             }
+
+            throw new Error(`binary.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
         }
 
         this.logger.info(`Publishing package '${descriptor.name}' into registry '${descriptor.registry.name}'`)
@@ -223,8 +232,13 @@ export class Core {
         this.logger.debug(`  target package name: '${dstName}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
-        const archive = createReadStream(this.archivePath(pkgID))
 
+        const exists = await s.exists(dstName)
+        if (exists && !options?.forceReupload) {
+            throw new Error(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. To re-upload it, use 'force' flag`)
+        }
+
+        const archive = createReadStream(this.archivePath(pkgID))
         s.putFile(dstName, archive).then(
             () => this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
         )
@@ -252,4 +266,48 @@ export class Core {
             arch: this.targetArch,
         }
     }
+}
+
+type storageSettings = {
+    UploadURL?: string
+}
+
+function getStorageSettings(options?: {
+    customStorageURL?: string,
+    registry?: {name: string, storageURL?: string},
+    pkgInfo?: PackageInfo,
+}): storageSettings {
+    const settings: storageSettings = {}
+
+    // Priorities (from highes to lowest):
+    //  <customStorageURL> ->
+    //    <environment variable> ->
+    //      <package registry settings> ->
+    //        <registry catalog in package.json>
+
+    const regNameUpper = (options?.registry?.name ?? "").toUpperCase()
+
+    if (options?.pkgInfo && options.registry?.name) {
+        const preset = options.pkgInfo.binaryRegistries[options.registry?.name]
+        if (preset) {
+            settings.UploadURL = preset.storageURL
+        }
+    }
+
+    if (options?.registry?.storageURL) {
+        settings.UploadURL = options?.registry?.storageURL
+    }
+
+    if (options?.registry?.name) {
+        const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
+        if (uploadTo) {
+            settings.UploadURL = uploadTo
+        }
+    }
+
+    if (options?.customStorageURL) {
+        settings.UploadURL = options.customStorageURL
+    }
+
+    return settings
 }

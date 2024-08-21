@@ -69,11 +69,21 @@ const packageConfigSchema = z.object({
     }
 )
 
+const storagePresetSchema = z.object({
+    storageURL: z.string().optional()
+})
+
+const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema)
+type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>
+
 const packageJsonSchema = z.object({
     name: z.string(),
     version: z.string(),
 
     "block-software": z.object({
+        registries: z.object({
+            binary: binaryRegistryPresetsSchema
+        }),
         packages: z.record(z.string(), packageConfigSchema)
     })
 })
@@ -82,12 +92,16 @@ type packageJson = z.infer<typeof packageJsonSchema>
 /*
  * package.json -> block-software structure example:
  * {
- *   "block-software": [
- *     {
+ *   "block-software": {
+ *     "registries": {
+ *       "binary": {
+ *         "my-org": {"uploadURL": "s3://<bucket>/<some-prefix>?region=<region-name>"}
+ *       }
+ *     },
+ *     "packages": {
  *       "binary": {
  *         "registry": {
- *            "name":       "my-org"
- *            "storageURL": "s3://<bucket>/<some-prefix>?region=<region-name>",
+ *            "name": "my-org"
  *         },
  *      
  *         "root": "./src",
@@ -99,7 +113,7 @@ type packageJson = z.infer<typeof packageJsonSchema>
  *         }
  *       }
  *     }
- *   ]
+ *   }
  * }
  */
 export class PackageInfo {
@@ -141,54 +155,9 @@ export class PackageInfo {
         logger.debug('  package information loaded successfully.')
     }
 
-    // set descriptorName(n: string | undefined) {
-    //     this._descriptorNameOverride = n
-    // }
-
-    // get descriptorName(): string {
-    //     if (this._descriptorNameOverride) {
-    //         return this._descriptorNameOverride
-    //     }
-
-    //     return this.pkgYaml.name ?? "main"
-    // }
-
-    // // Name to be used when importing this package as a software dependency of tengo script
-    // get dependencyName(): string {
-    //     return `${this.pkgJson.name}:${this.descriptorName}`
-    // }
-
-    // get hasDocker(): boolean {
-    //     return this.pkgYaml.docker !== undefined
-    // }
-
-    // get docker(): DockerConfig {
-    //     if (!this.hasDocker) {
-    //         this.logger.error(`No 'docker' configuration in ${util.plPackageYamlName} file`)
-    //         throw new Error("no 'docker' configuration")
-    //     }
-
-    //     if (!this._docker) {
-    //         this.logger.debug("  generating docker config from package info")
-
-    //         const registry = this.pkgYaml.docker!.registry
-    //         const imageName = this.getName(this.pkgYaml.docker?.imageName)
-    //         const version = this.getVersion(this.pkgYaml.docker?.version)
-
-    //         this._docker = {
-    //             ...this.pkgYaml.docker,
-    //             registry,
-    //             imageName,
-    //             version,
-
-    //             get tag(): string {
-    //                 return `${this.registry}/${this.imageName}:${this.version}`
-    //             }
-    //         }
-    //     }
-
-    //     return this._docker!
-    // }
+    get binaryRegistries() : binaryRegistryPresets {
+        return this.pkgJson['block-software'].registries.binary
+    }
 
     get packages(): Map<string, PackageConfig> {
         const result = new Map<string, PackageConfig>()

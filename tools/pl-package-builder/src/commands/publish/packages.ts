@@ -33,9 +33,10 @@ export default class Packages extends Command {
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
-        core.publishPackages({
+        await core.publishPackages({
             ids: flags['package-id'],
             forcePublish: flags.force,
+            forceReupload: flags.force,
 
             archivePath: flags.archive,
             storageURL: flags['storage-url'],

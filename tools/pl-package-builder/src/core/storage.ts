@@ -19,6 +19,7 @@ export function typeToURLScheme(sType: storageType): string {
 }
 
 export interface RegistryStorage {
+    exists(file: string): Promise<boolean>;
     putFile(file: string, data: Buffer | Readable): Promise<void>;
 }
 
@@ -28,6 +29,23 @@ export class S3Storage implements RegistryStorage {
         public readonly bucket: string,
         public readonly root: string = ""
     ) { }
+
+    async exists(file: string): Promise<boolean> {
+        try {
+            await this.client.headObject({
+                Bucket: this.bucket,
+                Key: pathPosix.join(this.root, file),
+            });
+
+            return true
+        } catch (error) {
+            if (error instanceof Error && error.name === 'NotFound') {
+                return false;
+            }
+
+            throw error;
+        }
+    }
 
     async putFile(file: string, data: Buffer | Readable): Promise<void> {
         await this.client.putObject({
@@ -51,26 +69,4 @@ export function initByUrl(address: string, pkgRoot: string): RegistryStorage {
         default:
             throw new Error(`Protocol ${url.protocol} is not supported for software registries yet. Use your own tooling for package upload`);
     }
-}
-
-export type storagePreset = {
-    UploadURL?: string
-    DownloadURL?: string
-}
-
-export function getStoragePreset(registryName: string): storagePreset {
-    const preset: storagePreset = {}
-    const regNameUpper = registryName.toUpperCase()
-
-    const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
-    if (uploadTo) {
-        preset.UploadURL = uploadTo
-    }
-
-    const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`]
-    if (downloadFrom) {
-        preset.DownloadURL = downloadFrom
-    }
-
-    return preset
 }
