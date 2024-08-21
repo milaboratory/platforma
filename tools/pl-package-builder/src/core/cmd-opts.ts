@@ -19,6 +19,14 @@ export const ForceFlag = {
     })
 }
 
+export const SkipExistingPackagesFlag = {
+    "skip-existing-packages": Flags.boolean({
+        description: "skip upload for package archives that already exist in registry",
+        default: false,
+        required: false
+    })
+}
+
 const devModeValues = ['local'] as const;
 export type devModeName = (typeof devModeValues)[number];
 

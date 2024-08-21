@@ -20,6 +20,7 @@ export default class Packages extends Command {
 
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.StorageURLFlag,
+        ...cmdOpts.SkipExistingPackagesFlag,
     };
 
     static strict: boolean = false;
@@ -35,11 +36,13 @@ export default class Packages extends Command {
 
         await core.publishPackages({
             ids: flags['package-id'],
-            forcePublish: flags.force,
-            forceReupload: flags.force,
+            ignoreArchiveOverlap: flags.force,
 
             archivePath: flags.archive,
             storageURL: flags['storage-url'],
+
+            skipExisting: flags['skip-existing-packages'],
+            forceReupload: flags.force,
         })
     }
 }

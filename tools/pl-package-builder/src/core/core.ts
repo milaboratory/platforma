@@ -179,15 +179,17 @@ export class Core {
 
     public async publishPackages(options?: {
         ids?: string[],
-        forcePublish?: boolean,
-        forceReupload?: boolean,
+        ignoreArchiveOverlap?: boolean,
 
         archivePath?: string,
         storageURL?: string,
+
+        skipExisting?: boolean,
+        forceReupload?: boolean,
     }) {
         const packagesToPublish = options?.ids ?? Array.from(this.packages.keys())
 
-        if (packagesToPublish.length > 1 && options?.archivePath && !options.forcePublish) {
+        if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
             this.logger.error("Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add '--force' flag")
             throw new Error("attempt to publish several packages using the same software package archive")
         }
@@ -203,6 +205,8 @@ export class Core {
     public async publishPackage(pkgID: string, options?: {
         archivePath?: string,
         storageURL?: string,
+
+        skipExisting?: boolean,
         forceReupload?: boolean
     }) {
         const pkg = this.getPackage(pkgID)
@@ -234,13 +238,22 @@ export class Core {
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
 
         const exists = await s.exists(dstName)
-        if (exists && !options?.forceReupload) {
-            throw new Error(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. To re-upload it, use 'force' flag`)
+        if (exists) {
+            if (options?.skipExisting) {
+                this.logger.info(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
+                return
+            }
+            if (!options?.forceReupload) {
+                throw new Error(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. To re-upload it, use 'force' flag`)
+            }
         }
 
         const archive = createReadStream(this.archivePath(pkgID))
-        s.putFile(dstName, archive).then(
-            () => this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
+        return s.putFile(dstName, archive).then(
+            () => {
+                this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
+                return
+            }
         )
     }
 
@@ -274,7 +287,7 @@ type storageSettings = {
 
 function getStorageSettings(options?: {
     customStorageURL?: string,
-    registry?: {name: string, storageURL?: string},
+    registry?: { name: string, storageURL?: string },
     pkgInfo?: PackageInfo,
 }): storageSettings {
     const settings: storageSettings = {}

@@ -12,6 +12,7 @@ export default class Publish extends Command {
 
     static override flags = {
         ...cmdOpts.GlobalFlags,
+        ...cmdOpts.ForceFlag,
         ...cmdOpts.ArchFlags,
         ...cmdOpts.VersionFlag,
 
@@ -19,6 +20,7 @@ export default class Publish extends Command {
         ...cmdOpts.StorageURLFlag,
 
         ...cmdOpts.PackageIDFlag,
+        ...cmdOpts.SkipExistingPackagesFlag,
     };
 
     public async run(): Promise<void> {
@@ -32,10 +34,13 @@ export default class Publish extends Command {
 
         core.publishPackages({
             ids: flags['package-id'],
-            forcePublish: flags.force,
+            ignoreArchiveOverlap: flags.force,
 
             archivePath: flags.archive,
             storageURL: flags['storage-url'],
+
+            skipExisting: flags['skip-existing-packages'],
+            forceReupload: flags.force,
         })
 
         core.publishDescriptors()
