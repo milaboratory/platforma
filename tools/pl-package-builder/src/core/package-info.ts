@@ -82,8 +82,9 @@ const packageJsonSchema = z.object({
 
     "block-software": z.object({
         registries: z.object({
-            binary: binaryRegistryPresetsSchema
-        }),
+            binary: binaryRegistryPresetsSchema.optional()
+        }).optional(),
+
         packages: z.record(z.string(), packageConfigSchema)
     })
 })
@@ -156,7 +157,7 @@ export class PackageInfo {
     }
 
     get binaryRegistries() : binaryRegistryPresets {
-        return this.pkgJson['block-software'].registries.binary
+        return this.pkgJson['block-software'].registries?.binary ?? {}
     }
 
     get packages(): Map<string, PackageConfig> {

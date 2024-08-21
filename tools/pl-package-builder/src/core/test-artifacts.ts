@@ -5,34 +5,15 @@ export const PackageNameNoAt: string = 'some-company/the-software'
 export const PackageName: string = '@'+PackageNameNoAt
 
 export const BinaryRegistry: string = "some-binary-registry"
-export const BinaryCustomName: string = "custom-binary-package-name"
+export const BinaryCustomName1: string = "custom-package-name-1"
+export const BinaryCustomName2: string = "custom-package-name-2"
+export const BinaryCustomName3: string = "custom-package-name-3"
 export const BinaryCustomVersion: string = "4.4.4"
 
 export const EPNameCrossplatform: string = "crossplatform"
 export const EPNameCustomName: string = "custom-name"
 export const EPNameJavaEnvironment: string = "java-test-entrypoint"
 export const EPNameJavaDependency: string = "java-dep"
-
-// export const PlPackageYamlDockerMinimal: string = `
-// docker:
-//   registry: "${PlDockerRegistry}"
-// `
-// 
-// export const PlPackageYamlBinaryMinimal: string = `
-// binary:
-//   registry:
-//     name: "${PlBinaryRegistry}"
-//   root: .
-// `
-// export const PlPackageYamlAllMinimal: string = `
-// docker:
-//   registry: "${PlDockerRegistry}"
-// 
-// binary:
-//   registry:
-//     name: "${PlBinaryRegistry}"
-//   root: .
-// `
 
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
@@ -48,27 +29,29 @@ export const CrossplatformPackage = `{
 
     "root": "./src",
 
-    "entrypoints": [
-      { "name": "${EPNameCrossplatform}", 
-        "cmd": ["aaaa"] }
-    ]
+    "entrypoints": {
+      "${EPNameCrossplatform}": { 
+        "cmd": ["aaaa"]
+      }
+    }
   }
 }`
 
-export const CustomNamePackage = `{
+export const CustomVersionPackage = `{
   "binary": {
     "registry": {
       "name": "${BinaryRegistry}"
     },
-    "name": "${BinaryCustomName}",
+    "name": "${BinaryCustomName1}",
     "version": "${BinaryCustomVersion}",
 
     "root": "./src",
 
-    "entrypoints": [
-      { "name": "${EPNameCustomName}", 
-        "cmd": ["aaaa"] }
-    ]
+    "entrypoints": {
+      "${EPNameCustomName}": {
+        "cmd": ["aaaa"]
+      }
+    }
   }
 }`
 
@@ -77,7 +60,7 @@ export const EnvironmentDependencyPackage = `{
     "registry": {
       "name": "${BinaryRegistry}"
     },
-    "version": "${BinaryCustomVersion}",
+    "name": "${BinaryCustomName2}",
     "crossplatform": true,
 
     "root": "./src",
@@ -85,10 +68,11 @@ export const EnvironmentDependencyPackage = `{
     "type": "java",
     "environment": ":${EPNameJavaEnvironment}",
 
-    "entrypoints": [
-      { "name": "${EPNameJavaDependency}", 
-        "cmd": ["aaaa"] }
-    ]
+    "entrypoints": {
+      "${EPNameJavaDependency}": {
+        "cmd": ["aaaa"]
+      }
+    }
   }
 }`
 
@@ -97,6 +81,7 @@ export const EnvironmentPackage = `{
     "registry": {
       "name": "${BinaryRegistry}"
     },
+    "name": "${BinaryCustomName3}",
 
     "type": "java",
     "root": "./src",
@@ -112,7 +97,7 @@ export const PackageJson = `{
     "block-software": {
       "packages": {
         "pCross": ${CrossplatformPackage},
-        "pCustom": ${CustomNamePackage},
+        "pCustom": ${CustomVersionPackage},
         "pEnv": ${EnvironmentPackage},
         "pEnvDep": ${EnvironmentDependencyPackage}
       }

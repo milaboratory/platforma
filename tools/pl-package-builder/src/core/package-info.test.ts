@@ -19,13 +19,13 @@ test("PackageInfo loads correctly for multi-package", () => {
     var pkg = i.getPackage("pCustom")
     expect(pkg.binary).toBeDefined()
     expect(pkg.binary!.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.binary!.name).toEqual(artifacts.BinaryCustomName)
+    expect(pkg.binary!.name).toEqual(artifacts.BinaryCustomName1)
     expect(pkg.binary!.version).toEqual(artifacts.BinaryCustomVersion)
 
     var pkg = i.getPackage("pEnv")
     expect(pkg.environment).toBeDefined()
     expect(pkg.environment!.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.environment!.name).toEqual(artifacts.PackageNameNoAt)
+    expect(pkg.environment!.name).toEqual(artifacts.BinaryCustomName3)
     expect(pkg.environment!.version).toEqual(artifacts.PackageVersion)
 })
 

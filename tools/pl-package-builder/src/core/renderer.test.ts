@@ -39,7 +39,7 @@ describe("Renderer tests", () => {
         const sw = new Renderer(l, i.packageName, i.packageRoot)
         const descriptor = sw.renderSoftwareEntrypoints('release', i.getPackage("pCustom"), { entrypoints: [epName] }).get(epName)!
 
-        expect(descriptor.binary!.package).toEqual(`${artifacts.BinaryCustomName}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`)
+        expect(descriptor.binary!.package).toEqual(`${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`)
     })
 
     test("render environment", () => {
@@ -47,7 +47,7 @@ describe("Renderer tests", () => {
         const sw = new Renderer(l, i.packageName, i.packageRoot)
         const descriptor = sw.renderSoftwareEntrypoints('release', i.getPackage("pEnv"), { entrypoints: [epName] }).get(epName)!
 
-        expect(descriptor.runEnv!.package).toEqual(`${artifacts.PackageNameNoAt}/${artifacts.PackageVersion}-{os}-{arch}.tgz`)
+        expect(descriptor.runEnv!.package).toEqual(`${artifacts.BinaryCustomName3}/${artifacts.PackageVersion}-{os}-{arch}.tgz`)
         expect(descriptor.runEnv!.type).toEqual("java")
         expect(descriptor.runEnv!.binDir).toEqual(".")
     })
@@ -73,6 +73,6 @@ describe("Renderer tests", () => {
         const sw = new Renderer(l, i.packageName, i.packageRoot)
         const descriptor = sw.renderSoftwareEntrypoints('release', i.getPackage("pEnvDep"), { entrypoints: [epName] }).get(epName)!
 
-        expect(descriptor.binary!.package).toEqual(`${artifacts.PackageNameNoAt}/${artifacts.BinaryCustomVersion}.tgz`)
+        expect(descriptor.binary!.package).toEqual(`${artifacts.BinaryCustomName2}/${artifacts.PackageVersion}.tgz`)
     })
 })
