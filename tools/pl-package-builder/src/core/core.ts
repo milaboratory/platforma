@@ -3,7 +3,7 @@ import path from 'path';
 import { spawnSync } from "child_process";
 import winston from "winston";
 import { PackageInfo, PackageConfig } from "./package-info";
-import { Renderer, listSoftwareIDs, readEntrypointDescriptor } from "./renderer";
+import { Renderer, listSoftwareNames as listSoftwareEntrypoints, readEntrypointDescriptor } from "./renderer";
 import * as binSchema from './schemas/binary';
 import * as util from "./util";
 import * as archive from "./archive";
@@ -147,21 +147,21 @@ export class Core {
     public publishDescriptors(options?: {
         npmPublishArgs?: string[],
     }) {
-        const names = listSoftwareIDs(this.pkg.packageRoot)
+        const names = listSoftwareEntrypoints(this.pkg.packageRoot)
 
         if (names.length === 0) {
-            throw new Error(`No descriptors found in package during 'publish descriptor' action. Nothing to publish`)
+            throw new Error(`No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`)
         }
 
         for (const swName of names) {
             const swInfo = readEntrypointDescriptor(this.pkg.packageName, this.pkg.packageRoot, swName)
             if (swInfo.isDev) {
-                this.logger.error("You are trying to publish software descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
-                throw new Error("attempt to publish 'dev' software descriptor")
+                this.logger.error("You are trying to publish entrypoint descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
+                throw new Error("attempt to publish 'dev' entrypoint descriptor")
             }
         }
 
-        this.logger.info("Running 'npm publish' to publish NPM package with software descriptors...")
+        this.logger.info("Running 'npm publish' to publish NPM package with entrypoint descriptors...")
 
         const args = ["publish"]
         if (options?.npmPublishArgs) {

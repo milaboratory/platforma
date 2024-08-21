@@ -75,7 +75,7 @@ export const VersionFlag = {
 export const ArchFlags = {
     "os": Flags.string({
         env: envs.PL_PKG_OS,
-        description: "OS supported by software. Has no effect on cross-platform packages",
+        description: "OS supported by software. Has no effect on cross-platform software packages",
         default: util.currentOS(),
         options: util.OSes,
         required: false,
@@ -83,7 +83,7 @@ export const ArchFlags = {
 
     "arch": Flags.string({
         env: envs.PL_PKG_ARCH,
-        description: "architecture supported by software. Has no effect on cross-platform packages",
+        description: "architecture supported by software. Has no effect on cross-platform software packages",
         default: util.currentArch(),
         options: util.Arches,
         required: false,

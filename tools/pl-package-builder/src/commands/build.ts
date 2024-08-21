@@ -4,7 +4,7 @@ import * as util from '../core/util';
 import { Core } from '../core/core';
 
 export default class Build extends Command {
-    static override description = 'Build all targets (software descriptor, binary pacakge and so on)'
+    static override description = 'Build all targets (entrypoint descriptors, binary pacakges and so on)'
 
     static override examples = [
         '<%= config.bin %> <%= command.id %>',

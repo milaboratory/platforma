@@ -38,7 +38,7 @@ const artifactIDSchema = z.string().
 
 const entrypointsListSchema = z.record(
     z.string().regex(/[-_a-z0-9.]/)
-    .describe("name of software descriptor, client should import to use this entrypoint (ll.importSoftware)"),
+    .describe("name of entrypoint descriptor, client should import to use this entrypoint (ll.importSoftware)"),
     entrypointSchema,
 )
 

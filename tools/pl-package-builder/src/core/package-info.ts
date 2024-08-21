@@ -84,25 +84,19 @@ type packageJson = z.infer<typeof packageJsonSchema>
  * {
  *   "block-software": [
  *     {
- *       "docker": {
- *         "registry": "quay.io",
- *         "entrypoints": [
- *           { "name": "script1",
- *             "cmd": [ "script1" ] }
- *         ]
- *       },
  *       "binary": {
  *         "registry": {
+ *            "name":       "my-org"
  *            "storageURL": "s3://<bucket>/<some-prefix>?region=<region-name>",
- *            "name":       "my-org" # defaults to 'scope' of npm package without leading '@'
  *         },
  *      
  *         "root": "./src",
  *
- *         "entrypoints": [
- *           { "name": "script1",
- *             "cmd": [ "{pkg}/script1" ] }
- *         ]
+ *         "entrypoints": {
+ *           "script1": {
+ *             "cmd": [ "{pkg}/script1" ]
+ *           }
+ *         }
  *       }
  *     }
  *   ]
@@ -306,26 +300,42 @@ export class PackageInfo {
 
     private validateConfig() {
         const blockSoftware = this.pkgJson['block-software']
-        const canHaveDefaultName = Object.values(blockSoftware).length === 1
+        const packages = blockSoftware.packages
+        var canHaveDefaultName = true
 
-        const packageNames = new Set<string>()
-        for (const pkg of Object.values(blockSoftware.packages)) {
-            const binaryEntrypoints: string[] = []
+        const uniqueEntrypoints: Record<string, string> = {}
+        const uniquePackageNames = new Set<string>()
 
+        for (const [pkgID, pkg] of Object.entries(packages)) {
             const binConfig = pkg.binary
+
             if (binConfig) {
-                if (!canHaveDefaultName && !binConfig.name) {
-                    throw new Error(`Several packages are defined in '${util.softwareConfigName}'. Each pacakge requires its own unique name`)
+                if (!binConfig.name) {
+                    if (!canHaveDefaultName) {
+                        throw new Error(`Several packages are defined in '${util.softwareConfigName}'. Only one software package can have empty 'name' field`)
+                    }
+                    canHaveDefaultName = false
                 }
+
                 if (binConfig.name) {
-                    if (packageNames.has(binConfig.name)) {
+                    if (uniquePackageNames.has(binConfig.name)) {
                         throw new Error(`found two packages with the same name '${binConfig.name}'`)
                     }
-                    packageNames.add(binConfig.name)
+                    uniquePackageNames.add(binConfig.name)
                 }
 
                 for (const e of Object.keys(binConfig.entrypoints)) {
-                    binaryEntrypoints.push(e)
+                    if (uniqueEntrypoints[e]) {
+                        throw new Error(`duplicate entrypoint: '${e}' is defined in software packages '${uniqueEntrypoints[e]}' and '${pkgID}'`)
+                    }
+                    uniqueEntrypoints[e] = pkgID
+                }
+            }
+
+            if (pkg.environment) {
+                if (uniqueEntrypoints[pkg.environment.entrypointName]) {
+                    const e = pkg.environment.entrypointName
+                    throw new Error(`duplicate entrypoint: '${e}' is defined in software packages '${uniqueEntrypoints[e]}' and '${pkgID}'`)
                 }
             }
 

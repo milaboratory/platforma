@@ -5,7 +5,7 @@ import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
 export default class Descriptor extends Command {
-    static override description = 'publish npm package with software descriptors'
+    static override description = 'publish npm package with entrypoint descriptors'
 
     static override examples = [
         '<%= config.bin %> <%= command.id %>',

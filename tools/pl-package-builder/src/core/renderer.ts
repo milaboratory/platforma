@@ -159,7 +159,7 @@ export function readEntrypointDescriptor(npmPackageName: string, packageRoot: st
     }
 }
 
-export function listSoftwareIDs(packageRoot: string): string[] {
+export function listSoftwareNames(packageRoot: string): string[] {
     const swDir = entrypointFilePath(packageRoot)
     const items = fs.readdirSync(swDir)
 
@@ -186,7 +186,7 @@ export class Renderer {
         const sources = options?.sources ?? util.AllSoftwareSources
         const fullDirHash = options?.fullDirHash ?? false
 
-        this.logger.info("Rendering software descriptors...")
+        this.logger.info(`Rendering entrypoint descriptors for '${pkg.id}'...`)
         this.logger.debug("  entrypoints: " + JSON.stringify(entrypoints))
         this.logger.debug("  sources: " + JSON.stringify(sources))
 
@@ -258,8 +258,8 @@ export class Renderer {
         }
 
         if (result.size === 0) {
-            this.logger.error("no software descriptors were rendered")
-            throw new Error("no software descriptors were rendered")
+            this.logger.error("no entrypoint descriptors were rendered")
+            throw new Error("no entrypoint descriptors were rendered")
         }
 
         return result
@@ -277,7 +277,7 @@ export class Renderer {
     public writeEntrypointDescriptor(info: entrypointSwJson, dstFile?: string) {
         const dstSwInfoPath = dstFile ?? entrypointFilePath(this.npmPackageRoot, info.artifact.name)
 
-        this.logger.info(`Writing software descriptor to '${dstSwInfoPath}'`)
+        this.logger.info(`Writing entrypoint descriptor to '${dstSwInfoPath}'`)
 
         const { artifact, ...toEncode } = info // cut 'artifact' from final .sw.json
         const encoded = JSON.stringify({
@@ -309,7 +309,7 @@ export class Renderer {
 
         if (!ep) {
             this.logger.error(`renderer logic error: attempt to render 'local' descriptor of package '${pkg.id}' for unknown entrypoint '${epName}'`)
-            throw new Error(`entrypoint '${epName}' not found in package '${pkg.id}'`)
+            throw new Error(`entrypoint '${epName}' not found in software package '${pkg.id}'`)
         }
 
         const pkgType = binary.type
@@ -400,7 +400,7 @@ export class Renderer {
         const ep = binary.entrypoints[epName]
         if (!ep) {
             this.logger.error(`renderer logic error: attempt to render 'binary' descriptor of package '${pkgID}' for unknown entrypoint '${epName}'`)
-            throw new Error(`entrypoint '${epName}' not found in package '${pkgID}'`)
+            throw new Error(`entrypoint '${epName}' not found in software package '${pkgID}'`)
         }
         const runEnv = this.resolveRunEnvironment(binary.environment)
 
