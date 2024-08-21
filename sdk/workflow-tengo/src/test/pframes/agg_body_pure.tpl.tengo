@@ -12,10 +12,15 @@ self.defineOutputs(
 self.body(func(inputs) {
 	value := inputs[pConstants.VALUE_FIELD_NAME]
 	key := inputs[pConstants.KEY_FIELD_NAME]
+	base := inputs.base
 
-	result := 0
+	if !is_array(key) {
+		ll.panic("key is not an array: %v", key)
+	}
+
+	result := is_undefined(base) ? 0 : base
 	for k, v in value.inputs() {
-		result += v.getDataAsJson()
+		result += v.getValue().getDataAsJson()
 	}
 
 	return {
