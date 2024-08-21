@@ -1,0 +1,17 @@
+// await-state-1
+
+self := import(":tpl")
+
+self.defineOutputs(["main"])
+
+self.awaitState("input1", { wildcard: "*" }, "ResourceReady")
+
+self.body(func(inputs) {
+	res := ""
+	for _, input in inputs["input1"].inputs() {
+		res += input.getValue().isReady() ? "A" : "B"
+	}
+	return {
+		main: res
+	}
+})
