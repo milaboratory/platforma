@@ -23,14 +23,16 @@
           "environment": "pl-package-builder-runenv-1:1.2.3",
           "requirements": "./requirements.txt",
 
-          "entrypoints": [
-            { "name": "hello",
+          "entrypoints": {
+            "hello": {
               "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
-              "envVars": [ "MYVAR=1" ] },
-            { "name": "goodbye",
+              "envVars": [ "MYVAR=1" ]
+            },
+            "goodbye": {
               "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
-              "envVars": [ "MYVAR=2" ] }
-          ]
+              "envVars": [ "MYVAR=2" ]
+            }
+          }
         }
       }
     }

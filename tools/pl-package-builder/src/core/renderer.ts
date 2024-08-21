@@ -228,7 +228,7 @@ export class Renderer {
                             this.logger.warn(`  skipping 'environment' rendering (dev mode is not supported yet)`)
                             continue
                         }
-                        if (pkg.binary && !pkg.binary.getEntrypoint(epName)) {
+                        if (pkg.binary && !pkg.binary.entrypoints[epName]) {
                             this.logger.warn(`  skipping 'binary' rendering (no entrypoint '${epName}')`)
                             continue
                         }
@@ -304,7 +304,7 @@ export class Renderer {
         const binary = pkg.binary!
         const rootDir = binary.contentRoot
         const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir)
-        const ep = binary.getEntrypoint(epName)
+        const ep = binary.entrypoints[epName]
         const runEnv = this.resolveRunEnvironment(binary.environment)
 
         if (!ep) {
@@ -320,7 +320,7 @@ export class Renderer {
                 return {
                     type: "binary",
                     hash: hash.digest().toString('hex'),
-                    path: rootDir, 
+                    path: rootDir,
                     cmd: ep.cmd,
                     envVars: ep.envVars
                 }
@@ -397,7 +397,7 @@ export class Renderer {
                 util.assertNever(mode)
         }
 
-        const ep = binary.getEntrypoint(epName)
+        const ep = binary.entrypoints[epName]
         if (!ep) {
             this.logger.error(`renderer logic error: attempt to render 'binary' descriptor of package '${pkgID}' for unknown entrypoint '${epName}'`)
             throw new Error(`entrypoint '${epName}' not found in package '${pkgID}'`)
@@ -535,8 +535,8 @@ export class Renderer {
         }
 
         if (pkg.binary) {
-            for (const e of pkg.binary.entrypoints) {
-                names.push(e.name)
+            for (const epName of Object.keys(pkg.binary.entrypoints)) {
+                names.push(epName)
             }
         }
 

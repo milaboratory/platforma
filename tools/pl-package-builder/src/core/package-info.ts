@@ -21,32 +21,22 @@ export interface PackageArchiveInfo extends binary.archiveRules {
 export interface BinaryConfig extends binary.binaryPackageConfig, PackageArchiveInfo {
     name: string
     version: string
-
-    getEntrypoint(name: string): binary.entrypointInfo | undefined
 }
 export interface JavaConfig extends binary.javaPackageConfig, PackageArchiveInfo {
     name: string
     version: string
-
-    getEntrypoint(name: string): binary.entrypointInfo | undefined
 }
 export interface PythonConfig extends binary.pythonPackageConfig, PackageArchiveInfo {
     name: string
     version: string
-
-    getEntrypoint(name: string): binary.entrypointInfo | undefined
 }
 export interface RConfig extends binary.rPackageConfig, PackageArchiveInfo {
     name: string
     version: string
-
-    getEntrypoint(name: string): binary.entrypointInfo | undefined
 }
 export interface CondaConfig extends binary.condaPackageConfig, PackageArchiveInfo {
     name: string
     version: string
-
-    getEntrypoint(name: string): binary.entrypointInfo | undefined
 }
 
 export type BinaryPackage =
@@ -250,16 +240,6 @@ export class PackageInfo {
             name,
             version,
 
-            getEntrypoint(name: string): binary.entrypointInfo | undefined {
-                for (const ep of binSettings.entrypoints) {
-                    if (ep.name === name) {
-                        return ep
-                    }
-                }
-
-                return undefined
-            },
-
             fullName(os: util.OSType, arch: util.ArchType): string {
                 return binaryPackageFullName(binSettings.crossplatform, this.name, this.version, os, arch)
             },
@@ -328,6 +308,7 @@ export class PackageInfo {
         const blockSoftware = this.pkgJson['block-software']
         const canHaveDefaultName = Object.values(blockSoftware).length === 1
 
+        const packageNames = new Set<string>()
         for (const pkg of Object.values(blockSoftware.packages)) {
             const binaryEntrypoints: string[] = []
 
@@ -336,8 +317,15 @@ export class PackageInfo {
                 if (!canHaveDefaultName && !binConfig.name) {
                     throw new Error(`Several packages are defined in '${util.softwareConfigName}'. Each pacakge requires its own unique name`)
                 }
-                for (const e of binConfig.entrypoints) {
-                    binaryEntrypoints.push(e.name)
+                if (binConfig.name) {
+                    if (packageNames.has(binConfig.name)) {
+                        throw new Error(`found two packages with the same name '${binConfig.name}'`)
+                    }
+                    packageNames.add(binConfig.name)
+                }
+
+                for (const e of Object.keys(binConfig.entrypoints)) {
+                    binaryEntrypoints.push(e)
                 }
             }
 

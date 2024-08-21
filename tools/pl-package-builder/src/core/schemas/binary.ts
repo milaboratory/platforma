@@ -20,8 +20,6 @@ const packageArchiveRulesSchema = z.object({
 export type archiveRules = z.infer<typeof packageArchiveRulesSchema>
 
 export const entrypointSchema = z.object({
-    name: z.string().regex(/[-_a-z0-9.]/)
-        .describe("name of software descriptor, client should import to use this entrypoint (ll.importSoftware)"),
     cmd: z.array(z.string()).
         describe("command to run for this entrypoint. This command will be appended by <args> set inside workflow"),
     envVars: z.array(
@@ -38,12 +36,17 @@ const artifactIDSchema = z.string().
     regex(/:/, { message: "tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1" }).
     describe("ID of tengo build artifact")
 
+const entrypointsListSchema = z.record(
+    z.string().regex(/[-_a-z0-9.]/)
+    .describe("name of software descriptor, client should import to use this entrypoint (ll.importSoftware)"),
+    entrypointSchema,
+)
+
 export const binaryPackageSchema = packageArchiveRulesSchema.extend({
     type: z.literal('binary').optional(),
     environment: z.undefined(),
 
-    entrypoints: z.array(entrypointSchema).
-        min(1, "binary software package without entrypoints is useless. Specify at least one entrypoint"),
+    entrypoints: entrypointsListSchema,
 })
 export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>
 
@@ -51,8 +54,7 @@ export const javaPackageSchema = packageArchiveRulesSchema.extend({
     type: z.literal("java"),
     environment: artifactIDSchema,
 
-    entrypoints: z.array(entrypointSchema).
-        min(1, "binary software package without entrypoints is useless. Specify at least one entrypoint"),
+    entrypoints: entrypointsListSchema,
 })
 export type javaPackageConfig = z.infer<typeof javaPackageSchema>
 
@@ -60,8 +62,7 @@ export const pythonPackageSchema = packageArchiveRulesSchema.extend({
     type: z.literal("python"),
     environment: artifactIDSchema,
 
-    entrypoints: z.array(entrypointSchema).
-        min(1, "binary software package without entrypoints is useless. Specify at least one entrypoint"),
+    entrypoints: entrypointsListSchema,
 
     requirements: z.string().
         describe("path to requrements.txt inside package archive"),
@@ -72,8 +73,7 @@ export const rPackageSchema = packageArchiveRulesSchema.extend({
     type: z.literal("R"),
     environment: artifactIDSchema,
 
-    entrypoints: z.array(entrypointSchema).
-        min(1, "binary software package without entrypoints is useless. Specify at least one entrypoint"),
+    entrypoints: entrypointsListSchema,
 
     renvLock: z.string().
         describe("path to 'renv.lock' file inside package archive"),
@@ -84,8 +84,7 @@ export const condaPackageSchema = packageArchiveRulesSchema.extend({
     type: z.literal("conda"),
     environment: artifactIDSchema,
 
-    entrypoints: z.array(entrypointSchema).
-        min(1, "binary software package without entrypoints is useless. Specify at least one entrypoint"),
+    entrypoints: entrypointsListSchema,
 })
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>
 

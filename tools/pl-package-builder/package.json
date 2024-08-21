@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-package-builder",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "build": "tsc",
