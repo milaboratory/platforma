@@ -52,3 +52,25 @@ export function initByUrl(address: string, pkgRoot: string): RegistryStorage {
             throw new Error(`Protocol ${url.protocol} is not supported for software registries yet. Use your own tooling for package upload`);
     }
 }
+
+export type storagePreset = {
+    UploadURL?: string
+    DownloadURL?: string
+}
+
+export function getStoragePreset(registryName: string): storagePreset {
+    const preset: storagePreset = {}
+    const regNameUpper = registryName.toUpperCase()
+
+    const uploadTo = process.env[`PL_REGISTRY_UPLOAD_${regNameUpper}_URL`]
+    if (uploadTo) {
+        preset.UploadURL = uploadTo
+    }
+
+    const downloadFrom = process.env[`PL_REGISTRY_DOWNLOAD_${regNameUpper}_URL`]
+    if (downloadFrom) {
+        preset.DownloadURL = downloadFrom
+    }
+
+    return preset
+}

@@ -121,7 +121,7 @@ export class Core {
         }
 
         const descriptor = pkg.environment ?? pkg.binary!
-        const archivePath = options?.archivePath ?? this.archivePath
+        const archivePath = options?.archivePath ?? this.archivePath(pkgID)
         const contentRoot = options?.contentRoot ?? descriptor.root
 
         this.logger.info("  rendering 'package.sw.json' to be embedded into package archive")
@@ -202,8 +202,10 @@ export class Core {
     }) {
         const pkg = this.getPackage(pkgID)
         const descriptor = pkg.environment ?? pkg.binary!
-        const archivePath = options?.archivePath ?? this.archivePath
-        const storageURL = options?.storageURL ?? descriptor.registry.storageURL
+        const storagePreset = storage.getStoragePreset(descriptor.registry.name)
+
+        const archivePath = options?.archivePath ?? this.archivePath(pkgID)
+        const storageURL = options?.storageURL ?? storagePreset.UploadURL ?? descriptor.registry.storageURL
         const dstName = descriptor.fullName(this.targetOS, this.targetArch)
 
         if (!storageURL) {
