@@ -14,6 +14,8 @@ import { Writable } from 'utility-types';
 
 export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {
+    case 'Json':
+      return;
     case 'JsonPartitioned':
       for (const [, blob] of Object.entries(data.parts)) yield blob;
       return;
@@ -42,6 +44,8 @@ export function mapBlobs<B1, B2>(
   mapping: (blob: B1) => B2
 ): PFrameInternal.DataInfo<B2> {
   switch (data.type) {
+    case 'Json':
+      return { ...data };
     case 'JsonPartitioned':
       return { ...data, parts: mapValues(data.parts, mapping) };
     case 'BinaryPartitioned':
@@ -58,8 +62,28 @@ export function mapBlobs<B1, B2>(
 }
 
 export const PColumnDataJsonPartitioned = resourceType('PColumnData/JsonPartitioned', '1');
+export const PColumnDataJsonSuperPartitioned = resourceType(
+  'PColumnData/Partitioned/JsonPartitioned',
+  '1'
+);
 export const PColumnDataBinaryPartitioned = resourceType('PColumnData/BinaryPartitioned', '1');
-export type PColumnDataResourceValue = {
+export const PColumnDataBinarySuperPartitioned = resourceType(
+  'PColumnData/Partitioned/BinaryPartitioned',
+  '1'
+);
+export const PColumnDataJson = resourceType('PColumnData/Json', '1');
+
+export type PColumnDataJsonResourceValue = {
+  keyLength: number;
+  data: Record<string, PFrameInternal.JsonDataValue>;
+};
+
+export type PColumnDataPartitionedResourceValue = {
+  partitionKeyLength: number;
+};
+
+export type PColumnDataSuperPartitionedResourceValue = {
+  superPartitionKeyLength: number;
   partitionKeyLength: number;
 };
 
@@ -68,10 +92,21 @@ export function parseDataInfoResource(
 ): PFrameInternal.DataInfo<ResourceInfo> {
   if (!data.getIsReadyOrError()) throw new Error('Data not ready.');
 
-  const meta = data.getDataAsJson<PColumnDataResourceValue>();
-  if (meta === undefined) throw new Error('unexpected data info structure, no resource value');
+  const resourceData = data.getDataAsJson();
+  if (resourceData === undefined)
+    throw new Error('unexpected data info structure, no resource data');
 
-  if (resourceTypesEqual(data.resourceType, PColumnDataJsonPartitioned)) {
+  if (resourceTypesEqual(data.resourceType, PColumnDataJson)) {
+    const dataContent = resourceData as PColumnDataJsonResourceValue;
+
+    return {
+      type: 'Json',
+      keyLength: dataContent.keyLength,
+      data: dataContent.data
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonPartitioned)) {
+    const meta = resourceData as PColumnDataPartitionedResourceValue;
+
     const parts = Object.fromEntries(
       data
         .listInputFields()
@@ -84,6 +119,8 @@ export function parseDataInfoResource(
       parts
     };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
+    const meta = resourceData as PColumnDataPartitionedResourceValue;
+
     const parts: Record<
       string,
       Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>

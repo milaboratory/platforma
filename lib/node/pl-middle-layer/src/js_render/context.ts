@@ -384,7 +384,9 @@ export class JsExecutionContext
   }
 
   public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
-    return this.resultPool.getSpecs();
+    const specs = this.resultPool.getSpecs();
+    if (!specs.isComplete) this.computableCtx?.markUnstable('specs_from_pool_incomplete');
+    return specs;
   }
 
   //
