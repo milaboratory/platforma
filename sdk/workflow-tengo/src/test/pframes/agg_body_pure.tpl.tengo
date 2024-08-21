@@ -1,0 +1,24 @@
+// agg_body_pure
+
+self := import(":tpl")
+
+ll := import(":ll")
+pConstants := import(":pframes.constants")
+
+self.defineOutputs(
+	"result"
+)
+
+self.body(func(inputs) {
+	value := inputs[pConstants.VALUE_FIELD_NAME]
+	key := inputs[pConstants.KEY_FIELD_NAME]
+
+	result := 0
+	for k, v in value.inputs() {
+		result += v.getDataAsJson()
+	}
+
+	return {
+		result: result
+	}
+})

@@ -1,0 +1,22 @@
+// ll_agg_1
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+pConstants := import(":pframes.constants")
+
+bodyTpl := ll.importTemplate(":test.pframes.agg_body_pure")
+
+llAggTpl := ll.importTemplate(":pframes.aggregate")
+
+self.body(func(inputs) {
+	renderResult := render.create(llAggTpl, {
+		params: inputs.params,
+		data: inputs.data
+	})
+
+	return {
+		result: renderResult.output("result")
+	}
+})
