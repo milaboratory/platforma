@@ -591,7 +591,7 @@ field = func(f) {
 			} else if isField(reference) {
 				tx.setFieldToField(self.id, reference.id)
 			} else {
-				ll.panic("smart resource or smart field expected, got %#v: ", reference)
+				ll.panic("smart resource or smart field expected (target field %v), got %#v: ", self.name(), reference)
 			}
 		},
 
@@ -602,6 +602,9 @@ field = func(f) {
 		 * @return nothing
 		 */
 		setRefOrJson: func(refOrJson) {
+			if is_undefined(refOrJson) {
+				ll.panic("attempt to assign undefined value to field %v", self.name())
+			}
 			self.set(_toRefOrJson(refOrJson))
 		},
 

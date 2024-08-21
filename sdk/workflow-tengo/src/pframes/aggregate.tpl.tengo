@@ -11,6 +11,7 @@ json := import("json")
 
 self.awaitState("InputsLocked")
 self.awaitState("data", "InputsLocked")
+self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 
@@ -18,6 +19,15 @@ self.body(func(inputs) {
 	//   indices: int[]
 	//   eph: bool
     params := inputs.params
+
+	if is_undefined(params) {
+		ll.panic("Params is not defined")
+	}
+
+	if !is_map(params) {
+		ll.panic("Params have wrong type, or nor ready yet: %v", params)
+	}
+
 	indices := params.indices
 	eph := params.eph
 
@@ -26,6 +36,14 @@ self.body(func(inputs) {
 
 	// template implementing aggregation body
     body := inputs.body
+
+	if is_undefined(data) {
+		ll.panic("Data is not defined")
+	}
+
+	if is_undefined(body) {
+		ll.panic("Body is not defined")
+	}
 
 	extraInputs := {}
 	for name, field in inputs {
@@ -84,17 +102,17 @@ self.body(func(inputs) {
 		for sGroupKey, group in groups {
 			group = group.lockAndBuild()
 			renderInputs := {}
-			renderInputs[constants.KEY_FIELD_NAME] := json.decode(sGroupKey)
-			renderInputs[constants.VALUE_FIELD_NAME] := group
+			renderInputs[constants.KEY_FIELD_NAME] = json.decode(sGroupKey)
+			renderInputs[constants.VALUE_FIELD_NAME] = group
 			for name, field in extraInputs {
-				renderInputs[name] := field
+				renderInputs[name] = field
 			}
 			renderResult := render.createUniversal(body, eph, renderInputs)
 			outputMap.createInputField(sGroupKey).set(renderResult.output(constants.RESULT_FIELD_NAME))
 		}
 
 		return {
-			result: outputMap
+			result: outputMap.lockAndBuild()
 		}
 	} else {
 		ll.panic("Unexpected input resource type: %v", data.info().Type)

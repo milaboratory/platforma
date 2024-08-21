@@ -1,9 +1,59 @@
-pframesConstants := import(":pframes-constants")
+/**
+ * Set of basic operations for PColumn data payload
+ */
 
-aggregate := func() {
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+pConstants := import(":pframes.constants")
 
+llAggTpl := ll.importTemplate(":pframes.aggregate")
+
+/**
+ * Instantiate an aggragation pipeline for the given inputs, and returns a reference to
+ * the future result.
+ *
+ * Contract for the body template:
+ *
+ *   Inputs:
+ *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
+ *                   positions not specified in the indices parameter)
+ *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
+ *     ...extra    - all values or references passed to optional extra parameter of this method
+ *                   will be forwarded to the template
+ *
+ *  Outputs:
+ *    "result"     - template is expected to return singular output with this name
+ *
+ * @param data    data resource (currently only PColumnData/ResourceMap is supported)
+ * @param indices indices to aggregate over (these indices will be stripped from the input map,
+ *                meaning of this parameter is the opposite of GROUP BY from SQL)
+ * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
+ * @param isEph   if true, body template will be rendered as ephemeral
+ * @param extra   optional map of paramters to pass to the template
+ */
+aggregate := func(data, indices, bodyTpl, isEph, ...extra) {
+	renderInputs := {
+		params: smart.createJsonResource({
+			indices: indices,
+			eph: isEph
+		}),
+		body: bodyTpl,
+		data: data
+	}
+
+	if len(extra) == 1 {
+		for k, v in extra[0] {
+			renderInputs[k] = v
+		}
+	} else if len(extra) != 0 {
+		ll.panic("Wrong number of parameters for aggregate method.")
+	}
+
+	renderResult := render.createEphemeral(llAggTpl, renderInputs)
+	return renderResult.output("result");
 }
 
 export ll.toStrict({
-	aggregate
+	aggregate: aggregate
 })
