@@ -1,5 +1,5 @@
-import { Command } from '@oclif/core'
-import { ArchFlags, GlobalFlags } from '../../../core/cmd-opts';
+import { Command, Flags } from '@oclif/core'
+import * as cmdOpts from '../../../core/cmd-opts';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
 
@@ -11,8 +11,10 @@ export default class Name extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...ArchFlags,
+        ...cmdOpts.GlobalFlags,
+        ...cmdOpts.ArchFlags,
+
+        ...cmdOpts.PackageIDRequiredFlag,
     };
 
     static strict: boolean = false;
@@ -23,9 +25,22 @@ export default class Name extends Command {
 
         const core = new Core(logger)
 
-        console.log(core.pkg.binary.fullName(
-            flags.os as util.OSType,
-            flags.arch as util.ArchType
-        ))
+        const pkg = core.getPackage(flags['package-id'])
+        if (pkg.binary) {
+            console.log(pkg.binary.fullName(
+                flags.os as util.OSType,
+                flags.arch as util.ArchType
+            ))
+        }
+
+        if (pkg.environment) {
+            console.log(pkg.environment.fullName(
+                flags.os as util.OSType,
+                flags.arch as util.ArchType
+            ))
+        }
+
+        logger.error(`Package '${flags['package-id']}' have no software archive build settings ('binary' or 'environment')`)
+        process.exit(1)
     }
 }

@@ -1,4 +1,3 @@
-export const PL_PKG_NAME = "PL_PKG_NAME"
 export const PL_PKG_VERSION = "PL_PKG_VERSION"
 export const PL_PKG_OS = "PL_PKG_OS"
 export const PL_PKG_ARCH = "PL_PKG_ARCH"

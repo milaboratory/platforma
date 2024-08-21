@@ -2,65 +2,56 @@ import * as artifacts from './test-artifacts'
 import { PackageInfo } from './package-info'
 import { createLogger } from './util'
 
-test("PackageInfo loads correctly on minimal required data", () => {
-    const l = createLogger('error')
-
-    const all = new PackageInfo(l, {
-        plPkgYamlData: artifacts.PlPackageYamlAllMinimal,
-        pkgJsonData: artifacts.PackageJson,
-    })
-
-    expect(all.hasDocker).toBeTruthy()
-    expect(all.docker.registry).toEqual(artifacts.PlDockerRegistry)
-    expect(all.docker.imageName).toEqual(artifacts.PackageName.substring(1))
-    expect(all.docker.version).toEqual(artifacts.PackageVersion)
-    expect(all.docker.tag).toEqual(`${artifacts.PlDockerRegistry}/${artifacts.PackageName.substring(1)}:${artifacts.PackageVersion}`)
-
-    expect(all.hasBinary).toBeTruthy()
-    expect(all.binary.registry.name).toEqual(artifacts.PlBinaryRegistry)
-    expect(all.binary.name).toEqual(artifacts.PackageName.split("/")[1])
-    expect(all.binary.version).toEqual(artifacts.PackageVersion)
-    expect(all.binary.root).toEqual(".")
-
-    const docker = new PackageInfo(l, {
-        plPkgYamlData: artifacts.PlPackageYamlDockerMinimal,
-        pkgJsonData: artifacts.PackageJson,
-    })
-    expect(docker.hasDocker).toBeTruthy()
-    expect(docker.docker).toEqual(all.docker)
-    expect(docker.hasBinary).toBeFalsy()
-
-    const binary = new PackageInfo(l, {
-        plPkgYamlData: artifacts.PlPackageYamlBinaryMinimal,
-        pkgJsonData: artifacts.PackageJson,
-    })
-    expect(binary.hasDocker).toBeFalsy()
-    expect(binary.hasBinary).toBeTruthy()
-    expect(JSON.stringify(binary.binary)).toEqual(JSON.stringify(all.binary))
-})
-
-test("PackageInfo considers custom version and package", () => {
+test("PackageInfo loads correctly for multi-package", () => {
     const l = createLogger('error')
 
     const i = new PackageInfo(l, {
-        plPkgYamlData: artifacts.PlPackageYamlCustomSettings,
         pkgJsonData: artifacts.PackageJson,
     })
 
-    expect(i.hasDocker).toBeTruthy()
-    expect(i.docker.registry).toEqual(artifacts.PlDockerRegistry)
-    expect(i.docker.imageName).toEqual(artifacts.PlDockerImageName)
-    expect(i.docker.version).toEqual(artifacts.PlDockerCustomVersion)
-    expect(i.docker.tag).toEqual(`${artifacts.PlDockerRegistry}/${artifacts.PlDockerImageName}:${artifacts.PlDockerCustomVersion}`)
-    expect(i.docker.entrypoint).toEqual(["/usr/bin/env", "printf"])
-    expect(i.docker.cmd).toEqual(["Hello, world!"])
+    var pkg = i.getPackage("pCross")
+    expect(pkg.binary).toBeDefined()
+    expect(pkg.binary!.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.binary!.name).toEqual(artifacts.PackageNameNoAt)
+    expect(pkg.binary!.version).toEqual(artifacts.PackageVersion)
+    expect(pkg.binary!.root).toEqual("./src")
 
-    expect(i.hasBinary).toBeTruthy()
-    expect(i.binary.registry.name).toEqual(artifacts.PlBinaryRegistry)
-    expect(i.binary.name).toEqual(artifacts.PlBinaryCustomName)
-    expect(i.binary.version).toEqual(artifacts.PlBinaryCustomVersion)
-    expect(i.binary.root).toEqual("./src")
-    expect(i.binary.cmd).toEqual("./script1.py")
-    expect(i.binary.runEnv).toEqual("python@3.12")
-    expect(i.binary.requirements).toEqual("./requirements.txt")
+    var pkg = i.getPackage("pCustom")
+    expect(pkg.binary).toBeDefined()
+    expect(pkg.binary!.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.binary!.name).toEqual(artifacts.BinaryCustomName)
+    expect(pkg.binary!.version).toEqual(artifacts.BinaryCustomVersion)
+
+    var pkg = i.getPackage("pEnv")
+    expect(pkg.environment).toBeDefined()
+    expect(pkg.environment!.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.environment!.name).toEqual(artifacts.PackageNameNoAt)
+    expect(pkg.environment!.version).toEqual(artifacts.PackageVersion)
+})
+
+test("PackageInfo considers version override", () => {
+    const l = createLogger('error')
+
+    const i = new PackageInfo(l, {
+        pkgJsonData: artifacts.PackageJson,
+    })
+
+    const customVersion = "my-custom-version"
+    i.version = customVersion
+
+    var pkg = i.getPackage("pCross")
+    expect(pkg.binary).toBeDefined()
+    expect(pkg.binary!.version).toEqual(customVersion)
+
+    var pkg = i.getPackage("pCustom")
+    expect(pkg.binary).toBeDefined()
+    expect(pkg.binary!.version).toEqual(customVersion)
+
+    var pkg = i.getPackage("pEnv")
+    expect(pkg.environment).toBeDefined()
+    expect(pkg.environment!.version).toEqual(customVersion)
+
+    var pkg = i.getPackage("pEnvDep")
+    expect(pkg.binary).toBeDefined()
+    expect(pkg.binary!.version).toEqual(customVersion)
 })

@@ -2,8 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from "child_process";
 import winston from "winston";
-import { PackageInfo, CommonBinaryConfig } from "./package-info";
-import { SoftwareDescriptor, listSoftwareIDs, readSoftwareInfo } from "./sw-json";
+import { PackageInfo, PackageConfig } from "./package-info";
+import { Renderer, listSoftwareIDs, readEntrypointDescriptor } from "./renderer";
+import * as binSchema from './schemas/binary';
 import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
@@ -12,8 +13,10 @@ import { createReadStream } from "fs";
 
 export class Core {
     private readonly logger: winston.Logger
+    private _packages: Map<string, PackageConfig> | undefined
+    private _renderer: Renderer | undefined
+
     public readonly pkg: PackageInfo
-    public readonly descriptor: SoftwareDescriptor
     public buildMode: util.BuildMode
     public targetOS: OSType
     public targetArch: ArchType
@@ -25,7 +28,6 @@ export class Core {
     ) {
         this.logger = logger
         this.pkg = pkgInfo ?? new PackageInfo(logger)
-        this.descriptor = new SoftwareDescriptor(logger, this.pkg)
 
         this.buildMode = 'release'
         this.targetOS = currentOS()
@@ -34,59 +36,115 @@ export class Core {
         this.fullDirHash = false
     }
 
-    public get archivePath(): string {
-        return archive.getPath(this.archiveOptions)
+    public archivePath(pkgID: string): string {
+        return archive.getPath(this.archiveOptions(pkgID))
     }
 
-    public set packageName(v: string) {
-        if (this.pkg.hasBinary) {
-            this.pkg.binary.name = v
+    public get packages(): Map<string, PackageConfig> {
+        if (!this._packages) {
+            this._packages = this.pkg.packages
         }
-        if (this.pkg.hasEnvironment) {
-            this.pkg.environment.name = v
+
+        return this._packages
+    }
+
+    public getPackage(id: string): PackageConfig {
+        const pkg = this.packages.get(id)
+        if (!pkg) {
+            this.logger.error(`package with id '${id}' not found in ${util.softwareConfigName} file`)
+            throw new Error(`no package with id '${id}'`)
+        }
+        return pkg
+    }
+
+    public buildDescriptors(options?: {
+        ids?: string[],
+        entrypoints?: string[],
+        sources?: util.SoftwareSource[]
+    }) {
+        for (const [id, pkg] of this.packages.entries()) {
+            if (options?.ids && !options.ids.includes(id)) {
+                this.logger.debug(`skipping descriptor generation for package '${id}'`)
+                continue
+            }
+
+            const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, pkg, {
+                entrypoints: options?.entrypoints,
+                sources: options?.sources,
+                fullDirHash: this.fullDirHash
+            })
+
+            for (const swJson of infos.values()) {
+                this.renderer.writeEntrypointDescriptor(swJson)
+            }
         }
     }
 
-    public buildDescriptor(sources: util.SoftwareSource[]) {
-        const swJson = this.descriptor.render(this.buildMode, sources, this.fullDirHash)
-        this.descriptor.write(swJson)
+    public buildPackages(options?: {
+        ids?: string[],
+        forceBuild?: boolean,
+
+        archivePath?: string,
+        contentRoot?: string,
+        skipIfEmpty?: boolean,
+    }) {
+        const packagesToBuild = options?.ids ?? Array.from(this.packages.keys())
+
+        if (packagesToBuild.length > 1 && options?.archivePath && !options.forceBuild) {
+            this.logger.error("Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add '--force' flag")
+            throw new Error("attempt to build several packages using the same software package archive")
+        }
+
+        for (const pkgID of packagesToBuild) {
+            this.buildPackage(pkgID, options)
+        }
     }
 
-    public buildPackage(options?: { archivePath?: string, contentRoot?: string }) {
-        if (!this.pkg.hasBinary && !this.pkg.hasEnvironment) {
-            this.logger.error("no 'binary' configuration found: package build is impossible for given 'pl.package.yaml' file")
+    public buildPackage(pkgID: string, options?: {
+        archivePath?: string, contentRoot?: string,
+        skipIfEmpty?: boolean,
+    }) {
+        this.logger.info(`Building software package '${pkgID}'...`)
+        const pkg = this.getPackage(pkgID)
+
+        if (!pkg.binary && !pkg.environment) {
+            if (options?.skipIfEmpty) {
+                this.logger.info(`  archive build was skipped: package '${pkgID}' has no software archive build settings ('binary' or 'environment')`)
+            }
+            this.logger.error(`  no 'binary' settings found: software '${pkgID}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
             throw new Error("no 'binary' configuration")
         }
 
         if (this.buildMode === 'dev-local') {
-            this.logger.info(`  no need to build pack software archive in '${this.buildMode}' mode: binary build was skipped`)
+            this.logger.info(`  no need to build software archive in '${this.buildMode}' mode: archive build was skipped`)
             return
         }
 
-        const desc = this.binaryDescriptor
+        const descriptor = pkg.environment ?? pkg.binary!
         const archivePath = options?.archivePath ?? this.archivePath
-        const contentRoot = options?.contentRoot ?? desc.contentRoot
+        const contentRoot = options?.contentRoot ?? descriptor.root
 
-        this.logger.info("Rendering 'package.sw.json' to be embedded into package archive")
-        const swInfo = this.descriptor.render(this.buildMode, ['binary'], this.fullDirHash)
-        const swInfoPath = path.resolve(contentRoot, "package.sw.json")
-        fs.writeFileSync(swInfoPath, JSON.stringify(swInfo))
+        this.logger.info("  rendering 'package.sw.json' to be embedded into package archive")
+        const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
 
-        this.logger.info("Packing software into a package")
-        if (desc.crossplatform) {
-            this.logger.info(`  generating cross-platform package`)
+        const swJsonPath = path.resolve(contentRoot, "package.sw.json")
+        fs.writeFileSync(swJsonPath, JSON.stringify(swJson))
+
+        this.logger.info("  packing software into a package")
+        if (descriptor.crossplatform) {
+            this.logger.info(`    generating cross-platform package`)
         } else {
-            this.logger.info(`  generating package for os='${this.targetOS}', arch='${this.targetArch}'`)
+            this.logger.info(`    generating package for os='${this.targetOS}', arch='${this.targetArch}'`)
         }
-        this.logger.debug(`  package content root: '${contentRoot} '`)
-        this.logger.debug(`  package destination archive: '${archivePath}'`)
+        this.logger.debug(`    package content root: '${contentRoot} '`)
+        this.logger.debug(`    package destination archive: '${archivePath}'`)
 
-        archive.create(contentRoot, archivePath)
+        archive.create(contentRoot, this.archivePath(pkgID))
 
-        this.logger.info(`Software package was written to '${archivePath}'`)
+        this.logger.info(`  software package was written to '${this.archivePath(pkgID)}'`)
     }
 
-    public publishDescriptor(options?: {
+    public publishDescriptors(options?: {
         npmPublishArgs?: string[],
     }) {
         const names = listSoftwareIDs(this.pkg.packageRoot)
@@ -96,7 +154,7 @@ export class Core {
         }
 
         for (const swName of names) {
-            const swInfo = readSoftwareInfo(this.pkg.packageRoot, swName)
+            const swInfo = readEntrypointDescriptor(this.pkg.packageName, this.pkg.packageRoot, swName)
             if (swInfo.isDev) {
                 this.logger.error("You are trying to publish software descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
                 throw new Error("attempt to publish 'dev' software descriptor")
@@ -119,43 +177,68 @@ export class Core {
         }
     }
 
-    public publishPackage(options?: {
+    public publishPackages(options?: {
+        ids?: string[],
+        forcePublish?: boolean,
+
         archivePath?: string,
         storageURL?: string,
     }) {
-        const desc = this.binaryDescriptor
+        const packagesToPublish = options?.ids ?? Array.from(this.packages.keys())
+
+        if (packagesToPublish.length > 1 && options?.archivePath && !options.forcePublish) {
+            this.logger.error("Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add '--force' flag")
+            throw new Error("attempt to publish several packages using the same software package archive")
+        }
+
+        for (const pkgID of packagesToPublish) {
+            this.publishPackage(pkgID, options)
+        }
+    }
+
+    public publishPackage(pkgID: string, options?: {
+        archivePath?: string,
+        storageURL?: string,
+    }) {
+        const pkg = this.getPackage(pkgID)
+        const descriptor = pkg.environment ?? pkg.binary!
         const archivePath = options?.archivePath ?? this.archivePath
-        const storageURL = options?.storageURL ?? desc.registry.storageURL
-        const dstName = desc.fullName(this.targetOS, this.targetArch)
+        const storageURL = options?.storageURL ?? descriptor.registry.storageURL
+        const dstName = descriptor.fullName(this.targetOS, this.targetArch)
 
         if (!storageURL) {
-            this.logger.error(`no storage URL is set for registry ${desc.registry.name}`)
-            if (this.pkg.hasEnvironment) {
-                throw new Error("environment.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
+            this.logger.error(`no storage URL is set for registry ${descriptor.registry.name}`)
+            if (pkg.environment) {
+                throw new Error(`environment.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
             } else {
-                throw new Error("environment.registry.storageURL is empty. Set it as command option or in 'pl.package.yaml' file")
+                throw new Error(`binary.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
             }
         }
 
-        this.logger.info(`Publishing package '${desc.name}' into registry '${desc.registry.name}'`)
+        this.logger.info(`Publishing package '${descriptor.name}' into registry '${descriptor.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
         this.logger.debug(`  target package name: '${dstName}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
-        const archive = createReadStream(archivePath)
+        const archive = createReadStream(this.archivePath(pkgID))
 
         s.putFile(dstName, archive).then(
-            () => this.logger.info(`Package '${desc.name}' was published to '${desc.registry.name}:${dstName}'`)
+            () => this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
         )
     }
 
-    private get binaryDescriptor(): CommonBinaryConfig {
-        return this.pkg.hasEnvironment ? this.pkg.environment! : this.pkg.binary!
+    private get renderer(): Renderer {
+        if (!this._renderer) {
+            this._renderer = new Renderer(this.logger, this.pkg.packageName, this.pkg.packageRoot)
+        }
+
+        return this._renderer
     }
 
-    private get archiveOptions(): archive.archiveOptions {
-        const desc = this.binaryDescriptor
+    private archiveOptions(pkgID: string): archive.archiveOptions {
+        const pkg = this.getPackage(pkgID)
+        const desc = pkg.environment ?? pkg.binary!
 
         return {
             packageRoot: this.pkg.packageRoot,

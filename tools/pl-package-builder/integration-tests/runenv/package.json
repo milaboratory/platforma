@@ -3,7 +3,25 @@
   "version": "1.0.0",
   "description": "Example of software to be used as runenv",
   "scripts": {
-    "build": "rm -rf dist && pl-pkg build --descriptor-name=1.2.3 --version=1.2.3"
+    "build": "rm -rf dist && pl-pkg build --version=1.2.3"
+  },
+  "block-software": {
+    "packages": {
+      "env1": {
+        "environment": {
+          "registry": {
+            "name": "example"
+          },
+
+          "name": "common/example",
+          "entrypointName": "1.2.3",
+
+          "type": "python",
+          "root": "./src",
+          "binDir": "."
+        }
+      }
+    }
   },
   "files": [
     "dist/"

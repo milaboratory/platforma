@@ -12,12 +12,14 @@ export default class Build extends Command {
 
     static override flags = {
         ...cmdOpts.GlobalFlags,
+        ...cmdOpts.ForceFlag,
+
         ...cmdOpts.BuildFlags,
         ...cmdOpts.ArchFlags,
         ...cmdOpts.VersionFlag,
 
-        ...cmdOpts.DescriptorNameFlag,
-        ...cmdOpts.PackageNameFlag,
+        ...cmdOpts.EntrypointNameFlag,
+        ...cmdOpts.PackageIDFlag,
         ...cmdOpts.DirHashFlag,
 
         ...cmdOpts.ArchiveFlag,
@@ -35,19 +37,28 @@ export default class Build extends Command {
         const core = new Core(logger)
 
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
-        core.pkg.descriptorName = flags['descriptor-name']
-        if (flags['package-name']) core.packageName = flags['package-name']
         core.pkg.version = flags.version
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
         core.fullDirHash = flags['full-dir-hash']
 
-        core.buildDescriptor(sources)
+        core.buildDescriptors({
+            ids: flags['package-id'] ? flags['package-id'] : undefined,
+            entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
+            sources: flags.source ? flags.source as util.SoftwareSource[] : undefined,
+        })
 
         for (const source of sources) {
             switch (source) {
                 case 'binary':
-                    core.buildPackage({ archivePath: flags.archive, contentRoot: flags['content-root'] })
+                    core.buildPackages({
+                        ids: flags['package-id'] ?? Array.from(core.packages.keys()),
+                        forceBuild: flags.force,
+
+                        archivePath: flags.archive,
+                        contentRoot: flags['content-root'],
+                        skipIfEmpty: flags['package-id'] ? false : true // do not skip 'non-binary' packages if their IDs were set as args
+                    })
                     break
 
                 // case 'docker':

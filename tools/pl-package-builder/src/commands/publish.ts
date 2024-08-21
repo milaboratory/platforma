@@ -2,7 +2,6 @@ import { Command } from '@oclif/core'
 import * as cmdOpts from '../core/cmd-opts';
 import * as util from '../core/util';
 import { Core } from '../core/core';
-import { readSoftwareInfo } from '../core/sw-json';
 
 export default class Publish extends Command {
     static override description = 'publish software package archive to its registry'
@@ -19,7 +18,7 @@ export default class Publish extends Command {
         ...cmdOpts.ArchiveFlag,
         ...cmdOpts.StorageURLFlag,
 
-        ...cmdOpts.PackageNameFlag,
+        ...cmdOpts.PackageIDFlag,
     };
 
     static strict: boolean = false;
@@ -32,18 +31,16 @@ export default class Publish extends Command {
         core.pkg.version = flags.version
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
-        if (flags['package-name']) core.packageName = flags['package-name']
 
-        const swInfo = readSoftwareInfo(core.pkg.packageRoot, core.pkg.descriptorName)
+        core.publishPackages({
+            ids: flags['package-id'],
+            forcePublish: flags.force,
 
-        if (swInfo.binary || swInfo.runEnv || flags.archive) {
-            core.publishPackage({
-                archivePath: flags.archive,
-                storageURL: flags.publishURL,
-            })
-        }
+            archivePath: flags.archive,
+            storageURL: flags['storage-url'],
+        })
 
-        core.publishDescriptor()
+        core.publishDescriptors()
 
         // TODO: don't forget to add docker here, when we support it
     }

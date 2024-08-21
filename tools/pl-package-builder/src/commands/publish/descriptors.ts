@@ -23,7 +23,7 @@ export default class Descriptor extends Command {
 
         const c = new Core(logger)
 
-        c.publishDescriptor({
+        c.publishDescriptors({
             npmPublishArgs: argv as string[],
         })
     }

@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import { ArchFlags, GlobalFlags } from '../../../core/cmd-opts';
+import * as cmdOpts from '../../../core/cmd-opts';
 import * as util from '../../../core/util';
 import { Core } from '../../../core/core';
 
@@ -11,8 +11,10 @@ export default class Path extends Command {
     ]
 
     static override flags = {
-        ...GlobalFlags,
-        ...ArchFlags,
+        ...cmdOpts.GlobalFlags,
+        ...cmdOpts.ArchFlags,
+
+        ...cmdOpts.PackageIDRequiredFlag,
     };
 
     static strict: boolean = false;
@@ -25,6 +27,6 @@ export default class Path extends Command {
         core.targetOS = flags.os as util.OSType
         core.targetArch = flags.arch as util.ArchType
 
-        console.log(core.archivePath)
+        console.log(core.archivePath(flags['package-id']))
     }
 }

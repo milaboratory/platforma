@@ -1,1 +1,1 @@
-{"name":"pl-package-builder-runenv-1:1.2.3","runEnv":{"type":"java","registry":"example","package":"common/example/1.2.3-{os}-{arch}.tgz","binDir":"."}}
+{"name":"pl-package-builder-runenv-1:1.2.3","runEnv":{"type":"python","registry":"example","package":"common/example/1.2.3-{os}-{arch}.tgz","binDir":"."}}

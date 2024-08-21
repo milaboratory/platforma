@@ -5,7 +5,7 @@ import { createHash, Hash } from 'crypto';
 import winston from 'winston';
 
 export const packageJsonName = "package.json"
-export const plPackageYamlName = "pl.package.yaml"
+export const softwareConfigName = "package.json"
 
 export function assertNever(a: never) {
     throw new Error("code logic error: assertNever() call")
@@ -201,3 +201,24 @@ export const AllSoftwareSources = ['binary'] as const; // add 'docker', '<whatev
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 
 export type BuildMode = 'dev-local' | 'release'
+
+
+export type artifactID = {
+    package: string
+    name: string
+}
+
+export function artifactIDFromString(s: string): artifactID {
+    const parts = s.split(":", 2)
+    if (parts.length < 2) {
+        throw new Error(`string '${s}' is not an artifact ID (artifact ID format is <packageName>:<artifactName>)`)
+    }
+    return {
+        package: parts[0],
+        name: parts[1],
+    }
+}
+
+export function artifactIDToString(a: artifactID): string {
+    return `${a.package}:${a.name}`
+}

@@ -3,9 +3,37 @@
   "version": "1.0.0",
   "description": "The software description example",
   "scripts": {
-    "build:descriptor": "pl-pkg build descriptor",
+    "build:descriptor": "pl-pkg build descriptors",
     "build": "rm -rf dist && pl-pkg build",
     "publish": "pl-pkg publish"
+  },
+  "block-software": {
+    "packages": {
+      "p1": {
+        "binary": {
+          "registry": {
+            "name": "milaboratories",
+            "storageURL": "s3://<bucket>/<some-prefix>?region=<s3-region-name>"
+          },
+
+          "root": "./src",
+          "crossplatform": true,
+
+          "type": "python",
+          "environment": "pl-package-builder-runenv-1:1.2.3",
+          "requirements": "./requirements.txt",
+
+          "entrypoints": [
+            { "name": "hello",
+              "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
+              "envVars": [ "MYVAR=1" ] },
+            { "name": "goodbye",
+              "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
+              "envVars": [ "MYVAR=2" ] }
+          ]
+        }
+      }
+    }
   },
   "files": [
     "dist/"

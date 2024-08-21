@@ -11,6 +11,14 @@ export const GlobalFlags = {
     })
 }
 
+export const ForceFlag = {
+    "force": Flags.boolean({
+        description: "force action, ignoring automatic safety checks",
+        default: false,
+        required: false
+    })
+}
+
 const devModeValues = ['local'] as const;
 export type devModeName = (typeof devModeValues)[number];
 
@@ -33,25 +41,33 @@ export const DirHashFlag = {
     })
 }
 
-export const DescriptorNameFlag = {
-    "descriptor-name": Flags.string({
-        description: "override name of package descriptor (<name>.sw.json) to be generated",
+export const EntrypointNameFlag = {
+    "entrypoint": Flags.string({
+        description: "build only selected entrypoints",
+        multiple: true,
         required: false,
     }),
 }
 
-export const PackageNameFlag = {
-    "package-name": Flags.string({
-        env: envs.PL_PKG_NAME,
-        description: "override name of package (<name>.tgz) to be uploaded to the binary registry",
+export const PackageIDFlag = {
+    "package-id": Flags.string({
+        description: "build/publish only selected packages",
         required: false,
+        multiple: true,
+    }),
+}
+
+export const PackageIDRequiredFlag = {
+    "package-id": Flags.string({
+        description: "build/publish only selected packages",
+        required: true,
     }),
 }
 
 export const VersionFlag = {
     "version": Flags.string({
         // env: envs.PL_PKG_VERSION, // !! this env is used 'globally' right inside package-info.ts !!
-        description: "override version of package to be built (ignore versions in pl.package.yaml and package.json)",
+        description: "override version of package to be built (ignore versions in package.json)",
         required: false,
     }),
 }
@@ -93,14 +109,14 @@ export const StorageURLFlag = {
 export const ContentRootFlag = {
     "content-root": Flags.directory({
         env: envs.PL_PKG_CONTENT_ROOT,
-        description: "path to directory with contents of software package. Overrides settings in pl.package.yaml",
+        description: "path to directory with contents of software package. Overrides settings in package.json",
         required: false,
     }),
 }
 
 export const SourceFlag = {
     'source': Flags.string({
-        description: "add only selected sources to *.sw.json descriptor",
+        description: "add only selected sources to software entrypoint descriptor (*.sw.json file)",
         options: (util.AllSoftwareSources as unknown) as string[],
         multiple: true,
         required: false,
