@@ -131,7 +131,7 @@ export class PackageInfo {
             pkgJsonData?: string,
         }
     ) {
-        this.logger.info("Reading package information...")
+        this.logger.debug("Reading package information...")
 
         this.packageRoot = options?.packageRoot ?? util.findPackageRoot(logger)
 

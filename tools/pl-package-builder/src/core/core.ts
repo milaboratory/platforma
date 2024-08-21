@@ -124,7 +124,7 @@ export class Core {
         const archivePath = options?.archivePath ?? this.archivePath(pkgID)
         const contentRoot = options?.contentRoot ?? descriptor.root
 
-        this.logger.info("  rendering 'package.sw.json' to be embedded into package archive")
+        this.logger.debug("  rendering 'package.sw.json' to be embedded into package archive")
         const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
 
         const swJsonPath = path.resolve(contentRoot, "package.sw.json")
@@ -240,7 +240,7 @@ export class Core {
         const exists = await s.exists(dstName)
         if (exists) {
             if (options?.skipExisting) {
-                this.logger.info(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
+                this.logger.notice(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
                 return
             }
             if (!options?.forceReupload) {
