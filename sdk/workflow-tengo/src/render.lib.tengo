@@ -21,7 +21,7 @@ _SUBSCRIPTION_FIELD := "subscription"
  * @param inputs: a map of inputs to be passed to the template
  * @return renderer: a smart resource with additional output("name") method
  */
-_create := func(tplId, isEph, inputs) {
+createUniversal := func(tplId, isEph, inputs) {
 
 	// build renderer resource
 	rbuilder := undefined
@@ -78,7 +78,7 @@ _create := func(tplId, isEph, inputs) {
  * @return renderer: a smart resource with additional output("name") method
  */
 create := func(tplId, inputs) {
-	return _create(tplId, false, inputs)
+	return createUniversal(tplId, false, inputs)
 }
 
 /**
@@ -89,10 +89,11 @@ create := func(tplId, inputs) {
  * @return renderer: a smart resource with additional output("name") method
  */
 createEphemeral := func(tplId, inputs) {
-	return _create(tplId, true, inputs)
+	return createUniversal(tplId, true, inputs)
 }
 
 export ll.toStrict({
+	createUniversal: createUniversal,
 	create: create,
 	createEphemeral: createEphemeral
 })
