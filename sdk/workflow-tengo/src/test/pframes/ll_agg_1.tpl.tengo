@@ -15,11 +15,11 @@ self.body(func(inputs) {
 	params := inputs.params
 	if is_undefined(inputs.base) {
 		return {
-			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, params.eph)
+			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, ["result"], params.eph).output("result")
 		}
 	} else {
 		return {
-			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, params.eph, {base: inputs.base} )
+			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, ["result"], params.eph, {base: inputs.base} ).output("result")
 		}
 	}
 })
