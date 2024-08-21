@@ -1,0 +1,25 @@
+// ll_agg_1
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+pLl := import(":pframes.ll")
+
+bodyTpl := ll.importTemplate(":test.pframes.agg_body_pure")
+
+self.awaitState("InputsLocked")
+self.awaitState("params", "ResourceReady")
+
+self.body(func(inputs) {
+	params := inputs.params
+	if is_undefined(inputs.base) {
+		return {
+			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, params.eph)
+		}
+	} else {
+		return {
+			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, params.eph, {base: inputs.base} )
+		}
+	}
+})
