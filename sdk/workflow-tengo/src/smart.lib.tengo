@@ -207,6 +207,10 @@ _toRefOrJson := func(object) {
 	}
 }
 
+resourceTypesEqual := func(rType1, rType2) {
+	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+}
+
 ////////////////// implementation ///////////////////////////
 
 /**
@@ -254,6 +258,16 @@ resource = func(r) {
 		 */
 		info: func() {
 			return tx.getResource(self.id)
+		},
+
+		/**
+		 * Returns true if resource has type equal to the one provided as an agrument.
+		 *
+		 * @param expectedType type to compare resource type with
+		 * @return true if type matches, false otherwise
+		 */
+		checkResourceType: func(expectedType) {
+			return resourceTypesEqual(self.info().Type, expectedType)
 		},
 
 		/**
@@ -577,7 +591,7 @@ field = func(f) {
 			} else if isField(reference) {
 				tx.setFieldToField(self.id, reference.id)
 			} else {
-				ll.panic("smart resource or smart field expected, got %#v: ", reference)
+				ll.panic("smart resource or smart field expected (target field %v), got %#v: ", self.name(), reference)
 			}
 		},
 
@@ -588,6 +602,9 @@ field = func(f) {
 		 * @return nothing
 		 */
 		setRefOrJson: func(refOrJson) {
+			if is_undefined(refOrJson) {
+				ll.panic("attempt to assign undefined value to field %v", self.name())
+			}
 			self.set(_toRefOrJson(refOrJson))
 		},
 
