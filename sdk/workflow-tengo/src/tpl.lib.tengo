@@ -172,7 +172,16 @@ tpl := func() {
 		 * Usage examples:
 		 *   awaitState("AllInputsSet") - all inputs of the inputs map must be set
 		 *   awaitState("inputName1", "ResourceReady") - resource in the input inputName1 must be ready
-		 *   awaitState("inputName1", "nestedField", "Set") - nested input field in the input inputName1 must exist and point to some resource
+		 *   awaitState("inputName1", "nestedField", "Set") - nested input field in the input
+		 *                              inputName1 must exist and point to some resource
+		 *   awaitState("inputName1", { wildcard: "*" }, "InputsLocked") - nested resource by the
+		 *                              inputName1 field must exist and have locked inputs and all
+		 *                              resources referenced by those fields must have all inputs
+		 *                              locked
+		 *
+		 * Example, the following two expressions are equivalent:
+		 *   awaitState("inputName1", { wildcard: "*" }, "Set")
+		 *   awaitState("inputName1", "AllInputsSet")
 		 *
 		 * Allowed states:
 		 *   Exists - field exists

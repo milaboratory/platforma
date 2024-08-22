@@ -1,0 +1,63 @@
+/**
+ * Set of basic operations for PColumn data payload
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+pConstants := import(":pframes.constants")
+
+llAggTpl := ll.importTemplate(":pframes.aggregate")
+
+/**
+ * Instantiate an aggragation pipeline for the given inputs, and returns rendered ephemeral template.
+ * Use r.output("output_name") method to get corresponding result, where r is an object returned by
+ * this method.
+ *
+ * Contract for the body template:
+ *
+ *   Inputs:
+ *     "__key__"   - will be set to the json representation of the group key (i.e. keys in all
+ *                   positions not specified in the indices parameter)
+ *     "__value__" - "PColumnData/ResourceMap" resource with all the records in the current group
+ *     ...extra    - all values or references passed to optional last parameter of this method
+ *                   will be forwarded to the template as is
+ *
+ *  Outputs:
+ *    array of output names to collect from aggregation operations is specified as a parameter
+ *    of this operation
+ *
+ * @param data    data resource (currently only PColumnData/ResourceMap is supported)
+ * @param indices indices to aggregate over (these indices will be stripped from the input map,
+ *                meaning of this parameter is the opposite of GROUP BY from SQL)
+ * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
+ * @param outputs array of output names to to collect from rendered templates
+ * @param isEph   if true, body template will be rendered as ephemeral
+ * @param extra   optional map of paramters to pass to the template
+ */
+aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
+	renderInputs := {
+		params: smart.createJsonResource({
+			indices: indices,
+			eph: isEph,
+			outputs: outputs
+		}),
+		body: bodyTpl,
+		data: data
+	}
+
+	if len(extra) == 1 {
+		for k, v in extra[0] {
+			renderInputs[k] = v
+		}
+	} else if len(extra) != 0 {
+		ll.panic("Wrong number of parameters for aggregate method.")
+	}
+
+	renderResult := render.createEphemeral(llAggTpl, renderInputs)
+	return renderResult;
+}
+
+export ll.toStrict({
+	aggregate: aggregate
+})

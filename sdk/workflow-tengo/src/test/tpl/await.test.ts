@@ -87,3 +87,112 @@ tplTest('test error field absent', async ({ pl, helper, expect }) => {
     async () => await mainResult.awaitStableFullValue()
   ).rejects.toThrow(/not found and inputs locked/);
 });
+
+tplTest(
+  'test await state with wildcards #1',
+  async ({ pl, helper, expect }) => {
+    let inputResource: ResourceId = 0n as ResourceId; // hack
+    const result = await helper.renderTemplate(
+      true,
+      'test.tpl.await-state-wildcard',
+      ['main'],
+      async (tx) => {
+        inputResource = await toGlobalResourceId(
+          tx.createStruct(resourceType('TestEph', '1'))
+        );
+        return {
+          input1: inputResource
+        };
+      }
+    );
+    const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.createField(field(inputResource, 'nestedField'), 'Input');
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.lockInputs(inputResource);
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.setField(
+        field(inputResource, 'nestedField'),
+        tx.createValue(Pl.JsonObject, '{}')
+      );
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.awaitStableValue()).eq('A');
+  }
+);
+
+tplTest(
+  'test await state with wildcards #2',
+  async ({ pl, helper, expect }) => {
+    let inputResource: ResourceId = 0n as ResourceId; // hack
+    const result = await helper.renderTemplate(
+      true,
+      'test.tpl.await-state-wildcard',
+      ['main'],
+      async (tx) => {
+        inputResource = await toGlobalResourceId(
+          tx.createStruct(resourceType('Test', '1'))
+        );
+        return {
+          input1: inputResource
+        };
+      }
+    );
+    const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.createField(field(inputResource, 'nestedField'), 'Input');
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    let nestedResource1: ResourceId = 0n as ResourceId; // hack
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.setField(
+        field(inputResource, 'nestedField'),
+        tx.createValue(Pl.JsonObject, '{}')
+      );
+      nestedResource1 = await toGlobalResourceId(
+        tx.createStruct(resourceType('Test', '1'))
+      );
+      tx.createField(field(inputResource, 'nestedField123'), 'Input');
+      tx.setField(field(inputResource, 'nestedField123'), nestedResource1);
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.lockInputs(inputResource);
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+    expect(await mainResult.getValue()).toBeUndefined();
+
+    await pl.withWriteTx('Test', async (tx) => {
+      tx.lockInputs(nestedResource1);
+      await tx.commit();
+    });
+    await mainResult.refreshState();
+
+    expect(await mainResult.awaitStableValue()).eq('AA');
+  }
+);

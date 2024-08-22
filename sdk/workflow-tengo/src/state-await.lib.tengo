@@ -14,81 +14,135 @@ createContext := func() {
 	}
 }
 
-awaitOneState := func(rootField, request) {
-	field := rootField
-	if !is_map(request) || !is_array(request.path) || !is_string(request.state) {
-		ll.panic("Malformed state await request: %v", request)
-	}
-	for _, step in request.path {
-		if !is_string(step) {
-			ll.panic("Malformed state await request path: %v", step)
-		}
-		if !field.isSet() {
-			return {
-				type: "Subscribe",
-				resource: field.id.ResourceID,
-				event: "InputSet"
-			}
-		}
-		resource := field.getValue()
-		field = resource.inputs()[step]
-		if field == undefined {
-			if resource.info().InputsLocked {
-				ll.panic("field %v not found and inputs locked", step)
-			}
-			return {
-				type: "Subscribe",
-				resource: resource.id,
-				event: ["FieldCreated", "InputsLocked"]
-			}
-		}
-	}
+awaitOneState := func(field, path, state) {
+	if len(path) > 0 {
+		step := path[0]
+		rPath := path[1:]
 
-	if request.state == "Exists" {
-		return { type: "Ready" }
-	} else {
 		if !field.isSet() {
 			return {
 				type: "Subscribe",
-				resource: field.id.ResourceID,
-				event: "InputSet"
+				subscriptions: [{
+					resource: field.id.ResourceID,
+					event: "InputSet"
+				}]
 			}
 		}
 		resource := field.getValue()
-		if request.state == "Set" {
-			return { type: "Ready" }
-		} else if request.state == "InputsLocked" {
-			if resource.info().InputsLocked {
-				return { type: "Ready" }
-			} else {
+
+		if is_string(step) {
+			nextField := resource.inputs()[step]
+			if nextField == undefined {
+				if resource.info().InputsLocked {
+					ll.panic("field %v not found and inputs locked", step)
+				}
 				return {
 					type: "Subscribe",
-					resource: resource.id,
-					event: "InputsLocked"
+					subscriptions: [{
+						resource: resource.id,
+						event: "FieldCreated"
+					},{
+						resource: resource.id,
+						event: "InputsLocked"
+					}]
 				}
 			}
-		} else if request.state == "AllInputsSet" {
-			if resource.info().AllInputsSet {
-				return { type: "Ready" }
-			} else {
+			return awaitOneState(nextField, rPath, state)
+		} else if is_map(step) {
+			if is_undefined(step.wildcard) {
+				ll.panic("Unknown step structure: %v", step)
+			}
+			if step.wildcard != "*" {
+				ll.panic("Complex wildcards are not yet supported: %v", step.wildcard)
+			}
+
+			if !resource.info().InputsLocked {
 				return {
 					type: "Subscribe",
-					resource: resource.id,
-					event: "AllInputsSet"
+					subscriptions: [{
+						resource: resource.id,
+						event: "InputsLocked"
+					}]
 				}
 			}
-		} else if request.state == "ResourceReady" {
-			if resource.info().ResourceReady {
+
+			subscriptions := []
+			for _, nextField in resource.inputs() {
+				res := awaitOneState(nextField, rPath, state)
+				if res.type == "Ready" {
+					continue
+				} else if res.type == "Subscribe" {
+					subscriptions = append(subscriptions, res.subscriptions...)
+				} else {
+					ll.panic("Unknown result type: %v", res.type)
+				}
+			}
+			if len(subscriptions) == 0 {
 				return { type: "Ready" }
 			} else {
 				return {
 					type: "Subscribe",
-					resource: resource.id,
-					event: "ResourceReady"
+					subscriptions: subscriptions
 				}
 			}
 		} else {
-			ll.panic("Unknown await state: %v", request.state)
+			ll.panic("Malformed state await request path: %v", step)
+		}
+	} else {
+		if state == "Exists" {
+			return { type: "Ready" }
+		} else {
+			if !field.isSet() {
+				return {
+					type: "Subscribe",
+					subscriptions: [{
+						resource: field.id.ResourceID,
+						event: "InputSet"
+					}]
+				}
+			}
+			resource := field.getValue()
+			if state == "Set" {
+				return { type: "Ready" }
+			} else if state == "InputsLocked" {
+				if resource.info().InputsLocked {
+					return { type: "Ready" }
+				} else {
+					return {
+						type: "Subscribe",
+						subscriptions: [{
+							resource: resource.id,
+							event: "InputsLocked"
+						}]
+					}
+				}
+			} else if state == "AllInputsSet" {
+				if resource.info().AllInputsSet {
+					return { type: "Ready" }
+				} else {
+					return {
+						type: "Subscribe",
+						subscriptions: [{
+							resource: resource.id,
+							event: "AllInputsSet"
+						}]
+					}
+				}
+			} else if state == "ResourceReady" {
+				if resource.info().ResourceReady {
+					return { type: "Ready" }
+				} else {
+					return {
+						type: "Subscribe",
+						subscriptions: [{
+							resource: resource.id,
+							event: "ResourceReady"
+						}]
+					}
+				}
+			} else {
+				ll.panic("Unknown await state: %v", state)
+			}
 		}
 	}
 }
@@ -121,20 +175,15 @@ await := func(rootField, ctxStorageResource, requests) {
 	}
 
 	for _, request in requests {
-		res := awaitOneState(rootField, request)
+		if !is_map(request) || !is_array(request.path) || !is_string(request.state) {
+			ll.panic("Malformed state await request: %v", request)
+		}
+		res := awaitOneState(rootField, request.path, request.state)
 		if res.type == "Ready" {
 			continue
 		} else if res.type == "Subscribe" {
-			if is_array(res.event) {
-				// multiple events to await
-				for _, event in res.event {
-					addSubscription({
-						resource: res.resource,
-						event: event
-					})
-				}
-			} else {
-				addSubscription(res)
+			for subscription in res.subscriptions {
+				addSubscription(subscription)
 			}
 		} else {
 			ll.panic("Unknown result type %v", res.type)
