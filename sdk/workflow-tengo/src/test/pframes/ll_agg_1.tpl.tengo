@@ -3,7 +3,6 @@
 self := import(":tpl")
 
 ll := import(":ll")
-render := import(":render")
 pLl := import(":pframes.ll")
 
 bodyTpl := ll.importTemplate(":test.pframes.agg_body_pure")

@@ -34,7 +34,7 @@ self.body(func(inputs) {
 	outputs := params.outputs
 
 	if !is_array(outputs) || len(outputs) == 0 {
-		ll.panic("Absent, empty or malformed outputs list")
+		ll.panic("Absent, empty or malformed outputs list: %v", params)
 	}
 
     // map of resources to aggregate over
@@ -54,7 +54,10 @@ self.body(func(inputs) {
 	extraInputs := {}
 	for name, field in inputs {
 		if name != "params" && name != "data" && name != "body" {
-			extraInputs[name] = field
+			if name[:8] != "__extra_" {
+				ll.panic("Unexpected input: %v", name)
+			}
+			extraInputs[name[8:]] = field
 		}
 	}
 

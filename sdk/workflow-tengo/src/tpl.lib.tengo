@@ -41,7 +41,11 @@ _unmarshal := func(resource, preprocessors) {
 		// unmarshal map
 		result := {}
 		for field, value in resource.inputs() {
-			result[field] = _unmarshal(value.getValue(), preprocessors)
+			if value.isSet() {
+				result[field] = _unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
 		}
 		return result
 	} else {
