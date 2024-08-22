@@ -43,18 +43,18 @@ proc := func() {
 			if is_undefined(self._wdAfterReadFiles) {
 
 				if !is_undefined(tpl.inputs().wdAfterReadFiles) {
-				
+
 					//
-					// this means readFiles was used and we are actually 
+					// this means readFiles was used and we are actually
 					// in the 'prepare' render
 					//
 					self._wdAfterReadFiles = tpl.inputs().wdAfterReadFiles
 				} else {
 
-					// no readFiles 
+					// no readFiles
 					self._wdAfterReadFiles = self.wdBefore()
 				}
-			} 
+			}
 
 			return self._wdAfterReadFiles
 		},
@@ -62,8 +62,8 @@ proc := func() {
 		/**
 		 * Select files to read their content and pass it to the body function
 		 *
-		 * @param cb: callback - a callback which takes a list of file names (paths) existing in the working directory and 
-		 *  returning a map of key -> file name containing files to get content from; each file content will be available in 
+		 * @param cb: callback - a callback which takes a list of file names (paths) existing in the working directory and
+		 *  returning a map of key -> file name containing files to get content from; each file content will be available in
 		 *  the body inputs with the corresponding key
 		 */
 		readFiles: func(cb) {
@@ -77,7 +77,7 @@ proc := func() {
 					wdBuilder.saveFileContent(fName)
 				}
 				wd := wdBuilder.build()
-				
+
 				// run prepare to get file contents in the inputs
 				preps := {}
 				for key, fName in files {
@@ -85,7 +85,7 @@ proc := func() {
 				}
 
 				preps.wdAfterReadFiles = wd.getWorkdirAfter()
-				
+
 				return preps
 			})
 		},
@@ -93,7 +93,7 @@ proc := func() {
 		_wdFinalBuilder: undefined,
 		/**
 		 * Final workdir builder, after prepare
-         */
+		 */
 		wdFinalBuilder: func() {
 			if is_undefined(self._wdFinalBuilder) {
 				self._wdFinalBuilder = wdSave.builder(self.wdAfterReadFiles())
@@ -105,7 +105,7 @@ proc := func() {
 		 * Save given file.
 		 *
 		 * @return ref: reference - a reference to saved file resource
-         */
+		 */
 		saveFile: func(fName) {
 			self.wdFinalBuilder().saveFile(fName)
 			return self.wdFinalBuilder().getSavedFile(fName)
@@ -115,7 +115,7 @@ proc := func() {
 		 * Save content of a given file.
 		 *
 		 * @return ref: reference - a reference to saved file content value resource
-         */
+		 */
 		saveFileContent: func(fName) {
 			self.wdFinalBuilder().saveFileContent(fName)
 			return self.wdFinalBuilder().getSavedFileContent(fName)
@@ -123,12 +123,12 @@ proc := func() {
 
 		/**
 		 * Template body function
-		 * 
+		 *
 		 * @param cb: func - a callback function to run in template body; the inputs passed to the body will have the following fields:
 		 *   files: string[] - list of files in workdir
 		 *   args: map - additional arguments of the template processor
-		 *   ...filesContent: resources - fields with the content of files specified in 'readFiles' 
-         */
+		 *   ...filesContent: resources - fields with the content of files specified in 'readFiles'
+		 */
 		body: func(cb) {
 			tpl.body(func(inputs) {
 

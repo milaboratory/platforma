@@ -251,7 +251,7 @@ save := func(workdir) {
 		 * Save files content which names satisfy given regex rule
 		 *
 		 * @param name: string - a name to refer this file set in the outputs
-		 * @param regex: string - regex		
+		 * @param regex: string - regex
 		 */
 		saveFileSetContent: func(name, regex) {
 			validation.assertJsonSchema(regex, "string")
@@ -280,7 +280,7 @@ save := func(workdir) {
 
 			return ll.toStrict({
 				files: wds.output("files"),
-				filesContent: wds.output("filesContent"),				
+				filesContent: wds.output("filesContent"),
 				fileSets : wds.output("fileSets"),
 				fileSetsContent : wds.output("fileSetsContent"),
 				workdir: wds.output("workdir"),

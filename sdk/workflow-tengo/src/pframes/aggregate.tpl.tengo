@@ -15,11 +15,11 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 
-    // parameters of aggregation
+	// parameters of aggregation
 	//   indices: int[]
 	//   eph: bool
 	//   outputs: string[]
-    params := inputs.params
+	params := inputs.params
 
 	if is_undefined(params) {
 		ll.panic("Params is not defined")
@@ -37,11 +37,11 @@ self.body(func(inputs) {
 		ll.panic("Absent, empty or malformed outputs list")
 	}
 
-    // map of resources to aggregate over
-    data := inputs.data
+	// map of resources to aggregate over
+	data := inputs.data
 
 	// template implementing aggregation body
-    body := inputs.body
+	body := inputs.body
 
 	if is_undefined(data) {
 		ll.panic("Data is not defined")

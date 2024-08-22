@@ -1,7 +1,8 @@
-/** 
-* Working with p-frames
-*/
+/**
+ * Working with p-frames
+ */
 
+validation := import(":validation")
 render := import(":render")
 smart := import(":smart")
 exec := import(":exec")
@@ -11,44 +12,92 @@ ll := import(":ll")
 readDirTpl := ll.importTemplate(":pframes.read-dir")
 readXsvMapTpl := ll.importTemplate(":pframes.read-xsv-map")
 
+
+// pfconv params validation
+
+_paramsAxesScheme := {
+	`column`: `string`,
+	`spec`: {
+		`name`: `string`,
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [`number`]
+	}
+}
+
+_paramsColumnScheme := {
+	`column`: `string`,
+	`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+	`id,omitempty`: `string`,
+	`name,omitempty`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`allowNA,omitempty`: `bool`
+}
+
+_paramsIndexScheme := {
+	`name`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`parentAxes,omitempty`: [`number`]
+}
+
+_paramsScheme := {
+	`storageFormat` : `string,regex=Binary|Json`,
+	`partitionKeyLength` : `number`,
+
+	`axes`: [_paramsAxesScheme],
+	`columns`: [_paramsColumnScheme],
+	`index,omitempty`: _paramsIndexScheme,
+
+
+	`naStr,omitempty`: `string`,
+	`nullStr,omitempty`: `string`,
+	`separator,omitempty`: `string`,
+	`emptyStrAsNA,omitempty`: `bool`,
+	`columnNamePrefix,omitempty`: `string`,
+	`allowColumnLabelDuplicates,omitempty`: `bool`
+}
+
 readXsv := func(xsvFile, xsvType, params) {
-    ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
-    
-    // @TODO: validate params
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-    xsvFileName := "file." + xsvType
+	validation.assertJsonSchema(params, _paramsScheme)
 
-    // convert csv to p-frame and read resulting data
+	xsvFileName := "file." + xsvType
+
+	// convert csv to p-frame and read resulting data
 	pf := exec.builder().
-                cmd("pfconv").	
-				arg("importCsv").
-				arg(xsvFileName).
-				arg("-p").arg("params.json").
-				arg("-o").arg("out").
-				addFile(xsvFileName, xsvFile).
-				writeFile("params.json", json.encode(params)).
-				processWorkdir("pf", ll.importTemplate(":pframes.read-dir"), params).
-                run()
+		cmd("pfconv").
+		arg("importCsv").
+		arg(xsvFileName).
+		arg("-p").arg("params.json").
+		arg("-o").arg("out").
+		addFile(xsvFileName, xsvFile).
+		writeFile("params.json", json.encode(params)).
+		processWorkdir("pf", ll.importTemplate(":pframes.read-dir"), params).
+		run()
 
-    return pf.getProcessorResult("pf")
+	return pf.getProcessorResult("pf")
 }
 
 readXsvMap := func(xsvMap, xsvType, params) {
-    r := render.createEphemeral(readXsvMapTpl, {
-                xsvMap: xsvMap,
-                xsvType: xsvType,
-                params: params
-            })
+	r := render.createEphemeral(readXsvMapTpl, {
+		xsvMap: xsvMap,
+		xsvType: xsvType,
+		params: params
+	})
 
-    result := {}
-    for c in params.columns {
-        result[c.name] = r.output(c.name)
-    }
+	result := {}
+	for c in params.columns {
+		result[c.name] = r.output(c.name)
+	}
 
-    return result
+	return result
 }
 
 export ll.toStrict({
-    readXsv: readXsv,
-    readXsvMap: readXsvMap
+	readXsv: readXsv,
+	readXsvMap: readXsvMap
 })

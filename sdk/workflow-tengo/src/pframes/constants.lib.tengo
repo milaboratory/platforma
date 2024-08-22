@@ -6,15 +6,15 @@
 ll := import("@milaboratory/tengo-sdk:ll")
 
 /**
-  * Name of the field under which the iteration value like in "map" and "aggregate" is passed
-  * to the iteration body template.
-  */
+ * Name of the field under which the iteration value like in "map" and "aggregate" is passed
+ * to the iteration body template.
+ */
 VALUE_FIELD_NAME := "__value__"
 
 /**
-  * Name of the field under which the iteration key like in "map" and "aggregate" is passed
-  * to the iteration body template.
-  */
+ * Name of the field under which the iteration key like in "map" and "aggregate" is passed
+ * to the iteration body template.
+ */
 KEY_FIELD_NAME := "__key__"
 
 P_COLUMN_DATA_TYPE_PREFIX := "PColumnData/"
@@ -23,7 +23,7 @@ RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Resourc
 
 export ll.toStrict({
 	VALUE_FIELD_NAME: VALUE_FIELD_NAME,
-  KEY_FIELD_NAME: KEY_FIELD_NAME,
-  P_COLUMN_DATA_TYPE_PREFIX: P_COLUMN_DATA_TYPE_PREFIX,
-  RTYPE_P_COLUMN_DATA_RESOURCE_MAP: RTYPE_P_COLUMN_DATA_RESOURCE_MAP
+	KEY_FIELD_NAME: KEY_FIELD_NAME,
+	P_COLUMN_DATA_TYPE_PREFIX: P_COLUMN_DATA_TYPE_PREFIX,
+	RTYPE_P_COLUMN_DATA_RESOURCE_MAP: RTYPE_P_COLUMN_DATA_RESOURCE_MAP
 })

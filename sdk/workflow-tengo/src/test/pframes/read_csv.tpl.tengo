@@ -8,21 +8,21 @@ self.defineOutputs("pf")
 
 self.body(func(inputs){
 
-    // csv as text
-    csv := inputs.csv
+	// csv as text
+	csv := inputs.csv
 
-    e := exec.builder().
-        cmd("env").
-        writeFile("data.csv", csv).
-        saveFile("data.csv").
-        run()
+	e := exec.builder().
+		cmd("env").
+		writeFile("data.csv", csv).
+		saveFile("data.csv").
+		run()
 
-    csvFile := e.getFile("data.csv")
+	csvFile := e.getFile("data.csv")
 
-    // pfconv params 
-    params := inputs.params
+	// pfconv params
+	params := inputs.params
 
-    return {
-        pf: pframes.readXsv(csvFile, "csv", params)
-    }
+	return {
+		pf: pframes.readXsv(csvFile, "csv", params)
+	}
 })

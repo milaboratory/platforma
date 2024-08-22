@@ -20,7 +20,7 @@ self.defineOutputs(
 )
 
 self.body(func(inputs) {
-	
+
 	//
 	// Create and fill the workdir with files that were passed from inputs.
 	//
@@ -31,7 +31,7 @@ self.body(func(inputs) {
 	// create dirs
 	for dir in inputs.dirsToCreate {
 		wdBuilder.mkDir(dir)
-	}	
+	}
 	// pass values as fields for saving the topology in pl-core
 	// and avoiding deduplication issues:
 	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
@@ -84,11 +84,11 @@ self.body(func(inputs) {
 			workdir: wdAfter,
 			args: p.tplArgs
 		}
-	
+
 		// render template & get results
 		r := render.createEphemeral(tpl, tplInputs)
-		
-		wdProcessorsResults[name] = r.output("result")	
+
+		wdProcessorsResults[name] = r.output("result")
 		wdAfter = r.output("workdir")
 	}
 
@@ -130,7 +130,7 @@ self.body(func(inputs) {
 		fileSets : wdResult.fileSets,
 		fileSetsContent : wdResult.fileSetsContent,
 		fileStreams: streams.build(),
-		wdProcessors: wdProcessorsResults, 
+		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress
 	}
 })

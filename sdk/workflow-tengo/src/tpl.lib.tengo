@@ -264,7 +264,7 @@ tpl := func() {
 			} else {
 				builder = smart.mapBuilder()
 			}
-			
+
 			for cb in self.prepareQueue {
 				// run callback
 				r := cb(inputs)
