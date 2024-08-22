@@ -276,7 +276,7 @@ builder := func() {
 		},
 
 		/**
-		 * Run specified 
+		 * Run specified
 		 */
 		processWorkdir: func(name, tpl, tplArgs) {
 			wdProcessors[name] = {

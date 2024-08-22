@@ -11,43 +11,40 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 
-    // resource with xsv files in values
-    xsvMap := inputs.xsvMap
-    // csv or tsv
-    xsvType := inputs.xsvType
-    // pfconv params
-    params := inputs.params
+	// resource with xsv files in values
+	xsvMap := inputs.xsvMap
+	// csv or tsv
+	xsvType := inputs.xsvType
+	// pfconv params
+	params := inputs.params
 
-    // @TODO validate params 
+	result := {}
+	for c in params.columns {
+		superKeyLength := xsvMap.getDataAsJson().keyLength
+		ll.assert(!is_undefined(superKeyLength), "key length must be defined")
 
-                
-    result := {}
-    for c in params.columns {
-        superKeyLength := xsvMap.getDataAsJson().keyLength
-        ll.assert(!is_undefined(superKeyLength), "key length must be defined")
+		rData := {
+			superPartitionKeyLength: superKeyLength,
+			partitionKeyLength: params.partitionKeyLength
+		}
+		rType := { Name: "PColumnData/Partitioned/" + params.storageFormat + "Partitioned", Version: "1" }
 
-        rData := { 
-            superPartitionKeyLength: superKeyLength,
-            partitionKeyLength: params.partitionKeyLength 
-        }
-        rType := { Name: "PColumnData/Partitioned/" + params.storageFormat + "Partitioned", Version: "1" }
-        
-        result[c.name] = smart.structBuilder(rType, json.encode(rData))
-    }
+		result[c.name] = smart.structBuilder(rType, json.encode(rData))
+	}
 
-    for key, xsvFile in xsvMap.inputs() {
-        
-        p := pframes.readXsv(xsvFile, xsvType, params)
+	for key, xsvFile in xsvMap.inputs() {
 
-        for c in params.columns {
-            result[c.name].createInputField(key).set(p.getFutureInputField(c.name))
-        }
-    }    
+		p := pframes.readXsv(xsvFile, xsvType, params)
 
-    for c in params.columns {
-        result[c.name] = result[c.name].lockAndBuild()
-    }
-    
+		for c in params.columns {
+			result[c.name].createInputField(key).set(p.getFutureInputField(c.name))
+		}
+	}
 
-    return result
+	for c in params.columns {
+		result[c.name] = result[c.name].lockAndBuild()
+	}
+
+
+	return result
 })

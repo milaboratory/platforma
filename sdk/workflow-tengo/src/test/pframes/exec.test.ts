@@ -10,8 +10,6 @@ const params = {
   axes: [
     {
       column: 'a',
-      id: 'a',
-      name: 'a',
       spec: {
         name: 'pl7.app/a',
         type: 'Long'
@@ -19,8 +17,6 @@ const params = {
     },
     {
       column: 'd',
-      id: 'd',
-      name: 'd',
       spec: {
         name: 'pl7.app/d',
         type: 'Long'
@@ -28,8 +24,6 @@ const params = {
     },
     {
       column: 'e',
-      id: 'e',
-      name: 'e',
       spec: {
         name: 'pl7.app/e',
         type: 'Long'
@@ -56,17 +50,14 @@ const params = {
       }
     }
   ],
-  include: ['b', 'c'],
 
   storageFormat: 'Binary',
 
-  partitionKeyLength: 1,
-
-  index: null
+  partitionKeyLength: 1
 };
 
 tplTest(
-  'should read p-frame from csv files map',
+  'should read чаа from csv files map',
   { timeout: 10000 },
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(

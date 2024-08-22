@@ -135,16 +135,16 @@ builder := func(wdBefore) {
 			for fName, _ in cRules {
 				rules = append(rules, getContentSaveRule(fName))
 			}
-			
+
 			super.getField(_RULES_FIELD).set(
 				smart.createValueResource(
 					constants.RTYPE_WORKDIR_SAVE_RULES,
 					json.encode(rules)
 				)
 			)
-			
+
 			resource := super.lockAndBuild()
-			
+
 			// still return self to have all the methods
 			return self
 		}
