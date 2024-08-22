@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -11,7 +11,7 @@
     "playground"
   ],
   "scripts": {
-    "dev": "npm run build:lib && npm run dev -w playground",
+    "dev": "DEV_SOURCE_MAP=1 npm run build:lib && npm run dev -w playground",
     "build:playground": "npm run build -w playground",
     "build:lib": "npm run build -w lib",
     "build-all": "npm run build:lib && npm run build:playground",

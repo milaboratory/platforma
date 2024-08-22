@@ -3,6 +3,7 @@ import { computed, ref, useSlots } from 'vue';
 import Tooltip from '@/components/Tooltip.vue';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/composition/useLabelNotch';
+import { useValidation } from '@/composition/useValidation';
 
 const slots = useSlots();
 
@@ -20,6 +21,7 @@ const props = defineProps<{
   dashed?: boolean;
   rows?: number;
   autogrow?: boolean;
+  rules?: ((v: typeof props.modelValue) => boolean | string)[];
 }>();
 
 const root = ref<HTMLInputElement | undefined>(undefined);
@@ -35,8 +37,20 @@ const value = computed({
 });
 
 const nonEmpty = computed(() => !!props.modelValue);
+const validationData = useValidation(value, props.rules || []);
 
 useLabelNotch(root);
+
+const displayErrors = computed(() => {
+  const allErrors: string[] = [];
+  if (props.error) {
+    allErrors.push(props.error);
+  }
+  if (validationData.value.errors.length > 0) {
+    allErrors.push(...validationData.value.errors);
+  }
+  return allErrors.length > 0 ? allErrors.join(' ') : false;
+});
 
 function adjustHeight() {
   if (!props.autogrow) {
@@ -52,7 +66,11 @@ function adjustHeight() {
 
 <template>
   <div class="ui-text-area__envelope">
-    <div ref="root" class="ui-text-area" :class="{ optional, error, disabled, dashed, nonEmpty }">
+    <div
+      ref="root"
+      class="ui-text-area"
+      :class="{ optional, error: displayErrors, disabled, dashed, nonEmpty }"
+    >
       <label v-if="label" ref="label">
         {{ label }}
         <span v-if="optional" style="opacity: 0.5">(optional)</span>
@@ -79,7 +97,9 @@ function adjustHeight() {
       </div>
       <double-contour class="ui-text-area__contour" />
     </div>
-    <div v-if="error" class="ui-text-area__error">{{ error }}</div>
+    <div v-if="displayErrors" class="ui-text-area__error">
+      {{ displayErrors }}
+    </div>
     <div v-else-if="helper" class="ui-text-area__helper">{{ helper }}</div>
   </div>
 </template>
