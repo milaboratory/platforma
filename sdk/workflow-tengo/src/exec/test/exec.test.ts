@@ -9,11 +9,7 @@ tplTest(
 
     const result = await helper.renderTemplate(
       false,
-<<<<<<< HEAD:src/exec/test/exec.test.ts
-      'exec.test.run_echo_to_value',
-=======
-      'test.exec.run_hello_go',
->>>>>>> 228d886 (feat: software load works for go binary (no run env dependency)):src/test/exec/exec.test.ts
+      'exec.test.run_hello_go',
       ['main'],
       (tx) => ({
         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
@@ -24,6 +20,35 @@ tplTest(
     );
 
     expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  }
+);
+
+tplTest(
+  'run-fake-java-script',
+  async ({ helper, expect }) => {
+    const customTestText = "hello from fake java"
+
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run_fake_java',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText))
+      })
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString()
+    );
+
+    const output = (await mainResult.awaitStableValue())
+    expect(output).toBeDefined()
+
+    const lines = output!.split("\n")
+    expect(lines).length(4)
+    expect(lines[0]).toBe("got 'java' by dependency")
+    if (!lines[1].startsWith("pkg=/")) throw new Error(`line[1] not starts with pkg=/`)
+    if (!lines[2].startsWith("java=/")) throw new Error(`line[2] not starts with java=/`)
+    expect(lines[3]).toBe(customTestText)
   }
 );
 

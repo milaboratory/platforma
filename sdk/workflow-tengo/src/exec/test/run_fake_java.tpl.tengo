@@ -1,0 +1,25 @@
+/** Runs a cat on the file and returns it's content as a value resource. */
+
+self := import(":tpl")
+ll := import(":ll")
+smart := import(":smart")
+exec := import(":exec")
+file := import(":file")
+
+self.defineOutputs(["main"])
+
+sw := ll.importSoftware(":test.exec.fake-java-script")
+
+self.body(func(inputs) {
+	run := exec.builder().
+        software(sw).
+		arg(inputs.text).
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})
