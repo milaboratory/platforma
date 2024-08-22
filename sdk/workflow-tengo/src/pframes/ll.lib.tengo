@@ -10,7 +10,7 @@ pConstants := import(":pframes.constants")
 llAggTpl := ll.importTemplate(":pframes.aggregate")
 
 /**
- * Instantiate an aggragation pipeline for the given inputs, and returns rendered ephemeral template.
+ * Instantiate an aggregation pipeline for the given inputs, and returns rendered ephemeral template.
  * Use r.output("output_name") method to get corresponding result, where r is an object returned by
  * this method.
  *
@@ -33,7 +33,7 @@ llAggTpl := ll.importTemplate(":pframes.aggregate")
  * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
  * @param outputs array of output names to to collect from rendered templates
  * @param isEph   if true, body template will be rendered as ephemeral
- * @param extra   optional map of paramters to pass to the template
+ * @param extra   optional map of parameters to pass to the template
  */
 aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
 	renderInputs := {

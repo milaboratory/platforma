@@ -4,7 +4,6 @@ self := import(":tpl")
 exec := import(":exec")
 json := import("json")
 pframes := import(":pframes")
-pframes2 := import(":pframes2")
 smart := import(":smart")
 
 self.defineOutputs("pf")
@@ -31,6 +30,6 @@ self.body(func(inputs){
     params := inputs.params
 
     return {
-        pf: pframes2.readXsvMap(csvMap, "csv", params)
+        pf: pframes.readXsvMap(csvMap, "csv", params)
     }
 })

@@ -15,7 +15,7 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 
-    // parameters of aggragation
+    // parameters of aggregation
 	//   indices: int[]
 	//   eph: bool
 	//   outputs: string[]
