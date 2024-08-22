@@ -51,6 +51,7 @@ _runBinaryCommand := func(inputs) {
 	// Attach installed software to the command
 	for pkgInfo in opts.packages {
 		runBuilder.ref(pkgInfo.name, pkgInfo.reference)
+		runBuilder.substitutionRule(pkgInfo.varName, pkgInfo.refName)
 	}
 
 	// Patch command's PATH env variable
@@ -59,16 +60,17 @@ _runBinaryCommand := func(inputs) {
 	}
 
 	// exec command
-	if opts.cmd.isRef {
-		runBuilder.cmdExecutable(opts.cmd.key, opts.cmd.value)
+	if opts.cmd.hasVars {
+		runBuilder.cmdVar(opts.cmd.value)
 	} else {
 		runBuilder.cmd(opts.cmd.value)
 	}
 
 	// cmd args
+
 	for name, arg in opts.args {
-		if arg.isRef {
-			runBuilder.argExecutable(arg.key, arg.value)
+		if arg.hasVars {
+			runBuilder.argVar(arg.value)
 		} else {
 			runBuilder.arg(arg.value)
 		}
@@ -76,8 +78,13 @@ _runBinaryCommand := func(inputs) {
 
 	// env vars
 	for name, value in opts.envs {
-		runBuilder.env(name, value)
+		if value.hasVars {
+			runBuilder.envVar(value.value)
+		} else {
+			runBuilder.env(value.value)
+		}
 	}
+
 	// other options
 	runBuilder.inQueue(opts.queue)
 	runBuilder.stdout(opts.stdout)
@@ -151,11 +158,6 @@ _runBinaryCommand := func(inputs) {
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	cmdScheme := {
-		isRef: "bool",
-		value: "string"
-	}
-
 	validation.assertJsonSchema(inputs, {
 		"softwareInfo,omitempty": validation.resource,
 		files: { any: validation.resource },
@@ -164,7 +166,7 @@ self.body(func(inputs) {
 		runOptions: {
 			"software,omitempty": pkg.softwareInfoScheme,
 			"cmd,omitempty": "string",
-			"args,omitempty": [cmdScheme],
+			"args,omitempty": ["string"],
 			envs: { any: "string" },
 			queue: "string",
 			stdout: "string",

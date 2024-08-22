@@ -14,16 +14,14 @@ runEnvDescriptorScheme := {
 binaryDescriptorScheme := {
 	registry: "string",
 	package: "string",
-	entrypoint: ["string"],
-	cmd: "string",
+	cmd: ["string"],
 	runEnv: runEnvDescriptorScheme
 }
 
 localDescriptorScheme := {
 	hash: "string",
 	path: "string",
-	entrypoint: ["string"],
-	cmd: "string",
+	cmd: ["string"],
 	runEnv: runEnvDescriptorScheme
 }
 

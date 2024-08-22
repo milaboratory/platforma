@@ -19,20 +19,6 @@ _HEAVY_QUEUE := "heavy"
 _UI_TASKS_QUEUE := "ui-tasks"
 
 /**
- * Provides structured argument info for simple string command arg
- *
- * @param arg: string - the argument value
- *
- * @return argInfo: object - argument in format expected by 'exec' template.
- */
-_simpleArg := func(arg) {
-	return {
-		isRef: false,
-		value: arg
-	}
-}
-
-/**
  * Creates a new builder for constructing and executing commands.
  *
  * @return builder - a new builder instance.
@@ -90,9 +76,9 @@ builder := func() {
 		 */
 		cmd: func(commandName) {
 			assertEntrypointNotSet()
-			entrypointSet = true
 
 			cmd = commandName
+			entrypointSet = true
 			return self
 		},
 
@@ -106,9 +92,9 @@ builder := func() {
 			ll.assert(assets.isSoftwareInfo(sw),
 				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
 			)
-			entrypointSet = true
 
 			soft = sw
+			entrypointSet = true
 			return self
 		},
 
@@ -378,12 +364,16 @@ builder := func() {
 				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
 			})
 
+			ll.assert(entrypointSet,
+				"incomplete command: cmd() or software() must be provided to exec.builder")
+
 			execInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
 				runOptions: {
-					args: slices.map(args, _simpleArg),
+					cmd: cmd,
+					args: args,
 					envs: envs,
 					queue: queue,
 					stdout: stdout,
@@ -398,9 +388,7 @@ builder := func() {
 				wdProcessors: wdProcessors
 			}
 
-			if is_undefined(soft) {
-				execInputs.runOptions.cmd = cmd
-			} else {
+			if !is_undefined(soft) {
 				execInputs.softwareInfo = soft.resource
 				execInputs.runOptions.software = {
 					name: soft.name,
