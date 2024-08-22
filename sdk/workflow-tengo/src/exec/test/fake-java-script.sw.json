@@ -1,0 +1,16 @@
+{
+    "name": "@milaboratory/fake-java-script:fake-java-script",
+    "binary": {
+        "registry": "milaboratories",
+        "package": "common/hello-world/1.6.3-{os}-{arch}.tgz",
+        "cmd": [ "main", "got 'java' by dependency", "pkg={pkg}", "java={java}" ],
+        "type": "java",
+        "runEnv": {
+            "name": ":runenv-java-stub",
+            "type": "java",
+            "registry": "milaboratories",
+            "package": "common/runenv-java-stub/1.0.1-{os}-{arch}.tgz",
+            "binDir": "."
+        }
+    }
+}
