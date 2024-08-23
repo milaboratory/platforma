@@ -140,8 +140,8 @@ _getFutureField := func(from, name, fieldType) {
 isMapResource := func(r) {
 	return isResource(r) && (
 		r.info().Type.Name == constants.RTYPE_MAP.Name ||
-		r.info().Type.Name == constants.RTYPE_MAP_ALT.Name) // @TODO get rid of alt name
-	
+			r.info().Type.Name == constants.RTYPE_MAP_ALT.Name) // @TODO get rid of alt name
+
 }
 
 /**
@@ -175,8 +175,8 @@ isJsonResource := func(r) {
 // deep check whether map has resources somewhere inside
 _hasReferenceValues := func(object) {
 	if isReference(object) {
-		// first check is reference since resource/field will return true on ll.isMap 
-	   return true
+		// first check is reference since resource/field will return true on ll.isMap
+		return true
 	} else if ll.isMap(object) {
 		for _, v in object {
 			if _hasReferenceValues(v) {
@@ -199,7 +199,7 @@ _hasReferenceValues := func(object) {
  */
 _toRefOrJson := func(object) {
 	if isReference(object) {
-		// first check is reference since resource/field will return true on ll.isMap 
+		// first check is reference since resource/field will return true on ll.isMap
 		return object
 	} else if ll.isMap(object) {
 

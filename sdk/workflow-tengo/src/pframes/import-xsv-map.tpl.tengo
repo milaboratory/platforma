@@ -1,0 +1,121 @@
+//
+// process map of xsv files into a potentially double-partitioned p-frame
+//
+
+ll := import(":ll")
+xsv := import(":pframes.xsv")
+self := import(":tpl")
+json := import("json")
+util := import(":pframes.util")
+smart := import(":smart")
+constants := import(":pframes.constants")
+validation := import(":validation")
+
+self.awaitState("spec", "ResourceReady")
+self.awaitState("xsvMap", "InputsLocked")
+
+self.validateInputs({
+	xsvMap: validation.resource({ type: constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP } ),
+	xsvType: `string,regex=csv|tsv`,
+	spec: `any`
+})
+
+_EMPTY_JSON_KEY := json.encode([])
+
+_getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
+	if supKeyLen > 0 && keyLen > 0 {
+		if storageFormat == "Json" {
+			return constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED
+		} else if storageFormat == "Binary" {
+			return constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+		} else {
+			ll.panic("unknown storage format: ", storageFormat)
+		}
+	} else {
+		if storageFormat == "Json" {
+			return constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+		} else if storageFormat == "Binary" {
+			return constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+		} else {
+			ll.panic("unknown storage format: ", storageFormat)
+		}
+	}
+}
+
+self.body(func(inputs) {
+
+	// resource with xsv files in values
+	xsvMap := inputs.xsvMap
+	// csv or tsv
+	xsvType := inputs.xsvType
+	// pfconv spec
+	spec := inputs.spec
+
+	// super key length
+	supKeyLen := xsvMap.getDataAsJson().keyLength
+	ll.assert(!is_undefined(supKeyLen), "key length must be defined")
+
+	if supKeyLen == 0 {
+		// special case
+
+		map := xsvMap.inputs()
+
+		ll.assert(len(map) == 1, "expected single element in resource map with keyLength == 0")
+
+		for key, xsvFile in xsvMap.inputs() {
+			// single element; so return immediately
+			return xsv.importFile(xsvFile, xsvType, spec)
+		}
+	}
+
+	keyLen := spec.partitionKeyLength
+
+	rType := _getPColumnRtype(supKeyLen, spec.partitionKeyLength, spec.storageFormat)
+	rData := json.encode({
+		superPartitionKeyLength: supKeyLen,
+		partitionKeyLength: keyLen
+	})
+
+	result := {}
+	for c in spec.columns {
+		id := util.xsvColumnId(c)
+		result[id] = smart.structBuilder(rType, rData)
+	}
+
+	for key, xsvFile in xsvMap.inputs() {
+		p := xsv.importFile(xsvFile, xsvType, spec)
+
+		for c in spec.columns {
+			id := util.xsvColumnId(c)
+
+			// p-column data
+			pCol := p.getFutureInputField(id)
+
+			if keyLen == 0 {
+				if spec.storageFormat == "Binary" {
+					// p has two fields: [].index [].values
+
+					for suffix in [".index", ".values"] {
+						result[id].createInputField(key + suffix).set(pCol.getFutureInputField(_EMPTY_JSON_KEY + suffix))
+					}
+				} else if spec.storageFormat == "Json" {
+					// p has only one field: []
+
+					result[id].createInputField(key).set(pCol.getFutureInputField(_EMPTY_JSON_KEY))
+				} else {
+					ll.panic("unknown storage format: ", spec.storageFormat)
+				}
+
+			} else {
+				result[id].createInputField(key).set(pCol)
+			}
+		}
+	}
+
+	for c in spec.columns {
+		id := util.xsvColumnId(c)
+		result[id] = result[id].lockAndBuild()
+	}
+
+	return result
+})

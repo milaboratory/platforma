@@ -11,32 +11,31 @@ wf := import(":workflow")
 // await all exports to appear as data fields
 tpl.awaitState("data", { wildcard: "*" }, "InputsLocked")
 
+tpl.validateInputs({
+	blockId: `string`,
+	parentContext: validation.resource(),
+	data: `any`
+})
+
 tpl.body(func(inputs) {
-    
-    // assert inputs
-    validation.assertArgsSchema(inputs,
-        {
-            blockId: `string`,
-            parentContext: validation.resource,
-            data: `any`
-        }
-    )
 	// create ctx and save exports
 	ctxBuilder := context.builder(inputs.blockId, inputs.parentContext)
-    
-	for prefix, map in inputs.data {
-        ll.assert(is_map(map), "expected map, got ", map)
 
-        for key, value in map {
-            if prefix == "_" { // @TODO use constant
-                ctxBuilder.add(key, value)    
-            } else {
-                ctxBuilder.add(prefix + "." + key, value)
-            }
-        }
+	for prefix, map in inputs.data {
+		ll.assert(is_map(map), "expected map, got ", map)
+
+		for key, value in map {
+			// @TODO check whether we have both .data & .spec for all exports
+
+			if prefix == "_" { // @TODO use constant
+				ctxBuilder.add(key, value)
+			} else {
+				ctxBuilder.add(prefix + "." + key, value)
+			}
+		}
 	}
 
-    return {
-        ctx: ctxBuilder.build()
-    }
+	return {
+		ctx: ctxBuilder.build()
+	}
 })

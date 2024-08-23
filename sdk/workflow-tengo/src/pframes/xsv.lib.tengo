@@ -1,0 +1,129 @@
+/**
+ * Library providing xsv <> p-frames conversion utils.
+ */
+
+validation := import(":validation")
+render := import(":render")
+exec := import(":exec")
+json := import("json")
+util := import(":pframes.util")
+ll := import(":ll")
+
+//
+// pfconv params validation
+//
+// link to the full schema:
+//
+//    https://github.com/milaboratory/pframes/blob/main/packages/conv/include/import_csv.h#L53
+//
+
+_PARAMS_AXES_SCHEMA := {
+	`column`: `string`,
+	`spec`: {
+		`name`: `string`,
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [`number`]
+	}
+}
+
+_PARAMS_COLUMN_SCHEMA := {
+	`column`: `string`,
+	`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+	`id,omitempty`: `string`,
+	`name,omitempty`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`allowNA,omitempty`: `bool`
+}
+
+_PARAMS_INDEX_SCHEMA := {
+	`name`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`parentAxes,omitempty`: [`number`]
+}
+
+_PARAMS_SCHEMA := {
+	`storageFormat` : `string,regex=Binary|Json`,
+	`partitionKeyLength` : `number`,
+
+	`axes`: [_PARAMS_AXES_SCHEMA],
+	`columns`: [_PARAMS_COLUMN_SCHEMA],
+	`index,omitempty`: _PARAMS_INDEX_SCHEMA,
+
+	`naStr,omitempty`: `string`,
+	`nullStr,omitempty`: `string`,
+	`separator,omitempty`: `string`,
+	`emptyStrAsNA,omitempty`: `bool`,
+	`columnNamePrefix,omitempty`: `string`,
+	`allowColumnLabelDuplicates,omitempty`: `bool`
+}
+
+/**
+ * Imports xsv data into p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
+ * provided by the spec used as map keys). Resulting p-columns will be always single-partitioned at most.
+ *
+ * @param xsvFile: reference - a reference to a file
+ * @param xsvType: string - either csv or tsv
+ * @param spec: object - xsv conversion specification
+ * @return map: reference - a reference to a map resource storing imported data.
+ */
+importFile := func(xsvFile, xsvType, spec) {
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
+
+	validation.assertJsonSchema(spec, _PARAMS_SCHEMA)
+
+	xsvFileName := "file." + xsvType
+
+	// import p-frame from directory tpl
+	importDirTpl := ll.importTemplate(":pframes.import-dir")
+
+	// convert csv to p-frame and read resulting data
+	pf := exec.builder().
+		cmd("pfconv"). // @TODO change to software once possible
+		arg("importCsv").
+		arg(xsvFileName).
+		arg("-p").arg("params.json").
+		arg("-o").arg("out").
+		addFile(xsvFileName, xsvFile).
+		writeFile("params.json", json.encode(spec)).
+		processWorkdir("pf", importDirTpl, spec).
+		run()
+
+	return pf.getProcessorResult("pf")
+}
+
+/**
+ * Imports a map with xsv files into a p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
+ * provided by the spec used as map keys). Resulting p-columns may be double-partitioned.
+ *
+ * @param xsvFile: reference - a reference to a file
+ * @param xsvType: string - either csv or tsv
+ * @param spec: object - xsv conversion specification
+ * @return map: reference - a reference to a map resource storing imported data.
+ */
+importFileMap := func(xsvMap, xsvType, spec) {
+
+	importXsvMapTpl := ll.importTemplate(":pframes.import-xsv-map")
+
+	r := render.createEphemeral(importXsvMapTpl, {
+		xsvMap: xsvMap,
+		xsvType: xsvType,
+		spec: spec
+	})
+
+	result := {}
+	for c in spec.columns {
+		id := util.xsvColumnId(c)
+		result[id] = r.output(id)
+	}
+
+	return result
+}
+
+export ll.toStrict({
+	importFile: importFile,
+	importFileMap: importFileMap
+})

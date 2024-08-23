@@ -334,16 +334,6 @@ assertJsonSchema := func(js, schema) {
 	}
 }
 
-/**
- * Asserts that a given args conforms to a given schema.
- *
- * @param js: any - the JSON to assert.
- * @param schema: any - the schema to assert against.
- */
-assertArgsSchema := func(args, schema) {
-	assertJsonSchema(args, schema)
-}
-
 //
 // Domain-specific schemas and checks:
 //
@@ -351,11 +341,53 @@ assertArgsSchema := func(args, schema) {
 /**
  * Checks if the given element is a resource.
  *
- * @param elem: any - the element to check.
- * @param stack: any - the current stack state.
+ * @param options: object - resource validation options
  */
-resource := func(elem, keyPath, stack) {
-	return check(smart.isResource(elem), keyPath, "the element " + elem + " must be a resource")
+resource := func(...args) {
+
+	ops := {}
+	if len(args) > 0 {
+		ops = args[0]
+	}
+
+	assertJsonSchema(ops, {
+		`type,omitempty`: {
+			Name: `string`,
+			Version: `string`
+		}
+	})
+
+	checker := func(elem, keyPath, stack) {
+		c := undefined
+
+		c = check(smart.isResource(elem), keyPath, "the element " + elem + " must be a resource")
+		if isFail(c) {
+			return c
+		}
+
+		if !is_undefined(ops.type) {
+			c = check(elem.info().Type.Name == ops.type.Name && elem.info().Type.Version == ops.type.Version, keyPath,
+				"the element " + elem + " must have the following type: ", ops.type, " found: ", elem.info().Type)
+			if isFail(c) {
+				return c
+			}
+		}
+
+		return c
+	}
+
+	return checker
+}
+
+/**
+ * Checks if the given element is a resource with specified type.
+ *
+ * @param rt: ResourceType - desired resource type
+ */
+resourceType := func(rt) {
+	return func(elem, keyPath, stack) {
+		return check(smart.isResource(elem) && elem.info().Type.Name == rt.Name, keyPath, "the element " + elem + " must be a resource")
+	}
 }
 
 /**
@@ -376,7 +408,7 @@ export ll.toStrict({
 	checkJson: checkJson,
 	isValid: isValid,
 	assertJsonSchema: assertJsonSchema,
-	assertArgsSchema: assertArgsSchema,
 	resource: resource,
-	reference: reference
+	reference: reference,
+	resourceType: resourceType
 })
