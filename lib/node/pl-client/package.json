@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-client-v2",
-  "version": "2.4.8",
+  "version": "2.4.9",
   "description": "New TS/JS client for Platform API",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -11,7 +11,8 @@
     "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
     "test": "jest --runInBand",
-    "test-setup": "tsup --no-config src/cmd/test_setup.ts --out-dir test_scripts && node test_scripts/test_setup.js"
+    "test-setup": "tsup --no-config src/cmd/test_setup.ts --out-dir test_scripts && node test_scripts/test_setup.js",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.11.1",
@@ -21,7 +22,7 @@
     "denque": "^2.1.0",
     "https-proxy-agent": "^7.0.5",
     "long": "^5.2.3",
-    "undici": "^6.19.5",
+    "undici": "^6.19.8",
     "utility-types": "^3.11.0",
     "yaml": "^2.5.0"
   },

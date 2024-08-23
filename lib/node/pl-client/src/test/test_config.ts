@@ -57,11 +57,15 @@ interface AuthCache {
 }
 
 function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformation) => void {
-  return authInformation =>
-    fs.writeFileSync(getFullAuthDataFilePath(), Buffer.from(JSON.stringify({
+  return authInformation => {
+    const dst = getFullAuthDataFilePath()
+    const tmpDst = getFullAuthDataFilePath() + randomUUID()
+    fs.writeFileSync(tmpDst, Buffer.from(JSON.stringify({
       conf: tConf, authInformation,
       expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
     } as AuthCache)), 'utf8');
+    fs.renameSync(tmpDst, dst)
+  }
 }
 
 const cleanAuthInfoCallback = () => {
@@ -76,12 +80,17 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth:
 
   // try recover from cache
   if (fs.existsSync(getFullAuthDataFilePath())) {
-    const cache: AuthCache = JSON.parse(fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }));
-    if (cache.conf.address === tConf.address
-      && cache.conf.test_user === tConf.test_user
-      && cache.conf.test_password === tConf.test_password
-      && cache.expiration > Date.now())
-      authInformation = cache.authInformation;
+    try{
+      const cache: AuthCache = JSON.parse(fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }));
+      if (cache.conf.address === tConf.address
+        && cache.conf.test_user === tConf.test_user
+        && cache.conf.test_password === tConf.test_password
+        && cache.expiration > Date.now())
+        authInformation = cache.authInformation;
+    } catch(e: any) {
+      // removing cache file on any error
+      fs.rmSync(getFullAuthDataFilePath())
+    }
   }
 
   const plConf = plAddressToConfig(tConf.address);
