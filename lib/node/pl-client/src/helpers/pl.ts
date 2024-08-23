@@ -34,72 +34,64 @@ export const StdMap: ResourceType = rt('StdMap', '1');
 //
 
 export function createPlNull(tx: PlTransaction): ResourceRef {
-  return tx.createValue(JsonNull,
-    Buffer.from(JSON.stringify(null))
-  );
+  return tx.createValue(JsonNull, Buffer.from(JSON.stringify(null)));
 }
 
 export function createPlBool(tx: PlTransaction, val: boolean): ResourceRef {
-  return tx.createValue(JsonBool,
-    Buffer.from(JSON.stringify(val))
-  );
+  return tx.createValue(JsonBool, Buffer.from(JSON.stringify(val)));
 }
 
 export function createPlNumber(tx: PlTransaction, val: number): ResourceRef {
-  return tx.createValue(JsonNumber,
-    Buffer.from(JSON.stringify(val))
-  );
+  return tx.createValue(JsonNumber, Buffer.from(JSON.stringify(val)));
 }
 
 export function createPlString(tx: PlTransaction, val: string): ResourceRef {
-  return tx.createValue(JsonString,
-    Buffer.from(JSON.stringify(val))
-  );
+  return tx.createValue(JsonString, Buffer.from(JSON.stringify(val)));
 }
 
 export function createPlArray(tx: PlTransaction, val: any[]): ResourceRef {
-  return tx.createValue(JsonArray,
-    Buffer.from(JSON.stringify(val))
-  );
+  return tx.createValue(JsonArray, Buffer.from(JSON.stringify(val)));
 }
 
 export function createPlObject(tx: PlTransaction, val: object): ResourceRef {
-  return tx.createValue(JsonObject,
-    Buffer.from(JSON.stringify(val))
-  );
+  return tx.createValue(JsonObject, Buffer.from(JSON.stringify(val)));
 }
 
 //
 // Pl Map
 //
 
-export type PlRecordEntry<Key extends string = string, Ref extends AnyRef = AnyRef> =
-  [Key, Ref];
+export type PlRecordEntry<Key extends string = string, Ref extends AnyRef = AnyRef> = [Key, Ref];
 
-export type PlRecord<Key extends string = string, Ref extends AnyRef = AnyRef> =
-  Record<Key, Ref>;
+export type PlRecord<Key extends string = string, Ref extends AnyRef = AnyRef> = Record<Key, Ref>;
 
-export function plEntry<Key extends string = string, Ref extends AnyRef = AnyRef>
-(key: Key, ref: Ref): PlRecordEntry<Key, Ref> {
+export function plEntry<Key extends string = string, Ref extends AnyRef = AnyRef>(
+  key: Key,
+  ref: Ref
+): PlRecordEntry<Key, Ref> {
   return [key, ref];
 }
 
-export function plEntries<Key extends string = string, Ref extends AnyRef = AnyRef>
-(record: PlRecord<Key, Ref>, fields?: Key[]): PlRecordEntry<Key, Ref>[] {
+export function plEntries<Key extends string = string, Ref extends AnyRef = AnyRef>(
+  record: PlRecord<Key, Ref>,
+  fields?: Key[]
+): PlRecordEntry<Key, Ref>[] {
   return fields === undefined
-    ? Object.entries(record) as PlRecordEntry<Key, Ref>[]
-    : fields.map(key => plEntry(key, record[key]));
+    ? (Object.entries(record) as PlRecordEntry<Key, Ref>[])
+    : fields.map((key) => plEntry(key, record[key]));
 }
 
 /** Helper method to build standard pl map from a set of entries */
-export function createPlMap(tx: PlTransaction, entries: PlRecordEntry[] | PlRecord,
-                            ephemeral: boolean, type?: ResourceType): ResourceRef {
+export function createPlMap(
+  tx: PlTransaction,
+  entries: PlRecordEntry[] | PlRecord,
+  ephemeral: boolean,
+  type?: ResourceType
+): ResourceRef {
   const actualType = type ?? (ephemeral ? EphStdMap : StdMap);
-  const rId = ephemeral
-    ? tx.createEphemeral(actualType)
-    : tx.createStruct(actualType);
+  const rId = ephemeral ? tx.createEphemeral(actualType) : tx.createStruct(actualType);
 
-  for (const [name, value] of (Array.isArray(entries) ? entries : plEntries(entries)))
+  for (const [name, value] of Array.isArray(entries) ? entries : plEntries(entries))
     tx.createField(field(rId, name), 'Input', value);
 
   tx.lock(rId);
@@ -108,15 +100,16 @@ export function createPlMap(tx: PlTransaction, entries: PlRecordEntry[] | PlReco
 }
 
 export function futureRecord<Key extends string>(
-  tx: PlTransaction, rId: AnyRef,
+  tx: PlTransaction,
+  rId: AnyRef,
   keys: Key[],
   fieldType: FutureFieldType,
   prefix: string = ''
 ): PlRecord<Key, FieldRef> {
-  return Object.fromEntries(keys.map(k =>
-    plEntry(k, tx.getFutureFieldValue(rId, `${prefix}${k}`, fieldType)))) as PlRecord<Key, FieldRef>;
+  return Object.fromEntries(
+    keys.map((k) => plEntry(k, tx.getFutureFieldValue(rId, `${prefix}${k}`, fieldType)))
+  ) as PlRecord<Key, FieldRef>;
 }
-
 
 //
 // Holder
@@ -146,4 +139,3 @@ export function wrapInEphHolder(tx: PlTransaction, ref: AnyRef): ResourceRef {
 export function unwrapHolder(tx: PlTransaction, ref: AnyRef): FieldRef {
   return tx.getFutureFieldValue(ref, HolderRefField, 'Input');
 }
-

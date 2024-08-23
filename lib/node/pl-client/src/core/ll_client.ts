@@ -1,5 +1,10 @@
 import { PlatformClient } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api.client';
-import { ChannelCredentials, InterceptingCall, Interceptor, status as GrpcStatus } from '@grpc/grpc-js';
+import {
+  ChannelCredentials,
+  InterceptingCall,
+  Interceptor,
+  status as GrpcStatus
+} from '@grpc/grpc-js';
 import {
   AuthInformation,
   AuthOps,
@@ -42,21 +47,25 @@ export class LLPlClient {
 
   public readonly httpDispatcher: Dispatcher;
 
-  constructor(configOrAddress: PlClientConfig | string,
-              ops: {
-                auth?: AuthOps,
-                statusListener?: PlConnectionStatusListener
-              } = {}) {
-    this.conf = typeof configOrAddress === 'string'
-      ? plAddressToConfig(configOrAddress)
-      : configOrAddress;
+  constructor(
+    configOrAddress: PlClientConfig | string,
+    ops: {
+      auth?: AuthOps;
+      statusListener?: PlConnectionStatusListener;
+    } = {}
+  ) {
+    this.conf =
+      typeof configOrAddress === 'string' ? plAddressToConfig(configOrAddress) : configOrAddress;
 
     const grpcInterceptors: Interceptor[] = [];
 
     const { auth, statusListener } = ops;
 
     if (auth !== undefined) {
-      this.refreshTimestamp = inferAuthRefreshTime(auth.authInformation, this.conf.authMaxRefreshSeconds);
+      this.refreshTimestamp = inferAuthRefreshTime(
+        auth.authInformation,
+        this.conf.authMaxRefreshSeconds
+      );
       grpcInterceptors.push(this.createAuthInterceptor());
       this.authInformation = auth.authInformation;
       this.onAuthUpdate = auth.onUpdate;
@@ -78,10 +87,8 @@ export class LLPlClient {
       }
     };
 
-    if (this.conf.grpcProxy)
-      process.env.grpc_proxy = this.conf.grpcProxy;
-    else
-      delete process.env.grpc_proxy;
+    if (this.conf.grpcProxy) process.env.grpc_proxy = this.conf.grpcProxy;
+    else delete process.env.grpc_proxy;
 
     this.grpcTransport = new GrpcTransport(grpcOptions);
     this.grpcPl = new PlatformClient(this.grpcTransport);
@@ -89,8 +96,7 @@ export class LLPlClient {
     // setting up http(s)
     if (this.conf.httpProxy !== undefined)
       this.httpDispatcher = new ProxyAgent(this.conf.httpProxy);
-    else
-      this.httpDispatcher = new Agent();
+    else this.httpDispatcher = new Agent();
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
@@ -107,22 +113,18 @@ export class LLPlClient {
 
   /** null means anonymous connection */
   public get authUser(): string | null {
-    if (!this.authenticated)
-      throw new Error('Client is not authenticated');
+    if (!this.authenticated) throw new Error('Client is not authenticated');
     if (this.authInformation?.jwtToken)
       return parsePlJwt(this.authInformation?.jwtToken).user.login;
-    else
-      return null;
+    else return null;
   }
 
   private updateStatus(newStatus: PlConnectionStatus) {
     process.nextTick(() => {
       if (this._status !== newStatus) {
         this._status = newStatus;
-        if (this.statusListener !== undefined)
-          this.statusListener(this._status);
-        if (this.onAuthError !== undefined)
-          this.onAuthError();
+        if (this.statusListener !== undefined) this.statusListener(this._status);
+        if (this.onAuthError !== undefined) this.onAuthError();
       }
     });
   }
@@ -134,10 +136,12 @@ export class LLPlClient {
   private authRefreshInProgress: boolean = false;
 
   private refreshAuthInformationIfNeeded(): void {
-    if (this.refreshTimestamp === undefined
-      || Date.now() < this.refreshTimestamp
-      || this.authRefreshInProgress
-      || this._status === 'Unauthenticated')
+    if (
+      this.refreshTimestamp === undefined ||
+      Date.now() < this.refreshTimestamp ||
+      this.authRefreshInProgress ||
+      this._status === 'Unauthenticated'
+    )
       return;
 
     // Running refresh in background
@@ -151,12 +155,13 @@ export class LLPlClient {
           }
         }).response;
         this.authInformation = { jwtToken: response.token };
-        this.refreshTimestamp = inferAuthRefreshTime(this.authInformation, this.conf.authMaxRefreshSeconds);
-        if (this.onAuthUpdate)
-          this.onAuthUpdate(this.authInformation);
+        this.refreshTimestamp = inferAuthRefreshTime(
+          this.authInformation,
+          this.conf.authMaxRefreshSeconds
+        );
+        if (this.onAuthUpdate) this.onAuthUpdate(this.authInformation);
       } catch (e: unknown) {
-        if (this.onAuthRefreshProblem)
-          this.onAuthRefreshProblem(e);
+        if (this.onAuthRefreshProblem) this.onAuthRefreshProblem(e);
       } finally {
         this.authRefreshInProgress = false;
       }
@@ -170,9 +175,11 @@ export class LLPlClient {
         start: (metadata, listener, next) => {
           next(metadata, {
             onReceiveStatus: (status, next) => {
-              if (status.code == GrpcStatus.UNAUTHENTICATED) // (!!!) don't change to "==="
+              if (status.code == GrpcStatus.UNAUTHENTICATED)
+                // (!!!) don't change to "==="
                 this.updateStatus('Unauthenticated');
-              if (status.code == GrpcStatus.UNAVAILABLE) // (!!!) don't change to "==="
+              if (status.code == GrpcStatus.UNAVAILABLE)
+                // (!!!) don't change to "==="
                 this.updateStatus('Disconnected');
               next(status);
             }
@@ -219,4 +226,3 @@ export class LLPlClient {
     this.grpcTransport.close();
   }
 }
-

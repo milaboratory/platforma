@@ -15,53 +15,73 @@ const CONFIG_FILE_USER_JSON = path.join(os.homedir(), '.pl.json');
 const CONFIG_FILE_LOCAL_YAML = 'pl.yaml';
 const CONFIG_FILE_USER_YAML = path.join(os.homedir(), '.pl.yaml');
 const CONF_FILE_SEQUENCE = [
-  CONFIG_FILE_LOCAL_JSON, CONFIG_FILE_LOCAL_YAML,
-  CONFIG_FILE_USER_JSON, CONFIG_FILE_USER_YAML];
+  CONFIG_FILE_LOCAL_JSON,
+  CONFIG_FILE_LOCAL_YAML,
+  CONFIG_FILE_USER_JSON,
+  CONFIG_FILE_USER_YAML
+];
 
 const AUTH_DATA_FILE = '.pl_auth.json';
 
 type FileConfigOverrideFields =
-  | 'grpcProxy' | 'httpProxy'
-  | 'user' | 'password'
+  | 'grpcProxy'
+  | 'httpProxy'
+  | 'user'
+  | 'password'
   | 'alternativeRoot'
-  | 'defaultTransactionTimeout' | 'defaultRequestTimeout'
-  | 'authTTLSeconds' | 'authMaxRefreshSeconds';
-const FILE_CONFIG_OVERRIDE_FIELDS: FileConfigOverrideFields[] =
-  ['grpcProxy', 'httpProxy',
-    'user', 'password',
-    'alternativeRoot',
-    'defaultTransactionTimeout', 'defaultRequestTimeout',
-    'authTTLSeconds', 'authMaxRefreshSeconds'];
+  | 'defaultTransactionTimeout'
+  | 'defaultRequestTimeout'
+  | 'authTTLSeconds'
+  | 'authMaxRefreshSeconds';
+const FILE_CONFIG_OVERRIDE_FIELDS: FileConfigOverrideFields[] = [
+  'grpcProxy',
+  'httpProxy',
+  'user',
+  'password',
+  'alternativeRoot',
+  'defaultTransactionTimeout',
+  'defaultRequestTimeout',
+  'authTTLSeconds',
+  'authMaxRefreshSeconds'
+];
 
 type PlConfigFile = {
-  address: string
-} & Partial<Pick<PlClientConfig, FileConfigOverrideFields>>
+  address: string;
+} & Partial<Pick<PlClientConfig, FileConfigOverrideFields>>;
 
 interface AuthCache {
   /** To check if config changed */
-  confHash: string,
-  expiration: number,
-  authInformation: AuthInformation
+  confHash: string;
+  expiration: number;
+  authInformation: AuthInformation;
 }
 
 export function tryGetFileConfig(): [PlConfigFile, string] | undefined {
   for (const confPath of CONF_FILE_SEQUENCE)
     if (fs.existsSync(confPath)) {
       const fileContent = fs.readFileSync(confPath, { encoding: 'utf-8' });
-      if (confPath.endsWith('json'))
-        return [JSON.parse(fileContent) as PlConfigFile, confPath];
-      else
-        return [YAML.parse(fileContent) as PlConfigFile, confPath];
+      if (confPath.endsWith('json')) return [JSON.parse(fileContent) as PlConfigFile, confPath];
+      else return [YAML.parse(fileContent) as PlConfigFile, confPath];
     }
   return undefined;
 }
 
-function saveAuthInfoCallback(confHash: string, authMaxRefreshSeconds: number): (newAuthInfo: AuthInformation) => void {
+function saveAuthInfoCallback(
+  confHash: string,
+  authMaxRefreshSeconds: number
+): (newAuthInfo: AuthInformation) => void {
   return (newAuthInfo) => {
-    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
-      confHash, authInformation: newAuthInfo,
-      expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds)
-    } as AuthCache)), 'utf8');
+    fs.writeFileSync(
+      AUTH_DATA_FILE,
+      Buffer.from(
+        JSON.stringify({
+          confHash,
+          authInformation: newAuthInfo,
+          expiration: inferAuthRefreshTime(newAuthInfo, authMaxRefreshSeconds)
+        } as AuthCache)
+      ),
+      'utf8'
+    );
   };
 }
 
@@ -82,19 +102,16 @@ export async function defaultPlClient(): Promise<PlClient> {
       config = plAddressToConfig(address);
       // applying overrides
       for (const field of FILE_CONFIG_OVERRIDE_FIELDS)
-        if (fileConfig[field] !== undefined)
-          (config as any)[field] = fileConfig[field];
+        if (fileConfig[field] !== undefined) (config as any)[field] = fileConfig[field];
     }
   }
 
   if (config === undefined)
-    throw new Error('Can\'t find configuration to create default platform client.');
+    throw new Error("Can't find configuration to create default platform client.");
 
-  if (process.env.PL_USER !== undefined)
-    config.user = process.env.PL_USER;
+  if (process.env.PL_USER !== undefined) config.user = process.env.PL_USER;
 
-  if (process.env.PL_PASSWORD !== undefined)
-    config.user = process.env.PL_PASSWORD;
+  if (process.env.PL_PASSWORD !== undefined) config.user = process.env.PL_PASSWORD;
 
   const confHash = createHash('sha256')
     .update(Buffer.from(canonicalize(config)!))
@@ -122,17 +139,23 @@ export async function defaultPlClient(): Promise<PlClient> {
     }
 
     // saving cache
-    fs.writeFileSync(AUTH_DATA_FILE, Buffer.from(JSON.stringify({
-      confHash, authInformation,
-      expiration: inferAuthRefreshTime(authInformation, config.authMaxRefreshSeconds)
-    } as AuthCache)), 'utf8');
+    fs.writeFileSync(
+      AUTH_DATA_FILE,
+      Buffer.from(
+        JSON.stringify({
+          confHash,
+          authInformation,
+          expiration: inferAuthRefreshTime(authInformation, config.authMaxRefreshSeconds)
+        } as AuthCache)
+      ),
+      'utf8'
+    );
   }
 
   return await PlClient.init(config, {
     authInformation,
-    onUpdate: newAuthInfo => saveAuthInfoCallback(confHash, config!.authMaxRefreshSeconds),
+    onUpdate: (newAuthInfo) => saveAuthInfoCallback(confHash, config!.authMaxRefreshSeconds),
     onUpdateError: cleanAuthInfoCallback,
     onAuthError: cleanAuthInfoCallback
   });
 }
-

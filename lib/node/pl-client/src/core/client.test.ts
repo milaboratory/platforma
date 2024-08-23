@@ -30,11 +30,12 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   init(pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher): SimpleDriver {
     return {
       async ping(): Promise<string> {
-        const response = await request('https://cdn.milaboratory.com/ping', { dispatcher: httpDispatcher });
+        const response = await request('https://cdn.milaboratory.com/ping', {
+          dispatcher: httpDispatcher
+        });
         return await response.body.text();
       },
-      close() {
-      }
+      close() {}
     };
   }
 };

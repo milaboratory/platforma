@@ -1,4 +1,7 @@
-import { TxAPI_ClientMessage, TxAPI_ServerMessage } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import {
+  TxAPI_ClientMessage,
+  TxAPI_ServerMessage
+} from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
 import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
@@ -15,10 +18,10 @@ export type ServerMessageResponse = TxAPI_ServerMessage['response'];
 
 type TxStream = DuplexStreamingCall<TxAPI_ClientMessage, TxAPI_ServerMessage>;
 
-export type OneOfKind<
-  T extends { oneofKind: unknown },
-  Kind extends T['oneofKind']>
-  = Extract<T, { oneofKind: Kind }>;
+export type OneOfKind<T extends { oneofKind: unknown }, Kind extends T['oneofKind']> = Extract<
+  T,
+  { oneofKind: Kind }
+>;
 
 interface SingleResponseHandler<Kind extends ServerMessageResponse['oneofKind']> {
   kind: Kind;
@@ -34,20 +37,20 @@ interface MultiResponseHandler<Kind extends ServerMessageResponse['oneofKind']> 
   reject: (e: Error) => void;
 }
 
-type AnySingleResponseHandler =
-  SingleResponseHandler<ServerMessageResponse['oneofKind']>
+type AnySingleResponseHandler = SingleResponseHandler<ServerMessageResponse['oneofKind']>;
 
-type AnyMultiResponseHandler =
-  MultiResponseHandler<ServerMessageResponse['oneofKind']>
+type AnyMultiResponseHandler = MultiResponseHandler<ServerMessageResponse['oneofKind']>;
 
 type AnyResponseHandler =
   | SingleResponseHandler<ServerMessageResponse['oneofKind']>
-  | MultiResponseHandler<ServerMessageResponse['oneofKind']>
+  | MultiResponseHandler<ServerMessageResponse['oneofKind']>;
 
 function createResponseHandler<Kind extends ServerMessageResponse['oneofKind']>(
   kind: Kind,
   expectMultiResponse: boolean,
-  resolve: ((v: OneOfKind<ServerMessageResponse, Kind>) => void) | ((v: OneOfKind<ServerMessageResponse, Kind>[]) => void),
+  resolve:
+    | ((v: OneOfKind<ServerMessageResponse, Kind>) => void)
+    | ((v: OneOfKind<ServerMessageResponse, Kind>[]) => void),
   reject: (e: Error) => void
 ): AnyResponseHandler {
   return { kind, expectMultiResponse, resolve, reject } as AnyResponseHandler;
@@ -103,11 +106,12 @@ export class LLPlTransaction {
     this.incomingProcessorResult = this.incomingEventProcessor();
   }
 
-  private assignErrorFactoryIfNotSet(errorFactory: () => never, reject?: (e: Error) => void): () => never {
-    if (reject !== undefined)
-      reject(new RethrowError(errorFactory));
-    if (this.errorFactory)
-      return errorFactory;
+  private assignErrorFactoryIfNotSet(
+    errorFactory: () => never,
+    reject?: (e: Error) => void
+  ): () => never {
+    if (reject !== undefined) reject(new RethrowError(errorFactory));
+    if (this.errorFactory) return errorFactory;
     this.errorFactory = errorFactory;
     return errorFactory;
   }
@@ -134,8 +138,7 @@ export class LLPlTransaction {
           }
 
           // allocating response aggregator array
-          if (currentHandler.expectMultiResponse)
-            responseAggregator = [];
+          if (currentHandler.expectMultiResponse) responseAggregator = [];
 
           expectedId++;
         }
@@ -152,9 +155,11 @@ export class LLPlTransaction {
           const status = message.error;
 
           if (isRecoverable(status)) {
-            currentHandler.reject(new RethrowError(() => {
-              throw new RecoverablePlError(status);
-            }));
+            currentHandler.reject(
+              new RethrowError(() => {
+                throw new RecoverablePlError(status);
+              })
+            );
             currentHandler = undefined;
 
             if (message.multiMessage !== undefined && !message.multiMessage.isLast) {
@@ -177,7 +182,10 @@ export class LLPlTransaction {
           }
         }
 
-        if (currentHandler!.kind !== message.response.oneofKind && message?.multiMessage?.isEmpty !== true) {
+        if (
+          currentHandler!.kind !== message.response.oneofKind &&
+          message?.multiMessage?.isEmpty !== true
+        ) {
           const errorMessage = `inconsistent request response types: ${currentHandler!.kind} !== ${message.response.oneofKind}`;
 
           this.assignErrorFactoryIfNotSet(() => {
@@ -203,7 +211,7 @@ export class LLPlTransaction {
 
         if (message.multiMessage !== undefined) {
           if (!message.multiMessage.isEmpty) {
-            if (message.multiMessage.id !== (responseAggregator!.length + 1)) {
+            if (message.multiMessage.id !== responseAggregator!.length + 1) {
               const errorMessage = `inconsistent multi id: ${message.multiMessage.id} !== ${responseAggregator!.length + 1}`;
 
               this.assignErrorFactoryIfNotSet(() => {
@@ -231,7 +239,6 @@ export class LLPlTransaction {
       return this.assignErrorFactoryIfNotSet(() => {
         rethrowMeaningfulError(e, true);
       }, currentHandler?.reject);
-
     } finally {
       await this.close();
     }
@@ -240,8 +247,7 @@ export class LLPlTransaction {
 
   /** Executed after termination of incoming message processor */
   private async close(): Promise<void> {
-    if (this.closed)
-      return;
+    if (this.closed) return;
 
     this.closed = true;
 
@@ -249,12 +255,9 @@ export class LLPlTransaction {
     let handler: AnyResponseHandler | undefined = undefined;
     while (true) {
       const handler = this.responseHandlerQueue.shift();
-      if (!handler)
-        break;
-      if (this.errorFactory)
-        handler.reject(new RethrowError(this.errorFactory));
-      else
-        handler.reject(new Error('no reply'));
+      if (!handler) break;
+      if (this.errorFactory) handler.reject(new RethrowError(this.errorFactory));
+      else handler.reject(new Error('no reply'));
     }
 
     // closing outgoing stream
@@ -271,45 +274,37 @@ export class LLPlTransaction {
 
   /** Await incoming message loop termination and throw any leftover errors if it was unsuccessful */
   public async await(): Promise<void> {
-
     // for those who want to understand "why?":
     // this way there is no hanging promise that will complete with rejection
     // until await is implicitly requested, the this.incomingProcessorResult
     // always resolves with success
 
     const processingResult = await this.incomingProcessorResult;
-    if (processingResult !== null)
-      processingResult();
-
+    if (processingResult !== null) processingResult();
   }
 
   public async send<Kind extends ClientMessageRequest['oneofKind']>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     expectMultiResponse: false
-  ): Promise<OneOfKind<ServerMessageResponse, Kind>>
+  ): Promise<OneOfKind<ServerMessageResponse, Kind>>;
   public async send<Kind extends ClientMessageRequest['oneofKind']>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     expectMultiResponse: true
-  ): Promise<OneOfKind<ServerMessageResponse, Kind>[]>
+  ): Promise<OneOfKind<ServerMessageResponse, Kind>[]>;
   /** Generate proper client message and send it to the server, and returns a promise of future response. */
   public async send<Kind extends ClientMessageRequest['oneofKind']>(
     r: OneOfKind<ClientMessageRequest, Kind>,
     expectMultiResponse: boolean
   ): Promise<OneOfKind<ServerMessageResponse, Kind> | OneOfKind<ServerMessageResponse, Kind>[]> {
-    if (this.errorFactory)
-      return Promise.reject(new RethrowError(this.errorFactory));
+    if (this.errorFactory) return Promise.reject(new RethrowError(this.errorFactory));
 
-    if (this.closed)
-      return Promise.reject(new Error('Transaction already closed'));
+    if (this.closed) return Promise.reject(new Error('Transaction already closed'));
 
     // Note: Promise synchronously executes a callback passed to a constructor
     const result = new Promise<OneOfKind<ServerMessageResponse, Kind>>((resolve, reject) => {
-      this.responseHandlerQueue.push(createResponseHandler(
-        r.oneofKind,
-        expectMultiResponse,
-        resolve,
-        reject
-      ));
+      this.responseHandlerQueue.push(
+        createResponseHandler(r.oneofKind, expectMultiResponse, resolve, reject)
+      );
     });
 
     // Awaiting message dispatch to catch any associated errors.
@@ -322,8 +317,7 @@ export class LLPlTransaction {
     try {
       return await result;
     } catch (e: any) {
-      if (e instanceof RethrowError)
-        e.rethrowLambda();
+      if (e instanceof RethrowError) e.rethrowLambda();
       throw new Error('Error while waiting for response', { cause: e });
     }
   }
@@ -332,8 +326,7 @@ export class LLPlTransaction {
 
   /** Safe to call multiple times */
   public async complete() {
-    if (this._completed)
-      return;
+    if (this._completed) return;
     this._completed = true;
     await this.stream.requests.complete();
   }

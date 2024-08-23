@@ -6,7 +6,5 @@ test('test toBytes 1', () => {
 });
 
 test('test toBytes 2', () => {
-  expect(toBytes('\x01\x02\x03')).toEqual(
-    Buffer.from(new Uint8Array([1, 2, 3]))
-  );
+  expect(toBytes('\x01\x02\x03')).toEqual(Buffer.from(new Uint8Array([1, 2, 3])));
 });

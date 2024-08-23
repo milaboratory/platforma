@@ -33,18 +33,15 @@ export class UnauthenticatedPlClient {
         { expiration: { seconds: BigInt(this.ll.conf.authTTLSeconds), nanos: 0 } },
         {
           meta: {
-            'authorization':
-              'Basic ' + Buffer.from(user + ':' + password).toString('base64')
+            authorization: 'Basic ' + Buffer.from(user + ':' + password).toString('base64')
           }
         }
       ).response;
       const jwtToken = notEmpty(response.token);
-      if (jwtToken === '')
-        throw new Error('empty token');
+      if (jwtToken === '') throw new Error('empty token');
       return { jwtToken };
     } catch (e: any) {
-      if (e.code === 'UNAUTHENTICATED')
-        throw new UnauthenticatedError(e.message);
+      if (e.code === 'UNAUTHENTICATED') throw new UnauthenticatedError(e.message);
       throw new Error(e);
     }
   }

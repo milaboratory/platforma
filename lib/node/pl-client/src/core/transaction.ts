@@ -1,10 +1,24 @@
 import {
   AnyResourceId,
-  createLocalResourceId, ensureResourceIdNotNull, LocalResourceId,
-  MaxTxId, OptionalResourceId, BasicResourceData, FieldData, FieldType, ResourceData,
-  ResourceId, ResourceType, FutureFieldType
+  createLocalResourceId,
+  ensureResourceIdNotNull,
+  LocalResourceId,
+  MaxTxId,
+  OptionalResourceId,
+  BasicResourceData,
+  FieldData,
+  FieldType,
+  ResourceData,
+  ResourceId,
+  ResourceType,
+  FutureFieldType
 } from './types';
-import { ClientMessageRequest, LLPlTransaction, OneOfKind, ServerMessageResponse } from './ll_transaction';
+import {
+  ClientMessageRequest,
+  LLPlTransaction,
+  OneOfKind,
+  ServerMessageResponse
+} from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
@@ -35,17 +49,16 @@ export interface KeyValueString {
   value: string;
 }
 
-
 interface _FieldId<RId> {
   /** Parent resource id */
-  resourceId: RId,
+  resourceId: RId;
   /** Field name */
-  fieldName: string
+  fieldName: string;
 }
 
-export type FieldId = _FieldId<ResourceId>
-export type FieldRef = _FieldId<ResourceRef>
-export type LocalFieldId = _FieldId<LocalResourceId>
+export type FieldId = _FieldId<ResourceId>;
+export type FieldRef = _FieldId<ResourceRef>;
+export type LocalFieldId = _FieldId<LocalResourceId>;
 export type AnyFieldId = FieldId | LocalFieldId;
 
 export type AnyResourceRef = ResourceRef | ResourceId;
@@ -57,8 +70,9 @@ export function isField(ref: AnyRef): ref is AnyFieldRef {
 }
 
 export function isResource(ref: AnyRef): ref is AnyResourceRef {
-  return typeof ref === 'bigint' ||
-    (ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId'));
+  return (
+    typeof ref === 'bigint' || (ref.hasOwnProperty('globalId') && ref.hasOwnProperty('localId'))
+  );
 }
 
 export function isFieldRef(ref: AnyFieldRef): ref is FieldRef {
@@ -70,31 +84,24 @@ export function isResourceRef(ref: AnyResourceRef): ref is ResourceRef {
 }
 
 export function toFieldId(ref: AnyFieldRef): AnyFieldId {
-  if (isFieldRef(ref))
-    return { resourceId: ref.resourceId.localId, fieldName: ref.fieldName };
-  else
-    return ref as FieldId;
+  if (isFieldRef(ref)) return { resourceId: ref.resourceId.localId, fieldName: ref.fieldName };
+  else return ref as FieldId;
 }
 
 export async function toGlobalFieldId(ref: AnyFieldRef): Promise<FieldId> {
   if (isFieldRef(ref))
     return { resourceId: await ref.resourceId.globalId, fieldName: ref.fieldName };
-  else
-    return ref as FieldId;
+  else return ref as FieldId;
 }
 
 export function toResourceId(ref: AnyResourceRef): AnyResourceId {
-  if (isResourceRef(ref))
-    return ref.localId;
-  else
-    return ref;
+  if (isResourceRef(ref)) return ref.localId;
+  else return ref;
 }
 
 export async function toGlobalResourceId(ref: AnyResourceRef): Promise<ResourceId> {
-  if (isResourceRef(ref))
-    return await ref.globalId;
-  else
-    return ref;
+  if (isResourceRef(ref)) return await ref.globalId;
+  else return ref;
 }
 
 export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRef {
@@ -102,15 +109,13 @@ export function field(resourceId: AnyResourceRef, fieldName: string): AnyFieldRe
 }
 
 /** If transaction commit failed due to write conflicts */
-export class TxCommitConflict extends Error {
-}
+export class TxCommitConflict extends Error {}
 
 async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefined> {
   try {
     return await cb();
   } catch (e: any) {
-    if (isNotFoundError(e))
-      return undefined;
+    if (isNotFoundError(e)) return undefined;
     throw e;
   }
 }
@@ -146,20 +151,22 @@ export class PlTransaction {
     private readonly _clientRoot: OptionalResourceId
   ) {
     // initiating transaction
-    this.globalTxId = this.sendSingleAndParse({
-      oneofKind: 'txOpen',
-      txOpen: {
-        name,
-        writable: writable
-          ? TxAPI_Open_Request_WritableTx.WRITABLE
-          : TxAPI_Open_Request_WritableTx.NOT_WRITABLE
-      }
-    }, r => notEmpty(r.txOpen.tx?.id));
+    this.globalTxId = this.sendSingleAndParse(
+      {
+        oneofKind: 'txOpen',
+        txOpen: {
+          name,
+          writable: writable
+            ? TxAPI_Open_Request_WritableTx.WRITABLE
+            : TxAPI_Open_Request_WritableTx.NOT_WRITABLE
+        }
+      },
+      (r) => notEmpty(r.txOpen.tx?.id)
+    );
   }
 
   private async drainAndAwaitPendingOps(): Promise<void> {
-    if (this.pendingVoidOps.length === 0)
-      return;
+    if (this.pendingVoidOps.length === 0) return;
 
     // drain pending operations into temp array
     const pending = this.pendingVoidOps;
@@ -208,8 +215,7 @@ export class PlTransaction {
   }
 
   private checkTxOpen() {
-    if (this._completed)
-      throw new Error('Transaction already closed');
+    if (this._completed) throw new Error('Transaction already closed');
   }
 
   public get completed() {
@@ -225,17 +231,15 @@ export class PlTransaction {
     this._completed = true;
 
     if (!this.writable) {
-
       // no need to explicitly commit or reject read-only tx
       const completeResult = this.ll.complete();
       await this.drainAndAwaitPendingOps();
       await completeResult;
       await this.ll.await();
-
     } else {
       const commitResponse = this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
-        r => r.txCommit.success
+        (r) => r.txCommit.success
       );
 
       // send closing frame right after commit to save some time on round-trips
@@ -245,8 +249,7 @@ export class PlTransaction {
       // pending void operations from before, to catch any errors
       await this.drainAndAwaitPendingOps();
 
-      if (!await commitResponse)
-        throw new TxCommitConflict();
+      if (!(await commitResponse)) throw new TxCommitConflict();
 
       await completeResult;
 
@@ -261,9 +264,7 @@ export class PlTransaction {
     // tx will accept no requests after this one
     this._completed = true;
 
-    const discardResponse = this.sendVoidSync(
-      { oneofKind: 'txDiscard', txDiscard: {} }
-    );
+    const discardResponse = this.sendVoidSync({ oneofKind: 'txDiscard', txDiscard: {} });
     // send closing frame right after commit to save some time on round-trips
     const completeResult = this.ll.complete();
 
@@ -288,16 +289,24 @@ export class PlTransaction {
   // Resources
   //
 
-  public createSingleton(name: string, type: ResourceType, errorIfExists: boolean = false): ResourceRef {
+  public createSingleton(
+    name: string,
+    type: ResourceType,
+    errorIfExists: boolean = false
+  ): ResourceRef {
     const localId = this.nextLocalResourceId(false);
 
     const globalId = this.sendSingleAndParse(
       {
-        oneofKind: 'resourceCreateSingleton', resourceCreateSingleton: {
-          type, id: localId, data: Buffer.from(name), errorIfExists
+        oneofKind: 'resourceCreateSingleton',
+        resourceCreateSingleton: {
+          type,
+          id: localId,
+          data: Buffer.from(name),
+          errorIfExists
         }
       },
-      r => r.resourceCreateSingleton.resourceId as ResourceId
+      (r) => r.resourceCreateSingleton.resourceId as ResourceId
     );
 
     return { globalId, localId };
@@ -305,14 +314,19 @@ export class PlTransaction {
 
   public async getSingleton(name: string, loadFields: true): Promise<ResourceData>;
   public async getSingleton(name: string, loadFields: false): Promise<BasicResourceData>;
-  public async getSingleton(name: string, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
+  public async getSingleton(
+    name: string,
+    loadFields: boolean = true
+  ): Promise<BasicResourceData | ResourceData> {
     return await this.sendSingleAndParse(
       {
-        oneofKind: 'resourceGetSingleton', resourceGetSingleton: {
-          data: Buffer.from(name), loadFields
+        oneofKind: 'resourceGetSingleton',
+        resourceGetSingleton: {
+          data: Buffer.from(name),
+          loadFields
         }
       },
-      r => protoToResource(notEmpty(r.resourceGetSingleton.resource))
+      (r) => protoToResource(notEmpty(r.resourceGetSingleton.resource))
     );
   }
 
@@ -323,86 +337,91 @@ export class PlTransaction {
   ): ResourceRef {
     const localId = this.nextLocalResourceId(root);
 
-    const globalId = this.sendSingleAndParse(
-      req(localId),
-      r => parser(r) as ResourceId
-    );
+    const globalId = this.sendSingleAndParse(req(localId), (r) => parser(r) as ResourceId);
 
     return { globalId, localId };
   }
 
   public createRoot(type: ResourceType): ResourceRef {
-    return this.createResource(true,
-      localId => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
-      r => r.resourceCreateRoot.resourceId
+    return this.createResource(
+      true,
+      (localId) => ({ oneofKind: 'resourceCreateRoot', resourceCreateRoot: { type, id: localId } }),
+      (r) => r.resourceCreateRoot.resourceId
     );
   }
 
   public createStruct(type: ResourceType, data?: Uint8Array | string): ResourceRef {
-    return this.createResource(false,
-      localId => ({
-        oneofKind: 'resourceCreateStruct', resourceCreateStruct: {
-          type, id: localId,
-          data: data === undefined
-            ? undefined
-            : typeof data === 'string' ? Buffer.from(data) : data
+    return this.createResource(
+      false,
+      (localId) => ({
+        oneofKind: 'resourceCreateStruct',
+        resourceCreateStruct: {
+          type,
+          id: localId,
+          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data
         }
       }),
-      r => r.resourceCreateStruct.resourceId
+      (r) => r.resourceCreateStruct.resourceId
     );
   }
 
   public createEphemeral(type: ResourceType, data?: Uint8Array | string): ResourceRef {
-    return this.createResource(false,
-      localId => ({
-        oneofKind: 'resourceCreateEphemeral', resourceCreateEphemeral: {
-          type, id: localId,
-          data: data === undefined
-            ? undefined
-            : typeof data === 'string' ? Buffer.from(data) : data
+    return this.createResource(
+      false,
+      (localId) => ({
+        oneofKind: 'resourceCreateEphemeral',
+        resourceCreateEphemeral: {
+          type,
+          id: localId,
+          data: data === undefined ? undefined : typeof data === 'string' ? Buffer.from(data) : data
         }
       }),
-      r => r.resourceCreateEphemeral.resourceId
+      (r) => r.resourceCreateEphemeral.resourceId
     );
   }
 
-  public createValue(type: ResourceType, data: Uint8Array | string, errorIfExists: boolean = false): ResourceRef {
-    return this.createResource(false,
-      localId => ({
+  public createValue(
+    type: ResourceType,
+    data: Uint8Array | string,
+    errorIfExists: boolean = false
+  ): ResourceRef {
+    return this.createResource(
+      false,
+      (localId) => ({
         oneofKind: 'resourceCreateValue',
         resourceCreateValue: {
-          type, id: localId,
+          type,
+          id: localId,
           data: typeof data === 'string' ? Buffer.from(data) : data,
           errorIfExists
         }
       }),
-      r => r.resourceCreateValue.resourceId
+      (r) => r.resourceCreateValue.resourceId
     );
   }
 
   public setResourceName(name: string, rId: AnyResourceRef): void {
-    this.sendVoidAsync(
-      { oneofKind: 'resourceNameSet', resourceNameSet: { resourceId: toResourceId(rId), name } }
-    );
+    this.sendVoidAsync({
+      oneofKind: 'resourceNameSet',
+      resourceNameSet: { resourceId: toResourceId(rId), name }
+    });
   }
 
   public deleteResourceName(name: string): void {
-    this.sendVoidAsync(
-      { oneofKind: 'resourceNameDelete', resourceNameDelete: { name } }
-    );
+    this.sendVoidAsync({ oneofKind: 'resourceNameDelete', resourceNameDelete: { name } });
   }
 
   public async getResourceByName(name: string): Promise<ResourceId> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameGet', resourceNameGet: { name } },
-      r => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId)
+      (r) => ensureResourceIdNotNull(r.resourceNameGet.resourceId as OptionalResourceId)
     );
   }
 
   public async checkResourceNameExists(name: string): Promise<boolean> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceNameExists', resourceNameExists: { name } },
-      r => r.resourceNameExists.exists
+      (r) => r.resourceNameExists.exists
     );
   }
 
@@ -413,25 +432,45 @@ export class PlTransaction {
   public async resourceExists(rId: ResourceId): Promise<boolean> {
     return await this.sendSingleAndParse(
       { oneofKind: 'resourceExists', resourceExists: { resourceId: rId } },
-      r => r.resourceExists.exists);
+      (r) => r.resourceExists.exists
+    );
   }
 
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
-  public async getResourceData(rId: AnyResourceRef, loadFields: boolean): Promise<BasicResourceData | ResourceData>
-  public async getResourceData(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData> {
-    return await this.sendSingleAndParse({
+  public async getResourceData(
+    rId: AnyResourceRef,
+    loadFields: boolean
+  ): Promise<BasicResourceData | ResourceData>;
+  public async getResourceData(
+    rId: AnyResourceRef,
+    loadFields: boolean = true
+  ): Promise<BasicResourceData | ResourceData> {
+    return await this.sendSingleAndParse(
+      {
         oneofKind: 'resourceGet',
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
       },
-      r => protoToResource(notEmpty(r.resourceGet.resource))
+      (r) => protoToResource(notEmpty(r.resourceGet.resource))
     );
   }
 
-  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: true): Promise<ResourceData | undefined>;
-  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData | undefined>;
-  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: boolean): Promise<BasicResourceData | ResourceData | undefined>
-  public async getResourceDataIfExists(rId: AnyResourceRef, loadFields: boolean = true): Promise<BasicResourceData | ResourceData | undefined> {
+  public async getResourceDataIfExists(
+    rId: AnyResourceRef,
+    loadFields: true
+  ): Promise<ResourceData | undefined>;
+  public async getResourceDataIfExists(
+    rId: AnyResourceRef,
+    loadFields: false
+  ): Promise<BasicResourceData | undefined>;
+  public async getResourceDataIfExists(
+    rId: AnyResourceRef,
+    loadFields: boolean
+  ): Promise<BasicResourceData | ResourceData | undefined>;
+  public async getResourceDataIfExists(
+    rId: AnyResourceRef,
+    loadFields: boolean = true
+  ): Promise<BasicResourceData | ResourceData | undefined> {
     return notFoundToUndefined(async () => await this.getResourceData(rId, loadFields));
   }
 
@@ -444,10 +483,9 @@ export class PlTransaction {
    */
   public lockInputs(rId: AnyResourceRef): void {
     this.sendVoidAsync({
-        oneofKind: 'resourceLockInputs',
-        resourceLockInputs: { resourceId: toResourceId(rId) }
-      }
-    );
+      oneofKind: 'resourceLockInputs',
+      resourceLockInputs: { resourceId: toResourceId(rId) }
+    });
   }
 
   /**
@@ -456,10 +494,9 @@ export class PlTransaction {
    */
   public lockOutputs(rId: AnyResourceRef): void {
     this.sendVoidAsync({
-        oneofKind: 'resourceLockOutputs',
-        resourceLockOutputs: { resourceId: toResourceId(rId) }
-      }
-    );
+      oneofKind: 'resourceLockOutputs',
+      resourceLockOutputs: { resourceId: toResourceId(rId) }
+    });
   }
 
   public lock(rID: AnyResourceRef): void {
@@ -473,45 +510,42 @@ export class PlTransaction {
 
   public createField(fId: AnyFieldRef, fieldType: FieldType, value?: AnyRef): void {
     this.sendVoidAsync({
-        oneofKind: 'fieldCreate',
-        fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
-      }
-    );
-    if (value !== undefined)
-      this.setField(fId, value);
+      oneofKind: 'fieldCreate',
+      fieldCreate: { type: fieldTypeToProto(fieldType), id: toFieldId(fId) }
+    });
+    if (value !== undefined) this.setField(fId, value);
   }
 
   public async fieldExists(fId: AnyFieldRef): Promise<boolean> {
-    return await this.sendSingleAndParse({
+    return await this.sendSingleAndParse(
+      {
         oneofKind: 'fieldExists',
         fieldExists: { field: toFieldId(fId) }
       },
-      r => r.fieldExists.exists
+      (r) => r.fieldExists.exists
     );
   }
 
   public setField(fId: AnyFieldRef, ref: AnyRef): void {
     if (isResource(ref))
       this.sendVoidAsync({
-          oneofKind: 'fieldSet',
-          fieldSet: {
-            field: toFieldId(fId), value:
-              {
-                resourceId: toResourceId(ref),
-                fieldName: '' // default value, read as undefined
-              }
+        oneofKind: 'fieldSet',
+        fieldSet: {
+          field: toFieldId(fId),
+          value: {
+            resourceId: toResourceId(ref),
+            fieldName: '' // default value, read as undefined
           }
         }
-      );
+      });
     else
       this.sendVoidAsync({
-          oneofKind: 'fieldSet',
-          fieldSet: {
-            field: toFieldId(fId),
-            value: toFieldId(ref)
-          }
+        oneofKind: 'fieldSet',
+        fieldSet: {
+          field: toFieldId(fId),
+          value: toFieldId(ref)
         }
-      );
+      });
   }
 
   public setFieldError(fId: AnyFieldRef, ref: AnyResourceRef): void {
@@ -524,7 +558,7 @@ export class PlTransaction {
   public async getField(fId: AnyFieldRef): Promise<FieldData> {
     return await this.sendSingleAndParse(
       { oneofKind: 'fieldGet', fieldGet: { field: toFieldId(fId) } },
-      r => protoToField(notEmpty(r.fieldGet.field))
+      (r) => protoToField(notEmpty(r.fieldGet.field))
     );
   }
 
@@ -533,15 +567,11 @@ export class PlTransaction {
   }
 
   public resetField(fId: AnyFieldRef): void {
-    this.sendVoidAsync(
-      { oneofKind: 'fieldReset', fieldReset: { field: toFieldId(fId) } }
-    );
+    this.sendVoidAsync({ oneofKind: 'fieldReset', fieldReset: { field: toFieldId(fId) } });
   }
 
   public removeField(fId: AnyFieldRef): void {
-    this.sendVoidAsync(
-      { oneofKind: 'fieldRemove', fieldRemove: { field: toFieldId(fId) } }
-    );
+    this.sendVoidAsync({ oneofKind: 'fieldRemove', fieldRemove: { field: toFieldId(fId) } });
   }
 
   //
@@ -554,27 +584,33 @@ export class PlTransaction {
         oneofKind: 'resourceKeyValueList',
         resourceKeyValueList: { resourceId: toResourceId(rId), startFrom: '', limit: 0 }
       },
-      r => r.map(e => e.resourceKeyValueList.record!)
+      (r) => r.map((e) => e.resourceKeyValueList.record!)
     );
   }
 
   public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
-    return (await this.listKeyValues(rId))
-      .map(({ key, value }) => ({ key, value: Buffer.from(value).toString() }));
+    return (await this.listKeyValues(rId)).map(({ key, value }) => ({
+      key,
+      value: Buffer.from(value).toString()
+    }));
   }
 
   public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
     return notFoundToUndefined(async () => await this.listKeyValues(rId));
   }
 
-  public async listKeyValuesStringIfResourceExists(rId: AnyResourceRef): Promise<KeyValueString[] | undefined> {
+  public async listKeyValuesStringIfResourceExists(
+    rId: AnyResourceRef
+  ): Promise<KeyValueString[] | undefined> {
     return notFoundToUndefined(async () => await this.listKeyValuesString(rId));
   }
 
   public setKValue(rId: AnyResourceRef, key: string, value: Uint8Array | string): void {
     this.sendVoidAsync({
-      oneofKind: 'resourceKeyValueSet', resourceKeyValueSet: {
-        resourceId: toResourceId(rId), key,
+      oneofKind: 'resourceKeyValueSet',
+      resourceKeyValueSet: {
+        resourceId: toResourceId(rId),
+        key,
         value: toBytes(value)
       }
     });
@@ -582,16 +618,21 @@ export class PlTransaction {
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {
     this.sendVoidAsync({
-      oneofKind: 'resourceKeyValueDelete', resourceKeyValueDelete: {
-        resourceId: toResourceId(rId), key
+      oneofKind: 'resourceKeyValueDelete',
+      resourceKeyValueDelete: {
+        resourceId: toResourceId(rId),
+        key
       }
     });
   }
 
   public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     return await this.sendSingleAndParse(
-      { oneofKind: 'resourceKeyValueGet', resourceKeyValueGet: { resourceId: toResourceId(rId), key } },
-      r => r.resourceKeyValueGet.value
+      {
+        oneofKind: 'resourceKeyValueGet',
+        resourceKeyValueGet: { resourceId: toResourceId(rId), key }
+      },
+      (r) => r.resourceKeyValueGet.value
     );
   }
 
@@ -603,22 +644,31 @@ export class PlTransaction {
     return JSON.parse(await this.getKValueString(rId, key)) as T;
   }
 
-  public async getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
+  public async getKValueIfExists(
+    rId: AnyResourceRef,
+    key: string
+  ): Promise<Uint8Array | undefined> {
     return await this.sendSingleAndParse(
-      { oneofKind: 'resourceKeyValueGetIfExists', resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key } },
-      r => r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
+      {
+        oneofKind: 'resourceKeyValueGetIfExists',
+        resourceKeyValueGetIfExists: { resourceId: toResourceId(rId), key }
+      },
+      (r) =>
+        r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined
     );
   }
 
-  public async getKValueStringIfExists(rId: AnyResourceRef, key: string): Promise<string | undefined> {
+  public async getKValueStringIfExists(
+    rId: AnyResourceRef,
+    key: string
+  ): Promise<string | undefined> {
     const data = await this.getKValueIfExists(rId, key);
     return data === undefined ? undefined : Buffer.from(data).toString();
   }
 
   public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
     const str = await this.getKValueString(rId, key);
-    if (str === undefined)
-      return undefined;
+    if (str === undefined) return undefined;
     return JSON.parse(str) as T;
   }
 
@@ -632,10 +682,7 @@ export class PlTransaction {
   //
 
   /** Resolves existing or create first level resource from */
-  public getFutureFieldValue(rId: AnyRef,
-                             fieldName: string,
-                             fieldType: FutureFieldType
-  ): FieldRef {
+  public getFutureFieldValue(rId: AnyRef, fieldName: string, fieldType: FutureFieldType): FieldRef {
     const data = Buffer.from(JSON.stringify({ fieldName, fieldType }));
     const getFieldResource = this.createEphemeral({ name: 'json/getField', version: '1' }, data);
     this.setField({ resourceId: getFieldResource, fieldName: 'resource' }, rId);
@@ -652,8 +699,7 @@ export class PlTransaction {
 
   /** Closes output event stream */
   public async complete() {
-    if (this._completed)
-      return;
+    if (this._completed) return;
     this._completed = true;
     const completeResult = this.ll.complete();
     await this.drainAndAwaitPendingOps();
@@ -678,8 +724,7 @@ export class PlTransaction {
 
   private static nextLocalTxId() {
     PlTransaction.localTxIdCounter++;
-    if (PlTransaction.localTxIdCounter === MaxTxId)
-      PlTransaction.localTxIdCounter = 1;
+    if (PlTransaction.localTxIdCounter === MaxTxId) PlTransaction.localTxIdCounter = 1;
     return PlTransaction.localTxIdCounter;
   }
 }

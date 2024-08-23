@@ -8,7 +8,6 @@ test('ping test', async () => {
   expect(response).toHaveProperty('coreVersion');
 });
 
-
 test('wrong login', async () => {
   const testConfig = getTestConfig();
   if (testConfig.test_user === undefined || testConfig.test_password === undefined) {
@@ -16,7 +15,7 @@ test('wrong login', async () => {
     return;
   }
   const client = new UnauthenticatedPlClient(testConfig.address);
-  await expect(client.login(testConfig.test_user, testConfig.test_password + 'A'))
-    .rejects
-    .toThrow(UnauthenticatedError);
+  await expect(client.login(testConfig.test_user, testConfig.test_password + 'A')).rejects.toThrow(
+    UnauthenticatedError
+  );
 });

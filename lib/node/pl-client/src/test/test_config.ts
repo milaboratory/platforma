@@ -21,8 +21,7 @@ const CONFIG_FILE = 'test_config.json';
 let authDataFilePath: string | undefined;
 
 function getFullAuthDataFilePath() {
-  if (authDataFilePath === undefined)
-    authDataFilePath = path.resolve('.test_auth.json');
+  if (authDataFilePath === undefined) authDataFilePath = path.resolve('.test_auth.json');
   return authDataFilePath;
 }
 
@@ -31,41 +30,46 @@ export function getTestConfig(): TestConfig {
   if (fs.existsSync(CONFIG_FILE))
     conf = JSON.parse(fs.readFileSync(CONFIG_FILE, { encoding: 'utf-8' }));
 
-  if (process.env.PL_ADDRESS !== undefined)
-    conf.address = process.env.PL_ADDRESS;
+  if (process.env.PL_ADDRESS !== undefined) conf.address = process.env.PL_ADDRESS;
 
-  if (process.env.PL_TEST_USER !== undefined)
-    conf.test_user = process.env.PL_TEST_USER;
+  if (process.env.PL_TEST_USER !== undefined) conf.test_user = process.env.PL_TEST_USER;
 
-  if (process.env.PL_TEST_PASSWORD !== undefined)
-    conf.test_password = process.env.PL_TEST_PASSWORD;
+  if (process.env.PL_TEST_PASSWORD !== undefined) conf.test_password = process.env.PL_TEST_PASSWORD;
 
-  if (process.env.PL_TEST_PROXY !== undefined)
-    conf.test_proxy = process.env.PL_TEST_PROXY;
+  if (process.env.PL_TEST_PROXY !== undefined) conf.test_proxy = process.env.PL_TEST_PROXY;
 
   if (conf.address === undefined)
-    throw new Error(`can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`);
+    throw new Error(
+      `can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`
+    );
 
   return conf as TestConfig;
 }
 
 interface AuthCache {
   /** To check if config changed */
-  conf: TestConfig,
-  expiration: number,
-  authInformation: AuthInformation
+  conf: TestConfig;
+  expiration: number;
+  authInformation: AuthInformation;
 }
 
 function saveAuthInfoCallback(tConf: TestConfig): (authInformation: AuthInformation) => void {
-  return authInformation => {
-    const dst = getFullAuthDataFilePath()
-    const tmpDst = getFullAuthDataFilePath() + randomUUID()
-    fs.writeFileSync(tmpDst, Buffer.from(JSON.stringify({
-      conf: tConf, authInformation,
-      expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
-    } as AuthCache)), 'utf8');
-    fs.renameSync(tmpDst, dst)
-  }
+  return (authInformation) => {
+    const dst = getFullAuthDataFilePath();
+    const tmpDst = getFullAuthDataFilePath() + randomUUID();
+    fs.writeFileSync(
+      tmpDst,
+      Buffer.from(
+        JSON.stringify({
+          conf: tConf,
+          authInformation,
+          expiration: inferAuthRefreshTime(authInformation, 24 * 60 * 60)
+        } as AuthCache)
+      ),
+      'utf8'
+    );
+    fs.renameSync(tmpDst, dst);
+  };
 }
 
 const cleanAuthInfoCallback = () => {
@@ -73,23 +77,27 @@ const cleanAuthInfoCallback = () => {
   fs.rmSync(getFullAuthDataFilePath());
 };
 
-export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth: AuthOps }> {
+export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
   const tConf = getTestConfig();
 
   let authInformation: AuthInformation | undefined = undefined;
 
   // try recover from cache
   if (fs.existsSync(getFullAuthDataFilePath())) {
-    try{
-      const cache: AuthCache = JSON.parse(fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' }));
-      if (cache.conf.address === tConf.address
-        && cache.conf.test_user === tConf.test_user
-        && cache.conf.test_password === tConf.test_password
-        && cache.expiration > Date.now())
+    try {
+      const cache: AuthCache = JSON.parse(
+        fs.readFileSync(getFullAuthDataFilePath(), { encoding: 'utf-8' })
+      );
+      if (
+        cache.conf.address === tConf.address &&
+        cache.conf.test_user === tConf.test_user &&
+        cache.conf.test_password === tConf.test_password &&
+        cache.expiration > Date.now()
+      )
         authInformation = cache.authInformation;
-    } catch(e: any) {
+    } catch (e: any) {
       // removing cache file on any error
-      fs.rmSync(getFullAuthDataFilePath())
+      fs.rmSync(getFullAuthDataFilePath());
     }
   }
 
@@ -100,17 +108,19 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth:
   const requireAuth = await uClient.requireAuth();
 
   if (!requireAuth && (tConf.test_user !== undefined || tConf.test_password !== undefined))
-    throw new Error(`Server require no auth, but test user name or test password are provided via (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`);
+    throw new Error(
+      `Server require no auth, but test user name or test password are provided via (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`
+    );
 
   if (requireAuth && (tConf.test_user === undefined || tConf.test_password === undefined))
-    throw new Error(`No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`);
+    throw new Error(
+      `No auth information found in config (${CONFIG_FILE}) or env variables: PL_TEST_USER and PL_TEST_PASSWORD`
+    );
 
   if (authInformation === undefined) {
-    if (requireAuth)
-      authInformation = await uClient.login(tConf.test_user!, tConf.test_password!);
-    else
-      // No authorization is required
-      authInformation = {};
+    if (requireAuth) authInformation = await uClient.login(tConf.test_user!, tConf.test_password!);
+    // No authorization is required
+    else authInformation = {};
 
     // saving cache
     saveAuthInfoCallback(tConf)(authInformation);
@@ -119,7 +129,8 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig, auth:
   return {
     conf: plConf,
     auth: {
-      authInformation, onUpdate: saveAuthInfoCallback(tConf),
+      authInformation,
+      onUpdate: saveAuthInfoCallback(tConf),
       onAuthError: cleanAuthInfoCallback,
       onUpdateError: cleanAuthInfoCallback
     }

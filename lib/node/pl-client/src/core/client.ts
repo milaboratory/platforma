@@ -2,7 +2,13 @@ import { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
 import { LLPlClient, PlCallOps } from './ll_client';
 import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { createHash } from 'crypto';
-import { ensureResourceIdNotNull, isNullResourceId, NullResourceId, OptionalResourceId, ResourceId } from './types';
+import {
+  ensureResourceIdNotNull,
+  isNullResourceId,
+  NullResourceId,
+  OptionalResourceId,
+  ResourceId
+} from './types';
 import { ClientRoot } from '../helpers/pl';
 import { createRetryState, nextRetryStateOrError, RetryOptions } from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
@@ -11,9 +17,9 @@ import * as tp from 'node:timers/promises';
 import { Dispatcher } from 'undici';
 
 export type TxOps = PlCallOps & {
-  sync: boolean,
-  retryOptions: RetryOptions
-}
+  sync: boolean;
+  retryOptions: RetryOptions;
+};
 
 const defaultTxOps: TxOps = {
   sync: false,
@@ -49,11 +55,13 @@ export class PlClient {
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
 
-  private constructor(configOrAddress: PlClientConfig | string,
-                      auth: AuthOps,
-                      ops: {
-                        statusListener?: PlConnectionStatusListener
-                      } = {}) {
+  private constructor(
+    configOrAddress: PlClientConfig | string,
+    auth: AuthOps,
+    ops: {
+      statusListener?: PlConnectionStatusListener;
+    } = {}
+  ) {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
     this.txDelay = this.ll.conf.txDelay;
     this.forceSync = this.ll.conf.forceSync;
@@ -76,8 +84,7 @@ export class PlClient {
   }
 
   private checkInitialized() {
-    if (!this.initialized)
-      throw new Error('Client not initialized');
+    if (!this.initialized) throw new Error('Client not initialized');
   }
 
   public get clientRoot(): ResourceId {
@@ -92,43 +99,43 @@ export class PlClient {
 
   /** Currently implements custom logic to emulate future behaviour with single root. */
   public async init() {
-    if (this.initialized)
-      throw new Error('Already initialized');
+    if (this.initialized) throw new Error('Already initialized');
 
     // calculating reproducible root name from the username
     const user = this.ll.authUser;
-    const mainRootName = user === null
-      ? AnonymousClientRoot
-      : createHash('sha256').update(user).digest('hex');
+    const mainRootName =
+      user === null ? AnonymousClientRoot : createHash('sha256').update(user).digest('hex');
 
     this._serverInfo = await this.ping();
 
-    this._clientRoot = await this._withTx('initialization', true, NullResourceId,
-      async tx => {
-        let mainRoot: AnyResourceRef;
+    this._clientRoot = await this._withTx('initialization', true, NullResourceId, async (tx) => {
+      let mainRoot: AnyResourceRef;
 
-        if (await tx.checkResourceNameExists(mainRootName))
-          mainRoot = await tx.getResourceByName(mainRootName);
-        else {
-          mainRoot = tx.createRoot(ClientRoot);
-          tx.setResourceName(mainRootName, mainRoot);
-        }
+      if (await tx.checkResourceNameExists(mainRootName))
+        mainRoot = await tx.getResourceByName(mainRootName);
+      else {
+        mainRoot = tx.createRoot(ClientRoot);
+        tx.setResourceName(mainRootName, mainRoot);
+      }
 
-        if (this.conf.alternativeRoot === undefined) {
-          await tx.commit();
-          return await toGlobalResourceId(mainRoot);
-        } else {
-          const aFId = { resourceId: mainRoot, fieldName: alternativeRootFieldName(this.conf.alternativeRoot) };
+      if (this.conf.alternativeRoot === undefined) {
+        await tx.commit();
+        return await toGlobalResourceId(mainRoot);
+      } else {
+        const aFId = {
+          resourceId: mainRoot,
+          fieldName: alternativeRootFieldName(this.conf.alternativeRoot)
+        };
 
-          const altRoot = tx.createEphemeral(ClientRoot);
-          tx.lock(altRoot);
-          tx.createField(aFId, 'Dynamic');
-          tx.setField(aFId, altRoot);
-          await tx.commit();
+        const altRoot = tx.createEphemeral(ClientRoot);
+        tx.lock(altRoot);
+        tx.createField(aFId, 'Dynamic');
+        tx.setField(aFId, altRoot);
+        await tx.commit();
 
-          return await altRoot.globalId;
-        }
-      });
+        return await altRoot.globalId;
+      }
+    });
 
     // try {
     //
@@ -142,7 +149,7 @@ export class PlClient {
     this.checkInitialized();
     if (this.ll.conf.alternativeRoot !== undefined)
       throw new Error('Initialized with alternative root.');
-    return await this.withWriteTx('delete-alternative-root', async tx => {
+    return await this.withWriteTx('delete-alternative-root', async (tx) => {
       const fId = {
         resourceId: tx.clientRoot,
         fieldName: alternativeRootFieldName(alternativeRootName)
@@ -154,15 +161,17 @@ export class PlClient {
     });
   }
 
-  private async _withTx<T>(name: string, writable: boolean,
-                           clientRoot: OptionalResourceId,
-                           body: (tx: PlTransaction) => Promise<T>,
-                           ops: TxOps = defaultTxOps): Promise<T> {
+  private async _withTx<T>(
+    name: string,
+    writable: boolean,
+    clientRoot: OptionalResourceId,
+    body: (tx: PlTransaction) => Promise<T>,
+    ops: TxOps = defaultTxOps
+  ): Promise<T> {
     // for exponential / linear backoff
     let retryState = createRetryState(ops.retryOptions);
 
     while (true) {
-
       // opening low-level tx
       const llTx = this.ll.createTx(ops);
       // wrapping it into high-level tx (this also asynchronously sends initialization message)
@@ -173,11 +182,9 @@ export class PlClient {
       let txId;
 
       try {
-
         // executing transaction body
         result = await body(tx);
         ok = true;
-
       } catch (e: unknown) {
         // the only recoverable
         if (e instanceof TxCommitConflict) {
@@ -200,8 +207,7 @@ export class PlClient {
 
       if (ok) {
         // syncing on transaction if requested
-        if (ops.sync || this.forceSync)
-          await this.ll.grpcPl.txSync({ txId });
+        if (ops.sync || this.forceSync) await this.ll.grpcPl.txSync({ txId });
 
         // introducing artificial delay, if requested
         if (writable && this.txDelay > 0)
@@ -218,29 +224,35 @@ export class PlClient {
     }
   }
 
-  private async withTx<T>(name: string, writable: boolean,
-                          body: (tx: PlTransaction) => Promise<T>,
-                          ops: Partial<TxOps> = {}): Promise<T> {
+  private async withTx<T>(
+    name: string,
+    writable: boolean,
+    body: (tx: PlTransaction) => Promise<T>,
+    ops: Partial<TxOps> = {}
+  ): Promise<T> {
     this.checkInitialized();
     return await this._withTx(name, writable, this.clientRoot, body, { ...ops, ...defaultTxOps });
   }
 
-  public async withWriteTx<T>(name: string,
-                              body: (tx: PlTransaction) => Promise<T>,
-                              ops: Partial<TxOps> = {}): Promise<T> {
+  public async withWriteTx<T>(
+    name: string,
+    body: (tx: PlTransaction) => Promise<T>,
+    ops: Partial<TxOps> = {}
+  ): Promise<T> {
     return await this.withTx(name, true, body, { ...ops, ...defaultTxOps });
   }
 
-  public async withReadTx<T>(name: string,
-                             body: (tx: PlTransaction) => Promise<T>,
-                             ops: Partial<TxOps> = {}): Promise<T> {
+  public async withReadTx<T>(
+    name: string,
+    body: (tx: PlTransaction) => Promise<T>,
+    ops: Partial<TxOps> = {}
+  ): Promise<T> {
     return await this.withTx(name, false, body, { ...ops, ...defaultTxOps });
   }
 
   public getDriver<Drv extends PlDriver>(definition: PlDriverDefinition<Drv>): Drv {
     const attached = this.drivers.get(definition.name);
-    if (attached !== undefined)
-      return attached as Drv;
+    if (attached !== undefined) return attached as Drv;
     const driver = definition.init(this, this.ll.grpcTransport, this.ll.httpDispatcher);
     this.drivers.set(definition.name, driver);
     return driver;
@@ -251,11 +263,13 @@ export class PlClient {
     this.ll.close();
   }
 
-  public static async init(configOrAddress: PlClientConfig | string,
-                           auth: AuthOps,
-                           ops: {
-                             statusListener?: PlConnectionStatusListener
-                           } = {}) {
+  public static async init(
+    configOrAddress: PlClientConfig | string,
+    auth: AuthOps,
+    ops: {
+      statusListener?: PlConnectionStatusListener;
+    } = {}
+  ) {
     const pl = new PlClient(configOrAddress, auth, ops);
     await pl.init();
     return pl;

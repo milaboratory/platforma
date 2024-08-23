@@ -51,20 +51,24 @@ export const DEFAULT_TX_TIMEOUT = 10_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
-type PlConfigOverrides = Partial<Pick<
-  PlClientConfig,
-  'ssl' | 'defaultRequestTimeout' | 'defaultTransactionTimeout' | 'httpProxy' | 'grpcProxy'
->>
+type PlConfigOverrides = Partial<
+  Pick<
+    PlClientConfig,
+    'ssl' | 'defaultRequestTimeout' | 'defaultTransactionTimeout' | 'httpProxy' | 'grpcProxy'
+  >
+>;
 
 function parseInt(s: string | null | undefined): number | undefined {
-  if (!s)
-    return undefined;
+  if (!s) return undefined;
   return Number.parseInt(s);
 }
 
 /** Parses pl url and creates a config object that can be passed to
  * {@link PlClient} of {@link UnauthenticatedPlClient}. */
-export function plAddressToConfig(address: string, overrides: PlConfigOverrides = {}): PlClientConfig {
+export function plAddressToConfig(
+  address: string,
+  overrides: PlConfigOverrides = {}
+): PlClientConfig {
   if (address.indexOf('://') === -1)
     // non-url address
     return {
@@ -81,10 +85,12 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
 
   const url = new URL(address);
 
-  if (url.protocol !== 'https:'
-    && url.protocol !== 'http:'
-    && url.protocol !== 'grpc:'
-    && url.protocol !== 'tls:')
+  if (
+    url.protocol !== 'https:' &&
+    url.protocol !== 'http:' &&
+    url.protocol !== 'grpc:' &&
+    url.protocol !== 'tls:'
+  )
     throw new Error(`Unexpected URL schema: ${url.protocol}`);
 
   if (url.pathname !== '/' && url.pathname !== '')
@@ -94,7 +100,8 @@ export function plAddressToConfig(address: string, overrides: PlConfigOverrides 
     hostAndPort: url.host, // this also includes port
     alternativeRoot: url.searchParams.get('alternative-root') ?? undefined,
     ssl: url.protocol === 'https:' || url.protocol === 'tls:',
-    defaultRequestTimeout: parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
+    defaultRequestTimeout:
+      parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
     defaultTransactionTimeout: parseInt(url.searchParams.get('tx-timeout')) ?? DEFAULT_TX_TIMEOUT,
     authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
     authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
@@ -122,17 +129,17 @@ export const AnonymousAuthInformation: AuthInformation = {};
 /** Authorization related settings to pass to {@link PlClient}. */
 export interface AuthOps {
   /** Initial authorization information */
-  authInformation: AuthInformation,
+  authInformation: AuthInformation;
   /** Will be executed after successful authorization information refresh */
-  readonly onUpdate?: (newInfo: AuthInformation) => void,
+  readonly onUpdate?: (newInfo: AuthInformation) => void;
   /** Will be executed if auth-related error happens during normal client operation */
-  readonly onAuthError?: () => void
+  readonly onAuthError?: () => void;
   /** Will be executed if error encountered during token update */
-  readonly onUpdateError?: (error: unknown) => void
+  readonly onUpdateError?: (error: unknown) => void;
 }
 
 /** Connection status. */
-export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated'
+export type PlConnectionStatus = 'OK' | 'Disconnected' | 'Unauthenticated';
 
 /** Listener that will be called each time connection status changes. */
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;

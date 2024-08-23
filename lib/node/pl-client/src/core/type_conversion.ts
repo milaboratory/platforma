@@ -26,8 +26,7 @@ function resourceIsDeleted(proto: Resource): boolean {
 
 /** Throws "native" pl not found error, if resource is marked as deleted. */
 export function protoToResource(proto: Resource): ResourceData {
-  if (resourceIsDeleted(proto))
-    throwPlNotFoundError('resource deleted');
+  if (resourceIsDeleted(proto)) throwPlNotFoundError('resource deleted');
   return {
     id: proto.id as ResourceId,
     originalResourceId: proto.originalResourceId as OptionalResourceId,
@@ -39,7 +38,7 @@ export function protoToResource(proto: Resource): ResourceData {
     kind: protoToResourceKind(proto.kind),
     error: protoToError(proto),
     final: proto.isFinal,
-    fields: proto.fields?.filter(f => f.id!.fieldName !== ResourceErrorField).map(protoToField)
+    fields: proto.fields?.filter((f) => f.id!.fieldName !== ResourceErrorField).map(protoToField)
   };
 }
 

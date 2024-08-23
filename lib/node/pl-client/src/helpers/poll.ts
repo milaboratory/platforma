@@ -1,5 +1,10 @@
 import { PlClient } from '../core/client';
-import { createRetryState, nextRetryStateOrError, notEmpty, RetryOptions } from '@milaboratory/ts-helpers';
+import {
+  createRetryState,
+  nextRetryStateOrError,
+  notEmpty,
+  RetryOptions
+} from '@milaboratory/ts-helpers';
 import {
   FieldData,
   FieldType,
@@ -13,17 +18,16 @@ import { PlTransaction } from '../core/transaction';
 import * as tp from 'node:timers/promises';
 
 /** This error tells state assertion mechanism that required state is not yet ready */
-export class ContinuePolling extends Error {
-}
+export class ContinuePolling extends Error {}
 
 export type PollFieldTraverseOps = {
-  expectedType?: FieldType,
+  expectedType?: FieldType;
   /** Fail if error present along with the value, if value not present,
    * but error do, exception will be thrown anyway. */
-  failOnError: boolean,
+  failOnError: boolean;
   /** Traverse only if field report its value as final. */
-  onlyFinal: boolean
-}
+  onlyFinal: boolean;
+};
 
 const DefaultPollFieldTraverseOps: PollFieldTraverseOps = {
   failOnError: true,
@@ -35,25 +39,22 @@ export class PollResourceAccessor {
     public readonly tx: PollTxAccessor,
     public readonly data: ResourceData,
     public readonly path: string[]
-  ) {
-  }
+  ) {}
 
   public final(): PollResourceAccessor {
-    if (!this.data.final)
-      throw new ContinuePolling();
+    if (!this.data.final) throw new ContinuePolling();
     return this;
   }
 
   public async requireNoError(): Promise<PollResourceAccessor> {
-    if (isNullResourceId(this.data.error))
-      return this;
+    if (isNullResourceId(this.data.error)) return this;
     await this.tx.throwError(this.data.error, this.path);
     // hmm... https://github.com/microsoft/TypeScript/issues/34955
     return this;
   }
 
   public getFieldData(name: string, expectedType?: FieldType): FieldData {
-    const fieldData = this.data.fields.find(f => f.name === name);
+    const fieldData = this.data.fields.find((f) => f.name === name);
 
     if (fieldData !== undefined) {
       if (expectedType !== undefined && fieldData.type !== expectedType)
@@ -61,46 +62,63 @@ export class PollResourceAccessor {
       return fieldData;
     }
 
-    if (((expectedType === 'Input' || expectedType === 'Service') && this.data.inputsLocked)
-      || ((expectedType === 'Output') && this.data.outputsLocked))
-      throw new Error(`Field "${name}" not found. Expected type: ${expectedType}, state: ${this.data}`);
+    if (
+      ((expectedType === 'Input' || expectedType === 'Service') && this.data.inputsLocked) ||
+      (expectedType === 'Output' && this.data.outputsLocked)
+    )
+      throw new Error(
+        `Field "${name}" not found. Expected type: ${expectedType}, state: ${this.data}`
+      );
 
     throw new ContinuePolling();
   }
 
-  public async get(name: string, ops: Partial<PollFieldTraverseOps> = {}): Promise<PollResourceAccessor> {
-    const { expectedType, failOnError, onlyFinal } =
-      { ...DefaultPollFieldTraverseOps, ...ops };
+  public async get(
+    name: string,
+    ops: Partial<PollFieldTraverseOps> = {}
+  ): Promise<PollResourceAccessor> {
+    const { expectedType, failOnError, onlyFinal } = { ...DefaultPollFieldTraverseOps, ...ops };
     const path = [...this.path, name];
 
     const fieldData = this.getFieldData(name, expectedType);
     if (isNotNullResourceId(fieldData.error) && (failOnError || isNullResourceId(fieldData.value)))
       await this.tx.throwError(fieldData.error, path);
 
-    if (isNullResourceId(fieldData.value))
-      throw new ContinuePolling();
+    if (isNullResourceId(fieldData.value)) throw new ContinuePolling();
 
     return await this.tx.get(fieldData.value, failOnError, path);
   }
 
-  public async getMulti(ops: Partial<PollFieldTraverseOps>, ...names: string[]): Promise<PollResourceAccessor[]> {
-    return await Promise.all(names.map(name => this.get(name, ops)));
+  public async getMulti(
+    ops: Partial<PollFieldTraverseOps>,
+    ...names: string[]
+  ): Promise<PollResourceAccessor[]> {
+    return await Promise.all(names.map((name) => this.get(name, ops)));
   }
 
-  public async getMultiObj<Key extends string>(ops: Partial<PollFieldTraverseOps>, ...names: Key[]): Promise<Record<Key, PollResourceAccessor>> {
-    return Object.fromEntries(await Promise.all(names.map(async name => [name, await this.get(name, ops)])));
+  public async getMultiObj<Key extends string>(
+    ops: Partial<PollFieldTraverseOps>,
+    ...names: Key[]
+  ): Promise<Record<Key, PollResourceAccessor>> {
+    return Object.fromEntries(
+      await Promise.all(names.map(async (name) => [name, await this.get(name, ops)]))
+    );
   }
 
-  public async getAllFinal(ops: Partial<PollFieldTraverseOps> = {}): Promise<Record<string, PollResourceAccessor>> {
-    return await this.getMultiObj(ops, ...this.data.fields
-      .filter(f => f.valueIsFinal || isNotNullResourceId(f.error))
-      .map(f => f.name));
+  public async getAllFinal(
+    ops: Partial<PollFieldTraverseOps> = {}
+  ): Promise<Record<string, PollResourceAccessor>> {
+    return await this.getMultiObj(
+      ops,
+      ...this.data.fields
+        .filter((f) => f.valueIsFinal || isNotNullResourceId(f.error))
+        .map((f) => f.name)
+    );
   }
 
   public async getKValue(key: string): Promise<string> {
     const value = await this.tx.tx.getKValueStringIfExists(this.data.id, key);
-    if (value === undefined)
-      throw new ContinuePolling();
+    if (value === undefined) throw new ContinuePolling();
     return value;
   }
 
@@ -110,16 +128,16 @@ export class PollResourceAccessor {
 }
 
 export class PollTxAccessor {
-  constructor(
-    public readonly tx: PlTransaction
-  ) {
-  }
+  constructor(public readonly tx: PlTransaction) {}
 
-  public async get(rid: ResourceId, failOnError: boolean = true, path: string[] = []): Promise<PollResourceAccessor> {
+  public async get(
+    rid: ResourceId,
+    failOnError: boolean = true,
+    path: string[] = []
+  ): Promise<PollResourceAccessor> {
     const data = await this.tx.getResourceData(rid, true);
     const accessor = new PollResourceAccessor(this, data, [...path, resourceIdToString(rid)]);
-    if (failOnError)
-      await accessor.requireNoError();
+    if (failOnError) await accessor.requireNoError();
     return accessor;
   }
 
@@ -138,13 +156,16 @@ export const DefaultPollingRetryOptions: RetryOptions = {
   initialDelay: 10
 };
 
-export async function poll<T>(cl: PlClient, cb: (tx: PollTxAccessor) => Promise<T>,
-                              retryOptions: RetryOptions = DefaultPollingRetryOptions,
-                              txName: string = 'polling'): Promise<T> {
+export async function poll<T>(
+  cl: PlClient,
+  cb: (tx: PollTxAccessor) => Promise<T>,
+  retryOptions: RetryOptions = DefaultPollingRetryOptions,
+  txName: string = 'polling'
+): Promise<T> {
   let retryState = createRetryState(retryOptions);
   while (true) {
     try {
-      return await cl.withReadTx(txName, async tx => {
+      return await cl.withReadTx(txName, async (tx) => {
         return await cb(new PollTxAccessor(tx));
       });
     } catch (e: any) {

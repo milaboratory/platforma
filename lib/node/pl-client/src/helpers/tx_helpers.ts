@@ -3,9 +3,9 @@ import { FieldData, OptionalResourceId, isNotNullResourceId } from '../core/type
 import { notEmpty } from '@milaboratory/ts-helpers';
 
 export interface ValErr {
-  valueId: OptionalResourceId,
-  errorId: OptionalResourceId,
-  error?: string,
+  valueId: OptionalResourceId;
+  errorId: OptionalResourceId;
+  error?: string;
 }
 
 export async function valErr(tx: PlTransaction, f: FieldData): Promise<ValErr> {
