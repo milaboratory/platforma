@@ -2,7 +2,7 @@
 
 self := import(":tpl")
 exec := import(":exec")
-pframes := import(":pframes")
+xsv := import(":pframes.xsv")
 
 self.defineOutputs("pf")
 
@@ -23,6 +23,6 @@ self.body(func(inputs){
 	params := inputs.params
 
 	return {
-		pf: pframes.readXsv(csvFile, "csv", params)
+		pf: xsv.importFile(csvFile, "csv", params)
 	}
 })

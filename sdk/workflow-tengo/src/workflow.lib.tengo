@@ -158,7 +158,7 @@ _buildOutputs := func(results) {
 
 		spec := value.spec
 		ll.assert(!is_undefined(spec), "spec must be defined")
-		
+
 		if !smart.isReference(spec) {
 			spec = bobject.createSpec(spec)
 		}

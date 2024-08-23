@@ -1,18 +1,39 @@
-// read p-frame processor
+//
+// read p-frame from the directory
+//
 
 self := import(":workdir-proc")
+
 ll := import(":ll")
 text := import("text")
-slices := import(":slices")
-smart := import(":smart")
 json := import("json")
+util := import(":pframes.util")
+smart := import(":smart")
+constants := import(":pframes.constants")
 validation := import(":validation")
 
+// json schema of .datainfo file
+_DATA_INFO_SCHEMA := [`or`,
+	{
+		partitionKeyLength: `number`,
+		type: `string,regex=JsonPartitioned`,
+		parts: {
+			any: `string`
+		}
+	},
+	{
+		partitionKeyLength: `number`,
+		type: `string,regex=BinaryPartitioned`,
+		parts: {
+			any: {
+				index: `string`,
+				values: `string`
+			}
+		}
+	}]
 
 self.readFiles(func(inputs) {
 	dInfo := {}
-
-	args := inputs.args
 
 	// search for .datainfo files
 	for f in inputs.files {
@@ -21,57 +42,45 @@ self.readFiles(func(inputs) {
 		}
 	}
 
-	// @TODO assert .datainfo files are contained in the args
+	// @TODO assert .datainfo files are contained in the spec
 	return dInfo
 })
 
-_dataInfoSchemeJson := {
-	partitionKeyLength: `number`,
-	type: `string,regex=JsonPartitioned`,
-	parts: {
-		any: `string`
+/**
+ * Returns p-column resource type given it's storage type specified in .datainfo
+ */
+_getPColumnRType := func(storageType) {
+	if storageType == "JsonPartitioned" {
+		return constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+	} else if storageType == "BinaryPartitioned" {
+		return constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+	} else {
+		ll.panic("unknown type in .datainfo: ", storageType)
 	}
 }
-
-_dataInfoSchemeBinary := {
-	partitionKeyLength: `number`,
-	type: `string,regex=BinaryPartitioned`,
-	parts: {
-		any: {
-			index: `string`,
-			values: `string`
-		}
-	}
-}
-
-_dataInfoScheme := [`or`, _dataInfoSchemeJson, _dataInfoSchemeBinary]
 
 self.body(func(inputs) {
-
-	args := inputs.args
+	spec := inputs.args
 
 	// columns
 	outputs := {}
-	for c in args.columns {
+	for c in spec.columns {
 
 		name := c.name
 		if is_undefined(name) {
 			name = c.column
 		}
 
-		id := c.id
-		if is_undefined(id) {
-			id = c.column
-		}
+		id := util.xsvColumnId(c)
 
 		dInfo := inputs["out/" + id + ".datainfo"].getDataAsJson()
+
 		// validate dataInfo type
-		validation.assertJsonSchema(dInfo, _dataInfoScheme)
+		validation.assertJsonSchema(dInfo, _DATA_INFO_SCHEMA)
 
 		// p-column resource builder
-		rType := { Name: "PColumnData/" + dInfo.type, Version: "1" }
 		rData := { partitionKeyLength: dInfo.partitionKeyLength }
-		rBuilder := smart.structBuilder(rType, json.encode(rData))
+		rBuilder := smart.structBuilder(_getPColumnRType(dInfo.type), json.encode(rData))
 
 		for part, data in dInfo.parts {
 			if dInfo.type == "BinaryPartitioned" {

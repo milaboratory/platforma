@@ -9,6 +9,7 @@ maps := import(":maps")
 tplutil := import(":tpl-util")
 constants := import(":constants")
 stateAwait := import(":state-await")
+validation := import(":validation")
 
 /**
  * Unmarshal resource according by:
@@ -335,6 +336,24 @@ tpl := func() {
 			self.renderer().lockOutputs()
 		},
 
+		_inputsSchema: undefined,
+
+		/**
+		 * Validate inputs schema before passing inputs to body.
+		 */
+		validateInputs: func(schema) {
+			ll.assert(is_undefined(self._inputsSchema), "validateInputs was already invoked")
+			self._inputsSchema  = schema
+		},
+
+		_validateInputs: func() {
+			schema := self._inputsSchema
+			if is_undefined(schema) {
+				return
+			}
+			validation.assertJsonSchema(self.inputs(), schema)
+		},
+
 		/**
 		 * Routes template.
 		 */
@@ -382,6 +401,7 @@ tpl := func() {
 					self.renderPrepare()
 				} else {
 					// run body func
+					self._validateInputs()
 					result := bodyFn(self.inputs())
 
 					ll.assert(ll.isMap(result),
@@ -432,6 +452,7 @@ tpl := func() {
 				} else {
 
 					// run body func
+					self._validateInputs()
 					result := bodyFn(self.inputs())
 					ll.assert(ll.isMap(result),
 						"expected map from tpl-eph.body() callback. Did you forget 'return' statement?")
@@ -492,5 +513,6 @@ export ll.toStrict({
 	prepare                 : instance.prepare,
 	awaitState              : instance.awaitState,
 	delegate                : instance.routeDelegate,
+	validateInputs          : instance.validateInputs,
 	body                    : instance.body
 })

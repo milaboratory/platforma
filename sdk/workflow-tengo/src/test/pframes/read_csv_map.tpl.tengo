@@ -3,7 +3,8 @@
 self := import(":tpl")
 exec := import(":exec")
 json := import("json")
-pframes := import(":pframes")
+pfc := import(":pframes.constants")
+xsv := import(":pframes.xsv")
 smart := import(":smart")
 
 self.defineOutputs("pf")
@@ -13,7 +14,7 @@ self.body(func(inputs){
 	// map with csv as text
 	csvDataMap := inputs.csvMap
 
-	csvMap := smart.structBuilder({ Name: "PColumnData", Version: "1" }, json.encode({ keyLength: 1 }))
+	csvMap := smart.structBuilder(pfc.RTYPE_P_COLUMN_DATA_RESOURCE_MAP, json.encode({keyLength: 1}))
 	for k, csv in csvDataMap {
 		e := exec.builder().
 			cmd("env").
@@ -30,6 +31,6 @@ self.body(func(inputs){
 	params := inputs.params
 
 	return {
-		pf: pframes.readXsvMap(csvMap, "csv", params)
+		pf: xsv.importFileMap(csvMap, "csv", params)
 	}
 })

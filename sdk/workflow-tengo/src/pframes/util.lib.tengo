@@ -1,0 +1,17 @@
+ll := import(":ll")
+constants := import(":pframes.constants")
+
+/**
+ * Get column id from the column spec
+ */
+xsvColumnId := func(c) {
+	id := c.id
+	if is_undefined(id) {
+		id = c.column
+	}
+	return id
+}
+
+export ll.toStrict({
+	xsvColumnId: xsvColumnId
+})

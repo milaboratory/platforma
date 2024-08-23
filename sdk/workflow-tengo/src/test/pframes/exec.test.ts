@@ -57,7 +57,7 @@ const params = {
 };
 
 tplTest(
-  'should read чаа from csv files map',
+  'should read p-frame from csv files map',
   { timeout: 10000 },
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
