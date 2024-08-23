@@ -33,6 +33,8 @@ _OUTPUT_CONTEXT_FIELD_NAME := "context"
 // that store prepared resources (aka requested in the 'prepare()' method)
 _PREPARED_INPUTS_PREFIX := "prepared/"
 
+// a dummy prefix used to mimic field with empty string name
+_NO_PREFIX_EXPORT := "_"
 
 // define outputs as we know them
 // this is important to unlock 'prepare' functionality
@@ -137,9 +139,17 @@ _buildOutputs := func(results) {
 		resBuilder.add(name, value)
 	}
 
-	// create ctx and save exports
-	ctxBuilder := context.builder(blockId(), _parentContext())
+	// data to pass to ctx builder template
+	eData := {}
+	eData[_NO_PREFIX_EXPORT] = {}
+
 	for name, value in e {
+		// pass resource to flatten in ctx builder
+		if smart.isReference(value) {
+			eData[name] = value
+			continue
+		}
+
 		// check that value has spec and data
 		ll.assert(
 			sets.fromSlice(["spec", "data"]) == sets.fromMapKeys(value),
@@ -147,17 +157,29 @@ _buildOutputs := func(results) {
 		)
 
 		spec := value.spec
+		ll.assert(!is_undefined(spec), "spec must be defined")
+		
 		if !smart.isReference(spec) {
 			spec = bobject.createSpec(spec)
 		}
-		ctxBuilder.add(name + ".spec", spec)
-		ctxBuilder.add(name + ".data", value.data)
+		eData[_NO_PREFIX_EXPORT][name + ".spec"] = spec
+		eData[_NO_PREFIX_EXPORT][name + ".data"] = value.data
 	}
+
+	// create ctx and save exports
+	ctxBuilder := render.createEphemeral(
+		ll.importTemplate(":workflow.build-ctx"),
+		{
+			blockId: blockId(),
+			parentContext: _parentContext(),
+			data: eData
+		}
+	)
 
 	// final template outputs
 	tplOutputs := {}
 	tplOutputs[_RESULTS_FIELD_NAME] = resBuilder.build()
-	tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = ctxBuilder.build()
+	tplOutputs[_OUTPUT_CONTEXT_FIELD_NAME] = ctxBuilder.output("ctx")
 
 	return tplOutputs
 }
@@ -250,6 +272,8 @@ body := func(bodyFn) {
 }
 
 export ll.toStrict({
+	// @TODO move to constants
+	_NO_PREFIX_EXPORT: _NO_PREFIX_EXPORT,
 	query: query,
 	resolve: resolve,
 	prepare: prepare,

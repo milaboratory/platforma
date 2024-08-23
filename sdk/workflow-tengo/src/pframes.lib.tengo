@@ -63,7 +63,7 @@ _paramsScheme := {
 readXsv := func(xsvFile, xsvType, params) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-	validation.assertJsonSchema(params, _paramsScheme)
+	validation.assertArgsSchema(params, _paramsScheme)
 
 	xsvFileName := "file." + xsvType
 
@@ -91,7 +91,11 @@ readXsvMap := func(xsvMap, xsvType, params) {
 
 	result := {}
 	for c in params.columns {
-		result[c.name] = r.output(c.name)
+        id := c.id
+		if is_undefined(id) {
+			id = c.column
+		}
+		result[id] = r.output(id)
 	}
 
 	return result

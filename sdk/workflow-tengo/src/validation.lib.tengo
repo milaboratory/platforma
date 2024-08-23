@@ -77,7 +77,7 @@ check := func(condition, keyPath, msg, ...args) {
 //
 
 /**
- * Validates JSON types based on tags when the scheme is a string.
+ * Validates JSON types based on tags when the schema is a string.
  *
  * @param js: any - the JSON to validate.
  * @param tags: { key: string, tags: []tag } - the tags to validate against.
@@ -155,67 +155,67 @@ _parseTags := func(rule) {
 }
 
 /**
- * Validates JSON against a scheme.
+ * Validates JSON against a schema.
  *
  * @param js: any - the JSON to validate.
- * @param scheme: any - the scheme to validate against.
+ * @param schema: any - the schema to validate against.
  * @param stack: ...any - the current stack state.
  * @return either fail or success
  */
-_validateJson := func(js, scheme, keyPath, ...stack) {
-	// ll.print(fmt.sprintf("validateJSON debug: json: %s, keyPath: %s, scheme %s", json.encode(js), keyPath, json.encode(scheme)))
+_validateJson := func(js, schema, keyPath, ...stack) {
+	// ll.print(fmt.sprintf("validateJSON debug: json: %s, keyPath: %s, schema %s", json.encode(js), keyPath, json.encode(schema)))
 
-	if is_undefined(scheme) {
+	if is_undefined(schema) {
 		if len(stack) == 0 {
-			return fail(keyPath, "key is not defined by scheme, but exists in the JSON")
+			return fail(keyPath, "key is not defined by schema, but exists in the JSON")
 		}
 
-		return fail(keyPath, "key is not defined by scheme, but exists in the JSON. Validated item: %#v", stack[0])
+		return fail(keyPath, "key is not defined by schema, but exists in the JSON. Validated item: %#v", stack[0])
 	}
 
-	// if the scheme is a string, then
+	// if the schema is a string, then
 	// we check the predefined type.
-	if is_string(scheme) {
-		if scheme == "any" {
+	if is_string(schema) {
+		if schema == "any" {
 			return success
 		}
-		tags := _parseTags(scheme)
+		tags := _parseTags(schema)
 
 		return _validateTypes(js, tags, keyPath, stack...)
 	}
 
-	// if the scheme is a function, call it
+	// if the schema is a function, call it
 	// with the element and the path of how we
 	// got this element, i.e. recursion history.
-	if is_callable(scheme) {
-		return scheme(js, keyPath, stack)
+	if is_callable(schema) {
+		return schema(js, keyPath, stack)
 	}
 
-	// if the scheme is an array with "or" at the beginning,
+	// if the schema is an array with "or" at the beginning,
 	// we should check if the element is succesed with
 	// any of the following elements.
-	if is_array(scheme) && len(scheme) > 0 && scheme[0] == "or" {
-		for i, elem in scheme[1:] {
+	if is_array(schema) && len(schema) > 0 && schema[0] == "or" {
+		for i, elem in schema[1:] {
 			r := _validateJson(js, elem, keyPath, stack...)
 			if isSuccess(r) {
 				return r
 			}
 		}
 
-		return fail(keyPath, "js %q does not fit any of the following rules: %q", js, scheme)
+		return fail(keyPath, "js %q does not fit any of the following rules: %q", js, schema)
 	}
 
-	// if the scheme is an array, then check that every
-	// element of the json has the scheme that is the first element
-	// of the scheme.
-	if is_array(scheme) {
+	// if the schema is an array, then check that every
+	// element of the json has the schema that is the first element
+	// of the schema.
+	if is_array(schema) {
 		if !is_array(js) {
 			return fail(keyPath, "js %q must be array", js)
 		}
 
-		scheme = scheme[0]
+		schema = schema[0]
 		for i, elem in js {
-			r := _validateJson(elem, scheme, _formatKeyPath(keyPath, "%s[%d]", i), js, stack...)
+			r := _validateJson(elem, schema, _formatKeyPath(keyPath, "%s[%d]", i), js, stack...)
 			if isFail(r) {
 				return r
 			}
@@ -224,36 +224,36 @@ _validateJson := func(js, scheme, keyPath, ...stack) {
 		return success
 	}
 
-	// only map left, since scheme can't be undefined
-	// if the scheme is a map, check that every key
-	// in json-object is in the scheme and vice-versa,
+	// only map left, since schema can't be undefined
+	// if the schema is a map, check that every key
+	// in json-object is in the schema and vice-versa,
 	// unless there are tags "any" or "omitempty".
 	if !ll.isMap(js) {
 		return fail(keyPath, "js %#v must be map", js)
 	}
 
-	// scheme.key -> tags
-	schemeTags := {}
-	// scheme.key -> rule
-	schemeRules := {}
+	// schema.key -> tags
+	schemaTags := {}
+	// schema.key -> rule
+	schemaRules := {}
 
-	for k, v in scheme {
+	for k, v in schema {
 		p := _parseTags(k)
-		schemeTags[p.key] = p
-		schemeRules[p.key] = v
+		schemaTags[p.key] = p
+		schemaRules[p.key] = v
 	}
 
 	// tags that should be applied to all elements
-	any := schemeTags["any"]
+	any := schemaTags["any"]
 
-	options := schemeTags["__options__"]
+	options := schemaTags["__options__"]
 	if is_undefined(options) {
 		options = {}
 	}
 
 	for _key, elem in js {
 		if any {
-			r := _validateJson(elem, schemeRules["any"], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
+			r := _validateJson(elem, schemaRules["any"], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
 			if isFail(r) {
 				return r
 			}
@@ -269,11 +269,11 @@ _validateJson := func(js, scheme, keyPath, ...stack) {
 		}
 
 		// tags for the key
-		key := schemeTags[_key]
+		key := schemaTags[_key]
 
 		if is_undefined(key) {
 			if options.tags["closed"] == true {
-				return fail(keyPath, "only keys %v from the scheme must be set, found %q", maps.getKeys(scheme), _key)
+				return fail(keyPath, "only keys %v from the schema must be set, found %q", maps.getKeys(schema), _key)
 			}
 
 			continue
@@ -290,7 +290,7 @@ _validateJson := func(js, scheme, keyPath, ...stack) {
 			continue
 		}
 
-		r := _validateJson(elem, schemeRules[_key], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
+		r := _validateJson(elem, schemaRules[_key], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
 		if isFail(r) {
 			return r
 		}
@@ -300,42 +300,52 @@ _validateJson := func(js, scheme, keyPath, ...stack) {
 }
 
 /**
- * Checks if the given JSON conforms to the given scheme.
+ * Checks if the given JSON conforms to the given schema.
  *
  * @param js: any - the JSON to check.
- * @param scheme: any - the scheme to check against.
+ * @param schema: any - the schema to check against.
  * @return either fail or success
  */
-checkJson := func(js, scheme) {
-	return _validateJson(js, scheme, "")
+checkJson := func(js, schema) {
+	return _validateJson(js, schema, "")
 }
 
 /**
- * Checks if the given JSON is valid according to the given scheme.
+ * Checks if the given JSON is valid according to the given schema.
  *
  * @param js: any - the JSON to check.
- * @param scheme: any - the scheme to check against.
+ * @param schema: any - the schema to check against.
  * @return result: bool - the result of the validation (true/false).
  */
-isValid := func(js, scheme) {
-	return _validateJson(js, scheme, "").result
+isValid := func(js, schema) {
+	return _validateJson(js, schema, "").result
 }
 
 /**
- * Asserts that a given JSON conforms to a given scheme.
+ * Asserts that a given JSON conforms to a given schema.
  *
  * @param js: any - the JSON to assert.
- * @param scheme: any - the scheme to assert against.
+ * @param schema: any - the schema to assert against.
  */
-assertJsonSchema := func(js, scheme) {
-	r := _validateJson(js, scheme, "")
+assertJsonSchema := func(js, schema) {
+	r := _validateJson(js, schema, "")
 	if isFail(r) {
 		ll.panic("JSON validation error: %s", r.message)
 	}
 }
 
+/**
+ * Asserts that a given args conforms to a given schema.
+ *
+ * @param js: any - the JSON to assert.
+ * @param schema: any - the schema to assert against.
+ */
+assertArgsSchema := func(args, schema) {
+	assertJsonSchema(args, schema)
+}
+
 //
-// Domain-specific schemes and checks:
+// Domain-specific schemas and checks:
 //
 
 /**
@@ -366,6 +376,7 @@ export ll.toStrict({
 	checkJson: checkJson,
 	isValid: isValid,
 	assertJsonSchema: assertJsonSchema,
+	assertArgsSchema: assertArgsSchema,
 	resource: resource,
 	reference: reference
 })
