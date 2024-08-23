@@ -32,16 +32,25 @@ _unmarshal := func(resource, preprocessors) {
 		}
 	}
 
+	if smart.isReference(resource) && resource.hasError() {
+		ll.panic("input resource has errors: ", resource, resource.getError())
+	}
+
 	if smart.isJsonResource(resource) {
 
 		// parse json data of the resource
 		return resource.getDataAsJson()
-	} else if smart.isMapResource(resource) {
+	} else if smart.isMapResource(resource) || smart.isLockedEphMapResource(resource) {
 
 		// unmarshal map
 		result := {}
 		for field, value in resource.inputs() {
-			result[field] = _unmarshal(value.getValue(), preprocessors)
+			if value.isValueSet() {
+				result[field] = _unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
+
 		}
 		return result
 	} else {

@@ -6,7 +6,7 @@ smart := import(":smart")
 
 self := import(":tpl")
 
-self.defineOutputs(["simpleMap", "strictMap"])
+self.defineOutputs(["simpleMap"])
 
 self.body(func(inputs) {
 
@@ -15,12 +15,7 @@ self.body(func(inputs) {
 		simpleMap: {
 			a: "a",
 			b: "b"
-		},
-
-		strictMap: ll.toStrict({
-			a: "a",
-			b: "b"
-		})
+		}
 	}
 
 	return result

@@ -20,6 +20,11 @@ self.body(func(inputs) {
 
 	result := {}
 	for c in params.columns {
+        id := c.id
+		if is_undefined(id) {
+			id = c.column
+		}
+
 		superKeyLength := xsvMap.getDataAsJson().keyLength
 		ll.assert(!is_undefined(superKeyLength), "key length must be defined")
 
@@ -29,19 +34,24 @@ self.body(func(inputs) {
 		}
 		rType := { Name: "PColumnData/Partitioned/" + params.storageFormat + "Partitioned", Version: "1" }
 
-		result[c.name] = smart.structBuilder(rType, json.encode(rData))
+		result[id] = smart.structBuilder(rType, json.encode(rData))
 	}
 
 	for key, xsvFile in xsvMap.inputs() {
-
+        
 		p := pframes.readXsv(xsvFile, xsvType, params)
 
 		for c in params.columns {
-			result[c.name].createInputField(key).set(p.getFutureInputField(c.name))
+            id := c.id
+            if is_undefined(id) {
+                id = c.column
+            }
+        	result[id].createInputField(key).set(p.getFutureInputField(id))
 		}
 	}
 
 	for c in params.columns {
+        
 		result[c.name] = result[c.name].lockAndBuild()
 	}
 

@@ -46,7 +46,6 @@ _dataInfoSchemeBinary := {
 
 _dataInfoScheme := [`or`, _dataInfoSchemeJson, _dataInfoSchemeBinary]
 
-
 self.body(func(inputs) {
 
 	args := inputs.args
@@ -62,7 +61,7 @@ self.body(func(inputs) {
 
 		id := c.id
 		if is_undefined(id) {
-			id = name
+			id = c.column
 		}
 
 		dInfo := inputs["out/" + id + ".datainfo"].getDataAsJson()
@@ -90,7 +89,7 @@ self.body(func(inputs) {
 			}
 		}
 
-		outputs[name] = rBuilder.lockAndBuild()
+		outputs[id] = rBuilder.lockAndBuild()
 	}
 
 	return outputs

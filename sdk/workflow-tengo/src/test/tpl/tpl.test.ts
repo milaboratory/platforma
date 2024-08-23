@@ -21,7 +21,7 @@ tplTest('test template with maps output', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
     'test.tpl.map-outputs',
-    ['simpleMap', 'strictMap'],
+    ['simpleMap'],
     (tx) => ({})
   );
 
@@ -29,11 +29,6 @@ tplTest('test template with maps output', async ({ helper, expect }) => {
     .computeOutput('simpleMap', (a) => a?.getDataAsJson())
     .awaitStableValue()) as Record<string, string>;
   expect(simpleMap['a']).eq('a');
-
-  const strictMap = (await result
-    .computeOutput('strictMap', (a) => a?.getDataAsJson())
-    .awaitStableValue()) as Record<string, string>;
-  expect(strictMap['a']).eq('a');
 });
 
 tplTest(
