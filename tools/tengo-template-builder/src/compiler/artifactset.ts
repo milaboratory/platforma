@@ -46,9 +46,6 @@ export class ArtifactStore<T> {
 
   add(mode: CompileMode, obj: T, replace: boolean = true): T | undefined {
     switch (mode) {
-      case 'dev':
-        return this.dev.add(obj, replace)
-
       case 'dist':
         return this.dist.add(obj, replace)
 
@@ -59,9 +56,6 @@ export class ArtifactStore<T> {
 
   get(mode: CompileMode, name: TypedArtifactName): T | undefined {
     switch (mode) {
-      case 'dev':
-        return this.dev.get(name) ?? this.dist.get(name)
-
       case 'dist':
         return this.dist.get(name);
 

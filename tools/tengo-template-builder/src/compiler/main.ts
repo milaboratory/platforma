@@ -72,39 +72,36 @@ function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
   packageInfo: PackageJson,
-  target: string,
+  searchIn: string,
   isLink: boolean = false
 ): void {
-  const packageJsonPath = path.resolve(target, 'package.json');
+  const packageJsonPath = path.resolve(searchIn, 'package.json');
 
   if (pathType(packageJsonPath) !== 'file') {
-    // recursively iterate over all folders
-    for (const f of fs.readdirSync(target)) {
-      const isLink = pathType(path.join(target, f)) === 'link';
-      const file = path.resolve(target, f);
+    // We're not in package root. Recursively iterate over all folders looking for packages.
+
+    for (const f of fs.readdirSync(searchIn)) {
+      const isLink = pathType(path.join(searchIn, f)) === 'link';
+      const file = path.resolve(searchIn, f);
       const type = pathType(file);
-      if (type === 'dir')
+      if (type === 'dir') {
         loadDependencies(logger, compiler, packageInfo, file, isLink);
+      }
     }
-    return;
+
+    return
   }
 
   // we are in package folder
-  const libDistFolder = resolveLibsDst('dist', target);
-  const libDevFolder = resolveLibsDst('dev', target);
-  const tplDistFolder = resolveTemplatesDst('dist', target);
-  const tplDevFolder = resolveTemplatesDst('dev', target);
-  const softwareDistFolder = resolveSoftwareDst('dist', target);
-  const softwareDevFolder = resolveSoftwareDst('dev', target);
+  const libDistFolder = resolveLibsDst('dist', searchIn);
+  const tplDistFolder = resolveTemplatesDst('dist', searchIn);
+  const softwareDistFolder = resolveSoftwareDst('dist', searchIn);
 
   const libDistExists = pathType(libDistFolder) === 'dir';
-  const libDevExists = pathType(libDevFolder) === 'dir';
   const tplDistExists = pathType(tplDistFolder) === 'dir';
-  const tplDevExists = pathType(tplDevFolder) === 'dir';
   const softwareDistExists = pathType(softwareDistFolder) === 'dir';
-  const softwareDevExists = pathType(softwareDevFolder) === 'dir';
 
-  if (!libDistExists && !tplDistExists && !softwareDistExists && !softwareDevExists)
+  if (!libDistExists && !tplDistExists && !softwareDistExists)
     // if neither of tengo-specific folders detected, skipping package
     return;
 
@@ -116,30 +113,21 @@ function loadDependencies(
   // in a workspace we will find ourselves in node_modules, ignoring
   if (packageJson.name === packageInfo.name) return;
 
-  if (pathType(path.resolve(target, 'node_modules')) === 'dir' && isLink)
+  if (pathType(path.resolve(searchIn, 'node_modules')) === 'dir' && isLink)
     throw new Error(
-      `nested node_modules is a sign of library dependencies version incompatibility in ${target}`
+      `nested node_modules is a sign of library dependencies version incompatibility in ${searchIn}`
     );
 
   if (libDistExists) {
     loadLibsFromDir(logger, packageJson, 'dist', libDistFolder, compiler)
   }
-  if (libDevExists) {
-    loadLibsFromDir(logger, packageJson, 'dev', libDevFolder, compiler)
-  }
 
   if (tplDistExists) {
     loadTemplatesFromDir(logger, packageJson, 'dist', tplDistFolder, compiler)
   }
-  if (tplDevExists) {
-    loadTemplatesFromDir(logger, packageJson, 'dev', tplDevFolder, compiler)
-  }
 
   if (softwareDistExists) {
     loadSoftwareFromDir(logger, packageJson, 'dist', softwareDistFolder, compiler)
-  }
-  if (softwareDevExists) {
-    loadSoftwareFromDir(logger, packageJson, 'dev', softwareDevFolder, compiler)
   }
 }
 
@@ -150,27 +138,27 @@ function loadLibsFromDir(
   folder: string,
   compiler: TengoTemplateCompiler
 ) {
-    for (const f of fs.readdirSync(folder)) {
-      const file = path.resolve(folder, f);
-      if (!f.endsWith(compiledLibSuffix))
-        throw new Error(`unexpected file in 'lib' folder: ${file}`);
-      const fullName: FullArtifactName = {
-        type: 'library',
-        pkg: packageJson.name,
-        id: f.slice(0, f.length - compiledLibSuffix.length),
-        version: packageJson.version
-      };
-      const src = parseSourceFile(mode, file, fullName, true);
-      compiler.addLib(src);
-      logger.debug(
-        `Adding dependency ${fullNameToString(fullName)} from ${file}`
-      );
-      if (src.dependencies.length > 0) {
-        logger.debug('Dependencies:');
-        for (const dep of src.dependencies)
-          logger.debug(`  - ${typedArtifactNameToString(dep)}`);
-      }
+  for (const f of fs.readdirSync(folder)) {
+    const file = path.resolve(folder, f);
+    if (!f.endsWith(compiledLibSuffix))
+      throw new Error(`unexpected file in 'lib' folder: ${file}`);
+    const fullName: FullArtifactName = {
+      type: 'library',
+      pkg: packageJson.name,
+      id: f.slice(0, f.length - compiledLibSuffix.length),
+      version: packageJson.version
+    };
+    const src = parseSourceFile(mode, file, fullName, true);
+    compiler.addLib(src);
+    logger.debug(
+      `Adding dependency ${fullNameToString(fullName)} from ${file}`
+    );
+    if (src.dependencies.length > 0) {
+      logger.debug('Dependencies:');
+      for (const dep of src.dependencies)
+        logger.debug(`  - ${typedArtifactNameToString(dep)}`);
     }
+  }
 }
 
 function loadTemplatesFromDir(
@@ -244,9 +232,11 @@ export function parseSources(
       continue;
     }
 
+    const artifactName = (f === "index.lib.tengo") ? `${path.basename(subdir)}.lib.tengo` : inRootPath
+
     const fullName = fullNameFromFileName(
       packageInfo,
-      inRootPath.replaceAll(path.sep, '.')
+      artifactName.replaceAll(path.sep, '.')
     );
     if (!fullName) {
       continue; // skip unknown file types
@@ -289,36 +279,40 @@ export function newCompiler(
 
 function fullNameFromFileName(
   packageJson: PackageJson,
-  fileName: string
+  artifactName: string
 ): FullArtifactName | null {
   const pkgAndVersion = { pkg: packageJson.name, version: packageJson.version };
-  if (fileName.endsWith(srcLibSuffix))
+  if (artifactName.endsWith(srcLibSuffix)) {
     return {
       ...pkgAndVersion,
-      id: fileName.substring(0, fileName.length - srcLibSuffix.length),
+      id: artifactName.substring(0, artifactName.length - srcLibSuffix.length),
       type: 'library'
     };
+  }
 
-  if (fileName.endsWith(srcTplSuffix))
+  if (artifactName.endsWith(srcTplSuffix)) {
     return {
       ...pkgAndVersion,
-      id: fileName.substring(0, fileName.length - srcTplSuffix.length),
+      id: artifactName.substring(0, artifactName.length - srcTplSuffix.length),
       type: 'template'
     };
+  }
 
-  if (fileName.endsWith(srcSoftwareSuffix))
+  if (artifactName.endsWith(srcSoftwareSuffix)) {
     return {
       ...pkgAndVersion,
-      id: fileName.substring(0, fileName.length - srcSoftwareSuffix.length),
+      id: artifactName.substring(0, artifactName.length - srcSoftwareSuffix.length),
       type: 'software'
     };
+  }
 
-  if (fileName.endsWith(srcTestSuffix))
+  if (artifactName.endsWith(srcTestSuffix)) {
     return {
       ...pkgAndVersion,
-      id: fileName.substring(0, fileName.length - srcTestSuffix.length),
+      id: artifactName.substring(0, artifactName.length - srcTestSuffix.length),
       type: 'test'
     };
+  }
 
   return null;
 }

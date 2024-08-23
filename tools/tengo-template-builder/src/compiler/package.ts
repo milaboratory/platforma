@@ -20,7 +20,7 @@ import canonicalize from 'canonicalize';
 
  */
 
-export type CompileMode = 'dev' | 'dist'
+export type CompileMode = 'dist'
 
 export type ArtifactType = 'library' | 'template' | 'test' | 'software'
 

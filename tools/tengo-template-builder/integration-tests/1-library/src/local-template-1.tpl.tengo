@@ -5,3 +5,5 @@
    multiline comments also should be ignored
 l2 := import(":non-existent-library-2")
    */
+
+complex := import(":complex-lib") // check we find 'index.lib.tengo' when importing a directory
