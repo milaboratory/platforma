@@ -83,4 +83,8 @@ export class Template {
     this.data = data;
     this.content = content;
   }
+
+  toJSON() {
+    return { compileMode: this.compileMode, fullName: this.fullName, data: this.data }
+  }
 }
