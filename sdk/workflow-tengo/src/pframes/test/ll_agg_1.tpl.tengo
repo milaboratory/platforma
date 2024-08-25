@@ -6,7 +6,7 @@ ll := import(":ll")
 render := import(":render")
 pLl := import(":pframes.ll")
 
-bodyTpl := ll.importTemplate(":test.pframes.agg_body_pure")
+bodyTpl := ll.importTemplate(":pframes.test.agg_body_pure")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
