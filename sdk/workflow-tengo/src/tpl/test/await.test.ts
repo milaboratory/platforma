@@ -1,11 +1,9 @@
 import {
   Pl,
   ResourceId,
-  ResourceRef,
   field,
   resourceType,
-  toGlobalResourceId,
-  toResourceId
+  toGlobalResourceId
 } from '@milaboratory/pl-middle-layer';
 import { tplTest } from '@milaboratory/sdk-test';
 
@@ -13,7 +11,7 @@ tplTest('test await simple state', async ({ pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
-    'test.tpl.await-state-1',
+    'tpl.test.await-state-1',
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
@@ -57,7 +55,7 @@ tplTest('test error field absent', async ({ pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
-    'test.tpl.await-state-1',
+    'tpl.test.await-state-1',
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
@@ -94,7 +92,7 @@ tplTest(
     let inputResource: ResourceId = 0n as ResourceId; // hack
     const result = await helper.renderTemplate(
       true,
-      'test.tpl.await-state-wildcard',
+      'tpl.test.await-state-wildcard',
       ['main'],
       async (tx) => {
         inputResource = await toGlobalResourceId(
@@ -141,7 +139,7 @@ tplTest(
     let inputResource: ResourceId = 0n as ResourceId; // hack
     const result = await helper.renderTemplate(
       true,
-      'test.tpl.await-state-wildcard',
+      'tpl.test.await-state-wildcard',
       ['main'],
       async (tx) => {
         inputResource = await toGlobalResourceId(

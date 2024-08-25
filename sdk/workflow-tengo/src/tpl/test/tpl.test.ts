@@ -4,7 +4,7 @@ import { tplTest } from '@milaboratory/sdk-test';
 tplTest('test simple template', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    'test.tpl.simple1',
+    'tpl.test.simple1',
     ['main'],
     (tx) => ({
       input1: tx.createValue(
@@ -20,7 +20,7 @@ tplTest('test simple template', async ({ helper, expect }) => {
 tplTest('test template with maps output', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    'test.tpl.map-outputs',
+    'tpl.test.map-outputs',
     ['simpleMap'],
     (tx) => ({})
   );
@@ -37,7 +37,7 @@ tplTest(
     const key = '{"a":"b"}';
     const result = await helper.renderTemplate(
       false,
-      'test.tpl.json-keys',
+      'tpl.test.json-keys',
       [key],
       (tx) => ({})
     );

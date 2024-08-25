@@ -2,7 +2,7 @@
 
 tpl := import(":tpl")
 ll := import(":ll")
-wdSave := import(":workdir-save")
+wdSave := import(":workdir.save")
 
 // the template has a defined outputs
 tpl.defineOutputs(["result", "workdir"])

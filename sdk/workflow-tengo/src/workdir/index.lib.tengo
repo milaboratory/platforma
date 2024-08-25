@@ -267,7 +267,7 @@ save := func(workdir) {
 		 */
 		build: func() {
 
-			tpl := ll.importTemplate(":workdir-save")
+			tpl := ll.importTemplate(":workdir.save")
 			inputs := {
 				workdir: workdir,
 				files: files,

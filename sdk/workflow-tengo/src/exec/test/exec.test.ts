@@ -1,13 +1,13 @@
 import { Pl } from '@milaboratory/pl-middle-layer';
 import { tplTest } from '@milaboratory/sdk-test';
-import * as env from '../env';
+import * as env from '../../test/env';
 
 tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_echo_to_value',
+      'exec.test.run_echo_to_value',
       ['main'],
       (tx) => ({})
     );
@@ -24,7 +24,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_echo_to_stream',
+      'exec.test.run_echo_to_stream',
       ['main'],
       (tx) => ({})
     );
@@ -54,7 +54,7 @@ tplTest(
 
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_cat_on_file',
+      'exec.test.run_cat_on_file',
       ['main'],
       (tx) => ({
         file: tx.createValue(
@@ -77,7 +77,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_cat_on_value',
+      'exec.test.run_cat_on_value',
       ['main'],
       (tx) => ({})
     );
@@ -97,7 +97,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_and_save_file_set',
+      'exec.test.run_and_save_file_set',
       ['p', 'x', 'all'],
       (tx) => ({})
     );
@@ -123,7 +123,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_with_wd_processor',
+      'exec.test.run_with_wd_processor',
       ['p'],
       (tx) => ({})
     );

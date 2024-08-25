@@ -1,9 +1,0 @@
-self := import(":tpl")
-
-self.body(func(inputs) {
-
-	// output resource
-	return {
-		main: inputs.input1.testValue + " Show"
-	}
-})
