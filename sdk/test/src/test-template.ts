@@ -45,7 +45,7 @@ export class TestRenderResults<O extends string> {
       const outputAccessor = ctx
         .accessor(this.resultEntry)
         .node()
-        .traverse({ field: name, assertFieldType: 'Output' });
+        .traverse({ field: name, assertFieldType: 'Input' });
       return cb(outputAccessor, ctx);
     });
   }
