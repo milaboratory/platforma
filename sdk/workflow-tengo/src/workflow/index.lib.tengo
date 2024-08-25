@@ -7,14 +7,13 @@ ll := import(":ll")
 text := import("text")
 json := import("json")
 
-constants := import(":constants")
-context := import(":context")
+constants := import(":workflow.constants")
 render := import(":render")
 smart := import(":smart")
 maps := import(":maps")
 sets := import(":sets")
-bobject := import(":bobject")
-bquery := import(":bquery")
+bobject := import(":workflow.bobject")
+bquery := import(":workflow.bquery")
 
 
 // instance of this
@@ -33,8 +32,6 @@ _OUTPUT_CONTEXT_FIELD_NAME := "context"
 // that store prepared resources (aka requested in the 'prepare()' method)
 _PREPARED_INPUTS_PREFIX := "prepared/"
 
-// a dummy prefix used to mimic field with empty string name
-_NO_PREFIX_EXPORT := "_"
 
 // define outputs as we know them
 // this is important to unlock 'prepare' functionality
@@ -141,7 +138,7 @@ _buildOutputs := func(results) {
 
 	// data to pass to ctx builder template
 	eData := {}
-	eData[_NO_PREFIX_EXPORT] = {}
+	eData[constants.NO_PREFIX_EXPORT] = {}
 
 	for name, value in e {
 		// pass resource to flatten in ctx builder
@@ -162,8 +159,8 @@ _buildOutputs := func(results) {
 		if !smart.isReference(spec) {
 			spec = bobject.createSpec(spec)
 		}
-		eData[_NO_PREFIX_EXPORT][name + ".spec"] = spec
-		eData[_NO_PREFIX_EXPORT][name + ".data"] = value.data
+		eData[constants.NO_PREFIX_EXPORT][name + ".spec"] = spec
+		eData[constants.NO_PREFIX_EXPORT][name + ".data"] = value.data
 	}
 
 	// create ctx and save exports
@@ -272,8 +269,6 @@ body := func(bodyFn) {
 }
 
 export ll.toStrict({
-	// @TODO move to constants
-	_NO_PREFIX_EXPORT: _NO_PREFIX_EXPORT,
 	query: query,
 	resolve: resolve,
 	prepare: prepare,

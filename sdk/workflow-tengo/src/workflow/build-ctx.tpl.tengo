@@ -2,11 +2,11 @@
 // Utility template to build context and flatten context resources
 //
 
-tpl := import(":tpl")
-context := import(":context")
-validation := import(":validation")
 ll := import(":ll")
-wf := import(":workflow")
+tpl := import(":tpl")
+context := import(":workflow.context")
+validation := import(":validation")
+constants := import(":workflow.constants")
 
 // await all exports to appear as data fields
 tpl.awaitState("data", { wildcard: "*" }, "InputsLocked")
@@ -27,7 +27,7 @@ tpl.body(func(inputs) {
 		for key, value in map {
 			// @TODO check whether we have both .data & .spec for all exports
 
-			if prefix == "_" { // @TODO use constant
+			if prefix == constants.NO_PREFIX_EXPORT { // @TODO use constant
 				ctxBuilder.add(key, value)
 			} else {
 				ctxBuilder.add(prefix + "." + key, value)

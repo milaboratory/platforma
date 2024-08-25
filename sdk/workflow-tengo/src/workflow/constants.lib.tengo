@@ -1,0 +1,8 @@
+ll := import(":ll")
+
+// a dummy prefix used to mimic field with empty string name
+NO_PREFIX_EXPORT := "_"
+
+export ll.toStrict({
+    NO_PREFIX_EXPORT: NO_PREFIX_EXPORT
+})
