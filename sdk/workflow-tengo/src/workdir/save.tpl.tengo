@@ -2,7 +2,7 @@
 
 self := import(":tpl")
 text := import("text")
-wdSave := import(":workdir-save")
+wdSave := import(":workdir.save")
 
 self.body(func(inputs) {
 

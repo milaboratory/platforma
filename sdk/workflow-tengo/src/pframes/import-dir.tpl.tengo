@@ -2,7 +2,7 @@
 // read p-frame from the directory
 //
 
-self := import(":workdir-proc")
+self := import(":workdir.proc")
 
 ll := import(":ll")
 text := import("text")

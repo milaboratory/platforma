@@ -6,7 +6,7 @@ function createObject(tx: PlTransaction, value: any) {
 }
 
 tplTest('should return export', async ({ helper, expect }) => {
-  const wf1 = await helper.renderWorkflow('test.exports.wf1', false, {
+  const wf1 = await helper.renderWorkflow('workflow.test.exports.wf1', false, {
     a: 'a',
     b: 'b'
   });
@@ -20,7 +20,12 @@ tplTest('should return export', async ({ helper, expect }) => {
 
   const ctx = await wf1.context().awaitStableValue();
 
-  const wf2 = await helper.renderWorkflow('test.exports.wf2', false, {}, ctx);
+  const wf2 = await helper.renderWorkflow(
+    'workflow.test.exports.wf2',
+    false,
+    {},
+    ctx
+  );
 
   const query = await wf2
     .output('query', (a) => a?.getDataAsJson())

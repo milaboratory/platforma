@@ -1,6 +1,6 @@
 // test wd processor
 
-self := import(":workdir-proc")
+self := import(":workdir.proc")
 ll := import(":ll")
 slices := import(":slices")
 

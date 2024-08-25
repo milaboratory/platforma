@@ -379,7 +379,7 @@ builder := func() {
 				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
 			})
 
-			tpl := render.create(ll.importTemplate(":exec"), {
+			tpl := render.create(ll.importTemplate(":exec.exec"), {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),

@@ -11,8 +11,8 @@ ll := import(":ll")
 smart := import(":smart")
 render := import(":render")
 workdir := import(":workdir")
-runcmd := import(":runcmd")
-stream := import(":stream")
+runcmd := import(":exec.runcmd")
+stream := import(":exec.stream")
 sets := import(":sets")
 
 self.defineOutputs(

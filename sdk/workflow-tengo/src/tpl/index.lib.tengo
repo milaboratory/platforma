@@ -6,9 +6,9 @@ render := import(":render")
 smart := import(":smart")
 sets := import(":sets")
 maps := import(":maps")
-tplutil := import(":tpl-util")
+tplutil := import(":tpl.util")
 constants := import(":constants")
-stateAwait := import(":state-await")
+stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
 /**
