@@ -33,6 +33,6 @@ self.body(func(inputs){
 	csvMap = csvMap.lockAndBuild()
 
 	return {
-		pf: pframes.exportFrame(xsv.importFileMap(csvMap, "csv", spec))
+		pf: pframes.exportFrame(xsv.importFileMap(csvMap, "csv", spec, {dataOnly: true}))
 	}
 })

@@ -25,6 +25,6 @@ self.body(func(inputs){
 	spec := inputs.spec
 
 	return {
-		pf: pframes.exportFrame(xsv.importFile(csvFile, "csv", spec))
+		pf: pframes.exportFrame(xsv.importFile(csvFile, "csv", spec, {dataOnly: true}))
 	}
 })
