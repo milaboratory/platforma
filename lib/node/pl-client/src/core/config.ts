@@ -44,12 +44,39 @@ export interface PlClientConfig {
 
   /** Last resort measure to solve complicated race conditions in pl. */
   forceSync: boolean;
+
+  //
+  // Retry
+  //
+
+  /**
+   * What type of backoff strategy to use in transaction retries
+   * (pl uses optimistic transaction model with regular retries in write transactions)
+   * */
+  retryBackoffAlgorithm: 'exponential' | 'linear';
+  /** Maximal number of attempts in */
+  retryMaxAttempts: number;
+  /** Delay after first failed attempt, in ms. */
+  retryInitialDelay: number;
+  /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
+  retryExponentialBackoffMultiplier: number;
+  /** [used only for ] This value will be added to the delay from the previous step, in ms */
+  retryLinearBackoffStep: number;
+  /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
+  retryJitter: number;
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 1000;
 export const DEFAULT_TX_TIMEOUT = 10_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
+
+export const DEFAULT_RETRY_BACKOFF_ALGORITHM = 'exponential';
+export const DEFAULT_RETRY_MAX_ATTEMPTS = 10;
+export const DEFAULT_RETRY_INITIAL_DELAY = 4; // 4 ms
+export const DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER = 2; // + 100% on each round
+export const DEFAULT_RETRY_LINEAR_BACKOFF_STEP = 50; // + 50 ms
+export const DEFAULT_RETRY_JITTER = 0.3; // 30%
 
 type PlConfigOverrides = Partial<
   Pick<
@@ -60,7 +87,9 @@ type PlConfigOverrides = Partial<
 
 function parseInt(s: string | null | undefined): number | undefined {
   if (!s) return undefined;
-  return Number.parseInt(s);
+  const num = Number(s);
+  if (num === Number.NaN) throw new Error(`Can't parse number: ${s}`);
+  return num;
 }
 
 /** Parses pl url and creates a config object that can be passed to
@@ -80,6 +109,14 @@ export function plAddressToConfig(
       authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
       txDelay: 0,
       forceSync: false,
+
+      retryBackoffAlgorithm: DEFAULT_RETRY_BACKOFF_ALGORITHM,
+      retryMaxAttempts: DEFAULT_RETRY_MAX_ATTEMPTS,
+      retryInitialDelay: DEFAULT_RETRY_INITIAL_DELAY,
+      retryExponentialBackoffMultiplier: DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
+      retryLinearBackoffStep: DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
+      retryJitter: DEFAULT_RETRY_JITTER,
+
       ...overrides
     };
 
@@ -109,8 +146,23 @@ export function plAddressToConfig(
     httpProxy: url.searchParams.get('http-proxy') ?? undefined,
     user: url.username === '' ? undefined : url.username,
     password: url.password === '' ? undefined : url.password,
-    txDelay: Number(url.searchParams.get('tx-delay')) ?? 0,
+    txDelay: parseInt(url.searchParams.get('tx-delay')) ?? 0,
     forceSync: Boolean(url.searchParams.get('force-sync')) ?? false,
+
+    retryBackoffAlgorithm: (url.searchParams.get('retry-backoff-algorithm') ??
+      DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,
+    retryMaxAttempts:
+      parseInt(url.searchParams.get('retry-max-attempts')) ?? DEFAULT_RETRY_MAX_ATTEMPTS,
+    retryInitialDelay:
+      parseInt(url.searchParams.get('retry-initial-delay')) ?? DEFAULT_RETRY_INITIAL_DELAY,
+    retryExponentialBackoffMultiplier:
+      parseInt(url.searchParams.get('retry-exp-backoff-multiplier')) ??
+      DEFAULT_RETRY_EXPONENTIAL_BACKOFF_MULTIPLIER,
+    retryLinearBackoffStep:
+      parseInt(url.searchParams.get('retry-linear-backoff-step')) ??
+      DEFAULT_RETRY_LINEAR_BACKOFF_STEP,
+    retryJitter: parseInt(url.searchParams.get('retry-backoff-jitter')) ?? DEFAULT_RETRY_JITTER,
+
     ...overrides
   };
 }

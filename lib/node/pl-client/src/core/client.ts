@@ -10,26 +10,24 @@ import {
   ResourceId
 } from './types';
 import { ClientRoot } from '../helpers/pl';
-import { createRetryState, nextRetryStateOrError, RetryOptions } from '@milaboratory/ts-helpers';
+import {
+  assertNever,
+  createRetryState,
+  nextRetryStateOrError,
+  RetryOptions
+} from '@milaboratory/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import { Dispatcher } from 'undici';
 
 export type TxOps = PlCallOps & {
-  sync: boolean;
-  retryOptions: RetryOptions;
+  sync?: boolean;
+  retryOptions?: RetryOptions;
 };
 
-const defaultTxOps: TxOps = {
-  sync: false,
-  retryOptions: {
-    type: 'exponentialBackoff',
-    maxAttempts: 10, // final backoff 2ms * 2 ^ 8 ~ 500ms (total time ~1s)
-    initialDelay: 2, // 2ms
-    backoffMultiplier: 2, // + 100% on each round
-    jitter: 0.1 // 10%
-  }
+const defaultTxOps = {
+  sync: false
 };
 
 const AnonymousClientRoot = 'AnonymousRoot';
@@ -50,6 +48,9 @@ export class PlClient {
   /** Last resort measure to solve complicated race conditions in pl. */
   private readonly forceSync: boolean;
 
+  /** Last resort measure to solve complicated race conditions in pl. */
+  private readonly defaultRetryOptions: RetryOptions;
+
   /** Stores client root (this abstraction is intended for future implementation of the security model)*/
   private _clientRoot: OptionalResourceId = NullResourceId;
 
@@ -63,8 +64,31 @@ export class PlClient {
     } = {}
   ) {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
-    this.txDelay = this.ll.conf.txDelay;
-    this.forceSync = this.ll.conf.forceSync;
+    const conf = this.ll.conf;
+    this.txDelay = conf.txDelay;
+    this.forceSync = conf.forceSync;
+    switch (conf.retryBackoffAlgorithm) {
+      case 'exponential':
+        this.defaultRetryOptions = {
+          type: 'exponentialBackoff',
+          initialDelay: conf.retryInitialDelay,
+          maxAttempts: conf.retryMaxAttempts,
+          backoffMultiplier: conf.retryExponentialBackoffMultiplier,
+          jitter: conf.retryJitter
+        };
+        break;
+      case 'linear':
+        this.defaultRetryOptions = {
+          type: 'linearBackoff',
+          initialDelay: conf.retryInitialDelay,
+          maxAttempts: conf.retryMaxAttempts,
+          backoffStep: conf.retryLinearBackoffStep,
+          jitter: conf.retryJitter
+        };
+        break;
+      default:
+        assertNever(conf.retryBackoffAlgorithm);
+    }
   }
 
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
@@ -166,10 +190,10 @@ export class PlClient {
     writable: boolean,
     clientRoot: OptionalResourceId,
     body: (tx: PlTransaction) => Promise<T>,
-    ops: TxOps = defaultTxOps
+    ops?: TxOps
   ): Promise<T> {
     // for exponential / linear backoff
-    let retryState = createRetryState(ops.retryOptions);
+    let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
       // opening low-level tx
@@ -207,11 +231,12 @@ export class PlClient {
 
       if (ok) {
         // syncing on transaction if requested
-        if (ops.sync || this.forceSync) await this.ll.grpcPl.txSync({ txId });
+        if (ops?.sync === undefined ? this.forceSync : ops?.sync)
+          await this.ll.grpcPl.txSync({ txId });
 
         // introducing artificial delay, if requested
         if (writable && this.txDelay > 0)
-          await tp.setTimeout(this.txDelay, undefined, { signal: ops.abortSignal });
+          await tp.setTimeout(this.txDelay, undefined, { signal: ops?.abortSignal });
 
         return result!;
       }
@@ -219,7 +244,7 @@ export class PlClient {
       // we only get here after TxCommitConflict error,
       // all other errors terminate this loop instantly
 
-      await tp.setTimeout(retryState.nextDelay, undefined, { signal: ops.abortSignal });
+      await tp.setTimeout(retryState.nextDelay, undefined, { signal: ops?.abortSignal });
       retryState = nextRetryStateOrError(retryState);
     }
   }
