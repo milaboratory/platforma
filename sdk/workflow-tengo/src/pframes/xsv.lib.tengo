@@ -3,6 +3,7 @@
  */
 
 validation := import(":validation")
+constants := import(":pframes.constants")
 objects := import(":objects")
 render := import(":render")
 exec := import(":exec")
@@ -168,11 +169,13 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 		result[id + ".data"] = pf.getFutureInputField(id)
 		result[id + ".spec"] = objects.deleteUndefined({
-			type: col.type,
+			kind: constants.KIND_P_COLUMN,
+			valueType: col.type,
 			name: col.name,
-			axes: axesSpec,
+			axesSpec: axesSpec,
 			domain: col.domain,
-			annotations: col.annotations
+			annotations: col.annotations,
+			parentAxes: col.parentAxes
 		})
 	}
 	
