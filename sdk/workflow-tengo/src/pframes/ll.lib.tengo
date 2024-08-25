@@ -31,7 +31,20 @@ llAggTpl := ll.importTemplate(":pframes.aggregate")
  * @param indices indices to aggregate over (these indices will be stripped from the input map,
  *                meaning of this parameter is the opposite of GROUP BY from SQL)
  * @param bodyTpl reference to the template implementing particular aggregation (see contract above)
- * @param outputs array of output names to to collect from rendered templates
+ * @param outputs array of output settings to to collect from rendered templates
+ *
+ *                  Common fields for all subtypes:
+ *                     {
+ *                       name: string - name of the output
+ *                     }
+ *
+ *                  Variants:
+ *                    | { type: "Resource" } // - assume normal singular resource is produced by this output
+ *                    | {
+ *                        type: "BinaryPartitioned" | "JsonPartitioned",
+ *                        partitionKeyLength: number // - expected partition length of result from each operation
+ *                      } // - assume each record is a partitionde Json or Binary PColumn data itself
+ *
  * @param isEph   if true, body template will be rendered as ephemeral
  * @param extra   optional map of parameters to pass to the template
  */
