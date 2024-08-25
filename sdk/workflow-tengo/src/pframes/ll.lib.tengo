@@ -41,9 +41,13 @@ llAggTpl := ll.importTemplate(":pframes.aggregate")
  *                  Variants:
  *                    | { type: "Resource" } // - assume normal singular resource is produced by this output
  *                    | {
+ *                        type: "ResourceMap",
+ *                        keyLength: number // - expected key length of result from each operation
+ *                      } // - assume each record is ResourceMap
+ *                    | {
  *                        type: "BinaryPartitioned" | "JsonPartitioned",
  *                        partitionKeyLength: number // - expected partition length of result from each operation
- *                      } // - assume each record is a partitionde Json or Binary PColumn data itself
+ *                      } // - assume each record is a partitionded Json or Binary PColumn data itself
  *
  * @param isEph   if true, body template will be rendered as ephemeral
  * @param extra   optional map of parameters to pass to the template

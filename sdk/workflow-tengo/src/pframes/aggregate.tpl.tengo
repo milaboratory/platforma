@@ -113,6 +113,14 @@ self.body(func(inputs) {
 					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
 					json.encode({ keyLength: groupKeyLength })
 				)
+			} else if output.type == "ResourceMap" {
+				outputMaps[output.name] = smart.structBuilder(
+					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
+					json.encode({
+						partitionKeyLength: groupKeyLength,
+						keyLength: output.keyLength
+					})
+				)
 			} else if output.type == "JsonPartitioned" {
 				outputMaps[output.name] = smart.structBuilder(
 					constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
