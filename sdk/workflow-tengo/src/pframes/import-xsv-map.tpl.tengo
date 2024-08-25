@@ -20,7 +20,7 @@ self.validateInputs({
 	spec: `any`
 })
 
-_EMPTY_JSON_KEY := json.encode([])
+_EMPTY_JSON_KEY := string(json.encode([]))
 
 _getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
 	if supKeyLen > 0 && keyLen > 0 {
@@ -64,17 +64,33 @@ self.body(func(inputs) {
 
 		for key, xsvFile in xsvMap.inputs() {
 			// single element; so return immediately
-			return xsv.importFile(xsvFile, xsvType, spec)
+
+			r := xsv.importFile(xsvFile, xsvType, spec)
+			
+			result := {}
+			for c in spec.columns {
+				id := util.xsvColumnId(c)
+				result[id] = r.getFutureInputField(id)
+			}
+			return result
 		}
 	}
 
 	keyLen := spec.partitionKeyLength
 
 	rType := _getPColumnRtype(supKeyLen, spec.partitionKeyLength, spec.storageFormat)
-	rData := json.encode({
-		superPartitionKeyLength: supKeyLen,
-		partitionKeyLength: keyLen
-	})
+	rData := undefined 
+	
+	if keyLen == 0 {
+		rData = json.encode({
+			partitionKeyLength: supKeyLen
+		})
+	} else {
+		rData = json.encode({
+			superPartitionKeyLength: supKeyLen,
+			partitionKeyLength: keyLen
+		})
+	}
 
 	result := {}
 	for c in spec.columns {

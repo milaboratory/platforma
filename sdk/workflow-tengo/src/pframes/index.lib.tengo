@@ -1,3 +1,14 @@
 /**
  * Working with p-frames
  */
+
+ll := import(":ll")
+render := import(":render")
+
+exportFrame := func(pf) {
+    return render.createEphemeral(ll.importTemplate(":pframes.export-pframe"), { pf: pf }).output("pf")
+}
+
+export ll.toStrict({
+    exportFrame: exportFrame
+})

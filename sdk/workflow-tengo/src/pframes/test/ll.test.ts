@@ -18,7 +18,7 @@ tplTest.for([
   async ({ indices, expectedResult, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
-      'test.pframes.ll_agg_1',
+      'pframes.test.ll_agg_1',
       ['result'],
       (tx) => {
         const v1 = tx.createValue(Pl.JsonObject, JSON.stringify(1));

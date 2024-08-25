@@ -163,7 +163,6 @@ _parseTags := func(rule) {
  * @return either fail or success
  */
 _validateJson := func(js, schema, keyPath, ...stack) {
-	// ll.print(fmt.sprintf("validateJSON debug: json: %s, keyPath: %s, schema %s", json.encode(js), keyPath, json.encode(schema)))
 
 	if is_undefined(schema) {
 		if len(stack) == 0 {

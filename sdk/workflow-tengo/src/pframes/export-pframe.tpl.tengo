@@ -1,0 +1,58 @@
+//
+// wrap all p-frame files with file.exportFile
+//
+
+ll := import(":ll")
+tpl := import(":tpl")
+file := import(":file")
+text := import("text")
+smart := import(":smart")
+pframes := import(":pframes")
+constants := import(":pframes.constants")
+validation := import(":validation")
+
+// await all inputs are locked
+tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
+
+tpl.validateInputs({
+	pf: { `any`: validation.resource() }
+})
+
+tpl.body(func(inputs) {
+
+	result := {}
+
+	for colName, colData in inputs.pf {
+		
+		rType := colData.info().Type
+		rData := colData.info().Data
+
+		newCol := smart.structBuilder(rType, rData)
+
+		if text.has_prefix(rType.Name, constants.P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX) {
+			// super-partitioned p-column
+
+			// save recurrently
+			saved := pframes.exportFrame(colData.inputs())
+			for key, _ in colData.inputs() {
+				newCol.createInputField(key).set(saved.getFutureInputField(key))
+			}
+		} else if text.has_suffix(rType.Name, "Partitioned") {
+			// single-partitioned p-column
+
+			for key, val in colData.inputs() {
+				newCol.createInputField(key).set(file.exportFile(val))
+			}
+
+		} else {
+			// no partitions
+			ll.panic("only partitioned p-columns are supported")
+		}
+
+		result[colName] = newCol.lockAndBuild()
+	}
+
+	return {
+		pf: result
+	}
+})

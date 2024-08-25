@@ -66,11 +66,6 @@ self.body(func(inputs) {
 	outputs := {}
 	for c in spec.columns {
 
-		name := c.name
-		if is_undefined(name) {
-			name = c.column
-		}
-
 		id := util.xsvColumnId(c)
 
 		dInfo := inputs["out/" + id + ".datainfo"].getDataAsJson()

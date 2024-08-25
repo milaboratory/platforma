@@ -3,6 +3,8 @@
 self := import(":tpl")
 exec := import(":exec")
 xsv := import(":pframes.xsv")
+pframes := import(":pframes")
+validation := import(":validation")
 
 self.defineOutputs("pf")
 
@@ -20,9 +22,9 @@ self.body(func(inputs){
 	csvFile := e.getFile("data.csv")
 
 	// pfconv params
-	params := inputs.params
+	spec := inputs.spec
 
 	return {
-		pf: xsv.importFile(csvFile, "csv", params)
+		pf: pframes.exportFrame(xsv.importFile(csvFile, "csv", spec))
 	}
 })
