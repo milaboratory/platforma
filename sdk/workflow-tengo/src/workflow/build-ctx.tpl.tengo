@@ -4,6 +4,7 @@
 
 ll := import(":ll")
 tpl := import(":tpl")
+smart := import(":smart")
 context := import(":workflow.context")
 validation := import(":validation")
 constants := import(":workflow.constants")
