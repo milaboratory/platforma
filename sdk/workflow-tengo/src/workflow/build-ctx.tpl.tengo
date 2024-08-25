@@ -28,7 +28,7 @@ tpl.body(func(inputs) {
 		for key, value in map {
 			// @TODO check whether we have both .data & .spec for all exports
 
-			if prefix == constants.NO_PREFIX_EXPORT { // @TODO use constant
+			if prefix == constants.NO_PREFIX_EXPORT {
 				ctxBuilder.add(key, value)
 			} else {
 				ctxBuilder.add(prefix + "." + key, value)
