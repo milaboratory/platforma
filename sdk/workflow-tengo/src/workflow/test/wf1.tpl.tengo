@@ -4,7 +4,7 @@ wf := import(":workflow")
 ll := import(":ll")
 
 
-wf.setPreRun(ll.importTemplate(":test.workflow.wf1-prerun"))
+wf.setPreRun(ll.importTemplate(":workflow.test.wf1-prerun"))
 
 
 wf.body(func(args) {

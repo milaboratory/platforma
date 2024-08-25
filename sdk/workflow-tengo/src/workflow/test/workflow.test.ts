@@ -1,6 +1,5 @@
 import { Pl, type PlTransaction } from '@milaboratory/pl-middle-layer';
 import { tplTest } from '@milaboratory/sdk-test';
-import { read } from 'fs';
 
 function createObject(tx: PlTransaction, value: any) {
   return tx.createValue(Pl.JsonObject, JSON.stringify(value));
@@ -9,7 +8,7 @@ function createObject(tx: PlTransaction, value: any) {
 tplTest(
   'should return results when run body of the workflow',
   async ({ helper, expect }) => {
-    const prod = await helper.renderWorkflow('test.workflow.wf1', false, {
+    const prod = await helper.renderWorkflow('workflow.test.wf1', false, {
       testValue: 'Truman Prod'
     });
 
@@ -24,7 +23,7 @@ tplTest(
 tplTest(
   'should return results when pre run of the workflow',
   async ({ helper, expect }) => {
-    const prerun = await helper.renderWorkflow('test.workflow.wf1', true, {
+    const prerun = await helper.renderWorkflow('workflow.test.wf1', true, {
       testValue: 'Truman PreRun'
     });
 
@@ -39,7 +38,7 @@ tplTest(
 tplTest(
   'should return dummy result and ctx for staging if pre-run template not specified',
   async ({ helper, expect }) => {
-    const prerun = await helper.renderWorkflow('test.workflow.wf2', true, {
+    const prerun = await helper.renderWorkflow('workflow.test.wf2', true, {
       testValue: 'Truman PreRun'
     });
 
