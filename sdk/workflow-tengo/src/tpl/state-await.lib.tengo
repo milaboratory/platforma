@@ -6,6 +6,7 @@
 tx := import("tx")
 ll := import(":ll")
 sets := import(":sets")
+text := import("text")
 
 createContext := func() {
 	return {
@@ -49,11 +50,27 @@ awaitOneState := func(field, path, state) {
 			}
 			return awaitOneState(nextField, rPath, state)
 		} else if is_map(step) {
-			if is_undefined(step.wildcard) {
+			if is_undefined(step.wildcard) == is_undefined(step.match) {
 				ll.panic("Unknown step structure: %v", step)
 			}
-			if step.wildcard != "*" {
-				ll.panic("Complex wildcards are not yet supported: %v", step.wildcard)
+
+			matcher := undefined
+
+			if !is_undefined(step.wildcard) {
+				if step.wildcard != "*" {
+					ll.panic("Complex wildcards are not supported, use { match: \"{regexp}\" }: %v", step.wildcard)
+				}
+				matcher = func(field) {
+					return true
+				}
+			} else {
+				regex := text.re_compile(step.match)
+				if is_error(regex) {
+					ll.panic("Error parsing regex %v: %v", step.match, regex)
+				}
+				matcher = func(field) {
+					return regex.match(field)
+				}
 			}
 
 			if !resource.info().InputsLocked {
@@ -67,7 +84,10 @@ awaitOneState := func(field, path, state) {
 			}
 
 			subscriptions := []
-			for _, nextField in resource.inputs() {
+			for nextFieldName, nextField in resource.inputs() {
+				if !matcher(nextFieldName) {
+					continue
+				}
 				res := awaitOneState(nextField, rPath, state)
 				if res.type == "Ready" {
 					continue

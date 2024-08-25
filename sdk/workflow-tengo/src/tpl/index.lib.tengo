@@ -188,9 +188,14 @@ tpl := func() {
 		 *                              inputName1 field must exist and have locked inputs and all
 		 *                              resources referenced by those fields must have all inputs
 		 *                              locked
+		 *   awaitState("inputName1", { match: "^some_prefix\\." }, "InputsLocked") - nested resource
+		 *                              by the inputName1 field must exist and have locked inputs and
+		 *                              all resources referenced by inputs with "some_prefix." prefix
+		 *                              must have all inputs locked
 		 *
 		 * Example, the following two expressions are equivalent:
 		 *   awaitState("inputName1", { wildcard: "*" }, "Set")
+		 *   awaitState("inputName1", { match: "^some_prefix\\." }, "Set")
 		 *   awaitState("inputName1", "AllInputsSet")
 		 *
 		 * Allowed states:
