@@ -17,7 +17,8 @@ self.awaitState("xsvMap", "InputsLocked")
 self.validateInputs({
 	xsvMap: validation.resource({ type: constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP } ),
 	xsvType: `string,regex=csv|tsv`,
-	spec: `any`
+	spec: `any`,
+	ops: `any`
 })
 
 _EMPTY_JSON_KEY := string(json.encode([]))
@@ -50,6 +51,8 @@ self.body(func(inputs) {
 	xsvType := inputs.xsvType
 	// pfconv spec
 	spec := inputs.spec
+	// options to pass to xsv.importFile
+	ops := inputs.ops
 
 	// super key length
 	supKeyLen := xsvMap.getDataAsJson().keyLength
@@ -65,7 +68,7 @@ self.body(func(inputs) {
 		for key, xsvFile in xsvMap.inputs() {
 			// single element; so return immediately
 
-			r := xsv.importFile(xsvFile, xsvType, spec)
+			r := xsv.importFile(xsvFile, xsvType, spec, ops)
 			
 			result := {}
 			for c in spec.columns {
@@ -99,7 +102,7 @@ self.body(func(inputs) {
 	}
 
 	for key, xsvFile in xsvMap.inputs() {
-		p := xsv.importFile(xsvFile, xsvType, spec)
+		p := xsv.importFile(xsvFile, xsvType, spec, ops)
 
 		for c in spec.columns {
 			id := util.xsvColumnId(c)

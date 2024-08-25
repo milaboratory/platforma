@@ -14,9 +14,9 @@ validation := import(":validation")
 // await all inputs are locked
 tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
 
-tpl.validateInputs({
-	pf: { `any`: validation.resource() }
-})
+// tpl.validateInputs({
+// 	pf: { `any`: validation.resource() }
+// })
 
 tpl.body(func(inputs) {
 
