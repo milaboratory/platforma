@@ -45,11 +45,7 @@ export class TestRenderResults<O extends string> {
       const outputAccessor = ctx
         .accessor(this.resultEntry)
         .node()
-        .traverse(name);
-      if (outputAccessor === undefined) {
-        ctx.markUnstable();
-        return undefined;
-      }
+        .traverse({ field: name, assertFieldType: 'Output' });
       return cb(outputAccessor, ctx);
     });
   }
@@ -61,14 +57,20 @@ export class TestWorkflowResults {
     public readonly blockId: string
   ) {}
 
-  /** Returns context id of this workflow */
+  /**
+   * Returns context id of this workflow
+   * @deprecated
+   * */
   public context(): ComputableStableDefined<ResourceId> {
     return this.renderResult
       .computeOutput('context', (cb) => cb?.id)
       .withStableType();
   }
 
-  /** Returns context id of this workflow */
+  /**
+   * Returns context id of this workflow
+   * @deprecated
+   * */
   public result(): ComputableStableDefined<ResourceId> {
     return this.renderResult
       .computeOutput('result', (cb) => cb?.id)
@@ -79,8 +81,11 @@ export class TestWorkflowResults {
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
   ) {
-    return this.renderResult.computeOutput('context', (xcb, xctx) => {
-      return cb(xcb?.getField(`values/${name}`)?.value, xctx);
+    return this.renderResult.computeOutput('context', (acc, ctx) => {
+      return cb(
+        acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }),
+        ctx
+      );
     });
   }
 
@@ -88,8 +93,8 @@ export class TestWorkflowResults {
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
   ) {
-    return this.renderResult.computeOutput('result', (xcb, xctx) => {
-      return cb(xcb?.getField(name)?.value, xctx);
+    return this.renderResult.computeOutput('result', (acc, ctx) => {
+      return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
     });
   }
 }
