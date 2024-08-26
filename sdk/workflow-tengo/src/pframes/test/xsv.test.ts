@@ -115,7 +115,8 @@ tplTest.for([
   { partitionKeyLength: 1, storageFormat: 'Json' },
   { partitionKeyLength: 2, storageFormat: 'Json' }
 ])(
-  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength',
+  'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
+  { timeout: 20000 },
   async (
     { partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
@@ -141,13 +142,18 @@ tplTest.for([
         .awaitStableValue()
     )?.sort();
 
-    const expected = ['col1', 'col2'].sort();
+    const expected = [
+      'col1.data',
+      'col1.spec',
+      'col2.data',
+      'col2.spec'
+    ].sort();
     expect(cols).toStrictEqual(expected);
 
     for (const colName of ['col1', 'col2']) {
       const colOpt = await result
         .computeOutput('pf', (pf) => {
-          const r = pf?.traverse(colName);
+          const r = pf?.traverse(colName + '.data');
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
@@ -314,7 +320,7 @@ tplTest.for([
     for (const colName of ['col1', 'col2']) {
       const colOpt = await result
         .computeOutput('pf', (pf) => {
-          const r = pf?.traverse(colName);
+          const r = pf?.traverse(colName + '.data');
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
