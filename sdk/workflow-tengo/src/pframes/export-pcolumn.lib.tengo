@@ -1,0 +1,44 @@
+pConstants := import(":pframes.constants")
+smart := import(":smart")
+render := import(":render")
+
+// reference to the template doing nested super-partitioned export
+nestedTpl := ll.importTemplate(":pframes.export-single-pcolumn")
+
+/** Implements core export logic for export-single-pcolumn and export-multiple-pcolumns templates */
+exportPColumnData := func(data) {
+	if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED) ||
+		data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED) ||
+		data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED) {
+		// super-partitioned data
+
+		newData := smart.structBuilder(data.info().Type, data.info().Data)
+		for key, partData in data.inputs() {
+			newData.createInputField(key).set(render.createEphemeral(nestedTpl, { data: partData }).output("result"))
+		}
+		return newData.lockAndBuild()
+
+	} else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP) ||
+		data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED) ||
+		data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED) {
+		// data directly referencing blob objects
+
+		newData := smart.structBuilder(data.info().Type, data.info().Data)
+		for key, partData in data.inputs() {
+			newData.createInputField(key).set(file.exportFile(partData))
+		}
+		return newData.lockAndBuild()
+
+	} else if data.checkResourceType(pConstants.RTYPE_P_COLUMN_DATA_JSON) {
+		// data embeds all information and needs no special exporting procedure
+
+		return data
+
+	} else {
+		ll.panic("unknonw resource type: %v", data.info().Type)
+	}
+}
+
+export ll.toStrict({
+	exportPColumnData: exportPColumnData
+})
