@@ -1,5 +1,5 @@
 import { field, Pl } from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
+import { awaitStableState, tplTest } from '@milaboratory/sdk-test';
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -116,7 +116,7 @@ tplTest.for([
   { partitionKeyLength: 2, storageFormat: 'Json' }
 ])(
   'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
-  { timeout: 20000 },
+  { timeout: 10000 },
   async (
     { partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
@@ -137,9 +137,9 @@ tplTest.for([
     );
 
     const cols = (
-      await result
-        .computeOutput('pf', (pf) => pf?.listInputFields())
-        .awaitStableValue()
+      await awaitStableState(
+        result.computeOutput('pf', (pf) => pf?.listInputFields())
+      )
     )?.sort();
 
     const expected = [
@@ -151,16 +151,17 @@ tplTest.for([
     expect(cols).toStrictEqual(expected);
 
     for (const colName of ['col1', 'col2']) {
-      const colOpt = await result
-        .computeOutput('pf', (pf) => {
+      const colOpt = await awaitStableState(
+        result.computeOutput('pf', (pf) => {
           const r = pf?.traverse(colName + '.data');
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
             fields: r?.listInputFields()
           };
-        })
-        .awaitStableValue();
+        }),
+        6000
+      );
 
       expect(colOpt).toBeDefined();
 
@@ -178,16 +179,17 @@ tplTest.for([
 
       if (storageFormat == 'Json') {
         if (partitionKeyLength == 0) {
-          const dataOpt = await result
-            .computeOutput('pf', (pf, ctx) => {
-              const r = pf?.traverse(colName, JSON.stringify([]));
+          const dataOpt = await awaitStableState(
+            result.computeOutput('pf', (pf, ctx) => {
+              const r = pf?.traverse(colName + '.data', JSON.stringify([]));
               if (r === undefined) {
                 return r;
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx)
                 .handle;
-            })
-            .awaitStableValue();
+            }),
+            6000
+          );
 
           const data = JSON.parse(
             Buffer.from(
@@ -318,16 +320,17 @@ tplTest.for([
     );
 
     for (const colName of ['col1', 'col2']) {
-      const colOpt = await result
-        .computeOutput('pf', (pf) => {
+      const colOpt = await awaitStableState(
+        result.computeOutput('pf', (pf) => {
           const r = pf?.traverse(colName + '.data');
           return {
             type: r?.resourceType.name,
             data: r?.getDataAsJson(),
             fields: r?.listInputFields()
           };
-        })
-        .awaitStableValue();
+        }),
+        6000
+      );
 
       expect(colOpt).toBeDefined();
 
@@ -360,16 +363,17 @@ tplTest.for([
       if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
         expect(keys).toEqual(supKeys);
         for (const sk of supKeys) {
-          const colOpt = await result
-            .computeOutput('pf', (pf) => {
-              const r = pf?.traverse(colName, sk);
+          const colOpt = await awaitStableState(
+            result.computeOutput('pf', (pf) => {
+              const r = pf?.traverse(colName + '.data', sk);
               return {
                 type: r?.resourceType.name,
                 data: r?.getDataAsJson(),
                 fields: r?.listInputFields()
               };
-            })
-            .awaitStableValue();
+            }),
+            6000
+          );
 
           expect(colOpt).toBeDefined();
 

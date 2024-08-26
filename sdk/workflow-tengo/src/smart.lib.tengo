@@ -583,7 +583,7 @@ field = func(f) {
 		getValue: func() {
 			if self.isErrorSet() {
 				err := self.getError().getDataAsJson()
-				ll.panic("failed to get the value of field ", field, ", error is not empty: ", err)
+				ll.panic("failed to get the value of field %v, error is not empty: %v", field, err)
 			}
 
 			ll.assert(self.isSet(), "field value is not set; ", self.name())
