@@ -37,7 +37,7 @@ _unmarshal := func(resource, preprocessors) {
 		ll.panic("input resource has errors: ", resource, resource.getError())
 	}
 
-	if smart.isJsonResource(resource) {
+	if smart.isJsonResource(resource) || resource.checkResourceType(constants.RTYPE_BOBJECT_SPEC) {
 
 		// parse json data of the resource
 		return resource.getDataAsJson()
