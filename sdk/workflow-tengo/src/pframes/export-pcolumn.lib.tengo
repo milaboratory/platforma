@@ -1,6 +1,8 @@
 pConstants := import(":pframes.constants")
 smart := import(":smart")
 render := import(":render")
+file := import(":file")
+ll := import(":ll")
 
 // reference to the template doing nested super-partitioned export
 nestedTpl := ll.importTemplate(":pframes.export-single-pcolumn")

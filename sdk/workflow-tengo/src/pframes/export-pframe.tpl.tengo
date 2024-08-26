@@ -36,6 +36,8 @@ tpl.body(func(inputs) {
 		return c
 	}
 
+	rawFields := tpl.rawInputs().pf.getValue().inputs()
+
 	for fieldName, fieldValue in inputs.pf {
 		if text.has_suffix(fieldName, ".spec") {
 			if !is_map(fieldValue) {
@@ -43,10 +45,13 @@ tpl.body(func(inputs) {
 			}
 			col := getColumn(fieldName[:len(fieldName) - 5])
 			col.spec = fieldValue
-			col.specRaw = tpl.rawInputs()[fieldName]
+			if is_undefined(rawFields[fieldName]) {
+				ll.panic("UUUUUUU")
+			}
+			col.specRaw = rawFields[fieldName]
 		} else if text.has_suffix(fieldName, ".data") {
 			col := getColumn(fieldName[:len(fieldName) - 5])
-			col.data = tpl.rawInputs()[fieldName]
+			col.data = rawFields[fieldName]
 		} else {
 			ll.panic("Unexpected field name: %v", fieldName)
 		}
@@ -67,7 +72,9 @@ tpl.body(func(inputs) {
 				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
 				col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
 				col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
-			result.createInputField(colName + ".spec").set(col.specRaw)
+			if !is_undefined(col.spec) {
+				result.createInputField(colName + ".spec").set(col.specRaw)
+			}
 			eMulTplInput.createInputField(colName).set(col.data)
 			result.createInputField(colName + ".data").set(eMulTplRender.output(colName))
 		} else {

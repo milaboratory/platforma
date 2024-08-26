@@ -10,7 +10,7 @@ render := import(":render")
  * downloaded from the UI side.
  */
 exportFrame := func(pf) {
-    return render.createEphemeral(ll.importTemplate(":pframes.export-pframe"), { pf: pf }).output("pf")
+    return render.createEphemeral(ll.importTemplate(":pframes.export-pframe"), { pf: pf }).output("result")
 }
 
 export ll.toStrict({
