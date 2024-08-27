@@ -118,6 +118,18 @@ getOps := func(...ops) {
 	return o
 }
 
+getColumnSpec := func(axesSpec, col) {
+	return objects.deleteUndefined({
+			kind: constants.KIND_P_COLUMN,
+			valueType: col.type,
+			name: col.name,
+			axesSpec: axesSpec,
+			domain: col.domain,
+			annotations: col.annotations,
+			parentAxes: col.parentAxes
+		})
+}
+
 /**
  * Imports xsv data into p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
  * provided by the spec used as map keys). Resulting p-columns will be always single-partitioned at most.
@@ -153,11 +165,11 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		processWorkdir("pf", importDirTpl, pureSpec).
 		run()
 
-    pp := getOps(ops...)
+    ops := getOps(ops...)
 
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
-	if pp.dataOnly {
+	if ops.dataOnly {
 		return pf
 	}
 
@@ -168,15 +180,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		id := util.xsvColumnId(col)
 
 		result[id + ".data"] = pf.getFutureInputField(id)
-		result[id + ".spec"] = objects.deleteUndefined({
-			kind: constants.KIND_P_COLUMN,
-			valueType: col.type,
-			name: col.name,
-			axesSpec: axesSpec,
-			domain: col.domain,
-			annotations: col.annotations,
-			parentAxes: col.parentAxes
-		})
+		result[id + ".spec"] = getColumnSpec(axesSpec, col)
 	}
 	
 	return result
@@ -195,17 +199,27 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 
 	importXsvMapTpl := ll.importTemplate(":pframes.import-xsv-map")
 
+	// spec without any metadata (for caching purposes)
+	pureSpec := purifySpec(spec)
+
 	r := render.createEphemeral(importXsvMapTpl, {
 		xsvMap: xsvMap,
 		xsvType: xsvType,
-		spec: spec,
-		ops: getOps(ops...)
+		spec: pureSpec,
+		ops: { dataOnly: true }
 	})
+    ops := getOps(ops...)
 
 	result := {}
+	axesSpec := getAxesSpec(spec)
 	for c in spec.columns {
 		id := util.xsvColumnId(c)
-		result[id] = r.output(id)
+		if ops.dataOnly {
+			result[id] = r.output(id)
+		} else {
+			result[id + ".data"] = r.output(id)
+			result[id + ".spec"] = getColumnSpec(axesSpec, c)
+		}
 	}
 
 	return result
