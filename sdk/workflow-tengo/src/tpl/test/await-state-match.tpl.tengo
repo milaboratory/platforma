@@ -1,0 +1,22 @@
+// await-state-1
+
+self := import(":tpl")
+
+self.defineOutputs(["main"])
+
+self.awaitState("input1", { match: "^the_prefix\\." }, "ResourceReady")
+
+self.body(func(inputs) {
+	ready := 0
+	notReady := 0
+	for _, input in inputs["input1"].inputs() {
+		if input.getValue().isReady() {
+			ready += 1
+		} else {
+			notReady += 1
+		}
+	}
+	return {
+		main: string(ready) + ":" + string(notReady)
+	}
+})

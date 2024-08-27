@@ -1,0 +1,37 @@
+// read_pf_from_csv_wf.tpl
+
+wf := import(":workflow")
+
+exec := import(":exec")
+json := import("json")
+pfc := import(":pframes.constants")
+xsv := import(":pframes.xsv")
+smart := import(":smart")
+pframes := import(":pframes")
+
+wf.body(func(args) {
+	// map with csv as text
+	csvDataMap := args.csvMap
+	keyLength := args.keyLength
+	spec := args.spec
+
+	csvMap := smart.structBuilder(pfc.RTYPE_P_COLUMN_DATA_RESOURCE_MAP, json.encode({keyLength: keyLength}))
+	// populate with the same data file
+	for k, csv in csvDataMap {
+		e := exec.builder().
+			cmd("env").
+			writeFile("data.csv", csv).
+			saveFile("data.csv").
+			run()
+
+		csvFile := e.getFile("data.csv")
+
+		csvMap.createInputField(k).set(csvFile)
+	}
+	csvMap = csvMap.lockAndBuild()
+
+	return {
+		outputs: {},
+		exports: xsv.importFileMap(csvMap, "csv", spec, { splitDataAndSpec: true })
+	}
+})

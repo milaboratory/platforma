@@ -1,0 +1,238 @@
+/**
+ * Library providing xsv <> p-frames conversion utils.
+ */
+
+validation := import(":validation")
+constants := import(":pframes.constants")
+objects := import(":objects")
+render := import(":render")
+exec := import(":exec")
+json := import("json")
+util := import(":pframes.util")
+ll := import(":ll")
+assets := import(":assets")
+
+//
+// pfconv params validation
+//
+// link to the full schema:
+//
+//    https://github.com/milaboratory/pframes/blob/main/packages/conv/include/import_csv.h#L53
+//
+
+_SPEC_AXES_SCHEMA := {
+	`column`: `string`,
+	`spec`: {
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`name,omitempty`: `string`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [`number`]
+	}
+}
+
+_SPEC_COLUMN_SCHEMA := {
+	`column`: `string`,
+	`id,omitempty`: `string`,
+	`allowNA,omitempty`: `bool`,
+	`spec`: {
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`name,omitempty`: `string`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [ `number` ]
+	}
+}
+
+_SPEC_INDEX_SCHEMA := {
+	`name`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`parentAxes,omitempty`: [`number`]
+}
+
+_SPEC_SCHEMA := {
+	`storageFormat` : `string,regex=Binary|Json`,
+	`partitionKeyLength` : `number`,
+
+	`axes`: [_SPEC_AXES_SCHEMA],
+	`columns`: [_SPEC_COLUMN_SCHEMA],
+	`index,omitempty`: _SPEC_INDEX_SCHEMA,
+
+	`naStr,omitempty`: `string`,
+	`nullStr,omitempty`: `string`,
+	`separator,omitempty`: `string`,
+	`emptyStrAsNA,omitempty`: `bool`,
+	`columnNamePrefix,omitempty`: `string`,
+	`allowColumnLabelDuplicates,omitempty`: `bool`
+}
+
+/**
+ * Removes all annotations & domain information from spec, to pass it to pfconv
+ */
+purifySpec := func(spec) {
+	newSpec := copy(spec)
+
+	newAxes := []
+	for ax in spec.axes {
+		newAxes = append(newAxes, {
+			column: ax.column,
+			spec: { type: ax.spec.type }
+		})
+	}
+	newSpec.axes = newAxes
+
+	newCols := []
+	for col in spec.columns {
+		newCols = append(newCols, objects.deleteUndefined({
+			column: col.column,
+			id: col.id,
+			allowNA: col.allowNA,
+			spec: { type: col.spec.type }
+		}))
+	}
+	newSpec.columns = newCols
+
+	validation.assertJsonSchema(newSpec, _SPEC_SCHEMA)
+
+	return newSpec
+}
+
+/**
+ * Calculate axes spec from pfconv spec
+ */
+getAxesSpec := func(spec) {
+	axes := []
+	for ax in spec.axes {
+		axes = append(axes, ax.spec)
+	}
+	return axes
+}
+
+getOps := func(...ops) {
+	o := { dataOnly: false, splitDataAndSpec: false }
+	if len(ops) > 0 {
+		for k, v in ops[0] {
+			o[k] = v
+		}
+	}
+	return o
+}
+
+getColumnSpec := func(axesSpec, col) {
+	spec := {
+		kind: constants.KIND_P_COLUMN,
+		axes: axesSpec
+	}
+
+	for k, v in col.spec {
+		spec[k] = v
+	}
+
+	return objects.deleteUndefined(spec)
+}
+
+/**
+ * Imports xsv data into p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
+ * provided by the spec used as map keys). Resulting p-columns will be always single-partitioned at most.
+ *
+ * @param xsvFile: reference - a reference to a file
+ * @param xsvType: string - either csv or tsv
+ * @param spec: object - xsv conversion specification
+ * @param ops: dict - additional params (internal)
+ * @return map: reference - a reference to a map resource storing imported data.
+ */
+importFile := func(xsvFile, xsvType, spec, ...ops) {
+	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
+
+	validation.assertJsonSchema(spec, _SPEC_SCHEMA)
+
+	xsvFileName := "file." + xsvType
+
+	// import p-frame from directory tpl
+	importDirTpl := assets.importTemplate(":pframes.import-dir")
+
+	// spec without any metadata (for caching purposes)
+	pureSpec := purifySpec(spec)
+
+	// convert csv to p-frame and read resulting data
+	pfconv := exec.builder().
+		cmd("pfconv"). // @TODO change to software once possible
+		arg("importCsv").
+		arg(xsvFileName).
+		arg("-p").arg("spec.json").
+		arg("-o").arg("out").
+		addFile(xsvFileName, xsvFile).
+		writeFile("spec.json", json.encode(pureSpec)).
+		processWorkdir("pf", importDirTpl, pureSpec).
+		run()
+
+    ops := getOps(ops...)
+
+	// p-columns data
+	pf := pfconv.getProcessorResult("pf")
+	if ops.dataOnly {
+		return pf
+	}
+
+	axesSpec := getAxesSpec(spec)
+
+	result := {}
+	for col in spec.columns {
+		id := util.xsvColumnId(col)
+
+		result[id + ".data"] = pf.getFutureInputField(id)
+		result[id + ".spec"] = getColumnSpec(axesSpec, col)
+	}
+
+	return result
+}
+
+/**
+ * Imports a map with xsv files into a p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
+ * provided by the spec used as map keys). Resulting p-columns may be double-partitioned.
+ *
+ * @param xsvFile: reference - a reference to a file
+ * @param xsvType: string - either csv or tsv
+ * @param spec: object - xsv conversion specification
+ * @return map: reference - a reference to a map resource storing imported data.
+ */
+importFileMap := func(xsvMap, xsvType, spec, ...ops) {
+
+	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
+
+	// spec without any metadata (for caching purposes)
+	pureSpec := purifySpec(spec)
+
+	r := render.createEphemeral(importXsvMapTpl, {
+		xsvMap: xsvMap,
+		xsvType: xsvType,
+		spec: pureSpec,
+		ops: { dataOnly: true }
+	})
+    ops := getOps(ops...)
+
+	result := {}
+	axesSpec := getAxesSpec(spec)
+	for c in spec.columns {
+		id := util.xsvColumnId(c)
+		if ops.dataOnly {
+			result[id] = r.output(id)
+		} else if ops.splitDataAndSpec {
+			result[id] = {
+				data: r.output(id),
+				spec: getColumnSpec(axesSpec, c)
+			}
+		} else {
+			result[id + ".data"] = r.output(id)
+			result[id + ".spec"] = getColumnSpec(axesSpec, c)
+		}
+	}
+
+	return result
+}
+
+export ll.toStrict({
+	importFile: importFile,
+	importFileMap: importFileMap
+})

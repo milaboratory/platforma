@@ -3,8 +3,9 @@
  */
 
 ll := import(":ll")
+assets := import(":assets")
 smart := import(":smart")
-tplutil := import(":tpl-util")
+tplutil := import(":tpl.util")
 constants := import(":constants")
 oop := import(":oop")
 validation := import(":validation")
@@ -16,12 +17,12 @@ _SUBSCRIPTION_FIELD := "subscription"
 /**
  * Creates a render template resource.
  *
- * @param tplId: template id (see ll.importTemplate())
+ * @param tpl: template resource (see assets.importTemplate())
  * @param isEph: whether template is ephemeral
  * @param inputs: a map of inputs to be passed to the template
  * @return renderer: a smart resource with additional output("name") method
  */
-createUniversal := func(tplId, isEph, inputs) {
+createUniversal := func(tpl, isEph, inputs) {
 
 	// build renderer resource
 	rbuilder := undefined
@@ -37,7 +38,7 @@ createUniversal := func(tplId, isEph, inputs) {
 	}
 
 	// template input
-	rbuilder.createInputField(tplutil.TEMPLATE_FIELD).set(smart.resource(tplId))
+	rbuilder.createInputField(tplutil.TEMPLATE_FIELD).set(tpl)
 
 	// inputs input
 	inputsMap := isEph ? smart.ephemeralMapBuilder() : smart.mapBuilder()
@@ -56,7 +57,7 @@ createUniversal := func(tplId, isEph, inputs) {
 		 * Returns an output field with a given name
 		 */
 		output: func(name, ...cache) {
-			validation.assertJsonSchema(cache, ["number"])
+			ll.assert(len(cache) == 0 || is_int(cache[0]), "cache should be a number (milliseconds)")
 			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 			if len(cache) > 0 && cache[0] > 0 {
 				cache = cache[0]
@@ -73,23 +74,23 @@ createUniversal := func(tplId, isEph, inputs) {
 /**
  * Creates a render template resource.
  *
- * @param tplId: template id (see ll.importTemplate())
+ * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
  * @return renderer: a smart resource with additional output("name") method
  */
-create := func(tplId, inputs) {
-	return createUniversal(tplId, false, inputs)
+create := func(tpl, inputs) {
+	return createUniversal(tpl, false, inputs)
 }
 
 /**
  * Creates ephemeral render template resource.
  *
- * @param tplId: template id (see ll.importTemplate())
+ * @param tpl: template resource (see assets.importTemplate())
  * @param inputs: a map of inputs to be passed to the template
  * @return renderer: a smart resource with additional output("name") method
  */
-createEphemeral := func(tplId, inputs) {
-	return createUniversal(tplId, true, inputs)
+createEphemeral := func(tpl, inputs) {
+	return createUniversal(tpl, true, inputs)
 }
 
 export ll.toStrict({

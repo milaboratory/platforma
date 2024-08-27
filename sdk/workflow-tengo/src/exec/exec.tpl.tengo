@@ -1,0 +1,136 @@
+// exec.tpl
+
+/**
+ * Creates and fill a workdir, runs a command on it
+ * and saves a chosen resulted files from this dir.
+ */
+
+self := import(":tpl")
+
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+workdir := import(":workdir")
+runcmd := import(":exec.runcmd")
+stream := import(":exec.stream")
+sets := import(":sets")
+
+self.defineOutputs(
+	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
+)
+
+self.body(func(inputs) {
+
+	//
+	// Create and fill the workdir with files that were passed from inputs.
+	//
+
+	wdBuilder := workdir.builder()
+	// add files
+	wdBuilder.addFiles(inputs.filesToAdd)
+	// create dirs
+	for dir in inputs.dirsToCreate {
+		wdBuilder.mkDir(dir)
+	}
+	// pass values as fields for saving the topology in pl-core
+	// and avoiding deduplication issues:
+	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
+	// working directory with input files added; before run
+	wdBefore := wdBuilder.build()
+
+
+	//
+	// Build runcmd resource
+	//
+
+	runBuilder := runcmd.builder(wdBefore)
+	// options
+	ops := inputs.runOptions
+	// exec command
+	if ops.cmd.isExec {
+		runBuilder.cmdExecutable(ops.cmd.cmd, ops.cmd.pathToBinary)
+	} else {
+		runBuilder.cmd(ops.cmd.value)
+	}
+	// cmd args
+	for name, arg in ops.args {
+		if arg.isExec {
+			runBuilder.argExecutable(arg.arg, arg.pathToBinary)
+		} else {
+			runBuilder.arg(arg.value)
+		}
+	}
+	// env vars
+	for name, value in ops.envs {
+		runBuilder.env(name, value)
+	}
+	// other options
+	runBuilder.inQueue(ops.queue)
+	runBuilder.stdout(ops.stdout)
+	runBuilder.stderr(ops.stderr)
+	runBuilder.nErrorLines(ops.nErrorLines)
+	run := runBuilder.build()
+	// get the workdir containing all the files, including produced by the run command
+	wdAfter := run.workdir
+
+	//
+	// Run workdir processors
+	//
+
+	wdProcessorsResults := {}
+	for name, p in inputs.wdProcessors {
+		tpl := p.tpl
+		tplInputs := {
+			workdir: wdAfter,
+			args: p.tplArgs
+		}
+
+		// render template & get results
+		r := render.createEphemeral(tpl, tplInputs)
+
+		wdProcessorsResults[name] = r.output("result")
+		wdAfter = r.output("workdir")
+	}
+
+	//
+	// Save data from the workdir
+	//
+
+	// saver resource
+	wdSaver := workdir.save(wdAfter)
+	// save files
+	for fName in inputs.filesToSave {
+		wdSaver.saveFile(fName)
+	}
+	// save files content
+	for fName in inputs.filesContentToSave {
+		wdSaver.saveFileContent(fName)
+	}
+	// save file sets
+	for name, regex in inputs.fileSetsToSave {
+		wdSaver.saveFileSet(name, regex)
+	}
+	// save file sets content
+	for name, regex in inputs.fileSetsContentToSave {
+		wdSaver.saveFileSetContent(name, regex)
+	}
+
+	// resulting wd
+	wdResult := wdSaver.build()
+
+	// create streams for all requested file streams.
+	streams := smart.mapBuilder()
+	for fName in inputs.filesToStream {
+		streams.add(fName, stream.create(wdBefore, wdResult, fName))
+	}
+
+	return {
+		files: wdResult.files,
+		filesContent: wdResult.filesContent,
+		fileSets : wdResult.fileSets,
+		fileSetsContent : wdResult.fileSetsContent,
+		fileStreams: streams.build(),
+		wdProcessors: wdProcessorsResults,
+		progress: wdResult.progress
+	}
+})

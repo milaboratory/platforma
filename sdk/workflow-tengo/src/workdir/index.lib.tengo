@@ -1,0 +1,299 @@
+/**
+ * Gives an interface for working with workdirs.
+ */
+
+json := import("json")
+
+ll := import(":ll")
+assets := import(":assets")
+constants := import(":constants")
+smart := import(":smart")
+oop := import(":oop")
+sets := import(":sets")
+slices := import(":slices")
+path := import(":path")
+enum := import("enum")
+validation := import(":validation")
+render := import(":render")
+
+_create := func() {
+	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
+	return wd.getField("workdir")
+}
+
+_getFileFillRule := func(filePath, extension) {
+	return {
+		path: filePath,
+		type: "file",
+		permissions: 0o600,
+		pathKey: filePath,
+		blobKey: filePath,
+		copyOptional: true,
+		fileExtension: extension
+	}
+}
+
+/**
+ * Generates a value fill rule for a given file path.
+ *
+ * @param filePath: string - the path of the file.
+ * @return rule: map - the value fill rule.
+ */
+_getValueFillRule := func(filePath) {
+	return {
+		path: filePath,
+		type: "value",
+		permissions: 0o600,
+		pathKey: filePath,
+		valueKey: filePath
+	}
+}
+
+/**
+ * Generates a directory fill rule for a given directory.
+ *
+ * @param dir: string - the path of the directory.
+ * @return rule: map - the directory fill rule.
+ */
+_getDirFillRule := func(dir) {
+	return {
+		path: dir,
+		type: "dir",
+		permissions: 0o700,
+		pathKey: ""
+	}
+}
+
+/**
+ * Fills a workdir with files, values, and directories.
+ *
+ * @param workdir: reference - a reference to the workdir to fill.
+ * @return self: builder - a builder that adds files and directories to the workdir. */
+_fill := func(workdir) {
+	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
+
+	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
+	wd.getField("workdirIn").set(workdir)
+
+	files := {}
+	values := {}
+	dirs := {}
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(wd, {
+		_getAllDirs: func(fileName) {
+			dirsWithFileName := path.getBasenameDirs(fileName)
+			return slices.slice(dirsWithFileName, 0, -1)
+		},
+
+		_addDirs: func(fileName) {
+			newDirs := self._getAllDirs(fileName)
+			sets.add(dirs, newDirs...)
+		},
+
+		/**
+		 * Adds a file to the workdir.
+		 *
+		 * @param fileName: string - the name of the file.
+		 * @param fileResource: reference - the file to add.
+		 */
+		addFile: func(fileName, fileResource) {
+			validation.assertJsonSchema(fileName, "string")
+			validation.assertJsonSchema(fileResource, validation.reference)
+
+			files[fileName] = fileResource
+			self._addDirs(fileName)
+
+			return self
+		},
+
+		/**
+		 * Adds multiple files to the workdir.
+		 *
+		 * @param fileMap: map[string]reference - a map of files.
+		 */
+		addFiles: func(fileMap) {
+			enum.each(fileMap, self.addFile)
+			return self
+		},
+
+		/**
+		 * Adds a file with a content to the workdir.
+		 *
+		 * @param fileName: string - the name of the file.
+		 * @param contentRef: reference|any - the content as a reference to add or the content itself.
+		 */
+		writeFile: func(fileName, contentRef) {
+			validation.assertJsonSchema(fileName, "string")
+			values[fileName] = contentRef
+			self._addDirs(fileName)
+
+			return self
+		},
+
+		/**
+		 * Adds multiple files with contents to the workdir.
+		 *
+		 * @param contentMap: map[string]any|reference - a map of references to a content or to a content itself.
+		 */
+		writeFiles: func(contentRefMap) {
+			enum.each(contentRefMap, self.writeFile)
+			return self
+		},
+
+		/**
+		 * Creates a possibly nested directory in the workdir.
+		 *
+		 * @param dir: string - the path of the directory.
+		 */
+		mkDir: func(dir) {
+			sets.add(dirs, path.getBasenameDirs(dir))
+			return self
+		},
+
+		/**
+		 * Builds the filled workdir.
+		 *
+		 * @return wd: reference - a reference to the filled workdir.
+		 */
+		build: func() {
+			rules := []
+			for dir, _ in dirs {
+				rules = append(rules, _getDirFillRule(dir))
+			}
+			for fileName, _ in files {
+				rules = append(rules, _getFileFillRule(fileName, path.getExtension(fileName)))
+			}
+			for fileName, _ in values {
+				rules = append(rules, _getValueFillRule(fileName))
+			}
+
+			rulesRes := smart.createValueResource(
+				constants.RTYPE_WORKDIR_FILL_RULES,
+				json.encode(rules)
+			)
+			self.getField("rules").set(rulesRes)
+
+			self.getField("dataIn").set(smart.createBinaryMapResource(values))
+			self.getField("blobsIn").set(smart.createBlobMapResource(files))
+
+			return self.lockAndBuild().outputs().workdirOut
+		}
+	}))
+
+	return self
+}
+
+/**
+ * Creates and fills a workdir with files, contents, and directories. See _fill for futher documentation.
+ *
+ * @return self: builder - a builder that adds files and directories to the workdir.
+ */
+builder := func() {
+	return _fill(_create())
+}
+
+/**
+ * Saves a workdir.
+ *
+ * @param workdir: reference - a reference to the workdir to save.
+ * @return self: builder - the builder that helps adding save rules to the save workdir.
+ */
+save := func(workdir) {
+	ll.assert(smart.isReference(workdir), "workdir must be a reference to a resource or field")
+
+	// files to save
+	files := {}
+	// files to save their content
+	filesContent := {}
+	// file sets to save by regex
+	fileSets := {}
+	// file sets to save their content by regex
+	fileSetsContent := {}
+
+	self := undefined
+	self = ll.toStrict({
+		/**
+		 * Saves a file from the workdir.
+		 *
+		 * @param fileName: string - the name of the file.
+		 */
+		saveFile: func(fileName) {
+			validation.assertJsonSchema(fileName, "string")
+			sets.add(files, fileName)
+			return self
+		},
+
+		/**
+		 * Saves a file to a value resource from the workdir.
+		 *
+		 * @param fileName: string - the name of the file.
+		 */
+		saveFileContent: func(fileName) {
+			validation.assertJsonSchema(fileName, "string")
+			sets.add(filesContent, fileName)
+			return self
+		},
+
+		/**
+		 * Save files which names satisfy given regex rule
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex
+		 */
+		saveFileSet: func(name, regex) {
+			validation.assertJsonSchema(regex, "string")
+			ll.assert(is_undefined(fileSets[name]), "file set with name '", name, "' is already in added")
+			fileSets[name] = regex
+			return self
+		},
+
+		/**
+		 * Save files content which names satisfy given regex rule
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex
+		 */
+		saveFileSetContent: func(name, regex) {
+			validation.assertJsonSchema(regex, "string")
+			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
+			sets.add(fileSetsContent, regex)
+			return self
+		},
+
+		/**
+		 * Builds the saved workdir.
+		 *
+		 * @return wd: reference - the saved workdir with additional fields.
+		 */
+		build: func() {
+
+			tpl := assets.importTemplate(":workdir.save")
+			inputs := {
+				workdir: workdir,
+				files: files,
+				filesContent: filesContent,
+				fileSets: fileSets,
+				fileSetsContent: fileSetsContent
+			}
+
+			wds := render.createEphemeral(tpl, inputs)
+
+			return ll.toStrict({
+				files: wds.output("files"),
+				filesContent: wds.output("filesContent"),
+				fileSets : wds.output("fileSets"),
+				fileSetsContent : wds.output("fileSetsContent"),
+				workdir: wds.output("workdir"),
+				progress: wds.output("progress")
+			})
+		}
+	})
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder,
+	save: save
+})

@@ -15,11 +15,11 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 
-    // parameters of aggragation
+	// parameters of aggregation
 	//   indices: int[]
 	//   eph: bool
-	//   outputs: string[]
-    params := inputs.params
+	//   outputs: (string)[]
+	params := inputs.params
 
 	if is_undefined(params) {
 		ll.panic("Params is not defined")
@@ -37,11 +37,11 @@ self.body(func(inputs) {
 		ll.panic("Absent, empty or malformed outputs list: %v", params)
 	}
 
-    // map of resources to aggregate over
-    data := inputs.data
+	// map of resources to aggregate over
+	data := inputs.data
 
 	// template implementing aggregation body
-    body := inputs.body
+	body := inputs.body
 
 	if is_undefined(data) {
 		ll.panic("Data is not defined")
@@ -72,6 +72,8 @@ self.body(func(inputs) {
 		for j:=len(indices)-1; j>=0; j-- {
 			splice(groupIndices, indices[j], 1)
 		}
+		groupKeyLength := len(groupIndices)
+		groupElementKeyLength := len(indices)
 
 		// group key -> group resource
 		groups := {}
@@ -96,7 +98,7 @@ self.body(func(inputs) {
 			if is_undefined(group) {
 				group = smart.structBuilder(
 					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-					json.encode({ keyLength: len(indices) })
+					json.encode({ keyLength: groupElementKeyLength })
 				)
 				groups[sGroupKey] = group
 			}
@@ -106,10 +108,41 @@ self.body(func(inputs) {
 		outputMaps := {}
 
 		for output in outputs {
-			outputMaps[output] = smart.structBuilder(
-				constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
-				json.encode({ keyLength: len(groupIndices) })
-			)
+			if !is_map(output) {
+				ll.panic("malformed output: %v", output)
+			}
+			if output.type == "Resource" {
+				outputMaps[output.name] = smart.structBuilder(
+					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+					json.encode({ keyLength: groupKeyLength })
+				)
+			} else if output.type == "ResourceMap" {
+				outputMaps[output.name] = smart.structBuilder(
+					constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
+					json.encode({
+						partitionKeyLength: groupKeyLength,
+						keyLength: output.keyLength
+					})
+				)
+			} else if output.type == "JsonPartitioned" {
+				outputMaps[output.name] = smart.structBuilder(
+					constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
+					json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: output.partitionKeyLength
+					})
+				)
+			} else if output.type == "BinaryPartitioned" {
+				outputMaps[output.name] = smart.structBuilder(
+					constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED,
+					json.encode({
+						superPartitionKeyLength: groupKeyLength,
+						partitionKeyLength: output.partitionKeyLength
+					})
+				)
+			} else {
+				ll.panic("unknonw output type: %v", output.type)
+			}
 		}
 
 		for sGroupKey, group in groups {
@@ -122,12 +155,12 @@ self.body(func(inputs) {
 			}
 			renderResult := render.createUniversal(body, eph, renderInputs)
 			for output in outputs {
-				outputMaps[output].createInputField(sGroupKey).set(renderResult.output(output))
+				outputMaps[output.name].createInputField(sGroupKey).set(renderResult.output(output.name))
 			}
 		}
 
 		for output in outputs {
-			outputMaps[output] = outputMaps[output].lockAndBuild()
+			outputMaps[output.name] = outputMaps[output.name].lockAndBuild()
 		}
 
 		return outputMaps
