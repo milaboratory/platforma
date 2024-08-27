@@ -1,5 +1,6 @@
 import { field, Pl } from '@milaboratory/pl-middle-layer';
 import { awaitStableState, tplTest } from '@milaboratory/sdk-test';
+import { Templates } from '../../..';
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -370,6 +371,174 @@ tplTest.for([
           const colOpt = await awaitStableState(
             result.computeOutput('pf', (pf) => {
               const r = pf?.traverse(colName + '.data', sk);
+              return {
+                type: r?.resourceType.name,
+                data: r?.getDataAsJson(),
+                fields: r?.listInputFields()
+              };
+            }),
+            6000
+          );
+
+          expect(colOpt).toBeDefined();
+
+          const col = colOpt!;
+
+          expect(col.type).toEqual(
+            'PColumnData/' + spec.storageFormat + 'Partitioned'
+          );
+
+          expect(col.data).toEqual({
+            partitionKeyLength: spec.partitionKeyLength
+          });
+
+          const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
+
+          expect(keys).toEqual(expectedPKeys);
+
+          if (storageFormat == 'Json') {
+            // @TODO test data
+          }
+        }
+      } else if (superPartitionKeyLength == 0) {
+        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
+
+        expect(keys).toEqual(expectedPKeys);
+      } else if (partitionKeyLength == 0) {
+        const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
+
+        expect(keys).toEqual(supKeys);
+      }
+    }
+  }
+);
+
+tplTest.for([
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
+])(
+  '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  { timeout: 10000 },
+  async (
+    { superPartitionKeyLength, partitionKeyLength, storageFormat },
+    { helper, expect }
+  ) => {
+    const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
+    var spec = baseSpec;
+    spec.partitionKeyLength = partitionKeyLength;
+    spec.storageFormat = storageFormat;
+    // inner keys
+    const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
+
+    const csvMap = Object.fromEntries(
+      supKeys.map((supKey) => [supKey, csvData])
+    );
+
+    const result = await helper.renderWorkflow(
+      Templates['pframes.test.xsv.import-csv-map-wf'],
+      false,
+      {
+        csvMap: csvMap,
+        keyLength: superPartitionKeyLength,
+        spec
+      },
+      { exportProcessor: Templates['pframes.export-pframe'] }
+    );
+
+    for (const colName of ['col1', 'col2']) {
+      const colOpt = await awaitStableState(
+        result.export(`${colName}.data`, (r) => {
+          return {
+            type: r?.resourceType.name,
+            data: r?.getDataAsJson(),
+            fields: r?.listInputFields()
+          };
+        }),
+        6000
+      );
+
+      expect(colOpt).toBeDefined();
+
+      const col = colOpt!;
+
+      var expectedResourceType: string;
+      var expectedData: object;
+      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
+        expectedResourceType =
+          'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
+        expectedData = {
+          superPartitionKeyLength: superPartitionKeyLength,
+          partitionKeyLength: partitionKeyLength
+        };
+      } else {
+        expectedResourceType =
+          'PColumnData/' + spec.storageFormat + 'Partitioned';
+        expectedData = {
+          partitionKeyLength: Math.max(
+            superPartitionKeyLength,
+            partitionKeyLength
+          )
+        };
+      }
+
+      expect(col.type).toEqual(expectedResourceType);
+      expect(col.data).toEqual(expectedData);
+
+      const keys = [...new Set(col?.fields?.map(partitionKeyJson))].sort();
+      if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
+        expect(keys).toEqual(supKeys);
+        for (const sk of supKeys) {
+          const colOpt = await awaitStableState(
+            result.export(`${colName}.data`, (pc) => {
+              const r = pc?.traverse(sk);
               return {
                 type: r?.resourceType.name,
                 data: r?.getDataAsJson(),

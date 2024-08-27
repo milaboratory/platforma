@@ -3,9 +3,10 @@ smart := import(":smart")
 render := import(":render")
 file := import(":file")
 ll := import(":ll")
+assets := import(":assets")
 
 // reference to the template doing nested super-partitioned export
-nestedTpl := ll.importTemplate(":pframes.export-single-pcolumn")
+nestedTpl := assets.importTemplate(":pframes.export-single-pcolumn")
 
 /** Implements core export logic for export-single-pcolumn and export-multiple-pcolumns templates */
 exportPColumnData := func(data) {

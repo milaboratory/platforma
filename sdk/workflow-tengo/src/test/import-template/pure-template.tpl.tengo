@@ -1,10 +1,11 @@
-ll := import("@milaboratory/tengo-sdk:ll")
+ll := import(":ll")
+assets := import(":assets")
 self := import(":tpl")
 smart := import(":smart")
 render := import(":render")
 fmt := import("fmt")
 
-concat_ab := ll.importTemplate(":test.import-template.concat_ab")
+concat_ab := assets.importTemplate(":test.import-template.concat_ab")
 
 self.defineOutputs(["main"])
 

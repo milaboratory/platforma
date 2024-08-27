@@ -3,11 +3,12 @@
  */
 
 ll := import(":ll")
+assets := import(":assets")
 smart := import(":smart")
 render := import(":render")
 pConstants := import(":pframes.constants")
 
-llAggTpl := ll.importTemplate(":pframes.aggregate")
+llAggTpl := assets.importTemplate(":pframes.aggregate")
 
 /**
  * Instantiate an aggregation pipeline for the given inputs, and returns rendered ephemeral template.

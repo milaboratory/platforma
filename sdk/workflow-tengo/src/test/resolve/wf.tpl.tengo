@@ -1,6 +1,7 @@
 // wf with resolve
 
-ll := import("@milaboratory/tengo-sdk:ll")
+ll := import(":ll")
+assets := import(":assets")
 smart := import(":smart")
 render := import(":render")
 fmt := import("fmt")
@@ -9,7 +10,7 @@ self := import(":workflow")
 
 self.prepare(func(args) {
 
-	concat_ab := ll.importTemplate(":test.resolve.concat_ab")
+	concat_ab := assets.importTemplate(":test.resolve.concat_ab")
 	run := render.create(concat_ab, {
 		a: args.a,
 		b: args.b

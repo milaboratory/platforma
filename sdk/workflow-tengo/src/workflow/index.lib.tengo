@@ -4,6 +4,7 @@
 
 tx := import("tx")
 ll := import(":ll")
+assets := import(":assets")
 text := import("text")
 json := import("json")
 
@@ -165,7 +166,7 @@ _buildOutputs := func(results) {
 
 	// create ctx and save exports
 	ctxBuilder := render.createEphemeral(
-		ll.importTemplate(":workflow.build-ctx"),
+		assets.importTemplate(":workflow.build-ctx"),
 		{
 			blockId: blockId(),
 			parentContext: _parentContext(),

@@ -1,6 +1,7 @@
 /** Runs a simple echo and returns stdout */
 
 self := import(":tpl")
+assets := import(":assets")
 smart := import(":smart")
 exec := import(":exec")
 ll := import(":ll")
@@ -13,7 +14,7 @@ self.body(func(inputs) {
 		arg("bash").
 		arg("-c").
 		arg("echo 'text1' > file1.txt && echo 'text2' > file2.txt").
-		processWorkdir("p", ll.importTemplate(":exec.test.wd_processor_1"), {}).
+		processWorkdir("p", assets.importTemplate(":exec.test.wd_processor_1"), {}).
 		run()
 
 	return {
