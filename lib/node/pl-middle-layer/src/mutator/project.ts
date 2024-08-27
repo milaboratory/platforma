@@ -2,6 +2,7 @@ import {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  ensureResourceIdNotNull,
   field,
   isNotNullResourceId,
   isNullResourceId,
@@ -10,7 +11,8 @@ import {
   Pl,
   PlClient,
   PlTransaction,
-  ResourceId
+  ResourceId,
+  ResourceRef
 } from '@milaboratory/pl-client-v2';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
 import {
@@ -34,7 +36,8 @@ import {
   blockArgsAuthorKey,
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
-  ProjectStructureAuthorKey
+  ProjectStructureAuthorKey,
+  getServiceTemplateField
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import {
@@ -48,6 +51,8 @@ import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import Denque from 'denque';
+import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
+import { loadTemplate } from './template/template_loading';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -220,7 +225,8 @@ export class ProjectMutator {
     private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
     private readonly blocksInLimbo: Set<string>,
     private readonly blockInfos: Map<string, BlockInfo>,
-    private readonly blockFrontendStates: Map<string, string>
+    private readonly blockFrontendStates: Map<string, string>,
+    private readonly ctxExportTplHolder: AnyResourceRef
   ) {}
 
   private fixProblems() {
@@ -355,21 +361,31 @@ export class ProjectMutator {
 
   private resetStaging(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
-    if (fields.stagingOutput?.status === 'Ready' && fields.stagingCtx?.status === 'Ready') {
+    if (
+      fields.stagingOutput?.status === 'Ready' &&
+      fields.stagingCtx?.status === 'Ready' &&
+      fields.stagingUiCtx?.status === 'Ready'
+    ) {
       this.setBlockFieldObj(blockId, 'stagingOutputPrevious', fields.stagingOutput);
       this.setBlockFieldObj(blockId, 'stagingCtxPrevious', fields.stagingCtx);
+      this.setBlockFieldObj(blockId, 'stagingUiCtxPrevious', fields.stagingUiCtx);
     }
-    if (this.deleteBlockFields(blockId, 'stagingOutput', 'stagingCtx'))
+    if (this.deleteBlockFields(blockId, 'stagingOutput', 'stagingCtx', 'stagingUiCtx'))
       this.resetStagingRefreshTimestamp();
   }
 
   private resetProduction(blockId: string): void {
     const fields = this.getBlockInfo(blockId).fields;
-    if (fields.prodOutput?.status === 'Ready' && fields.prodCtx?.status === 'Ready') {
+    if (
+      fields.prodOutput?.status === 'Ready' &&
+      fields.prodCtx?.status === 'Ready' &&
+      fields.prodUiCtx?.status === 'Ready'
+    ) {
       this.setBlockFieldObj(blockId, 'prodOutputPrevious', fields.prodOutput);
       this.setBlockFieldObj(blockId, 'prodCtxPrevious', fields.prodCtx);
+      this.setBlockFieldObj(blockId, 'prodUiCtxPrevious', fields.prodUiCtx);
     }
-    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs');
+    this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
   }
 
   /** Running blocks are reset, already computed moved to limbo. Returns if
@@ -386,12 +402,12 @@ export class ProjectMutator {
       this.renderingStateChanged = true;
 
       // doing some gc
-      this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious');
+      this.deleteBlockFields(blockId, 'prodOutputPrevious', 'prodCtxPrevious', 'prodUiCtxPrevious');
 
       return true;
     }
     // reset
-    else return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs');
+    else return this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs');
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -452,6 +468,10 @@ export class ProjectMutator {
     return createBContextFromUpstreams(this.tx, upstreamContexts);
   }
 
+  private exportCtx(ctx: AnyRef): AnyRef {
+    return exportContext(this.tx, Pl.unwrapHolder(this.tx, this.ctxExportTplHolder), ctx);
+  }
+
   private renderStagingFor(blockId: string) {
     this.resetStaging(blockId);
 
@@ -469,12 +489,16 @@ export class ProjectMutator {
       isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
       context: ctx
     });
+
     this.setBlockField(
       blockId,
       'stagingCtx',
       Pl.wrapInEphHolder(this.tx, results.context),
       'NotReady'
     );
+
+    this.setBlockField(blockId, 'stagingUiCtx', this.exportCtx(results.context), 'NotReady');
+
     this.setBlockField(blockId, 'stagingOutput', results.result, 'NotReady');
   }
 
@@ -505,6 +529,7 @@ export class ProjectMutator {
       Pl.wrapInEphHolder(this.tx, results.context),
       'NotReady'
     );
+    this.setBlockField(blockId, 'prodUiCtx', this.exportCtx(results.context), 'NotReady');
     this.setBlockField(blockId, 'prodOutput', results.result, 'NotReady');
 
     // saving inputs for which we rendered the production
@@ -738,7 +763,7 @@ export class ProjectMutator {
         // skipping finished blocks
         continue;
 
-      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodArgs')) {
+      if (this.deleteBlockFields(blockId, 'prodOutput', 'prodCtx', 'prodUiCtx', 'prodArgs')) {
         // was actually stopped
         stopped.push(blockId);
 
@@ -815,12 +840,22 @@ export class ProjectMutator {
         blockInfo.fields.prodCtx?.status === 'Ready' &&
         blockInfo.fields.prodOutput?.status === 'Ready'
       )
-        this.deleteBlockFields(blockInfo.id, 'prodOutputPrevious', 'prodCtxPrevious');
+        this.deleteBlockFields(
+          blockInfo.id,
+          'prodOutputPrevious',
+          'prodCtxPrevious',
+          'prodUiCtxPrevious'
+        );
       if (
         blockInfo.fields.stagingCtx?.status === 'Ready' &&
         blockInfo.fields.stagingOutput?.status === 'Ready'
       )
-        this.deleteBlockFields(blockInfo.id, 'stagingOutputPrevious', 'stagingCtxPrevious');
+        this.deleteBlockFields(
+          blockInfo.id,
+          'stagingOutputPrevious',
+          'stagingCtxPrevious',
+          'stagingUiCtxPrevious'
+        );
     });
   }
 
@@ -926,6 +961,26 @@ export class ProjectMutator {
         : { modCount: 0, ref: f.value };
     }
 
+    // loading ctx export template to check if we already have cached materialized template in our project
+    const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
+
+    // expected field name
+    const ctxExportTplCacheFieldName = getServiceTemplateField(ctxExportTplEnvelope.hash);
+    const ctxExportTplField = fullResourceState.fields.find(
+      (f) => f.name === ctxExportTplCacheFieldName
+    );
+    let ctxExportTplHolder: AnyResourceRef;
+    if (ctxExportTplField !== undefined)
+      ctxExportTplHolder = ensureResourceIdNotNull(ctxExportTplField.value);
+    else {
+      ctxExportTplHolder = Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec));
+      tx.createField(
+        field(rid, getServiceTemplateField(ctxExportTplEnvelope.hash)),
+        'Dynamic',
+        ctxExportTplHolder
+      );
+    }
+
     const renderingState = { stagingRefreshTimestamp };
     const blocksInLimboSet = new Set(blocksInLimbo);
 
@@ -982,7 +1037,8 @@ export class ProjectMutator {
       renderingState,
       blocksInLimboSet,
       blockInfos,
-      blockFrontendStates
+      blockFrontendStates,
+      ctxExportTplHolder
     );
 
     prj.fixProblems();
@@ -999,10 +1055,10 @@ export interface ProjectState {
   blockInfos: Map<string, BlockInfo>;
 }
 
-export function createProject(
+export async function createProject(
   tx: PlTransaction,
   meta: ProjectMeta = InitialBlockMeta
-): AnyResourceRef {
+): Promise<AnyResourceRef> {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
   const ts = String(Date.now());
@@ -1012,6 +1068,12 @@ export function createProject(
   tx.setKValue(prj, ProjectMetaKey, JSON.stringify(meta));
   tx.setKValue(prj, ProjectStructureKey, JSON.stringify(InitialBlockStructure));
   tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
+  const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
+  tx.createField(
+    field(prj, getServiceTemplateField(ctxExportTplEnvelope.hash)),
+    'Dynamic',
+    Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec))
+  );
   return prj;
 }
 

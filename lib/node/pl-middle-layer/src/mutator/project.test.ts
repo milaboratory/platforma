@@ -16,7 +16,7 @@ import {
 test('simple test #1', async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx('CreatingProject', async (tx) => {
-      const prjRef = createProject(tx);
+      const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, 'prj'), 'Dynamic', prjRef);
       await tx.commit();
       return await toGlobalResourceId(prjRef);
@@ -179,7 +179,7 @@ test('simple test #1', async () => {
 test('simple test #2 with bp migration', async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const prj = await pl.withWriteTx('CreatingProject', async (tx) => {
-      const prjRef = createProject(tx);
+      const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, 'prj'), 'Dynamic', prjRef);
       await tx.commit();
       return await toGlobalResourceId(prjRef);
