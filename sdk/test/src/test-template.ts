@@ -57,7 +57,9 @@ export class TestRenderResults<O extends string> {
 export class TestWorkflowResults {
   constructor(
     public readonly renderResult: TestRenderResults<'context' | 'result'>,
-    public readonly processedExportsResult: TestRenderResults<'result'> | undefined,
+    public readonly processedExportsResult:
+      | TestRenderResults<'result'>
+      | undefined,
     public readonly blockId: string
   ) {}
 
@@ -182,24 +184,20 @@ export class TplTestHelpers {
         };
       });
 
-    const exports: TestRenderResults<'exports'> | undefined = undefined;
-    if(ops.exportProcessor !== undefined){
-      const exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => {
-        let ctx = undefined;
-        if (ops.parent) {
-          ctx = ops.parent;
-        } else {
-          ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' });
-          tx.lock(ctx);
-        }
-
-        return {
-          args: this.createObject(tx, args),
-          blockId: this.createObject(tx, blockId),
-          isProduction: this.createObject(tx, !preRun),
-          context: ctx
-        };
-      });
+    const exports: TestRenderResults<'result'> | undefined = undefined;
+    if (ops.exportProcessor !== undefined) {
+      const exports = await this.renderTemplate(
+        true,
+        ops.exportProcessor,
+        ['result'],
+        (tx) => ({
+          pf: tx.getFutureFieldValue(
+            mainResult.resultEntry.rid,
+            'context',
+            'Input'
+          )
+        })
+      );
     }
 
     return new TestWorkflowResults(mainResult, exports, blockId);
