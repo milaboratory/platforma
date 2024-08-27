@@ -24,7 +24,7 @@ tplTest('should return export', async ({ helper, expect }) => {
     'workflow.test.exports.wf2',
     false,
     {},
-    ctx
+    {parent: ctx}
   );
 
   const query = await wf2

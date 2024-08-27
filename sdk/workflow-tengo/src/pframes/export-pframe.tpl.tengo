@@ -38,20 +38,30 @@ tpl.body(func(inputs) {
 
 	rawFields := tpl.rawInputs().pf.getValue().inputs()
 
-	for fieldName, fieldValue in inputs.pf {
+	// if context is passed as an input we differently treat the field names (see below)
+	isContext := inputs.pf.checkResourceType(constants.RTYPE_CONTEXT)
+
+	for rawFieldName, fieldValue in inputs.pf {
+		fieldName := rawFieldName
+		if isContext {
+			if text.has_prefix(fieldName, "values/") {
+				fieldName = fieldName[7:]
+			} else {
+				// there are other fields in context resource, we are only interesetd in "values/..."
+				continue
+			}
+		}
+
 		if text.has_suffix(fieldName, ".spec") {
 			if !is_map(fieldValue) {
 				ll.panic("Unexpected spec value: %v", fieldValue)
 			}
 			col := getColumn(fieldName[:len(fieldName) - 5])
 			col.spec = fieldValue
-			if is_undefined(rawFields[fieldName]) {
-				ll.panic("UUUUUUU")
-			}
-			col.specRaw = rawFields[fieldName]
+			col.specRaw = rawFields[rawFieldName]
 		} else if text.has_suffix(fieldName, ".data") {
 			col := getColumn(fieldName[:len(fieldName) - 5])
-			col.data = rawFields[fieldName]
+			col.data = rawFields[rawFieldName]
 		} else {
 			ll.panic("Unexpected field name: %v", fieldName)
 		}

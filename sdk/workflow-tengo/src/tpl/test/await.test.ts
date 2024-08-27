@@ -6,12 +6,13 @@ import {
   toGlobalResourceId
 } from '@milaboratory/pl-middle-layer';
 import { tplTest } from '@milaboratory/sdk-test';
+import { Templates } from '../../..';
 
 tplTest('test await simple state', async ({ pl, helper, expect }) => {
   let inputResource: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
-    'tpl.test.await-state-1',
+    Templates['tpl.test.await-state-1'],
     ['main'],
     async (tx) => {
       inputResource = await toGlobalResourceId(
@@ -92,7 +93,7 @@ tplTest(
     let inputResource: ResourceId = 0n as ResourceId; // hack
     const result = await helper.renderTemplate(
       true,
-      'tpl.test.await-state-wildcard',
+      Templates['tpl.test.await-state-wildcard'],
       ['main'],
       async (tx) => {
         inputResource = await toGlobalResourceId(
@@ -139,7 +140,7 @@ tplTest(
     let inputResource: ResourceId = 0n as ResourceId; // hack
     const result = await helper.renderTemplate(
       true,
-      'tpl.test.await-state-wildcard',
+      Templates['tpl.test.await-state-wildcard'],
       ['main'],
       async (tx) => {
         inputResource = await toGlobalResourceId(
@@ -199,7 +200,7 @@ tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
   let inputResource1: ResourceId = 0n as ResourceId; // hack
   const result = await helper.renderTemplate(
     true,
-    'tpl.test.await-state-match',
+    Templates['tpl.test.await-state-match'],
     ['main'],
     async (tx) => {
       inputResource1 = await toGlobalResourceId(
