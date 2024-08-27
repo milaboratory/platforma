@@ -4,6 +4,7 @@ import SecondPage from './SecondPage.vue';
 import ThirdPage from './ThirdPage.vue';
 import { platforma } from './testApi';
 import type { Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
+import FileDialogsPage from './FileDialogsPage.vue';
 
 type Outputs = {
   x: ValueOrErrors<number>;
@@ -16,6 +17,7 @@ export const sdkPlugin = defineApp<unknown, Outputs>(platforma as Platforma<unkn
       '/': MainPage,
       '/second': SecondPage,
       '/third': ThirdPage,
+      '/file-dialogs': FileDialogsPage,
     },
   };
 });

@@ -145,9 +145,7 @@ export function createApp<
     },
     updateUiState(cb: (args: UiState) => UiState) {
       const newUiState = cloneUiState();
-      return platforma.setBlockUiState(cb(newUiState)).then(() => {
-        console.log('push uiState');
-      });
+      return platforma.setBlockUiState(cb(newUiState));
     },
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
       const newState = cloneNavigationState();

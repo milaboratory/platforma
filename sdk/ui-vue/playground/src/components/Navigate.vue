@@ -33,6 +33,10 @@ const href = computed({
         text: 'ValueOrError',
         value: '/third',
       },
+      {
+        text: 'File Dialogs',
+        value: '/file-dialogs',
+      },
     ]"
   />
 </template>

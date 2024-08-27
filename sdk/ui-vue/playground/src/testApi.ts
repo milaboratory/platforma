@@ -1,7 +1,57 @@
-import { unionize } from '@milaboratory/helpers/utils';
+import { delay, randomInt, range, toList, unionize } from '@milaboratory/helpers/utils';
 import { wrapValueOrErrors } from 'lib';
+import { faker } from '@faker-js/faker';
+import type {
+  BlockState,
+  BlockStatePatch,
+  ListFilesResult,
+  LsEntry,
+  NavigationState,
+  Platforma,
+  StorageHandle,
+  ValueOrErrors,
+} from '@milaboratory/sdk-ui';
 
-import type { BlockState, BlockStatePatch, NavigationState, Platforma, ValueOrErrors } from '@milaboratory/sdk-ui';
+const d = new Map<string, LsEntry[]>();
+
+const getLsFilesResult = (path: string): ListFilesResult => {
+  const length = randomInt(1, 100);
+
+  if (!d.has(path)) {
+    const dirPath = path === '/' ? '' : path;
+
+    d.set(
+      path,
+      toList(range(0, length)).map((i) => {
+        if (i < 10) {
+          let name = faker.word.noun();
+          if (Math.random() < 0.2) {
+            name = '.' + name;
+          }
+          return {
+            type: 'dir',
+            name,
+            fullPath: dirPath + '/' + name,
+          };
+        }
+
+        const name = faker.system.commonFileName();
+
+        return {
+          type: 'file',
+          name,
+          fullPath: dirPath + '/' + name,
+          handle: `upload://upload/${name}.jpg`,
+        };
+      }),
+    );
+  }
+
+  return {
+    parent: '/',
+    entries: d.get(path)!,
+  };
+};
 
 type OnUpdates = (updates: BlockStatePatch<unknown, Record<string, ValueOrErrors<unknown>>, unknown, `/${string}`>[]) => Promise<void>;
 
@@ -9,7 +59,7 @@ const state: BlockState<unknown, Record<string, ValueOrErrors<unknown>>, unknown
   args: undefined,
   ui: undefined,
   navigationState: {
-    href: '/second',
+    href: '/file-dialogs',
   },
   outputs: {},
 };
@@ -46,12 +96,10 @@ export const platforma: Platforma = {
     return state;
   },
   onStateUpdates: function (cb: OnUpdates): () => void {
-    console.log('register on updates callback', cb);
-
     onUpdateListeners.push(cb);
 
     return () => {
-      console.log('unregister');
+      // do nothing
     };
   },
   setBlockArgs: function (_args: unknown): Promise<void> {
@@ -73,7 +121,21 @@ export const platforma: Platforma = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logDriver: undefined as any,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  lsDriver: undefined as any,
+  lsDriver: {
+    async getStorageList() {
+      return [
+        {
+          name: 'local',
+          handle: 'local://test',
+          initialFullPath: '/',
+        },
+      ];
+    },
+    async listFiles(_storage: StorageHandle, fullPath: string): Promise<ListFilesResult> {
+      await delay(1000);
+      return getLsFilesResult(fullPath);
+    },
+  },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pFrameDriver: undefined as any,
 };

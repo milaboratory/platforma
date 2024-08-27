@@ -1,48 +1,127 @@
 @import '@milaboratory/platforma-uikit/lib/src/assets/mixins.scss';
 
-.ls-head {
+.file-dialog {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 -24px 0;
-  padding: 6px 28px;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: 12px;
-  letter-spacing: 0.44px;
-  text-transform: uppercase;
-  border-top: 1px solid var(--light-border-div-grey, #e1e3eb);
-  > div {
-    cursor: pointer;
-  }
-}
-
-.ls-container {
-  margin: 0 -24px;
-  padding: 12px 24px 12px 24px;
-  max-height: 400px;
-  @include scrollbar(true);
+  flex-direction: column;
+  gap: 24px;
   overflow: auto;
-  user-select: none;
-  > div {
-    font-family: var(--font-family-monospace);
-    padding: 2px 4px;
-    margin: 1px 0;
-    color: var(--color-dis-01);
-    &.isDir {
-      color: #07ad3e;
-      font-weight: 500;
+
+  &__title {
+    font-weight: 500;
+    font-size: 28px;
+    line-height: 32px;
+    letter-spacing: -0.56px;
+    color: var(--txt-01);
+    margin-bottom: 16px;
+    margin: 0 24px 16px 24px;
+  }
+
+  &__search {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin: 0 24px;
+  }
+
+  .ls-container {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color-div-grey);
+  }
+  
+  .ls-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 12px;
+    letter-spacing: 0.44px;
+    border-bottom: 1px solid var(--border-color-div-grey);
+    background-color: var(--bg-base-light);
+    padding: 0 24px;
+    &__selected {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.44px;
+      text-transform: uppercase;
+    }
+    > div {
       cursor: pointer;
-      &:hover {
-        text-decoration: underline;
+    }
+  
+    &__breadcrumbs {
+      color: var(--txt-01);
+      font-size: 14px;
+      font-weight: 600;
+  
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 2px;
+  
+      > div {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+  
+      i {
+        display: inline-block;
       }
     }
-    &.isAllowed {
-      color: var(--color-txt-01);
-      &.selected {
-        background-color: #d0f0c0;
+  }
+  
+  .ls-body {
+    padding: 12px;
+    height: 366px;
+    @include scrollbar(true);
+    overflow: auto;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    > div {
+      font-family: var(--font-family-monospace);
+      color: var(--txt-01);
+      font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+      font-size: 14px;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      min-height: 24px;
+      gap: 12px;
+      padding: 0 12px;
+      i.isDir {
+        display: inline-block;
+        background-color: #CFD1DB;
       }
+      &.isDir {
+        cursor: pointer;
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+      &.canBeSelected {
+        color: var(--txt-01);
+        &.selected {
+          background-color: var(--btn-active-select);
+        }
+      }
+    }
+  }
+  
+  .ls-loader {
+    display: flex;
+    align-items: center;
+    justify-items: center;
+    height: 366px;
+    transform: scale(4);
+    .loader-icon {
+      animation: spin 4s linear infinite;
+      background-color: #ccc;
+      margin: auto;
     }
   }
 }

@@ -2,8 +2,16 @@
 import { reactive } from 'vue';
 import { FileDialog } from 'lib';
 import { BtnPrimary } from '@milaboratory/platforma-uikit';
-import '@milaboratory/platforma-uikit/dist/style.css';
-import { useApp } from '../app';
+import '@milaboratory/platforma-uikit/styles';
+// import { useApp } from '../app';
+import { platforma } from '../testApi';
+
+window.platforma = platforma;
+
+defineProps<{
+  name: string;
+  multi?: boolean;
+}>();
 
 const data = reactive({
   modalOpen: false,
@@ -13,15 +21,13 @@ const onUpdate = (files: unknown) => {
   console.log('files', files);
 };
 
-const app = useApp();
+// const app = useApp();
 </script>
 
 <template>
   <div class="d-flex column">
-    {{ app }}
-    <FileDialog v-model="data.modalOpen" @update:files="onUpdate" />
-    <BtnPrimary @click.stop="data.modalOpen = true">Open dialog</BtnPrimary>
-    <blue-input />
+    <FileDialog v-model="data.modalOpen" :multi="multi" @update:files="onUpdate" />
+    <BtnPrimary @click.stop="data.modalOpen = true">{{ name }}</BtnPrimary>
   </div>
 </template>
 
