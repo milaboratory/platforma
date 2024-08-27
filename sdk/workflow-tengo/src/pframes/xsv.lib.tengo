@@ -10,6 +10,7 @@ exec := import(":exec")
 json := import("json")
 util := import(":pframes.util")
 ll := import(":ll")
+assets := import(":assets")
 
 //
 // pfconv params validation
@@ -87,7 +88,7 @@ purifySpec := func(spec) {
 			column: col.column,
 			id: col.id,
 			allowNA: col.allowNA,
-			spec: { type: col.spec.type } 
+			spec: { type: col.spec.type }
 		}))
 	}
 	newSpec.columns = newCols
@@ -97,7 +98,7 @@ purifySpec := func(spec) {
 	return newSpec
 }
 
-/** 
+/**
  * Calculate axes spec from pfconv spec
  */
 getAxesSpec := func(spec) {
@@ -109,7 +110,7 @@ getAxesSpec := func(spec) {
 }
 
 getOps := func(...ops) {
-	o := { dataOnly: false }
+	o := { dataOnly: false, splitDataAndSpec: false }
 	if len(ops) > 0 {
 		for k, v in ops[0] {
 			o[k] = v
@@ -149,7 +150,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	xsvFileName := "file." + xsvType
 
 	// import p-frame from directory tpl
-	importDirTpl := ll.importTemplate(":pframes.import-dir")
+	importDirTpl := assets.importTemplate(":pframes.import-dir")
 
 	// spec without any metadata (for caching purposes)
 	pureSpec := purifySpec(spec)
@@ -183,7 +184,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		result[id + ".data"] = pf.getFutureInputField(id)
 		result[id + ".spec"] = getColumnSpec(axesSpec, col)
 	}
-	
+
 	return result
 }
 
@@ -198,7 +199,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  */
 importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 
-	importXsvMapTpl := ll.importTemplate(":pframes.import-xsv-map")
+	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
 
 	// spec without any metadata (for caching purposes)
 	pureSpec := purifySpec(spec)
@@ -217,6 +218,11 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		id := util.xsvColumnId(c)
 		if ops.dataOnly {
 			result[id] = r.output(id)
+		} else if ops.splitDataAndSpec {
+			result[id] = {
+				data: r.output(id),
+				spec: getColumnSpec(axesSpec, c)
+			}
 		} else {
 			result[id + ".data"] = r.output(id)
 			result[id + ".spec"] = getColumnSpec(axesSpec, c)

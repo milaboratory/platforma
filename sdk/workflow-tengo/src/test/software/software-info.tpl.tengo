@@ -1,7 +1,8 @@
 ll := import(":ll")
+assets := import(":assets")
 self := import(":tpl")
 
-sw := ll.importSoftware(":test.software.my-software")
+sw := assets.importSoftware(":test.software.my-software")
 
 self.defineOutputs(["main"])
 

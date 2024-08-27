@@ -118,43 +118,6 @@ isInitializing := func() {
 }
 
 /**
- * Returns internal template identifier for loaded templates
- *
- * @param tplName: string - full name of a template, including namespace (package name).
- * Local templates (within the same package) can omit namespace part and start the name with colon:
- *  - "@company/package:someTemplateName"
- *  - ":myLocalTemplate"
- #
- * @return template id: resource id - a resource id of the template.
-*/
-importTemplate := func(tplName) {
-	return plapi.getTemplateId(tplName)
-}
-
-/**
- * Returns software description suitable for 'exec' operations.
- *
- * @param swName: string - full name of the software description, including namespace (package name).
- * Local software definitions (within the same package) can omit namespace part and start the name with colon:
- *  - "@company/package:some-oftware"
- *  - ":my-local-software"
- #
- * @return softwareInfo: softwareInfo - structure with software info
-*/
-importSoftware := func(swName) {
-	sw := plapi.getSoftwareInfo(swName)
-	return {
-		_type: "softwareDescriptor",
-
-		id: sw.id,
-		name: sw.name,
-		version: sw.version,
-		blobRef: sw.blobRef,
-		descriptor: json.decode(sw.descriptor)
-	}
-}
-
-/**
  * Get the list of executors available in current Platforma installation.
  *
  * @return executors: []string - list of executors, say ['executor', 'docker', ...]
@@ -249,8 +212,6 @@ export toStrict({
 	fieldId: fieldId,
 	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
 	isInitializing: isInitializing,
-	importTemplate: importTemplate,
-	importSoftware: importSoftware,
 	getExecutorsList: getExecutorsList,
 	filepathJoin: filepathJoin,
 	filepathRegexpJoin: filepathRegexpJoin,

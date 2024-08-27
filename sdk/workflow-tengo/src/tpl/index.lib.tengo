@@ -99,8 +99,8 @@ tpl := func() {
 		/**
 		 * The template id of this template
 		 */
-		templateId: func() {
-			return _templateId
+		template: func() {
+			return smart.resource(_templateId)
 		},
 
 		_unmarshallers: [],
@@ -298,9 +298,9 @@ tpl := func() {
 			// re-render self
 			renderer := undefined
 			if self.isEphemeral() {
-				renderer = render.createEphemeral(self.templateId(), newInputs)
+				renderer = render.createEphemeral(self.template(), newInputs)
 			} else {
-				renderer = render.create(self.templateId(), newInputs)
+				renderer = render.create(self.template(), newInputs)
 			}
 			// set outputs
 			for output in self.definedOutputs {

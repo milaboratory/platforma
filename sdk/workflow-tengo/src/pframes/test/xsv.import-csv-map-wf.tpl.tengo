@@ -32,8 +32,6 @@ wf.body(func(args) {
 
 	return {
 		outputs: {},
-		exports: {
-			pf: pframes.exportFrame(xsv.importFileMap(csvMap, "csv", spec))
-		}
+		exports: xsv.importFileMap(csvMap, "csv", spec, { splitDataAndSpec: true })
 	}
 })

@@ -4,6 +4,7 @@
 
 
 ll := import(":ll")
+assets := import(":assets")
 tpl := import(":tpl")
 smart := import(":smart")
 render := import(":render")
@@ -21,7 +22,7 @@ tpl.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")
 // 	pf: { `any`: validation.resource() }
 // })
 
-eMulTpl := ll.importTemplate(":pframes.export-multiple-pcolumns")
+eMulTpl := assets.importTemplate(":pframes.export-multiple-pcolumns")
 
 tpl.body(func(inputs) {
 

@@ -3,9 +3,10 @@
 self := import(":tpl")
 
 ll := import(":ll")
+assets := import(":assets")
 pLl := import(":pframes.ll")
 
-bodyTpl := ll.importTemplate(":pframes.test.agg_body_pure")
+bodyTpl := assets.importTemplate(":pframes.test.agg_body_pure")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")

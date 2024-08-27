@@ -5,6 +5,7 @@
 json := import("json")
 
 ll := import(":ll")
+assets := import(":assets")
 constants := import(":constants")
 smart := import(":smart")
 oop := import(":oop")
@@ -267,7 +268,7 @@ save := func(workdir) {
 		 */
 		build: func() {
 
-			tpl := ll.importTemplate(":workdir.save")
+			tpl := assets.importTemplate(":workdir.save")
 			inputs := {
 				workdir: workdir,
 				files: files,
