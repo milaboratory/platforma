@@ -13,7 +13,7 @@ constants := import(":workflow.constants")
 tpl.awaitState("data", { wildcard: "*" }, "InputsLocked")
 
 tpl.validateInputs({
-	blockId: `string`,
+	blockId: `any`,
 	parentContext: validation.resource(),
 	data: `any`
 })
