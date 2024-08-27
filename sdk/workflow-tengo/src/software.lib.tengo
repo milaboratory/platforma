@@ -4,7 +4,7 @@ runEnvScheme := {
 	registry: "string",
 	package: "string",
 	type: "string",
-	entrypoint: [ "string" ]
+	binDir: "string"
 }
 
 binaryScheme := {

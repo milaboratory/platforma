@@ -2,6 +2,7 @@ ll := import(":ll")
 smart := import(":smart")
 oop := import(":oop")
 maps := import(":maps")
+validation := import(":validation")
 
 META_KEY_DESCRIPTOR := "ctl/runner/software/descriptor"
 
@@ -13,6 +14,26 @@ _OUTPUT_ARCHIVE := "archive"
 _RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall/exec", Version: "1" }
 _INPUT_PACKAGE := "package"
 _OUTPUT_SOFTWARE := "software"
+
+_RTYPE_PACKAGE_USE := { Name: "PackageUse/exec", Version: "1" }
+_INPUT_PACKAGE_USE_SETTINGS := "settings"
+
+_useSettingsSchema := {
+	hash: ["or", "bytes", "string"],
+	path: "string",
+	descriptor: "any",
+	origin: {
+		registry: "string",
+		url: "string",
+		packageName: "string"
+	}
+}
+
+_createUseSettingsResource := func(settings) {
+	validation.assertJsonSchema(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
+
+	return smart.createJsonResource(settings)
+}
 
 get := func(registryName, pkgName) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
@@ -58,9 +79,32 @@ install := func(pkg) {
 	return self
 }
 
+use := func(settings) {
+	res := smart.structBuilder(_RTYPE_PACKAGE_USE)
+
+	settingsRes := _createUseSettingsResource(settings)
+
+	res.inputs()[_INPUT_PACKAGE_USE_SETTINGS].set(settingsRes)
+
+	self := undefined
+	self = oop.inherit(res, {
+		/**
+		 * Reference to installed software
+		 *
+		 * @return software: field - output field, where info on downloaded archive will appear
+		 */
+		software: func() {
+			return res.outputs()[_OUTPUT_SOFTWARE]
+		}
+	})
+
+	return self
+}
+
 export ll.toStrict({
 	META_KEY_DESCRIPTOR                : META_KEY_DESCRIPTOR,
 
 	get                                : get,
-	install                            : install
+	install                            : install,
+	use                                : use
 })

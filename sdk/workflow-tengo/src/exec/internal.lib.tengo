@@ -1,3 +1,4 @@
+json := import("json")
 ll := import(":ll")
 oop := import(":oop")
 maps := import(":maps")
@@ -10,6 +11,11 @@ _formatArg := func(isRef, key, value) {
 		key: key,
 		value: value
 	}
+}
+
+_installSoftware := func(registry, pkgName) {
+	archive := pkg.get(registry, pkgName).archive()
+	return pkg.install(archive).software()
 }
 
 _directCallOptions := func(runOptions) {
@@ -29,36 +35,7 @@ _directCallOptions := func(runOptions) {
 	})
 }
 
-_devPackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	descriptor := software.descriptor.local
-
-	ll.panic("unable to run software %s v%s: 'local' execution mode is not implemented", software.name, software.version)
-}
-
-_binPackageCallOptions := func(runOptions) {
-	software := runOptions.software
-	descriptor := software.descriptor.binary
-
-	cmdName := runOptions.cmd
-	if (is_undefined(cmdName)) {
-		// Use default 'cmd' from descriptor, if caller did not specify custom cmd
-		cmdName = descriptor.cmd
-	}
-	if (is_undefined(cmdName)) {
-		ll.panic(
-			"unable to run software %s v%s: 'cmd' is required for 'binary' execution mode of this package",
-			software.name, software.version
-		)
-	}
-
-	packages := [{
-		descriptor: descriptor,
-
-		name: software.name,
-		registry: descriptor.registry,
-		package: descriptor.package
-	}]
+_binPackageCallOptions := func(runOptions, packages, software, descriptor) {
 	args := []
 
 	// Real command shoule be:
@@ -71,11 +48,8 @@ _binPackageCallOptions := func(runOptions) {
 		runEnv := descriptor.runEnv
 
 		packages = append(packages, {
-			descriptor: descriptor,
-
 			name: runEnv.name,
-			registry: runEnv.registry,
-			package: runEnv.package
+			reference: _installSoftware(runEnv.registry, runEnv.package)
 		})
 	}
 
@@ -86,6 +60,18 @@ _binPackageCallOptions := func(runOptions) {
 		for i := 1; i < len(entrypoint); i++ {
 			args = append(args, _formatArg(false, "", entrypoint[i]))
 		}
+	}
+
+	cmdName := runOptions.cmd
+	if (is_undefined(cmdName)) {
+		// Use default 'cmd' from descriptor, if caller did not specify custom cmd
+		cmdName = descriptor.cmd
+	}
+	if (is_undefined(cmdName)) {
+		ll.panic(
+			"unable to run software %s v%s: 'cmd' is required for 'binary' execution mode of this package",
+			software.name, software.version
+		)
 	}
 
 	args = append(args, _formatArg(true, software.name, cmdName))
@@ -101,6 +87,39 @@ _binPackageCallOptions := func(runOptions) {
 		cmd: cmd,
 		args: args
 	})
+}
+
+_devLocalPackageCallOptions := func(runOptions) {
+	software := runOptions.software
+	localDescriptor := software.descriptor.local
+
+	packages := [{
+		name: software.name,
+		reference: pkg.use({
+			hash: localDescriptor.hash,
+			path: localDescriptor.path,
+			descriptor: json.encode(ll.fromStrict(software.descriptor)),
+			origin: {
+				registry: "devLocal",
+				url: "file://" + localDescriptor.path,
+				packageName: software.descriptor.name
+			}
+		}).software()
+	}]
+
+	return _binPackageCallOptions(runOptions, packages, software, localDescriptor)
+}
+
+_remotePackageCallOptions := func(runOptions) {
+	software := runOptions.software
+	binaryDescriptor := software.descriptor.binary
+
+	packages := [{
+		name: software.name,
+		reference: _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
+	}]
+
+	return _binPackageCallOptions(runOptions, packages, software, binaryDescriptor)
 }
 
 binaryRunOptions := func(runOptions) {
@@ -121,22 +140,16 @@ binaryRunOptions := func(runOptions) {
 	descriptor := software.descriptor
 
 	if (maps.containsKey(descriptor, "local")) {
-		return _devPackageCallOptions(runOptions)
+		return _devLocalPackageCallOptions(runOptions)
 	}
 
 	if (maps.containsKey(descriptor, "binary")) {
-		return _binPackageCallOptions(runOptions)
+		return _remotePackageCallOptions(runOptions)
 	}
 
 	ll.panic("Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor", software.name, software.version)
 }
 
-installSoftware := func(pkgInfo) {
-    archive := pkg.get(pkgInfo.registry, pkgInfo.package).archive()
-    return pkg.install(archive).software()
-}
-
 export {
-	binaryRunOptions: binaryRunOptions,
-    installSoftware: installSoftware
+	binaryRunOptions: binaryRunOptions
 }
