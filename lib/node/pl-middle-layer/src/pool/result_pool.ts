@@ -228,7 +228,7 @@ export class ResultPool {
 
       const prod = loadCtx(
         prj.traverse({
-          field: projectFieldName(blockInfo.id, 'prodCtx'),
+          field: projectFieldName(blockInfo.id, 'prodUiCtx'),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
           stableIfNotFound: true
@@ -236,7 +236,7 @@ export class ResultPool {
       );
       const staging = loadCtx(
         prj.traverse({
-          field: projectFieldName(blockInfo.id, 'stagingCtx'),
+          field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
           ignoreError: true,
           pureFieldErrorToUndefined: true
         })
@@ -268,5 +268,5 @@ function loadCtx(
     // from empty unlocked cotext
     return { locked: false, results: new Map() };
 
-  return parseRawPObjectCollection(ctxNode, false, true, 'values/');
+  return parseRawPObjectCollection(ctxNode, false, true);
 }
