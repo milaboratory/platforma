@@ -248,6 +248,10 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
     return;
   }
 
+  if (ev.target !== document.body) {
+    return;
+  }
+
   ev.preventDefault();
 
   if (ev.metaKey && ev.code === 'KeyA') {
@@ -263,7 +267,7 @@ onUpdated(refresh);
 </script>
 
 <template>
-  <dialog-modal class="split" :model-value="modelValue" width="688px" height="720px" @update:model-value="closeModal" @click="deselectAll">
+  <dialog-modal class="split" :model-value="modelValue" width="688px" height="720px" @update:model-value="closeModal" @click.stop="deselectAll">
     <div v-focus class="file-dialog" @keyup.enter="submit">
       <div class="file-dialog__title">{{ title ?? 'Select files' }}</div>
       <div class="file-dialog__search">
