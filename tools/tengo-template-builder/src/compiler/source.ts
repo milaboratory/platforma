@@ -152,6 +152,16 @@ function parseSingleSourceLine(line: string, context: sourceParserContext, local
       }
     }
 
+    if (iInfo.module === "@milaboratory/tengo-sdk:assets" ||
+      (localPackageName === "@milaboratory/tengo-sdk" && iInfo.module === ":assets")) {
+      if (!context.tplDepREs.has(iInfo.module)) {
+        context.tplDepREs.set(iInfo.module, [
+          ['template', newImportTemplateRE(iInfo.alias)],
+          ['software', newImportSoftwareRE(iInfo.alias)]
+        ])
+      }
+    }
+
     const artifact = parseArtifactName(iInfo.module, 'library', localPackageName)
     if (!artifact) {
       // not a Platforma Tengo library import
