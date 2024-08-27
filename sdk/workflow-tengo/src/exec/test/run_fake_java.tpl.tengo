@@ -8,7 +8,7 @@ file := import(":file")
 
 self.defineOutputs(["main"])
 
-sw := ll.importSoftware(":test.exec.fake-java-script")
+sw := ll.importSoftware(":exec.test.fake-java-script")
 
 self.body(func(inputs) {
 	run := exec.builder().

@@ -50,13 +50,13 @@ _runBinaryCommand := func(inputs) {
 
 	// Attach installed software to the command
 	for pkgInfo in opts.packages {
-		runBuilder.ref(pkgInfo.name, pkgInfo.reference)
+		runBuilder.ref(pkgInfo.refName, pkgInfo.reference)
 		runBuilder.substitutionRule(pkgInfo.varName, pkgInfo.refName)
 	}
 
 	// Patch command's PATH env variable
 	for p in opts.customPaths {
-		runBuilder.addToPath(p.key, p.value)
+		runBuilder.addToPath(p.value, p.hasVars)
 	}
 
 	// exec command
@@ -159,8 +159,8 @@ _runBinaryCommand := func(inputs) {
 self.body(func(inputs) {
 	// assert we have inputs we expect.
 	validation.assertJsonSchema(inputs, {
-		"softwareInfo,omitempty": validation.resource,
-		files: { any: validation.resource },
+		"softwareInfo,omitempty": validation.resource(),
+		files: { any: validation.resource() },
 		values: { any: "any" },
 		dirs: ["string"],
 		runOptions: {

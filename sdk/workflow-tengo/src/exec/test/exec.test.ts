@@ -59,7 +59,7 @@ tplTest(
 
     const result = await helper.renderTemplate(
       false,
-      'test.exec.run_echo_to_value',
+      'exec.test.run_echo_to_value',
       ['main'],
       (tx) => ({
         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
