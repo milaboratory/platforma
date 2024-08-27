@@ -41,9 +41,7 @@ _directCallOptions := func(runOptions) {
 	envs := {}
 
 	for name, arg in runOptions.args {
-		ll.assert(!arg.isRef,
-			"'exec-ref' argument is invalid in this command: no software info was given to exec.builder()")
-		args = append(args, _newArg(false, arg.value))
+		args = append(args, _newArg(false, arg))
 	}
 
 	for name, val in runOptions.envs {
