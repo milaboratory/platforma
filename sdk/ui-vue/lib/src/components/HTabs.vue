@@ -37,7 +37,7 @@ const optionsRef = computed(() =>
 <style lang="scss" scoped>
 .h-tabs {
   --bottom-color: var(--color-div-grey);
-  --color: var(--color-txt-03);
+  --color: var(--txt-03);
 
   font-weight: 600;
   font-size: 13px;
@@ -57,7 +57,7 @@ const optionsRef = computed(() =>
 
     &.active {
       --bottom-color: var(--color-focus);
-      --color: var(--color-txt-01);
+      --color: var(--txt-01);
       cursor: default;
     }
   }
