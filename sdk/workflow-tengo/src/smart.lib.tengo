@@ -134,15 +134,35 @@ _getFutureField := func(from, name, fieldType) {
 
 	return field(futureField.ResultFID)
 }
-
 /**
  * Returns true if given object is a StdMap resource
  */
 isMapResource := func(r) {
-	// @TODO get rid of alt name
-	return isResource(r) && (r.info().Type.Name == constants.RTYPE_MAP.Name ||
-		r.info().Type.Name == constants.RTYPE_MAP_EPH.Name ||
-		r.info().Type.Name == constants.RTYPE_MAP_ALT.Name)
+	return isResource(r) && (
+		r.info().Type.Name == constants.RTYPE_MAP.Name ||
+			r.info().Type.Name == constants.RTYPE_MAP_ALT.Name) // @TODO get rid of alt name
+
+}
+
+/**
+ * Returns true if given object is an ephemeral std map resource
+ */
+isEphMapResource := func(r) {
+	return isResource(r) &&  r.info().Type.Name == constants.RTYPE_MAP_EPH.Name
+}
+
+/**
+ * Returns true if given object is an ephemeral std map resource with locked inputs (so the list of inputs is final)
+ */
+isLockedEphMapResource := func(r) {
+	return isEphMapResource(r) && r.info().InputsLocked
+}
+
+/**
+ * Returns true if given object is a map or ephemeral map resource
+ */
+isAnyMapResource := func(r) {
+	return isMapResource(r) || isEphMapResource(r)
 }
 
 /**
@@ -153,23 +173,20 @@ isJsonResource := func(r) {
 }
 
 // deep check whether map has resources somewhere inside
-_hasResourceValues := func(object) {
-	if ll.isMap(object) {
+_hasReferenceValues := func(object) {
+	if isReference(object) {
+		// first check is reference since resource/field will return true on ll.isMap
+		return true
+	} else if ll.isMap(object) {
 		for _, v in object {
-			if isReference(v) {
+			if _hasReferenceValues(v) {
 				return true
-			}
-			if ll.isMap(v) || is_array(v) {
-				return _hasResourceValues(v)
 			}
 		}
 	} else if is_array(object) {
 		for v in object {
-			if isReference(v) {
+			if _hasReferenceValues(v) {
 				return true
-			}
-			if ll.isMap(v) || is_array(v) {
-				return _hasResourceValues(v)
 			}
 		}
 	}
@@ -182,11 +199,12 @@ _hasResourceValues := func(object) {
  */
 _toRefOrJson := func(object) {
 	if isReference(object) {
+		// first check is reference since resource/field will return true on ll.isMap
 		return object
 	} else if ll.isMap(object) {
 
 		// just json if there are no nested resources
-		if !_hasResourceValues(object)  {
+		if !_hasReferenceValues(object)  {
 			return createJsonResource(object)
 		}
 
@@ -199,7 +217,7 @@ _toRefOrJson := func(object) {
 	} else if is_array(object) {
 
 		// assert we are not having refs inside
-		ll.assert(!_hasResourceValues(object), "array can't contain references")
+		ll.assert(!_hasReferenceValues(object), "array can't contain references")
 
 		return createJsonResource(object)
 	} else {
@@ -281,7 +299,27 @@ resource = func(r) {
 		 * Get resource data as Json
 		 */
 		getDataAsJson: func() {
+			if self.hasError() {
+				ll.panic("resource has errors: ", self.info())
+			}
 			return json.decode(self.info().Data);
+		},
+
+		/**
+		 * Whether this resource has error
+		 */
+		hasError: func() {
+			return self.info().HasErrors
+		},
+
+		/**
+		 * Return error set in the resource
+		 */
+		getError: func() {
+			if !self.info().HasErrors {
+				ll.panic("no error set in resource")
+			}
+			return self.getField("resourceError").getValue()
 		},
 
 		_hasField: func(fieldMapName, fieldName) {
@@ -545,7 +583,7 @@ field = func(f) {
 		getValue: func() {
 			if self.isErrorSet() {
 				err := self.getError().getDataAsJson()
-				ll.panic("failed to get the value of field ", field, ", error is not empty: ", err)
+				ll.panic("failed to get the value of field %v, error is not empty: %v", field, err)
 			}
 
 			ll.assert(self.isSet(), "field value is not set; ", self.name())
@@ -874,7 +912,8 @@ createJsonResource = func(value) {
 
 	// important: strict map can't be encoded to JSON
 
-	value = ll.ensureNonStrict(value)
+	ll.assert(!ll.isStrict(value), "can't encode strict map: ", value)
+	// value = ll.ensureNonStrict(value)
 
 	encoded := json.encode(value)
 	return createValueResource(constants.RTYPE_JSON, encoded)
@@ -907,6 +946,9 @@ export ll.toStrict({
 	isField: isField,
 	isReference: isReference,
 	isMapResource: isMapResource,
+	isEphMapResource: isEphMapResource,
+	isAnyMapResource: isAnyMapResource,
+	isLockedEphMapResource: isLockedEphMapResource,
 	isJsonResource: isJsonResource,
 	resource: resource,
 	field: field,

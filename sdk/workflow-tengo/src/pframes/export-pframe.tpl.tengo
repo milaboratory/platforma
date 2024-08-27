@@ -1,0 +1,103 @@
+//
+// wrap all p-frame files with file.exportFile
+//
+
+
+ll := import(":ll")
+assets := import(":assets")
+tpl := import(":tpl")
+smart := import(":smart")
+render := import(":render")
+pConstants := import(":pframes.constants")
+constants := import(":constants")
+validation := import(":validation")
+
+text := import("text")
+
+// await all inputs are locked
+tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
+tpl.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")
+
+// tpl.validateInputs({
+// 	pf: { `any`: validation.resource() }
+// })
+
+eMulTpl := assets.importTemplate(":pframes.export-multiple-pcolumns")
+
+tpl.body(func(inputs) {
+
+	columns := {}
+
+	getColumn := func(name) {
+		c := columns[name]
+		if is_undefined(c) {
+			c = {}
+			columns[name] = c
+		}
+		return c
+	}
+
+	rawFields := tpl.rawInputs().pf.getValue().inputs()
+
+	// if context is passed as an input we differently treat the field names (see below)
+	isContext := tpl.rawInputs().pf.getValue().checkResourceType(constants.RTYPE_CONTEXT)
+
+	for rawFieldName, fieldValue in inputs.pf {
+		fieldName := rawFieldName
+		if isContext {
+			if text.has_prefix(fieldName, "values/") {
+				fieldName = fieldName[7:]
+			} else {
+				// there are other fields in context resource, we are only interesetd in "values/..."
+				continue
+			}
+		}
+
+		if text.has_suffix(fieldName, ".spec") {
+			if !is_map(fieldValue) {
+				ll.panic("Unexpected spec value: %v", fieldValue)
+			}
+			col := getColumn(fieldName[:len(fieldName) - 5])
+			col.spec = fieldValue
+			col.specRaw = rawFields[rawFieldName]
+		} else if text.has_suffix(fieldName, ".data") {
+			col := getColumn(fieldName[:len(fieldName) - 5])
+			col.data = rawFields[rawFieldName]
+		} else {
+			ll.panic("Unexpected field name: %v", fieldName)
+		}
+	}
+
+	result := smart.structBuilder(pConstants.RTYPE_P_FRAME)
+
+	// serves as an input to the export-pcolumn template
+	eMulTplInput := smart.structBuilder(constants.RTYPE_MAP)
+	// export-pcolumn export instance
+	eMulTplRender := render.createEphemeral(eMulTpl, { data: eMulTplInput })
+
+	for colName, col in columns {
+		if is_undefined(col.spec) || (
+		    col.spec.kind == "PColumn" && (
+				is_undefined(col.spec.valueType) ||
+				col.spec.valueType == "file" || col.spec.valueType == "blob" ||
+				col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
+				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
+				col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
+				col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
+			if !is_undefined(col.spec) {
+				result.createInputField(colName + ".spec").set(col.specRaw)
+			}
+			eMulTplInput.createInputField(colName).set(col.data)
+			result.createInputField(colName + ".data").set(eMulTplRender.output(colName))
+		} else {
+			result.createInputField(colName + ".spec").set(col.specRaw)
+			result.createInputField(colName + ".data").set(col.data)
+		}
+	}
+
+	eMulTplInput.lockAndBuild()
+
+	return {
+		result: result.lockAndBuild()
+	}
+})

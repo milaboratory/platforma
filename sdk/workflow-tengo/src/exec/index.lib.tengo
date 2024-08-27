@@ -1,0 +1,518 @@
+/**
+ * A builder for executing commands.
+ */
+ll := import(":ll")
+assets := import(":assets")
+smart := import(":smart")
+times := import("times")
+maps := import(":maps")
+sets := import(":sets")
+slices := import(":slices")
+path := import(":path")
+render := import(":render")
+enum := import("enum")
+oop := import(":oop")
+validation := import(":validation")
+constants := import(":constants")
+
+_HEAVY_QUEUE := "heavy"
+_UI_TASKS_QUEUE := "ui-tasks"
+
+/**
+ * Converts an argument into an executable or non-executable format.
+ *
+ * @param arg: string - the argument to convert.
+ * @param isExec: bool - a boolean indicating if the argument is executable.
+ * @param pathToBinary: string|undefined - the path to the binary if the argument is executable.
+ * @return A map representing the argument.
+ */
+_argToExec := func(arg, isExec, pathToBinary) {
+	if isExec {
+		return {
+			isExec: true,
+			value: arg,
+			pathToBinary: pathToBinary
+		}
+	}
+	return {
+		isExec: false,
+		value: arg
+	}
+}
+
+/**
+ * Creates a new builder for constructing and executing commands.
+ *
+ * @return builder - a new builder instance.
+ */
+builder := func() {
+	self := undefined
+
+	cmd := undefined
+	args := []
+	entrypointSet := false
+
+	assertEntrypointNotSet := func() {
+		ll.assert(!entrypointSet,
+			"either a command with arguments or a software were already set.")
+	}
+
+	envs := {}
+	queue := _HEAVY_QUEUE
+	cache := 0
+	nErrorLines := 200
+
+	// files to be added in workdir
+	filesToAdd := {}
+	// files to be created in the workdir with the content from resources
+	filesToWrite := {}
+	// directories to create in the workdir
+	dirsToCreate := {}
+
+	// files to save from the workdir
+	filesToSave := {}
+	// files which content to save from the workdir
+	filesContentToSave := {}
+	// file sets to save by regex
+	fileSetsToSave := {}
+	// file sets to save by regex (save file content)
+	fileSetsContentToSave := {}
+	// files to stream from the workdir
+	filesToStream := {}
+	// workdir processors
+	wdProcessors := {}
+
+	stdout := "stdout.txt"
+	stderr := "stderr.txt"
+
+	stdoutToValue := false
+	stderrToValue := false
+	stderrToStdout := false
+
+	self = ll.toStrict({
+		/**
+		 * Sets the command to be executed, e.g. /usr/bin/env or sh.
+		 *
+		 * @param commandName: string - the name of the command.
+		 */
+		cmd: func(commandName) {
+			assertEntrypointNotSet()
+			cmd = commandName
+			entrypointSet = true
+			return self
+		},
+
+		/**
+		 * Sets the software to be executed.
+		 *
+		 * @param software: string - the software to execute.
+		 */
+		software: func(software) {
+			assertEntrypointNotSet()
+			ll.panic("exec.builder.software is not implemented")
+			entrypointSet = true
+			return self
+		},
+
+		/**
+		 * Adds an argument to the command.
+		 *
+		 * @param arg: string - the argument to add.
+		 */
+		arg: func(arg) {
+			args = append(args, arg)
+			return self
+		},
+
+		/**
+		 * Sets an environment variable.
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param value: string - the value of the environment variable.
+		 */
+		env: func(name, value) {
+			validation.assertJsonSchema([name, value], ["string"])
+			envs[name] = value
+			return self
+		},
+
+		/**
+		 * Sets multiple environment variables.
+		 *
+		 * @param envMap: map[string]string - a map of environment variables.
+		 */
+		envMap: func(envMap) {
+			enum.each(envMap, self.env)
+			return self
+		},
+
+		/**
+		 * Sets the execution queue to the heavy queue.
+		 */
+		inHeavyQueue: func() {
+			queue = _HEAVY_QUEUE
+			return self
+		},
+
+		/**
+		 * Sets the execution queue to the UI tasks queue.
+		 */
+		inUiQueue: func() {
+			queue = _UI_TASKS_QUEUE
+			return self
+		},
+
+		/**
+		 * Sets the cache time.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cache: func(time) {
+			ll.assert(
+				is_int(time),
+				"cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'time'?")
+			cache = time
+			return self
+		},
+
+		/**
+		 * Sets the number of error lines to be captured.
+		 *
+		 * @param lines: number - the number of error lines.
+		 */
+		nErrorLines: func(lines) {
+			ll.assert(
+				is_int(lines) && lines >= 0,
+				"lines must be integer")
+
+			nErrorLines = lines
+			return self
+		},
+
+		/**
+		 * Adds a file to the working directory
+		 *
+		 * @param fileName: string - the name of the input file.
+		 * @param file: reference - a resource id of the file or a field that points to it.
+		 */
+		addFile: func(fileName, file) {
+			fileName = path.canonize(fileName)
+			filesToAdd[fileName] = file
+			return self
+		},
+
+		/**
+		 * Adds multiple files to the working directory.
+		 *
+		 * @param filesMap: map[string]reference - a map of file names to files' references.
+		 */
+		addFiles: func(filesMap) {
+			enum.each(filesMap, self.addFile)
+			return self
+		},
+
+		/**
+		 * Writes a file with a given content.
+		 *
+		 * @param fileName: string - the name of the content.
+		 * @param data: bytes|reference - a primitive tengo value (map or array) or a reference to
+		 *        a resource from which data we create a file.
+		 */
+		writeFile: func(fileName, data) {
+			validation.assertJsonSchema(data, ["or",
+				"string",
+				"bytes",
+				validation.reference])
+
+			fileName = path.canonize(fileName)
+
+			filesToWrite[fileName] = data
+
+			return self
+		},
+
+		/**
+		 * Creates a directory.
+		 *
+		 * @param dir: string - the directory to create.
+		 */
+		mkDir: func(dir) {
+			dir = path.canonize(dir)
+			dirsToCreate = sets.add(dirsToCreate, dir)
+			return self
+		},
+
+		/**
+		 * Saves a file.
+		 *
+		 * @param fileName: string - the name of the output file.
+		 */
+		saveFile: func(fileName) {
+			fileName = path.canonize(fileName)
+			sets.add(filesToSave, fileName)
+			return self
+		},
+
+		/**
+		 * Saves a file's content to a value resource.
+		 *
+		 * @param fileName: string - the name of the output value.
+		 */
+		saveFileContent: func(fileName) {
+			fileName = path.canonize(fileName)
+			sets.add(filesContentToSave, fileName)
+			return self
+		},
+
+		/**
+		 * Saves files from the exec workdir using regex.
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex pattern
+		 */
+		saveFileSet: func(name, regex) {
+			fileSetsToSave[name] = regex
+			return self
+		},
+
+		/**
+		 * Run specified
+		 */
+		processWorkdir: func(name, tpl, tplArgs) {
+			wdProcessors[name] = {
+				tpl: tpl,
+				tplArgs: tplArgs
+			}
+			return self
+		},
+
+		/**
+		 * Saves files content from the exec workdir using regex.
+		 *
+		 * @param name: string - a name to refer this file set in the outputs
+		 * @param regex: string - regex pattern
+		 */
+		saveFileSetContent: func(name, regex) {
+			fileSetsContentToSave[name] = regex
+			return self
+		},
+
+		/**
+		 * A command to stream a file by a given file name.
+		 *
+		 * @param fileName: string - the name of the file to stream.
+		 */
+		streamFile: func(fileName) {
+			fileName = path.canonize(fileName)
+			sets.add(filesToStream, fileName)
+
+			return self
+		},
+
+		/**
+		 * Set stdout file name
+		 */
+		stdoutFileName: func(fileName) {
+			fileName = path.canonize(fileName)
+			stdout = fileName
+			return self
+		},
+
+		/**
+		 * Set stderr file name
+		 */
+		stderrFileName: func(fileName) {
+			fileName = path.canonize(fileName)
+			stderr = fileName
+			return self
+		},
+
+		/**
+		 * Sets stdout to be captured as a value resource.
+		 */
+		saveStdoutContent: func() {
+			stdoutToValue = true
+			return self
+		},
+
+		/**
+		 * Sets stderr to be captured as a value resource.
+		 */
+		saveStderrContent: func() {
+			stderrToValue = true
+			return self
+		},
+
+		/**
+		 * Redirects stderr output to stdout.
+		 */
+		printErrStreamToStdout: func() {
+			stderrToStdout = true
+			return self
+		},
+
+		/**
+		 * Executes the command.
+		 *
+		 * @return A map containing the execution results.
+		 */
+		run: func() {
+			if stderrToStdout {
+				stderr = stdout
+			}
+			sets.add(filesToStream, stdout)
+			sets.add(filesToStream, stderr)
+			sets.add(filesToSave, stdout)
+			sets.add(filesToSave, stderr)
+			if stdoutToValue {
+				sets.add(filesContentToSave, stdout)
+			}
+			if stderrToValue {
+				sets.add(filesContentToSave, stderr)
+			}
+
+			// We don't want these values to be encoded as JSON's since
+			// values are pure bytes.
+			// Thus, we create a resource with a custom type here manually.
+			filesToWriteRefs := maps.mapValues(filesToWrite, func(v) {
+				if smart.isReference(v) { return v }
+				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
+			})
+
+			tpl := render.create(assets.importTemplate(":exec.exec"), {
+				filesToAdd: smart.createMapResource(filesToAdd),
+				filesToWrite: smart.createMapResource(filesToWriteRefs),
+				dirsToCreate: slices.fromSet(dirsToCreate),
+				runOptions: {
+					cmd: _argToExec(cmd, false, undefined),
+					args: slices.map(args, func(a) { return _argToExec(a, false, undefined) }),
+					envs: envs,
+					queue: queue,
+					stdout: stdout,
+					stderr: stderr,
+					nErrorLines: nErrorLines
+				},
+				filesToSave: slices.fromSet(filesToSave),
+				filesContentToSave: slices.fromSet(filesContentToSave),
+				fileSetsToSave: fileSetsToSave,
+				fileSetsContentToSave: fileSetsContentToSave,
+				filesToStream: slices.fromSet(filesToStream),
+				wdProcessors: wdProcessors
+			})
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * Retrieves a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file resource.
+				 */
+				getFile: func(fileName) {
+					return tpl.output("files", cache).getFutureInputField(fileName)
+				},
+
+				/**
+				 * Retrieves the content of a file.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file content resource.
+				 */
+				getFileContent: func(fileName) {
+					return tpl.output("filesContent", cache).getFutureInputField(fileName)
+				},
+
+				/**
+				 * Retrieves a file stream.
+				 *
+				 * @param fileName: string
+				 * @return field - a reference to the file stream resource.
+				 */
+				getFileStream: func(fileName) {
+					return tpl.output("fileStreams", cache).getFutureInputField(fileName)
+				},
+
+				/**
+				 * Retrieves a file set resource.
+				 *
+				 * @param fileSetName: string - name of a file set
+				 * @return field - a reference to the map resource with files
+				 */
+				getFileSet: func(fileSetName) {
+					return tpl.output("fileSets", cache).getFutureInputField(fileSetName)
+				},
+
+				/**
+				 * Retrieves a file set content resource.
+				 *
+				 * @param fileSetName: string - name of a file set
+				 * @return field - a reference to the map resource with files
+				 */
+				getFileSetContent: func(fileSetName) {
+					return tpl.output("fileSetsContent", cache).getFutureInputField(fileSetName)
+				},
+
+				getProcessorResult: func(procName) {
+					return tpl.output("wdProcessors", cache).getFutureInputField(procName)
+				},
+
+				/**
+				 * Retrieves the stdout stream.
+				 */
+				getStdoutStream: func() {
+					return self.getFileStream(stdout)
+				},
+
+				/**
+				 * Retrieves the stderr stream.
+				 */
+				getStderrStream: func() {
+					return self.getFileStream(stderr)
+				},
+
+				/**
+				 * Retrieves the stdout file.
+				 */
+				getStdoutFile: func() {
+					return self.getFile(stdout)
+				},
+
+				/**
+				 * Retrieves the stderr file.
+				 */
+				getStderrFile: func() {
+					return self.getFile(stderr)
+				},
+
+				/**
+				 * Retrieves the content of the stdout file.
+				 */
+				getStdoutFileContent: func() {
+					if stdoutToValue {
+						return self.getFileContent(stdout)
+					}
+					ll.panic("stdout was not saved as a content")
+				},
+
+				/**
+				 * Retrieves the content of the stderr file.
+				 */
+				getStderrFileContent: func() {
+					if stderrToValue {
+						return self.getFileContent(stderr)
+					}
+					ll.panic("stderr was not saved as a content")
+				}
+			}))
+
+			return self
+		}
+	})
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder
+})

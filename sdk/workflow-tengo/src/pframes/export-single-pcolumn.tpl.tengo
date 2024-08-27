@@ -1,0 +1,13 @@
+// export-single-pcolumn
+
+tpl := import(":tpl")
+ep := import(":pframes.export-pcolumn")
+
+// await each input PColumnData have all it's keys defined
+tpl.awaitState("data", "InputsLocked")
+
+tpl.body(func(inputs) {
+	return {
+		result: ep.exportPColumnData(inputs.data)
+	}
+})
