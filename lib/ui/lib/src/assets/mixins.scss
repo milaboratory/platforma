@@ -138,7 +138,7 @@
 @mixin field-helper {
   position: relative;
   font-size: 12px;
-  color: var(--color-txt-03);
+  color: var(--txt-03);
   padding: 2px 0 0;
   white-space: pre-wrap;
   text-overflow: ellipsis;
@@ -150,7 +150,7 @@
 @mixin field-error {
   position: relative;
   font-size: 12px;
-  color: var(--color-txt-error);
+  color: var(--txt-error);
   padding: 2px 0 0;
   white-space: pre-wrap;
   text-overflow: ellipsis;

@@ -35,7 +35,7 @@
   }
 
   &:focus-visible {
-    --label-color: var(--color-txt-focus);
+    --label-color: var(--txt-focus);
     --body-shadow: var(--btn-group-shape-shadow), 0 0 0 2px #fff,  0 0 0 4px var(--color-focus);
   }
 }

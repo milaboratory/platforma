@@ -72,8 +72,8 @@ useEventListener(document, 'keydown', (evt: KeyboardEvent) => {
 
   background-color: #fff;
 
-  border-left: 1px solid var(--color-txt-01);
-  border-top: 1px solid var(--color-txt-01);
+  border-left: 1px solid var(--txt-01);
+  border-top: 1px solid var(--txt-01);
 
   box-shadow: var(--shadow-l);
   border-radius: 24px 0 0 0;

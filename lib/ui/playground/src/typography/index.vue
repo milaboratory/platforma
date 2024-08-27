@@ -43,7 +43,7 @@ const text = 'Lorem Ipsum is simply dummy text of the printing and typesetting i
 }
 
 .typography-container {
-  background-color: var(--color-txt-03);
+  background-color: var(--txt-03);
   padding: 16px;
   border-radius: 6px;
 

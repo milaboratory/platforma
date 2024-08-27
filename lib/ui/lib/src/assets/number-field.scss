@@ -1,11 +1,11 @@
 .mi-number-field {
-  --contour-color: var(--color-txt-01);
+  --contour-color: var(--txt-01);
   --contour-border-width: 1px;
   --options-bg: #fff;
   --option-hover-bg: var(--btn-sec-hover-grey);
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
-  --label-color: var(--color-txt-01);
+  --label-color: var(--txt-01);
   --color-hint: #9d9eae;
 
   // overflow: hidden;
@@ -79,7 +79,7 @@
   }
 
   &:focus-within:not(.error) {
-    --label-color: var(--color-txt-focus);
+    --label-color: var(--txt-focus);
     --contour-color: var(--color-focus);
     --contour-border-width: 2px;
     --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);
@@ -136,7 +136,7 @@
       font-weight: 500;
       font-size: 12px;
       line-height: 16px;
-      color: var(--color-txt-error);
+      color: var(--txt-error);
       margin-right: 4px;
     }
   }

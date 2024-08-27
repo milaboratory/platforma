@@ -3,14 +3,14 @@
 .ui-dropdown {
   $root: &;
 
-  --contour-color: var(--color-txt-01);
+  --contour-color: var(--txt-01);
   --contour-border-width: 1px;
   --options-bg: #fff;
   --option-hover-bg: var(--btn-sec-hover-grey);
 
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
-  --label-color: var(--color-txt-01);
+  --label-color: var(--txt-01);
 
   [data-theme='dark'] & {
     --options-bg: #1b1b1f;
@@ -50,7 +50,7 @@
       font-weight: 500;
       font-size: 12px;
       line-height: 16px;
-      color: var(--color-txt-error);
+      color: var(--txt-error);
       margin-right: 4px;
     }
   }
@@ -62,7 +62,7 @@
     right: 0;
     border-radius: 6px;
     min-height: var(--control-height);
-    color: var(--color-txt-01);
+    color: var(--txt-01);
   }
 
   &__contour {
@@ -168,7 +168,7 @@
       border: none;
       padding: 0;
       width: calc(100% - 40px);
-      color: var(--color-txt-01);
+      color: var(--txt-01);
       caret-color: var(--color-focus);
 
       &:focus {
@@ -241,7 +241,7 @@
   &.open,
   &:focus-within {
     z-index: 1;
-    --label-color: var(--color-txt-focus);
+    --label-color: var(--txt-focus);
   }
 
   &.open {
@@ -264,7 +264,7 @@
   }
 
   &:focus-within:not(.error) {
-    --label-color: var(--color-txt-focus);
+    --label-color: var(--txt-focus);
     --contour-color: var(--color-focus);
     --contour-border-width: 2px;
     --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);

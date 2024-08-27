@@ -133,7 +133,7 @@
     overflow: hidden;
     padding-bottom: 1px;
     background-color: var(--bg-elevated-02);
-    border-bottom: 1px solid var(--color-txt-01);
+    border-bottom: 1px solid var(--txt-01);
 
     .tr-head {
       max-width: 100%;
@@ -248,7 +248,7 @@
       align-items: center;
       justify-content: center;
 
-      color: var(--color-txt-mask);
+      color: var(--txt-mask);
       font-size: 28px;
       font-style: normal;
       font-weight: 500;

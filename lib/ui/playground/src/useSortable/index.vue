@@ -75,7 +75,7 @@ useSortable(list2Ref, {
       min-height: 32px;
       padding: 0 24px;
       min-width: 240px;
-      border: 1px solid var(--color-txt-01);
+      border: 1px solid var(--txt-01);
       background-color: #ddd;
       button {
         margin-left: auto;

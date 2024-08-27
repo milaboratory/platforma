@@ -51,7 +51,7 @@
     }
 
     &__title {
-        color: var(--color-txt-01);
+        color: var(--txt-01);
         font-family: Manrope;
         font-size: 28px;
         font-style: normal;
@@ -72,16 +72,16 @@
         letter-spacing: 0.44px;
         text-transform: uppercase;
         cursor: pointer;
-        color: var(--color-txt-03);
+        color: var(--txt-03);
     }
 
     &__group-item-active {
-        color: var(--color-txt-01);
+        color: var(--txt-01);
         background: linear-gradient(90deg, #E4FFD7 0%, rgba(255, 255, 255, 0.00) 100%);
     }
 
     &__btm-info {
-        color: var(--color-txt-01);
+        color: var(--txt-01);
         font-family: Manrope;
         font-size: 14px;
         font-weight: 500;
@@ -137,7 +137,7 @@
     }
 
     &__title {
-        color: var(--color-txt-01);
+        color: var(--txt-01);
         font-family: Manrope;
         font-size: 14px;
         font-style: normal;

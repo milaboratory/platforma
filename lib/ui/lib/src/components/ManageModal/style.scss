@@ -13,7 +13,7 @@
     font-size: 28px;
     line-height: 32px;
     letter-spacing: -0.56px;
-    color: var(--color-txt-01);
+    color: var(--txt-01);
     margin-bottom: 16px;
   }
 
@@ -75,7 +75,7 @@
       line-height: 32px;
       /* 114.286% */
       letter-spacing: -0.56px;
-      color: var(--color-txt-mask);
+      color: var(--txt-mask);
       text-align: center;
     }
   }
@@ -105,7 +105,7 @@
       }
 
       .split__header {
-        color: var(--color-txt-03);
+        color: var(--txt-03);
         font-size: 13px;
         font-style: normal;
         font-weight: 600;
@@ -158,7 +158,7 @@
       }
 
       &__title {
-        color: var(--color-txt-01);
+        color: var(--txt-01);
         font-size: 14px;
         font-style: normal;
         font-weight: 600;
@@ -179,14 +179,14 @@
     }
 
     &__title {
-      color: var(--color-txt-01);
+      color: var(--txt-01);
       font-size: 14px;
       font-weight: 600;
       line-height: 20px;
     }
 
     &__description {
-      color: var(--color-txt-03);
+      color: var(--txt-03);
       font-size: 12px;
       font-weight: 500;
       line-height: 16px;

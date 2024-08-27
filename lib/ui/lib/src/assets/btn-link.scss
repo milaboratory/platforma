@@ -5,8 +5,8 @@
   flex-direction: row;
   align-items: center;
   gap: 12px;
-  --color-text: var(--color-txt-01);
-  color: var(--color-txt-01);
+  --color-text: var(--txt-01);
+  color: var(--txt-01);
   &.disabled,&.loading {
     color: var(--color-dis-01);
   }

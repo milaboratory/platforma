@@ -3,8 +3,8 @@
 .ui-text-field {
   $root: &;
 
-  --contour-color: var(--color-txt-01);
-  --label-color: var(--color-txt-01);
+  --contour-color: var(--txt-01);
+  --label-color: var(--txt-01);
   --contour-border-width: 1px;
   --contour-box-shadow: none;
   --label-offset-left-x: 8px;
@@ -32,7 +32,7 @@
     border: none;
     font-size: inherit;
     background-color: transparent;
-    color: var(--color-txt-01);
+    color: var(--txt-01);
     caret-color: var(--color-focus);
     cursor: inherit;
 
@@ -113,7 +113,7 @@
   }
 
   &:focus-within:not(.error) {
-    --label-color: var(--color-txt-focus);
+    --label-color: var(--txt-focus);
     --contour-color: var(--color-focus);
     --contour-border-width: 2px;
     --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);
@@ -131,7 +131,7 @@
   }
 
   &.nonEmpty {
-    --prefix-color: var(--color-txt-01);
+    --prefix-color: var(--txt-01);
   }
 
   &.error {

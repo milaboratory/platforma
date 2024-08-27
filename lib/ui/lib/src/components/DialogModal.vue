@@ -95,7 +95,7 @@ function onClickShadow(ev: Event) {
   }
 
   &__title {
-    color: var(--color-txt-01, #110529);
+    color: var(--txt-01, #110529);
     font-size: 28px;
     font-weight: 500;
     line-height: 32px; /* 114.286% */
