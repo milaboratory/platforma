@@ -32,12 +32,15 @@ _SPEC_AXES_SCHEMA := {
 
 _SPEC_COLUMN_SCHEMA := {
 	`column`: `string`,
-	`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
 	`id,omitempty`: `string`,
-	`name,omitempty`: `string`,
-	`domain,omitempty`: { any: `string` },
-	`annotations,omitempty`: { any: `string` },
-	`allowNA,omitempty`: `bool`
+	`allowNA,omitempty`: `bool`,
+	`spec`: {
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`name,omitempty`: `string`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [ `number` ]
+	}
 }
 
 _SPEC_INDEX_SCHEMA := {
@@ -73,10 +76,7 @@ purifySpec := func(spec) {
 	for ax in spec.axes {
 		newAxes = append(newAxes, {
 			column: ax.column,
-			spec: {
-				name: ax.spec.name,
-				type: ax.spec.type
-			}
+			spec: { type: ax.spec.type }
 		})
 	}
 	newSpec.axes = newAxes
@@ -86,8 +86,8 @@ purifySpec := func(spec) {
 		newCols = append(newCols, objects.deleteUndefined({
 			column: col.column,
 			id: col.id,
-			type: col.type,
-			allowNA: col.allowNA
+			allowNA: col.allowNA,
+			spec: { type: col.spec.type } 
 		}))
 	}
 	newSpec.columns = newCols
@@ -119,15 +119,16 @@ getOps := func(...ops) {
 }
 
 getColumnSpec := func(axesSpec, col) {
-	return objects.deleteUndefined({
-			kind: constants.KIND_P_COLUMN,
-			valueType: col.type,
-			name: col.name,
-			axesSpec: axesSpec,
-			domain: col.domain,
-			annotations: col.annotations,
-			parentAxes: col.parentAxes
-		})
+	spec := {
+		kind: constants.KIND_P_COLUMN,
+		axes: axesSpec
+	}
+
+	for k, v in col.spec {
+		spec[k] = v
+	}
+
+	return objects.deleteUndefined(spec)
 }
 
 /**
