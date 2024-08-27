@@ -4,7 +4,7 @@ import { BtnPrimary, BtnGhost, TextField, Dropdown, DialogModal, useEventListene
 import { debounce } from '@milaboratory/helpers/functions';
 import { between, notEmpty, tapIf } from '@milaboratory/helpers/utils';
 import type { Option } from '@milaboratory/helpers/types';
-import type { ImportFileHandle, StorageHandle } from '@milaboratory/sdk-ui';
+import type { ImportFileHandle, StorageEntry, StorageHandle } from '@milaboratory/sdk-ui';
 import type { ImportedFiles } from '../types';
 import { getFilePathBreadcrumbs } from '../utils';
 
@@ -29,19 +29,27 @@ const emit = defineEmits<{
   (e: 'import:files', value: ImportedFiles): void;
 }>();
 
-const props = defineProps<{
-  modelValue: boolean;
-  extensions?: string[]; // with dot, like ['.fastq.gz', '.fastq']
-  multi?: boolean;
-  title?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    extensions?: string[]; // with dot, like ['.fastq.gz', '.fastq']
+    multi?: boolean;
+    title?: string;
+    autoSelectStorage?: boolean;
+  }>(),
+  {
+    extensions: undefined,
+    title: undefined,
+    autoSelectStorage: true,
+  },
+);
 
 const defaultData = () => ({
   dirPath: '',
-  storageHandle: undefined as StorageHandle | undefined,
+  storageEntry: undefined as StorageEntry | undefined,
   items: [] as FileDialogItem[],
   error: '',
-  storageOptions: [] as Option<StorageHandle>[],
+  storageOptions: [] as Option<StorageEntry>[],
   selected: [],
   lastSelected: undefined as number | undefined,
   currentLoadingPath: undefined as string | undefined,
@@ -62,11 +70,11 @@ const lookup = computed(() => {
   return {
     modelValue: props.modelValue,
     dirPath: data.dirPath,
-    storageHandle: data.storageHandle,
+    storageHandle: data.storageEntry?.handle,
   };
 });
 
-const query = (storageHandle: StorageHandle, dirPath: string) => {
+const query = (handle: StorageHandle, dirPath: string) => {
   if (!window.platforma) {
     return;
   }
@@ -82,7 +90,7 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
   data.currentLoadingPath = dirPath;
 
   window.platforma.lsDriver
-    .listFiles(storageHandle, dirPath)
+    .listFiles(handle, dirPath)
     .then((res) => {
       if (dirPath !== data.dirPath) {
         return;
@@ -113,7 +121,7 @@ const load = () => {
 
 const updateDirPathDebounced = debounce((v: string) => {
   data.dirPath = v;
-}, 2000);
+}, 1000);
 
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
 
@@ -126,9 +134,9 @@ const closeModal = () => {
 };
 
 const submit = () => {
-  if (isReady.value && data.storageHandle) {
+  if (isReady.value && data.storageEntry?.handle) {
     emit('import:files', {
-      storageHandle: data.storageHandle,
+      storageHandle: data.storageEntry.handle,
       files: selectedFiles.value.map((f) => f.handle!),
     });
     closeModal();
@@ -137,8 +145,8 @@ const submit = () => {
 
 const setDirPath = (dirPath: string) => {
   data.dirPath = dirPath;
-  if (data.storageHandle) {
-    query(data.storageHandle, dirPath);
+  if (data.storageEntry) {
+    load();
   }
 };
 
@@ -186,18 +194,18 @@ const changeAll = (selected: boolean) => {
     return;
   }
 
-  data.items.forEach((file) => {
-    if (file.canBeSelected) {
+  data.items
+    .filter((f) => f.canBeSelected)
+    .forEach((file) => {
       file.selected = selected;
-    }
-  });
+    });
 };
 
 const selectAll = () => changeAll(true);
 
 const deselectAll = () => changeAll(false);
 
-const refresh = () => {
+const loadAvailableStorages = () => {
   data.error = '';
   data.lastSelected = undefined;
   deselectAll();
@@ -209,25 +217,27 @@ const refresh = () => {
     .then((storageEntries) => {
       data.storageOptions = storageEntries.map((it) => ({
         text: it.name,
-        value: it.handle,
+        value: it,
       }));
 
-      tapIf(
-        storageEntries.find((e) => e.name === 'local'),
-        (entry) => {
-          data.storageHandle = entry.handle;
-          data.dirPath = entry.initialFullPath;
-        },
-      );
+      if (props.autoSelectStorage) {
+        tapIf(
+          storageEntries.find((e) => e.name === 'local'),
+          (entry) => {
+            data.storageEntry = entry;
+            data.dirPath = entry.initialFullPath;
+          },
+        );
+      }
     })
     .catch((err) => (data.error = String(err)));
 };
 
-watch(toRef(data, 'storageHandle'), () => {
-  data.dirPath = '';
+watch(toRef(data, 'storageEntry'), (entry) => {
+  data.dirPath = entry?.initialFullPath ?? '';
 });
 
-watch([() => data.dirPath, () => data.storageHandle], () => {
+watch([() => data.dirPath, () => data.storageEntry], () => {
   load();
 });
 
@@ -235,7 +245,7 @@ watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
-      refresh();
+      loadAvailableStorages();
     } else {
       Object.assign(data, defaultData());
     }
@@ -263,7 +273,7 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
   }
 });
 
-onUpdated(refresh);
+onUpdated(loadAvailableStorages);
 </script>
 
 <template>
@@ -271,7 +281,7 @@ onUpdated(refresh);
     <div v-focus class="file-dialog" @keyup.enter="submit">
       <div class="file-dialog__title">{{ title ?? 'Select files' }}</div>
       <div class="file-dialog__search">
-        <dropdown v-model="data.storageHandle" label="Select storage" :options="data.storageOptions" />
+        <dropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
         <text-field :model-value="data.dirPath" label="Enter path" @update:model-value="updateDirPathDebounced" />
       </div>
       <div class="ls-container">
@@ -289,6 +299,14 @@ onUpdated(refresh);
         <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">
           <i class="mask-24 mask-loading loader-icon" />
         </div>
+        <div v-else-if="!data.storageEntry" class="ls-empty">
+          <div class="ls-empty__cat" />
+          <div class="ls-empty__message">Select storage to preview</div>
+        </div>
+        <div v-else-if="data.error" class="ls-error">
+          <div class="ls-error__cat" />
+          <div class="ls-error__message">{{ data.error }}</div>
+        </div>
         <div v-else class="ls-body">
           <template v-for="file in visibleItems" :key="file.id">
             <div v-if="file.isDir" class="isDir" @click="setDirPath(file.path)">
@@ -302,7 +320,6 @@ onUpdated(refresh);
           </template>
         </div>
       </div>
-      <div v-if="data.error" class="alert-error">{{ data.error }}</div>
     </div>
     <div class="form-modal__actions bordered">
       <btn-primary :disabled="!isReady" @click.stop="submit">Import</btn-primary>

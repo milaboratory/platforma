@@ -17,6 +17,10 @@ const d = new Map<string, LsEntry[]>();
 const getLsFilesResult = (path: string): ListFilesResult => {
   const length = randomInt(1, 100);
 
+  if (path.endsWith('11')) {
+    throw Error('Some error');
+  }
+
   if (!d.has(path)) {
     const dirPath = path === '/' ? '' : path;
 
