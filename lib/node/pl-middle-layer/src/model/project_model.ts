@@ -101,6 +101,12 @@ export function parseBlockFrontendStateKey(key: string): string | undefined {
   return match.groups!['blockid'];
 }
 
+export const ServiceTemplateCacheFieldPrefix = '__serviceTemplate_';
+
+export function getServiceTemplateField(hash: string): string {
+  return `${ServiceTemplateCacheFieldPrefix}${hash}`;
+}
+
 export interface ProjectField {
   blockId: string;
   fieldName:
@@ -108,12 +114,16 @@ export interface ProjectField {
     | 'prodArgs'
     | 'currentArgs'
     | 'prodCtx'
+    | 'prodUiCtx'
     | 'prodOutput'
     | 'prodCtxPrevious'
+    | 'prodUiCtxPrevious'
     | 'prodOutputPrevious'
     | 'stagingCtx'
+    | 'stagingUiCtx'
     | 'stagingOutput'
     | 'stagingCtxPrevious'
+    | 'stagingUiCtxPrevious'
     | 'stagingOutputPrevious';
 }
 
@@ -122,7 +132,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField['field
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodOutput|prodCtxPrevious|prodOutputPrevious|stagingCtx|stagingOutput|stagingCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|prodArgs|currentArgs|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

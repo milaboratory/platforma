@@ -76,7 +76,7 @@ export class MiddleLayer {
   /** Creates a project with initial state and adds it to project list. */
   public async createProject(meta: ProjectMeta, id: string = randomUUID()): Promise<ResourceId> {
     const resource = await this.pl.withWriteTx('MLCreateProject', async (tx) => {
-      const prj = createProject(tx, meta);
+      const prj = await createProject(tx, meta);
       tx.createField(field(this.projectListResourceId, id), 'Dynamic', prj);
       await tx.commit();
       return await toGlobalResourceId(prj);

@@ -2,6 +2,7 @@ import {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  ensureResourceIdNotNull,
   field,
   isNotNullResourceId,
   isNullResourceId,
@@ -10,7 +11,8 @@ import {
   Pl,
   PlClient,
   PlTransaction,
-  ResourceId
+  ResourceId,
+  ResourceRef
 } from '@milaboratory/pl-client-v2';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
 import {
@@ -34,7 +36,8 @@ import {
   blockArgsAuthorKey,
   ProjectLastModifiedTimestamp,
   ProjectCreatedTimestamp,
-  ProjectStructureAuthorKey
+  ProjectStructureAuthorKey,
+  getServiceTemplateField
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
 import {
@@ -48,6 +51,8 @@ import { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratory/ts-helpers';
 import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
 import Denque from 'denque';
+import { getPreparedExportTemplateEnvelope } from './context_export';
+import { loadTemplate } from './template/template_loading';
 
 type FieldStatus = 'NotReady' | 'Ready' | 'Error';
 
@@ -220,7 +225,8 @@ export class ProjectMutator {
     private readonly renderingState: Omit<ProjectRenderingState, 'blocksInLimbo'>,
     private readonly blocksInLimbo: Set<string>,
     private readonly blockInfos: Map<string, BlockInfo>,
-    private readonly blockFrontendStates: Map<string, string>
+    private readonly blockFrontendStates: Map<string, string>,
+    private readonly ctxExportTplHolder: AnyResourceRef
   ) {}
 
   private fixProblems() {
@@ -926,6 +932,26 @@ export class ProjectMutator {
         : { modCount: 0, ref: f.value };
     }
 
+    // loading ctx export template to check if we already have cached materialized template in our project
+    const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
+
+    // expected field name
+    const ctxExportTplCacheFieldName = getServiceTemplateField(ctxExportTplEnvelope.hash);
+    const ctxExportTplField = fullResourceState.fields.find(
+      (f) => f.name === ctxExportTplCacheFieldName
+    );
+    let ctxExportTplHolder: AnyResourceRef;
+    if (ctxExportTplField !== undefined)
+      ctxExportTplHolder = ensureResourceIdNotNull(ctxExportTplField.value);
+    else {
+      ctxExportTplHolder = Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec));
+      tx.createField(
+        field(rid, getServiceTemplateField(ctxExportTplEnvelope.hash)),
+        'Dynamic',
+        ctxExportTplHolder
+      );
+    }
+
     const renderingState = { stagingRefreshTimestamp };
     const blocksInLimboSet = new Set(blocksInLimbo);
 
@@ -982,7 +1008,8 @@ export class ProjectMutator {
       renderingState,
       blocksInLimboSet,
       blockInfos,
-      blockFrontendStates
+      blockFrontendStates,
+      ctxExportTplHolder
     );
 
     prj.fixProblems();
@@ -999,10 +1026,10 @@ export interface ProjectState {
   blockInfos: Map<string, BlockInfo>;
 }
 
-export function createProject(
+export async function createProject(
   tx: PlTransaction,
   meta: ProjectMeta = InitialBlockMeta
-): AnyResourceRef {
+): Promise<AnyResourceRef> {
   const prj = tx.createEphemeral(ProjectResourceType);
   tx.lock(prj);
   const ts = String(Date.now());
@@ -1012,6 +1039,12 @@ export function createProject(
   tx.setKValue(prj, ProjectMetaKey, JSON.stringify(meta));
   tx.setKValue(prj, ProjectStructureKey, JSON.stringify(InitialBlockStructure));
   tx.setKValue(prj, BlockRenderingStateKey, JSON.stringify(InitialProjectRenderingState));
+  const ctxExportTplEnvelope = await getPreparedExportTemplateEnvelope();
+  tx.createField(
+    field(prj, getServiceTemplateField(ctxExportTplEnvelope.hash)),
+    'Dynamic',
+    Pl.wrapInHolder(tx, loadTemplate(tx, ctxExportTplEnvelope.spec))
+  );
   return prj;
 }
 
