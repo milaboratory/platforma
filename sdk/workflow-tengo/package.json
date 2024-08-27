@@ -32,7 +32,7 @@
     "@types/node": "^20.16.1",
     "@milaboratory/tengo-template-builder": "^1.12.0",
     "@milaboratory/pl-middle-layer": "^1.9.29",
-    "@milaboratory/sdk-test": "^1.4.14",
+    "@milaboratory/sdk-test": "^1.4.15",
     "vitest": "^2.0.5"
   }
 }

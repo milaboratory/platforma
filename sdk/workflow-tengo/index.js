@@ -37,6 +37,7 @@ module.exports = { Templates: {
   'pframes.export-multiple-pcolumns': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.export-multiple-pcolumns.plj.gz') },
   'pframes.export-pframe': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.export-pframe.plj.gz') },
   'pframes.import-xsv-map': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.import-xsv-map.plj.gz') },
+  'pframes.test.xsv.import-csv-map-wf': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv-map-wf.plj.gz') },
   'pframes.test.xsv.import-csv-map': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv-map.plj.gz') },
   'pframes.test.xsv.import-csv': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv.plj.gz') },
   'test.import-template.workflow': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.import-template.workflow.plj.gz') },
