@@ -28,7 +28,7 @@ createUniversal := func(tplId, isEph, inputs) {
 	if isEph {
 		rbuilder = smart.ephemeralBuilder(constants.RTYPE_RENDER_EPH_TEMPLATE)
 	}  else {
-		rbuilder =smart.structBuilder(constants.RTYPE_RENDER_TEMPLATE)
+		rbuilder = smart.structBuilder(constants.RTYPE_RENDER_TEMPLATE)
 	}
 
 	if isEph {
