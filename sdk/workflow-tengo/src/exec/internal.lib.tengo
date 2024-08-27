@@ -4,7 +4,7 @@ ll := import(":ll")
 oop := import(":oop")
 maps := import(":maps")
 path := import(":path")
-pkg := import(":package")
+pkg := import(":exec.package")
 
 // Variables, substituted in command arguments and environment variable values
 _ARG_VAR_PKG            := "{pkg}"  // abs path to software package

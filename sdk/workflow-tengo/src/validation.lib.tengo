@@ -163,7 +163,6 @@ _parseTags := func(rule) {
  * @return either fail or success
  */
 _validateJson := func(js, schema, keyPath, ...stack) {
-
 	if is_undefined(schema) {
 		if len(stack) == 0 {
 			return fail(keyPath, "key is not defined by schema, but exists in the JSON")

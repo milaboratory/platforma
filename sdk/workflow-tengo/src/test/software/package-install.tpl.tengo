@@ -1,6 +1,6 @@
 ll := import(":ll")
 self := import(":tpl")
-pkg := import(":package")
+pkg := import(":exec.package")
 render := import(":render")
 maps := import(":maps")
 json := import("json")
