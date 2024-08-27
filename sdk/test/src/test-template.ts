@@ -18,6 +18,7 @@ import {
   PlTransaction,
   prepareTemplateSpec,
   ResourceId,
+  TemplateSpecAny,
   toGlobalResourceId
 } from '@milaboratory/pl-middle-layer';
 import {
@@ -31,11 +32,13 @@ import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { plTest } from './test-pl';
 
+export type WorkflowRenderOps = {
+  parent?: ResourceId;
+  exportProcessor?: TemplateSpecAny;
+};
+
 export class TestRenderResults<O extends string> {
-  constructor(
-    public readonly fields: Readonly<Record<O, FieldRef>>,
-    public readonly resultEntry: PlTreeEntry
-  ) {}
+  constructor(public readonly resultEntry: PlTreeEntry) {}
 
   public computeOutput<R>(
     name: O,
@@ -54,12 +57,12 @@ export class TestRenderResults<O extends string> {
 export class TestWorkflowResults {
   constructor(
     public readonly renderResult: TestRenderResults<'context' | 'result'>,
+    public readonly processedExportsResult: TestRenderResults<'result'> | undefined,
     public readonly blockId: string
   ) {}
 
   /**
    * Returns context id of this workflow
-   * @deprecated
    * */
   public context(): ComputableStableDefined<ResourceId> {
     return this.renderResult
@@ -69,7 +72,6 @@ export class TestWorkflowResults {
 
   /**
    * Returns context id of this workflow
-   * @deprecated
    * */
   public result(): ComputableStableDefined<ResourceId> {
     return this.renderResult
@@ -81,12 +83,20 @@ export class TestWorkflowResults {
     name: string,
     cb: (acc: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R
   ) {
-    return this.renderResult.computeOutput('context', (acc, ctx) => {
-      return cb(
-        acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }),
-        ctx
-      );
-    });
+    if (this.processedExportsResult !== undefined)
+      return this.processedExportsResult.computeOutput('result', (acc, ctx) => {
+        return cb(
+          acc?.traverse({ field: name, assertFieldType: 'Input' }),
+          ctx
+        );
+      });
+    else
+      return this.renderResult.computeOutput('context', (acc, ctx) => {
+        return cb(
+          acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }),
+          ctx
+        );
+      });
   }
 
   public output<R>(
@@ -108,18 +118,21 @@ export class TplTestHelpers {
 
   async renderTemplate<const O extends string>(
     ephemeral: boolean,
-    templateName: string,
+    template: string | TemplateSpecAny,
     outputs: O[],
     inputs: (
       tx: PlTransaction
     ) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>
   ): Promise<TestRenderResults<O>> {
     const runId = randomUUID();
-    const spec = await prepareTemplateSpec({
-      type: 'from-file',
-      path: `./dist/tengo/tpl/${templateName}.plj.gz`
-    });
-    const { resultMapRid, resultFields } = await this.pl.withWriteTx(
+    const spec =
+      typeof template === 'string'
+        ? await prepareTemplateSpec({
+            type: 'from-file',
+            path: `./dist/tengo/tpl/${template}.plj.gz`
+          })
+        : await prepareTemplateSpec(template);
+    const { resultMapRid } = await this.pl.withWriteTx(
       'TemplateRender',
       async (tx) => {
         const tpl = loadTemplate(tx, spec);
@@ -132,18 +145,12 @@ export class TplTestHelpers {
         const resultMapRid = await toGlobalResourceId(resultMap);
         await tx.commit();
         return {
-          resultMapRid,
-          resultFields: Object.fromEntries(
-            outputs.map((o) => [o, field(resultMapRid, o)])
-          ) as Record<O, FieldRef>
+          resultMapRid
         };
       }
     );
     await this.resultRootTree.refreshState();
-    return new TestRenderResults(
-      resultFields,
-      this.resultRootTree.entry(resultMapRid)
-    );
+    return new TestRenderResults(this.resultRootTree.entry(resultMapRid));
   }
 
   createObject(tx: PlTransaction, value: any) {
@@ -151,37 +158,51 @@ export class TplTestHelpers {
   }
 
   async renderWorkflow(
-    workflowName: string,
+    workflow: string | TemplateSpecAny,
     preRun: boolean,
     args: Record<string, any> | Promise<Record<string, any>>,
-    parent?: ResourceId
+    ops: WorkflowRenderOps = {}
   ): Promise<TestWorkflowResults> {
     const blockId = randomUUID();
-    const result: TestRenderResults<'result' | 'context'> =
-      await this.renderTemplate(
-        true,
-        workflowName,
-        ['result', 'context'],
-        (tx) => {
-          let ctx = undefined;
-          if (parent) {
-            ctx = parent;
-          } else {
-            ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' });
-            tx.lockInputs(ctx);
-            tx.lockOutputs(ctx);
-          }
-
-          return {
-            args: this.createObject(tx, args),
-            blockId: this.createObject(tx, blockId),
-            isProduction: this.createObject(tx, !preRun),
-            context: ctx
-          };
+    const mainResult: TestRenderResults<'result' | 'context'> =
+      await this.renderTemplate(true, workflow, ['result', 'context'], (tx) => {
+        let ctx = undefined;
+        if (ops.parent) {
+          ctx = ops.parent;
+        } else {
+          ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' });
+          tx.lock(ctx);
         }
-      );
 
-    return new TestWorkflowResults(result, blockId);
+        return {
+          args: this.createObject(tx, args),
+          blockId: this.createObject(tx, blockId),
+          isProduction: this.createObject(tx, !preRun),
+          context: ctx
+        };
+      });
+
+    const exports: TestRenderResults<'exports'> | undefined = undefined;
+    if(ops.exportProcessor !== undefined){
+      const exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => {
+        let ctx = undefined;
+        if (ops.parent) {
+          ctx = ops.parent;
+        } else {
+          ctx = tx.createEphemeral({ name: 'BContextEnd', version: '1' });
+          tx.lock(ctx);
+        }
+
+        return {
+          args: this.createObject(tx, args),
+          blockId: this.createObject(tx, blockId),
+          isProduction: this.createObject(tx, !preRun),
+          context: ctx
+        };
+      });
+    }
+
+    return new TestWorkflowResults(mainResult, exports, blockId);
   }
 }
 
