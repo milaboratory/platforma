@@ -39,7 +39,7 @@ tpl.body(func(inputs) {
 	rawFields := tpl.rawInputs().pf.getValue().inputs()
 
 	// if context is passed as an input we differently treat the field names (see below)
-	isContext := inputs.pf.checkResourceType(constants.RTYPE_CONTEXT)
+	isContext := tpl.rawInputs().pf.getValue().checkResourceType(constants.RTYPE_CONTEXT)
 
 	for rawFieldName, fieldValue in inputs.pf {
 		fieldName := rawFieldName
@@ -77,6 +77,7 @@ tpl.body(func(inputs) {
 	for colName, col in columns {
 		if is_undefined(col.spec) || (
 		    col.spec.kind == "PColumn" && (
+				is_undefined(col.spec.valueType) ||
 				col.spec.valueType == "file" || col.spec.valueType == "blob" ||
 				col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
 				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
