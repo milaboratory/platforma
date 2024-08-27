@@ -325,11 +325,18 @@ isValid := func(js, schema) {
  *
  * @param js: any - the JSON to assert.
  * @param schema: any - the schema to assert against.
+ * @param failMsg: string - optional parameter with custom message to be printed on validation error
  */
-assertJsonSchema := func(js, schema) {
+assertJsonSchema := func(js, schema, ...failMsg) {
 	r := _validateJson(js, schema, "")
+
+	msg := "JSON validation error"
+	if len(failMsg) > 0 {
+		msg = failMsg[0]
+	}
+
 	if isFail(r) {
-		ll.panic("JSON validation error: %s", r.message)
+		ll.panic("%s: %s", msg, r.message)
 	}
 }
 

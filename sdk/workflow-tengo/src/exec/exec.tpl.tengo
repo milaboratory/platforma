@@ -49,10 +49,7 @@ _runBinaryCommand := func(inputs) {
 	opts := execInternal.binaryRunOptions(inputs.runOptions)
 
 	for pkgInfo in opts.packages {
-		runBuilder.useSoftware(
-			pkgInfo.name,
-			execInternal.installSoftware(pkgInfo)
-		)
+		runBuilder.useSoftware(pkgInfo.name, pkgInfo.reference)
 	}
 
 	// exec command
@@ -159,7 +156,7 @@ self.body(func(inputs) {
 		values: { any: "any" },
 		dirs: ["string"],
 		runOptions: {
-			soft: software.infoScheme,
+			"software,omitempty": software.infoScheme,
 			"cmd,omitempty": "string",
 			"args,omitempty": [cmdScheme],
 			envs: { any: "string" },
