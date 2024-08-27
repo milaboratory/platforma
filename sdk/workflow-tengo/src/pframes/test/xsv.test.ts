@@ -65,12 +65,16 @@ const baseSpec = {
     {
       column: 'col1',
       id: 'col1',
-      type: 'String'
+      spec: {
+        type: 'String'
+      }
     },
     {
       column: 'col2',
       id: 'col2',
-      type: 'String'
+      spec: {
+        type: 'String'
+      }
     }
   ],
 
