@@ -66,6 +66,19 @@ export function downloadArchive(logger: winston.Logger, options?: {
 
     return new Promise((resolve, reject) => {
         request.on('response', (response) => {
+            if (!response.statusCode) {
+                const err = new Error("failed to download archive: no HTTP status code in response from server")
+                request.destroy()
+                reject(err)
+                return
+            }
+            if (response.statusCode !== 200) {
+                const err = new Error(`failed to download archive: ${response.statusCode} ${response.statusMessage}`)
+                request.destroy()
+                reject(err)
+                return
+            }
+
             const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
             let downloadedBytes = 0;
 
@@ -83,12 +96,14 @@ export function downloadArchive(logger: winston.Logger, options?: {
             response.on('error', (err: Error) => {
                 fs.unlinkSync(archiveFilePath)
                 logger.error(`Failed to download Platforma Binary: ${err.message}`)
+                request.destroy()
                 reject(err)
             })
 
             archive.on('finish', () => {
                 archive.close()
                 logger.info(`  ... download done.`)
+                request.destroy()
                 resolve(archiveFilePath)
             })
         })
@@ -108,6 +123,7 @@ export function extractArchive(logger: winston.Logger, options?: {
 
     if (fs.existsSync(targetDir)) {
         logger.info(`Platforma Backend binaries unpack skipped: '${targetDir}' exists`)
+        return targetDir
     }
 
     if (!fs.existsSync(archivePath)) {

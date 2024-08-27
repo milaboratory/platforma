@@ -70,7 +70,8 @@ export default class FS extends Command {
       core.startLocalFS(startOptions)
     } else {
       platforma.getBinary(logger, { version: flags.version }).
-        then(() => core.startLocalFS(startOptions))
+        then(() => core.startLocalFS(startOptions)).
+        catch(function (err: Error) { logger.error(err.message) })
     }
   }
 }

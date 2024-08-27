@@ -75,7 +75,8 @@ export default class FS extends Command {
 
     } else {
       platforma.getBinary(logger, { version: flags.version }).
-        then(() => core.startLocalS3(startOptions))
+        then(() => core.startLocalS3(startOptions)).
+        catch(function (err: Error) { logger.error(err.message) })
     }
   }
 }
