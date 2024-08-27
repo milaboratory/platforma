@@ -4,7 +4,7 @@ import { tplTest } from "@milaboratory/sdk-test";
 tplTest("package-loads-and-installs", async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    "test.software.package-install",
+    "exec.test.package-install",
     ["installed", "descriptor"],
     (tx) => ({})
   );

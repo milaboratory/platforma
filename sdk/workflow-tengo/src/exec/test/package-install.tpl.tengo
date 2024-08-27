@@ -5,7 +5,7 @@ render := import(":render")
 maps := import(":maps")
 json := import("json")
 
-sw := ll.importSoftware(":test.software.sleep")
+sw := ll.importSoftware(":exec.test.sleep")
 
 self.defineOutputs(["installed", "descriptor"])
 

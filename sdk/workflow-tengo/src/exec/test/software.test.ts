@@ -3,7 +3,7 @@ import { tplTest } from "@milaboratory/sdk-test";
 tplTest("software-info-loads", async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
     false,
-    "test.software.software-info",
+    "exec.test.software-info",
     ["main"],
     (tx) => ({})
   );
@@ -18,7 +18,7 @@ tplTest("software-info-loads", async ({ helper, expect }) => {
    }
 
 
-  expect(val.name).eq("@milaboratory/tengo-sdk:test.software.sleep")
+  expect(val.name).eq("@milaboratory/tengo-sdk:exec.test.sleep")
   expect(val.version).not.eq("")
   expect(val.execs.length).gt(0)
   expect(val).toHaveProperty("blobRef")
