@@ -19,3 +19,7 @@ export * from './utils';
 export * from './computedResult';
 
 export * from './composition/useWatchResult';
+
+export * from '@milaboratory/platforma-uikit';
+
+export type * from '@milaboratory/platforma-uikit';

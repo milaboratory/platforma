@@ -1,10 +1,22 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.38",
+  "version": "1.0.39",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
   "types": "lib/dist/src/lib.d.ts",
+  "styles": "lib/dist/style.css",
+  "exports": {
+    ".": {
+      "style": "./lib/styles/main.css",
+      "types": "./lib/dist/src/lib.d.ts",
+      "default": "./lib/dist/lib.js"
+    },
+    "./styles": {
+      "default": "./lib/dist/style.css"
+    },
+    "./*": "./*"
+  },
   "directories": {
     "lib": "lib"
   },
@@ -27,11 +39,14 @@
   "license": "ISC",
   "peerDependencies": {
     "@milaboratory/helpers": "^1.5.1",
-    "@milaboratory/platforma-uikit": "^1.0.26",
     "@milaboratory/sdk-ui": "^0.12.10",
     "vue": "^3.4.31"
   },
+  "dependencies": {
+    "@milaboratory/platforma-uikit": "^1.0.26"
+  },
   "devDependencies": {
+    "@milaboratory/platforma-uikit": "^1.0.26",
     "@faker-js/faker": "8.4.0",
     "@types/node": "20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
