@@ -53,11 +53,7 @@ const computedValue = computed({
     if (isNumeric(val)) {
       emit('update:modelValue', +val);
       //try press 123.12345678912345 and than 6
-      if (
-        val.toString() !== props.modelValue?.toString() &&
-        +val === props.modelValue &&
-        val[val.length - 1] !== '.'
-      ) {
+      if (val.toString() !== props.modelValue?.toString() && +val === props.modelValue && val[val.length - 1] !== '.') {
         canRenderValue.value = false;
         nextTick(() => {
           canRenderValue.value = true;
@@ -83,18 +79,10 @@ const errors = computed(() => {
   if (!isNumeric(props.modelValue)) {
     ers.push('Model value is not a number.');
   } else {
-    if (
-      props.minValue !== undefined &&
-      props.modelValue !== undefined &&
-      props.modelValue < props.minValue
-    ) {
+    if (props.minValue !== undefined && props.modelValue !== undefined && props.modelValue < props.minValue) {
       ers.push(`Model value must be higher than ${props.minValue}`);
     }
-    if (
-      props.maxValue !== undefined &&
-      props.modelValue !== undefined &&
-      props.modelValue > props.maxValue
-    ) {
+    if (props.maxValue !== undefined && props.modelValue !== undefined && props.modelValue > props.maxValue) {
       ers.push(`Model value must be less than ${props.maxValue}`);
     }
   }
@@ -154,9 +142,7 @@ function decrement() {
       nV = +(props.modelValue || 0) - props.step;
     }
 
-    computedValue.value = props.minValue
-      ? Math.max(props.minValue, nV).toString()
-      : nV.toString();
+    computedValue.value = props.minValue ? Math.max(props.minValue, nV).toString() : nV.toString();
   }
 }
 
@@ -165,21 +151,12 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
     e.preventDefault();
   }
 
-  e.code === 'ArrowUp'
-    ? increment()
-    : e.code === 'ArrowDown'
-      ? decrement()
-      : undefined;
+  e.code === 'ArrowUp' ? increment() : e.code === 'ArrowDown' ? decrement() : undefined;
 }
 </script>
 
 <template>
-  <div
-    ref="root"
-    :class="{ error: !!errors.trim(), disabled: disabled }"
-    class="mi-number-field d-flex-column"
-    @keydown="handleKeyPress($event)"
-  >
+  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-field d-flex-column" @keydown="handleKeyPress($event)">
     <div class="mi-number-field__main-wrapper d-flex">
       <DoubleContour class="mi-number-field__contour" />
       <div class="mi-number-field__wrapper flex-grow d-flex flex-align-center">
@@ -191,13 +168,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
             </template>
           </Tooltip>
         </label>
-        <input
-          ref="input"
-          v-model="computedValue"
-          :disabled="disabled"
-          :placeholder="placeholder"
-          class="text-s flex-grow"
-        />
+        <input ref="input" v-model="computedValue" :disabled="disabled" :placeholder="placeholder" class="text-s flex-grow" />
       </div>
       <div class="mi-number-field__icons d-flex-column">
         <div
@@ -205,13 +176,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
           class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="increment"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
               fill-rule="evenodd"
               clip-rule="evenodd"
@@ -225,13 +190,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
           class="mi-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
           @click="decrement"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path
               fill-rule="evenodd"
               clip-rule="evenodd"

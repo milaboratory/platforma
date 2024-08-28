@@ -66,11 +66,7 @@ function adjustHeight() {
 
 <template>
   <div class="ui-text-area__envelope">
-    <div
-      ref="root"
-      class="ui-text-area"
-      :class="{ optional, error: displayErrors, disabled, dashed, nonEmpty }"
-    >
+    <div ref="root" class="ui-text-area" :class="{ optional, error: displayErrors, disabled, dashed, nonEmpty }">
       <label v-if="label" ref="label">
         {{ label }}
         <span v-if="optional" style="opacity: 0.5">(optional)</span>

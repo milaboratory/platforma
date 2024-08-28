@@ -1,9 +1,6 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, type Ref } from 'vue';
 
-export function useValidation<T>(
-  val: Ref<T>,
-  rules: ((v: T) => boolean | string)[],
-) {
+export function useValidation<T>(val: Ref<T>, rules: ((v: T) => boolean | string)[]) {
   return computed(() => {
     const errors: string[] = [];
     if (rules && rules.length > 0) {

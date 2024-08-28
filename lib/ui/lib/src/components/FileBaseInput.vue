@@ -30,9 +30,7 @@ const emit = defineEmits<{
 const fileInput = ref<HTMLInputElement>();
 const dragging = ref(false);
 
-const hasFiles = computed(
-  () => props.modelValue && props.modelValue.length > 0,
-);
+const hasFiles = computed(() => props.modelValue && props.modelValue.length > 0);
 function triggerFileInput() {
   fileInput.value?.click();
 }
@@ -61,9 +59,7 @@ function handleDrop(event: DragEvent) {
 
 function filterFiles(files: File[]): File[] {
   if (!props.acceptedTypes) return files;
-  const acceptedTypesArray = props.acceptedTypes
-    .split(',')
-    .map((type) => type.trim());
+  const acceptedTypesArray = props.acceptedTypes.split(',').map((type) => type.trim());
   return Array.from(files).filter((file) => {
     return acceptedTypesArray.some((type) => {
       if (type.includes('/*')) {
@@ -104,13 +100,7 @@ function deleteFile(file: File) {
         </div>
       </div>
       <div class="pl-file-base-input__buttons d-flex gap-2">
-        <input
-          ref="fileInput"
-          :multiple="multiple"
-          :accept="acceptedTypes"
-          type="file"
-          @change="handleFiles"
-        />
+        <input ref="fileInput" :multiple="multiple" :accept="acceptedTypes" type="file" @change="handleFiles" />
         <BtnSecondary :disabled="disabled" class="text-caps11">
           {{ buttonText }}
         </BtnSecondary>
@@ -119,22 +109,11 @@ function deleteFile(file: File) {
     </div>
 
     <div v-if="hasFiles" class="d-flex gap-2 pa-4 flex-wrap">
-      <div
-        v-for="file in modelValue"
-        :key="file.name"
-        class="pl-file-base-input__file d-flex align-center"
-      >
+      <div v-for="file in modelValue" :key="file.name" class="pl-file-base-input__file d-flex align-center">
         <div class="pl-file-base-input__file-name text-m">
           {{ file.name }}
         </div>
-        <BtnGhost
-          :disabled="disabled"
-          icon="close"
-          round
-          size="small"
-          class="flex-shrink-0"
-          @click.stop="deleteFile(file)"
-        />
+        <BtnGhost :disabled="disabled" icon="close" round size="small" class="flex-shrink-0" @click.stop="deleteFile(file)" />
       </div>
     </div>
   </div>

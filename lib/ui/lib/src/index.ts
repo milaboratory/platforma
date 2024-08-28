@@ -84,15 +84,7 @@ export { scrollIntoView } from './helpers/dom';
 export { animateInfinite } from './helpers/utils';
 
 // MiXCR
-export {
-  AlphabetType,
-  AbundanceMeasure,
-  AbundanceType,
-  GeneFeatureDropdown,
-  GeneNameFormat,
-  GeneType,
-  MarkedSequence,
-};
+export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };
 
 export {
   // Common
@@ -156,14 +148,7 @@ export { showContextMenu };
 export type { GridTableSettings, GridTableTypes, ManageModalTypes };
 
 //move to new version pl-uikit
-export {
-  LongText,
-  SliderRangeTriple,
-  SliderRange,
-  Scrollable,
-  AddGraph,
-  useDraggable,
-};
+export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
 
 const DemoData = { allCssVariables: allCssVariables(), icons16, icons24 };
 export { DemoData };

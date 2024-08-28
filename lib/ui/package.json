@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.0.26",
+  "version": "1.0.28",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -21,7 +21,9 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "lint": "eslint . --ext js,ts,vue",
-    "install-no-ws": "npm i --package-lock-only --workspaces false"
+    "install-no-ws": "npm i --package-lock-only --workspaces false",
+    "prepare": "husky",
+    "check": "npm run type-check && npm run lint"
   },
   "files": [
     "lib"
@@ -60,6 +62,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "eslint-plugin-vue": "^9.26.0",
+    "husky": "^9.1.5",
     "prettier": "^3.2.4",
     "sass": "1.77.2",
     "stylelint-config-prettier": "^9.0.5",

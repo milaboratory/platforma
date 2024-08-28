@@ -173,10 +173,7 @@ export function allCssVariables(): Record<
         },
         '--btn-switcher': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #A1E59C 0%, #D0F5B0 100%)',
-            '#5E5E70',
-          ],
+          value: ['linear-gradient(180deg, #A1E59C 0%, #D0F5B0 100%)', '#5E5E70'],
           description: 'Gradient on active controll/switcher element',
         },
       },
@@ -251,34 +248,22 @@ export function allCssVariables(): Record<
       data: {
         '--notification-neutral': {
           light: [false, true],
-          value: [
-            'linear-gradient(90deg, #D6D9FF 0%, #FFF 100%)',
-            'linear-gradient(90deg, #4D4D8F 0%, #292933 100%)',
-          ],
+          value: ['linear-gradient(90deg, #D6D9FF 0%, #FFF 100%)', 'linear-gradient(90deg, #4D4D8F 0%, #292933 100%)'],
           description: 'Background on neutral blocks',
         },
         '--notification-success': {
           light: [false, true],
-          value: [
-            'linear-gradient(90deg, #C9F0B6 0%, #FFF 100%)',
-            'linear-gradient(90deg, #305C3E 0%, #292933 100%)',
-          ],
+          value: ['linear-gradient(90deg, #C9F0B6 0%, #FFF 100%)', 'linear-gradient(90deg, #305C3E 0%, #292933 100%)'],
           description: 'Background on success blocks',
         },
         '--notification-warning': {
           light: [false, true],
-          value: [
-            'linear-gradient(90deg, #FEE0A3 0%, #FFF 100%)',
-            'linear-gradient(90deg, #754F2D 0%, #292933 100%)',
-          ],
+          value: ['linear-gradient(90deg, #FEE0A3 0%, #FFF 100%)', 'linear-gradient(90deg, #754F2D 0%, #292933 100%)'],
           description: 'Background on warning blocks',
         },
         '--notification-error': {
           light: [false, true],
-          value: [
-            'linear-gradient(90deg, #FFB8B8 0%, #FFF 100%)',
-            'linear-gradient(90deg, #8F3343 0%, #292933 100%)',
-          ],
+          value: ['linear-gradient(90deg, #FFB8B8 0%, #FFF 100%)', 'linear-gradient(90deg, #8F3343 0%, #292933 100%)'],
           description: 'Background on error blocks',
         },
       },
@@ -296,74 +281,47 @@ export function allCssVariables(): Record<
         },
         '--gradient-green-lime': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #A1E59C 0%, #D0F5B0 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #A1E59C 0%, #D0F5B0 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Main brand light gradient',
         },
         '--gradient-blue-violet': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #ADB8FF 0%, #D6E9FF 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #ADB8FF 0%, #D6E9FF 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Main brand light gradient',
         },
         '--gradient-blue-clear': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #85BEFF 0%, #CEF 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #85BEFF 0%, #CEF 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-orange': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #FFB766 0%, #FFEAA3 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #FFB766 0%, #FFEAA3 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-mint': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #7DD1D1 0%, #C8FAE9 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #7DD1D1 0%, #C8FAE9 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-lime': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #BFE062 0%, #E4FFAD 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #BFE062 0%, #E4FFAD 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-rose': {
           light: [false, true],
-          value: [
-            'linear-gradient(0deg, #FFDDD6 0%, #FF99C9 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(0deg, #FFDDD6 0%, #FF99C9 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-red': {
           light: [false, true],
-          value: [
-            'linear-gradient(0deg, #FFD5CC 0%, #FF9494 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(0deg, #FFD5CC 0%, #FF9494 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
         '--gradient-violet': {
           light: [false, true],
-          value: [
-            'linear-gradient(180deg, #BCA3FF 0%, #E5E5FF 100%)',
-            'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)',
-          ],
+          value: ['linear-gradient(180deg, #BCA3FF 0%, #E5E5FF 100%)', 'linear-gradient(0deg, #478063 0%, #2E4652 45.93%, #24223D 91.63%)'],
           description: 'Additional brand gradient',
         },
       },

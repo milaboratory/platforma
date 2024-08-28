@@ -84,20 +84,9 @@ function clear() {
       <div v-if="prefix" class="ui-text-field__prefix">
         {{ prefix }}
       </div>
-      <input
-        ref="input"
-        v-model="value"
-        :disabled="disabled"
-        :placeholder="placeholder || '...'"
-        type="text"
-        spellcheck="false"
-      />
+      <input ref="input" v-model="value" :disabled="disabled" :placeholder="placeholder || '...'" type="text" spellcheck="false" />
       <div class="ui-text-field__append">
-        <div
-          v-if="clearable && nonEmpty"
-          class="icon icon--clear"
-          @click="clear"
-        />
+        <div v-if="clearable && nonEmpty" class="icon icon--clear" @click="clear" />
         <slot name="append" />
       </div>
       <double-contour class="ui-text-field__contour" />

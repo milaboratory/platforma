@@ -16,9 +16,7 @@ describe('Test useValidation', () => {
 
   test('Check correct', () => {
     const model = ref('12345');
-    const rules: ((v: string) => boolean | string)[] = [
-      (v: string) => v.length === 5 || 'Length must be 5',
-    ];
+    const rules: ((v: string) => boolean | string)[] = [(v: string) => v.length === 5 || 'Length must be 5'];
 
     const validationData = useValidation(model, rules);
 
@@ -41,17 +39,12 @@ describe('Test useValidation', () => {
     expect(validationData.value).to.have.property('isValid');
     expect(validationData.value.isValid).to.equal(false);
 
-    expect(validationData.value.errors).toEqual([
-      'Length must be 5',
-      'Length must be 5 second message',
-    ]);
+    expect(validationData.value.errors).toEqual(['Length must be 5', 'Length must be 5 second message']);
   });
 
   test('Check value changes', () => {
     const model = ref('12345');
-    const rules: ((v: string) => boolean | string)[] = [
-      (v: string) => v.length === 5 || 'Length must be 5!!!',
-    ];
+    const rules: ((v: string) => boolean | string)[] = [(v: string) => v.length === 5 || 'Length must be 5!!!'];
 
     const validationData = useValidation(model, rules);
 
@@ -65,16 +58,10 @@ describe('Test useValidation', () => {
 
   test('should return multiple error messages', () => {
     const value = ref('no');
-    const rules = [
-      (v: string) => v.length > 3 || 'Must be longer than 3 characters',
-      (v: string) => v.includes('@') || 'Must include "@" symbol',
-    ];
+    const rules = [(v: string) => v.length > 3 || 'Must be longer than 3 characters', (v: string) => v.includes('@') || 'Must include "@" symbol'];
     const validation = useValidation(value, rules);
 
     expect(validation.value.isValid).toBe(false);
-    expect(validation.value.errors).toEqual([
-      'Must be longer than 3 characters',
-      'Must include "@" symbol',
-    ]);
+    expect(validation.value.errors).toEqual(['Must be longer than 3 characters', 'Must include "@" symbol']);
   });
 });

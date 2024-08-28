@@ -29,9 +29,7 @@ describe('NumberInput.vue', () => {
         step: 2,
       },
     });
-    const incrementButton = wrapper.find(
-      '.mi-number-field__icons div:first-child',
-    );
+    const incrementButton = wrapper.find('.mi-number-field__icons div:first-child');
     await incrementButton.trigger('click');
     expect(wrapper.emitted('update:modelValue')).toEqual([[12]]);
   });
@@ -43,9 +41,7 @@ describe('NumberInput.vue', () => {
         step: 1,
       },
     });
-    const decrementButton = wrapper.find(
-      '.mi-number-field__icons div:last-child',
-    );
+    const decrementButton = wrapper.find('.mi-number-field__icons div:last-child');
     await decrementButton.trigger('click');
     expect(wrapper.emitted('update:modelValue')).toEqual([[9]]);
   });
@@ -57,9 +53,7 @@ describe('NumberInput.vue', () => {
         maxValue: 10,
       },
     });
-    const incrementButton = wrapper.find(
-      '.mi-number-field__icons div:first-child',
-    );
+    const incrementButton = wrapper.find('.mi-number-field__icons div:first-child');
     expect(incrementButton.classes()).toContain('disabled');
   });
 
@@ -70,9 +64,7 @@ describe('NumberInput.vue', () => {
         minValue: 1,
       },
     });
-    const decrementButton = wrapper.find(
-      '.mi-number-field__icons div:last-child',
-    );
+    const decrementButton = wrapper.find('.mi-number-field__icons div:last-child');
     expect(decrementButton.classes()).toContain('disabled');
   });
 
@@ -84,12 +76,8 @@ describe('NumberInput.vue', () => {
         errorMessage: 'Custom error message',
       },
     });
-    expect(wrapper.find('.mi-number-field__hint').text()).toContain(
-      'Custom error message',
-    );
-    expect(wrapper.find('.mi-number-field__hint').text()).toContain(
-      'Model value must be higher than 10',
-    );
+    expect(wrapper.find('.mi-number-field__hint').text()).toContain('Custom error message');
+    expect(wrapper.find('.mi-number-field__hint').text()).toContain('Model value must be higher than 10');
   });
 
   it('validates and updates the computedValue when the user types in the input field', async () => {
