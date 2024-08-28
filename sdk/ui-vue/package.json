@@ -46,7 +46,7 @@
     "@milaboratory/platforma-uikit": "^1.0.26"
   },
   "devDependencies": {
-    "@milaboratory/platforma-uikit": "^1.0.26",
+    "@milaboratory/platforma-uikit": "^1.0.29",
     "@faker-js/faker": "8.4.0",
     "@types/node": "20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
