@@ -8,6 +8,7 @@ assets := import(":assets")
 tpl := import(":tpl")
 smart := import(":smart")
 render := import(":render")
+file := import(":file")
 pConstants := import(":pframes.constants")
 constants := import(":constants")
 validation := import(":validation")
@@ -89,6 +90,9 @@ tpl.body(func(inputs) {
 			}
 			eMulTplInput.createInputField(colName).set(col.data)
 			result.createInputField(colName + ".data").set(eMulTplRender.output(colName))
+		} else if col.spec.kind == "File" {
+			result.createInputField(colName + ".spec").set(col.specRaw)
+			result.createInputField(colName + ".data").set(file.exportFile(col.data))
 		} else {
 			result.createInputField(colName + ".spec").set(col.specRaw)
 			result.createInputField(colName + ".data").set(col.data)
