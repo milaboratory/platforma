@@ -66,7 +66,9 @@ export function createRenderLightBlock(
 }
 
 export function createBContextEnd(tx: PlTransaction): ResourceRef {
-  return tx.createEphemeral(BContextEnd);
+  const ctx = tx.createEphemeral(BContextEnd);
+  tx.lock(ctx);
+  return ctx;
 }
 
 export function createBContextFromUpstreams(tx: PlTransaction, upstreamCtxs: AnyRef[]): AnyRef {
