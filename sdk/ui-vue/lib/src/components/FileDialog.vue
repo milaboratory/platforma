@@ -310,11 +310,11 @@ onUpdated(loadAvailableStorages);
         <div v-else class="ls-body">
           <template v-for="file in visibleItems" :key="file.id">
             <div v-if="file.isDir" class="isDir" @click="setDirPath(file.path)">
-              <i class="mask-16 mask-comp isDir" />
+              <i class="icon-16 icon-chevron-right" />
               {{ file.name }}
             </div>
             <div v-else :class="{ canBeSelected: file.canBeSelected, selected: file.selected }" @click.stop="(ev) => selectFile(ev, file)">
-              <i class="icon-16 icon-chevron-right" />
+              <i class="mask-16 mask-comp isFile" />
               {{ file.name }}
             </div>
           </template>
