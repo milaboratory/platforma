@@ -20,7 +20,7 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-focus);
+    box-shadow: 0 0 0 2px var(--border-color-focus);
   }
 
   [data-theme="dark"] & {

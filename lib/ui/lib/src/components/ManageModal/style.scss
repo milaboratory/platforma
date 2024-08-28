@@ -147,12 +147,12 @@
       margin: 0 24px 8px;
 
       &.invalid {
-        border: 2px solid var(--color-error) !important;
+        border: 2px solid var(--txt-error) !important;
       }
 
       &.active {
         border-radius: 6px;
-        border: 2px solid var(--color-focus, #49cc49);
+        border: 2px solid var(--border-color-focus, #49cc49);
         background: var(--bg-elevated-01, #fff);
         // box-shadow: 0px 0px 0px 4px rgba(73, 204, 73, 0.24);
       }

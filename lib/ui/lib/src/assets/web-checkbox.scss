@@ -12,7 +12,7 @@
     @include icon(var(--checked-icon), 24px);
   }
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-focus);
+    box-shadow: 0 0 0 2px var(--border-color-focus);
   }
   [data-theme="dark"] & {
     --base-icon: url('./images/24_checkbox-base-dark.svg');

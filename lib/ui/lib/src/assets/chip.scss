@@ -56,7 +56,7 @@
 
     &:focus-visible {
       --mask-color: var(--chip-close-ic-hover-color);
-      box-shadow: 0 0 0 2px var(--color-focus);
+      box-shadow: 0 0 0 2px var(--border-color-focus);
       border-radius: 1px;
       outline: none;
     }

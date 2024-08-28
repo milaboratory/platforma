@@ -80,7 +80,7 @@
 
     &:focus-visible {
       @include border-fix {
-        border: 2px solid var(--color-focus);
+        border: 2px solid var(--border-color-focus);
         border-radius: inherit;
         z-index: 1;
       }

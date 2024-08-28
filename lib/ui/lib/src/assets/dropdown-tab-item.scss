@@ -5,12 +5,12 @@
   border-bottom: 2px solid var(--color-div-grey);
 
   &.hovered-item{
-    border-bottom: 2px solid var(--color-focus);
+    border-bottom: 2px solid var(--border-color-focus);
   }
 
   &__selected {
     background-color: var(--color-div-bw) !important;
-    border-bottom: 2px solid var(--color-focus);
+    border-bottom: 2px solid var(--border-color-focus);
   }
 
   &__title{

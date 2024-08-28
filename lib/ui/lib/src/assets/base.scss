@@ -3,12 +3,10 @@
 :root {
   --main-dark-color: #110529;
 
-  --color-focus: #49cc49;
   --color-div-grey: #e1e3eb;
   --color-div-bw: #ffffff;
   --color-div-black: #e8ecf2;
-  --color-focus-shadow: rgba(73, 204, 73, 0.24);
-  --color-error: #ff5c5c;
+  --border-color-focus-shadow: rgba(73, 204, 73, 0.24);
   --color-error-shadow: #ff5c5c33;
   --color-dis-00: #fff;
   --color-dis-01: #cfd1db;
@@ -17,7 +15,7 @@
   --color-sec-hover-white: rgba(255, 255, 255, 0.5);
   --color-sec-hover-grey: rgba(155, 171, 204, 0.16);
   --color-ic-link: #5f31cc;
-  // --color-active-select: rgba(110, 229, 134, 0.16);
+
   --color-active-select: rgba(99, 224, 36, 0.24);
   --color-border-default: #110529;
   --color-text: var(--txt-01); // @todo
@@ -75,12 +73,10 @@
 }
 
 [data-theme='dark'] {
-  --color-focus: #49cc49;
   --color-div-grey: #232329;
   --color-div-bw: #000000;
   --color-div-black: #000000;
-  --color-focus-shadow: rgba(73, 204, 73, 0.24);
-  --color-error: #ff5c5c;
+  --border-color-focus-shadow: rgba(73, 204, 73, 0.24);
   --color-error-shadow: rgba(250, 90, 101, 0.24);
   --color-dis-00: #65656b;
   --color-dis-01: #38383d;
@@ -120,7 +116,7 @@
 
   --chip-bg: var(--btn-sec-hover-grey);
   --chip-close-ic-color: var(--color-ic-02);
-  --chip-close-ic-hover-color: var(--color-focus);
+  --chip-close-ic-hover-color: var(--border-color-focus);
 
   --theme-switcher-icon-color: var(--txt-01);
 }

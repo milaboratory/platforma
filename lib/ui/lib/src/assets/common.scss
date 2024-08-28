@@ -45,7 +45,7 @@
     --prefix-color: var(--color-placeholder);
 
     &.error {
-        --contour-color: var(--color-error);
+        --contour-color: var(--txt-error);
     }
 
     &::after {
@@ -66,9 +66,9 @@
 
     &:focus-within:not(.error) {
         --label-color: var(--txt-focus);
-        --contour-color: var(--color-focus);
+        --contour-color: var(--border-color-focus);
         --contour-border-width: 2px;
-        --contour-box-shadow: 0 0 0 4px var(--color-focus-shadow);
+        --contour-box-shadow: 0 0 0 4px var(--border-color-focus-shadow);
     }
 
     &:focus-within.error {
