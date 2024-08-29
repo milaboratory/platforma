@@ -399,6 +399,14 @@ reference := func(elem, keyPath, stack) {
 	return check(smart.isReference(elem), keyPath, "the element " + elem + " must be a resource or a field")
 }
 
+/**
+ * Schema for reference
+ */
+refSchema := {
+	blockId: `string`,
+	name:  `string`
+}
+
 export ll.toStrict({
 	success: success,
 	fail: fail,
@@ -409,5 +417,6 @@ export ll.toStrict({
 	assertJsonSchema: assertJsonSchema,
 	resource: resource,
 	reference: reference,
-	resourceType: resourceType
+	resourceType: resourceType,
+	ref: refSchema
 })

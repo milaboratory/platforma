@@ -280,6 +280,8 @@ tpl := func() {
 				builder = smart.mapBuilder()
 			}
 
+			// validate inputs first if needed
+			self._validateInputs()
 			for cb in self.prepareQueue {
 				// run callback
 				r := cb(inputs)
