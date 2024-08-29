@@ -9,7 +9,7 @@ const emit = defineEmits(['tooltip:close']);
 const props = withDefaults(
   defineProps<{
     /**
-     * delay in milliseconds before the tooltip appears
+     * delay in milliseconds before the tooltip disappears
      */
     delay?: number;
     position?: 'top-left' | 'left' | 'right' | 'top';
