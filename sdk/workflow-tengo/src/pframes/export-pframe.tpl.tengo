@@ -59,8 +59,8 @@ tpl.body(func(inputs) {
 		}
 
 		if text.has_suffix(fieldName, ".spec") {
-			if !fieldValue.getValue().checkResourceType(constants.RTYPE_JSON) {
-				ll.panic("Unexpected spec value type: %v", fieldValue.info().Type)
+			if !(fieldValue.getValue().checkResourceType(constants.RTYPE_JSON) || fieldValue.getValue().checkResourceType(constants.RTYPE_OBJECT_SPEC)) {
+				ll.panic("Unexpected spec value type: %v", fieldValue.getValue().info().Type)
 			}
 			col := getColumn(fieldName[:len(fieldName) - 5])
 			col.spec = fieldValue.getValue().getDataAsJson()
