@@ -35,7 +35,7 @@ export default class Sign extends Command {
             ids: flags['package-id'],
 
             archivePath: flags.archive,
-            signUtil: flags['sign-util'],
+            signCommand: flags['sign-command'],
         })
     }
 }

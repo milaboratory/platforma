@@ -128,11 +128,9 @@ export const SourceFlag = {
 }
 
 export const SignFlags = {
-    'sign-util': Flags.string({
-        description: "command to use for signature creation. The command will be called with two arguments:\n" +
-            "\t(1) - path to file (package archive) to be signed\n" +
-            "\t(2) - path to signature file to be generated (including .sig extension)\n",
-        default: "sign-file",
+    'sign-command': Flags.string({
+        description: "command to use for signature creation.\n" +
+            "\t{pkg} in argument is replaced with path to the package archive\n",
         required: false,
     }),
 }

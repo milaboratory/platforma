@@ -264,16 +264,13 @@ export class Core {
             throw new Error(`binary.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
         }
 
-        const signaturePath = archivePath + ".sig"
-        const dstSig = dstName + ".sig"
-        const uploadSig = fs.existsSync(signaturePath)
+        const signatureSuffixes = this.findSignatures(archivePath)
 
         this.logger.info(`Publishing package '${descriptor.name}' for platform '${platform}' into registry '${descriptor.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
-        if (uploadSig) this.logger.debug(`  archive signature: '${signaturePath}'`)
+        if (signatureSuffixes.length > 0) this.logger.debug(`  detected signatures: '${signatureSuffixes}'`)
         this.logger.debug(`  target package name: '${dstName}'`)
-        this.logger.debug(`  target signature name: '${dstSig}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
 
@@ -296,11 +293,13 @@ export class Core {
             return
         }))
 
-        const signature = fs.createReadStream(signaturePath)
-        uploads.push(s.putFile(dstSig, signature).finally(() => {
-            signature.close()
-            return
-        }))
+        for (const sig of signatureSuffixes) {
+            const signature = fs.createReadStream(`${archivePath}${sig}`)
+            uploads.push(s.putFile(`${dstName}${sig}`, signature).finally(() => {
+                signature.close()
+                return
+            }))
+        }
 
         return Promise.all(uploads).then(
             () => {
@@ -314,7 +313,7 @@ export class Core {
         ids?: string[],
 
         archivePath?: string,
-        signUtil?: string,
+        signCommand?: string,
     }) {
         const packagesToSign = options?.ids ?? Array.from(this.buildablePackages.keys())
 
@@ -344,29 +343,57 @@ export class Core {
 
     public signPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
         archivePath?: string,
-        signUtil?: string,
+        signCommand?: string,
     }) {
-        const signUtilName = options?.signUtil ?? "sign-file"
+        if (!options?.signCommand) {
+            throw new Error("current version of pl-package-builder supports only package signature with external utility. Provide 'sign command' option to sign package")
+        }
+        const signCommand = JSON.parse(options.signCommand)
+        const commandFormatIsValid = Array.isArray(signCommand) && signCommand.every(item => typeof item === 'string')
+        if (!commandFormatIsValid) {
+            throw new Error('sign command must be valid JSON array with command and arguments (["cmd", "arg", "arg", "..."])')
+        }
+
         const { os, arch } = util.splitPlatform(platform)
 
         const descriptor = pkg.environment ?? pkg.binary!
 
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
-        const signaturePath = archivePath + ".sig"
 
         this.logger.info(`Signing package '${descriptor.name}' for platform '${platform}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
-        this.logger.debug(`  sign util: '${signUtilName}'`)
-        this.logger.debug(`  sign file: '${signaturePath}'`)
+        this.logger.debug(`  sign command: '${signCommand}'`)
 
-        const args: string[] = [archivePath, signaturePath]
-        const result = spawnSync(signUtilName, args, { stdio: 'inherit', cwd: this.pkg.packageRoot })
+        const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
+
+        const result = spawnSync(toExecute[0], toExecute.slice(1), { stdio: 'inherit', cwd: this.pkg.packageRoot })
         if (result.error) {
             throw result.error
         }
         if (result.status !== 0) {
-            throw new Error(`"'${signUtilName}' '${archivePath}' '${signaturePath}'" failed with non-zero exit code`)
+            throw new Error(`${JSON.stringify(toExecute)} failed with non-zero exit code`)
         }
+    }
+
+    /**
+     * Get list of actual signature suffiexes existing for given archive
+     */
+    private findSignatures(archivePath: string): string[] {
+        const signSuffixes: string[] = [".sig", ".p7s"]
+        const dirName = path.dirname(archivePath)
+        const archiveName = path.basename(archivePath)
+
+        const files = fs.readdirSync(dirName)
+
+        const foundSuffixes: string[] = []
+        files.map((fileName: string) => {
+            for (const suffix of signSuffixes) {
+                if (fileName === `${archiveName}${suffix}`) {
+                    foundSuffixes.push(suffix)
+                }
+            }
+        })
+        return foundSuffixes
     }
 
     private get renderer(): Renderer {
