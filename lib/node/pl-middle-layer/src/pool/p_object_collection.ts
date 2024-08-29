@@ -4,6 +4,7 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
 import { derivePObjectId } from './data';
+import { resourceTypeToString } from '@milaboratory/pl-client-v2';
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {

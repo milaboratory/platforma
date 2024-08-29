@@ -357,6 +357,7 @@ export class JsExecutionContext
 
   public getDataFromResultPool(): ResultCollection<PObject<string>> {
     const collection = this.resultPool.getData();
+    if (!collection.isComplete) this.computableCtx!.markUnstable('incomplete_result_pool');
     return {
       isComplete: collection.isComplete,
       entries: collection.entries.map((e) => ({

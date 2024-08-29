@@ -20,8 +20,7 @@ import {
   projectFieldName
 } from '../model/project_model';
 import { allBlocks, stagingGraph } from '../model/project_model_util';
-import { Pl } from '@milaboratory/pl-client-v2';
-import { Optional, Writable } from 'utility-types';
+import { Optional } from 'utility-types';
 import { derivePObjectId } from './data';
 import {
   RawPObjectCollection,
@@ -228,6 +227,12 @@ export class ResultPool {
 
       const prod = loadCtx(
         prj.traverse({
+          field: projectFieldName(blockInfo.id, 'prodCtx'),
+          ignoreError: true,
+          pureFieldErrorToUndefined: true,
+          stableIfNotFound: true
+        }) !== undefined,
+        prj.traverse({
           field: projectFieldName(blockInfo.id, 'prodUiCtx'),
           ignoreError: true,
           pureFieldErrorToUndefined: true,
@@ -235,6 +240,11 @@ export class ResultPool {
         })
       );
       const staging = loadCtx(
+        prj.traverse({
+          field: projectFieldName(blockInfo.id, 'stagingCtx'),
+          ignoreError: true,
+          pureFieldErrorToUndefined: true
+        }) !== undefined,
         prj.traverse({
           field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
           ignoreError: true,
@@ -251,22 +261,17 @@ export class ResultPool {
 
 /** Loads single BContext data */
 function loadCtx(
-  ctxHolderAccessor: PlTreeNodeAccessor | undefined
+  calculated: boolean,
+  ctxAccessor: PlTreeNodeAccessor | undefined
 ): RawPObjectCollection | undefined {
-  if (ctxHolderAccessor === undefined) return undefined;
+  if (ctxAccessor === undefined) {
+    if (calculated)
+      // this case defines the situation when ctx holder is present, but the ctx itself is
+      // not yet available, to simplify the logic we make this situation indistinguishable
+      // from empty unlocked cotext
+      return { locked: false, results: new Map() };
+    else return undefined;
+  }
 
-  const ctxNode = ctxHolderAccessor.traverse({
-    field: Pl.HolderRefField,
-    assertFieldType: 'Input',
-    ignoreError: true,
-    pureFieldErrorToUndefined: true
-  });
-
-  if (ctxNode === undefined)
-    // this case defines the situation when ctx holder is present, but the ctx itself is
-    // not yet available, to simplify the logic we make this situation indistinguishable
-    // from empty unlocked cotext
-    return { locked: false, results: new Map() };
-
-  return parseRawPObjectCollection(ctxNode, false, true);
+  return parseRawPObjectCollection(ctxAccessor, false, true);
 }
