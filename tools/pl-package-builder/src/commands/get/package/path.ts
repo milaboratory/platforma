@@ -24,9 +24,13 @@ export default class Path extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const core = new Core(logger)
-        core.targetOS = flags.os as util.OSType
-        core.targetArch = flags.arch as util.ArchType
+        const platform = (flags.platform as util.PlatformType) ?? util.currentPlatform()
 
-        console.log(core.archivePath(flags['package-id']))
+        const pkgID = flags['package-id']
+        const { os, arch } = util.splitPlatform(platform)
+
+        const pkg = core.getPackage(pkgID)
+
+        console.log(core.archivePath(pkg, os, arch))
     }
 }

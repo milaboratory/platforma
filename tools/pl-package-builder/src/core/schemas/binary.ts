@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import * as util from '../util';
 
 export const runEnvironmentTypes = ['java', 'python', 'R', 'conda'] as const;
 export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
@@ -14,8 +15,13 @@ const packageArchiveRulesSchema = z.object({
     registry: registrySchema,
     name: z.string().optional(),
     version: z.string().optional(),
-    crossplatform: z.boolean().optional().default(false),
-    root: z.string().min(1),
+    crossplatform: z.boolean().optional(),
+
+    root: z.string().optional(),
+    roots: z.record(
+        z.enum(util.AllPlatforms as [typeof util.AllPlatforms[number], ...typeof util.AllPlatforms[number][]]),
+        z.string().min(1)
+    ).optional().describe("please, provide settings only for supported platforms")
 })
 export type archiveRules = z.infer<typeof packageArchiveRulesSchema>
 
@@ -38,7 +44,7 @@ const artifactIDSchema = z.string().
 
 const entrypointsListSchema = z.record(
     z.string().regex(/[-_a-z0-9.]/)
-    .describe("name of entrypoint descriptor, client should import to use this entrypoint (ll.importSoftware)"),
+        .describe("name of entrypoint descriptor, client should import to use this entrypoint (ll.importSoftware)"),
     entrypointSchema,
 )
 

@@ -25,22 +25,20 @@ export default class Name extends Command {
 
         const core = new Core(logger)
 
-        const pkg = core.getPackage(flags['package-id'])
+        const pkgID = flags['package-id']
+        const platform = (flags.platform as util.PlatformType) ?? util.currentPlatform()
+
+        const pkg = core.getPackage(pkgID)
         if (pkg.binary) {
-            console.log(pkg.binary.fullName(
-                flags.os as util.OSType,
-                flags.arch as util.ArchType
-            ))
+            console.log(pkg.binary.fullName(platform))
+            return
         }
 
         if (pkg.environment) {
-            console.log(pkg.environment.fullName(
-                flags.os as util.OSType,
-                flags.arch as util.ArchType
-            ))
+            console.log(pkg.environment.fullName(platform))
+            return
         }
 
-        logger.error(`Package '${flags['package-id']}' have no software archive build settings ('binary' or 'environment')`)
-        process.exit(1)
+        throw new Error(`Package '${pkgID}' have no software archive build settings ('binary' or 'environment')`)
     }
 }

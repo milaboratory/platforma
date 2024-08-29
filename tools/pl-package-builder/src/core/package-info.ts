@@ -7,36 +7,43 @@ import { z } from 'zod';
 import * as util from './util';
 import * as envs from './envs';
 import * as binary from './schemas/binary';
+import { boolean } from '@oclif/core/lib/flags';
 
 export interface PackageArchiveInfo extends binary.archiveRules {
     name: string
     version: string
+    crossplatform: boolean
 
-    fullName: (os: util.OSType, arch: util.ArchType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
+    fullName: (platform: util.PlatformType) => string // full package name inside registry (common/corretto/21.2.0.4.1-linux-x64.tgz)
     namePattern: string // address to put into sw.json (common/corretto/21.2.0.4.1-{os}-{arch}.tgz)
 
-    contentRoot: string // absolute path to package's content root
+    contentRoot: (platform: util.PlatformType) => string // absolute path to package's content root
 }
 
 export interface BinaryConfig extends binary.binaryPackageConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 export interface JavaConfig extends binary.javaPackageConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 export interface PythonConfig extends binary.pythonPackageConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 export interface RConfig extends binary.rPackageConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 export interface CondaConfig extends binary.condaPackageConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 
 export type BinaryPackage =
@@ -49,12 +56,19 @@ export type BinaryPackage =
 export interface RunEnvironment extends binary.environmentConfig, PackageArchiveInfo {
     name: string
     version: string
+    crossplatform: boolean
 }
 
 export interface PackageConfig {
     id: string
     binary?: BinaryPackage
     environment?: RunEnvironment
+    buildable: boolean
+
+    crossplatform: boolean
+    isMultiRoot: boolean
+    platforms: util.PlatformType[]
+    contentRoot(platform: util.PlatformType): string
 }
 
 const packageConfigSchema = z.object({
@@ -62,7 +76,9 @@ const packageConfigSchema = z.object({
     binary: binary.configSchema.optional(),
     environment: binary.environmentConfigSchema.optional(),
 }).refine(
-    data => (!(data.binary && data.environment)),
+    data => (
+        !((data.binary && data.environment) || (!data.binary && !data.environment))
+    ),
     {
         message: "software package can provide either binary for execution, either execution environment. Never both",
         path: ['binary', 'environment']
@@ -104,8 +120,13 @@ type packageJson = z.infer<typeof packageJsonSchema>
  *         "registry": {
  *            "name": "my-org"
  *         },
- *      
+ *
  *         "root": "./src",
+ *         "roots": {
+ *           "linux-x64": "./linux-x64/src",
+ *           "linux-aarch64": "./linux-aarch/src",
+ *           "...and so on...": "platform-dependant roots",
+ *         }
  *
  *         "entrypoints": {
  *           "script1": {
@@ -156,7 +177,7 @@ export class PackageInfo {
         logger.debug('  package information loaded successfully.')
     }
 
-    get binaryRegistries() : binaryRegistryPresets {
+    get binaryRegistries(): binaryRegistryPresets {
         return this.pkgJson['block-software'].registries?.binary ?? {}
     }
 
@@ -185,6 +206,37 @@ export class PackageInfo {
             id: id,
             binary,
             environment,
+
+            buildable: Boolean(binary || environment),
+
+            get crossplatform(): boolean {
+                if (binary) return binary.crossplatform
+                if (environment) return environment.crossplatform
+                return false
+            },
+
+            get isMultiRoot(): boolean {
+                if (binary) return binary.roots !== undefined
+                if (environment) return environment.roots !== undefined
+                return false
+            },
+
+            get platforms(): util.PlatformType[] {
+                if (binary?.root) return [util.currentPlatform()]
+                if (binary?.roots) return Object.keys(binary.roots) as util.PlatformType[]
+
+                if (environment?.root) return [util.currentPlatform()]
+                if (environment?.roots) return Object.keys(environment.roots) as util.PlatformType[]
+
+                throw new Error(`no platforms are defined as supported for package '${id}' in binary mode (no 'root' or 'roots' are defined)`)
+            },
+
+            contentRoot(platform: util.PlatformType): string {
+                if (binary) return binary.contentRoot(platform)
+                if (environment) return environment.contentRoot(platform)
+
+                throw new Error(`root path for software archive is undefined for package ${id}`)
+            }
         }
     }
 
@@ -204,16 +256,31 @@ export class PackageInfo {
             name,
             version,
 
-            fullName(os: util.OSType, arch: util.ArchType): string {
-                return binaryPackageFullName(binSettings.crossplatform, this.name, this.version, os, arch)
+            get crossplatform(): boolean {
+                if (binSettings.crossplatform !== undefined) {
+                    return binSettings.crossplatform
+                }
+
+                return binSettings.type === 'java' ||
+                    binSettings.type === 'python' ||
+                    binSettings.type === 'R'
+            },
+
+            fullName(platform: util.PlatformType): string {
+                return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
             },
 
             get namePattern(): string {
-                return binaryPackageAddressPattern(binSettings.crossplatform, this.name, this.version)
+                return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
             },
 
-            get contentRoot(): string {
-                return path.resolve(pkgRoot, this.root)
+            contentRoot(platform: util.PlatformType): string {
+                const root = this.root ?? this.roots?.[platform]
+                if (!root) {
+                    throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
+                }
+
+                return path.resolve(pkgRoot, root)
             }
         }
     }
@@ -234,16 +301,23 @@ export class PackageInfo {
             name,
             version,
 
-            fullName(os: util.OSType, arch: util.ArchType): string {
-                return binaryPackageFullName(envSettings.crossplatform, this.name, this.version, os, arch)
+            crossplatform: envSettings.crossplatform ?? false,
+
+            fullName(platform: util.PlatformType): string {
+                return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
             },
 
             get namePattern(): string {
-                return binaryPackageAddressPattern(envSettings.crossplatform, this.name, this.version)
+                return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
             },
 
-            get contentRoot(): string {
-                return path.resolve(pkgRoot, this.root)
+            contentRoot(platform: util.PlatformType): string {
+                const root = this.root ?? this.roots?.[platform]
+                if (!root) {
+                    throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
+                }
+
+                return path.resolve(pkgRoot, root)
             }
         }
     }
@@ -326,11 +400,12 @@ export class PackageInfo {
 const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(filePath, 'utf8'));
 const parsePackageJson = (data: string) => packageJsonSchema.parse(JSON.parse(data)) as packageJson;
 
-function binaryPackageFullName(crossplatform: boolean, name: string, version: string, os: util.OSType, arch: util.ArchType): string {
+function binaryPackageFullName(crossplatform: boolean, name: string, version: string, platform: util.PlatformType): string {
     if (crossplatform) {
         return `${name}/${version}.tgz`
     }
 
+    const { os, arch } = util.splitPlatform(platform)
     return `${name}/${version}-${os}-${arch}.tgz`
 }
 

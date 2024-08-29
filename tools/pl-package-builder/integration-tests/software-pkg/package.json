@@ -14,14 +14,13 @@
       }
     },
     "packages": {
-      "p1": {
+      "with-environment": {
         "binary": {
           "registry": {
             "name": "milaboratories"
           },
 
           "root": "./src",
-          "crossplatform": true,
 
           "type": "python",
           "environment": "pl-package-builder-runenv-1:1.2.3",
@@ -39,9 +38,10 @@
           }
         }
       },
-      "p2": {
+      "current-arch": {
         "binary": {
           "registry": { "name": "milaboratories" },
+
           "root": "./src",
 
           "name": "package2",
@@ -49,6 +49,27 @@
           "entrypoints": {
             "hello2": {
               "cmd": [ "printf", "Hello from python!\n" ]
+            }
+          }
+        }
+      },
+      "multiarch": {
+        "binary": {
+          "registry": { "name": "milaboratories" },
+
+          "roots": {
+            "linux-x64": "./x64/",
+            "linux-aarch64": "./x64/",
+            "macosx-x64": "./x64/",
+            "macosx-aarch64": "./arm64/",
+            "windows-x64": "./x64/"
+          },
+
+          "name": "package3",
+
+          "entrypoints": {
+            "starter": {
+              "cmd": [ "true" ]
             }
           }
         }

@@ -30,8 +30,8 @@ export default class Packages extends Command {
 
         core.pkg.version = flags.version
         core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
-        core.targetOS = flags.os as util.OSType
-        core.targetArch = flags.arch as util.ArchType
+        core.targetPlatform = flags.platform as util.PlatformType
+        core.allPlatforms = flags['all-platforms']
         core.fullDirHash = flags['full-dir-hash']
 
         core.buildPackages({

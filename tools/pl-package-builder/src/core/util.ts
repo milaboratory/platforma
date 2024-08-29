@@ -197,6 +197,33 @@ export function currentArch(): ArchType {
     }
 }
 
+// Combinartions of OS and architecture, Platforma supports.
+export const AllPlatforms: `${OSType}-${ArchType}`[] = [
+    'linux-x64',
+    'linux-aarch64',
+    'macosx-x64',
+    'macosx-aarch64',
+    'windows-x64',
+] as const
+export type PlatformType = (typeof AllPlatforms)[number]
+
+export function splitPlatform(platform: PlatformType): { os: OSType, arch: ArchType } {
+    const parts = platform.split("-")
+
+    return {
+        os: parts[0] as OSType,
+        arch: parts[1] as ArchType,
+    }
+}
+
+export function isPlatformSupported(os: OSType, arch: ArchType): boolean {
+    return AllPlatforms.includes(`${os}-${arch}`)
+}
+
+export function currentPlatform() : PlatformType {
+    return `${currentOS()}-${currentArch()}`
+}
+
 export const AllSoftwareSources = ['binary'] as const; // add 'docker', '<whatever>' here when supported
 export type SoftwareSource = (typeof AllSoftwareSources)[number];
 

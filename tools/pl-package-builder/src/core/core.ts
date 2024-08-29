@@ -8,7 +8,6 @@ import * as binSchema from './schemas/binary';
 import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
-import { ArchType, currentArch, currentOS, OSType } from "./util";
 import { createReadStream } from "fs";
 
 export class Core {
@@ -18,8 +17,8 @@ export class Core {
 
     public readonly pkg: PackageInfo
     public buildMode: util.BuildMode
-    public targetOS: OSType
-    public targetArch: ArchType
+    public targetPlatform: util.PlatformType | undefined
+    public allPlatforms: boolean = false
     public fullDirHash: boolean
 
     constructor(
@@ -30,14 +29,12 @@ export class Core {
         this.pkg = pkgInfo ?? new PackageInfo(logger)
 
         this.buildMode = 'release'
-        this.targetOS = currentOS()
-        this.targetArch = currentArch()
 
         this.fullDirHash = false
     }
 
-    public archivePath(pkgID: string): string {
-        return archive.getPath(this.archiveOptions(pkgID))
+    public archivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+        return archive.getPath(this.archiveOptions(pkg, os, arch))
     }
 
     public get packages(): Map<string, PackageConfig> {
@@ -46,6 +43,13 @@ export class Core {
         }
 
         return this._packages
+    }
+
+    public get buildablePackages(): Map<string, PackageConfig> {
+        return new Map(
+            Array.from(this.packages.entries())
+                .filter(([, value]) => value.buildable)
+        )
     }
 
     public getPackage(id: string): PackageConfig {
@@ -88,7 +92,7 @@ export class Core {
         contentRoot?: string,
         skipIfEmpty?: boolean,
     }) {
-        const packagesToBuild = options?.ids ?? Array.from(this.packages.keys())
+        const packagesToBuild = options?.ids ?? Array.from(this.buildablePackages.keys())
 
         if (packagesToBuild.length > 1 && options?.archivePath && !options.forceBuild) {
             this.logger.error("Attempt to build several packages targeting single package archive. This will simply overwrite the archive several times. If you know what you are doing, add '--force' flag")
@@ -96,22 +100,40 @@ export class Core {
         }
 
         for (const pkgID of packagesToBuild) {
-            this.buildPackage(pkgID, options)
+            const pkg = this.getPackage(pkgID)
+
+            if (pkg.crossplatform) {
+                this.buildPackage(pkg, util.currentPlatform(), options)
+            } else if (this.targetPlatform) {
+                this.buildPackage(pkg, this.targetPlatform, options)
+            } else if (this.allPlatforms && !pkg.isMultiRoot) {
+                const currentPlatform = util.currentPlatform()
+                this.logger.warn(
+                    `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`,
+                )
+                this.buildPackage(pkg, currentPlatform, options)
+            } else if (this.allPlatforms) {
+                for (const platform of pkg.platforms) {
+                    this.buildPackage(pkg, platform, options)
+                }
+            } else {
+                this.buildPackage(pkg, util.currentPlatform(), options)
+            }
         }
     }
 
-    public buildPackage(pkgID: string, options?: {
+    public buildPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
         archivePath?: string, contentRoot?: string,
         skipIfEmpty?: boolean,
     }) {
-        this.logger.info(`Building software package '${pkgID}'...`)
-        const pkg = this.getPackage(pkgID)
+        this.logger.info(`Building software package '${pkg.id}'...`)
+        const { os, arch } = util.splitPlatform(platform)
 
         if (!pkg.binary && !pkg.environment) {
             if (options?.skipIfEmpty) {
-                this.logger.info(`  archive build was skipped: package '${pkgID}' has no software archive build settings ('binary' or 'environment')`)
+                this.logger.info(`  archive build was skipped: package '${pkg.id}' has no software archive build settings ('binary' or 'environment')`)
             }
-            this.logger.error(`  no 'binary' settings found: software '${pkgID}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
+            this.logger.error(`  no 'binary' settings found: software '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
             throw new Error("no 'binary' configuration")
         }
 
@@ -121,8 +143,8 @@ export class Core {
         }
 
         const descriptor = pkg.environment ?? pkg.binary!
-        const archivePath = options?.archivePath ?? this.archivePath(pkgID)
-        const contentRoot = options?.contentRoot ?? descriptor.root
+        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
+        const contentRoot = options?.contentRoot ?? descriptor.contentRoot(platform)
 
         this.logger.debug("  rendering 'package.sw.json' to be embedded into package archive")
         const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
@@ -134,14 +156,14 @@ export class Core {
         if (descriptor.crossplatform) {
             this.logger.info(`    generating cross-platform package`)
         } else {
-            this.logger.info(`    generating package for os='${this.targetOS}', arch='${this.targetArch}'`)
+            this.logger.info(`    generating package for os='${os}', arch='${arch}'`)
         }
         this.logger.debug(`    package content root: '${contentRoot} '`)
         this.logger.debug(`    package destination archive: '${archivePath}'`)
 
-        archive.create(contentRoot, this.archivePath(pkgID))
+        archive.create(contentRoot, archivePath)
 
-        this.logger.info(`  software package was written to '${this.archivePath(pkgID)}'`)
+        this.logger.info(`  software package was written to '${archivePath}'`)
     }
 
     public publishDescriptors(options?: {
@@ -187,7 +209,7 @@ export class Core {
         skipExisting?: boolean,
         forceReupload?: boolean,
     }) {
-        const packagesToPublish = options?.ids ?? Array.from(this.packages.keys())
+        const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys())
 
         if (packagesToPublish.length > 1 && options?.archivePath && !options.ignoreArchiveOverlap) {
             this.logger.error("Attempt to publish several pacakges using single package archive. This will upload the same archive under several different names. If you know what you are doing, add '--force' flag")
@@ -196,20 +218,33 @@ export class Core {
 
         const uploads: Promise<void>[] = []
         for (const pkgID of packagesToPublish) {
-            uploads.push(this.publishPackage(pkgID, options))
+            const pkg = this.getPackage(pkgID)
+
+            if (pkg.crossplatform) {
+                uploads.push(this.publishPackage(pkg, util.currentPlatform(), options))
+            } else if (this.targetPlatform) {
+                uploads.push(this.publishPackage(pkg, this.targetPlatform, options))
+            } else if (this.allPlatforms) {
+                for (const platform of pkg.platforms) {
+                    uploads.push(this.publishPackage(pkg, platform, options))
+                }
+            } else {
+                uploads.push(this.publishPackage(pkg, util.currentPlatform(), options))
+            }
         }
 
         return Promise.all(uploads)
     }
 
-    public async publishPackage(pkgID: string, options?: {
+    public async publishPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
         archivePath?: string,
         storageURL?: string,
 
         skipExisting?: boolean,
         forceReupload?: boolean
     }) {
-        const pkg = this.getPackage(pkgID)
+        const { os, arch } = util.splitPlatform(platform)
+
         const descriptor = pkg.environment ?? pkg.binary!
         const storageSettings = getStorageSettings({
             customStorageURL: options?.storageURL,
@@ -217,17 +252,17 @@ export class Core {
             pkgInfo: this.pkg,
         })
 
-        const archivePath = options?.archivePath ?? this.archivePath(pkgID)
+        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
         const storageURL = storageSettings.UploadURL
-        const dstName = descriptor.fullName(this.targetOS, this.targetArch)
+        const dstName = descriptor.fullName(platform)
 
         if (!storageURL) {
             this.logger.error(`no storage URL is set for registry ${descriptor.registry.name}`)
             if (pkg.environment) {
-                throw new Error(`environment.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
+                throw new Error(`environment.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
             }
 
-            throw new Error(`binary.registry.storageURL of package '${pkgID}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
+            throw new Error(`binary.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
         }
 
         this.logger.info(`Publishing package '${descriptor.name}' into registry '${descriptor.registry.name}'`)
@@ -248,7 +283,7 @@ export class Core {
             }
         }
 
-        const archive = createReadStream(this.archivePath(pkgID))
+        const archive = createReadStream(archivePath)
         return s.putFile(dstName, archive).then(
             () => {
                 this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
@@ -265,8 +300,7 @@ export class Core {
         return this._renderer
     }
 
-    private archiveOptions(pkgID: string): archive.archiveOptions {
-        const pkg = this.getPackage(pkgID)
+    private archiveOptions(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): archive.archiveOptions {
         const desc = pkg.environment ?? pkg.binary!
 
         return {
@@ -275,8 +309,8 @@ export class Core {
             packageVersion: desc.version,
 
             crossplatform: desc.crossplatform,
-            os: this.targetOS,
-            arch: this.targetArch,
+            os: os,
+            arch: arch,
         }
     }
 }

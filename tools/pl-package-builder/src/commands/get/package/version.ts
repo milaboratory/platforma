@@ -23,8 +23,9 @@ export default class Version extends Command {
         const logger = util.createLogger(flags['log-level'])
 
         const core = new Core(logger)
+        const pkgID = flags['package-id']
 
-        const pkg = core.getPackage(flags['package-id'])
+        const pkg = core.getPackage(pkgID)
         if (pkg.binary) {
             console.log(pkg.binary.version)
         }

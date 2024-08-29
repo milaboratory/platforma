@@ -31,8 +31,8 @@ export default class Packages extends Command {
 
         const core = new Core(logger)
         core.pkg.version = flags.version
-        core.targetOS = flags.os as util.OSType
-        core.targetArch = flags.arch as util.ArchType
+        core.targetPlatform = flags.platform as util.PlatformType
+        core.allPlatforms = flags['all-platforms']
 
         await core.publishPackages({
             ids: flags['package-id'],

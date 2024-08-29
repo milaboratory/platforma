@@ -302,7 +302,7 @@ export class Renderer {
         }
 
         const binary = pkg.binary!
-        const rootDir = binary.contentRoot
+        const rootDir = binary.contentRoot(util.currentPlatform())
         const hash = fullDirHash ? util.hashDirSync(rootDir) : util.hashDirMetaSync(rootDir)
         const ep = binary.entrypoints[epName]
         const runEnv = this.resolveRunEnvironment(binary.environment)
