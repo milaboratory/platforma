@@ -63,6 +63,9 @@ args := func() {
 
 		// original args from inputs
 		_args = inputs.args
+		if is_undefined(_args) || smart.isReference(_args) {
+			ll.panic("Unexpected args type: %v", _args)
+		}
 
 		// add all prepared 'extra' inputs to the args
 		for k, v in inputs {
