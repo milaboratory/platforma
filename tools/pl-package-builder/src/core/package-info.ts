@@ -361,6 +361,10 @@ export class PackageInfo {
                     canHaveDefaultName = false
                 }
 
+                if (binConfig.root && binConfig.roots) {
+                    throw new Error(`binary package '${pkgID}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`)
+                }
+
                 const name = this.getName(binConfig.name)
                 const version = this.getVersion(binConfig.version)
                 const uniqueName = `${name}-${version}`
@@ -381,6 +385,11 @@ export class PackageInfo {
                 if (uniqueEntrypoints[pkg.environment.entrypointName]) {
                     const e = pkg.environment.entrypointName
                     throw new Error(`duplicate entrypoint: '${e}' is defined in software packages '${uniqueEntrypoints[e]}' and '${pkgID}'`)
+                }
+                uniqueEntrypoints[pkg.environment.entrypointName] = pkgID
+
+                if (pkg.environment.root && pkg.environment.roots) {
+                    throw new Error(`binary package '${pkgID}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`)
                 }
             }
 
