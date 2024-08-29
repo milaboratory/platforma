@@ -8,6 +8,8 @@ import {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
+  PTableRecordFilter,
+  PTableSorting,
   ResultCollection,
   ValueOrError,
   mapPObjectData,
@@ -114,8 +116,37 @@ export class RenderCtx<Args, UiState> {
     return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
   }
 
-  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle {
-    return this.ctx.createPTable(mapPTableDef(def, (po) => mapPObjectData(po, (d) => d.handle)));
+  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle;
+  public createPTable(def: {
+    columns: PColumn<TreeNodeAccessor>[];
+    filters?: PTableRecordFilter[];
+    /** Table sorting */
+    sorting?: PTableSorting[];
+  }): PTableHandle;
+  public createPTable(
+    def:
+      | PTableDef<PColumn<TreeNodeAccessor>>
+      | {
+          columns: PColumn<TreeNodeAccessor>[];
+          filters?: PTableRecordFilter[];
+          /** Table sorting */
+          sorting?: PTableSorting[];
+        }
+  ): PTableHandle {
+    var rawDef: PTableDef<PColumn<TreeNodeAccessor>>;
+    if ('columns' in def) {
+      rawDef = {
+        src: {
+          type: 'inner',
+          entries: def.columns.map((c) => ({ type: 'column', column: c }))
+        },
+        filters: def.filters ?? [],
+        sorting: def.sorting ?? []
+      };
+    } else {
+      rawDef = def;
+    }
+    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => d.handle)));
   }
 
   public getBlockLabel(blockId: string): string {

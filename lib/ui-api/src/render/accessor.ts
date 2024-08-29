@@ -2,8 +2,10 @@ import {
   AnyLogHandle,
   ImportProgress,
   LocalBlobHandleAndSize,
+  PColumn,
   PObject,
   RemoteBlobHandleAndSize,
+  isPColumn,
   mapPObjectData
 } from '@milaboratory/sdk-model';
 import { getCfgRenderCtx } from '../internal';
@@ -110,6 +112,27 @@ export class TreeNodeAccessor {
     return JSON.parse(content);
   }
 
+  /**
+   *
+   */
+  public getPColumns(
+    errorOnUnknownField: boolean = false,
+    prefix: string = ''
+  ): PColumn<TreeNodeAccessor>[] | undefined {
+    const result = this.parsePObjectCollection(errorOnUnknownField, prefix);
+    if (result === undefined) return undefined;
+
+    const pf = Object.entries(result).map(([, obj]) => {
+      if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
+      return obj;
+    });
+
+    return pf;
+  }
+
+  /**
+   *
+   */
   public parsePObjectCollection(
     errorOnUnknownField: boolean = false,
     prefix: string = ''
