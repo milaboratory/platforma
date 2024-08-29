@@ -125,7 +125,7 @@ export class Core {
         archivePath?: string, contentRoot?: string,
         skipIfEmpty?: boolean,
     }) {
-        this.logger.info(`Building software package '${pkg.id}'...`)
+        this.logger.info(`Building software package '${pkg.id}' for platform '${platform}'...`)
         const { os, arch } = util.splitPlatform(platform)
 
         if (!pkg.binary && !pkg.environment) {
@@ -268,7 +268,7 @@ export class Core {
         const dstSig = dstName + ".sig"
         const uploadSig = fs.existsSync(signaturePath)
 
-        this.logger.info(`Publishing package '${descriptor.name}' into registry '${descriptor.registry.name}'`)
+        this.logger.info(`Publishing package '${descriptor.name}' for platform '${platform}' into registry '${descriptor.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
         if (uploadSig) this.logger.debug(`  archive signature: '${signaturePath}'`)
@@ -354,7 +354,7 @@ export class Core {
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
         const signaturePath = archivePath + ".sig"
 
-        this.logger.info(`Signing package '${descriptor.name}'...`)
+        this.logger.info(`Signing package '${descriptor.name}' for platform '${platform}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
         this.logger.debug(`  sign util: '${signUtilName}'`)
         this.logger.debug(`  sign file: '${signaturePath}'`)
