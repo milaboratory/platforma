@@ -309,6 +309,14 @@ resource = func(r) {
 		 * Whether this resource has error
 		 */
 		hasError: func() {
+			return self._hasField("OneTimeWritables", "resourceError")
+		},
+
+		/**
+		 * Whether any of the input fields have errors. The resource itself may still not have
+		 * error status because error propagation was not yet happened.
+		 */
+		hasInputErrors: func() {
 			return self.info().HasErrors
 		},
 
@@ -358,7 +366,6 @@ resource = func(r) {
 
 		// cached _inputs
 		_inputs: undefined,
-
 		/**
 		 * Returns resource inputs map name -> smart.Field
 		 */
@@ -557,7 +564,7 @@ field = func(f) {
 		},
 
 		/**
-		 * Whether field is set to either some resource or future from other field
+		 * Whether the field points to resource or error
 		 */
 		isSet: func() {
 			return self.info().IsSet
@@ -583,7 +590,10 @@ field = func(f) {
 		getValue: func() {
 			if self.isErrorSet() {
 				err := self.getError().getDataAsJson()
-				ll.panic("failed to get the value of field %v, error is not empty: %v", field, err)
+				if !is_undefined(err.message) {
+					err = err.message
+				}
+				ll.panic("failed to get the value of field %v, error is not empty: %v", self.name(), err)
 			}
 
 			ll.assert(self.isSet(), "field value is not set; ", self.name())
