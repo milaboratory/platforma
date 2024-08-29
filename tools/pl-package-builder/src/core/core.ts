@@ -280,7 +280,7 @@ export class Core {
         const exists = await s.exists(dstName)
         if (exists) {
             if (options?.skipExisting) {
-                this.logger.notice(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
+                this.logger.warn(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
                 return
             }
             if (!options?.forceReupload) {
@@ -356,6 +356,7 @@ export class Core {
 
         this.logger.info(`Signing package '${descriptor.name}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
+        this.logger.debug(`  sign util: '${signUtilName}'`)
         this.logger.debug(`  sign file: '${signaturePath}'`)
 
         const args: string[] = [archivePath, signaturePath]
