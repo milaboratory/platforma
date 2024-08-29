@@ -16,11 +16,19 @@ createContext := func() {
 }
 
 awaitOneState := func(field, path, state) {
+	if field.isErrorSet() && !field.isValueSet() {
+		// Field is in pure error state (just error and no referenced resource).
+		// This is a terminal state, so we stop any traversal here, and return value
+		// the same as we would return if we achieved the desired state. It is
+		// template's body responsibility to correctly handle the error state.
+		return { type: "Ready" }
+	}
+
 	if len(path) > 0 {
 		step := path[0]
 		rPath := path[1:]
 
-		if !field.isSet() {
+		if !field.isValueSet() {
 			return {
 				type: "Subscribe",
 				subscriptions: [{
@@ -29,6 +37,7 @@ awaitOneState := func(field, path, state) {
 				}]
 			}
 		}
+
 		resource := field.getValue()
 
 		if is_string(step) {

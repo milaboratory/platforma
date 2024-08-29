@@ -31,6 +31,9 @@ RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill/rules", Version: "1" }
 RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }
 RTYPE_WORKDIR_SAVE_RULES  := { Name: "WorkdirSave/rules", Version: "1" }
 
+/** Main resource type of representing a PL error */
+RTYPE_JSON_ERROR          := { Name: "json/resourceError", Version: "1"}
+
 export ll.toStrict({
 	RTYPE_BINARY_MAP            : RTYPE_BINARY_MAP,
 	RTYPE_BINARY_VALUE          : RTYPE_BINARY_VALUE,
@@ -52,5 +55,6 @@ export ll.toStrict({
 	RTYPE_WORKDIR_FILL          : RTYPE_WORKDIR_FILL,
 	RTYPE_WORKDIR_FILL_RULES    : RTYPE_WORKDIR_FILL_RULES,
 	RTYPE_WORKDIR_SAVE          : RTYPE_WORKDIR_SAVE,
-	RTYPE_WORKDIR_SAVE_RULES    : RTYPE_WORKDIR_SAVE_RULES
+	RTYPE_WORKDIR_SAVE_RULES    : RTYPE_WORKDIR_SAVE_RULES,
+	RTYPE_JSON_ERROR            : RTYPE_JSON_ERROR
 })

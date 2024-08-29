@@ -1,4 +1,4 @@
-// await-state-1
+// await-state-1-wildcard
 
 self := import(":tpl")
 
