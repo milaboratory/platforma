@@ -79,12 +79,19 @@ export class RenderCtx<Args, UiState> {
     return accessorId ? new TreeNodeAccessor(accessorId) : undefined;
   }
 
-  public get precalc(): TreeNodeAccessor | undefined {
+  public get prerun(): TreeNodeAccessor | undefined {
     return this.getNamedAccessor(StagingAccessorName);
   }
 
   /**
-   * @deprecated use precalc
+   * @deprecated use prerun
+   */
+  public get precalc(): TreeNodeAccessor | undefined {
+    return this.prerun;
+  }
+
+  /**
+   * @deprecated use prerun
    */
   public get stagingOutput(): TreeNodeAccessor | undefined {
     return this.precalc;
