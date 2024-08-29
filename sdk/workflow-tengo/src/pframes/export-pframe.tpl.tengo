@@ -38,32 +38,36 @@ tpl.body(func(inputs) {
 		return c
 	}
 
-	rawFields := tpl.rawInputs().pf.getValue().inputs()
+	pfResource := tpl.rawInputs().pf.getValue()
+
+	// rawFields := pfResource.inputs()
 
 	// if context is passed as an input we differently treat the field names (see below)
-	isContext := tpl.rawInputs().pf.getValue().checkResourceType(constants.RTYPE_CONTEXT)
+	isContext := pfResource.checkResourceType(constants.RTYPE_CONTEXT)
 
-	for rawFieldName, fieldValue in inputs.pf {
+	for rawFieldName, fieldValue in pfResource.inputs() {
 		fieldName := rawFieldName
 		if isContext {
 			if text.has_prefix(fieldName, "values/") {
 				fieldName = fieldName[7:]
-			} else {
+			} else if fieldName == "id" || fieldName == "parent" {
 				// there are other fields in context resource, we are only interesetd in "values/..."
 				continue
+			} else {
+				ll.panic("Unexpected context field: %v", fieldName)
 			}
 		}
 
 		if text.has_suffix(fieldName, ".spec") {
-			if !is_map(fieldValue) {
-				ll.panic("Unexpected spec value: %v", fieldValue)
+			if !fieldValue.getValue().checkResourceType(constants.RTYPE_JSON) {
+				ll.panic("Unexpected spec value type: %v", fieldValue.info().Type)
 			}
 			col := getColumn(fieldName[:len(fieldName) - 5])
-			col.spec = fieldValue
-			col.specRaw = rawFields[rawFieldName]
+			col.spec = fieldValue.getValue().getDataAsJson()
+			col.specRaw = fieldValue
 		} else if text.has_suffix(fieldName, ".data") {
 			col := getColumn(fieldName[:len(fieldName) - 5])
-			col.data = rawFields[rawFieldName]
+			col.data = fieldValue
 		} else {
 			ll.panic("Unexpected field name: %v", fieldName)
 		}
