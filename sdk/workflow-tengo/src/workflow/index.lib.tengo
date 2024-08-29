@@ -235,6 +235,15 @@ setPreRun := func(tplId) {
 }
 
 /**
+ * Validate that arguments fulfil the desired schema
+ */
+validateArgs := func(argsSchema) {
+	self.validateInputs({
+		args: argsSchema
+	})
+}
+
+/**
  * Defines main entry point for current workflow
  */
 body := func(bodyFn) {
@@ -275,5 +284,6 @@ export ll.toStrict({
 	prepare: prepare,
 	body: body,
 	setPreRun: setPreRun,
-	blockId: blockId
+	blockId: blockId,
+	validateArgs: validateArgs
 })

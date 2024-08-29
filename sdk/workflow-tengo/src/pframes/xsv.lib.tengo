@@ -122,7 +122,7 @@ getOps := func(...ops) {
 getColumnSpec := func(axesSpec, col) {
 	spec := {
 		kind: constants.KIND_P_COLUMN,
-		axes: axesSpec
+		axesSpec: axesSpec
 	}
 
 	for k, v in col.spec {
