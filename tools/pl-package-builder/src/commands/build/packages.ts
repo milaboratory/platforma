@@ -13,7 +13,7 @@ export default class Packages extends Command {
     static override flags = {
         ...cmdOpts.GlobalFlags,
         ...cmdOpts.BuildFlags,
-        ...cmdOpts.ArchFlags,
+        ...cmdOpts.PlatformFlags,
 
         ...cmdOpts.VersionFlag,
         ...cmdOpts.ArchiveFlag,
@@ -35,7 +35,7 @@ export default class Packages extends Command {
         core.fullDirHash = flags['full-dir-hash']
 
         core.buildPackages({
-            ids: flags['package-id'] ?? Array.from(core.packages.keys()),
+            ids: flags['package-id'],
             forceBuild: flags.force,
 
             archivePath: flags.archive,

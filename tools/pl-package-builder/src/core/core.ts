@@ -8,7 +8,6 @@ import * as binSchema from './schemas/binary';
 import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
-import { createReadStream } from "fs";
 
 export class Core {
     private readonly logger: winston.Logger
@@ -265,10 +264,16 @@ export class Core {
             throw new Error(`binary.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
         }
 
+        const signaturePath = archivePath + ".sig"
+        const dstSig = dstName + ".sig"
+        const uploadSig = fs.existsSync(signaturePath)
+
         this.logger.info(`Publishing package '${descriptor.name}' into registry '${descriptor.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
+        if (uploadSig) this.logger.debug(`  archive signature: '${signaturePath}'`)
         this.logger.debug(`  target package name: '${dstName}'`)
+        this.logger.debug(`  target signature name: '${dstSig}'`)
 
         const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
 
@@ -283,13 +288,84 @@ export class Core {
             }
         }
 
-        const archive = createReadStream(archivePath)
-        return s.putFile(dstName, archive).then(
+        const uploads: Promise<void>[] = []
+
+        const archive = fs.createReadStream(archivePath)
+        uploads.push(s.putFile(dstName, archive).finally(() => {
+            archive.close()
+            return
+        }))
+
+        const signature = fs.createReadStream(signaturePath)
+        uploads.push(s.putFile(dstSig, signature).finally(() => {
+            signature.close()
+            return
+        }))
+
+        return Promise.all(uploads).then(
             () => {
                 this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
                 return
             }
         )
+    }
+
+    public signPackages(options?: {
+        ids?: string[],
+
+        archivePath?: string,
+        signUtil?: string,
+    }) {
+        const packagesToSign = options?.ids ?? Array.from(this.buildablePackages.keys())
+
+        if (packagesToSign.length > 1 && options?.archivePath) {
+            this.logger.warn("Call of 'sign' action for several packages targeting single package archive.")
+        }
+
+        const uploads: Promise<void>[] = []
+        for (const pkgID of packagesToSign) {
+            const pkg = this.getPackage(pkgID)
+
+            if (pkg.crossplatform) {
+                this.signPackage(pkg, util.currentPlatform(), options)
+            } else if (this.targetPlatform) {
+                this.signPackage(pkg, this.targetPlatform, options)
+            } else if (this.allPlatforms) {
+                for (const platform of pkg.platforms) {
+                    this.signPackage(pkg, platform, options)
+                }
+            } else {
+                this.signPackage(pkg, util.currentPlatform(), options)
+            }
+        }
+
+        return Promise.all(uploads)
+    }
+
+    public signPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
+        archivePath?: string,
+        signUtil?: string,
+    }) {
+        const signUtilName = options?.signUtil ?? "sign-file"
+        const { os, arch } = util.splitPlatform(platform)
+
+        const descriptor = pkg.environment ?? pkg.binary!
+
+        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
+        const signaturePath = archivePath + ".sig"
+
+        this.logger.info(`Signing package '${descriptor.name}'...`)
+        this.logger.debug(`  archive: '${archivePath}'`)
+        this.logger.debug(`  sign file: '${signaturePath}'`)
+
+        const args: string[] = [archivePath, signaturePath]
+        const result = spawnSync(signUtilName, args, { stdio: 'inherit', cwd: this.pkg.packageRoot })
+        if (result.error) {
+            throw result.error
+        }
+        if (result.status !== 0) {
+            throw new Error(`"'${signUtilName}' '${archivePath}' '${signaturePath}'" failed with non-zero exit code`)
+        }
     }
 
     private get renderer(): Renderer {

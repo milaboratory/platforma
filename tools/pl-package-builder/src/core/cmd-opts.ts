@@ -42,8 +42,8 @@ export const BuildFlags = {
 export const DirHashFlag = {
     "full-dir-hash": Flags.boolean({
         env: envs.PL_PKG_FULL_HASH,
-        description: "when calculating software hash in dev=local mode, hash file contents instead of metadata.\n"+
-            "This makes descriptor file generation slower, but makes Platforma deduplication to work better, restarting"+
+        description: "when calculating software hash in dev=local mode, hash file contents instead of metadata.\n" +
+            "This makes descriptor file generation slower, but makes Platforma deduplication to work better, restarting" +
             " calculations only when they readlly should be.",
         default: false
     })
@@ -80,7 +80,7 @@ export const VersionFlag = {
     }),
 }
 
-export const ArchFlags = {
+export const PlatformFlags = {
     "platform": Flags.string({
         env: envs.PL_PKG_OS,
         description: "{os}-{arch} pair, supported by software. Has no effect on cross-platform software packages",
@@ -123,6 +123,16 @@ export const SourceFlag = {
         description: "add only selected sources to software entrypoint descriptor (*.sw.json file)",
         options: (util.AllSoftwareSources as unknown) as string[],
         multiple: true,
+        required: false,
+    }),
+}
+
+export const SignFlags = {
+    'sign-util': Flags.string({
+        description: "command to use for signature creation. The command will be called with two arguments:\n" +
+            "\t(1) - path to file (package archive) to be signed\n" +
+            "\t(2) - path to signature file to be generated (including .sig extension)\n",
+        default: "sign-file",
         required: false,
     }),
 }

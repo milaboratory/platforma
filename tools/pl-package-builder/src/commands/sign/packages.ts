@@ -4,7 +4,7 @@ import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
 export default class Packages extends Command {
-    static override description = 'publish software package archive to its registry'
+    static override description = 'Sign packages (.tgz archives)'
 
     static override examples = [
         '<%= config.bin %> <%= command.id %>',
@@ -12,37 +12,30 @@ export default class Packages extends Command {
 
     static override flags = {
         ...cmdOpts.GlobalFlags,
-        ...cmdOpts.ForceFlag,
         ...cmdOpts.PlatformFlags,
 
         ...cmdOpts.PackageIDFlag,
         ...cmdOpts.VersionFlag,
 
         ...cmdOpts.ArchiveFlag,
-        ...cmdOpts.StorageURLFlag,
-        ...cmdOpts.SkipExistingPackagesFlag,
+        ...cmdOpts.SignFlags,
     };
 
-    static strict: boolean = false;
-
     public async run(): Promise<void> {
-        const { argv, flags } = await this.parse(Packages);
+        const { flags } = await this.parse(Packages);
         const logger = util.createLogger(flags['log-level'])
 
         const core = new Core(logger)
+
         core.pkg.version = flags.version
         core.targetPlatform = flags.platform as util.PlatformType
         core.allPlatforms = flags['all-platforms']
 
-        await core.publishPackages({
+        core.signPackages({
             ids: flags['package-id'],
-            ignoreArchiveOverlap: flags.force,
-
+            
             archivePath: flags.archive,
-            storageURL: flags['storage-url'],
-
-            skipExisting: flags['skip-existing-packages'],
-            forceReupload: flags.force,
+            signUtil: flags['sign-util'],
         })
     }
 }

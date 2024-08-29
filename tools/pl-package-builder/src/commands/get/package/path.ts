@@ -12,7 +12,7 @@ export default class Path extends Command {
 
     static override flags = {
         ...cmdOpts.GlobalFlags,
-        ...cmdOpts.ArchFlags,
+        ...cmdOpts.PlatformFlags,
 
         ...cmdOpts.PackageIDRequiredFlag,
     };

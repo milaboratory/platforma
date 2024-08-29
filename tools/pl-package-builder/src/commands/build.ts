@@ -15,7 +15,7 @@ export default class Build extends Command {
         ...cmdOpts.ForceFlag,
 
         ...cmdOpts.BuildFlags,
-        ...cmdOpts.ArchFlags,
+        ...cmdOpts.PlatformFlags,
         ...cmdOpts.VersionFlag,
 
         ...cmdOpts.EntrypointNameFlag,
@@ -52,7 +52,7 @@ export default class Build extends Command {
             switch (source) {
                 case 'binary':
                     core.buildPackages({
-                        ids: flags['package-id'] ?? Array.from(core.packages.keys()),
+                        ids: flags['package-id'],
                         forceBuild: flags.force,
 
                         archivePath: flags.archive,
