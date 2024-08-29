@@ -57,7 +57,14 @@ const delay = 1000;
     <div class="line">
       <tooltip position="top-left">
         <template #tooltip> Tooltip content </template>
-        <button class="nn">NN</button>
+        <button class="nn">Top left</button>
+      </tooltip>
+    </div>
+
+    <div class="line">
+      <tooltip element="span" position="top-left">
+        I am a span element
+        <template #tooltip> Tooltip for span </template>
       </tooltip>
     </div>
   </layout>
@@ -80,6 +87,9 @@ const delay = 1000;
   padding: 12px;
   margin-top: 48px;
   gap: 60px;
+  span {
+    text-decoration: underline;
+  }
 }
 
 .tt {

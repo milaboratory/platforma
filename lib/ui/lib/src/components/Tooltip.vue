@@ -8,15 +8,29 @@ const emit = defineEmits(['tooltip:close']);
 
 const props = withDefaults(
   defineProps<{
+    /**
+     * delay in milliseconds before the tooltip appears
+     */
     delay?: number;
     position?: 'top-left' | 'left' | 'right' | 'top';
+    /**
+     * external prop to hide tooltips
+     */
     hide?: boolean;
+    /**
+     * The gap in pixels between the tooltip and the target element
+     */
     gap?: number;
+    /**
+     * base html element for tooltip
+     */
+    element?: 'div' | 'span' | 'a' | 'p' | 'h1' | 'h2' | 'h3';
   }>(),
   {
     delay: 1000,
     gap: 8,
     position: 'top',
+    element: 'div',
   },
 );
 
@@ -76,7 +90,7 @@ useClickOutside([root, tooltip], () => closeTooltip());
 </script>
 
 <template>
-  <div ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
+  <component :is="element" ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
       <Transition name="tooltip">
@@ -92,5 +106,5 @@ useClickOutside([root, tooltip], () => closeTooltip());
         </div>
       </Transition>
     </Teleport>
-  </div>
+  </component>
 </template>
