@@ -88,7 +88,7 @@ purifySpec := func(spec) {
 			column: col.column,
 			id: col.id,
 			allowNA: col.allowNA,
-			spec: { type: col.spec.type }
+			spec: { valueType: col.spec.valueType }
 		}))
 	}
 	newSpec.columns = newCols
