@@ -46,7 +46,9 @@ _unmarshal := func(resource, preprocessors) {
 		// unmarshal map
 		result := {}
 		for field, value in resource.inputs() {
-			if value.isSet() {
+			if value.isErrorSet() {
+				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
+			} else if value.isSet() {
 				result[field] = _unmarshal(value.getValue(), preprocessors)
 			} else {
 				result[field] = value
