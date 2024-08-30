@@ -28,7 +28,7 @@ import { BlockContextAny } from '../middle_layer/block_ctx';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
-import { ResultPool } from '../pool/result_pool';
+import { ExtendedResultCollection, ResultPool } from '../pool/result_pool';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);
@@ -357,7 +357,8 @@ export class JsExecutionContext
 
   public getDataFromResultPool(): ResultCollection<PObject<string>> {
     const collection = this.resultPool.getData();
-    if (!collection.isComplete) this.computableCtx!.markUnstable('incomplete_result_pool');
+    if (collection.instabilityMarker !== undefined)
+      this.computableCtx!.markUnstable(`incomplete_result_pool:${collection.instabilityMarker}`);
     return {
       isComplete: collection.isComplete,
       entries: collection.entries.map((e) => ({
@@ -371,6 +372,8 @@ export class JsExecutionContext
     Optional<PObject<ValueOrError<string, string>>, 'id'>
   > {
     const collection = this.resultPool.getDataWithErrors();
+    if (collection.instabilityMarker !== undefined)
+      this.computableCtx!.markUnstable(`incomplete_result_pool:${collection.instabilityMarker}`);
     return {
       isComplete: collection.isComplete,
       entries: collection.entries.map((e) => ({
@@ -386,7 +389,8 @@ export class JsExecutionContext
 
   public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
     const specs = this.resultPool.getSpecs();
-    if (!specs.isComplete) this.computableCtx?.markUnstable('specs_from_pool_incomplete');
+    if (specs.instabilityMarker !== undefined)
+      this.computableCtx!.markUnstable(`specs_from_pool_incomplete:${specs.instabilityMarker}`);
     return specs;
   }
 

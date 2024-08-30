@@ -41,6 +41,10 @@ interface PoolBlock {
   readonly staging?: RawPObjectCollection;
 }
 
+export interface ExtendedResultCollection<T> extends ResultCollection<T> {
+  readonly instabilityMarker: string | undefined;
+}
+
 export interface ExtendedOption extends Option {
   readonly spec: PObjectSpec;
 }
@@ -74,7 +78,7 @@ export class ResultPool {
     return notEmpty(this.blocks.get(blockId)?.info?.label, `block "${blockId}" not found`);
   }
 
-  public getData(): ResultCollection<PObject<PlTreeNodeAccessor>> {
+  public getData(): ExtendedResultCollection<PObject<PlTreeNodeAccessor>> {
     const resultWithErrors = this.getDataWithErrors();
     const entries: ResultPoolEntry<PObject<PlTreeNodeAccessor>>[] = [];
     for (const res of resultWithErrors.entries)
@@ -87,16 +91,26 @@ export class ResultPool {
             data: res.obj.data.value
           }
         });
-    return { entries, isComplete: resultWithErrors.isComplete };
+    return {
+      entries,
+      isComplete: resultWithErrors.isComplete,
+      instabilityMarker: resultWithErrors.instabilityMarker
+    };
   }
 
-  public getDataWithErrors(): ResultCollection<
+  public getDataWithErrors(): ExtendedResultCollection<
     Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
   > {
     const entries: ResultPoolEntry<
       Optional<PObject<ValueOrError<PlTreeNodeAccessor, string>>, 'id'>
     >[] = [];
     let isComplete = true;
+
+    let instabilityMarker: string | undefined = undefined;
+    const markUnstable = (marker: string) => {
+      if (instabilityMarker === undefined) instabilityMarker = marker;
+      isComplete = false;
+    };
 
     const tryAddEntry = (blockId: string, exportName: string, result: RawPObjectEntry) => {
       if (result.spec !== undefined && result.hasData === true && result.data !== undefined) {
@@ -114,7 +128,7 @@ export class ResultPool {
               data
             }
           });
-        } else isComplete = false; // because data will eventually be resolved
+        } else markUnstable(`no_data:${blockId}:${exportName}`); // because data will eventually be resolved
       }
     };
 
@@ -122,7 +136,7 @@ export class ResultPool {
       const exportsProcessed = new Set<string>();
 
       if (block.prod !== undefined) {
-        if (!block.prod.locked) isComplete = false;
+        if (!block.prod.locked) markUnstable(`prod_not_locked:${blockId}`);
         for (const [exportName, result] of block.prod.results) {
           // any signal that this expost will be (or already is) present in the prod
           // will prevent adding it from staging
@@ -132,7 +146,7 @@ export class ResultPool {
       }
 
       if (block.staging !== undefined) {
-        if (!block.staging.locked) isComplete = false;
+        if (!block.staging.locked) markUnstable(`staging_not_locked:${blockId}`);
 
         for (const [exportName, result] of block.staging.results) {
           // trying to add soemthing only if result is absent in prod
@@ -142,16 +156,24 @@ export class ResultPool {
       }
     }
 
-    return { entries, isComplete };
+    return { entries, isComplete, instabilityMarker };
   }
 
-  public getSpecs(): ResultCollection<PObjectSpec> {
+  public getSpecs(): ExtendedResultCollection<PObjectSpec> {
     const entries: ResultPoolEntry<PObjectSpec>[] = [];
+
     let isComplete = true;
+
+    let instabilityMarker: string | undefined = undefined;
+    const markUnstable = (marker: string) => {
+      if (instabilityMarker === undefined) instabilityMarker = marker;
+      isComplete = false;
+    };
+
     for (const [blockId, block] of this.blocks) {
       const exportsProcessed = new Set<string>();
       if (block.staging !== undefined) {
-        if (!block.staging.locked) isComplete = false;
+        if (!block.staging.locked) markUnstable(`staging_not_locked:${blockId}`);
 
         for (const [exportName, result] of block.staging.results)
           if (result.spec !== undefined) {
@@ -165,10 +187,10 @@ export class ResultPool {
             });
             exportsProcessed.add(exportName);
           }
-      } else isComplete = false; // because staging will be inevitably rendered soon
+      } else markUnstable(`staging_not_rendered:${blockId}`); // because staging will be inevitably rendered soon
 
       if (block.prod !== undefined) {
-        if (!block.prod.locked) isComplete = false;
+        if (!block.prod.locked) markUnstable(`prod_not_locked:${blockId}`);
         for (const [exportName, result] of block.prod.results) {
           // staging have higher priority when we are interested in specs
           if (exportsProcessed.has(exportName)) continue;
@@ -187,7 +209,7 @@ export class ResultPool {
       }
     }
 
-    return { entries, isComplete };
+    return { entries, isComplete, instabilityMarker };
   }
 
   public calculateOptions(predicate: PSpecPredicate): ExtendedOption[] {
@@ -232,10 +254,8 @@ export class ResultPool {
           pureFieldErrorToUndefined: true,
           stableIfNotFound: true
         }) !== undefined,
-        prj.traverse({
+        prj.traverseOrError({
           field: projectFieldName(blockInfo.id, 'prodUiCtx'),
-          ignoreError: true,
-          pureFieldErrorToUndefined: true,
           stableIfNotFound: true
         })
       );
@@ -245,10 +265,8 @@ export class ResultPool {
           ignoreError: true,
           pureFieldErrorToUndefined: true
         }) !== undefined,
-        prj.traverse({
-          field: projectFieldName(blockInfo.id, 'stagingUiCtx'),
-          ignoreError: true,
-          pureFieldErrorToUndefined: true
+        prj.traverseOrError({
+          field: projectFieldName(blockInfo.id, 'stagingUiCtx')
         })
       );
 
@@ -262,7 +280,7 @@ export class ResultPool {
 /** Loads single BContext data */
 function loadCtx(
   calculated: boolean,
-  ctxAccessor: PlTreeNodeAccessor | undefined
+  ctxAccessor: ValueOrError<PlTreeNodeAccessor, string> | undefined
 ): RawPObjectCollection | undefined {
   if (ctxAccessor === undefined) {
     if (calculated)
@@ -273,5 +291,6 @@ function loadCtx(
     else return undefined;
   }
 
-  return parseRawPObjectCollection(ctxAccessor, false, true);
+  if (ctxAccessor.ok) return parseRawPObjectCollection(ctxAccessor.value, false, true);
+  else return undefined;
 }
