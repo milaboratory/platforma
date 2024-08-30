@@ -34,6 +34,7 @@ module.exports = { Templates: {
   'exec.test.run.echo_to_stream': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.echo_to_stream.plj.gz') },
   'exec.test.run.echo_to_value': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.echo_to_value.plj.gz') },
   'exec.test.run.fake_java': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.fake_java.plj.gz') },
+  'exec.test.run.fake_python': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.fake_python.plj.gz') },
   'exec.test.run.hello_go': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.hello_go.plj.gz') },
   'exec.test.run.save_file_set': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.save_file_set.plj.gz') },
   'exec.test.run.with_wd_processor': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.with_wd_processor.plj.gz') },

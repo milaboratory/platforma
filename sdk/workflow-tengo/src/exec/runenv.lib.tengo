@@ -4,45 +4,11 @@ oop := import(":oop")
 maps := import(":maps")
 validation := import(":validation")
 
-runEnvDescriptorScheme := {
-	registry: "string",
-	package: "string",
-	type: "string",
-	binDir: "string"
-}
-
-binaryDescriptorScheme := {
-	registry: "string",
-	package: "string",
-	cmd: ["string"],
-	runEnv: runEnvDescriptorScheme
-}
-
-localDescriptorScheme := {
-	hash: "string",
-	path: "string",
-	cmd: ["string"],
-	runEnv: runEnvDescriptorScheme
-}
-
-descriptorScheme := {
-	"isDev,omitempty": "bool",
-	"binary,omitempty": binaryDescriptorScheme,
-	"local,omitempty": localDescriptorScheme
-}
-
-softwareInfoScheme := {
-	"name": "string",
-	"version": "string",
-	"descriptor": descriptorScheme
-}
-
-META_KEY_DESCRIPTOR   := "ctl/runner/software/descriptor"
-
 _RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv/executor", Version: "1" }
 _INPUT_SETTINGS       := "settings"
 _INPUT_WD_IN          := "workdirIn"
 _INPUT_SOFTWARE       := "software"
+
 _OUTPUT_RUN_ENV       := "runEnv"
 _OUTPUT_WD_OUT        := "workdirOut"
 
@@ -51,8 +17,6 @@ saveBuilder := func() {
 
     pathsToSave := []
     envType := ""
-    toolset := ""
-    dependencies := {}
 
     self = {
         addPath: func(p) {
@@ -63,17 +27,6 @@ saveBuilder := func() {
             envType = eType
         },
 
-        packagingToolset: func(name) {
-            toolset = name
-        },
-
-        addDependencySpec := func(fileName, fileContent) {
-            if !is_bytes(fileContent) {
-                fileContent = bytes(fileContent)
-            }
-            dependencies[fileName] = fileContent
-        }
-
         build: func() {
             settings := smart.createJsonResource({
                 paths: pathsToSave,
@@ -81,8 +34,6 @@ saveBuilder := func() {
                 packagingToolset: toolset,
                 dependencies: dependencies,
             })
-
-            
         }
     }
 

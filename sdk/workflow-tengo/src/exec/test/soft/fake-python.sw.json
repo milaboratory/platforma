@@ -1,0 +1,16 @@
+{
+    "name": "@milaboratory/fake-java-script:fake-java",
+    "binary": {
+        "registry": "milaboratories",
+        "package": "common/sleep/1.7.0-{os}-{arch}.tgz",
+        "cmd": [ "python", "got 'python' by dependency", "pkg={pkg}", "java={java}" ],
+        "type": "python",
+        "runEnv": {
+            "name": ":runenv-python-stub",
+            "type": "python",
+            "registry": "milaboratories",
+            "package": "common/runenv-python-stub/1.0.0-{os}-{arch}.tgz",
+            "binDir": "bin/"
+        }
+    }
+}
