@@ -5,7 +5,7 @@ tplTest(
   async ({ helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
-      'test.forloop.forloop',
+      'test.forloop.forloop_simple',
       ['concat', 'concatReversed'],
       (tx) => ({})
     );

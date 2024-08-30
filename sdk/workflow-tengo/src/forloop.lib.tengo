@@ -13,7 +13,7 @@ enum := import("enum")
 oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
-tplutil := import(":tpl-util")
+tplutil := import(":tpl.util")
 json := import("json")
 
 _MODE_NESTED := "nested"
@@ -33,22 +33,27 @@ _forLoopSettingsSchema := {
 }
 
 /**
- * Clients can create ForLoop resources, with settings and input fields,
- * and the controller creates resources by the given "schema" from settings
- * and for each output creates a map with results by each dynamic arg.
-
- * ForLoop gets or creates a map for each output defined in settings.
- * For example, if the body resource creates 3 outputs a, b and c,
- * ForLoop resource will have 3 outputs a, b and c as well, but every output
- * will be a map with results from different bodies: a/dynamicArg1, b/dynamicArg1, c/dynamicArg1 etc.
+ * Clients can create `ForLoop` resources with specific settings and input fields.
+ * The controller then creates resources based on the given "schema" from these settings
+ * and, for each output, generates a map with results corresponding to each dynamic argument.
  *
- * Mode specifies whether ForLoop works in a usual or nested mode:
- *    - In the usual mode, all static arguments are passed to the body as inputs, and the dynamic argument is also passed in inputs.
- *    - In the nested mode, all static arguments are passed to the body as inputs except the nested argument, that is a map. The dynamic arguments will be set as input in this nested map, and then the nested map will be passed
- *	  to the body.
- *        - Think of RenderTemplates that have inputMap as arguments and we have to set a dynamic argument to the inputMap.
+ * The `ForLoop` retrieves or creates a map for each output defined in the settings.
+ * For example, if the body resource generates three outputs — `a`, `b`, and `c` —
+ * the `ForLoop` resource will also have three outputs: `a`, `b`, and `c`.
+ * However, each output will be a map containing results from different bodies,
+ * such as `a/dynamicArg1`, `b/dynamicArg1`, `c/dynamicArg1`, etc.
  *
-*/
+ * The `mode` specifies whether the `ForLoop` operates in a usual or nested mode:
+ *
+ *    - In the usual mode, all static arguments, along with the dynamic argument,
+ *      are passed to the body as inputs.
+ *
+ *    - In the nested mode, all static arguments are passed to the body as inputs,
+ *      except for the nested argument, which is a map. The dynamic arguments
+ *      are set as inputs within this nested map, and then the nested map is passed to the body.
+ *        - Think about `RenderTemplates` that use `inputMap` as arguments,
+ *          where we need to set a dynamic argument within the `inputMap`.
+ */
 builder := func() {
 	outputNames := []
 	bodyEphemeral := false
@@ -251,14 +256,14 @@ builder := func() {
 /**
  * Runs a For Loop for templates.
  *
- * @param tplId: string - The ID of the template to run with.
+ * @param tpl: resource - The template to run with.
  */
-runWithTemplate := func(tplId) {
+runWithTemplate := func(tpl) {
 	res := builder().
 		setEphemeral(false).
 		setBodyResourceType(constants.RTYPE_RENDER_TEMPLATE).
 		setNestedMode(tplutil.INPUTS_MAP_FIELD).
-		addStaticArgument(tplutil.TEMPLATE_FIELD, smart.resource(tplId))
+		addStaticArgument(tplutil.TEMPLATE_FIELD, tpl)
 
 	inputs := {}
 

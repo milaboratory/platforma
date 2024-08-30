@@ -6,12 +6,13 @@ exec := import(":exec")
 file := import(":file")
 forloop := import(":forloop")
 ll := import(":ll")
+assets := import(":assets")
 
 self.defineOutputs(["concat", "concatReversed"])
 
 self.body(func(inputs) {
-	loop := forloop.runWithTemplate(
-		ll.importTemplate(":test.forloop.concat_abc")).
+	concatTpl := assets.importTemplate(":test.forloop.concat_abc")
+	loop := forloop.runWithTemplate(concatTpl).
 		addTemplateOutput("concat").
 		addTemplateOutput("concatReversed").
 		addStaticInput("a", "astring").

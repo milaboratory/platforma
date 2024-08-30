@@ -7,6 +7,7 @@ module.exports = { Templates: {
   'pframes.test.agg_body_pure': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.agg_body_pure.plj.gz') },
   'pframes.test.ll.agg_1': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.ll.agg_1.plj.gz') },
   'test.file.simple1': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.file.simple1.plj.gz') },
+  'test.forloop.concat_abc': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.forloop.concat_abc.plj.gz') },
   'test.import-template.concat_ab': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.import-template.concat_ab.plj.gz') },
   'test.import-template.pure-template': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.import-template.pure-template.plj.gz') },
   'test.kv.kv': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.kv.kv.plj.gz') },
@@ -40,6 +41,7 @@ module.exports = { Templates: {
   'pframes.test.xsv.import-csv-map-wf': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv-map-wf.plj.gz') },
   'pframes.test.xsv.import-csv-map': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv-map.plj.gz') },
   'pframes.test.xsv.import-csv': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.test.xsv.import-csv.plj.gz') },
+  'test.forloop.forloop_simple': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.forloop.forloop_simple.plj.gz') },
   'test.import-template.workflow': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.import-template.workflow.plj.gz') },
   'test.resolve.wf': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.resolve.wf.plj.gz') },
   'test.resolve.wf_no_res': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.resolve.wf_no_res.plj.gz') }
