@@ -3,8 +3,7 @@ import type { BlockOutputsBase, ImportFileHandle, Platforma, StorageHandle, Valu
 import type { Component, ComputedGetter } from 'vue';
 
 export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, { ok: true }>['value'];
-
-export interface ArgsModelOptions<A, T = A> {
+export interface StateModelOptions<A, T = A> {
   transform?: (v: A) => T;
   validate?: (v: unknown) => A;
 }

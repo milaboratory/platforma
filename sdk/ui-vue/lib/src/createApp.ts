@@ -2,7 +2,7 @@ import { deepClone } from '@milaboratory/helpers';
 import type { Mutable } from '@milaboratory/helpers/types';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@milaboratory/sdk-ui';
 import { reactive, nextTick, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, ArgsModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
+import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
 import { MultiError, unwrapValueOrErrors } from './utils';
@@ -52,7 +52,7 @@ export function createApp<
   const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
-    createArgsModel<T = Args>(options: ArgsModelOptions<Args, T> = {}) {
+    createArgsModel<T = Args>(options: StateModelOptions<Args, T> = {}) {
       return createModel<T, Args>({
         get() {
           if (options.transform) {
@@ -65,6 +65,22 @@ export function createApp<
         autoSave: true,
         onSave(newArgs) {
           platforma.setBlockArgs(newArgs);
+        },
+      });
+    },
+    createUiModel<T = UiState>(options: StateModelOptions<UiState, T> = {}) {
+      return createModel<T, UiState>({
+        get() {
+          if (options.transform) {
+            return options.transform(innerState.ui);
+          }
+
+          return innerState.ui as T;
+        },
+        validate: options.validate,
+        autoSave: true,
+        onSave(newData) {
+          platforma.setBlockUiState(newData);
         },
       });
     },
