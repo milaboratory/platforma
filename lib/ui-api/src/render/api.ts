@@ -158,8 +158,13 @@ export type RenderFunction<Args = unknown, UiState = unknown, Ret = unknown> = (
   rCtx: RenderCtx<Args, UiState>
 ) => Ret;
 
-export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
-  ? R extends FutureRef<infer T>
+export type UnwrapFutureRef<K> =
+  K extends FutureRef<infer T>
     ? T
-    : R
+    : K extends bigint | boolean | null | number | string | symbol | undefined
+      ? K
+      : { [key in keyof K]: UnwrapFutureRef<K[key]> };
+
+export type InferRenderFunctionReturn<RF extends Function> = RF extends (...args: any) => infer R
+  ? UnwrapFutureRef<R>
   : never;
