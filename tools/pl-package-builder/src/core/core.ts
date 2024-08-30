@@ -359,12 +359,11 @@ export class Core {
         const descriptor = pkg.environment ?? pkg.binary!
 
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
+        const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
 
         this.logger.info(`Signing package '${descriptor.name}' for platform '${platform}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
-        this.logger.debug(`  sign command: '${signCommand}'`)
-
-        const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
+        this.logger.debug(`  sign command: '${toExecute}'`)
 
         const result = spawnSync(toExecute[0], toExecute.slice(1), { stdio: 'inherit', cwd: this.pkg.packageRoot })
         if (result.error) {
