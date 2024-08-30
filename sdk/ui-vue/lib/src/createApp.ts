@@ -68,14 +68,17 @@ export function createApp<
         },
       });
     },
-    createUiModel<T = UiState>(options: StateModelOptions<UiState, T> = {}) {
+    /**
+     * defaultUiState is temporarily here, remove it after implementing initialUiState
+     */
+    createUiModel<T = UiState>(options: StateModelOptions<UiState, T> = {}, defaultUiState: () => UiState) {
       return createModel<T, UiState>({
         get() {
           if (options.transform) {
             return options.transform(innerState.ui);
           }
 
-          return innerState.ui as T;
+          return (innerState.ui ?? defaultUiState()) as T;
         },
         validate: options.validate,
         autoSave: true,
