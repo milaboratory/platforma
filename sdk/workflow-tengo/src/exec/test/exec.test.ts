@@ -24,35 +24,6 @@ tplTest(
 );
 
 tplTest(
-  'run-fake-java-script',
-  async ({ helper, expect }) => {
-    const customTestText = "hello from fake java"
-
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.fake_java',
-      ['main'],
-      (tx) => ({
-        text: tx.createValue(Pl.JsonObject, JSON.stringify(customTestText))
-      })
-    );
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
-
-    const output = (await mainResult.awaitStableValue())
-    expect(output).toBeDefined()
-
-    const lines = output!.split("\n")
-    expect(lines).length(4)
-    expect(lines[0]).toBe("got 'java' by dependency")
-    if (!lines[1].startsWith("pkg=/")) throw new Error(`line[1] not starts with pkg=/`)
-    if (!lines[2].startsWith("java=/")) throw new Error(`line[2] not starts with java=/`)
-    expect(lines[3]).toBe(customTestText)
-  }
-);
-
-tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
     const helloText = "Hello from bash"

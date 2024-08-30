@@ -1,14 +1,14 @@
 /** Runs a cat on the file and returns it's content as a value resource. */
 
 self := import(":tpl")
-ll := import(":ll")
+assets := import(":assets")
 smart := import(":smart")
 exec := import(":exec")
 file := import(":file")
 
 self.defineOutputs(["main"])
 
-sw := ll.importSoftware(":exec.test.fake-java-script")
+sw := assets.importSoftware(":exec.test.soft.fake-java")
 
 self.body(func(inputs) {
 	run := exec.builder().
