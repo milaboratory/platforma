@@ -363,7 +363,7 @@ export class Core {
 
         this.logger.info(`Signing package '${descriptor.name}' for platform '${platform}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
-        this.logger.debug(`  sign command: '${toExecute}'`)
+        this.logger.debug(`  sign command: ${JSON.stringify(toExecute)}`)
 
         const result = spawnSync(toExecute[0], toExecute.slice(1), { stdio: 'inherit', cwd: this.pkg.packageRoot })
         if (result.error) {
