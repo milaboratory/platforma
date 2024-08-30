@@ -6,7 +6,7 @@ oop := import(":oop")
 smart := import(":smart")
 json := import("json")
 
-_RTYPE_RUN_COMMAND := { Name: "RunCommand", Version: "1" }
+_RTYPE_RUN_COMMAND := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }

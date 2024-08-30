@@ -37,32 +37,55 @@ softwareInfoScheme := {
 	"descriptor": descriptorScheme
 }
 
-META_KEY_DESCRIPTOR := "ctl/runner/software/descriptor"
+META_KEY_DESCRIPTOR   := "ctl/runner/software/descriptor"
 
-_RTYPE_PACKAGE_GET := { Name: "PackageGet/executor", Version: "1" }
-_INPUT_PACKAGE_NAME := "packageName"
-_INPUT_REGISTRY := "registry"
-_OUTPUT_ARCHIVE := "archive"
+_RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv/executor", Version: "1" }
+_INPUT_SETTINGS       := "settings"
+_INPUT_WD_IN          := "workdirIn"
+_INPUT_SOFTWARE       := "software"
+_OUTPUT_RUN_ENV       := "runEnv"
+_OUTPUT_WD_OUT        := "workdirOut"
 
-_RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall/executor", Version: "1" }
-_INPUT_PACKAGE := "package"
-_OUTPUT_SOFTWARE := "software"
+saveBuilder := func() {
+    self := undefined
 
-_RTYPE_PACKAGE_USE := { Name: "PackageUse/executor", Version: "1" }
-_INPUT_PACKAGE_USE_SETTINGS := "settings"
+    pathsToSave := []
+    envType := ""
+    toolset := ""
+    dependencies := {}
 
-_useSettingsSchema := {
-	hash: ["or", "bytes", "string"],
-	path: "string",
-	descriptor: "any",
-	origin: {
-		registry: "string",
-		url: "string",
-		packageName: "string"
-	}
-}
+    self = {
+        addPath: func(p) {
+            pathsToSave = append(pathsToSave, p)
+        },
 
-get := func(registryName, pkgName) {
+        envType: func(eType) {
+            envType = eType
+        },
+
+        packagingToolset: func(name) {
+            toolset = name
+        },
+
+        addDependencySpec := func(fileName, fileContent) {
+            if !is_bytes(fileContent) {
+                fileContent = bytes(fileContent)
+            }
+            dependencies[fileName] = fileContent
+        }
+
+        build: func() {
+            settings := smart.createJsonResource({
+                paths: pathsToSave,
+                type: envType,
+                packagingToolset: toolset,
+                dependencies: dependencies,
+            })
+
+            
+        }
+    }
+
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
 
 	res.inputs()[_INPUT_REGISTRY].setRefOrJson(registryName)
