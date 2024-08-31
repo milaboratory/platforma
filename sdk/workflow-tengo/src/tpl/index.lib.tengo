@@ -102,7 +102,7 @@ tpl := func() {
 		/**
 		 * Current template resource
 		 */
-		resource: func() {
+		template: func() {
 			return smart.resource(_templateId)
 		},
 
@@ -530,5 +530,5 @@ export ll.toStrict({
 	delegate                : instance.routeDelegate,
 	validateInputs          : instance.validateInputs,
 	body                    : instance.body,
-	resource                : instance.resource
+	template                : instance.template
 })

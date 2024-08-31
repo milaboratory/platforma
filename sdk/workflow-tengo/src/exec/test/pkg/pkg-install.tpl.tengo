@@ -1,11 +1,11 @@
-ll := import(":ll")
+assets := import(":assets")
 self := import(":tpl")
 pkg := import(":exec.package")
 render := import(":render")
 maps := import(":maps")
 json := import("json")
 
-sw := ll.importSoftware(":exec.test.sleep")
+sw := assets.importSoftware(":exec.test.pkg.sleep")
 
 self.defineOutputs(["installed", "descriptor"])
 
@@ -14,7 +14,7 @@ self.body(func(inputs) {
 		software := inputs["software"]
 
 		return {
-			installed: software.kvGetAsJson("ctl/runner/software/installation"),
+			installed: software.kvGetAsJson("ctl/runner/package/installation"),
 			descriptor: software.kvGetAsJson(pkg.META_KEY_DESCRIPTOR)
 		}
 	}
@@ -24,8 +24,10 @@ self.body(func(inputs) {
 	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
 
 	self.delegate(
-		self.resource(),
-		{ software: pkg.install(archive).software() },
+		self.template(),
+		{
+			software: pkg.install(archive).package()
+		},
 		["installed", "descriptor"]
 	)
 

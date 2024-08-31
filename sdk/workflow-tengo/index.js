@@ -1,5 +1,4 @@
 module.exports = { Templates: {
-  'exec.test.package-install': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.package-install.plj.gz') },
   'exec.test.software-info': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.software-info.plj.gz') },
   'exec.test.wd_processor_1': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.wd_processor_1.plj.gz') },
   'pframes.aggregate': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/pframes.aggregate.plj.gz') },
@@ -29,6 +28,9 @@ module.exports = { Templates: {
   'workflow.test.wf1': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/workflow.test.wf1.plj.gz') },
   'workflow.test.wf2': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/workflow.test.wf2.plj.gz') },
   'exec.exec': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.exec.plj.gz') },
+  'exec.test.pkg.asset-content': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.pkg.asset-content.plj.gz') },
+  'exec.test.pkg.asset-export': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.pkg.asset-export.plj.gz') },
+  'exec.test.pkg.pkg-install': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.pkg.pkg-install.plj.gz') },
   'exec.test.run.cat_on_file': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.cat_on_file.plj.gz') },
   'exec.test.run.cat_on_value': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.cat_on_value.plj.gz') },
   'exec.test.run.echo_to_stream': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/exec.test.run.echo_to_stream.plj.gz') },
