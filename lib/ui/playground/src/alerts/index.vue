@@ -14,7 +14,7 @@ const data = reactive({
 
 const paragraph = faker.lorem.paragraph();
 
-const paragraphs = toList(range(0, 12)).map(() => faker.lorem.paragraph());
+const paragraphs = toList(range(0, 25)).map(() => faker.lorem.paragraph());
 
 const json = {
   label: 'Some json',
@@ -48,13 +48,12 @@ const json = {
         <PlAlert v-bind="data" type="warn" label="Warn" closeable>Warning </PlAlert>
         <PlAlert v-bind="data" type="info" label="Info" closeable>Information (neutral) </PlAlert>
         <PlAlert v-bind="data" label="Basic" closeable>Without type </PlAlert>
-        <PlAlert v-bind="data" label="One paragraph" closeable>{{ paragraph }}</PlAlert>
-        <PlAlert :model-value="data.icon" v-bind="data" label="Multiple paragraphs">
+        <PlAlert v-bind="data" type="info" label="One paragraph" closeable>{{ paragraph }}</PlAlert>
+        <PlAlert v-bind="data" type="warn" label="Multiple paragraphs" max-height="400px">
           <p v-for="(it, i) in paragraphs" :key="i">
             {{ it }}
           </p>
         </PlAlert>
-        <PlAlert label="test" />
       </div>
     </Split>
   </Layout>

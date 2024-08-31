@@ -41,6 +41,11 @@ withDefaults(
      * If `true`, the alert content will preserve whitespace and line breaks.
      */
     whiteSpacePre?: boolean;
+
+    /**
+     * Max height (css value like '120px or 30%')
+     */
+    maxHeight?: string;
   }>(),
   {
     modelValue: true,
@@ -50,6 +55,7 @@ withDefaults(
     closeable: undefined,
     monospace: undefined,
     whiteSpacePre: undefined,
+    maxHeight: undefined,
   },
 );
 
@@ -62,7 +68,7 @@ const iconMap = {
 </script>
 
 <template>
-  <div v-if="modelValue" class="pl-alert" :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']">
+  <div v-if="modelValue" class="pl-alert" :style="{ maxHeight }" :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']">
     <div v-if="icon && type" class="pl-alert__icon">
       <div :class="`icon-24 icon-${iconMap[type]}`" />
     </div>

@@ -3,10 +3,12 @@
 .pl-alert {
   --text-font-family: var(--font-family-base);
   --text-white-space: normal;
+  --indent: 24px;
 
   position: relative;
   padding: 12px;
   display: flex;
+  flex-wrap: nowrap;
   gap: 12px;
   border: 1px solid var(--border-color-default);
   border-radius: 6px;
@@ -44,6 +46,8 @@
     display: flex;
     flex-direction: column;
     min-height: 24px;
+    flex: 1;
+    overflow: hidden;
     width: 100%;
     gap: 6px;
     label {
@@ -59,6 +63,7 @@
       font-family: var(--text-font-family);
       white-space: var(--text-white-space);
       max-width: 100%;
+      flex: 1;
       @include scrollbar(true);
     }
   }

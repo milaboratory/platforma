@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
