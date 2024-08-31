@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.42",
+  "version": "1.0.43",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -43,10 +43,9 @@
     "vue": "^3.4.31"
   },
   "dependencies": {
-    "@milaboratory/platforma-uikit": "^1.0.26"
+    "@milaboratory/platforma-uikit": "^1.0.32"
   },
   "devDependencies": {
-    "@milaboratory/platforma-uikit": "^1.0.29",
     "@faker-js/faker": "8.4.0",
     "@types/node": "20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
