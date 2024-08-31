@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
 import { fileURLToPath, URL } from 'node:url';
+import { exec } from 'child_process';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,6 +10,7 @@ export default defineConfig({
     vue({
       template: {
         compilerOptions: {
+          whitespace: 'preserve',
           isCustomElement: (tag) => {
             return tag.startsWith('web');
           },
@@ -16,6 +18,19 @@ export default defineConfig({
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any,
+    {
+      name: 'run-build-types',
+      closeBundle() {
+        // Your extra script logic here
+        exec('npm run build:types', (err, stdout, stderr) => {
+          if (err) {
+            console.error(`Error running extra script: ${stderr}`);
+            return;
+          }
+          console.log(`Extra script output: ${stdout}`);
+        });
+      },
+    },
   ],
   define: {
     APP_VERSION: JSON.stringify(process.env.npm_package_version),

@@ -7,21 +7,65 @@ import { useValidation } from '@/composition/useValidation';
 
 const slots = useSlots();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  /**
+   * Emitted when the model value is updated.
+   *
+   * @param value - The new value of the input, which can be a string or undefined if cleared.
+   */
+  (e: 'update:modelValue', value: string | undefined): void;
+}>();
 
 const props = defineProps<{
+  /**
+   * The current value of the input field.
+   */
   modelValue?: string;
+  /**
+   * The label to display above the input field.
+   */
   label?: string;
+  /**
+   * If `true`, a clear icon will appear in the input field to clear the value (set it to 'undefined').
+   */
   clearable?: boolean;
+  /**
+   * If `true`, the input field is marked as required.
+   */
   required?: boolean;
-  numeric?: boolean;
+  /**
+   * If `true`, the input field is marked as optional.
+   * @deprecated (to discuss)
+   */
   optional?: boolean;
+  /**
+   * An error message to display below the input field.
+   */
   error?: string;
+  /**
+   * A helper text to display below the input field when there are no errors.
+   */
   helper?: string;
+  /**
+   * A placeholder text to display inside the input field when it is empty.
+   */
   placeholder?: string;
+  /**
+   * If `true`, the input field is disabled and cannot be interacted with.
+   */
   disabled?: boolean;
+  /**
+   * If `true`, the input field has a dashed border.
+   */
   dashed?: boolean;
+  /**
+   * A prefix text to display inside the input field before the value.
+   */
   prefix?: string;
+  /**
+   * An array of validation rules to apply to the input field. Each rule is a function that takes the current value and returns `true` if valid or an error message if invalid.
+   * @nicolaygiman This is a strange signature, let's discuss it (@TODO)
+   */
   rules?: ((v: typeof props.modelValue) => boolean | string)[];
 }>();
 

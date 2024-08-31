@@ -5,6 +5,8 @@ import type { Settings as GridTableSettings } from './components/GridTable/types
 import type * as GridTableTypes from './components/GridTable/types';
 import type * as ManageModalTypes from './components/ManageModal/types';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
+
+import PlAlert from './components/PlAlert.vue';
 import BtnPrimary from './components/BtnPrimary.vue';
 import BtnSecondary from './components/BtnSecondary.vue';
 import BtnAccent from './components/BtnAccent.vue';
@@ -50,6 +52,7 @@ import { useSortable } from './composition/useSortable';
 import { useInterval } from './composition/useInterval';
 import { useFormState } from './composition/useFormState';
 import { useQuery } from './composition/useQuery.ts';
+import { useDraggable } from './composition/useDraggable';
 
 //for new version
 import LongText from './components/LongText.vue';
@@ -57,7 +60,6 @@ import SliderRangeTriple from './components/SliderRangeTriple.vue';
 import SliderRange from './components/SliderRange.vue';
 import Scrollable from './components/Scrollable.vue';
 import AddGraph from './components/AddGraph.vue';
-import { useDraggable } from './composition/useDraggable';
 
 // MiXCR
 import AlphabetType from './components/mixcr/AlphabetType.vue';
@@ -88,6 +90,7 @@ export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, Gen
 
 export {
   // Common
+  PlAlert,
   FileBaseInput,
   ProgressBar,
   TextArea,

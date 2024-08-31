@@ -1,0 +1,78 @@
+@import './mixins.scss';
+
+.pl-alert {
+  --text-font-family: var(--font-family-base);
+  --text-white-space: normal;
+
+  position: relative;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  border: 1px solid var(--border-color-default);
+  border-radius: 6px;
+  color: var(--txt-01);
+
+  &.monospace {
+    --text-font-family: var(--font-family-monospace);
+  }
+
+  &.whiteSpacePre {
+    --text-white-space: pre;
+  }
+
+  &__error {
+    background: var(--notification-error);
+  }
+
+  &__warn {
+    background: var(--notification-warning);
+  }
+
+  &__success {
+    background: var(--notification-success);
+  }
+
+  &__info {
+    background: var(--notification-neutral);
+  }
+
+  &__icon {
+    width: 24px;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    min-height: 24px;
+    width: 100%;
+    gap: 6px;
+    label {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 24px;
+      letter-spacing: -0.2px;
+    }
+    &__text {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
+      font-family: var(--text-font-family);
+      white-space: var(--text-white-space);
+      max-width: 100%;
+      @include scrollbar(true);
+    }
+  }
+
+  &__close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    cursor: pointer;
+    background-color: #d3d7e0;
+    @include mask(url(./images/24_close.svg), 24px);
+    transition: all 0.1s ease-in-out;
+    &:hover {
+      background-color: var(--main-dark-color);
+    }
+  }
+}

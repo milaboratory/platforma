@@ -2,8 +2,13 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 export const routes = [
   {
-    name: 'Data Table',
+    name: 'Alerts',
     path: '/',
+    component: () => import('@/alerts/index.vue'),
+  },
+  {
+    name: 'Data Table',
+    path: '/data-table',
     component: () => import('@/data-table/index.vue'),
   },
   {

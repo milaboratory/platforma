@@ -4,7 +4,13 @@ import { UiCheckbox } from '@/index';
 defineEmits(['update:modelValue']);
 
 const props = defineProps<{
+  /**
+   * The current boolean value of the checkbox.
+   */
   modelValue: boolean;
+  /**
+   * If `true`, the input field is disabled and cannot be interacted with.
+   */
   disabled?: boolean;
 }>();
 </script>
