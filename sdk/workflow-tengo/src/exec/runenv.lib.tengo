@@ -31,8 +31,6 @@ saveBuilder := func() {
             settings := smart.createJsonResource({
                 paths: pathsToSave,
                 type: envType,
-                packagingToolset: toolset,
-                dependencies: dependencies,
             })
         }
     }
@@ -57,50 +55,8 @@ saveBuilder := func() {
 	return self
 }
 
-install := func(pkg) {
-	ll.assert(smart.isReference(pkg),
-		"package.install: <pkg> must be reference to software package. It is usually obtained from package.get().archive")
-
-	res := smart.structBuilder(_RTYPE_PACKAGE_INSTALL)
-
-	res.inputs()[_INPUT_PACKAGE].set(pkg)
-
-	self := undefined
-	self = oop.inherit(res, {
-		/**
-		 * Reference to installed software
-		 *
-		 * @return software: field - output field, where info on downloaded archive will appear
-		 */
-		software: func() {
-			return res.outputs()[_OUTPUT_SOFTWARE]
-		}
-	})
-
-	return self
-}
-
-use := func(settings) {
-	res := smart.structBuilder(_RTYPE_PACKAGE_USE)
-
-    validation.assertJsonSchema(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
-	settingsRes := smart.createJsonResource(settings)
-
-	res.inputs()[_INPUT_PACKAGE_USE_SETTINGS].set(settingsRes)
-
-	self := undefined
-	self = oop.inherit(res, {
-		/**
-		 * Reference to installed software
-		 *
-		 * @return software: field - output field, where info on downloaded archive will appear
-		 */
-		software: func() {
-			return res.outputs()[_OUTPUT_SOFTWARE]
-		}
-	})
-
-	return self
+createBuilder := func() {
+	
 }
 
 export ll.toStrict({

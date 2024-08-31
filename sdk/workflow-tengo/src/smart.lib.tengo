@@ -300,13 +300,22 @@ resource = func(r) {
 		},
 
 		/**
-		 * Get resource data as Json
+		 * Get raw resource data
+		 *
+		 * @return data: []byte - raw resource data
 		 */
-		getDataAsJson: func() {
+		getData: func() {
 			if self.hasError() {
 				ll.panic("resource has errors: ", self.info())
 			}
-			return json.decode(self.info().Data);
+			return self.info().Data;
+		},
+
+		/**
+		 * Get resource data as Json
+		 */
+		getDataAsJson: func() {
+			return json.decode(self.getData());
 		},
 
 		/**

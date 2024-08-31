@@ -16,7 +16,7 @@ enum := import("enum")
 validation := import(":validation")
 render := import(":render")
 
-_create := func() {
+create := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
 	return wd.getField("workdir")
 }
@@ -190,7 +190,7 @@ _fill := func(workdir) {
  * @return self: builder - a builder that adds files and directories to the workdir.
  */
 builder := func() {
-	return _fill(_create())
+	return _fill(create())
 }
 
 /**
@@ -295,5 +295,6 @@ save := func(workdir) {
 
 export ll.toStrict({
 	builder: builder,
+	create: create,
 	save: save
 })

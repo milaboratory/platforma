@@ -9,6 +9,7 @@ pkg := import(":exec.package")
 // Variables, substituted in command arguments and environment variable values
 _ARG_VAR_PKG            := "{pkg}"  // abs path to software package
 _ARG_VAR_JAVA           := "{java}" // abs path to 'java' run environment
+_ARG_VAR_PYTHON         := "{python}" // abs path to 'python' run environment
 
 /**
  * Create new argument marking it as 'with' or 'without' variables inside.
@@ -32,7 +33,7 @@ _newPackageRef := func(varName, refName, reference) {
 
 _installSoftware := func(registry, pkgName) {
 	archive := pkg.get(registry, pkgName).archive()
-	return pkg.install(archive).software()
+	return pkg.install(archive).package()
 }
 
 _directCallOptions := func(runOptions) {
@@ -68,10 +69,26 @@ _loadJavaRunEnvironment := func(runEnvDescriptor) {
 	}
 }
 
+_loadPythonRunEnvironment := func(runEnvDescriptor) {
+	pythonRef := _newPackageRef(
+		_ARG_VAR_PYTHON,
+		runEnvDescriptor.name,
+		_installSoftware(runEnvDescriptor.registry, runEnvDescriptor.package)
+	)
+
+	// venvBuilder := python_venv.builder()
+
+	// venvBuilder.environment(pythonRef.reference)
+	// venvBuilder.descriptor()
+}
+
 _loadRunEnvironment := func(runEnvDescriptor) {
 	if runEnvDescriptor.type == "java" {
 		return _loadJavaRunEnvironment(runEnvDescriptor)
 	}
+	// if runEnvDescriptor.type == "python" {
+	// 	return _loadPythonRunEnvironment(runEnvDescriptor)
+	// }
 
 	ll.panic("run environment type %q is not currently supported by tengo-sdk", runEnvDescriptor.type)
 }
@@ -132,7 +149,7 @@ _devLocalPackageCallOptions := func(runOptions) {
 				url: "file://" + localDescriptor.path,
 				packageName: software.descriptor.name
 			}
-		}).software()
+		}).package()
 	)]
 
 	return _binPackageCallOptions(runOptions, packages, software, localDescriptor)

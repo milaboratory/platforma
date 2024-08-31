@@ -2,7 +2,7 @@ ll := import(":ll")
 assets := import(":assets")
 self := import(":tpl")
 
-sw := assets.importSoftware(":exec.test.sleep")
+sw := assets.importSoftware(":exec.test.pkg.sleep")
 
 self.defineOutputs(["main"])
 

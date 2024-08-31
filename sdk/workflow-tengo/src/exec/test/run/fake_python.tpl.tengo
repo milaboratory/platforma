@@ -8,7 +8,7 @@ file := import(":file")
 
 self.defineOutputs(["main"])
 
-sw := assets.importSoftware(":exec.test.soft.fake-python")
+sw := assets.importSoftware(":exec.test.pkg.fake-python")
 
 self.body(func(inputs) {
 	run := exec.builder().
