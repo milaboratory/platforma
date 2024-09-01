@@ -2,6 +2,7 @@
 
 self := import(":tpl")
 text := import("text")
+smart := import(":smart")
 wdSave := import(":workdir.save")
 
 self.body(func(inputs) {
@@ -75,28 +76,29 @@ self.body(func(inputs) {
 	filesResult := wd.getSavedFiles()
 	filesContentResult := wd.getSavedFilesContent()
 
-	fileSetsResult := {}
+	fileSetsResult := smart.mapBuilder()
 	for fSetName, list in fileSetsMatch {
-		r := {}
+		r := smart.mapBuilder()
 		for f in list {
-			r[f] = filesResult.getFutureInputField(f)
+			r.addRef(f, filesResult.getFutureInputField(f))
 		}
-		fileSetsResult[fSetName] = r
+		fileSetsResult.addRef(fSetName, r.build())
 	}
-	fileSetsContentResult := {}
+
+	fileSetsContentResult := smart.mapBuilder()
 	for fSetName, list in fileSetsContentMatch {
-		r := {}
+		r := smart.mapBuilder()
 		for f in list {
-			r[f] = filesContentResult.getFutureInputField(f)
+			r.addRef(f, filesContentResult.getFutureInputField(f))
 		}
-		fileSetsContentResult[fSetName] = r
+		fileSetsContentResult.addRef(fSetName, r.build())
 	}
 
 	return {
 		files           : filesResult,
 		filesContent    : filesContentResult,
-		fileSets        : fileSetsResult,
-		fileSetsContent : fileSetsContentResult,
+		fileSets        : fileSetsResult.build(),
+		fileSetsContent : fileSetsContentResult.build(),
 		workdir         : wd.getWorkdirAfter(),
 		progress        : wd.getProgress()
 	}
