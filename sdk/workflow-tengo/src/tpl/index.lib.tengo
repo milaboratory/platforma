@@ -417,7 +417,8 @@ tpl := func() {
 						"expected map from tpl.body() callback. Did you forget 'return' statement?")
 
 					ll.assert(sets.fromSlice(self.definedOutputs) == sets.fromMapKeys(result),
-						"not all defined outputs were returned from tpl.body() callback. Want ", self.definedOutputs, ", got ", maps.getKeys(result))
+						"inconsistent number of defined and returned outputs from tpl.body() callback. Want %v, got %v.",
+						self.definedOutputs, maps.getKeys(result))
 
 					// set result to self outputs
 					self.setOutputs(result)
