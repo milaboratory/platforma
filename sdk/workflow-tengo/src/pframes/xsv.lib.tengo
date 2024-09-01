@@ -12,92 +12,6 @@ util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
 
-//
-// pfconv params validation
-//
-// link to the full schema:
-//
-//    https://github.com/milaboratory/pframes/blob/main/packages/conv/include/import_csv.h#L53
-//
-
-_SPEC_AXES_SCHEMA := {
-	`column`: `string`,
-	`spec`: {
-		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
-		`name,omitempty`: `string`,
-		`domain,omitempty`: { any: `string` },
-		`annotations,omitempty`: { any: `string` },
-		`parentAxes,omitempty`: [`number`]
-	}
-}
-
-_SPEC_COLUMN_SCHEMA := {
-	`column`: `string`,
-	`id,omitempty`: `string`,
-	`allowNA,omitempty`: `bool`,
-	`spec`: {
-		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
-		`name,omitempty`: `string`,
-		`domain,omitempty`: { any: `string` },
-		`annotations,omitempty`: { any: `string` },
-		`parentAxes,omitempty`: [ `number` ]
-	}
-}
-
-_SPEC_INDEX_SCHEMA := {
-	`name`: `string`,
-	`domain,omitempty`: { any: `string` },
-	`annotations,omitempty`: { any: `string` },
-	`parentAxes,omitempty`: [`number`]
-}
-
-_SPEC_SCHEMA := {
-	`storageFormat` : `string,regex=Binary|Json`,
-	`partitionKeyLength` : `number`,
-
-	`axes`: [_SPEC_AXES_SCHEMA],
-	`columns`: [_SPEC_COLUMN_SCHEMA],
-	`index,omitempty`: _SPEC_INDEX_SCHEMA,
-
-	`naStr,omitempty`: `string`,
-	`nullStr,omitempty`: `string`,
-	`separator,omitempty`: `string`,
-	`emptyStrAsNA,omitempty`: `bool`,
-	`columnNamePrefix,omitempty`: `string`,
-	`allowColumnLabelDuplicates,omitempty`: `bool`
-}
-
-/**
- * Removes all annotations & domain information from spec, to pass it to pfconv
- */
-purifySpec := func(spec) {
-	newSpec := copy(spec)
-
-	newAxes := []
-	for ax in spec.axes {
-		newAxes = append(newAxes, {
-			column: ax.column,
-			spec: { type: ax.spec.type }
-		})
-	}
-	newSpec.axes = newAxes
-
-	newCols := []
-	for col in spec.columns {
-		newCols = append(newCols, objects.deleteUndefined({
-			column: col.column,
-			id: col.id,
-			allowNA: col.allowNA,
-			spec: { valueType: col.spec.valueType }
-		}))
-	}
-	newSpec.columns = newCols
-
-	validation.assertJsonSchema(newSpec, _SPEC_SCHEMA)
-
-	return newSpec
-}
-
 /**
  * Calculate axes spec from pfconv spec
  */
@@ -145,7 +59,7 @@ getColumnSpec := func(axesSpec, col) {
 importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-	validation.assertJsonSchema(spec, _SPEC_SCHEMA)
+	validation.assertJsonSchema(spec, util.PFCONV_CFG_SCHEMA)
 
 	xsvFileName := "file." + xsvType
 
@@ -153,7 +67,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	importDirTpl := assets.importTemplate(":pframes.import-dir")
 
 	// spec without any metadata (for caching purposes)
-	pureSpec := purifySpec(spec)
+	pureSpec := util.purifySpec(spec)
 
 	// convert csv to p-frame and read resulting data
 	pfconv := exec.builder().
@@ -202,7 +116,7 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
 
 	// spec without any metadata (for caching purposes)
-	pureSpec := purifySpec(spec)
+	pureSpec := util.purifySpec(spec)
 
 	r := render.createEphemeral(importXsvMapTpl, {
 		xsvMap: xsvMap,

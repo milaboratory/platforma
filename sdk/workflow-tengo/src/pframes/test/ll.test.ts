@@ -2,12 +2,54 @@ import { AnyRef, Pl, field, resourceType } from '@milaboratory/pl-middle-layer';
 import { awaitStableState, tplTest } from '@milaboratory/sdk-test';
 
 tplTest.for([
-  { name: '[0]', indices: [0], expectedResult: { '[1]': 1, '[2]': 1 } },
-  { name: '[1]', indices: [1], expectedResult: { '[1]': 2 } },
-  { name: '[]', indices: [], expectedResult: { '[1,1]': 1, '[1,2]': 1 } },
-  { name: '[0,1]', indices: [0, 1], expectedResult: { '[]': 2 } },
+  {
+    name: '[0]',
+    nested: false,
+    indices: [0],
+    expectedResult: { '[1]': 1, '[2]': 1 }
+  },
+  { name: '[1]', nested: false, indices: [1], expectedResult: { '[1]': 2 } },
+  {
+    name: '[]',
+    nested: false,
+    indices: [],
+    expectedResult: { '[1,1]': 1, '[1,2]': 1 }
+  },
+  {
+    name: '[0,1]',
+    nested: false,
+    indices: [0, 1],
+    expectedResult: { '[]': 2 }
+  },
   {
     name: '[0]+3',
+    nested: false,
+    indices: [0],
+    expectedResult: { '[1]': 4, '[2]': 4 },
+    base: 3
+  },
+  {
+    name: 'n[0]',
+    nested: true,
+    indices: [0],
+    expectedResult: { '[1]': 1, '[2]': 1 }
+  },
+  { name: 'n[1]', nested: true, indices: [1], expectedResult: { '[1]': 2 } },
+  {
+    name: 'n[]',
+    nested: true,
+    indices: [],
+    expectedResult: { '[1,1]': 1, '[1,2]': 1 }
+  },
+  {
+    name: 'n[0,1]',
+    nested: true,
+    indices: [0, 1],
+    expectedResult: { '[]': 2 }
+  },
+  {
+    name: 'n[0]+3',
+    nested: true,
     indices: [0],
     expectedResult: { '[1]': 4, '[2]': 4 },
     base: 3
@@ -15,7 +57,7 @@ tplTest.for([
 ])(
   'should correctly execute low level aggregation routine $name',
   { timeout: 10000 },
-  async ({ indices, expectedResult, base }, { helper, expect }) => {
+  async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       true,
       'pframes.test.ll.agg_1',
@@ -41,6 +83,7 @@ tplTest.for([
               eph: false
             })
           ),
+          nested: tx.createValue(Pl.JsonObject, JSON.stringify(nested)),
           data: data
         };
 

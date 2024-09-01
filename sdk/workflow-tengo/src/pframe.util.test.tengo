@@ -1,0 +1,62 @@
+util := import(":pframes.util")
+ll := import(":ll")
+
+assert := func(got, want, ...msg) {
+	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
+}
+
+TestDecomposePfconvCfg := func() {
+	result := util.decomposePfconvCfg({
+		"axes": [{
+			"column": "cloneId",
+			"spec": {
+				"name": "pl7.app/vdj/cloneId",
+				"type": "Long"
+			}
+		}],
+		"columns": [{
+			"column": "readCount",
+			"id": "read-count",
+			"allowNA": false,
+			"spec": {
+				"name": "pl7.app/vdj/readCount",
+				"valueType": "Long",
+				"annotations": {
+					"pl7.app/label": "Number Of Reads"
+				}
+			}
+		}],
+		"storageFormat": "Binary",
+		"partitionKeyLength": 0
+	}, {
+		additionalAxesSpec: [
+			{ name: "pl7.app/sampleId", type: "String" }
+		]
+	})
+	assert(result, {
+			purifiedCfg: {
+				partitionKeyLength: 0,
+				axes: [
+					{
+						column: "cloneId",
+						spec: { type: "Long" }
+					}
+				],
+				columns: [
+					{ column: "readCount", id: "read-count", allowNA: false, spec: { valueType: "Long" } }
+				],
+				storageFormat: "Binary"
+			},
+			columnsSpec: {
+				"read-count": {
+					valueType: "Long",
+					name: "pl7.app/vdj/readCount",
+					annotations: { "pl7.app/label": "Number Of Reads" },
+					axesSpec: [
+						{ name: "pl7.app/sampleId", type: "String" },
+						{ name: "pl7.app/vdj/cloneId", type: "Long" }
+					]
+				}
+			}
+		}, "wrong result")
+}

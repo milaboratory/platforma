@@ -13,13 +13,19 @@ self.awaitState("params", "ResourceReady")
 
 self.body(func(inputs) {
 	params := inputs.params
-	if is_undefined(inputs.base) {
-		return {
-			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, [{ type: "Resource", name: "result" }], params.eph).output("result")
-		}
-	} else {
-		return {
-			result: pLl.aggregate(inputs.data, params.indices, bodyTpl, [{ type: "Resource", name: "result" }], params.eph, {base: inputs.base} ).output("result")
-		}
+	extraFields := {}
+	if !is_undefined(inputs.base) {
+		extraFields.base = inputs.base
+	}
+
+	outputsToCollect := [{ type: "Resource", name: "result" }]
+
+	if inputs.nested {
+		extraFields.nested = true
+		outputsToCollect = [{ type: "Resource", name: "result", path: ["result", "nested"] }]
+	}
+
+	return {
+		result: pLl.aggregate(inputs.data, params.indices, bodyTpl, outputsToCollect, params.eph, extraFields).output("result")
 	}
 })
