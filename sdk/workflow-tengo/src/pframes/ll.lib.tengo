@@ -36,18 +36,23 @@ llAggTpl := assets.importTemplate(":pframes.aggregate")
  *
  *                  Common fields for all subtypes:
  *                     {
- *                       name: string - name of the output
+ *                       name:  string     - name of the output
+ *                       path?: string[]   - [optional] overrides the path inside the body template
+ *                                           result, first name is interpreted as output name. If
+ *                                           not specified path equals to `[name]`.
  *                     }
  *
  *                  Variants:
- *                    | { type: "Resource" } // - assume normal singular resource is produced by this output
+ *                    | { type: "Resource" } // - assume normal singular resource is produced by
+ *                                                this output
  *                    | {
  *                        type: "ResourceMap",
  *                        keyLength: number // - expected key length of result from each operation
  *                      } // - assume each record is ResourceMap
  *                    | {
  *                        type: "BinaryPartitioned" | "JsonPartitioned",
- *                        partitionKeyLength: number // - expected partition length of result from each operation
+ *                        partitionKeyLength: number // - expected partition length of result from
+ *                                                        each operation
  *                      } // - assume each record is a partitionded Json or Binary PColumn data itself
  *
  * @param isEph   if true, body template will be rendered as ephemeral
