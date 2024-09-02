@@ -1,42 +1,33 @@
-ll := import(":ll")
 assets := import(":assets")
 self := import(":tpl")
 pkg := import(":exec.package")
-workdir := import(":workdir")
-maps := import(":maps")
 file := import(":file")
 
 sw := assets.importSoftware(":exec.test.pkg.sleep")
 
 self.defineOutputs(["assetFile", "assetContent"])
 
-self.body(func(inputs) {
-	if (maps.containsKey(inputs, "assetFile")) {
-		return {
-			assetFile: file.exportFile(inputs["assetFile"]),
-			assetContent: inputs["assetContent"].getDataAsJson()
-		}
-	}
-
+self.prepare(func() {
 	binaryDescriptor := sw.descriptor.binary
 
 	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
-    installed := pkg.install(archive)
+	installed := pkg.install(archive)
 
-    assetName := "package.sw.json"
+	assetName := "package.sw.json"
 
-    assetFile := pkg.loadAssetFile(installed.package(), assetName)
-    assetContent := pkg.loadAssetContent(installed.package(), assetName)
+	assetFile := pkg.loadAssetFile(installed.package(), assetName)
+	assetContent := pkg.loadAssetContent(installed.package(), assetName)
 
+	return {
+		assetFile: assetFile.file,
+		assetContent: assetContent.content
+	}
+})
 
-	self.delegate(
-		self.template(),
-		{ 
-			assetFile: assetFile.file,
-			assetContent: assetContent.content
-		},
-		["assetFile", "assetContent"]
-	)
+self.body(func(inputs) {
+	return {
+		assetFile: file.exportFile(inputs["assetFile"]),
+		assetContent: inputs["assetContent"].getDataAsJson()
+	}
 
-	return {}
 })

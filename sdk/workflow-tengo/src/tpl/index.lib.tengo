@@ -248,8 +248,8 @@ tpl := func() {
 		prepareQueue : [],
 
 		/**
-		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references will be
-		 * returned by the prepare method will be resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references
+		 * returned from prepare method will be resolved into a ready resources. The resulting resources will be passed as an input to the body function.
 		 *
 		 * @param cb: a callback function returning a map of references to be resolved
 		 */
