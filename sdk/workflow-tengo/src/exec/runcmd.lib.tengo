@@ -118,6 +118,7 @@ builder := func(workdir) {
 				"attempt to override existing reference %q", refKey)
 
 			refs[refKey] = ref
+			return self
 		},
 
 		/**
@@ -141,6 +142,7 @@ builder := func(workdir) {
 		envVar: func(name, valueTpl) {
 			envs[name] = _createVariableArg(valueTpl)
 			hasPatternArgs = true
+			return self
 		},
 
 		/*
@@ -156,6 +158,7 @@ builder := func(workdir) {
 			} else {
 				customPaths = append(customPaths, _createSimpleArg(value))
 			}
+			return self
 		},
 
 		/**
@@ -167,6 +170,7 @@ builder := func(workdir) {
 		 */
 		substitutionRule: func(varName, refKey) {
 			substRules[varName] = refKey
+			return self
 		},
 
 		/**
@@ -178,6 +182,7 @@ builder := func(workdir) {
 			for k, v in rules {
 				substRules[k] = v
 			}
+			return self
 		},
 
 		/**

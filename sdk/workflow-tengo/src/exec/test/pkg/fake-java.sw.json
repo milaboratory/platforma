@@ -1,5 +1,5 @@
 {
-    "name": "@milaboratory/fake-java-script:fake-java",
+    "name": "@milaboratory/tengo-sdk:exec.test.pkg.fake-java",
     "binary": {
         "registry": "milaboratories",
         "package": "common/sleep/1.7.0-{os}-{arch}.tgz",

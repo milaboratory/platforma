@@ -49,8 +49,8 @@ _OUTPUT_ARCHIVE := "archive"
 get := func(registryName, pkgName) {
 	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
 
-	res.inputs()[_INPUT_REGISTRY].setRefOrJson(registryName)
-	res.inputs()[_INPUT_PACKAGE_NAME].setRefOrJson(pkgName)
+	res.getField(_INPUT_REGISTRY).setRefOrJson(registryName)
+	res.getField(_INPUT_PACKAGE_NAME).setRefOrJson(pkgName)
 
 	self := undefined
 	self = oop.inherit(res, {
@@ -77,17 +77,17 @@ install := func(archive) {
 
 	res := smart.structBuilder(_RTYPE_PACKAGE_INSTALL)
 
-	res.inputs()[_INPUT_ARCHIVE].set(archive)
+	res.getField(_INPUT_ARCHIVE).set(archive)
 
 	self := undefined
 	self = oop.inherit(res, {
 		/**
 		 * Reference to installed package
 		 *
-		 * @return package: field - output field, where installed package will appear
+		 * @return package: smart.field - output field, where installed package will appear
 		 */
 		package: func() {
-			return res.outputs()[_OUTPUT_PACKAGE]
+			return res.getField(_OUTPUT_PACKAGE)
 		}
 	})
 
@@ -114,7 +114,7 @@ use := func(settings) {
 	validation.assertJsonSchema(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
 	settingsRes := smart.createJsonResource(settings)
 
-	res.inputs()[_INPUT_PACKAGE_USE_SETTINGS].set(settingsRes)
+	res.getField(_INPUT_PACKAGE_USE_SETTINGS).set(settingsRes)
 
 	self := undefined
 	self = oop.inherit(res, {
@@ -195,10 +195,10 @@ assetsLoader := func(pkg) {
 				paths: sets.toSlice(allPaths)
 			}))
 
-			res.inputs()[_INPUT_PACKAGE].set(pkg)
-			res.inputs()[_INPUT_WD_IN].set(wd)
+			res.getField(_INPUT_PACKAGE).set(pkg)
+			res.getField(_INPUT_WD_IN).set(wd)
 
-			wdAfter := res.outputs()[_OUTPUT_WD_OUT]
+			wdAfter := res.getField(_OUTPUT_WD_OUT)
 
 			wdSaveBuilder := workdir.save(wdAfter)
 			for p in filePaths {
@@ -220,7 +220,7 @@ assetsLoader := func(pkg) {
 				 * @param fileName: string
 				 * @return file: smart.field - a reference to the file resource.
 				 */
-				saveFile: func(fileName) {
+				getFile: func(fileName) {
 					return wdSave.files.getFutureInputField(fileName)
 				},
 
@@ -230,7 +230,7 @@ assetsLoader := func(pkg) {
 				 * @param fileName: string
 				 * @return file: smart.field - a reference to the file resource.
 				 */
-				saveFileContent: func(fileName) {
+				getFileContent: func(fileName) {
 					return wdSave.filesContent.getFutureInputField(fileName)
 				}
 			}
@@ -254,7 +254,7 @@ loadAssetFile := func(pkg, assetPath) {
 		load()
 
 	return {
-		file: assets.saveFile(assetPath),
+		file: assets.getFile(assetPath),
 		progress: assets.progress
 	}
 }
@@ -273,7 +273,7 @@ loadAssetContent := func(pkg, assetPath) {
 		load()
 
 	return {
-		content: assets.saveFileContent(assetPath),
+		content: assets.getFileContent(assetPath),
 		progress: assets.progress
 	}
 }

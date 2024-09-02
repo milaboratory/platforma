@@ -45,13 +45,13 @@ _runBinaryCommand := func(inputs) {
 	//
 
 	runBuilder := runcmd.builder(wdBefore)
-	
+
 	opts := execInternal.binaryRunOptions(inputs.runOptions)
 
 	// Attach installed software to the command
-	for pkgInfo in opts.packages {
-		runBuilder.ref(pkgInfo.refName, pkgInfo.reference)
-		runBuilder.substitutionRule(pkgInfo.varName, pkgInfo.refName)
+	for varInfo in opts.variables {
+		runBuilder.ref(varInfo.refName, varInfo.reference)
+		runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
 	}
 
 	// Patch command's PATH env variable
@@ -79,9 +79,9 @@ _runBinaryCommand := func(inputs) {
 	// env vars
 	for name, value in opts.envs {
 		if value.hasVars {
-			runBuilder.envVar(value.value)
+			runBuilder.envVar(name, value.value)
 		} else {
-			runBuilder.env(value.value)
+			runBuilder.env(name, value.value)
 		}
 	}
 
