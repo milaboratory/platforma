@@ -21,13 +21,11 @@ export default defineConfig({
     {
       name: 'run-build-types',
       closeBundle() {
-        // Your extra script logic here
         exec('npm run build:types', (err, stdout, stderr) => {
           if (err) {
-            console.error(`Error running extra script: ${stderr}`);
+            console.error(`Error running build:types: ${stderr}`);
             return;
           }
-          console.log(`Extra script output: ${stdout}`);
         });
       },
     },

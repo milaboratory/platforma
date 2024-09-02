@@ -23,7 +23,7 @@ export function allCssVariables(): Record<
         },
         '--txt-01': {
           light: [true, false],
-          value: ['#110529', '#DFE0E5'],
+          value: ['#110529', '#FFFFFF'],
           description: 'Primary text layer',
         },
         '--txt-02': {
@@ -38,7 +38,7 @@ export function allCssVariables(): Record<
         },
         '--txt-mask': {
           light: [false, true],
-          value: ['#CFD1DB', '#38383D'],
+          value: ['#CFD1DB', '#3D3D42'],
           description: 'Text mask in inputs, icons, etc.',
         },
         '--txt-focus': {
@@ -68,7 +68,7 @@ export function allCssVariables(): Record<
         },
         '--ic-01': {
           light: [true, false],
-          value: ['#110529', '#DFE0E5'],
+          value: ['#110529', '#FFFFFF'],
           description: 'Primary elements',
         },
         '--ic-02': {
@@ -188,7 +188,7 @@ export function allCssVariables(): Record<
         },
         '--dis-01': {
           light: [false, true],
-          value: ['#CFD1DB', '#38383D'],
+          value: ['#CFD1DB', '#3D3D42'],
           description: 'Buttons, borders, labels, texts, icons',
         },
       },
