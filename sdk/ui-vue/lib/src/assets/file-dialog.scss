@@ -91,8 +91,10 @@
       color: var(--txt-mask);
       text-align: center;
       font-size: 28px;
+      line-height: 28px;
       font-weight: 500;
       letter-spacing: -0.56px;
+      overflow: hidden;
     }
   }
 
@@ -137,6 +139,14 @@
       min-height: 24px;
       gap: 12px;
       padding: 0 12px;
+      > span {
+        display: inline-block;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      > i {
+        min-width: 16px;
+      }
       i.isFile {
         display: inline-block;
         background-color: #CFD1DB;

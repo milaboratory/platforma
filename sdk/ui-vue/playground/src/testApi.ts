@@ -1,4 +1,4 @@
-import { delay, randomInt, range, toList, unionize } from '@milaboratory/helpers/utils';
+import { delay, randomInt, range, times, toList, unionize } from '@milaboratory/helpers/utils';
 import { wrapValueOrErrors } from 'lib';
 import { faker } from '@faker-js/faker';
 import type {
@@ -18,7 +18,7 @@ const getLsFilesResult = (path: string): ListFilesResult => {
   const length = randomInt(1, 100);
 
   if (path.endsWith('11')) {
-    throw Error('Some error');
+    throw Error('Some error ' + faker.lorem.paragraph() + faker.lorem.paragraph());
   }
 
   if (!d.has(path)) {
@@ -39,7 +39,7 @@ const getLsFilesResult = (path: string): ListFilesResult => {
           };
         }
 
-        const name = faker.system.commonFileName();
+        const name = times(randomInt(1, 40), () => faker.word.noun()).join(' ') + faker.system.commonFileName();
 
         return {
           type: 'file',

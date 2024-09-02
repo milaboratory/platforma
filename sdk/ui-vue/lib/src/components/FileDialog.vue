@@ -119,8 +119,10 @@ const load = () => {
   }
 };
 
-const updateDirPathDebounced = debounce((v: string) => {
-  data.dirPath = v;
+const updateDirPathDebounced = debounce((v: string | undefined) => {
+  if (v) {
+    data.dirPath = v;
+  }
 }, 1000);
 
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
@@ -262,18 +264,27 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
     return;
   }
 
-  ev.preventDefault();
-
   if (ev.metaKey && ev.code === 'KeyA') {
+    ev.preventDefault();
     selectAll();
   }
 
   if (ev.metaKey && ev.shiftKey && ev.code === 'Period') {
+    ev.preventDefault();
     data.showHiddenItems = !data.showHiddenItems;
   }
 });
 
 onUpdated(loadAvailableStorages);
+
+const vTextOverflown = {
+  mounted: (el: HTMLElement) => {
+    if (el.clientWidth < el.scrollWidth) {
+      const s = el.innerText;
+      el.innerText = s.substring(0, 57) + '...' + s.substring(s.length - 10);
+    }
+  },
+};
 </script>
 
 <template>
@@ -311,11 +322,11 @@ onUpdated(loadAvailableStorages);
           <template v-for="file in visibleItems" :key="file.id">
             <div v-if="file.isDir" class="isDir" @click="setDirPath(file.path)">
               <i class="icon-16 icon-chevron-right" />
-              {{ file.name }}
+              <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>
             <div v-else :class="{ canBeSelected: file.canBeSelected, selected: file.selected }" @click.stop="(ev) => selectFile(ev, file)">
               <i class="mask-16 mask-comp isFile" />
-              {{ file.name }}
+              <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>
           </template>
         </div>
