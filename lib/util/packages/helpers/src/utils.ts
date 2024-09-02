@@ -152,6 +152,10 @@ export function toList<T>(iterable: Iterable<T>): T[] {
   return lst;
 }
 
+export function times<R>(n: number, cb: (i: number) => R): R[] {
+  return toList(range(0, n)).map(cb);
+}
+
 export class Interval {
   constructor(private _delay: number) {
   }

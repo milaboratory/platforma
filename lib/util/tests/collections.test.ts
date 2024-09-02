@@ -4,6 +4,13 @@ import {utils} from '@milaboratory/helpers';
 
 const {toList, range} = utils;
 
+test('Times', () => {
+  expect(utils.times(0, i => i)).toEqual([]);
+  expect(utils.times(1, i => i).reduce((x, y) => x + y)).toBe(0);
+  expect(utils.times(2, i => i).reduce((x, y) => x + y)).toBe(1);
+  expect(utils.times(3, i => i).reduce((x, y) => x + y)).toBe(3);
+});
+
 test('SliceBy', async () => {
   const arr = toList(range(1, 100));
 
