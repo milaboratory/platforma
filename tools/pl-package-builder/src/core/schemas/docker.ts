@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { entrypointSchema } from './binary';
 
 // TODO: this is only example of how to structure the code for later development
 //       and few thoughts on what how docker build can look like
@@ -11,8 +10,6 @@ const dockerBuildRulesSchema = z.object({
 
 const configSchema = z.object({
     ...dockerBuildRulesSchema.shape,
-
-    entrypoints: z.array(entrypointSchema),
 });
 
 export type config = z.infer<typeof configSchema>

@@ -245,14 +245,9 @@ export class Core {
         const { os, arch } = util.splitPlatform(platform)
 
         const descriptor = pkg.environment ?? pkg.binary!
-        const storageSettings = getStorageSettings({
-            customStorageURL: options?.storageURL,
-            registry: descriptor.registry,
-            pkgInfo: this.pkg,
-        })
+        const storageURL = options?.storageURL ?? descriptor.registry.storageURL
 
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
-        const storageURL = storageSettings.UploadURL
         const dstName = descriptor.fullName(platform)
 
         if (!storageURL) {
@@ -416,48 +411,4 @@ export class Core {
             arch: arch,
         }
     }
-}
-
-type storageSettings = {
-    UploadURL?: string
-}
-
-function getStorageSettings(options?: {
-    customStorageURL?: string,
-    registry?: { name: string, storageURL?: string },
-    pkgInfo?: PackageInfo,
-}): storageSettings {
-    const settings: storageSettings = {}
-
-    // Priorities (from highes to lowest):
-    //  <customStorageURL> ->
-    //    <environment variable> ->
-    //      <package registry settings> ->
-    //        <registry catalog in package.json>
-
-    const regNameUpper = (options?.registry?.name ?? "").toUpperCase()
-
-    if (options?.pkgInfo && options.registry?.name) {
-        const preset = options.pkgInfo.binaryRegistries[options.registry?.name]
-        if (preset) {
-            settings.UploadURL = preset.storageURL
-        }
-    }
-
-    if (options?.registry?.storageURL) {
-        settings.UploadURL = options?.registry?.storageURL
-    }
-
-    if (options?.registry?.name) {
-        const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
-        if (uploadTo) {
-            settings.UploadURL = uploadTo
-        }
-    }
-
-    if (options?.customStorageURL) {
-        settings.UploadURL = options.customStorageURL
-    }
-
-    return settings
 }

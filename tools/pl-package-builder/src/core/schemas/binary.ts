@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export const runEnvironmentTypes = ['java', 'python', 'R', 'conda'] as const;
+export const runEnvironmentTypes = ['java', 'python'] as const;
 export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
+
+export const pythonToolsets = ["pip"] as const
+export type pythonToolsetName = (typeof pythonToolsets)[number];
 
 export const registrySchema = z.strictObject({
     name: z.string(),
@@ -11,8 +14,8 @@ export const registrySchema = z.strictObject({
 export type registry = z.infer<typeof registrySchema>
 
 // common fields both for 'environment' and 'binary'
-const packageArchiveRulesSchema = z.object({
-    registry: registrySchema,
+const archiveRulesSchema = z.object({
+    registry: registrySchema.optional(),
     name: z.string().optional(),
     version: z.string().optional(),
     crossplatform: z.boolean().optional(),
@@ -21,76 +24,66 @@ const packageArchiveRulesSchema = z.object({
     roots: z.record(
         z.enum(util.AllPlatforms as [typeof util.AllPlatforms[number], ...typeof util.AllPlatforms[number][]]),
         z.string().min(1)
-    ).optional().describe("please, provide settings only for supported platforms")
+    ).optional().describe("please, provide settings only for supported platforms: " + util.AllPlatforms.join(", "))
 })
-export type archiveRules = z.infer<typeof packageArchiveRulesSchema>
-
-export const entrypointSchema = z.object({
-    cmd: z.array(z.string()).
-        describe("command to run for this entrypoint. This command will be appended by <args> set inside workflow"),
-    envVars: z.array(
-        z.string().
-            regex(/=/, "full environment variable specification is required: <var-name>=<var-value>, e.g.: IS_CI=yes")
-    ).
-        optional().
-        describe("list of environment variables to be set for this entrypoint")
-})
-
-export type entrypointInfo = z.infer<typeof entrypointSchema>
+export type archiveRules = z.infer<typeof archiveRulesSchema>
 
 const artifactIDSchema = z.string().
     regex(/:/, { message: "tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1" }).
     describe("ID of tengo build artifact")
 
-const entrypointsListSchema = z.record(
-    z.string().regex(/[-_a-z0-9.]/)
-        .describe("name of entrypoint descriptor, client should import to use this entrypoint (ll.importSoftware)"),
-    entrypointSchema,
-)
-
-export const binaryPackageSchema = packageArchiveRulesSchema.extend({
+export const binaryPackageSchema = archiveRulesSchema.extend({
     type: z.literal('binary').optional(),
     environment: z.undefined(),
-
-    entrypoints: entrypointsListSchema,
 })
 export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>
 
-export const javaPackageSchema = packageArchiveRulesSchema.extend({
+export const javaPackageSchema = archiveRulesSchema.extend({
     type: z.literal("java"),
     environment: artifactIDSchema,
-
-    entrypoints: entrypointsListSchema,
 })
 export type javaPackageConfig = z.infer<typeof javaPackageSchema>
 
-export const pythonPackageSchema = packageArchiveRulesSchema.extend({
-    type: z.literal("python"),
-    environment: artifactIDSchema,
-
-    entrypoints: entrypointsListSchema,
-
+const pipToolsetSchema = z.strictObject({
+    toolset: z.literal("pip"),
     requirements: z.string().
         describe("path to requrements.txt inside package archive"),
 })
+
+export const pythonToolsetSchema = z.discriminatedUnion('toolset', [
+    pipToolsetSchema
+])
+
+export const pythonPackageSchema = archiveRulesSchema.extend({
+    type: z.literal("python"),
+    environment: artifactIDSchema,
+    dependencies: pythonToolsetSchema
+})
+
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>
 
-export const rPackageSchema = packageArchiveRulesSchema.extend({
+export const renvToolsetSchema = z.strictObject({
+    toolset: z.literal('renv'),
+    lockFile: z.string().
+        describe("path to 'renv.lock' file inside package archive"),
+})
+
+export const rToolsetSchema = z.discriminatedUnion('toolset', [
+    renvToolsetSchema,
+])
+
+export const rPackageSchema = archiveRulesSchema.extend({
     type: z.literal("R"),
     environment: artifactIDSchema,
-
-    entrypoints: entrypointsListSchema,
-
-    renvLock: z.string().
-        describe("path to 'renv.lock' file inside package archive"),
+    dependencies: rToolsetSchema,
 })
 export type rPackageConfig = z.infer<typeof rPackageSchema>
 
-export const condaPackageSchema = packageArchiveRulesSchema.extend({
+export const condaPackageSchema = archiveRulesSchema.extend({
     type: z.literal("conda"),
     environment: artifactIDSchema,
-
-    entrypoints: entrypointsListSchema,
+    lockFile: z.string().
+        describe("path to 'renv.lock' file inside package archive"),
 })
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>
 
@@ -98,13 +91,13 @@ export const configSchema = z.discriminatedUnion('type', [
     binaryPackageSchema,
     javaPackageSchema,
     pythonPackageSchema,
-    rPackageSchema,
-    condaPackageSchema,
+    // rPackageSchema,
+    // condaPackageSchema,
 ])
 
 export type config = z.infer<typeof configSchema>
 
-export const environmentConfigSchema = packageArchiveRulesSchema.extend({
+export const environmentConfigSchema = archiveRulesSchema.extend({
     type: z.enum(runEnvironmentTypes).
         describe("run environment type"),
 
