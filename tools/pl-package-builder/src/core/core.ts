@@ -2,16 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from "child_process";
 import winston from "winston";
-import { PackageInfo, PackageConfig } from "./package-info";
+import { PackageInfo, PackageConfig, Entrypoint } from "./package-info";
 import { Renderer, listSoftwareNames as listSoftwareEntrypoints, readEntrypointDescriptor } from "./renderer";
-import * as binSchema from './schemas/binary';
+import * as binSchema from './schemas/artifacts';
 import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 
 export class Core {
     private readonly logger: winston.Logger
-    private _packages: Map<string, PackageConfig> | undefined
+    private _entrypoints: Map<string, Entrypoint> | undefined
     private _renderer: Renderer | undefined
 
     public readonly pkg: PackageInfo
@@ -36,18 +36,39 @@ export class Core {
         return archive.getPath(this.archiveOptions(pkg, os, arch))
     }
 
-    public get packages(): Map<string, PackageConfig> {
-        if (!this._packages) {
-            this._packages = this.pkg.packages
+    public get entrypoints(): Map<string, Entrypoint> {
+        if (!this._entrypoints) {
+            this._entrypoints = this.pkg.entrypoints
         }
 
-        return this._packages
+        return this._entrypoints
+    }
+
+    public get packages(): Map<string, PackageConfig> {
+        return new Map(
+            Array.from(this.entrypoints.entries())
+                .map(([_, ep]) => [ep.package.id, ep.package])
+        )
+    }
+
+    public get packageEntrypointsIndex(): Map<string, string[]> {
+        const result = new Map<string, string[]>()
+
+        for (const [epName, ep] of this.entrypoints) {
+            if (!result.has(ep.package.id)) {
+                result.set(ep.package.id, [])
+            }
+
+            result.get(ep.package.id)!.push(epName)
+        }
+
+        return result
     }
 
     public get buildablePackages(): Map<string, PackageConfig> {
         return new Map(
             Array.from(this.packages.entries())
-                .filter(([, value]) => value.buildable)
+                .filter(([, value]) => value.isBuildable)
         )
     }
 
@@ -65,21 +86,34 @@ export class Core {
         entrypoints?: string[],
         sources?: util.SoftwareSource[]
     }) {
-        for (const [id, pkg] of this.packages.entries()) {
-            if (options?.ids && !options.ids.includes(id)) {
-                this.logger.debug(`skipping descriptor generation for package '${id}'`)
-                continue
-            }
+        const index = this.packageEntrypointsIndex
 
-            const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, pkg, {
-                entrypoints: options?.entrypoints,
-                sources: options?.sources,
-                fullDirHash: this.fullDirHash
-            })
+        const entrypointNames = options?.entrypoints ?? []
+        if (options?.ids) {
+            for (const pkgId of options.ids) {
+                const packageEntrypoints = index.get(pkgId)
+                if (!packageEntrypoints || packageEntrypoints.length === 0) {
+                    throw new Error(`cannot build descriptor for package ${pkgId}: no entrypoints found for package`)
+                }
 
-            for (const swJson of infos.values()) {
-                this.renderer.writeEntrypointDescriptor(swJson)
+                entrypointNames.push(...packageEntrypoints)
             }
+        }
+
+        var entrypoints = Array.from(this.entrypoints.entries())
+        if (entrypointNames.length > 0) {
+            entrypoints = entrypoints.filter(
+                ([epName, _]) => entrypointNames.includes(epName)
+            )
+        }
+
+        const infos = this.renderer.renderSoftwareEntrypoints(this.buildMode, new Map(entrypoints), {
+            sources: options?.sources,
+            fullDirHash: this.fullDirHash
+        })
+
+        for (const swJson of infos.values()) {
+            this.renderer.writeEntrypointDescriptor(swJson)
         }
     }
 
@@ -105,7 +139,7 @@ export class Core {
                 this.buildPackage(pkg, util.currentPlatform(), options)
             } else if (this.targetPlatform) {
                 this.buildPackage(pkg, this.targetPlatform, options)
-            } else if (this.allPlatforms && !pkg.isMultiRoot) {
+            } else if (this.allPlatforms && !pkg.isMultiroot) {
                 const currentPlatform = util.currentPlatform()
                 this.logger.warn(
                     `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`,
@@ -128,9 +162,9 @@ export class Core {
         this.logger.info(`Building software package '${pkg.id}' for platform '${platform}'...`)
         const { os, arch } = util.splitPlatform(platform)
 
-        if (!pkg.binary && !pkg.environment) {
+        if (!pkg.isBuildable) {
             if (options?.skipIfEmpty) {
-                this.logger.info(`  archive build was skipped: package '${pkg.id}' has no software archive build settings ('binary' or 'environment')`)
+                this.logger.info(`  archive build was skipped: package '${pkg.id}' is not buildable`)
             }
             this.logger.error(`  no 'binary' settings found: software '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
             throw new Error("no 'binary' configuration")
@@ -141,9 +175,8 @@ export class Core {
             return
         }
 
-        const descriptor = pkg.environment ?? pkg.binary!
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
-        const contentRoot = options?.contentRoot ?? descriptor.contentRoot(platform)
+        const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform)
 
         this.logger.debug("  rendering 'package.sw.json' to be embedded into package archive")
         const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
@@ -152,7 +185,7 @@ export class Core {
         fs.writeFileSync(swJsonPath, JSON.stringify(swJson))
 
         this.logger.info("  packing software into a package")
-        if (descriptor.crossplatform) {
+        if (pkg.crossplatform) {
             this.logger.info(`    generating cross-platform package`)
         } else {
             this.logger.info(`    generating package for os='${os}', arch='${arch}'`)
@@ -244,24 +277,20 @@ export class Core {
     }) {
         const { os, arch } = util.splitPlatform(platform)
 
-        const descriptor = pkg.environment ?? pkg.binary!
-        const storageURL = options?.storageURL ?? descriptor.registry.storageURL
+        const storageURL = options?.storageURL ?? pkg.registry.storageURL
 
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
-        const dstName = descriptor.fullName(platform)
+        const dstName = pkg.fullName(platform)
 
         if (!storageURL) {
-            this.logger.error(`no storage URL is set for registry ${descriptor.registry.name}`)
-            if (pkg.environment) {
-                throw new Error(`environment.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
-            }
-
-            throw new Error(`binary.registry.storageURL of package '${pkg.id}' is empty. Set it as command option or in '${util.softwareConfigName}' file`)
+            const regNameUpper = pkg.registry.name.toUpperCase()
+            this.logger.error(`no storage URL is set for registry ${pkg.registry.name}`)
+            throw new Error(`'registry.storageURL' of package '${pkg.id}' is empty. Set it as command option, in '${util.softwareConfigName}' file or via environment variable 'PL_REGISTRY_${regNameUpper}_UPLOAD_URL'`)
         }
 
         const signatureSuffixes = this.findSignatures(archivePath)
 
-        this.logger.info(`Publishing package '${descriptor.name}' for platform '${platform}' into registry '${descriptor.registry.name}'`)
+        this.logger.info(`Publishing package '${pkg.name}' for platform '${platform}' into registry '${pkg.registry.name}'`)
         this.logger.debug(`  registry storage URL: '${storageURL}'`)
         this.logger.debug(`  archive to publish: '${archivePath}'`)
         if (signatureSuffixes.length > 0) this.logger.debug(`  detected signatures: '${signatureSuffixes}'`)
@@ -272,11 +301,11 @@ export class Core {
         const exists = await s.exists(dstName)
         if (exists) {
             if (options?.skipExisting) {
-                this.logger.warn(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. Upload was skipped.`)
+                this.logger.warn(`software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`)
                 return
             }
             if (!options?.forceReupload) {
-                throw new Error(`software package '${dstName}' already exists in registry '${descriptor.registry.name}'. To re-upload it, use 'force' flag`)
+                throw new Error(`software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag`)
             }
         }
 
@@ -298,7 +327,7 @@ export class Core {
 
         return Promise.all(uploads).then(
             () => {
-                this.logger.info(`Package '${descriptor.name}' was published to '${descriptor.registry.name}:${dstName}'`)
+                this.logger.info(`Package '${pkg.name}' was published to '${pkg.registry.name}:${dstName}'`)
                 return
             }
         )
@@ -351,12 +380,10 @@ export class Core {
 
         const { os, arch } = util.splitPlatform(platform)
 
-        const descriptor = pkg.environment ?? pkg.binary!
-
         const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
         const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
 
-        this.logger.info(`Signing package '${descriptor.name}' for platform '${platform}'...`)
+        this.logger.info(`Signing package '${pkg.name}' for platform '${platform}'...`)
         this.logger.debug(`  archive: '${archivePath}'`)
         this.logger.debug(`  sign command: ${JSON.stringify(toExecute)}`)
 
@@ -399,14 +426,12 @@ export class Core {
     }
 
     private archiveOptions(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): archive.archiveOptions {
-        const desc = pkg.environment ?? pkg.binary!
-
         return {
             packageRoot: this.pkg.packageRoot,
-            packageName: desc.name,
-            packageVersion: desc.version,
+            packageName: pkg.name,
+            packageVersion: pkg.version,
 
-            crossplatform: desc.crossplatform,
+            crossplatform: pkg.crossplatform,
             os: os,
             arch: arch,
         }

@@ -3,22 +3,22 @@
   "version": "1.0.0",
   "description": "Example of software to be used as runenv",
   "scripts": {
-    "build": "rm -rf dist && pl-pkg build --version=1.2.3"
+    "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
   },
   "block-software": {
-    "packages": {
-      "env1": {
+    "entrypoints": {
+      "1.2.3": {
         "environment": {
-          "registry": {
-            "name": "example"
-          },
+          "artifact": {
+            "registry": "example",
+            "name": "common/example",
+            "version": "1.2.3",
 
-          "name": "common/example",
-          "entrypointName": "1.2.3",
-
-          "type": "python",
-          "root": "./src",
-          "binDir": "."
+            "type": "environment",
+            "runtime": "python",
+            "root": "./src",
+            "binDir": "."
+          }
         }
       }
     }

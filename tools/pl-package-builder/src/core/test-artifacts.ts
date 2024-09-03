@@ -2,12 +2,10 @@
 
 export const PackageVersion: string = '1.2.3'
 export const PackageNameNoAt: string = 'some-company/the-software'
-export const PackageName: string = '@'+PackageNameNoAt
+export const PackageName: string = '@' + PackageNameNoAt
 
 export const BinaryRegistry: string = "some-binary-registry"
 export const BinaryCustomName1: string = "custom-package-name-1"
-export const BinaryCustomName2: string = "custom-package-name-2"
-export const BinaryCustomName3: string = "custom-package-name-3"
 export const BinaryCustomVersion: string = "4.4.4"
 
 export const EPNameCrossplatform: string = "crossplatform"
@@ -20,86 +18,77 @@ export const PackageJsonNoSoftware = `{
     "version": "${PackageVersion}"
 }`
 
-export const CrossplatformPackage = `{
-  "binary": {
-    "registry": {
-      "name": "${BinaryRegistry}"
-    },
-    "crossplatform": true,
+export const CrossplatformArtifact = `{
+  "registry": "${BinaryRegistry}",
 
-    "root": "./src",
-
-    "entrypoints": {
-      "${EPNameCrossplatform}": { 
-        "cmd": ["aaaa"]
-      }
-    }
-  }
+  "type": "binary",
+  "crossplatform": true,
+  "root": "./src"
 }`
 
-export const CustomVersionPackage = `{
-  "binary": {
-    "registry": {
-      "name": "${BinaryRegistry}"
-    },
-    "name": "${BinaryCustomName1}",
-    "version": "${BinaryCustomVersion}",
+export const CustomVersionArtifact = `{
+  "registry": {
+    "name": "${BinaryRegistry}"
+  },
+  "name": "${BinaryCustomName1}",
+  "version": "${BinaryCustomVersion}",
 
-    "root": "./src",
-
-    "entrypoints": {
-      "${EPNameCustomName}": {
-        "cmd": ["aaaa"]
-      }
-    }
-  }
+  "type": "binary",
+  "root": "./src"
 }`
 
 export const EnvironmentDependencyPackage = `{
-  "binary": {
-    "registry": {
-      "name": "${BinaryRegistry}"
-    },
-    "name": "${BinaryCustomName2}",
-    "crossplatform": true,
+  "registry": {
+    "name": "${BinaryRegistry}"
+  },
 
-    "root": "./src",
-    
-    "type": "java",
-    "environment": ":${EPNameJavaEnvironment}",
-
-    "entrypoints": {
-      "${EPNameJavaDependency}": {
-        "cmd": ["aaaa"]
-      }
-    }
-  }
+  "root": "./src",
+  "type": "java",
+  "environment": ":${EPNameJavaEnvironment}"
 }`
 
 export const EnvironmentPackage = `{
-  "environment": {
-    "registry": {
-      "name": "${BinaryRegistry}"
-    },
-    "name": "${BinaryCustomName3}",
+  "registry": {
+    "name": "${BinaryRegistry}"
+  },
 
-    "type": "java",
-    "root": "./src",
-    "binDir": ".",
-    
-    "entrypointName": "${EPNameJavaEnvironment}"
-  }
+  "type": "environment",
+  "runtime": "java",
+  "root": "./src",
+  "binDir": "."
 }`
 
 export const PackageJson = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}",
     "block-software": {
-      "packages": {
-        "pCross": ${CrossplatformPackage},
-        "pCustom": ${CustomVersionPackage},
+      "artifacts": {
+        "pCross": ${CrossplatformArtifact},
         "pEnv": ${EnvironmentPackage},
         "pEnvDep": ${EnvironmentDependencyPackage}
+      },
+      "entrypoints": {
+        "${EPNameCrossplatform}": {
+          "binary": {
+            "artifact": "pCross",
+            "cmd": ["aaaa"]
+          }
+        },
+        "${EPNameCustomName}": {
+          "binary": {
+            "artifact": ${CustomVersionArtifact},
+            "cmd": ["aaaa"]
+          }
+        },
+        "${EPNameJavaEnvironment}": {
+          "environment": { "artifact": "pEnv" }
+        },
+        "${EPNameJavaDependency}": {
+          "binary": {
+            "artifact": "pEnvDep",
+            "cmd": ["aaaa"]
+          }
+        }
       }
     }
 }`

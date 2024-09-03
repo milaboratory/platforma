@@ -10,23 +10,20 @@ test("PackageInfo loads correctly for multi-package", () => {
     })
 
     var pkg = i.getPackage("pCross")
-    expect(pkg.binary).toBeDefined()
-    expect(pkg.binary!.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.binary!.name).toEqual(artifacts.PackageNameNoAt)
-    expect(pkg.binary!.version).toEqual(artifacts.PackageVersion)
-    expect(pkg.binary!.root).toEqual("./src")
+    expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.name).toEqual(artifacts.PackageNameNoAt + "/pCross")
+    expect(pkg.version).toEqual(artifacts.PackageVersion)
+    expect(pkg.root).toEqual("./src")
 
-    var pkg = i.getPackage("pCustom")
-    expect(pkg.binary).toBeDefined()
-    expect(pkg.binary!.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.binary!.name).toEqual(artifacts.BinaryCustomName1)
-    expect(pkg.binary!.version).toEqual(artifacts.BinaryCustomVersion)
+    var pkg = i.getPackage(artifacts.EPNameCustomName)
+    expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.name).toEqual(artifacts.BinaryCustomName1)
+    expect(pkg.version).toEqual(artifacts.BinaryCustomVersion)
 
     var pkg = i.getPackage("pEnv")
-    expect(pkg.environment).toBeDefined()
-    expect(pkg.environment!.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.environment!.name).toEqual(artifacts.BinaryCustomName3)
-    expect(pkg.environment!.version).toEqual(artifacts.PackageVersion)
+    expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry)
+    expect(pkg.name).toEqual(artifacts.PackageNameNoAt + "/pEnv")
+    expect(pkg.version).toEqual(artifacts.PackageVersion)
 })
 
 test("PackageInfo considers version override", () => {
@@ -40,18 +37,14 @@ test("PackageInfo considers version override", () => {
     i.version = customVersion
 
     var pkg = i.getPackage("pCross")
-    expect(pkg.binary).toBeDefined()
-    expect(pkg.binary!.version).toEqual(customVersion)
+    expect(pkg.version).toEqual(customVersion)
 
-    var pkg = i.getPackage("pCustom")
-    expect(pkg.binary).toBeDefined()
-    expect(pkg.binary!.version).toEqual(customVersion)
+    var pkg = i.getPackage(artifacts.EPNameCustomName)
+    expect(pkg.version).toEqual(customVersion)
 
     var pkg = i.getPackage("pEnv")
-    expect(pkg.environment).toBeDefined()
-    expect(pkg.environment!.version).toEqual(customVersion)
+    expect(pkg.version).toEqual(customVersion)
 
     var pkg = i.getPackage("pEnvDep")
-    expect(pkg.binary).toBeDefined()
-    expect(pkg.binary!.version).toEqual(customVersion)
+    expect(pkg.version).toEqual(customVersion)
 })

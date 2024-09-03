@@ -5,10 +5,10 @@ import winston from 'winston';
 import { z, ZodError } from 'zod';
 import * as util from './util';
 import * as envs from './envs';
-import * as binary from './schemas/binary';
+import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
 
-export interface PackageArchiveInfo extends binary.archiveRules {
+export interface PackageArchiveInfo extends artifacts.archiveRules {
     name: string
     version: string
     crossplatform: boolean
@@ -19,85 +19,100 @@ export interface PackageArchiveInfo extends binary.archiveRules {
     contentRoot: (platform: util.PlatformType) => string // absolute path to package's content root
 }
 
-const binaryEntrypointsList = z.record(z.string(), entrypoint.binaryOptionsSchema)
-export type BinaryEntrypoints = z.infer<typeof binaryEntrypointsList>
+const softwareEntrypointsList = z.record(z.string(), entrypoint.softwareOptionsSchema)
+export type SoftwareEntrypoints = z.infer<typeof softwareEntrypointsList>
 
-export interface BinaryConfig extends binary.binaryPackageConfig, PackageArchiveInfo {
-    registry: binary.registry
-    name: string
-    version: string
-    crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
-export interface JavaConfig extends binary.javaPackageConfig, PackageArchiveInfo {
-    registry: binary.registry
-    name: string
-    version: string
-    crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
-export interface PythonConfig extends binary.pythonPackageConfig, PackageArchiveInfo {
-    registry: binary.registry
-    name: string
-    version: string
-    crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
-export interface RConfig extends binary.rPackageConfig, PackageArchiveInfo {
-    registry: binary.registry
-    name: string
-    version: string
-    crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
-export interface CondaConfig extends binary.condaPackageConfig, PackageArchiveInfo {
-    registry: binary.registry
-    name: string
-    version: string
-    crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
+const environmentEntrypointsList = z.record(z.string(), entrypoint.environmentOptionsSchema)
+export type EnvironmentEntrypoints = z.infer<typeof softwareEntrypointsList>
 
-export type BinaryPackage =
-    BinaryConfig |
-    JavaConfig |
-    PythonConfig
-// RConfig
-// CondaConfig
-
-export interface RunEnvironment extends binary.environmentConfig, PackageArchiveInfo {
-    registry: binary.registry,
+export interface RunEnvironmentPackage extends artifacts.environmentConfig, PackageArchiveInfo {
+    registry: artifacts.registry,
     name: string
     version: string
     crossplatform: boolean
-    entrypoints: BinaryEntrypoints
-}
 
-export interface PackageConfig {
-    id: string
-    binary?: BinaryPackage
-    environment?: RunEnvironment
-    buildable: boolean
-
-    crossplatform: boolean
-    isMultiRoot: boolean
-    platforms: util.PlatformType[]
+    isMultiroot: boolean
     contentRoot(platform: util.PlatformType): string
 }
 
-const artifactDefinitionSchema = z.object({
-    // docker: dockerConfigSchema.optional(),
-    binary: binary.configSchema.optional(),
-    environment: binary.environmentConfigSchema.optional(),
-}).refine(
-    data => (
-        !((data.binary && data.environment) || (!data.binary && !data.environment))
-    ),
-    {
-        message: "software package can provide either binary for execution, either execution environment. Never both",
-        path: ['binary', 'environment']
-    }
-)
+export interface BinaryPackage extends artifacts.binaryPackageConfig, PackageArchiveInfo {
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+export interface JavaPackage extends artifacts.javaPackageConfig, PackageArchiveInfo {
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+export interface PythonPackage extends artifacts.pythonPackageConfig, PackageArchiveInfo {
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+export interface RPackage extends artifacts.rPackageConfig, PackageArchiveInfo {
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchiveInfo {
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+}
+
+export type BuildablePackage =
+    RunEnvironmentPackage |
+    BinaryPackage |
+    JavaPackage |
+    PythonPackage
+// RPackage
+// CondaPackage
+
+export type PackageConfig = BuildablePackage & {
+    id: string
+    platforms: util.PlatformType[]
+
+    isBuildable: boolean
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+
+export interface SoftwareEntrypoint {
+    type: 'software'
+    name: string
+    package: PackageConfig
+    cmd: string[]
+    env: string[]
+}
+
+export interface EnvironmentEntrypoint {
+    type: 'environment'
+    name: string
+    package: PackageConfig
+    env: string[]
+}
+
+export type Entrypoint =
+    SoftwareEntrypoint |
+    EnvironmentEntrypoint
 
 const storagePresetSchema = z.object({
     storageURL: z.string()
@@ -115,9 +130,8 @@ const packageJsonSchema = z.object({
             binary: binaryRegistryPresetsSchema.optional(),
         }).optional(),
 
-        artifacts: z.record(z.string(), artifactDefinitionSchema),
-
-        entrypoints: entrypoint.listSchema.optional(),
+        artifacts: artifacts.listSchema.optional(),
+        entrypoints: entrypoint.listSchema,
     })
 })
 type packageJson = z.infer<typeof packageJsonSchema>
@@ -134,20 +148,19 @@ type packageJson = z.infer<typeof packageJsonSchema>
  *
  *     "artifacts": {
  *       "pkg-1": {
- *         "binary": {
- *           "roots": {
- *             "linux-x64": "./linux-x64/src",
- *             "linux-aarch64": "./linux-aarch/src",
- *             "...and so on...": "platform-dependant roots",
- *           }
+ *         "type": "binary",
+ *         "roots": {
+ *           "linux-x64": "./linux-x64/src",
+ *           "linux-aarch64": "./linux-aarch/src",
+ *           "...and so on...": "platform-dependant roots",
  *         }
  *       }
  *     }
  *
  *     "entrypoints": {
  *       "script1": {
- *         "artifact": "pkg-1",
- *         "binary": {
+ *         "software": {
+ *           "artifact": "pkg-1",
  *           "cmd": [ "{pkg}/script1" ]
  *         }
  *       }
@@ -198,182 +211,228 @@ export class PackageInfo {
         return this.pkgJson['block-software'].registries?.binary ?? {}
     }
 
-    getEntrypoints(pkgID: string): Record<string, entrypoint.info> {
-        const list: Record<string, entrypoint.info> = {}
+    get entrypoints(): Map<string, Entrypoint> {
+        const list = new Map<string, Entrypoint>()
 
-        for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints ?? {})) {
-            if (ep.artifact === pkgID) {
-                list[epName] = ep
+        for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
+            if (ep.binary) {
+                const packageID = (typeof ep.binary.artifact === 'string') ? ep.binary.artifact : epName
+                list.set(epName, {
+                    type: 'software',
+                    name: epName,
+                    package: this.getPackage(packageID),
+                    cmd: ep.binary.cmd,
+                    env: ep.binary.envVars ?? [],
+                })
+                continue
             }
+
+            if (ep.environment) {
+                const packageID = (typeof ep.environment.artifact === 'string') ? ep.environment.artifact : epName
+                list.set(epName, {
+                    type: 'environment',
+                    name: epName,
+                    package: this.getPackage(packageID),
+                    env: ep.environment.envVars ?? [],
+                })
+                continue
+            }
+
+            throw new Error(`entrypoint '${epName}' type is not supported by current platforma package builder`)
         }
 
         return list
+    }
+
+    public getEntrypoint(name: string): Entrypoint {
+        return this.entrypoints.get(name)!
     }
 
     // Packages are buildable artifacts with entrypoints
     get packages(): Map<string, PackageConfig> {
         const result = new Map<string, PackageConfig>()
 
-        for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints ?? {})) {
-            if (!ep.binary) {
-                continue
-            }
-
-            if (!result.has(ep.artifact)) {
-                result.set(ep.artifact, this.getPackage(ep.artifact))
+        for (const ep of this.entrypoints.values()) {
+            if (!result.has(ep.package.id)) {
+                result.set(ep.package.id, ep.package)
             }
         }
 
         return result
     }
 
-    getPackage(id: string): PackageConfig {
-        const artifact = this.pkgJson['block-software'].artifacts[id]
+    public getPackage(id: string): PackageConfig {
+        const pkgRoot = this.packageRoot
+        const artifact = this.getArtifact(id)
 
-        if (!artifact) {
-            this.logger.error(`artifact '${id}' not found in ${util.softwareConfigName} file`)
-            throw new Error(`no artifact with id '${id}'`)
-        }
-
-        if (!artifact.binary && !artifact.environment) {
-            this.logger.error(`artifact '${id}' is refered as binary entrypoint but has no 'binary' or 'environment' configuration`)
-        }
-
-        const entrypoints = this.getEntrypoints(id)
-
-        const binary = (artifact.binary) ? this.getBinary(id, artifact.binary, entrypoints) : undefined
-        const environment = (artifact.environment) ? this.getEnvironment(id, artifact.environment, entrypoints) : undefined
+        const crossplatform = (artifact.crossplatform !== undefined) ?
+            artifact.crossplatform :
+            artifact.type == 'java' || artifact.type == 'python'
 
         return {
             id: id,
-            binary,
-            environment,
 
-            buildable: Boolean(binary || environment),
+            ...artifact,
 
-            get crossplatform(): boolean {
-                if (binary) return binary.crossplatform
-                if (environment) return environment.crossplatform
-                return false
+            registry: this.binRegistryFor(artifact.registry),
+            name: this.getName(id, artifact.name),
+            version: this.getVersion(artifact.version),
+            crossplatform: crossplatform,
+
+            fullName(platform: util.PlatformType): string {
+                return binaryPackageFullName(crossplatform, this.name, this.version, platform)
             },
 
-            get isMultiRoot(): boolean {
-                if (binary) return binary.roots !== undefined
-                if (environment) return environment.roots !== undefined
-                return false
+            get namePattern(): string {
+                return binaryPackageAddressPattern(crossplatform, this.name, this.version)
+            },
+
+            get isBuildable(): boolean {
+                return artifacts.isBuildable(this.type)
+            },
+
+            get isMultiroot(): boolean {
+                return Object.keys(this.roots || {}).length > 0
+            },
+
+            contentRoot(platform: util.PlatformType): string {
+                const root = this.root ?? this.roots?.[platform]
+                if (!root) {
+                    throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
+                }
+
+                return path.resolve(pkgRoot, root)
             },
 
             get platforms(): util.PlatformType[] {
-                if (binary?.root) return [util.currentPlatform()]
-                if (binary?.roots) return Object.keys(binary.roots) as util.PlatformType[]
+                if (artifact?.root) return [util.currentPlatform()]
+                if (artifact?.roots) return Object.keys(artifact.roots) as util.PlatformType[]
 
-                if (environment?.root) return [util.currentPlatform()]
-                if (environment?.roots) return Object.keys(environment.roots) as util.PlatformType[]
-
-                throw new Error(`no platforms are defined as supported for package '${id}' in binary mode (no 'root' or 'roots' are defined)`)
-            },
-
-            contentRoot(platform: util.PlatformType): string {
-                if (binary) return binary.contentRoot(platform)
-                if (environment) return environment.contentRoot(platform)
-
-                throw new Error(`root path for software archive is undefined for package ${id}`)
+                throw new Error(
+                    `no platforms are defined as supported for package '${id}' in binary mode ` +
+                    `(no 'root' or 'roots' are defined)`)
             }
         }
     }
 
-    private getBinary(packageID: string, binSettings: binary.config, entrypoints: Record<string, entrypoint.info>): BinaryPackage {
-        this.logger.debug(`  generating binary config for package`)
+    private getArtifact(id: string): artifacts.config {
+        const artifacts = this.pkgJson['block-software'].artifacts ?? {}
+        const entrypoints = this.pkgJson['block-software'].entrypoints
 
-        const pkgRoot = this.packageRoot
-        const version = this.getVersion(binSettings.version)
-
-        const registry = this.binRegistryFor(binSettings.registry)
-        const name = this.getName(packageID, binSettings.name)
-
-        const binEntrypoints: Record<string, entrypoint.binaryOptions> = {}
-        for (const [epName, ep] of Object.entries(entrypoints)) {
-            binEntrypoints[epName] = ep.binary!
+        if (artifacts[id]) {
+            return artifacts[id]
         }
 
-        return {
-            ...binSettings,
-
-            registry,
-            name,
-            version,
-            entrypoints: binEntrypoints,
-
-            get crossplatform(): boolean {
-                if (binSettings.crossplatform !== undefined) {
-                    return binSettings.crossplatform
-                }
-
-                return binSettings.type === 'java' ||
-                    binSettings.type === 'python'
-            },
-
-            fullName(platform: util.PlatformType): string {
-                return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
-            },
-
-            get namePattern(): string {
-                return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
-            },
-
-            contentRoot(platform: util.PlatformType): string {
-                const root = this.root ?? this.roots?.[platform]
-                if (!root) {
-                    throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
-                }
-
-                return path.resolve(pkgRoot, root)
-            }
+        const ep = entrypoints[id]
+        if (!ep) {
+            throw new Error(`artifact with id '${id}' not found neither in 'entrypoints', nor in 'artifacts'`)
         }
+
+        const idOrArtifact = ep.environment?.artifact ?? ep.binary!.artifact
+
+        if (typeof idOrArtifact !== 'string') {
+            return idOrArtifact
+        }
+
+        if (artifacts[idOrArtifact]) {
+            return artifacts[idOrArtifact]
+        }
+
+        throw new Error(`entrypoint '${id}' points to artifact '${idOrArtifact}' which does not exist in 'artifacts'`)
     }
 
-    private getEnvironment(packageID: string, envSettings: binary.environmentConfig, entrypoints: Record<string, entrypoint.info>): RunEnvironment {
-        this.logger.debug("  generating environment config for package")
+    // private getBinary(packageID: string, binSettings: artifacts.config, entrypoints: Record<string, entrypoint.info>): BuildablePackage {
+    //     this.logger.debug(`  generating binary config for package`)
 
-        const pkgRoot = this.packageRoot
-        const version = this.getVersion(envSettings.version)
+    //     const pkgRoot = this.packageRoot
+    //     const version = this.getVersion(binSettings.version)
 
-        const registry = this.binRegistryFor(envSettings.registry)
-        const name: string = this.getName(packageID, envSettings.name)
-        const envEntrypoints: Record<string, entrypoint.binaryOptions> = {}
-        for (const [epName, ep] of Object.entries(entrypoints)) {
-            envEntrypoints[epName] = ep.binary!
-        }
+    //     const registry = this.binRegistryFor(binSettings.registry)
+    //     const name = this.getName(packageID, binSettings.name)
+
+    //     const binEntrypoints: Record<string, entrypoint.binaryOptions> = {}
+    //     for (const [epName, ep] of Object.entries(entrypoints)) {
+    //         binEntrypoints[epName] = ep.binary!
+    //     }
+
+    //     return {
+    //         ...binSettings,
+
+    //         registry,
+    //         name,
+    //         version,
+    //         entrypoints: binEntrypoints,
+
+    //         get crossplatform(): boolean {
+    //             if (binSettings.crossplatform !== undefined) {
+    //                 return binSettings.crossplatform
+    //             }
+
+    //             return binSettings.type === 'java' ||
+    //                 binSettings.type === 'python'
+    //         },
+
+    //         fullName(platform: util.PlatformType): string {
+    //             return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
+    //         },
+
+    //         get namePattern(): string {
+    //             return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
+    //         },
+
+    //         contentRoot(platform: util.PlatformType): string {
+    //             const root = this.root ?? this.roots?.[platform]
+    //             if (!root) {
+    //                 throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
+    //             }
+
+    //             return path.resolve(pkgRoot, root)
+    //         }
+    //     }
+    // }
+
+    // private getEnvironment(packageID: string, envSettings: artifacts.environmentConfig, entrypoints: Record<string, entrypoint.info>): RunEnvironmentPackage {
+    //     this.logger.debug("  generating environment config for package")
+
+    //     const pkgRoot = this.packageRoot
+    //     const version = this.getVersion(envSettings.version)
+
+    //     const registry = this.binRegistryFor(envSettings.registry)
+    //     const name: string = this.getName(packageID, envSettings.name)
+    //     const envEntrypoints: Record<string, entrypoint.binaryOptions> = {}
+    //     for (const [epName, ep] of Object.entries(entrypoints)) {
+    //         envEntrypoints[epName] = ep.binary!
+    //     }
 
 
-        return {
-            ...envSettings,
+    //     return {
+    //         ...envSettings,
 
-            registry,
-            name,
-            version,
-            entrypoints: envEntrypoints,
+    //         registry,
+    //         name,
+    //         version,
+    //         entrypoints: envEntrypoints,
 
-            crossplatform: envSettings.crossplatform ?? false,
+    //         crossplatform: envSettings.crossplatform ?? false,
 
-            fullName(platform: util.PlatformType): string {
-                return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
-            },
+    //         fullName(platform: util.PlatformType): string {
+    //             return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
+    //         },
 
-            get namePattern(): string {
-                return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
-            },
+    //         get namePattern(): string {
+    //             return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
+    //         },
 
-            contentRoot(platform: util.PlatformType): string {
-                const root = this.root ?? this.roots?.[platform]
-                if (!root) {
-                    throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
-                }
+    //         contentRoot(platform: util.PlatformType): string {
+    //             const root = this.root ?? this.roots?.[platform]
+    //             if (!root) {
+    //                 throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
+    //             }
 
-                return path.resolve(pkgRoot, root)
-            }
-        }
-    }
+    //             return path.resolve(pkgRoot, root)
+    //         }
+    //     }
+    // }
 
     public set version(v: string | undefined) {
         this._versionOverride = v
@@ -395,16 +454,22 @@ export class PackageInfo {
         return this.pkgJson.version
     }
 
-    private binRegistryFor(registry?: binary.registry): binary.registry {
-        const registries = this.pkgJson['block-software'].registries ?? {}
+    private binRegistryFor(registry: artifacts.registry | string | undefined): artifacts.registry {
+        const registries = this.binaryRegistries
 
-        var result: binary.registry = {
+        var result: artifacts.registry = {
             name: "default",
-            storageURL: registries.binary?.default?.storageURL
+            storageURL: registries.default?.storageURL
         }
 
         if (registry) {
-            result = registry
+            if (typeof registry === 'string') {
+                result.name = registry
+                result.storageURL = registries[result.name]?.storageURL
+            } else {
+                result.name = registry.name
+                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL
+            }
         }
 
         const regNameUpper = (result.name).toUpperCase()
@@ -422,22 +487,61 @@ export class PackageInfo {
 
         const blockSoftware = this.pkgJson['block-software']
 
-        const artifacts = blockSoftware.artifacts ?? {}
+        const as = blockSoftware.artifacts ?? {}
         const entrypoints = blockSoftware.entrypoints ?? {}
 
         for (const [epName, ep] of Object.entries(entrypoints)) {
-            const artifact = artifacts[ep.artifact]
-            if (!artifact) {
-                this.logger.error(
-                    `entrypoint '${epName}' refers artifact '${ep.artifact}' which is not defined in '${util.softwareConfigName}'`
-                )
-                hasErrors = true
+            if (ep.binary) {
+                const artifactName = (typeof ep.binary.artifact === 'string') ? ep.binary.artifact : epName
+                const artifact = this.getArtifact(artifactName)
+
+                if (!artifact) {
+                    this.logger.error(
+                        `entrypoint '${epName}' refers to artifact '${ep.binary.artifact}' which is not defined in '${util.softwareConfigName}'`
+                    )
+                    hasErrors = true
+                }
+
+                if (!this.validateArtifact(artifactName, artifact)) {
+                    hasErrors = true
+                }
+
+                if (!artifacts.isBuildable(artifact.type)) {
+                    this.logger.error(
+                        `entrypoint '${epName}' artifact type '${artifact.type}' is not buildable to binary package`
+                    )
+                    hasErrors = true
+                }
+
+                if (artifact.type === 'environment') {
+                    this.logger.error(
+                        `entrypoint '${epName}' artifact type '${artifact.type}' cannot be build into software pacakge. Use 'environment' entrypoint`
+                    )
+                    hasErrors = true
+                }
             }
-            if (ep.binary && !artifact.binary && !artifact.environment) {
-                this.logger.error(
-                    `entrypoint '${epName}' declares 'binary' settings for artifact '${ep.artifact}' with no 'binary' or 'environment' configuration`
-                )
-                hasErrors = true
+
+            if (ep.environment) {
+                const artifactName = (typeof ep.environment.artifact === 'string') ? ep.environment.artifact : epName
+                const artifact = this.getArtifact(artifactName)
+
+                if (!artifact) {
+                    this.logger.error(
+                        `entrypoint '${epName}' refers to artifact '${ep.environment.artifact}' which is not defined in '${util.softwareConfigName}'`
+                    )
+                    hasErrors = true
+                }
+
+                if (!this.validateArtifact(artifactName, artifact)) {
+                    hasErrors = true
+                }
+
+                if (artifact.type !== 'environment') {
+                    this.logger.error(
+                        `entrypoint '${epName}' with 'environment' settings should refer to 'environment' artifact type`
+                    )
+                    hasErrors = true
+                }
             }
 
             // TODO: add docker validation here
@@ -445,28 +549,42 @@ export class PackageInfo {
 
         const uniquePackageNames = new Set<string>()
 
-        for (const [artifactName, artifact] of Object.entries(artifacts)) {
-            const binConfig = artifact.binary ?? artifact.environment
-            if (binConfig) {
-                if (binConfig.root && binConfig.roots) {
-                    this.logger.error(`binary package '${artifactName}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`)
-                    hasErrors = true
-                }
-
-                const name = this.getName(artifactName, binConfig.name)
-                const version = this.getVersion(binConfig.version)
-                const uniqueName = `${name}-${version}`
-                if (uniquePackageNames.has(uniqueName)) {
-                    this.logger.error(`found two packages with the same name '${name}' and version '${version}'`)
-                    hasErrors = true
-                }
-                uniquePackageNames.add(uniqueName)
+        for (const [artifactName, artifact] of Object.entries(as)) {
+            if (!artifacts.isBuildable(artifact.type)) {
+                continue
             }
+
+            if (!this.validateArtifact(artifactName, artifact)) {
+                hasErrors = true
+            }
+
+
+            const name = this.getName(artifactName, artifact.name)
+            const version = this.getVersion(artifact.version)
+            const uniqueName = `${name}-${version}`
+            if (uniquePackageNames.has(uniqueName)) {
+                this.logger.error(`found two packages with the same name '${name}' and version '${version}'`)
+                hasErrors = true
+            }
+
+            uniquePackageNames.add(uniqueName)
         }
 
         if (hasErrors) {
             throw new Error(`${util.softwareConfigName} has xconfiguration errors in 'block-software' section. See error log messages above for details`)
         }
+    }
+
+    private validateArtifact(artifactName: string, artifact: artifacts.config): boolean {
+        if (artifacts.isBuildable(artifact.type)) {
+            if (artifact.root && artifact.roots) {
+                this.logger.error(`${artifact.type} artifact '${artifactName}' has both 'root' and 'roots' options. 'root' and 'roots' are mutually exclusive.`)
+
+                return false
+            }
+        }
+
+        return true
     }
 
     private getName(artifactName: string, name?: string): string {

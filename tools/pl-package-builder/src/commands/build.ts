@@ -34,40 +34,49 @@ export default class Build extends Command {
             (flags.source as util.SoftwareSource[]) :
             [...util.AllSoftwareSources] // we need to iterate over the list to build all targets
 
-        const core = new Core(logger)
+        try {
+            const core = new Core(logger)
 
-        core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
-        core.pkg.version = flags.version
-        core.targetPlatform = flags.platform as util.PlatformType
-        core.allPlatforms = flags['all-platforms']
-        core.fullDirHash = flags['full-dir-hash']
+            core.buildMode = cmdOpts.modeFromFlag(flags.dev as cmdOpts.devModeName)
+            core.pkg.version = flags.version
+            core.targetPlatform = flags.platform as util.PlatformType
+            core.allPlatforms = flags['all-platforms']
+            core.fullDirHash = flags['full-dir-hash']
 
-        core.buildDescriptors({
-            ids: flags['package-id'] ? flags['package-id'] : undefined,
-            entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
-            sources: flags.source ? flags.source as util.SoftwareSource[] : undefined,
-        })
+            core.buildDescriptors({
+                ids: flags['package-id'] ? flags['package-id'] : undefined,
+                entrypoints: flags.entrypoint ? flags.entrypoint : undefined,
+                sources: flags.source ? flags.source as util.SoftwareSource[] : undefined,
+            })
 
-        for (const source of sources) {
-            switch (source) {
-                case 'binary':
-                    core.buildPackages({
-                        ids: flags['package-id'],
-                        forceBuild: flags.force,
+            for (const source of sources) {
+                switch (source) {
+                    case 'binary':
+                        core.buildPackages({
+                            ids: flags['package-id'],
+                            forceBuild: flags.force,
 
-                        archivePath: flags.archive,
-                        contentRoot: flags['content-root'],
-                        skipIfEmpty: flags['package-id'] ? false : true // do not skip 'non-binary' packages if their IDs were set as args
-                    })
-                    break
+                            archivePath: flags.archive,
+                            contentRoot: flags['content-root'],
+                            skipIfEmpty: flags['package-id'] ? false : true // do not skip 'non-binary' packages if their IDs were set as args
+                        })
+                        break
 
-                // case 'docker':
-                //     core.buildDocker()
-                //     break
+                    // case 'docker':
+                    //     core.buildDocker()
+                    //     break
 
-                default:
-                    util.assertNever(source)
+                    default:
+                        util.assertNever(source)
+                }
             }
+        } catch (e) {
+            logger.debug(e)
+            if (e instanceof Error) {
+                logger.debug(e.stack)
+            }
+
+            throw e
         }
     }
 }

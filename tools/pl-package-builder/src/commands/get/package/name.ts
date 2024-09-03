@@ -29,16 +29,6 @@ export default class Name extends Command {
         const platform = (flags.platform as util.PlatformType) ?? util.currentPlatform()
 
         const pkg = core.getPackage(pkgID)
-        if (pkg.binary) {
-            console.log(pkg.binary.fullName(platform))
-            return
-        }
-
-        if (pkg.environment) {
-            console.log(pkg.environment.fullName(platform))
-            return
-        }
-
-        throw new Error(`Package '${pkgID}' have no software archive build settings ('binary' or 'environment')`)
+        console.log(pkg.fullName(platform))
     }
 }

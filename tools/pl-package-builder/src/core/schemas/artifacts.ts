@@ -1,6 +1,15 @@
 import { z } from 'zod';
 import * as util from '../util';
 
+export const artifactTypes = ['environment', 'binary', 'java', 'python'] as const;
+export type artifactType = (typeof artifactTypes)[number];
+
+export const buildableTypes: artifactType[] = ['environment', 'binary', 'java', 'python'] as const;
+
+export function isBuildable(aType: artifactType) : boolean {
+    return buildableTypes.includes(aType)
+}
+
 export const runEnvironmentTypes = ['java', 'python'] as const;
 export type runEnvironmentType = (typeof runEnvironmentTypes)[number];
 
@@ -13,9 +22,11 @@ export const registrySchema = z.strictObject({
 })
 export type registry = z.infer<typeof registrySchema>
 
+export const registryOrRef = z.union([z.string(), registrySchema])
+
 // common fields both for 'environment' and 'binary'
 const archiveRulesSchema = z.object({
-    registry: registrySchema.optional(),
+    registry: registryOrRef,
     name: z.string().optional(),
     version: z.string().optional(),
     crossplatform: z.boolean().optional(),
@@ -32,8 +43,21 @@ const artifactIDSchema = z.string().
     regex(/:/, { message: "tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1" }).
     describe("ID of tengo build artifact")
 
+
+export const environmentPackageSchema = archiveRulesSchema.extend({
+    type: z.literal('environment'),
+
+    runtime: z.enum(runEnvironmentTypes).
+        describe("type of runtime this run environment provides: 'java', 'python' and so on"),
+
+    binDir: z.string().
+        describe("path to 'bin' directory to be added to PATH when software uses this run environment"),
+});
+
+export type environmentConfig = z.infer<typeof environmentPackageSchema>
+
 export const binaryPackageSchema = archiveRulesSchema.extend({
-    type: z.literal('binary').optional(),
+    type: z.literal('binary'),
     environment: z.undefined(),
 })
 export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>
@@ -59,7 +83,6 @@ export const pythonPackageSchema = archiveRulesSchema.extend({
     environment: artifactIDSchema,
     dependencies: pythonToolsetSchema
 })
-
 export type pythonPackageConfig = z.infer<typeof pythonPackageSchema>
 
 export const renvToolsetSchema = z.strictObject({
@@ -88,6 +111,7 @@ export const condaPackageSchema = archiveRulesSchema.extend({
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>
 
 export const configSchema = z.discriminatedUnion('type', [
+    environmentPackageSchema,
     binaryPackageSchema,
     javaPackageSchema,
     pythonPackageSchema,
@@ -97,14 +121,5 @@ export const configSchema = z.discriminatedUnion('type', [
 
 export type config = z.infer<typeof configSchema>
 
-export const environmentConfigSchema = archiveRulesSchema.extend({
-    type: z.enum(runEnvironmentTypes).
-        describe("run environment type"),
-
-    entrypointName: z.string()
-        .describe("name of descriptor (.sw.json) to be created for this run environment"),
-    binDir: z.string().
-        describe("path to 'bin' directory to be added to PATH when software uses this run environment"),
-});
-
-export type environmentConfig = z.infer<typeof environmentConfigSchema>
+export const listSchema = z.record(z.string(), configSchema)
+export type list = z.infer<typeof listSchema>

@@ -26,15 +26,6 @@ export default class Version extends Command {
         const pkgID = flags['package-id']
 
         const pkg = core.getPackage(pkgID)
-        if (pkg.binary) {
-            console.log(pkg.binary.version)
-        }
-
-        if (pkg.environment) {
-            console.log(pkg.environment.version)
-        }
-
-        logger.error(`Package '${flags['package-id']}' have no software archive build settings ('binary' or 'environment')`)
-        process.exit(1)
+        console.log(pkg.version)
     }
 }

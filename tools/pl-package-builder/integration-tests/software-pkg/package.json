@@ -4,76 +4,74 @@
   "description": "The software description example",
   "scripts": {
     "build:descriptor": "pl-pkg build descriptors",
-    "build": "rm -rf dist && pl-pkg build",
+    "build": "rm -rf dist && pl-pkg build --log-level=debug",
     "publish": "pl-pkg publish"
   },
 
   "block-software": {
     "registries": {
       "binary": {
-        "default": { "storageURL": "s3://registry-bucket-name/?region=eu-central-1" },
+        "milaboratories": { "storageURL": "s3://registry-bucket-name/?region=eu-central-1" },
         "custom": { "storageURL": "s3://other-registry-bucket-name/pub/?region=eu-central-1" }
       }
     },
 
     "artifacts": {
       "with-environment": {
-        "binary": {
-          "registry": { "name": "custom" },
+        "registry": "custom",
 
-          "root": "./src",
-
-          "type": "python",
-          "environment": "pl-package-builder-runenv-1:1.2.3",
-          "dependencies": {
-            "toolset": "pip",
-            "requirements": "./requirements.txt"
-          }
+        "type": "python",
+        "root": "./src",
+        "environment": "pl-package-builder-runenv-1:1.2.3",
+        "dependencies": {
+          "toolset": "pip",
+          "requirements": "./requirements.txt"
         }
       },
 
-      "current-arch": {
-        "binary": { "root": "./src" }
-      },
-
       "multiarch": {
-        "binary": {
-          "registry": { "name": "custom2", "storageURL": "s3e://minio.local/bucket" },
-          "roots": {
-            "linux-x64": "./x64/",
-            "linux-aarch64": "./x64/",
-            "macosx-x64": "./x64/",
-            "macosx-aarch64": "./arm64/",
-            "windows-x64": "./x64/"
-          }
+        "type": "binary",
+
+        "registry": { "name": "custom2", "storageURL": "s3e://minio.local/bucket" },
+        "roots": {
+          "linux-x64": "./x64/",
+          "linux-aarch64": "./x64/",
+          "macosx-x64": "./x64/",
+          "macosx-aarch64": "./arm64/",
+          "windows-x64": "./x64/"
         }
       }
     },
 
     "entrypoints": {
       "hello": {
-        "artifact": "with-environment",
         "binary": {
+          "artifact": "with-environment",
           "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
           "envVars": [ "MYVAR=1" ]
         }
       },
       "goodbye": {
-        "artifact": "with-environment",
         "binary": {
+          "artifact": "with-environment",
           "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
           "envVars": [ "MYVAR=2" ]
         }
       },
       "hello2": {
-        "artifact": "current-arch",
         "binary": {
+          "artifact": {
+            "type": "binary",
+
+            "registry": "milaboratories",
+            "root": "./src"
+          },
           "cmd": [ "printf", "Hello from binary!\n" ]
         }
       },
       "starter": {
-        "artifact": "multiarch",
         "binary": {
+          "artifact": "multiarch",
           "cmd": [ "true" ]
         }
       }
