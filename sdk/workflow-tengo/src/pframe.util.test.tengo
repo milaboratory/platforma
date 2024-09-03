@@ -49,6 +49,7 @@ TestDecomposePfconvCfg := func() {
 			},
 			columnsSpec: {
 				"read-count": {
+					kind: "PColumn",
 					valueType: "Long",
 					name: "pl7.app/vdj/readCount",
 					annotations: { "pl7.app/label": "Number Of Reads" },
