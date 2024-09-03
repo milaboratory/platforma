@@ -17,22 +17,43 @@ export type AwaitBlockDoneOps = {
   ignoreBlockError?: boolean;
 };
 
+export type AwaitBlockDoneNormalized = {
+  timeout: AbortSignal;
+  ignoreBlockError: boolean;
+};
+
+function normalizeABDOpts(
+  timeoutOrOps?: number | AwaitBlockDoneOps
+): AwaitBlockDoneNormalized {
+  let ops: AwaitBlockDoneOps = {};
+  if (timeoutOrOps !== undefined) {
+    if (
+      typeof timeoutOrOps === 'object' &&
+      !(timeoutOrOps instanceof AbortSignal)
+    )
+      ops = { ...ops, ...timeoutOrOps };
+    else ops.timeout = timeoutOrOps;
+  }
+  const abortSignal =
+    typeof ops.timeout === 'undefined'
+      ? AbortSignal.timeout(DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT)
+      : typeof ops.timeout === 'number'
+        ? AbortSignal.timeout(ops.timeout)
+        : ops.timeout;
+  return {
+    timeout: abortSignal,
+    ignoreBlockError: Boolean(ops.ignoreBlockError)
+  };
+}
+
 export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 2000;
 
 async function awaitBlockDone(
   prj: Project,
   blockId: string,
-  timeoutOrOps?: number | AbortSignal | AwaitBlockDoneOps
+  timeoutOrOps?: number | AwaitBlockDoneOps
 ) {
-  let ops: AwaitBlockDoneOps = { timeout: DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT };
-  if (timeoutOrOps !== undefined) {
-    if (typeof timeoutOrOps === 'object') ops = { ...ops, ...timeoutOrOps };
-    else ops.timeout = timeoutOrOps;
-  }
-  const abortSignal =
-    typeof ops.timeout === 'number'
-      ? AbortSignal.timeout(ops.timeout)
-      : ops.timeout;
+  const ops = normalizeABDOpts(timeoutOrOps);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
   while (true) {
@@ -55,7 +76,7 @@ async function awaitBlockDone(
         `Unexpected block status, block not calculating anything at the moment: ${blockOverview.calculationStatus}`
       );
     try {
-      await overview.awaitChange(abortSignal);
+      await overview.awaitChange(ops.timeout);
     } catch (e: any) {
       console.dir(blockOverview, { depth: 5 });
       console.dir(await state.getValue(), { depth: 5 });
@@ -67,11 +88,11 @@ async function awaitBlockDone(
 export interface RawHelpers {
   awaitBlockDone(
     blockId: string,
-    timeout?: number | AbortSignal
+    timeoutOrOps?: number | AwaitBlockDoneOps
   ): Promise<void>;
   awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(
     blockId: string,
-    timeout?: number | AbortSignal
+    timeoutOrOps?: number | AwaitBlockDoneOps
   ): Promise<InferBlockState<Pl>>;
   getLocalFileHandle(localPath: string): Promise<ImportFileHandleUpload>;
 }
@@ -117,14 +138,13 @@ export const blockTest = plTest.extend<{
       },
       awaitBlockDoneAndGetStableBlockState: async <Pl extends Platforma>(
         blockId: string,
-        timeout?: number | AbortSignal
+        timeoutOrOps?: number | AwaitBlockDoneOps
       ) => {
-        const abortSignal =
-          typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
-        await awaitBlockDone(rawPrj, blockId, abortSignal);
+        const ops = normalizeABDOpts(timeoutOrOps);
+        await awaitBlockDone(rawPrj, blockId, ops);
         return (await awaitStableState(
           rawPrj.getBlockState(blockId),
-          abortSignal
+          ops.timeout
         )) as InferBlockState<Pl>;
       },
       async getLocalFileHandle(localPath) {
