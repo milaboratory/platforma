@@ -12,13 +12,27 @@ import {
 import { plTest } from './test-pl';
 import { awaitStableState } from './util';
 
+export type AwaitBlockDoneOps = {
+  timeout?: number | AbortSignal;
+  ignoreBlockError?: boolean;
+};
+
+export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 2000;
+
 async function awaitBlockDone(
   prj: Project,
   blockId: string,
-  timeout: number | AbortSignal = 2000
+  timeoutOrOps?: number | AbortSignal | AwaitBlockDoneOps
 ) {
+  let ops: AwaitBlockDoneOps = { timeout: DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT };
+  if (timeoutOrOps !== undefined) {
+    if (typeof timeoutOrOps === 'object') ops = { ...ops, ...timeoutOrOps };
+    else ops.timeout = timeoutOrOps;
+  }
   const abortSignal =
-    typeof timeout === 'number' ? AbortSignal.timeout(timeout) : timeout;
+    typeof ops.timeout === 'number'
+      ? AbortSignal.timeout(ops.timeout)
+      : ops.timeout;
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
   while (true) {
@@ -26,7 +40,15 @@ async function awaitBlockDone(
     const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
     if (blockOverview === undefined)
       throw new Error(`Blocks not found: ${blockId}`);
-    if (blockOverview.outputErrors) return;
+    if (blockOverview.outputErrors) {
+      if (ops.ignoreBlockError) return;
+      else {
+        let errorMessage = blockOverview.outputsError;
+        if (errorMessage === undefined)
+          errorMessage = blockOverview.exportsError;
+        throw new Error('Block error: ' + (errorMessage ?? 'no message'));
+      }
+    }
     if (blockOverview.calculationStatus === 'Done') return;
     if (blockOverview.calculationStatus !== 'Running')
       throw new Error(
