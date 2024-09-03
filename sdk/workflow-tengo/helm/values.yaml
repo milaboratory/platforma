@@ -179,8 +179,11 @@ app:
   env:
     AWS_REGION: eu-central-1
     PL_DUMP_CONFIG_BEFORE_RUN: yes
-    PL_LICENSE_VALUE: ""
   envValueFrom:
+    PL_LICENSE_VALUE:
+      secretKeyRef:
+        name: pl-license-secret
+        key: pl-license-key
     AWS_ACCESS_KEY_ID:
       secretKeyRef:
         name: pl-ci-aws-secrets
