@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { TextField, BtnGroup, Dropdown, Slider, ToggleSwitch } from '@milaboratory/platforma-uikit.lib';
+import { PlTextField, PlBtnGroup, PlDropdown, Slider, ToggleSwitch } from '@milaboratory/platforma-uikit.lib';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 
@@ -36,15 +36,15 @@ const helper = computed(() => (data.state === 'helper' ? data.helper : ''));
 </script>
 
 <template>
-  <layout>
-    <split name="Form">
-      <btn-group v-model="data.state" label="Variants" :helper="helper" :error="error" :options="options" />
-      <text-field v-model="data.text" label="Label Text" :helper="helper" :error="error" />
-      <Dropdown v-model="data.text" label="Label Dropdown" :options="options" :helper="helper" :error="error" />
-      <slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" />
-      <slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" :breakpoints="true" />
-      <toggle-switch v-model="data.on" />
-      <toggle-switch v-model="data.on" label="With label" />
-    </split>
-  </layout>
+  <Layout>
+    <Split name="Form">
+      <PlBtnGroup v-model="data.state" label="Variants" :helper="helper" :error="error" :options="options" />
+      <PlTextField v-model="data.text" label="Label Text" :helper="helper" :error="error" />
+      <PlDropdown v-model="data.text" label="Label Dropdown" :options="options" :helper="helper" :error="error" />
+      <Slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" />
+      <Slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" :breakpoints="true" />
+      <ToggleSwitch v-model="data.on" />
+      <ToggleSwitch v-model="data.on" label="With label" />
+    </Split>
+  </Layout>
 </template>

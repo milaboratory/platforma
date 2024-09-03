@@ -1,74 +1,73 @@
 import './assets/ui.scss';
+
+// @TODO review
 import GridTable from '@/components/GridTable/index.vue';
 import * as DataTable from '@/components/DataTable';
 import type { Settings as GridTableSettings } from './components/GridTable/types';
 import type * as GridTableTypes from './components/GridTable/types';
-import type * as ManageModalTypes from './components/ManageModal/types';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
 
-import PlAlert from './components/PlAlert.vue';
-import BtnPrimary from './components/BtnPrimary.vue';
-import BtnSecondary from './components/BtnSecondary.vue';
-import BtnAccent from './components/BtnAccent.vue';
-import BtnGhost from './components/BtnGhost.vue';
-import BtnLink from './components/BtnLink.vue';
-import TextField from './components/TextField.vue';
-import TextArea from './components/TextArea.vue';
-import FileBaseInput from './components/FileBaseInput.vue';
-import ProgressBar from './components/ProgressBar.vue';
-import NumberField from './components/NumberField.vue';
-import Dropdown from './components/Dropdown.vue';
+/**
+ * Components
+ */
+export * from './components/PlAlert';
+export * from './components/PlBtnPrimary';
+export * from './components/PlBtnAccent';
+export * from './components/PlBtnSecondary';
+export * from './components/PlBtnGhost';
+export * from './components/PlBtnLink';
+export * from './components/PlBtnGroup';
+export * from './components/PlTextField';
+export * from './components/PlTextArea';
+export * from './components/PlDropdown';
+export * from './components/PlTooltip';
+export * from './components/PlProgressBar';
+export * from './components/PlNumberField';
+export * from './components/PlDropdownMulti';
+export * from './components/PlCheckbox';
+export * from './components/PlCheckboxGroup';
+export * from './components/PlChip';
+export * from './components/PlDialogModal';
+export * from './components/PlSlideModal';
+
+// @TODO review (may be private)
 import LineDropdown from './components/LineDropdown.vue';
-import MultiDropdown from './components/MultiDropdown.vue';
 import DropdownListItem from './components/DropdownListItem.vue';
-import BtnGroup from './components/BtnGroup.vue';
 import UiCheckbox from './components/UiCheckbox.vue';
-import Checkbox from './components/Checkbox.vue';
-import CheckboxGroup from './components/CheckboxGroup.vue';
+
+// @TODO review
 import WebCheckbox from './components/WebCheckbox'; // experimental web component
-import Chip from './components/Chip.vue';
-import Tooltip from './components/Tooltip.vue';
 import ToggleSwitch from './components/ToggleSwitch.vue';
 import MaskIcon from './components/MaskIcon.vue';
 import MaskIcon16 from './components/MaskIcon16.vue';
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
-import DialogModal from './components/DialogModal.vue';
-import SlideModal from './components/SlideModal.vue';
-import ManageModal from './components/ManageModal/index.vue';
 import { showContextMenu } from './components/contextMenu/index.ts';
-import { usePosition } from './composition/usePosition';
-import { useClickOutside } from './composition/useClickOuside';
-import { useEventListener } from './composition/useEventListener';
-import { useLabelNotch } from './composition/useLabelNotch';
-import { useScroll } from './composition/useScroll';
-import { useResizeObserver } from './composition/useResizeObserver';
-import { useTheme } from './composition/useTheme';
-import { useLocalStorage } from './composition/useLocalStorage';
-import { useMouseCapture } from './composition/useMouseCapture';
-import { useHover } from './composition/useHover';
-import { useMouse } from './composition/useMouse';
-import { useSortable } from './composition/useSortable';
-import { useInterval } from './composition/useInterval';
-import { useFormState } from './composition/useFormState';
-import { useQuery } from './composition/useQuery.ts';
-import { useDraggable } from './composition/useDraggable';
+
+/**
+ * Usables
+ */
+export { usePosition } from './composition/usePosition';
+export { useClickOutside } from './composition/useClickOuside';
+export { useEventListener } from './composition/useEventListener';
+export { useScroll } from './composition/useScroll';
+export { useResizeObserver } from './composition/useResizeObserver';
+export { useTheme } from './composition/useTheme';
+export { useLocalStorage } from './composition/useLocalStorage';
+export { useMouseCapture } from './composition/useMouseCapture';
+export { useHover } from './composition/useHover';
+export { useMouse } from './composition/useMouse';
+export { useSortable } from './composition/useSortable';
+export { useInterval } from './composition/useInterval';
+export { useFormState } from './composition/useFormState';
+export { useQuery } from './composition/useQuery.ts';
+export { useDraggable } from './composition/useDraggable';
 
 //for new version
 import LongText from './components/LongText.vue';
 import SliderRangeTriple from './components/SliderRangeTriple.vue';
 import SliderRange from './components/SliderRange.vue';
 import Scrollable from './components/Scrollable.vue';
-import AddGraph from './components/AddGraph.vue';
-
-// MiXCR
-import AlphabetType from './components/mixcr/AlphabetType.vue';
-import AbundanceMeasure from './components/mixcr/AbundanceMeasure.vue';
-import AbundanceType from './components/mixcr/AbundanceType.vue';
-import GeneFeatureDropdown from './components/mixcr/GeneFeatureDropdown/index.vue';
-import GeneNameFormat from './components/mixcr/GeneNameFormat.vue';
-import GeneType from './components/mixcr/GeneType.vue';
-import MarkedSequence from './components/mixcr/MarkedSequence.vue';
 
 import icons16 from './assets/icons/icons-16-generated.json';
 import icons24 from './assets/icons/icons-24-generated.json';
@@ -81,38 +80,21 @@ export { maskIcons, maskIcons16 } from './types';
 
 export * from './helpers/dom';
 
-export { scrollIntoView } from './helpers/dom';
+export * from './helpers/utils';
 
-export { animateInfinite } from './helpers/utils';
+// @TODO
+import FileBaseInput from './components/FileBaseInput.vue';
 
-// MiXCR
-export { AlphabetType, AbundanceMeasure, AbundanceType, GeneFeatureDropdown, GeneNameFormat, GeneType, MarkedSequence };
-
+/**
+ * @TODO review
+ */
 export {
-  // Common
-  PlAlert,
   FileBaseInput,
-  ProgressBar,
-  TextArea,
-  NumberField,
   ThemeSwitcher,
-  BtnPrimary,
-  BtnSecondary,
-  BtnAccent,
-  TextField,
-  Dropdown,
-  MultiDropdown,
   LineDropdown,
   DropdownListItem,
-  BtnGroup,
-  BtnGhost,
-  BtnLink,
   UiCheckbox,
   WebCheckbox,
-  Checkbox,
-  CheckboxGroup,
-  Chip,
-  Tooltip,
   ToggleSwitch,
   MaskIcon,
   MaskIcon16,
@@ -120,38 +102,17 @@ export {
   DataTable,
   ContextProvider,
   Slider,
-  DialogModal,
-  SlideModal,
-  ManageModal,
-};
-
-// Usables
-export {
-  useClickOutside,
-  useEventListener,
-  useLabelNotch,
-  usePosition,
-  useScroll,
-  useResizeObserver,
-  useTheme,
-  useLocalStorage,
-  useMouseCapture,
-  useHover,
-  useMouse,
-  useSortable,
-  useInterval,
-  useFormState,
-  useQuery,
 };
 
 // Helpers
 export { showContextMenu };
 
 // types
-export type { GridTableSettings, GridTableTypes, ManageModalTypes };
+export type { GridTableSettings, GridTableTypes };
 
 //move to new version pl-uikit
-export { LongText, SliderRangeTriple, SliderRange, Scrollable, AddGraph, useDraggable };
+export { LongText, SliderRangeTriple, SliderRange, Scrollable };
 
+// @todo
 const DemoData = { allCssVariables: allCssVariables(), icons16, icons24 };
 export { DemoData };

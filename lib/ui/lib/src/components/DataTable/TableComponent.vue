@@ -77,25 +77,25 @@ const onWheel = (ev: WheelEvent) => {
       <ColumnsCommandMenu />
     </div>
     <div ref="headRef" class="table-head">
-      <tr-head>
-        <th-cell v-for="(col, i) in tableColumns" :key="i" :col="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
-      </tr-head>
+      <TrHead>
+        <ThCell v-for="(col, i) in tableColumns" :key="i" :col="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
+      </TrHead>
     </div>
     <div ref="bodyRef" class="table-body" :style="tableBodyStyle" @wheel="onWheel">
       <div v-if="hasNoData" class="table-body__no-data">
         <div>
-          <table-icon />
+          <TableIcon />
           <div>No Data To Show</div>
         </div>
       </div>
-      <tr-body v-for="(row, i) in tableRows" :key="i" :row="row">
-        <td-cell v-for="cell in row.cells" :key="cell.column.id + ':' + i" :cell="cell" :style="cell.style" />
-      </tr-body>
+      <TrBody v-for="(row, i) in tableRows" :key="i" :row="row">
+        <TdCell v-for="cell in row.cells" :key="cell.column.id + ':' + i" :cell="cell" :style="cell.style" />
+      </TrBody>
     </div>
     <div class="carets">
-      <column-caret v-for="(col, i) in tableColumns" :key="i" :column="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
+      <ColumnCaret v-for="(col, i) in tableColumns" :key="i" :column="col" :style="col.style" @change:sort="$emit('change:sort', $event)" />
     </div>
-    <t-scroll
+    <TScroll
       :offset="state.data.scrollTop"
       :window-size="state.data.bodyHeight"
       :data-size="state.data.dataHeight"

@@ -2,7 +2,7 @@
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import { ref } from 'vue';
-import { Slider, SliderRange, SliderRangeTriple, BtnSecondary } from '@milaboratory/platforma-uikit.lib';
+import { Slider, SliderRange, SliderRangeTriple, PlBtnSecondary } from '@milaboratory/platforma-uikit.lib';
 
 const value = ref(2);
 const value2 = ref<[number, number]>([2, 15]);
@@ -27,26 +27,26 @@ const modelTriple = ref([2, 20, 30] as [number, number, number]);
 </script>
 
 <template>
-  <layout>
-    <split name="Slider" hide-second>
+  <Layout>
+    <Split name="Slider" hide-second>
       <div class="demo-slider-container">
         <h3 class="text-subtitle-m ma-0 mb-6">Slider</h3>
         <div class="demo-slider-container">
-          <slider v-model="value" label="Slider" :max="10" measure="$" />
+          <Slider v-model="value" label="Slider" :max="10" measure="$" />
         </div>
         <div class="demo-slider-container">
           <h4 class="ma-0 mb-6">Disabled</h4>
-          <slider v-model="value" disabled label="Slider" :max="10" />
+          <Slider v-model="value" disabled label="Slider" :max="10" />
         </div>
         <div class="demo-slider-container">
-          <slider v-model="value" :mode="'input'" :max="10" label="Slider" />
+          <Slider v-model="value" :mode="'input'" :max="10" label="Slider" />
           <div class="demo-slider-actions">
             <div>
               <h3 class="text-subtitle-m ma-0 mb-6">Additional actions</h3>
             </div>
             <div class="d-flex">
-              <btn-secondary @click.stop="value--">-</btn-secondary>
-              <btn-secondary @click.stop="value++">+</btn-secondary>
+              <PlBtnSecondary @click.stop="value--">-</PlBtnSecondary>
+              <PlBtnSecondary @click.stop="value++">+</PlBtnSecondary>
             </div>
           </div>
         </div>
@@ -98,8 +98,8 @@ const modelTriple = ref([2, 20, 30] as [number, number, number]);
       <div class="flex-row gap-12" style="width: 200px">
         <slider v-model="value3" label="Invalid value" :max="5" :step="step" />
       </div> -->
-    </split>
-  </layout>
+    </Split>
+  </Layout>
 </template>
 
 <style lang="scss" scoped>

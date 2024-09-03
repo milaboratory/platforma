@@ -109,15 +109,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div style="display: flex" class="gap-12">
       <button @click="createRandomRecord">Create random</button>
       <span>last id: {{ data.rows.length }}</span>
       <span>last record: {{ data.rows[data.rows.length - 1] }}</span>
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
-      <my-table :settings="settings" style="flex: 1" />
+      <MyTable :settings="settings" style="flex: 1" />
     </div>
     <pre>{{ data.rows }}</pre>
-  </layout>
+  </Layout>
 </template>

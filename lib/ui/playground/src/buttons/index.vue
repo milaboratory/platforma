@@ -1,7 +1,16 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
-import { BtnPrimary, BtnSecondary, BtnAccent, BtnGroup, BtnLink, BtnGhost, type Size, maskIcons16 } from '@milaboratory/platforma-uikit.lib';
+import {
+  PlBtnPrimary,
+  PlBtnSecondary,
+  PlBtnAccent,
+  PlBtnGroup,
+  PlBtnLink,
+  PlBtnGhost,
+  type Size,
+  maskIcons16,
+} from '@milaboratory/platforma-uikit.lib';
 import Split from '@/Split.vue';
 
 const props = reactive({
@@ -22,10 +31,10 @@ function onClick() {
 </script>
 
 <template>
-  <layout>
-    <split name="Buttons">
+  <Layout>
+    <Split name="Buttons">
       <div class="flex-row gap-12">
-        <btn-group v-model="props.size" :options="sizeOptions" />
+        <PlBtnGroup v-model="props.size" :options="sizeOptions" />
         <label style="user-select: none"> <input v-model="props.disabled" type="checkbox" />Disabled </label>
         <label style="user-select: none"> <input v-model="props.reverse" type="checkbox" />Reverse </label>
         <label style="user-select: none"> <input v-model="props.loading" type="checkbox" />Loading </label>
@@ -33,38 +42,38 @@ function onClick() {
       </div>
       <div class="test-buttons">
         <div>
-          <btn-accent v-bind="props">{{ text }}</btn-accent>
-          <btn-accent icon="add" v-bind="props">{{ text }}</btn-accent>
-          <btn-accent round icon="add" v-bind="props">{{ text }}</btn-accent>
+          <PlBtnAccent v-bind="props">{{ text }}</PlBtnAccent>
+          <PlBtnAccent icon="add" v-bind="props">{{ text }}</PlBtnAccent>
+          <PlBtnAccent round icon="add" v-bind="props">{{ text }}</PlBtnAccent>
         </div>
         <div>
-          <btn-primary v-bind="props">{{ text }}</btn-primary>
-          <btn-primary icon="play" v-bind="props">{{ text }}</btn-primary>
-          <btn-primary round icon="add" v-bind="props" @click="onClick">{{ text }}</btn-primary>
+          <PlBtnPrimary v-bind="props">{{ text }}</PlBtnPrimary>
+          <PlBtnPrimary icon="play" v-bind="props">{{ text }}</PlBtnPrimary>
+          <PlBtnPrimary round icon="add" v-bind="props" @click="onClick">{{ text }}</PlBtnPrimary>
         </div>
         <div>
-          <btn-secondary v-bind="props">{{ text }}</btn-secondary>
-          <btn-secondary icon="add" v-bind="props">{{ text }}</btn-secondary>
-          <btn-secondary round icon="add" v-bind="props">{{ text }}</btn-secondary>
+          <PlBtnSecondary v-bind="props">{{ text }}</PlBtnSecondary>
+          <PlBtnSecondary icon="add" v-bind="props">{{ text }}</PlBtnSecondary>
+          <PlBtnSecondary round icon="add" v-bind="props">{{ text }}</PlBtnSecondary>
         </div>
         <div>
-          <btn-link icon="arrow-right" v-bind="props">{{ text }}</btn-link>
-          <btn-link icon="add" v-bind="props">{{ text }}</btn-link>
-          <btn-link round icon="add" v-bind="props" @click="onClick">{{ text }}</btn-link>
+          <PlBtnLink icon="arrow-right" v-bind="props">{{ text }}</PlBtnLink>
+          <PlBtnLink icon="add" v-bind="props">{{ text }}</PlBtnLink>
+          <PlBtnLink round icon="add" v-bind="props" @click="onClick">{{ text }}</PlBtnLink>
         </div>
         <div>
-          <btn-ghost style="min-width: 160px" v-bind="props">{{ text }}</btn-ghost>
-          <btn-ghost icon="arrow-right" v-bind="props">{{ text }}</btn-ghost>
-          <btn-ghost icon="add" v-bind="props">{{ text }}</btn-ghost>
-          <btn-ghost icon="clipboard" v-bind="props" />
-          <btn-ghost icon="import" v-bind="props">Settings</btn-ghost>
+          <PlBtnGhost style="min-width: 160px" v-bind="props">{{ text }}</PlBtnGhost>
+          <PlBtnGhost icon="arrow-right" v-bind="props">{{ text }}</PlBtnGhost>
+          <PlBtnGhost icon="add" v-bind="props">{{ text }}</PlBtnGhost>
+          <PlBtnGhost icon="clipboard" v-bind="props" />
+          <PlBtnGhost icon="import" v-bind="props">Settings</PlBtnGhost>
         </div>
         <div>
-          <btn-ghost v-for="icon in maskIcons16" :key="icon" :icon="icon">Icon: {{ icon }}</btn-ghost>
+          <PlBtnGhost v-for="icon in maskIcons16" :key="icon" :icon="icon">Icon: {{ icon }}</PlBtnGhost>
         </div>
       </div>
-    </split>
-  </layout>
+    </Split>
+  </Layout>
 </template>
 
 <style lang="scss">

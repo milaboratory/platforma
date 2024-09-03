@@ -6,10 +6,10 @@ import NativeScroll from '@/scroll/NativeScroll.vue';
 </script>
 
 <template>
-  <layout>
-    <split name="Scrolls">
-      <dom-scroll />
-      <native-scroll />
-    </split>
-  </layout>
+  <Layout>
+    <Split name="Scrolls">
+      <DomScroll />
+      <NativeScroll />
+    </Split>
+  </Layout>
 </template>

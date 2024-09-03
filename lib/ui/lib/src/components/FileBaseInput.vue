@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import BtnSecondary from './BtnSecondary.vue';
-import BtnGhost from './BtnGhost.vue';
+import { PlBtnSecondary } from './PlBtnSecondary';
+import { PlBtnGhost } from './PlBtnGhost';
 import { computed, ref } from 'vue';
 
 type PropsType = {
@@ -101,9 +101,9 @@ function deleteFile(file: File) {
       </div>
       <div class="pl-file-base-input__buttons d-flex gap-2">
         <input ref="fileInput" :multiple="multiple" :accept="acceptedTypes" type="file" @change="handleFiles" />
-        <BtnSecondary :disabled="disabled" class="text-caps11">
+        <PlBtnSecondary :disabled="disabled" class="text-caps11">
           {{ buttonText }}
-        </BtnSecondary>
+        </PlBtnSecondary>
         <slot name="actions" />
       </div>
     </div>
@@ -113,7 +113,7 @@ function deleteFile(file: File) {
         <div class="pl-file-base-input__file-name text-m">
           {{ file.name }}
         </div>
-        <BtnGhost :disabled="disabled" icon="close" round size="small" class="flex-shrink-0" @click.stop="deleteFile(file)" />
+        <PlBtnGhost :disabled="disabled" icon="close" round size="small" class="flex-shrink-0" @click.stop="deleteFile(file)" />
       </div>
     </div>
   </div>

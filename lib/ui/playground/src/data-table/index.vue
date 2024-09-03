@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { DataTable, NumberField, BtnSecondary } from '@milaboratory/platforma-uikit.lib';
+import { DataTable, PlNumberField, PlBtnSecondary } from '@milaboratory/platforma-uikit.lib';
 import { computed, onMounted } from 'vue';
 import { useData } from './useData';
 
@@ -74,11 +74,11 @@ onMounted(onGenerate);
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
-      <NumberField v-model="data.numColumns" label="Num columns" />
-      <NumberField v-model="data.numRows" label="Num rows" />
-      <btn-secondary :loading="data.loading" @click="onGenerate">Generate</btn-secondary>
+      <PlNumberField v-model="data.numColumns" label="Num columns" />
+      <PlNumberField v-model="data.numRows" label="Num rows" />
+      <PlBtnSecondary :loading="data.loading" @click="onGenerate">Generate</PlBtnSecondary>
       <span>rows: {{ data.rows.length }}</span>
       <span>cols: {{ data.numColumns }}</span>
       <span>last id: {{ lastId }}</span>
@@ -92,7 +92,7 @@ onMounted(onGenerate);
       {{ data.tableData?.bodyHeight }}
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
-      <data-table-component style="flex: 1" :settings="settings" @update:data="onUpdateData" />
+      <DataTableComponent style="flex: 1" :settings="settings" @update:data="onUpdateData" />
     </div>
-  </layout>
+  </Layout>
 </template>

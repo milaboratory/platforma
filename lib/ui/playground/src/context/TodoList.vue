@@ -14,7 +14,7 @@ function addItem() {
 
 <template>
   <div class="todo-list">
-    <todo-item v-for="(it, i) in state.items" :id="it.id" :key="i" />
+    <TodoItem v-for="(it, i) in state.items" :id="it.id" :key="i" />
     <button @click.stop="addItem">Add</button>
   </div>
 </template>

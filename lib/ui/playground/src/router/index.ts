@@ -37,21 +37,6 @@ export const routes = [
     component: () => import('@/form/index.vue'),
   },
   {
-    name: 'Mixcr',
-    path: '/mixcr',
-    component: () => import('@/mixcr/index.vue'),
-  },
-  {
-    name: 'Layout',
-    path: '/layout',
-    component: () => import('@/layout/index.vue'),
-  },
-  {
-    name: 'Add graph',
-    path: '/add-graph',
-    component: () => import('@/graph/add-graph/index.vue'),
-  },
-  {
     name: 'Long text',
     path: '/long-text',
     component: () => import('@/text-component/index.vue'),

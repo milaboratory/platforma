@@ -83,14 +83,14 @@ const settings = DataTable.useRawData<DataRecord>(data.rows, {
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px; padding-top: 60px" class="mb-6">
-      <data-table-component style="flex: 1" :settings="settings" />
+      <DataTableComponent style="flex: 1" :settings="settings" />
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss">

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { Chip } from '@milaboratory/platforma-uikit.lib';
 import Split from '@/Split.vue';
+import { PlChip } from '@milaboratory/platforma-uikit.lib';
 import ChipsExample from '@/figma/ChipsExample.vue';
 import { faker } from '@faker-js/faker';
 
@@ -12,23 +12,23 @@ function onClose() {
 </script>
 
 <template>
-  <layout>
-    <split name="Chips">
+  <Layout>
+    <Split name="Chips">
       <div class="flex-row gap-12">
-        <chip closeable small @close="onClose">
+        <PlChip closeable small @close="onClose">
           {{ longText }}
-        </chip>
-        <chip closeable small @close="onClose">Chips</chip>
+        </PlChip>
+        <PlChip closeable small @close="onClose">Chips</PlChip>
       </div>
       <div class="flex-row gap-12">
-        <chip closeable @close="onClose">
+        <PlChip closeable @close="onClose">
           {{ longText }}
-        </chip>
-        <chip closeable @close="onClose">Chips</chip>
+        </PlChip>
+        <PlChip closeable @close="onClose">Chips</PlChip>
       </div>
-    </split>
+    </Split>
     <div class="ground">
-      <chips-example />
+      <ChipsExample />
     </div>
-  </layout>
+  </Layout>
 </template>

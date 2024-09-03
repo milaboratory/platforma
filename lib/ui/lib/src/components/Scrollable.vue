@@ -63,14 +63,14 @@ onUnmounted(() => {
     <div ref="containerRef" class="ui-scrollable__container" @wheel="onWheel">
       <slot />
     </div>
-    <v-scroll
+    <VScroll
       :scroll-top="data.scrollTop"
       :client-height="data.clientHeight"
       :scroll-height="data.scrollHeight"
       @wheel.stop
       @update:scroll-top="updateTop"
     />
-    <h-scroll
+    <HScroll
       :scroll-left="data.scrollLeft"
       :client-width="data.clientWidth"
       :scroll-width="data.scrollWidth"

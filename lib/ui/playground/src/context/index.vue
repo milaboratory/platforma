@@ -11,20 +11,20 @@ const todoApp2 = reactive<TodoState>(defaultState());
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div class="row-pane">
       <button @click.stop="() => todoApp1.addItem('first')">Ext change state1</button>
       <button @click.stop="() => todoApp2.addItem('second')">Ext change state2</button>
     </div>
     <div class="row-pane">
-      <context-provider :context-key="todoListKey" :context="todoApp1">
-        <todo-list />
-      </context-provider>
-      <context-provider :context-key="todoListKey" :context="todoApp2">
-        <todo-list />
-      </context-provider>
+      <ContextProvider :context-key="todoListKey" :context="todoApp1">
+        <TodoList />
+      </ContextProvider>
+      <ContextProvider :context-key="todoListKey" :context="todoApp2">
+        <TodoList />
+      </ContextProvider>
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss">

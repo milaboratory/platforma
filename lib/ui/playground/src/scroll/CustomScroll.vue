@@ -4,7 +4,7 @@ import { Scrollable } from '@milaboratory/platforma-uikit.lib';
 
 <template>
   <h3 class="text-color">Custom scroll</h3>
-  <scrollable class="dom-scroll">
+  <Scrollable class="dom-scroll">
     <div class="article">
       <div class="inner">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
@@ -25,7 +25,7 @@ import { Scrollable } from '@milaboratory/platforma-uikit.lib';
         anim id est laborum.
       </div>
     </div>
-  </scrollable>
+  </Scrollable>
 </template>
 
 <style lang="scss" scoped>

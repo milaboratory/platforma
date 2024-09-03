@@ -22,9 +22,9 @@ const test = reactive({
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div style="border: 1px solid red; height: 50px; background-color: #fff">
-      <my-component v-model="test.user" />
+      <MyComponent v-model="test.user" />
     </div>
-  </layout>
+  </Layout>
 </template>

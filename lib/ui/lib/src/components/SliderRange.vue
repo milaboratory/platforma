@@ -3,7 +3,7 @@ import { computed, reactive, ref, unref, useSlots, watch } from 'vue';
 import { useMouseCapture } from '@/composition/useMouseCapture';
 import { tapIf } from '@/helpers/functions';
 import { clamp } from '@/helpers/math';
-import Tooltip from '@/components/Tooltip.vue';
+import { PlTooltip } from '@/components/PlTooltip';
 import type { SliderMode } from '@/types';
 import InputRange from '@/components/InputRange.vue';
 import { useSliderBreakpoints } from '@/composition/useSliderBreakpoints';
@@ -182,11 +182,11 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
         <div class="ui-slider__label-section">
           <label v-if="label" class="text-s">
             <span>{{ label }}</span>
-            <tooltip v-if="slots.tooltip" class="info" position="top">
+            <PlTooltip v-if="slots.tooltip" class="info" position="top">
               <template #tooltip>
                 <slot name="tooltip" />
               </template>
-            </tooltip>
+            </PlTooltip>
           </label>
           <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">{{ textModelValue }}</div>
         </div>

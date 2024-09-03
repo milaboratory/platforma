@@ -6,10 +6,10 @@ import Tbl from '@/draggable/Tbl.vue';
 </script>
 
 <template>
-  <layout>
-    <split name="Draggable">
-      <list />
-      <tbl />
-    </split>
-  </layout>
+  <Layout>
+    <Split name="Draggable">
+      <List />
+      <Tbl />
+    </Split>
+  </Layout>
 </template>

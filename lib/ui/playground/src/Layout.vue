@@ -11,7 +11,7 @@ defineProps<{
     <slot name="header" />
   </header>
   <div class="layout">
-    <sidebar v-once />
+    <Sidebar v-once />
     <main>
       <slot />
     </main>

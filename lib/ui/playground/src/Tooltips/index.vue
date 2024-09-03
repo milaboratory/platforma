@@ -1,73 +1,73 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { Tooltip } from '@milaboratory/platforma-uikit.lib';
+import { PlTooltip } from '@milaboratory/platforma-uikit.lib';
 
 const delay = 1000;
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div class="line">
-      <tooltip class="tt" :delay="delay" position="top">
+      <PlTooltip class="tt" :delay="delay" position="top">
         <span>Top position</span>
         <template #tooltip>
           Tooltip content<br />
           Second line<br />
           Third line<br />
         </template>
-      </tooltip>
+      </PlTooltip>
 
-      <tooltip class="tt" :delay="delay" position="left">
+      <PlTooltip class="tt" :delay="delay" position="left">
         <span>Left position</span>
         <template #tooltip>
-          Tooltip content<br />
+          PlTooltip content<br />
           Second line<br />
           Third line<br />
         </template>
-      </tooltip>
+      </PlTooltip>
 
-      <tooltip class="info">
+      <PlTooltip class="info">
         <template #tooltip> Icon </template>
-      </tooltip>
+      </PlTooltip>
     </div>
     <div class="line">
-      <tooltip class="tt" :delay="delay" position="top-left">
+      <PlTooltip class="tt" :delay="delay" position="top-left">
         <span>Top left</span>
         <template #tooltip>
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
         </template>
-      </tooltip>
+      </PlTooltip>
 
-      <tooltip class="tt" :delay="delay" position="right">
+      <PlTooltip class="tt" :delay="delay" position="right">
         <span>Right</span>
         <template #tooltip>
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
-          Tooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
+          PlTooltip content<br />
         </template>
-      </tooltip>
+      </PlTooltip>
     </div>
 
     <div class="line">
-      <tooltip position="top-left">
-        <template #tooltip> Tooltip content </template>
+      <PlTooltip position="top-left">
+        <template #tooltip> PlTooltip content </template>
         <button class="nn">Top left</button>
-      </tooltip>
+      </PlTooltip>
     </div>
 
     <div class="line">
-      <tooltip element="span" position="top-left">
+      <PlTooltip element="span" position="top-left">
         I am a span element
-        <template #tooltip> Tooltip for span </template>
-      </tooltip>
+        <template #tooltip> PlTooltip for span </template>
+      </PlTooltip>
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss" scoped>

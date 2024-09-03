@@ -196,9 +196,9 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
 
 <template>
   <div ref="tableRef" class="grid-table" @mousedown="mouseDown">
-    <add-column-btn v-if="settings.addColumn" @click.stop="settings.addColumn" />
+    <AddColumnBtn v-if="settings.addColumn" @click.stop="settings.addColumn" />
     <div ref="headRef" class="table-head" :style="{ gridTemplateColumns }">
-      <th-cell
+      <ThCell
         v-for="(col, i) in columnsRef"
         :key="i"
         :col="col"
@@ -212,12 +212,12 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
     <div ref="bodyRef" class="table-body" @scroll="onBodyScroll">
       <div v-if="rows.length === 0" class="table-body__no-data" :style="noDataStyle">
         <div>
-          <table-icon />
+          <TableIcon />
           <div>No Data To Show</div>
         </div>
       </div>
-      <t-row v-for="(row, i) in rows" :key="i" :visible="row.visible" :height="row.height" :index="i" :style="{ gridTemplateColumns }">
-        <td-cell
+      <TRow v-for="(row, i) in rows" :key="i" :visible="row.visible" :height="row.height" :index="i" :style="{ gridTemplateColumns }">
+        <TdCell
           v-for="(cell, k) in row.cells"
           :key="k"
           :cell="cell"
@@ -231,8 +231,8 @@ useEventListener(window, 'resize', () => nextTick(updateBodyHeight));
             {{ cell.value }}
           </slot>
           <slot v-else v-bind="cell">{{ cell.value }}</slot>
-        </td-cell>
-      </t-row>
+        </TdCell>
+      </TRow>
     </div>
   </div>
 </template>

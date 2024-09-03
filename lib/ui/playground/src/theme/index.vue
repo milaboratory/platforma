@@ -13,7 +13,7 @@ useTheme((theme) => {
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div class="panel" :data-theme="theme">
       <div class="split__header">
         Toggle theme (appearance)
@@ -23,7 +23,7 @@ useTheme((theme) => {
         <Heap />
       </div>
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss">

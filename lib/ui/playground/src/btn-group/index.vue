@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
-import { BtnGroup } from '@milaboratory/platforma-uikit.lib';
+import { PlBtnGroup } from '@milaboratory/platforma-uikit.lib';
 import Split from '@/Split.vue';
 import { generate } from '@/imports';
 
@@ -31,14 +31,14 @@ const options2 = [
 </script>
 
 <template>
-  <layout>
-    <split name="Button Group">
-      <btn-group v-model="data.num" label="Label" :options="options" />
-      <btn-group v-model="data.num" label="Label" :options="options">
+  <Layout>
+    <Split name="Button Group">
+      <PlBtnGroup v-model="data.num" label="Label" :options="options" />
+      <PlBtnGroup v-model="data.num" label="Label" :options="options">
         <template #tooltip> Tooltip content Second row </template>
-      </btn-group>
-      <btn-group v-model="data.num" label="Label" disabled :options="options2" />
-      <btn-group v-model="data.num" label="Label" :options="options2" />
-    </split>
-  </layout>
+      </PlBtnGroup>
+      <PlBtnGroup v-model="data.num" label="Label" disabled :options="options2" />
+      <PlBtnGroup v-model="data.num" label="Label" :options="options2" />
+    </Split>
+  </Layout>
 </template>

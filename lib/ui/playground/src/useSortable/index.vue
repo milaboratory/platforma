@@ -36,7 +36,7 @@ useSortable(list2Ref, {
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div>
       <ToggleSwitch v-model="data.show" label="Show/hide" />
     </div>
@@ -53,7 +53,7 @@ useSortable(list2Ref, {
         </div>
       </div>
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss" scoped>

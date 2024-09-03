@@ -1,0 +1,160 @@
+@import "@/assets/mixins";
+
+.ui-text-field {
+  $root: &;
+
+  --contour-color: var(--txt-01);
+  --label-color: var(--txt-01);
+  --contour-border-width: 1px;
+  --contour-box-shadow: none;
+  --label-offset-left-x: 8px;
+  --label-offset-right-x: 8px;
+  --prefix-color: var(--color-placeholder);
+
+  width: 100%;
+  min-height: var(--control-height);
+  position: relative;
+  border-radius: var(--border-radius-control);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  outline: none;
+
+  &__envelope {
+    font-family: var(--font-family-base);
+  }
+
+  input {
+    min-height: calc(var(--control-height) - 2px);
+    line-height: calc(var(--control-height) - 2px);
+    width: 100%;
+    padding: 0 12px;
+    border: none;
+    font-size: inherit;
+    background-color: transparent;
+    color: var(--txt-01);
+    caret-color: var(--border-color-focus);
+    cursor: inherit;
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: var(--color-placeholder);
+    }
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    gap: 4px;
+    top: 0;
+    transform: translateY(-60%);
+    left: var(--label-offset-left-x);
+    padding: 0 4px;
+    max-width: calc(100% - 16px);
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    cursor: inherit;
+    color: var(--label-color);
+    font-size: 12px;
+    font-weight: 500;
+
+    > span {
+      overflow: hidden;
+      white-space: pre;
+      text-overflow: ellipsis;
+    }
+
+    .required-icon {
+      background: url(@/assets/images/required.svg);
+      width: 5px;
+      height: 12px;
+      margin-top: 2px;
+    }
+  }
+
+  &__contour {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: var(--border-radius-control);
+    border-width: var(--contour-border-width);
+    border-color: var(--contour-color);
+    border-style: solid;
+    box-shadow: var(--contour-box-shadow);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__prefix {
+    padding-left: 12px;
+    white-space: nowrap;
+    margin-right: -12px;
+    color: var(--prefix-color);
+  }
+
+  &__append {
+    padding-right: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    .icon {
+      cursor: pointer;
+    }
+    .mask {
+      background-color: var(--control-mask-fill);
+      cursor: pointer;
+    }
+  }
+
+  &__helper {
+    @include field-helper();
+  }
+
+  &__error {
+    @include field-error();
+  }
+
+  &:hover {
+    --contour-color: var(--control-hover-color);
+  }
+
+  &:focus-within:not(.error) {
+    --label-color: var(--txt-focus);
+    --contour-color: var(--border-color-focus);
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--border-color-focus-shadow);
+  }
+
+  &:focus-within.error {
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+  }
+
+  &.dashed {
+    #{$root}__contour {
+      border-style: dashed;
+    }
+  }
+
+  &.nonEmpty {
+    --prefix-color: var(--txt-01);
+  }
+
+  &.error {
+    --contour-color: var(--txt-error);
+    --label-color: var(--txt-error);
+  }
+
+  &.disabled {
+    --contour-color: var(--color-dis-01);
+    cursor: not-allowed;
+  }
+}

@@ -88,7 +88,7 @@ const test = () => {
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div style="display: flex; background-color: #fff; align-items: center; overflow: scroll" class="p-12 gap-24 mb-6">
       <button @click="test">Post</button>
     </div>
@@ -96,9 +96,9 @@ const test = () => {
       <pre>{{ settings }}</pre>
     </div>
     <div style="display: flex; flex-direction: column; max-height: 800px" class="mb-6">
-      <data-table-component style="flex: 1" :settings="settings" />
+      <DataTableComponent style="flex: 1" :settings="settings" />
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss">

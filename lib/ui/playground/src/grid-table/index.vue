@@ -38,14 +38,14 @@ function onChangeSort(v: { colName: string; direction: 'ASC' | 'DESC' | undefine
 </script>
 
 <template>
-  <layout>
+  <Layout>
     <div style="display: flex; max-height: 600px">
-      <grid-table style="flex: 1" :settings="settings" @change:sort="onChangeSort" />
+      <GridTable style="flex: 1" :settings="settings" @change:sort="onChangeSort" />
     </div>
     <div v-if="false" style="display: flex">
       <pre>{{ settings }}</pre>
     </div>
-  </layout>
+  </Layout>
 </template>
 
 <style lang="scss">

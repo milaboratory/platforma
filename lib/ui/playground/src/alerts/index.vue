@@ -3,7 +3,7 @@ import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import { faker } from '@faker-js/faker';
 import { range, toList } from '@milaboratory/helpers';
-import { Checkbox, PlAlert } from '@milaboratory/platforma-uikit.lib';
+import { PlCheckbox, PlAlert } from '@milaboratory/platforma-uikit.lib';
 import { reactive } from 'vue';
 
 const data = reactive({
@@ -35,9 +35,9 @@ const json = {
   <Layout>
     <Split name="Alerts">
       <div class="d-flex d-flex-row gap-12">
-        <Checkbox v-model="data.icon">Show Icon</Checkbox>
-        <Checkbox v-model="data.monospace">Monospace</Checkbox>
-        <Checkbox v-model="data.whiteSpacePre">White space pre</Checkbox>
+        <PlCheckbox v-model="data.icon">Show Icon</PlCheckbox>
+        <PlCheckbox v-model="data.monospace">Monospace</PlCheckbox>
+        <PlCheckbox v-model="data.whiteSpacePre">White space pre</PlCheckbox>
       </div>
       {{ data }}
       <div class="d-flex d-flex-column gap-24" style="max-width: 600px">

@@ -2,7 +2,7 @@
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
-import { NumberField } from '@milaboratory/platforma-uikit.lib';
+import { PlNumberField } from '@milaboratory/platforma-uikit.lib';
 
 const models = reactive({
   model0: 0,
@@ -22,41 +22,41 @@ const models = reactive({
         </div>
         <div class="container">
           <div class="text-h3 h3">Model</div>
-          <NumberField v-model="models.model0" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model0" label="Your label" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">Disabled</div>
-          <NumberField v-model="models.model0" :disabled="true" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model0" :disabled="true" label="Your label" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">Model undefined and MAX is set to 7</div>
-          <NumberField v-model="models.model1" :max-value="7" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model1" :max-value="7" label="Your label" placeholder="Some placeholder" />
           <div class="text-h3 h3">Model undefined and MIN is set to 3</div>
-          <NumberField v-model="models.model1" :min-value="3" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model1" :min-value="3" label="Your label" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">Min and max</div>
-          <NumberField v-model="models.model0" :max-value="7" :min-value="3" label="Your label max - 7 min - 3" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model0" :max-value="7" :min-value="3" label="Your label max - 7 min - 3" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">Model NaN</div>
-          <NumberField v-model="models.model2" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model2" label="Your label" placeholder="Some placeholder" />
           <div class="text-h3 h3">Model NaN MIN and MAX</div>
-          <NumberField v-model="models.model2" :max-value="10" :min-value="-10" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model2" :max-value="10" :min-value="-10" label="Your label" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">String model not number</div>
-          <NumberField v-model="models.model3" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model3" label="Your label" placeholder="Some placeholder" />
         </div>
 
         <div class="container">
           <div class="text-h3 h3">String model is number</div>
-          <NumberField v-model="models.model4" label="Your label" placeholder="Some placeholder" />
+          <PlNumberField v-model="models.model4" label="Your label" placeholder="Some placeholder" />
         </div>
       </div>
     </Split>

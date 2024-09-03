@@ -8,5 +8,5 @@ const props = defineProps<{
 </script>
 
 <template>
-  <base-element v-bind="props" type="primary" />
+  <BaseElement v-bind="props" type="primary" />
 </template>

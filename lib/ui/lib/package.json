@@ -14,7 +14,7 @@
     "build:types": "vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
     "tsc": "tsc",
     "watch": "vite build --watch",
-    "type-check": "vue-tsc --noEmit --project ./tsconfig.lib.json",
+    "type-check": "vue-tsc --project ./tsconfig.lib.json",
     "preview": "vite preview",
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
