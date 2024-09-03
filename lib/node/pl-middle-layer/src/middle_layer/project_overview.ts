@@ -88,13 +88,11 @@ export function projectOverview(
           const result = prj.getField({
             field: projectFieldName(id, 'prodOutput'),
             assertFieldType: 'Dynamic',
-            stableIfNotFound: true,
             errorIfFieldNotFound: true
           });
           const ctx = prj.getField({
-            field: projectFieldName(id, 'prodCtx'),
+            field: projectFieldName(id, 'prodUiCtx'),
             assertFieldType: 'Dynamic',
-            stableIfNotFound: true,
             errorIfFieldNotFound: true
           });
           prod = {
