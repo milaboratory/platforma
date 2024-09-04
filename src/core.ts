@@ -82,8 +82,6 @@ export default class Core {
             }
         }
 
-      console.log("HERE: ", configOptions.license)
-
       if (!configPath) {
         configPath = pkg.state("config-lastrun.yaml")
         fs.writeFileSync(configPath, plCfg.render(configOptions))
