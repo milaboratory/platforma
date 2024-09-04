@@ -1,6 +1,7 @@
 export type plSettings = {
     localRoot: string
 
+    license: licenseSettings
     log: logSettings
     grpc: grpcSettings
     core: coreSettings
@@ -16,6 +17,7 @@ export type plSettings = {
 export type plOptions = {
     localRoot?: string
 
+    license?: licenseOptions
     log?: logOptions
     grpc?: grpcOptions
     core?: coreOptions
@@ -24,6 +26,12 @@ export type plOptions = {
     monitoring?: monitoringOptions
     debug?: debugOptions
 }
+
+export type licenseSettings = {
+    value: string
+    file: string
+}
+export type licenseOptions = DeepPartial<licenseSettings>
 
 export type logSettings = {
     level: string
@@ -151,6 +159,7 @@ export type debugSettings = {
 }
 export type debugOptions = Partial<debugSettings>
 
+/** Makes all keys and keys in sub-objects optional. */
 type DeepPartial<T> = {
     [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
