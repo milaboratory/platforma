@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import * as types from './types'
-import { assertNever, resolveTilde} from '../util';
+import { assertNever, resolveTilde } from '../util';
 import * as pkg from '../package';
 
 export { plOptions } from './types';
@@ -110,6 +110,7 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
   return {
     localRoot, log, grpc, core, monitoring, debug,
     storages: { primary, work, library },
+    hacks: { libraryDownloadable: true },
   }
 }
 
@@ -152,6 +153,7 @@ export function render(options: types.plSettings): string {
   const disableMon = options.monitoring.enabled ? "" : " disabled"
   const disableDbg = options.debug.enabled ? "" : " disabled"
   const disableTLS = options.grpc.tls.enable ? "" : " disabled"
+  const libraryDownloadable = options.hacks.libraryDownloadable ? "true" : "false"
 
   return `
 logging:
@@ -194,7 +196,7 @@ controllers:
 
           library:
               mode: passive
-              downloadable: true
+              downloadable: ${libraryDownloadable}
 
           work:
               mode: active
@@ -237,7 +239,7 @@ controllers:
     executor:
       id: 'work'
       storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
-      softwareRoot: '${options.localRoot}/software'
+      packagesRoot: '${options.localRoot}/packages'
       queues:
         - name: 'heavy'
           maxConcurrency: 1
@@ -245,12 +247,12 @@ controllers:
           maxConcurrency: 50
 
     softwareLoader:
-      softwareRoot: '${options.localRoot}/software'
+      packagesRoot: '${options.localRoot}/packages'
       registries:
         - name: 'milaboratories'
           endpoints:
             - type: 'local'
-              path: '${options.localRoot}/software-local'
+              path: '${options.localRoot}/packages-local'
             - type: 'url'
               url: 'https://bin.registry.platforma.bio/'
 
@@ -259,7 +261,7 @@ controllers:
       - name: 'milaboratories'
         endpoints:
           - type: 'local'
-            path: '${options.localRoot}/blocks/local'
+            path: '${options.localRoot}/blocks-local'
           - type: 'url'
             url: 'https://block.registry.platforma.bio/'
 

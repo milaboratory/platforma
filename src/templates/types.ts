@@ -8,6 +8,10 @@ export type plSettings = {
 
     monitoring: monitoringSettings
     debug: debugSettings
+
+    hacks: {
+        libraryDownloadable: boolean
+    }
 }
 export type plOptions = {
     localRoot?: string
