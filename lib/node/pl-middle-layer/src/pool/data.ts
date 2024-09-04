@@ -187,18 +187,14 @@ export function parseDataInfoResource(
       string,
       Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
     > = {};
-    for (const field of data.listInputFields()) {
-      if (field.endsWith('.index')) {
-        const superKey = field.slice(0, field.length - 6);
+    for (const superKey of data.listInputFields()) {
+      const keys = data
+        .traverse({ field: superKey, errorIfFieldNotSet: true })
+        .getDataAsJson<string[]>();
+      if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
-        const keys = data
-          .traverse({ field: superKey, errorIfFieldNotSet: true })
-          .getDataAsJson<string[]>();
-        if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
-
-        for (const field of keys) {
-          if (!field.endsWith('.index'))
-            throw new Error(`unrecognized part field name: ${superKey}, expected: '*.index'`);
+      for (const field of keys) {
+        if (field.endsWith('.index')) {
           const key = field.slice(0, field.length - 6);
 
           const partKey =
@@ -212,18 +208,7 @@ export function parseDataInfoResource(
             field: key,
             errorIfFieldNotSet: true
           }).resourceInfo;
-        }
-      } else if (field.endsWith('.values')) {
-        const superKey = field.slice(0, field.length - 7);
-
-        const keys = data
-          .traverse({ field: superKey, errorIfFieldNotSet: true })
-          .getDataAsJson<string[]>();
-        if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
-
-        for (const field of keys) {
-          if (!field.endsWith('.values'))
-            throw new Error(`unrecognized part field name: ${superKey}, expected: '*.values'`);
+        } else if (field.endsWith('.values')) {
           const key = field.slice(0, field.length - 7);
 
           const partKey =
@@ -237,8 +222,8 @@ export function parseDataInfoResource(
             field: key,
             errorIfFieldNotSet: true
           }).resourceInfo;
-        }
-      } else throw new Error(`unrecognized part field name: ${field}`);
+        } else throw new Error(`unrecognized part field name: ${field}`);
+      }
     }
 
     return {
