@@ -7,7 +7,7 @@ sw := assets.importSoftware(":exec.test.pkg.sleep")
 
 self.defineOutputs(["assetFile", "assetContent"])
 
-self.prepare(func() {
+self.prepare(func(inputs) {
 	binaryDescriptor := sw.descriptor.binary
 
 	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
