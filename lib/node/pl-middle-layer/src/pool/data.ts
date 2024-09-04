@@ -123,9 +123,7 @@ export function parseDataInfoResource(
 
     const parts: Record<string, ResourceInfo> = {};
     for (const superKey of data.listInputFields()) {
-      const keys = data
-        .traverse({ field: superKey, errorIfFieldNotSet: true })
-        .getDataAsJson<string[]>();
+      const keys = data.traverse({ field: superKey, errorIfFieldNotSet: true }).listInputFields();
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const key of keys) {
@@ -188,9 +186,7 @@ export function parseDataInfoResource(
       Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
     > = {};
     for (const superKey of data.listInputFields()) {
-      const keys = data
-        .traverse({ field: superKey, errorIfFieldNotSet: true })
-        .getDataAsJson<string[]>();
+      const keys = data.traverse({ field: superKey, errorIfFieldNotSet: true }).listInputFields();
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const field of keys) {
