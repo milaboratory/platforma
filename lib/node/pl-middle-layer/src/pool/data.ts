@@ -123,13 +123,13 @@ export function parseDataInfoResource(
 
     const parts: Record<string, ResourceInfo> = {};
     for (const superKey of data.listInputFields()) {
-      const keys = data.traverse({ field: superKey, errorIfFieldNotSet: true }).listInputFields();
+      const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
+      const keys = superPart.listInputFields();
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const key of keys) {
-        const partKey =
-          superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
-        parts[partKey] = data.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
+        const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
       }
     }
 
@@ -186,36 +186,35 @@ export function parseDataInfoResource(
       Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
     > = {};
     for (const superKey of data.listInputFields()) {
-      const keys = data.traverse({ field: superKey, errorIfFieldNotSet: true }).listInputFields();
+      const superData = data.traverse({ field: superKey, errorIfFieldNotSet: true });
+      const keys = superData.listInputFields();
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const field of keys) {
         if (field.endsWith('.index')) {
           const key = field.slice(0, field.length - 6);
 
-          const partKey =
-            superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
+          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
             parts[partKey] = part;
           }
-          parts[partKey].index = data.traverse({
-            field: key,
+          parts[partKey].index = superData.traverse({
+            field,
             errorIfFieldNotSet: true
           }).resourceInfo;
         } else if (field.endsWith('.values')) {
           const key = field.slice(0, field.length - 7);
 
-          const partKey =
-            superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
+          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
             parts[partKey] = part;
           }
-          parts[partKey].values = data.traverse({
-            field: key,
+          parts[partKey].values = superData.traverse({
+            field,
             errorIfFieldNotSet: true
           }).resourceInfo;
         } else throw new Error(`unrecognized part field name: ${field}`);
