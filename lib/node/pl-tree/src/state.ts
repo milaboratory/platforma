@@ -182,12 +182,17 @@ export class PlTreeResource implements PlTreeResourceI {
     } else {
       if (step.assertFieldType !== undefined && field.type !== step.assertFieldType)
         throw new Error(
-          `Unexpected field type: expected ${step.assertFieldType} but got ${field.type}`
+          `Unexpected field type: expected ${step.assertFieldType} but got ${field.type} for the field name ${step.field}`
         );
 
       const ret = {} as ValueAndError<ResourceId>;
       if (isNotNullResourceId(field.value)) ret.value = field.value;
       if (isNotNullResourceId(field.error)) ret.error = field.error;
+      if (ret.value === undefined && ret.error === undefined)
+        // this method returns value and error of the field, thus those values are considered to be accessed;
+        // any existing but not resolved field here is considered to be unstable, in the sence it is
+        // considered to acquire some resolved value eventually
+        onUnstable('field_not_resolved:' + step.field);
       field.change.attachWatcher(watcher);
       return ret;
     }
