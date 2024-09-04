@@ -5,9 +5,9 @@ import * as path from 'node:path';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratory/ts-helpers';
 import { addRTypeToMetadata } from '@milaboratory/pl-client-v2';
-import { Dispatcher, request } from 'undici';
+import { Dispatcher } from 'undici';
 import {
   DownloadAPI_GetDownloadURL_HTTPHeader,
   DownloadAPI_GetDownloadURL_Response
@@ -17,6 +17,9 @@ import { DownloadHelper, DownloadResponse } from '../helpers/download';
 
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
+
+export class UnknownStorageError extends Error {}
+export class WrongLocalFileUrl extends Error {}
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
  * files locally and from the web. */
@@ -73,17 +76,17 @@ export class ClientDownload {
   async readLocalFile(url: string): Promise<DownloadResponse> {
     const parsed = url.match(localPathRegex);
     if (parsed === null || parsed.length != 3) {
-      throw new Error(
+      throw new WrongLocalFileUrl(
         `url for local filepath ${url} does not match regex ${localPathRegex}, parsed: ${parsed}`
       );
     }
 
     const [_, storageId, localPath] = parsed;
 
-    const storageRoot = notEmpty(
-      this.localStorageIdsToRoot[storageId],
-      `Unknown storage location: ${storageId}`
-    );
+    if (this.localStorageIdsToRoot[storageId] == undefined)
+      throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
+
+    const storageRoot = this.localStorageIdsToRoot[storageId];
 
     const fullPath = path.join(storageRoot, localPath);
     const stat = await fsp.stat(fullPath);

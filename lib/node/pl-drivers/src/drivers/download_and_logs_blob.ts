@@ -17,7 +17,11 @@ import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
-import { ClientDownload } from '../clients/download';
+import {
+  ClientDownload,
+  UnknownStorageError,
+  WrongLocalFileUrl
+} from '../clients/download';
 import { ClientLogs } from '../clients/logs';
 import * as helper from './helpers/helpers';
 import * as readline from 'node:readline/promises';
@@ -51,6 +55,7 @@ import {
 } from '@milaboratory/sdk-model';
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 import { z } from 'zod';
+import { NetworkError400 } from '../helpers/download';
 
 /** ResourceSnapshot that can be passed to OnDemandBlob */
 export const OnDemandBlobResourceSnapshot = rsSchema({
@@ -464,7 +469,7 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-            `from cache along with ${toDelete.map((d) => d.path)}`
+              `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );
@@ -563,8 +568,7 @@ class LastLinesGetter {
         this.patternToSearch
       );
 
-      if (this.log != newLogs)
-        this.change.markChanged();
+      if (this.log != newLogs) this.change.markChanged();
       this.log = newLogs;
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
@@ -666,7 +670,12 @@ export class Download {
 
       this.setDone(size);
     } catch (e: any) {
-      if (e instanceof DownloadAborted) {
+      if (
+        e instanceof DownloadAborted ||
+        e instanceof NetworkError400 ||
+        e instanceof UnknownStorageError ||
+        e instanceof WrongLocalFileUrl
+      ) {
         this.setError(e);
         // Just in case we were half-way extracting an archive.
         await fsp.rm(this.path);
