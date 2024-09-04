@@ -1,0 +1,25 @@
+/** Runs a cat on the file and returns it's content as a value resource. */
+
+self := import(":tpl")
+assets := import(":assets")
+smart := import(":smart")
+exec := import(":exec")
+file := import(":file")
+
+self.defineOutputs(["main"])
+
+sw := assets.importSoftware("@milaboratory/small-binaries:stub-java-script")
+
+self.body(func(inputs) {
+	run := exec.builder().
+        software(sw).
+		arg(inputs.text).
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})

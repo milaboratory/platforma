@@ -21,7 +21,7 @@ inherit := func(super, self) {
 		}
 	}
 
-	return self
+	return ll.toStrict(self)
 }
 
 export ll.toStrict({

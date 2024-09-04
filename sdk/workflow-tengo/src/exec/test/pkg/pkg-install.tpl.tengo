@@ -1,0 +1,35 @@
+assets := import(":assets")
+self := import(":tpl")
+pkg := import(":exec.package")
+render := import(":render")
+maps := import(":maps")
+json := import("json")
+
+sw := assets.importSoftware(":exec.test.pkg.sleep")
+
+self.defineOutputs(["installed", "descriptor"])
+
+self.body(func(inputs) {
+	if (maps.containsKey(inputs, "software")) {
+		software := inputs["software"]
+
+		return {
+			installed: software.kvGetAsJson("ctl/runner/package/installation"),
+			descriptor: software.kvGetAsJson(pkg.META_KEY_DESCRIPTOR)
+		}
+	}
+
+	binaryDescriptor := sw.descriptor.binary
+
+	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
+
+	self.delegate(
+		self.template(),
+		{
+			software: pkg.install(archive).package()
+		},
+		["installed", "descriptor"]
+	)
+
+	return {}
+})
