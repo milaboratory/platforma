@@ -20,7 +20,7 @@ export default class FS extends Command {
 
     ...cmdOpts.ConfigFlag,
 
-    ...cmdOpts.LicenseValueFlag,
+    ...cmdOpts.LicenseFlag,
     ...cmdOpts.LicenseFileFlag,
       
     ...cmdOpts.StorageFlag,
@@ -58,7 +58,7 @@ export default class FS extends Command {
       workdir: flags['pl-workdir'],
 
       configOptions: {
-        license: { value: flags['license-value'], file: flags['license-file'] },
+        license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile, },
         localRoot: storage,
         core: { auth: { enabled: authEnabled, drivers: authDrivers } },

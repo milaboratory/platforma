@@ -17,7 +17,7 @@ export default class S3 extends Command {
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
-    ...cmdOpts.LicenseValueFlag,
+    ...cmdOpts.LicenseFlag,
     ...cmdOpts.LicenseFileFlag,
     
     ...cmdOpts.AuthFlags,
@@ -39,7 +39,7 @@ export default class S3 extends Command {
       image: flags.image,
       version: flags.version,
 
-      licenseValue: flags['license-value'],
+      license: flags['license'],
       licenseFile: flags['license-file'],
 
       auth: authOptions,
