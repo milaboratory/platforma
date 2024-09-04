@@ -118,6 +118,26 @@ export function parseDataInfoResource(
       partitionKeyLength: meta.partitionKeyLength,
       parts
     };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonSuperPartitioned)) {
+    const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
+
+    const parts: Record<string, ResourceInfo> = {};
+    for (const superKey of data.listInputFields()) {
+      const superPart = data.traverse({ field: superKey, errorIfFieldNotSet: true });
+      const keys = superPart.listInputFields();
+      if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+      for (const key of keys) {
+        const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+        parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
+      }
+    }
+
+    return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
+      parts
+    };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
 
@@ -156,6 +176,54 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
+      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
+    const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
+
+    const parts: Record<
+      string,
+      Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
+    > = {};
+    for (const superKey of data.listInputFields()) {
+      const superData = data.traverse({ field: superKey, errorIfFieldNotSet: true });
+      const keys = superData.listInputFields();
+      if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+      for (const field of keys) {
+        if (field.endsWith('.index')) {
+          const key = field.slice(0, field.length - 6);
+
+          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+          let part = parts[partKey];
+          if (part === undefined) {
+            part = {};
+            parts[partKey] = part;
+          }
+          parts[partKey].index = superData.traverse({
+            field,
+            errorIfFieldNotSet: true
+          }).resourceInfo;
+        } else if (field.endsWith('.values')) {
+          const key = field.slice(0, field.length - 7);
+
+          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+          let part = parts[partKey];
+          if (part === undefined) {
+            part = {};
+            parts[partKey] = part;
+          }
+          parts[partKey].values = superData.traverse({
+            field,
+            errorIfFieldNotSet: true
+          }).resourceInfo;
+        } else throw new Error(`unrecognized part field name: ${field}`);
+      }
+    }
+
+    return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
       parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
     };
   }
