@@ -118,6 +118,28 @@ export function parseDataInfoResource(
       partitionKeyLength: meta.partitionKeyLength,
       parts
     };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataJsonSuperPartitioned)) {
+    const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
+
+    const parts: Record<string, ResourceInfo> = {};
+    for (const superKey of data.listInputFields()) {
+      const keys = data
+        .traverse({ field: superKey, errorIfFieldNotSet: true })
+        .getDataAsJson<string[]>();
+      if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+      for (const key of keys) {
+        const partKey =
+          superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
+        parts[partKey] = data.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
+      }
+    }
+
+    return {
+      type: 'JsonPartitioned',
+      partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
+      parts
+    };
   } else if (resourceTypesEqual(data.resourceType, PColumnDataBinaryPartitioned)) {
     const meta = resourceData as PColumnDataPartitionedResourceValue;
 
@@ -156,6 +178,72 @@ export function parseDataInfoResource(
     return {
       type: 'BinaryPartitioned',
       partitionKeyLength: meta.partitionKeyLength,
+      parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
+    };
+  } else if (resourceTypesEqual(data.resourceType, PColumnDataBinarySuperPartitioned)) {
+    const meta = resourceData as PColumnDataSuperPartitionedResourceValue;
+
+    const parts: Record<
+      string,
+      Partial<Writable<PFrameInternal.BinaryChunkInfo<ResourceInfo>>>
+    > = {};
+    for (const field of data.listInputFields()) {
+      if (field.endsWith('.index')) {
+        const superKey = field.slice(0, field.length - 6);
+
+        const keys = data
+          .traverse({ field: superKey, errorIfFieldNotSet: true })
+          .getDataAsJson<string[]>();
+        if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+        for (const field of keys) {
+          if (!field.endsWith('.index'))
+            throw new Error(`unrecognized part field name: ${superKey}, expected: '*.index'`);
+          const key = field.slice(0, field.length - 6);
+
+          const partKey =
+            superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
+          let part = parts[partKey];
+          if (part === undefined) {
+            part = {};
+            parts[partKey] = part;
+          }
+          parts[partKey].index = data.traverse({
+            field: key,
+            errorIfFieldNotSet: true
+          }).resourceInfo;
+        }
+      } else if (field.endsWith('.values')) {
+        const superKey = field.slice(0, field.length - 7);
+
+        const keys = data
+          .traverse({ field: superKey, errorIfFieldNotSet: true })
+          .getDataAsJson<string[]>();
+        if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
+
+        for (const field of keys) {
+          if (!field.endsWith('.values'))
+            throw new Error(`unrecognized part field name: ${superKey}, expected: '*.values'`);
+          const key = field.slice(0, field.length - 7);
+
+          const partKey =
+            superKey.slice(0, superKey.length - 1) + ',' + superKey.slice(1, superKey.length);
+          let part = parts[partKey];
+          if (part === undefined) {
+            part = {};
+            parts[partKey] = part;
+          }
+          parts[partKey].values = data.traverse({
+            field: key,
+            errorIfFieldNotSet: true
+          }).resourceInfo;
+        }
+      } else throw new Error(`unrecognized part field name: ${field}`);
+    }
+
+    return {
+      type: 'BinaryPartitioned',
+      partitionKeyLength: meta.superPartitionKeyLength + meta.partitionKeyLength,
       parts: parts as Record<string, PFrameInternal.BinaryChunkInfo<ResourceInfo>>
     };
   }
