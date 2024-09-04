@@ -14,6 +14,14 @@ exportFrame := func(pf) {
     return render.createEphemeral(assets.importTemplate(":pframes.export-pframe"), { pf: pf }).output("result")
 }
 
+/**
+ * Export single PColumn data
+ */
+exportColumnData := func(data) {
+    return render.createEphemeral(assets.importTemplate(":pframes.export-single-pcolumn"), { data: data }).output("result")
+}
+
 export ll.toStrict({
-    exportFrame: exportFrame
+    exportFrame: exportFrame,
+    exportColumnData: exportColumnData
 })

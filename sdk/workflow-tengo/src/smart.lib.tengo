@@ -436,13 +436,21 @@ resource = func(r) {
 		},
 
 		/**
-		 * Get future input field given field name
+		 * Get future input field given field name or a path
 		 *
-		 * @param name field name
+		 * @param nameOrPath field name or an array representing a path to be traversed
 		 * @return field: smart field
 		 */
-		getFutureInputField: func(name) {
-			return self.getFutureField(name, "input")
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
 		},
 
 		/**
@@ -688,13 +696,21 @@ field = func(f) {
 		},
 
 		/**
-		 * Get future input field given field name
+		 * Get future input field given field name or a path
 		 *
-		 * @param name field name
+		 * @param nameOrPath field name or an array representing a path to be traversed
 		 * @return field: smart field
 		 */
-		getFutureInputField: func(name) {
-			return self.getFutureField(name, "input")
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
 		},
 
 		/**

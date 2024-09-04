@@ -7,7 +7,9 @@ tpl := import(":tpl")
 smart := import(":smart")
 context := import(":workflow.context")
 validation := import(":validation")
-constants := import(":workflow.constants")
+constants := import(":constants")
+wConstants := import(":workflow.constants")
+pConstants := import(":pframes.constants")
 
 // await all exports to appear as data fields
 tpl.awaitState("data", { wildcard: "*" }, "InputsLocked")
@@ -22,13 +24,18 @@ tpl.body(func(inputs) {
 	// create ctx and save exports
 	ctxBuilder := context.builder(inputs.blockId, inputs.parentContext)
 
-	for prefix, map in inputs.data {
-		ll.assert(is_map(map), "expected map, got ", map)
+	data := tpl.rawInputs().data.getValue()
 
-		for key, value in map {
+	for prefix, mapField in tpl.rawInputs().data.getValue().inputs() {
+		map := mapField.getValue()
+		if !map.checkResourceType(constants.RTYPE_MAP) && !map.checkResourceType(pConstants.RTYPE_P_FRAME) {
+			ll.panic("Unknown input PObject collection container type: " + map.info().Type)
+		}
+
+		for key, value in map.inputs() {
 			// @TODO check whether we have both .data & .spec for all exports
 
-			if prefix == constants.NO_PREFIX_EXPORT {
+			if prefix == wConstants.NO_PREFIX_EXPORT {
 				ctxBuilder.add(key, value)
 			} else {
 				ctxBuilder.add(prefix + "." + key, value)
