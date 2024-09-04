@@ -21,8 +21,8 @@ export const VersionFlag = {
     })
 }
 
-export const LicenseValueFlag = {
-  'license-value': Flags.string({
+export const LicenseFlag = {
+  'license': Flags.string({
     description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
   })
 }

@@ -21,7 +21,7 @@ export default class FS extends Command {
 
     ...cmdOpts.ConfigFlag,
 
-    ...cmdOpts.LicenseValueFlag,
+    ...cmdOpts.LicenseFlag,
     ...cmdOpts.LicenseFileFlag,
     
     ...cmdOpts.StorageFlag,
@@ -62,7 +62,7 @@ export default class FS extends Command {
       libraryURL: flags['storage-library'],
 
       configOptions: {
-        license: { value: flags['license-value'], file: flags['license-file'] },
+        license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,
         core: {

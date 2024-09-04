@@ -203,18 +203,18 @@ export default class Core {
     version?: string,
     primaryURL?: string,
     auth?: types.authOptions,
-    licenseValue?: string,
+    license?: string,
     licenseFile?: string,
   }) {
       const composeS3Path = pkg.assets("compose-s3.yaml")
       const image = options?.image ?? pkg.plImageTag(options?.version)
 
-      this.checkLicense(options?.licenseValue, options?.licenseFile)
+      this.checkLicense(options?.license, options?.licenseFile)
 
       const envs: NodeJS.ProcessEnv = {
         "PL_IMAGE": image,
         'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
-        'PL_LICENSE_VALUE': options?.licenseValue,
+        'PL_LICENSE': options?.license,
         'PL_LICENSE_FILE': options?.licenseFile,
       }
 
@@ -278,7 +278,7 @@ export default class Core {
     image?: string,
     version?: string,
     auth?: types.authOptions,
-    licenseValue?: string,
+    license?: string,
     licenseFile?: string,
   }) {
       var composeFSPath = pkg.assets("compose-fs.yaml")
@@ -288,14 +288,14 @@ export default class Core {
       const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath
       const libraryStorage = options?.libraryStorage ?? state.lastRun?.docker?.libraryPath
 
-      this.checkLicense(options?.licenseValue, options?.licenseFile)
+      this.checkLicense(options?.license, options?.licenseFile)
       this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath)
       this.checkVolumeConfig('library', libraryStorage, state.lastRun?.docker?.libraryPath)
 
       const envs: NodeJS.ProcessEnv = {
         "PL_IMAGE": image,
         'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
-        'PL_LICENSE_VALUE': options?.licenseValue,
+        'PL_LICENSE': options?.license,
         'PL_LICENSE_FILE': options?.licenseFile,
       }
       const compose = this.readComposeFile(composeFSPath)
@@ -512,7 +512,7 @@ ${storageWarns}
 
       this.logger.error(`License for Platforma Backend must be set.
 
-Use '--license-value' flag for providing the license directly,
+Use '--license' flag for providing the license directly,
 or '--license-file' flags if it's stored in the file.
 The license can be got from "https://licensing.milaboratories.com".`)
       

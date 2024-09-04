@@ -19,7 +19,7 @@ export default class FS extends Command {
 
     ...cmdOpts.AuthFlags,
 
-    ...cmdOpts.LicenseValueFlag,
+    ...cmdOpts.LicenseFlag,
     ...cmdOpts.LicenseFileFlag,
     
     ...cmdOpts.StoragePrimaryPathFlag,
@@ -47,7 +47,7 @@ export default class FS extends Command {
       image: flags.image,
       version: flags.version,
 
-      licenseValue: flags['license-value'],
+      license: flags['license'],
       licenseFile: flags['license-file'],
       
       auth: authOptions,
