@@ -4,6 +4,9 @@
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "build": "tsc",
+    "test:i:runenv": "cd integration-tests/runenv && npm run build",
+    "test:i:script": "cd integration-tests/software-pkg && npm run build",
+    "test:integration": "npm run test:i:runenv && npm run test:i:script",
     "test": "rm -rf ./dist && npm run build && jest"
   },
   "bin": {
