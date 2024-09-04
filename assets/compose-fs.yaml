@@ -16,6 +16,8 @@ services:
         max-file: "4"
 
     environment:
+      - "PL_LICENSE_VALUE=${PL_LICENSE_VALUE:-}"
+      - "PL_LICENSE_FILE=${PL_LICENSE_FILE:+/storage/mi.license}"
       - "PL_API_ADDR=0.0.0.0:6345"
       - "PL_MONITORING_ENABLED=true"
       - "PL_MONITORING_ADDR=0.0.0.0:9090"
@@ -36,6 +38,7 @@ services:
       - work:/storage/controllers/file/work
       - software:/storage/controllers/runner/software
       - db:/storage/rocksdb
+      - ${PL_LICENSE_FILE}:/storage/mi.license
 
     restart: always
 

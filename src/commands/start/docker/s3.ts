@@ -17,6 +17,9 @@ export default class S3 extends Command {
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
+    ...cmdOpts.LicenseValueFlag,
+    ...cmdOpts.LicenseFileFlag,
+    
     ...cmdOpts.AuthFlags,
   }
 
@@ -35,6 +38,9 @@ export default class S3 extends Command {
     core.startDockerS3({
       image: flags.image,
       version: flags.version,
+
+      licenseValue: flags['license-value'],
+      licenseFile: flags['license-file'],
 
       auth: authOptions,
     })
