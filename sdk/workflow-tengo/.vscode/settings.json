@@ -1,8 +1,0 @@
-{
-    "customLocalFormatters.formatters": [
-        {
-            "command": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-            "languages": ["tengo"]
-        }
-    ]
-}
