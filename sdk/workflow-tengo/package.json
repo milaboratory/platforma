@@ -23,6 +23,7 @@
     "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test",
     "test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test && vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
+    "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "vscode-tags": "./create_tags.sh .tags false",
     "emacs-tags": "./create_tags.sh ../TAGS false -e"
@@ -34,6 +35,7 @@
     "@milaboratory/tengo-template-builder": "^1.13.0",
     "@milaboratory/pl-middle-layer": "^1.10.2",
     "@milaboratory/sdk-test": "^1.5.3",
+    "@milaboratory/small-binaries": "^1.10.0",
     "vitest": "^2.0.5"
   }
 }

@@ -19,28 +19,6 @@ _HEAVY_QUEUE := "heavy"
 _UI_TASKS_QUEUE := "ui-tasks"
 
 /**
- * Converts an argument into an executable or non-executable format.
- *
- * @param arg: string - the argument to convert.
- * @param isExec: bool - a boolean indicating if the argument is executable.
- * @param pathToBinary: string|undefined - the path to the binary if the argument is executable.
- * @return A map representing the argument.
- */
-_argToExec := func(arg, isExec, pathToBinary) {
-	if isExec {
-		return {
-			isExec: true,
-			value: arg,
-			pathToBinary: pathToBinary
-		}
-	}
-	return {
-		isExec: false,
-		value: arg
-	}
-}
-
-/**
  * Creates a new builder for constructing and executing commands.
  *
  * @return builder - a new builder instance.
@@ -48,6 +26,7 @@ _argToExec := func(arg, isExec, pathToBinary) {
 builder := func() {
 	self := undefined
 
+	soft := undefined
 	cmd := undefined
 	args := []
 	entrypointSet := false
@@ -97,6 +76,7 @@ builder := func() {
 		 */
 		cmd: func(commandName) {
 			assertEntrypointNotSet()
+
 			cmd = commandName
 			entrypointSet = true
 			return self
@@ -105,11 +85,15 @@ builder := func() {
 		/**
 		 * Sets the software to be executed.
 		 *
-		 * @param software: string - the software to execute.
+		 * @param software: softwareInfo - the software to execute.
 		 */
-		software: func(software) {
+		software: func(sw) {
 			assertEntrypointNotSet()
-			ll.panic("exec.builder.software is not implemented")
+			ll.assert(assets.isSoftwareInfo(sw),
+				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
+			)
+
+			soft = sw
 			entrypointSet = true
 			return self
 		},
@@ -380,13 +364,16 @@ builder := func() {
 				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
 			})
 
-			tpl := render.create(assets.importTemplate(":exec.exec"), {
+			ll.assert(entrypointSet,
+				"incomplete command: cmd() or software() must be provided to exec.builder")
+
+			execInputs := {
 				filesToAdd: smart.createMapResource(filesToAdd),
 				filesToWrite: smart.createMapResource(filesToWriteRefs),
 				dirsToCreate: slices.fromSet(dirsToCreate),
 				runOptions: {
-					cmd: _argToExec(cmd, false, undefined),
-					args: slices.map(args, func(a) { return _argToExec(a, false, undefined) }),
+					cmd: cmd,
+					args: args,
 					envs: envs,
 					queue: queue,
 					stdout: stdout,
@@ -399,7 +386,18 @@ builder := func() {
 				fileSetsContentToSave: fileSetsContentToSave,
 				filesToStream: slices.fromSet(filesToStream),
 				wdProcessors: wdProcessors
-			})
+			}
+
+			if !is_undefined(soft) {
+				execInputs.softwareInfo = soft.resource
+				execInputs.runOptions.software = {
+					name: soft.name,
+					version: soft.version,
+					descriptor: ll.fromStrict(soft.descriptor)
+				}
+			}
+
+			tpl := render.create(assets.importTemplate(":exec.exec"), execInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {

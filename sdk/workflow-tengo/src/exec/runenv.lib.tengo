@@ -1,0 +1,221 @@
+ll := import(":ll")
+smart := import(":smart")
+oop := import(":oop")
+maps := import(":maps")
+validation := import(":validation")
+pkg := import(":exec.package")
+assets := import(":assets")
+render := import(":render")
+
+_RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv/executor", Version: "1" }
+_INPUT_SETTINGS       := "settings"
+_INPUT_WD_IN          := "workdirIn"
+_INPUT_PACKAGES_MAP   := "packagesMap"
+
+_OUTPUT_RUN_ENV       := "runEnv"
+_OUTPUT_WD_OUT        := "workdirOut"
+
+saveBuilder := func(wd) {
+	self := undefined
+
+	pathsToSave := []
+	envType := ""
+
+	packagesMap := {}
+
+	self = {
+		addPath: func(path) {
+			validation.assertJsonSchema(path, "string", "runenv.saveBuilder.addPath: <path> must be string")
+
+			pathsToSave = append(pathsToSave, path)
+			return self
+		},
+
+		envType: func(type) {
+			validation.assertJsonSchema(type, "string", "runenv.saveBuilder.envType: <type> must be string")
+
+			envType = type
+			return self
+		},
+
+		/**
+		 * Bind package to created run environment, holding it as long as run environment exists.
+		 */
+		addPackage: func(key, pkgRef) {
+			ll.assert(!maps.containsKey(packagesMap, key), "runenv.saveBuilder.addPackage: package %q was already added to SaveRunEnv builder", key)
+			validation.assertJsonSchema(pkgRef, validation.reference, "runenv.saveBuilder.addPackage: <pkgRef> must be reference")
+
+			packagesMap[key] = pkgRef
+			return self
+		},
+
+		build: func() {
+			ll.assert(envType != "", "runenv.saveBuilder.build: environment type is not set")
+
+			envSaver := smart.ephemeralBuilder(_RTYPE_SAVE_RUN_ENV)
+
+			envSaver.getField(_INPUT_WD_IN).set(wd)
+
+			envSaver.getField(_INPUT_SETTINGS).
+				set(smart.createJsonResource({
+					paths: pathsToSave,
+					type: envType
+				}))
+
+			envSaver.getField(_INPUT_PACKAGES_MAP).
+				set(smart.createMapResource(packagesMap))
+
+			return oop.inherit(envSaver.lockAndBuild(), {
+				/**
+				 * Run environment reference
+				 *
+				 * @return runEnv: smart.field - field where run environment appears
+				 *                               after operation is done
+				 */
+				runEnv: func() {
+					return envSaver.getField(_OUTPUT_RUN_ENV)
+				},
+
+				/**
+				 * Working directory reference after operation is complete
+				 *
+				 * @return wd: smart.field - field where workdir appears after
+				 *                           operation is done
+				 */
+				workdir: func() {
+					return envSaver.getField(_OUTPUT_WD_OUT)
+				}
+			})
+		}
+	}
+
+	return self
+}
+
+pythonVenvInputSchema := {
+	toolset: "string",
+	dependencies: {"string": validation.reference},
+	// software: validation.reference,
+
+	pythonDescriptor: pkg.runEnvDescriptorScheme,
+	python: validation.reference
+}
+
+loadDependencyFiles := func(packageRef, dependencies) {
+	if len(dependencies) == 0 {
+		return {}
+	}
+
+	depsMap := {}
+
+	loader := pkg.assetsLoader(packageRef)
+	for depName, fileName in dependencies {
+		loader.saveFile(fileName)
+	}
+	deps := loader.load()
+
+	for depName, fileName in dependencies {
+		depsMap[depName] = deps.getFile(fileName)
+	}
+
+	return depsMap
+}
+
+pythonVenv := func() {
+	self := undefined
+
+	toolset := "pip"
+	pythonDescriptor := undefined
+	softwareRef := undefined
+	dependencies := undefined
+	cache := 0
+
+	self = {
+		useToolset: func(name) {
+			validation.assertJsonSchema(name, "string",
+				"runenv.python.useToolset: <name> must be valid name of python packaging toolset (pip, pipenv and so on)")
+			ll.assert(name != "", "runenv.python.useToolset: toolset name must not be empty")
+
+			toolset = name
+			return self
+		},
+
+		runEnvDescriptor: func(descriptor) {
+			validation.assertJsonSchema(descriptor, pkg.runEnvDescriptorScheme, "runenv.python.runEnvDescriptor: <descriptor> must be run environment specification")
+			ll.assert(descriptor.type == "python", "runenv.python.runEnvDescriptor: not a 'python' run environment: %q", descriptor.type)
+
+			pythonDescriptor = ll.fromStrict(descriptor)
+			return self
+		},
+
+		software: func(pkgRef) {
+			validation.assertJsonSchema(pkgRef, validation.reference, "runenv.python.software: <pkgRef> must be a reference to software package")
+
+			softwareRef = pkgRef
+			return self
+		},
+
+		dependencies: func(deps) {
+			validation.assertJsonSchema(deps, { "any": "string" }, "runenv.python.dependencies: <deps> must be map of reference file paths")
+
+			dependencies = deps
+			return self
+		},
+
+		/**
+		 * Sets the cache time.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cache: func(time) {
+			ll.assert(
+				is_int(time),
+				"cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'time'?")
+			cache = time
+			return self
+		},
+
+		build: func() {
+			depsMap := loadDependencyFiles(softwareRef, dependencies)
+
+			archive := pkg.get(pythonDescriptor.registry, pythonDescriptor.package).archive()
+			pythonPkg := pkg.install(archive).package()
+
+			pyVenvInputs := {
+				toolset: toolset,
+				dependencies: smart.createMapResource(depsMap),
+				// software: softwareRef,
+				pythonDescriptor: pythonDescriptor,
+				python: pythonPkg
+			}
+
+			validation.assertJsonSchema(pyVenvInputs, pythonVenvInputSchema, "incomplete python runenv configuration")
+
+			tpl := render.create(assets.importTemplate(":exec.create-python-venv"), pyVenvInputs)
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * Python virtual environment with all dependencies installed.
+				 *
+				 * @return venv: smart.field - a reference to the runenv with python venv inside.
+				 */
+				venv: func() {
+					return tpl.output(_OUTPUT_RUN_ENV, cache)
+				}
+			}))
+
+			return self
+		}
+	}
+
+	return self
+}
+
+export ll.toStrict({
+	saveBuilder                        : saveBuilder,
+
+	pythonVenv                         : pythonVenv,
+	pythonVenvInputSchema              : pythonVenvInputSchema
+})

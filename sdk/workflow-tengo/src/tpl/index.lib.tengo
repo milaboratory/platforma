@@ -81,6 +81,7 @@ tpl := func() {
 	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
 
 	_stateRequests := []
+	_delegatedOutputs := []
 
 	self = {
 
@@ -99,7 +100,7 @@ tpl := func() {
 		},
 
 		/**
-		 * The template id of this template
+		 * Current template resource
 		 */
 		template: func() {
 			return smart.resource(_templateId)
@@ -247,8 +248,8 @@ tpl := func() {
 		prepareQueue : [],
 
 		/**
-		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references will be
-		 * returned by the prepare method will be resolved into a ready resources. The resulting resources will be passed as an input to the body function.
+		 * Prepare additional resources for the template body. The body function of the workflow will be executed only when the references
+		 * returned from prepare method will be resolved into a ready resources. The resulting resources will be passed as an input to the body function.
 		 *
 		 * @param cb: a callback function returning a map of references to be resolved
 		 */
@@ -416,9 +417,12 @@ tpl := func() {
 					ll.assert(ll.isMap(result),
 						"expected map from tpl.body() callback. Did you forget 'return' statement?")
 
-					ll.assert(sets.fromSlice(self.definedOutputs) == sets.fromMapKeys(result),
-						"inconsistent number of defined and returned outputs from tpl.body() callback. Want %v, got %v.",
-						self.definedOutputs, maps.getKeys(result))
+					outputsWithValues := sets.fromMapKeys(result)
+					outputsWithValues = sets.add(outputsWithValues, _delegatedOutputs...)
+
+					ll.assert(sets.fromSlice(self.definedOutputs) == outputsWithValues,
+						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s", 
+						self.definedOutputs, sets.toSlice(outputsWithValues))
 
 					// set result to self outputs
 					self.setOutputs(result)
@@ -484,6 +488,8 @@ tpl := func() {
 		 * @param outputs: array - array of expected outputs to save
 		 */
 		routeDelegate: func(tpl, extraInputs, outputs) {
+			_delegatedOutputs = outputs
+
 			inputs := self.rawInputs()
 			for k, v in extraInputs {
 				inputs[k] = v
@@ -524,5 +530,6 @@ export ll.toStrict({
 	awaitState              : instance.awaitState,
 	delegate                : instance.routeDelegate,
 	validateInputs          : instance.validateInputs,
-	body                    : instance.body
+	body                    : instance.body,
+	template                : instance.template
 })

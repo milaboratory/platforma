@@ -22,6 +22,20 @@ fromSlice := func(slice) {
 }
 
 /**
+ * Convert given set to slice
+ *
+ * @param set: set - a set of values to be converted to slice
+ * @return slice: []<string|number>
+ */
+toSlice := func(set) {
+	sl := []
+	for v, _ in set {
+		sl = append(sl, v)
+	}
+	return sl
+}
+
+/**
  * Checks if a set has an element.
  *
  * @param set a set of any elements
@@ -71,6 +85,7 @@ map := func(set, fn) {
 
 export ll.toStrict({
 	fromSlice: fromSlice,
+	toSlice: toSlice,
 	hasElement: hasElement,
 	add: add,
 	fromMapKeys: fromMapKeys,

@@ -36,7 +36,19 @@ RTYPE_WORKDIR_SAVE_RULES  := { Name: "WorkdirSave/rules", Version: "1" }
 /** Main resource type of representing a PL error */
 RTYPE_JSON_ERROR          := { Name: "json/resourceError", Version: "1"}
 
+FTYPE_OTW                 := "OTW" // Generic one-time writable field. The value of this field can be set only once.
+FTYPE_SERVICE             := "service"
+FTYPE_INPUT               := "input"
+FTYPE_OUTPUT              := "output"
+FTYPE_DYNAMIC             := "dynamic"
+
 export ll.toStrict({
+	FTYPE_OTW                   : FTYPE_OTW,
+	FTYPE_SERVICE               : FTYPE_SERVICE,
+	FTYPE_INPUT                 : FTYPE_INPUT,
+	FTYPE_OUTPUT                : FTYPE_OUTPUT,
+	FTYPE_DYNAMIC               : FTYPE_DYNAMIC,
+
 	RTYPE_BINARY_MAP            : RTYPE_BINARY_MAP,
 	RTYPE_BINARY_VALUE          : RTYPE_BINARY_VALUE,
 	RTYPE_BLOB_MAP              : RTYPE_BLOB_MAP,

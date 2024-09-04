@@ -6,7 +6,7 @@ oop := import(":oop")
 smart := import(":smart")
 json := import("json")
 
-_RTYPE_RUN_COMMAND := { Name: "RunCommand", Version: "1" }
+_RTYPE_RUN_COMMAND := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
 _RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }
 _RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command/options", Version: "1" }
@@ -25,16 +25,13 @@ _createSimpleArg := func(argument) {
 }
 
 /**
- * Creates an executable argument for the command.
- *
- * @param executableName: string - the name of the executable.
- * @param pathToBinary: string|undefined - the path to the binary.
+ * Creates 'variableRef' argument.
+ * @param argTpl: string - argument value in any form with variables inside (e.g. "file://{pkg}/some-file" or "o-{java}-o")
  */
-_createExecutableArg := func(executableName, pathToBinary) {
+_createVariableArg := func(argTpl) {
 	return {
-		type: "executableRef",
-		value: executableName,
-		execPath: pathToBinary // maybe null
+		type: "variableRef",
+		value: argTpl
 	}
 }
 
@@ -54,7 +51,11 @@ builder := func(workdir) {
 	args := []
 	envs := {}
 	queue := ""
-	execRefs := {}
+	refs := {}
+
+	substRules := {}
+	hasPatternArgs := false
+	customPaths := []
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -72,15 +73,16 @@ builder := func(workdir) {
 		},
 
 		/**
-		 * Sets the command executable.
+		 * Sets the command with variables inside to be rendered using rules
+		 * from .substitutionRules().
 		 *
-		 * @param commandName: string - the name of the command.
-		 * @param pathToBinary: string - the path to the binary.
+		 * @param commandTpl: string - string with '{varName}' substitutions to be replaced with
+		 *                             software paths. Replace rules are defined by .substitutionRule()
+		 *                             and .substitutionRules(),
 		 */
-		cmdExecutable: func(commandName, pathToBinary) {
-			cmd = _createExecutableArg(commandName, pathToBinary)
-			// TODO: should we add BinaryGet resource?
-			// execRefs[commandName] =
+		cmdVar: func(commandTpl) {
+			cmd = _createVariableArg(commandTpl)
+			hasPatternArgs = true
 			return self
 		},
 
@@ -95,13 +97,27 @@ builder := func(workdir) {
 		},
 
 		/**
-		 * Adds an executable argument to the command.
+		 * Adds an argument with variables inside to be rendered using rules
+		 * from .substitutionRules().
 		 *
-		 * @param arg: string - the argument to add.
-		 * @param pathToBinary: string - the path to the binary.
+		 * @param argTpl: string - string with '{varName}' substitutions to be replaced with
+		 *                         software paths. Replace rules are defined by .substitutionRule()
+		 *                         and .substitutionRules(),
 		 */
-		argExecutable: func(arg, pathToBinary) {
-			args = append(args, _createExecutableArg(arg, pathToBinary))
+		argVar: func(argTpl) {
+			args = append(args, _createVariableArg(argTpl))
+			hasPatternArgs = true
+			return self
+		},
+
+		ref: func(refKey, ref) {
+			ll.assert(smart.isReference(ref),
+				"runcmd.builder().ref() must be a reference (valid field or resource)")
+
+			ll.assert(!maps.containsKey(refs, refKey),
+				"attempt to override existing reference %q", refKey)
+
+			refs[refKey] = ref
 			return self
 		},
 
@@ -113,6 +129,59 @@ builder := func(workdir) {
 		 */
 		env: func(name, value) {
 			envs[name] = value
+			return self
+		},
+
+		/**
+		 * Sets environment variable with substitution inside value, to be rendered
+		 * using rules from .substitutionRules().
+		 *
+		 * @param name: string - the name of the environment variable.
+		 * @param valueTpl: string - the value of the environment variable.
+		 */
+		envVar: func(name, valueTpl) {
+			envs[name] = _createVariableArg(valueTpl)
+			hasPatternArgs = true
+			return self
+		},
+
+		/*
+		 * Patch 'PATH' environment variable, adding software path to it.
+		 *
+		 * @param value: string - the value of the environment variable with variables to be replaced to software path.
+		 * @param hasVars: boolean - wether Platforma Backend should try to substitute variables inside <value> on server side
+		 */
+		addToPath: func(value, hasVars) {
+			if hasVars {
+				customPaths = append(customPaths, _createVariableArg(value))
+				hasPatternArgs = true
+			} else {
+				customPaths = append(customPaths, _createSimpleArg(value))
+			}
+			return self
+		},
+
+		/**
+		 * Define substitution variable for software args.
+		 *
+		 * @param varName: string - variable to be substituted in arg value ("var1" would be
+		 *                          substituted in place of {var1} of arg value)
+		 * @param refKey: string - key of ref (added with .ref()) that points to installed software.
+		 */
+		substitutionRule: func(varName, refKey) {
+			substRules[varName] = refKey
+			return self
+		},
+
+		/**
+		 * Batched .substitutionRule() call (add several rules in single call)
+		 *
+		 * @param rules: map[string]string - <var name> -> <ref key> pairs to be added to substitution rules.
+		 */
+		substitutionRules: func(rules) {
+			for k, v in rules {
+				substRules[k] = v
+			}
 			return self
 		},
 
@@ -164,8 +233,11 @@ builder := func(workdir) {
 		build: func() {
 			// TODO: add assertions about the state
 
-			execRefsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, execRefs)
-			self.getField("refs").set(execRefsRes)
+			ll.assert(!hasPatternArgs || len(substRules) != 0,
+				"found pattern argument, but no substitution rules were set")
+
+			refsRes := smart.createMapResourceWithType(_RTYPE_RUN_COMMAND_REFS, refs)
+			self.getField("refs").set(refsRes)
 
 			cmdRes := smart.createValueResource(_RTYPE_RUN_COMMAND_CMD, json.encode(cmd))
 			self.getField("cmd").set(cmdRes)
@@ -175,8 +247,11 @@ builder := func(workdir) {
 				errorLines: nErrorLines,
 				redirectStdout: stdout,
 				redirectStderr: stderr,
-				env: envs
+				env: envs,
+				additionalPaths: customPaths,
+				substitutions: substRules
 			}
+
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(options))
 			self.getField("options").set(optionsRes)
 
