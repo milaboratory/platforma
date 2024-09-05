@@ -54,15 +54,16 @@ export default class Core {
         )
 
         const storageDirs: string[] = [
-            `${configOptions.localRoot}/software`,
-            `${configOptions.localRoot}/software-local`,
-            `${configOptions.localRoot}/blocks/local`,
+            `${configOptions.localRoot}/packages`,
+            `${configOptions.localRoot}/packages-local`,
+            `${configOptions.localRoot}/blocks-local`,
         ]
         if (configOptions.storages.primary.type === 'FS') {
             storageDirs.push(configOptions.storages.primary.rootPath)
         }
         if (configOptions.storages.library.type === 'FS') {
             storageDirs.push(configOptions.storages.library.rootPath)
+            configOptions.hacks.libraryDownloadable = false
         }
         if (configOptions.storages.work.type === 'FS') {
             storageDirs.push(configOptions.storages.work.rootPath)
