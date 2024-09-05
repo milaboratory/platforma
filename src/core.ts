@@ -13,27 +13,27 @@ import * as util from './util';
 import winston from 'winston';
 
 export default class Core {
-    constructor(
-        private readonly logger: winston.Logger,
+  constructor(
+    private readonly logger: winston.Logger,
     ) { }
 
     public startLast() {
-        const result = run.rerunLast(this.logger, { stdio: 'inherit' })
-        this.checkRunError(result, "failed to bring back Platforma Backend in the last started configuration")
+      const result = run.rerunLast(this.logger, { stdio: 'inherit' })
+      this.checkRunError(result, "failed to bring back Platforma Backend in the last started configuration")
     }
 
     public startLocal(options?: startLocalOptions): ChildProcess {
-        const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, "binaries", "platforma")
-        var configPath = options?.configPath
-        const workdir: string = options?.workdir ?? (configPath ? process.cwd() : pkg.state())
+      const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, "binaries", "platforma")
+      var configPath = options?.configPath
+      const workdir: string = options?.workdir ?? (configPath ? process.cwd() : pkg.state())
 
-        if (options?.primaryURL) {
-            options.configOptions = {
-                ...options.configOptions,
-                storages: {
-                    ...options.configOptions?.storages,
-                    primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir),
-                }
+      if (options?.primaryURL) {
+        options.configOptions = {
+          ...options.configOptions,
+          storages: {
+            ...options.configOptions?.storages,
+            primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir),
+          }
             }
         }
         if (options?.libraryURL) {
@@ -437,16 +437,40 @@ ${storageWarns}
             fs.rmSync(dir, { recursive: true, force: true })
         }
 
-        this.logger.info(`Destroying state dir '${pkg.state()}'`)
-        fs.rmSync(pkg.state(), { recursive: true, force: true })
-
-        this.logger.info(`\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`)
+      this.logger.info(`Destroying state dir '${pkg.state()}'`)
+      fs.rmSync(pkg.state(), { recursive: true, force: true })
+      
+      this.logger.info(`\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`)
     }
 
-    public initAuthDriversList(flags: {
-        'auth-htpasswd-file'?: string,
+   public mergeLicenseEnvs(flags: {
+     license?: string,
+    'license-file'?: string,
+  }) {
+      if (flags.license === undefined) {
+       if ((process.env.MI_LICENSE ?? "") != "")
+         flags.license = process.env.MI_LICENSE
 
-        'auth-ldap-server'?: string,
+        else if ((process.env.PL_LICENSE ?? "") != "")
+          flags.license = process.env.PL_LICENSE
+      }
+
+      if (flags['license-file'] === undefined) {
+        if ((process.env.MI_LICENSE_FILE ?? "") != "")
+          flags['license-file'] = process.env.MI_LICENSE_FILE
+        
+        else if ((process.env.PL_LICENSE_FILE ?? "") != "")
+          flags['license-file'] = process.env.PL_LICENSE_FILE
+        
+        else if ((fs.existsSync(path.resolve(os.homedir(), ".pl.license"))))
+          flags['license-file'] = path.resolve(os.homedir(), ".pl.license")
+      }
+    }
+  
+  public initAuthDriversList(flags: {
+    'auth-htpasswd-file'?: string,
+
+    'auth-ldap-server'?: string,
         'auth-ldap-default-dn'?: string,
     }, workdir: string): types.authDriver[] | undefined {
         var authDrivers: types.authDriver[] = []

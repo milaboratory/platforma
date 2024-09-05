@@ -32,6 +32,7 @@ export default class FS extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+    core.mergeLicenseEnvs(flags)
 
     const authEnabled = flags['auth-enabled']
     const authOptions: types.authOptions | undefined = authEnabled ? {
