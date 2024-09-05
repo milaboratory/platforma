@@ -26,8 +26,8 @@ const props = defineProps<{
    */
   label?: string;
   /**
-   * If `true`, a clear icon will appear in the input field to clear the value (set it to 'undefined').
-   * Or you can pass a callback that returns null | undefined | string
+   * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
+   * Or you can pass a callback that returns a custom "empty" value (null | undefined | string)
    */
   clearable?: boolean | (() => E);
   /**
