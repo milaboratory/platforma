@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
 import { FileDialog } from 'lib';
-import { BtnPrimary } from '@milaboratory/platforma-uikit';
+import { PlBtnPrimary } from '@milaboratory/platforma-uikit';
 import '@milaboratory/platforma-uikit/styles';
 // import { useApp } from '../app';
 import { platforma } from '../testApi';
@@ -27,7 +27,7 @@ const onUpdate = (files: unknown) => {
 <template>
   <div class="d-flex column">
     <FileDialog v-model="data.modalOpen" :multi="multi" @update:files="onUpdate" />
-    <BtnPrimary @click.stop="data.modalOpen = true">{{ name }}</BtnPrimary>
+    <PlBtnPrimary @click.stop="data.modalOpen = true">{{ name }}</PlBtnPrimary>
   </div>
 </template>
 

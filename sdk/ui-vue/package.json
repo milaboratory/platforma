@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.0.44",
+  "version": "1.1.0",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -43,7 +43,7 @@
     "vue": "^3.4.31"
   },
   "dependencies": {
-    "@milaboratory/platforma-uikit": "^1.0.32"
+    "@milaboratory/platforma-uikit": "^1.1.1"
   },
   "devDependencies": {
     "@faker-js/faker": "8.4.0",

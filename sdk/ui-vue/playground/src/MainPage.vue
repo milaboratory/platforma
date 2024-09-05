@@ -27,6 +27,6 @@ const removeInstance = () => {
     </fieldset>
     <button @click="data.instances++">Create store</button>
     <button @click="removeInstance">Remove store</button>
-    <store-test v-for="i in data.instances" :key="i" />
+    <StoreTest v-for="i in data.instances" :key="i" />
   </div>
 </template>

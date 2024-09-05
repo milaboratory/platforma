@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { watch, reactive, computed, toRef, onUpdated } from 'vue';
-import { BtnPrimary, BtnGhost, TextField, Dropdown, DialogModal, useEventListener } from '@milaboratory/platforma-uikit';
+import { useEventListener, PlTextField, PlDialogModal, PlDropdown, PlBtnPrimary, PlBtnGhost } from '@milaboratory/platforma-uikit';
 import { debounce } from '@milaboratory/helpers/functions';
 import { between, notEmpty, tapIf } from '@milaboratory/helpers/utils';
 import type { Option } from '@milaboratory/helpers/types';
@@ -288,12 +288,12 @@ const vTextOverflown = {
 </script>
 
 <template>
-  <dialog-modal class="split" :model-value="modelValue" width="688px" height="720px" @update:model-value="closeModal" @click.stop="deselectAll">
+  <PlDialogModal class="split" :model-value="modelValue" width="688px" height="720px" @update:model-value="closeModal" @click.stop="deselectAll">
     <div v-focus class="file-dialog" @keyup.enter="submit">
       <div class="file-dialog__title">{{ title ?? 'Select files' }}</div>
       <div class="file-dialog__search">
-        <dropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
-        <text-field :model-value="data.dirPath" label="Enter path" @update:model-value="updateDirPathDebounced" />
+        <PlDropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
+        <PlTextField :model-value="data.dirPath" label="Enter path" @update:model-value="updateDirPathDebounced" />
       </div>
       <div class="ls-container">
         <div class="ls-head">
@@ -332,9 +332,10 @@ const vTextOverflown = {
         </div>
       </div>
     </div>
-    <div class="form-modal__actions bordered">
-      <btn-primary :disabled="!isReady" @click.stop="submit">Import</btn-primary>
-      <btn-ghost :justify-center="false" @click.stop="closeModal">Cancel</btn-ghost>
+    <!--@todo fix uikit css-->
+    <div style="padding-top: 24px; display: flex; gap: 12px; border-top: 1px solid rgb(225, 227, 235)" class="form-modal__actions bordered">
+      <PlBtnPrimary style="min-width: 160px" :disabled="!isReady" @click.stop="submit">Import</PlBtnPrimary>
+      <PlBtnGhost :justify-center="false" @click.stop="closeModal">Cancel</PlBtnGhost>
     </div>
-  </dialog-modal>
+  </PlDialogModal>
 </template>

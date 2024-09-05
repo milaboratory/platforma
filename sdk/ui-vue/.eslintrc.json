@@ -33,6 +33,8 @@
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/consistent-type-imports": "error",
     "vue/multi-word-component-names": "off",
+    "vue/component-name-in-template-casing": "warn",
+    "vue/no-undef-components": "error",
     "@typescript-eslint/no-explicit-any": "error",
 
   /**

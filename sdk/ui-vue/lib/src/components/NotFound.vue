@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { BtnSecondary } from '@milaboratory/platforma-uikit';
+import { PlBtnSecondary } from '@milaboratory/platforma-uikit';
 import { useSdkPlugin } from '../defineApp';
 
 const sdk = useSdkPlugin();
@@ -16,6 +16,6 @@ const goToMain = () => {
 <template>
   <div class="block__not-found">
     <h1>Not found route: {{ app.navigationState.href }}</h1>
-    <BtnSecondary @click.stop="goToMain">Return to main page</BtnSecondary>
+    <PlBtnSecondary @click.stop="goToMain">Return to main page</PlBtnSecondary>
   </div>
 </template>

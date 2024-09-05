@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { BtnSecondary, MaskIcon } from '@milaboratory/platforma-uikit';
+import { MaskIcon, PlBtnSecondary } from '@milaboratory/platforma-uikit';
 import { strings } from '@milaboratory/helpers';
 import { computed } from 'vue';
 
@@ -69,13 +69,13 @@ function clear() {
 <template>
   <div class="file-content-input">
     <div v-if="hasContent" class="file-content-input__file">
-      <mask-icon name="paper-clip" />
+      <MaskIcon name="paper-clip" />
       <span>{{ fileName }}</span>
-      <mask-icon name="clear" @click.stop="clear" />
+      <MaskIcon name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-content-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
       {{ label }}
-      <btn-secondary small @click.stop="onClickSelect"> Select file </btn-secondary>
+      <PlBtnSecondary small @click.stop="onClickSelect"> Select file </PlBtnSecondary>
     </div>
   </div>
 </template>

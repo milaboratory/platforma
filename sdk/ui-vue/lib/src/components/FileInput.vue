@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import { BtnSecondary, MaskIcon } from '@milaboratory/platforma-uikit';
-import FileDialog from './FileDialog.vue';
+import { MaskIcon, PlBtnSecondary } from '@milaboratory/platforma-uikit';
 import { computed, reactive } from 'vue';
 import type { ImportedFiles } from '../types';
 import type { ImportFileHandle } from '@milaboratory/sdk-ui';
 import { getFilePathFromHandle } from '@milaboratory/sdk-ui';
+import FileDialog from './FileDialog.vue';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -96,14 +96,14 @@ const clear = () => emit('update:modelValue', undefined);
 <template>
   <div class="file-input">
     <div v-if="modelValue" class="file-input__file">
-      <mask-icon name="paper-clip" />
+      <MaskIcon name="paper-clip" />
       <span @click.stop="openFileDialog">{{ fileName }}</span>
-      <mask-icon name="clear" @click.stop="clear" />
+      <MaskIcon name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
       {{ placeholder ?? 'Drag & drop file here or' }}
-      <btn-secondary @click.stop="openFileDialog">Select file</btn-secondary>
+      <PlBtnSecondary @click.stop="openFileDialog">Select file</PlBtnSecondary>
     </div>
   </div>
-  <file-dialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" @import:files="onImport" />
+  <FileDialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" @import:files="onImport" />
 </template>
