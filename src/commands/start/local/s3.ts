@@ -39,6 +39,7 @@ export default class FS extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+    core.mergeLicenseEnvs(flags)
 
     const workdir = flags['pl-workdir'] ?? "."
     const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined

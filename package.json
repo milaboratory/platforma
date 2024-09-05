@@ -5,7 +5,8 @@
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "build": "rm -rf ./dist/ && tsc",
-    "test": "jest"
+    "test": "jest",
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "bin": {
     "pl-service": "./bin/run.js"
