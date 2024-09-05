@@ -21,13 +21,10 @@ export const VersionFlag = {
     })
 }
 
-export const LicenseFlag = {
+export const LicenseFlags = {
   'license': Flags.string({
     description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".',
   }),
-}
-
-export const LicenseFileFlag = {
   'license-file': Flags.file({
     exists: true,
     description: "specify a path to the file with a license. The license can be got from 'https://licensing.milaboratories.com'.",
