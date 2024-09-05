@@ -48,6 +48,11 @@ export default class Core {
 
         const configOptions = plCfg.loadDefaults(options?.configOptions)
 
+        this.checkLicense(
+            options?.configOptions?.license?.value,
+            options?.configOptions?.license?.file,
+        )
+
         const storageDirs: string[] = [
             `${configOptions.localRoot}/packages`,
             `${configOptions.localRoot}/packages-local`,
@@ -197,13 +202,19 @@ export default class Core {
         version?: string,
         primaryURL?: string,
         auth?: types.authOptions,
+        license?: string,
+        licenseFile?: string,
     }) {
         const composeS3Path = pkg.assets("compose-s3.yaml")
         const image = options?.image ?? pkg.plImageTag(options?.version)
 
+        this.checkLicense(options?.license, options?.licenseFile)
+
         const envs: NodeJS.ProcessEnv = {
             "PL_IMAGE": image,
             'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
+            'PL_LICENSE': options?.license,
+            'PL_LICENSE_FILE': options?.licenseFile,
         }
 
         if (options?.auth) {
@@ -266,6 +277,8 @@ export default class Core {
         image?: string,
         version?: string,
         auth?: types.authOptions,
+        license?: string,
+        licenseFile?: string,
     }) {
         var composeFSPath = pkg.assets("compose-fs.yaml")
         var composeRunPath = pkg.state("compose-fs.yaml")
@@ -274,12 +287,15 @@ export default class Core {
         const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath
         const libraryStorage = options?.libraryStorage ?? state.lastRun?.docker?.libraryPath
 
+        this.checkLicense(options?.license, options?.licenseFile)
         this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath)
         this.checkVolumeConfig('library', libraryStorage, state.lastRun?.docker?.libraryPath)
 
         const envs: NodeJS.ProcessEnv = {
             "PL_IMAGE": image,
             'PL_AUTH_HTPASSWD_PATH': pkg.assets("users.htpasswd"),
+            'PL_LICENSE': options?.license,
+            'PL_LICENSE_FILE': options?.licenseFile,
         }
         const compose = this.readComposeFile(composeFSPath)
 
@@ -428,6 +444,31 @@ ${storageWarns}
         this.logger.info(`\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`)
     }
 
+    public mergeLicenseEnvs(flags: {
+        license?: string,
+        'license-file'?: string,
+    }) {
+        if (flags.license === undefined) {
+            if ((process.env.MI_LICENSE ?? "") != "")
+                flags.license = process.env.MI_LICENSE
+
+            else if ((process.env.PL_LICENSE ?? "") != "")
+                flags.license = process.env.PL_LICENSE
+        }
+
+        // set 'license-file' only if license is still undefined
+        if (flags['license-file'] === undefined && flags.license === undefined) {
+            if ((process.env.MI_LICENSE_FILE ?? "") != "")
+                flags['license-file'] = process.env.MI_LICENSE_FILE
+
+            else if ((process.env.PL_LICENSE_FILE ?? "") != "")
+                flags['license-file'] = process.env.PL_LICENSE_FILE
+
+            else if ((fs.existsSync(path.resolve(os.homedir(), ".pl.license"))))
+                flags['license-file'] = path.resolve(os.homedir(), ".pl.license")
+        }
+    }
+
     public initAuthDriversList(flags: {
         'auth-htpasswd-file'?: string,
 
@@ -484,6 +525,29 @@ ${storageWarns}
             })
 
         if (result.status !== 0) process.exit(result.status)
+    }
+
+    private checkLicense(value?: string, file?: string) {
+        if (value !== undefined && value != "")
+            return;
+
+        if (file !== undefined && file != "")
+            return;
+
+      this.logger.error(`A license for Platforma Backend must be set.
+
+You can provide the license directly using the '--license' flag
+or use the '--license-file' flag if the license is stored in a file.
+
+Alternatively, you can set it via the environment variables 'MI_LICENSE' or 'PL_LICENSE'.
+
+The license file can also be set with the variables 'MI_LICENSE_FILE' or 'PL_LICENSE_FILE',
+or stored in '$HOME/.pl.license'.
+
+You can obtain the license from "https://licensing.milaboratories.com".`)
+
+      throw new Error(`The license was not provided.`)
+
     }
 
     private checkVolumeConfig(volumeID: string, newPath?: string, lastRunPath?: string) {

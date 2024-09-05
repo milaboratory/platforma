@@ -18,7 +18,8 @@ export default class FS extends Command {
     ...cmdOpts.VersionFlag,
 
     ...cmdOpts.AuthFlags,
-
+    ...cmdOpts.LicenseFlags,
+    
     ...cmdOpts.StoragePrimaryPathFlag,
     ...cmdOpts.StorageWorkPathFlag,
     ...cmdOpts.StorageLibraryPathFlag,
@@ -29,6 +30,7 @@ export default class FS extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+    core.mergeLicenseEnvs(flags)
 
     const authEnabled = flags['auth-enabled']
     const authOptions: types.authOptions | undefined = authEnabled ? {
@@ -44,6 +46,9 @@ export default class FS extends Command {
       image: flags.image,
       version: flags.version,
 
+      license: flags['license'],
+      licenseFile: flags['license-file'],
+      
       auth: authOptions,
     })
   }

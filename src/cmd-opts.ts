@@ -21,9 +21,19 @@ export const VersionFlag = {
     })
 }
 
+export const LicenseFlags = {
+  'license': Flags.string({
+    description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".',
+  }),
+  'license-file': Flags.file({
+    exists: true,
+    description: "specify a path to the file with a license. The license can be got from 'https://licensing.milaboratories.com'.",
+  })
+}
+
 export const StorageFlag = {
-    storage: Flags.string({
-        description: "specify path on host to be used as storage for all Platforma Backend data",
+  storage: Flags.string({
+    description: "specify path on host to be used as storage for all Platforma Backend data",
     })
 }
 
