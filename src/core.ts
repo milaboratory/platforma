@@ -456,7 +456,8 @@ ${storageWarns}
                 flags.license = process.env.PL_LICENSE
         }
 
-        if (flags['license-file'] === undefined) {
+        // set 'license-file' only if license is still undefined
+        if (flags['license-file'] === undefined && flags.license === undefined) {
             if ((process.env.MI_LICENSE_FILE ?? "") != "")
                 flags['license-file'] = process.env.MI_LICENSE_FILE
 
