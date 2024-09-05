@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import { PlTooltip } from '@milaboratory/platforma-uikit.lib';
+import { reactive } from 'vue';
 
-const delay = 1000;
+const data = reactive({
+  delay: 1000,
+});
 </script>
 
 <template>
   <Layout>
+    <div>
+      <input v-model.number="data.delay" />
+    </div>
     <div class="line">
-      <PlTooltip class="tt" :delay="delay" position="top">
+      <PlTooltip class="tt" :delay="data.delay" position="top">
         <span>Top position</span>
         <template #tooltip>
           Tooltip content<br />
@@ -17,7 +23,7 @@ const delay = 1000;
         </template>
       </PlTooltip>
 
-      <PlTooltip class="tt" :delay="delay" position="left">
+      <PlTooltip class="tt" :delay="data.delay" position="left">
         <span>Left position</span>
         <template #tooltip>
           PlTooltip content<br />
@@ -31,7 +37,7 @@ const delay = 1000;
       </PlTooltip>
     </div>
     <div class="line">
-      <PlTooltip class="tt" :delay="delay" position="top-left">
+      <PlTooltip class="tt" :delay="data.delay" position="top-left">
         <span>Top left</span>
         <template #tooltip>
           PlTooltip content<br />
@@ -42,7 +48,7 @@ const delay = 1000;
         </template>
       </PlTooltip>
 
-      <PlTooltip class="tt" :delay="delay" position="right">
+      <PlTooltip class="tt" :delay="data.delay" position="right">
         <span>Right</span>
         <template #tooltip>
           PlTooltip content<br />
@@ -55,14 +61,14 @@ const delay = 1000;
     </div>
 
     <div class="line">
-      <PlTooltip position="top-left">
+      <PlTooltip position="top-left" :delay="data.delay">
         <template #tooltip> PlTooltip content </template>
         <button class="nn">Top left</button>
       </PlTooltip>
     </div>
 
     <div class="line">
-      <PlTooltip element="span" position="top-left">
+      <PlTooltip element="span" position="top-left" :delay="data.delay">
         I am a span element
         <template #tooltip> PlTooltip for span </template>
       </PlTooltip>

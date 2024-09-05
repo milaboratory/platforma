@@ -136,7 +136,6 @@
 }
 
 @mixin field-helper {
-  position: relative;
   font-size: 12px;
   color: var(--txt-03);
   padding: 2px 0 0;
@@ -148,7 +147,6 @@
 }
 
 @mixin field-error {
-  position: relative;
   font-size: 12px;
   color: var(--txt-error);
   padding: 2px 0 0;

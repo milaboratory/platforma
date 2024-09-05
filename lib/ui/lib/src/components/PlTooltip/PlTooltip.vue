@@ -10,8 +10,12 @@ const props = withDefaults(
   defineProps<{
     /**
      * delay in milliseconds before the tooltip disappears
+     * @todo rename
      */
     delay?: number;
+    /**
+     * Tooltip position
+     */
     position?: 'top-left' | 'left' | 'right' | 'top';
     /**
      * external prop to hide tooltips
@@ -97,9 +101,8 @@ useClickOutside([root, tooltip], () => closeTooltip());
       <Transition name="tooltip">
         <div v-if="data.open" class="ui-tooltip__container" :style="style">
           <div ref="tooltip" class="ui-tooltip" :class="position" @mouseover="onOver" @mouseleave="onLeave">
-            <div>
-              <slot name="tooltip" />
-            </div>
+            <!-- should be one line -->
+            <div><slot name="tooltip" /></div>
             <svg class="beak" width="5" height="9" viewBox="0 0 3 8" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4.00222 8.00933L0 4.00711L4.00222 0.00488281L4.00222 8.00933Z" fill="#24223D" />
             </svg>

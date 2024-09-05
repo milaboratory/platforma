@@ -9,9 +9,6 @@ describe('TextField', () => {
       props: {
         label: 'TextField Label',
       },
-      slots: {
-        default: 'Button text',
-      },
     });
     expect(wrapper.text()).toContain('TextField Label');
   });
@@ -20,11 +17,13 @@ describe('TextField', () => {
     const wrapper = mount(PlTextField, {
       props: {
         modelValue: 'initialText',
-        'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
+        'onUpdate:modelValue': (e: string) => wrapper.setProps({ modelValue: e }),
       },
     });
 
     await wrapper.find('input').setValue('test');
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error @TODO generic component issue
     expect(wrapper.props('modelValue')).toBe('test');
   });
 });

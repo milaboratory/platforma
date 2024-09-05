@@ -11,7 +11,8 @@
   --label-offset-right-x: 8px;
   --prefix-color: var(--color-placeholder);
 
-  width: 100%;
+  width: 100%; // @TODO
+  max-width: 100%;
   min-height: var(--control-height);
   position: relative;
   border-radius: var(--border-radius-control);
