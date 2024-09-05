@@ -1,15 +1,14 @@
-import { Command } from '@oclif/core'
-import Core from '../../../core'
-import * as cmdOpts from '../../../cmd-opts'
-import * as util from '../../../util'
-import * as types from '../../../templates/types'
+import { Command } from '@oclif/core';
+import Core from '../../../core';
+import * as cmdOpts from '../../../cmd-opts';
+import * as util from '../../../util';
+import * as types from '../../../templates/types';
 
 export default class S3 extends Command {
-  static override description = 'Run platforma backend service with \'S3\' primary storage type'
+  static override description =
+    "Run platforma backend service with 'S3' primary storage type";
 
-  static override examples = [
-    '<%= config.bin %> <%= command.id %>',
-  ]
+  static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
@@ -17,21 +16,23 @@ export default class S3 extends Command {
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
     ...cmdOpts.LicenseFlags,
-    ...cmdOpts.AuthFlags,
-  }
+    ...cmdOpts.AuthFlags
+  };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(S3)
+    const { flags } = await this.parse(S3);
 
-    const logger = util.createLogger(flags['log-level'])
-    const core = new Core(logger)
-    core.mergeLicenseEnvs(flags)
+    const logger = util.createLogger(flags['log-level']);
+    const core = new Core(logger);
+    core.mergeLicenseEnvs(flags);
 
-    const authEnabled = flags['auth-enabled']
-    const authOptions: types.authOptions | undefined = authEnabled ? {
-      enabled: authEnabled,
-      drivers: core.initAuthDriversList(flags, '.')
-    } : undefined
+    const authEnabled = flags['auth-enabled'];
+    const authOptions: types.authOptions | undefined = authEnabled
+      ? {
+          enabled: authEnabled,
+          drivers: core.initAuthDriversList(flags, '.')
+        }
+      : undefined;
 
     core.startDockerS3({
       image: flags.image,
@@ -40,7 +41,7 @@ export default class S3 extends Command {
       license: flags['license'],
       licenseFile: flags['license-file'],
 
-      auth: authOptions,
-    })
+      auth: authOptions
+    });
   }
 }
