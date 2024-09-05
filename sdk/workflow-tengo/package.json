@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/tengo-sdk",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Tengo SDK library",
   "homepage": "https://docs.platforma.bio/",
   "author": {
@@ -35,7 +35,8 @@
     "@milaboratory/tengo-template-builder": "^1.13.0",
     "@milaboratory/pl-middle-layer": "^1.10.2",
     "@milaboratory/sdk-test": "^1.5.3",
-    "@milaboratory/small-binaries": "^1.10.0",
+    "@milaboratory/small-binaries": "^1.10.1",
+    "@milaboratory/pframes-conv": "^0.4.25",
     "vitest": "^2.0.5"
   }
 }
