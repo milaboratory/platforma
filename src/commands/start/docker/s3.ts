@@ -16,10 +16,7 @@ export default class S3 extends Command {
 
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
-
-    ...cmdOpts.LicenseFlag,
-    ...cmdOpts.LicenseFileFlag,
-    
+    ...cmdOpts.LicenseFlags,
     ...cmdOpts.AuthFlags,
   }
 

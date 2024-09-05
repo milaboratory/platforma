@@ -18,9 +18,7 @@ export default class FS extends Command {
     ...cmdOpts.VersionFlag,
 
     ...cmdOpts.AuthFlags,
-
-    ...cmdOpts.LicenseFlag,
-    ...cmdOpts.LicenseFileFlag,
+    ...cmdOpts.LicenseFlags,
     
     ...cmdOpts.StoragePrimaryPathFlag,
     ...cmdOpts.StorageWorkPathFlag,

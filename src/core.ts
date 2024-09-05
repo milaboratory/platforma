@@ -414,7 +414,7 @@ export default class Core {
         var warnMessage = `
 You are going to reset the state of platforma service
 Things to be removed:
-- ${removeWarns.join("\n  - ")}
+  - ${removeWarns.join("\n  - ")}
 ${storageWarns}
 `
         this.logger.warn(warnMessage)
@@ -533,13 +533,19 @@ ${storageWarns}
         if (file !== undefined && file != "")
             return;
 
-        this.logger.error(`License for Platforma Backend must be set.
+      this.logger.error(`A license for Platforma Backend must be set.
 
-Use '--license' flag for providing the license directly,
-or '--license-file' flags if it's stored in the file.
-The license can be got from "https://licensing.milaboratories.com".`)
+You can provide the license directly using the '--license' flag
+or use the '--license-file' flag if the license is stored in a file.
 
-        throw new Error(`The license was not provided.`)
+Alternatively, you can set it via the environment variables 'MI_LICENSE' or 'PL_LICENSE'.
+
+The license file can also be set with the variables 'MI_LICENSE_FILE' or 'PL_LICENSE_FILE',
+or stored in '$HOME/.pl.license'.
+
+You can obtain the license from "https://licensing.milaboratories.com".`)
+
+      throw new Error(`The license was not provided.`)
 
     }
 
