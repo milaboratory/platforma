@@ -158,17 +158,17 @@ export default class Core {
         const result = spawnSync(
             'docker',
             ['compose', `--file=${composeMinioDst}`,
-             'up',
-             '--detach',
-             '--remove-orphans',
-             '--pull=missing'],
+                'up',
+                '--detach',
+                '--remove-orphans',
+                '--pull=missing'],
             {
-                 env: {
-                     ...process.env,
-                     ...envs
-                 },
-                 stdio: 'inherit'
-             },
+                env: {
+                    ...process.env,
+                    ...envs
+                },
+                stdio: 'inherit'
+            },
         )
 
         this.checkRunError(result, "failed to start MinIO service in docker")
@@ -251,19 +251,19 @@ export default class Core {
         const result = run.runDocker(
             this.logger,
             ['compose', `--file=${composeS3Path}`,
-             'up',
-             '--detach',
-             '--remove-orphans',
-             '--pull=missing',
-             'backend'],
+                'up',
+                '--detach',
+                '--remove-orphans',
+                '--pull=missing',
+                'backend'],
             {
-                 env: envs,
-                 stdio: 'inherit'
-             },
+                env: envs,
+                stdio: 'inherit'
+            },
             {
-                 plImage: image,
-                 composePath: composeS3Path
-             }
+                plImage: image,
+                composePath: composeS3Path
+            }
         );
 
         this.checkRunError(result, "failed to start Platforma Backend in Docker")
@@ -339,22 +339,22 @@ export default class Core {
         const result = run.runDocker(
             this.logger,
             ['compose', `--file=${composeFSPath}`,
-             'up',
-             '--detach',
-             '--remove-orphans',
-             '--pull=missing',
-             'backend'],
+                'up',
+                '--detach',
+                '--remove-orphans',
+                '--pull=missing',
+                'backend'],
             {
-                 env: envs,
-                 stdio: 'inherit'
-             },
+                env: envs,
+                stdio: 'inherit'
+            },
             {
-                 plImage: image,
-                 composePath: composeFSPath,
-                 primaryPath: primaryStorage ? path.resolve(primaryStorage) : "",
-                 workPath: workStorage ? path.resolve(workStorage) : "",
-                 libraryPath: libraryStorage ? path.resolve(libraryStorage) : "",
-             }
+                plImage: image,
+                composePath: composeFSPath,
+                primaryPath: primaryStorage ? path.resolve(primaryStorage) : "",
+                workPath: workStorage ? path.resolve(workStorage) : "",
+                libraryPath: libraryStorage ? path.resolve(libraryStorage) : "",
+            }
         );
 
         this.checkRunError(result, "failed to start Platforma Backend in Docker")
@@ -560,7 +560,7 @@ The license can be got from "https://licensing.milaboratories.com".`)
             `  current bind path: '${lastRunPath}'\n` +
             `  new bind path:     '${path.resolve(newPath)}'\n` +
             `Your '${volumeID}' storage path change would not have effect until reset (pl-service reset)`
-                         )
+        )
         throw new Error(`cannot change '${volumeID}' storage path`)
     }
 
