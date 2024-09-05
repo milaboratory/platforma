@@ -93,7 +93,7 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
       break;
 
     default:
-      throw new Error("work storage MUST have 'FS' type as it is used for working directories management")
+        throw new Error("work storage MUST have 'FS' type as it is used for working directories management")
   }
 
   const library = defaultStorageSettings('library', `${localRoot}/storages/library`, 'library-bucket', options?.storages?.library)
@@ -106,9 +106,13 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
     enabled: defaultBool(options?.debug?.enabled, true),
     listen: options?.debug?.listen ?? '127.0.0.1:9091',
   }
+  const license: types.licenseSettings = {
+    value: options?.license?.value ?? "",
+    file: options?.license?.file ?? "",
+  }
 
   return {
-    localRoot, log, grpc, core, monitoring, debug,
+    localRoot, license, log, grpc, core, monitoring, debug,
     storages: { primary, work, library },
     hacks: { libraryDownloadable: true },
   }
@@ -156,6 +160,10 @@ export function render(options: types.plSettings): string {
   const libraryDownloadable = options.hacks.libraryDownloadable ? "true" : "false"
 
   return `
+license:
+  value: '${options.license.value}'
+  file: '${options.license.file}'
+
 logging:
   level: '${options.log.level}'
   destinations:

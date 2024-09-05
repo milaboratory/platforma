@@ -16,7 +16,7 @@ export default class S3 extends Command {
 
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
-
+    ...cmdOpts.LicenseFlags,
     ...cmdOpts.AuthFlags,
   }
 
@@ -25,6 +25,7 @@ export default class S3 extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+    core.mergeLicenseEnvs(flags)
 
     const authEnabled = flags['auth-enabled']
     const authOptions: types.authOptions | undefined = authEnabled ? {
@@ -35,6 +36,9 @@ export default class S3 extends Command {
     core.startDockerS3({
       image: flags.image,
       version: flags.version,
+
+      license: flags['license'],
+      licenseFile: flags['license-file'],
 
       auth: authOptions,
     })

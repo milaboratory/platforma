@@ -21,6 +21,8 @@ export default class FS extends Command {
 
     ...cmdOpts.ConfigFlag,
 
+    ...cmdOpts.LicenseFlags,
+    
     ...cmdOpts.StorageFlag,
     ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
@@ -36,6 +38,7 @@ export default class FS extends Command {
 
     const logger = util.createLogger(flags['log-level'])
     const core = new Core(logger)
+    core.mergeLicenseEnvs(flags)
 
     const workdir = flags['pl-workdir'] ?? "."
     const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined
@@ -59,6 +62,7 @@ export default class FS extends Command {
       libraryURL: flags['storage-library'],
 
       configOptions: {
+        license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,
         core: {
