@@ -4,6 +4,9 @@ import Core, { startLocalFSOptions } from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
 import * as util from '../../../util';
+import * as os from 'node:os';
+import * as fs from 'node:fs';
+import * as pkg from '../../../package';
 
 export default class FS extends Command {
   static override description =
