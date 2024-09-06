@@ -12,6 +12,8 @@ util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
 
+pfconvSw := assets.importSoftware("@milaboratory/pframes-conv:main")
+
 /**
  * Calculate axes spec from pfconv spec
  */
@@ -71,7 +73,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	// convert csv to p-frame and read resulting data
 	pfconv := exec.builder().
-		cmd("pfconv"). // @TODO change to software once possible
+		software(pfconvSw).
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
