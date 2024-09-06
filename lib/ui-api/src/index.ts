@@ -1,12 +1,13 @@
-export * from './config';
 export * from './block_state_patch';
 export * from './block_state_util';
 export * from './builder';
-export * from './ref_util';
+export * from './components';
+export * from './config';
+export * from './pframe';
 export * from './platforma';
+export * from './ref_util';
 export * from './render';
 export * from './sdk_info';
-export * from './pframe';
 
 // reexporting everything from SDK model
 export * from '@milaboratory/sdk-model';
