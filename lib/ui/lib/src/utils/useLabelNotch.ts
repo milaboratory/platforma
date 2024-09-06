@@ -4,6 +4,8 @@ import { onChanged } from '@/composition/utils';
 import { call } from '@/helpers/utils';
 import { startResizeObserving, stopResizeObserving } from '@/global/resizeObserver';
 
+const offset = 8; // see --label-offset-left-x css var
+
 const contourOffset = 4; // see --contour-offset css var
 
 /**
@@ -24,11 +26,12 @@ export function useLabelNotch(root: Ref<HTMLElement | undefined>, labelSelector 
 
       startResizeObserving(label, () => {
         const rightOffset = call(() => {
-          const offset = getComputedStyle(label).getPropertyValue('--label-offset-left-x');
-          return label.getBoundingClientRect().width + tap(parseInt(offset, 10), (n) => (Number.isNaN(n) ? contourOffset : n + contourOffset)); //
+          return label.getBoundingClientRect().width + tap(offset, (n) => (Number.isNaN(n) ? contourOffset : n + contourOffset)); //
         });
 
-        el.style.setProperty('--label-offset-right-x', `${rightOffset}px`);
+        if (el.style.getPropertyValue('--label-offset-right-x') !== `${rightOffset}px`) {
+          el.style.setProperty('--label-offset-right-x', `${rightOffset}px`);
+        }
       });
     });
   });

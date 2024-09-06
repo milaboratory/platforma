@@ -61,6 +61,11 @@
   --gradient-red: linear-gradient(0deg, #ffd5cc 0%, #ff9494 100%);
   --gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
   --TT-gradient-violet: linear-gradient(180deg, #bca3ff 0%, #e5e5ff 100%);
+
+  // Layout
+  --main-spacing: 24px;
+  --gap-v: 24px;
+  --gap-h: 12px;
 }
 
 [data-theme='dark'] {

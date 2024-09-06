@@ -200,8 +200,6 @@ function getHint() {
     { r: right3, th: thumbRef3 },
   ].sort((a, b) => a.r - b.r);
 
-  console.log(arr);
-
   if (arr[0].th.value) {
     arr[0].th.value.dataset.hint = 'high';
   }
@@ -215,8 +213,6 @@ function getHint() {
 }
 
 function handleKeyPress(e: { code: string; preventDefault(): void }, index: number) {
-  console.log(e.code, index);
-
   if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Enter'].includes(e.code)) {
     e.preventDefault();
   }

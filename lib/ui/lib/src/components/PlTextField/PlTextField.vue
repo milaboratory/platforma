@@ -1,4 +1,12 @@
+<script lang="ts">
+/**  Component for one-line string data manipulation */
+export default {
+  name: 'PlTextField',
+};
+</script>
+
 <script lang="ts" setup generic="M extends string | null | undefined = string, E extends M = M">
+import './pl-text-field.scss';
 import { computed, ref, useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';

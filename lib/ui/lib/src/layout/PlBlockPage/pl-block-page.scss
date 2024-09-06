@@ -1,0 +1,35 @@
+.pl-block-page {
+  padding: var(--container-spacing);
+  background-color: var(--bg-elevated-01);
+
+  &__title {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+
+    h1 {
+      margin: 0;
+      color: var(--txt-01);
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 32px;
+      letter-spacing: -0.56px;
+    }
+
+    &__append {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-v);
+    padding: var(--main-spacing, 24px);
+  }
+}

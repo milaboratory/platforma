@@ -8,6 +8,16 @@ import type * as GridTableTypes from './components/GridTable/types';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
 
 /**
+ * Layout components
+ */
+
+export * from './layout/PlBlockPage';
+export * from './layout/PlContainer';
+export * from './layout/PlRow';
+export * from './layout/PlSpacer';
+export * from './layout/PlGrid';
+
+/**
  * Components
  */
 export * from './components/PlAlert';

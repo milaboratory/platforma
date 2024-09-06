@@ -8,6 +8,7 @@ describe('TextField', () => {
     const wrapper = mount(PlTextField, {
       props: {
         label: 'TextField Label',
+        modelValue: '',
       },
     });
     expect(wrapper.text()).toContain('TextField Label');

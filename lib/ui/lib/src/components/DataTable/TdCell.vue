@@ -32,7 +32,6 @@ const onClick = (ev: MouseEvent) => {
 };
 
 const onContextMenu = (ev: MouseEvent, row: Row) => {
-  console.log('ev', ev);
   if (ev.type === 'contextmenu') {
     ev.preventDefault();
   } else {

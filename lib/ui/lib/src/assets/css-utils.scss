@@ -115,9 +115,6 @@
   align-items: center;
   justify-content: center;
 }
-// .gap-4 {
-//   gap: 4px;
-// }
 
 @for $i from 1 through 15 {
   .gap-#{$i} {

@@ -7,6 +7,11 @@ export const routes = [
     component: () => import('@/alerts/index.vue'),
   },
   {
+    name: 'Layout',
+    path: '/layout',
+    component: () => import('@/layout/index.vue'),
+  },
+  {
     name: 'Data Table',
     path: '/data-table',
     component: () => import('@/data-table/index.vue'),
