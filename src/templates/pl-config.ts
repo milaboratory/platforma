@@ -53,7 +53,7 @@ export function storageSettingsFromURL(
   }
 }
 
-export function loadDefaults(options?: types.plOptions): types.plSettings {
+export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
   const localRoot = options?.localRoot ?? pkg.state('local-pl');
 
   const log: types.logSettings = {
@@ -79,7 +79,7 @@ export function loadDefaults(options?: types.plOptions): types.plSettings {
     auth: {
       enabled: options?.core?.auth?.enabled ?? false,
       drivers: options?.core?.auth?.drivers ?? [
-        { driver: 'jwt', key: randomStr(64) },
+        { driver: 'jwt', key: jwtKey },
         { driver: 'htpasswd', path: `${localRoot}/users.htpasswd` }
       ]
     }

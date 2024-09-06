@@ -55,7 +55,7 @@ export default class Core {
       };
     }
 
-    const configOptions = plCfg.loadDefaults(options?.configOptions);
+    const configOptions = plCfg.loadDefaults(this.getLastJwt(), options?.configOptions);
 
     this.checkLicense(
       options?.configOptions?.license?.value,
@@ -545,9 +545,27 @@ ${storageWarns}
     }
 
     return [
-      { driver: 'jwt', key: util.randomStr(32) },
+      { driver: 'jwt', key: this.getLastJwt() },
       ...authDrivers
     ] as types.authDriver[];
+  }
+
+  /** Gets the last stored JWT secret key or generates it and stores in a file. */
+  public getLastJwt() {
+    const jwtFile = pkg.state('auth.jwt');
+    const encoding = 'utf-8';
+
+    let lastJwt = ""
+    try {
+      lastJwt = fs.readFileSync(jwtFile, { encoding });
+    } catch (e: any) {}
+
+    if (lastJwt == "") {
+      lastJwt = util.randomStr(64);
+      fs.writeFileSync(jwtFile, lastJwt, { encoding });
+    }
+
+    return lastJwt;
   }
 
   private destroyDocker(composePath: string, image: string) {
