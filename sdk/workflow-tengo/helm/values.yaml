@@ -231,7 +231,7 @@ app:
       listen: "0.0.0.0:6345"
 
     license:
-       value: "${PL_LICENSE}"
+      value: "env:PL_LICENSE"
 
     core:
       logging:

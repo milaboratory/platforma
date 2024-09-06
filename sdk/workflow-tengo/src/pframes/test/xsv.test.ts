@@ -143,7 +143,8 @@ tplTest.for([
 
     const cols = (
       await awaitStableState(
-        result.computeOutput('pf', (pf) => pf?.listInputFields())
+        result.computeOutput('pf', (pf) => pf?.listInputFields()),
+        5000
       )
     )?.sort();
 

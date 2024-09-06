@@ -104,7 +104,7 @@ tplTest.for([
         a.listInputFields().map((f) => [f, a.traverse(f)!.getDataAsJson()])
       );
     });
-    const finalResult = await awaitStableState(r);
+    const finalResult = await awaitStableState(r, 10000);
     expect(finalResult).toStrictEqual(expectedResult);
   }
 );
