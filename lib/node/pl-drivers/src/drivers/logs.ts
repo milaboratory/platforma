@@ -29,7 +29,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable();
+      ctx.markUnstable('no stream in stream manager');
       return undefined;
     }
 
@@ -40,7 +40,7 @@ export class LogsDriver implements sdk.LogsDriver {
       return this.logsStreamDriver.getLastLogs(stream, lines, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-        ctx.markUnstable();
+        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting last logs: ${e}`);
         return undefined;
       }
       throw e;
@@ -70,7 +70,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable();
+      ctx.markUnstable('no stream in stream manager');
       return undefined;
     }
 
@@ -81,7 +81,7 @@ export class LogsDriver implements sdk.LogsDriver {
       return this.logsStreamDriver.getProgressLog(stream, patternToSearch, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-        ctx.markUnstable();
+        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log: ${e}`);
         return undefined;
       }
       throw e;
@@ -106,7 +106,7 @@ export class LogsDriver implements sdk.LogsDriver {
 
     const stream = streamManagerGetStream(ctx, res);
     if (stream === undefined) {
-      ctx.markUnstable();
+      ctx.markUnstable('no stream in stream manager');
       return undefined;
     }
 

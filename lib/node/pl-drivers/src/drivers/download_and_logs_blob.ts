@@ -149,7 +149,8 @@ export class DownloadDriver implements BlobDriver {
       rInfo as ResourceSnapshot,
       callerId
     );
-    if (result == undefined) ctx.markUnstable();
+    if (result == undefined)
+      ctx.markUnstable('download blob is still undefined');
 
     return result;
   }
@@ -179,7 +180,6 @@ export class DownloadDriver implements BlobDriver {
     ctx.addOnDestroy(() => this.releaseOnDemandBlob(rInfo.id, callerId));
 
     const result = this.getOnDemandBlobNoCtx(ctx.watcher, rInfo, callerId);
-    if (result == undefined) ctx.markUnstable();
 
     return result;
   }
@@ -251,7 +251,7 @@ export class DownloadDriver implements BlobDriver {
     w: Watcher,
     info: OnDemandBlobResourceSnapshot,
     callerId: string
-  ): RemoteBlobHandleAndSize | undefined {
+  ): RemoteBlobHandleAndSize {
     let blob = this.idToOnDemand.get(info.id);
 
     if (blob === undefined) {
@@ -296,7 +296,8 @@ export class DownloadDriver implements BlobDriver {
       lines,
       callerId
     );
-    if (result == undefined) ctx.markUnstable();
+    if (result == undefined)
+      ctx.markUnstable('either a file was not downloaded or logs was not read');
 
     return result;
   }
@@ -357,7 +358,8 @@ export class DownloadDriver implements BlobDriver {
       patternToSearch,
       callerId
     );
-    if (result === undefined) ctx.markUnstable();
+    if (result === undefined)
+      ctx.markUnstable('either a file was not downloaded or a progress log was not read');
 
     return result;
   }
@@ -469,7 +471,7 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-              `from cache along with ${toDelete.map((d) => d.path)}`
+            `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );

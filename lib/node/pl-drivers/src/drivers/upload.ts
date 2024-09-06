@@ -123,8 +123,10 @@ export class UploadDriver {
     ctx.addOnDestroy(() => this.release(rInfo.id, callerId));
 
     const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
-    if (result == undefined || !isProgressStable(result)) {
-      ctx.markUnstable();
+    if (!isProgressStable(result)) {
+      ctx.markUnstable(
+        `upload/index progress was got, but it's not stable: ${result}`
+      );
     }
 
     return result;
@@ -310,6 +312,8 @@ class ProgressUpdater {
     try {
       await this.uploadBlob();
     } catch (e: any) {
+      this.setLastError(e);
+
       if (
         e.name == 'RpcError' &&
         (e.code == 'NOT_FOUND' ||
@@ -324,7 +328,6 @@ class ProgressUpdater {
       }
 
       this.logger.error(`error while uploading a blob: ${e}`);
-      this.setLastError(e);
       this.change.markChanged();
 
       if (e instanceof MTimeError) this.terminateWithError(e);
@@ -374,7 +377,6 @@ class ProgressUpdater {
 
   private setDone(done: boolean) {
     this.progress.done = done;
-    if (done) this.progress.lastError = undefined;
   }
 
   async updateStatus() {
@@ -388,15 +390,20 @@ class ProgressUpdater {
       if (status.done || status.progress != oldStatus?.progress)
         this.change.markChanged();
     } catch (e: any) {
+      this.setLastError(e);
+
       if (
         e.name == 'RpcError' &&
-        (e.code == 'NOT_FOUND' || e.code == 'ABORTED')
+        (e.code == 'NOT_FOUND' ||
+          e.code == 'ABORTED' ||
+          e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(
           `resource was not found while updating a status of BlobIndex: ${e}, ${stringifyWithResourceId(this.res)}`
         );
         this.change.markChanged();
         this.setDone(true);
+
         return;
       }
 

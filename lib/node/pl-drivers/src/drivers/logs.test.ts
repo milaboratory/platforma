@@ -59,7 +59,7 @@ test('should get all logs', async () => {
         .traverse('result')
         ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable();
+        ctx.markUnstable('no stream manager');
         return;
       }
 
@@ -106,7 +106,7 @@ test('should get last line with a prefix', async () => {
         .traverse('result')
         ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable();
+        ctx.markUnstable('no stream manager');
         return;
       }
 
@@ -160,7 +160,7 @@ test('should get log smart object and get log lines from that', async () => {
         .traverse('result')
         ?.persist();
       if (streamManager === undefined) {
-        ctx.markUnstable();
+        ctx.markUnstable('no stream manager');
         return;
       }
 
