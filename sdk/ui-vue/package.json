@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/sdk-vue",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "vue sdk",
   "main": "lib/dist/lib.cjs",
   "module": "lib/dist/lib.js",
@@ -39,7 +39,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@milaboratory/helpers": "^1.5.3",
-    "@milaboratory/sdk-ui": "^0.12.10",
+    "@milaboratory/sdk-ui": "^0.12.22",
     "vue": "^3.4.31"
   },
   "dependencies": {
@@ -51,6 +51,7 @@
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "eslint": "^8.57.0",
+    "canonicalize": "^2.0.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "eslint-plugin-vue": "^9.26.0",
@@ -61,7 +62,14 @@
     "typescript": "^5.4.5",
     "vite": "^5.2.0",
     "vitest": "^2.0.3",
-    "vue-tsc": "^2.0.6"
+    "vue-tsc": "^2.0.6",
+    "@ag-grid-community/core": "^32.1.0",
+    "@ag-grid-community/vue3": "^32.1.0",
+    "@ag-grid-community/styles": "^32.1.0",
+    "@ag-grid-community/client-side-row-model": "^32.1.0",
+    "@ag-grid-community/infinite-row-model": "^32.1.0",
+    "@ag-grid-enterprise/clipboard": "^32.1.0",
+    "@ag-grid-enterprise/range-selection": "^32.1.0"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.9.5"

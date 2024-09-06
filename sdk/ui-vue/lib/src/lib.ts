@@ -2,9 +2,12 @@ import './assets/ui.scss';
 import BlockLayout from './components/BlockLayout.vue';
 import FileDialog from './components/FileDialog.vue';
 import FileInput from './components/FileInput.vue';
+import PlAgDataTable from './components/PlAgDataTable/PlAgDataTable.vue';
 import ValueOrErrorsComponent from './components/ValueOrErrorsComponent.vue';
 
-export { BlockLayout, FileDialog, FileInput, ValueOrErrorsComponent };
+export { BlockLayout, FileDialog, FileInput, PlAgDataTable, ValueOrErrorsComponent };
+
+export * from './components/PlAgDataTable/types';
 
 export * from './defineApp';
 
