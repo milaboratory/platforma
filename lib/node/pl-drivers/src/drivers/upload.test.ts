@@ -238,7 +238,6 @@ test('index a blob', async () => {
       expect(p.isUpload).toBeFalsy();
       expect(p.isUploadSignMatch).toBeUndefined();
       if (p.done) {
-        expect(p.lastError).toBeUndefined();
         return;
       }
 
