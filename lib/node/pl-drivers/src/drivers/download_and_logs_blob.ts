@@ -440,7 +440,7 @@ export class DownloadDriver implements BlobDriver {
     offsetBytes?: number,
     searchStr?: string
   ): Promise<StreamingApiResponse> {
-    const resp = await this.clientLogs.lastLines(
+    const resp = await this.clientLogs.readText(
       handleToData(handle),
       lineCount,
       BigInt(offsetBytes ?? 0),
