@@ -1,7 +1,10 @@
 import {
   Aborted,
+  createInfiniteRetryState,
   createRetryState,
+  InfiniteRetryOptions,
   jitter,
+  nextInfiniteRetryState,
   nextRetryStateOrError,
   RetryOptions,
   sleep,
@@ -74,3 +77,34 @@ test('delay error', () => {
   const state2 = nextRetryStateOrError(state1);
   expect(() => nextRetryStateOrError(state2)).toThrow(/reached/);
 });
+
+test('delay exponential with max delay works', () => {
+  const opts: InfiniteRetryOptions = {
+    type: 'exponentialWithMaxDelayBackoff',
+    jitter: 0,
+    backoffMultiplier: 1.5,
+    initialDelay: 1000,
+    maxDelay: 15000,
+  }
+
+  const state = createInfiniteRetryState(opts);
+  expect(state.nextDelay).toEqual(1000);
+  expect(nextInfiniteRetryState(state).nextDelay).toEqual(1500);
+})
+
+test('delay exponential with max delay reached max', () => {
+  const opts: InfiniteRetryOptions = {
+    type: 'exponentialWithMaxDelayBackoff',
+    jitter: 0,
+    backoffMultiplier: 1.5,
+    initialDelay: 1000,
+    maxDelay: 15000,
+  }
+
+  const states = [createInfiniteRetryState(opts)];
+  for (let i = 0; i < 100; i++){
+    states.push(nextInfiniteRetryState(states[states.length - 1]))
+  }
+
+  expect(states[states.length - 1].nextDelay).toEqual(15000);
+})

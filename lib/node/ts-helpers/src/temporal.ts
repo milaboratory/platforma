@@ -65,29 +65,22 @@ export type LinearBackoffRetryOptions = {
 
 export type RetryOptions = LinearBackoffRetryOptions | ExponentialBackoffRetryOptions;
 
-export type InfiniteRetryState = {
+export type RetryState = {
   options: RetryOptions,
   startTimestamp: number,
   /** Total delays so far (including next delay, implying it already applied) */
   totalDelay: number,
   /** Next delay in ms */
   nextDelay: number
-}
-
-export type RetryState = InfiniteRetryState & { attemptsLeft: number }
-
-export function createInfiniteRetryState(options: RetryOptions): InfiniteRetryState {
-  return {
-    options,
-    nextDelay: options.initialDelay,
-    totalDelay: options.initialDelay,
-    startTimestamp: Date.now()
-  };
+  attemptsLeft: number
 }
 
 export function createRetryState(options: RetryOptions): RetryState {
   return {
-    ...createInfiniteRetryState(options),
+    options,
+    nextDelay: options.initialDelay,
+    totalDelay: options.initialDelay,
+    startTimestamp: Date.now(),
     attemptsLeft: options.maxAttempts - 1
   };
 }
@@ -96,13 +89,6 @@ export function tryNextRetryState(previous: RetryState): RetryState | undefined 
   if (previous.attemptsLeft <= 0)
     return undefined;
 
-  return {
-    ...nextInfiniteRetryState(previous),
-    attemptsLeft: previous.attemptsLeft - 1
-  };
-}
-
-export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRetryState {
   let delayDelta = previous.options.type == 'linearBackoff'
     ? previous.options.backoffStep
     : (previous.nextDelay * (previous.options.backoffMultiplier - 1));
@@ -112,16 +98,70 @@ export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRe
     options: previous.options,
     nextDelay: previous.nextDelay + delayDelta,
     startTimestamp: previous.startTimestamp,
-    totalDelay: previous.totalDelay + previous.nextDelay + delayDelta
+    totalDelay: previous.totalDelay + previous.nextDelay + delayDelta,
+    attemptsLeft: previous.attemptsLeft - 1
   };
 }
 
 export function nextRetryStateOrError(previous: RetryState): RetryState {
   const next = tryNextRetryState(previous);
   if (next === undefined)
-    throw new Error(`max number of attempts reached (${previous.options.maxAttempts}): ` +
-      `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, total delay = ${msToHumanReadable(previous.totalDelay)}`);
+    throw new Error(
+      `max number of attempts reached (${previous.options.maxAttempts}): ` +
+        `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, ` +
+        `total delay = ${msToHumanReadable(previous.totalDelay)}`);
   return next;
+}
+
+export type ExponentialWithMaxBackoffDelayRetryOptions = {
+  type: 'exponentialWithMaxDelayBackoff',
+  /** Delay after first failed attempt, in ms. */
+  initialDelay: number,
+
+  /** Max delay in ms, every delay that exceeds the limit will be changed to this delay. */
+  maxDelay: number,
+
+  /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
+  backoffMultiplier: number,
+
+  /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
+  jitter: number
+}
+
+export type InfiniteRetryOptions = ExponentialWithMaxBackoffDelayRetryOptions;
+
+export type InfiniteRetryState = {
+  options: InfiniteRetryOptions,
+  startTimestamp: number,
+  /** Total delays so far (including next delay, implying it already applied) */
+  totalDelay: number,
+  /** Next delay in ms */
+  nextDelay: number
+}
+
+export function createInfiniteRetryState(options: InfiniteRetryOptions): InfiniteRetryState {
+  return {
+    options,
+    nextDelay: options.initialDelay,
+    totalDelay: options.initialDelay,
+    startTimestamp: Date.now()
+  };
+}
+
+export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRetryState {
+  let delayDelta = previous.nextDelay * (previous.options.backoffMultiplier - 1);
+  delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
+
+  let nextDelay = previous.nextDelay + delayDelta
+  if (nextDelay > previous.options.maxDelay)
+    nextDelay = previous.options.maxDelay
+
+  return {
+    options: previous.options,
+    nextDelay,
+    startTimestamp: previous.startTimestamp,
+    totalDelay: previous.totalDelay + previous.nextDelay + delayDelta
+  };
 }
 
 function msToHumanReadable(ms: number): string {

@@ -1,5 +1,5 @@
 import { MiLogger } from '../log';
-import { LinearBackoffRetryOptions, RetryOptions, createInfiniteRetryState, createRetryState, nextInfiniteRetryState, nextRetryStateOrError, tryNextRetryState } from '../temporal';
+import { ExponentialWithMaxBackoffDelayRetryOptions, InfiniteRetryOptions, LinearBackoffRetryOptions, RetryOptions, createInfiniteRetryState, createRetryState, nextInfiniteRetryState, nextRetryStateOrError, tryNextRetryState } from '../temporal';
 import { AsyncQueue } from './async_queue';
 import { scheduler } from 'node:timers/promises';
 
@@ -16,22 +16,22 @@ export class TaskProcessor {
   readonly workers: Promise<void>[];
   keepRunning: boolean = true;
 
-  private readonly backoffOptionsPerWorker: LinearBackoffRetryOptions;
+  private readonly backoffOptionsPerWorker: InfiniteRetryOptions;
 
   constructor(
     private readonly logger: MiLogger,
     numberOfWorkers: number,
     /** The task will be tried infinitely. */
-    backoffOptions: LinearBackoffRetryOptions = {
-      maxAttempts: 0, // doesn't matter since we will retry infinitely.
-      type: 'linearBackoff',
-      initialDelay: 0,
-      backoffStep: 200,
+    backoffOptions: ExponentialWithMaxBackoffDelayRetryOptions = {
+      type: 'exponentialWithMaxDelayBackoff',
+      initialDelay: 1,
+      maxDelay: 15000, // 15 seconds
+      backoffMultiplier: 1.5,
       jitter: 0.5
     },
   ) {
     this.backoffOptionsPerWorker = backoffOptions;
-    this.backoffOptionsPerWorker.backoffStep *= numberOfWorkers;
+    this.backoffOptionsPerWorker.maxDelay *= numberOfWorkers;
 
     this.workers = [];
     for (let i = 0; i < numberOfWorkers; i++)
