@@ -289,15 +289,13 @@ app:
               maxConcurrency: 1
             - name: "ui-tasks"
               maxConcurrency: 50
-          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+          packagesRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
 
         softwareLoader:
-          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+          packagesRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
           registries:
           - name: "milaboratories"
             endpoints:
-              - type: "local"
-                path: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
               - type: "url"
                 url: "https://bin.registry.platforma.bio/"
 
