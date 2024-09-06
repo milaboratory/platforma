@@ -109,11 +109,8 @@ const query = (handle: StorageHandle, dirPath: string) => {
         .sort((a, b) => {
           if (a.isDir && !b.isDir) return -1;
           if (!a.isDir && b.isDir) return 1;
-          const nameA = a.name.toUpperCase();
-          const nameB = b.name.toUpperCase();
-          if (nameA < nameB) return -1;
-          if (nameA > nameB) return 1;
-          return 0;
+          // localeCompare for unicode alphabets
+          return a.name.localeCompare(b.name);
         });
     })
     .catch((err) => (data.error = String(err)))
