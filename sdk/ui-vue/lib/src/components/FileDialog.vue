@@ -96,15 +96,22 @@ const query = (handle: StorageHandle, dirPath: string) => {
         return;
       }
 
-      data.items = notEmpty(res).entries.map((item, id) => ({
-        id,
-        path: item.fullPath,
-        name: item.name,
-        isDir: item.type === 'dir',
-        canBeSelected: item.type === 'file' && (!props.extensions || props.extensions.some((ext) => item.fullPath.endsWith(ext))),
-        handle: item.type === 'file' ? item.handle : undefined,
-        selected: false,
-      }));
+      data.items = notEmpty(res)
+        .entries.map((item, id) => ({
+          id,
+          path: item.fullPath,
+          name: item.name,
+          isDir: item.type === 'dir',
+          canBeSelected: item.type === 'file' && (!props.extensions || props.extensions.some((ext) => item.fullPath.endsWith(ext))),
+          handle: item.type === 'file' ? item.handle : undefined,
+          selected: false,
+        }))
+        .sort((a, b) => {
+          if (a.isDir && !b.isDir) return -1;
+          if (!a.isDir && b.isDir) return 1;
+          // localeCompare for unicode alphabets
+          return a.name.localeCompare(b.name);
+        });
     })
     .catch((err) => (data.error = String(err)))
     .finally(() => {
