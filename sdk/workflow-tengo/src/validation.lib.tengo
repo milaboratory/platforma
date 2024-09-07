@@ -190,7 +190,7 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	}
 
 	// if the schema is an array with "or" at the beginning,
-	// we should check if the element is succesed with
+	// we should check if the element is succeed with
 	// any of the following elements.
 	if is_array(schema) && len(schema) > 0 && schema[0] == "or" {
 		for i, elem in schema[1:] {

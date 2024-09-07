@@ -4,10 +4,10 @@
 
 tx := import("tx")
 ll := import(":ll")
+oop := import(":oop")
 maps := import(":maps")
 json := import("json")
 constants := import(":constants")
-oop := import(":oop")
 
 //////////////// definitions ////////////////
 
@@ -871,7 +871,7 @@ _mapBuilder := func(isEph) {
 
 	self := undefined
 
-	self = ll.toStrict({
+	self = ll.toStrict(oop.inherit(builder, {
 		/**
 		 * Adds a reference to the map by a given key.
 		 *
@@ -917,7 +917,7 @@ _mapBuilder := func(isEph) {
 		build: func() {
 			return builder.lockAndBuild()
 		}
-	})
+	}))
 
 	return self
 }

@@ -106,7 +106,7 @@ purifySpec := func(spec) {
  *
  *  (1) purified cfg with minimal required settings to be passed to the pfconv binary,
  *      to maximize caching retention when domains and annotations changes
- *  (2) complete columns spects, that can be directly rendered into BObjectSpecs and
+ *  (2) complete columns specs, that can be directly rendered into BObjectSpecs and
  *      returned as workflow exports
  *
  * This method comes in handy in situations where actual csv -> pframe export is broadcasted
