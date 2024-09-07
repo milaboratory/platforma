@@ -4,16 +4,16 @@
 
 
 ll := import(":ll")
-assets := import(":assets")
 tpl := import(":tpl")
+file := import(":file")
+text := import("text")
 smart := import(":smart")
 render := import(":render")
-file := import(":file")
-pConstants := import(":pframes.constants")
+assets := import(":assets")
+pframes := import(":pframes")
 constants := import(":constants")
 validation := import(":validation")
 
-text := import("text")
 
 // await all inputs are locked
 tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
@@ -51,7 +51,7 @@ tpl.body(func(inputs) {
 			if text.has_prefix(fieldName, "values/") {
 				fieldName = fieldName[7:]
 			} else if fieldName == "id" || fieldName == "parent" {
-				// there are other fields in context resource, we are only interesetd in "values/..."
+				// there are other fields in context resource, we are only interested in "values/..."
 				continue
 			} else {
 				ll.panic("Unexpected context field: %v", fieldName)
@@ -73,10 +73,10 @@ tpl.body(func(inputs) {
 		}
 	}
 
-	result := smart.structBuilder(pConstants.RTYPE_P_FRAME)
+	result := pframes.pFrameBuilder()
 
 	// serves as an input to the export-pcolumn template
-	eMulTplInput := smart.structBuilder(constants.RTYPE_MAP)
+	eMulTplInput := smart.mapBuilder()
 	// export-pcolumn export instance
 	eMulTplRender := render.createEphemeral(eMulTpl, { data: eMulTplInput })
 
@@ -89,23 +89,19 @@ tpl.body(func(inputs) {
 				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
 				col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
 				col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
-			if !is_undefined(col.spec) {
-				result.createInputField(colName + ".spec").set(col.specRaw)
-			}
-			eMulTplInput.createInputField(colName).set(col.data)
-			result.createInputField(colName + ".data").set(eMulTplRender.output(colName))
+
+			result.add(colName, col.specRaw, eMulTplRender.output(colName))
+			eMulTplInput.add(colName, col.data)
 		} else if col.spec.kind == "File" {
-			result.createInputField(colName + ".spec").set(col.specRaw)
-			result.createInputField(colName + ".data").set(file.exportFile(col.data))
+			result.add(colName, col.specRaw, file.exportFile(col.data))
 		} else {
-			result.createInputField(colName + ".spec").set(col.specRaw)
-			result.createInputField(colName + ".data").set(col.data)
+			result.add(colName, col.specRaw, col.data)
 		}
 	}
 
-	eMulTplInput.lockAndBuild()
+	eMulTplInput.build()
 
 	return {
-		result: result.lockAndBuild()
+		result: result.build()
 	}
 })

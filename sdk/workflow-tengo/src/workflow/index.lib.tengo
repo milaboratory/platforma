@@ -13,6 +13,7 @@ render := import(":render")
 smart := import(":smart")
 maps := import(":maps")
 sets := import(":sets")
+oop := import(":oop")
 bobject := import(":workflow.bobject")
 bquery := import(":workflow.bquery")
 
@@ -202,7 +203,12 @@ query := func(spec, ...options) {
  * @return result: a {ref: spec: data:} object
  */
 resolve := func(ref, ...options) {
-	return bquery.resolve(ref, _parentContext(), options...)
+	r := bquery.resolve(ref, _parentContext(), options...)
+
+	return ll.toStrict(oop.inherit(r, {
+		spec: r.getFutureInputField("spec"),
+		data: r.getFutureInputField("data")
+	}))
 }
 
 
