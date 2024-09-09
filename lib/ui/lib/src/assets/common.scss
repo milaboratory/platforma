@@ -1,12 +1,16 @@
 .uc-pointer {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .d-flex {
-    display: flex;
+  display: flex;
 }
 
-// @TODO nikolaygiman (naming)
+.d-flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
 .d-flex-column {
     display: flex;
     flex-direction: column;

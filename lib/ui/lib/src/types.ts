@@ -19,9 +19,8 @@ export type Position = Omit<DOMRect, 'toJSON'> & {
   offsetX: number;
 };
 
-// @TODO nicolaygiman, ask me
 export type ListOption<T = unknown> = {
-  text: string; //  | { title: string; description: string };
+  text: string;
   description?: string;
   value: T;
 };

@@ -138,18 +138,6 @@ a.btn-link {
   flex: 1;
 }
 
-.d-flex {
-  display: flex;
-
-  &.row {
-    flex-direction: row;
-  }
-
-  &.column {
-    flex-direction: column;
-  }
-}
-
 @for $i from 1 through 48 {
   .p-#{$i} {
     padding: #{$i}px;
