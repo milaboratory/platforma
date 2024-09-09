@@ -23,8 +23,6 @@ import LongText from '@/components/LongText.vue';
 const emit = defineEmits<{
   /**
    * Emitted when the model value is updated.
-   *
-   * @param value - The new value of the input, which can be a string or undefined if cleared.
    */
   (e: 'update:modelValue', value: M | undefined): void;
 }>();

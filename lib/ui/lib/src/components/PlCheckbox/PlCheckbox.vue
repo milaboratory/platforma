@@ -1,7 +1,21 @@
-<script lang="ts" setup>
-import { UiCheckbox } from '@/index';
+<script lang="ts">
+/** Component for boolean model manipulation */
+export default {
+  name: 'PlCheckbox',
+};
+</script>
 
-defineEmits(['update:modelValue']);
+<script lang="ts" setup>
+import { useSlots } from 'vue';
+import './pl-checkbox.scss';
+import PlCheckboxBase from './PlCheckboxBase.vue';
+
+defineEmits<{
+  /**
+   * Emitted when the model value is updated.
+   */
+  (e: 'update:modelValue', value: boolean): void;
+}>();
 
 const props = defineProps<{
   /**
@@ -13,33 +27,14 @@ const props = defineProps<{
    */
   disabled?: boolean;
 }>();
+
+const slots = useSlots();
 </script>
 
 <template>
-  <div class="ui-checkbox-with-label" :class="{ disabled }">
-    <UiCheckbox v-bind="props" @update:model-value="$emit('update:modelValue', $event)" />
+  <div v-if="slots['default']" class="pl-checkbox" :class="{ disabled }">
+    <PlCheckboxBase v-bind="props" @update:model-value="$emit('update:modelValue', $event)" />
     <label @click="$emit('update:modelValue', !$props.modelValue)"><slot /></label>
   </div>
+  <PlCheckboxBase v-else v-bind="props" @update:model-value="$emit('update:modelValue', $event)" />
 </template>
-
-<style lang="scss">
-.ui-checkbox-with-label {
-  --color-label: var(--color-text);
-  --cursor-label: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  &.disabled {
-    --color-label: var(--color-dis-01);
-    --cursor-label: default;
-    pointer-events: none;
-  }
-  > label {
-    user-select: none;
-    color: var(--color-label);
-    cursor: var(--cursor-label);
-    font-size: 14px;
-    font-weight: 500;
-  }
-}
-</style>

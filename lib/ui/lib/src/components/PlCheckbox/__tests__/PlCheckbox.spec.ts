@@ -17,13 +17,13 @@ describe('PlCheckbox', () => {
 
     expect(wrapper.text()).toContain('Slot text');
 
-    await wrapper.find('.ui-checkbox').trigger('click');
+    await wrapper.find('.pl-checkbox-base').trigger('click');
     expect(wrapper.props('modelValue')).toBe(true);
 
-    await wrapper.find('.ui-checkbox').trigger('click');
+    await wrapper.find('.pl-checkbox-base').trigger('click');
     expect(wrapper.props('modelValue')).toBe(false);
 
-    await wrapper.find('.ui-checkbox').trigger('click');
+    await wrapper.find('.pl-checkbox-base').trigger('click');
     expect(wrapper.props('modelValue')).toBe(true);
   });
 });

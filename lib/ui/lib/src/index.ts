@@ -43,10 +43,8 @@ export * from './components/PlSlideModal';
 // @TODO review (may be private)
 import LineDropdown from './components/LineDropdown.vue';
 import DropdownListItem from './components/DropdownListItem.vue';
-import UiCheckbox from './components/UiCheckbox.vue';
 
 // @TODO review
-import WebCheckbox from './components/WebCheckbox'; // experimental web component
 import ToggleSwitch from './components/ToggleSwitch.vue';
 import MaskIcon from './components/MaskIcon.vue';
 import MaskIcon16 from './components/MaskIcon16.vue';
@@ -103,8 +101,6 @@ export {
   ThemeSwitcher,
   LineDropdown,
   DropdownListItem,
-  UiCheckbox,
-  WebCheckbox,
   ToggleSwitch,
   MaskIcon,
   MaskIcon16,

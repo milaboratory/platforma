@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
-import { UiCheckbox, PlCheckbox, PlCheckboxGroup } from '@milaboratory/platforma-uikit.lib';
+import { PlCheckbox, PlCheckboxGroup } from '@milaboratory/platforma-uikit.lib';
 import { reactive } from 'vue';
 
 const data = reactive({
@@ -33,13 +33,13 @@ const options = [
 <template>
   <Layout>
     <Split name="Checkbox">
-      <pre class="text-color">Data: {{ data }}</pre>
+      <pre class="text-color" style="min-height: 120px; border: 1px solid #ccc; padding: 12px">Data: {{ data }}</pre>
       <div class="flex-row" style="gap: 12px">
         <span>Disable all</span>
-        <UiCheckbox v-model="data.disabled" />
+        <PlCheckbox v-model="data.disabled" />
       </div>
       <div class="flex-row" style="gap: 12px">
-        <UiCheckbox v-model="data.checked" :disabled="data.disabled" />
+        <PlCheckbox v-model="data.checked" :disabled="data.disabled" />
         <span>Vue component</span>
       </div>
       <div class="flex-row" style="gap: 12px">Values: {{ data.values }}</div>
@@ -48,6 +48,8 @@ const options = [
       </div>
       <div>
         <PlCheckbox v-model="data.checked" :disabled="data.disabled">Checkbox with label</PlCheckbox>
+        <h4>Without label</h4>
+        <PlCheckbox v-model="data.checked" :disabled="data.disabled" />
       </div>
     </Split>
   </Layout>

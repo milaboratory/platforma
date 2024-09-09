@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import './pl-checkbox-base.scss';
 import { computed } from 'vue';
 
 defineEmits(['update:modelValue']);
@@ -14,7 +15,7 @@ const checked = computed(() => props.modelValue);
 <template>
   <div
     tabindex="0"
-    class="ui-checkbox"
+    class="pl-checkbox-base"
     :class="{ checked, disabled }"
     @click="$emit('update:modelValue', !modelValue)"
     @keydown.enter="$emit('update:modelValue', !modelValue)"

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { ListOption } from '@/types';
-import UiCheckbox from '@/components/UiCheckbox.vue';
+import PlCheckboxBase from '@/components/PlCheckbox/PlCheckboxBase.vue';
 
 const emit = defineEmits(['update:modelValue']);
 
@@ -25,7 +25,7 @@ function updateModel(value: unknown) {
   <div class="ui-checkbox-group" :class="{ disabled }">
     <label v-if="label">{{ label }}</label>
     <div v-for="(opt, i) in options" :key="i">
-      <UiCheckbox :disabled="disabled" :label="opt.text" :model-value="hasValue(opt.value)" @update:model-value="() => updateModel(opt.value)" />
+      <PlCheckboxBase :disabled="disabled" :label="opt.text" :model-value="hasValue(opt.value)" @update:model-value="() => updateModel(opt.value)" />
       <label @click.stop="() => updateModel(opt.value)">{{ opt.text }}</label>
     </div>
   </div>
