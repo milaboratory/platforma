@@ -4,7 +4,8 @@
   --base-icon: url('@/assets/images/24_checkbox-base.svg');
   --checked-icon: url('@/assets/images/24_checkbox-checked.svg');
   --disabled-icon: url('@/assets/images/24_checkbox-disabled.svg');
-  background-color: red;
+  --disabled-checked-icon: url('@/assets/images/24_checkbox-disabled-checked.svg');
+
   cursor: pointer;
   outline: none;
   border-radius: 4px;
@@ -16,6 +17,11 @@
 
   &.disabled {
     @include icon(var(--disabled-icon), 24px);
+    pointer-events: none;
+  }
+
+  &.disabled:is(.checked) {
+    @include icon(var(--disabled-checked-icon), 24px);
     pointer-events: none;
   }
 
@@ -36,6 +42,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  
   &.disabled {
     --color-label: var(--color-dis-01);
     --cursor-label: default;

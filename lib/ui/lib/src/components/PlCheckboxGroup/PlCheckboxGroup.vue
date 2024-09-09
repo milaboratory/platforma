@@ -41,6 +41,7 @@ function updateModel(value: unknown) {
   &.disabled {
     --color-label: var(--color-dis-01);
     --cursor-label: default;
+    pointer-events: none;
   }
   label {
     color: var(--color-label);
