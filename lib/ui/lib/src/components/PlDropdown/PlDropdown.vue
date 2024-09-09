@@ -71,6 +71,10 @@ const props = withDefaults(
      * Custom icon class for the dropdown arrow (optional)
      */
     arrowIcon?: string;
+    /**
+     * Option list item size
+     */
+    optionSize?: 'small' | 'medium';
   }>(),
   {
     label: '',
@@ -81,6 +85,7 @@ const props = withDefaults(
     required: false,
     disabled: false,
     arrowIcon: undefined,
+    optionSize: 'small',
   },
 );
 
@@ -106,6 +111,18 @@ const updateActive = () => (data.activeIndex = findActiveIndex());
 
 const selectedIndex = computed(() => {
   return props.options.findIndex((o) => deepEqual(o.value, props.modelValue));
+});
+
+const computedError = computed(() => {
+  if (props.error) {
+    return props.error;
+  }
+
+  if (props.modelValue !== undefined && selectedIndex.value === -1) {
+    return 'The selected value is not one of the options';
+  }
+
+  return undefined;
 });
 
 const textValue = computed(() => {
@@ -163,36 +180,29 @@ const filteredRef = computed(() => {
 
 const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
-function selectOption(v: M | undefined) {
+const selectOption = (v: M | undefined) => {
   emit('update:modelValue', v);
   data.search = '';
   data.open = false;
   root?.value?.focus();
-}
+};
 
 const clear = () => emit('update:modelValue', undefined);
 
-function setFocusOnInput() {
-  input.value?.focus();
-}
+const setFocusOnInput = () => input.value?.focus();
 
-function toggle() {
-  data.open = !data.open;
-}
+const toggleOpen = () => (data.open = !data.open);
 
-function onInputFocus() {
-  data.open = true;
-}
+const onInputFocus = () => (data.open = true);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function onBlur(event: any) {
-  if (!root?.value?.contains(event.relatedTarget)) {
+const onFocusOut = (event: FocusEvent) => {
+  if (!root?.value?.contains(event.relatedTarget as Node | null)) {
     data.search = '';
     data.open = false;
   }
-}
+};
 
-function scrollIntoActive() {
+const scrollIntoActive = () => {
   const $list = list.value;
 
   if (!$list) {
@@ -202,10 +212,10 @@ function scrollIntoActive() {
   tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
     scrollIntoView($list, opt);
   });
-}
+};
 
-function handleKeydown(e: { code: string; preventDefault(): void }) {
-  if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(e.code)) {
+const handleKeydown = (e: { code: string; preventDefault(): void }) => {
+  if (!['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.code)) {
     return;
   } else {
     e.preventDefault();
@@ -218,6 +228,11 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
       data.open = true;
     }
     return;
+  } else {
+    if (e.code === 'Escape') {
+      data.open = false;
+      root.value?.focus();
+    }
   }
 
   const filtered = unref(filteredRef);
@@ -239,7 +254,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   const newIndex = Math.abs(localIndex + delta + length) % length;
 
   data.activeIndex = filteredRef.value[newIndex].index ?? -1;
-}
+};
 
 useLabelNotch(root);
 
@@ -267,7 +282,7 @@ watchPostEffect(() => {
       class="ui-dropdown"
       :class="{ open: data.open, error, disabled }"
       @keydown="handleKeydown"
-      @focusout="onBlur"
+      @focusout="onFocusOut"
     >
       <div class="ui-dropdown__container">
         <div class="ui-dropdown__field">
@@ -288,8 +303,8 @@ watchPostEffect(() => {
             <div v-if="clearable" class="close" @click.stop="clear" />
           </div>
 
-          <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggle" />
-          <div v-else class="arrow" @click.stop="toggle" />
+          <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggleOpen" />
+          <div v-else class="arrow" @click.stop="toggleOpen" />
           <div class="ui-dropdown__append">
             <div v-if="clearable && hasValue" class="icon icon--clear" @click.stop="clear" />
             <slot name="append" />
@@ -309,10 +324,9 @@ watchPostEffect(() => {
             v-for="(item, index) in filteredRef"
             :key="index"
             :option="item"
-            :text-item="'text'"
             :is-selected="item.isSelected"
             :is-hovered="item.isActive"
-            size="medium"
+            :size="optionSize"
             @click.stop="selectOption(item.value)"
           />
           <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
@@ -320,7 +334,7 @@ watchPostEffect(() => {
         <DoubleContour class="ui-dropdown__contour" />
       </div>
     </div>
-    <div v-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
-    <div v-else-if="error" class="ui-dropdown__error">{{ error }}</div>
+    <div v-if="computedError" class="ui-dropdown__error">{{ computedError }}</div>
+    <div v-else-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
   </div>
 </template>
