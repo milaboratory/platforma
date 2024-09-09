@@ -20,13 +20,9 @@ export type Position = Omit<DOMRect, 'toJSON'> & {
 };
 
 // @TODO nicolaygiman, ask me
-export type Option<T = unknown> = {
-  text: string | { title: string; description: string };
-  value: T;
-};
-
-export type IOption<T = unknown> = {
-  text: string;
+export type ListOption<T = unknown> = {
+  text: string; //  | { title: string; description: string };
+  description?: string;
   value: T;
 };
 

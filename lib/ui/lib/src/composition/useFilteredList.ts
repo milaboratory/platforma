@@ -1,16 +1,12 @@
 import type { ComputedRef, Ref } from 'vue';
 import { computed } from 'vue';
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 
-export function useFilteredList(items: Ref<Option[]>, searchPhrase: Ref<string>): ComputedRef<Option[]> {
+export function useFilteredList(items: Ref<ListOption[]>, searchPhrase: Ref<string>): ComputedRef<ListOption[]> {
   return computed(() => {
     if (searchPhrase.value) {
       return items.value.filter((element) => {
-        if (typeof element['text'] === 'object') {
-          return element['text']['title'].toLowerCase().includes(searchPhrase.value.toLowerCase());
-        } else {
-          return element['text'].toLowerCase().includes(searchPhrase.value.toLowerCase());
-        }
+        return element['text'].toLowerCase().includes(searchPhrase.value.toLowerCase());
       });
     }
     return items.value;

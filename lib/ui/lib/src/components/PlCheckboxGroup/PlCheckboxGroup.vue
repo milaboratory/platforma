@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 import UiCheckbox from '@/components/UiCheckbox.vue';
 
 const emit = defineEmits(['update:modelValue']);
@@ -7,7 +7,7 @@ const emit = defineEmits(['update:modelValue']);
 const props = defineProps<{
   modelValue: unknown[];
   label?: string;
-  options: Option[];
+  options: ListOption[];
   disabled?: boolean;
 }>();
 

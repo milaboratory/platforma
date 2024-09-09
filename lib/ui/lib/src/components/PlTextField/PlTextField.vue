@@ -1,5 +1,5 @@
 <script lang="ts">
-/**  Component for one-line string data manipulation */
+/** Component for one-line string data manipulation */
 export default {
   name: 'PlTextField',
 };

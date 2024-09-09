@@ -2,7 +2,7 @@
 import { useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import InnerBorder from '@/utils/InnerBorder.vue';
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 
 const slots = useSlots();
 
@@ -12,7 +12,7 @@ const emitModel = (v: unknown) => emit('update:modelValue', v);
 
 defineProps<{
   modelValue?: unknown;
-  options: Readonly<Option[]>;
+  options: Readonly<ListOption[]>;
   label?: string;
   //FIXME unused props
   // clearable?: boolean;

@@ -9,7 +9,7 @@ import { tapIf, tap } from '@/helpers/functions';
 import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import TabItem from '@/components/TabItem.vue';
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 
 const emit = defineEmits(['update:modelValue']); // at the top always
 
@@ -18,7 +18,7 @@ const props = withDefaults(
     modelValue: unknown;
     disabled?: boolean;
     prefix?: string;
-    options: Option[];
+    options: ListOption[]; // @todo extend with size field
     placeholder?: string;
     mode?: 'list' | 'tabs';
     tabsContainerStyles?: StyleValue;
@@ -124,14 +124,14 @@ watch(
 );
 
 function getIndexForModelInItems(): number | -1 {
-  return props.options.findIndex((o: Option) => {
+  return props.options.findIndex((o: ListOption) => {
     return deepEqual(o.value, props.modelValue);
   });
 }
 
 function updateSelected() {
   data.activeOption = tap(
-    options.value.findIndex((o: Option) => {
+    options.value.findIndex((o: ListOption) => {
       return deepEqual(o.value, props.modelValue);
     }),
     (v) => (v < 0 ? 0 : v),
@@ -159,7 +159,7 @@ function closePopupIfNeeded() {
   }
 }
 
-function selectItem(item?: Option): void {
+function selectItem(item?: ListOption): void {
   if (item) {
     emit('update:modelValue', item.value);
     closePopupIfNeeded();
@@ -167,7 +167,7 @@ function selectItem(item?: Option): void {
   }
 }
 
-function isItemSelected(item: Option): boolean {
+function isItemSelected(item: ListOption): boolean {
   return deepEqual(item.value, props.modelValue);
 }
 
@@ -257,7 +257,7 @@ function clearModel() {
           @click.stop="selectItem(item)"
         >
           <DropdownListItem
-            :item="item"
+            :option="item"
             :text-item="'text'"
             :is-selected="isItemSelected(item)"
             :is-hovered="data.activeOption == index"

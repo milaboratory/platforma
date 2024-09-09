@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextField, MaskIcon } from '@milaboratory/platforma-uikit.lib';
+import { PlTextField, MaskIcon, PlTextArea } from '@milaboratory/platforma-uikit.lib';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 
@@ -46,6 +46,8 @@ const onClick = () => alert('Some action');
           <MaskIcon name="chevron-right" @click="onClick" />
         </template>
       </PlTextField>
+
+      <PlTextArea v-model="data.lorem" label="Text Area" required />
     </Split>
   </Layout>
 </template>

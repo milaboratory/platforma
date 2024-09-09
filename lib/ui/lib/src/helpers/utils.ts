@@ -1,4 +1,4 @@
-import type { Option } from '../types';
+import type { ListOption } from '../types';
 
 export function call<R>(f: () => R): R {
   return f();
@@ -137,6 +137,6 @@ export function throttle<F extends AnyFunction>(callback: F, ms: number, trailin
   };
 }
 
-export function listToOptions<T>(list: T[] | readonly T[]): Option<T>[] {
+export function listToOptions<T>(list: T[] | readonly T[]): ListOption<T>[] {
   return list.map((value) => ({ text: String(value), value }));
 }

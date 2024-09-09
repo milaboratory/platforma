@@ -38,34 +38,31 @@ const propsDescription = {
         <div class="container">
           <h3 class="text-h3 h3">Title and description SMALL</h3>
           <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
-            <DropdownListItem :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }" />
+            <DropdownListItem :option="{ text: 'Some good title', description: 'Description with some data', value: 'any value' }" />
+            <DropdownListItem :option="{ text: 'Some good title', description: 'Description with some data', value: 'any value' }" is-selected />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
-              is-selected
-            />
-            <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: `Description with some data ${lorem}` }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               is-hovered
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: `Description with some data ${lorem}` }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
               is-selected
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
             />
             <DropdownListItem
-              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               is-selected
             />
             <DropdownListItem
-              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
             />
           </div>
@@ -74,42 +71,42 @@ const propsDescription = {
           <h3 class="text-h3 h3">Title and description MEDIUM</h3>
           <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               is-selected
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               is-hovered
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
               is-selected
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: 'Some good title', description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               is-selected
               size="medium"
             />
             <DropdownListItem
-              :item="{ text: { title: `Some good title ${lorem}`, description: 'Description with some data' }, value: 'any value' }"
+              :option="{ text: 'Some good title', description: `Description with some data ${lorem}`, value: 'any value' }"
               use-checkbox
               size="medium"
             />
@@ -119,26 +116,26 @@ const propsDescription = {
         <div class="container">
           <h3 class="text-h3 h3">Small size</h3>
           <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
-            <DropdownListItem :item="{ text: 'Just item', value: 'any value' }" />
-            <DropdownListItem :item="{ text: 'Selected item', value: 'any value' }" is-selected />
-            <DropdownListItem :item="{ text: 'Hovered item (using keyboard)', value: 'any value' }" is-hovered />
-            <DropdownListItem :item="{ text: 'Checkbox', value: 'any value' }" use-checkbox />
-            <DropdownListItem :item="{ text: 'Checkbox selected', value: 'any value' }" use-checkbox is-selected />
-            <DropdownListItem :item="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" use-checkbox />
-            <DropdownListItem :item="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" is-selected />
+            <DropdownListItem :option="{ text: 'Just item', value: 'any value' }" />
+            <DropdownListItem :option="{ text: 'Selected item', value: 'any value' }" is-selected />
+            <DropdownListItem :option="{ text: 'Hovered item (using keyboard)', value: 'any value' }" is-hovered />
+            <DropdownListItem :option="{ text: 'Checkbox', value: 'any value' }" use-checkbox />
+            <DropdownListItem :option="{ text: 'Checkbox selected', value: 'any value' }" use-checkbox is-selected />
+            <DropdownListItem :option="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" use-checkbox />
+            <DropdownListItem :option="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" is-selected />
           </div>
         </div>
 
         <div class="container">
           <h3 class="text-h3 h3">Medium size</h3>
           <div style="border-radius: 6px; border: 1px solid var(--color-div-grey)">
-            <DropdownListItem :item="{ text: 'Just item', value: 'any value' }" size="medium" />
-            <DropdownListItem :item="{ text: 'Selected item', value: 'any value' }" is-selected size="medium" />
-            <DropdownListItem :item="{ text: 'Hovered item (using keyboard)', value: 'any value' }" is-hovered size="medium" />
-            <DropdownListItem :item="{ text: 'Checkbox', value: 'any value' }" use-checkbox size="medium" />
-            <DropdownListItem :item="{ text: 'Checkbox selected', value: 'any value' }" use-checkbox size="medium" is-selected />
-            <DropdownListItem :item="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" use-checkbox size="medium" />
-            <DropdownListItem :item="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" size="medium" is-selected />
+            <DropdownListItem :option="{ text: 'Just item', value: 'any value' }" size="medium" />
+            <DropdownListItem :option="{ text: 'Selected item', value: 'any value' }" is-selected size="medium" />
+            <DropdownListItem :option="{ text: 'Hovered item (using keyboard)', value: 'any value' }" is-hovered size="medium" />
+            <DropdownListItem :option="{ text: 'Checkbox', value: 'any value' }" use-checkbox size="medium" />
+            <DropdownListItem :option="{ text: 'Checkbox selected', value: 'any value' }" use-checkbox size="medium" is-selected />
+            <DropdownListItem :option="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" use-checkbox size="medium" />
+            <DropdownListItem :option="{ text: `Long text ${lorem} ${lorem}`, value: 'any value' }" size="medium" is-selected />
           </div>
         </div>
       </div>

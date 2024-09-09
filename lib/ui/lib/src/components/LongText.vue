@@ -32,8 +32,8 @@ function mouseoutHandler() {
 </script>
 
 <template>
-  <div v-bind="$attrs" class="ui-lt-container" @mouseover="mouseoverHandler" @mouseleave="mouseoutHandler">
-    <span>
+  <div v-bind="$attrs" class="ui-lt-container">
+    <span @mouseover="mouseoverHandler" @mouseleave="mouseoutHandler">
       <span ref="span" :class="classes"><slot /></span>
     </span>
   </div>
@@ -41,13 +41,12 @@ function mouseoutHandler() {
 
 <style lang="scss">
 .ui-lt-container {
+  outline: 1px solid red;
   min-width: 0;
-  //color: #13d31f;
   white-space: nowrap;
   overflow: hidden;
   position: relative;
   border-radius: 5px;
-  pointer-events: all !important;
 
   span {
     display: inline-block;
@@ -55,6 +54,7 @@ function mouseoutHandler() {
     text-overflow: ellipsis;
     width: 100%;
     vertical-align: bottom;
+    pointer-events: all !important;
   }
 
   .ui-lt-animate {

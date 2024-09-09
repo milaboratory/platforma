@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import './pl-textarea.scss';
 import { computed, ref, useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
@@ -12,7 +13,7 @@ const emit = defineEmits(['update:modelValue']);
 const props = defineProps<{
   modelValue?: string;
   label?: string;
-  optional?: boolean;
+  required?: boolean;
   error?: string;
   helper?: string;
   placeholder?: string;
@@ -66,10 +67,10 @@ function adjustHeight() {
 
 <template>
   <div class="ui-text-area__envelope">
-    <div ref="root" class="ui-text-area" :class="{ optional, error: displayErrors, disabled, dashed, nonEmpty }">
+    <div ref="root" class="ui-text-area" :class="{ error: displayErrors, disabled, dashed, nonEmpty }">
       <label v-if="label" ref="label">
-        {{ label }}
-        <span v-if="optional" style="opacity: 0.5">(optional)</span>
+        <i v-if="required" class="required-icon" />
+        <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>
             <slot name="tooltip" />

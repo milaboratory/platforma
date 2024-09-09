@@ -1,35 +1,76 @@
-<script lang="ts" setup>
+<script lang="ts">
+/**
+ * A component for selecting one value from a list of options
+ */
+export default {
+  name: 'PlDropdown',
+};
+</script>
+
+<script lang="ts" setup generic="M = unknown">
+import './pl-dropdown.scss';
 import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
 import { tap, tapIf } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 import { scrollIntoView } from '@/helpers/dom';
 import { deepEqual } from '@/helpers/objects';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import LongText from '@/components/LongText.vue';
 
-const emit = defineEmits(['update:modelValue']);
-const emitModel = (v: unknown) => emit('update:modelValue', v);
-
-const slots = useSlots();
+const emit = defineEmits<{
+  /**
+   * Emitted when the model value is updated.
+   *
+   * @param value - The new value of the input, which can be a string or undefined if cleared.
+   */
+  (e: 'update:modelValue', value: M | undefined): void;
+}>();
 
 const props = withDefaults(
   defineProps<{
-    modelValue: unknown;
+    /**
+     * The current selected value of the dropdown.
+     */
+    modelValue: M;
+    /**
+     * The label text for the dropdown field (optional)
+     */
     label?: string;
-    options: Option[];
+    /**
+     * List of available options for the dropdown
+     */
+    options: ListOption<M>[];
+    /**
+     * A helper text displayed below the dropdown when there are no errors (optional).
+     */
     helper?: string;
+    /**
+     * Error message displayed below the dropdown (optional)
+     */
     error?: string;
+    /**
+     * Placeholder text shown when no value is selected.
+     */
     placeholder?: string;
+    /**
+     * Enables a button to clear the selected value (default: false)
+     */
     clearable?: boolean;
-    //FIXME unused property
+    /**
+     * If `true`, the dropdown component is marked as required.
+     */
     required?: boolean;
+    /**
+     * If `true`, the dropdown component is disabled and cannot be interacted with.
+     */
     disabled?: boolean;
+    /**
+     * Custom icon class for the dropdown arrow (optional)
+     */
     arrowIcon?: string;
-    //FIXME unused property
-    checkOptions?: boolean;
   }>(),
   {
     label: '',
@@ -37,14 +78,13 @@ const props = withDefaults(
     error: undefined,
     placeholder: '...',
     clearable: false,
-    //FIXME unused property
     required: false,
     disabled: false,
     arrowIcon: undefined,
-    //FIXME unused property
-    checkOptions: false,
   },
 );
+
+const slots = useSlots();
 
 const root = ref<HTMLElement | undefined>();
 const list = ref<HTMLElement | undefined>();
@@ -69,16 +109,9 @@ const selectedIndex = computed(() => {
 });
 
 const textValue = computed(() => {
-  const item: Option | undefined = props.options.find((o) => deepEqual(o.value, props.modelValue));
-  if (item) {
-    if (item) {
-      if (typeof item.text === 'object') {
-        return item.text.title;
-      }
-    }
-  }
+  const item: ListOption | undefined = props.options.find((o) => deepEqual(o.value, props.modelValue));
 
-  return item?.text || props.modelValue;
+  return item?.text || props.modelValue; // @todo show inner value?
 });
 
 const computedPlaceholder = computed(() => {
@@ -106,15 +139,15 @@ const filteredRef = computed(() => {
   const options = optionsRef.value;
 
   if (data.search) {
-    return options.filter((o: Option) => {
+    return options.filter((o: ListOption) => {
       const search = data.search.toLowerCase();
 
-      if (o.text) {
-        if (typeof o.text === 'object') {
-          return o.text.title.toLowerCase().includes(search);
-        } else {
-          return o.text.toLowerCase().includes(search);
-        }
+      if (o.text.toLowerCase().includes(search)) {
+        return true;
+      }
+
+      if (o.description && o.description.toLowerCase().includes(search)) {
+        return true;
       }
 
       if (typeof o.value === 'string') {
@@ -130,16 +163,14 @@ const filteredRef = computed(() => {
 
 const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
-function selectOption(v: unknown) {
-  emitModel(v);
+function selectOption(v: M | undefined) {
+  emit('update:modelValue', v);
   data.search = '';
   data.open = false;
   root?.value?.focus();
 }
 
-function clear() {
-  emit('update:modelValue', null);
-}
+const clear = () => emit('update:modelValue', undefined);
 
 function setFocusOnInput() {
   input.value?.focus();
@@ -251,13 +282,7 @@ watchPostEffect(() => {
             autocomplete="chrome-off"
             @focus="onInputFocus"
           />
-          <!-- OLD VERSION -->
-          <!-- <div v-if="!data.open" class="input-value" @click="setFocusOnInput">
-            {{ textValue }}
-            <div v-if="clearable" class="close" @click.stop="clear" />
-          </div> -->
 
-          <!-- NEW VERSION -->
           <div v-if="!data.open" @click="setFocusOnInput">
             <LongText class="input-value"> {{ textValue }} </LongText>
             <div v-if="clearable" class="close" @click.stop="clear" />
@@ -271,7 +296,8 @@ watchPostEffect(() => {
           </div>
         </div>
         <label v-if="label">
-          {{ label }}
+          <i v-if="required" class="required-icon" />
+          <span>{{ label }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
               <slot name="tooltip" />
@@ -282,7 +308,7 @@ watchPostEffect(() => {
           <DropdownListItem
             v-for="(item, index) in filteredRef"
             :key="index"
-            :item="item"
+            :option="item"
             :text-item="'text'"
             :is-selected="item.isSelected"
             :is-hovered="item.isActive"

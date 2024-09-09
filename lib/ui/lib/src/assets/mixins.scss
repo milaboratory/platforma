@@ -77,9 +77,6 @@
 }
 
 @mixin scrollbar($y: true, $x: false, $over: auto) {
-  //overflow-y: hidden;
-  //overflow-x: hidden;
-
   &::-webkit-scrollbar {
     width: 6px;
     height: 5px;
@@ -104,15 +101,6 @@
   &:hover {
     --color-ic-02: var(--border-color-focus);
   }
-
-  //&:hover {
-  //  @if $y {
-  //    overflow-y: $over;
-  //  }
-  //  @if $x {
-  //    overflow-x: $over;
-  //  }
-  //}
 }
 
 @mixin border-fix($offset: 0) {
@@ -133,6 +121,39 @@
 @mixin abs-center-y {
   top: 50%;
   transform: translateY(-50%);
+}
+
+// label for "outlined" form controls
+@mixin outlined-control-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  top: 0;
+  transform: translateY(-60%);
+  left: var(--label-offset-left-x);
+  padding: 0 4px;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  white-space: pre;
+  text-overflow: ellipsis;
+  cursor: inherit;
+  color: var(--label-color);
+  font-size: 12px;
+  font-weight: 500;
+
+  > span {
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+  }
+
+  .required-icon {
+    background: url(@/assets/images/required.svg);
+    width: 5px;
+    height: 12px;
+    margin-top: 2px;
+  }
 }
 
 @mixin field-helper {

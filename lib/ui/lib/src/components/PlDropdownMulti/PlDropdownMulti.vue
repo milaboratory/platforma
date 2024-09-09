@@ -1,11 +1,12 @@
 <script lang="ts" setup>
+import './pl-dropdown-multi.scss';
 import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
 import { tap, tapIf } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import { PlChip } from '@/components/PlChip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
@@ -19,7 +20,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: unknown[];
     label?: string;
-    options: Option[];
+    options: ListOption[];
     error?: string;
     placeholder?: string;
     clearable?: boolean;
@@ -74,19 +75,14 @@ const filteredOptionsRef = computed(() => {
   return (
     data.search
       ? props.options.filter((opt) => {
-          const _search = data.search.toLowerCase();
+          const search = data.search.toLowerCase();
 
-          if (opt.text) {
-            // return opt.text.toLowerCase().includes(_search);
-            if (typeof opt.text === 'object') {
-              return opt.text.title.toLowerCase().includes(_search);
-            } else {
-              return opt.text.toLowerCase().includes(_search);
-            }
+          if (opt.text.toLowerCase().includes(search)) {
+            return true;
           }
 
           if (typeof opt.value === 'string') {
-            return opt.value.toLowerCase().includes(_search);
+            return opt.value.toLowerCase().includes(search);
           }
 
           return opt.value === data.search;
@@ -214,7 +210,7 @@ watchPostEffect(() => {
         />
         <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
           <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="closeItem(opt.value)">
-            {{ (typeof opt.text === 'object' ? opt.text.title : opt.text) || opt.value }}
+            {{ opt.text || opt.value }}
           </PlChip>
         </div>
         <div class="arrow" @click.stop="toggle" />
@@ -223,7 +219,8 @@ watchPostEffect(() => {
         </div>
       </div>
       <label v-if="label">
-        {{ label }}
+        <i v-if="required" class="required-icon" />
+        <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
           <template #tooltip>
             <slot name="tooltip" />
@@ -233,13 +230,13 @@ watchPostEffect(() => {
       <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
         <div class="ui-multi-dropdown__open-chips-conteiner">
           <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop @close="closeItem(opt.value)">
-            {{ (typeof opt.text === 'object' ? opt.text.title : opt.text) || opt.value }}
+            {{ opt.text || opt.value }}
           </PlChip>
         </div>
         <DropdownListItem
           v-for="(item, index) in filteredOptionsRef"
           :key="index"
-          :item="item"
+          :option="item"
           :text-item="'text'"
           :is-selected="item.selected"
           :is-hovered="data.activeOption == index"

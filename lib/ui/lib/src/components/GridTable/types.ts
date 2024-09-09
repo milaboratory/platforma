@@ -1,4 +1,4 @@
-import type { Option } from '@/types';
+import type { ListOption } from '@/types';
 
 type TypeMap = {
   integer: number;
@@ -22,7 +22,7 @@ export type ColumnSettings = {
   valueType?: ValueType;
 };
 
-export type ShowContextOptions = <T extends string = string>(options: Option<T>[], onSelect: (op: T) => void) => void;
+export type ShowContextOptions = <T extends string = string>(options: ListOption<T>[], onSelect: (op: T) => void) => void;
 
 export type ColumnEvent = 'delete:column' | 'expand:column';
 

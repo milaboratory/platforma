@@ -1,8 +1,9 @@
-@import './mixins';
+@import "@/assets/mixins";
 
-.ui-dropdown {
+.ui-multi-dropdown {
   $root: &;
 
+  --label-color: var(--txt-01);
   --contour-color: var(--txt-01);
   --contour-border-width: 1px;
   --options-bg: #fff;
@@ -10,10 +11,9 @@
 
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
-  --label-color: var(--txt-01);
 
-  [data-theme='dark'] & {
-    --options-bg: #1b1b1f;
+  [data-theme="dark"] & {
+    --options-bg: #1B1B1F;
   }
 
   position: relative;
@@ -24,36 +24,8 @@
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);
 
-  &__envelope {
-    font-family: var(--control-font-family);
-    min-width: 160px;
-  }
-
   label {
-    position: absolute;
-    top: 0;
-    transform: translateY(-60%);
-    left: var(--label-offset-left-x);
-    display: flex;
-    align-items: center;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 0 4px;
-    overflow: hidden;
-    white-space: pre;
-    text-overflow: ellipsis;
-    cursor: inherit;
-
-    color: var(--label-color);
-
-    .required {
-      display: inline-block;
-      font-weight: 500;
-      font-size: 12px;
-      line-height: 16px;
-      color: var(--txt-error);
-      margin-right: 4px;
-    }
+    @include outlined-control-label();
   }
 
   &__container {
@@ -63,6 +35,7 @@
     right: 0;
     border-radius: 6px;
     min-height: var(--control-height);
+    padding: 1px;
     color: var(--txt-01);
   }
 
@@ -93,20 +66,31 @@
 
     .option {
       position: relative;
-      padding: 0 30px 0 10px;
+      padding: 0 10px;
       height: var(--control-height);
       line-height: var(--control-height);
       cursor: pointer;
       user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 12px;
 
-      .checkmark {
-        position: absolute;
-        display: none;
-        @include abs-center-y();
-        right: 10px;
+      --base-icon: url('@/assets/images/24_checkbox-base.svg');
+      --checked-icon: url('@/assets/images/24_checkbox-checked.svg');
+
+      .ui-multi-dropdown__checkmark {
+        cursor: pointer;
+        outline: none;
+        border-radius: 4px;
+        @include icon(var(--base-icon), 24px);
+
+        [data-theme="dark"] & {
+          --base-icon: url('@/assets/images/24_checkbox-base-dark.svg');
+          --checked-icon: url('@/assets/images/24_checkbox-checked-dark.svg');
+        }
       }
 
-      > span {
+      >span {
         display: block;
         overflow: hidden;
         white-space: nowrap;
@@ -116,8 +100,9 @@
 
       &.selected {
         background-color: var(--color-active-select);
-        .checkmark {
-          display: block;
+
+        .ui-multi-dropdown__checkmark {
+          @include icon(var(--checked-icon), 24px);
         }
       }
 
@@ -145,19 +130,19 @@
     flex-direction: row;
     align-items: center;
 
-    .input-value {
+    .chips-container {
       position: absolute;
       top: 0;
       left: 0;
       bottom: 0;
-      right: 0;
-      padding: 0 36px 0 11px;
-      pointer-events: none;
+      right: 30px;
+      overflow: hidden;
+      padding: 0 11px;
       line-height: var(--control-height);
       color: var(--contour-color);
-      overflow: hidden;
-      white-space: pre;
-      text-overflow: ellipsis;
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
 
     input {
@@ -168,7 +153,7 @@
       background-color: transparent;
       border: none;
       padding: 0;
-      width: calc(100% - 40px);
+      width: calc(100% - 20px);
       color: var(--txt-01);
       caret-color: var(--border-color-focus);
 
@@ -192,12 +177,20 @@
     }
   }
 
-  &__helper {
-    @include field-helper();
-  }
-
   &__error {
-    @include field-error();
+    position: absolute;
+    height: 18px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    font-size: 12px;
+    transform: translateY(100%);
+    color: var(--txt-error);
+    padding: 2px 12px 0;
+
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
   }
 
   &__append {
@@ -206,9 +199,11 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
+
     .icon {
       cursor: pointer;
     }
+
     .mask {
       background-color: var(--control-mask-fill);
       cursor: pointer;
@@ -220,13 +215,14 @@
     @include abs-center-y;
     right: 12px;
     background-color: var(--control-mask-fill);
-    @include mask(url('./images/16_chevron-down.svg'), 16px);
+    @include mask(url("@/assets/images/16_chevron-down.svg"), 16px);
   }
 
-  .arrow-altered {
-    position: absolute;
-    @include abs-center-y;
-    right: 12px;
+  &.open {
+    .arrow {
+      background-color: var(--control-mask-fill);
+      @include mask(url(@/assets/images/16_up.svg), 16px);
+    }
   }
 
   .clear {
@@ -235,14 +231,19 @@
     @include abs-center-y;
     right: 36px;
     z-index: 1;
-    @include icon(url('./images/16_clear.svg'), 16px); // @todo mask-image
+    @include icon(url("@/assets/images/16_clear.svg"), 16px); // @todo mask-image
     cursor: pointer;
   }
 
   &.open,
   &:focus-within {
     z-index: 1;
-    --label-color: var(--txt-focus);
+
+    #{$root}__container {
+      .label {
+        color: var(--txt-focus);
+      }
+    }
   }
 
   &.open {
@@ -256,7 +257,7 @@
 
     .arrow {
       background-color: var(--control-mask-fill);
-      @include mask(url(./images/16_chevron-up.svg), 16px);
+      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
     }
   }
 
@@ -278,12 +279,21 @@
 
   &.error {
     --contour-color: var(--txt-error);
-    --label-color: var(--txt-error);
   }
 
   &.disabled {
     --contour-color: var(--color-dis-01);
     --control-mask-fill: var(--color-dis-01);
     cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &__open-chips-conteiner {
+    padding: 12px;
+
+    .ui-chip {
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
   }
 }

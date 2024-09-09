@@ -57,7 +57,8 @@ const itemsLong = generate(300, (i) => ({
 }));
 
 const itemsTitleAndDescription = generate(300, (i) => ({
-  text: { title: `Title ${i}`, description: `${lorem}` },
+  text: `Title ${i}`,
+  description: `${lorem}`,
   value: {
     i,
   },
@@ -111,7 +112,7 @@ const propsDescription = {
       </div>
       <div style="display: flex">
         <LineDropdown v-model="model0" :options="items0" prefix="Option:" :input-max-width="'400px'" clearable>
-          <template #item="slotProps">
+          <template #option="slotProps">
             <DropdownListItem v-bind="slotProps" :size="'small'" />
           </template>
         </LineDropdown>

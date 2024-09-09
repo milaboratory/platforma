@@ -46,35 +46,7 @@
   }
 
   label {
-    display: flex;
-    align-items: center;
-    position: absolute;
-    gap: 4px;
-    top: 0;
-    transform: translateY(-60%);
-    left: var(--label-offset-left-x);
-    padding: 0 4px;
-    max-width: calc(100% - 16px);
-    overflow: hidden;
-    white-space: pre;
-    text-overflow: ellipsis;
-    cursor: inherit;
-    color: var(--label-color);
-    font-size: 12px;
-    font-weight: 500;
-
-    > span {
-      overflow: hidden;
-      white-space: pre;
-      text-overflow: ellipsis;
-    }
-
-    .required-icon {
-      background: url(@/assets/images/required.svg);
-      width: 5px;
-      height: 12px;
-      margin-top: 2px;
-    }
+    @include outlined-control-label();
   }
 
   &__contour {
