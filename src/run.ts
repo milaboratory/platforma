@@ -96,6 +96,7 @@ function run(
   );
 
   options.env = { ...process.env, ...options.env };
+  logger.debug('  spawning child process');
   const child = spawn(cmd, args, options);
   var exitAfterChild: boolean = false;
 
@@ -107,6 +108,7 @@ function run(
     exitAfterChild = true;
   };
 
+  logger.debug('  setting up signal handler');
   process.on('SIGINT', sigintHandler);
 
   child.on('close', (code) => {
