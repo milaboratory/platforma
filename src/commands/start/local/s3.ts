@@ -7,8 +7,7 @@ import * as util from '../../../util';
 import * as types from '../../../templates/types';
 
 export default class S3 extends Command {
-  static override description =
-    'Run Platforma Backend service as local process on current host (no docker container)';
+  static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -41,12 +40,8 @@ export default class S3 extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage
-      ? path.resolve(workdir, flags.storage)
-      : undefined;
-    const logFile = flags['pl-log-file']
-      ? path.resolve(workdir, flags['pl-log-file'])
-      : 'stdout';
+    const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined;
+    const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout';
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;

@@ -24,13 +24,10 @@ export function createLogger(level: string = 'debug'): winston.Logger {
         const indent = ' '.repeat(level.length + 2); // For ': ' after the level
         const indentedMessage = message
           .split('\n')
-          .map((line: string, index: number) =>
-            index === 0 ? line : indent + line
-          )
+          .map((line: string, index: number) => (index === 0 ? line : indent + line))
           .join('\n');
 
-        const colorize = (l: string) =>
-          winston.format.colorize().colorize(l, l);
+        const colorize = (l: string) => winston.format.colorize().colorize(l, l);
 
         return `${colorize(level)}: ${indentedMessage}`;
       })

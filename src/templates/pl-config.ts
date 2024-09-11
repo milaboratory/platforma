@@ -5,10 +5,7 @@ import * as pkg from '../package';
 
 export { plOptions } from './types';
 
-export function storageSettingsFromURL(
-  storageURL: string,
-  baseDir?: string
-): types.storageOptions {
+export function storageSettingsFromURL(storageURL: string, baseDir?: string): types.storageOptions {
   storageURL = resolveTilde(storageURL);
   const url = new URL(storageURL, `file:${baseDir}`);
 
@@ -66,10 +63,8 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     tls: {
       enable: defaultBool(options?.grpc?.tls?.enable, false),
       clientAuthMode: options?.grpc?.tls?.clientAuthMode ?? 'NoAuth',
-      certFile:
-        options?.grpc?.tls?.certFile ?? `${localRoot}/certs/server-cert.pem`,
-      keyFile:
-        options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/server-key.pem`,
+      certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/server-cert.pem`,
+      keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/server-key.pem`,
 
       ...options?.grpc?.tls
     }
@@ -98,15 +93,12 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     case undefined:
     case 'FS':
       work = types.emptyFSSettings('work');
-      work.rootPath =
-        options?.storages?.work?.rootPath ?? `${localRoot}/storages/work`;
+      work.rootPath = options?.storages?.work?.rootPath ?? `${localRoot}/storages/work`;
       work.indexCachePeriod = options?.storages?.work?.indexCachePeriod ?? '1m';
       break;
 
     default:
-      throw new Error(
-        "work storage MUST have 'FS' type as it is used for working directories management"
-      );
+      throw new Error("work storage MUST have 'FS' type as it is used for working directories management");
   }
 
   const library = defaultStorageSettings(
@@ -161,8 +153,7 @@ function defaultStorageSettings(
       storage = types.emptyS3Settings(storageID);
 
       storage.endpoint = options?.endpoint ?? 'http://localhost:9000';
-      storage.presignEndpoint =
-        options?.presignEndpoint ?? 'http://localhost:9000';
+      storage.presignEndpoint = options?.presignEndpoint ?? 'http://localhost:9000';
       storage.bucketName = options?.bucketName ?? defaultBucket;
       storage.createBucket = defaultBool(options?.createBucket, true);
       storage.key = options?.key ?? '';
@@ -183,9 +174,7 @@ export function render(options: types.plSettings): string {
   const disableMon = options.monitoring.enabled ? '' : ' disabled';
   const disableDbg = options.debug.enabled ? '' : ' disabled';
   const disableTLS = options.grpc.tls.enable ? '' : ' disabled';
-  const libraryDownloadable = options.hacks.libraryDownloadable
-    ? 'true'
-    : 'false';
+  const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
 
   return `
 license:

@@ -9,8 +9,7 @@ import * as fs from 'node:fs';
 import * as pkg from '../../../package';
 
 export default class FS extends Command {
-  static override description =
-    'Run Platforma Backend service as local process on current host (no docker container)';
+  static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -43,12 +42,8 @@ export default class FS extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage
-      ? path.resolve(workdir, flags.storage)
-      : undefined;
-    const logFile = flags['pl-log-file']
-      ? path.resolve(workdir, flags['pl-log-file'])
-      : 'stdout';
+    const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined;
+    const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout';
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;

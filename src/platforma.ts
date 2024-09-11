@@ -59,49 +59,36 @@ export function downloadArchive(
   const showProgress = options?.showProgress ?? process.stdout.isTTY;
 
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
-  const downloadURL =
-    options?.downloadURL ??
-    `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
+  const downloadURL = options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
 
   const archiveFilePath = options?.saveTo ?? pkg.binaries(archiveName);
   if (fs.existsSync(archiveFilePath)) {
-    logger.info(
-      `Platforma Backend archive download skipped: '${archiveFilePath}' already exists`
-    );
+    logger.info(`Platforma Backend archive download skipped: '${archiveFilePath}' already exists`);
     return Promise.resolve(archiveFilePath);
   }
 
   fs.mkdirSync(path.dirname(archiveFilePath), { recursive: true });
 
-  logger.info(
-    `Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`
-  );
+  logger.info(`Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`);
 
   const request = https.get(downloadURL);
 
   return new Promise((resolve, reject) => {
     request.on('response', (response) => {
       if (!response.statusCode) {
-        const err = new Error(
-          'failed to download archive: no HTTP status code in response from server'
-        );
+        const err = new Error('failed to download archive: no HTTP status code in response from server');
         request.destroy();
         reject(err);
         return;
       }
       if (response.statusCode !== 200) {
-        const err = new Error(
-          `failed to download archive: ${response.statusCode} ${response.statusMessage}`
-        );
+        const err = new Error(`failed to download archive: ${response.statusCode} ${response.statusMessage}`);
         request.destroy();
         reject(err);
         return;
       }
 
-      const totalBytes = parseInt(
-        response.headers['content-length'] || '0',
-        10
-      );
+      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
       let downloadedBytes = 0;
 
       const archive = fs.createWriteStream(archiveFilePath);
@@ -153,9 +140,7 @@ export function extractArchive(
   logger.debug(`  target dir: '${targetDir}'`);
 
   if (fs.existsSync(targetDir)) {
-    logger.info(
-      `Platforma Backend binaries unpack skipped: '${targetDir}' exists`
-    );
+    logger.info(`Platforma Backend binaries unpack skipped: '${targetDir}' exists`);
     return targetDir;
   }
 
@@ -170,9 +155,7 @@ export function extractArchive(
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
-  logger.info(
-    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`
-  );
+  logger.info(`Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`);
 
   tar.x({
     file: archivePath,
@@ -190,9 +173,7 @@ export function getBinary(
   logger: winston.Logger,
   options?: { version?: string; showProgress?: boolean }
 ): Promise<string> {
-  return downloadArchive(logger, options).then((archivePath) =>
-    extractArchive(logger, { archivePath })
-  );
+  return downloadArchive(logger, options).then((archivePath) => extractArchive(logger, { archivePath }));
 }
 
 function binaryDirName(options?: { version?: string }): string {
