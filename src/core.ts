@@ -55,7 +55,10 @@ export default class Core {
       };
     }
 
-    const configOptions = plCfg.loadDefaults(this.getLastJwt(), options?.configOptions);
+    const configOptions = plCfg.loadDefaults(
+      this.getLastJwt(),
+      options?.configOptions
+    );
 
     this.checkLicense(
       options?.configOptions?.license?.value,
@@ -78,8 +81,10 @@ export default class Core {
       storageDirs.push(configOptions.storages.work.rootPath);
     }
 
+    this.logger.debug('  creating pl state directories...');
     for (const dir of storageDirs) {
       if (!fs.existsSync(dir)) {
+        this.logger.debug(`    '${dir}'`);
         fs.mkdirSync(dir, { recursive: true });
       }
     }
@@ -87,6 +92,9 @@ export default class Core {
     for (const drv of configOptions.core.auth.drivers) {
       if (drv.driver === 'htpasswd') {
         if (!fs.existsSync(drv.path)) {
+          this.logger.debug(
+            `  installing default 'users.htpasswd' to ${drv.path}...`
+          );
           fs.copyFileSync(pkg.assets('users.htpasswd'), drv.path);
         }
       }
@@ -94,9 +102,11 @@ export default class Core {
 
     if (!configPath) {
       configPath = pkg.state('config-lastrun.yaml');
+      this.logger.debug(`  rendering configuration '${configPath}'...`);
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
+    this.logger.debug(`  starting Platforma...`);
     return run.runProcess(
       this.logger,
       cmd,
@@ -555,12 +565,12 @@ ${storageWarns}
     const jwtFile = pkg.state('auth.jwt');
     const encoding = 'utf-8';
 
-    let lastJwt = ""
+    let lastJwt = '';
     try {
       lastJwt = fs.readFileSync(jwtFile, { encoding });
     } catch (e: any) {}
 
-    if (lastJwt == "") {
+    if (lastJwt == '') {
       lastJwt = util.randomStr(64);
       fs.writeFileSync(jwtFile, lastJwt, { encoding });
     }
