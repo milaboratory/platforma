@@ -99,6 +99,8 @@ const displayErrors = computed(() => {
   return errors;
 });
 
+const hasErrors = computed(() => displayErrors.value.length > 0);
+
 const adjustHeight = () => {
   if (!props.autogrow) {
     return;
@@ -117,7 +119,7 @@ onMounted(() => {
 
 <template>
   <div class="ui-text-area__envelope">
-    <div ref="root" class="ui-text-area" :class="{ error: displayErrors, disabled, dashed, nonEmpty }">
+    <div ref="root" class="ui-text-area" :class="{ error: hasErrors, disabled, dashed, nonEmpty }">
       <label v-if="label" ref="label">
         <i v-if="required" class="required-icon" />
         <span>{{ label }}</span>
@@ -142,7 +144,7 @@ onMounted(() => {
       </div>
       <DoubleContour class="ui-text-area__contour" />
     </div>
-    <div v-if="displayErrors.length" class="ui-text-area__error">
+    <div v-if="hasErrors" class="ui-text-area__error">
       {{ displayErrors.join(' ') }}
     </div>
     <div v-else-if="helper" class="ui-text-area__helper">{{ helper }}</div>
