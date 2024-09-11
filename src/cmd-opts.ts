@@ -17,15 +17,13 @@ export const ImageFlag = {
 
 export const VersionFlag = {
   version: Flags.string({
-    description:
-      'use custom platforma release (official docker image or binary package)'
+    description: 'use custom platforma release (official docker image or binary package)'
   })
 };
 
 export const LicenseFlags = {
   license: Flags.string({
-    description:
-      'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
+    description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
   }),
   'license-file': Flags.file({
     exists: true,
@@ -36,8 +34,7 @@ export const LicenseFlags = {
 
 export const StorageFlag = {
   storage: Flags.string({
-    description:
-      'specify path on host to be used as storage for all Platforma Backend data'
+    description: 'specify path on host to be used as storage for all Platforma Backend data'
   })
 };
 
@@ -55,15 +52,13 @@ export const PlWorkdirFlag = {
 
 export const PlBinaryFlag = {
   ['pl-binary']: Flags.file({
-    description:
-      'start given Platforma Backend binary instead of automatically downloaded version'
+    description: 'start given Platforma Backend binary instead of automatically downloaded version'
   })
 };
 
 export const PlSourcesFlag = {
   ['pl-sources']: Flags.file({
-    description:
-      'path to pl repository root: build Platforma Backend from sources and start the resulting binary'
+    description: 'path to pl repository root: build Platforma Backend from sources and start the resulting binary'
   })
 };
 
@@ -121,22 +116,19 @@ export const AuthEnabledFlag = {
 
 export const HTPasswdFileFlag = {
   'auth-htpasswd-file': Flags.file({
-    description:
-      'path to .htpasswd file with Platforma users (static user DB auth source)'
+    description: 'path to .htpasswd file with Platforma users (static user DB auth source)'
   })
 };
 
 export const LDAPAddressFlag = {
   'auth-ldap-server': Flags.string({
-    description:
-      'address of LDAP server to use for auth in Platforma (auth source)'
+    description: 'address of LDAP server to use for auth in Platforma (auth source)'
   })
 };
 
 export const LDAPDefaultDNFlag = {
   'auth-ldap-default-dn': Flags.string({
-    description:
-      'DN to use when checking user with LDAP bind operation: e.g. cn=%u,ou=users,dc=example,dc=com'
+    description: 'DN to use when checking user with LDAP bind operation: e.g. cn=%u,ou=users,dc=example,dc=com'
   })
 };
 

@@ -81,12 +81,7 @@ export type tlsSettings = {
 };
 export type tlsOptions = Partial<tlsSettings>;
 
-export type tlsAuthMode =
-  | 'NoAuth'
-  | 'RequestAnyCert'
-  | 'RequireAnyCert'
-  | 'RequestValidCert'
-  | 'RequireValidCert';
+export type tlsAuthMode = 'NoAuth' | 'RequestAnyCert' | 'RequireAnyCert' | 'RequestValidCert' | 'RequireValidCert';
 
 export type storagesSettings = {
   primary: storageSettings;
@@ -107,13 +102,8 @@ type commonStorageSettings = {
   indexCachePeriod: string;
 };
 
-export type s3StorageSettings = storageID &
-  s3StorageType &
-  commonStorageSettings &
-  s3StorageTypeSettings;
-export type s3StorageOptions = s3StorageType &
-  Partial<commonStorageSettings> &
-  Partial<s3StorageTypeSettings>;
+export type s3StorageSettings = storageID & s3StorageType & commonStorageSettings & s3StorageTypeSettings;
+export type s3StorageOptions = s3StorageType & Partial<commonStorageSettings> & Partial<s3StorageTypeSettings>;
 export function emptyS3Settings(id: string): s3StorageSettings {
   return {
     id: id,
@@ -144,13 +134,8 @@ type s3StorageTypeSettings = {
   uploadKeyPrefix: string;
 };
 
-export type fsStorageSettings = storageID &
-  fsStorageType &
-  commonStorageSettings &
-  fsStorageTypeSettings;
-export type fsStorageOptions = fsStorageType &
-  Partial<commonStorageSettings> &
-  Partial<fsStorageTypeSettings>;
+export type fsStorageSettings = storageID & fsStorageType & commonStorageSettings & fsStorageTypeSettings;
+export type fsStorageOptions = fsStorageType & Partial<commonStorageSettings> & Partial<fsStorageTypeSettings>;
 export function emptyFSSettings(id: string): fsStorageSettings {
   return {
     id: id,

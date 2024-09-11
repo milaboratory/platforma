@@ -1,9 +1,4 @@
-import {
-  ChildProcess,
-  SpawnSyncReturns,
-  spawn,
-  spawnSync
-} from 'child_process';
+import { ChildProcess, SpawnSyncReturns, spawn, spawnSync } from 'child_process';
 import yaml from 'yaml';
 import fs from 'fs';
 import os from 'os';
@@ -22,19 +17,13 @@ export default class Core {
 
   public startLast() {
     const result = run.rerunLast(this.logger, { stdio: 'inherit' });
-    this.checkRunError(
-      result,
-      'failed to bring back Platforma Backend in the last started configuration'
-    );
+    this.checkRunError(result, 'failed to bring back Platforma Backend in the last started configuration');
   }
 
   public startLocal(options?: startLocalOptions): ChildProcess {
-    const cmd =
-      options?.binaryPath ??
-      platforma.binaryPath(options?.version, 'binaries', 'platforma');
+    const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
     var configPath = options?.configPath;
-    const workdir: string =
-      options?.workdir ?? (configPath ? process.cwd() : pkg.state());
+    const workdir: string = options?.workdir ?? (configPath ? process.cwd() : pkg.state());
 
     if (options?.primaryURL) {
       options.configOptions = {
@@ -55,16 +44,10 @@ export default class Core {
       };
     }
 
-    const configOptions = plCfg.loadDefaults(
-      this.getLastJwt(),
-      options?.configOptions
-    );
+    const configOptions = plCfg.loadDefaults(this.getLastJwt(), options?.configOptions);
 
     this.logger.debug(`  checking license...`);
-    this.checkLicense(
-      options?.configOptions?.license?.value,
-      options?.configOptions?.license?.file
-    );
+    this.checkLicense(options?.configOptions?.license?.value, options?.configOptions?.license?.file);
 
     const storageDirs: string[] = [
       `${configOptions.localRoot}/packages`,
@@ -93,9 +76,7 @@ export default class Core {
     for (const drv of configOptions.core.auth.drivers) {
       if (drv.driver === 'htpasswd') {
         if (!fs.existsSync(drv.path)) {
-          this.logger.debug(
-            `  installing default 'users.htpasswd' to ${drv.path}...`
-          );
+          this.logger.debug(`  installing default 'users.htpasswd' to ${drv.path}...`);
           fs.copyFileSync(pkg.assets('users.htpasswd'), drv.path);
         }
       }
@@ -136,26 +117,20 @@ export default class Core {
     if (!options?.primaryURL) {
       options = {
         ...options,
-        primaryURL:
-          's3e://testuser:testpassword@localhost:9000/main-bucket/?region=fake-region'
+        primaryURL: 's3e://testuser:testpassword@localhost:9000/main-bucket/?region=fake-region'
       };
     }
     if (!options?.libraryURL) {
       options = {
         ...options,
-        libraryURL:
-          's3e://testuser:testpassword@localhost:9000/library-bucket/?region=fake-region'
+        libraryURL: 's3e://testuser:testpassword@localhost:9000/library-bucket/?region=fake-region'
       };
     }
 
     return this.startLocal(options);
   }
 
-  public startMinio(options?: {
-    storage?: string;
-    image?: string;
-    version?: string;
-  }) {
+  public startMinio(options?: { storage?: string; image?: string; version?: string }) {
     this.logger.debug('  starting minio...');
     var composeMinioSrc = pkg.assets('compose-minio.yaml');
     var composeMinioDst = pkg.state('compose-minio.yaml');
@@ -175,9 +150,7 @@ export default class Core {
 
     if (storage) {
       const storagePath = path.resolve(storage);
-      this.logger.debug(
-        `    creating minio storage persistent directory '${storagePath}'...`
-      );
+      this.logger.debug(`    creating minio storage persistent directory '${storagePath}'...`);
       fs.mkdirSync(storagePath, { recursive: true });
       envs['MINIO_STORAGE'] = storagePath;
     } else {
@@ -185,22 +158,13 @@ export default class Core {
       compose.volumes.storage = null;
     }
 
-    this.logger.debug(
-      `    rendering minio docker compose '${composeMinioDst}'...`
-    );
+    this.logger.debug(`    rendering minio docker compose '${composeMinioDst}'...`);
     this.writeComposeFile(composeMinioDst, compose);
 
     this.logger.debug(`    spawning child 'docker' process...`);
     const result = spawnSync(
       'docker',
-      [
-        'compose',
-        `--file=${composeMinioDst}`,
-        'up',
-        '--detach',
-        '--remove-orphans',
-        '--pull=missing'
-      ],
+      ['compose', `--file=${composeMinioDst}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
       {
         env: {
           ...process.env,
@@ -213,13 +177,9 @@ export default class Core {
     this.checkRunError(result, 'failed to start MinIO service in docker');
   }
 
-  public buildPlatforma(options: {
-    repoRoot: string;
-    binPath?: string;
-  }): string {
+  public buildPlatforma(options: { repoRoot: string; binPath?: string }): string {
     const cmdPath: string = path.resolve(options.repoRoot, 'cmd', 'platforma');
-    const binPath: string =
-      options.binPath ?? path.join(os.tmpdir(), 'platforma-local-build');
+    const binPath: string = options.binPath ?? path.join(os.tmpdir(), 'platforma-local-build');
 
     this.logger.info('Building Platforma Backend binary from sources');
     this.logger.info(`  sources path: ${options.repoRoot}`);
@@ -230,10 +190,7 @@ export default class Core {
       stdio: 'inherit'
     });
 
-    this.checkRunError(
-      result,
-      "failed to build platforma binary from sources using 'go build' command"
-    );
+    this.checkRunError(result, "failed to build platforma binary from sources using 'go build' command");
     return binPath;
   }
 
@@ -278,32 +235,19 @@ export default class Core {
       if (primary.type === 'S3') {
         envs['PLC_FILE_PRIMARY_S3_BUCKET'] = primary.bucketName!;
 
-        if (primary.endpoint)
-          envs['PLC_FILE_PRIMARY_S3_ENDPOINT'] = primary.endpoint;
-        if (primary.presignEndpoint)
-          envs['PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT'] =
-            primary.presignEndpoint;
+        if (primary.endpoint) envs['PLC_FILE_PRIMARY_S3_ENDPOINT'] = primary.endpoint;
+        if (primary.presignEndpoint) envs['PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT'] = primary.presignEndpoint;
         if (primary.key) envs['PLC_FILE_PRIMARY_S3_KEY'] = primary.key;
         if (primary.secret) envs['PLC_FILE_PRIMARY_S3_SECRET'] = primary.secret;
         if (primary.region) envs['PLC_FILE_PRIMARY_S3_REGION'] = primary.region;
       } else {
-        throw new Error(
-          "primary storage must have 'S3' type in 'docker s3' configuration"
-        );
+        throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
       }
     }
 
     const result = run.runDocker(
       this.logger,
-      [
-        'compose',
-        `--file=${composeS3Path}`,
-        'up',
-        '--detach',
-        '--remove-orphans',
-        '--pull=missing',
-        'backend'
-      ],
+      ['compose', `--file=${composeS3Path}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'backend'],
       {
         env: envs,
         stdio: 'inherit'
@@ -331,23 +275,13 @@ export default class Core {
     var composeFSPath = pkg.assets('compose-fs.yaml');
     var composeRunPath = pkg.state('compose-fs.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
-    const primaryStorage =
-      options?.primaryStorage ?? state.lastRun?.docker?.primaryPath;
+    const primaryStorage = options?.primaryStorage ?? state.lastRun?.docker?.primaryPath;
     const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath;
-    const libraryStorage =
-      options?.libraryStorage ?? state.lastRun?.docker?.libraryPath;
+    const libraryStorage = options?.libraryStorage ?? state.lastRun?.docker?.libraryPath;
 
     this.checkLicense(options?.license, options?.licenseFile);
-    this.checkVolumeConfig(
-      'primary',
-      primaryStorage,
-      state.lastRun?.docker?.primaryPath
-    );
-    this.checkVolumeConfig(
-      'library',
-      libraryStorage,
-      state.lastRun?.docker?.libraryPath
-    );
+    this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath);
+    this.checkVolumeConfig('library', libraryStorage, state.lastRun?.docker?.libraryPath);
 
     const envs: NodeJS.ProcessEnv = {
       PL_IMAGE: image,
@@ -396,15 +330,7 @@ export default class Core {
 
     const result = run.runDocker(
       this.logger,
-      [
-        'compose',
-        `--file=${composeFSPath}`,
-        'up',
-        '--detach',
-        '--remove-orphans',
-        '--pull=missing',
-        'backend'
-      ],
+      ['compose', `--file=${composeFSPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'backend'],
       {
         env: envs,
         stdio: 'inherit'
@@ -432,17 +358,13 @@ export default class Core {
 
     switch (lastRun.mode) {
       case 'docker':
-        const result = spawnSync(
-          'docker',
-          ['compose', '--file', lastRun.docker!.composePath!, 'down'],
-          {
-            env: {
-              ...process.env,
-              ...lastRun.envs
-            },
-            stdio: 'inherit'
-          }
-        );
+        const result = spawnSync('docker', ['compose', '--file', lastRun.docker!.composePath!, 'down'], {
+          env: {
+            ...process.env,
+            ...lastRun.envs
+          },
+          stdio: 'inherit'
+        });
         state.isActive = false;
         if (result.status !== 0) process.exit(result.status);
         return;
@@ -509,23 +431,16 @@ ${storageWarns}
     );
   }
 
-  public mergeLicenseEnvs(flags: {
-    license?: string;
-    'license-file'?: string;
-  }) {
+  public mergeLicenseEnvs(flags: { license?: string; 'license-file'?: string }) {
     if (flags.license === undefined) {
-      if ((process.env.MI_LICENSE ?? '') != '')
-        flags.license = process.env.MI_LICENSE;
-      else if ((process.env.PL_LICENSE ?? '') != '')
-        flags.license = process.env.PL_LICENSE;
+      if ((process.env.MI_LICENSE ?? '') != '') flags.license = process.env.MI_LICENSE;
+      else if ((process.env.PL_LICENSE ?? '') != '') flags.license = process.env.PL_LICENSE;
     }
 
     // set 'license-file' only if license is still undefined
     if (flags['license-file'] === undefined && flags.license === undefined) {
-      if ((process.env.MI_LICENSE_FILE ?? '') != '')
-        flags['license-file'] = process.env.MI_LICENSE_FILE;
-      else if ((process.env.PL_LICENSE_FILE ?? '') != '')
-        flags['license-file'] = process.env.PL_LICENSE_FILE;
+      if ((process.env.MI_LICENSE_FILE ?? '') != '') flags['license-file'] = process.env.MI_LICENSE_FILE;
+      else if ((process.env.PL_LICENSE_FILE ?? '') != '') flags['license-file'] = process.env.PL_LICENSE_FILE;
       else if (fs.existsSync(path.resolve(os.homedir(), '.pl.license')))
         flags['license-file'] = path.resolve(os.homedir(), '.pl.license');
     }
@@ -548,13 +463,8 @@ ${storageWarns}
       });
     }
 
-    if (
-      Boolean(flags['auth-ldap-server']) !==
-      Boolean(flags['auth-ldap-default-dn'])
-    ) {
-      throw new Error(
-        "LDAP auth settings require both 'server' and 'default DN' options to be set"
-      );
+    if (Boolean(flags['auth-ldap-server']) !== Boolean(flags['auth-ldap-default-dn'])) {
+      throw new Error("LDAP auth settings require both 'server' and 'default DN' options to be set");
     }
 
     if (flags['auth-ldap-server']) {
@@ -569,10 +479,7 @@ ${storageWarns}
       return undefined;
     }
 
-    return [
-      { driver: 'jwt', key: this.getLastJwt() },
-      ...authDrivers
-    ] as types.authDriver[];
+    return [{ driver: 'jwt', key: this.getLastJwt() }, ...authDrivers] as types.authDriver[];
   }
 
   /** Gets the last stored JWT secret key or generates it and stores in a file. */
@@ -594,31 +501,20 @@ ${storageWarns}
   }
 
   private destroyDocker(composePath: string, image: string) {
-    const result = spawnSync(
-      'docker',
-      [
-        'compose',
-        '--file',
-        composePath,
-        'down',
-        '--volumes',
-        '--remove-orphans'
-      ],
-      {
-        env: {
-          ...process.env,
-          PL_IMAGE: 'scratch',
-          PL_STORAGE_PRIMARY: '',
-          PL_STORAGE_WORK: '',
-          PL_STORAGE_LIBRARY: '',
-          PL_AUTH_HTPASSWD_PATH: '.',
+    const result = spawnSync('docker', ['compose', '--file', composePath, 'down', '--volumes', '--remove-orphans'], {
+      env: {
+        ...process.env,
+        PL_IMAGE: 'scratch',
+        PL_STORAGE_PRIMARY: '',
+        PL_STORAGE_WORK: '',
+        PL_STORAGE_LIBRARY: '',
+        PL_AUTH_HTPASSWD_PATH: '.',
 
-          MINIO_IMAGE: 'scratch',
-          MINIO_STORAGE: ''
-        },
-        stdio: 'inherit'
-      }
-    );
+        MINIO_IMAGE: 'scratch',
+        MINIO_STORAGE: ''
+      },
+      stdio: 'inherit'
+    });
 
     if (result.status !== 0) process.exit(result.status);
   }
@@ -643,11 +539,7 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
     throw new Error(`The license was not provided.`);
   }
 
-  private checkVolumeConfig(
-    volumeID: string,
-    newPath?: string,
-    lastRunPath?: string
-  ) {
+  private checkVolumeConfig(volumeID: string, newPath?: string, lastRunPath?: string) {
     if (newPath === undefined) {
       return;
     }

@@ -1,11 +1,5 @@
 import fs from 'fs';
-import {
-  spawnSync,
-  SpawnOptions,
-  SpawnSyncReturns,
-  ChildProcess,
-  spawn
-} from 'child_process';
+import { spawnSync, SpawnOptions, SpawnSyncReturns, ChildProcess, spawn } from 'child_process';
 import state, { dockerRunInfo, processRunInfo } from './state';
 import winston from 'winston';
 
@@ -63,14 +57,9 @@ export function runProcess(
   return result;
 }
 
-export function rerunLast(
-  logger: winston.Logger,
-  options: SpawnOptions
-): SpawnSyncReturns<Buffer> {
+export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnSyncReturns<Buffer> {
   if (!state.lastRun) {
-    throw new Error(
-      'no previous run info found: this is the first run after package installation'
-    );
+    throw new Error('no previous run info found: this is the first run after package installation');
   }
 
   options = {
@@ -85,12 +74,7 @@ export function rerunLast(
   return runSync(logger, state.lastRun.cmd, state.lastRun.args, options);
 }
 
-function run(
-  logger: winston.Logger,
-  cmd: string,
-  args: readonly string[],
-  options: SpawnOptions
-): ChildProcess {
+function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
   logger.info(
     `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
   );

@@ -5,8 +5,7 @@ import * as util from '../../../util';
 import * as types from '../../../templates/types';
 
 export default class FS extends Command {
-  static override description =
-    "Run platforma backend service with 'FS' primary storage type";
+  static override description = "Run platforma backend service with 'FS' primary storage type";
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 

@@ -5,8 +5,7 @@ import * as util from '../../../util';
 import * as types from '../../../templates/types';
 
 export default class S3 extends Command {
-  static override description =
-    "Run platforma backend service with 'S3' primary storage type";
+  static override description = "Run platforma backend service with 'S3' primary storage type";
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
