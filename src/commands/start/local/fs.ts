@@ -15,6 +15,7 @@ export default class FS extends Command {
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
+    ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
     ...cmdOpts.PlBinaryFlag,

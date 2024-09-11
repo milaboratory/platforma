@@ -6,13 +6,14 @@ import * as platforma from '../../../platforma';
 import * as util from '../../../util';
 import * as types from '../../../templates/types';
 
-export default class FS extends Command {
+export default class S3 extends Command {
   static override description =
     'Run Platforma Backend service as local process on current host (no docker container)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
   static override flags = {
+    ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
     ...cmdOpts.PlBinaryFlag,
@@ -33,7 +34,7 @@ export default class FS extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(FS);
+    const { flags } = await this.parse(S3);
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
