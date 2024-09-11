@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import 'ag-theme.css';
+import './ag-theme.css';
 
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 
