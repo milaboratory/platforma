@@ -39,9 +39,7 @@
   }
 
   &__layout {
-    // border: 1px solid red;
-    padding: 12px;
-    // border: 2px solid green;
+    padding: 0;
   }
 
   &__error {
@@ -58,96 +56,6 @@
     pre {
       white-space: pre-wrap;
       margin: 0;
-    }
-  }
-
-  &__title {
-    font-weight: 500;
-    font-size: 28px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    letter-spacing: -0.02em;
-    height: 42px;
-    line-height: 42px; // @TODO
-
-    &__label {
-      display: flex;
-      align-items: end;
-    }
-
-    &__description {
-      color: var(--txt-03);
-      font-size: 14px;
-      font-weight: 500;
-      line-height: 20px;
-      margin-top: 8px;
-    }
-  }
-
-  &__subtitle {
-    font-weight: 500;
-    font-size: 20px;
-    line-height: 24px;
-    letter-spacing: -0.01em;
-    display: flex;
-    align-items: flex-end;
-    margin-bottom: 40px;
-  }
-
-  .editable-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    .icon {
-      opacity: 0;
-      transition: opacity;
-      transition-duration: 0.3s;
-      width: 24px;
-      height: 24px;
-      // background: url('./icons/24_edit.svg') no-repeat;
-    }
-    &:hover {
-      .icon {
-        opacity: 1;
-      }
-    }
-  }
-
-  &__section {
-    padding: 19px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-width: 100%;
-
-    &.flex-1 {
-      flex-grow: 1;
-      flex-shrink: 0;
-      display: flex;
-      height: calc(100% - 96px);
-      max-height: calc(100% - 96px);
-    }
-  }
-
-  &__row {
-    display: flex;
-    flex-direction: row;
-    gap: 6px;
-
-    &.align-center {
-      align-items: center;
-    }
-
-    .ui-select-input__envelope {
-      // width: 100%;
-      flex: 1;
-    }
-
-    &.grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
     }
   }
 
