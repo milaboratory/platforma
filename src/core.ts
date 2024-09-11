@@ -60,6 +60,7 @@ export default class Core {
       options?.configOptions
     );
 
+    this.logger.debug(`  checking license...`);
     this.checkLicense(
       options?.configOptions?.license?.value,
       options?.configOptions?.license?.file
@@ -106,7 +107,7 @@ export default class Core {
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
-    this.logger.debug(`  starting Platforma...`);
+    this.logger.debug(`  starting platforma service...`);
     return run.runProcess(
       this.logger,
       cmd,
@@ -122,10 +123,12 @@ export default class Core {
   }
 
   public startLocalFS(options?: startLocalFSOptions): ChildProcess {
+    this.logger.debug("starting platforma in 'local fs' mode...");
     return this.startLocal(options);
   }
 
   public startLocalS3(options?: startLocalOptions): ChildProcess {
+    this.logger.debug("starting platforma in 'local s3' mode...");
     if (!options?.libraryURL || !options?.primaryURL) {
       this.startMinio();
     }
@@ -153,11 +156,14 @@ export default class Core {
     image?: string;
     version?: string;
   }) {
+    this.logger.debug('  starting minio...');
     var composeMinioSrc = pkg.assets('compose-minio.yaml');
     var composeMinioDst = pkg.state('compose-minio.yaml');
 
     const version = options?.version ? `:${options.version!}` : '';
+    this.logger.debug(`    minio version: ${version}`);
     const image = options?.image ?? `quay.io/minio/minio${version}`;
+    this.logger.debug(`    minio image: ${image}`);
 
     const storage = options?.storage;
 
@@ -168,14 +174,23 @@ export default class Core {
     const compose = this.readComposeFile(composeMinioSrc);
 
     if (storage) {
-      fs.mkdirSync(path.resolve(storage), { recursive: true });
-      envs['MINIO_STORAGE'] = path.resolve(storage);
+      const storagePath = path.resolve(storage);
+      this.logger.debug(
+        `    creating minio storage persistent directory '${storagePath}'...`
+      );
+      fs.mkdirSync(storagePath, { recursive: true });
+      envs['MINIO_STORAGE'] = storagePath;
     } else {
+      this.logger.debug(`    configuring minio to have temporary storage...`);
       compose.volumes.storage = null;
     }
 
+    this.logger.debug(
+      `    rendering minio docker compose '${composeMinioDst}'...`
+    );
     this.writeComposeFile(composeMinioDst, compose);
 
+    this.logger.debug(`    spawning child 'docker' process...`);
     const result = spawnSync(
       'docker',
       [
