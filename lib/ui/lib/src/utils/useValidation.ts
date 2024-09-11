@@ -1,5 +1,7 @@
 import { computed, type Ref } from 'vue';
 
+// Validation rules similar to those in Vuetify
+
 export function validateFormValue<T>(value: T, rules: ((v: T) => boolean | string)[]) {
   const errors: string[] = [];
   if (rules && rules.length > 0) {

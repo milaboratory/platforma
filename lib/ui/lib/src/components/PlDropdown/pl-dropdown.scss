@@ -262,6 +262,7 @@
   &.disabled {
     --contour-color: var(--color-dis-01);
     --control-mask-fill: var(--color-dis-01);
+    --label-color: var(--color-dis-01);
     cursor: not-allowed;
   }
 }

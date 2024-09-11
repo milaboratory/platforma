@@ -23,7 +23,7 @@ export default defineConfig({
       closeBundle() {
         exec('npm run build:types', (err, stdout, stderr) => {
           if (err) {
-            console.error(`Error running build:types: ${stderr}`);
+            console.error(`Error running build:types: ${stderr}`, err);
             return;
           }
         });

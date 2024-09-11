@@ -67,6 +67,11 @@ export const routes = [
     component: () => import('@/text-field/index.vue'),
   },
   {
+    name: 'TextArea',
+    path: '/textarea',
+    component: () => import('@/textarea/index.vue'),
+  },
+  {
     name: 'Buttons',
     path: '/buttons',
     component: () => import('@/buttons/index.vue'),

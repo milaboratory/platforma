@@ -30,6 +30,7 @@ export * from './components/PlBtnGroup';
 export * from './components/PlTextField';
 export * from './components/PlTextArea';
 export * from './components/PlDropdown';
+export * from './components/PlDropdownLine';
 export * from './components/PlTooltip';
 export * from './components/PlProgressBar';
 export * from './components/PlNumberField';
@@ -41,7 +42,6 @@ export * from './components/PlDialogModal';
 export * from './components/PlSlideModal';
 
 // @TODO review (may be private)
-import LineDropdown from './components/LineDropdown.vue';
 import DropdownListItem from './components/DropdownListItem.vue';
 
 // @TODO review
@@ -96,19 +96,7 @@ import FileBaseInput from './components/FileBaseInput.vue';
 /**
  * @TODO review
  */
-export {
-  FileBaseInput,
-  ThemeSwitcher,
-  LineDropdown,
-  DropdownListItem,
-  ToggleSwitch,
-  MaskIcon,
-  MaskIcon16,
-  GridTable,
-  DataTable,
-  ContextProvider,
-  Slider,
-};
+export { FileBaseInput, ThemeSwitcher, DropdownListItem, ToggleSwitch, MaskIcon, MaskIcon16, GridTable, DataTable, ContextProvider, Slider };
 
 // Helpers
 export { showContextMenu };

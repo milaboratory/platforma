@@ -1,4 +1,12 @@
+<script lang="ts">
+export default {
+  name: 'PlAlert',
+};
+</script>
+
 <script lang="ts" setup>
+import './pl-alert.scss';
+
 defineEmits<{
   /**
    * Emitted when the model value is updated, typically when the close button is clicked.

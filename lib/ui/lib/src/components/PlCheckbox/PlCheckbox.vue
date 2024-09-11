@@ -23,7 +23,7 @@ const props = defineProps<{
    */
   modelValue: boolean;
   /**
-   * If `true`, the input field is disabled and cannot be interacted with.
+   * If `true`, the checkbox is disabled and cannot be interacted with.
    */
   disabled?: boolean;
 }>();

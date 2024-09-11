@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LineDropdown, DropdownListItem } from '@milaboratory/platforma-uikit.lib';
+import { PlDropdownLine } from '@milaboratory/platforma-uikit.lib';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import { generate } from '@/imports';
@@ -108,18 +108,14 @@ const propsDescription = {
   <Layout>
     <Split name="Line Dropdown">
       <div>
-        <LineDropdown v-model="model0" :options="itemsTitleAndDescription" prefix="Option:" />
+        <PlDropdownLine v-model="model0" :options="itemsTitleAndDescription" prefix="Option:" />
       </div>
       <div style="display: flex">
-        <LineDropdown v-model="model0" :options="items0" prefix="Option:" :input-max-width="'400px'" clearable>
-          <template #option="slotProps">
-            <DropdownListItem v-bind="slotProps" :size="'small'" />
-          </template>
-        </LineDropdown>
-        <LineDropdown v-model="model0" :options="itemsLong" prefix="Option:" />
-        <LineDropdown v-model="model1" :options="items1" prefix="List:" :disabled="true" />
-        <LineDropdown v-model="model1" :options="items1" prefix="List:" clearable />
-        <LineDropdown v-model="model2" mode="tabs" :options="items2" prefix="Tab:" :tabs-container-styles="{ maxWidth: '700px' }" clearable />
+        <PlDropdownLine v-model="model0" :options="items0" prefix="Option(s):" :input-max-width="'400px'" clearable> </PlDropdownLine>
+        <PlDropdownLine v-model="model0" :options="itemsLong" prefix="Option:" />
+        <PlDropdownLine v-model="model1" :options="items1" prefix="List:" :disabled="true" />
+        <PlDropdownLine v-model="model1" :options="items1" prefix="List:" clearable />
+        <PlDropdownLine v-model="model2" mode="tabs" :options="items2" prefix="Tab:" :tabs-container-styles="{ maxWidth: '700px' }" clearable />
       </div>
       {{ model0 }} {{ typeof model0 }}
       <template #props>

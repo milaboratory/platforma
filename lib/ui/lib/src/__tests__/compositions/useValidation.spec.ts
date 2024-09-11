@@ -1,4 +1,4 @@
-import { useValidation } from '@/composition/useValidation';
+import { useValidation } from '@/utils/useValidation';
 import { describe } from 'node:test';
 import { expect, test } from 'vitest';
 import { ref } from 'vue';

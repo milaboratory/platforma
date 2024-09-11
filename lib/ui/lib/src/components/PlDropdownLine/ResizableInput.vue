@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import './resizable-input.scss';
 import { computed } from 'vue';
 
 const props = defineProps<{

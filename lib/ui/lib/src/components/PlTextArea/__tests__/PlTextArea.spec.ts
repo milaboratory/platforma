@@ -3,17 +3,14 @@ import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import PlTextArea from '../PlTextArea.vue';
 
-describe('TextField', () => {
+describe('TextArea', () => {
   it('renders properly', () => {
     const wrapper = mount(PlTextArea, {
       props: {
-        label: 'TextField Label',
-      },
-      slots: {
-        default: 'Button text',
+        label: 'Label',
       },
     });
-    expect(wrapper.text()).toContain('TextField Label');
+    expect(wrapper.text()).toContain('Label');
   });
 
   it('modelValue', async () => {

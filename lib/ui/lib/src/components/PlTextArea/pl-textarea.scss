@@ -34,6 +34,8 @@
     color: var(--txt-01);
     caret-color: var(--border-color-focus);
     cursor: inherit;
+    resize: none;
+    @include scrollbar;
 
     &:focus {
       outline: none;

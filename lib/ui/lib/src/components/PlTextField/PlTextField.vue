@@ -11,7 +11,7 @@ import { computed, ref, useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import { useValidation } from '@/composition/useValidation';
+import { useValidation } from '@/utils/useValidation';
 
 const slots = useSlots();
 

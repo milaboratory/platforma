@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import './pl-dropdown-line.scss';
 import type { StyleValue } from 'vue';
 import { computed, nextTick, reactive, ref, toRef, watch } from 'vue';
 import { deepEqual } from '@/helpers/objects';
 import { useClickOutside } from '@/composition/useClickOuside';
 import { useFilteredList } from '@/composition/useFilteredList';
-import ResizableInput from '@/components/ResizableInput.vue';
+import ResizableInput from './ResizableInput.vue';
 import { tapIf, tap } from '@/helpers/functions';
 import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
@@ -22,16 +23,12 @@ const props = withDefaults(
     placeholder?: string;
     mode?: 'list' | 'tabs';
     tabsContainerStyles?: StyleValue;
-    // inputMaxWidth?: string;
-    // inputWidth?: string;
     clearable?: boolean;
   }>(),
   {
     mode: 'list',
     placeholder: 'Select..',
     prefix: '',
-    // inputMaxWidth: '',
-    // inputWidth: '',
     tabsContainerStyles: undefined,
     clearable: false,
   },
