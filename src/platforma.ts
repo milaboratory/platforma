@@ -140,11 +140,17 @@ export function extractArchive(
     extractTo?: string;
   }
 ): string {
+  logger.debug('extracting archive...');
+
   const version = options?.version ?? pkg.getPackageJson()['pl-version'];
+  logger.debug(`  version: '${version}'`);
   const archiveName = `${binaryDirName({ version })}.tgz`;
 
   const archivePath = options?.archivePath ?? pkg.binaries(archiveName);
+  logger.debug(`  archive path: '${archivePath}'`);
+
   const targetDir = options?.extractTo ?? trimExtension(archivePath);
+  logger.debug(`  target dir: '${targetDir}'`);
 
   if (fs.existsSync(targetDir)) {
     logger.info(
@@ -154,12 +160,13 @@ export function extractArchive(
   }
 
   if (!fs.existsSync(archivePath)) {
-    throw new Error(
-      `Platforma Backend binary archive not found at '${archivePath}'`
-    );
+    const msg = `Platforma Backend binary archive not found at '${archivePath}'`;
+    logger.error(msg);
+    throw new Error(msg);
   }
 
   if (!fs.existsSync(targetDir)) {
+    logger.debug(`  creating target dir '${targetDir}'`);
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
