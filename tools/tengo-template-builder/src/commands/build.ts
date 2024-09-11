@@ -5,9 +5,9 @@ import {
 import { Command } from '@oclif/core';
 import { compile, savePacks, createLogger } from '../compiler/main';
 import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
-import * as fs from 'node:fs/promises';
+import * as fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import * as nodedir from 'node-dir';
 import winston from 'winston';
 
 export default class Build extends Command {
@@ -45,8 +45,8 @@ export default class Build extends Command {
       .join(',\n');
     js += `\n}}\n`;
 
-    fs.writeFile('index.d.ts', dts);
-    fs.writeFile('index.js', js);
+    await fsp.writeFile('index.d.ts', dts);
+    await fsp.writeFile('index.js', js);
 
     // const compiledDev = compile(logger, 'dev')
     // savePacks(logger, compiledDev, 'dev')
@@ -62,43 +62,44 @@ export default class Build extends Command {
 function checkAndGenerateCtags(logger: winston.Logger, flags: {
   'tags-file': string,
   'tags-root-dir': string,
-  'tags-additional-args': string[],
+  'tags-additional-args': string[] | string,
 }) {
 
   const fileName = path.resolve(flags['tags-file']);
   const rootDir = path.resolve(flags['tags-root-dir']);
-  const additionalArgs = flags['tags-additional-args'];
+  const additionalArgs: string[] = (typeof flags['tags-additional-args'] == "string")
+    ? [flags['tags-additional-args']]
+    : flags['tags-additional-args'];
+
+  // all tengo files in dirs and subdirs
+  const tengoFiles = getTengoFiles(rootDir)
   
-  nodedir.files(rootDir, (_, files) => {
-    // all tengo files in dirs and subdirs
-    const tengoFiles = files.filter(f => f.endsWith(".tengo"));
-    
-    logger.info(
-      `Generating tags for tengo autocompletion from "${rootDir}" \
+  logger.info(
+    `Generating tags for tengo autocompletion from "${rootDir}" \
 in "${fileName}", additional arguments: "${additionalArgs}".
 Found ${tengoFiles.length} tengo files...`)
 
-    // see https://docs.ctags.io/en/latest/man/ctags-optlib.7.html#perl-pod
-    const result = spawnSync(
-      'ctags',
-      [
-        "-f", fileName, ...additionalArgs,
-        "--langdef=tengo",
-        "--map-tengo=+.tengo",
-        "--kinddef-tengo=f,function,function",
-        "--regex-tengo=/^\\s*(.*)(:| :=| =) ?func.*/\\1/f/",
-        "--kinddef-tengo=c,constant,constant",
-        "--regex-tengo=/^\\s*(.*) := (\"|\\{).*/\\1/c/",
-        "-R", ...tengoFiles
-      ],
-      {
-        env: process.env,
-        stdio: 'inherit'
-      }
-    );
+  // see https://docs.ctags.io/en/lates// t/man/ctags-optlib.7.html#perl-pod
+  const result = spawnSync(
+    'ctags',
+    [
+      "-f", fileName, ...additionalArgs,
+      "--langdef=tengo",
+      "--map-tengo=+.tengo",
+      "--kinddef-tengo=f,function,function",
+      "--regex-tengo=/^\\s*(.*)(:| :=| =) ?func.*/\\1/f/",
+      "--kinddef-tengo=c,constant,constant",
+      "--regex-tengo=/^\\s*(.*) := (\"|\\{).*/\\1/c/",
+      "-R", ...tengoFiles
+    ],
+    {
+      env: process.env,
+      stdio: 'inherit'
+    }
+  );
 
-    if (result.error?.message.includes('ENOENT')) {
-      console.log(`
+  if (result.error?.message.includes('ENOENT')) {
+    console.log(`
 pl-tengo can create tags for tengo autocompletion,
 but the program should be installed
 with "brew install universal-ctags" on OSX
@@ -107,13 +108,25 @@ or "sudo apt install universal-ctags" on Ubuntu.
 For vscode, you should also install ctags extension:
 https://marketplace.visualstudio.com/items?itemName=jaydenlin.ctags-support`)
 
-      return
+    return
+  }
+
+  checkRunError(result, 'failed to generate ctags');
+
+  logger.info('Generation of tags is done.')
+}
+
+function getTengoFiles(dir: string): string[] {
+  const files = fs.readdirSync(dir, { withFileTypes: true, recursive: true });
+  const tengoFiles: string[] = [];
+
+  files.forEach(file => {
+    if (!file.isDirectory() && file.name.endsWith('.tengo')) {
+      tengoFiles.push(path.join(file.parentPath, file.name));
     }
+  });
 
-    checkRunError(result, 'failed to generate ctags');
-
-    logger.info('Generation of tags is done.')
-  })
+  return tengoFiles;
 }
 
 function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {

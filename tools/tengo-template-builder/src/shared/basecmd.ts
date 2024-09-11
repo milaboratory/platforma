@@ -32,5 +32,6 @@ export const CtagsFlags = {
     env: "TAGS_ADDITIONAL_ARGS",
     default: [],
     multiple: true,
+    delimiter: ',',
   })
 }
