@@ -36,7 +36,7 @@ _DEFAULT_OPTIONS := {
  * @param spec: query spec
  * @param ctx: results pool (context) to query
  * @param options: an options map
- * @return result: a list of {ref: spec: data:} objects (data will be absent if not requested)
+ * @return result: a list of { ref: spec: data: } objects (data will be absent if not requested)
  */
 create := func(spec, ctx, ...options) {
 
@@ -98,7 +98,7 @@ create := func(spec, ctx, ...options) {
 }
 
 /**
- * Inputs preprocessor used to convert query result into array of {ref: spec: data:} objects
+ * Inputs preprocessor used to convert query result into array of { ref: spec: data: } objects
  */
 resultUnmarshaller := func() {
 	return  {
@@ -138,7 +138,7 @@ resultUnmarshaller := func() {
 					}
 				}
 
-				return result
+				return immutable(result)
 			} else {
 				// format list of results
 
@@ -169,7 +169,7 @@ resultUnmarshaller := func() {
 					result = result[0]
 				}
 
-				return result
+				return immutable(result)
 			}
 		}
 	}
@@ -178,9 +178,9 @@ resultUnmarshaller := func() {
 /**
  * Query results pool to find spec & data for a given ref.
  *
- * @param ref: a ref object ({blockId: name:})
+ * @param ref: a ref object ({ blockId: name: })
  * @param ctx: results pool (context) to query
- * @return result: a {ref: spec: data:} object
+ * @return result: a { ref: spec: data: } object
  */
 resolve := func(ref, ctx, ...options) {
 

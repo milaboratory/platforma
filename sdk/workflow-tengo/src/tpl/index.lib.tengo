@@ -6,61 +6,74 @@ render := import(":render")
 smart := import(":smart")
 sets := import(":sets")
 maps := import(":maps")
+slices := import(":slices")
 tplutil := import(":tpl.util")
 constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
+//////////////// prepared inputs ////////////////////////
+
 /**
- * Unmarshal resource according by:
- *  - converting all json resources (potentially nested) into a tengo objects (maps)
- *  - converting all pl.maps (resource maps) into tengo maps
+ * If we have prepared inputs, flatten them.
  *
- * @param resource: smart resource to unmarshal
- * @param preprocessors: input preprocessors
- * @return object: unmarshaled resource
+ * @param inputs: map[string]any - unmarshaled inputs.
  */
-_unmarshal := func(resource, preprocessors) {
-	ll.assert(smart.isResource(resource), "expected resource, found ", resource)
-
-	// instance of this
-	self := func(resource) { return _unmarshal(resource, preprocessors) }
-
-	// try preprocessors first
-	for preproc in preprocessors {
-		if preproc.canParse(resource) {
-			return preproc.parse(resource, self)
+_flattenPrepareInputs := func(inputs) {
+	pp := inputs[tplutil.PREPARE_MAP_FIELD_NAME]
+	if !is_undefined(pp) {
+		delete(inputs, tplutil.PREPARE_MAP_FIELD_NAME)
+		for k, v in pp {
+			ll.assert(is_undefined(inputs[k]), k, " key already exists in inputs map")
+			inputs[k] = v
 		}
 	}
 
-	if smart.isReference(resource) && resource.hasError() {
-		ll.panic("input resource has errors: ", resource, resource.getError())
-	}
-
-	if smart.isJsonResource(resource) || resource.checkResourceType(constants.RTYPE_BOBJECT_SPEC) {
-
-		// parse json data of the resource
-		return resource.getDataAsJson()
-	} else if smart.isMapResource(resource) || smart.isLockedEphMapResource(resource) {
-
-		// unmarshal map
-		result := {}
-		for field, value in resource.inputs() {
-			if value.isErrorSet() {
-				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
-			} else if value.isSet() {
-				result[field] = _unmarshal(value.getValue(), preprocessors)
-			} else {
-				result[field] = value
-			}
-
-		}
-		return result
-	} else {
-		// nothing todo
-		return resource
-	}
+	return inputs
 }
+
+/**
+ * Has renderer prepare inputs or not.
+ *
+ * @param renderer: smart resource
+ * @return hasPreparedInputs: bool
+ */
+_hasPrepared := func(renderer) {
+	return renderer.get(tplutil.INPUTS_MAP_FIELD).hasField(tplutil.PREPARE_MAP_FIELD_NAME)
+}
+
+/**
+ * Get a prepared map of inputs.
+ * True means we are in the inner render cycle, when all "to be prepared" fields are passed
+ * already to inputs and no need to call prepare callbacks again.
+ *
+ * @param renderer: smart resource
+ */
+_preparedMap := func(renderer) {
+	if _hasPrepared(renderer) {
+		return renderer.get(tplutil.INPUTS_MAP_FIELD).get(tplutil.PREPARE_MAP_FIELD_NAME)
+	}
+
+	return undefined
+}
+
+/**
+ * Sets prepared inputs as a map resource to inputs.
+ *
+ * @param isEph: bool
+ * @param inputs: map[string]any
+ * @param preparedInputs: map[string]reference
+ */
+_setPreparedMap := func(isEph, inputs, preparedInputs) {
+	builder := smart.mapBuilderUniversal(isEph)
+	for name, ref in preparedInputs {
+		builder.add(name, ref)
+	}
+
+	inputs[tplutil.PREPARE_MAP_FIELD_NAME] = builder.build()
+}
+
+/////////////////// tpl /////////////////////////////////
 
 /**
  * A wrapper object around template functionality
@@ -73,10 +86,6 @@ tpl := func() {
 	_rendererType :=  _renderer.info().Type
 
 	_isEphemeral := _rendererType.Name == constants.RTYPE_RENDER_EPH_TEMPLATE.Name
-
-	_hasPrepared := _renderer.get(tplutil.INPUTS_MAP_FIELD).hasField(tplutil.PREPARE_MAP_FIELD_NAME)
-
-	_preparedMap := _hasPrepared ? _renderer.get(tplutil.INPUTS_MAP_FIELD).get(tplutil.PREPARE_MAP_FIELD_NAME) : undefined
 
 	_templateId := _renderer.get(tplutil.TEMPLATE_FIELD).id
 
@@ -132,19 +141,9 @@ tpl := func() {
 		 */
 		inputs: func() {
 			if self._inputs == undefined {
-				inputs := _unmarshal(self.renderer().get(tplutil.INPUTS_MAP_FIELD), self._unmarshallers)
-
-				// if we have prepared inputs, flatten them
-				pp := inputs[tplutil.PREPARE_MAP_FIELD_NAME]
-				if !is_undefined(pp) {
-					delete(inputs, tplutil.PREPARE_MAP_FIELD_NAME)
-					for k, v in pp {
-						ll.assert(is_undefined(inputs[k]), k, " key already exists in inputs map")
-						inputs[k] = v
-					}
-				}
-
-				self._inputs = inputs
+				inputs := smart.unmarshal(self.renderer().get(tplutil.INPUTS_MAP_FIELD), self._unmarshallers)
+				_flattenPrepareInputs(inputs)
+				self._inputs = smart.immutablify(inputs)
 			}
 			return self._inputs
 		},
@@ -233,13 +232,13 @@ tpl := func() {
 		 * True means we are in the inner render cycle, when all "to be prepared" fields are passed
 		 * already to inputs and no need to call prepare callbacks again.
 		 */
-		ignorePrepare: _hasPrepared,
+		ignorePrepare: _hasPrepared(_renderer),
 
 		/**
 		 * Resource map with the resources passed
 		 */
 		preparedMapResource: func() {
-			return _preparedMap
+			return _preparedMap(_renderer)
 		},
 
 		/**
@@ -271,21 +270,12 @@ tpl := func() {
 			ll.assert(!self.ignorePrepare, "expected !ignorePrepare")
 
 			inputs := self.inputs()
-
-			// create new inputs map
 			newInputs := copy(inputs)
-
-			// build a prepare map
-			builder := undefined
-			if self.isEphemeral() {
-				builder = smart.ephemeralMapBuilder()
-			} else {
-				builder = smart.mapBuilder()
-			}
 
 			// validate inputs first if needed
 			self._validateInputs()
-			for cb in self.prepareQueue {
+			preparedInputs := {}
+			for _, cb in self.prepareQueue {
 				// run callback
 				r := cb(inputs)
 
@@ -294,19 +284,15 @@ tpl := func() {
 				for name, ref in r {
 					ll.assert(smart.isReference(ref), "expected reference, got ", ref)
 					ll.assert(is_undefined(newInputs[name]), "prepare name is already in use: ", name)
-
-					builder.add(name, ref)
+					preparedInputs[name] = ref
 				}
 			}
-			newInputs[tplutil.PREPARE_MAP_FIELD_NAME] = builder.build()
+
+			_setPreparedMap(self.isEphemeral(), newInputs, preparedInputs)
 
 			// re-render self
-			renderer := undefined
-			if self.isEphemeral() {
-				renderer = render.createEphemeral(self.template(), newInputs)
-			} else {
-				renderer = render.create(self.template(), newInputs)
-			}
+			renderer := render.createUniversal(self.template(), self.isEphemeral(), newInputs)
+
 			// set outputs
 			for output in self.definedOutputs {
 				self.getOutputField(output).set(renderer.output(output))
@@ -421,7 +407,7 @@ tpl := func() {
 					outputsWithValues = sets.add(outputsWithValues, _delegatedOutputs...)
 
 					ll.assert(sets.fromSlice(self.definedOutputs) == outputsWithValues,
-						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s", 
+						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s",
 						self.definedOutputs, sets.toSlice(outputsWithValues))
 
 					// set result to self outputs
@@ -442,7 +428,7 @@ tpl := func() {
 				}]
 			}
 
-			if _hasPrepared {
+			if _hasPrepared(_renderer) {
 				_stateRequests = append(_stateRequests, {
 					path: [tplutil.PREPARE_MAP_FIELD_NAME],
 					state: "ResourceReady"
@@ -487,7 +473,7 @@ tpl := func() {
 		 * @param extraInputs: map - additional inputs to pass to the template
 		 * @param outputs: array - array of expected outputs to save
 		 */
-		routeDelegate: func(tpl, extraInputs, outputs) {
+		delegate: func(tpl, extraInputs, outputs) {
 			_delegatedOutputs = outputs
 
 			inputs := self.rawInputs()
@@ -495,12 +481,7 @@ tpl := func() {
 				inputs[k] = v
 			}
 
-			renderer := undefined
-			if self.isEphemeral() {
-				renderer = render.createEphemeral(tpl, inputs)
-			} else {
-				renderer = render.create(tpl, inputs)
-			}
+			renderer := render.createUniversal(tpl, self.isEphemeral(), inputs)
 
 			tplOutputs := {}
 			for o in outputs {
@@ -528,7 +509,7 @@ export ll.toStrict({
 	defineOutputs           : instance.defineOutputs,
 	prepare                 : instance.prepare,
 	awaitState              : instance.awaitState,
-	delegate                : instance.routeDelegate,
+	delegate                : instance.delegate,
 	validateInputs          : instance.validateInputs,
 	body                    : instance.body,
 	template                : instance.template
