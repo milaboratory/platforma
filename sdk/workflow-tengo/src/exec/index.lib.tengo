@@ -29,11 +29,16 @@ builder := func() {
 	soft := undefined
 	cmd := undefined
 	args := []
-	entrypointSet := false
 
+	entrypointSet := false
 	assertEntrypointNotSet := func() {
 		ll.assert(!entrypointSet,
 			"either a command with arguments or a software were already set.")
+	}
+
+	built := false
+	assertNotBuilt := func() {
+		ll.assert(!built, "exec.builder was already built")
 	}
 
 	envs := {}
@@ -76,6 +81,7 @@ builder := func() {
 		 */
 		cmd: func(commandName) {
 			assertEntrypointNotSet()
+			assertNotBuilt()
 
 			cmd = commandName
 			entrypointSet = true
@@ -89,6 +95,7 @@ builder := func() {
 		 */
 		software: func(sw) {
 			assertEntrypointNotSet()
+			assertNotBuilt()
 			ll.assert(assets.isSoftwareInfo(sw),
 				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
 			)
@@ -104,6 +111,7 @@ builder := func() {
 		 * @param arg: string - the argument to add.
 		 */
 		arg: func(arg) {
+			assertNotBuilt()
 			args = append(args, arg)
 			return self
 		},
@@ -115,6 +123,7 @@ builder := func() {
 		 * @param value: string - the value of the environment variable.
 		 */
 		env: func(name, value) {
+			assertNotBuilt()
 			validation.assertJsonSchema([name, value], ["string"])
 			envs[name] = value
 			return self
@@ -126,6 +135,7 @@ builder := func() {
 		 * @param envMap: map[string]string - a map of environment variables.
 		 */
 		envMap: func(envMap) {
+			assertNotBuilt()
 			enum.each(envMap, self.env)
 			return self
 		},
@@ -134,6 +144,7 @@ builder := func() {
 		 * Sets the execution queue to the heavy queue.
 		 */
 		inHeavyQueue: func() {
+			assertNotBuilt()
 			queue = _HEAVY_QUEUE
 			return self
 		},
@@ -142,6 +153,7 @@ builder := func() {
 		 * Sets the execution queue to the UI tasks queue.
 		 */
 		inUiQueue: func() {
+			assertNotBuilt()
 			queue = _UI_TASKS_QUEUE
 			return self
 		},
@@ -152,6 +164,7 @@ builder := func() {
 		 * @param time: duration - the cache time from 'times' library.
 		 */
 		cache: func(time) {
+			assertNotBuilt()
 			ll.assert(
 				is_int(time),
 				"cache time must be an integer. " +
@@ -166,6 +179,7 @@ builder := func() {
 		 * @param lines: number - the number of error lines.
 		 */
 		nErrorLines: func(lines) {
+			assertNotBuilt()
 			ll.assert(
 				is_int(lines) && lines >= 0,
 				"lines must be integer")
@@ -181,6 +195,13 @@ builder := func() {
 		 * @param file: reference - a resource id of the file or a field that points to it.
 		 */
 		addFile: func(fileName, file) {
+			assertNotBuilt()
+			// Windows does not support hardlinks, thus we have a hack in pl-core that helps to use
+			// files without linking them on Windows IF there is an extension.
+			// If it's too restrictive, unset 'copyOptional' flag from a workdir fill rule
+			// and this assert.
+			ll.assert(path.getExtension(fileName) != "", "file %s should contain a proper extension", fileName)
+
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
 			return self
@@ -192,6 +213,7 @@ builder := func() {
 		 * @param filesMap: map[string]reference - a map of file names to files' references.
 		 */
 		addFiles: func(filesMap) {
+			assertNotBuilt()
 			enum.each(filesMap, self.addFile)
 			return self
 		},
@@ -204,6 +226,13 @@ builder := func() {
 		 *        a resource from which data we create a file.
 		 */
 		writeFile: func(fileName, data) {
+			assertNotBuilt()
+			// Windows does not support hardlinks, thus we have a hack in pl-core that helps to use
+			// files without linking them on Windows IF there is an extension.
+			// If it's too restrictive, unset 'copyOptional' flag from a fill rule
+			// and this assert.
+			ll.assert(path.getExtension(fileName) != "", "file %s should contain a proper extension", fileName)
+
 			validation.assertJsonSchema(data, ["or",
 				"string",
 				"bytes",
@@ -222,6 +251,7 @@ builder := func() {
 		 * @param dir: string - the directory to create.
 		 */
 		mkDir: func(dir) {
+			assertNotBuilt()
 			dir = path.canonize(dir)
 			dirsToCreate = sets.add(dirsToCreate, dir)
 			return self
@@ -233,6 +263,7 @@ builder := func() {
 		 * @param fileName: string - the name of the output file.
 		 */
 		saveFile: func(fileName) {
+			assertNotBuilt()
 			fileName = path.canonize(fileName)
 			sets.add(filesToSave, fileName)
 			return self
@@ -244,6 +275,7 @@ builder := func() {
 		 * @param fileName: string - the name of the output value.
 		 */
 		saveFileContent: func(fileName) {
+			assertNotBuilt()
 			fileName = path.canonize(fileName)
 			sets.add(filesContentToSave, fileName)
 			return self
@@ -256,6 +288,7 @@ builder := func() {
 		 * @param regex: string - regex pattern
 		 */
 		saveFileSet: func(name, regex) {
+			assertNotBuilt()
 			fileSetsToSave[name] = regex
 			return self
 		},
@@ -264,6 +297,7 @@ builder := func() {
 		 * Run specified
 		 */
 		processWorkdir: func(name, tpl, tplArgs) {
+			assertNotBuilt()
 			wdProcessors[name] = {
 				tpl: tpl,
 				tplArgs: tplArgs
@@ -278,6 +312,7 @@ builder := func() {
 		 * @param regex: string - regex pattern
 		 */
 		saveFileSetContent: func(name, regex) {
+			assertNotBuilt()
 			fileSetsContentToSave[name] = regex
 			return self
 		},
@@ -288,6 +323,7 @@ builder := func() {
 		 * @param fileName: string - the name of the file to stream.
 		 */
 		streamFile: func(fileName) {
+			assertNotBuilt()
 			fileName = path.canonize(fileName)
 			sets.add(filesToStream, fileName)
 
@@ -298,6 +334,7 @@ builder := func() {
 		 * Set stdout file name
 		 */
 		stdoutFileName: func(fileName) {
+			assertNotBuilt()
 			fileName = path.canonize(fileName)
 			stdout = fileName
 			return self
@@ -307,6 +344,7 @@ builder := func() {
 		 * Set stderr file name
 		 */
 		stderrFileName: func(fileName) {
+			assertNotBuilt()
 			fileName = path.canonize(fileName)
 			stderr = fileName
 			return self
@@ -316,6 +354,7 @@ builder := func() {
 		 * Sets stdout to be captured as a value resource.
 		 */
 		saveStdoutContent: func() {
+			assertNotBuilt()
 			stdoutToValue = true
 			return self
 		},
@@ -324,6 +363,7 @@ builder := func() {
 		 * Sets stderr to be captured as a value resource.
 		 */
 		saveStderrContent: func() {
+			assertNotBuilt()
 			stderrToValue = true
 			return self
 		},
@@ -332,6 +372,7 @@ builder := func() {
 		 * Redirects stderr output to stdout.
 		 */
 		printErrStreamToStdout: func() {
+			assertNotBuilt()
 			stderrToStdout = true
 			return self
 		},
@@ -342,6 +383,9 @@ builder := func() {
 		 * @return A map containing the execution results.
 		 */
 		run: func() {
+			assertNotBuilt()
+			built = true
+
 			if stderrToStdout {
 				stderr = stdout
 			}
