@@ -116,11 +116,12 @@
   justify-content: center;
 }
 
-@for $i from 1 through 15 {
-  .gap-#{$i} {
-    gap: $i * 2px !important;
-  }
-}
+// @TODO
+// @for $i from 1 through 15 {
+//   .gap-#{$i} {
+//     gap: $i * 2px !important;
+//   }
+// }
 
 .cursor-pointer {
   cursor: pointer;
