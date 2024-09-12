@@ -1,4 +1,4 @@
-@import "./mixins";
+@import "@/assets/mixins";
 
 .ui-btn-secondary {
   @include base-btn;

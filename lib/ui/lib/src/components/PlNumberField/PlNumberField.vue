@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import './pl-number-field.scss';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { computed, nextTick, ref, useSlots } from 'vue';

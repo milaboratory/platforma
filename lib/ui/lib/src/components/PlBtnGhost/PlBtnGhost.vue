@@ -1,4 +1,14 @@
+<script lang="ts">
+/**
+ * Ghost button
+ */
+export default {
+  name: 'PlBtnGhost',
+};
+</script>
+
 <script lang="ts" setup>
+import './pl-btn-ghost.scss';
 import type { MaskIconName16, Size } from '@/types';
 import MaskIcon16 from '@/components/MaskIcon16.vue';
 import { computed, ref, useSlots } from 'vue';
@@ -6,15 +16,30 @@ import { useRipple } from '@/composition/useRipple';
 
 const props = withDefaults(
   defineProps<{
+    /**
+     * If `true,` the button is disabled, cannot be interacted with, and shows a special 'loading' icon.
+     */
     loading?: boolean;
-    small?: boolean;
-    large?: boolean;
+    /**
+     * Size of the button, the default value is 'medium'
+     */
     size?: Size;
+    /**
+     * If `true` the shape is round.
+     */
     round?: boolean;
+    /**
+     * Icon to display
+     */
     icon?: MaskIconName16;
+    /**
+     * If `true`, an icon is displayed before the text.
+     */
     reverse?: boolean;
+    /**
+     * Justify text at the center (is `true` by default)
+     */
     justifyCenter?: boolean;
-    hover?: boolean;
   }>(),
   {
     size: undefined,
@@ -23,22 +48,22 @@ const props = withDefaults(
   },
 );
 
-const small = computed(() => props.small || props.size === 'small');
-const large = computed(() => props.large || props.size === 'large');
+const small = computed(() => props.size === 'small');
+const large = computed(() => props.size === 'large');
 
-const btn = ref();
+const btnRef = ref();
 
 const slots = useSlots();
 
-useRipple(btn);
+useRipple(btnRef);
 </script>
 
 <template>
   <button
-    ref="btn"
+    ref="btnRef"
     tabindex="0"
     class="ui-btn-ghost"
-    :class="{ loading, small, large, round, reverse, justifyCenter, hover, [$attrs.class + '']: true }"
+    :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
     <span v-if="slots.default">

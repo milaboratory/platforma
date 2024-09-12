@@ -6,33 +6,15 @@
 @use './icons';
 @use './masks';
 @use './slider';
-@use './chip';
 @use './theme-switcher';
-@use './btn-primary';
-@use './btn-secondary';
-@use './btn-link';
-@use './btn-accent';
-@use './btn-ghost';
-@use './btn-group';
-@use './textarea';
 @use './progress-bar';
-@use './tooltip';
 @use './scroll';
-@use './dialog-modal';
 @use './dropdown-list-item';
 @use './typography';
 @use './dropdown-tab-item';
-@use './toggle-switch';
 @use './input-range';
 @use './sortable';
-@use './number-field';
 @use './layout';
 @use './icons/icons-set';
 @use './css-utils';
 @use './file-base-input';
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}

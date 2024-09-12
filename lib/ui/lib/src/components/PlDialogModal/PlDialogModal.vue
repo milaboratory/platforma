@@ -5,6 +5,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
+import './pl-dialog-modal.scss';
 import { ref, useAttrs } from 'vue';
 
 const emit = defineEmits(['update:modelValue']);
@@ -41,8 +42,8 @@ function onClickShadow(ev: Event) {
 <template>
   <Teleport to="body">
     <Transition name="dialog">
-      <div v-if="modelValue" class="dialog-modal__shadow" @click="onClickShadow" @keyup.esc="emit('update:modelValue', false)">
-        <div v-bind="$attrs" ref="modal" class="dialog-modal" :class="[type]" :style="{ width, height, minHeight }">
+      <div v-if="modelValue" class="pl-dialog-modal__shadow" @click="onClickShadow" @keyup.esc="emit('update:modelValue', false)">
+        <div v-bind="$attrs" ref="modal" class="pl-dialog-modal" :class="[type]" :style="{ width, height, minHeight }">
           <div v-if="closable" class="close-dialog-btn" @click.stop="emit('update:modelValue', false)" />
           <slot />
         </div>

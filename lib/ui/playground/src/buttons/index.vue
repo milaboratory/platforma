@@ -41,36 +41,42 @@ function onClick() {
         <label style="user-select: none"> <input v-model="props.justifyCenter" type="checkbox" />Justify center </label>
       </div>
       <div class="test-buttons">
-        <div>
+        <fieldset>
+          <legend>PlBtnAccent</legend>
           <PlBtnAccent v-bind="props">{{ text }}</PlBtnAccent>
           <PlBtnAccent icon="add" v-bind="props">{{ text }}</PlBtnAccent>
           <PlBtnAccent round icon="add" v-bind="props">{{ text }}</PlBtnAccent>
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+          <legend>PlBtnPrimary</legend>
           <PlBtnPrimary v-bind="props">{{ text }}</PlBtnPrimary>
           <PlBtnPrimary icon="play" v-bind="props">{{ text }}</PlBtnPrimary>
           <PlBtnPrimary round icon="add" v-bind="props" @click="onClick">{{ text }}</PlBtnPrimary>
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+          <legend>PlBtnSecondary</legend>
           <PlBtnSecondary v-bind="props">{{ text }}</PlBtnSecondary>
           <PlBtnSecondary icon="add" v-bind="props">{{ text }}</PlBtnSecondary>
-          <PlBtnSecondary round icon="add" v-bind="props">{{ text }}</PlBtnSecondary>
-        </div>
-        <div>
+          <PlBtnSecondary round icon="add" v-bind="props">{{ text }} (round)</PlBtnSecondary>
+        </fieldset>
+        <fieldset>
+          <legend>PlBtnLink</legend>
           <PlBtnLink icon="arrow-right" v-bind="props">{{ text }}</PlBtnLink>
           <PlBtnLink icon="add" v-bind="props">{{ text }}</PlBtnLink>
           <PlBtnLink round icon="add" v-bind="props" @click="onClick">{{ text }}</PlBtnLink>
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+          <legend>PlBtnGhost</legend>
           <PlBtnGhost style="min-width: 160px" v-bind="props">{{ text }}</PlBtnGhost>
           <PlBtnGhost icon="arrow-right" v-bind="props">{{ text }}</PlBtnGhost>
           <PlBtnGhost icon="add" v-bind="props">{{ text }}</PlBtnGhost>
           <PlBtnGhost icon="clipboard" v-bind="props" />
           <PlBtnGhost icon="import" v-bind="props">Settings</PlBtnGhost>
-        </div>
-        <div>
+        </fieldset>
+        <fieldset>
+          <legend>PlBtnGhost with all the icons</legend>
           <PlBtnGhost v-for="icon in maskIcons16" :key="icon" :icon="icon">Icon: {{ icon }}</PlBtnGhost>
-        </div>
+        </fieldset>
       </div>
     </Split>
   </Layout>
@@ -82,7 +88,8 @@ function onClick() {
   grid-template-rows: auto;
   grid-gap: 24px;
 
-  > div {
+  > div,
+  fieldset {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     grid-gap: 24px;

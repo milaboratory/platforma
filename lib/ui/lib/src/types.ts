@@ -19,40 +19,16 @@ export type Position = Omit<DOMRect, 'toJSON'> & {
   offsetX: number;
 };
 
+export type SimpleOption<T = unknown> = {
+  text: string;
+  value: T;
+};
+
 export type ListOption<T = unknown> = {
   text: string;
   description?: string;
   value: T;
 };
-
-/**
- * @deprecated
- */
-export const maskIcons = [
-  'checkmark',
-  'download',
-  'clear',
-  'chevron-right',
-  'add',
-  'play',
-  'loader',
-  'arrow-right',
-  'clipboard',
-  'paper-clip',
-  'settings-2',
-  'filters',
-  'local',
-  'server-on',
-  'close',
-  'columns',
-  'restart',
-  'stop',
-] as const;
-
-/**
- * @deprecated
- */
-export type MaskIconName = (typeof maskIcons)[number];
 
 export const maskIcons16 = [
   'checkmark',

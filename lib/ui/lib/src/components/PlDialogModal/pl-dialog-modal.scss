@@ -1,6 +1,6 @@
-@import './mixins';
+@import '@/assets/mixins';
 
-.dialog-modal {
+.pl-dialog-modal {
   --padding: 24px 20px;
   --border-radius: 12px;
 
@@ -84,7 +84,7 @@
     right: 12px;
     cursor: pointer;
     background-color: #d3d7e0;
-    @include mask(url(./images/24_close.svg), 24px);
+    @include mask(url(@/assets/images/24_close.svg), 24px);
     transition: all 0.1s ease-in-out;
     &:hover {
       background-color: var(--main-dark-color);

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import './pl-tooltip.scss';
 import { reactive, ref, watch } from 'vue';
 import { useTooltipPosition } from '@/composition/useTooltipPosition';
 import * as utils from '@/helpers/utils';

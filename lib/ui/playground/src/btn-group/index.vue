@@ -39,6 +39,7 @@ const options2 = [
       </PlBtnGroup>
       <PlBtnGroup v-model="data.num" label="Label" disabled :options="options2" />
       <PlBtnGroup v-model="data.num" label="Label" :options="options2" />
+      <PlBtnGroup v-model="data.num" label="Label (required)" :options="options2" required />
     </Split>
   </Layout>
 </template>

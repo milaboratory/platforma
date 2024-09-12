@@ -19,7 +19,6 @@ const props = defineProps<{
   icon?: MaskIconName16;
   reverse?: boolean;
   justifyCenter?: boolean;
-  hover?: boolean;
 }>();
 
 const btn = ref();
@@ -34,7 +33,7 @@ useRipple(btn);
   <button
     ref="btn"
     tabindex="0"
-    :class="{ loading, small, large, round, reverse, justifyCenter, hover, [$attrs.class + '']: true }"
+    :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
     <span v-if="!round">

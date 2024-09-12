@@ -1,32 +1,60 @@
-<script lang="ts" setup>
+<script lang="ts">
+/**
+ * A component for selecting one value from a list of options
+ */
+export default {
+  name: 'PlBtnGroup',
+};
+</script>
+
+<script lang="ts" setup generic="M = unknown">
+import './pl-btn-group.scss';
 import { useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import InnerBorder from '@/utils/InnerBorder.vue';
-import type { ListOption } from '@/types';
+import type { SimpleOption } from '@/types';
 
 const slots = useSlots();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  /**
+   * Emitted when the model value is updated.
+   */
+  (e: 'update:modelValue', value: M): void;
+}>();
 
-const emitModel = (v: unknown) => emit('update:modelValue', v);
+const emitModel = (v: M) => emit('update:modelValue', v);
 
 defineProps<{
-  modelValue?: unknown;
-  options: Readonly<ListOption[]>;
+  /**
+   * The current selected value.
+   */
+  modelValue?: M;
+  /**
+   * The label text for the dropdown field (optional)
+   */
   label?: string;
-  //FIXME unused props
-  // clearable?: boolean;
-  //FIXME unused props
-  //required?: boolean;
+  /**
+   * List of available options for the dropdown
+   */
+  options: Readonly<SimpleOption<M>[]>;
+  /**
+   * If `true`, the dropdown component is disabled and cannot be interacted with.
+   */
   disabled?: boolean;
-  large?: boolean;
+  /**
+   * A helper text displayed below the component when there are no errors (optional).
+   */
   helper?: string;
+  /**
+   * Error message displayed below the component (optional)
+   */
   error?: string;
 }>();
 </script>
 
 <template>
-  <div class="ui-btn-group" :class="{ large, disabled }">
+  <div class="ui-btn-group" :class="{ disabled }">
     <label v-if="label">
       <span>{{ label }}</span>
       <PlTooltip v-if="slots.tooltip" class="info" position="top">
@@ -38,7 +66,7 @@ defineProps<{
     <InnerBorder class="ui-btn-group__container">
       <div
         v-for="(opt, i) in options"
-        :key="opt.value + ':' + i"
+        :key="i"
         class="ui-btn-group__option"
         :tabindex="modelValue === opt.value || disabled ? undefined : 0"
         :class="{ active: modelValue === opt.value }"

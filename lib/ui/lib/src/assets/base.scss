@@ -121,6 +121,12 @@
   --theme-switcher-icon-color: var(--txt-01);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 #app {

@@ -1,4 +1,4 @@
-@import "./mixins";
+@import "@/assets/mixins";
 
 .ui-btn-group {
   box-sizing: content-box;
@@ -10,6 +10,7 @@
     margin-bottom: 6px;
     display: flex;
     align-items: center;
+    gap: 4px;
     font-weight: 500;
     font-size: var(--font-size-base);
     line-height: 20px;
@@ -117,6 +118,7 @@
     --btn-switcher-active-option-color: var(--color-dis-00);
     --btn-switcher-active-option-border: 0px;
     pointer-events: none;
+    // @TODO
     tab-index: unset !important;
   }
 }

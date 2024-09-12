@@ -1,4 +1,4 @@
-@import "./mixins";
+@import "@/assets/mixins";
 
 .ui-chip-tooltip {
   display: inline-flex;
@@ -63,7 +63,7 @@
 
     &--icon {
       background: var(--mask-color);
-      @include mask(url('./images/16_close.svg'), 16px);
+      @include mask(url('@/assets/images/16_close.svg'), 16px);
     }
   }
 }

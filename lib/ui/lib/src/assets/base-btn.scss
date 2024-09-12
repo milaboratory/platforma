@@ -110,7 +110,7 @@
   &.loading {
     box-shadow: none !important;
 
-    .mask--loader {
+    .mask-loading {
       display: block;
       animation: spin 4s linear infinite;
     }

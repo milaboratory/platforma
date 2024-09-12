@@ -40,13 +40,12 @@ export * from './components/PlCheckboxGroup';
 export * from './components/PlChip';
 export * from './components/PlDialogModal';
 export * from './components/PlSlideModal';
+export * from './components/PlToggleSwitch';
 
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';
 
 // @TODO review
-import ToggleSwitch from './components/ToggleSwitch.vue';
-import MaskIcon from './components/MaskIcon.vue';
 import MaskIcon16 from './components/MaskIcon16.vue';
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
@@ -84,7 +83,7 @@ import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
 export type * from './types';
 
-export { maskIcons, maskIcons16 } from './types';
+export { maskIcons16 } from './types';
 
 export * from './helpers/dom';
 
@@ -96,7 +95,7 @@ import FileBaseInput from './components/FileBaseInput.vue';
 /**
  * @TODO review
  */
-export { FileBaseInput, ThemeSwitcher, DropdownListItem, ToggleSwitch, MaskIcon, MaskIcon16, GridTable, DataTable, ContextProvider, Slider };
+export { FileBaseInput, ThemeSwitcher, DropdownListItem, MaskIcon16, GridTable, DataTable, ContextProvider, Slider };
 
 // Helpers
 export { showContextMenu };
