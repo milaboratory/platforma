@@ -1,5 +1,7 @@
 export type AnyFunction = (...args: any[]) => any;
 
+export type AnyAsyncFuntion = (...args: any[]) => Promise<any>;
+
 export type Optional<T> = T | undefined;
 
 export type OneOrMany<T> = T | T[];
@@ -87,3 +89,5 @@ export type Objectify<U extends {key: string; value: unknown}> = { [T in U as T[
 declare const __brand: unique symbol
 
 export type Branded<T, B> = T & { readonly [__brand]: B };
+
+export type Undef<T> = T | undefined;

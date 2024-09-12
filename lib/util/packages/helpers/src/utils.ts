@@ -16,8 +16,6 @@ export function notUndef<T>(v: T | undefined, message?: string): T {
   return v;
 }
 
-export type Undef<T> = T | undefined;
-
 export function undef<V>(v: V | undefined = undefined): V | undefined {
   return v;
 }
