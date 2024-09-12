@@ -18,13 +18,22 @@
 !_TAG_OUTPUT_VERSION	0.0	/current.age/
 !_TAG_PARSER_VERSION!tengo	0.0	/current.age/
 !_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
-!_TAG_PROC_CWD	/Users/denkoren/work/milaboratory/platforma/tengo/tengo-sdk/	//
+!_TAG_PROC_CWD	/home/snyssfx/prog/mi/tpls/tengo-sdk/	//
 !_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
 !_TAG_PROGRAM_VERSION	6.1.0	//
+* @param cb	./dist/tengo/lib/workdir.proc.lib.tengo	/^		 * @param cb: func - a callback function to run in template body; the inputs passed to the bod/;"	f
 * @param cb	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		 * @param cb: func - a callback function to run in template body; the inputs passed to the bod/;"	f
 * @param cb	./src/workdir/proc.lib.tengo	/^		 * @param cb: func - a callback function to run in template body; the inputs passed to the bod/;"	f
+* @param fn	./dev/tengo/lib/sets.lib.tengo	/^ * @param fn: func(elem): newElem - a function that gets an element and returns a new element.$/;"	f
+* @param fn	./dev/tengo/lib/slices.lib.tengo	/^ * @param fn: func(any, element): new result.$/;"	f
+* @param fn	./dev/tengo/lib/slices.lib.tengo	/^ * @param fn: func(elem): int - a function that transforms an element to a key.$/;"	f
+* @param fn	./dev/tengo/lib/slices.lib.tengo	/^ * @param fn: func(elem): new elem - a function that gets an element and returns a transformed e/;"	f
+* @param fn	./dist/tengo/lib/sets.lib.tengo	/^ * @param fn: func(elem): newElem - a function that gets an element and returns a new element.$/;"	f
+* @param fn	./dist/tengo/lib/slices.lib.tengo	/^ * @param fn: func(any, element): new result.$/;"	f
+* @param fn	./dist/tengo/lib/slices.lib.tengo	/^ * @param fn: func(elem): int - a function that transforms an element to a key.$/;"	f
+* @param fn	./dist/tengo/lib/slices.lib.tengo	/^ * @param fn: func(elem): new elem - a function that gets an element and returns a transformed e/;"	f
 * @param fn	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^ * @param fn: func(elem): newElem - a function that gets an element and returns a new element.$/;"	f
 * @param fn	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^ * @param fn: func(any, element): new result.$/;"	f
 * @param fn	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^ * @param fn: func(elem): int - a function that transforms an element to a key.$/;"	f
@@ -33,94 +42,169 @@
 * @param fn	./src/slices.lib.tengo	/^ * @param fn: func(any, element): new result.$/;"	f
 * @param fn	./src/slices.lib.tengo	/^ * @param fn: func(elem): int - a function that transforms an element to a key.$/;"	f
 * @param fn	./src/slices.lib.tengo	/^ * @param fn: func(elem): new elem - a function that gets an element and returns a transformed e/;"	f
+* @param fnK	./dev/tengo/lib/maps.lib.tengo	/^ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.$/;"	f
+* @param fnK	./dist/tengo/lib/maps.lib.tengo	/^ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.$/;"	f
 * @param fnK	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.$/;"	f
 * @param fnK	./src/maps.lib.tengo	/^ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.$/;"	f
+* @param predicateFn	./dev/tengo/lib/slices.lib.tengo	/^ * @param predicateFn: func(elem): bool - a function that gets an element and returns a truthy o/;"	f
+* @param predicateFn	./dist/tengo/lib/slices.lib.tengo	/^ * @param predicateFn: func(elem): bool - a function that gets an element and returns a truthy o/;"	f
 * @param predicateFn	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^ * @param predicateFn: func(elem): bool - a function that gets an element and returns a truthy o/;"	f
 * @param predicateFn	./src/slices.lib.tengo	/^ * @param predicateFn: func(elem): bool - a function that gets an element and returns a truthy o/;"	f
+// cmd	./dev/tengo/lib/software.lib.tengo	/^\/\/ cmd := func() {$/;"	f
+// get	./dev/tengo/lib/software.lib.tengo	/^\/\/ get := func(artifact) {$/;"	f
+FTYPE_DYNAMIC	./dist/tengo/lib/constants.lib.tengo	/^FTYPE_DYNAMIC             := "dynamic"$/;"	c
 FTYPE_DYNAMIC	./src/constants.lib.tengo	/^FTYPE_DYNAMIC             := "dynamic"$/;"	c
+FTYPE_INPUT	./dist/tengo/lib/constants.lib.tengo	/^FTYPE_INPUT               := "input"$/;"	c
 FTYPE_INPUT	./src/constants.lib.tengo	/^FTYPE_INPUT               := "input"$/;"	c
+FTYPE_OTW	./dist/tengo/lib/constants.lib.tengo	/^FTYPE_OTW                 := "OTW" \/\/ Generic one-time writable field. The value of this field/;"	c
 FTYPE_OTW	./src/constants.lib.tengo	/^FTYPE_OTW                 := "OTW" \/\/ Generic one-time writable field. The value of this field/;"	c
+FTYPE_OUTPUT	./dist/tengo/lib/constants.lib.tengo	/^FTYPE_OUTPUT              := "output"$/;"	c
 FTYPE_OUTPUT	./src/constants.lib.tengo	/^FTYPE_OUTPUT              := "output"$/;"	c
+FTYPE_SERVICE	./dist/tengo/lib/constants.lib.tengo	/^FTYPE_SERVICE             := "service"$/;"	c
 FTYPE_SERVICE	./src/constants.lib.tengo	/^FTYPE_SERVICE             := "service"$/;"	c
+INPUTS_MAP_FIELD	./dev/tengo/lib/tpl-util.lib.tengo	/^INPUTS_MAP_FIELD := "inputs"$/;"	c
+INPUTS_MAP_FIELD	./dist/tengo/lib/tpl.util.lib.tengo	/^INPUTS_MAP_FIELD := "inputs"$/;"	c
 INPUTS_MAP_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.util.lib.tengo	/^INPUTS_MAP_FIELD := "inputs"$/;"	c
 INPUTS_MAP_FIELD	./src/tpl/util.lib.tengo	/^INPUTS_MAP_FIELD := "inputs"$/;"	c
+KEY_FIELD_NAME	./dist/tengo/lib/pframes.constants.lib.tengo	/^KEY_FIELD_NAME := "__key__"$/;"	c
 KEY_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^KEY_FIELD_NAME := "__key__"$/;"	c
 KEY_FIELD_NAME	./src/pframes/constants.lib.tengo	/^KEY_FIELD_NAME := "__key__"$/;"	c
+KIND_P_COLUMN	./dist/tengo/lib/pframes.constants.lib.tengo	/^KIND_P_COLUMN := "PColumn"$/;"	c
 KIND_P_COLUMN	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^KIND_P_COLUMN := "PColumn"$/;"	c
 KIND_P_COLUMN	./src/pframes/constants.lib.tengo	/^KIND_P_COLUMN := "PColumn"$/;"	c
+META_KEY_DESCRIPTOR	./dist/tengo/lib/exec.package.lib.tengo	/^META_KEY_DESCRIPTOR := "ctl\/runner\/package\/descriptor"$/;"	c
 META_KEY_DESCRIPTOR	./src/exec/package.lib.tengo	/^META_KEY_DESCRIPTOR := "ctl\/runner\/package\/descriptor"$/;"	c
+NO_PREFIX_EXPORT	./dist/tengo/lib/workflow.constants.lib.tengo	/^NO_PREFIX_EXPORT := "_"$/;"	c
 NO_PREFIX_EXPORT	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.constants.lib.tengo	/^NO_PREFIX_EXPORT := "_"$/;"	c
 NO_PREFIX_EXPORT	./src/workflow/constants.lib.tengo	/^NO_PREFIX_EXPORT := "_"$/;"	c
+PFCONV_CFG_SCHEMA	./dist/tengo/lib/pframes.util.lib.tengo	/^PFCONV_CFG_SCHEMA := {$/;"	c
+PFCONV_CFG_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^PFCONV_CFG_SCHEMA := {$/;"	c
+PFCONV_CFG_SCHEMA	./src/pframes/util.lib.tengo	/^PFCONV_CFG_SCHEMA := {$/;"	c
+PREPARE_MAP_FIELD_NAME	./dev/tengo/lib/tpl-util.lib.tengo	/^PREPARE_MAP_FIELD_NAME := "__prepare__"$/;"	c
+PREPARE_MAP_FIELD_NAME	./dist/tengo/lib/tpl.util.lib.tengo	/^PREPARE_MAP_FIELD_NAME := "__prepare__"$/;"	c
 PREPARE_MAP_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.util.lib.tengo	/^PREPARE_MAP_FIELD_NAME := "__prepare__"$/;"	c
 PREPARE_MAP_FIELD_NAME	./src/tpl/util.lib.tengo	/^PREPARE_MAP_FIELD_NAME := "__prepare__"$/;"	c
+P_COLUMN_DATA_TYPE_PREFIX	./dist/tengo/lib/pframes.constants.lib.tengo	/^P_COLUMN_DATA_TYPE_PREFIX := "PColumnData\/"$/;"	c
 P_COLUMN_DATA_TYPE_PREFIX	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^P_COLUMN_DATA_TYPE_PREFIX := "PColumnData\/"$/;"	c
 P_COLUMN_DATA_TYPE_PREFIX	./src/pframes/constants.lib.tengo	/^P_COLUMN_DATA_TYPE_PREFIX := "PColumnData\/"$/;"	c
+RTYPE_BINARY_MAP	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_MAP := { Name: "BinaryMap", Version: "1" }$/;"	c
+RTYPE_BINARY_MAP	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_MAP          := { Name: "BinaryMap",         Version: "1" }$/;"	c
 RTYPE_BINARY_MAP	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_MAP          := { Name: "BinaryMap",         Version: "1" }$/;"	c
 RTYPE_BINARY_MAP	./src/constants.lib.tengo	/^RTYPE_BINARY_MAP          := { Name: "BinaryMap",         Version: "1" }$/;"	c
+RTYPE_BINARY_VALUE	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_VALUE := { Name: "BinaryValue", Version: "1" }$/;"	c
+RTYPE_BINARY_VALUE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_VALUE        := { Name: "BinaryValue",       Version: "1" }$/;"	c
 RTYPE_BINARY_VALUE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BINARY_VALUE        := { Name: "BinaryValue",       Version: "1" }$/;"	c
 RTYPE_BINARY_VALUE	./src/constants.lib.tengo	/^RTYPE_BINARY_VALUE        := { Name: "BinaryValue",       Version: "1" }$/;"	c
+RTYPE_BLOB_MAP	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BLOB_MAP := { Name: "BlobMap", Version: "1" }$/;"	c
+RTYPE_BLOB_MAP	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BLOB_MAP            := { Name: "BlobMap",           Version: "1" }$/;"	c
 RTYPE_BLOB_MAP	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BLOB_MAP            := { Name: "BlobMap",           Version: "1" }$/;"	c
 RTYPE_BLOB_MAP	./src/constants.lib.tengo	/^RTYPE_BLOB_MAP            := { Name: "BlobMap",           Version: "1" }$/;"	c
+RTYPE_BOBJECT_SPEC	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BOBJECT_SPEC := { Name: "BObjectSpec", Version: "1" }$/;"	c
+RTYPE_BOBJECT_SPEC	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BOBJECT_SPEC        := { Name: "BObjectSpec",       Version: "1" }$/;"	c
 RTYPE_BOBJECT_SPEC	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BOBJECT_SPEC        := { Name: "BObjectSpec",       Version: "1" }$/;"	c
 RTYPE_BOBJECT_SPEC	./src/constants.lib.tengo	/^RTYPE_BOBJECT_SPEC        := { Name: "BObjectSpec",       Version: "1" }$/;"	c
+RTYPE_BRESOLVE_CHOICE	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_CHOICE := { Name: "BResolveChoice", Version: "1" }$/;"	c
+RTYPE_BRESOLVE_CHOICE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_CHOICE     := { Name: "BResolveChoice",    Version: "1" }$/;"	c
 RTYPE_BRESOLVE_CHOICE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_CHOICE     := { Name: "BResolveChoice",    Version: "1" }$/;"	c
 RTYPE_BRESOLVE_CHOICE	./src/constants.lib.tengo	/^RTYPE_BRESOLVE_CHOICE     := { Name: "BResolveChoice",    Version: "1" }$/;"	c
+RTYPE_BRESOLVE_FIRST	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_FIRST := { Name: "BResolveSingle", Version: "1" }$/;"	c
+RTYPE_BRESOLVE_FIRST	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_FIRST      := { Name: "BResolveSingle",    Version: "1" }$/;"	c
 RTYPE_BRESOLVE_FIRST	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_FIRST      := { Name: "BResolveSingle",    Version: "1" }$/;"	c
 RTYPE_BRESOLVE_FIRST	./src/constants.lib.tengo	/^RTYPE_BRESOLVE_FIRST      := { Name: "BResolveSingle",    Version: "1" }$/;"	c
+RTYPE_BRESOLVE_NO_RESULT	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_NO_RESULT := { Name: "BResolveSingleNoResult", Version: "1" }$/;"	c
+RTYPE_BRESOLVE_NO_RESULT	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_NO_RESULT  := { Name: "BResolveSingleNoResult", Version: "1" }$/;"	c
 RTYPE_BRESOLVE_NO_RESULT	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_BRESOLVE_NO_RESULT  := { Name: "BResolveSingleNoResult", Version: "1" }$/;"	c
 RTYPE_BRESOLVE_NO_RESULT	./src/constants.lib.tengo	/^RTYPE_BRESOLVE_NO_RESULT  := { Name: "BResolveSingleNoResult", Version: "1" }$/;"	c
+RTYPE_CONTEXT	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT := { Name: "BContext", Version: "1" }$/;"	c
+RTYPE_CONTEXT	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT             := { Name: "BContext",          Version: "1" }$/;"	c
 RTYPE_CONTEXT	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT             := { Name: "BContext",          Version: "1" }$/;"	c
 RTYPE_CONTEXT	./src/constants.lib.tengo	/^RTYPE_CONTEXT             := { Name: "BContext",          Version: "1" }$/;"	c
+RTYPE_CONTEXT_END	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT_END := { Name: "BContextEnd", Version: "1" }$/;"	c
+RTYPE_CONTEXT_END	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT_END         := { Name: "BContextEnd",       Version: "1" }$/;"	c
 RTYPE_CONTEXT_END	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_CONTEXT_END         := { Name: "BContextEnd",       Version: "1" }$/;"	c
 RTYPE_CONTEXT_END	./src/constants.lib.tengo	/^RTYPE_CONTEXT_END         := { Name: "BContextEnd",       Version: "1" }$/;"	c
+RTYPE_JSON	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_JSON := { Name: "json\/object", Version: "1" }$/;"	c
+RTYPE_JSON	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_JSON                := { Name: "json\/object",       Version: "1" }$/;"	c
 RTYPE_JSON	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_JSON                := { Name: "json\/object",       Version: "1" }$/;"	c
 RTYPE_JSON	./src/constants.lib.tengo	/^RTYPE_JSON                := { Name: "json\/object",       Version: "1" }$/;"	c
+RTYPE_JSON_ERROR	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_JSON_ERROR          := { Name: "json\/resourceError", Version: "1"}$/;"	c
 RTYPE_JSON_ERROR	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_JSON_ERROR          := { Name: "json\/resourceError", Version: "1"}$/;"	c
 RTYPE_JSON_ERROR	./src/constants.lib.tengo	/^RTYPE_JSON_ERROR          := { Name: "json\/resourceError", Version: "1"}$/;"	c
+RTYPE_MAP	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_MAP := { Name: "std\/map", Version: "1" }$/;"	c
+RTYPE_MAP	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP                 := { Name: "std\/map",           Version: "1" }$/;"	c
 RTYPE_MAP	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP                 := { Name: "std\/map",           Version: "1" }$/;"	c
 RTYPE_MAP	./src/constants.lib.tengo	/^RTYPE_MAP                 := { Name: "std\/map",           Version: "1" }$/;"	c
+RTYPE_MAP_ALT	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_ALT := { Name: "StdMap", Version: "1" }$/;"	c
+RTYPE_MAP_ALT	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_ALT             := { Name: "StdMap",            Version: "1" }$/;"	c
 RTYPE_MAP_ALT	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_ALT             := { Name: "StdMap",            Version: "1" }$/;"	c
 RTYPE_MAP_ALT	./src/constants.lib.tengo	/^RTYPE_MAP_ALT             := { Name: "StdMap",            Version: "1" }$/;"	c
+RTYPE_MAP_EPH	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_EPH := { Name: "EphStdMap", Version: "1" }$/;"	c
+RTYPE_MAP_EPH	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_EPH             := { Name: "EphStdMap",         Version: "1" }$/;"	c
 RTYPE_MAP_EPH	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_MAP_EPH             := { Name: "EphStdMap",         Version: "1" }$/;"	c
 RTYPE_MAP_EPH	./src/constants.lib.tengo	/^RTYPE_MAP_EPH             := { Name: "EphStdMap",         Version: "1" }$/;"	c
+RTYPE_OBJECT_SPEC	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_OBJECT_SPEC         := { Name: "BObjectSpec",       Version: "1" }$/;"	c
 RTYPE_OBJECT_SPEC	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_OBJECT_SPEC         := { Name: "BObjectSpec",       Version: "1" }$/;"	c
 RTYPE_OBJECT_SPEC	./src/constants.lib.tengo	/^RTYPE_OBJECT_SPEC         := { Name: "BObjectSpec",       Version: "1" }$/;"	c
+RTYPE_P_COLUMN_DATA_BINARY	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Binary", Version: "1" }$/;"	c
 RTYPE_P_COLUMN_DATA_BINARY	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Binary", Version: "1" }$/;"	c
 RTYPE_P_COLUMN_DATA_BINARY	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Binary", Version: "1" }$/;"	c
+RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "BinaryPartitioned/;"	c
 RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "BinaryPartitioned/;"	c
 RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "BinaryPartitioned/;"	c
+RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PRE/;"	c
 RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PRE/;"	c
 RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PRE/;"	c
+RTYPE_P_COLUMN_DATA_JSON	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Json", Version: "1" }$/;"	c
 RTYPE_P_COLUMN_DATA_JSON	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Json", Version: "1" }$/;"	c
 RTYPE_P_COLUMN_DATA_JSON	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Json", Version: "1" }$/;"	c
+RTYPE_P_COLUMN_DATA_JSON_PARTITIONED	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "JsonPartitioned", V/;"	c
 RTYPE_P_COLUMN_DATA_JSON_PARTITIONED	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "JsonPartitioned", V/;"	c
 RTYPE_P_COLUMN_DATA_JSON_PARTITIONED	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "JsonPartitioned", V/;"	c
+RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFI/;"	c
 RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFI/;"	c
 RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFI/;"	c
+RTYPE_P_COLUMN_DATA_RESOURCE_MAP	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "ResourceMap", Version: /;"	c
 RTYPE_P_COLUMN_DATA_RESOURCE_MAP	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "ResourceMap", Version: /;"	c
 RTYPE_P_COLUMN_DATA_RESOURCE_MAP	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "ResourceMap", Version: /;"	c
+RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED	./dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Partitioned/;"	c
 RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Partitioned/;"	c
 RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED	./src/pframes/constants.lib.tengo	/^RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Partitioned/;"	c
+RTYPE_QUERY_RESULT	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_QUERY_RESULT := { Name: "BQueryResult", Version: "1" }$/;"	c
+RTYPE_QUERY_RESULT	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_QUERY_RESULT        := { Name: "BQueryResult",      Version: "1" }$/;"	c
 RTYPE_QUERY_RESULT	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_QUERY_RESULT        := { Name: "BQueryResult",      Version: "1" }$/;"	c
 RTYPE_QUERY_RESULT	./src/constants.lib.tengo	/^RTYPE_QUERY_RESULT        := { Name: "BQueryResult",      Version: "1" }$/;"	c
+RTYPE_RENDER_EPH_TEMPLATE	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }$/;"	c
+RTYPE_RENDER_EPH_TEMPLATE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }$/;"	c
 RTYPE_RENDER_EPH_TEMPLATE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }$/;"	c
 RTYPE_RENDER_EPH_TEMPLATE	./src/constants.lib.tengo	/^RTYPE_RENDER_EPH_TEMPLATE := { Name: "EphRenderTemplate", Version: "1" }$/;"	c
+RTYPE_RENDER_TEMPLATE	./dev/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_TEMPLATE := { Name: "RenderTemplate", Version: "1" }$/;"	c
+RTYPE_RENDER_TEMPLATE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_TEMPLATE     := { Name: "RenderTemplate",    Version: "1" }$/;"	c
 RTYPE_RENDER_TEMPLATE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_RENDER_TEMPLATE     := { Name: "RenderTemplate",    Version: "1" }$/;"	c
 RTYPE_RENDER_TEMPLATE	./src/constants.lib.tengo	/^RTYPE_RENDER_TEMPLATE     := { Name: "RenderTemplate",    Version: "1" }$/;"	c
+RTYPE_WORKDIR_CREATE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_CREATE      := { Name: "WorkdirCreate",     Version: "1" }$/;"	c
 RTYPE_WORKDIR_CREATE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_CREATE      := { Name: "WorkdirCreate",     Version: "1" }$/;"	c
 RTYPE_WORKDIR_CREATE	./src/constants.lib.tengo	/^RTYPE_WORKDIR_CREATE      := { Name: "WorkdirCreate",     Version: "1" }$/;"	c
+RTYPE_WORKDIR_FILL	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_FILL        := { Name: "WorkdirFill",       Version: "1" }$/;"	c
 RTYPE_WORKDIR_FILL	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_FILL        := { Name: "WorkdirFill",       Version: "1" }$/;"	c
 RTYPE_WORKDIR_FILL	./src/constants.lib.tengo	/^RTYPE_WORKDIR_FILL        := { Name: "WorkdirFill",       Version: "1" }$/;"	c
+RTYPE_WORKDIR_FILL_RULES	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill\/rules", Version: "1" }$/;"	c
 RTYPE_WORKDIR_FILL_RULES	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill\/rules", Version: "1" }$/;"	c
 RTYPE_WORKDIR_FILL_RULES	./src/constants.lib.tengo	/^RTYPE_WORKDIR_FILL_RULES  := { Name: "WorkdirFill\/rules", Version: "1" }$/;"	c
+RTYPE_WORKDIR_SAVE	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }$/;"	c
 RTYPE_WORKDIR_SAVE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }$/;"	c
 RTYPE_WORKDIR_SAVE	./src/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE        := { Name: "WorkdirSave",       Version: "1" }$/;"	c
+RTYPE_WORKDIR_SAVE_RULES	./dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE_RULES  := { Name: "WorkdirSave\/rules", Version: "1" }$/;"	c
 RTYPE_WORKDIR_SAVE_RULES	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE_RULES  := { Name: "WorkdirSave\/rules", Version: "1" }$/;"	c
 RTYPE_WORKDIR_SAVE_RULES	./src/constants.lib.tengo	/^RTYPE_WORKDIR_SAVE_RULES  := { Name: "WorkdirSave\/rules", Version: "1" }$/;"	c
+TEMPLATE_FIELD	./dev/tengo/lib/tpl-util.lib.tengo	/^TEMPLATE_FIELD := "template"$/;"	c
+TEMPLATE_FIELD	./dist/tengo/lib/tpl.util.lib.tengo	/^TEMPLATE_FIELD := "template"$/;"	c
 TEMPLATE_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.util.lib.tengo	/^TEMPLATE_FIELD := "template"$/;"	c
 TEMPLATE_FIELD	./src/tpl/util.lib.tengo	/^TEMPLATE_FIELD := "template"$/;"	c
+TEMPLATE_OUTPUT_PREFIX	./dev/tengo/lib/tpl-util.lib.tengo	/^TEMPLATE_OUTPUT_PREFIX := "outputs\/"$/;"	c
+TEMPLATE_OUTPUT_PREFIX	./dist/tengo/lib/tpl.util.lib.tengo	/^TEMPLATE_OUTPUT_PREFIX := "outputs\/"$/;"	c
 TEMPLATE_OUTPUT_PREFIX	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.util.lib.tengo	/^TEMPLATE_OUTPUT_PREFIX := "outputs\/"$/;"	c
 TEMPLATE_OUTPUT_PREFIX	./src/tpl/util.lib.tengo	/^TEMPLATE_OUTPUT_PREFIX := "outputs\/"$/;"	c
+TestDecomposePfconvCfg	./src/pframe.util.test.tengo	/^TestDecomposePfconvCfg := func() {$/;"	f
 TestGetBasenameDirs	./src/path.test.tengo	/^TestGetBasenameDirs := func() {$/;"	f
 TestGetExtension	./src/path.test.tengo	/^TestGetExtension := func() {$/;"	f
 TestMiLength	./src/slices.test.tengo	/^TestMiLength := func() {$/;"	f
@@ -128,233 +212,487 @@ TestMiSliceAppend	./src/slices.test.tengo	/^TestMiSliceAppend := func() {$/;"	f
 TestSplit	./src/path.test.tengo	/^TestSplit := func() {$/;"	f
 TestValidateJSONGeneral	./src/validation.test.tengo	/^TestValidateJSONGeneral := func() {$/;"	f
 TestValidateJSONOrArrays	./src/validation.test.tengo	/^TestValidateJSONOrArrays := func() {$/;"	f
+VALUE_FIELD_NAME	./dist/tengo/lib/pframes.constants.lib.tengo	/^VALUE_FIELD_NAME := "__value__"$/;"	c
 VALUE_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.constants.lib.tengo	/^VALUE_FIELD_NAME := "__value__"$/;"	c
 VALUE_FIELD_NAME	./src/pframes/constants.lib.tengo	/^VALUE_FIELD_NAME := "__value__"$/;"	c
+_ARG_VAR_JAVA	./dist/tengo/lib/exec.internal.lib.tengo	/^_ARG_VAR_JAVA           := "{java}" \/\/ abs path to 'java' run environment$/;"	c
 _ARG_VAR_JAVA	./src/exec/internal.lib.tengo	/^_ARG_VAR_JAVA           := "{java}" \/\/ abs path to 'java' run environment$/;"	c
+_ARG_VAR_PKG	./dist/tengo/lib/exec.internal.lib.tengo	/^_ARG_VAR_PKG            := "{pkg}"  \/\/ abs path to software package$/;"	c
 _ARG_VAR_PKG	./src/exec/internal.lib.tengo	/^_ARG_VAR_PKG            := "{pkg}"  \/\/ abs path to software package$/;"	c
+_ARG_VAR_PYTHON	./dist/tengo/lib/exec.internal.lib.tengo	/^_ARG_VAR_PYTHON         := "{python}" \/\/ abs path to 'python' run environment$/;"	c
 _ARG_VAR_PYTHON	./src/exec/internal.lib.tengo	/^_ARG_VAR_PYTHON         := "{python}" \/\/ abs path to 'python' run environment$/;"	c
+_BLOCK_ID_FIELD	./dev/tengo/lib/context.lib.tengo	/^_BLOCK_ID_FIELD := "id"$/;"	c
+_BLOCK_ID_FIELD	./dist/tengo/lib/workflow.context.lib.tengo	/^_BLOCK_ID_FIELD := "id"$/;"	c
 _BLOCK_ID_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.context.lib.tengo	/^_BLOCK_ID_FIELD := "id"$/;"	c
 _BLOCK_ID_FIELD	./src/workflow/context.lib.tengo	/^_BLOCK_ID_FIELD := "id"$/;"	c
+_CONTEXT_FIELD_NAME	./dev/tengo/lib/bquery.lib.tengo	/^_CONTEXT_FIELD_NAME := "ctx"$/;"	c
+_CONTEXT_FIELD_NAME	./dist/tengo/lib/workflow.bquery.lib.tengo	/^_CONTEXT_FIELD_NAME := "ctx"$/;"	c
 _CONTEXT_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^_CONTEXT_FIELD_NAME := "ctx"$/;"	c
 _CONTEXT_FIELD_NAME	./src/workflow/bquery.lib.tengo	/^_CONTEXT_FIELD_NAME := "ctx"$/;"	c
+_DEFAULT_OPTIONS	./dev/tengo/lib/bquery.lib.tengo	/^_DEFAULT_OPTIONS := {$/;"	c
+_DEFAULT_OPTIONS	./dist/tengo/lib/workflow.bquery.lib.tengo	/^_DEFAULT_OPTIONS := {$/;"	c
 _DEFAULT_OPTIONS	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^_DEFAULT_OPTIONS := {$/;"	c
 _DEFAULT_OPTIONS	./src/workflow/bquery.lib.tengo	/^_DEFAULT_OPTIONS := {$/;"	c
+_EXPORTS_OUTPUT_PREFIX	./dev/tengo/lib/context.lib.tengo	/^_EXPORTS_OUTPUT_PREFIX := "values\/"$/;"	c
+_EXPORTS_OUTPUT_PREFIX	./dist/tengo/lib/workflow.context.lib.tengo	/^_EXPORTS_OUTPUT_PREFIX := "values\/"$/;"	c
 _EXPORTS_OUTPUT_PREFIX	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.context.lib.tengo	/^_EXPORTS_OUTPUT_PREFIX := "values\/"$/;"	c
 _EXPORTS_OUTPUT_PREFIX	./src/workflow/context.lib.tengo	/^_EXPORTS_OUTPUT_PREFIX := "values\/"$/;"	c
+_HEAVY_QUEUE	./dev/tengo/lib/exec.lib.tengo	/^_HEAVY_QUEUE := "heavy"$/;"	c
+_HEAVY_QUEUE	./dist/tengo/lib/exec.lib.tengo	/^_HEAVY_QUEUE := "heavy"$/;"	c
 _HEAVY_QUEUE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^_HEAVY_QUEUE := "heavy"$/;"	c
 _HEAVY_QUEUE	./src/exec/index.lib.tengo	/^_HEAVY_QUEUE := "heavy"$/;"	c
+_INPUT_ARCHIVE	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_ARCHIVE := "archive"$/;"	c
 _INPUT_ARCHIVE	./src/exec/package.lib.tengo	/^_INPUT_ARCHIVE := "archive"$/;"	c
+_INPUT_CONTEXT_FIELD_NAME	./dev/tengo/lib/workflow.lib.tengo	/^_INPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
+_INPUT_CONTEXT_FIELD_NAME	./dist/tengo/lib/workflow.lib.tengo	/^_INPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
 _INPUT_CONTEXT_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_INPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
 _INPUT_CONTEXT_FIELD_NAME	./src/workflow/index.lib.tengo	/^_INPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
+_INPUT_PACKAGE	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_PACKAGE := "package"$/;"	c
 _INPUT_PACKAGE	./src/exec/package.lib.tengo	/^_INPUT_PACKAGE := "package"$/;"	c
+_INPUT_PACKAGES_MAP	./dist/tengo/lib/exec.runenv.lib.tengo	/^_INPUT_PACKAGES_MAP   := "packagesMap"$/;"	c
 _INPUT_PACKAGES_MAP	./src/exec/runenv.lib.tengo	/^_INPUT_PACKAGES_MAP   := "packagesMap"$/;"	c
+_INPUT_PACKAGE_NAME	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_PACKAGE_NAME := "packageName"$/;"	c
 _INPUT_PACKAGE_NAME	./src/exec/package.lib.tengo	/^_INPUT_PACKAGE_NAME := "packageName"$/;"	c
+_INPUT_PACKAGE_USE_SETTINGS	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_PACKAGE_USE_SETTINGS := "settings"$/;"	c
 _INPUT_PACKAGE_USE_SETTINGS	./src/exec/package.lib.tengo	/^_INPUT_PACKAGE_USE_SETTINGS := "settings"$/;"	c
+_INPUT_REGISTRY	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_REGISTRY := "registry"$/;"	c
 _INPUT_REGISTRY	./src/exec/package.lib.tengo	/^_INPUT_REGISTRY := "registry"$/;"	c
+_INPUT_SETTINGS	./dist/tengo/lib/exec.runenv.lib.tengo	/^_INPUT_SETTINGS       := "settings"$/;"	c
 _INPUT_SETTINGS	./src/exec/runenv.lib.tengo	/^_INPUT_SETTINGS       := "settings"$/;"	c
+_INPUT_WD_IN	./dist/tengo/lib/exec.package.lib.tengo	/^_INPUT_WD_IN := "workdirIn"$/;"	c
+_INPUT_WD_IN	./dist/tengo/lib/exec.runenv.lib.tengo	/^_INPUT_WD_IN          := "workdirIn"$/;"	c
 _INPUT_WD_IN	./src/exec/package.lib.tengo	/^_INPUT_WD_IN := "workdirIn"$/;"	c
 _INPUT_WD_IN	./src/exec/runenv.lib.tengo	/^_INPUT_WD_IN          := "workdirIn"$/;"	c
+_MODE_NESTED	./dev/tengo/lib/forloop.lib.tengo	/^_MODE_NESTED := "nested"$/;"	c
+_MODE_USUAL	./dev/tengo/lib/forloop.lib.tengo	/^_MODE_USUAL := "usual"$/;"	c
+_OPTIONS_SCHEME	./dev/tengo/lib/bquery.lib.tengo	/^_OPTIONS_SCHEME := {$/;"	c
+_OPTIONS_SCHEME	./dist/tengo/lib/workflow.bquery.lib.tengo	/^_OPTIONS_SCHEME := {$/;"	c
 _OPTIONS_SCHEME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^_OPTIONS_SCHEME := {$/;"	c
 _OPTIONS_SCHEME	./src/workflow/bquery.lib.tengo	/^_OPTIONS_SCHEME := {$/;"	c
+_OUTPUTS_PREFIX	./dev/tengo/lib/forloop.lib.tengo	/^_OUTPUTS_PREFIX := "outputs\/"$/;"	c
+_OUTPUT_ARCHIVE	./dist/tengo/lib/exec.package.lib.tengo	/^_OUTPUT_ARCHIVE := "archive"$/;"	c
 _OUTPUT_ARCHIVE	./src/exec/package.lib.tengo	/^_OUTPUT_ARCHIVE := "archive"$/;"	c
+_OUTPUT_CONTEXT_FIELD_NAME	./dev/tengo/lib/workflow.lib.tengo	/^_OUTPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
+_OUTPUT_CONTEXT_FIELD_NAME	./dist/tengo/lib/workflow.lib.tengo	/^_OUTPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
 _OUTPUT_CONTEXT_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_OUTPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
 _OUTPUT_CONTEXT_FIELD_NAME	./src/workflow/index.lib.tengo	/^_OUTPUT_CONTEXT_FIELD_NAME := "context"$/;"	c
+_OUTPUT_PACKAGE	./dist/tengo/lib/exec.package.lib.tengo	/^_OUTPUT_PACKAGE := "package"$/;"	c
 _OUTPUT_PACKAGE	./src/exec/package.lib.tengo	/^_OUTPUT_PACKAGE := "package"$/;"	c
+_OUTPUT_RUN_ENV	./dist/tengo/lib/exec.runenv.lib.tengo	/^_OUTPUT_RUN_ENV       := "runEnv"$/;"	c
 _OUTPUT_RUN_ENV	./src/exec/runenv.lib.tengo	/^_OUTPUT_RUN_ENV       := "runEnv"$/;"	c
+_OUTPUT_WD_OUT	./dist/tengo/lib/exec.package.lib.tengo	/^_OUTPUT_WD_OUT := "workdirOut"$/;"	c
+_OUTPUT_WD_OUT	./dist/tengo/lib/exec.runenv.lib.tengo	/^_OUTPUT_WD_OUT        := "workdirOut"$/;"	c
 _OUTPUT_WD_OUT	./src/exec/package.lib.tengo	/^_OUTPUT_WD_OUT := "workdirOut"$/;"	c
 _OUTPUT_WD_OUT	./src/exec/runenv.lib.tengo	/^_OUTPUT_WD_OUT        := "workdirOut"$/;"	c
+_PARENT_CTX_FIELD	./dev/tengo/lib/context.lib.tengo	/^_PARENT_CTX_FIELD := "parent"$/;"	c
+_PARENT_CTX_FIELD	./dist/tengo/lib/workflow.context.lib.tengo	/^_PARENT_CTX_FIELD := "parent"$/;"	c
 _PARENT_CTX_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.context.lib.tengo	/^_PARENT_CTX_FIELD := "parent"$/;"	c
 _PARENT_CTX_FIELD	./src/workflow/context.lib.tengo	/^_PARENT_CTX_FIELD := "parent"$/;"	c
+_PREPARED_INPUTS_PREFIX	./dev/tengo/lib/workflow.lib.tengo	/^_PREPARED_INPUTS_PREFIX := "prepared\/"$/;"	c
+_PREPARED_INPUTS_PREFIX	./dist/tengo/lib/workflow.lib.tengo	/^_PREPARED_INPUTS_PREFIX := "prepared\/"$/;"	c
 _PREPARED_INPUTS_PREFIX	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_PREPARED_INPUTS_PREFIX := "prepared\/"$/;"	c
 _PREPARED_INPUTS_PREFIX	./src/workflow/index.lib.tengo	/^_PREPARED_INPUTS_PREFIX := "prepared\/"$/;"	c
+_PROGRESS_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_PROGRESS_FIELD := "progress"$/;"	c
 _PROGRESS_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_PROGRESS_FIELD := "progress"$/;"	c
 _PROGRESS_FIELD	./src/workdir/save.lib.tengo	/^_PROGRESS_FIELD := "progress"$/;"	c
+_RESULTS_FIELD_NAME	./dev/tengo/lib/workflow.lib.tengo	/^_RESULTS_FIELD_NAME := "result"$/;"	c
+_RESULTS_FIELD_NAME	./dist/tengo/lib/workflow.lib.tengo	/^_RESULTS_FIELD_NAME := "result"$/;"	c
 _RESULTS_FIELD_NAME	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_RESULTS_FIELD_NAME := "result"$/;"	c
 _RESULTS_FIELD_NAME	./src/workflow/index.lib.tengo	/^_RESULTS_FIELD_NAME := "result"$/;"	c
+_RTYPE_BLOB_DOWNLOAD	./dev/tengo/lib/blob.lib.tengo	/^_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }$/;"	c
+_RTYPE_BLOB_DOWNLOAD	./dev/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }$/;"	c
+_RTYPE_BLOB_DOWNLOAD	./dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }$/;"	c
 _RTYPE_BLOB_DOWNLOAD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }$/;"	c
 _RTYPE_BLOB_DOWNLOAD	./src/file.lib.tengo	/^_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }$/;"	c
+_RTYPE_BLOB_IMPORT_INTERNAL	./dev/tengo/lib/blob.lib.tengo	/^_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }$/;"	c
+_RTYPE_BLOB_IMPORT_INTERNAL	./dev/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }$/;"	c
+_RTYPE_BLOB_IMPORT_INTERNAL	./dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }$/;"	c
 _RTYPE_BLOB_IMPORT_INTERNAL	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }$/;"	c
 _RTYPE_BLOB_IMPORT_INTERNAL	./src/file.lib.tengo	/^_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }$/;"	c
+_RTYPE_BLOB_UPLOAD	./dev/tengo/lib/blob.lib.tengo	/^_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }$/;"	c
+_RTYPE_BLOB_UPLOAD	./dev/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }$/;"	c
+_RTYPE_BLOB_UPLOAD	./dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }$/;"	c
 _RTYPE_BLOB_UPLOAD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }$/;"	c
 _RTYPE_BLOB_UPLOAD	./src/file.lib.tengo	/^_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }$/;"	c
+_RTYPE_CREATE_STREAM	./dev/tengo/lib/stream.lib.tengo	/^_RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }$/;"	c
+_RTYPE_CREATE_STREAM	./dist/tengo/lib/exec.stream.lib.tengo	/^_RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }$/;"	c
 _RTYPE_CREATE_STREAM	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.stream.lib.tengo	/^_RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }$/;"	c
 _RTYPE_CREATE_STREAM	./src/exec/stream.lib.tengo	/^_RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }$/;"	c
+_RTYPE_FOR_LOOP	./dev/tengo/lib/forloop.lib.tengo	/^_RTYPE_FOR_LOOP := { Name: "ForLoop", Version: "1" }$/;"	c
+_RTYPE_PACKAGE_GET	./dist/tengo/lib/exec.package.lib.tengo	/^_RTYPE_PACKAGE_GET := { Name: "PackageGet", Version: "1" }$/;"	c
 _RTYPE_PACKAGE_GET	./src/exec/package.lib.tengo	/^_RTYPE_PACKAGE_GET := { Name: "PackageGet", Version: "1" }$/;"	c
+_RTYPE_PACKAGE_INSTALL	./dist/tengo/lib/exec.package.lib.tengo	/^_RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall", Version: "1" }$/;"	c
 _RTYPE_PACKAGE_INSTALL	./src/exec/package.lib.tengo	/^_RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall", Version: "1" }$/;"	c
+_RTYPE_PACKAGE_PUT_ASSET	./dist/tengo/lib/exec.package.lib.tengo	/^_RTYPE_PACKAGE_PUT_ASSET := { Name: "PackagePutAssetsToWD", Version: "1" }$/;"	c
 _RTYPE_PACKAGE_PUT_ASSET	./src/exec/package.lib.tengo	/^_RTYPE_PACKAGE_PUT_ASSET := { Name: "PackagePutAssetsToWD", Version: "1" }$/;"	c
+_RTYPE_PACKAGE_USE	./dist/tengo/lib/exec.package.lib.tengo	/^_RTYPE_PACKAGE_USE := { Name: "PackageUse", Version: "1" }$/;"	c
 _RTYPE_PACKAGE_USE	./src/exec/package.lib.tengo	/^_RTYPE_PACKAGE_USE := { Name: "PackageUse", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND	./dev/tengo/lib/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND := { Name: "RunCommand", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND := { Name: "RunCommand\/executor", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND := { Name: "RunCommand", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND	./src/exec/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND := { Name: "RunCommand\/executor", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_ARGS	./dev/tengo/lib/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_ARGS	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_ARGS	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_ARGS	./src/exec/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_ARGS := { Name: "RunCommandArgs", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_CMD	./dev/tengo/lib/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_CMD	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_CMD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_CMD	./src/exec/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_OPTIONS	./dev/tengo/lib/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command\/options", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_OPTIONS	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command\/options", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_OPTIONS	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command\/options", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_OPTIONS	./src/exec/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_OPTIONS := { Name: "run-command\/options", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_REFS	./dev/tengo/lib/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }$/;"	c
+_RTYPE_RUN_COMMAND_REFS	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_REFS	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }$/;"	c
 _RTYPE_RUN_COMMAND_REFS	./src/exec/runcmd.lib.tengo	/^_RTYPE_RUN_COMMAND_REFS := { Name: "RunCommandRefs", Version: "1" }$/;"	c
+_RTYPE_SAVE_RUN_ENV	./dist/tengo/lib/exec.runenv.lib.tengo	/^_RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv\/executor", Version: "1" }$/;"	c
 _RTYPE_SAVE_RUN_ENV	./src/exec/runenv.lib.tengo	/^_RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv\/executor", Version: "1" }$/;"	c
+_RTYPE_STREAM_MANAGER	./dev/tengo/lib/stream.lib.tengo	/^_RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }$/;"	c
+_RTYPE_STREAM_MANAGER	./dist/tengo/lib/exec.stream.lib.tengo	/^_RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }$/;"	c
 _RTYPE_STREAM_MANAGER	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.stream.lib.tengo	/^_RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }$/;"	c
 _RTYPE_STREAM_MANAGER	./src/exec/stream.lib.tengo	/^_RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }$/;"	c
 _RTYPE_TEST_EPH	./src/test/kv/kv.tpl.tengo	/^_RTYPE_TEST_EPH := { Name: "TestEph", Version: "1" }$/;"	c
+_RTYPE_WORKDIR_CREATE	./dev/tengo/lib/workdir.lib.tengo	/^_RTYPE_WORKDIR_CREATE := { Name: "WorkdirCreate", Version: "1" }$/;"	c
+_RTYPE_WORKDIR_FILL	./dev/tengo/lib/workdir.lib.tengo	/^_RTYPE_WORKDIR_FILL := { Name: "WorkdirFill", Version: "1" }$/;"	c
+_RTYPE_WORKDIR_FILL_RULES	./dev/tengo/lib/workdir.lib.tengo	/^_RTYPE_WORKDIR_FILL_RULES := { Name: "WorkdirFill\/rules", Version: "1" }$/;"	c
+_RTYPE_WORKDIR_SAVE	./dev/tengo/lib/workdir.lib.tengo	/^_RTYPE_WORKDIR_SAVE := { Name: "WorkdirSave", Version: "1" }$/;"	c
+_RTYPE_WORKDIR_SAVE_RULES	./dev/tengo/lib/workdir.lib.tengo	/^_RTYPE_WORKDIR_SAVE_RULES := { Name: "WorkdirSave\/rules", Version: "1" }$/;"	c
+_RULES_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_RULES_FIELD := "rules"$/;"	c
 _RULES_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_RULES_FIELD := "rules"$/;"	c
 _RULES_FIELD	./src/workdir/save.lib.tengo	/^_RULES_FIELD := "rules"$/;"	c
+_SAVED_CONTENT_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_SAVED_CONTENT_FIELD := "dataOut"$/;"	c
 _SAVED_CONTENT_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_SAVED_CONTENT_FIELD := "dataOut"$/;"	c
 _SAVED_CONTENT_FIELD	./src/workdir/save.lib.tengo	/^_SAVED_CONTENT_FIELD := "dataOut"$/;"	c
+_SAVED_FILES_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_SAVED_FILES_FIELD := "blobsOut"$/;"	c
 _SAVED_FILES_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_SAVED_FILES_FIELD := "blobsOut"$/;"	c
 _SAVED_FILES_FIELD	./src/workdir/save.lib.tengo	/^_SAVED_FILES_FIELD := "blobsOut"$/;"	c
-_SPEC_AXES_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^_SPEC_AXES_SCHEMA := {$/;"	c
-_SPEC_AXES_SCHEMA	./src/pframes/xsv.lib.tengo	/^_SPEC_AXES_SCHEMA := {$/;"	c
-_SPEC_COLUMN_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^_SPEC_COLUMN_SCHEMA := {$/;"	c
-_SPEC_COLUMN_SCHEMA	./src/pframes/xsv.lib.tengo	/^_SPEC_COLUMN_SCHEMA := {$/;"	c
-_SPEC_INDEX_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^_SPEC_INDEX_SCHEMA := {$/;"	c
-_SPEC_INDEX_SCHEMA	./src/pframes/xsv.lib.tengo	/^_SPEC_INDEX_SCHEMA := {$/;"	c
-_SPEC_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^_SPEC_SCHEMA := {$/;"	c
-_SPEC_SCHEMA	./src/pframes/xsv.lib.tengo	/^_SPEC_SCHEMA := {$/;"	c
+_SPEC_AXES_SCHEMA	./dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_AXES_SCHEMA := {$/;"	c
+_SPEC_AXES_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_AXES_SCHEMA := {$/;"	c
+_SPEC_AXES_SCHEMA	./src/pframes/util.lib.tengo	/^_SPEC_AXES_SCHEMA := {$/;"	c
+_SPEC_COLUMN_SCHEMA	./dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_COLUMN_SCHEMA := {$/;"	c
+_SPEC_COLUMN_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_COLUMN_SCHEMA := {$/;"	c
+_SPEC_COLUMN_SCHEMA	./src/pframes/util.lib.tengo	/^_SPEC_COLUMN_SCHEMA := {$/;"	c
+_SPEC_INDEX_SCHEMA	./dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_INDEX_SCHEMA := {$/;"	c
+_SPEC_INDEX_SCHEMA	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^_SPEC_INDEX_SCHEMA := {$/;"	c
+_SPEC_INDEX_SCHEMA	./src/pframes/util.lib.tengo	/^_SPEC_INDEX_SCHEMA := {$/;"	c
+_SUBSCRIPTION_FIELD	./dev/tengo/lib/render.lib.tengo	/^_SUBSCRIPTION_FIELD := "subscription"$/;"	c
+_SUBSCRIPTION_FIELD	./dist/tengo/lib/render.lib.tengo	/^_SUBSCRIPTION_FIELD := "subscription"$/;"	c
 _SUBSCRIPTION_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/render.lib.tengo	/^_SUBSCRIPTION_FIELD := "subscription"$/;"	c
 _SUBSCRIPTION_FIELD	./src/render.lib.tengo	/^_SUBSCRIPTION_FIELD := "subscription"$/;"	c
+_UI_TASKS_QUEUE	./dev/tengo/lib/exec.lib.tengo	/^_UI_TASKS_QUEUE := "ui-tasks"$/;"	c
+_UI_TASKS_QUEUE	./dist/tengo/lib/exec.lib.tengo	/^_UI_TASKS_QUEUE := "ui-tasks"$/;"	c
 _UI_TASKS_QUEUE	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^_UI_TASKS_QUEUE := "ui-tasks"$/;"	c
 _UI_TASKS_QUEUE	./src/exec/index.lib.tengo	/^_UI_TASKS_QUEUE := "ui-tasks"$/;"	c
+_WORKDIR_AFTER_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_WORKDIR_AFTER_FIELD := "workdirOut"$/;"	c
 _WORKDIR_AFTER_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_WORKDIR_AFTER_FIELD := "workdirOut"$/;"	c
 _WORKDIR_AFTER_FIELD	./src/workdir/save.lib.tengo	/^_WORKDIR_AFTER_FIELD := "workdirOut"$/;"	c
+_WORKDIR_IN_FIELD	./dist/tengo/lib/workdir.save.lib.tengo	/^_WORKDIR_IN_FIELD := "workdirIn"$/;"	c
 _WORKDIR_IN_FIELD	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^_WORKDIR_IN_FIELD := "workdirIn"$/;"	c
 _WORKDIR_IN_FIELD	./src/workdir/save.lib.tengo	/^_WORKDIR_IN_FIELD := "workdirIn"$/;"	c
+_addDirs	./dev/tengo/lib/workdir.lib.tengo	/^		_addDirs: func(fileName) {$/;"	f
+_addDirs	./dist/tengo/lib/workdir.lib.tengo	/^		_addDirs: func(fileName) {$/;"	f
 _addDirs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		_addDirs: func(fileName) {$/;"	f
 _addDirs	./src/workdir/index.lib.tengo	/^		_addDirs: func(fileName) {$/;"	f
+_argToExec	./dev/tengo/lib/exec.lib.tengo	/^_argToExec := func(arg, isExec, pathToBinary) {$/;"	f
 _argToExec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^_argToExec := func(arg, isExec, pathToBinary) {$/;"	f
+_binPackageCallOptions	./dist/tengo/lib/exec.internal.lib.tengo	/^_binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {$/;"	f
 _binPackageCallOptions	./src/exec/internal.lib.tengo	/^_binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {$/;"	f
+_buildOutputs	./dev/tengo/lib/workflow.lib.tengo	/^_buildOutputs := func(results) {$/;"	f
+_buildOutputs	./dist/tengo/lib/workflow.lib.tengo	/^_buildOutputs := func(results) {$/;"	f
 _buildOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_buildOutputs := func(results) {$/;"	f
 _buildOutputs	./src/workflow/index.lib.tengo	/^_buildOutputs := func(results) {$/;"	f
+_create	./dev/tengo/lib/render.lib.tengo	/^_create := func(tplId, isEph, inputs) {$/;"	f
+_create	./dev/tengo/lib/stream.lib.tengo	/^_create := func(workdir, filePath) {$/;"	f
+_create	./dev/tengo/lib/workdir.lib.tengo	/^_create := func() {$/;"	f
+_create	./dist/tengo/lib/exec.stream.lib.tengo	/^_create := func(workdir, filePath) {$/;"	f
 _create	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.stream.lib.tengo	/^_create := func(workdir, filePath) {$/;"	f
 _create	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^_create := func() {$/;"	f
 _create	./src/exec/stream.lib.tengo	/^_create := func(workdir, filePath) {$/;"	f
+_createBlobImportInternal	./dev/tengo/lib/blob.lib.tengo	/^_createBlobImportInternal := func(settings) {$/;"	f
+_createBlobUpload	./dev/tengo/lib/blob.lib.tengo	/^_createBlobUpload := func(settings) {$/;"	f
+_createExecutableArg	./dev/tengo/lib/runcmd.lib.tengo	/^_createExecutableArg := func(executableName, pathToBinary) {$/;"	f
 _createExecutableArg	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_createExecutableArg := func(executableName, pathToBinary) {$/;"	f
+_createSimpleArg	./dev/tengo/lib/runcmd.lib.tengo	/^_createSimpleArg := func(argument) {$/;"	f
+_createSimpleArg	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_createSimpleArg := func(argument) {$/;"	f
 _createSimpleArg	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^_createSimpleArg := func(argument) {$/;"	f
 _createSimpleArg	./src/exec/runcmd.lib.tengo	/^_createSimpleArg := func(argument) {$/;"	f
+_createVariableArg	./dist/tengo/lib/exec.runcmd.lib.tengo	/^_createVariableArg := func(argTpl) {$/;"	f
 _createVariableArg	./src/exec/runcmd.lib.tengo	/^_createVariableArg := func(argTpl) {$/;"	f
 _createVenvWithPip	./src/exec/create-python-venv.tpl.tengo	/^_createVenvWithPip := func(inputs) {$/;"	f
+_devLocalPackageCallOptions	./dist/tengo/lib/exec.internal.lib.tengo	/^_devLocalPackageCallOptions := func(runOptions) {$/;"	f
 _devLocalPackageCallOptions	./src/exec/internal.lib.tengo	/^_devLocalPackageCallOptions := func(runOptions) {$/;"	f
+_directCallOptions	./dist/tengo/lib/exec.internal.lib.tengo	/^_directCallOptions := func(runOptions) {$/;"	f
 _directCallOptions	./src/exec/internal.lib.tengo	/^_directCallOptions := func(runOptions) {$/;"	f
+_fill	./dev/tengo/lib/workdir.lib.tengo	/^_fill := func(workdir) {$/;"	f
+_fill	./dist/tengo/lib/workdir.lib.tengo	/^_fill := func(workdir) {$/;"	f
 _fill	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^_fill := func(workdir) {$/;"	f
 _fill	./src/workdir/index.lib.tengo	/^_fill := func(workdir) {$/;"	f
+_flattenPrepareInputs	./dist/tengo/lib/tpl.lib.tengo	/^_flattenPrepareInputs := func(inputs) {$/;"	f
+_flattenPrepareInputs	./src/tpl/index.lib.tengo	/^_flattenPrepareInputs := func(inputs) {$/;"	f
+_forLoopSettingsSchema	./dev/tengo/lib/forloop.lib.tengo	/^_forLoopSettingsSchema := {$/;"	c
+_formatKeyPath	./dist/tengo/lib/validation.lib.tengo	/^_formatKeyPath := func(current, format, key) {$/;"	f
 _formatKeyPath	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^_formatKeyPath := func(current, format, key) {$/;"	f
 _formatKeyPath	./src/validation.lib.tengo	/^_formatKeyPath := func(current, format, key) {$/;"	f
+_getAllDirs	./dev/tengo/lib/workdir.lib.tengo	/^		_getAllDirs: func(fileName) {$/;"	f
+_getAllDirs	./dist/tengo/lib/workdir.lib.tengo	/^		_getAllDirs: func(fileName) {$/;"	f
 _getAllDirs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		_getAllDirs: func(fileName) {$/;"	f
 _getAllDirs	./src/workdir/index.lib.tengo	/^		_getAllDirs: func(fileName) {$/;"	f
+_getContentSaveRule	./dev/tengo/lib/workdir.lib.tengo	/^_getContentSaveRule := func(fileName) {$/;"	f
+_getDirFillRule	./dev/tengo/lib/workdir.lib.tengo	/^_getDirFillRule := func(dir) {$/;"	f
+_getDirFillRule	./dist/tengo/lib/workdir.lib.tengo	/^_getDirFillRule := func(dir) {$/;"	f
 _getDirFillRule	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^_getDirFillRule := func(dir) {$/;"	f
 _getDirFillRule	./src/workdir/index.lib.tengo	/^_getDirFillRule := func(dir) {$/;"	f
+_getFileFillRule	./dev/tengo/lib/workdir.lib.tengo	/^_getFileFillRule := func(filePath, extension) {$/;"	f
+_getFileFillRule	./dist/tengo/lib/workdir.lib.tengo	/^_getFileFillRule := func(filePath, extension) {$/;"	f
 _getFileFillRule	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^_getFileFillRule := func(filePath, extension) {$/;"	f
 _getFileFillRule	./src/workdir/index.lib.tengo	/^_getFileFillRule := func(filePath, extension) {$/;"	f
+_getFileSaveRule	./dev/tengo/lib/workdir.lib.tengo	/^_getFileSaveRule := func(fileName) {$/;"	f
+_getFutureField	./dev/tengo/lib/smart.lib.tengo	/^_getFutureField := func(from, name, fieldType) {$/;"	f
+_getFutureField	./dist/tengo/lib/smart.lib.tengo	/^_getFutureField := func(from, name, fieldType) {$/;"	f
 _getFutureField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^_getFutureField := func(from, name, fieldType) {$/;"	f
 _getFutureField	./src/smart.lib.tengo	/^_getFutureField := func(from, name, fieldType) {$/;"	f
 _getPColumnRType	./src/pframes/import-dir.tpl.tengo	/^_getPColumnRType := func(storageType) {$/;"	f
 _getPColumnRtype	./src/pframes/import-xsv-map.tpl.tengo	/^_getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {$/;"	f
+_getValueFillRule	./dev/tengo/lib/workdir.lib.tengo	/^_getValueFillRule := func(filePath) {$/;"	f
+_getValueFillRule	./dist/tengo/lib/workdir.lib.tengo	/^_getValueFillRule := func(filePath) {$/;"	f
 _getValueFillRule	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^_getValueFillRule := func(filePath) {$/;"	f
 _getValueFillRule	./src/workdir/index.lib.tengo	/^_getValueFillRule := func(filePath) {$/;"	f
+_hasField	./dev/tengo/lib/smart.lib.tengo	/^		_hasField: func(fieldMapName, fieldName) {$/;"	f
+_hasField	./dist/tengo/lib/smart.lib.tengo	/^		_hasField: func(fieldMapName, fieldName) {$/;"	f
 _hasField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		_hasField: func(fieldMapName, fieldName) {$/;"	f
 _hasField	./src/smart.lib.tengo	/^		_hasField: func(fieldMapName, fieldName) {$/;"	f
+_hasPrepared	./dist/tengo/lib/tpl.lib.tengo	/^_hasPrepared := func(renderer) {$/;"	f
+_hasPrepared	./src/tpl/index.lib.tengo	/^_hasPrepared := func(renderer) {$/;"	f
+_hasReferenceValues	./dist/tengo/lib/smart.lib.tengo	/^_hasReferenceValues := func(object) {$/;"	f
 _hasReferenceValues	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^_hasReferenceValues := func(object) {$/;"	f
 _hasReferenceValues	./src/smart.lib.tengo	/^_hasReferenceValues := func(object) {$/;"	f
+_hasResourceValues	./dev/tengo/lib/smart.lib.tengo	/^_hasResourceValues := func(object) {$/;"	f
+_immutablify	./dist/tengo/lib/tpl.lib.tengo	/^_immutablify := func(obj) {$/;"	f
+_immutablify	./src/tpl/index.lib.tengo	/^_immutablify := func(obj) {$/;"	f
+_installSoftware	./dist/tengo/lib/exec.internal.lib.tengo	/^_installSoftware := func(registry, pkgName) {$/;"	f
 _installSoftware	./src/exec/internal.lib.tengo	/^_installSoftware := func(registry, pkgName) {$/;"	f
+_isProduction	./dev/tengo/lib/workflow.lib.tengo	/^_isProduction := func() {$/;"	f
+_isProduction	./dist/tengo/lib/workflow.lib.tengo	/^_isProduction := func() {$/;"	f
 _isProduction	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_isProduction := func() {$/;"	f
 _isProduction	./src/workflow/index.lib.tengo	/^_isProduction := func() {$/;"	f
+_isStaging	./dev/tengo/lib/workflow.lib.tengo	/^_isStaging := func() {$/;"	f
+_isStaging	./dist/tengo/lib/workflow.lib.tengo	/^_isStaging := func() {$/;"	f
 _isStaging	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_isStaging := func() {$/;"	f
 _isStaging	./src/workflow/index.lib.tengo	/^_isStaging := func() {$/;"	f
+_loadJavaRunEnvironment	./dist/tengo/lib/exec.internal.lib.tengo	/^_loadJavaRunEnvironment := func(descriptor) {$/;"	f
 _loadJavaRunEnvironment	./src/exec/internal.lib.tengo	/^_loadJavaRunEnvironment := func(descriptor) {$/;"	f
+_loadPythonRunEnvironment	./dist/tengo/lib/exec.internal.lib.tengo	/^_loadPythonRunEnvironment := func(descriptor, softName, softPkg) {$/;"	f
 _loadPythonRunEnvironment	./src/exec/internal.lib.tengo	/^_loadPythonRunEnvironment := func(descriptor, softName, softPkg) {$/;"	f
+_loadRunEnvironment	./dist/tengo/lib/exec.internal.lib.tengo	/^_loadRunEnvironment := func(descriptor, softName, softPackage) {$/;"	f
 _loadRunEnvironment	./src/exec/internal.lib.tengo	/^_loadRunEnvironment := func(descriptor, softName, softPackage) {$/;"	f
+_log	./dev/tengo/lib/log.lib.tengo	/^		_log: func(level, ...args) {$/;"	f
+_manager	./dev/tengo/lib/stream.lib.tengo	/^_manager := func(stream, downloadableRef) {$/;"	f
+_manager	./dist/tengo/lib/exec.stream.lib.tengo	/^_manager := func(stream, downloadableRef) {$/;"	f
 _manager	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.stream.lib.tengo	/^_manager := func(stream, downloadableRef) {$/;"	f
 _manager	./src/exec/stream.lib.tengo	/^_manager := func(stream, downloadableRef) {$/;"	f
+_mapBuilder	./dev/tengo/lib/smart.lib.tengo	/^_mapBuilder := func(isEph) {$/;"	f
 _mapBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^_mapBuilder := func(isEph) {$/;"	f
-_mapBuilder	./src/smart.lib.tengo	/^_mapBuilder := func(isEph) {$/;"	f
+_newArg	./dist/tengo/lib/exec.internal.lib.tengo	/^_newArg := func(hasVariables, value) {$/;"	f
 _newArg	./src/exec/internal.lib.tengo	/^_newArg := func(hasVariables, value) {$/;"	f
+_newRefVar	./dist/tengo/lib/exec.internal.lib.tengo	/^_newRefVar := func(varName, refName, reference) {$/;"	f
 _newRefVar	./src/exec/internal.lib.tengo	/^_newRefVar := func(varName, refName, reference) {$/;"	f
+_pObjectSpecSchema	./dev/tengo/lib/bobject.lib.tengo	/^_pObjectSpecSchema := {$/;"	c
+_pObjectSpecSchema	./dist/tengo/lib/workflow.bobject.lib.tengo	/^_pObjectSpecSchema := {$/;"	c
 _pObjectSpecSchema	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bobject.lib.tengo	/^_pObjectSpecSchema := {$/;"	c
 _pObjectSpecSchema	./src/workflow/bobject.lib.tengo	/^_pObjectSpecSchema := {$/;"	c
+_parentContext	./dev/tengo/lib/workflow.lib.tengo	/^_parentContext := func() {$/;"	f
+_parentContext	./dist/tengo/lib/workflow.lib.tengo	/^_parentContext := func() {$/;"	f
 _parentContext	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^_parentContext := func() {$/;"	f
 _parentContext	./src/workflow/index.lib.tengo	/^_parentContext := func() {$/;"	f
+_parseImportHandle	./dev/tengo/lib/blob.lib.tengo	/^_parseImportHandle := func(handle, opts) {$/;"	f
+_parseTags	./dev/tengo/lib/validation.lib.tengo	/^_parseTags := func(rule) {$/;"	f
+_parseTags	./dist/tengo/lib/validation.lib.tengo	/^_parseTags := func(rule) {$/;"	f
 _parseTags	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^_parseTags := func(rule) {$/;"	f
 _parseTags	./src/validation.lib.tengo	/^_parseTags := func(rule) {$/;"	f
+_preparedMap	./dist/tengo/lib/tpl.lib.tengo	/^_preparedMap := func(renderer) {$/;"	f
+_preparedMap	./src/tpl/index.lib.tengo	/^_preparedMap := func(renderer) {$/;"	f
+_remotePackageCallOptions	./dist/tengo/lib/exec.internal.lib.tengo	/^_remotePackageCallOptions := func(runOptions) {$/;"	f
 _remotePackageCallOptions	./src/exec/internal.lib.tengo	/^_remotePackageCallOptions := func(runOptions) {$/;"	f
 _runBinaryCommand	./src/exec/exec.tpl.tengo	/^_runBinaryCommand := func(inputs) {$/;"	f
+_sepOrDefault	./dev/tengo/lib/path.lib.tengo	/^_sepOrDefault := func(...sep) {$/;"	f
+_sepOrDefault	./dist/tengo/lib/path.lib.tengo	/^_sepOrDefault := func(...sep) {$/;"	f
 _sepOrDefault	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^_sepOrDefault := func(...sep) {$/;"	f
 _sepOrDefault	./src/path.lib.tengo	/^_sepOrDefault := func(...sep) {$/;"	f
+_setPreparedMap	./dist/tengo/lib/tpl.lib.tengo	/^_setPreparedMap := func(isEph, inputs, preparedInputs) {$/;"	f
+_setPreparedMap	./src/tpl/index.lib.tengo	/^_setPreparedMap := func(isEph, inputs, preparedInputs) {$/;"	f
+_toRefOrJson	./dev/tengo/lib/smart.lib.tengo	/^_toRefOrJson := func(object) {$/;"	f
+_toRefOrJson	./dist/tengo/lib/smart.lib.tengo	/^_toRefOrJson := func(object) {$/;"	f
 _toRefOrJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^_toRefOrJson := func(object) {$/;"	f
 _toRefOrJson	./src/smart.lib.tengo	/^_toRefOrJson := func(object) {$/;"	f
+_unmarshal	./dev/tengo/lib/tpl.lib.tengo	/^_unmarshal := func(resource, preprocessors) {$/;"	f
+_unmarshal	./dist/tengo/lib/tpl.lib.tengo	/^_unmarshal := func(resource, preprocessors) {$/;"	f
 _unmarshal	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^_unmarshal := func(resource, preprocessors) {$/;"	f
 _unmarshal	./src/tpl/index.lib.tengo	/^_unmarshal := func(resource, preprocessors) {$/;"	f
+_useSettingsSchema	./dist/tengo/lib/exec.package.lib.tengo	/^_useSettingsSchema := {$/;"	c
 _useSettingsSchema	./src/exec/package.lib.tengo	/^_useSettingsSchema := {$/;"	c
+_validateInputs	./dist/tengo/lib/tpl.lib.tengo	/^		_validateInputs: func() {$/;"	f
 _validateInputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		_validateInputs: func() {$/;"	f
 _validateInputs	./src/tpl/index.lib.tengo	/^		_validateInputs: func() {$/;"	f
+_validateJson	./dev/tengo/lib/validation.lib.tengo	/^_validateJson := func(js, scheme, ...stack) {$/;"	f
+_validateJson	./dist/tengo/lib/validation.lib.tengo	/^_validateJson := func(js, schema, keyPath, ...stack) {$/;"	f
 _validateJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^_validateJson := func(js, schema, keyPath, ...stack) {$/;"	f
 _validateJson	./src/validation.lib.tengo	/^_validateJson := func(js, schema, keyPath, ...stack) {$/;"	f
+_validateTypes	./dev/tengo/lib/validation.lib.tengo	/^_validateTypes := func(js, tags, ...stack) {$/;"	f
+_validateTypes	./dist/tengo/lib/validation.lib.tengo	/^_validateTypes := func(js, tags, keyPath, ...stack) {$/;"	f
 _validateTypes	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^_validateTypes := func(js, tags, keyPath, ...stack) {$/;"	f
 _validateTypes	./src/validation.lib.tengo	/^_validateTypes := func(js, tags, keyPath, ...stack) {$/;"	f
+add	./dev/tengo/lib/context.lib.tengo	/^		add: func(name, value) {$/;"	f
+add	./dev/tengo/lib/sets.lib.tengo	/^add := func(set, ...elements) {$/;"	f
+add	./dev/tengo/lib/smart.lib.tengo	/^		add: func(key, value) {$/;"	f
+add	./dist/tengo/lib/pframes.lib.tengo	/^        add: func(column, spec, data) {$/;"	f
+add	./dist/tengo/lib/pframes.lib.tengo	/^        add: func(key, data) {$/;"	f
+add	./dist/tengo/lib/sets.lib.tengo	/^add := func(set, ...elements) {$/;"	f
+add	./dist/tengo/lib/smart.lib.tengo	/^		add: func(key, value) {$/;"	f
+add	./dist/tengo/lib/workflow.context.lib.tengo	/^		add: func(name, value) {$/;"	f
 add	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^add := func(set, ...elements) {$/;"	f
 add	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		add: func(key, value) {$/;"	f
 add	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.context.lib.tengo	/^		add: func(name, value) {$/;"	f
+add	./src/pframes/index.lib.tengo	/^        add: func(column, spec, data) {$/;"	f
+add	./src/pframes/index.lib.tengo	/^        add: func(key, data) {$/;"	f
 add	./src/sets.lib.tengo	/^add := func(set, ...elements) {$/;"	f
 add	./src/smart.lib.tengo	/^		add: func(key, value) {$/;"	f
 add	./src/workflow/context.lib.tengo	/^		add: func(name, value) {$/;"	f
+addDynamicArgument	./dev/tengo/lib/forloop.lib.tengo	/^		addDynamicArgument: func(name, value) {$/;"	f
+addDynamicArgumentMap	./dev/tengo/lib/forloop.lib.tengo	/^		addDynamicArgumentMap: func(nameToValue) {$/;"	f
+addDynamicInput	./dev/tengo/lib/forloop.lib.tengo	/^		addDynamicInput: func(name, value) {$/;"	f
+addDynamicInputMap	./dev/tengo/lib/forloop.lib.tengo	/^		addDynamicInputMap: func(nameToValue) {$/;"	f
+addFile	./dev/tengo/lib/exec.lib.tengo	/^		addFile: func(fileName, file) {$/;"	f
+addFile	./dev/tengo/lib/workdir.lib.tengo	/^		addFile: func(fileName, fileResource) {$/;"	f
+addFile	./dist/tengo/lib/exec.lib.tengo	/^		addFile: func(fileName, file) {$/;"	f
+addFile	./dist/tengo/lib/workdir.lib.tengo	/^		addFile: func(fileName, fileResource) {$/;"	f
 addFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		addFile: func(fileName, file) {$/;"	f
 addFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		addFile: func(fileName, fileResource) {$/;"	f
 addFile	./src/exec/index.lib.tengo	/^		addFile: func(fileName, file) {$/;"	f
 addFile	./src/workdir/index.lib.tengo	/^		addFile: func(fileName, fileResource) {$/;"	f
+addFiles	./dev/tengo/lib/exec.lib.tengo	/^		addFiles: func(filesMap) {$/;"	f
+addFiles	./dev/tengo/lib/workdir.lib.tengo	/^		addFiles: func(fileMap) {$/;"	f
+addFiles	./dist/tengo/lib/exec.lib.tengo	/^		addFiles: func(filesMap) {$/;"	f
+addFiles	./dist/tengo/lib/workdir.lib.tengo	/^		addFiles: func(fileMap) {$/;"	f
 addFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		addFiles: func(filesMap) {$/;"	f
 addFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		addFiles: func(fileMap) {$/;"	f
 addFiles	./src/exec/index.lib.tengo	/^		addFiles: func(filesMap) {$/;"	f
 addFiles	./src/workdir/index.lib.tengo	/^		addFiles: func(fileMap) {$/;"	f
+addJson	./dev/tengo/lib/smart.lib.tengo	/^		addJson: func(key, value) {$/;"	f
+addJson	./dist/tengo/lib/smart.lib.tengo	/^		addJson: func(key, value) {$/;"	f
 addJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		addJson: func(key, value) {$/;"	f
 addJson	./src/smart.lib.tengo	/^		addJson: func(key, value) {$/;"	f
+addOutputName	./dev/tengo/lib/forloop.lib.tengo	/^		addOutputName: func(name) {$/;"	f
+addOutputNames	./dev/tengo/lib/forloop.lib.tengo	/^		addOutputNames: func(names) {$/;"	f
+addPackage	./dist/tengo/lib/exec.runenv.lib.tengo	/^		addPackage: func(key, pkgRef) {$/;"	f
 addPackage	./src/exec/runenv.lib.tengo	/^		addPackage: func(key, pkgRef) {$/;"	f
+addPath	./dist/tengo/lib/exec.runenv.lib.tengo	/^		addPath: func(path) {$/;"	f
 addPath	./src/exec/runenv.lib.tengo	/^		addPath: func(path) {$/;"	f
+addRef	./dev/tengo/lib/smart.lib.tengo	/^		addRef: func(key, value) {$/;"	f
+addRef	./dist/tengo/lib/smart.lib.tengo	/^		addRef: func(key, value) {$/;"	f
 addRef	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		addRef: func(key, value) {$/;"	f
 addRef	./src/smart.lib.tengo	/^		addRef: func(key, value) {$/;"	f
+addStaticArgument	./dev/tengo/lib/forloop.lib.tengo	/^		addStaticArgument: func(name, value) {$/;"	f
+addStaticArgumentMap	./dev/tengo/lib/forloop.lib.tengo	/^		addStaticArgumentMap: func(nameToValue) {$/;"	f
+addStaticInput	./dev/tengo/lib/forloop.lib.tengo	/^		addStaticInput: func(name, value) {$/;"	f
+addStaticInputMap	./dev/tengo/lib/forloop.lib.tengo	/^		addStaticInputMap: func(nameToValue) {$/;"	f
+addSubscription	./dist/tengo/lib/tpl.state-await.lib.tengo	/^	addSubscription := func(subscription) {$/;"	f
 addSubscription	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^	addSubscription := func(subscription) {$/;"	f
 addSubscription	./src/tpl/state-await.lib.tengo	/^	addSubscription := func(subscription) {$/;"	f
+addTemplateOutput	./dev/tengo/lib/forloop.lib.tengo	/^		addTemplateOutput: func(name) {$/;"	f
+addToPath	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		addToPath: func(value, hasVars) {$/;"	f
 addToPath	./src/exec/runcmd.lib.tengo	/^		addToPath: func(value, hasVars) {$/;"	f
+aggregate	./dist/tengo/lib/pframes.ll.lib.tengo	/^aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {$/;"	f
 aggregate	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.ll.lib.tengo	/^aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {$/;"	f
 aggregate	./src/pframes/ll.lib.tengo	/^aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {$/;"	f
+archive	./dist/tengo/lib/exec.package.lib.tengo	/^		archive: func() {$/;"	f
 archive	./src/exec/package.lib.tengo	/^		archive: func() {$/;"	f
+arg	./dev/tengo/lib/exec.lib.tengo	/^		arg: func(arg) {$/;"	f
+arg	./dev/tengo/lib/runcmd.lib.tengo	/^		arg: func(arg) {$/;"	f
+arg	./dist/tengo/lib/exec.lib.tengo	/^		arg: func(arg) {$/;"	f
+arg	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		arg: func(arg) {$/;"	f
 arg	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		arg: func(arg) {$/;"	f
 arg	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		arg: func(arg) {$/;"	f
 arg	./src/exec/index.lib.tengo	/^		arg: func(arg) {$/;"	f
 arg	./src/exec/runcmd.lib.tengo	/^		arg: func(arg) {$/;"	f
+argExecutable	./dev/tengo/lib/runcmd.lib.tengo	/^		argExecutable: func(arg, pathToBinary) {$/;"	f
 argExecutable	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		argExecutable: func(arg, pathToBinary) {$/;"	f
+argVar	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		argVar: func(argTpl) {$/;"	f
 argVar	./src/exec/runcmd.lib.tengo	/^		argVar: func(argTpl) {$/;"	f
+args	./dev/tengo/lib/workflow.lib.tengo	/^args := func() {$/;"	f
+args	./dist/tengo/lib/workflow.lib.tengo	/^args := func() {$/;"	f
 args	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^args := func() {$/;"	f
 args	./src/workflow/index.lib.tengo	/^args := func() {$/;"	f
+assert	./dev/tengo/lib/ll.lib.tengo	/^assert := func(condition, msg, ...args) {$/;"	f
+assert	./dist/tengo/lib/ll.lib.tengo	/^assert := func(condition, msg, ...args) {$/;"	f
 assert	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^assert := func(condition, msg, ...args) {$/;"	f
 assert	./src/ll.lib.tengo	/^assert := func(condition, msg, ...args) {$/;"	f
 assert	./src/path.test.tengo	/^assert := func(got, want) {$/;"	f
+assert	./src/pframe.util.test.tengo	/^assert := func(got, want, ...msg) {$/;"	f
 assert	./src/slices.test.tengo	/^assert := func(got, want, ...msg) {$/;"	f
 assert	./src/validation.test.tengo	/^assert := func(got, want, ...msg) {$/;"	f
+assertEntrypointNotSet	./dev/tengo/lib/exec.lib.tengo	/^	assertEntrypointNotSet := func() {$/;"	f
+assertEntrypointNotSet	./dist/tengo/lib/exec.lib.tengo	/^	assertEntrypointNotSet := func() {$/;"	f
 assertEntrypointNotSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	assertEntrypointNotSet := func() {$/;"	f
 assertEntrypointNotSet	./src/exec/index.lib.tengo	/^	assertEntrypointNotSet := func() {$/;"	f
+assertIsValid	./dev/tengo/lib/path.lib.tengo	/^assertIsValid := func(path) {$/;"	f
+assertIsValid	./dist/tengo/lib/path.lib.tengo	/^assertIsValid := func(path) {$/;"	f
 assertIsValid	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^assertIsValid := func(path) {$/;"	f
 assertIsValid	./src/path.lib.tengo	/^assertIsValid := func(path) {$/;"	f
+assertJsonSchema	./dev/tengo/lib/validation.lib.tengo	/^assertJsonSchema := func(js, scheme) {$/;"	f
+assertJsonSchema	./dist/tengo/lib/validation.lib.tengo	/^assertJsonSchema := func(js, schema, ...failMsg) {$/;"	f
 assertJsonSchema	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^assertJsonSchema := func(js, schema) {$/;"	f
 assertJsonSchema	./src/validation.lib.tengo	/^assertJsonSchema := func(js, schema, ...failMsg) {$/;"	f
+assertNotBuilt	./dev/tengo/lib/smart.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
+assertNotBuilt	./dist/tengo/lib/exec.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
+assertNotBuilt	./dist/tengo/lib/smart.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
 assertNotBuilt	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
+assertNotBuilt	./src/exec/index.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
 assertNotBuilt	./src/smart.lib.tengo	/^	assertNotBuilt := func() {$/;"	f
 assetName	./src/exec/test/pkg/asset-export.tpl.tengo	/^	assetName := "package.sw.json"$/;"	c
+assetsLoader	./dist/tengo/lib/exec.package.lib.tengo	/^assetsLoader := func(pkg) {$/;"	f
 assetsLoader	./src/exec/package.lib.tengo	/^assetsLoader := func(pkg) {$/;"	f
+await	./dist/tengo/lib/tpl.state-await.lib.tengo	/^await := func(rootField, ctxStorageResource, requests) {$/;"	f
 await	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^await := func(rootField, ctxStorageResource, requests) {$/;"	f
 await	./src/tpl/state-await.lib.tengo	/^await := func(rootField, ctxStorageResource, requests) {$/;"	f
+awaitOneState	./dist/tengo/lib/tpl.state-await.lib.tengo	/^awaitOneState := func(field, path, state) {$/;"	f
 awaitOneState	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^awaitOneState := func(field, path, state) {$/;"	f
 awaitOneState	./src/tpl/state-await.lib.tengo	/^awaitOneState := func(field, path, state) {$/;"	f
+awaitState	./dist/tengo/lib/tpl.lib.tengo	/^		awaitState: func(...pathAndState) {$/;"	f
 awaitState	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		awaitState: func(...pathAndState) {$/;"	f
 awaitState	./src/tpl/index.lib.tengo	/^		awaitState: func(...pathAndState) {$/;"	f
+binaryDescriptorScheme	./dist/tengo/lib/exec.package.lib.tengo	/^binaryDescriptorScheme := {$/;"	c
 binaryDescriptorScheme	./src/exec/package.lib.tengo	/^binaryDescriptorScheme := {$/;"	c
+binaryRunOptions	./dist/tengo/lib/exec.internal.lib.tengo	/^binaryRunOptions := func(runOptions) {$/;"	f
 binaryRunOptions	./src/exec/internal.lib.tengo	/^binaryRunOptions := func(runOptions) {$/;"	f
+blockId	./dev/tengo/lib/workflow.lib.tengo	/^blockId := func() {$/;"	f
+blockId	./dist/tengo/lib/workflow.lib.tengo	/^blockId := func() {$/;"	f
 blockId	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^blockId := func() {$/;"	f
 blockId	./src/workflow/index.lib.tengo	/^blockId := func() {$/;"	f
+body	./dev/tengo/lib/tpl.lib.tengo	/^		body: func(bodyFn){$/;"	f
+body	./dev/tengo/lib/workflow.lib.tengo	/^body := func(bodyFn) {$/;"	f
+body	./dist/tengo/lib/tpl.lib.tengo	/^		body: func(bodyFn){$/;"	f
+body	./dist/tengo/lib/workdir.proc.lib.tengo	/^		body: func(cb) {$/;"	f
+body	./dist/tengo/lib/workflow.lib.tengo	/^body := func(bodyFn) {$/;"	f
 body	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		body: func(bodyFn){$/;"	f
 body	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		body: func(cb) {$/;"	f
 body	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^body := func(bodyFn) {$/;"	f
 body	./src/tpl/index.lib.tengo	/^		body: func(bodyFn){$/;"	f
 body	./src/workdir/proc.lib.tengo	/^		body: func(cb) {$/;"	f
 body	./src/workflow/index.lib.tengo	/^body := func(bodyFn) {$/;"	f
+build	./dev/tengo/lib/context.lib.tengo	/^		build: func() {$/;"	f
+build	./dev/tengo/lib/forloop.lib.tengo	/^		build: func() {$/;"	f
+build	./dev/tengo/lib/runcmd.lib.tengo	/^		build: func() {$/;"	f
+build	./dev/tengo/lib/smart.lib.tengo	/^		build: func() {$/;"	f
+build	./dev/tengo/lib/workdir.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/exec.runenv.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/pframes.lib.tengo	/^        build: func() {$/;"	f
+build	./dist/tengo/lib/smart.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/workdir.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/workdir.save.lib.tengo	/^		build: func() {$/;"	f
+build	./dist/tengo/lib/workflow.context.lib.tengo	/^		build: func() {$/;"	f
 build	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		build: func() {$/;"	f
 build	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		build: func() {$/;"	f
 build	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		build: func() {$/;"	f
@@ -362,12 +700,25 @@ build	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.ten
 build	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.context.lib.tengo	/^		build: func() {$/;"	f
 build	./src/exec/runcmd.lib.tengo	/^		build: func() {$/;"	f
 build	./src/exec/runenv.lib.tengo	/^		build: func() {$/;"	f
+build	./src/pframes/index.lib.tengo	/^        build: func() {$/;"	f
 build	./src/smart.lib.tengo	/^		build: func() {$/;"	f
 build	./src/workdir/index.lib.tengo	/^		build: func() {$/;"	f
 build	./src/workdir/save.lib.tengo	/^		build: func() {$/;"	f
 build	./src/workflow/context.lib.tengo	/^		build: func() {$/;"	f
+buildUnlocked	./dev/tengo/lib/smart.lib.tengo	/^		buildUnlocked: func() {$/;"	f
+buildUnlocked	./dist/tengo/lib/smart.lib.tengo	/^		buildUnlocked: func() {$/;"	f
 buildUnlocked	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		buildUnlocked: func() {$/;"	f
 buildUnlocked	./src/smart.lib.tengo	/^		buildUnlocked: func() {$/;"	f
+builder	./dev/tengo/lib/context.lib.tengo	/^builder := func(block, parentContext) {$/;"	f
+builder	./dev/tengo/lib/exec.lib.tengo	/^builder := func() {$/;"	f
+builder	./dev/tengo/lib/forloop.lib.tengo	/^builder := func() {$/;"	f
+builder	./dev/tengo/lib/runcmd.lib.tengo	/^builder := func(workdir) {$/;"	f
+builder	./dev/tengo/lib/workdir.lib.tengo	/^builder := func() {$/;"	f
+builder	./dist/tengo/lib/exec.lib.tengo	/^builder := func() {$/;"	f
+builder	./dist/tengo/lib/exec.runcmd.lib.tengo	/^builder := func(workdir) {$/;"	f
+builder	./dist/tengo/lib/workdir.lib.tengo	/^builder := func() {$/;"	f
+builder	./dist/tengo/lib/workdir.save.lib.tengo	/^builder := func(wdBefore) {$/;"	f
+builder	./dist/tengo/lib/workflow.context.lib.tengo	/^builder := func(block, parentContext) {$/;"	f
 builder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^builder := func() {$/;"	f
 builder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^builder := func(workdir) {$/;"	f
 builder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^builder := func() {$/;"	f
@@ -378,32 +729,65 @@ builder	./src/exec/runcmd.lib.tengo	/^builder := func(workdir) {$/;"	f
 builder	./src/workdir/index.lib.tengo	/^builder := func() {$/;"	f
 builder	./src/workdir/save.lib.tengo	/^builder := func(wdBefore) {$/;"	f
 builder	./src/workflow/context.lib.tengo	/^builder := func(block, parentContext) {$/;"	f
+cRules	./dist/tengo/lib/workdir.save.lib.tengo	/^	cRules := {}$/;"	c
 cRules	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^	cRules := {}$/;"	c
 cRules	./src/workdir/save.lib.tengo	/^	cRules := {}$/;"	c
+cache	./dev/tengo/lib/exec.lib.tengo	/^		cache: func(time) {$/;"	f
+cache	./dist/tengo/lib/exec.lib.tengo	/^		cache: func(time) {$/;"	f
+cache	./dist/tengo/lib/exec.runenv.lib.tengo	/^		cache: func(time) {$/;"	f
 cache	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		cache: func(time) {$/;"	f
 cache	./src/exec/index.lib.tengo	/^		cache: func(time) {$/;"	f
 cache	./src/exec/runenv.lib.tengo	/^		cache: func(time) {$/;"	f
+canParse	./dev/tengo/lib/bquery.lib.tengo	/^		canParse: func(r) {$/;"	f
+canParse	./dist/tengo/lib/workflow.bquery.lib.tengo	/^		canParse: func(r) {$/;"	f
 canParse	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^		canParse: func(r) {$/;"	f
 canParse	./src/workflow/bquery.lib.tengo	/^		canParse: func(r) {$/;"	f
+canonize	./dev/tengo/lib/path.lib.tengo	/^canonize := func(...elems) {$/;"	f
+canonize	./dist/tengo/lib/path.lib.tengo	/^canonize := func(...elems) {$/;"	f
 canonize	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^canonize := func(...elems) {$/;"	f
 canonize	./src/path.lib.tengo	/^canonize := func(...elems) {$/;"	f
+check	./dev/tengo/lib/validation.lib.tengo	/^check := func(condition, stack, msg, ...args) {$/;"	f
+check	./dist/tengo/lib/validation.lib.tengo	/^check := func(condition, keyPath, msg, ...args) {$/;"	f
 check	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^check := func(condition, keyPath, msg, ...args) {$/;"	f
 check	./src/validation.lib.tengo	/^check := func(condition, keyPath, msg, ...args) {$/;"	f
+checkJson	./dev/tengo/lib/validation.lib.tengo	/^checkJson := func(js, scheme) {$/;"	f
+checkJson	./dist/tengo/lib/validation.lib.tengo	/^checkJson := func(js, schema) {$/;"	f
 checkJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^checkJson := func(js, schema) {$/;"	f
 checkJson	./src/validation.lib.tengo	/^checkJson := func(js, schema) {$/;"	f
+checkResourceType	./dist/tengo/lib/smart.lib.tengo	/^		checkResourceType: func(expectedType) {$/;"	f
 checkResourceType	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		checkResourceType: func(expectedType) {$/;"	f
 checkResourceType	./src/smart.lib.tengo	/^		checkResourceType: func(expectedType) {$/;"	f
+checker	./dist/tengo/lib/validation.lib.tengo	/^	checker := func(elem, keyPath, stack) {$/;"	f
 checker	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^	checker := func(elem, keyPath, stack) {$/;"	f
 checker	./src/validation.lib.tengo	/^	checker := func(elem, keyPath, stack) {$/;"	f
+cmd	./dev/tengo/lib/exec.lib.tengo	/^		cmd: func(commandName) {$/;"	f
+cmd	./dev/tengo/lib/runcmd.lib.tengo	/^		cmd: func(commandName) {$/;"	f
+cmd	./dist/tengo/lib/exec.lib.tengo	/^		cmd: func(commandName) {$/;"	f
+cmd	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		cmd: func(commandName) {$/;"	f
 cmd	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		cmd: func(commandName) {$/;"	f
 cmd	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		cmd: func(commandName) {$/;"	f
 cmd	./src/exec/index.lib.tengo	/^		cmd: func(commandName) {$/;"	f
 cmd	./src/exec/runcmd.lib.tengo	/^		cmd: func(commandName) {$/;"	f
+cmdExecutable	./dev/tengo/lib/runcmd.lib.tengo	/^		cmdExecutable: func(commandName, pathToBinary) {$/;"	f
 cmdExecutable	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		cmdExecutable: func(commandName, pathToBinary) {$/;"	f
+cmdVar	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		cmdVar: func(commandTpl) {$/;"	f
 cmdVar	./src/exec/runcmd.lib.tengo	/^		cmdVar: func(commandTpl) {$/;"	f
 columns	./src/pframes/export-pframe.tpl.tengo	/^	columns := {}$/;"	c
+columnsSpec	./dist/tengo/lib/pframes.util.lib.tengo	/^	columnsSpec := {}$/;"	c
+columnsSpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^	columnsSpec := {}$/;"	c
+columnsSpec	./src/pframes/util.lib.tengo	/^	columnsSpec := {}$/;"	c
+containsKey	./dev/tengo/lib/maps.lib.tengo	/^containsKey := func(map, key) {$/;"	f
+containsKey	./dist/tengo/lib/maps.lib.tengo	/^containsKey := func(map, key) {$/;"	f
 containsKey	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^containsKey := func(map, key) {$/;"	f
 containsKey	./src/maps.lib.tengo	/^containsKey := func(map, key) {$/;"	f
+create	./dev/tengo/lib/bquery.lib.tengo	/^create := func(spec, ctx, ...options) {$/;"	f
+create	./dev/tengo/lib/log.lib.tengo	/^create := func(name) {$/;"	f
+create	./dev/tengo/lib/render.lib.tengo	/^create := func(tplId, inputs) {$/;"	f
+create	./dev/tengo/lib/stream.lib.tengo	/^create := func(workdirBefore, workdirAfter, filePath) {$/;"	f
+create	./dist/tengo/lib/exec.stream.lib.tengo	/^create := func(workdirBefore, workdirAfter, filePath) {$/;"	f
+create	./dist/tengo/lib/render.lib.tengo	/^create := func(tpl, inputs) {$/;"	f
+create	./dist/tengo/lib/workdir.lib.tengo	/^create := func() {$/;"	f
+create	./dist/tengo/lib/workflow.bquery.lib.tengo	/^create := func(spec, ctx, ...options) {$/;"	f
 create	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.stream.lib.tengo	/^create := func(workdirBefore, workdirAfter, filePath) {$/;"	f
 create	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/render.lib.tengo	/^create := func(tpl, inputs) {$/;"	f
 create	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^create := func(spec, ctx, ...options) {$/;"	f
@@ -411,481 +795,906 @@ create	./src/exec/stream.lib.tengo	/^create := func(workdirBefore, workdirAfter,
 create	./src/render.lib.tengo	/^create := func(tpl, inputs) {$/;"	f
 create	./src/workdir/index.lib.tengo	/^create := func() {$/;"	f
 create	./src/workflow/bquery.lib.tengo	/^create := func(spec, ctx, ...options) {$/;"	f
+createBinaryMapResource	./dev/tengo/lib/smart.lib.tengo	/^createBinaryMapResource = func(keyToValue) {$/;"	f
+createBinaryMapResource	./dist/tengo/lib/smart.lib.tengo	/^createBinaryMapResource = func(keyToValue) {$/;"	f
 createBinaryMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createBinaryMapResource = func(keyToValue) {$/;"	f
 createBinaryMapResource	./src/smart.lib.tengo	/^createBinaryMapResource = func(keyToValue) {$/;"	f
+createBlobImportInternal	./dev/tengo/lib/file.lib.tengo	/^createBlobImportInternal := func(settings) {$/;"	f
+createBlobImportInternal	./dist/tengo/lib/file.lib.tengo	/^createBlobImportInternal := func(settings) {$/;"	f
 createBlobImportInternal	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^createBlobImportInternal := func(settings) {$/;"	f
 createBlobImportInternal	./src/file.lib.tengo	/^createBlobImportInternal := func(settings) {$/;"	f
+createBlobMapResource	./dev/tengo/lib/smart.lib.tengo	/^createBlobMapResource = func(keyToValue) {$/;"	f
+createBlobMapResource	./dist/tengo/lib/smart.lib.tengo	/^createBlobMapResource = func(keyToValue) {$/;"	f
 createBlobMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createBlobMapResource = func(keyToValue) {$/;"	f
 createBlobMapResource	./src/smart.lib.tengo	/^createBlobMapResource = func(keyToValue) {$/;"	f
+createBlobUpload	./dev/tengo/lib/file.lib.tengo	/^createBlobUpload := func(settings) {$/;"	f
+createBlobUpload	./dist/tengo/lib/file.lib.tengo	/^createBlobUpload := func(settings) {$/;"	f
 createBlobUpload	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^createBlobUpload := func(settings) {$/;"	f
 createBlobUpload	./src/file.lib.tengo	/^createBlobUpload := func(settings) {$/;"	f
+createContext	./dist/tengo/lib/tpl.state-await.lib.tengo	/^createContext := func() {$/;"	f
 createContext	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^createContext := func() {$/;"	f
 createContext	./src/tpl/state-await.lib.tengo	/^createContext := func() {$/;"	f
+createEphemeral	./dev/tengo/lib/render.lib.tengo	/^createEphemeral := func(tplId, inputs) {$/;"	f
+createEphemeral	./dist/tengo/lib/render.lib.tengo	/^createEphemeral := func(tpl, inputs) {$/;"	f
 createEphemeral	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/render.lib.tengo	/^createEphemeral := func(tpl, inputs) {$/;"	f
 createEphemeral	./src/render.lib.tengo	/^createEphemeral := func(tpl, inputs) {$/;"	f
+createField	./dev/tengo/lib/smart.lib.tengo	/^		createField: func(name, fieldType) {$/;"	f
+createField	./dist/tengo/lib/smart.lib.tengo	/^		createField: func(name, fieldType) {$/;"	f
 createField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		createField: func(name, fieldType) {$/;"	f
 createField	./src/smart.lib.tengo	/^		createField: func(name, fieldType) {$/;"	f
+createInputField	./dev/tengo/lib/smart.lib.tengo	/^		createInputField: func(name) {$/;"	f
+createInputField	./dist/tengo/lib/smart.lib.tengo	/^		createInputField: func(name) {$/;"	f
 createInputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		createInputField: func(name) {$/;"	f
 createInputField	./src/smart.lib.tengo	/^		createInputField: func(name) {$/;"	f
+createJsonResource	./dev/tengo/lib/smart.lib.tengo	/^createJsonResource = func(value) {$/;"	f
+createJsonResource	./dist/tengo/lib/smart.lib.tengo	/^createJsonResource = func(value) {$/;"	f
 createJsonResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createJsonResource = func(value) {$/;"	f
 createJsonResource	./src/smart.lib.tengo	/^createJsonResource = func(value) {$/;"	f
+createMapResource	./dev/tengo/lib/smart.lib.tengo	/^createMapResource = func(keyToValue) {$/;"	f
+createMapResource	./dist/tengo/lib/smart.lib.tengo	/^createMapResource = func(keyToValue) {$/;"	f
 createMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createMapResource = func(keyToValue) {$/;"	f
 createMapResource	./src/smart.lib.tengo	/^createMapResource = func(keyToValue) {$/;"	f
+createMapResourceWithType	./dev/tengo/lib/smart.lib.tengo	/^createMapResourceWithType := func(resourceType, keyToValue) {$/;"	f
+createMapResourceWithType	./dist/tengo/lib/smart.lib.tengo	/^createMapResourceWithType := func(resourceType, keyToValue) {$/;"	f
 createMapResourceWithType	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createMapResourceWithType := func(resourceType, keyToValue) {$/;"	f
 createMapResourceWithType	./src/smart.lib.tengo	/^createMapResourceWithType := func(resourceType, keyToValue) {$/;"	f
+createOutputField	./dev/tengo/lib/smart.lib.tengo	/^		createOutputField: func(name) {$/;"	f
+createOutputField	./dist/tengo/lib/smart.lib.tengo	/^		createOutputField: func(name) {$/;"	f
 createOutputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		createOutputField: func(name) {$/;"	f
 createOutputField	./src/smart.lib.tengo	/^		createOutputField: func(name) {$/;"	f
+createOutputsAndLock	./dev/tengo/lib/tpl.lib.tengo	/^		createOutputsAndLock: func(outputs) {$/;"	f
+createOutputsAndLock	./dist/tengo/lib/tpl.lib.tengo	/^		createOutputsAndLock: func(outputs) {$/;"	f
 createOutputsAndLock	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		createOutputsAndLock: func(outputs) {$/;"	f
 createOutputsAndLock	./src/tpl/index.lib.tengo	/^		createOutputsAndLock: func(outputs) {$/;"	f
+createSpec	./dev/tengo/lib/bobject.lib.tengo	/^createSpec := func(spec) {$/;"	f
+createSpec	./dist/tengo/lib/workflow.bobject.lib.tengo	/^createSpec := func(spec) {$/;"	f
 createSpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bobject.lib.tengo	/^createSpec := func(spec) {$/;"	f
 createSpec	./src/workflow/bobject.lib.tengo	/^createSpec := func(spec) {$/;"	f
+createUniversal	./dist/tengo/lib/render.lib.tengo	/^createUniversal := func(tpl, isEph, inputs) {$/;"	f
 createUniversal	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/render.lib.tengo	/^createUniversal := func(tpl, isEph, inputs) {$/;"	f
 createUniversal	./src/render.lib.tengo	/^createUniversal := func(tpl, isEph, inputs) {$/;"	f
+createValueResource	./dev/tengo/lib/smart.lib.tengo	/^createValueResource = func(resourceType, data) {$/;"	f
+createValueResource	./dist/tengo/lib/smart.lib.tengo	/^createValueResource = func(resourceType, data) {$/;"	f
 createValueResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^createValueResource = func(resourceType, data) {$/;"	f
 createValueResource	./src/smart.lib.tengo	/^createValueResource = func(resourceType, data) {$/;"	f
 dInfo	./src/pframes/import-dir.tpl.tengo	/^	dInfo := {}$/;"	c
+decomposePfconvCfg	./dist/tengo/lib/pframes.util.lib.tengo	/^decomposePfconvCfg := func(cfg, ...ops) {$/;"	f
+decomposePfconvCfg	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^decomposePfconvCfg := func(cfg, ...ops) {$/;"	f
+decomposePfconvCfg	./src/pframes/util.lib.tengo	/^decomposePfconvCfg := func(cfg, ...ops) {$/;"	f
+defineOutputs	./dev/tengo/lib/tpl.lib.tengo	/^		defineOutputs : func(...name) {$/;"	f
+defineOutputs	./dist/tengo/lib/tpl.lib.tengo	/^		defineOutputs : func(...name) {$/;"	f
 defineOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		defineOutputs : func(...name) {$/;"	f
 defineOutputs	./src/tpl/index.lib.tengo	/^		defineOutputs : func(...name) {$/;"	f
+delegate	./dist/tengo/lib/tpl.lib.tengo	/^		delegate: func(tpl, extraInputs, outputs) {$/;"	f
+delegate	./src/tpl/index.lib.tengo	/^		delegate: func(tpl, extraInputs, outputs) {$/;"	f
+deleteUndefined	./dist/tengo/lib/objects.lib.tengo	/^deleteUndefined := func(obj) {$/;"	f
 deleteUndefined	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/objects.lib.tengo	/^deleteUndefined := func(obj) {$/;"	f
 deleteUndefined	./src/objects.lib.tengo	/^deleteUndefined := func(obj) {$/;"	f
+dependencies	./dist/tengo/lib/exec.runenv.lib.tengo	/^		dependencies: func(deps) {$/;"	f
 dependencies	./src/exec/runenv.lib.tengo	/^		dependencies: func(deps) {$/;"	f
-depsMap	./src/exec/runenv.lib.tengo	/^			depsMap := {}$/;"	c
+depsMap	./dist/tengo/lib/exec.runenv.lib.tengo	/^	depsMap := {}$/;"	c
+depsMap	./src/exec/runenv.lib.tengo	/^	depsMap := {}$/;"	c
+descriptorScheme	./dist/tengo/lib/exec.package.lib.tengo	/^descriptorScheme := {$/;"	c
 descriptorScheme	./src/exec/package.lib.tengo	/^descriptorScheme := {$/;"	c
+dirs	./dev/tengo/lib/exec.lib.tengo	/^	dirs := {}$/;"	c
+dirs	./dev/tengo/lib/workdir.lib.tengo	/^	dirs := {}$/;"	c
+dirs	./dist/tengo/lib/workdir.lib.tengo	/^	dirs := {}$/;"	c
 dirs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	dirs := {}$/;"	c
 dirs	./src/workdir/index.lib.tengo	/^	dirs := {}$/;"	c
+dirsToCreate	./dist/tengo/lib/exec.lib.tengo	/^	dirsToCreate := {}$/;"	c
 dirsToCreate	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	dirsToCreate := {}$/;"	c
 dirsToCreate	./src/exec/index.lib.tengo	/^	dirsToCreate := {}$/;"	c
+download	./dev/tengo/lib/blob.lib.tengo	/^download := func(blob) {$/;"	f
+dynamicArgFieldName	./dev/tengo/lib/forloop.lib.tengo	/^	dynamicArgFieldName := ""$/;"	c
+dynamicArgs	./dev/tengo/lib/forloop.lib.tengo	/^	dynamicArgs := {}$/;"	c
+e	./dist/tengo/lib/tpl.state-await.lib.tengo	/^		e := {}$/;"	c
 e	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^		e := {}$/;"	c
 e	./src/tpl/state-await.lib.tengo	/^		e := {}$/;"	c
+eData	./dist/tengo/lib/workflow.lib.tengo	/^	eData := {}$/;"	c
 eData	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^	eData := {}$/;"	c
 eData	./src/workflow/index.lib.tengo	/^	eData := {}$/;"	c
+ensureNonStrict	./dev/tengo/lib/ll.lib.tengo	/^ensureNonStrict := func(r) {$/;"	f
+ensureNonStrict	./dist/tengo/lib/ll.lib.tengo	/^ensureNonStrict := func(r) {$/;"	f
 ensureNonStrict	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^ensureNonStrict := func(r) {$/;"	f
 ensureNonStrict	./src/ll.lib.tengo	/^ensureNonStrict := func(r) {$/;"	f
+env	./dev/tengo/lib/exec.lib.tengo	/^		env: func(name, value) {$/;"	f
+env	./dev/tengo/lib/runcmd.lib.tengo	/^		env: func(name, value) {$/;"	f
+env	./dist/tengo/lib/exec.lib.tengo	/^		env: func(name, value) {$/;"	f
+env	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		env: func(name, value) {$/;"	f
 env	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		env: func(name, value) {$/;"	f
 env	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		env: func(name, value) {$/;"	f
 env	./src/exec/index.lib.tengo	/^		env: func(name, value) {$/;"	f
 env	./src/exec/runcmd.lib.tengo	/^		env: func(name, value) {$/;"	f
+envMap	./dev/tengo/lib/exec.lib.tengo	/^		envMap: func(envMap) {$/;"	f
+envMap	./dist/tengo/lib/exec.lib.tengo	/^		envMap: func(envMap) {$/;"	f
 envMap	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		envMap: func(envMap) {$/;"	f
 envMap	./src/exec/index.lib.tengo	/^		envMap: func(envMap) {$/;"	f
+envType	./dist/tengo/lib/exec.runenv.lib.tengo	/^		envType: func(type) {$/;"	f
+envType	./dist/tengo/lib/exec.runenv.lib.tengo	/^	envType := ""$/;"	c
 envType	./src/exec/runenv.lib.tengo	/^		envType: func(type) {$/;"	f
 envType	./src/exec/runenv.lib.tengo	/^	envType := ""$/;"	c
+envVar	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		envVar: func(name, valueTpl) {$/;"	f
 envVar	./src/exec/runcmd.lib.tengo	/^		envVar: func(name, valueTpl) {$/;"	f
+envs	./dev/tengo/lib/exec.lib.tengo	/^	envs := {}$/;"	c
+envs	./dev/tengo/lib/runcmd.lib.tengo	/^	envs := {}$/;"	c
+envs	./dist/tengo/lib/exec.internal.lib.tengo	/^	envs := {}$/;"	c
+envs	./dist/tengo/lib/exec.lib.tengo	/^	envs := {}$/;"	c
+envs	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	envs := {}$/;"	c
 envs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	envs := {}$/;"	c
 envs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^	envs := {}$/;"	c
 envs	./src/exec/index.lib.tengo	/^	envs := {}$/;"	c
 envs	./src/exec/internal.lib.tengo	/^	envs := {}$/;"	c
 envs	./src/exec/runcmd.lib.tengo	/^	envs := {}$/;"	c
+ephemeralBuilder	./dev/tengo/lib/smart.lib.tengo	/^ephemeralBuilder = func(resourceType, ...data) {$/;"	f
+ephemeralBuilder	./dist/tengo/lib/smart.lib.tengo	/^ephemeralBuilder = func(resourceType, ...data) {$/;"	f
 ephemeralBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^ephemeralBuilder = func(resourceType, ...data) {$/;"	f
 ephemeralBuilder	./src/smart.lib.tengo	/^ephemeralBuilder = func(resourceType, ...data) {$/;"	f
+ephemeralMapBuilder	./dev/tengo/lib/smart.lib.tengo	/^ephemeralMapBuilder = func() {$/;"	f
+ephemeralMapBuilder	./dist/tengo/lib/smart.lib.tengo	/^ephemeralMapBuilder = func() {$/;"	f
 ephemeralMapBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^ephemeralMapBuilder = func() {$/;"	f
 ephemeralMapBuilder	./src/smart.lib.tengo	/^ephemeralMapBuilder = func() {$/;"	f
+err	./dev/tengo/lib/log.lib.tengo	/^		err: func(...args) {$/;"	f
+execInputs	./dist/tengo/lib/exec.lib.tengo	/^			execInputs := {$/;"	c
 execInputs	./src/exec/index.lib.tengo	/^			execInputs := {$/;"	c
+execRefs	./dev/tengo/lib/runcmd.lib.tengo	/^	execRefs := {}$/;"	c
 execRefs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^	execRefs := {}$/;"	c
+exportColumnData	./dist/tengo/lib/pframes.lib.tengo	/^exportColumnData := func(data) {$/;"	f
+exportColumnData	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.lib.tengo	/^exportColumnData := func(data) {$/;"	f
+exportColumnData	./src/pframes/index.lib.tengo	/^exportColumnData := func(data) {$/;"	f
+exportFile	./dev/tengo/lib/file.lib.tengo	/^exportFile := func(blob) {$/;"	f
+exportFile	./dist/tengo/lib/file.lib.tengo	/^exportFile := func(blob) {$/;"	f
 exportFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^exportFile := func(blob) {$/;"	f
 exportFile	./src/file.lib.tengo	/^exportFile := func(blob) {$/;"	f
+exportFrame	./dist/tengo/lib/pframes.lib.tengo	/^exportFrame := func(pf) {$/;"	f
 exportFrame	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.lib.tengo	/^exportFrame := func(pf) {$/;"	f
 exportFrame	./src/pframes/index.lib.tengo	/^exportFrame := func(pf) {$/;"	f
+exportPColumnData	./dist/tengo/lib/pframes.export-pcolumn.lib.tengo	/^exportPColumnData := func(data) {$/;"	f
 exportPColumnData	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.export-pcolumn.lib.tengo	/^exportPColumnData := func(data) {$/;"	f
 exportPColumnData	./src/pframes/export-pcolumn.lib.tengo	/^exportPColumnData := func(data) {$/;"	f
 exports	./src/workflow/test/exports.wf1.tpl.tengo	/^	exports := {}$/;"	c
+ext	./dev/tengo/lib/path.lib.tengo	/^	ext := ""$/;"	c
+ext	./dist/tengo/lib/path.lib.tengo	/^	ext := ""$/;"	c
 ext	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^	ext := ""$/;"	c
 ext	./src/path.lib.tengo	/^	ext := ""$/;"	c
+extraFields	./src/pframes/test/ll.agg_1.tpl.tengo	/^	extraFields := {}$/;"	c
 extraInputs	./src/pframes/aggregate.tpl.tengo	/^	extraInputs := {}$/;"	c
+fRules	./dist/tengo/lib/workdir.save.lib.tengo	/^	fRules := {}$/;"	c
 fRules	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^	fRules := {}$/;"	c
 fRules	./src/workdir/save.lib.tengo	/^	fRules := {}$/;"	c
+fail	./dev/tengo/lib/validation.lib.tengo	/^fail := func(stack, msg, ...args) {$/;"	f
+fail	./dist/tengo/lib/validation.lib.tengo	/^fail := func(keyPath, msg, ...args) {$/;"	f
 fail	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^fail := func(keyPath, msg, ...args) {$/;"	f
 fail	./src/validation.lib.tengo	/^fail := func(keyPath, msg, ...args) {$/;"	f
+field	./dev/tengo/lib/smart.lib.tengo	/^field = func(f) {$/;"	f
+field	./dist/tengo/lib/smart.lib.tengo	/^field = func(f) {$/;"	f
 field	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^field = func(f) {$/;"	f
 field	./src/smart.lib.tengo	/^field = func(f) {$/;"	f
+fieldId	./dev/tengo/lib/ll.lib.tengo	/^fieldId := func(resourceId, fieldName) {$/;"	f
+fieldId	./dist/tengo/lib/ll.lib.tengo	/^fieldId := func(resourceId, fieldName) {$/;"	f
 fieldId	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^fieldId := func(resourceId, fieldName) {$/;"	f
 fieldId	./src/ll.lib.tengo	/^fieldId := func(resourceId, fieldName) {$/;"	f
+fileSets	./dist/tengo/lib/workdir.lib.tengo	/^	fileSets := {}$/;"	c
 fileSets	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	fileSets := {}$/;"	c
 fileSets	./src/workdir/index.lib.tengo	/^	fileSets := {}$/;"	c
+fileSetsContent	./dist/tengo/lib/workdir.lib.tengo	/^	fileSetsContent := {}$/;"	c
 fileSetsContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	fileSetsContent := {}$/;"	c
 fileSetsContent	./src/workdir/index.lib.tengo	/^	fileSetsContent := {}$/;"	c
 fileSetsContentMatch	./src/workdir/save.tpl.tengo	/^	fileSetsContentMatch := {}$/;"	c
-fileSetsContentResult	./src/workdir/save.tpl.tengo	/^	fileSetsContentResult := {}$/;"	c
+fileSetsContentToSave	./dist/tengo/lib/exec.lib.tengo	/^	fileSetsContentToSave := {}$/;"	c
 fileSetsContentToSave	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	fileSetsContentToSave := {}$/;"	c
 fileSetsContentToSave	./src/exec/index.lib.tengo	/^	fileSetsContentToSave := {}$/;"	c
 fileSetsMatch	./src/workdir/save.tpl.tengo	/^	fileSetsMatch := {}$/;"	c
-fileSetsResult	./src/workdir/save.tpl.tengo	/^	fileSetsResult := {}$/;"	c
+fileSetsToSave	./dist/tengo/lib/exec.lib.tengo	/^	fileSetsToSave := {}$/;"	c
 fileSetsToSave	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	fileSetsToSave := {}$/;"	c
 fileSetsToSave	./src/exec/index.lib.tengo	/^	fileSetsToSave := {}$/;"	c
+filepathCanonize	./dev/tengo/lib/ll.lib.tengo	/^filepathCanonize := func(...elem) {$/;"	f
+filepathCanonize	./dist/tengo/lib/ll.lib.tengo	/^filepathCanonize := func(...elem) {$/;"	f
 filepathCanonize	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^filepathCanonize := func(...elem) {$/;"	f
 filepathCanonize	./src/ll.lib.tengo	/^filepathCanonize := func(...elem) {$/;"	f
+filepathJoin	./dev/tengo/lib/ll.lib.tengo	/^filepathJoin := func(...elems) {$/;"	f
+filepathJoin	./dist/tengo/lib/ll.lib.tengo	/^filepathJoin := func(...elems) {$/;"	f
 filepathJoin	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^filepathJoin := func(...elems) {$/;"	f
 filepathJoin	./src/ll.lib.tengo	/^filepathJoin := func(...elems) {$/;"	f
+filepathRegexpJoin	./dev/tengo/lib/ll.lib.tengo	/^filepathRegexpJoin := func(...elems) {$/;"	f
+filepathRegexpJoin	./dist/tengo/lib/ll.lib.tengo	/^filepathRegexpJoin := func(...elems) {$/;"	f
 filepathRegexpJoin	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^filepathRegexpJoin := func(...elems) {$/;"	f
 filepathRegexpJoin	./src/ll.lib.tengo	/^filepathRegexpJoin := func(...elems) {$/;"	f
+files	./dev/tengo/lib/exec.lib.tengo	/^	files := {}$/;"	c
+files	./dev/tengo/lib/workdir.lib.tengo	/^	files := {}$/;"	c
+files	./dist/tengo/lib/workdir.lib.tengo	/^	files := {}$/;"	c
 files	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	files := {}$/;"	c
 files	./src/workdir/index.lib.tengo	/^	files := {}$/;"	c
+filesContent	./dist/tengo/lib/workdir.lib.tengo	/^	filesContent := {}$/;"	c
 filesContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	filesContent := {}$/;"	c
 filesContent	./src/workdir/index.lib.tengo	/^	filesContent := {}$/;"	c
+filesContentToSave	./dist/tengo/lib/exec.lib.tengo	/^	filesContentToSave := {}$/;"	c
 filesContentToSave	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	filesContentToSave := {}$/;"	c
 filesContentToSave	./src/exec/index.lib.tengo	/^	filesContentToSave := {}$/;"	c
+filesInWd	./dist/tengo/lib/workdir.proc.lib.tengo	/^		filesInWd: func() {$/;"	f
 filesInWd	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		filesInWd: func() {$/;"	f
 filesInWd	./src/workdir/proc.lib.tengo	/^		filesInWd: func() {$/;"	f
+filesToAdd	./dist/tengo/lib/exec.lib.tengo	/^	filesToAdd := {}$/;"	c
 filesToAdd	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	filesToAdd := {}$/;"	c
 filesToAdd	./src/exec/index.lib.tengo	/^	filesToAdd := {}$/;"	c
+filesToSave	./dist/tengo/lib/exec.lib.tengo	/^	filesToSave := {}$/;"	c
 filesToSave	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	filesToSave := {}$/;"	c
 filesToSave	./src/exec/index.lib.tengo	/^	filesToSave := {}$/;"	c
+filesToStream	./dist/tengo/lib/exec.lib.tengo	/^	filesToStream := {}$/;"	c
 filesToStream	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	filesToStream := {}$/;"	c
 filesToStream	./src/exec/index.lib.tengo	/^	filesToStream := {}$/;"	c
+filesToWrite	./dist/tengo/lib/exec.lib.tengo	/^	filesToWrite := {}$/;"	c
 filesToWrite	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	filesToWrite := {}$/;"	c
 filesToWrite	./src/exec/index.lib.tengo	/^	filesToWrite := {}$/;"	c
+filter	./dev/tengo/lib/maps.lib.tengo	/^filter := func(map, predicateFn) {$/;"	f
+filter	./dev/tengo/lib/slices.lib.tengo	/^filter := func(slice, predicateFn) {$/;"	f
+filter	./dist/tengo/lib/maps.lib.tengo	/^filter := func(map, predicateFn) {$/;"	f
+filter	./dist/tengo/lib/slices.lib.tengo	/^filter := func(slice, predicateFn) {$/;"	f
 filter	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^filter := func(map, predicateFn) {$/;"	f
 filter	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^filter := func(slice, predicateFn) {$/;"	f
 filter	./src/maps.lib.tengo	/^filter := func(map, predicateFn) {$/;"	f
 filter	./src/slices.lib.tengo	/^filter := func(slice, predicateFn) {$/;"	f
+filterKeys	./dev/tengo/lib/maps.lib.tengo	/^filterKeys := func(map, predicateFnK) {$/;"	f
+filterKeys	./dist/tengo/lib/maps.lib.tengo	/^filterKeys := func(map, predicateFnK) {$/;"	f
 filterKeys	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^filterKeys := func(map, predicateFnK) {$/;"	f
 filterKeys	./src/maps.lib.tengo	/^filterKeys := func(map, predicateFnK) {$/;"	f
+filterKeysValues	./dev/tengo/lib/maps.lib.tengo	/^filterKeysValues := func(map, predicateFnK, predicateFnV) {$/;"	f
+filterKeysValues	./dist/tengo/lib/maps.lib.tengo	/^filterKeysValues := func(map, predicateFnK, predicateFnV) {$/;"	f
 filterKeysValues	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^filterKeysValues := func(map, predicateFnK, predicateFnV) {$/;"	f
 filterKeysValues	./src/maps.lib.tengo	/^filterKeysValues := func(map, predicateFnK, predicateFnV) {$/;"	f
+filterValues	./dev/tengo/lib/maps.lib.tengo	/^filterValues := func(map, predicateFnV) {$/;"	f
+filterValues	./dist/tengo/lib/maps.lib.tengo	/^filterValues := func(map, predicateFnV) {$/;"	f
 filterValues	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^filterValues := func(map, predicateFnV) {$/;"	f
 filterValues	./src/maps.lib.tengo	/^filterValues := func(map, predicateFnV) {$/;"	f
+findElement	./dev/tengo/lib/slices.lib.tengo	/^findElement := func(slice, element) {$/;"	f
+findElement	./dist/tengo/lib/slices.lib.tengo	/^findElement := func(slice, element) {$/;"	f
 findElement	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^findElement := func(slice, element) {$/;"	f
 findElement	./src/slices.lib.tengo	/^findElement := func(slice, element) {$/;"	f
+fromMapKeys	./dev/tengo/lib/sets.lib.tengo	/^fromMapKeys := func(map) {$/;"	f
+fromMapKeys	./dist/tengo/lib/sets.lib.tengo	/^fromMapKeys := func(map) {$/;"	f
 fromMapKeys	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^fromMapKeys := func(map) {$/;"	f
 fromMapKeys	./src/sets.lib.tengo	/^fromMapKeys := func(map) {$/;"	f
+fromSet	./dev/tengo/lib/slices.lib.tengo	/^fromSet := func(set) {$/;"	f
+fromSet	./dist/tengo/lib/slices.lib.tengo	/^fromSet := func(set) {$/;"	f
 fromSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^fromSet := func(set) {$/;"	f
 fromSet	./src/slices.lib.tengo	/^fromSet := func(set) {$/;"	f
+fromSlice	./dev/tengo/lib/sets.lib.tengo	/^fromSlice := func(slice) {$/;"	f
+fromSlice	./dist/tengo/lib/sets.lib.tengo	/^fromSlice := func(slice) {$/;"	f
 fromSlice	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^fromSlice := func(slice) {$/;"	f
 fromSlice	./src/sets.lib.tengo	/^fromSlice := func(slice) {$/;"	f
+fromStrict	./dev/tengo/lib/ll.lib.tengo	/^fromStrict := func(r) {$/;"	f
+fromStrict	./dist/tengo/lib/ll.lib.tengo	/^fromStrict := func(r) {$/;"	f
 fromStrict	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^fromStrict := func(r) {$/;"	f
 fromStrict	./src/ll.lib.tengo	/^fromStrict := func(r) {$/;"	f
+get	./dev/tengo/lib/smart.lib.tengo	/^		get: func(name) {$/;"	f
+get	./dist/tengo/lib/exec.package.lib.tengo	/^get := func(registryName, pkgName) {$/;"	f
+get	./dist/tengo/lib/smart.lib.tengo	/^		get: func(name) {$/;"	f
 get	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		get: func(name) {$/;"	f
 get	./src/exec/package.lib.tengo	/^get := func(registryName, pkgName) {$/;"	f
 get	./src/smart.lib.tengo	/^		get: func(name) {$/;"	f
+getAxesSpec	./dist/tengo/lib/pframes.xsv.lib.tengo	/^getAxesSpec := func(spec) {$/;"	f
 getAxesSpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^getAxesSpec := func(spec) {$/;"	f
 getAxesSpec	./src/pframes/xsv.lib.tengo	/^getAxesSpec := func(spec) {$/;"	f
+getBasenameDirs	./dev/tengo/lib/path.lib.tengo	/^getBasenameDirs := func(path, ...sep) {$/;"	f
+getBasenameDirs	./dist/tengo/lib/path.lib.tengo	/^getBasenameDirs := func(path, ...sep) {$/;"	f
 getBasenameDirs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^getBasenameDirs := func(path, ...sep) {$/;"	f
 getBasenameDirs	./src/path.lib.tengo	/^getBasenameDirs := func(path, ...sep) {$/;"	f
 getColumn	./src/pframes/export-pframe.tpl.tengo	/^	getColumn := func(name) {$/;"	f
+getColumnSpec	./dist/tengo/lib/pframes.xsv.lib.tengo	/^getColumnSpec := func(axesSpec, col) {$/;"	f
 getColumnSpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^getColumnSpec := func(axesSpec, col) {$/;"	f
 getColumnSpec	./src/pframes/xsv.lib.tengo	/^getColumnSpec := func(axesSpec, col) {$/;"	f
+getContentSaveRule	./dist/tengo/lib/workdir.save.lib.tengo	/^getContentSaveRule := func(fileName) {$/;"	f
 getContentSaveRule	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^getContentSaveRule := func(fileName) {$/;"	f
 getContentSaveRule	./src/workdir/save.lib.tengo	/^getContentSaveRule := func(fileName) {$/;"	f
+getCtx	./dev/tengo/lib/ll.lib.tengo	/^getCtx := func() {$/;"	f
+getCtx	./dist/tengo/lib/ll.lib.tengo	/^getCtx := func() {$/;"	f
 getCtx	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^getCtx := func() {$/;"	f
 getCtx	./src/ll.lib.tengo	/^getCtx := func() {$/;"	f
+getCurrentTemplateRenderer	./dev/tengo/lib/ll.lib.tengo	/^getCurrentTemplateRenderer := func() {$/;"	f
+getCurrentTemplateRenderer	./dist/tengo/lib/ll.lib.tengo	/^getCurrentTemplateRenderer := func() {$/;"	f
 getCurrentTemplateRenderer	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^getCurrentTemplateRenderer := func() {$/;"	f
 getCurrentTemplateRenderer	./src/ll.lib.tengo	/^getCurrentTemplateRenderer := func() {$/;"	f
+getData	./dist/tengo/lib/smart.lib.tengo	/^		getData: func() {$/;"	f
 getData	./src/smart.lib.tengo	/^		getData: func() {$/;"	f
+getDataAsJson	./dev/tengo/lib/smart.lib.tengo	/^		getDataAsJson: func() {$/;"	f
+getDataAsJson	./dist/tengo/lib/smart.lib.tengo	/^		getDataAsJson: func() {$/;"	f
 getDataAsJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getDataAsJson: func() {$/;"	f
 getDataAsJson	./src/smart.lib.tengo	/^		getDataAsJson: func() {$/;"	f
+getError	./dev/tengo/lib/smart.lib.tengo	/^		getError: func() {$/;"	f
+getError	./dist/tengo/lib/smart.lib.tengo	/^		getError: func() {$/;"	f
 getError	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getError: func() {$/;"	f
 getError	./src/smart.lib.tengo	/^		getError: func() {$/;"	f
+getExecutorsList	./dev/tengo/lib/ll.lib.tengo	/^getExecutorsList := func() {$/;"	f
+getExecutorsList	./dist/tengo/lib/ll.lib.tengo	/^getExecutorsList := func() {$/;"	f
 getExecutorsList	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^getExecutorsList := func() {$/;"	f
 getExecutorsList	./src/ll.lib.tengo	/^getExecutorsList := func() {$/;"	f
+getExtension	./dev/tengo/lib/path.lib.tengo	/^getExtension := func(path, ...sep) {$/;"	f
+getExtension	./dist/tengo/lib/path.lib.tengo	/^getExtension := func(path, ...sep) {$/;"	f
 getExtension	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^getExtension := func(path, ...sep) {$/;"	f
 getExtension	./src/path.lib.tengo	/^getExtension := func(path, ...sep) {$/;"	f
+getField	./dev/tengo/lib/smart.lib.tengo	/^		getField: func(name) {$/;"	f
+getField	./dist/tengo/lib/smart.lib.tengo	/^		getField: func(name) {$/;"	f
 getField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getField: func(name) {$/;"	f
 getField	./src/smart.lib.tengo	/^		getField: func(name) {$/;"	f
+getFile	./dev/tengo/lib/exec.lib.tengo	/^				getFile: func(fileName) {$/;"	f
+getFile	./dist/tengo/lib/exec.lib.tengo	/^				getFile: func(fileName) {$/;"	f
+getFile	./dist/tengo/lib/exec.package.lib.tengo	/^				getFile: func(fileName) {$/;"	f
 getFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getFile: func(fileName) {$/;"	f
 getFile	./src/exec/index.lib.tengo	/^				getFile: func(fileName) {$/;"	f
 getFile	./src/exec/package.lib.tengo	/^				getFile: func(fileName) {$/;"	f
+getFileContent	./dev/tengo/lib/exec.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
+getFileContent	./dist/tengo/lib/exec.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
+getFileContent	./dist/tengo/lib/exec.package.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
 getFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
 getFileContent	./src/exec/index.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
 getFileContent	./src/exec/package.lib.tengo	/^				getFileContent: func(fileName) {$/;"	f
+getFileSaveRule	./dist/tengo/lib/workdir.save.lib.tengo	/^getFileSaveRule := func(fileName) {$/;"	f
 getFileSaveRule	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^getFileSaveRule := func(fileName) {$/;"	f
 getFileSaveRule	./src/workdir/save.lib.tengo	/^getFileSaveRule := func(fileName) {$/;"	f
+getFileSet	./dev/tengo/lib/exec.lib.tengo	/^				getFileSet: func(setName) {$/;"	f
+getFileSet	./dist/tengo/lib/exec.lib.tengo	/^				getFileSet: func(fileSetName) {$/;"	f
 getFileSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getFileSet: func(fileSetName) {$/;"	f
 getFileSet	./src/exec/index.lib.tengo	/^				getFileSet: func(fileSetName) {$/;"	f
+getFileSetContent	./dist/tengo/lib/exec.lib.tengo	/^				getFileSetContent: func(fileSetName) {$/;"	f
 getFileSetContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getFileSetContent: func(fileSetName) {$/;"	f
 getFileSetContent	./src/exec/index.lib.tengo	/^				getFileSetContent: func(fileSetName) {$/;"	f
+getFileStream	./dev/tengo/lib/exec.lib.tengo	/^				getFileStream: func(fileName) {$/;"	f
+getFileStream	./dist/tengo/lib/exec.lib.tengo	/^				getFileStream: func(fileName) {$/;"	f
 getFileStream	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getFileStream: func(fileName) {$/;"	f
 getFileStream	./src/exec/index.lib.tengo	/^				getFileStream: func(fileName) {$/;"	f
+getFutureField	./dev/tengo/lib/smart.lib.tengo	/^		getFutureField: func(name, fieldType) {$/;"	f
+getFutureField	./dist/tengo/lib/smart.lib.tengo	/^		getFutureField: func(name, fieldType) {$/;"	f
 getFutureField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getFutureField: func(name, fieldType) {$/;"	f
 getFutureField	./src/smart.lib.tengo	/^		getFutureField: func(name, fieldType) {$/;"	f
-getFutureInputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getFutureInputField: func(name) {$/;"	f
-getFutureInputField	./src/smart.lib.tengo	/^		getFutureInputField: func(name) {$/;"	f
+getFutureInputField	./dev/tengo/lib/smart.lib.tengo	/^		getFutureInputField: func(name) {$/;"	f
+getFutureInputField	./dist/tengo/lib/smart.lib.tengo	/^		getFutureInputField: func(nameOrPath) {$/;"	f
+getFutureInputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getFutureInputField: func(nameOrPath) {$/;"	f
+getFutureInputField	./src/smart.lib.tengo	/^		getFutureInputField: func(nameOrPath) {$/;"	f
+getFutureOutputField	./dev/tengo/lib/smart.lib.tengo	/^		getFutureOutputField: func(name) {$/;"	f
+getFutureOutputField	./dist/tengo/lib/smart.lib.tengo	/^		getFutureOutputField: func(name) {$/;"	f
 getFutureOutputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getFutureOutputField: func(name) {$/;"	f
 getFutureOutputField	./src/smart.lib.tengo	/^		getFutureOutputField: func(name) {$/;"	f
+getKeys	./dev/tengo/lib/maps.lib.tengo	/^getKeys := func(map) {$/;"	f
+getKeys	./dist/tengo/lib/maps.lib.tengo	/^getKeys := func(map) {$/;"	f
 getKeys	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^getKeys := func(map) {$/;"	f
 getKeys	./src/maps.lib.tengo	/^getKeys := func(map) {$/;"	f
+getOps	./dist/tengo/lib/pframes.xsv.lib.tengo	/^getOps := func(...ops) {$/;"	f
 getOps	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^getOps := func(...ops) {$/;"	f
 getOps	./src/pframes/xsv.lib.tengo	/^getOps := func(...ops) {$/;"	f
+getOutput	./dev/tengo/lib/forloop.lib.tengo	/^				getOutput: func(name) {$/;"	f
+getOutputField	./dev/tengo/lib/tpl.lib.tengo	/^		getOutputField: func(name) {$/;"	f
+getOutputField	./dist/tengo/lib/tpl.lib.tengo	/^		getOutputField: func(name) {$/;"	f
 getOutputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		getOutputField: func(name) {$/;"	f
 getOutputField	./src/tpl/index.lib.tengo	/^		getOutputField: func(name) {$/;"	f
+getProcessorResult	./dist/tengo/lib/exec.lib.tengo	/^				getProcessorResult: func(procName) {$/;"	f
 getProcessorResult	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getProcessorResult: func(procName) {$/;"	f
 getProcessorResult	./src/exec/index.lib.tengo	/^				getProcessorResult: func(procName) {$/;"	f
+getProgress	./dist/tengo/lib/workdir.save.lib.tengo	/^		getProgress: func() {$/;"	f
 getProgress	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getProgress: func() {$/;"	f
 getProgress	./src/workdir/save.lib.tengo	/^		getProgress: func() {$/;"	f
+getSavedFile	./dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFile: func(fName) {$/;"	f
 getSavedFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFile: func(fName) {$/;"	f
 getSavedFile	./src/workdir/save.lib.tengo	/^		getSavedFile: func(fName) {$/;"	f
+getSavedFileContent	./dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFileContent: func(fName) {$/;"	f
 getSavedFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFileContent: func(fName) {$/;"	f
 getSavedFileContent	./src/workdir/save.lib.tengo	/^		getSavedFileContent: func(fName) {$/;"	f
+getSavedFiles	./dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFiles: func() {$/;"	f
 getSavedFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFiles: func() {$/;"	f
 getSavedFiles	./src/workdir/save.lib.tengo	/^		getSavedFiles: func() {$/;"	f
+getSavedFilesContent	./dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFilesContent: func() {$/;"	f
 getSavedFilesContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getSavedFilesContent: func() {$/;"	f
 getSavedFilesContent	./src/workdir/save.lib.tengo	/^		getSavedFilesContent: func() {$/;"	f
+getStderrFile	./dev/tengo/lib/exec.lib.tengo	/^				getStderrFile: func() {$/;"	f
+getStderrFile	./dist/tengo/lib/exec.lib.tengo	/^				getStderrFile: func() {$/;"	f
 getStderrFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStderrFile: func() {$/;"	f
 getStderrFile	./src/exec/index.lib.tengo	/^				getStderrFile: func() {$/;"	f
+getStderrFileContent	./dev/tengo/lib/exec.lib.tengo	/^				getStderrFileContent: func() {$/;"	f
+getStderrFileContent	./dist/tengo/lib/exec.lib.tengo	/^				getStderrFileContent: func() {$/;"	f
 getStderrFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStderrFileContent: func() {$/;"	f
 getStderrFileContent	./src/exec/index.lib.tengo	/^				getStderrFileContent: func() {$/;"	f
+getStderrStream	./dev/tengo/lib/exec.lib.tengo	/^				getStderrStream: func() {$/;"	f
+getStderrStream	./dist/tengo/lib/exec.lib.tengo	/^				getStderrStream: func() {$/;"	f
 getStderrStream	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStderrStream: func() {$/;"	f
 getStderrStream	./src/exec/index.lib.tengo	/^				getStderrStream: func() {$/;"	f
+getStdoutFile	./dev/tengo/lib/exec.lib.tengo	/^				getStdoutFile: func() {$/;"	f
+getStdoutFile	./dist/tengo/lib/exec.lib.tengo	/^				getStdoutFile: func() {$/;"	f
 getStdoutFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStdoutFile: func() {$/;"	f
 getStdoutFile	./src/exec/index.lib.tengo	/^				getStdoutFile: func() {$/;"	f
+getStdoutFileContent	./dev/tengo/lib/exec.lib.tengo	/^				getStdoutFileContent: func() {$/;"	f
+getStdoutFileContent	./dist/tengo/lib/exec.lib.tengo	/^				getStdoutFileContent: func() {$/;"	f
 getStdoutFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStdoutFileContent: func() {$/;"	f
 getStdoutFileContent	./src/exec/index.lib.tengo	/^				getStdoutFileContent: func() {$/;"	f
+getStdoutStream	./dev/tengo/lib/exec.lib.tengo	/^				getStdoutStream: func() {$/;"	f
+getStdoutStream	./dist/tengo/lib/exec.lib.tengo	/^				getStdoutStream: func() {$/;"	f
 getStdoutStream	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^				getStdoutStream: func() {$/;"	f
 getStdoutStream	./src/exec/index.lib.tengo	/^				getStdoutStream: func() {$/;"	f
+getValue	./dev/tengo/lib/smart.lib.tengo	/^		getValue: func() {$/;"	f
+getValue	./dist/tengo/lib/smart.lib.tengo	/^		getValue: func() {$/;"	f
 getValue	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getValue: func() {$/;"	f
 getValue	./src/smart.lib.tengo	/^		getValue: func() {$/;"	f
+getValueAsJson	./dev/tengo/lib/smart.lib.tengo	/^		getValueAsJson: func() {$/;"	f
+getValueAsJson	./dist/tengo/lib/smart.lib.tengo	/^		getValueAsJson: func() {$/;"	f
 getValueAsJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		getValueAsJson: func() {$/;"	f
 getValueAsJson	./src/smart.lib.tengo	/^		getValueAsJson: func() {$/;"	f
+getWorkdirAfter	./dist/tengo/lib/workdir.save.lib.tengo	/^		getWorkdirAfter: func() {$/;"	f
 getWorkdirAfter	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.save.lib.tengo	/^		getWorkdirAfter: func() {$/;"	f
 getWorkdirAfter	./src/workdir/save.lib.tengo	/^		getWorkdirAfter: func() {$/;"	f
 groups	./src/pframes/aggregate.tpl.tengo	/^		groups := {}$/;"	c
+hasElement	./dev/tengo/lib/sets.lib.tengo	/^hasElement := func(set, element) {$/;"	f
+hasElement	./dev/tengo/lib/slices.lib.tengo	/^hasElement := func(slice, element) {$/;"	f
+hasElement	./dist/tengo/lib/sets.lib.tengo	/^hasElement := func(set, element) {$/;"	f
+hasElement	./dist/tengo/lib/slices.lib.tengo	/^hasElement := func(slice, element) {$/;"	f
 hasElement	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^hasElement := func(set, element) {$/;"	f
 hasElement	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^hasElement := func(slice, element) {$/;"	f
 hasElement	./src/sets.lib.tengo	/^hasElement := func(set, element) {$/;"	f
 hasElement	./src/slices.lib.tengo	/^hasElement := func(slice, element) {$/;"	f
+hasError	./dist/tengo/lib/smart.lib.tengo	/^		hasError: func() {$/;"	f
 hasError	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		hasError: func() {$/;"	f
 hasError	./src/smart.lib.tengo	/^		hasError: func() {$/;"	f
+hasField	./dev/tengo/lib/smart.lib.tengo	/^		hasField: func(name) {$/;"	f
+hasField	./dist/tengo/lib/smart.lib.tengo	/^		hasField: func(name) {$/;"	f
 hasField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		hasField: func(name) {$/;"	f
 hasField	./src/smart.lib.tengo	/^		hasField: func(name) {$/;"	f
+hasInput	./dev/tengo/lib/tpl.lib.tengo	/^		hasInput: func(name) {$/;"	f
+hasInput	./dist/tengo/lib/tpl.lib.tengo	/^		hasInput: func(name) {$/;"	f
 hasInput	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		hasInput: func(name) {$/;"	f
 hasInput	./src/tpl/index.lib.tengo	/^		hasInput: func(name) {$/;"	f
+hasInputErrors	./dist/tengo/lib/smart.lib.tengo	/^		hasInputErrors: func() {$/;"	f
 hasInputErrors	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		hasInputErrors: func() {$/;"	f
 hasInputErrors	./src/smart.lib.tengo	/^		hasInputErrors: func() {$/;"	f
+hasInputField	./dev/tengo/lib/smart.lib.tengo	/^		hasInputField: func(name) {$/;"	f
+hasInputField	./dist/tengo/lib/smart.lib.tengo	/^		hasInputField: func(name) {$/;"	f
 hasInputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		hasInputField: func(name) {$/;"	f
 hasInputField	./src/smart.lib.tengo	/^		hasInputField: func(name) {$/;"	f
+hasOutputField	./dev/tengo/lib/smart.lib.tengo	/^		hasOutputField: func(name) {$/;"	f
+hasOutputField	./dist/tengo/lib/smart.lib.tengo	/^		hasOutputField: func(name) {$/;"	f
 hasOutputField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		hasOutputField: func(name) {$/;"	f
 hasOutputField	./src/smart.lib.tengo	/^		hasOutputField: func(name) {$/;"	f
+importFile	./dev/tengo/lib/file.lib.tengo	/^importFile := func(importFileHandle) {$/;"	f
+importFile	./dist/tengo/lib/file.lib.tengo	/^importFile := func(importFileHandle) {$/;"	f
+importFile	./dist/tengo/lib/pframes.xsv.lib.tengo	/^importFile := func(xsvFile, xsvType, spec, ...ops) {$/;"	f
 importFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/file.lib.tengo	/^importFile := func(importFileHandle) {$/;"	f
 importFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^importFile := func(xsvFile, xsvType, spec, ...ops) {$/;"	f
 importFile	./src/file.lib.tengo	/^importFile := func(importFileHandle) {$/;"	f
 importFile	./src/pframes/xsv.lib.tengo	/^importFile := func(xsvFile, xsvType, spec, ...ops) {$/;"	f
+importFileMap	./dist/tengo/lib/pframes.xsv.lib.tengo	/^importFileMap := func(xsvMap, xsvType, spec, ...ops) {$/;"	f
 importFileMap	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^importFileMap := func(xsvMap, xsvType, spec, ...ops) {$/;"	f
 importFileMap	./src/pframes/xsv.lib.tengo	/^importFileMap := func(xsvMap, xsvType, spec, ...ops) {$/;"	f
+importSoftware	./dev/tengo/lib/ll.lib.tengo	/^importSoftware := func(swName) {$/;"	f
+importSoftware	./dist/tengo/lib/assets.lib.tengo	/^importSoftware := func(swName) {$/;"	f
 importSoftware	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/assets.lib.tengo	/^importSoftware := func(swName) {$/;"	f
 importSoftware	./src/assets.lib.tengo	/^importSoftware := func(swName) {$/;"	f
+importTemplate	./dev/tengo/lib/ll.lib.tengo	/^importTemplate := func(tplName) {$/;"	f
+importTemplate	./dist/tengo/lib/assets.lib.tengo	/^importTemplate := func(tplName) {$/;"	f
 importTemplate	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/assets.lib.tengo	/^importTemplate := func(tplName) {$/;"	f
 importTemplate	./src/assets.lib.tengo	/^importTemplate := func(tplName) {$/;"	f
+inHeavyQueue	./dev/tengo/lib/exec.lib.tengo	/^		inHeavyQueue: func() {$/;"	f
+inHeavyQueue	./dist/tengo/lib/exec.lib.tengo	/^		inHeavyQueue: func() {$/;"	f
 inHeavyQueue	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		inHeavyQueue: func() {$/;"	f
 inHeavyQueue	./src/exec/index.lib.tengo	/^		inHeavyQueue: func() {$/;"	f
+inQueue	./dev/tengo/lib/runcmd.lib.tengo	/^		inQueue: func(queueName) {$/;"	f
+inQueue	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		inQueue: func(queueName) {$/;"	f
 inQueue	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		inQueue: func(queueName) {$/;"	f
 inQueue	./src/exec/runcmd.lib.tengo	/^		inQueue: func(queueName) {$/;"	f
+inUiQueue	./dev/tengo/lib/exec.lib.tengo	/^		inUiQueue: func() {$/;"	f
+inUiQueue	./dist/tengo/lib/exec.lib.tengo	/^		inUiQueue: func() {$/;"	f
 inUiQueue	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		inUiQueue: func() {$/;"	f
 inUiQueue	./src/exec/index.lib.tengo	/^		inUiQueue: func() {$/;"	f
+info	./dev/tengo/lib/log.lib.tengo	/^		info: func(...args) {$/;"	f
+info	./dev/tengo/lib/smart.lib.tengo	/^		info: func() {$/;"	f
+info	./dist/tengo/lib/smart.lib.tengo	/^		info: func() {$/;"	f
 info	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		info: func() {$/;"	f
 info	./src/smart.lib.tengo	/^		info: func() {$/;"	f
+inherit	./dev/tengo/lib/oop.lib.tengo	/^inherit := func(super, self) {$/;"	f
+inherit	./dist/tengo/lib/oop.lib.tengo	/^inherit := func(super, self) {$/;"	f
 inherit	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/oop.lib.tengo	/^inherit := func(super, self) {$/;"	f
 inherit	./src/oop.lib.tengo	/^inherit := func(super, self) {$/;"	f
+inputs	./dev/tengo/lib/forloop.lib.tengo	/^	inputs := {}$/;"	c
+inputs	./dev/tengo/lib/smart.lib.tengo	/^		inputs: func() {$/;"	f
+inputs	./dev/tengo/lib/tpl.lib.tengo	/^		inputs: func() {$/;"	f
+inputs	./dist/tengo/lib/smart.lib.tengo	/^		inputs: func() {$/;"	f
+inputs	./dist/tengo/lib/tpl.lib.tengo	/^		inputs: func() {$/;"	f
+inputs	./dist/tengo/lib/workdir.lib.tengo	/^			inputs := {$/;"	c
 inputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		inputs: func() {$/;"	f
 inputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		inputs: func() {$/;"	f
 inputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^			inputs := {$/;"	c
 inputs	./src/smart.lib.tengo	/^		inputs: func() {$/;"	f
 inputs	./src/tpl/index.lib.tengo	/^		inputs: func() {$/;"	f
 inputs	./src/workdir/index.lib.tengo	/^			inputs := {$/;"	c
+install	./dist/tengo/lib/exec.package.lib.tengo	/^install := func(archive) {$/;"	f
 install	./src/exec/package.lib.tengo	/^install := func(archive) {$/;"	f
+isAnyMapResource	./dist/tengo/lib/smart.lib.tengo	/^isAnyMapResource := func(r) {$/;"	f
 isAnyMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isAnyMapResource := func(r) {$/;"	f
 isAnyMapResource	./src/smart.lib.tengo	/^isAnyMapResource := func(r) {$/;"	f
+isEphMapResource	./dist/tengo/lib/smart.lib.tengo	/^isEphMapResource := func(r) {$/;"	f
 isEphMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isEphMapResource := func(r) {$/;"	f
 isEphMapResource	./src/smart.lib.tengo	/^isEphMapResource := func(r) {$/;"	f
+isEphemeral	./dev/tengo/lib/tpl.lib.tengo	/^		isEphemeral: func() {$/;"	f
+isEphemeral	./dist/tengo/lib/tpl.lib.tengo	/^		isEphemeral: func() {$/;"	f
 isEphemeral	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		isEphemeral: func() {$/;"	f
 isEphemeral	./src/tpl/index.lib.tengo	/^		isEphemeral: func() {$/;"	f
+isErrorSet	./dev/tengo/lib/smart.lib.tengo	/^		isErrorSet: func() {$/;"	f
+isErrorSet	./dist/tengo/lib/smart.lib.tengo	/^		isErrorSet: func() {$/;"	f
 isErrorSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		isErrorSet: func() {$/;"	f
 isErrorSet	./src/smart.lib.tengo	/^		isErrorSet: func() {$/;"	f
+isFail	./dev/tengo/lib/validation.lib.tengo	/^isFail := func(r) {$/;"	f
+isFail	./dist/tengo/lib/validation.lib.tengo	/^isFail := func(r) {$/;"	f
 isFail	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^isFail := func(r) {$/;"	f
 isFail	./src/validation.lib.tengo	/^isFail := func(r) {$/;"	f
+isField	./dev/tengo/lib/smart.lib.tengo	/^isField := func(f) {$/;"	f
+isField	./dist/tengo/lib/smart.lib.tengo	/^isField := func(f) {$/;"	f
 isField	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isField := func(f) {$/;"	f
 isField	./src/smart.lib.tengo	/^isField := func(f) {$/;"	f
+isFieldId	./dev/tengo/lib/smart.lib.tengo	/^isFieldId := func(val) {$/;"	f
+isFieldId	./dist/tengo/lib/smart.lib.tengo	/^isFieldId := func(val) {$/;"	f
 isFieldId	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isFieldId := func(val) {$/;"	f
 isFieldId	./src/smart.lib.tengo	/^isFieldId := func(val) {$/;"	f
+isInitializing	./dev/tengo/lib/ll.lib.tengo	/^isInitializing := func() {$/;"	f
+isInitializing	./dist/tengo/lib/ll.lib.tengo	/^isInitializing := func() {$/;"	f
 isInitializing	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^isInitializing := func() {$/;"	f
 isInitializing	./src/ll.lib.tengo	/^isInitializing := func() {$/;"	f
+isJsonResource	./dev/tengo/lib/smart.lib.tengo	/^isJsonResource := func(r) {$/;"	f
+isJsonResource	./dist/tengo/lib/smart.lib.tengo	/^isJsonResource := func(r) {$/;"	f
 isJsonResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isJsonResource := func(r) {$/;"	f
 isJsonResource	./src/smart.lib.tengo	/^isJsonResource := func(r) {$/;"	f
+isLockedEphMapResource	./dist/tengo/lib/smart.lib.tengo	/^isLockedEphMapResource := func(r) {$/;"	f
 isLockedEphMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isLockedEphMapResource := func(r) {$/;"	f
 isLockedEphMapResource	./src/smart.lib.tengo	/^isLockedEphMapResource := func(r) {$/;"	f
+isMap	./dev/tengo/lib/ll.lib.tengo	/^isMap := func(obj) {$/;"	f
+isMap	./dist/tengo/lib/ll.lib.tengo	/^isMap := func(obj) {$/;"	f
 isMap	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^isMap := func(obj) {$/;"	f
 isMap	./src/ll.lib.tengo	/^isMap := func(obj) {$/;"	f
+isMapResource	./dev/tengo/lib/smart.lib.tengo	/^isMapResource := func(r) {$/;"	f
+isMapResource	./dist/tengo/lib/smart.lib.tengo	/^isMapResource := func(r) {$/;"	f
 isMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isMapResource := func(r) {$/;"	f
 isMapResource	./src/smart.lib.tengo	/^isMapResource := func(r) {$/;"	f
+isNR	./dev/tengo/lib/bquery.lib.tengo	/^				isNR := func(r) {$/;"	f
+isNR	./dist/tengo/lib/workflow.bquery.lib.tengo	/^				isNR := func(r) {$/;"	f
 isNR	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^				isNR := func(r) {$/;"	f
 isNR	./src/workflow/bquery.lib.tengo	/^				isNR := func(r) {$/;"	f
+isReady	./dev/tengo/lib/smart.lib.tengo	/^		isReady: func() {$/;"	f
+isReady	./dist/tengo/lib/smart.lib.tengo	/^		isReady: func() {$/;"	f
 isReady	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		isReady: func() {$/;"	f
 isReady	./src/smart.lib.tengo	/^		isReady: func() {$/;"	f
+isReference	./dev/tengo/lib/smart.lib.tengo	/^isReference := func(f) {$/;"	f
+isReference	./dist/tengo/lib/smart.lib.tengo	/^isReference := func(f) {$/;"	f
 isReference	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isReference := func(f) {$/;"	f
 isReference	./src/smart.lib.tengo	/^isReference := func(f) {$/;"	f
+isResource	./dev/tengo/lib/smart.lib.tengo	/^isResource := func(f) {$/;"	f
+isResource	./dist/tengo/lib/smart.lib.tengo	/^isResource := func(f) {$/;"	f
 isResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^isResource := func(f) {$/;"	f
 isResource	./src/smart.lib.tengo	/^isResource := func(f) {$/;"	f
+isSet	./dev/tengo/lib/smart.lib.tengo	/^		isSet: func() {$/;"	f
+isSet	./dist/tengo/lib/smart.lib.tengo	/^		isSet: func() {$/;"	f
 isSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		isSet: func() {$/;"	f
 isSet	./src/smart.lib.tengo	/^		isSet: func() {$/;"	f
+isSoftwareInfo	./dist/tengo/lib/assets.lib.tengo	/^isSoftwareInfo := func(toCheck) {$/;"	f
 isSoftwareInfo	./src/assets.lib.tengo	/^isSoftwareInfo := func(toCheck) {$/;"	f
+isStrict	./dev/tengo/lib/ll.lib.tengo	/^isStrict := func(obj) {$/;"	f
+isStrict	./dist/tengo/lib/ll.lib.tengo	/^isStrict := func(obj) {$/;"	f
 isStrict	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^isStrict := func(obj) {$/;"	f
 isStrict	./src/ll.lib.tengo	/^isStrict := func(obj) {$/;"	f
+isSuccess	./dev/tengo/lib/validation.lib.tengo	/^isSuccess := func(r) {$/;"	f
+isSuccess	./dist/tengo/lib/validation.lib.tengo	/^isSuccess := func(r) {$/;"	f
 isSuccess	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^isSuccess := func(r) {$/;"	f
 isSuccess	./src/validation.lib.tengo	/^isSuccess := func(r) {$/;"	f
+isValid	./dev/tengo/lib/validation.lib.tengo	/^isValid := func(js, scheme) {$/;"	f
+isValid	./dist/tengo/lib/validation.lib.tengo	/^isValid := func(js, schema) {$/;"	f
 isValid	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^isValid := func(js, schema) {$/;"	f
 isValid	./src/validation.lib.tengo	/^isValid := func(js, schema) {$/;"	f
+isValueSet	./dev/tengo/lib/smart.lib.tengo	/^		isValueSet: func() {$/;"	f
+isValueSet	./dist/tengo/lib/smart.lib.tengo	/^		isValueSet: func() {$/;"	f
 isValueSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		isValueSet: func() {$/;"	f
 isValueSet	./src/smart.lib.tengo	/^		isValueSet: func() {$/;"	f
+join	./dev/tengo/lib/path.lib.tengo	/^join := func(...elems) {$/;"	f
+join	./dist/tengo/lib/path.lib.tengo	/^join := func(...elems) {$/;"	f
 join	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^join := func(...elems) {$/;"	f
 join	./src/path.lib.tengo	/^join := func(...elems) {$/;"	f
 js	./src/validation.test.tengo	/^	js := {$/;"	c
 key	./src/tpl/test/json-keys.tpl.tengo	/^key := "{\\"a\\":\\"b\\"}"$/;"	c
+kvGet	./dist/tengo/lib/smart.lib.tengo	/^		kvGet: func(key) {$/;"	f
 kvGet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		kvGet: func(key) {$/;"	f
 kvGet	./src/smart.lib.tengo	/^		kvGet: func(key) {$/;"	f
+kvGetAsJson	./dist/tengo/lib/smart.lib.tengo	/^		kvGetAsJson: func(key) {$/;"	f
 kvGetAsJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		kvGetAsJson: func(key) {$/;"	f
 kvGetAsJson	./src/smart.lib.tengo	/^		kvGetAsJson: func(key) {$/;"	f
+kvGetAsString	./dist/tengo/lib/smart.lib.tengo	/^		kvGetAsString: func(key) {$/;"	f
 kvGetAsString	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		kvGetAsString: func(key) {$/;"	f
 kvGetAsString	./src/smart.lib.tengo	/^		kvGetAsString: func(key) {$/;"	f
+kvSet	./dist/tengo/lib/smart.lib.tengo	/^		kvSet: func(key, value) {$/;"	f
 kvSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		kvSet: func(key, value) {$/;"	f
 kvSet	./src/smart.lib.tengo	/^		kvSet: func(key, value) {$/;"	f
+kvSetJson	./dist/tengo/lib/smart.lib.tengo	/^		kvSetJson: func(key, value) {$/;"	f
 kvSetJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		kvSetJson: func(key, value) {$/;"	f
 kvSetJson	./src/smart.lib.tengo	/^		kvSetJson: func(key, value) {$/;"	f
+length	./dev/tengo/lib/slices.lib.tengo	/^length := func(slice) {$/;"	f
+length	./dist/tengo/lib/slices.lib.tengo	/^length := func(slice) {$/;"	f
 length	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^length := func(slice) {$/;"	f
 length	./src/slices.lib.tengo	/^length := func(slice) {$/;"	f
+load	./dist/tengo/lib/exec.package.lib.tengo	/^		load: func() {$/;"	f
 load	./src/exec/package.lib.tengo	/^		load: func() {$/;"	f
+loadAssetContent	./dist/tengo/lib/exec.package.lib.tengo	/^loadAssetContent := func(pkg, assetPath) {$/;"	f
 loadAssetContent	./src/exec/package.lib.tengo	/^loadAssetContent := func(pkg, assetPath) {$/;"	f
+loadAssetFile	./dist/tengo/lib/exec.package.lib.tengo	/^loadAssetFile := func(pkg, assetPath) {$/;"	f
 loadAssetFile	./src/exec/package.lib.tengo	/^loadAssetFile := func(pkg, assetPath) {$/;"	f
+loadDependencyFiles	./dist/tengo/lib/exec.runenv.lib.tengo	/^loadDependencyFiles := func(packageRef, dependencies) {$/;"	f
+loadDependencyFiles	./src/exec/runenv.lib.tengo	/^loadDependencyFiles := func(packageRef, dependencies) {$/;"	f
+localDescriptorScheme	./dist/tengo/lib/exec.package.lib.tengo	/^localDescriptorScheme := {$/;"	c
 localDescriptorScheme	./src/exec/package.lib.tengo	/^localDescriptorScheme := {$/;"	c
+lock	./dev/tengo/lib/smart.lib.tengo	/^		lock: func() {$/;"	f
+lock	./dist/tengo/lib/smart.lib.tengo	/^		lock: func() {$/;"	f
 lock	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lock: func() {$/;"	f
 lock	./src/smart.lib.tengo	/^		lock: func() {$/;"	f
+lockAndBuild	./dev/tengo/lib/smart.lib.tengo	/^		lockAndBuild: func() {$/;"	f
+lockAndBuild	./dist/tengo/lib/smart.lib.tengo	/^		lockAndBuild: func() {$/;"	f
 lockAndBuild	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lockAndBuild: func() {$/;"	f
 lockAndBuild	./src/smart.lib.tengo	/^		lockAndBuild: func() {$/;"	f
+lockInputs	./dev/tengo/lib/smart.lib.tengo	/^		lockInputs: func() {$/;"	f
+lockInputs	./dist/tengo/lib/smart.lib.tengo	/^		lockInputs: func() {$/;"	f
 lockInputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lockInputs: func() {$/;"	f
 lockInputs	./src/smart.lib.tengo	/^		lockInputs: func() {$/;"	f
+lockInputsAndBuild	./dev/tengo/lib/smart.lib.tengo	/^		lockInputsAndBuild: func() {$/;"	f
+lockInputsAndBuild	./dist/tengo/lib/smart.lib.tengo	/^		lockInputsAndBuild: func() {$/;"	f
 lockInputsAndBuild	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lockInputsAndBuild: func() {$/;"	f
 lockInputsAndBuild	./src/smart.lib.tengo	/^		lockInputsAndBuild: func() {$/;"	f
+lockOutputs	./dev/tengo/lib/smart.lib.tengo	/^		lockOutputs: func() {$/;"	f
+lockOutputs	./dist/tengo/lib/smart.lib.tengo	/^		lockOutputs: func() {$/;"	f
 lockOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lockOutputs: func() {$/;"	f
 lockOutputs	./src/smart.lib.tengo	/^		lockOutputs: func() {$/;"	f
+lockOutputsAndBuild	./dev/tengo/lib/smart.lib.tengo	/^		lockOutputsAndBuild: func() {$/;"	f
+lockOutputsAndBuild	./dist/tengo/lib/smart.lib.tengo	/^		lockOutputsAndBuild: func() {$/;"	f
 lockOutputsAndBuild	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		lockOutputsAndBuild: func() {$/;"	f
 lockOutputsAndBuild	./src/smart.lib.tengo	/^		lockOutputsAndBuild: func() {$/;"	f
+map	./dev/tengo/lib/maps.lib.tengo	/^map := func(map, fn) {$/;"	f
+map	./dev/tengo/lib/sets.lib.tengo	/^map := func(set, fn) {$/;"	f
+map	./dev/tengo/lib/slices.lib.tengo	/^map := func(slice, fn) {$/;"	f
+map	./dist/tengo/lib/maps.lib.tengo	/^map := func(map, fn) {$/;"	f
+map	./dist/tengo/lib/sets.lib.tengo	/^map := func(set, fn) {$/;"	f
+map	./dist/tengo/lib/slices.lib.tengo	/^map := func(slice, fn) {$/;"	f
 map	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^map := func(map, fn) {$/;"	f
 map	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^map := func(set, fn) {$/;"	f
 map	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^map := func(slice, fn) {$/;"	f
 map	./src/maps.lib.tengo	/^map := func(map, fn) {$/;"	f
 map	./src/sets.lib.tengo	/^map := func(set, fn) {$/;"	f
 map	./src/slices.lib.tengo	/^map := func(slice, fn) {$/;"	f
+mapBuilder	./dev/tengo/lib/smart.lib.tengo	/^mapBuilder = func() {$/;"	f
+mapBuilder	./dist/tengo/lib/smart.lib.tengo	/^mapBuilder = func() {$/;"	f
 mapBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^mapBuilder = func() {$/;"	f
 mapBuilder	./src/smart.lib.tengo	/^mapBuilder = func() {$/;"	f
+mapBuilderUniversal	./dist/tengo/lib/smart.lib.tengo	/^mapBuilderUniversal := func(isEph) {$/;"	f
+mapBuilderUniversal	./src/smart.lib.tengo	/^mapBuilderUniversal := func(isEph) {$/;"	f
+mapKeys	./dev/tengo/lib/maps.lib.tengo	/^mapKeys := func(map, fnK) {$/;"	f
+mapKeys	./dist/tengo/lib/maps.lib.tengo	/^mapKeys := func(map, fnK) {$/;"	f
 mapKeys	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^mapKeys := func(map, fnK) {$/;"	f
 mapKeys	./src/maps.lib.tengo	/^mapKeys := func(map, fnK) {$/;"	f
+mapValues	./dev/tengo/lib/maps.lib.tengo	/^mapValues := func(map, fnV) {$/;"	f
+mapValues	./dist/tengo/lib/maps.lib.tengo	/^mapValues := func(map, fnV) {$/;"	f
 mapValues	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^mapValues := func(map, fnV) {$/;"	f
 mapValues	./src/maps.lib.tengo	/^mapValues := func(map, fnV) {$/;"	f
+matcher	./dist/tengo/lib/tpl.state-await.lib.tengo	/^				matcher = func(field) {$/;"	f
 matcher	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^				matcher = func(field) {$/;"	f
 matcher	./src/tpl/state-await.lib.tengo	/^				matcher = func(field) {$/;"	f
+mkDir	./dev/tengo/lib/exec.lib.tengo	/^		mkDir: func(dir) {$/;"	f
+mkDir	./dev/tengo/lib/workdir.lib.tengo	/^		mkDir: func(dir) {$/;"	f
+mkDir	./dist/tengo/lib/exec.lib.tengo	/^		mkDir: func(dir) {$/;"	f
+mkDir	./dist/tengo/lib/workdir.lib.tengo	/^		mkDir: func(dir) {$/;"	f
 mkDir	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		mkDir: func(dir) {$/;"	f
 mkDir	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		mkDir: func(dir) {$/;"	f
 mkDir	./src/exec/index.lib.tengo	/^		mkDir: func(dir) {$/;"	f
 mkDir	./src/workdir/index.lib.tengo	/^		mkDir: func(dir) {$/;"	f
+msg	./dist/tengo/lib/validation.lib.tengo	/^	msg := "JSON validation error"$/;"	c
 msg	./src/validation.lib.tengo	/^	msg := "JSON validation error"$/;"	c
+nErrorLines	./dev/tengo/lib/exec.lib.tengo	/^		nErrorLines: func(lines) {$/;"	f
+nErrorLines	./dev/tengo/lib/runcmd.lib.tengo	/^		nErrorLines: func(number) {$/;"	f
+nErrorLines	./dist/tengo/lib/exec.lib.tengo	/^		nErrorLines: func(lines) {$/;"	f
+nErrorLines	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		nErrorLines: func(number) {$/;"	f
 nErrorLines	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		nErrorLines: func(lines) {$/;"	f
 nErrorLines	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		nErrorLines: func(number) {$/;"	f
 nErrorLines	./src/exec/index.lib.tengo	/^		nErrorLines: func(lines) {$/;"	f
 nErrorLines	./src/exec/runcmd.lib.tengo	/^		nErrorLines: func(number) {$/;"	f
+name	./dev/tengo/lib/smart.lib.tengo	/^		name: func() {$/;"	f
+name	./dist/tengo/lib/smart.lib.tengo	/^		name: func() {$/;"	f
 name	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		name: func() {$/;"	f
 name	./src/smart.lib.tengo	/^		name: func() {$/;"	f
+newM	./dev/tengo/lib/maps.lib.tengo	/^	newM := {}$/;"	c
+newM	./dist/tengo/lib/maps.lib.tengo	/^	newM := {}$/;"	c
 newM	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/maps.lib.tengo	/^	newM := {}$/;"	c
 newM	./src/maps.lib.tengo	/^	newM := {}$/;"	c
+newPrevSubscriptions	./dist/tengo/lib/tpl.state-await.lib.tengo	/^	newPrevSubscriptions := {}$/;"	c
 newPrevSubscriptions	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^	newPrevSubscriptions := {}$/;"	c
 newPrevSubscriptions	./src/tpl/state-await.lib.tengo	/^	newPrevSubscriptions := {}$/;"	c
+o	./dist/tengo/lib/pframes.xsv.lib.tengo	/^	o := { dataOnly: false, splitDataAndSpec: false }$/;"	c
 o	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^	o := { dataOnly: false, splitDataAndSpec: false }$/;"	c
 o	./src/pframes/xsv.lib.tengo	/^	o := { dataOnly: false, splitDataAndSpec: false }$/;"	c
+ops	./dev/tengo/lib/bquery.lib.tengo	/^	ops := {}$/;"	c
+ops	./dist/tengo/lib/validation.lib.tengo	/^	ops := {}$/;"	c
+ops	./dist/tengo/lib/workflow.bquery.lib.tengo	/^	ops := {}$/;"	c
 ops	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^	ops := {}$/;"	c
 ops	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^	ops := {}$/;"	c
 ops	./src/test/resolve/wf_no_res.tpl.tengo	/^	ops := {$/;"	c
 ops	./src/validation.lib.tengo	/^	ops := {}$/;"	c
 ops	./src/workflow/bquery.lib.tengo	/^	ops := {}$/;"	c
 ops	./src/workflow/test/exports.wf2.tpl.tengo	/^	ops := {$/;"	c
+options	./dev/tengo/lib/runcmd.lib.tengo	/^			options := {$/;"	c
+options	./dist/tengo/lib/exec.runcmd.lib.tengo	/^			options := {$/;"	c
 options	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^			options := {$/;"	c
 options	./src/exec/runcmd.lib.tengo	/^			options := {$/;"	c
+output	./dev/tengo/lib/render.lib.tengo	/^		output: func(name, ...cache) {$/;"	f
+output	./dist/tengo/lib/render.lib.tengo	/^		output: func(name, ...cache) {$/;"	f
 output	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/render.lib.tengo	/^		output: func(name, ...cache) {$/;"	f
 output	./src/render.lib.tengo	/^		output: func(name, ...cache) {$/;"	f
+outputFiles	./dev/tengo/lib/exec.lib.tengo	/^	outputFiles := {}$/;"	c
 outputMaps	./src/pframes/aggregate.tpl.tengo	/^		outputMaps := {}$/;"	c
+outputValues	./dev/tengo/lib/exec.lib.tengo	/^	outputValues := {}$/;"	c
+outputs	./dev/tengo/lib/smart.lib.tengo	/^		outputs: func() {$/;"	f
+outputs	./dist/tengo/lib/smart.lib.tengo	/^		outputs: func() {$/;"	f
 outputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		outputs: func() {$/;"	f
 outputs	./src/pframes/import-dir.tpl.tengo	/^	outputs := {}$/;"	c
 outputs	./src/smart.lib.tengo	/^		outputs: func() {$/;"	f
 outputs	./src/test/import-template/workflow.tpl.tengo	/^	outputs := {$/;"	c
 outputs	./src/workflow/test/exports.wf1.tpl.tengo	/^	outputs := {}$/;"	c
+pColumnResourceMapDataBuilder	./dist/tengo/lib/pframes.lib.tengo	/^pColumnResourceMapDataBuilder := func(keyLength) {$/;"	f
+pColumnResourceMapDataBuilder	./src/pframes/index.lib.tengo	/^pColumnResourceMapDataBuilder := func(keyLength) {$/;"	f
+pFrameBuilder	./dist/tengo/lib/pframes.lib.tengo	/^pFrameBuilder := func() {$/;"	f
+pFrameBuilder	./src/pframes/index.lib.tengo	/^pFrameBuilder := func() {$/;"	f
+package	./dist/tengo/lib/exec.package.lib.tengo	/^		package: func() {$/;"	f
 package	./src/exec/package.lib.tengo	/^		package: func() {$/;"	f
+packagesMap	./dist/tengo/lib/exec.runenv.lib.tengo	/^	packagesMap := {}$/;"	c
 packagesMap	./src/exec/runenv.lib.tengo	/^	packagesMap := {}$/;"	c
+panic	./dev/tengo/lib/ll.lib.tengo	/^panic := func(msg, ...args) {$/;"	f
+panic	./dist/tengo/lib/ll.lib.tengo	/^panic := func(msg, ...args) {$/;"	f
 panic	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^panic := func(msg, ...args) {$/;"	f
 panic	./src/ll.lib.tengo	/^panic := func(msg, ...args) {$/;"	f
+parse	./dev/tengo/lib/bquery.lib.tengo	/^		parse: func(resource, parser)  {$/;"	f
+parse	./dist/tengo/lib/workflow.bquery.lib.tengo	/^		parse: func(resource, parser)  {$/;"	f
 parse	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^		parse: func(resource, parser)  {$/;"	f
 parse	./src/workflow/bquery.lib.tengo	/^		parse: func(resource, parser)  {$/;"	f
+parseUrl	./dev/tengo/lib/ll.lib.tengo	/^parseUrl := func(url) {$/;"	f
+parseUrl	./dist/tengo/lib/ll.lib.tengo	/^parseUrl := func(url) {$/;"	f
 parseUrl	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^parseUrl := func(url) {$/;"	f
 parseUrl	./src/ll.lib.tengo	/^parseUrl := func(url) {$/;"	f
+prefixed	./dev/tengo/lib/workflow.lib.tengo	/^		prefixed := {}$/;"	c
+prefixed	./dist/tengo/lib/workflow.lib.tengo	/^		prefixed := {}$/;"	c
 prefixed	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^		prefixed := {}$/;"	c
 prefixed	./src/workflow/index.lib.tengo	/^		prefixed := {}$/;"	c
+prepare	./dev/tengo/lib/tpl.lib.tengo	/^		prepare : func(codeFn) {$/;"	f
+prepare	./dev/tengo/lib/workflow.lib.tengo	/^prepare := func(cb) {$/;"	f
+prepare	./dist/tengo/lib/tpl.lib.tengo	/^		prepare : func(codeFn) {$/;"	f
+prepare	./dist/tengo/lib/workflow.lib.tengo	/^prepare := func(cb) {$/;"	f
 prepare	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		prepare : func(codeFn) {$/;"	f
 prepare	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^prepare := func(cb) {$/;"	f
 prepare	./src/tpl/index.lib.tengo	/^		prepare : func(codeFn) {$/;"	f
 prepare	./src/workflow/index.lib.tengo	/^prepare := func(cb) {$/;"	f
+preparedInputs	./dist/tengo/lib/tpl.lib.tengo	/^			preparedInputs := {}$/;"	c
+preparedInputs	./src/tpl/index.lib.tengo	/^			preparedInputs := {}$/;"	c
+preparedMapResource	./dev/tengo/lib/tpl.lib.tengo	/^		preparedMapResource: func() {$/;"	f
+preparedMapResource	./dist/tengo/lib/tpl.lib.tengo	/^		preparedMapResource: func() {$/;"	f
 preparedMapResource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		preparedMapResource: func() {$/;"	f
 preparedMapResource	./src/tpl/index.lib.tengo	/^		preparedMapResource: func() {$/;"	f
+preps	./dist/tengo/lib/workdir.proc.lib.tengo	/^				preps := {}$/;"	c
 preps	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^				preps := {}$/;"	c
 preps	./src/workdir/proc.lib.tengo	/^				preps := {}$/;"	c
+print	./dev/tengo/lib/ll.lib.tengo	/^print := func(txt, ...args) {$/;"	f
+print	./dist/tengo/lib/ll.lib.tengo	/^print := func(txt, ...args) {$/;"	f
 print	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^print := func(txt, ...args) {$/;"	f
 print	./src/ll.lib.tengo	/^print := func(txt, ...args) {$/;"	f
+printErrStreamToStdout	./dev/tengo/lib/exec.lib.tengo	/^		printErrStreamToStdout: func() {$/;"	f
+printErrStreamToStdout	./dist/tengo/lib/exec.lib.tengo	/^		printErrStreamToStdout: func() {$/;"	f
 printErrStreamToStdout	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		printErrStreamToStdout: func() {$/;"	f
 printErrStreamToStdout	./src/exec/index.lib.tengo	/^		printErrStreamToStdout: func() {$/;"	f
+proc	./dist/tengo/lib/workdir.proc.lib.tengo	/^proc := func() {$/;"	f
 proc	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^proc := func() {$/;"	f
 proc	./src/workdir/proc.lib.tengo	/^proc := func() {$/;"	f
+processWorkdir	./dist/tengo/lib/exec.lib.tengo	/^		processWorkdir: func(name, tpl, tplArgs) {$/;"	f
 processWorkdir	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		processWorkdir: func(name, tpl, tplArgs) {$/;"	f
 processWorkdir	./src/exec/index.lib.tengo	/^		processWorkdir: func(name, tpl, tplArgs) {$/;"	f
+pssKey	./dist/tengo/lib/tpl.state-await.lib.tengo	/^	pssKey := "await:" + string(rootField.id.ResourceID) + ":" + rootField.id.Name$/;"	c
 pssKey	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^	pssKey := "await:" + string(rootField.id.ResourceID) + ":" + rootField.id.Name$/;"	c
 pssKey	./src/tpl/state-await.lib.tengo	/^	pssKey := "await:" + string(rootField.id.ResourceID) + ":" + rootField.id.Name$/;"	c
-purifySpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^purifySpec := func(spec) {$/;"	f
-purifySpec	./src/pframes/xsv.lib.tengo	/^purifySpec := func(spec) {$/;"	f
+purifySpec	./dist/tengo/lib/pframes.util.lib.tengo	/^purifySpec := func(spec) {$/;"	f
+purifySpec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^purifySpec := func(spec) {$/;"	f
+purifySpec	./src/pframes/util.lib.tengo	/^purifySpec := func(spec) {$/;"	f
+pyVenvInputs	./dist/tengo/lib/exec.runenv.lib.tengo	/^			pyVenvInputs := {$/;"	c
 pyVenvInputs	./src/exec/runenv.lib.tengo	/^			pyVenvInputs := {$/;"	c
+pythonVenv	./dist/tengo/lib/exec.runenv.lib.tengo	/^pythonVenv := func() {$/;"	f
 pythonVenv	./src/exec/runenv.lib.tengo	/^pythonVenv := func() {$/;"	f
+pythonVenvInputSchema	./dist/tengo/lib/exec.runenv.lib.tengo	/^pythonVenvInputSchema := {$/;"	c
 pythonVenvInputSchema	./src/exec/runenv.lib.tengo	/^pythonVenvInputSchema := {$/;"	c
+query	./dev/tengo/lib/workflow.lib.tengo	/^query := func(spec, ...options) {$/;"	f
+query	./dist/tengo/lib/workflow.lib.tengo	/^query := func(spec, ...options) {$/;"	f
 query	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^query := func(spec, ...options) {$/;"	f
 query	./src/workflow/index.lib.tengo	/^query := func(spec, ...options) {$/;"	f
 query	./src/workflow/test/exports.wf2.tpl.tengo	/^	query := {$/;"	c
+queue	./dev/tengo/lib/runcmd.lib.tengo	/^	queue := ""$/;"	c
+queue	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	queue := ""$/;"	c
 queue	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^	queue := ""$/;"	c
 queue	./src/exec/runcmd.lib.tengo	/^	queue := ""$/;"	c
+r	./dev/tengo/lib/bquery.lib.tengo	/^					r  := {$/;"	c
+r	./dist/tengo/lib/workflow.bquery.lib.tengo	/^					r  := {$/;"	c
 r	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^					r  := {$/;"	c
-r	./src/workdir/save.tpl.tengo	/^		r := {}$/;"	c
 r	./src/workflow/bquery.lib.tengo	/^					r  := {$/;"	c
 rData	./src/pframes/import-dir.tpl.tengo	/^		rData := { partitionKeyLength: dInfo.partitionKeyLength }$/;"	c
+rawInputs	./dev/tengo/lib/tpl.lib.tengo	/^		rawInputs: func() {$/;"	f
+rawInputs	./dist/tengo/lib/tpl.lib.tengo	/^		rawInputs: func() {$/;"	f
 rawInputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		rawInputs: func() {$/;"	f
 rawInputs	./src/tpl/index.lib.tengo	/^		rawInputs: func() {$/;"	f
+readFiles	./dist/tengo/lib/workdir.proc.lib.tengo	/^		readFiles: func(cb) {$/;"	f
 readFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		readFiles: func(cb) {$/;"	f
 readFiles	./src/workdir/proc.lib.tengo	/^		readFiles: func(cb) {$/;"	f
+reduce	./dev/tengo/lib/slices.lib.tengo	/^reduce := func(slice, fn) {$/;"	f
+reduce	./dist/tengo/lib/slices.lib.tengo	/^reduce := func(slice, fn) {$/;"	f
 reduce	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^reduce := func(slice, fn) {$/;"	f
 reduce	./src/slices.lib.tengo	/^reduce := func(slice, fn) {$/;"	f
+ref	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		ref: func(refKey, ref) {$/;"	f
 ref	./src/exec/runcmd.lib.tengo	/^		ref: func(refKey, ref) {$/;"	f
+refSchema	./dist/tengo/lib/validation.lib.tengo	/^refSchema := {$/;"	c
 refSchema	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^refSchema := {$/;"	c
 refSchema	./src/validation.lib.tengo	/^refSchema := {$/;"	c
+reference	./dev/tengo/lib/validation.lib.tengo	/^reference := func(elem, stack) {$/;"	f
+reference	./dist/tengo/lib/validation.lib.tengo	/^reference := func(elem, keyPath, stack) {$/;"	f
 reference	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^reference := func(elem, keyPath, stack) {$/;"	f
 reference	./src/validation.lib.tengo	/^reference := func(elem, keyPath, stack) {$/;"	f
+refs	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	refs := {}$/;"	c
 refs	./src/exec/runcmd.lib.tengo	/^	refs := {}$/;"	c
+regexpJoin	./dev/tengo/lib/path.lib.tengo	/^regexpJoin := func(...elems) {$/;"	f
+regexpJoin	./dist/tengo/lib/path.lib.tengo	/^regexpJoin := func(...elems) {$/;"	f
 regexpJoin	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^regexpJoin := func(...elems) {$/;"	f
 regexpJoin	./src/path.lib.tengo	/^regexpJoin := func(...elems) {$/;"	f
+registerUnmarshaller	./dev/tengo/lib/tpl.lib.tengo	/^		registerUnmarshaller: func(preproc) {$/;"	f
+registerUnmarshaller	./dist/tengo/lib/tpl.lib.tengo	/^		registerUnmarshaller: func(preproc) {$/;"	f
 registerUnmarshaller	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		registerUnmarshaller: func(preproc) {$/;"	f
 registerUnmarshaller	./src/tpl/index.lib.tengo	/^		registerUnmarshaller: func(preproc) {$/;"	f
+removeElement	./dev/tengo/lib/slices.lib.tengo	/^removeElement := func(slice, i) {$/;"	f
+removeElement	./dist/tengo/lib/slices.lib.tengo	/^removeElement := func(slice, i) {$/;"	f
 removeElement	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^removeElement := func(slice, i) {$/;"	f
 removeElement	./src/slices.lib.tengo	/^removeElement := func(slice, i) {$/;"	f
+renderInputs	./dist/tengo/lib/pframes.ll.lib.tengo	/^	renderInputs := {$/;"	c
 renderInputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.ll.lib.tengo	/^	renderInputs := {$/;"	c
 renderInputs	./src/pframes/aggregate.tpl.tengo	/^			renderInputs := {}$/;"	c
 renderInputs	./src/pframes/ll.lib.tengo	/^	renderInputs := {$/;"	c
+renderPrepare	./dev/tengo/lib/tpl.lib.tengo	/^		renderPrepare: func() {$/;"	f
+renderPrepare	./dist/tengo/lib/tpl.lib.tengo	/^		renderPrepare: func() {$/;"	f
 renderPrepare	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		renderPrepare: func() {$/;"	f
 renderPrepare	./src/tpl/index.lib.tengo	/^		renderPrepare: func() {$/;"	f
+renderer	./dev/tengo/lib/tpl.lib.tengo	/^		renderer: func() {$/;"	f
+renderer	./dist/tengo/lib/tpl.lib.tengo	/^		renderer: func() {$/;"	f
 renderer	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		renderer: func() {$/;"	f
 renderer	./src/tpl/index.lib.tengo	/^		renderer: func() {$/;"	f
 res	./src/tpl/test/await-state-wildcard.tpl.tengo	/^	res := ""$/;"	c
+resolve	./dev/tengo/lib/bquery.lib.tengo	/^resolve := func(ref, ctx, ...options) {$/;"	f
+resolve	./dev/tengo/lib/workflow.lib.tengo	/^resolve := func(ref, ...options) {$/;"	f
+resolve	./dist/tengo/lib/workflow.bquery.lib.tengo	/^resolve := func(ref, ctx, ...options) {$/;"	f
+resolve	./dist/tengo/lib/workflow.lib.tengo	/^resolve := func(ref, ...options) {$/;"	f
 resolve	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^resolve := func(ref, ctx, ...options) {$/;"	f
 resolve	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^resolve := func(ref, ...options) {$/;"	f
 resolve	./src/workflow/bquery.lib.tengo	/^resolve := func(ref, ctx, ...options) {$/;"	f
 resolve	./src/workflow/index.lib.tengo	/^resolve := func(ref, ...options) {$/;"	f
+resource	./dev/tengo/lib/smart.lib.tengo	/^		resource: func() {$/;"	f
+resource	./dev/tengo/lib/smart.lib.tengo	/^resource = func(r) {$/;"	f
+resource	./dev/tengo/lib/validation.lib.tengo	/^resource := func(elem, stack) {$/;"	f
+resource	./dist/tengo/lib/smart.lib.tengo	/^		resource: func() {$/;"	f
+resource	./dist/tengo/lib/smart.lib.tengo	/^resource = func(r) {$/;"	f
+resource	./dist/tengo/lib/validation.lib.tengo	/^resource := func(...args) {$/;"	f
 resource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		resource: func() {$/;"	f
 resource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^resource = func(r) {$/;"	f
 resource	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^resource := func(...args) {$/;"	f
 resource	./src/smart.lib.tengo	/^		resource: func() {$/;"	f
 resource	./src/smart.lib.tengo	/^resource = func(r) {$/;"	f
 resource	./src/validation.lib.tengo	/^resource := func(...args) {$/;"	f
+resourceBuilder	./dev/tengo/lib/smart.lib.tengo	/^resourceBuilder = func(r) {$/;"	f
+resourceBuilder	./dist/tengo/lib/smart.lib.tengo	/^resourceBuilder = func(r) {$/;"	f
 resourceBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^resourceBuilder = func(r) {$/;"	f
 resourceBuilder	./src/smart.lib.tengo	/^resourceBuilder = func(r) {$/;"	f
+resourceType	./dist/tengo/lib/validation.lib.tengo	/^resourceType := func(rt) {$/;"	f
 resourceType	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^resourceType := func(rt) {$/;"	f
 resourceType	./src/validation.lib.tengo	/^resourceType := func(rt) {$/;"	f
+resourceTypesEqual	./dist/tengo/lib/smart.lib.tengo	/^resourceTypesEqual := func(rType1, rType2) {$/;"	f
 resourceTypesEqual	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^resourceTypesEqual := func(rType1, rType2) {$/;"	f
 resourceTypesEqual	./src/smart.lib.tengo	/^resourceTypesEqual := func(rType1, rType2) {$/;"	f
+result	./dev/tengo/lib/bquery.lib.tengo	/^				result  := {$/;"	c
+result	./dev/tengo/lib/tpl.lib.tengo	/^		result := {}$/;"	c
+result	./dist/tengo/lib/pframes.xsv.lib.tengo	/^	result := {}$/;"	c
+result	./dist/tengo/lib/tpl.lib.tengo	/^		result := {}$/;"	c
+result	./dist/tengo/lib/workflow.bquery.lib.tengo	/^				result  := {$/;"	c
 result	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^	result := {}$/;"	c
 result	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		result := {}$/;"	c
 result	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^				result  := {$/;"	c
@@ -908,25 +1717,49 @@ result	./src/tpl/index.lib.tengo	/^		result := {}$/;"	c
 result	./src/tpl/test/map-outputs.tpl.tengo	/^	result := {$/;"	c
 result	./src/tpl/test/simple1.tpl.tengo	/^	result := {$/;"	c
 result	./src/workflow/bquery.lib.tengo	/^				result  := {$/;"	c
+resultUnmarshaller	./dev/tengo/lib/bquery.lib.tengo	/^resultUnmarshaller := func() {$/;"	f
+resultUnmarshaller	./dist/tengo/lib/workflow.bquery.lib.tengo	/^resultUnmarshaller := func() {$/;"	f
 resultUnmarshaller	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^resultUnmarshaller := func() {$/;"	f
 resultUnmarshaller	./src/workflow/bquery.lib.tengo	/^resultUnmarshaller := func() {$/;"	f
 results	./src/tpl/test/json-keys.tpl.tengo	/^	results := {}$/;"	c
+routeDelegate	./dev/tengo/lib/tpl.lib.tengo	/^		routeDelegate: func(tpl, extraInputs, outputs) {$/;"	f
 routeDelegate	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		routeDelegate: func(tpl, extraInputs, outputs) {$/;"	f
-routeDelegate	./src/tpl/index.lib.tengo	/^		routeDelegate: func(tpl, extraInputs, outputs) {$/;"	f
+routeEph	./dev/tengo/lib/tpl.lib.tengo	/^		routeEph: func(bodyFn){$/;"	f
+routeEph	./dist/tengo/lib/tpl.lib.tengo	/^		routeEph: func(bodyFn) {$/;"	f
 routeEph	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		routeEph: func(bodyFn) {$/;"	f
 routeEph	./src/tpl/index.lib.tengo	/^		routeEph: func(bodyFn) {$/;"	f
+routePure	./dev/tengo/lib/tpl.lib.tengo	/^		routePure: func(bodyFn){$/;"	f
+routePure	./dist/tengo/lib/tpl.lib.tengo	/^		routePure: func(bodyFn){$/;"	f
 routePure	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		routePure: func(bodyFn){$/;"	f
 routePure	./src/tpl/index.lib.tengo	/^		routePure: func(bodyFn){$/;"	f
+run	./dev/tengo/lib/exec.lib.tengo	/^		run: func() {$/;"	f
+run	./dist/tengo/lib/exec.lib.tengo	/^		run: func() {$/;"	f
 run	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		run: func() {$/;"	f
 run	./src/exec/index.lib.tengo	/^		run: func() {$/;"	f
+runEnv	./dist/tengo/lib/exec.runenv.lib.tengo	/^				runEnv: func() {$/;"	f
 runEnv	./src/exec/runenv.lib.tengo	/^				runEnv: func() {$/;"	f
+runEnvDescriptor	./dist/tengo/lib/exec.runenv.lib.tengo	/^		runEnvDescriptor: func(descriptor) {$/;"	f
 runEnvDescriptor	./src/exec/runenv.lib.tengo	/^		runEnvDescriptor: func(descriptor) {$/;"	f
+runEnvDescriptorScheme	./dist/tengo/lib/exec.package.lib.tengo	/^runEnvDescriptorScheme := {$/;"	c
 runEnvDescriptorScheme	./src/exec/package.lib.tengo	/^runEnvDescriptorScheme := {$/;"	c
+runWithTemplate	./dev/tengo/lib/forloop.lib.tengo	/^runWithTemplate := func(tplId) {$/;"	f
+safeAppend	./dev/tengo/lib/slices.lib.tengo	/^safeAppend := func(slice, ...toAppend) {$/;"	f
+safeAppend	./dist/tengo/lib/slices.lib.tengo	/^safeAppend := func(slice, ...toAppend) {$/;"	f
 safeAppend	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^safeAppend := func(slice, ...toAppend) {$/;"	f
 safeAppend	./src/slices.lib.tengo	/^safeAppend := func(slice, ...toAppend) {$/;"	f
+save	./dev/tengo/lib/workdir.lib.tengo	/^save := func(workdir) {$/;"	f
+save	./dist/tengo/lib/workdir.lib.tengo	/^save := func(workdir) {$/;"	f
 save	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^save := func(workdir) {$/;"	f
 save	./src/workdir/index.lib.tengo	/^save := func(workdir) {$/;"	f
+saveBuilder	./dist/tengo/lib/exec.runenv.lib.tengo	/^saveBuilder := func(wd) {$/;"	f
 saveBuilder	./src/exec/runenv.lib.tengo	/^saveBuilder := func(wd) {$/;"	f
+saveFile	./dev/tengo/lib/exec.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
+saveFile	./dev/tengo/lib/workdir.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
+saveFile	./dist/tengo/lib/exec.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
+saveFile	./dist/tengo/lib/exec.package.lib.tengo	/^		saveFile: func(path) {$/;"	f
+saveFile	./dist/tengo/lib/workdir.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
+saveFile	./dist/tengo/lib/workdir.proc.lib.tengo	/^		saveFile: func(fName) {$/;"	f
+saveFile	./dist/tengo/lib/workdir.save.lib.tengo	/^		saveFile: func(fName) {$/;"	f
 saveFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
 saveFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
 saveFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		saveFile: func(fName) {$/;"	f
@@ -936,6 +1769,13 @@ saveFile	./src/exec/package.lib.tengo	/^		saveFile: func(path) {$/;"	f
 saveFile	./src/workdir/index.lib.tengo	/^		saveFile: func(fileName) {$/;"	f
 saveFile	./src/workdir/proc.lib.tengo	/^		saveFile: func(fName) {$/;"	f
 saveFile	./src/workdir/save.lib.tengo	/^		saveFile: func(fName) {$/;"	f
+saveFileContent	./dev/tengo/lib/exec.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
+saveFileContent	./dev/tengo/lib/workdir.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
+saveFileContent	./dist/tengo/lib/exec.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
+saveFileContent	./dist/tengo/lib/exec.package.lib.tengo	/^		saveFileContent: func(path) {$/;"	f
+saveFileContent	./dist/tengo/lib/workdir.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
+saveFileContent	./dist/tengo/lib/workdir.proc.lib.tengo	/^		saveFileContent: func(fName) {$/;"	f
+saveFileContent	./dist/tengo/lib/workdir.save.lib.tengo	/^		saveFileContent: func(fName) {$/;"	f
 saveFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
 saveFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
 saveFileContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		saveFileContent: func(fName) {$/;"	f
@@ -945,125 +1785,244 @@ saveFileContent	./src/exec/package.lib.tengo	/^		saveFileContent: func(path) {$/
 saveFileContent	./src/workdir/index.lib.tengo	/^		saveFileContent: func(fileName) {$/;"	f
 saveFileContent	./src/workdir/proc.lib.tengo	/^		saveFileContent: func(fName) {$/;"	f
 saveFileContent	./src/workdir/save.lib.tengo	/^		saveFileContent: func(fName) {$/;"	f
+saveFileSet	./dev/tengo/lib/exec.lib.tengo	/^		saveFileSet: func(regex, template, inputs) {$/;"	f
+saveFileSet	./dist/tengo/lib/exec.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
+saveFileSet	./dist/tengo/lib/workdir.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
 saveFileSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
 saveFileSet	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
 saveFileSet	./src/exec/index.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
 saveFileSet	./src/workdir/index.lib.tengo	/^		saveFileSet: func(name, regex) {$/;"	f
+saveFileSetContent	./dist/tengo/lib/exec.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
+saveFileSetContent	./dist/tengo/lib/workdir.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
 saveFileSetContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
 saveFileSetContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
 saveFileSetContent	./src/exec/index.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
 saveFileSetContent	./src/workdir/index.lib.tengo	/^		saveFileSetContent: func(name, regex) {$/;"	f
+saveFiles	./dist/tengo/lib/exec.package.lib.tengo	/^		saveFiles: func(paths) {$/;"	f
 saveFiles	./src/exec/package.lib.tengo	/^		saveFiles: func(paths) {$/;"	f
+saveFilesContent	./dist/tengo/lib/exec.package.lib.tengo	/^		saveFilesContent: func(paths) {$/;"	f
 saveFilesContent	./src/exec/package.lib.tengo	/^		saveFilesContent: func(paths) {$/;"	f
+saveStderrContent	./dev/tengo/lib/exec.lib.tengo	/^		saveStderrContent: func() {$/;"	f
+saveStderrContent	./dist/tengo/lib/exec.lib.tengo	/^		saveStderrContent: func() {$/;"	f
 saveStderrContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveStderrContent: func() {$/;"	f
 saveStderrContent	./src/exec/index.lib.tengo	/^		saveStderrContent: func() {$/;"	f
+saveStdoutContent	./dev/tengo/lib/exec.lib.tengo	/^		saveStdoutContent: func() {$/;"	f
+saveStdoutContent	./dist/tengo/lib/exec.lib.tengo	/^		saveStdoutContent: func() {$/;"	f
 saveStdoutContent	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		saveStdoutContent: func() {$/;"	f
 saveStdoutContent	./src/exec/index.lib.tengo	/^		saveStdoutContent: func() {$/;"	f
 schema	./src/validation.test.tengo	/^	schema := {$/;"	c
+schemaRules	./dist/tengo/lib/validation.lib.tengo	/^	schemaRules := {}$/;"	c
 schemaRules	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^	schemaRules := {}$/;"	c
 schemaRules	./src/validation.lib.tengo	/^	schemaRules := {}$/;"	c
+schemaTags	./dist/tengo/lib/validation.lib.tengo	/^	schemaTags := {}$/;"	c
 schemaTags	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^	schemaTags := {}$/;"	c
 schemaTags	./src/validation.lib.tengo	/^	schemaTags := {}$/;"	c
+schemeRules	./dev/tengo/lib/validation.lib.tengo	/^	schemeRules := {}$/;"	c
+schemeTags	./dev/tengo/lib/validation.lib.tengo	/^	schemeTags := {}$/;"	c
+self	./dev/tengo/lib/tpl.lib.tengo	/^	self := func(resource) { return _unmarshal(resource, preprocessors) }$/;"	f
+self	./dist/tengo/lib/tpl.lib.tengo	/^	self := func(resource) { return _unmarshal(resource, preprocessors) }$/;"	f
 self	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^	self := func(resource) { return _unmarshal(resource, preprocessors) }$/;"	f
 self	./src/tpl/index.lib.tengo	/^	self := func(resource) { return _unmarshal(resource, preprocessors) }$/;"	f
+set	./dev/tengo/lib/sets.lib.tengo	/^	set := {}$/;"	c
+set	./dev/tengo/lib/smart.lib.tengo	/^		set: func(reference) {$/;"	f
+set	./dist/tengo/lib/sets.lib.tengo	/^	set := {}$/;"	c
+set	./dist/tengo/lib/smart.lib.tengo	/^		set: func(reference) {$/;"	f
 set	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/sets.lib.tengo	/^	set := {}$/;"	c
 set	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		set: func(reference) {$/;"	f
 set	./src/sets.lib.tengo	/^	set := {}$/;"	c
 set	./src/smart.lib.tengo	/^		set: func(reference) {$/;"	f
+setBodyData	./dev/tengo/lib/forloop.lib.tengo	/^		setBodyData: func(data) {$/;"	f
+setBodyResourceType	./dev/tengo/lib/forloop.lib.tengo	/^		setBodyResourceType: func(resourceType) {$/;"	f
+setDynamicArgumentFieldName	./dev/tengo/lib/forloop.lib.tengo	/^		setDynamicArgumentFieldName: func(fieldName) {$/;"	f
+setDynamicInputName	./dev/tengo/lib/forloop.lib.tengo	/^		setDynamicInputName: func(name) {$/;"	f
+setEphemeral	./dev/tengo/lib/forloop.lib.tengo	/^		setEphemeral: func(isEphemeral) {$/;"	f
+setJson	./dev/tengo/lib/smart.lib.tengo	/^		setJson: func(value) {$/;"	f
+setJson	./dist/tengo/lib/smart.lib.tengo	/^		setJson: func(value) {$/;"	f
 setJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		setJson: func(value) {$/;"	f
 setJson	./src/smart.lib.tengo	/^		setJson: func(value) {$/;"	f
+setMap	./dev/tengo/lib/smart.lib.tengo	/^		setMap: func(keyToValue) {$/;"	f
+setMap	./dist/tengo/lib/smart.lib.tengo	/^		setMap: func(keyToValue) {$/;"	f
 setMap	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		setMap: func(keyToValue) {$/;"	f
 setMap	./src/smart.lib.tengo	/^		setMap: func(keyToValue) {$/;"	f
+setNestedMode	./dev/tengo/lib/forloop.lib.tengo	/^		setNestedMode: func(fieldName) {$/;"	f
+setOutputs	./dev/tengo/lib/tpl.lib.tengo	/^		setOutputs : func(resultMap) {$/;"	f
+setOutputs	./dist/tengo/lib/tpl.lib.tengo	/^		setOutputs : func(resultMap) {$/;"	f
 setOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		setOutputs : func(resultMap) {$/;"	f
 setOutputs	./src/tpl/index.lib.tengo	/^		setOutputs : func(resultMap) {$/;"	f
+setPreRun	./dev/tengo/lib/workflow.lib.tengo	/^setPreRun := func(tplId) {$/;"	f
+setPreRun	./dist/tengo/lib/workflow.lib.tengo	/^setPreRun := func(tplId) {$/;"	f
 setPreRun	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^setPreRun := func(tplId) {$/;"	f
 setPreRun	./src/workflow/index.lib.tengo	/^setPreRun := func(tplId) {$/;"	f
+setRefOrJson	./dev/tengo/lib/smart.lib.tengo	/^		setRefOrJson: func(refOrJson) {$/;"	f
+setRefOrJson	./dist/tengo/lib/smart.lib.tengo	/^		setRefOrJson: func(refOrJson) {$/;"	f
 setRefOrJson	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^		setRefOrJson: func(refOrJson) {$/;"	f
 setRefOrJson	./src/smart.lib.tengo	/^		setRefOrJson: func(refOrJson) {$/;"	f
+setUsualMode	./dev/tengo/lib/forloop.lib.tengo	/^		setUsualMode: func() {$/;"	f
+settings	./dev/tengo/lib/forloop.lib.tengo	/^			settings := {$/;"	c
+slice	./dev/tengo/lib/slices.lib.tengo	/^slice := func(array, from, to) {$/;"	f
+slice	./dist/tengo/lib/slices.lib.tengo	/^slice := func(array, from, to) {$/;"	f
 slice	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^slice := func(array, from, to) {$/;"	f
 slice	./src/slices.lib.tengo	/^slice := func(array, from, to) {$/;"	f
+software	./dev/tengo/lib/exec.lib.tengo	/^		software: func(software) {$/;"	f
+software	./dist/tengo/lib/exec.lib.tengo	/^		software: func(sw) {$/;"	f
+software	./dist/tengo/lib/exec.runenv.lib.tengo	/^		software: func(pkgRef) {$/;"	f
 software	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		software: func(software) {$/;"	f
 software	./src/exec/index.lib.tengo	/^		software: func(sw) {$/;"	f
 software	./src/exec/runenv.lib.tengo	/^		software: func(pkgRef) {$/;"	f
+softwareInfoScheme	./dist/tengo/lib/exec.package.lib.tengo	/^softwareInfoScheme := {$/;"	c
 softwareInfoScheme	./src/exec/package.lib.tengo	/^softwareInfoScheme := {$/;"	c
+sortByFn	./dev/tengo/lib/slices.lib.tengo	/^sortByFn := func(notSortedSlice, fn) {$/;"	f
+sortByFn	./dist/tengo/lib/slices.lib.tengo	/^sortByFn := func(notSortedSlice, fn) {$/;"	f
 sortByFn	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/slices.lib.tengo	/^sortByFn := func(notSortedSlice, fn) {$/;"	f
 sortByFn	./src/slices.lib.tengo	/^sortByFn := func(notSortedSlice, fn) {$/;"	f
+spec	./dev/tengo/lib/bquery.lib.tengo	/^	spec := {$/;"	c
+spec	./dist/tengo/lib/pframes.xsv.lib.tengo	/^	spec := {$/;"	c
+spec	./dist/tengo/lib/workflow.bquery.lib.tengo	/^	spec := {$/;"	c
 spec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^	spec := {$/;"	c
 spec	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.bquery.lib.tengo	/^	spec := {$/;"	c
 spec	./src/pframes/xsv.lib.tengo	/^	spec := {$/;"	c
 spec	./src/workflow/bquery.lib.tengo	/^	spec := {$/;"	c
+split	./dev/tengo/lib/path.lib.tengo	/^split := func(path, ...sep) {$/;"	f
+split	./dist/tengo/lib/path.lib.tengo	/^split := func(path, ...sep) {$/;"	f
 split	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^split := func(path, ...sep) {$/;"	f
 split	./src/path.lib.tengo	/^split := func(path, ...sep) {$/;"	f
+staticArgs	./dev/tengo/lib/forloop.lib.tengo	/^	staticArgs := {}$/;"	c
+stderr	./dev/tengo/lib/exec.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
+stderr	./dev/tengo/lib/runcmd.lib.tengo	/^		stderr: func(fileName) {$/;"	f
+stderr	./dev/tengo/lib/runcmd.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
+stderr	./dist/tengo/lib/exec.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
+stderr	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		stderr: func(fileName) {$/;"	f
+stderr	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
 stderr	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
 stderr	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		stderr: func(fileName) {$/;"	f
 stderr	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
 stderr	./src/exec/index.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
 stderr	./src/exec/runcmd.lib.tengo	/^		stderr: func(fileName) {$/;"	f
 stderr	./src/exec/runcmd.lib.tengo	/^	stderr := "stderr.txt"$/;"	c
+stderrFileName	./dev/tengo/lib/exec.lib.tengo	/^		stderrFileName: func(fileName) {$/;"	f
+stderrFileName	./dist/tengo/lib/exec.lib.tengo	/^		stderrFileName: func(fileName) {$/;"	f
 stderrFileName	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		stderrFileName: func(fileName) {$/;"	f
 stderrFileName	./src/exec/index.lib.tengo	/^		stderrFileName: func(fileName) {$/;"	f
+stdout	./dev/tengo/lib/exec.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
+stdout	./dev/tengo/lib/runcmd.lib.tengo	/^		stdout: func(fileName) {$/;"	f
+stdout	./dev/tengo/lib/runcmd.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
+stdout	./dist/tengo/lib/exec.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
+stdout	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		stdout: func(fileName) {$/;"	f
+stdout	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
 stdout	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
 stdout	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^		stdout: func(fileName) {$/;"	f
 stdout	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.runcmd.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
 stdout	./src/exec/index.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
 stdout	./src/exec/runcmd.lib.tengo	/^		stdout: func(fileName) {$/;"	f
 stdout	./src/exec/runcmd.lib.tengo	/^	stdout := "stdout.txt"$/;"	c
+stdoutFileName	./dev/tengo/lib/exec.lib.tengo	/^		stdoutFileName: func(fileName) {$/;"	f
+stdoutFileName	./dist/tengo/lib/exec.lib.tengo	/^		stdoutFileName: func(fileName) {$/;"	f
 stdoutFileName	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		stdoutFileName: func(fileName) {$/;"	f
 stdoutFileName	./src/exec/index.lib.tengo	/^		stdoutFileName: func(fileName) {$/;"	f
+streamFile	./dev/tengo/lib/exec.lib.tengo	/^		streamFile: func(fileName) {$/;"	f
+streamFile	./dist/tengo/lib/exec.lib.tengo	/^		streamFile: func(fileName) {$/;"	f
 streamFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		streamFile: func(fileName) {$/;"	f
 streamFile	./src/exec/index.lib.tengo	/^		streamFile: func(fileName) {$/;"	f
+streams	./dev/tengo/lib/exec.lib.tengo	/^	streams := {}$/;"	c
+structBuilder	./dev/tengo/lib/smart.lib.tengo	/^structBuilder = func(resourceType, ...data) {$/;"	f
+structBuilder	./dist/tengo/lib/smart.lib.tengo	/^structBuilder = func(resourceType, ...data) {$/;"	f
 structBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/smart.lib.tengo	/^structBuilder = func(resourceType, ...data) {$/;"	f
 structBuilder	./src/smart.lib.tengo	/^structBuilder = func(resourceType, ...data) {$/;"	f
+subscriptions	./dist/tengo/lib/tpl.state-await.lib.tengo	/^	subscriptions := {}$/;"	c
 subscriptions	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.state-await.lib.tengo	/^	subscriptions := {}$/;"	c
 subscriptions	./src/tpl/state-await.lib.tengo	/^	subscriptions := {}$/;"	c
+substRules	./dist/tengo/lib/exec.runcmd.lib.tengo	/^	substRules := {}$/;"	c
 substRules	./src/exec/runcmd.lib.tengo	/^	substRules := {}$/;"	c
+substitutionRule	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		substitutionRule: func(varName, refKey) {$/;"	f
 substitutionRule	./src/exec/runcmd.lib.tengo	/^		substitutionRule: func(varName, refKey) {$/;"	f
+substitutionRules	./dist/tengo/lib/exec.runcmd.lib.tengo	/^		substitutionRules: func(rules) {$/;"	f
 substitutionRules	./src/exec/runcmd.lib.tengo	/^		substitutionRules: func(rules) {$/;"	f
+success	./dev/tengo/lib/validation.lib.tengo	/^success := { result: true }$/;"	c
+success	./dist/tengo/lib/validation.lib.tengo	/^success := { result: true }$/;"	c
 success	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^success := { result: true }$/;"	c
 success	./src/validation.lib.tengo	/^success := { result: true }$/;"	c
+tags	./dev/tengo/lib/validation.lib.tengo	/^	tags := {}$/;"	c
+tags	./dist/tengo/lib/validation.lib.tengo	/^	tags := {}$/;"	c
 tags	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/validation.lib.tengo	/^	tags := {}$/;"	c
 tags	./src/validation.lib.tengo	/^	tags := {}$/;"	c
+template	./dist/tengo/lib/tpl.lib.tengo	/^		template: func() {$/;"	f
 template	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		template: func() {$/;"	f
 template	./src/tpl/index.lib.tengo	/^		template: func() {$/;"	f
+templateId	./dev/tengo/lib/tpl.lib.tengo	/^		templateId: func() {$/;"	f
+toSlice	./dist/tengo/lib/sets.lib.tengo	/^toSlice := func(set) {$/;"	f
 toSlice	./src/sets.lib.tengo	/^toSlice := func(set) {$/;"	f
+toStrict	./dev/tengo/lib/ll.lib.tengo	/^toStrict := func(r) {$/;"	f
+toStrict	./dist/tengo/lib/ll.lib.tengo	/^toStrict := func(v) {$/;"	f
 toStrict	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/ll.lib.tengo	/^toStrict := func(r) {$/;"	f
 toStrict	./src/ll.lib.tengo	/^toStrict := func(v) {$/;"	f
+toolset	./dist/tengo/lib/exec.runenv.lib.tengo	/^	toolset := "pip"$/;"	c
 toolset	./src/exec/runenv.lib.tengo	/^	toolset := "pip"$/;"	c
+tpl	./dev/tengo/lib/tpl.lib.tengo	/^tpl := func() {$/;"	f
+tpl	./dist/tengo/lib/tpl.lib.tengo	/^tpl := func() {$/;"	f
 tpl	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^tpl := func() {$/;"	f
 tpl	./src/tpl/index.lib.tengo	/^tpl := func() {$/;"	f
 tplInputs	./src/exec/exec.tpl.tengo	/^		tplInputs := {$/;"	c
+tplOutputs	./dev/tengo/lib/tpl.lib.tengo	/^			tplOutputs := {}$/;"	c
+tplOutputs	./dev/tengo/lib/workflow.lib.tengo	/^	tplOutputs := {}$/;"	c
+tplOutputs	./dist/tengo/lib/tpl.lib.tengo	/^			tplOutputs := {}$/;"	c
+tplOutputs	./dist/tengo/lib/workflow.lib.tengo	/^	tplOutputs := {}$/;"	c
 tplOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^			tplOutputs := {}$/;"	c
 tplOutputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^	tplOutputs := {}$/;"	c
 tplOutputs	./src/tpl/index.lib.tengo	/^			tplOutputs := {}$/;"	c
 tplOutputs	./src/workflow/index.lib.tengo	/^	tplOutputs := {}$/;"	c
+trimPrefix	./dev/tengo/lib/path.lib.tengo	/^trimPrefix := func(path, prefix) {$/;"	f
+trimPrefix	./dist/tengo/lib/path.lib.tengo	/^trimPrefix := func(path, prefix) {$/;"	f
 trimPrefix	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/path.lib.tengo	/^trimPrefix := func(path, prefix) {$/;"	f
 trimPrefix	./src/path.lib.tengo	/^trimPrefix := func(path, prefix) {$/;"	f
+upload	./dev/tengo/lib/blob.lib.tengo	/^upload := func(importHandle, ...opts) {$/;"	f
+use	./dist/tengo/lib/exec.package.lib.tengo	/^use := func(settings) {$/;"	f
 use	./src/exec/package.lib.tengo	/^use := func(settings) {$/;"	f
+useToolset	./dist/tengo/lib/exec.runenv.lib.tengo	/^		useToolset: func(name) {$/;"	f
 useToolset	./src/exec/runenv.lib.tengo	/^		useToolset: func(name) {$/;"	f
+validateArgs	./dist/tengo/lib/workflow.lib.tengo	/^validateArgs := func(argsSchema) {$/;"	f
 validateArgs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workflow.lib.tengo	/^validateArgs := func(argsSchema) {$/;"	f
 validateArgs	./src/workflow/index.lib.tengo	/^validateArgs := func(argsSchema) {$/;"	f
+validateInputs	./dist/tengo/lib/tpl.lib.tengo	/^		validateInputs: func(schema) {$/;"	f
 validateInputs	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/tpl.lib.tengo	/^		validateInputs: func(schema) {$/;"	f
 validateInputs	./src/tpl/index.lib.tengo	/^		validateInputs: func(schema) {$/;"	f
+values	./dev/tengo/lib/exec.lib.tengo	/^	values := {}$/;"	c
+values	./dev/tengo/lib/workdir.lib.tengo	/^	values := {}$/;"	c
+values	./dist/tengo/lib/workdir.lib.tengo	/^	values := {}$/;"	c
 values	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^	values := {}$/;"	c
 values	./src/workdir/index.lib.tengo	/^	values := {}$/;"	c
+venv	./dist/tengo/lib/exec.runenv.lib.tengo	/^				venv: func() {$/;"	f
 venv	./src/exec/runenv.lib.tengo	/^				venv: func() {$/;"	f
+warn	./dev/tengo/lib/log.lib.tengo	/^		warn: func(...args) {$/;"	f
+wdAfterReadFiles	./dist/tengo/lib/workdir.proc.lib.tengo	/^		wdAfterReadFiles: func() {$/;"	f
 wdAfterReadFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		wdAfterReadFiles: func() {$/;"	f
 wdAfterReadFiles	./src/workdir/proc.lib.tengo	/^		wdAfterReadFiles: func() {$/;"	f
+wdBefore	./dist/tengo/lib/workdir.proc.lib.tengo	/^		wdBefore: func() {$/;"	f
 wdBefore	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		wdBefore: func() {$/;"	f
 wdBefore	./src/workdir/proc.lib.tengo	/^		wdBefore: func() {$/;"	f
+wdFinalBuilder	./dist/tengo/lib/workdir.proc.lib.tengo	/^		wdFinalBuilder: func() {$/;"	f
 wdFinalBuilder	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.proc.lib.tengo	/^		wdFinalBuilder: func() {$/;"	f
 wdFinalBuilder	./src/workdir/proc.lib.tengo	/^		wdFinalBuilder: func() {$/;"	f
+wdProcessors	./dist/tengo/lib/exec.lib.tengo	/^	wdProcessors := {}$/;"	c
 wdProcessors	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^	wdProcessors := {}$/;"	c
 wdProcessors	./src/exec/index.lib.tengo	/^	wdProcessors := {}$/;"	c
 wdProcessorsResults	./src/exec/exec.tpl.tengo	/^	wdProcessorsResults := {}$/;"	c
+workdir	./dist/tengo/lib/exec.runenv.lib.tengo	/^				workdir: func() {$/;"	f
 workdir	./src/exec/runenv.lib.tengo	/^				workdir: func() {$/;"	f
+writeFile	./dev/tengo/lib/exec.lib.tengo	/^		writeFile: func(fileName, data) {$/;"	f
+writeFile	./dev/tengo/lib/workdir.lib.tengo	/^		writeFile: func(fileName, contentRef) {$/;"	f
+writeFile	./dist/tengo/lib/exec.lib.tengo	/^		writeFile: func(fileName, data) {$/;"	f
+writeFile	./dist/tengo/lib/workdir.lib.tengo	/^		writeFile: func(fileName, contentRef) {$/;"	f
 writeFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/exec.lib.tengo	/^		writeFile: func(fileName, data) {$/;"	f
 writeFile	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		writeFile: func(fileName, contentRef) {$/;"	f
 writeFile	./src/exec/index.lib.tengo	/^		writeFile: func(fileName, data) {$/;"	f
 writeFile	./src/workdir/index.lib.tengo	/^		writeFile: func(fileName, contentRef) {$/;"	f
+writeFiles	./dev/tengo/lib/workdir.lib.tengo	/^		writeFiles: func(contentRefMap) {$/;"	f
+writeFiles	./dist/tengo/lib/workdir.lib.tengo	/^		writeFiles: func(contentRefMap) {$/;"	f
 writeFiles	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/workdir.lib.tengo	/^		writeFiles: func(contentRefMap) {$/;"	f
 writeFiles	./src/workdir/index.lib.tengo	/^		writeFiles: func(contentRefMap) {$/;"	f
+xsvColumnId	./dist/tengo/lib/pframes.util.lib.tengo	/^xsvColumnId := func(c) {$/;"	f
 xsvColumnId	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.util.lib.tengo	/^xsvColumnId := func(c) {$/;"	f
 xsvColumnId	./src/pframes/util.lib.tengo	/^xsvColumnId := func(c) {$/;"	f
+xsvFileName	./dist/tengo/lib/pframes.xsv.lib.tengo	/^	xsvFileName := "file." + xsvType$/;"	c
 xsvFileName	./node_modules/@milaboratory/tengo-sdk/dist/tengo/lib/pframes.xsv.lib.tengo	/^	xsvFileName := "file." + xsvType$/;"	c
 xsvFileName	./src/pframes/xsv.lib.tengo	/^	xsvFileName := "file." + xsvType$/;"	c

@@ -19,14 +19,12 @@
   ],
   "scripts": {
     "check": "pl-tengo check",
-    "build": "rm -rf dist && pl-tengo check && pl-tengo build",
-    "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test",
-    "test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test && vitest",
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags",
+    "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags && pl-tengo test",
+    "test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags && pl-tengo test && vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "vscode-tags": "./create_tags.sh .tags false",
-    "emacs-tags": "./create_tags.sh ../TAGS false -e"
+    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
   "dependencies": {
     "@milaboratory/pframes-conv": "^0.4.25"
@@ -34,7 +32,7 @@
   "devDependencies": {
     "prettier": "^3.3.3",
     "@types/node": "^20.16.3",
-    "@milaboratory/tengo-template-builder": "^1.13.0",
+    "@milaboratory/tengo-template-builder": "^1.14.2",
     "@milaboratory/pl-middle-layer": "^1.10.2",
     "@milaboratory/sdk-test": "^1.5.3",
     "@milaboratory/small-binaries": "^1.10.1",

@@ -172,6 +172,12 @@ isJsonResource := func(r) {
 	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
 }
 
+resourceTypesEqual := func(rType1, rType2) {
+	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+}
+
+/////////////////////////// marshal and unmarshal trees ///////////////////////
+
 // deep check whether map has resources somewhere inside
 _hasReferenceValues := func(object) {
 	if isReference(object) {
@@ -225,10 +231,74 @@ _toRefOrJson := func(object) {
 	}
 }
 
-resourceTypesEqual := func(rType1, rType2) {
-	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+/**
+ * Unmarshal resource according by:
+ *  - converting all json resources (potentially nested) into a tengo objects (maps, arrays, strings etc)
+ *  - converting all pl.maps (resource maps) into tengo maps
+ *
+ * @param resource: smart resource to unmarshal
+ * @param preprocessors: input preprocessors
+ * @return object: unmarshaled resource
+ */
+unmarshal := func(resource, preprocessors) {
+	ll.assert(isResource(resource), "expected resource, found ", resource)
+
+	// instance of this
+	self := func(resource) { return unmarshal(resource, preprocessors) }
+
+	// try preprocessors first
+	for preproc in preprocessors {
+		if preproc.canParse(resource) {
+			return preproc.parse(resource, self)
+		}
+	}
+
+	if isReference(resource) && resource.hasError() {
+		ll.panic("input resource has errors: ", resource, resource.getError())
+	}
+
+	if isJsonResource(resource) || resource.checkResourceType(constants.RTYPE_BOBJECT_SPEC) {
+
+		// parse json data of the resource
+		return resource.getDataAsJson()
+
+	} else if isMapResource(resource) || isLockedEphMapResource(resource) {
+
+		// unmarshal map
+		result := {}
+		for field, value in resource.inputs() {
+			if value.isErrorSet() {
+				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
+			} else if value.isSet() {
+				result[field] = unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
+
+		}
+		return result
+	} else {
+		// nothing todo
+		return resource
+	}
 }
 
+/**
+ * Makes a json primitive object deeply immutable.
+ * This assumes that all objects that are not maps nor arrays are immutable.
+ *
+ * @param obj: any - any primitive json object
+ */
+immutablify := func(obj) {
+	if is_array(obj) {
+		return immutable(slices.map(obj, _immutablify))
+	}
+	if is_map(obj) {
+		return immutable(maps.mapValues(obj, _immutablify))
+	}
+
+	return obj
+}
 ////////////////// implementation ///////////////////////////
 
 /**
@@ -864,7 +934,7 @@ structBuilder = func(resourceType, ...data) {
 /**
  * @param isEph: is ephemeral map
  */
-_mapBuilder := func(isEph) {
+mapBuilderUniversal := func(isEph) {
 	builder := isEph ? ephemeralBuilder(constants.RTYPE_MAP_EPH) : structBuilder(constants.RTYPE_MAP)
 	// ensure no outputs will be created
 	builder.lockOutputs()
@@ -923,11 +993,11 @@ _mapBuilder := func(isEph) {
 }
 
 mapBuilder = func() {
-	return _mapBuilder(false)
+	return mapBuilderUniversal(false)
 }
 
 ephemeralMapBuilder = func() {
-	return _mapBuilder(true)
+	return mapBuilderUniversal(true)
 }
 
 ephemeralBuilder = func(resourceType, ...data) {
@@ -995,11 +1065,14 @@ export ll.toStrict({
 	structBuilder: structBuilder,
 	mapBuilder: mapBuilder,
 	ephemeralMapBuilder: ephemeralMapBuilder,
+	mapBuilderUniversal: mapBuilderUniversal,
 	ephemeralBuilder: ephemeralBuilder,
 	createValueResource: createValueResource,
 	createJsonResource: createJsonResource,
 	createMapResourceWithType: createMapResourceWithType,
 	createMapResource: createMapResource,
 	createBinaryMapResource: createBinaryMapResource,
-	createBlobMapResource: createBlobMapResource
+	createBlobMapResource: createBlobMapResource,
+	unmarshal: unmarshal,
+	immutablify: immutablify
 })
