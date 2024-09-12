@@ -52,6 +52,7 @@ export default class Build extends Command {
     // savePacks(logger, compiledDev, 'dev')
     // logger.info('')
 
+    mergeTagsEnvs(flags)
     if (flags['generate-tags'])
       checkAndGenerateCtags(logger, flags)
 
@@ -59,17 +60,32 @@ export default class Build extends Command {
   }
 }
 
-function checkAndGenerateCtags(logger: winston.Logger, flags: {
+function mergeTagsEnvs(flags: {
+  'generate-tags': boolean,
   'tags-file': string,
   'tags-additional-args': string[] | string,
+}) {
+  if (process.env.GENERATE_TAGS != undefined) {
+    flags['generate-tags'] = process.env.GENERATE_TAGS == 'true';
+  }
+
+  if (process.env.TAGS_FILE != undefined) {
+    flags['tags-file'] = process.env.TAGS_FILE;
+  }
+
+  if (process.env.TAGS_ADDITIONAL_ARGS != undefined) {
+    flags['tags-additional-args'] = process.env.TAGS_ADDITIONAL_ARGS.split(",");
+  }
+}
+
+function checkAndGenerateCtags(logger: winston.Logger, flags: {
+  'tags-file': string,
+  'tags-additional-args': string[],
 }) {
 
   const fileName = path.resolve(flags['tags-file']);
   const rootDir = path.dirname(fileName);
-
-  const additionalArgs: string[] = (typeof flags['tags-additional-args'] == "string")
-    ? [flags['tags-additional-args']]
-    : flags['tags-additional-args'];
+  const additionalArgs = flags['tags-additional-args'];
 
   // all tengo files in dirs and subdirs
   const tengoFiles = getTengoFiles(rootDir)
