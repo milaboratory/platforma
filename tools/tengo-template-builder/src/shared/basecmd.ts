@@ -21,12 +21,6 @@ export const CtagsFlags = {
     default: "../../.tags" // usually a user opens a directory with all blocks
   }),
 
-  "tags-root-dir": Flags.directory({
-    description: "from what directory all tags should be generated",
-    env: "TAGS_ROOT_DIR",
-    default: "../../" // the same directory as where .tags file is localted.
-  }),
-
   "tags-additional-args": Flags.string({
     description: "additional flags for universal-ctags command: e.g. -e for emacs",
     env: "TAGS_ADDITIONAL_ARGS",

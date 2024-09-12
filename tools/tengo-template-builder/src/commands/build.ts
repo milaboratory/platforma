@@ -61,19 +61,19 @@ export default class Build extends Command {
 
 function checkAndGenerateCtags(logger: winston.Logger, flags: {
   'tags-file': string,
-  'tags-root-dir': string,
   'tags-additional-args': string[] | string,
 }) {
 
   const fileName = path.resolve(flags['tags-file']);
-  const rootDir = path.resolve(flags['tags-root-dir']);
+  const rootDir = path.dirname(fileName);
+
   const additionalArgs: string[] = (typeof flags['tags-additional-args'] == "string")
     ? [flags['tags-additional-args']]
     : flags['tags-additional-args'];
 
   // all tengo files in dirs and subdirs
   const tengoFiles = getTengoFiles(rootDir)
-  
+
   logger.info(
     `Generating tags for tengo autocompletion from "${rootDir}" \
 in "${fileName}", additional arguments: "${additionalArgs}".
@@ -94,7 +94,8 @@ Found ${tengoFiles.length} tengo files...`)
     ],
     {
       env: process.env,
-      stdio: 'inherit'
+      stdio: 'inherit',
+      cwd: rootDir
     }
   );
 
@@ -122,7 +123,9 @@ function getTengoFiles(dir: string): string[] {
 
   files.forEach(file => {
     if (!file.isDirectory() && file.name.endsWith('.tengo')) {
-      tengoFiles.push(path.join(file.parentPath, file.name));
+      // Note that VS Code extension likes only relatives paths to the root of the opened dir.
+      const relativePath = path.join(file.parentPath, file.name).replace(dir, ".")
+      tengoFiles.push(relativePath);
     }
   });
 
