@@ -302,14 +302,20 @@ immutablify := func(obj) {
 ////////////////// implementation ///////////////////////////
 
 /**
- * @param r either resource id or resource info
+ * @param r: either resource id or resource info
+ * @param fromWhatFieldID: field ID | nothing - what field the resource was got from.
  */
-resource = func(r) {
+resource = func(r, ...fromWhatFieldID) {
 	self := undefined
 	strictSelf := undefined
 
 	if isResource(r) {
 		return r
+	}
+
+	_fromFieldID := undefined
+	if !is_undefined(fromWhatFieldID) && len(fromWhatFieldID) == 1 {
+		_fromFieldID = fromWhatFieldID[0]
 	}
 
 	id := ll.isStrict(r) ? r.ID : r
@@ -604,6 +610,21 @@ resource = func(r) {
 		 */
 		kvSetJson: func(key, value) {
 			self.kvSet(key, json.encode(value))
+		},
+
+		/**
+		 * Returns a field from which this resource was got from.
+		 * If the client wants to set this resource to some field,
+		 * it should be set to the field we got the resource from
+		 * so that the topology will be stored in pl-core (which leads to better deduplication).
+		 *
+		 * @return fromWhatField: field | undefined
+		 */
+		gotFromField: func() {
+			if is_undefined(_fromFieldID) {
+				return undefined
+			}
+			return field(_fromFieldID)
 		}
 	}
 
@@ -689,14 +710,14 @@ field = func(f) {
 
 			ll.assert(self.isSet(), "field value is not set; ", self.name())
 
-			return resource(self.info().Value)
+			return resource(self.info().Value, self.id)
 		},
 
 		/**
 		 * Returns a smart.Resource object from the resolved field error
 		 */
 		getError: func() {
-			return resource(self.info().Error)
+			return resource(self.info().Error, self.id)
 		},
 
 		/**
@@ -725,7 +746,12 @@ field = func(f) {
 		set: func(reference) {
 			ll.assert(!self.isSet(), "field ", self.name(), " is already set")
 
-			if isResource(reference) {
+			if isResource(reference) && isField(reference.gotFromField()) {
+				// Special case: if the resource was got from the field's getValue,
+				// then we sets this field to the resource's field for saving
+				// the topology in pl-core.
+				tx.setFieldToField(self.id, reference.gotFromField())
+			} else if isResource(reference) {
 				tx.setFieldToResource(self.id, reference.id)
 			} else if isField(reference) {
 				tx.setFieldToField(self.id, reference.id)
