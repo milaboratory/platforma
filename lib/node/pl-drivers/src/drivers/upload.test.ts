@@ -8,7 +8,8 @@ import {
 } from '@milaboratory/pl-client-v2';
 import {
   ConsoleLoggerAdapter,
-  HmacSha256Signer
+  HmacSha256Signer,
+  Signer
 } from '@milaboratory/ts-helpers';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
@@ -23,15 +24,9 @@ import {
 
 test('upload a blob', async () => {
   await withTest(
-    '42',
-    async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
-      const uploadId = await createBlobUpload(
-        client,
-        fPath,
-        2n,
-        fileSignature,
-        mtime
-      );
+    async ({ client, uploader, signer }: TestArg) => {
+      const stats = await writeFile('42', signer)
+      const uploadId = await createBlobUpload(client, stats);
       const handleRes = await getHandleField(client, uploadId);
 
       const c = uploader.getProgressId(handleRes);
@@ -45,6 +40,7 @@ test('upload a blob', async () => {
           expect(p.lastError).toBeUndefined();
           expect(p.status?.bytesProcessed).toBe(2);
           expect(p.status?.bytesTotal).toBe(2);
+
           return;
         }
 
@@ -62,15 +58,9 @@ test('upload a big blob', async () => {
   const hugeString = lotsOfNumbers.join(' ');
 
   await withTest(
-    hugeString,
-    async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
-      const uploadId = await createBlobUpload(
-        client,
-        fPath,
-        BigInt(hugeString.length),
-        fileSignature,
-        mtime
-      );
+    async ({ client, uploader, signer }: TestArg) => {
+      const stats = await writeFile(hugeString, signer)
+      const uploadId = await createBlobUpload(client, stats);
       const handleRes = await getHandleField(client, uploadId);
 
       const c = uploader.getProgressId(handleRes);
@@ -84,6 +74,7 @@ test('upload a big blob', async () => {
           expect(p.isUploadSignMatch).toBeTruthy();
           expect(p.lastError).toBeUndefined();
           expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+
           return;
         }
 
@@ -95,15 +86,10 @@ test('upload a big blob', async () => {
 
 test('upload a blob with wrong modification time', async () => {
   await withTest(
-    '42',
-    async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
-      const uploadId = await createBlobUpload(
-        client,
-        fPath,
-        2n,
-        fileSignature,
-        mtime - 1000n
-      );
+    async ({ client, uploader, signer }: TestArg) => {
+      const stats = await writeFile('42', signer)
+      stats.mtime -= 1000n
+      const uploadId = await createBlobUpload(client, stats);
       const handleRes = await getHandleField(client, uploadId);
 
       const c = uploader.getProgressId(handleRes);
@@ -112,7 +98,9 @@ test('upload a blob with wrong modification time', async () => {
         try {
           await c.getValue();
         } catch (e: any) {
-          if (String(e).includes('file was modified')) return;
+          if (String(e).includes('file was modified')) {
+            return
+          };
           throw e;
         }
 
@@ -124,15 +112,9 @@ test('upload a blob with wrong modification time', async () => {
 
 test('upload a duplicate blob', async () => {
   await withTest(
-    '42',
-    async ({ client, uploader, mtime, fPath, fileSignature }: TestArg) => {
-      const uploadId = await createBlobUpload(
-        client,
-        fPath,
-        2n,
-        fileSignature,
-        mtime
-      );
+    async ({ client, uploader, signer }: TestArg) => {
+      const stats = await writeFile('42', signer)
+      const uploadId = await createBlobUpload(client, stats);
       const handleRes = await getHandleField(client, uploadId);
 
       const cOrig = uploader.getProgressId(handleRes);
@@ -149,6 +131,7 @@ test('upload a duplicate blob', async () => {
           expect(pDupl.lastError).toBeUndefined();
           expect(pDupl.status?.bytesProcessed).toBe(2);
           expect(pDupl.status?.bytesTotal).toBe(2);
+
           return;
         }
 
@@ -172,25 +155,12 @@ test('upload lots of duplicate blobs concurrently', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
     const n = 100;
 
-    const settings: any[] = [];
+    const settings: FileStat[] = [];
     for (let i = 0; i < n; i++) {
-      const fPath = path.join(tmpDir, `testUploadABlob_${i}.txt`);
-      const data = Buffer.from(
-        new TextEncoder().encode('DuplicateBlobsFileContent')
-      );
-      await fs.writeFile(fPath, data);
-      const f = await fs.open(fPath);
-      const stats = await fs.stat(fPath);
-      const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
-      const sign = signer.sign(fPath);
-      await f.close();
-
-      settings.push({
-        path: fPath,
-        sizeBytes: 25n,
-        signature: signer.sign(fPath),
-        mTime: mtime
-      });
+      const stat = await writeFile(
+        'DuplicateBlobsFileContent', signer, tmpDir, `testUploadABlob_${i}.txt`,
+      )
+      settings.push(stat);
     }
 
     const { mapId, uploadIds } = await createMapOfUploads(client, n, settings);
@@ -221,7 +191,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
 });
 
 test('index a blob', async () => {
-  await withTest('', async ({ client, uploader }: TestArg) => {
+  await withTest(async ({ client, uploader }: TestArg) => {
     const uploadId = await createBlobIndex(
       client,
       'another_answer_to_the_ultimate_question.txt',
@@ -249,16 +219,10 @@ test('index a blob', async () => {
 interface TestArg {
   client: PlClient;
   uploader: UploadDriver;
-  f: fs.FileHandle;
-  fPath: string;
-  mtime: bigint;
-  fileSignature: string;
+  signer: Signer;
 }
 
-async function withTest(
-  fileContent: string,
-  cb: (arg: TestArg) => Promise<void>
-) {
+async function withTest(cb: (arg: TestArg) => Promise<void>) {
   await TestHelpers.withTempRoot(async (client) => {
     const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
     const logger = new ConsoleLoggerAdapter();
@@ -269,31 +233,48 @@ async function withTest(
       createUploadProgressClient(client, logger)
     );
 
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
-    const fPath = path.join(tmpDir, 'testUploadABlob.txt');
-    const data = Buffer.from(new TextEncoder().encode(fileContent));
-    await fs.writeFile(fPath, data);
-    const f = await fs.open(fPath);
-    const stats = await fs.stat(fPath);
-    const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
-    const sign = signer.sign(fPath);
+    await cb({ client, uploader, signer });
 
-    await cb({ client, uploader, f, fPath, mtime, fileSignature: sign });
-
-    await f.close();
     await uploader.releaseAll();
   });
+}
+
+interface FileStat {
+  fPath: string;
+  mtime: bigint;
+  fileSignature: string;
+  size: number;
+}
+
+async function writeFile(
+  fileContent: string,
+  signer: Signer,
+  tmpDir?: string,
+  fileName: string = 'testUploadABlob.txt',
+): Promise<FileStat> {
+  if (tmpDir == undefined)
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
+
+  const fPath = path.join(tmpDir, fileName);
+
+  const data = Buffer.from(new TextEncoder().encode(fileContent));
+  await fs.writeFile(fPath, data);
+
+  return await getFileStats(signer, fPath);
+}
+
+async function getFileStats(signer: Signer, fPath: string): Promise<FileStat> {
+  const fileSignature = signer.sign(fPath);
+  const stats = await fs.stat(fPath);
+  const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
+
+  return { fPath, mtime, fileSignature, size: stats.size };
 }
 
 async function createMapOfUploads(
   c: PlClient,
   n: number,
-  settings: {
-    path: string;
-    sizeBytes: bigint;
-    signature: string;
-    mTime: bigint;
-  }[]
+  settings: FileStat[]
 ) {
   return await c.withWriteTx(
     'UploaderCreateMapOfUploads',
@@ -302,13 +283,7 @@ async function createMapOfUploads(
 
       const mapId = tx.createStruct({ name: 'StdMap', version: '1' });
       for (let i = 0; i < n; i++) {
-        const uploadId = await createBlobUploadTx(
-          tx,
-          settings[i].path,
-          settings[i].sizeBytes,
-          settings[i].signature,
-          settings[i].mTime
-        );
+        const uploadId = await createBlobUploadTx(tx, settings[i]);
         uploads.push(uploadId);
         const fId = { resourceId: mapId, fieldName: String(i) };
         tx.createField(fId, 'Input');
@@ -332,22 +307,12 @@ async function createMapOfUploads(
 }
 
 async function createBlobUpload(
-  c: PlClient,
-  path: string,
-  sizeBytes: bigint,
-  signature: string,
-  mTime: bigint
+  c: PlClient, stat: FileStat,
 ): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
-      const uploadId = await createBlobUploadTx(
-        tx,
-        path,
-        sizeBytes,
-        signature,
-        mTime
-      );
+      const uploadId = await createBlobUploadTx(tx, stat);
 
       tx.createField(
         { resourceId: c.clientRoot, fieldName: 'project1' },
@@ -363,17 +328,13 @@ async function createBlobUpload(
 }
 
 async function createBlobUploadTx(
-  tx: PlTransaction,
-  path: string,
-  sizeBytes: bigint,
-  signature: string,
-  mTime: bigint
+  tx: PlTransaction, stat: FileStat,
 ): Promise<ResourceId> {
   const settings = {
-    modificationTime: mTime.toString(),
-    localPath: path,
-    pathSignature: signature,
-    sizeBytes: sizeBytes.toString()
+    modificationTime: stat.mtime.toString(),
+    localPath: stat.fPath,
+    pathSignature: stat.fileSignature,
+    sizeBytes: stat.size.toString()
   };
   const data = new TextEncoder().encode(JSON.stringify(settings));
   const upload = tx.createStruct({ name: 'BlobUpload', version: '1' }, data);
