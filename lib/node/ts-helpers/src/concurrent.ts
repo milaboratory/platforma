@@ -6,17 +6,18 @@
  * https://github.com/rxaviers/async-pool/blob/1.x/lib/es7.js */
 export async function asyncPool(
   concurrency: number,
-  iterableFns: Promise<void>[]
+  iterableFns: (() => Promise<void>)[]
 ): Promise<void> {
   const results = [];
   const executing = new Set();
   const errs: Array<Error>[] = [];
 
   for (const fn of iterableFns) {
-    results.push(fn);
-    executing.add(fn);
+    const p = fn();
+    results.push(p);
+    executing.add(p);
 
-    fn.catch((e) => {
+    p.catch((e) => {
       errs.push(e);
     })
       .finally(() => executing.delete(fn));
