@@ -16,6 +16,12 @@
     }
   }
 
+  &:disabled {
+    --color-text: var(--btn-disabled-bg);
+    box-shadow: none !important;
+    cursor: auto;
+  }
+
   &.loading {
     --color-text: var(--btn-disabled-bg);
   }
