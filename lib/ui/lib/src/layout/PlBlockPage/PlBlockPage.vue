@@ -20,6 +20,7 @@ const slots = useSlots();
         <slot name="append" />
       </div>
     </div>
+    <div v-else />
     <div class="pl-block-page__body">
       <slot />
     </div>

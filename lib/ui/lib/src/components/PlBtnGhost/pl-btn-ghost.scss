@@ -15,4 +15,8 @@
       --color-text: #87E087;
     }
   }
+
+  &.loading {
+    --color-text: var(--btn-disabled-bg);
+  }
 }

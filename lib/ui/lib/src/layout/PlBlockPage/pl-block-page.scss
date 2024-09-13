@@ -1,6 +1,9 @@
 .pl-block-page {
   padding: var(--container-spacing);
   background-color: var(--bg-elevated-01);
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 
   &__title {
     height: 80px;

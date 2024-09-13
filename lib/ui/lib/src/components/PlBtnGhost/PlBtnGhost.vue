@@ -66,7 +66,7 @@ useRipple(btnRef);
     :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
-    <span v-if="slots.default">
+    <span v-if="slots.default && !round">
       <slot />
     </span>
     <MaskIcon16 v-if="loading" name="loading" :size="size" />

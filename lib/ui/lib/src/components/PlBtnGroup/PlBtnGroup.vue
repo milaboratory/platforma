@@ -31,15 +31,15 @@ defineProps<{
    */
   modelValue?: M;
   /**
-   * The label text for the dropdown field (optional)
+   * The label text for the component (optional)
    */
   label?: string;
   /**
-   * List of available options for the dropdown
+   * List of available options for the component
    */
   options: Readonly<SimpleOption<M>[]>;
   /**
-   * If `true`, the dropdown component is disabled and cannot be interacted with.
+   * If `true`, the component is disabled and cannot be interacted with.
    */
   disabled?: boolean;
   /**

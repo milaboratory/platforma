@@ -11,7 +11,7 @@ const data = reactive({
 
 <template>
   <Layout>
-    <div class="example-frame">
+    <div v-if="false" class="example-frame">
       <PlBlockPage>
         <template #title> Block title </template>
         <template #append>
@@ -58,11 +58,21 @@ const data = reactive({
         </PlGrid>
       </PlBlockPage>
     </div>
+    <div class="example-frame" style="height: 600px">
+      <PlBlockPage>
+        <div>111</div>
+        <div>222</div>
+      </PlBlockPage>
+    </div>
   </Layout>
 </template>
 
 <style lang="scss">
 .example-frame {
   border: 1px solid #333;
+
+  .pl-block-page__body {
+    background-color: #eee;
+  }
 }
 </style>
