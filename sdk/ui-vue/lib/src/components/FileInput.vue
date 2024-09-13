@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { MaskIcon, PlBtnSecondary } from '@milaboratory/platforma-uikit';
+import { MaskIcon16, PlBtnSecondary } from '@milaboratory/platforma-uikit';
 import { computed, reactive } from 'vue';
 import type { ImportedFiles } from '../types';
 import type { ImportFileHandle } from '@milaboratory/sdk-ui';
@@ -96,9 +96,9 @@ const clear = () => emit('update:modelValue', undefined);
 <template>
   <div class="file-input">
     <div v-if="modelValue" class="file-input__file">
-      <MaskIcon name="paper-clip" />
+      <MaskIcon16 name="link" />
       <span @click.stop="openFileDialog">{{ fileName }}</span>
-      <MaskIcon name="clear" @click.stop="clear" />
+      <MaskIcon16 name="clear" @click.stop="clear" />
     </div>
     <div v-else class="file-input__select" @dragenter.prevent @dragover.prevent @drop="onDrop">
       {{ placeholder ?? 'Drag & drop file here or' }}

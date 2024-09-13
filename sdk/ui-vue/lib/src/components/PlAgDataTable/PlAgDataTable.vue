@@ -12,7 +12,7 @@ import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { deepClone } from '@milaboratory/helpers';
-import { LineDropdown } from '@milaboratory/platforma-uikit';
+import { PlDropdownLine } from '@milaboratory/platforma-uikit';
 import type { AxisId, PlDataTableState, PTableRecordFilter } from '@milaboratory/sdk-ui';
 import { computed, ref, shallowRef, watch } from 'vue';
 import OverlayLoading from './OverlayLoading.vue';
@@ -197,7 +197,7 @@ const getRowId = (params: GetRowIdParams) => {
 <template>
   <div v-if="settings?.sourceType === 'pframe' && settings.sheets">
     <div v-for="(sheet, i) in settings.sheets" :key="i">
-      <LineDropdown
+      <PlDropdownLine
         :model-value="model?.gridState?.sheets?.[axisIdFn(sheet.axis)] ?? sheet.defaultValue ?? sheet.options[0].value"
         :options="sheet.options"
         style="z-index: 3"
