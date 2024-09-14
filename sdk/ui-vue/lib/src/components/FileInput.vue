@@ -60,7 +60,7 @@ const props = defineProps<{
 const fileName = computed(() => {
   if (props.modelValue) {
     try {
-      return getFilePathFromHandle(props.modelValue as ImportFileHandle);
+      return extractFileName(getFilePathFromHandle(props.modelValue as ImportFileHandle));
     } catch (e) {
       console.error(e);
       return props.modelValue;
@@ -105,5 +105,6 @@ const clear = () => emit('update:modelValue', undefined);
       <PlBtnSecondary @click.stop="openFileDialog">Select file</PlBtnSecondary>
     </div>
   </div>
-  <FileDialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" @import:files="onImport" />
+  <FileDialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle"
+    @import:files="onImport" />
 </template>
