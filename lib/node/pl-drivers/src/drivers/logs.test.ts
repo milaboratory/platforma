@@ -257,7 +257,7 @@ function createRunCommand(
     envs: []
   };
 
-  const runCmdId = tx.createEphemeral({ name: 'RunCommand', version: '1' });
+  const runCmdId = tx.createEphemeral({ name: 'RunCommand/executor', version: '1' });
 
   const setInputValue = (fName: string, rType: ResourceType, data: unknown) => {
     const valResId = tx.createValue(rType, jsonToData(data));
