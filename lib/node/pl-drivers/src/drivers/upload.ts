@@ -89,7 +89,13 @@ export class UploadDriver {
       stopPollingDelay: 1000
     }
   ) {
-    this.uploadQueue = new TaskProcessor(this.logger, 1);
+    this.uploadQueue = new TaskProcessor(this.logger, 1, {
+      type: 'exponentialWithMaxDelayBackoff',
+      initialDelay: 20,
+      maxDelay: 15000, // 15 seconds
+      backoffMultiplier: 1.5,
+      jitter: 0.5
+    });
 
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
@@ -217,7 +223,7 @@ export class UploadDriver {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
           this.getAllNotDoneProgresses().map(
-            async (p) => await p.updateStatus()
+            (p) => (async () => await p.updateStatus())
           )
         );
 
@@ -316,9 +322,9 @@ class ProgressUpdater {
 
       if (
         e.name == 'RpcError' &&
-        (e.code == 'NOT_FOUND' ||
-          e.code == 'ABORTED' ||
-          e.code == 'ALREADY_EXISTS')
+          (e.code == 'NOT_FOUND' ||
+            e.code == 'ABORTED' ||
+            e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.change.markChanged();
@@ -345,17 +351,20 @@ class ProgressUpdater {
       `start to upload blob ${this.res.id}, parts count: ${parts.length}`
     );
 
+    const partUploadFn = (part: bigint) => (async () => {
+      if (this.counter.isZero()) return;
+      await this.clientBlob.partUpload(
+        this.res,
+        this.uploadOpts!.localPath,
+        part,
+        parts.length,
+        BigInt(this.uploadOpts!.modificationTime)
+      );
+    })
+
     await asyncPool(
       this.nConcurrentPartsUpload,
-      parts.map(async (part) => {
-        if (this.counter.isZero()) return;
-        await this.clientBlob.partUpload(
-          this.res,
-          this.uploadOpts!.localPath,
-          part,
-          BigInt(this.uploadOpts!.modificationTime)
-        );
-      })
+      parts.map(partUploadFn),
     );
 
     if (this.counter.isZero()) return;
@@ -392,6 +401,11 @@ class ProgressUpdater {
     } catch (e: any) {
       this.setLastError(e);
 
+      if (e.name == 'RpcError' && (e.code == 'DEADLINE_EXCEEDED')) {
+        this.logger.warn(`deadline exceeded while getting a status of BlobImport`)
+        return;
+      }
+
       if (
         e.name == 'RpcError' &&
         (e.code == 'NOT_FOUND' ||
@@ -399,15 +413,15 @@ class ProgressUpdater {
           e.code == 'ALREADY_EXISTS')
       ) {
         this.logger.warn(
-          `resource was not found while updating a status of BlobIndex: ${e}, ${stringifyWithResourceId(this.res)}`
+          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`
         );
         this.change.markChanged();
         this.setDone(true);
-
         return;
       }
 
-      this.logger.error(`error while updating a status of BlobIndex: ${e}`);
+      this.logger.error(`error while updating a status of BlobImport: ${e}`);
+      this.change.markChanged();
       this.terminateWithError(e);
     }
   }
@@ -426,7 +440,7 @@ export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
   if (res.data == undefined || !('modificationTime' in res.data)) {
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
-        stringifyWithResourceId(res.data)
+      stringifyWithResourceId(res.data)
     );
   }
 

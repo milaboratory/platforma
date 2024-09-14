@@ -11,7 +11,8 @@ import {
   HmacSha256Signer,
   Signer
 } from '@milaboratory/ts-helpers';
-import * as fs from 'node:fs/promises';
+import * as fs from 'node:fs';
+import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratory/pl-client-v2';
@@ -21,6 +22,7 @@ import {
   createUploadBlobClient,
   createUploadProgressClient
 } from '../clients/helpers';
+import { Writable, Readable } from 'node:stream';
 
 test('upload a blob', async () => {
   await withTest(
@@ -83,6 +85,56 @@ test('upload a big blob', async () => {
     }
   );
 });
+
+// unskip if you need to test uploads of big files
+test.skip('upload a very big blob', async () => {
+  await withTest(
+    async ({ client, uploader, signer }: TestArg) => {
+      //       const size = 4 * (1 << 30); // 4 GB
+      //       const anAnswer = Buffer.from(new TextEncoder().encode(`
+      // "Good morning," said Deep Thought at last.
+      // "do you have... er, that is..."
+      // "An answer for you?" interrupted Deep Thought majestically. "Yes. I have."
+      // ...
+      // "Forty-two," said Deep Thought, with infinite majesty and calm.
+      // ...
+      // "We're going to get lynched aren't we?" he whispered.
+      // `));
+      //       const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+      //       const fPath = path.join(tmpDir, 'verybig.txt');
+      //       const fileToWrite = await fsp.open(fPath, 'w')
+
+      //       for (let i = 0; i <= (size / anAnswer.length); i++) {
+      //         await fileToWrite.write(anAnswer)
+      //         if (i % 100 == 0)
+      //           console.log(`wrote ${i/(size / anAnswer.length)}`);
+      //       }
+      //       await fileToWrite.close();
+
+      // const stats = await getFileStats(signer, fPath)
+      const stats = await getFileStats(signer, "/home/bigfile.txt")
+      const uploadId = await createBlobUpload(client, stats);
+      const handleRes = await getHandleField(client, uploadId);
+
+      const c = uploader.getProgressId(handleRes);
+
+      while (true) {
+        const p = await c.getValue();
+        console.log('got progress of a very big blob: ', p);
+
+        expect(p.isUpload).toBeTruthy();
+        if (p.done) {
+          expect(p.isUploadSignMatch).toBeTruthy();
+          expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+
+          return;
+        }
+
+        await c.awaitChange();
+      }
+    }
+  );
+}, 1000000000);
 
 test('upload a blob with wrong modification time', async () => {
   await withTest(
@@ -152,7 +204,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
       createUploadProgressClient(client, logger)
     );
 
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
+    const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
     const n = 100;
 
     const settings: FileStat[] = [];
@@ -160,10 +212,11 @@ test('upload lots of duplicate blobs concurrently', async () => {
       const stat = await writeFile(
         'DuplicateBlobsFileContent', signer, tmpDir, `testUploadABlob_${i}.txt`,
       )
+
       settings.push(stat);
     }
 
-    const { mapId, uploadIds } = await createMapOfUploads(client, n, settings);
+    const { uploadIds } = await createMapOfUploads(client, n, settings);
 
     const handles = await Promise.all(
       uploadIds.map((id) => getHandleField(client, id))
@@ -253,19 +306,19 @@ async function writeFile(
   fileName: string = 'testUploadABlob.txt',
 ): Promise<FileStat> {
   if (tmpDir == undefined)
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
+    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
 
   const fPath = path.join(tmpDir, fileName);
 
   const data = Buffer.from(new TextEncoder().encode(fileContent));
-  await fs.writeFile(fPath, data);
+  await fsp.writeFile(fPath, data);
 
   return await getFileStats(signer, fPath);
 }
 
 async function getFileStats(signer: Signer, fPath: string): Promise<FileStat> {
   const fileSignature = signer.sign(fPath);
-  const stats = await fs.stat(fPath);
+  const stats = await fsp.stat(fPath);
   const mtime = BigInt(Math.floor(stats.mtime.getTime() / 1000));
 
   return { fPath, mtime, fileSignature, size: stats.size };

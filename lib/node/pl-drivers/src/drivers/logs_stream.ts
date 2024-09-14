@@ -296,7 +296,9 @@ export class LogsStreamDriver implements sdk.LogsDriver {
       try {
         await asyncPool(
           this.opts.nConcurrentGetLogs,
-          this.getAllNotDoneLogs().map(async (getter) => await getter.update())
+          this.getAllNotDoneLogs().map(
+            (getter) => (async () => await getter.update()),
+          )
         );
 
         toNotify.forEach((n) => n.resolve());

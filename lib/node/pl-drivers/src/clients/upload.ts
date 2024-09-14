@@ -46,6 +46,7 @@ export class ClientUpload {
     { id, type }: ResourceInfo,
     path: string,
     partNumber: bigint,
+    partsOverall: number,
     expectedMTimeUnix: bigint,
     options?: RpcOptions
   ) {
@@ -80,15 +81,15 @@ export class ClientUpload {
 
     const body = await (await resp.body.blob()).text();
     this.logger.info(
-      `uploaded chunk ${partNumber} of resource: ${id},` +
-        ` response: ${body}, ` +
-        `status code: ${resp.statusCode}, url: ${info.uploadUrl}`
+      `uploaded chunk ${partNumber} from ${partsOverall} of resource: ${id},` +
+        ` response: '${body.toString()}', ` +
+        `status code: ${resp.statusCode}`
     );
 
     if (resp.statusCode != 200) {
       throw new NetworkError(
         `response is not ok, status code: ${resp.statusCode},` +
-          ` body: ${body}, headers: ${resp.headers}`
+          ` body: ${body}, headers: ${resp.headers}, url: ${info.uploadUrl}`, 
       );
     }
 
