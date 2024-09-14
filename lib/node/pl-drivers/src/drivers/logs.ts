@@ -40,7 +40,9 @@ export class LogsDriver implements sdk.LogsDriver {
       return this.logsStreamDriver.getLastLogs(stream, lines, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting last logs: ${e}`);
+        ctx.markUnstable(
+          `NOT_FOUND in logs stream driver while getting last logs: ${e}`
+        );
         return undefined;
       }
       throw e;
@@ -81,7 +83,9 @@ export class LogsDriver implements sdk.LogsDriver {
       return this.logsStreamDriver.getProgressLog(stream, patternToSearch, ctx);
     } catch (e: any) {
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
-        ctx.markUnstable(`NOT_FOUND in logs stream driver while getting a progress log: ${e}`);
+        ctx.markUnstable(
+          `NOT_FOUND in logs stream driver while getting a progress log: ${e}`
+        );
         return undefined;
       }
       throw e;

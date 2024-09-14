@@ -25,31 +25,29 @@ import {
 import { Writable, Readable } from 'node:stream';
 
 test('upload a blob', async () => {
-  await withTest(
-    async ({ client, uploader, signer }: TestArg) => {
-      const stats = await writeFile('42', signer)
-      const uploadId = await createBlobUpload(client, stats);
-      const handleRes = await getHandleField(client, uploadId);
+  await withTest(async ({ client, uploader, signer }: TestArg) => {
+    const stats = await writeFile('42', signer);
+    const uploadId = await createBlobUpload(client, stats);
+    const handleRes = await getHandleField(client, uploadId);
 
-      const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes);
 
-      while (true) {
-        const p = await c.getValue();
+    while (true) {
+      const p = await c.getValue();
 
-        expect(p.isUpload).toBeTruthy();
-        expect(p.isUploadSignMatch).toBeTruthy();
-        if (p.done) {
-          expect(p.lastError).toBeUndefined();
-          expect(p.status?.bytesProcessed).toBe(2);
-          expect(p.status?.bytesTotal).toBe(2);
+      expect(p.isUpload).toBeTruthy();
+      expect(p.isUploadSignMatch).toBeTruthy();
+      if (p.done) {
+        expect(p.lastError).toBeUndefined();
+        expect(p.status?.bytesProcessed).toBe(2);
+        expect(p.status?.bytesTotal).toBe(2);
 
-          return;
-        }
-
-        await c.awaitChange();
+        return;
       }
+
+      await c.awaitChange();
     }
-  );
+  });
 });
 
 test('upload a big blob', async () => {
@@ -59,138 +57,133 @@ test('upload a big blob', async () => {
   }
   const hugeString = lotsOfNumbers.join(' ');
 
-  await withTest(
-    async ({ client, uploader, signer }: TestArg) => {
-      const stats = await writeFile(hugeString, signer)
-      const uploadId = await createBlobUpload(client, stats);
-      const handleRes = await getHandleField(client, uploadId);
+  await withTest(async ({ client, uploader, signer }: TestArg) => {
+    const stats = await writeFile(hugeString, signer);
+    const uploadId = await createBlobUpload(client, stats);
+    const handleRes = await getHandleField(client, uploadId);
 
-      const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes);
 
-      while (true) {
-        const p = await c.getValue();
-        console.log('got progress of big blob: ', p);
+    while (true) {
+      const p = await c.getValue();
+      console.log('got progress of big blob: ', p);
 
-        expect(p.isUpload).toBeTruthy();
-        if (p.done) {
-          expect(p.isUploadSignMatch).toBeTruthy();
-          expect(p.lastError).toBeUndefined();
-          expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+      expect(p.isUpload).toBeTruthy();
+      if (p.done) {
+        expect(p.isUploadSignMatch).toBeTruthy();
+        expect(p.lastError).toBeUndefined();
+        expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
 
-          return;
-        }
-
-        await c.awaitChange();
+        return;
       }
+
+      await c.awaitChange();
     }
-  );
+  });
 });
 
 // unskip if you need to test uploads of big files
 test.skip('upload a very big blob', async () => {
-  await withTest(
-    async ({ client, uploader, signer }: TestArg) => {
-      //       const size = 4 * (1 << 30); // 4 GB
-      //       const anAnswer = Buffer.from(new TextEncoder().encode(`
-      // "Good morning," said Deep Thought at last.
-      // "do you have... er, that is..."
-      // "An answer for you?" interrupted Deep Thought majestically. "Yes. I have."
-      // ...
-      // "Forty-two," said Deep Thought, with infinite majesty and calm.
-      // ...
-      // "We're going to get lynched aren't we?" he whispered.
-      // `));
-      //       const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
-      //       const fPath = path.join(tmpDir, 'verybig.txt');
-      //       const fileToWrite = await fsp.open(fPath, 'w')
+  await withTest(async ({ client, uploader, signer }: TestArg) => {
+    //       const size = 4 * (1 << 30); // 4 GB
+    //       const anAnswer = Buffer.from(new TextEncoder().encode(`
+    // "Good morning," said Deep Thought at last.
+    // "do you have... er, that is..."
+    // "An answer for you?" interrupted Deep Thought majestically. "Yes. I have."
+    // ...
+    // "Forty-two," said Deep Thought, with infinite majesty and calm.
+    // ...
+    // "We're going to get lynched aren't we?" he whispered.
+    // `));
+    //       const tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+    //       const fPath = path.join(tmpDir, 'verybig.txt');
+    //       const fileToWrite = await fsp.open(fPath, 'w')
 
-      //       for (let i = 0; i <= (size / anAnswer.length); i++) {
-      //         await fileToWrite.write(anAnswer)
-      //         if (i % 100 == 0)
-      //           console.log(`wrote ${i/(size / anAnswer.length)}`);
-      //       }
-      //       await fileToWrite.close();
+    //       for (let i = 0; i <= (size / anAnswer.length); i++) {
+    //         await fileToWrite.write(anAnswer)
+    //         if (i % 100 == 0)
+    //           console.log(`wrote ${i/(size / anAnswer.length)}`);
+    //       }
+    //       await fileToWrite.close();
 
-      // const stats = await getFileStats(signer, fPath)
-      const stats = await getFileStats(signer, "/home/bigfile.txt")
-      const uploadId = await createBlobUpload(client, stats);
-      const handleRes = await getHandleField(client, uploadId);
+    // const stats = await getFileStats(signer, fPath)
+    const stats = await getFileStats(
+      signer,
+      '/home/snyssfx/Downloads/Kung Fu Hustle (2004) Open Matte 1080p.mkv'
+    );
+    const uploadId = await createBlobUpload(client, stats);
+    const handleRes = await getHandleField(client, uploadId);
 
-      const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes);
 
-      while (true) {
-        const p = await c.getValue();
-        console.log('got progress of a very big blob: ', p);
+    while (true) {
+      const p = await c.getValue();
+      console.log('got progress of a very big blob: ', p);
 
-        expect(p.isUpload).toBeTruthy();
-        if (p.done) {
-          expect(p.isUploadSignMatch).toBeTruthy();
-          expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+      expect(p.isUpload).toBeTruthy();
+      if (p.done) {
+        expect(p.isUploadSignMatch).toBeTruthy();
+        expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
 
-          return;
-        }
-
-        await c.awaitChange();
+        return;
       }
+
+      await c.awaitChange();
     }
-  );
+  });
 }, 1000000000);
 
 test('upload a blob with wrong modification time', async () => {
-  await withTest(
-    async ({ client, uploader, signer }: TestArg) => {
-      const stats = await writeFile('42', signer)
-      stats.mtime -= 1000n
-      const uploadId = await createBlobUpload(client, stats);
-      const handleRes = await getHandleField(client, uploadId);
+  await withTest(async ({ client, uploader, signer }: TestArg) => {
+    const stats = await writeFile('42', signer);
+    stats.mtime -= 1000n;
+    const uploadId = await createBlobUpload(client, stats);
+    const handleRes = await getHandleField(client, uploadId);
 
-      const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes);
 
-      while (true) {
-        try {
-          await c.getValue();
-        } catch (e: any) {
-          if (String(e).includes('file was modified')) {
-            return
-          };
-          throw e;
+    while (true) {
+      try {
+        await c.getValue();
+      } catch (e: any) {
+        if (String(e).includes('file was modified')) {
+          return;
         }
-
-        await c.awaitChange();
+        throw e;
       }
+
+      await c.awaitChange();
     }
-  );
+  });
 });
 
 test('upload a duplicate blob', async () => {
-  await withTest(
-    async ({ client, uploader, signer }: TestArg) => {
-      const stats = await writeFile('42', signer)
-      const uploadId = await createBlobUpload(client, stats);
-      const handleRes = await getHandleField(client, uploadId);
+  await withTest(async ({ client, uploader, signer }: TestArg) => {
+    const stats = await writeFile('42', signer);
+    const uploadId = await createBlobUpload(client, stats);
+    const handleRes = await getHandleField(client, uploadId);
 
-      const cOrig = uploader.getProgressId(handleRes);
-      const cDupl = uploader.getProgressId(handleRes);
+    const cOrig = uploader.getProgressId(handleRes);
+    const cDupl = uploader.getProgressId(handleRes);
 
-      while (true) {
-        const pOrig = await cOrig.getValue();
-        const pDupl = await cDupl.getValue();
+    while (true) {
+      const pOrig = await cOrig.getValue();
+      const pDupl = await cDupl.getValue();
 
-        expect(pDupl).toStrictEqual(pOrig);
-        expect(pDupl.isUpload).toBeTruthy();
-        if (pDupl.done) {
-          expect(pDupl.isUploadSignMatch).toBeTruthy();
-          expect(pDupl.lastError).toBeUndefined();
-          expect(pDupl.status?.bytesProcessed).toBe(2);
-          expect(pDupl.status?.bytesTotal).toBe(2);
+      expect(pDupl).toStrictEqual(pOrig);
+      expect(pDupl.isUpload).toBeTruthy();
+      if (pDupl.done) {
+        expect(pDupl.isUploadSignMatch).toBeTruthy();
+        expect(pDupl.lastError).toBeUndefined();
+        expect(pDupl.status?.bytesProcessed).toBe(2);
+        expect(pDupl.status?.bytesTotal).toBe(2);
 
-          return;
-        }
-
-        await cDupl.awaitChange();
+        return;
       }
+
+      await cDupl.awaitChange();
     }
-  );
+  });
 });
 
 test('upload lots of duplicate blobs concurrently', async () => {
@@ -210,8 +203,11 @@ test('upload lots of duplicate blobs concurrently', async () => {
     const settings: FileStat[] = [];
     for (let i = 0; i < n; i++) {
       const stat = await writeFile(
-        'DuplicateBlobsFileContent', signer, tmpDir, `testUploadABlob_${i}.txt`,
-      )
+        'DuplicateBlobsFileContent',
+        signer,
+        tmpDir,
+        `testUploadABlob_${i}.txt`
+      );
 
       settings.push(stat);
     }
@@ -303,7 +299,7 @@ async function writeFile(
   fileContent: string,
   signer: Signer,
   tmpDir?: string,
-  fileName: string = 'testUploadABlob.txt',
+  fileName: string = 'testUploadABlob.txt'
 ): Promise<FileStat> {
   if (tmpDir == undefined)
     tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
@@ -360,7 +356,8 @@ async function createMapOfUploads(
 }
 
 async function createBlobUpload(
-  c: PlClient, stat: FileStat,
+  c: PlClient,
+  stat: FileStat
 ): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
@@ -381,7 +378,8 @@ async function createBlobUpload(
 }
 
 async function createBlobUploadTx(
-  tx: PlTransaction, stat: FileStat,
+  tx: PlTransaction,
+  stat: FileStat
 ): Promise<ResourceId> {
   const settings = {
     modificationTime: stat.mtime.toString(),

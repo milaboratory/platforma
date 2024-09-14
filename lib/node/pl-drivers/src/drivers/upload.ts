@@ -19,7 +19,12 @@ import {
 } from '@milaboratory/ts-helpers';
 import * as sdk from '@milaboratory/sdk-model';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
-import { ClientUpload, MTimeError, UnexpectedEOF } from '../clients/upload';
+import {
+  ClientUpload,
+  MTimeError,
+  NoFileForUploading,
+  UnexpectedEOF
+} from '../clients/upload';
 import {
   InferSnapshot,
   isPlTreeEntry,
@@ -168,8 +173,7 @@ export class UploadDriver {
     if (newValue.progress.isUpload && newValue.progress.isUploadSignMatch)
       this.uploadQueue.push({
         fn: () => newValue.uploadBlobTask(),
-        recoverableErrorPredicate: (e) =>
-          !(e instanceof MTimeError || e instanceof UnexpectedEOF)
+        recoverableErrorPredicate: (e) => !nonRecoverableError(e)
       });
 
     return newValue.mustGetProgress(blobExists);
@@ -223,7 +227,7 @@ export class UploadDriver {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
           this.getAllNotDoneProgresses().map(
-            (p) => (async () => await p.updateStatus())
+            (p) => async () => await p.updateStatus()
           )
         );
 
@@ -320,12 +324,7 @@ class ProgressUpdater {
     } catch (e: any) {
       this.setLastError(e);
 
-      if (
-        e.name == 'RpcError' &&
-          (e.code == 'NOT_FOUND' ||
-            e.code == 'ABORTED' ||
-            e.code == 'ALREADY_EXISTS')
-      ) {
+      if (isResourceWasDeletedError(e)) {
         this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
         this.change.markChanged();
         this.setDone(true);
@@ -336,7 +335,7 @@ class ProgressUpdater {
       this.logger.error(`error while uploading a blob: ${e}`);
       this.change.markChanged();
 
-      if (e instanceof MTimeError) this.terminateWithError(e);
+      if (nonRecoverableError(e)) this.terminateWithError(e);
 
       throw e;
     }
@@ -351,7 +350,7 @@ class ProgressUpdater {
       `start to upload blob ${this.res.id}, parts count: ${parts.length}`
     );
 
-    const partUploadFn = (part: bigint) => (async () => {
+    const partUploadFn = (part: bigint) => async () => {
       if (this.counter.isZero()) return;
       await this.clientBlob.partUpload(
         this.res,
@@ -360,12 +359,9 @@ class ProgressUpdater {
         parts.length,
         BigInt(this.uploadOpts!.modificationTime)
       );
-    })
+    };
 
-    await asyncPool(
-      this.nConcurrentPartsUpload,
-      parts.map(partUploadFn),
-    );
+    await asyncPool(this.nConcurrentPartsUpload, parts.map(partUploadFn));
 
     if (this.counter.isZero()) return;
     await this.clientBlob.finalizeUpload(this.res);
@@ -401,17 +397,14 @@ class ProgressUpdater {
     } catch (e: any) {
       this.setLastError(e);
 
-      if (e.name == 'RpcError' && (e.code == 'DEADLINE_EXCEEDED')) {
-        this.logger.warn(`deadline exceeded while getting a status of BlobImport`)
+      if (e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') {
+        this.logger.warn(
+          `deadline exceeded while getting a status of BlobImport`
+        );
         return;
       }
 
-      if (
-        e.name == 'RpcError' &&
-        (e.code == 'NOT_FOUND' ||
-          e.code == 'ABORTED' ||
-          e.code == 'ALREADY_EXISTS')
-      ) {
+      if (isResourceWasDeletedError(e)) {
         this.logger.warn(
           `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`
         );
@@ -440,7 +433,7 @@ export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
   if (res.data == undefined || !('modificationTime' in res.data)) {
     throw new Error(
       'no upload options in BlobUpload resource data: ' +
-      stringifyWithResourceId(res.data)
+        stringifyWithResourceId(res.data)
     );
   }
 
@@ -483,6 +476,21 @@ function isSignMatch(signer: Signer, path: string, signature: string): boolean {
   } catch (e) {
     return false;
   }
+}
+
+function nonRecoverableError(e: any) {
+  return (
+    e instanceof MTimeError ||
+    e instanceof UnexpectedEOF ||
+    e instanceof NoFileForUploading
+  );
+}
+
+function isResourceWasDeletedError(e: any) {
+  return (
+    e.name == 'RpcError' &&
+    (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
+  );
 }
 
 type ScheduledRefresh = {

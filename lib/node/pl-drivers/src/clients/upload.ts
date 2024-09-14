@@ -14,6 +14,8 @@ export class UnexpectedEOF extends Error {}
 
 export class NetworkError extends Error {}
 
+export class NoFileForUploading extends Error {}
+
 /** Low-level client for grpc uploadapi.
  * The user should pass here a concrete BlobUpload/<storageId> resource,
  * it can be got from handle field of BlobUpload. */
@@ -89,7 +91,7 @@ export class ClientUpload {
     if (resp.statusCode != 200) {
       throw new NetworkError(
         `response is not ok, status code: ${resp.statusCode},` +
-          ` body: ${body}, headers: ${resp.headers}, url: ${info.uploadUrl}`, 
+          ` body: ${body}, headers: ${resp.headers}, url: ${info.uploadUrl}`
       );
     }
 
@@ -131,6 +133,10 @@ export class ClientUpload {
         chunk: b.subarray(0, bytesRead),
         mTime: BigInt(Math.floor(stat.mtimeMs / 1000))
       };
+    } catch (e: any) {
+      if (e.code == 'ENOENT')
+        throw new NoFileForUploading(`there is no file ${path} for uploading`);
+      throw e;
     } finally {
       f?.close();
     }

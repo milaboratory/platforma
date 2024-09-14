@@ -74,7 +74,9 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     ctx.addOnDestroy(() => this.releaseLastLogs(r.id, callerId));
 
     const result = this.getLastLogsNoCtx(ctx.watcher, r, lines, callerId);
-    ctx.markUnstable('The logs are from stream, so we consider them unstable. Final values will be got from blobs.');
+    ctx.markUnstable(
+      'The logs are from stream, so we consider them unstable. Final values will be got from blobs.'
+    );
 
     return result;
   }
@@ -134,7 +136,9 @@ export class LogsStreamDriver implements sdk.LogsDriver {
       callerId
     );
 
-    ctx.markUnstable('The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.');
+    ctx.markUnstable(
+      'The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.'
+    );
 
     return result;
   }
@@ -297,7 +301,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         await asyncPool(
           this.opts.nConcurrentGetLogs,
           this.getAllNotDoneLogs().map(
-            (getter) => (async () => await getter.update()),
+            (getter) => async () => await getter.update()
           )
         );
 

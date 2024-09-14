@@ -90,7 +90,9 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
 
     const result = this.getPathNoCtx(url, ctx.watcher, callerId);
     if (result?.path === undefined)
-      ctx.markUnstable(`a path to the downloaded and untared archive might be undefined. The current result: ${result}` );
+      ctx.markUnstable(
+        `a path to the downloaded and untared archive might be undefined. The current result: ${result}`
+      );
 
     return result;
   }

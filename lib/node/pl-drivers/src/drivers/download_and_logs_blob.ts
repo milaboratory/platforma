@@ -359,7 +359,9 @@ export class DownloadDriver implements BlobDriver {
       callerId
     );
     if (result === undefined)
-      ctx.markUnstable('either a file was not downloaded or a progress log was not read');
+      ctx.markUnstable(
+        'either a file was not downloaded or a progress log was not read'
+      );
 
     return result;
   }
@@ -471,7 +473,7 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-            `from cache along with ${toDelete.map((d) => d.path)}`
+              `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );
@@ -676,7 +678,8 @@ export class Download {
         e instanceof DownloadAborted ||
         e instanceof NetworkError400 ||
         e instanceof UnknownStorageError ||
-        e instanceof WrongLocalFileUrl
+        e instanceof WrongLocalFileUrl ||
+        e.code == 'ENOENT' // file that we downloads from was moved or deleted.
       ) {
         this.setError(e);
         // Just in case we were half-way extracting an archive.
