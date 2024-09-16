@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package MiLaboratories.PL.RTypes;
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
+
+message Number {
+  oneof value {
+    int32 int32 = 1;
+    uint32 uint32 = 2;
+
+    int64 int64 = 3;
+    uint64 uint64 = 4;
+
+    float float = 5;
+    double double = 6;
+  }
+}
+
+message ControllerSettings {
+  string type = 1;
+}
+
+message SubscriptionSettings {
+  bool blocking = 1;
+
+  // FIXME: drop this hack once we allow Data in Structural resources
+  uint64 randomizer = 2; // dirty hack that makes subscription settings resources unique
+}
+
+message NotificationFilter {
+  oneof resource_filter {
+    Base.ResourceType resource_type = 1;
+    uint64 resource_id = 7;
+  }
+
+  message EventFilter {
+    optional bool all = 1;
+
+    //
+    // Resource events
+    //
+
+    optional bool resource_created = 2;
+    optional bool resource_deleted = 3;
+
+    optional bool resource_ready = 5;
+    optional bool resource_duplicate = 6;
+    optional bool resource_error = 16;
+
+    //
+    // Field events
+    //
+    optional bool inputs_locked = 13;
+    optional bool outputs_locked = 14;
+
+    optional bool field_created = 12;
+    optional bool field_got_error = 17;
+
+    optional bool input_set = 7;
+    optional bool all_inputs_set = 8;
+
+    optional bool output_set = 9;
+    optional bool all_outputs_set = 10;
+
+    optional bool generic_otw_set = 15;
+    optional bool dynamic_changed = 11;
+
+    // next free 18;
+  }
+
+  message Payload {
+    map<string, bytes> values = 1;
+  }
+
+  EventFilter event_filter = 8;
+  Payload payload = 9;
+}

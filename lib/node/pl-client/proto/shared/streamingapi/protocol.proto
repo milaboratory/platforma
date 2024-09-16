@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package MiLaboratories.Controller.Shared;
+
+option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/streamingapi;streamingapi";
+
+//
+// Streaming provides access to online data stream from item in storage. Whenever item is appended with data,
+// the caller receives this fresh data in stream from server.
+//
+service Streaming {
+  // StreamBinary provides stream of binary file. Each response message keeps
+  // one single chunk of binary data from data source. See StreamingAPI.Binary message
+  // for more info on available options.
+  rpc StreamBinary(StreamingAPI.StreamBinary) returns (stream StreamingAPI.Response) {}
+
+  // ReadBinary allows to read remote item in chunks using stream-like API.
+  // The difference to StreamBinary is that the client receives single response for each 
+  // call and has to send new calls to the server to get fresh data from remote item.
+  // Each response (each chunk from server) keeps not more than 3.9MiB of data.
+  rpc ReadBinary(StreamingAPI.ReadBinary) returns (StreamingAPI.Response) {}
+
+  // StreamText provides stream of textual file, splitting the data by newline symbol.
+  // Each response message keeps one single line of text from data source.
+  rpc StreamText(StreamingAPI.StreamText) returns (stream StreamingAPI.Response) {}
+
+  // ReadBinary allows to read remote item in chunks using stream-like API.
+  // The difference to StreamBinary is that the client receives single response for each 
+  // call and has to send new calls to the server to get fresh data from remote item.
+  // Each response (each chunk from server) keeps not more than 3.9MiB of data.
+  rpc ReadText(StreamingAPI.ReadText) returns (StreamingAPI.Response) {}
+
+  // LastLines provides single message with the last lines from data source.
+  // When search pattern is specified, the last lines matching the given pattern are returned.
+  // The lines are returned in reversed order, as server reads data source from the end.
+  // Consider it as equivalent to 'tac <file> | grep <search> | head -n <line_count>'
+  // The <new_offset> returned in the response points to the _beginning_ of the last 
+  // line found, so client can continue reading the file backwards in subsequent calls.
+  // This means, that use of this <new_offset> in ReadText() will return you the same line
+  // returned last in LastLines() data.
+  rpc LastLines(StreamingAPI.LastLines) returns (StreamingAPI.Response) {}
+}
+
+message StreamingAPI {
+  message StreamBinary {
+    // <resource_id> of Stream resource, that keeps info on item to be streamed.
+    uint64 resource_id = 1;
+
+    // <offset> makes streamer to perform seek operation to given offset before sending the data.
+    int64 offset = 2;
+
+    // <chunk_size> limits the maximum size of <data> for each response message in stream.
+    //
+    // Default value: 32 768 (32 KiB)
+    // Max value: 3900 * 1024 (3.9 MiB)
+    optional uint32 chunk_size = 11;
+
+    // <read_limit> allows client to limit total data sent from server.
+    // This limit is aggregation of all data, sent in all chunks.
+    // E.g. to read 2000 bytes of data in chunks of at most
+    // 130 bytes, use <chunk_size> = 130; <read_limit> = 2000.
+    // For storage item of appropriate size this settings will result in
+    // 16 messages from server: 15 of 130 bytes and one of 50 bytes.
+    optional int64 read_limit = 20;
+  }
+
+  message ReadBinary {
+    // <resource_id> of Stream resource, that keeps info on item to be streamed.
+    uint64 resource_id = 1;
+
+    // <offset> makes streamer to perform seek operation to given offset before sending the data.
+    int64 offset = 2;
+
+    // <chunk_size> limits the maximum size of <data> for response message in stream.
+    //
+    // Default value: 32 768 (32 KiB)
+    // Max value: 3900 * 1024 (3.9 MiB)
+    optional uint32 chunk_size = 11;
+  }
+
+  message StreamText {
+    // <resource_id> of Stream resource, that keeps info on item to be streamed.
+    uint64 resource_id = 1;
+
+    // <offset> makes streamer to perform seek operation to given offset before sending the contents.
+    // This offset is taken in BYTES, as it eases streaming recovery after client reconnection or controller restart.
+    // Client can just use the <new_offset> value of the last response from server to continue streaming after reconnection.
+    int64 offset = 2;
+
+    // <read_limit> allows client to limit total data sent from server.
+    // This limit is aggregation of all data, sent in all chunks, measured 
+    // in lines of text.
+    // E.g. to read top 1000 lines from stream source, use <read_limit> = 1000.
+    // When both <read_limit> and <search>/<search_re> are set, the <read_limit> is applied first.
+    // this is equivalent to 'head -n <read_limit> | grep <search>'.
+    optional int64 read_limit = 20;
+
+    // <search> is substring for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // have given substring.
+    optional string search = 21;
+
+    // <search_re> is regular expression for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // match given regular expression.
+    optional string search_re = 22;
+  }
+
+  message ReadText {
+    // <resource_id> of Stream resource, that keeps info on item to be streamed.
+    uint64 resource_id = 1;
+
+    // <offset> makes streamer to perform seek operation to given offset before sending the contents.
+    // This offset is taken in BYTES, as it eases streaming recovery after client reconnection or controller restart.
+    // Client can just use the <new_offset> value of the last response from server to continue streaming after reconnection.
+    int64 offset = 2;
+
+    // <read_limit> allows client to limit total data sent from server.
+    // Measured in lines of text.
+    // E.g. to read top 1000 lines from stream source, use <read_limit> = 1000.
+    // When both <read_limit> and <search>/<search_re> are set, the <read_limit> is applied first.
+    // this is equivalent to 'head -n <read_limit> | grep <search>'.
+    // At most 3.9 MiB (3900 * 1024 KiB) of data is returned in single read regardless of <read_limit> option
+    // Only full lines of text are returned except for the last line from the completed source
+    // (the one that is not expected to have new data, like blob in storage)
+    optional int64 read_limit = 20;
+
+    // <search> is substring for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // have given substring.
+    optional string search = 21;
+
+    // <search_re> is regular expression for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // match given regular expression.
+    optional string search_re = 22;
+  }
+
+  message LastLines {
+    // <resource_id> of Stream resource, that keeps info on item to be streamed.
+    uint64 resource_id = 1;
+
+    // <offset> makes streamer to perform seek operation to given offset before sending the contents.
+    // This offset is taken in BYTES, as it eases streaming recovery after client reconnection or controller restart.
+    // By default, LastLines starts to treat the data source from the very last byte available in data stream 
+    // at the moment of call, but client can set the server to start from earlier position.
+    optional int64 offset = 2;
+
+    // <line_count> makes streamer to return up to <line_count> lines to the client.
+    // Default value: 1
+    optional int32 line_count = 3;
+
+    // <search> is substring for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // have given substring.
+    optional string search = 21;
+
+    // <search_re> is regular expression for line search pattern.
+    // This option makes controller to send to the client only lines, that
+    // match given regular expression.
+    optional string search_re = 22;
+  }
+
+  message Response {
+    // data chunk from item, starting from the <new_offset> of the previous message in the same stream.
+    bytes data = 1;
+
+    // <size> is the actual size of the streamed item at the moment of this message.
+    // This might be not a final amount of streamed data, as stream source can be updated 
+    // by other independent process (e.g., data is written to log file).
+    // This field in combination with <new_offset> shows, how far the client is from the end
+    // of the data right now.
+    uint64 size = 2;
+
+    // <new_offset> is the new offset in bytes from the start of the streamed item,
+    // including size of <data> in current response.
+    // Call to Stream rpc with <offset> = <new_offset> will continue
+    // streaming from the place of last received message
+    // (e.g. <offset> = <new_offset> - 1 will repeat the last byte of
+    // previously received <data>)
+    uint64 new_offset = 3;
+  }
+}

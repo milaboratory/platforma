@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package MiLaboratories.PL.API;
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+import "google/protobuf/timestamp.proto";
+
+import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
+import "github.com/milaboratory/pl/plapi/plapiproto/resource_types.proto";
+
+message Tx {
+  bool is_valid = 1;
+  uint64 id = 2;
+}
+
+message Resource {
+  enum Kind {
+    KIND_INVALID = 0;
+    KIND_STRUCTURAL = 1;
+    KIND_VALUE = 2;
+  }
+
+  uint64 id = 2;
+  Kind kind = 3;
+  Base.ResourceType type = 4;
+  bytes data = 5;
+
+  repeated Field fields = 6;
+
+  // Resource has at least one field with error
+  bool has_errors = 7;
+  bool inputs_locked = 8;
+  bool outputs_locked = 9;
+  bool resource_ready = 14;
+  bool is_final = 15;
+
+  uint64 original_resource_id = 10;
+  uint64 parent_resource_id = 11;
+
+  google.protobuf.Timestamp created_time = 12;
+  google.protobuf.Timestamp deleted_time = 13;
+}
+
+message Field {
+  // field ID is always combination of parent resource ID and field name
+  Base.FieldRef id = 1;
+  Base.FieldType type = 2;
+
+  // _resolved_ value of field or _assigned_ if the field was assigned to a resource.
+  // If field refers to another field, it will get
+  // value only when this chain of references ends up with direct resource
+  // reference. At that moment all fields in the chain will get their values
+  // resolved and will start to refer to the same resource directly.
+  uint64 value = 5;
+
+  enum ValueStatus {
+    INVALID = 0;
+    EMPTY = 1;
+    ASSIGNED = 2;
+    RESOLVED = 3;
+  }
+
+  // If the value was empty, assigned or finally resolved.
+  ValueStatus value_status = 7;
+
+  // If the value is in its final state (ready, duplicate or error)
+  bool value_is_final = 8;
+
+  // Resource error resource id if any.
+  // Is intended to report problems _from_ platform to client.
+  uint64 error = 6;
+}
+
+message Notification {
+  message Events {
+    bool resource_created = 1;
+    bool resource_deleted = 2;
+
+    bool resource_ready = 4;
+    bool resource_duplicate = 5;
+    bool resource_error = 15;
+
+    bool inputs_locked = 12;
+    bool outputs_locked = 13;
+
+    bool field_created = 11;
+    bool field_got_error = 16;
+    bool input_set = 6;
+    bool all_inputs_set = 7;
+    bool output_set = 8;
+    bool all_outputs_set = 9;
+
+    bool generic_otw_set = 14;
+    bool dynamic_changed = 10;
+
+    // next free: 17;
+  }
+
+  message FieldChange {
+    Field old = 1;
+    Field new = 2;
+  }
+
+  uint64 subscription_id = 1;
+  uint64 event_id = 2;
+
+  uint64 resource_id = 3;
+  Base.ResourceType resource_type = 4;
+
+  Events events = 5;
+  map<string, FieldChange> field_changes = 6;
+
+  RTypes.NotificationFilter.Payload payload = 7;
+  string filter_name = 8;
+
+  SpanInfo tx_span = 9;
+}
+
+message SpanInfo {
+  string path = 1;
+  map<string, string> carrier = 2;
+}
+
+message Subscription {
+  uint64 id = 1;
+  bool blocking = 3;
+}
+
+message Controller {
+  string type = 1;
+  uint64 id = 2;
+  uint64 subscriptionID = 3;
+}
+
+message ResourceSchema {
+  Base.ResourceType type = 1;
+
+  repeated FieldSchema fields = 2;
+}
+
+message FieldSchema {
+  Base.FieldType type = 1;
+  string name = 2;
+}
+
+message ResourceAPIFeature {
+  string controller_type = 1;
+  string feature_name = 2;
+  Base.ResourceType resource_type = 3;
+  string endpoint = 4;
+}
