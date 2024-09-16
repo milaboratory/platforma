@@ -1,0 +1,39 @@
+ll := import(":ll")
+smart := import(":smart")
+
+assert := func(got, want) {
+	ll.assert(got == want, "got: %#v, want: %#v", got, want)
+}
+
+TestHasReferencedValues := func() {
+	assert(smart._hasReferenceValues({
+		a: 5,
+		b: [1, 2, 3, smart.resource(5)]
+	}), true)
+
+	assert(smart._hasReferenceValues({
+		a: 5,
+		b: { c: 2, d: smart.resource(5) }
+	}), true)
+
+}
+
+TestCacheMap := func() {
+	state := {}
+	cache := smart._cacheMap(func() { return state })
+
+	m := immutable({ a: 1, b: 2 })
+
+	// assert that the map can be found by reference
+	cache.set(m, 42)
+	assert(cache.get(m), 42)
+
+	// assert that the map will be found by value
+	assert(cache.get(immutable({ a: 1, b: 2 })), 42)
+
+	// assert that non-immutable maps will be found by value as well
+	assert(cache.get({ a: 1, b: 2 }), 42)
+
+	// assert that nothing will be found for another map
+	assert(cache.get({ a: 2, b: 1 }), undefined)
+}

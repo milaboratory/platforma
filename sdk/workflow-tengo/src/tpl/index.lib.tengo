@@ -127,6 +127,19 @@ tpl := func() {
 			self._unmarshallers = append(self._unmarshallers, preproc)
 		},
 
+		_onBodyEnd: [],
+
+		/**
+		 * Register a hook that will be executed before exiting from a body.
+		 * This hook can close or finalize resources etc.
+		 *
+		 * @param fn: func() - the hook that should be executed before the end of the body.
+		 */
+		registerOnBodyEnd: func(fn) {
+			ll.assert(is_callable(fn), "fn in on body end hooks must be a function")
+			self._onBodyEnd = append(self._onBodyEnd, fn)
+		},
+
 		/**
 		 * @return map[string]field: - a map of inputs to the fields of the input map.
 		 */
@@ -355,11 +368,13 @@ tpl := func() {
 		 */
 		body: func(bodyFn){
 			if self.isEphemeral() {
-
 				self.routeEph(bodyFn)
 			} else {
-
 				self.routePure(bodyFn)
+			}
+
+			for _, fn in self._onBodyEnd {
+				fn()
 			}
 		},
 
@@ -499,6 +514,9 @@ tpl := func() {
  * Singleton instance of this resource
  */
 instance := tpl()
+
+// close the cache at the end of the body execution
+instance.registerOnBodyEnd(smart.cacheMap().close)
 
 export ll.toStrict({
 	renderer                : instance.renderer,

@@ -32,7 +32,7 @@
   "devDependencies": {
     "prettier": "^3.3.3",
     "@types/node": "^20.16.3",
-    "@milaboratory/tengo-template-builder": "^1.14.2",
+    "@milaboratory/tengo-template-builder": "^1.14.3",
     "@milaboratory/pl-middle-layer": "^1.10.2",
     "@milaboratory/sdk-test": "^1.5.3",
     "@milaboratory/small-binaries": "^1.10.1",

@@ -1,0 +1,18 @@
+// map was referenced by field.
+
+smart := import(":smart")
+self := import(":tpl")
+ll := import(":ll")
+
+self.defineOutputs(["outputMap", "outputFromCache", "outputField"])
+
+self.body(func(inputs) {
+	res := inputs.mapResource
+	cachedRes := smart.cacheMap().get(res)
+
+	return {
+		outputMap: res,
+		outputFromCache: cachedRes,
+		outputField: cachedRes.gotFromField()
+	}
+})

@@ -1,0 +1,19 @@
+// resource was referenced by field.
+
+self := import(":tpl")
+smart := import(":smart")
+ll := import(":ll")
+
+self.defineOutputs(["outputRes", "outputField"])
+
+// In the body, res from inputs will be created
+// with a reference to a field it was got from.
+self.body(func(inputs) {
+	res := inputs.res
+
+	// outputRes should set the field.
+	return {
+		outputRes: res,
+		outputField: res.gotFromField()
+	}
+})
