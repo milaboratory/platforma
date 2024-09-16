@@ -58,7 +58,7 @@ awaitOneState := func(field, path, state) {
 				}
 			}
 			return awaitOneState(nextField, rPath, state)
-		} else if is_map(step) {
+		} else if ll.isMap(step) {
 			if is_undefined(step.wildcard) == is_undefined(step.match) {
 				ll.panic("Unknown step structure: %v", step)
 			}
@@ -67,7 +67,7 @@ awaitOneState := func(field, path, state) {
 
 			if !is_undefined(step.wildcard) {
 				if step.wildcard != "*" {
-					ll.panic("Complex wildcards are not supported, use { match: \"{regexp}\" }: %v", step.wildcard)
+					ll.panic("Complex wildcards are not supported, use { match: \"{ regexp }\" }: %v", step.wildcard)
 				}
 				matcher = func(field) {
 					return true
@@ -204,7 +204,7 @@ await := func(rootField, ctxStorageResource, requests) {
 	}
 
 	for _, request in requests {
-		if !is_map(request) || !is_array(request.path) || !is_string(request.state) {
+		if !ll.isMap(request) || !ll.isArray(request.path) || !is_string(request.state) {
 			ll.panic("Malformed state await request: %v", request)
 		}
 		res := awaitOneState(rootField, request.path, request.state)

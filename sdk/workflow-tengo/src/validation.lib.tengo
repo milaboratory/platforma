@@ -192,7 +192,7 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	// if the schema is an array with "or" at the beginning,
 	// we should check if the element is succeed with
 	// any of the following elements.
-	if is_array(schema) && len(schema) > 0 && schema[0] == "or" {
+	if ll.isArray(schema) && len(schema) > 0 && schema[0] == "or" {
 		for i, elem in schema[1:] {
 			r := _validateJson(js, elem, keyPath, stack...)
 			if isSuccess(r) {
@@ -206,8 +206,8 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	// if the schema is an array, then check that every
 	// element of the json has the schema that is the first element
 	// of the schema.
-	if is_array(schema) {
-		if !is_array(js) {
+	if ll.isArray(schema) {
+		if !ll.isArray(js) {
 			return fail(keyPath, "js %q must be array", js)
 		}
 
