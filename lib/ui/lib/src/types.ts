@@ -49,6 +49,8 @@ export const maskIcons16 = [
 
 export type MaskIconName16 = (typeof maskIcons16)[number];
 
-// @todo MaskIcons24
+export const maskIcons24 = ['paper-clip', 'cloud-up', 'success', 'restart'];
+
+export type MaskIconName24 = (typeof maskIcons24)[number];
 
 export type SliderMode = 'input' | 'text';

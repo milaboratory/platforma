@@ -47,6 +47,7 @@ import DropdownListItem from './components/DropdownListItem.vue';
 
 // @TODO review
 import MaskIcon16 from './components/MaskIcon16.vue';
+import MaskIcon24 from './components/MaskIcon24.vue';
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
 import { showContextMenu } from './components/contextMenu/index.ts';
@@ -83,7 +84,7 @@ import { allCssVariables } from './demo-site-data/all-css-variables.ts';
 
 export type * from './types';
 
-export { maskIcons16 } from './types';
+export { maskIcons16, maskIcons24 } from './types';
 
 export * from './helpers/dom';
 
@@ -95,7 +96,7 @@ import FileBaseInput from './components/FileBaseInput.vue';
 /**
  * @TODO review
  */
-export { FileBaseInput, ThemeSwitcher, DropdownListItem, MaskIcon16, GridTable, DataTable, ContextProvider, Slider };
+export { FileBaseInput, ThemeSwitcher, DropdownListItem, MaskIcon16, MaskIcon24, GridTable, DataTable, ContextProvider, Slider };
 
 // Helpers
 export { showContextMenu };

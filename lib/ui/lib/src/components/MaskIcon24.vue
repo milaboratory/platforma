@@ -9,7 +9,7 @@ const props = defineProps<{
 
 const style = computed(() => (props.size === 'large' ? '--mask-size: 24px' : ''));
 
-const className = computed(() => `mask-16 mask-${props.name}`);
+const className = computed(() => `mask-24 mask-${props.name}`);
 </script>
 
 <template>
