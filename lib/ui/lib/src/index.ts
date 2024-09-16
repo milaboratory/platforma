@@ -71,6 +71,8 @@ export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 
+
+
 //for new version
 import LongText from './components/LongText.vue';
 import SliderRangeTriple from './components/SliderRangeTriple.vue';
@@ -92,6 +94,7 @@ export * from './helpers/utils';
 
 // @TODO
 import FileBaseInput from './components/FileBaseInput.vue';
+export { useLabelNotch } from './utils/useLabelNotch.ts';
 
 /**
  * @TODO review
