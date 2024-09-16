@@ -97,8 +97,7 @@ const query = (handle: StorageHandle, dirPath: string) => {
       }
 
       data.items = notEmpty(res)
-        .entries.map((item, id) => ({
-          id,
+        .entries.map((item) => ({
           path: item.fullPath,
           name: item.name,
           isDir: item.type === 'dir',
@@ -111,7 +110,10 @@ const query = (handle: StorageHandle, dirPath: string) => {
           if (!a.isDir && b.isDir) return 1;
           // localeCompare for unicode alphabets
           return a.name.localeCompare(b.name);
-        });
+        })
+        .map((it, id) => ({ id, ...it }));
+
+      data.lastSelected = undefined;
     })
     .catch((err) => (data.error = String(err)))
     .finally(() => {
