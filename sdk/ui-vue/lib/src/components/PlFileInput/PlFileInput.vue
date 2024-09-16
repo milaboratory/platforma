@@ -9,6 +9,7 @@ import FileDialog from '../FileDialog.vue';
 import DoubleContour from './DoubleContour.vue';
 import { useLabelNotch } from '@milaboratory/platforma-uikit';
 import { prettyBytes } from '@milaboratory/helpers';
+import { extractFileName } from './utils';
 
 const data = reactive({
   fileDialogOpen: false,
@@ -62,6 +63,10 @@ const props = withDefaults(
      * A helper text to display below the input field when there are no errors.
      */
     helper?: string;
+    /**
+     * If `true`, only the file name is displayed, not the full path to it.
+     */
+    showFilenameOnly?: boolean;
   }>(),
   {
     label: undefined,
@@ -77,7 +82,8 @@ const props = withDefaults(
 const fileName = computed(() => {
   if (props.modelValue) {
     try {
-      return getFilePathFromHandle(props.modelValue as ImportFileHandle).trim();
+      const filePath = getFilePathFromHandle(props.modelValue as ImportFileHandle).trim();
+      return props.showFilenameOnly ? extractFileName(filePath) : filePath;
     } catch (e) {
       console.error(e);
       return props.modelValue;
