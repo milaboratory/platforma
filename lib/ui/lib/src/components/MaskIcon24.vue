@@ -1,17 +1,15 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { MaskIconName16, Size } from '@/types';
+import type { MaskIconName24, Size } from '@/types';
 
 const props = defineProps<{
-  name: MaskIconName16;
+  name: MaskIconName24;
   size?: Size;
 }>();
-
-const style = computed(() => (props.size === 'large' ? '--mask-size: 24px' : ''));
 
 const className = computed(() => `mask-24 mask-${props.name}`);
 </script>
 
 <template>
-  <i :style="style" :class="className" />
+  <i :class="className" />
 </template>
