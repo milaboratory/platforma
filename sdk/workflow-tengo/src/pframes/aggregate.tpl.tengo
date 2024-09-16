@@ -25,7 +25,7 @@ self.body(func(inputs) {
 		ll.panic("Params is not defined")
 	}
 
-	if !is_map(params) {
+	if !ll.isMap(params) {
 		ll.panic("Params have wrong type, or nor ready yet: %v", params)
 	}
 
@@ -33,7 +33,7 @@ self.body(func(inputs) {
 	eph := params.eph
 	outputs := params.outputs
 
-	if !is_array(outputs) || len(outputs) == 0 {
+	if !ll.isArray(outputs) || len(outputs) == 0 {
 		ll.panic("Absent, empty or malformed outputs list: %v", params)
 	}
 
@@ -108,7 +108,7 @@ self.body(func(inputs) {
 		outputMaps := {}
 
 		for output in outputs {
-			if !is_map(output) {
+			if !ll.isMap(output) {
 				ll.panic("malformed output: %v", output)
 			}
 			if output.type == "Resource" {
@@ -160,8 +160,8 @@ self.body(func(inputs) {
 					path = [output.name]
 				}
 				outputMaps[output.name].
-						createInputField(sGroupKey).
-						set(renderResult.output(path[0]).getFutureInputField(path[1:]))
+					createInputField(sGroupKey).
+					set(renderResult.output(path[0]).getFutureInputField(path[1:]))
 			}
 		}
 

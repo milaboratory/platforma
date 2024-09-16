@@ -56,6 +56,16 @@ isMap := func(obj) {
 }
 
 /**
+ * Checks whether the given object is an array or a immutable array.
+ *
+ * @param obj any
+ * @return bool whether obj is any kind of array object (array/immutable array)
+ */
+isArray := func(obj) {
+	return is_array(obj) || is_immutable_array(obj)
+}
+
+/**
  * Converts 'strict' map into a normal one
  *
  * @param r: map|strictMap (will panic if not)
@@ -63,7 +73,7 @@ isMap := func(obj) {
  * @return map: std map
  */
 fromStrict := func(r) {
-	if is_map(r) {
+	if is_map(r) || is_immutable_map(r) {
 		return r
 	}
 
@@ -101,7 +111,7 @@ toStrict := func(v) {
 		return v
 	}
 
-	if(!is_map(v)) {
+	if(!is_map(v) && !is_immutable_map(v)) {
 		panic("toStrict(<v>): <v> is not a map", v)
 	}
 	return plapi.mapToStrict(v)
@@ -217,6 +227,7 @@ export toStrict({
 	assert: assert,
 	isStrict: isStrict,
 	isMap: isMap,
+	isArray: isArray,
 	fromStrict: fromStrict,
 	ensureNonStrict: ensureNonStrict,
 	toStrict: toStrict,

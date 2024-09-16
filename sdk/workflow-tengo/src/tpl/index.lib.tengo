@@ -178,7 +178,7 @@ tpl := func() {
 		 * inside. Optional for ephemeral templates.
 		 */
 		defineOutputs : func(...name) {
-			if len(name) == 1 && is_array(name[0]) {
+			if len(name) == 1 && ll.isArray(name[0]) {
 				for v in name[0] {
 					self.definedOutputs = append(self.definedOutputs, v)
 				}
@@ -292,7 +292,7 @@ tpl := func() {
 				// run callback
 				r := cb(inputs)
 
-				ll.assert(is_map(r), "expected map, got ", r)
+				ll.assert(ll.isMap(r), "expected map, got ", r)
 
 				for name, ref in r {
 					ll.assert(smart.isReference(ref), "expected reference, got ", ref)

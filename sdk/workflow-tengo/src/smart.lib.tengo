@@ -197,7 +197,7 @@ resourceTypesEqual := func(rType1, rType2) {
  *     Also, set up a hook _cacheMap.close() for clearing ll.context before exit.
  */
 _cacheMap := func(getStateFn) {
-	ll.assert(is_map(getStateFn()), "state must be a map, got %v", getStateFn())
+	ll.assert(ll.isMap(getStateFn()), "state must be a map, got %v", getStateFn())
 
 	_ctxKey := "smart/cacheKey"
 
@@ -261,7 +261,7 @@ _hasReferenceValues := func(object) {
 				return true
 			}
 		}
-	} else if is_array(object) {
+	} else if ll.isArray(object) {
 		for v in object {
 			if _hasReferenceValues(v) {
 				return true
@@ -298,7 +298,7 @@ _marshalToRefOrJson := func(object) {
 		}
 
 		return mb.build()
-	} else if is_array(object) {
+	} else if ll.isArray(object) {
 
 		// assert we are not having refs inside
 		ll.assert(!_hasReferenceValues(object), "array can't contain references")
@@ -598,7 +598,7 @@ resource = func(r, ...fromWhatFieldID) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath) {
-			if is_array(nameOrPath) {
+			if ll.isArray(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
 					current = current.getFutureField(name, "input")
@@ -878,7 +878,7 @@ field = func(f) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath) {
-			if is_array(nameOrPath) {
+			if ll.isArray(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
 					current = current.getFutureField(name, "input")
