@@ -4,6 +4,7 @@ import { faker } from '@faker-js/faker';
 import type {
   BlockState,
   BlockStatePatch,
+  ImportFileHandleUpload,
   ListFilesResult,
   LsEntry,
   NavigationState,
@@ -52,11 +53,17 @@ const getLsFilesResult = (path: string): ListFilesResult => {
             return faker.word.noun();
           }).join(' ') + faker.system.commonFileName();
 
+        const handle = `upload://upload/${encodeURIComponent(
+          JSON.stringify({
+            localPath: dirPath + '/' + name,
+          }),
+        )}` as ImportFileHandleUpload;
+
         return {
           type: 'file',
           name,
           fullPath: dirPath + '/' + name,
-          handle: `upload://upload/${name}.jpg`,
+          handle,
         };
       }),
     );
@@ -74,7 +81,7 @@ const state: BlockState<unknown, Record<string, ValueOrErrors<unknown>>, unknown
   args: undefined,
   ui: undefined,
   navigationState: {
-    href: '/file-dialogs',
+    href: '/form',
   },
   outputs: {},
 };
@@ -147,7 +154,7 @@ export const platforma: Platforma = {
       ];
     },
     async listFiles(_storage: StorageHandle, fullPath: string): Promise<ListFilesResult> {
-      await delay(1000);
+      await delay(10);
       return getLsFilesResult(fullPath);
     },
   },

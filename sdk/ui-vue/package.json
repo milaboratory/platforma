@@ -43,7 +43,7 @@
     "vue": "^3.4.31"
   },
   "dependencies": {
-    "@milaboratory/platforma-uikit": "^1.1.16"
+    "@milaboratory/platforma-uikit": "^1.1.19"
   },
   "devDependencies": {
     "@faker-js/faker": "8.4.0",

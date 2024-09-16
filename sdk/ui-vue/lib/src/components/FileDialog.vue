@@ -219,6 +219,7 @@ const loadAvailableStorages = () => {
   data.lastSelected = undefined;
   deselectAll();
   if (!window.platforma) {
+    console.warn('platforma API is not found');
     return;
   }
   window.platforma.lsDriver
