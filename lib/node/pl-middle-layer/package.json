@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/pl-middle-layer",
-  "version": "1.10.8",
+  "version": "1.10.9",
   "description": "Pl Middle Layer",
   "main": "dist/lib.js",
   "module": "dist/lib.mjs",
@@ -21,7 +21,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@milaboratory/computable": "^2.1.2",
-    "@milaboratory/pframes-node": "^0.4.26",
+    "@milaboratory/pframes-node": "^0.4.27",
     "@milaboratory/pl-block-tools": "^2.1.5",
     "@milaboratory/pl-client-v2": "^2.4.10",
     "@milaboratory/pl-drivers": "1.2.15",
