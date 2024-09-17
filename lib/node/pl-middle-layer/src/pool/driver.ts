@@ -60,9 +60,16 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     // pframe initialization
     this.pFrame.setDataSource(this);
     for (const column of columns) {
-      this.pFrame.addColumnSpec(column.id, column.spec);
       for (const blob of allBlobs(column.data)) this.blobIdToResource.set(blobKey(blob), blob);
-      this.pFrame.setColumnData(column.id, mapBlobs(column.data, blobKey));
+      const dataInfo = mapBlobs(column.data, blobKey);
+      try {
+        this.pFrame.addColumnSpec(column.id, column.spec);
+        this.pFrame.setColumnData(column.id, dataInfo);
+      } catch (err) {
+        throw new Error(
+          `Adding column ${column.id} to PFrame failed: ${err}; Spec: ${column.spec}, DataInfo: ${dataInfo}.`
+        );
+      }
     }
   }
 
