@@ -55,10 +55,6 @@ const props = withDefaults(
      */
     placeholder?: string;
     /**
-     * Enables a button to clear the selected value (default: false)
-     */
-    clearable?: boolean;
-    /**
      * If `true`, the dropdown component is marked as required.
      */
     required?: boolean;
@@ -73,7 +69,6 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: '...',
-    clearable: false,
     required: false,
     disabled: false,
   },
