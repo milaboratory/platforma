@@ -18,10 +18,8 @@ const options = generate(100, (i) => ({
 }));
 
 const optionsTitleAndDescription = generate(100, (i) => ({
-  text: { title: `Title ${i} ${faker.lorem.sentence({ min: 1, max: 20 })}`, description: `Description ${i}` },
-  // value: {
-  //   i,
-  // },
+  text: `Title ${i} ${faker.lorem.sentence({ min: 1, max: 20 })}`,
+  description: `Description ${i}`,
   value: i,
 }));
 </script>

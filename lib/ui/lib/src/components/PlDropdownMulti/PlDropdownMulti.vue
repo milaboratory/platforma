@@ -1,4 +1,13 @@
-<script lang="ts" setup>
+<script lang="ts">
+/**
+ * A component for selecting multiple values from a list of options
+ */
+export default {
+  name: 'PlDropdownMulti',
+};
+</script>
+
+<script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-multi.scss';
 import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
 import { tap, tapIf } from '@/helpers/functions';
@@ -11,16 +20,19 @@ import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
 
-const emit = defineEmits(['update:modelValue']);
-const emitModel = (v: unknown[]) => emit('update:modelValue', v);
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: M[]): void;
+}>();
+
+const emitModel = (v: M[]) => emit('update:modelValue', v);
 
 const slots = useSlots();
 
 const props = withDefaults(
   defineProps<{
-    modelValue: unknown[];
+    modelValue: M[];
     label?: string;
-    options: ListOption[];
+    options: ListOption<M>[];
     error?: string;
     placeholder?: string;
     clearable?: boolean;
@@ -28,9 +40,9 @@ const props = withDefaults(
     disabled?: boolean;
   }>(),
   {
+    modelValue: () => [],
     label: undefined,
     error: undefined,
-    modelValue: () => [],
     placeholder: '...',
     clearable: false,
     required: false,
@@ -47,13 +59,6 @@ const data = reactive({
   activeOption: -1,
   open: false,
 });
-
-function updateSelected() {
-  data.activeOption = tap(
-    filteredOptionsRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
-    (v) => (v < 0 ? 0 : v),
-  );
-}
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
 
@@ -96,38 +101,34 @@ const filteredOptionsRef = computed(() => {
 
 const tabindex = computed(() => (props.disabled ? undefined : '0'));
 
-function selectItem(v: unknown) {
+const updateActiveOption = () => {
+  data.activeOption = tap(
+    filteredOptionsRef.value.findIndex((o) => deepEqual(o.value, props.modelValue)),
+    (v) => (v < 0 ? 0 : v),
+  );
+};
+
+const selectOption = (v: M) => {
   const values = unref(selectedValuesRef);
   emitModel(deepIncludes(values, v) ? values.filter((it) => !deepEqual(it, v)) : [...values, v]);
   data.search = '';
   rootRef?.value?.focus();
-}
+};
 
-function closeItem(d: unknown) {
-  emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
-}
+const unselectOption = (d: M) => emitModel(unref(selectedValuesRef).filter((v) => !deepEqual(v, d)));
 
-function setFocusOnInput() {
-  input.value?.focus();
-}
+const setFocusOnInput = () => input.value?.focus();
 
-function toggle() {
-  data.open = !data.open;
-}
+const toggleModel = () => (data.open = !data.open);
 
-function onInputFocus() {
-  data.open = true;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function onBlur(event: any) {
-  if (!rootRef?.value?.contains(event.relatedTarget)) {
+const onFocusOut = (event: FocusEvent) => {
+  if (!rootRef?.value?.contains(event.relatedTarget as Node | null)) {
     data.search = '';
     data.open = false;
   }
-}
+};
 
-function scrollIntoActive() {
+const scrollIntoActive = () => {
   const $list = list.value;
 
   if (!$list) {
@@ -137,14 +138,21 @@ function scrollIntoActive() {
   tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
     scrollIntoView($list, opt);
   });
-}
+};
 
-function handleKeydown(e: { code: string; preventDefault(): void }) {
+const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   const { open, activeOption } = data;
 
-  if (!open && e.code === 'Enter') {
-    data.open = true;
+  if (!open) {
+    if (e.code === 'Enter') {
+      data.open = true;
+    }
     return;
+  }
+
+  if (e.code === 'Escape') {
+    data.open = false;
+    rootRef.value?.focus();
   }
 
   const filteredOptions = unref(filteredOptionsRef);
@@ -160,7 +168,7 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   }
 
   if (e.code === 'Enter') {
-    selectItem(filteredOptions[activeOption].value);
+    selectOption(filteredOptions[activeOption].value);
   }
 
   const d = e.code === 'ArrowDown' ? 1 : e.code === 'ArrowUp' ? -1 : 0;
@@ -168,17 +176,19 @@ function handleKeydown(e: { code: string; preventDefault(): void }) {
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
   requestAnimationFrame(scrollIntoActive);
-}
+};
 
 useLabelNotch(rootRef);
 
 watch(
   () => props.modelValue,
-  () => updateSelected(),
+  () => updateActiveOption(),
   { immediate: true },
 );
 
 watchPostEffect(() => {
+  data.search;
+
   if (data.open) {
     scrollIntoActive();
   }
@@ -192,7 +202,7 @@ watchPostEffect(() => {
     class="ui-multi-dropdown"
     :class="{ open: data.open, error, disabled }"
     @keydown="handleKeydown"
-    @focusout="onBlur"
+    @focusout="onFocusOut"
   >
     <div v-if="error" class="ui-multi-dropdown__error">{{ error }}</div>
     <div class="ui-multi-dropdown__container">
@@ -206,14 +216,14 @@ watchPostEffect(() => {
           :placeholder="placeholderRef"
           spellcheck="false"
           autocomplete="chrome-off"
-          @focus="onInputFocus"
+          @focus="data.open = true"
         />
         <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
-          <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="closeItem(opt.value)">
+          <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
             {{ opt.text || opt.value }}
           </PlChip>
         </div>
-        <div class="arrow" @click.stop="toggle" />
+        <div class="arrow" @click.stop="toggleModel" />
         <div class="ui-multi-dropdown__append">
           <slot name="append" />
         </div>
@@ -229,7 +239,7 @@ watchPostEffect(() => {
       </label>
       <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
         <div class="ui-multi-dropdown__open-chips-conteiner">
-          <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop @close="closeItem(opt.value)">
+          <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
             {{ opt.text || opt.value }}
           </PlChip>
         </div>
@@ -242,7 +252,7 @@ watchPostEffect(() => {
           :is-hovered="data.activeOption == index"
           size="medium"
           use-checkbox
-          @click.stop="selectItem(item.value)"
+          @click.stop="selectOption(item.value)"
         />
         <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
       </div>

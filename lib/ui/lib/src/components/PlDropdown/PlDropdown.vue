@@ -226,11 +226,11 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
       data.open = true;
     }
     return;
-  } else {
-    if (e.code === 'Escape') {
-      data.open = false;
-      root.value?.focus();
-    }
+  }
+
+  if (e.code === 'Escape') {
+    data.open = false;
+    root.value?.focus();
   }
 
   const filtered = unref(filteredRef);

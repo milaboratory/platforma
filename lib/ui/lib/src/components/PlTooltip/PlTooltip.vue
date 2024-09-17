@@ -96,7 +96,7 @@ useClickOutside([root, tooltip], () => closeTooltip());
 
 <template>
   <!--@todo click.stop -->
-  <component :is="element" ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
+  <component :is="element" v-bind="$attrs" ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
       <Transition name="tooltip">
