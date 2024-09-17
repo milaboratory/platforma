@@ -2,39 +2,29 @@
   "name": "@milaboratory/ts-helpers-winston",
   "version": "1.0.0",
   "description": "Useful helpers for our TS projects (winston-specific)",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
-    "build-watch": "tsup --watch",
-    "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand --passWithNoTests"
-  },
-  "dependencies": {
-    "@milaboratory/ts-helpers": "1.x",
-    "winston": "3.x"
+    "build-watch": "tsup --watch"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "src/**/*"
   ],
-  "devDependencies": {
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.5"
+  "dependencies": {
+    "@milaboratory/ts-helpers": "workspace:^",
+    "winston": "catalog:"
   },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "splitting": false,
-    "treeshake": true,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

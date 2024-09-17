@@ -1,0 +1,20 @@
+{
+  "name": "@milaboratories/platforma-build-configs",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsup": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./src/index.ts"
+    },
+    "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "tsup": "catalog:"
+  }
+}

@@ -1,7 +1,17 @@
-import { MiLogger } from '../log';
-import { ExponentialWithMaxBackoffDelayRetryOptions, InfiniteRetryOptions, LinearBackoffRetryOptions, RetryOptions, createInfiniteRetryState, createRetryState, nextInfiniteRetryState, nextRetryStateOrError, tryNextRetryState } from '../temporal';
-import { AsyncQueue } from './async_queue';
-import { scheduler } from 'node:timers/promises';
+import { MiLogger } from "../log";
+import {
+  ExponentialWithMaxBackoffDelayRetryOptions,
+  InfiniteRetryOptions,
+  LinearBackoffRetryOptions,
+  RetryOptions,
+  createInfiniteRetryState,
+  createRetryState,
+  nextInfiniteRetryState,
+  nextRetryStateOrError,
+  tryNextRetryState,
+} from "../temporal";
+import { AsyncQueue } from "./async_queue";
+import { scheduler } from "node:timers/promises";
 
 export interface Task {
   readonly fn: () => Promise<void>;
@@ -23,12 +33,12 @@ export class TaskProcessor {
     numberOfWorkers: number,
     /** The task will be tried infinitely. */
     backoffOptions: ExponentialWithMaxBackoffDelayRetryOptions = {
-      type: 'exponentialWithMaxDelayBackoff',
+      type: "exponentialWithMaxDelayBackoff",
       initialDelay: 1,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
-      jitter: 0.5
-    },
+      jitter: 0.5,
+    }
   ) {
     this.backoffOptionsPerWorker = backoffOptions;
     this.backoffOptionsPerWorker.maxDelay *= numberOfWorkers;
@@ -66,7 +76,7 @@ export class TaskProcessor {
         if (task.recoverableErrorPredicate(e)) {
           this.logger.warn(
             `recoverable error in a task processor: ${String(e)},` +
-              ` worker ${id} will wait for ${retry.nextDelay} ms.`,
+              ` worker ${id} will wait for ${retry.nextDelay} ms.`
           );
           this.queue.push(task);
           retry = nextInfiniteRetryState(retry);
@@ -75,7 +85,7 @@ export class TaskProcessor {
           continue;
         }
         this.logger.warn(
-          `non-recoverable error in a task processor, the task will be dropped: ${String(e)}`,
+          `non-recoverable error in a task processor, the task will be dropped: ${String(e)}`
         );
       }
     }

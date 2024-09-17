@@ -2,38 +2,29 @@
   "name": "@milaboratory/ts-helpers-oclif",
   "version": "1.1.0",
   "description": "Useful helpers for our TS projects (oclif-specific)",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false"
   },
-  "dependencies": {
-    "@milaboratory/ts-helpers": "1.x",
-    "@oclif/core": "4.x"
-  },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "src/**/*"
   ],
-  "devDependencies": {
-    "tsup": "^8.1.2",
-    "typescript": "^5.5.4"
+  "dependencies": {
+    "@milaboratory/ts-helpers": "workspace:^",
+    "@oclif/core": "catalog:"
   },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "splitting": false,
-    "treeshake": true,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

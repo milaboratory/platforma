@@ -1,0 +1,51 @@
+packages:
+  - lib/util/build-configs
+
+  - lib/node/ts-helpers
+  - lib/node/ts-helpers-oclif
+  - lib/node/ts-helpers-winston
+  - lib/node/pl-client
+
+catalog:
+  # Build
+
+  "typescript": ^5.6.2
+  "tsup": ~8.2.4
+
+  # Build util / linters
+
+  "prettier": ^3.3.3
+  "@protobuf-ts/plugin": ^2.9.4
+
+  # Net
+
+  "undici": ^6.19.8
+  "@grpc/grpc-js": ^1.11.2
+  "@protobuf-ts/grpc-transport": ^2.9.4
+  "@protobuf-ts/runtime": ^2.9.4
+  "@protobuf-ts/runtime-rpc": ^2.9.4
+  "https-proxy-agent": ^7.0.5
+
+  # Util
+
+  "utility-types": ^3.11.0
+  "denque": ^2.1.0
+  "canonicalize": ^2.0.0
+  "long": ^5.2.3
+
+  "yaml": ^2.5.1
+
+  "@oclif/core": ^4.0.22
+
+  "winston": ^3.14.2
+
+  # Test
+
+  "jest": ^29.7.0
+  "ts-jest": ^29.2.5
+
+  # Types
+
+  "@types/jest": ^29.5.13
+  "@types/http-proxy": ^1.17.15
+  "@types/node": ^20.16.5
