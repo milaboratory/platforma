@@ -1,24 +1,48 @@
-<script lang="ts" setup>
-import type { ListOption } from '@/types';
+<script lang="ts">
+/**
+ * Component for selecting multiple values from a list of options
+ */
+export default {
+  name: 'PlCheckboxGroup',
+};
+</script>
+
+<script lang="ts" setup generic="M = unknown">
+import './pl-checkbox-group.scss';
+import type { SimpleOption } from '@/types';
 import PlCheckboxBase from '@/components/PlCheckbox/PlCheckboxBase.vue';
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: M[]): void;
+}>();
 
 const props = defineProps<{
-  modelValue: unknown[];
+  /**
+   * The current selected values.
+   */
+  modelValue: M[];
+  /**
+   * The label text for the component (optional)
+   */
   label?: string;
-  options: ListOption[];
+  /**
+   * List of available options for the component
+   */
+  options: SimpleOption<M>[];
+  /**
+   * If `true`, the component is disabled and cannot be interacted with.
+   */
   disabled?: boolean;
 }>();
 
-function hasValue(value: unknown) {
+const hasValue = (value: M) => {
   return props.modelValue.includes(value);
-}
+};
 
-function updateModel(value: unknown) {
+const updateModel = (value: M) => {
   const values = props.modelValue ?? [];
   emit('update:modelValue', hasValue(value) ? values.filter((v) => v !== value) : [...values, value]);
-}
+};
 </script>
 
 <template>
@@ -30,39 +54,3 @@ function updateModel(value: unknown) {
     </div>
   </div>
 </template>
-
-<style lang="scss">
-.ui-checkbox-group {
-  --color-label: var(--color-text);
-  --cursor-label: pointer;
-  display: flex;
-  flex-direction: column;
-  font-family: var(--font-family-base);
-  &.disabled {
-    --color-label: var(--color-dis-01);
-    --cursor-label: default;
-    pointer-events: none;
-  }
-  label {
-    color: var(--color-label);
-    cursor: var(--cursor-label);
-  }
-  > label {
-    margin-bottom: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 20px;
-  }
-  > div {
-    height: 32px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    > label {
-      font-size: 14px;
-      font-weight: 500;
-    }
-  }
-}
-</style>
