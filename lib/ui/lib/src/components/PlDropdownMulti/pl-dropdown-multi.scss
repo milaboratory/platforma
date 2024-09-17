@@ -3,7 +3,6 @@
 .ui-multi-dropdown {
   $root: &;
 
-  --label-color: var(--txt-01);
   --contour-color: var(--txt-01);
   --contour-border-width: 1px;
   --options-bg: #fff;
@@ -11,6 +10,7 @@
 
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
+  --label-color: var(--txt-01);
 
   [data-theme="dark"] & {
     --options-bg: #1B1B1F;
@@ -23,6 +23,11 @@
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);
+
+  &__envelope {
+    font-family: var(--control-font-family);
+    min-width: 160px;
+  }
 
   label {
     @include outlined-control-label();
@@ -177,20 +182,12 @@
     }
   }
 
-  &__error {
-    position: absolute;
-    height: 18px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    font-size: 12px;
-    transform: translateY(100%);
-    color: var(--txt-error);
-    padding: 2px 12px 0;
+  &__helper {
+    @include field-helper();
+  }
 
-    overflow: hidden;
-    white-space: pre;
-    text-overflow: ellipsis;
+  &__error {
+    @include field-error();
   }
 
   &__append {
@@ -279,6 +276,7 @@
 
   &.error {
     --contour-color: var(--txt-error);
+    --label-color: var(--txt-error);
   }
 
   &.disabled {
