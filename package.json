@@ -1,0 +1,19 @@
+{
+  "name": "@milaboratories/platforma-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "changeset": "changeset",
+    "version-packages": "changeset version"
+  },
+  "devDependencies": {
+    "@changesets/cli": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "turbo": "catalog:"
+  },
+  "packageManager": "pnpm@9.10.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
