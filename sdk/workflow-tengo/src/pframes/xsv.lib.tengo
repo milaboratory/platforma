@@ -25,8 +25,13 @@ getAxesSpec := func(spec) {
 	return axes
 }
 
-getOps := func(...ops) {
-	o := { dataOnly: false, splitDataAndSpec: false }
+renderOps := func(defaults, ...ops) {
+	o := { }
+
+	for k, v in defaults {
+		o[k] = v
+	}
+
 	if len(ops) > 0 {
 		for k, v in ops[0] {
 			o[k] = v
@@ -83,7 +88,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		processWorkdir("pf", importDirTpl, pureSpec).
 		run()
 
-    ops := getOps(ops...)
+    ops := renderOps({ dataOnly: false }, ops...)
 
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
@@ -125,8 +130,14 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 
 	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
 
+	ops := renderOps({
+	    dataOnly: false,
+		splitDataAndSpec: false,
+		additionalAxesSpec: []
+	  }, ops...)
+
 	// spec without any metadata (for caching purposes)
-	decomposedSpec := util.decomposePfconvCfg(spec)
+	decomposedSpec := util.decomposePfconvCfg(spec, { additionalAxesSpec: ops.additionalAxesSpec })
 	pureSpec := decomposedSpec.purifiedCfg
 	columnsSpec := decomposedSpec.columnsSpec
 
@@ -136,7 +147,6 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		spec: pureSpec,
 		ops: { dataOnly: true }
 	})
-    ops := getOps(ops...)
 
 	if ops.dataOnly && ops.splitDataAndSpec {
 		ll.panic("Can't use both options dataOnly and splitDataAndSpec at the same time.")
