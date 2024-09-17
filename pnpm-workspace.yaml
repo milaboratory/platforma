@@ -17,6 +17,12 @@ catalog:
   "prettier": ^3.3.3
   "@protobuf-ts/plugin": ^2.9.4
 
+  "@changesets/cli": ^2.27.8
+
+  "eslint": ^9.10.0
+
+  "turbo": ^2.1.2
+
   # Net
 
   "undici": ^6.19.8
