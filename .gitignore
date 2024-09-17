@@ -1,0 +1,8 @@
+node_modules/
+dist/
+block-pack/
+dev/
+work/
+.test_auth.json
+*.iml
+*.tgz
