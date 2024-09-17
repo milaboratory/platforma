@@ -1,6 +1,24 @@
-import type { ColDef, GetRowIdParams, GridApi, GridOptions, IDatasource, IGetRowsParams, SortModelItem } from '@ag-grid-community/core';
-import type { PFrameDriver, PTableColumnId, PTableColumnSpec, PTableHandle, PTableVector, ValueType } from '@milaboratory/sdk-ui';
-
+import type { ColDef, GetRowIdParams, GridApi, GridOptions, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
+import {
+  type PValueBytes,
+  PValueBytesNA,
+  type PValueDouble,
+  PValueDoubleNA,
+  type PValueFloat,
+  PValueFloatNA,
+  PValueIntNA,
+  PValueLongNA,
+  type PValueString,
+  PValueStringNA,
+  type PFrameDriver,
+  type PTableColumnId,
+  type PTableColumnSpec,
+  type PTableHandle,
+  type PTableVector,
+  type PValueInt,
+  type ValueType,
+} from '@milaboratory/sdk-ui';
+import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
 
 /**
@@ -17,6 +35,7 @@ const colIdFunc = (columnIndex: number, spec: PTableColumnSpec) => {
     })!,
   );
 };
+
 /**
  * Extract `PTableColumnId` from colId string
  */
@@ -31,13 +50,22 @@ function getColDef(columnIndex: number, spec: PTableColumnSpec): ColDef {
   const colDef: ColDef = {
     colId: id,
     field: field,
-    headerName: spec.spec.annotations?.['pl7.app/label'] ?? '',
-    cellDataType: true,
+    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + columnIndex.toString(),
+    cellDataType: 'text',
+    valueFormatter: (value) => {
+      if (!value) {
+        return 'ERROR';
+      } else if (value.value === null) {
+        return 'NULL';
+      } else if (value.value === undefined) {
+        return 'NA';
+      } else {
+        return value.value.toString();
+      }
+    },
   };
 
-  // pin column if it is a 'key colum'
   if (spec.type == 'axis') {
-    colDef.pinned = 'left';
     colDef.lockPosition = true;
   }
 
@@ -48,10 +76,40 @@ function getColDef(columnIndex: number, spec: PTableColumnSpec): ColDef {
     dataType = spec.spec.valueType;
   }
   if (dataType == 'Int' || dataType == 'Long' || dataType == 'Double' || dataType == 'Float') {
-    colDef.type = 'numericColumn';
+    colDef.cellDataType = 'number';
   }
 
   return colDef;
+}
+
+/**
+ * Check if value is NA
+ */
+function isValueNA(value: unknown, type: ValueType): boolean {
+  if (type == 'Int') {
+    return (value as PValueInt) === PValueIntNA;
+  } else if (type == 'Long') {
+    return (value as bigint) === PValueLongNA;
+  } else if (type == 'Float') {
+    return (value as PValueFloat) === PValueFloatNA;
+  } else if (type == 'Double') {
+    return (value as PValueDouble) === PValueDoubleNA;
+  } else if (type == 'String') {
+    return (value as PValueString) === PValueStringNA;
+  } else if (type == 'Bytes') {
+    return (value as PValueBytes) === PValueBytesNA;
+  } else {
+    throw Error('Unsupported value type: ' + type);
+  }
+}
+
+/**
+ * Check if value is absent
+ */
+function isValueAbsent(array: Uint8Array, index: number): boolean {
+  const chunkIndex = Math.floor(index / 8);
+  const mask = 1 << (7 - (index % 8));
+  return (array[chunkIndex] & mask) > 0;
 }
 
 /**
@@ -71,7 +129,13 @@ function columns2rows(specs: PTableColumnSpec[], columns: PTableVector[], nRows:
     for (let columnIndex = 0; columnIndex < nCols; ++columnIndex) {
       const field = columnIndex.toString();
       const value = columns[columnIndex].data[iRow];
-      row[field] = value;
+      if (isValueAbsent(columns[columnIndex].absent, iRow)) {
+        row[field] = null; // NULL
+      } else if (isValueNA(value, columns[columnIndex].type)) {
+        row[field] = undefined; // NA
+      } else {
+        row[field] = columns[columnIndex].type === 'Long' ? Number(value) : value;
+      }
 
       if (specs[columnIndex].type === 'axis') {
         axes.push(value);
@@ -79,7 +143,7 @@ function columns2rows(specs: PTableColumnSpec[], columns: PTableVector[], nRows:
     }
 
     // generate ID based on the axes information
-    row['id'] = JSON.stringify(axes, (_, v) => (typeof v === 'bigint' ? v.toString() : v));
+    row['id'] = JSON.stringify(axes, (_, v) => (typeof v === 'bigint' ? Number(v) : v));
 
     rowData.push(row);
   }
@@ -88,25 +152,6 @@ function columns2rows(specs: PTableColumnSpec[], columns: PTableVector[], nRows:
 }
 
 /**
- * Check whether the sorting is changed.
- */
-const sortChanged = (oldSort: SortModelItem[] | undefined, newSort: SortModelItem[] | undefined) => {
-  if (oldSort && !newSort) return true;
-  else if (!oldSort && newSort) return true;
-  else if (!oldSort && !newSort) return false;
-  else if (oldSort?.length != newSort?.length) return true;
-  else if (oldSort && newSort) {
-    for (let i = 0; i < oldSort.length; ++i) {
-      if (oldSort[i].colId !== newSort[i].colId) return true;
-      if (oldSort[i].sort !== newSort[i].sort) return true;
-    }
-
-    return false;
-  } else return false;
-};
-
-/**
- *
  * Calculate GridOptions for p-table data source type
  */
 export async function pFrameGridOptions(pfDriver: PFrameDriver, pt: PTableHandle, gridApi: GridApi | undefined): Promise<GridOptions> {
@@ -136,7 +181,7 @@ export async function pFrameGridOptions(pfDriver: PFrameDriver, pt: PTableHandle
           lastParams &&
           lastParams.startRow === params.startRow &&
           lastParams.endRow === params.endRow &&
-          sortChanged(lastParams.sortModel, params.sortModel)
+          !lodash.isEqual(lastParams.sortModel, params.sortModel)
         ) {
           // this is to avoid double flickering when sort is changed:
           // as we do sort by re-creating the p-table with the driver,
