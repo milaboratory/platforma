@@ -1,0 +1,46 @@
+{
+  "name": "@milaboratory/computable",
+  "version": "2.1.2",
+  "description": "Watcher / Computable Abstraction",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "build-watch": "tsup --watch",
+    "type-check": "tsc --noEmit --composite false",
+    "test": "jest --runInBand",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+  },
+  "dependencies": {
+    "@milaboratory/ts-helpers": "1.0.19",
+    "serialize-error": "^11.0.3",
+    "utility-types": "^3.11.0"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.6.4",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.4",
+    "tsup": "~8.1.2",
+    "typescript": "^5.5.4"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "treeshake": true,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  }
+}
