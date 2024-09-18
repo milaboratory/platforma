@@ -1,5 +1,5 @@
 import type { Equal, Expect } from '@milaboratory/helpers/types';
-import type { BlockOutputsBase, ImportFileHandle, Platforma, StorageHandle, ValueOrErrors } from '@milaboratory/sdk-ui';
+import type { BlockOutputsBase, ValueOrErrors } from '@milaboratory/sdk-ui';
 import type { Component, ComputedGetter } from 'vue';
 
 export type UnwrapValueOrErrors<R extends ValueOrErrors<unknown>> = Extract<R, { ok: true }>['value'];
@@ -54,11 +54,6 @@ export type LocalState<Href extends `/${string}` = `/${string}`> = {
   routes: Routes<Href>;
 };
 
-export type ImportedFiles = {
-  storageHandle: StorageHandle;
-  files: ImportFileHandle[];
-};
-
 // Results (ValueOrErrors)
 
 export type UnwrapValueOrError<W> = W extends {
@@ -101,11 +96,11 @@ export type OutputErrors<Outputs extends BlockOutputsBase> = {
   [P in keyof Outputs]?: Error;
 };
 
-declare global {
-  const platforma: Platforma | undefined;
-  interface Window {
-    platforma: Platforma | undefined;
-  }
-}
+// declare global {
+//   const platforma: Platforma | undefined;
+//   interface Window {
+//     platforma: Platforma | undefined;
+//   }
+// }
 
 type _cases = [Expect<Equal<number, UnwrapValueOrError<ValueOrErrors<number>>>>];
