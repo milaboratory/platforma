@@ -10,7 +10,7 @@ export const GlobalFlags = {
 
 export const CtagsFlags = {
   "generate-tags": Flags.boolean({
-    description: "generate tags, default true",
+    description: "generate tags, default false",
     default: false,
   }),
 
