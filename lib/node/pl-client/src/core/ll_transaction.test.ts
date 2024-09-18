@@ -3,7 +3,7 @@ import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/
 import { createLocalResourceId } from './types';
 
 import { isTimeoutOrCancelError } from './errors';
-import { Aborted } from '@milaboratory/ts-helpers';
+import { Aborted } from '@milaboratories/ts-helpers';
 
 test('transaction timeout test', async () => {
   const client = await getTestLLClient();

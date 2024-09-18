@@ -1,5 +1,5 @@
 import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
-import { Aborted } from '@milaboratory/ts-helpers';
+import { Aborted } from '@milaboratories/ts-helpers';
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {
   if (err instanceof DisconnectedError) return true;

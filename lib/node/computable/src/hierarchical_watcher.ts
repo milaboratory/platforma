@@ -1,5 +1,5 @@
 import { Watcher } from './watcher';
-import { Aborted } from '@milaboratory/ts-helpers';
+import { Aborted } from '@milaboratories/ts-helpers';
 
 /**
  * Instances of this class may form a tree of watchers having parent-child relations.

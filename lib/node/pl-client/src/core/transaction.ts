@@ -23,7 +23,7 @@ import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/
 import { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
 
 /** Reference to resource, used only within transaction */

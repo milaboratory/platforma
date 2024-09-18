@@ -1,5 +1,5 @@
 import { HierarchicalWatcher } from './hierarchical_watcher';
-import { Aborted } from '@milaboratory/ts-helpers';
+import { Aborted } from '@milaboratories/ts-helpers';
 
 test('create a tree watcher and watch for changes', () => {
   const grandChild1 = new HierarchicalWatcher();

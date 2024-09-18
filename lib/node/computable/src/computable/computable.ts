@@ -15,7 +15,7 @@ import {
   updateCellState,
   updateCellStateWithoutValue
 } from './computable_state';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
 import { formatError } from './error';

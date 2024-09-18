@@ -15,7 +15,7 @@ import {
   createRetryState,
   nextRetryStateOrError,
   RetryOptions
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';

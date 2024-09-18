@@ -4,7 +4,7 @@ import {
   nextRetryStateOrError,
   notEmpty,
   RetryOptions
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import {
   FieldData,
   FieldType,

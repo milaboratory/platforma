@@ -1,7 +1,7 @@
 import { WatchableValue, ObservableAccessor } from '../watchable_value';
 
 import { AccessorProvider, UsageGuard } from './accessor_provider';
-import { Aborted, sleep } from '@milaboratory/ts-helpers';
+import { Aborted, sleep } from '@milaboratories/ts-helpers';
 import { Computable } from './computable';
 import { ChangeSource } from '../change_source';
 import { ComputableCtx } from './kernel';

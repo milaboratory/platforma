@@ -4,7 +4,7 @@ import canonicalize from 'canonicalize';
 import YAML from 'yaml';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedPlClient } from './unauth_client';
 import { PlClient } from './client';
 import { createHash } from 'crypto';

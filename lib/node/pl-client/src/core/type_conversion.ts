@@ -15,7 +15,7 @@ import {
   ResourceId,
   ResourceKind
 } from './types';
-import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
+import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
 import { throwPlNotFoundError } from './errors';
 
 const ResourceErrorField = 'resourceError';

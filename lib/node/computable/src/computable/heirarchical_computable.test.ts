@@ -111,7 +111,7 @@ function getValueFromTreeAsNestedWithDestroy(
       const a = ctx.accessor(tree);
       if (pathLeft.length === 0) return a.getValue();
       else {
-        if (!a.isLocked()) ctx.markUnstable("not_locked");
+        if (!a.isLocked()) ctx.markUnstable('not_locked');
         const next = a.get(pathLeft[0])?.persist;
         if (next === undefined) return undefined;
         return getValueFromTreeAsNestedWithDestroy(next, {}, tracked, pathLeft.slice(1), [
