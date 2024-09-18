@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratory/ts-helpers-winston",
+  "name": "@milaboratories/ts-helpers-winston",
   "version": "1.0.0",
   "description": "Useful helpers for our TS projects (winston-specific)",
   "type": "module",
@@ -19,7 +19,7 @@
     "src/**/*"
   ],
   "dependencies": {
-    "@milaboratory/ts-helpers": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
     "winston": "catalog:"
   },
   "devDependencies": {
