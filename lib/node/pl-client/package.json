@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratory/pl-client-v2",
+  "name": "@milaboratories/pl-client-v2",
   "version": "2.4.10",
   "description": "New TS/JS client for Platform API",
   "type": "module",
@@ -22,7 +22,7 @@
     "./src/**/*"
   ],
   "dependencies": {
-    "@milaboratory/ts-helpers": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
     "@grpc/grpc-js": "catalog:",
     "@protobuf-ts/grpc-transport": "catalog:",
     "@protobuf-ts/runtime": "catalog:",

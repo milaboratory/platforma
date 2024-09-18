@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratory/ts-helpers",
+  "name": "@milaboratories/ts-helpers",
   "version": "1.0.22",
   "description": "Useful helpers for our TS projects",
   "type": "module",
