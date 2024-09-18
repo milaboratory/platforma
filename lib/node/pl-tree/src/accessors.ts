@@ -313,22 +313,21 @@ export class PlTreeNodeAccessor {
   public getInputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getInputsLocked(this.instanceData.ctx.watcher);
-    if (!result) 
-      this.instanceData.ctx.markUnstable("inputs_unlocked:" + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable('inputs_unlocked:' + this.resourceType.name);
     return result;
   }
 
   public getOutputsLocked(): boolean {
     this.instanceData.guard();
     const result = this.resource.getOutputsLocked(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable("outputs_unlocked:" + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable('outputs_unlocked:' + this.resourceType.name);
     return result;
   }
 
   public getIsReadyOrError(): boolean {
     this.instanceData.guard();
     const result = this.resource.getIsReadyOrError(this.instanceData.ctx.watcher);
-    if (!result) this.instanceData.ctx.markUnstable("not_ready:" + this.resourceType.name);
+    if (!result) this.instanceData.ctx.markUnstable('not_ready:' + this.resourceType.name);
     return result;
   }
 
@@ -379,7 +378,7 @@ export class PlTreeNodeAccessor {
     this.instanceData.guard();
     const result = this.resource.getKeyValue(this.instanceData.ctx.watcher, key);
     if (result === undefined && unstableIfNotFound)
-      this.instanceData.ctx.markUnstable("key_not_found_b:" + key);
+      this.instanceData.ctx.markUnstable('key_not_found_b:' + key);
     return result;
   }
 
@@ -392,7 +391,7 @@ export class PlTreeNodeAccessor {
     this.instanceData.guard();
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
     if (result === undefined && unstableIfNotFound)
-      this.instanceData.ctx.markUnstable("key_not_found_s:" + key);
+      this.instanceData.ctx.markUnstable('key_not_found_s:' + key);
     return result;
   }
 
@@ -402,8 +401,7 @@ export class PlTreeNodeAccessor {
   ): T | undefined {
     const result = this.resource.getKeyValueString(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
-      if (unstableIfNotFound) 
-        this.instanceData.ctx.markUnstable("key_not_found_j:" + key);
+      if (unstableIfNotFound) this.instanceData.ctx.markUnstable('key_not_found_j:' + key);
       return undefined;
     }
     return JSON.parse(result) as T;
