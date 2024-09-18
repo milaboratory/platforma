@@ -4,7 +4,6 @@ import { notEmpty } from '@milaboratory/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
 import { derivePObjectId } from './data';
-import { resourceTypeToString } from '@milaboratory/pl-client-v2';
 
 /** Represents specific staging or prod ctx data */
 export interface RawPObjectCollection {
@@ -43,7 +42,7 @@ export function parseRawPObjectCollection(
   errorOnUnknownField: boolean = true,
   ignoreFieldErrors: boolean = false,
   prefix: string = ''
-) {
+): RawPObjectCollection {
   const entryPattern = /^(?<name>.*)\.(?<type>spec|data)$/;
   const results = new Map<string, Writable<RawPObjectEntry>>();
   for (const fieldName of node.listInputFields()) {
@@ -105,19 +104,19 @@ export function parseFinalPObjectCollection(
   if (!node.getIsReadyOrError()) throw new Error('resource is not ready');
   const rawCollection = parseRawPObjectCollection(node, errorOnUnknownField, false, prefix);
   assert(rawCollection.locked);
-  const result: Record<string, PObject<PlTreeNodeAccessor>> = {};
-  for (const [key, entry] of rawCollection.results) {
-    if (entry.spec === undefined) throw new Error(`no spec for key ${key}`);
-    if (entry.hasData !== true || entry.data === undefined)
-      throw new Error(`no data for key ${key}`);
-    const data = entry.data();
-    if (data === undefined) throw new Error(`no data for key ${key}`);
+  const collection: Record<string, PObject<PlTreeNodeAccessor>> = {};
+  for (const [exportName, result] of rawCollection.results) {
+    if (result.spec === undefined) throw new Error(`no spec for key ${exportName}`);
+    if (result.hasData !== true || result.data === undefined)
+      throw new Error(`no data for key ${exportName}`);
+    const data = result.data();
+    if (data === undefined) throw new Error(`no data for key ${exportName}`);
     if (!data.ok) throw new PlError(data.error);
-    result[key] = {
-      id: derivePObjectId(entry.spec, data.value),
-      spec: entry.spec,
+    collection[exportName] = {
+      id: derivePObjectId(result.spec, data.value),
+      spec: result.spec,
       data: data.value
     };
   }
-  return result;
+  return collection;
 }

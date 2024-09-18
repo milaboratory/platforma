@@ -8,11 +8,11 @@ import {
   Ref,
   ResultCollection,
   ResultPoolEntry,
-  TreeNodeAccessor,
   ValueOrError,
   executePSpecPredicate
 } from '@milaboratory/sdk-ui';
 import { notEmpty } from '@milaboratory/ts-helpers';
+import { outputRef } from '../model/args';
 import {
   Block,
   ProjectStructure,
@@ -117,11 +117,7 @@ export class ResultPool {
         const data = result.data();
         if (data !== undefined) {
           entries.push({
-            ref: {
-              __isRef: true,
-              blockId,
-              name: exportName
-            },
+            ref: outputRef(blockId, exportName),
             obj: {
               id: data.ok ? derivePObjectId(result.spec, data.value) : undefined,
               spec: result.spec,
@@ -138,7 +134,7 @@ export class ResultPool {
       if (block.prod !== undefined) {
         if (!block.prod.locked) markUnstable(`prod_not_locked:${blockId}`);
         for (const [exportName, result] of block.prod.results) {
-          // any signal that this expost will be (or already is) present in the prod
+          // any signal that this export will be (or already is) present in the prod
           // will prevent adding it from staging
           exportsProcessed.add(exportName);
           tryAddEntry(blockId, exportName, result);
@@ -149,7 +145,7 @@ export class ResultPool {
         if (!block.staging.locked) markUnstable(`staging_not_locked:${blockId}`);
 
         for (const [exportName, result] of block.staging.results) {
-          // trying to add soemthing only if result is absent in prod
+          // trying to add something only if result is absent in prod
           if (exportsProcessed.has(exportName)) continue;
           tryAddEntry(blockId, exportName, result);
         }
@@ -178,11 +174,7 @@ export class ResultPool {
         for (const [exportName, result] of block.staging.results)
           if (result.spec !== undefined) {
             entries.push({
-              ref: {
-                __isRef: true,
-                blockId,
-                name: exportName
-              },
+              ref: outputRef(blockId, exportName),
               obj: result.spec
             });
             exportsProcessed.add(exportName);
@@ -197,11 +189,7 @@ export class ResultPool {
 
           if (result.spec !== undefined) {
             entries.push({
-              ref: {
-                __isRef: true,
-                blockId,
-                name: exportName
-              },
+              ref: outputRef(blockId, exportName),
               obj: result.spec
             });
           }
@@ -224,7 +212,7 @@ export class ResultPool {
           if (executePSpecPredicate(predicate, result.spec))
             found.push({
               label: block.info.label + ' / ' + exportName,
-              ref: { __isRef: true, name: exportName, blockId: block.info.id },
+              ref: outputRef(block.info.id, exportName),
               spec: result.spec
             });
         }

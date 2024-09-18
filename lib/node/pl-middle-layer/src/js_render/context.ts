@@ -28,7 +28,7 @@ import { BlockContextAny } from '../middle_layer/block_ctx';
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
 import { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
-import { ExtendedResultCollection, ResultPool } from '../pool/result_pool';
+import { ResultPool } from '../pool/result_pool';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);

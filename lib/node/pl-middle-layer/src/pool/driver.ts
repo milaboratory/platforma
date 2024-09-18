@@ -26,11 +26,9 @@ import {
   PFrameDef,
   JoinEntry,
   PTableDef,
-  PObject,
-  mapPTableDef,
-  PTable
+  mapPTableDef
 } from '@milaboratory/sdk-ui';
-import { PollResource, RefCountResourcePool, UnrefFn } from './ref_count_pool';
+import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'crypto';
 import { assertNever } from '@milaboratory/ts-helpers';

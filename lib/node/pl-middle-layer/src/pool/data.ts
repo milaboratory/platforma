@@ -1,4 +1,4 @@
-import { PColumn, PColumnSpec, PObject, PObjectId, PObjectSpec } from '@milaboratory/sdk-ui';
+import { PObjectId, PObjectSpec } from '@milaboratory/sdk-ui';
 import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratory/pl-tree';
 import { assertNever } from '@milaboratory/ts-helpers';
@@ -234,17 +234,6 @@ export function parseDataInfoResource(
 export function derivePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
   const hash = createHash('sha256');
   hash.update(canonicalize(spec)!);
-  hash.update(String(isNullResourceId(data.originalId) ? data.id : data.originalId));
+  hash.update(String(!isNullResourceId(data.originalId) ? data.originalId : data.id));
   return hash.digest().toString('hex') as PObjectId;
-}
-
-export function makePObject(
-  spec: PObjectSpec,
-  data: PlTreeNodeAccessor
-): PObject<PlTreeNodeAccessor> {
-  return {
-    id: derivePObjectId(spec, data),
-    spec,
-    data
-  };
 }
