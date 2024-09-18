@@ -1,5 +1,5 @@
 import { AxisQualificationWithAxisId } from './common';
-import { PObjectId, PTableRecordFilter } from '@milaboratory/sdk-model';
+import { PObjectId, PTableRecordFilter } from '@milaboratories/pl-model-common';
 
 export interface ColumnJoinEntry {
   type: 'column';

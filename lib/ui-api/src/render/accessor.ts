@@ -7,7 +7,7 @@ import {
   RemoteBlobHandleAndSize,
   isPColumn,
   mapPObjectData
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 import { getCfgRenderCtx } from '../internal';
 import { FutureRef } from './future';
 import { AccessorHandle } from './internal';

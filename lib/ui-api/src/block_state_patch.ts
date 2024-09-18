@@ -1,5 +1,5 @@
 import { Unionize } from './unionize';
-import { BlockOutputsBase, BlockState } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState } from '@milaboratories/pl-model-common';
 
 /** Patch for the BlockState, pushed by onStateUpdates method in SDK. */
 export type BlockStatePatch<

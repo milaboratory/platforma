@@ -1,4 +1,4 @@
-import { ColumnFilter, PColumnIdAndSpec } from '@milaboratory/sdk-model';
+import { ColumnFilter, PColumnIdAndSpec } from '@milaboratories/pl-model-common';
 import { AxisQualification, ColumnAxesWithQualifications } from './common';
 
 export interface FindColumnsRequest {

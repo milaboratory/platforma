@@ -1,4 +1,4 @@
-import { PTableRecordFilter, PTableSorting } from '@milaboratory/sdk-model';
+import { PTableRecordFilter, PTableSorting } from '@milaboratories/pl-model-common';
 
 /** Data table state */
 export type PlDataTableGridState = {

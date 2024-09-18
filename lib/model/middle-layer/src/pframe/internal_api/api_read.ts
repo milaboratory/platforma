@@ -6,7 +6,7 @@ import {
   PObjectId,
   UniqueValuesRequest,
   UniqueValuesResponse
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 import { CreateTableRequest } from './create_table';
 import { PTable } from './table';
 

@@ -1,4 +1,4 @@
-import { BlockOutputsBase, BlockState } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
 import { Optional } from 'utility-types';
 

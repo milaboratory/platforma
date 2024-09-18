@@ -1,4 +1,4 @@
-import { PColumnSpec, PObjectId } from '@milaboratory/sdk-model';
+import { PColumnSpec, PObjectId } from '@milaboratories/pl-model-common';
 
 /** Abstract identifier of a data blob that can be requested from the storage backend */
 export type PFrameBlobId = string;

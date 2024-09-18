@@ -1,4 +1,4 @@
-import { BlockOutputsBase, BlockState, NavigationState } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState, NavigationState } from '@milaboratories/pl-model-common';
 import { BlockStatePatch } from './block_state_patch';
 
 /** Returned by state subscription methods to be able to cancel the subscription. */

@@ -1,45 +1,35 @@
 {
-  "name": "@milaboratory/sdk-ui",
-  "version": "0.12.22",
+  "name": "@milaboratories/pl-ui-api",
+  "version": "1.2.22",
   "description": "Block UI and configuration SDK",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "node ./scripts/save-package-version.js && tsup",
-    "type-check": "node ./scripts/save-package-version.js && tsc --noEmit --composite false",
-    "test": "node ./scripts/save-package-version.js && jest",
-    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
-  "dependencies": {
-    "@milaboratory/sdk-model": "^1.3.9",
-    "utility-types": "^3.11.0",
-    "zod": "^3.23.8"
+  "scripts": {
+    "build": "node ./scripts/save-package-version.cjs && tsup",
+    "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
+    "test": "node ./scripts/save-package-version.cjs && jest --experimental-vm-modules"
   },
   "files": [
-    "dist/**/*"
+    "./dist/**/*",
+    "./src/**/*"
   ],
-  "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "prettier": "^3.3.3",
-    "jest": "^29.6.4",
-    "ts-jest": "^29.2.5",
-    "tsup": "~8.1.2",
-    "typescript": "^5.5.4"
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:^",
+    "utility-types": "catalog:",
+    "zod": "catalog:"
   },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "splitting": false,
-    "treeshake": true,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/jest": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

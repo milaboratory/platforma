@@ -10,7 +10,7 @@ import {
   PObjectId,
   UniqueValuesRequest,
   UniqueValuesResponse
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 
 export class PFrameImpl implements PFrame {
   constructor(private readonly handle: PFrameHandle) {}

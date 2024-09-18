@@ -1,4 +1,4 @@
-import { AxisId, AxisSpec, ValueType } from '@milaboratory/sdk-model';
+import { AxisId, AxisSpec, ValueType } from '@milaboratories/pl-model-common';
 
 export interface SingleAxisSelector {
   name: string;

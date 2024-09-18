@@ -10,6 +10,6 @@ export * from './render';
 export * from './sdk_info';
 
 // reexporting everything from SDK model
-export * from '@milaboratory/sdk-model';
+export * from '@milaboratories/pl-model-common';
 
 export * as JsRenderInternal from './render/internal';

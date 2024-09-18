@@ -1,6 +1,11 @@
 packages:
   - lib/util/build-configs
 
+  - lib/model/common
+  - lib/model/middle-layer
+
+  - lib/ui-api
+
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
