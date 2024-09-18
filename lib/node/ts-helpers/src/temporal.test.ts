@@ -18,17 +18,13 @@ test('timeout', async () => {
 test('abort timeout', async () => {
   await expect(async () => {
     await sleep(1000, AbortSignal.timeout(10));
-  })
-    .rejects
-    .toThrow(Aborted);
+  }).rejects.toThrow(Aborted);
 });
 
 test('aborted timeout', async () => {
   await expect(async () => {
     await sleep(1000, AbortSignal.abort());
-  })
-    .rejects
-    .toThrow(/aborted/);
+  }).rejects.toThrow(/aborted/);
 });
 
 test('jitter', () => {
@@ -84,13 +80,13 @@ test('delay exponential with max delay works', () => {
     jitter: 0,
     backoffMultiplier: 1.5,
     initialDelay: 1000,
-    maxDelay: 15000,
-  }
+    maxDelay: 15000
+  };
 
   const state = createInfiniteRetryState(opts);
   expect(state.nextDelay).toEqual(1000);
   expect(nextInfiniteRetryState(state).nextDelay).toEqual(1500);
-})
+});
 
 test('delay exponential with max delay reached max', () => {
   const opts: InfiniteRetryOptions = {
@@ -98,13 +94,13 @@ test('delay exponential with max delay reached max', () => {
     jitter: 0,
     backoffMultiplier: 1.5,
     initialDelay: 1000,
-    maxDelay: 15000,
-  }
+    maxDelay: 15000
+  };
 
   const states = [createInfiniteRetryState(opts)];
-  for (let i = 0; i < 100; i++){
-    states.push(nextInfiniteRetryState(states[states.length - 1]))
+  for (let i = 0; i < 100; i++) {
+    states.push(nextInfiniteRetryState(states[states.length - 1]));
   }
 
   expect(states[states.length - 1].nextDelay).toEqual(15000);
-})
+});

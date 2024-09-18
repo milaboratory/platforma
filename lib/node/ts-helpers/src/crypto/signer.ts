@@ -19,8 +19,7 @@ export class SignatureVerificationError extends Error {
 
 /** So far the only {@link Signer} implementation. */
 export class HmacSha256Signer implements Signer {
-  constructor(private readonly secret: string | Uint8Array) {
-  }
+  constructor(private readonly secret: string | Uint8Array) {}
 
   sign(data: string | Uint8Array): string {
     return createHmac('sha256', this.secret).update(data).digest('hex');
@@ -30,8 +29,7 @@ export class HmacSha256Signer implements Signer {
     if (signature !== createHmac('sha256', this.secret).update(data).digest('hex')) {
       if (validationErrorMessage === undefined)
         throw new SignatureVerificationError(`Signature verification failed for ${data}`);
-      else
-        throw new SignatureVerificationError(validationErrorMessage);
+      else throw new SignatureVerificationError(validationErrorMessage);
     }
   }
 

@@ -8,8 +8,7 @@ export interface MiLogger {
 }
 
 export class ConsoleLoggerAdapter implements MiLogger {
-  constructor(private readonly console: Console = require('console')) {
-  }
+  constructor(private readonly console: Console = require('console')) {}
 
   info(msg: string): void {
     this.console.log(msg);

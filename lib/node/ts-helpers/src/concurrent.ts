@@ -13,8 +13,7 @@ export async function asyncPool(
   const errs: Array<Error>[] = [];
 
   for (const fn of iterableFns) {
-    if (errs.length > 0)
-      throw new AsyncPoolError(`Errors while executing async pool: ${errs}`);
+    if (errs.length > 0) throw new AsyncPoolError(`Errors while executing async pool: ${errs}`);
 
     const p = fn();
     results.push(p);
@@ -22,8 +21,7 @@ export async function asyncPool(
 
     p.catch((e) => {
       errs.push(e);
-    })
-      .finally(() => executing.delete(p));
+    }).finally(() => executing.delete(p));
 
     if (executing.size >= concurrency) {
       await Promise.race(executing);
@@ -34,8 +32,6 @@ export async function asyncPool(
   if (errs.length > 0) {
     throw new AsyncPoolError(`Errors while executing async pool: ${errs}`);
   }
-
 }
 
-export class AsyncPoolError extends Error {
-}
+export class AsyncPoolError extends Error {}

@@ -2,8 +2,7 @@ import { MiLogger } from '@milaboratory/ts-helpers';
 import { Logger } from 'winston';
 
 export class WinstonLoggerAdapter implements MiLogger {
-  constructor(private readonly logger: Logger) {
-  }
+  constructor(private readonly logger: Logger) {}
 
   info(msg: string): void {
     this.logger.info(msg);
