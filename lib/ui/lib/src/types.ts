@@ -1,3 +1,4 @@
+import type { ImportFileHandle, Platforma, StorageHandle } from '@milaboratory/sdk-ui';
 import type { Ref, ComputedRef } from 'vue';
 
 export type Size = 'small' | 'medium' | 'large';
@@ -54,3 +55,15 @@ export const maskIcons24 = ['paper-clip', 'cloud-up', 'success', 'restart', 'clo
 export type MaskIconName24 = (typeof maskIcons24)[number];
 
 export type SliderMode = 'input' | 'text';
+
+export type ImportedFiles = {
+  storageHandle: StorageHandle;
+  files: ImportFileHandle[];
+};
+
+declare global {
+  const platforma: Platforma | undefined;
+  interface Window {
+    platforma: Platforma | undefined;
+  }
+}

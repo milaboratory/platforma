@@ -3,7 +3,7 @@ import './pl-tooltip.scss';
 import { reactive, ref, watch } from 'vue';
 import { useTooltipPosition } from '@/composition/useTooltipPosition';
 import * as utils from '@/helpers/utils';
-import { useClickOutside } from '@/composition/useClickOuside';
+import { useClickOutside } from '@/composition/useClickOutside';
 
 const emit = defineEmits(['tooltip:close']);
 

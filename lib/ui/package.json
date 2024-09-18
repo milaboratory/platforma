@@ -1,6 +1,6 @@
 {
   "name": "@milaboratory/platforma-uikit",
-  "version": "1.1.24",
+  "version": "1.2.0",
   "type": "module",
   "engines": {
     "node": "^20.12.2",
@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^8.4.0",
+    "@milaboratory/sdk-ui": "^0.12.22",
     "@rollup/plugin-alias": "^5.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.2",

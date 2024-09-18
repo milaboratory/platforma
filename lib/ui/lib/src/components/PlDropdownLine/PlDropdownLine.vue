@@ -3,7 +3,7 @@ import './pl-dropdown-line.scss';
 import type { StyleValue } from 'vue';
 import { computed, nextTick, reactive, ref, toRef, watch } from 'vue';
 import { deepEqual } from '@/helpers/objects';
-import { useClickOutside } from '@/composition/useClickOuside';
+import { useClickOutside } from '@/composition/useClickOutside';
 import { useFilteredList } from '@/composition/useFilteredList';
 import ResizableInput from './ResizableInput.vue';
 import { tapIf, tap } from '@/helpers/functions';

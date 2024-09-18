@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PlBtnSecondary } from './PlBtnSecondary';
-import { PlBtnGhost } from './PlBtnGhost';
+import { PlBtnSecondary } from '@/components/PlBtnSecondary';
+import { PlBtnGhost } from '@/components/PlBtnGhost';
 import { computed, ref } from 'vue';
 
 type PropsType = {

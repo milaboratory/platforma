@@ -42,6 +42,9 @@ export * from './components/PlDialogModal';
 export * from './components/PlSlideModal';
 export * from './components/PlToggleSwitch';
 
+export * from './components/PlFileDialog';
+export * from './components/PlFileInput';
+
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';
 
@@ -56,7 +59,7 @@ import { showContextMenu } from './components/contextMenu/index.ts';
  * Usables
  */
 export { usePosition } from './composition/usePosition';
-export { useClickOutside } from './composition/useClickOuside';
+export { useClickOutside } from './composition/useClickOutside';
 export { useEventListener } from './composition/useEventListener';
 export { useScroll } from './composition/useScroll';
 export { useResizeObserver } from './composition/useResizeObserver';
@@ -90,14 +93,10 @@ export * from './helpers/dom';
 
 export * from './helpers/utils';
 
-// @TODO
-import FileBaseInput from './components/FileBaseInput.vue';
-export { useLabelNotch } from './utils/useLabelNotch.ts';
-
 /**
  * @TODO review
  */
-export { FileBaseInput, ThemeSwitcher, DropdownListItem, MaskIcon16, MaskIcon24, GridTable, DataTable, ContextProvider, Slider };
+export { ThemeSwitcher, DropdownListItem, MaskIcon16, MaskIcon24, GridTable, DataTable, ContextProvider, Slider };
 
 // Helpers
 export { showContextMenu };
