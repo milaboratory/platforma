@@ -16,15 +16,15 @@
     "type-check": "tsc --noEmit --composite false",
     "test": "jest --runInBand"
   },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:^",
     "@types/node": "catalog:",
     "utility-types": "catalog:"
   },
-  "files": [
-    "./dist/**/*",
-    "./src/**/*"
-  ],
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@types/jest": "catalog:",

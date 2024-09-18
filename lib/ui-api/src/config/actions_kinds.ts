@@ -4,8 +4,8 @@ import {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ImportProgress
-} from '@milaboratory/sdk-model';
-import { AnyLogHandle } from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
+import { AnyLogHandle } from '@milaboratories/pl-model-common';
 
 //
 // Context

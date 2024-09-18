@@ -5,7 +5,7 @@ import {
   PTableSorting,
   PTableVector,
   TableRange
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 
 /**
  * Table view returned as a result of create table operation.

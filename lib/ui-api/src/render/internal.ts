@@ -13,7 +13,7 @@ import {
   PTableHandle,
   ResultCollection,
   ValueOrError
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 
 export const StagingAccessorName = 'staging';
 export const MainAccessorName = 'main';

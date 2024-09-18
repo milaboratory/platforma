@@ -3,7 +3,7 @@ import {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ValueOrErrors
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 import { BlockModel, DeriveHref, StdCtx } from './builder';
 import {
   Args,

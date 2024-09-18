@@ -1,6 +1,6 @@
 import { ProjectMeta } from './project';
 import { BlockPackSpec } from './block_pack';
-import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
 
 /** Generalized block status, to be used in block item "styling". */

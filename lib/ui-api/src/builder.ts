@@ -1,4 +1,4 @@
-import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratories/pl-model-common';
 import { Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import { Platforma } from './platforma';

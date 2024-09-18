@@ -1,5 +1,5 @@
 import { BlockApi } from './block_api';
-import { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratory/sdk-model';
+import { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratories/pl-model-common';
 import { BlockConfig } from './builder';
 import { SdkInfo } from './sdk_info';
 import { BlockStatePatch } from './block_state_patch';

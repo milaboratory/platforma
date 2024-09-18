@@ -15,7 +15,7 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 import { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor } from './accessor';
