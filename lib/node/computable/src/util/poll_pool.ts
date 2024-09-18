@@ -1,5 +1,5 @@
 import * as tp from 'node:timers/promises';
-import { ConsoleLoggerAdapter, MiLogger } from '@milaboratory/ts-helpers';
+import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { ComputableHooks } from '../computable/computable_hooks';
 import { Computable } from '../computable/computable';
 import { ComputableCtx, UnwrapComputables } from '../computable/kernel';

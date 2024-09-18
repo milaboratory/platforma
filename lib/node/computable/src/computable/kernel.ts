@@ -2,7 +2,7 @@ import { Watcher } from '../watcher';
 import { ComputableHooks } from './computable_hooks';
 import { AccessorProvider } from './accessor_provider';
 import { Computable } from './computable';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 
 export interface ComputableCtx {
   /** Attaches computable observer to track interactions with resulting computable.

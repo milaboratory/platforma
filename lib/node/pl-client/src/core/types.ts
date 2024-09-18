@@ -1,4 +1,4 @@
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { version } from 'ts-jest/dist/transformers/hoist-jest';
 
 // more details here: https://egghead.io/blog/using-branded-types-in-typescript

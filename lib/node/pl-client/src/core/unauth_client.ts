@@ -4,7 +4,7 @@ import {
   MaintenanceAPI_Ping_Response
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import { LLPlClient } from './ll_client';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { UnauthenticatedError } from './errors';
 
 /** Primarily used for initial authentication (login) */

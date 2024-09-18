@@ -6,7 +6,7 @@
     "lint": "turbo build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\""
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",

@@ -1,6 +1,6 @@
 import { PlTransaction } from '../core/transaction';
 import { FieldData, OptionalResourceId, isNotNullResourceId } from '../core/types';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 export interface ValErr {
   valueId: OptionalResourceId;
