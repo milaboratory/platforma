@@ -4,7 +4,7 @@ import {
   ComputableCtx,
   ComputableHooks,
   UsageGuard
-} from '@milaboratory/computable';
+} from '@milaboratories/computable';
 import {
   ResourceId,
   resourceIdToString,
@@ -13,7 +13,7 @@ import {
   resourceTypeToString,
   NullResourceId,
   OptionalResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { mapValueAndError, ValueAndError } from './value_and_error';
 import {
   CommonFieldTraverseOps,
@@ -24,7 +24,7 @@ import {
 import { ValueOrError } from './value_or_error';
 import { ZodType, z } from 'zod';
 import { Optional, Writable } from 'utility-types';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {

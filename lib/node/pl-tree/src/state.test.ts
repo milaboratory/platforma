@@ -10,8 +10,8 @@ import {
   TestValueResourceState1,
   TestErrorResourceState2
 } from './test_utils';
-import { Computable } from '@milaboratory/computable';
-import { NullResourceId, ResourceId } from '@milaboratory/pl-client-v2';
+import { Computable } from '@milaboratories/computable';
+import { NullResourceId, ResourceId } from '@milaboratories/pl-client';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;

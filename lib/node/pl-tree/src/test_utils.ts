@@ -8,7 +8,7 @@ import {
   ResourceData,
   ResourceId,
   ResourceType
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { ExtendedResourceData } from './state';
 
 export const TestRootType1: ResourceType = {

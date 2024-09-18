@@ -1,10 +1,10 @@
-import { PollingComputableHooks } from '@milaboratory/computable';
+import { PollingComputableHooks } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import { isTimeoutOrCancelError, PlClient, ResourceId } from '@milaboratory/pl-client-v2';
+import { isTimeoutOrCancelError, PlClient, ResourceId } from '@milaboratories/pl-client';
 import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
 import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
 import * as tp from 'node:timers/promises';
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 export type SynchronizedTreeOps = {
   finalPredicate?: FinalPredicate;

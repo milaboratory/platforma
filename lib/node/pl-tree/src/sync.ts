@@ -4,7 +4,7 @@ import {
   OptionalResourceId,
   PlTransaction,
   ResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import Denque from 'denque';
 import { ExtendedResourceData, PlTreeState } from './state';
 
