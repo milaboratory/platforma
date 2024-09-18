@@ -15,8 +15,7 @@
     "build-debug": "tsc",
     "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand",
-    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+    "test": "jest --runInBand"
   },
   "files": [
     "./dist/**/*",

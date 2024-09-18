@@ -17,4 +17,3 @@ export class CallersCounter {
     return this.callers.size == 0;
   }
 }
-

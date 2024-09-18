@@ -3,17 +3,25 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
+    "lint": "turbo build",
     "changeset": "changeset",
-    "version-packages": "changeset version"
+    "version-packages": "changeset version",
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
-    "eslint": "catalog:",
-    "prettier": "catalog:",
-    "turbo": "catalog:"
+    "turbo": "catalog:",
+    "prettier": "catalog:"
   },
   "packageManager": "pnpm@9.10.0",
   "engines": {
     "node": ">=18"
+  },
+  "//": {
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "@eslint/js": "catalog:",
+    "@types/eslint__js": "catalog:",
+    "typescript-eslint": "catalog:"
   }
 }

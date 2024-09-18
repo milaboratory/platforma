@@ -1,4 +1,4 @@
-import { MiLogger } from "../log";
+import { MiLogger } from '../log';
 import {
   ExponentialWithMaxBackoffDelayRetryOptions,
   InfiniteRetryOptions,
@@ -8,10 +8,10 @@ import {
   createRetryState,
   nextInfiniteRetryState,
   nextRetryStateOrError,
-  tryNextRetryState,
-} from "../temporal";
-import { AsyncQueue } from "./async_queue";
-import { scheduler } from "node:timers/promises";
+  tryNextRetryState
+} from '../temporal';
+import { AsyncQueue } from './async_queue';
+import { scheduler } from 'node:timers/promises';
 
 export interface Task {
   readonly fn: () => Promise<void>;
@@ -33,19 +33,18 @@ export class TaskProcessor {
     numberOfWorkers: number,
     /** The task will be tried infinitely. */
     backoffOptions: ExponentialWithMaxBackoffDelayRetryOptions = {
-      type: "exponentialWithMaxDelayBackoff",
+      type: 'exponentialWithMaxDelayBackoff',
       initialDelay: 1,
       maxDelay: 15000, // 15 seconds
       backoffMultiplier: 1.5,
-      jitter: 0.5,
+      jitter: 0.5
     }
   ) {
     this.backoffOptionsPerWorker = backoffOptions;
     this.backoffOptionsPerWorker.maxDelay *= numberOfWorkers;
 
     this.workers = [];
-    for (let i = 0; i < numberOfWorkers; i++)
-      this.workers.push(this.worker(String(i)));
+    for (let i = 0; i < numberOfWorkers; i++) this.workers.push(this.worker(String(i)));
   }
 
   public push(task: Task): void {

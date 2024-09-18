@@ -18,8 +18,7 @@ export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void>
         clearTimeout(timeoutRef);
         reject(new Aborted(abortSignal?.reason));
       };
-      if (abortSignal?.aborted)
-        reject(new Aborted(abortSignal.reason));
+      if (abortSignal?.aborted) reject(new Aborted(abortSignal.reason));
       timeoutRef = setTimeout(() => {
         abortSignal?.removeEventListener('abort', abortHandler);
         resolve();
@@ -42,38 +41,38 @@ export function jitter({ ms, factor }: JitterOpts): number {
 }
 
 export type ExponentialBackoffRetryOptions = {
-  type: 'exponentialBackoff',
-  maxAttempts: number,
+  type: 'exponentialBackoff';
+  maxAttempts: number;
   /** Delay after first failed attempt, in ms. */
-  initialDelay: number,
+  initialDelay: number;
   /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
-  backoffMultiplier: number,
+  backoffMultiplier: number;
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
-  jitter: number
-}
+  jitter: number;
+};
 
 export type LinearBackoffRetryOptions = {
-  type: 'linearBackoff',
-  maxAttempts: number,
+  type: 'linearBackoff';
+  maxAttempts: number;
   /** Delay after first failed attempt (in milliseconds) */
-  initialDelay: number,
+  initialDelay: number;
   /** This value will be added to the delay from the previous step, in ms */
-  backoffStep: number,
+  backoffStep: number;
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
-  jitter: number
-}
+  jitter: number;
+};
 
 export type RetryOptions = LinearBackoffRetryOptions | ExponentialBackoffRetryOptions;
 
 export type RetryState = {
-  options: RetryOptions,
-  startTimestamp: number,
+  options: RetryOptions;
+  startTimestamp: number;
   /** Total delays so far (including next delay, implying it already applied) */
-  totalDelay: number,
+  totalDelay: number;
   /** Next delay in ms */
-  nextDelay: number
-  attemptsLeft: number
-}
+  nextDelay: number;
+  attemptsLeft: number;
+};
 
 export function createRetryState(options: RetryOptions): RetryState {
   return {
@@ -86,12 +85,12 @@ export function createRetryState(options: RetryOptions): RetryState {
 }
 
 export function tryNextRetryState(previous: RetryState): RetryState | undefined {
-  if (previous.attemptsLeft <= 0)
-    return undefined;
+  if (previous.attemptsLeft <= 0) return undefined;
 
-  let delayDelta = previous.options.type == 'linearBackoff'
-    ? previous.options.backoffStep
-    : (previous.nextDelay * (previous.options.backoffMultiplier - 1));
+  let delayDelta =
+    previous.options.type == 'linearBackoff'
+      ? previous.options.backoffStep
+      : previous.nextDelay * (previous.options.backoffMultiplier - 1);
   delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
 
   return {
@@ -109,35 +108,36 @@ export function nextRetryStateOrError(previous: RetryState): RetryState {
     throw new Error(
       `max number of attempts reached (${previous.options.maxAttempts}): ` +
         `total time = ${msToHumanReadable(Date.now() - previous.startTimestamp)}, ` +
-        `total delay = ${msToHumanReadable(previous.totalDelay)}`);
+        `total delay = ${msToHumanReadable(previous.totalDelay)}`
+    );
   return next;
 }
 
 export type ExponentialWithMaxBackoffDelayRetryOptions = {
-  type: 'exponentialWithMaxDelayBackoff',
+  type: 'exponentialWithMaxDelayBackoff';
   /** Delay after first failed attempt, in ms. */
-  initialDelay: number,
+  initialDelay: number;
 
   /** Max delay in ms, every delay that exceeds the limit will be changed to this delay. */
-  maxDelay: number,
+  maxDelay: number;
 
   /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
-  backoffMultiplier: number,
+  backoffMultiplier: number;
 
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
-  jitter: number
-}
+  jitter: number;
+};
 
 export type InfiniteRetryOptions = ExponentialWithMaxBackoffDelayRetryOptions;
 
 export type InfiniteRetryState = {
-  options: InfiniteRetryOptions,
-  startTimestamp: number,
+  options: InfiniteRetryOptions;
+  startTimestamp: number;
   /** Total delays so far (including next delay, implying it already applied) */
-  totalDelay: number,
+  totalDelay: number;
   /** Next delay in ms */
-  nextDelay: number
-}
+  nextDelay: number;
+};
 
 export function createInfiniteRetryState(options: InfiniteRetryOptions): InfiniteRetryState {
   return {
@@ -152,9 +152,8 @@ export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRe
   let delayDelta = previous.nextDelay * (previous.options.backoffMultiplier - 1);
   delayDelta += delayDelta * previous.options.jitter * 2 * (Math.random() - 0.5);
 
-  let nextDelay = previous.nextDelay + delayDelta
-  if (nextDelay > previous.options.maxDelay)
-    nextDelay = previous.options.maxDelay
+  let nextDelay = previous.nextDelay + delayDelta;
+  if (nextDelay > previous.options.maxDelay) nextDelay = previous.options.maxDelay;
 
   return {
     options: previous.options,
