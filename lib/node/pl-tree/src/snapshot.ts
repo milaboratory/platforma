@@ -1,9 +1,9 @@
-import { ResourceId, ResourceType } from '@milaboratory/pl-client-v2';
+import { ResourceId, ResourceType } from '@milaboratories/pl-client';
 import { Optional, Writable } from 'utility-types';
 import { ZodType, z } from 'zod';
 import { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from './accessors';
-import { ComputableCtx } from '@milaboratory/computable';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { ComputableCtx } from '@milaboratories/computable';
+import { notEmpty } from '@milaboratories/ts-helpers';
 
 /**
  * A DTO that can be generated from a tree node to make a snapshot of specific parts of it's state.

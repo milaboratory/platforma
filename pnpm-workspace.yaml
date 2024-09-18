@@ -6,6 +6,7 @@ packages:
   - lib/node/ts-helpers-winston
   - lib/node/computable
   - lib/node/pl-client
+  - lib/node/pl-tree
 
 catalog:
   # Build
@@ -41,6 +42,8 @@ catalog:
   'denque': ^2.1.0
   'canonicalize': ^2.0.0
   'long': ^5.2.3
+
+  'zod': ^3.23.8
 
   'yaml': ^2.5.1
 

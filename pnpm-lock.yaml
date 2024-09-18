@@ -78,6 +78,9 @@ catalogs:
     yaml:
       specifier: ^2.5.1
       version: 2.5.1
+    zod:
+      specifier: ^3.23.8
+      version: 3.23.8
 
 importers:
 
@@ -181,6 +184,46 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.3.3
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0)(typescript@5.6.2)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(typescript@5.6.2)(yaml@2.5.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
+
+  lib/node/pl-tree:
+    dependencies:
+      '@milaboratories/computable':
+        specifier: workspace:^
+        version: link:../computable
+      '@milaboratories/pl-client':
+        specifier: workspace:^
+        version: link:../pl-client
+      '@milaboratories/ts-helpers':
+        specifier: workspace:^
+        version: link:../ts-helpers
+      denque:
+        specifier: 'catalog:'
+        version: 2.1.0
+      utility-types:
+        specifier: 'catalog:'
+        version: 3.11.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../util/build-configs
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 29.5.13
+      jest:
+        specifier: 'catalog:'
+        version: 29.7.0(@types/node@20.16.5)
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0)(typescript@5.6.2)
@@ -2432,6 +2475,9 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
 snapshots:
 
@@ -4937,3 +4983,5 @@ snapshots:
       yargs-parser: 21.1.1
 
   yocto-queue@0.1.0: {}
+
+  zod@3.23.8: {}

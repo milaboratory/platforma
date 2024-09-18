@@ -1,7 +1,7 @@
-import { field, TestHelpers } from '@milaboratory/pl-client-v2';
+import { field, TestHelpers } from '@milaboratories/pl-client';
 import { PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState } from './sync';
-import { Computable } from '@milaboratory/computable';
+import { Computable } from '@milaboratories/computable';
 import { TestStructuralResourceType1 } from './test_utils';
 
 test('load resources', async () => {

@@ -1,4 +1,4 @@
-import { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
+import { FieldType, ResourceType } from '@milaboratories/pl-client';
 
 export type CommonTraversalOps = {
   /**

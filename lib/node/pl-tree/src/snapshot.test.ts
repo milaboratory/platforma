@@ -10,8 +10,8 @@ import {
   iField
 } from './test_utils';
 import { PlTreeState } from './state';
-import { Computable } from '@milaboratory/computable';
-import { ResourceId } from '@milaboratory/pl-client-v2';
+import { Computable } from '@milaboratories/computable';
+import { ResourceId } from '@milaboratories/pl-client';
 
 // schema definition
 const MyTestResourceState = rsSchema({

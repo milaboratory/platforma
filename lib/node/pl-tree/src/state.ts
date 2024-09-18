@@ -12,11 +12,11 @@ import {
   ResourceKind,
   ResourceType,
   stringifyWithResourceId
-} from '@milaboratory/pl-client-v2';
-import { ChangeSource, Watcher } from '@milaboratory/computable';
+} from '@milaboratories/pl-client';
+import { ChangeSource, Watcher } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
 import { ValueAndError } from './value_and_error';
-import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
 
 export type ExtendedResourceData = ResourceData & {
