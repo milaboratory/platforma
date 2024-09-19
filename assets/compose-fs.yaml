@@ -29,7 +29,7 @@ services:
       - "PL_LOG_RESOURCE_DATA=false"
       - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
       - "PL_DUMP_CONFIG_BEFORE_RUN=true"
-      - "PLC_FILE_PRIMARY_TYPE=FS"
+      - "PL_DATA_PRIMARY_TYPE=FS"
 
     volumes:
       - ${PL_AUTH_HTPASSWD_PATH}:/etc/platforma/users.htpasswd

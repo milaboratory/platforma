@@ -233,13 +233,13 @@ export default class Core {
       const primary = plCfg.storageSettingsFromURL(options.primaryURL, '.');
 
       if (primary.type === 'S3') {
-        envs['PLC_FILE_PRIMARY_S3_BUCKET'] = primary.bucketName!;
+        envs['PL_DATA_PRIMARY_S3_BUCKET'] = primary.bucketName!;
 
-        if (primary.endpoint) envs['PLC_FILE_PRIMARY_S3_ENDPOINT'] = primary.endpoint;
-        if (primary.presignEndpoint) envs['PLC_FILE_PRIMARY_S3_PRESIGN_ENDPOINT'] = primary.presignEndpoint;
-        if (primary.key) envs['PLC_FILE_PRIMARY_S3_KEY'] = primary.key;
-        if (primary.secret) envs['PLC_FILE_PRIMARY_S3_SECRET'] = primary.secret;
-        if (primary.region) envs['PLC_FILE_PRIMARY_S3_REGION'] = primary.region;
+        if (primary.endpoint) envs['PL_DATA_PRIMARY_S3_ENDPOINT'] = primary.endpoint;
+        if (primary.presignEndpoint) envs['PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT'] = primary.presignEndpoint;
+        if (primary.key) envs['PL_DATA_PRIMARY_S3_KEY'] = primary.key;
+        if (primary.secret) envs['PL_DATA_PRIMARY_S3_SECRET'] = primary.secret;
+        if (primary.region) envs['PL_DATA_PRIMARY_S3_REGION'] = primary.region;
       } else {
         throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
       }
