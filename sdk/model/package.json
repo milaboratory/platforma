@@ -1,7 +1,7 @@
 {
-  "name": "@milaboratories/pl-ui-api",
+  "name": "@platforma-sdk/model",
   "version": "1.2.22",
-  "description": "Block UI and configuration SDK",
+  "description": "Platforma.bio SDK / Block Model",
   "type": "module",
   "exports": {
     ".": {
