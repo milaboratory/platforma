@@ -13,7 +13,7 @@
   "scripts": {
     "build": "node ./scripts/save-package-version.cjs && tsup",
     "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
-    "test": "node ./scripts/save-package-version.cjs && jest --experimental-vm-modules"
+    "test": "node ./scripts/save-package-version.cjs && jest"
   },
   "files": [
     "./dist/**/*",
