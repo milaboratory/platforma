@@ -17,7 +17,8 @@
   },
   "files": [
     "./dist/**/*",
-    "./src/**/*"
+    "./src/**/*",
+    "README.md"
   ],
   "dependencies": {
     "@milaboratories/pl-model-common": "workspace:^",
