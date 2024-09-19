@@ -1,0 +1,5 @@
+thelib := import("@milaboratory/tengo-integration-tests-1-library:local-lib")
+/* a := import(":nonexistent") single-line comments in comment-block should be ignored */
+plapi := import("plapi")
+
+tpl1 := plapi.getTemplateId("@milaboratory/tengo-integration-tests-1-library:local-template-1")
