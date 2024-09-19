@@ -1,0 +1,6 @@
+ll := import("@milaboratory/tengo-sdk:ll")
+mySoft := ll.importSoftware(":my-software")
+
+export {
+    "some": "value"
+}

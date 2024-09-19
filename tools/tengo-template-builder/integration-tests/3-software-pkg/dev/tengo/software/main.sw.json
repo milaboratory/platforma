@@ -1,0 +1,15 @@
+{
+  "docker": {
+    "image": "local/milaboratory/some-software: 1.0.0",
+    "entrypoint": [
+      "..."
+    ]
+  },
+  "local": {
+    "hash": "fadedeafcafeface...",
+    "root": "../../src",
+    "cmd": "./script.py",
+    "runEnv": "python-3.12",
+    "requirements": "./requirements.txt}"
+  }
+}
