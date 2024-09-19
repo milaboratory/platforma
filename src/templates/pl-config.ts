@@ -156,6 +156,7 @@ function defaultStorageSettings(
       storage.presignEndpoint = options?.presignEndpoint ?? 'http://localhost:9000';
       storage.bucketName = options?.bucketName ?? defaultBucket;
       storage.createBucket = defaultBool(options?.createBucket, true);
+      storage.forcePathStyle = defaultBool(options?.forcePathStyle, true);
       storage.key = options?.key ?? '';
       storage.secret = options?.secret ?? '';
       storage.accessPrefixes = options?.accessPrefixes ?? [''];
@@ -227,35 +228,10 @@ controllers:
               mode: active
               downloadable: false
 
-      workdirManager: work
-      uploadManager: main
-      defaultDownloadable: main
-
     storages:
       - &mainStorage      ${JSON.stringify(options.storages.primary)}
       - &libraryStorage   ${JSON.stringify(options.storages.library)}
       - &workStorage      ${JSON.stringify(options.storages.work)}
-        
-    transfers:
-      - src: *mainStorage
-        dst:
-          <<: *workStorage
-          useHardlinks: 'auto'
-
-      - src: *workStorage
-        dst:
-          <<: *mainStorage
-          useHardlinks: 'auto'
-
-      - src: *libraryStorage
-        dst:
-          <<: *workStorage
-          useHardlinks: 'auto'
-
-      - src: *libraryStorage
-        dst:
-          <<: *mainStorage
-          useHardlinks: 'auto'
 
   runner:
     main:
@@ -265,6 +241,7 @@ controllers:
       id: 'work'
       storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
       packagesRoot: '${options.localRoot}/packages'
+      defaultQueueName: 'heavy'
       queues:
         - name: 'heavy'
           maxConcurrency: 1
