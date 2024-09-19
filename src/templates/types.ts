@@ -128,6 +128,7 @@ type s3StorageTypeSettings = {
   region: string;
   bucketName: string;
   createBucket: boolean;
+  forcePathStyle: boolean;
   key: string;
   secret: string;
   accessPrefixes: string[];
