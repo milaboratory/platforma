@@ -4,14 +4,14 @@ packages:
   - lib/model/common
   - lib/model/middle-layer
 
-  - lib/ui-api
-
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
   - lib/node/computable
   - lib/node/pl-client
   - lib/node/pl-tree
+
+  - sdk/model
 
 catalog:
   # Build
