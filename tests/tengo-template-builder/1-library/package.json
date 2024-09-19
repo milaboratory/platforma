@@ -1,5 +1,6 @@
 {
-  "name": "@milaboratory/tengo-integration-tests-1-library",
+  "private": true,
+  "name": "@milaboratories/tengo-integration-tests-1-library",
   "version": "1.0.0",
   "description": "The library and template compilation test",
   "scripts": {
@@ -8,6 +9,6 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@milaboratory/tengo-template-builder": "file:../../."
+    "@milaboratories/tengo-template-builder": "workspace:*"
   }
 }

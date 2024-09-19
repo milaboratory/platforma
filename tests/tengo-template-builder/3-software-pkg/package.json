@@ -1,16 +1,13 @@
 {
+  "private": true,
   "name": "@milaboratory/tengo-integration-tests-3-software-pkg",
   "version": "1.0.0",
   "description": "The software description example",
   "scripts": {
     "build": "pl-tengo build"
   },
-  "files": [
-    "dist/"
-  ],
   "license": "UNLICENSED",
-  "dependencies": {},
   "devDependencies": {
-    "@milaboratory/tengo-template-builder": "file:../../."
+    "@milaboratory/tengo-template-builder": "workspace:*"
   }
 }
