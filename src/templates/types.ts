@@ -114,6 +114,7 @@ export function emptyS3Settings(id: string): s3StorageSettings {
     presignEndpoint: '',
     bucketName: '',
     createBucket: false,
+    forcePathStyle: false,
     key: '',
     secret: '',
     accessPrefixes: [],
