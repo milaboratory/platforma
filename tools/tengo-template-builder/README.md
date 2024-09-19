@@ -2,6 +2,7 @@
 
 This repo contains a tool, that facilitates integration of `tengo` libraries and template build and distribution process into npm infrastructure. 
 
+<!-- 
 # Example config & file layout
 
 `package.json`
@@ -48,4 +49,4 @@ package.json
 Only if you are developing a library, and use external libraries or templates in your code add such dependencies
 in `"dependencies"`, because your users will have to have those libraries as their transient dependencies. In all other
 cases use `"devDependencies"`. For example use of `"devDependencies"` is recommended if you are consuming external
-library code only in templates.
+library code only in templates. -->

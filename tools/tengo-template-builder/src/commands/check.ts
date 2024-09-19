@@ -3,7 +3,7 @@ import { createLogger } from '../compiler/main';
 import { dumpAll } from '../shared/dump';
 import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
-import { TengoTesterBinaryPath } from '@milaboratory/tengo-tester';
+import { TengoTesterBinaryPath } from '@milaboratories/tengo-tester';
 
 export default class Check extends Command {
   static override description = 'check tengo sources for language processor an';
@@ -22,8 +22,7 @@ export default class Check extends Command {
     const { flags, argv } = await this.parse(Check);
     const logger = createLogger(flags['log-level']);
 
-    const testerArgs: string[] =
-      argv.length == 0 ? ['./src'] : (argv as string[]);
+    const testerArgs: string[] = argv.length == 0 ? ['./src'] : (argv as string[]);
 
     // prettier-ignore
     const tester = spawnEmbed(

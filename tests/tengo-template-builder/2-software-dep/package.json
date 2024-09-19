@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@milaboratory/tengo-integration-tests-2-software-dep",
   "version": "1.0.0",
   "description": "The software dependency test",
@@ -7,7 +8,7 @@
   },
   "license": "UNLICENSED",
   "devDependencies": {
-    "@milaboratory/tengo-sdk": "^0.1.1",
-    "@milaboratory/tengo-template-builder": "file:../../."
+    "@milaboratory/tengo-sdk": "workspace:*",
+    "@milaboratory/tengo-template-builder": "workspace:*"
   }
 }

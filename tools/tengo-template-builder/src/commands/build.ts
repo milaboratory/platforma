@@ -8,7 +8,7 @@ import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import winston from 'winston';
+import * as winston from 'winston';
 
 export default class Build extends Command {
   static override description =

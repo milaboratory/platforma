@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratory/tengo-template-builder",
+  "name": "@milaboratories/tengo-template-builder",
   "version": "1.14.4",
   "description": "Pl Tengo Template Builder",
   "scripts": {
@@ -10,24 +10,23 @@
     "pl-tengo": "./bin/run.js"
   },
   "files": [
-    "dist"
+    "./dist/**/*",
+    "README.md"
   ],
-  "keywords": [],
   "license": "UNLICENSED",
-  "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.16.1",
-    "@types/node-dir": "^0.0.37",
-    "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.5.4"
-  },
   "dependencies": {
-    "@milaboratory/tengo-tester": "^1.4.1",
-    "@oclif/core": "^3.26.6",
-    "canonicalize": "^2.0.0",
-    "winston": "^3.14.2"
+    "@milaboratories/tengo-tester": "catalog:",
+    "@oclif/core": "catalog:",
+    "canonicalize": "catalog:",
+    "winston": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:",
+    "typescript": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",

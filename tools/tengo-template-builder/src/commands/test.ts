@@ -3,7 +3,7 @@ import { createLogger } from '../compiler/main';
 import { dumpAll } from '../shared/dump';
 import { GlobalFlags } from '../shared/basecmd';
 import { spawnEmbed, waitFor } from '../shared/proc';
-import { TengoTesterBinaryPath } from '@milaboratory/tengo-tester';
+import { TengoTesterBinaryPath } from '@milaboratories/tengo-tester';
 
 export default class Test extends Command {
   static override description = 'run tengo unit tests (.test.tengo)';
