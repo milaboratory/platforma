@@ -44,7 +44,7 @@
     "vue": "^3.4.31"
   },
   "dependencies": {
-    "@milaboratory/platforma-uikit": "^1.2.0"
+    "@milaboratory/platforma-uikit": "^1.2.2"
   },
   "devDependencies": {
     "@ag-grid-community/client-side-row-model": "^32.1.0",
