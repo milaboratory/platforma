@@ -246,16 +246,16 @@ watch(
 
 <template>
   <div class="container">
-    <div class="sheets" v-if="settings.sourceType === 'ptable' && settings.sheets">
+    <div v-if="settings.sourceType === 'ptable' && settings.sheets" class="sheets">
       <PlDropdownLine
         v-for="(sheet, i) in settings.sheets"
         :key="i"
-        :modelValue="sheetsState[makeSheetId(sheet.axis)]"
-        @update:modelValue="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+        :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
       />
     </div>
-    <AgGridVue class="grid" :gridOptions="gridOptions" />
+    <AgGridVue class="grid" :grid-options="gridOptions" />
   </div>
 </template>
 

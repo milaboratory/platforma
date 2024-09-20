@@ -1,4 +1,4 @@
-import type { ColDef, GetRowIdParams, GridApi, GridOptions, IDatasource, IGetRowsParams, SortModelItem } from '@ag-grid-community/core';
+import type { ColDef, GridApi, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
 import {
   type ValueType,
   type PValueInt,
