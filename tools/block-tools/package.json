@@ -1,0 +1,72 @@
+{
+  "name": "@milaboratory/pl-block-tools",
+  "version": "2.1.5",
+  "description": "Utility to manipulate Platforma Blocks and Block Registry",
+  "scripts": {
+    "build": "tsup",
+    "readme": "exec oclif readme",
+    "test": "jest",
+    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+  },
+  "main": "dist/lib.js",
+  "module": "dist/lib.mjs",
+  "types": "dist/lib.d.ts",
+  "bin": {
+    "block-tools": "./bin/run.js"
+  },
+  "files": [
+    "bin/*",
+    "dist/**/*"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratory/pl-middle-layer-model": "1.2.11",
+    "@aws-sdk/client-s3": "^3.626.0",
+    "@milaboratory/ts-helpers": "^1.0.19",
+    "@milaboratory/ts-helpers-oclif": "^1.1.0",
+    "@oclif/core": "^4.0.17",
+    "@types/semver": "^7.5.8",
+    "mime-types": "^2.1.35",
+    "semver": "^7.6.3",
+    "tar": "^7.4.3",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/mime-types": "^2.1.4",
+    "@types/node": "^20.14.12",
+    "oclif": "^4.14.15",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.3",
+    "ts-node": "^10.9.2",
+    "tsup": "~8.1.2",
+    "typescript": "^5.5.4"
+  },
+  "tsup": {
+    "entry": {
+      "cli": "src/cmd/index.ts",
+      "lib": "src/lib.ts"
+    },
+    "splitting": false,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  },
+  "oclif": {
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/cli.js",
+      "identifier": "COMMANDS"
+    },
+    "bin": "block-tools",
+    "dirname": "block-tools",
+    "topicSeparator": " "
+  }
+}

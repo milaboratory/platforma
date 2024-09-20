@@ -1,0 +1,2 @@
+registries:
+  default: s3://milab-euce1-prod-pkgs-s3-block-registry/pub/reg0?region=eu-central-1
