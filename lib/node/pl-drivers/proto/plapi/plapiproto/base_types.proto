@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package MiLaboratories.PL.Base;
+
+option go_package = "github.com/milaboratory/pl/plapi/plapiproto;plapiproto";
+
+message ResourceType {
+  string name = 1;
+  string version = 2;
+}
+
+enum FieldType {
+  INVALID = 0;
+
+  INPUT = 1;
+  OUTPUT = 2;
+  SERVICE = 6;
+  ONE_TIME_WRITABLE = 4;
+
+  DYNAMIC = 3;
+  MULTIPLE_TIMES_WRITABLE = 5;
+}
+
+message FieldRef {
+  uint64 resource_id = 2;
+  string field_name = 3;
+}
