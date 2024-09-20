@@ -1,7 +1,7 @@
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import { fromFileHandle, toFileHandle, toListItem } from './ls_list_entry';
 import type { Dirent, Stats } from 'node:fs';
 

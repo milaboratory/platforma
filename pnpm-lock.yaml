@@ -13,8 +13,8 @@ catalogs:
       specifier: ^2.27.8
       version: 2.27.8
     '@grpc/grpc-js':
-      specifier: ^1.11.2
-      version: 1.11.2
+      specifier: ^1.11.3
+      version: 1.11.3
     '@milaboratories/tengo-tester':
       specifier: ^1.4.4
       version: 1.4.4
@@ -48,6 +48,9 @@ catalogs:
     '@types/semver':
       specifier: ^7.5.8
       version: 7.5.8
+    '@types/tar-fs':
+      specifier: ^2.0.4
+      version: 2.0.4
     canonicalize:
       specifier: ^2.0.0
       version: 2.0.0
@@ -78,6 +81,9 @@ catalogs:
     tar:
       specifier: ^7.4.3
       version: 7.4.3
+    tar-fs:
+      specifier: ^3.0.6
+      version: 3.0.6
     ts-jest:
       specifier: ^29.2.5
       version: 29.2.5
@@ -193,13 +199,13 @@ importers:
     dependencies:
       '@grpc/grpc-js':
         specifier: 'catalog:'
-        version: 1.11.2
+        version: 1.11.3
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
       '@protobuf-ts/grpc-transport':
         specifier: 'catalog:'
-        version: 2.9.4(@grpc/grpc-js@1.11.2)
+        version: 2.9.4(@grpc/grpc-js@1.11.3)
       '@protobuf-ts/runtime':
         specifier: 'catalog:'
         version: 2.9.4
@@ -246,6 +252,73 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.3.3
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0)(typescript@5.6.2)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(typescript@5.6.2)(yaml@2.5.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.2
+
+  lib/node/pl-drivers:
+    dependencies:
+      '@grpc/grpc-js':
+        specifier: 'catalog:'
+        version: 1.11.3
+      '@milaboratories/computable':
+        specifier: workspace:^
+        version: link:../computable
+      '@milaboratories/pl-client':
+        specifier: workspace:^
+        version: link:../pl-client
+      '@milaboratories/pl-model-common':
+        specifier: workspace:^
+        version: link:../../model/common
+      '@milaboratories/pl-tree':
+        specifier: workspace:^
+        version: link:../pl-tree
+      '@milaboratories/ts-helpers':
+        specifier: workspace:^
+        version: link:../ts-helpers
+      '@protobuf-ts/grpc-transport':
+        specifier: 'catalog:'
+        version: 2.9.4(@grpc/grpc-js@1.11.3)
+      '@protobuf-ts/plugin':
+        specifier: 'catalog:'
+        version: 2.9.4
+      '@protobuf-ts/runtime':
+        specifier: 'catalog:'
+        version: 2.9.4
+      '@protobuf-ts/runtime-rpc':
+        specifier: 'catalog:'
+        version: 2.9.4
+      denque:
+        specifier: 'catalog:'
+        version: 2.1.0
+      tar-fs:
+        specifier: 'catalog:'
+        version: 3.0.6
+      undici:
+        specifier: 'catalog:'
+        version: 6.19.8
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../util/build-configs
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 29.5.13
+      '@types/tar-fs':
+        specifier: 'catalog:'
+        version: 2.0.4
+      jest:
+        specifier: 'catalog:'
+        version: 29.7.0(@types/node@20.16.5)
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0)(typescript@5.6.2)
@@ -1056,8 +1129,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@grpc/grpc-js@1.11.2':
-    resolution: {integrity: sha512-DWp92gDD7/Qkj7r8kus6/HCINeo3yPZWZ3paKgDgsbKbSpoxKg1yvN8xe2Q8uE3zOsPe3bX8FQX2+XValq2yTw==}
+  '@grpc/grpc-js@1.11.3':
+    resolution: {integrity: sha512-i9UraDzFHMR+Iz/MhFLljT+fCpgxZ3O6CxwGJ8YuNYHJItIHUzKJpW2LvoFZNnGPwqc9iWy9RAucxV0JoR9aUQ==}
     engines: {node: '>=12.10.0'}
 
   '@grpc/proto-loader@0.7.13':
@@ -1660,6 +1733,12 @@ packages:
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
 
+  '@types/tar-fs@2.0.4':
+    resolution: {integrity: sha512-ipPec0CjTmVDWE+QKr9cTmIIoTl7dFG/yARCM5MqK8i6CNLIG1P8x4kwDsOQY1ChZOZjH0wO9nvfgBvWl4R3kA==}
+
+  '@types/tar-stream@3.1.3':
+    resolution: {integrity: sha512-Zbnx4wpkWBMBSu5CytMbrT5ZpMiF55qgM+EpHzR4yIDu7mv52cej8hTkOc6K+LzpkOAbxwn/m7j3iO+/l42YkQ==}
+
   '@types/triple-beam@1.3.5':
     resolution: {integrity: sha512-6WaYesThRMCl19iryMYP7/x2OVgCtbIVflDGFpWnb9irXI3UjYE4AzmYuiUKY1AJstGijoY+MgUszMgRxIYTYw==}
 
@@ -1732,6 +1811,9 @@ packages:
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
 
+  b4a@1.6.6:
+    resolution: {integrity: sha512-5Tk1HLk6b6ctmjIkAcU/Ujv/1WqiDl0F0JdRCR80VsOcUlHcu7pWeWRlOqQLHfDEsVx9YH/aif5AG4ehoCtTmg==}
+
   babel-jest@29.7.0:
     resolution: {integrity: sha512-BrvGY3xZSwEcCzKvKsCi2GgHqDqsYkOP4/by5xCgIwGXQxIEh+8ew3gmrE1y7XRR6LHZIj6yLYnUi/mm2KXKBg==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -1759,6 +1841,21 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  bare-events@2.4.2:
+    resolution: {integrity: sha512-qMKFd2qG/36aA4GwvKq8MxnPgCQAmBWmSyLWsJcbn8v03wvIPQ/hG1Ms8bPzndZxMDoHpxez5VOS+gC9Yi24/Q==}
+
+  bare-fs@2.3.5:
+    resolution: {integrity: sha512-SlE9eTxifPDJrT6YgemQ1WGFleevzwY+XAP1Xqgl56HtcrisC2CHCZ2tq6dBpcH2TnNxwUEUGhweo+lrQtYuiw==}
+
+  bare-os@2.4.4:
+    resolution: {integrity: sha512-z3UiI2yi1mK0sXeRdc4O1Kk8aOa/e+FNWZcTiPB/dfTWyLypuE99LibgRaQki914Jq//yAWylcAt+mknKdixRQ==}
+
+  bare-path@2.1.3:
+    resolution: {integrity: sha512-lh/eITfU8hrj9Ru5quUp0Io1kJWIk1bTjzo7JH1P5dWmQ2EL4hFUlfI8FonAhSlgIfhn63p84CDY/x+PisgcXA==}
+
+  bare-stream@2.3.0:
+    resolution: {integrity: sha512-pVRWciewGUeCyKEuRxwv06M079r+fRjAQjBEK2P6OYGrO43O+Z0LrPZZEjlc4mB6C2RpZ9AxJ1s7NLEtOHO6eA==}
 
   better-path-resolve@1.0.0:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
@@ -2036,6 +2133,9 @@ packages:
   enabled@2.0.0:
     resolution: {integrity: sha512-AKrN98kuwOzMIdAizXGI86UFBoo26CL21UM763y1h/GMSJ4/OHU9k2YlsmBpyScFo/wbLzWQJBMCW4+IO3/+OQ==}
 
+  end-of-stream@1.4.4:
+    resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
+
   enquirer@2.4.1:
     resolution: {integrity: sha512-rRqJg/6gd538VHvR3PSrdRBb/1Vy2YfzHqzvbhGIQpDRKIa4FgV/54b5Q1xYSxOOwKvjXweS26E0Q+nAMwp2pQ==}
     engines: {node: '>=8.6'}
@@ -2087,6 +2187,9 @@ packages:
   external-editor@3.1.0:
     resolution: {integrity: sha512-hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==}
     engines: {node: '>=4'}
+
+  fast-fifo@1.3.2:
+    resolution: {integrity: sha512-/d9sfos4yxzpwkDkuN7k2SqFKtYNmCTzgfEpz82x34IM9/zc8KGxQoXg1liNC/izpRM/MBdt44Nmx41ZWqk+FQ==}
 
   fast-glob@3.3.2:
     resolution: {integrity: sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==}
@@ -2893,6 +2996,9 @@ packages:
   pseudomap@1.0.2:
     resolution: {integrity: sha512-b/YwNhb8lk1Zz2+bXXpS/LK9OisiZZ1SNsSLxN1x2OXVEhW2Ckr/7mWE5vrC1ZTiJlD9g19jWszTmJsB+oEpFQ==}
 
+  pump@3.0.2:
+    resolution: {integrity: sha512-tUPXtzlGM8FE3P0ZL6DVs/3P58k9nk8/jZeQCurTJylQA8qFYzHFfhBJkuqyE0FifOsQ0uKWekiZ5g8wtr28cw==}
+
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
@@ -2902,6 +3008,9 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  queue-tick@1.0.1:
+    resolution: {integrity: sha512-kJt5qhMxoszgU/62PLP1CJytzd2NKetjSRnyuj31fDd3Rlcz3fzlFdFLD1SItunPwyqEOkca6GbV612BWfaBag==}
 
   quick-lru@5.1.1:
     resolution: {integrity: sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==}
@@ -3081,6 +3190,9 @@ packages:
     resolution: {integrity: sha512-XlkWvfIm6RmsWtNJx+uqtKLS8eqFbxUg0ZzLXqY0caEy9l7hruX8IpiDnjsLavoBgqCCR71TqWO8MaXYheJ3RQ==}
     engines: {node: '>=10'}
 
+  streamx@2.20.1:
+    resolution: {integrity: sha512-uTa0mU6WUC65iUvzKH4X9hEdvSW7rbPxPtwfWiLMSj3qTdQbAiUboZTxauKfpFuGIGa1C2BYijZ7wgdUXICJhA==}
+
   string-length@4.0.2:
     resolution: {integrity: sha512-+l6rNN5fYHNhZZy41RXsYptCjA2Igmq4EG7kZAYFQI1E1VTXarr6ZPXBg6eq7Y6eK4FEhY6AJlyuFIb/v/S0VQ==}
     engines: {node: '>=10'}
@@ -3144,6 +3256,12 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
+  tar-fs@3.0.6:
+    resolution: {integrity: sha512-iokBDQQkUyeXhgPYaZxmczGPhnhXZ0CmrqI+MOb/WFGS9DW5wnfrLgtjUJBvz50vQ3qfRwJ62QVoCFu8mPVu5w==}
+
+  tar-stream@3.1.7:
+    resolution: {integrity: sha512-qJj60CXt7IU1Ffyc3NJMjh6EkuCFej46zUqJ4J7pqYlThyd9bO0XBTmcOIhSzZJVWfsLks0+nle/j538YAW9RQ==}
+
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
@@ -3155,6 +3273,9 @@ packages:
   test-exclude@6.0.0:
     resolution: {integrity: sha512-cAGWPIyOHU6zlmg88jwm7VRyXnMN7iV68OGAbYDk/Mh/xC/pzVPlQtY6ngoIH/5/tciuhGfvESU8GrHrcxD56w==}
     engines: {node: '>=8'}
+
+  text-decoder@1.2.0:
+    resolution: {integrity: sha512-n1yg1mOj9DNpk3NeZOx7T6jchTbyJS3i3cucbNN6FcdPriMZx7NsgrGpWWdWZZGxD7ES1XB+3uoqHMgOKaN+fg==}
 
   text-hex@1.0.0:
     resolution: {integrity: sha512-uuVGNWzgJ4yhRaNSiubPY7OjISw4sw4E5Uv0wbjp+OzcbmVU/rsT8ujgcXJhn9ypzsgr5vlzpPqP+MBBKcGvbg==}
@@ -4413,7 +4534,7 @@ snapshots:
   '@esbuild/win32-x64@0.23.1':
     optional: true
 
-  '@grpc/grpc-js@1.11.2':
+  '@grpc/grpc-js@1.11.3':
     dependencies:
       '@grpc/proto-loader': 0.7.13
       '@js-sdsl/ordered-map': 4.4.2
@@ -4759,9 +4880,9 @@ snapshots:
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
 
-  '@protobuf-ts/grpc-transport@2.9.4(@grpc/grpc-js@1.11.2)':
+  '@protobuf-ts/grpc-transport@2.9.4(@grpc/grpc-js@1.11.3)':
     dependencies:
-      '@grpc/grpc-js': 1.11.2
+      '@grpc/grpc-js': 1.11.3
       '@protobuf-ts/runtime': 2.9.4
       '@protobuf-ts/runtime-rpc': 2.9.4
 
@@ -5272,6 +5393,15 @@ snapshots:
 
   '@types/stack-utils@2.0.3': {}
 
+  '@types/tar-fs@2.0.4':
+    dependencies:
+      '@types/node': 22.5.5
+      '@types/tar-stream': 3.1.3
+
+  '@types/tar-stream@3.1.3':
+    dependencies:
+      '@types/node': 22.5.5
+
   '@types/triple-beam@1.3.5': {}
 
   '@types/wrap-ansi@3.0.0': {}
@@ -5331,6 +5461,8 @@ snapshots:
 
   async@3.2.6: {}
 
+  b4a@1.6.6: {}
+
   babel-jest@29.7.0(@babel/core@7.25.2):
     dependencies:
       '@babel/core': 7.25.2
@@ -5387,6 +5519,30 @@ snapshots:
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.25.2)
 
   balanced-match@1.0.2: {}
+
+  bare-events@2.4.2:
+    optional: true
+
+  bare-fs@2.3.5:
+    dependencies:
+      bare-events: 2.4.2
+      bare-path: 2.1.3
+      bare-stream: 2.3.0
+    optional: true
+
+  bare-os@2.4.4:
+    optional: true
+
+  bare-path@2.1.3:
+    dependencies:
+      bare-os: 2.4.4
+    optional: true
+
+  bare-stream@2.3.0:
+    dependencies:
+      b4a: 1.6.6
+      streamx: 2.20.1
+    optional: true
 
   better-path-resolve@1.0.0:
     dependencies:
@@ -5660,6 +5816,10 @@ snapshots:
 
   enabled@2.0.0: {}
 
+  end-of-stream@1.4.4:
+    dependencies:
+      once: 1.4.0
+
   enquirer@2.4.1:
     dependencies:
       ansi-colors: 4.1.3
@@ -5735,6 +5895,8 @@ snapshots:
       chardet: 0.7.0
       iconv-lite: 0.4.24
       tmp: 0.0.33
+
+  fast-fifo@1.3.2: {}
 
   fast-glob@3.3.2:
     dependencies:
@@ -6730,11 +6892,18 @@ snapshots:
 
   pseudomap@1.0.2: {}
 
+  pump@3.0.2:
+    dependencies:
+      end-of-stream: 1.4.4
+      once: 1.4.0
+
   punycode@2.3.1: {}
 
   pure-rand@6.1.0: {}
 
   queue-microtask@1.2.3: {}
+
+  queue-tick@1.0.1: {}
 
   quick-lru@5.1.1: {}
 
@@ -6917,6 +7086,14 @@ snapshots:
     dependencies:
       escape-string-regexp: 2.0.0
 
+  streamx@2.20.1:
+    dependencies:
+      fast-fifo: 1.3.2
+      queue-tick: 1.0.1
+      text-decoder: 1.2.0
+    optionalDependencies:
+      bare-events: 2.4.2
+
   string-length@4.0.2:
     dependencies:
       char-regex: 1.0.2
@@ -6980,6 +7157,20 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
+  tar-fs@3.0.6:
+    dependencies:
+      pump: 3.0.2
+      tar-stream: 3.1.7
+    optionalDependencies:
+      bare-fs: 2.3.5
+      bare-path: 2.1.3
+
+  tar-stream@3.1.7:
+    dependencies:
+      b4a: 1.6.6
+      fast-fifo: 1.3.2
+      streamx: 2.20.1
+
   tar@7.4.3:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
@@ -6996,6 +7187,10 @@ snapshots:
       '@istanbuljs/schema': 0.1.3
       glob: 7.2.3
       minimatch: 3.1.2
+
+  text-decoder@1.2.0:
+    dependencies:
+      b4a: 1.6.6
 
   text-hex@1.0.0: {}
 

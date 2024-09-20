@@ -2,10 +2,10 @@ import { ProgressClient } from '../proto/github.com/milaboratory/pl/controllers/
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
 import { Duration } from '../proto/google/protobuf/duration';
-import { PlClient, addRTypeToMetadata } from '@milaboratory/pl-client-v2';
-import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+import { PlClient, addRTypeToMetadata } from '@milaboratories/pl-client';
+import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { Dispatcher } from 'undici';
-import { ResourceInfo } from '@milaboratory/pl-tree';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
 export type ProgressStatus = {
   done: boolean;

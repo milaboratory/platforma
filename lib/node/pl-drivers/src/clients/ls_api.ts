@@ -1,10 +1,10 @@
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
 import type { LsAPI_List_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol';
 import { LSClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/lsapi/protocol.client';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { addRTypeToMetadata } from '@milaboratory/pl-client-v2';
-import { ResourceInfo } from '@milaboratory/pl-tree';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLs {
   private readonly grpcClient: LSClient;

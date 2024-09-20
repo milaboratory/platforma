@@ -1,11 +1,11 @@
 import { StreamingClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { MiLogger, notEmpty } from '@milaboratory/ts-helpers';
+import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { Dispatcher } from 'undici';
-import { addRTypeToMetadata } from '@milaboratory/pl-client-v2';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import { ResourceInfo } from '@milaboratory/pl-tree';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class ClientLogs {
   public readonly grpcClient: StreamingClient;

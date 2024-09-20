@@ -1,5 +1,5 @@
-import { PlClient } from '@milaboratory/pl-client-v2';
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { PlClient } from '@milaboratories/pl-client';
+import { MiLogger } from '@milaboratories/ts-helpers';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { Dispatcher } from 'undici';
 import { ClientDownload } from './download';

@@ -7,9 +7,9 @@ import {
   isNullResourceId,
   valErr,
   getField
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
-import { ResourceInfo } from '@milaboratory/pl-tree';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 
 // TODO: remove this when we switch to refreshState.
 

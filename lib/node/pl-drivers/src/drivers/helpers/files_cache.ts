@@ -1,4 +1,4 @@
-import { CallersCounter, mapEntries, mapGet } from '@milaboratory/ts-helpers';
+import { CallersCounter, mapEntries, mapGet } from '@milaboratories/ts-helpers';
 
 type PathLike = string;
 

@@ -5,14 +5,14 @@ import * as path from 'node:path';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { MiLogger } from '@milaboratory/ts-helpers';
-import { addRTypeToMetadata } from '@milaboratory/pl-client-v2';
+import { MiLogger } from '@milaboratories/ts-helpers';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import { Dispatcher } from 'undici';
 import {
   DownloadAPI_GetDownloadURL_HTTPHeader,
   DownloadAPI_GetDownloadURL_Response
 } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
-import { ResourceInfo } from '@milaboratory/pl-tree';
+import { ResourceInfo } from '@milaboratories/pl-tree';
 import { DownloadHelper, DownloadResponse } from '../helpers/download';
 
 const storageProtocol = 'storage://';

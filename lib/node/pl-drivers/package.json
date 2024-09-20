@@ -1,55 +1,47 @@
 {
-  "name": "@milaboratory/pl-drivers",
+  "name": "@milaboratories/pl-drivers",
   "version": "1.2.15",
-  "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to Platforma",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
+    "test": "jest --runInBand"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.10.11",
-    "@milaboratory/computable": "^2.1.2",
-    "@milaboratory/pl-client-v2": "^2.4.10",
-    "@milaboratory/pl-tree": "^1.3.6",
-    "@milaboratory/sdk-model": "^1.3.9",
-    "@milaboratory/ts-helpers": "^1.0.22",
-    "@protobuf-ts/grpc-transport": "^2.9.4",
-    "@protobuf-ts/plugin": "^2.9.4",
-    "denque": "^2.1.0",
-    "tar-fs": "^3.0.6",
-    "undici": "^6.19.8",
-    "zod": "^3.23.8"
+    "@grpc/grpc-js": "catalog:",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/pl-client": "workspace:^",
+    "@milaboratories/pl-tree": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:^",
+    "@protobuf-ts/grpc-transport": "catalog:",
+    "@protobuf-ts/runtime": "catalog:",
+    "@protobuf-ts/runtime-rpc": "catalog:",
+    "@protobuf-ts/plugin": "catalog:",
+    "denque": "catalog:",
+    "tar-fs": "catalog:",
+    "undici": "catalog:",
+    "zod": "catalog:"
   },
   "files": [
     "dist/**/*"
   ],
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/tar-fs": "^2.0.4",
-    "jest": "^29.6.4",
-    "prettier": "^3.3.3",
-    "ts-jest": "^29.2.5",
-    "tsup": "^8.2.4",
-    "typescript": "^5.5.4"
-  },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "splitting": false,
-    "treeshake": true,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/jest": "catalog:",
+    "@types/tar-fs": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

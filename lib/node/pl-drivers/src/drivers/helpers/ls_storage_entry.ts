@@ -1,10 +1,10 @@
-import * as sdk from '@milaboratory/sdk-model';
+import * as sdk from '@milaboratories/pl-model-common';
 import {
   bigintToResourceId,
   ResourceId,
   ResourceType
-} from '@milaboratory/pl-client-v2';
-import { assertNever } from '@milaboratory/ts-helpers';
+} from '@milaboratories/pl-client';
+import { assertNever } from '@milaboratories/ts-helpers';
 
 /**
  * Converts local and remote storages to StorageEntries.

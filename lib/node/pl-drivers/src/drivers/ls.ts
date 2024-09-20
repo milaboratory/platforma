@@ -3,9 +3,9 @@ import {
   PlClient,
   ResourceData,
   ResourceId
-} from '@milaboratory/pl-client-v2';
-import { MiLogger, Signer } from '@milaboratory/ts-helpers';
-import * as sdk from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-client';
+import { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import * as sdk from '@milaboratories/pl-model-common';
 import { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';

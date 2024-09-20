@@ -2,22 +2,22 @@ import { randomUUID } from 'node:crypto';
 import {
   ResourceId,
   stringifyWithResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import {
   Watcher,
   ChangeSource,
   ComputableCtx,
   Computable,
   PollingComputableHooks
-} from '@milaboratory/computable';
+} from '@milaboratories/computable';
 import {
   MiLogger,
   asyncPool,
   TaskProcessor,
   CallersCounter,
   Signer
-} from '@milaboratory/ts-helpers';
-import * as sdk from '@milaboratory/sdk-model';
+} from '@milaboratories/ts-helpers';
+import * as sdk from '@milaboratories/pl-model-common';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import {
   ClientUpload,
@@ -31,7 +31,7 @@ import {
   makeResourceSnapshot,
   PlTreeEntry,
   rsSchema
-} from '@milaboratory/pl-tree';
+} from '@milaboratories/pl-tree';
 import { scheduler } from 'node:timers/promises';
 import { PollingOps } from './helpers/polling_ops';
 import { z } from 'zod';

@@ -5,18 +5,18 @@ import {
   PollTxAccessor,
   ResourceId,
   TestHelpers
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer,
   Signer
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { PlClient } from '@milaboratory/pl-client-v2';
-import { poll } from '@milaboratory/pl-client-v2';
+import { PlClient } from '@milaboratories/pl-client';
+import { poll } from '@milaboratories/pl-client';
 import { UploadOpts, UploadDriver, UploadResourceSnapshot } from './upload';
 import {
   createUploadBlobClient,

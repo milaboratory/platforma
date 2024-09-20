@@ -1,8 +1,8 @@
-import { PlClient, TestHelpers } from '@milaboratory/pl-client-v2';
+import { PlClient, TestHelpers } from '@milaboratories/pl-client';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { Dispatcher } from 'undici';
 import { text } from 'node:stream/consumers';
