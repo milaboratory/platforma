@@ -1,3 +1,4 @@
+import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import * as pkg from './package';
@@ -47,18 +48,22 @@ class State {
   };
 
   public readonly filePath: string;
-  public readonly dirPath: string;
+  private readonly dirPath: string;
 
   constructor() {
-    this.dirPath = path.resolve(pkg.state());
-    this.filePath = path.resolve(pkg.state('state.json'));
+    const home = os.homedir();
+    const stateDir = path.resolve(home, '.config', 'pl-bootstrap');
+    const stateFile = path.join(stateDir, 'state.json');
 
-    if (!fs.existsSync(this.dirPath)) {
-      fs.mkdirSync(this.dirPath, { recursive: true });
+    this.dirPath = stateDir;
+    this.filePath = stateFile;
+
+    if (!fs.existsSync(stateDir)) {
+      fs.mkdirSync(stateDir, { recursive: true });
     }
 
-    if (fs.existsSync(this.filePath)) {
-      this.state = JSON.parse(pkg.readFileSync(this.filePath).toString());
+    if (fs.existsSync(stateFile)) {
+      this.state = JSON.parse(pkg.readFileSync(stateFile).toString());
     }
   }
 
@@ -68,6 +73,10 @@ class State {
     }
 
     return State.instance;
+  }
+
+  public path(...p: string[]): string {
+    return path.join(this.dirPath, ...p);
   }
 
   private writeState() {
