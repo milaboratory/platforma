@@ -22,13 +22,8 @@
     "sourceType": "module",
     "parser": "@typescript-eslint/parser"
   },
-  "plugins": [
-    "@typescript-eslint"
-  ],
-  "ignorePatterns": [
-    "node_modules/**",
-    "**/dist/**"
-  ],
+  "plugins": ["@typescript-eslint"],
+  "ignorePatterns": ["node_modules/**", "**/dist/**"],
   "rules": {
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/consistent-type-imports": "error",
@@ -37,22 +32,17 @@
     "vue/no-undef-components": "error",
     "@typescript-eslint/no-explicit-any": "error",
 
-  /**
-   * Having a semicolon helps the optimizer interpret your code correctly.
-   * This avoids rare errors in optimized code.
-   * @see https://twitter.com/alex_kozack/status/1364210394328408066
-   */
-    "semi": [
-      "warn",
-      "always"
-    ],
+    /**
+     * Having a semicolon helps the optimizer interpret your code correctly.
+     * This avoids rare errors in optimized code.
+     * @see https://twitter.com/alex_kozack/status/1364210394328408066
+     */
+    "semi": ["warn", "always"],
 
     /**
      * Just for beauty
      */
-    "quotes": [
-      "warn", "single"
-    ],
+    "quotes": ["warn", "single"],
 
     "@typescript-eslint/no-unused-vars": [
       "warn",

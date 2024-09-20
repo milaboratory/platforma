@@ -1,14 +1,17 @@
-import type { GridApi, GridOptions } from '@ag-grid-community/core';
+import type { ColDef, GridApi, IDatasource } from '@ag-grid-community/core';
 import type { BlobDriver, LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-ui';
 
-export async function xsvGridOptions(
+export async function updateXsvGridOptions(
+  gridApi: GridApi,
   blobDriver: BlobDriver,
   file: LocalBlobHandleAndSize | RemoteBlobHandleAndSize,
-  gridApi: GridApi | undefined,
-): Promise<GridOptions> {
+): Promise<{
+  columnDefs: ColDef[];
+  datasource: IDatasource;
+}> {
+  gridApi;
   blobDriver;
   file;
-  gridApi;
   //blobDriver.getContent(file.handle!)
   // return {
   //   datasource,
