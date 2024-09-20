@@ -14,8 +14,10 @@
   "scripts": {
     "build": "tsup"
   },
-  "devDependencies": {
-    "typescript": "catalog:",
+  "dependencies": {
     "tsup": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
   }
 }

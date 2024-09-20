@@ -1,4 +1,4 @@
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
 import { Logger } from 'winston';
 
 export class WinstonLoggerAdapter implements MiLogger {

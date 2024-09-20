@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig_lib_bundled.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
