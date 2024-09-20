@@ -1,9 +1,10 @@
 {
   "name": "@milaboratories/tengo-template-builder",
-  "version": "1.14.4",
+  "version": "1.14.5",
   "description": "Pl Tengo Template Builder",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "test": "jest"
   },
   "bin": {
@@ -26,11 +27,16 @@
     "@types/node": "catalog:",
     "jest": "catalog:",
     "ts-jest": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "tsup": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",
-    "commands": "./dist/commands",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/index.js",
+      "identifier": "COMMANDS"
+    },
     "dirname": "pl-tengo",
     "topicSeparator": " "
   }
