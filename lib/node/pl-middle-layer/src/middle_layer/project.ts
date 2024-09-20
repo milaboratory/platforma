@@ -256,13 +256,13 @@ export class Project {
    * */
   public async setBlockArgsAndUiState(
     blockId: string,
-    args: any,
-    uiState: any,
+    args: unknown,
+    uiState: unknown,
     author?: AuthorMarker
   ) {
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
       mut.setArgs([{ blockId, args: JSON.stringify(args) }]);
-      mut.setUiState(blockId, uiState);
+      mut.setUiState(blockId, JSON.stringify(uiState));
     });
     await this.projectTree.refreshState();
   }
