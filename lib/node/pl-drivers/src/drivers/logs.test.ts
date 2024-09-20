@@ -10,18 +10,18 @@ import {
   ResourceRef,
   stringifyWithResourceId,
   ResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer,
   notEmpty
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import { scheduler } from 'node:timers/promises';
-import { Computable } from '@milaboratory/computable';
+import { Computable } from '@milaboratories/computable';
 import * as os from 'node:os';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { SynchronizedTreeState } from '@milaboratory/pl-tree';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { DownloadDriver } from './download_and_logs_blob';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
 import { LogsStreamDriver } from './logs_stream';

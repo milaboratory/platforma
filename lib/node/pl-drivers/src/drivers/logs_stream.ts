@@ -4,20 +4,20 @@ import {
   ComputableCtx,
   PollingComputableHooks,
   Watcher
-} from '@milaboratory/computable';
-import { ResourceId } from '@milaboratory/pl-client-v2';
-import { asyncPool, CallersCounter } from '@milaboratory/ts-helpers';
+} from '@milaboratories/computable';
+import { ResourceId } from '@milaboratories/pl-client';
+import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import {
   PlTreeEntry,
   ResourceInfo,
   treeEntryToResourceInfo
-} from '@milaboratory/pl-tree';
+} from '@milaboratories/pl-tree';
 import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import * as sdk from '@milaboratory/sdk-model';
+import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
 
 export type LogsStreamDriverOps = PollingOps & {

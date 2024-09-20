@@ -1,5 +1,5 @@
-import { MiLogger, notEmpty, Signer } from '@milaboratory/ts-helpers';
-import * as sdk from '@milaboratory/sdk-model';
+import { MiLogger, notEmpty, Signer } from '@milaboratories/ts-helpers';
+import * as sdk from '@milaboratories/pl-model-common';
 import { Timestamp } from '../../proto/google/protobuf/timestamp';
 import { Dirent, Stats } from 'node:fs';
 

@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import {
   PlClient,
   PlTransaction,
@@ -15,7 +15,7 @@ import {
   PollTxAccessor,
   BasicResourceData,
   FieldId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
 import {

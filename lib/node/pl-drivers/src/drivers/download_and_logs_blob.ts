@@ -4,15 +4,15 @@ import {
   ComputableCtx,
   ComputableStableDefined,
   Watcher
-} from '@milaboratory/computable';
-import { bigintToResourceId, ResourceId } from '@milaboratory/pl-client-v2';
+} from '@milaboratories/computable';
+import { bigintToResourceId, ResourceId } from '@milaboratories/pl-client';
 import {
   CallersCounter,
   MiLogger,
   TaskProcessor,
   Signer,
   ValueOrError
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
@@ -42,7 +42,7 @@ import {
   ResourceSnapshot,
   treeEntryToResourceInfo,
   isPlTreeEntry
-} from '@milaboratory/pl-tree';
+} from '@milaboratories/pl-tree';
 import {
   AnyLogHandle,
   BlobDriver,
@@ -52,7 +52,7 @@ import {
   RemoteBlobHandle,
   RemoteBlobHandleAndSize,
   StreamingApiResponse
-} from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-model-common';
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 import { z } from 'zod';
 import { NetworkError400 } from '../helpers/download';

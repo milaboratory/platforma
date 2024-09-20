@@ -1,9 +1,9 @@
-import { Computable, ComputableCtx } from '@milaboratory/computable';
-import { PlTreeEntry, ResourceInfo } from '@milaboratory/pl-tree';
-import { bigintToResourceId } from '@milaboratory/pl-client-v2';
+import { Computable, ComputableCtx } from '@milaboratories/computable';
+import { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
+import { bigintToResourceId } from '@milaboratories/pl-client';
 import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
-import * as sdk from '@milaboratory/sdk-model';
+import * as sdk from '@milaboratories/pl-model-common';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(

@@ -1,10 +1,10 @@
 import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import { LsDriver } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
-import { TestHelpers } from '@milaboratory/pl-client-v2';
+import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
 
 test('should ok when get all storages from ls driver', async () => {

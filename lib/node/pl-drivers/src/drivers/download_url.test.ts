@@ -1,5 +1,5 @@
-import { TestHelpers } from '@milaboratory/pl-client-v2';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { TestHelpers } from '@milaboratories/pl-client';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import * as os from 'node:os';
 import { text } from 'node:stream/consumers';
 import { Readable } from 'node:stream';

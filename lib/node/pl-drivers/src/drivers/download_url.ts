@@ -3,7 +3,7 @@ import {
   MiLogger,
   TaskProcessor,
   notEmpty
-} from '@milaboratory/ts-helpers';
+} from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream';
@@ -12,7 +12,7 @@ import {
   Computable,
   ComputableCtx,
   Watcher
-} from '@milaboratory/computable';
+} from '@milaboratories/computable';
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
