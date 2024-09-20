@@ -1,9 +1,9 @@
 import { type Ref, onMounted } from 'vue';
 import { useEventListener } from '@/composition/useEventListener';
 import { requestTick } from '@/helpers/utils';
-import type { Position } from '@/types';
+import type { ElementPosition } from '@/types';
 
-export function usePosition(el: Ref<HTMLElement | undefined>, cb: (pos: Position) => void) {
+export function useElementPosition(el: Ref<HTMLElement | undefined>, cb: (pos: ElementPosition) => void) {
   const update = () => {
     if (el.value) {
       const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = document.documentElement;

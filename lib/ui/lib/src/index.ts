@@ -58,7 +58,7 @@ import { showContextMenu } from './components/contextMenu/index.ts';
 /**
  * Usables
  */
-export { usePosition } from './composition/usePosition';
+export { useElementPosition as usePosition } from './composition/usePosition';
 export { useClickOutside } from './composition/useClickOutside';
 export { useEventListener } from './composition/useEventListener';
 export { useScroll } from './composition/useScroll';

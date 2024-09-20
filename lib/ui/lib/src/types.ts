@@ -9,7 +9,7 @@ export type MaybeReadonlyRef<T> = (() => T) | ComputedRef<T>;
 
 export type MaybeComputedRef<T> = MaybeReadonlyRef<T> | MaybeRef<T>;
 
-export type Position = Omit<DOMRect, 'toJSON'> & {
+export type ElementPosition = Omit<DOMRect, 'toJSON'> & {
   scrollTop: number;
   scrollLeft: number;
   scrollHeight: number;

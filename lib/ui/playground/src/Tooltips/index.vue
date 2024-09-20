@@ -1,32 +1,28 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { PlTooltip } from '@milaboratory/platforma-uikit.lib';
+import { listToOptions } from '@milaboratory/helpers';
+import { PlBtnAccent, PlDropdown, PlTooltip } from '@milaboratory/platforma-uikit.lib';
 import { reactive } from 'vue';
 
 const data = reactive({
   delay: 1000,
+  position: 'top' as 'top' | 'left' | 'top-left' | 'right',
 });
+
+const options = listToOptions(['top', 'left', 'top-left', 'right']);
 </script>
 
 <template>
   <Layout>
-    <div>
+    <div class="controls">
       <input v-model.number="data.delay" />
+      <PlDropdown v-model:model-value="data.position" label="Tooltip position" :options="options" />
     </div>
     <div class="line">
-      <PlTooltip class="tt" :delay="data.delay" position="top">
-        <span>Top position</span>
+      <PlTooltip class="tt" :delay="data.delay" :position="data.position">
+        <PlBtnAccent>Position: {{ data.position }}</PlBtnAccent>
         <template #tooltip>
           Tooltip content<br />
-          Second line<br />
-          Third line<br />
-        </template>
-      </PlTooltip>
-
-      <PlTooltip class="tt" :delay="data.delay" position="left">
-        <span>Left position</span>
-        <template #tooltip>
-          PlTooltip content<br />
           Second line<br />
           Third line<br />
         </template>
@@ -77,6 +73,12 @@ const data = reactive({
 </template>
 
 <style lang="scss" scoped>
+.controls {
+  background-color: #fff;
+  display: flex;
+  gap: 12px;
+}
+
 .nn {
   display: flex;
   width: 61px;
@@ -100,7 +102,9 @@ const data = reactive({
 
 .tt {
   width: 200px;
-  border: 1px solid red;
+  border: 1px solid #ccc;
+  padding: 12px 24px;
+  border-radius: 4px;
   cursor: default;
   resize: both;
 }

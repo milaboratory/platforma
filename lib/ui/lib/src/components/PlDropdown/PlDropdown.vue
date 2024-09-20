@@ -40,7 +40,7 @@ const props = withDefaults(
     /**
      * List of available options for the dropdown
      */
-    options: ListOption<M>[];
+    options: Readonly<ListOption<M>[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */

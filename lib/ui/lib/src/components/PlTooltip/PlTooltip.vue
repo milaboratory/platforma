@@ -7,7 +7,7 @@ export default {
 
 <script lang="ts" setup>
 import './pl-tooltip.scss';
-import { onUnmounted, reactive, ref, watch } from 'vue';
+import { onUnmounted, reactive, ref, toRef, watch } from 'vue';
 import { useTooltipPosition } from './useTooltipPosition';
 import * as utils from '@/helpers/utils';
 import { useClickOutside } from '@/composition/useClickOutside';
@@ -131,7 +131,7 @@ watch(
 const rootRef = ref<HTMLElement | undefined>();
 const tooltip = ref<HTMLElement | undefined>();
 
-const style = useTooltipPosition(rootRef, props.position, props.gap);
+const style = useTooltipPosition(rootRef, toRef(props));
 
 useClickOutside([rootRef, tooltip], () => closeTooltip());
 
