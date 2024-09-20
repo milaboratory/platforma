@@ -4,7 +4,7 @@ import {
   ContentAbsoluteTextLocal,
   DescriptionContentBinary,
   DescriptionContentText
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 import {
   absoluteToBase64,
   absoluteToString,
@@ -12,7 +12,7 @@ import {
   mapLocalToAbsolute
 } from './content_conversion';
 import { z } from 'zod';
-import { BlockPackMetaEmbeddedContent } from '@milaboratory/pl-middle-layer-model';
+import { BlockPackMetaEmbeddedContent } from '@milaboratories/pl-model-middle-layer';
 
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(

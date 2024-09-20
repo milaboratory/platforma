@@ -12,7 +12,7 @@ import {
   ContentAnyLocal,
   ContentExplicitBase64,
   ContentRelative
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 
 type ContentCtxFs = {
   type: 'local';

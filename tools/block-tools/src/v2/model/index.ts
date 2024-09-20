@@ -4,7 +4,7 @@ import {
   BlockComponentsManifest,
   BlockPackMetaManifest,
   CreateBlockPackDescriptionSchema
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 import { BlockPackMetaConsolidate, BlockPackMetaDescription } from './meta';
 
 export * from './block_components';

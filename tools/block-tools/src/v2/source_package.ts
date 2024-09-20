@@ -1,7 +1,7 @@
 import path from 'path';
 import { tryLoadFile } from '../util';
 import { ResolvedBlockPackDescriptionFromPackageJson, BlockPackDescriptionAbsolute } from './model';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import fsp from 'node:fs/promises';
 import {
   BlockPackDescriptionFromPackageJsonRaw,
@@ -9,7 +9,7 @@ import {
   BlockPackId,
   BlockPackMetaDescriptionRaw,
   SemVer
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 
 export const BlockDescriptionPackageJsonField = 'block';
 

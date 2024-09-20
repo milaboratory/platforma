@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PlRegAddress } from '../common_types';
-import { SemVer } from '@milaboratory/pl-middle-layer-model';
+import { SemVer } from '@milaboratories/pl-model-middle-layer';
 
 export const PlPackageConfigData = z.object({
   organization: z.string(),
