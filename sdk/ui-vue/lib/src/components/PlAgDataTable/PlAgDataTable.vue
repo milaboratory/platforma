@@ -32,7 +32,7 @@ function makeSorting(state?: SortState): PTableSorting[] | undefined {
     state?.sortModel.map(
       (item) =>
         ({
-          column: parseColId(item.colId).id,
+          column: parseColId(item.colId),
           ascending: item.sort === 'asc',
           naAndAbsentAreLeastValues: true,
         }) as PTableSorting,
@@ -112,20 +112,28 @@ const sheetsState = computed({
   },
 });
 
-(() => {
-  if (settings.value.sourceType === 'ptable' && settings.value.sheets) {
+watch(
+  () => settings.value,
+  (settings, oldSettings) => {
+    if (settings.sourceType === 'ptable' && oldSettings?.sourceType === 'ptable' && lodash.isEqual(settings.sheets, oldSettings.sheets)) return;
+
+    if (settings.sourceType !== 'ptable') {
+      sheetsState.value = {};
+      return;
+    }
+
     const state = sheetsState.value;
-    const sheets = settings.value.sheets;
-    for (let i = 0; i < sheets.length; ++i) {
-      const sheet = sheets[i];
+    const sheets = settings.sheets ?? [];
+    for (const sheet of sheets) {
       const sheetId = makeSheetId(sheet.axis);
       if (!state[sheetId]) {
         state[sheetId] = sheet.defaultValue ?? sheet.options[0].value;
       }
     }
     sheetsState.value = state;
-  }
-})();
+  },
+  { immediate: true },
+);
 
 const gridApi = shallowRef<GridApi>();
 const gridOptions: GridOptions = {
@@ -207,7 +215,7 @@ watch(
           });
         }
 
-        const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable.value);
+        const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable.value, settings.sheets ?? []);
         return gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: { notReady: false },
@@ -245,8 +253,8 @@ watch(
 </script>
 
 <template>
-  <div class="container">
-    <div v-if="settings.sourceType === 'ptable' && settings.sheets" class="sheets">
+  <div class="ap-ag-data-table-container">
+    <div v-if="settings.sourceType === 'ptable' && (settings.sheets?.length ?? 0) > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
         v-for="(sheet, i) in settings.sheets"
         :key="i"
@@ -255,25 +263,25 @@ watch(
         @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
       />
     </div>
-    <AgGridVue class="grid" :grid-options="gridOptions" />
+    <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" />
   </div>
 </template>
 
 <style lang="css" scoped>
-.container {
+.ap-ag-data-table-container {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
   gap: 12px;
 }
-.sheets {
+.ap-ag-data-table-sheets {
   display: flex;
   flex-direction: row;
   gap: 12px;
   flex-wrap: wrap;
+  z-index: 3;
 }
-.grid {
+.ap-ag-data-table-grid {
   flex: 1;
-  min-height: 700px;
 }
 </style>

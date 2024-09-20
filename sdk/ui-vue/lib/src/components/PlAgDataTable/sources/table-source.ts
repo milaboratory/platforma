@@ -20,44 +20,40 @@ import {
 } from '@milaboratory/sdk-ui';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
+import { type PlDataTableSheet } from '../types';
 
 /**
- * Generate unique colId based on the column spec and index. The id encodes `PTableColumnId`, needed further to pass it to the filters for pfDriver.
+ * Generate unique colId based on the column spec.
  */
-function makeColId(columnIndex: number, spec: PTableColumnSpec) {
-  return btoa(
-    canonicalize({
-      columnIndex: columnIndex,
-      id: {
-        type: spec.type,
-        id: spec.id,
-      },
-    })!,
-  );
+function makeColId(spec: PTableColumnSpec) {
+  return canonicalize({
+    type: spec.type,
+    id: spec.id,
+  })!;
 }
 
 /**
  * Extract `PTableColumnId` from colId string
  */
 export function parseColId(str: string) {
-  return JSON.parse(atob(str)) as { columnIndex: number; id: PTableColumnId };
+  return JSON.parse(str) as PTableColumnId;
 }
 
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(columnIndex: number, spec: PTableColumnSpec): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
   return {
-    colId: makeColId(columnIndex, spec),
-    field: columnIndex.toString(),
-    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + columnIndex.toString(),
+    colId: makeColId(spec),
+    field: iCol.toString(),
+    headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
     valueFormatter: (value) => {
       if (!value) {
         return 'ERROR';
-      } else if (value.value === null) {
-        return 'NULL';
       } else if (value.value === undefined) {
+        return 'NULL';
+      } else if (value.value === null) {
         return 'NA';
       } else {
         return value.value.toString();
@@ -112,32 +108,55 @@ function isValueAbsent(array: Uint8Array, index: number): boolean {
 }
 
 /**
+ * Convert value to displayable form
+ */
+function toDisplayValue(value: string | number | bigint | Uint8Array, valueType: ValueType): string | number {
+  switch (valueType) {
+    case 'Int':
+      return value as number;
+    case 'Long':
+      return Number(value as bigint);
+    case 'Float':
+      return value as number;
+    case 'Double':
+      return value as number;
+    case 'String':
+      return value as string;
+    case 'Bytes':
+      return Buffer.from(value as Uint8Array).toString('hex');
+    default:
+      throw Error(`unsupported data type: ${valueType satisfies never}`);
+  }
+}
+
+/**
  * Convert columnar data from the driver to rows, used by ag-grid
  * @param specs column specs
  * @param columns columnar data
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(specs: PTableColumnSpec[], columns: PTableVector[], nRows: number): unknown[] {
+function columns2rows(indices: number[], isAxis: boolean[], columns: PTableVector[]): unknown[] {
   const nCols = columns.length;
   const rowData = [];
-  for (let iRow = 0; iRow < nRows; ++iRow) {
+  for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
     const row: Record<string, unknown> = {};
 
     const index = [];
-    for (let columnIndex = 0; columnIndex < nCols; ++columnIndex) {
-      const field = columnIndex.toString();
-      const value = columns[columnIndex].data[iRow];
-      if (isValueAbsent(columns[columnIndex].absent, iRow)) {
-        row[field] = null; // NULL
-      } else if (isValueNA(value, columns[columnIndex].type)) {
-        row[field] = undefined; // NA
+    for (let iCol = 0; iCol < nCols; ++iCol) {
+      const field = indices[iCol].toString();
+      const value = columns[iCol].data[iRow];
+      const valueType = columns[iCol].type;
+      if (isValueAbsent(columns[iCol].absent, iRow)) {
+        row[field] = undefined; // NULL
+      } else if (isValueNA(value, valueType) || value === null) {
+        row[field] = null; // NA
       } else {
-        row[field] = columns[columnIndex].type === 'Long' ? Number(value) : value;
+        row[field] = toDisplayValue(value, valueType);
       }
 
-      if (specs[columnIndex].type === 'axis') {
-        index.push(columns[columnIndex].type === 'Long' ? Number(value) : value);
+      if (isAxis[iCol]) {
+        index.push(valueType === 'Long' ? Number(value) : value);
       }
     }
 
@@ -157,12 +176,17 @@ export async function updatePFrameGridOptions(
   gridApi: GridApi,
   pfDriver: PFrameDriver,
   pt: PTableHandle,
+  sheets: PlDataTableSheet[],
 ): Promise<{
   columnDefs: ColDef[];
   datasource: IDatasource;
 }> {
   const specs = await pfDriver.getSpec(pt);
-  const columnDefs = specs.map((spec, i) => getColDef(i, spec));
+  const indices = specs
+    .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
+    .filter((entry) => entry !== null);
+  const columnDefs = indices.map((i) => getColDef(i, specs[i]));
+  const isAxis = indices.map((i) => specs[i].type === 'axis');
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
@@ -181,7 +205,7 @@ export async function updatePFrameGridOptions(
         }
 
         // this is to avoid double flickering when underlying table is changed
-        if (lastParams && (!lodash.isEqual(lastParams.sortModel, params.sortModel) || !lodash.isEqual(lastParams.filterModel, params.filterModel))) {
+        if (lastParams && !lodash.isEqual(lastParams.sortModel, params.sortModel)) {
           lastParams = undefined;
           params.failCallback();
           return;
@@ -189,11 +213,14 @@ export async function updatePFrameGridOptions(
         lastParams = params;
 
         const length = params.endRow - params.startRow;
-        const data = await pfDriver.getData(pt, [...specs.keys()], {
-          offset: params.startRow,
-          length,
-        });
-        const rowData = columns2rows(specs, data, length);
+        let rowData: unknown[] = [];
+        if (length > 0) {
+          const data = await pfDriver.getData(pt, indices, {
+            offset: params.startRow,
+            length,
+          });
+          rowData = columns2rows(indices, isAxis, data);
+        }
 
         params.successCallback(rowData, ptShape.rows);
         gridApi.setGridOption('loading', false);
