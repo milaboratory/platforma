@@ -4,7 +4,7 @@ import { targetFile } from '../registry_v1/flags';
 import fs from 'node:fs';
 import YAML from 'yaml';
 import { PlRegPackageConfigDataShard } from '../registry_v1/config_schema';
-import { OclifLoggerAdapter } from '@milaboratory/ts-helpers-oclif';
+import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 
 type BasicConfigField = keyof PlRegPackageConfigDataShard &
   ('registry' | 'organization' | 'package' | 'version');

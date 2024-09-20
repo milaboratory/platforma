@@ -6,7 +6,7 @@ import {
   cpAbsoluteToRelative,
   mapRemoteToAbsolute,
 } from './content_conversion';
-import { BlockComponents, BlockComponentsManifest, ContentAbsoluteBinaryLocal, ContentAbsoluteFolder, ContentRelativeBinary } from '@milaboratory/pl-middle-layer-model';
+import { BlockComponents, BlockComponentsManifest, ContentAbsoluteBinaryLocal, ContentAbsoluteFolder, ContentRelativeBinary } from '@milaboratories/pl-model-middle-layer';
 
 export function BlockComponentsDescription(moduleRoot: string) {
   return BlockComponents(

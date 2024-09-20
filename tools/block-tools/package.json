@@ -1,63 +1,52 @@
 {
-  "name": "@milaboratory/pl-block-tools",
+  "name": "@platforma-sdk/block-tools",
   "version": "2.1.5",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "tsup",
     "readme": "exec oclif readme",
-    "test": "jest",
-    "pretty": "prettier --write \"./src/**/*.{js,jsx,mjs,cjs,ts,tsx,json}\""
+    "test": "jest"
   },
-  "main": "dist/lib.js",
-  "module": "dist/lib.mjs",
-  "types": "dist/lib.d.ts",
   "bin": {
     "block-tools": "./bin/run.js"
   },
   "files": [
     "bin/*",
-    "dist/**/*"
+    "dist/**/*",
+    "README.md"
   ],
-  "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-middle-layer-model": "1.2.11",
-    "@aws-sdk/client-s3": "^3.626.0",
-    "@milaboratory/ts-helpers": "^1.0.19",
-    "@milaboratory/ts-helpers-oclif": "^1.1.0",
-    "@oclif/core": "^4.0.17",
-    "@types/semver": "^7.5.8",
-    "mime-types": "^2.1.35",
-    "semver": "^7.6.3",
-    "tar": "^7.4.3",
-    "yaml": "^2.5.0",
-    "zod": "^3.23.8"
+    "@milaboratories/pl-model-middle-layer": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/ts-helpers-oclif": "workspace:^",
+    "@aws-sdk/client-s3": "catalog:",
+    "@oclif/core": "catalog:",
+    "mime-types": "catalog:",
+    "semver": "catalog:",
+    "tar": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/mime-types": "^2.1.4",
-    "@types/node": "^20.14.12",
-    "oclif": "^4.14.15",
-    "prettier": "^3.3.3",
-    "ts-jest": "^29.2.3",
-    "ts-node": "^10.9.2",
-    "tsup": "~8.1.2",
-    "typescript": "^5.5.4"
-  },
-  "tsup": {
-    "entry": {
-      "cli": "src/cmd/index.ts",
-      "lib": "src/lib.ts"
-    },
-    "splitting": false,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/jest": "catalog:",
+    "@types/mime-types": "catalog:",
+    "@types/node": "catalog:",
+    "@types/semver": "catalog:",
+    "jest": "catalog:",
+    "oclif": "catalog:",
+    "ts-jest": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   },
   "oclif": {
     "commands": {

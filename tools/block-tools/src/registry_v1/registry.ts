@@ -11,7 +11,7 @@ import {
   packageOverviewPath,
   payloadFilePath
 } from './v1_repo_schema';
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;

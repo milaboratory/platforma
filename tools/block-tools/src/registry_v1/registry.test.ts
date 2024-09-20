@@ -3,7 +3,7 @@ import path from 'node:path';
 import { RegistryStorage, S3Storage, storageByUrl } from '../lib/storage';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 type TestStorageInstance = {
   storage: RegistryStorage;
