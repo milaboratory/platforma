@@ -8,7 +8,7 @@ export type PlDataTableSettings =
       /**
        * The type of the source to feed the data into the table.
        */
-      sourceType: 'pframe';
+      sourceType: 'ptable';
       /**
        * PTable handle output
        */
