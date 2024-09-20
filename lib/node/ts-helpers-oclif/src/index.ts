@@ -1,4 +1,4 @@
-import { MiLogger } from '@milaboratory/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
 import { Command } from '@oclif/core';
 
 export class OclifLoggerAdapter implements MiLogger {
