@@ -23,7 +23,7 @@ export default class Core {
   public startLocal(options?: startLocalOptions): ChildProcess {
     const cmd = options?.binaryPath ?? platforma.binaryPath(options?.version, 'binaries', 'platforma');
     var configPath = options?.configPath;
-    const workdir: string = options?.workdir ?? (configPath ? process.cwd() : pkg.state());
+    const workdir: string = options?.workdir ?? (configPath ? process.cwd() : state.path());
 
     if (options?.primaryURL) {
       options.configOptions = {
@@ -83,7 +83,7 @@ export default class Core {
     }
 
     if (!configPath) {
-      configPath = pkg.state('config-lastrun.yaml');
+      configPath = state.path('config-lastrun.yaml');
       this.logger.debug(`  rendering configuration '${configPath}'...`);
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
@@ -133,7 +133,7 @@ export default class Core {
   public startMinio(options?: { storage?: string; image?: string; version?: string }) {
     this.logger.debug('  starting minio...');
     var composeMinioSrc = pkg.assets('compose-minio.yaml');
-    var composeMinioDst = pkg.state('compose-minio.yaml');
+    var composeMinioDst = state.path('compose-minio.yaml');
 
     const version = options?.version ? `:${options.version!}` : '';
     this.logger.debug(`    minio version: ${version}`);
@@ -273,7 +273,7 @@ export default class Core {
     licenseFile?: string;
   }) {
     var composeFSPath = pkg.assets('compose-fs.yaml');
-    var composeRunPath = pkg.state('compose-fs.yaml');
+    var composeRunPath = state.path('compose-fs.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
     const primaryStorage = options?.primaryStorage ?? state.lastRun?.docker?.primaryPath;
     const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath;
@@ -423,8 +423,8 @@ ${storageWarns}
       fs.rmSync(dir, { recursive: true, force: true });
     }
 
-    this.logger.info(`Destroying state dir '${pkg.state()}'`);
-    fs.rmSync(pkg.state(), { recursive: true, force: true });
+    this.logger.info(`Destroying state dir '${state.path()}'`);
+    fs.rmSync(state.path(), { recursive: true, force: true });
 
     this.logger.info(
       `\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`
@@ -484,7 +484,7 @@ ${storageWarns}
 
   /** Gets the last stored JWT secret key or generates it and stores in a file. */
   public getLastJwt() {
-    const jwtFile = pkg.state('auth.jwt');
+    const jwtFile = state.path('auth.jwt');
     const encoding = 'utf-8';
 
     let lastJwt = '';

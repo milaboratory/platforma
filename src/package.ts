@@ -1,5 +1,6 @@
-import { resolve } from 'path';
+import { resolve, join } from 'path';
 import fs from 'fs';
+import os from 'os';
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);
@@ -15,10 +16,6 @@ export function assets(...p: string[]): string {
 
 export function binaries(...p: string[]): string {
   return path('binaries', ...p);
-}
-
-export function state(...p: string[]): string {
-  return path('state', ...p);
 }
 
 export function composeFiles(): string[] {

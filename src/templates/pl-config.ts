@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import * as types from './types';
 import { assertNever, resolveTilde } from '../util';
-import * as pkg from '../package';
+import state from '../state';
 
 export { plOptions } from './types';
 
@@ -51,7 +51,7 @@ export function storageSettingsFromURL(storageURL: string, baseDir?: string): ty
 }
 
 export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
-  const localRoot = options?.localRoot ?? pkg.state('local-pl');
+  const localRoot = options?.localRoot ?? state.path('local-pl');
 
   const log: types.logSettings = {
     level: options?.log?.level ?? 'info',
