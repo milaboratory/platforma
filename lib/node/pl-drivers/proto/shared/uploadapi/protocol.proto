@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package MiLaboratories.Controller.Shared;
+
+option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/uploadapi;uploadapi";
+
+//
+// Upload provides access to data upload feature, allowing clients to uplad data to Platforma.
+//
+service Upload {
+  //
+  // Init upload, making controller to do all required preparation steps.
+  //
+  rpc Init(uploadapi.Init.Request) returns (uploadapi.Init.Response) {}
+
+  //
+  // GetPartURL provides URL for uploading chunk of the data.
+  // Clients are expected to put their data directly to the given location.
+  //
+  rpc GetPartURL(uploadapi.GetPartURL.Request) returns (uploadapi.GetPartURL.Response) {}
+
+  //
+  // UpdateProgress of the upload, so other clients can see how it is going.
+  //
+  rpc UpdateProgress(uploadapi.UpdateProgress.Request) returns (uploadapi.UpdateProgress.Response) {}
+
+  //
+  // Finalize informs Controller that the upload process is done.
+  // Returns an error, if the total size of all uploaded chunks is not equal to
+  // size of the upload given in Init.
+  //
+  rpc Finalize(uploadapi.Finalize.Request) returns (uploadapi.Finalize.Response) {}
+}
+
+message uploadapi {
+  message Init {
+    message Request {
+      // Id of upload resource
+      uint64 resource_id = 1;
+    }
+
+    message Response {
+      // Number of parts in this upload.
+      // For parallel upload support, client can generate any number of part upload URLs
+      // at the moment and upload them in parallel.
+      // <parts_count> keeps the number of chunks supported by this upload.
+      // The parts count is calculated from the planned size of the upload, controller
+      // configuration and underlying storage restrictions.
+      uint64 parts_count = 1;
+
+      // List of IDs of parts that were already uploaded by client.
+      // Helps client to recover upload and skip already done parts
+      // after being interrupted in the middle of the upload
+      // (say, because of the restart).
+      // Parts enumeration starts from 1.
+      repeated uint64 uploaded_parts = 2;
+    }
+  }
+
+  message UpdateProgress {
+    message Request {
+      // Id of upload resource
+      uint64 resource_id = 1;
+
+      // Amount of bytes, uploaded since the earlier call to UpdateProgress.
+      // This value is just blindly added to the 'bytes_processed' of progress report,
+      // so other clients can see the upload progress.
+      // If client uploads the data in several streams (several chunks in parallel), it
+      // can safely send progress updates individually for each of the streams, just counting
+      // bytes uploaded by particular stream.
+      //
+      // Negative value can be used to report about upload retry: when upload was interrupted,
+      // part of the uploaded data is lost and require re-upload.
+      int64 bytes_processed = 2;
+    }
+
+    message Response {}
+  }
+
+  message GetPartURL {
+    message Request {
+      // Id of upload resource
+      uint64 resource_id = 1;
+
+      // Part to be uploaded. It is responsibility of the Client to watch after already uploaded parts:
+      // - client can request an URL for the same part twice (request -> request) without errors;
+      // - client can request an URL for alrady uploaded part (request -> upload -> request) without errors.
+      //
+      // Parts enumeration starts from 1.
+      uint64 part_number = 2;
+
+      // Size of the part uploaded by client earlier. Allows controller to count upload progress
+      // based on client's input.
+      // Client is free to never sent this value (send zeroes in each request).
+      uint64 uploaded_part_size = 3;
+    }
+
+    message HTTPHeader {
+      string Name = 1;
+      string Value = 2;
+    }
+
+    message Response {
+      // URL for chunk upload
+      string upload_url = 1;
+
+      // HTTP method to use for chunk upload, say 'PUT' or 'POST'.
+      string method = 2;
+
+      // List of headers with their values, MANDATORY to be sent by the client for the upload.
+      // The destination service (the one, that will handle upload request for specific part)
+      // may reject the request if it would not keep the given headers.
+      repeated HTTPHeader headers = 3;
+
+      // The number of the _first_ byte in the chunk.
+      // Absolute position from the start of the file ( file.seek(<chunk_start>, SEEK_START) ).
+      // The client is expected to send [<chunk_start>; <chunk_end>) range.
+      uint64 chunk_start = 4;
+
+      // The number of the byte _after_ the last to be sent in the chunk.
+      // Absolute position from the start of the file.
+      // The client is expected to send [<chunk_start>; <chunk_end>) range.
+      uint64 chunk_end = 5;
+    }
+  }
+
+  message Finalize {
+      message Request {
+        uint64 resource_id = 1;
+      }
+
+      message Response {}
+  }
+}

@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package MiLaboratories.Controller.Shared;
+
+option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/lsapi;lsapi";
+
+import "google/protobuf/timestamp.proto";
+
+//
+// LS provides access to lists of blobs (files, S3 objects and so on) is some storage.
+// This API allows clients to know, whan items are available in storages, that
+// the contorllers can access, providing clients with the ability to start indexation
+// on, say, existing sequence files from the corporate storage.
+//
+service LS {
+  rpc List(LsAPI.List.Request) returns (LsAPI.List.Response) {}
+}
+
+message LsAPI {
+  message ListItem {
+    // name of the item in storage, without any prefixes
+    string name = 1;
+
+    // size of item in bytes
+    // is always zero for directories (is_dir = true)
+    uint64 size = 2;
+
+    // is_dir is true for item, that can have subitems.
+    bool is_dir = 3;
+
+    // full_name is the name of item absolute to storage root.
+    // it is <directory> + <name>
+    // The <delimiter>, used in names, is storage-specific and is NOT guaranteed to be '/'.
+    string full_name = 10;
+
+    // directory, the item is located in. The value here is always a prefix of name:
+    // name.HasPrefix(directory) is always true.
+    string directory = 11;
+
+    // last_modified keeps the item last modification timestamp
+    google.protobuf.Timestamp last_modified = 12;
+
+    // version of item in storage.
+    // When storage supports versioning or provides checksums for the data stored,
+    // the <version> field keeps that data.
+    // If not - it keeps the any simple combination of item attributes, that helps to
+    // detect if the contents of item has changed, e.g. <size>+<mtime>.
+    // Anyway, client should not try to interpret this field, but should provide it to the Platform
+    // in operations with given item (like BlobImportInternal) to help Platform with deduplication.
+    string version = 13;
+  }
+
+  message List {
+    message Request {
+      // resource_id of 'LS/<Storage>' resource
+      uint64 resource_id = 1;
+
+      // location to list, absolute to storage root. Only items, that have <full_name> starting
+      // from <location> are included into list response.
+      string location = 2;
+      
+      // // limit amount of items returned by server in single response.
+      // // The default and maximum limit may differ for different storage types.
+      // // If the storage has its own restrictions on <limit> value (<storage limit>),
+      // // the controller will just use min(<limit>, <storage limit>) as a final list limitation.
+      // // For example, S3 API provides at most 1000 records in list responses. If
+      // // client sets <limit> to 5000 for S3 listing, only up to 1000 records will be returned.
+      // int32 limit = 10;
+
+      // // start_after allows to request server for list of items after the given name.
+      // string start_after = 11;
+
+      // // continuation_token is special token that allows server to continue the list,
+      // // when previous response contained limited number of items.
+      // // continuation_token may or may not be the real item name from storage, depending on
+      // // the API storage actually provides for the controllers. It may even always be empty for some
+      // // storage types (like for filesystem storage).
+      // // In general, this means, that the client should not try to interpret this token, or generate
+      // // it by itself, but rather use the value from <Response> of previous List call 'as is'.
+      // string continuation_token = 12;
+    }
+
+    message Response {
+      // List of the full (absolute to storage root) names of items from storage.
+      // E.g., for 'fs' storage each name will consist of names of all directories, where the
+      // item is located, and the item name itself.
+      // The delimiter, used in names, is storage-specific and is NOT guaranteed to be '/'.
+      repeated ListItem items = 1;
+
+      // delimiter is path separator, used in this storage. Client can use it to parse item names into parts,
+      // to extract directory names.
+      string delimiter = 2;
+
+      // // is_truncated is set to false if all results are returned for the prefix and limit, given in request.
+      // bool is_truncated = 3;
+
+      // // continuation_token is special token that allows server to continue the list,
+      // // when the storage actually keeps more items, than is returned in this response.
+      // // continuation_token may or may not be the real item name from storage, depending on
+      // // the API storage actually provides for the controller.
+      // // In general, this means, that the client should not try to interpret this token, or generate
+      // // it by itself, but rather use the value from <Response> 'as is'.
+      // string continuation_token = 10;
+    }
+  }
+}
