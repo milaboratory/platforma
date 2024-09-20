@@ -1,19 +1,33 @@
+<script lang="ts">
+/** Simple tooltip on mouseover */
+export default {
+  name: 'PlTooltip',
+};
+</script>
+
 <script lang="ts" setup>
 import './pl-tooltip.scss';
-import { reactive, ref, watch } from 'vue';
-import { useTooltipPosition } from '@/composition/useTooltipPosition';
+import { onUnmounted, reactive, ref, watch } from 'vue';
+import { useTooltipPosition } from './useTooltipPosition';
 import * as utils from '@/helpers/utils';
 import { useClickOutside } from '@/composition/useClickOutside';
+import Beak from './Beak.vue';
+import { tMap } from './global';
 
 const emit = defineEmits(['tooltip:close']);
+
+const tKey = Symbol();
 
 const props = withDefaults(
   defineProps<{
     /**
-     * delay in milliseconds before the tooltip disappears
-     * @todo rename
+     * delay in milliseconds before the tooltip opens
      */
-    delay?: number;
+    openDelay?: number;
+    /**
+     * delay in milliseconds before the tooltip disappears
+     */
+    closeDelay?: number;
     /**
      * Tooltip position
      */
@@ -32,7 +46,8 @@ const props = withDefaults(
     element?: 'div' | 'span' | 'a' | 'p' | 'h1' | 'h2' | 'h3';
   }>(),
   {
-    delay: 1000,
+    openDelay: 100,
+    closeDelay: 1000,
     gap: 8,
     position: 'top',
     element: 'div',
@@ -42,40 +57,67 @@ const props = withDefaults(
 const data = reactive({
   open: false,
   over: false,
+  tooltipOpen: false,
+  key: Symbol(),
 });
+
+tMap.set(tKey, () => closeTooltip());
+
+// Hook to avoid the need to immediately teleport into the body (better performance)
+watch(
+  () => data.open,
+  (v) => {
+    requestAnimationFrame(() => {
+      data.tooltipOpen = v;
+    });
+  },
+);
 
 let clearTimeout = () => {};
 
-async function onOver() {
+const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent('adjust')), 1000);
+
+const showTooltip = () => {
+  data.open = true;
+
+  for (let [k, f] of tMap.entries()) {
+    if (k !== tKey) {
+      f();
+    }
+  }
+};
+
+const closeTooltip = () => {
+  data.open = false;
+  emit('tooltip:close');
+};
+
+const onOver = async () => {
   if (props.hide) {
     return;
   }
 
-  window.dispatchEvent(new CustomEvent('adjust'));
+  dispatchAdjust();
 
   data.over = true;
+
   clearTimeout();
 
   await utils.delay(100);
 
   if (data.over) {
-    data.open = true;
+    showTooltip();
   }
-}
+};
 
-function closeTooltip() {
-  data.open = false;
-  emit('tooltip:close');
-}
-
-function onLeave() {
+const onLeave = () => {
   data.over = false;
   clearTimeout = utils.timeout(() => {
     if (!data.over) {
       closeTooltip();
     }
-  }, props.delay);
-}
+  }, props.closeDelay);
+};
 
 watch(
   () => props.hide,
@@ -86,27 +128,28 @@ watch(
   },
 );
 
-const root = ref<HTMLElement | undefined>();
+const rootRef = ref<HTMLElement | undefined>();
 const tooltip = ref<HTMLElement | undefined>();
 
-const style = useTooltipPosition(root, props.position, props.gap);
+const style = useTooltipPosition(rootRef, props.position, props.gap);
 
-useClickOutside([root, tooltip], () => closeTooltip());
+useClickOutside([rootRef, tooltip], () => closeTooltip());
+
+onUnmounted(() => {
+  tMap.delete(tKey);
+});
 </script>
 
 <template>
-  <!--@todo click.stop -->
-  <component :is="element" v-bind="$attrs" ref="root" @click.stop="onOver" @mouseover="onOver" @mouseleave="onLeave">
+  <component :is="element" v-bind="$attrs" ref="rootRef" @click="onOver" @mouseover="onOver" @mouseleave="onLeave">
     <slot />
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
-      <Transition name="tooltip">
-        <div v-if="data.open" class="ui-tooltip__container" :style="style">
-          <div ref="tooltip" class="ui-tooltip" :class="position" @mouseover="onOver" @mouseleave="onLeave">
+      <Transition name="tooltip-transition">
+        <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style">
+          <div ref="tooltip" class="pl-tooltip" :class="position" @mouseover="onOver" @mouseleave="onLeave">
             <!-- should be one line -->
             <div><slot name="tooltip" /></div>
-            <svg class="beak" width="5" height="9" viewBox="0 0 3 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4.00222 8.00933L0 4.00711L4.00222 0.00488281L4.00222 8.00933Z" fill="#24223D" />
-            </svg>
+            <Beak />
           </div>
         </div>
       </Transition>

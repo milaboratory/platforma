@@ -1,4 +1,4 @@
-.ui-tooltip {
+.pl-tooltip {
   z-index: 3;
   position: absolute;
   display: inline-block;
@@ -84,7 +84,7 @@
   }
 }
 
-.tooltip {
+.tooltip-transition {
   &-enter-active, &-leave-active {
     transition: all 0.1s ease-in-out;
   }
