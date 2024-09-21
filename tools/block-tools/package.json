@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

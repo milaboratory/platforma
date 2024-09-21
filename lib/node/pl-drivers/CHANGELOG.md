@@ -1,5 +1,17 @@
 # @milaboratories/pl-drivers
 
+## 1.2.17
+
+### Patch Changes
+
+- 0f3f25f: fallback "types", "main" and "module" in package.json
+- Updated dependencies [0f3f25f]
+  - @milaboratories/computable@2.1.4
+  - @milaboratories/ts-helpers@1.0.24
+  - @milaboratories/pl-client@2.4.12
+  - @milaboratories/pl-model-common@1.3.11
+  - @milaboratories/pl-tree@1.3.8
+
 ## 1.2.16
 
 ### Patch Changes
