@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.2.24
+
+### Patch Changes
+
+- 0f3f25f: fallback "types", "main" and "module" in package.json
+- Updated dependencies [0f3f25f]
+  - @milaboratories/pl-model-common@1.3.11
+
 ## 1.2.23
 
 ### Patch Changes
