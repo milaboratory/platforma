@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "Useful helpers for our TS projects",
   "exports": {
     ".": {
