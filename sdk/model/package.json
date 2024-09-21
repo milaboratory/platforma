@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.2.22",
+  "version": "1.2.23",
   "description": "Platforma.bio SDK / Block Model",
   "exports": {
     ".": {
