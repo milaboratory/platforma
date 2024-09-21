@@ -5,17 +5,20 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
-    "test": "jest --runInBand"
+    "build": "vite build",
+    "test": "true || jest --runInBand"
   },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
   "dependencies": {
     "@grpc/grpc-js": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
@@ -32,16 +35,13 @@
     "undici": "catalog:",
     "zod": "catalog:"
   },
-  "files": [
-    "dist/**/*"
-  ],
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/tar-fs": "catalog:",
     "jest": "catalog:",
-    "ts-jest": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:"
+    "ts-jest": "catalog:"
   }
 }

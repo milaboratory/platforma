@@ -2,19 +2,16 @@
   "name": "@milaboratories/pl-client",
   "version": "2.4.10",
   "description": "New TS/JS client for Platform API",
-  "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsup",
-    "build-debug": "tsc",
-    "build-watch": "tsup --watch",
     "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "test": "jest --runInBand"
   },
   "files": [
@@ -38,12 +35,11 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
-    "tsup": "catalog:",
+    "vite": "catalog:",
     "@protobuf-ts/plugin": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
-    "ts-jest": "catalog:",
-    "prettier": "catalog:"
+    "ts-jest": "catalog:"
   }
 }

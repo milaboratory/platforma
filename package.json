@@ -17,6 +17,11 @@
   "engines": {
     "node": ">=18"
   },
+  "pnpm": {
+    "overrides": {
+      "@microsoft/api-extractor>typescript": "catalog:"
+    }
+  },
   "//": {
     "eslint": "catalog:",
     "typescript": "catalog:",
