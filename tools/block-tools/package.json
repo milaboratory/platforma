@@ -2,16 +2,16 @@
   "name": "@platforma-sdk/block-tools",
   "version": "2.1.5",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
-  "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "tsup",
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "readme": "exec oclif readme",
     "test": "jest"
   },
@@ -19,16 +19,17 @@
     "block-tools": "./bin/run.js"
   },
   "files": [
-    "bin/*",
-    "dist/**/*",
-    "README.md"
+    "./bin/*",
+    "./dist/**/*",
+    "./src/**/*",
+    "./README.md"
   ],
   "license": "UNLICENSED",
   "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",
-    "@aws-sdk/client-s3": "catalog:",
     "@oclif/core": "catalog:",
     "mime-types": "catalog:",
     "semver": "catalog:",
@@ -38,23 +39,26 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "vite-plugin-dts": "catalog:",
     "@types/jest": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "jest": "catalog:",
     "oclif": "catalog:",
-    "ts-jest": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:"
+    "ts-jest": "catalog:"
   },
   "oclif": {
+    "bin": "block-tools",
     "commands": {
       "strategy": "explicit",
       "target": "./dist/cli.js",
       "identifier": "COMMANDS"
     },
-    "bin": "block-tools",
     "dirname": "block-tools",
     "topicSeparator": " "
   }

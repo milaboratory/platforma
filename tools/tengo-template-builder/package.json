@@ -2,9 +2,9 @@
   "name": "@milaboratories/tengo-template-builder",
   "version": "1.14.6",
   "description": "Pl Tengo Template Builder",
-  "type": "module",
   "scripts": {
-    "build": "tsup",
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "test": "jest"
   },
   "bin": {
@@ -12,6 +12,7 @@
   },
   "files": [
     "./dist/**/*",
+    "./src/**/*",
     "README.md"
   ],
   "license": "UNLICENSED",
@@ -23,12 +24,12 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",
-    "ts-jest": "catalog:",
-    "typescript": "catalog:",
-    "tsup": "catalog:"
+    "ts-jest": "catalog:"
   },
   "oclif": {
     "bin": "pl-tengo",

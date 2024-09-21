@@ -1,10 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["tsconfig.json"],
   "tasks": {
+    "type-check": {
+      "dependsOn": ["^build"]
+    },
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**"],
-      "dependsOn": ["^build"]
+      "dependsOn": ["type-check", "^build"]
     },
     "test": {
       "dependsOn": ["build"],
