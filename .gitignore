@@ -7,6 +7,7 @@ work/
 *.iml
 *.tgz
 .turbo
+log/platforma.log
 
 test_config.json
 .test_auth.json
