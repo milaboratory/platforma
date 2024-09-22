@@ -73,8 +73,8 @@ catalogs:
       specifier: ^2.1.35
       version: 2.1.35
     oclif:
-      specifier: ^4.14.34
-      version: 4.14.34
+      specifier: ^4.14.35
+      version: 4.14.35
     prettier:
       specifier: ^3.3.3
       version: 3.3.3
@@ -559,7 +559,7 @@ importers:
         version: 29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.6.2))
       oclif:
         specifier: 'catalog:'
-        version: 4.14.34
+        version: 4.14.35
       rollup-plugin-node-externals:
         specifier: 'catalog:'
         version: 7.1.3(rollup@4.21.3)
@@ -3237,8 +3237,8 @@ packages:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
 
-  oclif@4.14.34:
-    resolution: {integrity: sha512-NA604h6cPhiDQTLjjwaJ2yGq3gv6OyHIMIdwt9xTiOqMjFOrKXpoqXiwmKN6bGoeWC1SuaSJqlfoXThlAKn+Ag==}
+  oclif@4.14.35:
+    resolution: {integrity: sha512-PWiBL6+fQZNiFPkdrorDINFfpOTdI5Je9UZD/RwaeP2LvQdggqpBUXx5qlrtxPcHZXNuTQrn4pFfIbDIOPCjsg==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -7705,7 +7705,7 @@ snapshots:
 
   object-assign@4.1.1: {}
 
-  oclif@4.14.34:
+  oclif@4.14.35:
     dependencies:
       '@aws-sdk/client-cloudfront': 3.654.0
       '@aws-sdk/client-s3': 3.654.0
