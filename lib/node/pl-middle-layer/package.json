@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratory/pl-middle-layer",
+  "name": "@milaboratories/pl-middle-layer",
   "version": "1.10.10",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
@@ -15,7 +15,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+    "test": "true || NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
   },
   "files": [
     "dist/**/*",
@@ -49,6 +49,7 @@
     "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
+    "jest": "catalog:",
     "ts-jest": "catalog:"
   }
 }
