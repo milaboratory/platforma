@@ -19,7 +19,7 @@ test('integration test, grpc upload blob should throw error on NOT_FOUND', async
     try {
       await clientBlob.initUpload({
         id: 1n as ResourceId,
-        type: { name: 'BlobUpload/primary', version: '1' }
+        type: { name: 'BlobUpload/main', version: '1' }
       });
       fail('should throw NOT_FOUND');
     } catch (e) {
