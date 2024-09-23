@@ -1,2 +1,2 @@
 export * from './block_pack_spec';
-export { ProjectListEntry } from './project_model';
+export { type ProjectListEntry } from './project_model';

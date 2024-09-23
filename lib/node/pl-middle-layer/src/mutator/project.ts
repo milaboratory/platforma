@@ -13,7 +13,7 @@ import {
   PlTransaction,
   ResourceId,
   ResourceRef
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
 import {
   Block,
@@ -48,8 +48,8 @@ import {
   stagingGraph
 } from '../model/project_model_util';
 import { BlockPackSpecPrepared } from '../model';
-import { notEmpty } from '@milaboratory/ts-helpers';
-import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';

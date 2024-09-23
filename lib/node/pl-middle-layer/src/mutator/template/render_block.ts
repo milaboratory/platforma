@@ -5,7 +5,7 @@ import {
   ResourceRef,
   ResourceType,
   Pl
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { randomUUID } from 'node:crypto';
 import { createRenderTemplate } from './render_template';
 

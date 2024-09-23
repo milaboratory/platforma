@@ -1,6 +1,6 @@
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Code, FunctionHandle } from '@milaboratory/sdk-ui';
-import { Computable, ComputableRenderingOps } from '@milaboratory/computable';
+import { Code, FunctionHandle } from '@platforma-sdk/model';
+import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
 import { BlockContextAny } from '../middle_layer/block_ctx';

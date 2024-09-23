@@ -1,5 +1,5 @@
-import { SynchronizedTreeOps, SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { Computable } from '@milaboratory/computable';
+import { SynchronizedTreeOps, SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { Computable } from '@milaboratories/computable';
 
 export type TemporalSynchronizedTreeOps = Pick<
   SynchronizedTreeOps,

@@ -1,18 +1,18 @@
-import { PlTreeEntry } from '@milaboratory/pl-tree';
+import { PlTreeEntry } from '@milaboratories/pl-tree';
 import {
   Computable,
   ComputableCtx,
   ComputableStableDefined,
   ComputableValueOrErrors
-} from '@milaboratory/computable';
+} from '@milaboratories/computable';
 import { constructBlockContext, constructBlockContextArgsOnly } from './block_ctx';
 import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { getBlockCfg } from './util';
-import { AuthorMarker, BlockStateInternal } from '@milaboratory/pl-middle-layer-model';
+import { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-middle-layer';
 import { computableFromCfgOrRF } from './render';
-import { resourceIdToString } from '@milaboratory/pl-client-v2';
+import { resourceIdToString } from '@milaboratories/pl-client';
 
 export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigationState'>;
 

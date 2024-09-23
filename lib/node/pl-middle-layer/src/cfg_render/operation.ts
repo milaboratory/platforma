@@ -1,5 +1,5 @@
-import { DownloadDriver, LogsDriver, UploadDriver } from '@milaboratory/pl-drivers';
-import { Computable, ComputableCtx } from '@milaboratory/computable';
+import { DownloadDriver, LogsDriver, UploadDriver } from '@milaboratories/pl-drivers';
+import { Computable, ComputableCtx } from '@milaboratories/computable';
 import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 export type ArgumentKey = string;

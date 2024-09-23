@@ -12,10 +12,10 @@ import {
   getField,
   valErr,
   Pl
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { loadTemplate } from './template_loading';
 import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './render_block';
-import { notEmpty, sleep } from '@milaboratory/ts-helpers';
+import { notEmpty, sleep } from '@milaboratories/ts-helpers';
 import { TemplateSpecPrepared } from '../../model/template_spec';
 import {
   TplSpecEnterExplicit,

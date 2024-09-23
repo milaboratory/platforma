@@ -3,11 +3,11 @@ import {
   poll,
   TestHelpers,
   toGlobalResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { BlockPackPreparer, createBlockPack } from './block_pack';
 import { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
-import { HmacSha256Signer } from '@milaboratory/ts-helpers';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 
 const preparation = new BlockPackPreparer(new HmacSha256Signer(HmacSha256Signer.generateSecret()));
 

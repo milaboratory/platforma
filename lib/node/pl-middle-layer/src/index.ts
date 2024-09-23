@@ -1,16 +1,16 @@
-export * from '@milaboratory/sdk-ui';
-export * from '@milaboratory/pl-middle-layer-model';
+export * from '@platforma-sdk/model';
+export * from '@milaboratories/pl-model-middle-layer';
 
 export * from './block_registry';
 export * from './middle_layer';
 export * from './model';
 
 // explicitly override ProjectListEntry from SDK
-export { ProjectListEntry } from './model';
+export { type ProjectListEntry } from './model';
 
 // needed by users of middle-layer
-export * from '@milaboratory/pl-client-v2';
-export { FieldType, ResourceType } from '@milaboratory/pl-client-v2';
+export * from '@milaboratories/pl-client';
+export { FieldType, ResourceType } from '@milaboratories/pl-client';
 
 // for tests etc..
 export * from './mutator/template/template_loading';
@@ -18,4 +18,4 @@ export * from './mutator/template/render_template';
 export * from './model/template_spec';
 
 // TODO change to rich meta information from V2 registry
-export { BlockPackMeta } from './block_registry';
+export { type BlockPackMeta } from './block_registry';

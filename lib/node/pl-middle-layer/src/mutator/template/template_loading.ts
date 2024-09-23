@@ -1,4 +1,4 @@
-import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
+import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratories/pl-client';
 import fs from 'node:fs';
 import {
   ExplicitTemplate,
@@ -6,7 +6,7 @@ import {
   TemplateSpecAny,
   TemplateSpecPrepared
 } from '../../model/template_spec';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 
 //
 // Resource schema

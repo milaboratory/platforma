@@ -1,13 +1,13 @@
 import { Dispatcher, request } from 'undici';
 import { RegistrySpec } from './registry_spec';
 import { BlockPackSpecAny } from '../model';
-import { BlockPackDescriptionAbsolute, RegistryV1 } from '@milaboratory/pl-block-tools';
+import { BlockPackDescriptionAbsolute, RegistryV1 } from '@platforma-sdk/block-tools';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 import { LegacyDevBlockPackFiles } from '../dev';
-import { tryLoadPackDescription } from '@milaboratory/pl-block-tools';
+import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 
 /**
  * Information specified by the developer of the block.

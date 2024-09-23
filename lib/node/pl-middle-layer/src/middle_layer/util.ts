@@ -1,9 +1,9 @@
-import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import { projectFieldName } from '../model/project_model';
-import { Pl } from '@milaboratory/pl-client-v2';
+import { Pl } from '@milaboratories/pl-client';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { normalizeBlockConfig } from '@milaboratory/sdk-ui';
+import { normalizeBlockConfig } from '@platforma-sdk/model';
 
 export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string) {
   return ifNotUndef(

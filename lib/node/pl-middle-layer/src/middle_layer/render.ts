@@ -1,5 +1,5 @@
-import { Code, isFunctionHandle, TypedConfigOrFunctionHandle } from '@milaboratory/sdk-ui';
-import { Computable, ComputableRenderingOps } from '@milaboratory/computable';
+import { Code, isFunctionHandle, TypedConfigOrFunctionHandle } from '@platforma-sdk/model';
+import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { computableFromCfg } from '../cfg_render/executor';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';

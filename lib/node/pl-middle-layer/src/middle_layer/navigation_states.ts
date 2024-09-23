@@ -1,5 +1,5 @@
-import { ChangeSource, Computable, ComputableCtx } from '@milaboratory/computable';
-import { NavigationState, DefaultNavigationState } from '@milaboratory/sdk-ui';
+import { ChangeSource, Computable, ComputableCtx } from '@milaboratories/computable';
+import { NavigationState, DefaultNavigationState } from '@platforma-sdk/model';
 
 type NavigationStateEntry = {
   state: NavigationState;

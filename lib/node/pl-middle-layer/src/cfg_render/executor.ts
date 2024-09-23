@@ -6,9 +6,9 @@ import {
   Subroutine
 } from './operation';
 import Denque from 'denque';
-import { assertNever, notEmpty } from '@milaboratory/ts-helpers';
-import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratory/computable';
-import { Cfg } from '@milaboratory/sdk-ui';
+import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
+import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
+import { Cfg } from '@platforma-sdk/model';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
 import { BlockContextAny } from '../middle_layer/block_ctx';

@@ -13,11 +13,11 @@ import {
   mapArrayValues,
   PlResourceEntry,
   TypedConfig
-} from '@milaboratory/sdk-ui';
+} from '@platforma-sdk/model';
 import { computableFromCfg, computableFromCfgUnsafe } from './executor';
-import { field, Pl, TestHelpers } from '@milaboratory/pl-client-v2';
-import { SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { Computable } from '@milaboratory/computable';
+import { field, Pl, TestHelpers } from '@milaboratories/pl-client';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { Computable } from '@milaboratories/computable';
 import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 test('local cfg test (no pl)', async () => {

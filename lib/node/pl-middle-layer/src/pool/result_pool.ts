@@ -1,5 +1,5 @@
-import { ComputableCtx } from '@milaboratory/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { ComputableCtx } from '@milaboratories/computable';
+import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import {
   Option,
   PObject,
@@ -10,8 +10,8 @@ import {
   ResultPoolEntry,
   ValueOrError,
   executePSpecPredicate
-} from '@milaboratory/sdk-ui';
-import { notEmpty } from '@milaboratory/ts-helpers';
+} from '@platforma-sdk/model';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { outputRef } from '../model/args';
 import {
   Block,

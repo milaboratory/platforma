@@ -1,12 +1,12 @@
-import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaboratory/pl-client-v2';
+import { AnyResourceRef, field, PlTransaction, ResourceType } from '@milaboratories/pl-client';
 import { loadTemplate } from '../template/template_loading';
 import { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from '../../model';
-import { assertNever, Signer } from '@milaboratory/ts-helpers';
+import { assertNever, Signer } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
-import { BlockConfig } from '@milaboratory/sdk-ui';
-import { loadPackDescription, RegistryV1 } from '@milaboratory/pl-block-tools';
+import { BlockConfig } from '@platforma-sdk/model';
+import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev';
 import { getDevV2PacketMtime } from '../../block_registry';
