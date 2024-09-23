@@ -2,12 +2,19 @@
   "name": "@milaboratory/sdk-test",
   "version": "1.5.5",
   "description": "Typescript Block Test Helpers",
-  "type": "module",
-  "main": "dist/lib.js",
-  "module": "dist/lib.mjs",
-  "types": "dist/lib.d.ts",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsup",
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "test": "vitest",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
   },
@@ -16,32 +23,18 @@
   ],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/pl-middle-layer": "^1.10.4",
-    "@milaboratory/sdk-ui": "^0.12.21",
-    "@milaboratory/pl-client-v2": "^2.4.10",
-    "vitest": "^2.0.5",
-    "@milaboratory/pl-tree": "^1.3.5",
-    "@milaboratory/computable": "^2.1.2",
-    "@milaboratory/ts-helpers": "^1.0.19"
+    "@milaboratories/pl-middle-layer": "workspace:^",
+    "@platforma-sdk/model": "workspace:^",
+    "@milaboratories/pl-client": "workspace:^",
+    "@milaboratories/pl-tree": "workspace:^",
+    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "vitest": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^20.16.3",
-    "prettier": "^3.2.5",
-    "tsup": "~8.1.2",
-    "typescript": "^5.5.4"
-  },
-  "tsup": {
-    "entry": {
-      "lib": "src/index.ts"
-    },
-    "splitting": false,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
   }
 }

@@ -1,5 +1,5 @@
-import { Computable } from '@milaboratory/computable';
-import { isTimeoutOrCancelError } from '@milaboratory/pl-client-v2';
+import { Computable } from '@milaboratories/computable';
+import { isTimeoutOrCancelError } from '@milaboratories/pl-client';
 import { BigIntStats } from 'node:fs';
 import * as fsp from 'node:fs/promises';
 
