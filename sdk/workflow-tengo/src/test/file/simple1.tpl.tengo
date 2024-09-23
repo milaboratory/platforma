@@ -1,0 +1,15 @@
+// file import template
+
+self := import(":tpl")
+file := import(":file")
+
+self.defineOutputs(["file", "progress"])
+
+self.body(func(inputs) {
+	importResult := file.importFile(inputs.importHandle)
+
+	return {
+		file: file.exportFile(importResult.file),
+		progress: importResult.handle
+	}
+})

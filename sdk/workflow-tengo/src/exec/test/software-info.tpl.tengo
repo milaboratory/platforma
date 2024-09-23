@@ -1,0 +1,21 @@
+ll := import(":ll")
+assets := import(":assets")
+self := import(":tpl")
+
+sw := assets.importSoftware(":exec.test.pkg.sleep")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	result := {
+		main: {
+			name: sw.name,
+			version: sw.version,
+			descriptor: ll.fromStrict(sw.descriptor),
+			blobRef: ll.fromStrict(sw.blobRef),
+			execs: ll.getExecutorsList()
+		}
+	}
+
+	return result
+})

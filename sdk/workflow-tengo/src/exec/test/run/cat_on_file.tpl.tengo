@@ -1,0 +1,28 @@
+/** Runs a cat on the file and returns it's content as a value resource. */
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+file := import(":file")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	inputFile := file.importFile(inputs.file).file
+
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("cat input.txt").
+		addFile("input.txt", inputFile).
+		saveStdoutContent().
+		stdoutFileName("out.txt").
+		run()
+
+	result := {
+		main: run.getFileContent("out.txt")
+	}
+
+	return result
+})

@@ -1,0 +1,64 @@
+/**
+ * A library for working with streams.
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+oop := import(":oop")
+file := import(":file")
+
+_RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }
+_RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }
+
+/**
+ * Creates a stream in the specified workdir for the given file path.
+ *
+ * @param workdir: reference - a reference to the workdir.
+ * @param filePath: string - the path of the file in the workdir.
+ * @return stream: resource - a smart.resource to the created stream with an output field.
+ */
+_create := func(workdir, filePath) {
+	stream := smart.ephemeralBuilder(_RTYPE_CREATE_STREAM)
+	stream.getField("workdir").set(workdir)
+	stream.getField("filePath").setRefOrJson(filePath)
+
+	return ll.toStrict(oop.inherit(stream.lockAndBuild(), {
+		output: stream.outputs().stream
+	}))
+}
+
+/**
+ * Creates a special manager resource that has either a blob or a stream in the `stream` field.
+ *
+ * @param stream: reference - a reference to the stream.
+ * @param downloadableRef: reference - a reference to the downloadable content.
+ * @return manager: reference - a reference to the stream manager.
+ */
+_manager := func(stream, downloadableRef) {
+	res := smart.structBuilder(_RTYPE_STREAM_MANAGER)
+
+	res.getField("downloadable").set(downloadableRef)
+	res.getField("stream").set(stream.output)
+
+	return res.lockAndBuild()
+}
+
+/**
+ * Creates a stream and manages its downloadable content.
+ *
+ * @param workdirBefore: reference - a reference to the workdir before RunCommand were executed.
+ * @param workdirAfter: reference - a reference to the resulted workdir field of RunCommand.
+ * @param filePath: string - the path of the file in the workdir.
+ * @return manager: reference - a reference to the stream manager.
+ */
+create := func(workdirBefore, workdirAfter, filePath) {
+	stream := _create(workdirBefore, filePath)
+	fileFuture := workdirAfter.files.getFutureInputField(filePath)
+	downloadable := file.exportFile(fileFuture)
+
+	return _manager(stream, downloadable)
+}
+
+export ll.toStrict({
+	create: create
+})

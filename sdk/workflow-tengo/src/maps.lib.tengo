@@ -1,0 +1,102 @@
+ll := import(":ll")
+slices := import(":slices")
+
+/**
+ * Returns a slice of keys of the map.
+ *
+ * @param map map[string]any - map to extract keys from
+ * @return result: string[] - a slice of keys.
+ */
+getKeys := func(map) {
+	res := []
+	for k, _ in map {
+		res = append(res, k)
+	}
+
+	return slices.sortByFn(res, func(elem) { return elem })
+}
+
+/**
+ * Returns true if map contains specified key. Note: current implementation is O(N)
+ */
+containsKey := func(map, key) {
+	for k, _ in map {
+		if key == k {
+			return true
+		}
+	}
+
+	return false
+}
+
+/**
+ * Transforms all keys of the map with a function and returns a new map with these keys.
+ *
+ * @param map: map[key]any
+ * @param fnK: func(key): newKey - a function that gets a key and returns a new key.
+ * @return new map: map[newKey]any - a transformed map
+ */
+mapKeys := func(map, fnK) {
+	newM := {}
+	for k, v in map {
+		newM[fnK(k)] = v
+	}
+
+	return newM
+}
+
+// Map values
+mapValues := func(map, fnV) {
+	newM := {}
+	for k, v in map {
+		newM[k] = fnV(v)
+	}
+
+	return newM
+}
+
+// Map keys and values
+map := func(map, fn) {
+	newM := {}
+	for k, v in map {
+		r := fn(k, v)
+		newM[r.key] = r.value
+	}
+
+	return newM
+}
+
+filter := func(map, predicateFn) {
+	newM := {}
+	for k, v in map {
+		if predicateFn(k, v) {
+			newM[k] = v
+		}
+	}
+
+	return newM
+}
+
+filterValues := func(map, predicateFnV) {
+	return filter(map, func(k, v) { return predicateFnV(v) })
+}
+
+filterKeys := func(map, predicateFnK) {
+	return filter(map, func(k, v) { return predicateFnK(k) })
+}
+
+filterKeysValues := func(map, predicateFnK, predicateFnV) {
+	return filter(map, func(k, v) { return predicateFnK(k) && predicateFnV(v) })
+}
+
+export ll.toStrict({
+	map : map,
+	mapKeys : mapKeys,
+	mapValues : mapValues,
+	filter : filter,
+	filterValues : filterValues,
+	filterKeys : filterKeys,
+	filterKeysValues : filterKeysValues,
+	getKeys: getKeys,
+	containsKey: containsKey
+})

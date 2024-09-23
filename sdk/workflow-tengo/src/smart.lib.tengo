@@ -1,0 +1,1005 @@
+/*
+ * Library provides smart.Resource and smart.Field primitives.
+ */
+
+tx := import("tx")
+ll := import(":ll")
+oop := import(":oop")
+maps := import(":maps")
+json := import("json")
+constants := import(":constants")
+
+//////////////// definitions ////////////////
+
+/**
+ * A read-only wrapper object around raw platforma resource
+ */
+resource := undefined
+
+/**
+ * A wrapper object around raw platforma resource field
+ */
+field := undefined
+
+/**
+ * A convenient builder for resource objects
+ */
+resourceBuilder := undefined
+
+/**
+ * Builder for structural resource
+ *
+ * @param resourceType { Name: "", Version: "" }
+ */
+structBuilder := undefined
+
+/**
+ * Builder for map resource
+ */
+mapBuilder := undefined
+
+/**
+ * Builder for ephemeral map resource
+ */
+ephemeralMapBuilder := undefined
+
+/**
+ * Builder for emphemeral resources
+ *
+ * @param resourceType { Name: "", Version: "" }
+ */
+ephemeralBuilder := undefined
+
+/**
+ * Create value resource
+ *
+ * @param resourceType { Name: "", Version: "" }
+ * @param data optional data
+ */
+createValueResource := undefined
+
+/**
+ * Create Json resource
+ *
+ * @param value value to save in the resource
+ */
+createJsonResource := undefined
+
+/**
+ * Create map resource
+ *
+ * @param keyToValue: map[string]anyResource
+ * @return resource
+ */
+createMapResource := undefined
+
+/**
+ * Create binary map resource
+ *
+ * @param keyToValue: map[string]valueResource
+ * @return resource
+ */
+createBinaryMapResource := undefined
+
+/**
+ * Create blob map resource
+ *
+ * @param keyToValue: map[string]blobResource
+ * @return resource
+ */
+createBlobMapResource := undefined
+
+////////////////// helpers ///////////////////////////
+
+// internal helper function
+isFieldId := func(val) {
+	return ll.isStrict(val) && ll.fromStrict(val)["ResourceID"] != undefined
+}
+
+/**
+ * Returns true if given object is a smart.Resource
+ */
+isResource := func(f) {
+	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "resource"
+}
+
+/**
+ * Returns true if given object is a smart.Field
+ */
+isField := func(f) {
+	return ll.isStrict(f) && ll.fromStrict(f)["_type"] == "field"
+}
+
+/**
+ * Returns true if given object is a smart.Field or smart.Resource
+ */
+isReference := func(f) {
+	return isField(f) || isResource(f)
+}
+
+/**
+ * Gets future field by given field name and field type.
+ *
+ * @param from: reference - whether a resource or a field we get a field from.
+ * @param name: field name
+ * @param fieldType: field type: input, output
+ * @return field: smart field
+ */
+_getFutureField := func(from, name, fieldType) {
+	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
+
+	futureField := tx.createFutureFieldID(fieldType, name)
+	f := field(futureField.ResourceFID)
+	f.set(from)
+
+	return field(futureField.ResultFID)
+}
+/**
+ * Returns true if given object is a StdMap resource
+ */
+isMapResource := func(r) {
+	return isResource(r) && (
+		r.info().Type.Name == constants.RTYPE_MAP.Name ||
+			r.info().Type.Name == constants.RTYPE_MAP_ALT.Name) // @TODO get rid of alt name
+
+}
+
+/**
+ * Returns true if given object is an ephemeral std map resource
+ */
+isEphMapResource := func(r) {
+	return isResource(r) &&  r.info().Type.Name == constants.RTYPE_MAP_EPH.Name
+}
+
+/**
+ * Returns true if given object is an ephemeral std map resource with locked inputs (so the list of inputs is final)
+ */
+isLockedEphMapResource := func(r) {
+	return isEphMapResource(r) && r.info().InputsLocked
+}
+
+/**
+ * Returns true if given object is a map or ephemeral map resource
+ */
+isAnyMapResource := func(r) {
+	return isMapResource(r) || isEphMapResource(r)
+}
+
+/**
+ * Returns true if given object is a json resource
+ */
+isJsonResource := func(r) {
+	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
+}
+
+// deep check whether map has resources somewhere inside
+_hasReferenceValues := func(object) {
+	if isReference(object) {
+		// first check is reference since resource/field will return true on ll.isMap
+		return true
+	} else if ll.isMap(object) {
+		for _, v in object {
+			if _hasReferenceValues(v) {
+				return true
+			}
+		}
+	} else if is_array(object) {
+		for v in object {
+			if _hasReferenceValues(v) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+/**
+ * Convert given object to resource. If object is a true json, then
+ * a simple Json resource will be created, otherwise a resource map.
+ */
+_toRefOrJson := func(object) {
+	if isReference(object) {
+		// first check is reference since resource/field will return true on ll.isMap
+		return object
+	} else if ll.isMap(object) {
+
+		// just json if there are no nested resources
+		if !_hasReferenceValues(object)  {
+			return createJsonResource(object)
+		}
+
+		mb := mapBuilder()
+		for k, v in object {
+			mb.add(k, _toRefOrJson(v))
+		}
+
+		return mb.build()
+	} else if is_array(object) {
+
+		// assert we are not having refs inside
+		ll.assert(!_hasReferenceValues(object), "array can't contain references")
+
+		return createJsonResource(object)
+	} else {
+		return createJsonResource(object)
+	}
+}
+
+resourceTypesEqual := func(rType1, rType2) {
+	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+}
+
+////////////////// implementation ///////////////////////////
+
+/**
+ * @param r either resource id or resource info
+ */
+resource = func(r) {
+	self := undefined
+	strictSelf := undefined
+
+	if isResource(r) {
+		return r
+	}
+
+	id := ll.isStrict(r) ? r.ID : r
+
+	if !is_int(id) {
+		ll.panic("resource id should be int for ", r)
+	}
+
+	if id == 0 {
+		ll.panic("null resource id for ", r)
+	}
+
+	self = {
+		_type: "resource",
+
+		/**
+		 * Resource id (int64)
+		 */
+		id: id,
+
+		/**
+		 * Resource info:
+		 *
+		 *	ID:			   int64
+		 *	Data:		   byte[],
+		 *	Type:		   { Name: string, Version: string }
+		 *	Inputs:		   strict map
+		 *	Outputs:	   strict map
+		 *	Dynamic:	   strict map
+		 *	OTW:		   strict map
+		 *	ResourceReady: bool
+		 *	AllInputsSet:  bool
+		 *	AllOutputsSet: bool
+		 *	IsDuplicate:   bool
+		 *	InputsLocked:  bool
+		 *	OutputsLocked: bool
+		 *	HasErrors:	   bool
+		 */
+		info: func() {
+			return tx.getResource(self.id)
+		},
+
+		/**
+		 * Returns true if resource has type equal to the one provided as an agrument.
+		 *
+		 * @param expectedType type to compare resource type with
+		 * @return true if type matches, false otherwise
+		 */
+		checkResourceType: func(expectedType) {
+			return resourceTypesEqual(self.info().Type, expectedType)
+		},
+
+		/**
+		 * Resource is ready when all inputs are set to the terminal values.
+		 */
+		isReady: func() {
+			return self.info().ResourceReady
+		},
+
+		/**
+		 * Get raw resource data
+		 *
+		 * @return data: []byte - raw resource data
+		 */
+		getData: func() {
+			if self.hasError() {
+				ll.panic("resource has errors: ", self.info())
+			}
+			return self.info().Data;
+		},
+
+		/**
+		 * Get resource data as Json
+		 */
+		getDataAsJson: func() {
+			return json.decode(self.getData());
+		},
+
+		/**
+		 * Whether this resource has error
+		 */
+		hasError: func() {
+			return self._hasField("OneTimeWritables", "resourceError")
+		},
+
+		/**
+		 * Whether any of the input fields have errors. The resource itself may still not have
+		 * error status because error propagation was not yet happened.
+		 */
+		hasInputErrors: func() {
+			return self.info().HasErrors
+		},
+
+		/**
+		 * Return error set in the resource
+		 */
+		getError: func() {
+			if !self.info().HasErrors {
+				ll.panic("no error set in resource")
+			}
+			return self.getField("resourceError").getValue()
+		},
+
+		_hasField: func(fieldMapName, fieldName) {
+			return ll.fromStrict(self.info()[fieldMapName])[fieldName] != undefined
+		},
+
+		/**
+		 * Whether ressource has input field with specified name
+		 *
+		 * @param name field name
+		 */
+		hasInputField: func(name) {
+			return self._hasField("Inputs", name)
+		},
+
+		/**
+		 * Whether ressource has output field with specified name
+		 *
+		 * @param name field name
+		 */
+		hasOutputField: func(name) {
+			return self._hasField("Outputs", name)
+		},
+
+		/**
+		 * Whether ressource has any field with specified name
+		 *
+		 * @param name field name
+		 */
+		hasField: func(name) {
+			return self._hasField("Inputs", name) ||
+				self._hasField("Outputs", name) ||
+				self._hasField("DynamicFields", name) ||
+				self._hasField("OneTimeWritables", name)
+		},
+
+		// cached _inputs
+		_inputs: undefined,
+		/**
+		 * Returns resource inputs map name -> smart.Field
+		 */
+		inputs: func() {
+			if self._inputs == undefined {
+				info := self.info()
+				inputs := maps.mapValues(info.Inputs, field)
+				if !info.InputsLocked {
+					return inputs
+				}
+				self._inputs = inputs
+			}
+			return self._inputs
+		},
+
+		// cached _outputs
+		_outputs: undefined,
+		/**
+		 * Returns resource outputs map name -> smart.Field
+		 */
+		outputs: func() {
+			if(self._outputs == undefined) {
+				info := self.info()
+				outputs := ll.toStrict(maps.mapValues(info.Outputs, field))
+				if !info.OutputsLocked {
+					return outputs
+				}
+				self._outputs = outputs
+			}
+			return self._outputs
+		},
+
+		/**
+		 * Get smart.Field by name
+		 *
+		 * @param name field name
+		 */
+		getField: func(name) {
+			if(!self.hasField(name)) {
+				ll.panic("field %v is not found", name)
+			}
+
+			return field(ll.fieldId(self.id, name))
+		},
+
+		/**
+		 * Get future field given field name and field type.
+		 *
+		 * @param name: field name
+		 * @param fieldType: field type: input, output
+		 * @return field: smart field
+		 */
+		getFutureField: func(name, fieldType) {
+			return _getFutureField(strictSelf, name, fieldType)
+		},
+
+		/**
+		 * Get future input field given field name or a path
+		 *
+		 * @param nameOrPath field name or an array representing a path to be traversed
+		 * @return field: smart field
+		 */
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
+		},
+
+		/**
+		 * Get future output field given field name
+		 *
+		 * @param name field name
+		 * @return field: smart field
+		 */
+		getFutureOutputField: func(name) {
+			return self.getFutureField(name, "output")
+		},
+
+		/**
+		 * Get a resource set in field of a given field name
+		 *
+		 * @param name field name
+		 */
+		get: func(name) {
+			return self.getField(name).getValue()
+		},
+
+		/**
+		 * Gets value from key value storage associated with resource if corresponding
+		 * record exists.
+		 *
+		 * @param key string key
+		 * @return bytes or undefined
+		 */
+		kvGet: func(key) {
+			return tx.resourceKeyValueGet(self.id, key)
+		},
+
+		/**
+		 * Sets bytes or string value to a key value storage associated
+		 * with resource.
+		 *
+		 * @param key string key
+		 * @param value to be set
+		 */
+		kvSet: func(key, value) {
+			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Gets value as string from key value storage associated with resource if
+		 * corresponding record exists.
+		 *
+		 * @param key string key
+		 * @return string or undefined
+		 */
+		kvGetAsString: func(key) {
+			value := tx.resourceKeyValueGet(self.id, key)
+			if is_undefined(value) {
+				return undefined
+			} else {
+				return string(value)
+			}
+		},
+
+		/**
+		 * Gets value from key value storage associated with resource and
+		 * decodes as json if corresponding record exists.
+		 *
+		 * @param key string key
+		 * @return value or undefined
+		 */
+		kvGetAsJson: func(key) {
+			bytes := self.kvGet(key)
+			if is_undefined(bytes){
+				return undefined
+			} else {
+				return json.decode(bytes)
+			}
+		},
+
+		/**
+		 * Sets json value to a key value storage associated with resource.
+		 *
+		 * @param key string key
+		 * @param value to be set
+		 */
+		kvSetJson: func(key, value) {
+			self.kvSet(key, json.encode(value))
+		}
+	}
+
+	strictSelf = ll.toStrict(self)
+
+	return strictSelf
+}
+
+field = func(f) {
+	self := undefined
+	strictSelf := undefined
+
+	self = {
+		_type: "field",
+
+		/**
+		 * Field id struct:
+		 *
+		 *	ResourceID: int64
+		 *	Name:		string
+		 *
+		 */
+		id: isFieldId(f) ? f : f.ID,
+
+		/**
+		 * Field name
+		 */
+		name: func() {
+			return self.id.Name
+		},
+
+		/**
+		 * Associated smart.Resource
+		 */
+		resource: func() {
+			return resource(self.id.ResourceID)
+		},
+
+		/**
+		 * Field info:
+		 *
+		 *	ID:	   { ResourceId: int64, Name: string }
+		 *	Value: int64 - value resource id
+		 *	Error: int64 - error resource id
+		 *	IsSet: bool	 - whether field is set
+		 */
+		info: func() {
+			return tx.getField(self.id)
+		},
+
+		/**
+		 * Whether the field points to resource or error
+		 */
+		isSet: func() {
+			return self.info().IsSet
+		},
+
+		/**
+		 * Whether field is resolved to a value
+		 */
+		isValueSet: func() {
+			return self.info().Value != 0
+		},
+
+		/**
+		 * Whether field is resolved to a error
+		 */
+		isErrorSet: func() {
+			return self.info().Error != 0
+		},
+
+		/**
+		 * Returns a smart.Resource object from the resolved field value
+		 */
+		getValue: func() {
+			if self.isErrorSet() {
+				err := self.getError().getDataAsJson()
+				if !is_undefined(err.message) {
+					err = err.message
+				}
+				ll.panic("failed to get the value of field %v, error is not empty: %v", self.name(), err)
+			}
+
+			ll.assert(self.isSet(), "field value is not set; ", self.name())
+
+			return resource(self.info().Value)
+		},
+
+		/**
+		 * Returns a smart.Resource object from the resolved field error
+		 */
+		getError: func() {
+			return resource(self.info().Error)
+		},
+
+		/**
+		 * Set (resolve) this field to a Json resource
+		 *
+		 * @param value any
+		 */
+		setJson: func(value) {
+			self.set(createJsonResource(value))
+		},
+
+		/**
+		 * Set (resolve) this field to a Map resource
+		 *
+		 * @param keyToValue any
+		 */
+		setMap: func(keyToValue) {
+			self.set(createMapResource(keyToValue))
+		},
+
+		/**
+		 * Set (resolve) this field to either another resource or field
+		 *
+		 * @param reference smart.resource or smart.field
+		 */
+		set: func(reference) {
+			ll.assert(!self.isSet(), "field ", self.name(), " is already set")
+
+			if isResource(reference) {
+				tx.setFieldToResource(self.id, reference.id)
+			} else if isField(reference) {
+				tx.setFieldToField(self.id, reference.id)
+			} else {
+				ll.panic("smart resource or smart field expected (target field %v), got %#v: ", self.name(), reference)
+			}
+		},
+
+		/**
+		 * Sets this field to either another resource, field or a JSON value.
+		 *
+		 * @param refOrJson: resource|field|JSON
+		 * @return nothing
+		 */
+		setRefOrJson: func(refOrJson) {
+			if is_undefined(refOrJson) {
+				ll.panic("attempt to assign undefined value to field %v", self.name())
+			}
+			self.set(_toRefOrJson(refOrJson))
+		},
+
+		/**
+		 * Returns a json encoded data of the resolved value resource
+		 */
+		getValueAsJson: func() {
+			return self.getValue().getDataAsJson()
+		},
+
+		/**
+		 * Get future field given field name and field type.
+		 *
+		 * @param name: field name
+		 * @param fieldType: field type: input, output
+		 * @return field: smart field
+		 */
+		getFutureField: func(name, fieldType) {
+			return _getFutureField(strictSelf, name, fieldType)
+		},
+
+		/**
+		 * Get future input field given field name or a path
+		 *
+		 * @param nameOrPath field name or an array representing a path to be traversed
+		 * @return field: smart field
+		 */
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
+		},
+
+		/**
+		 * Get future output field given field name
+		 *
+		 * @param name field name
+		 * @return field: smart field
+		 */
+		getFutureOutputField: func(name) {
+			return self.getFutureField(name, "output")
+		}
+	}
+
+	strictSelf = ll.toStrict(self)
+
+	return strictSelf
+}
+
+
+/**
+ * Universal resource builder.
+ *
+ * @param r either resource id or resource info
+ */
+resourceBuilder = func(r) {
+	super := resource(r)
+
+	self := undefined
+
+	// Mutator methods of the builder cannot be used after it was built.
+	built := false
+	assertNotBuilt := func() {
+		ll.assert(!built, "builder methods must not be used after a build() was called")
+	}
+
+	self = ll.toStrict(oop.inherit(super, {
+		/**
+		 * Create new field with given name and field type.
+		 *
+		 * @param name field name
+		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use F_TYPE_* constants.
+		 */
+		createField: func(name, fieldType) {
+			assertNotBuilt()
+			fid := ll.fieldId(super.id, name)
+			tx.createField(fid, fieldType)
+			return field(fid)
+		},
+
+		/**
+		 * Create new input field with given name.
+		 *
+		 * @param name field name
+		 */
+		createInputField: func(name) {
+			assertNotBuilt()
+			return self.createField(name, "input")
+		},
+
+		/**
+		 * Create new output field with given name.
+		 *
+		 * @param name field name
+		 */
+		createOutputField: func(name) {
+			assertNotBuilt()
+			return self.createField(name, "output")
+		},
+
+		/**
+		 * Lock resource outputs
+		 */
+		lockOutputs: func() {
+			assertNotBuilt()
+			tx.lockOutputs(super.id)
+		},
+
+		/**
+		 * Lock resource inputs
+		 */
+		lockInputs: func() {
+			assertNotBuilt()
+			tx.lockInputs(super.id)
+		},
+
+		/**
+		 * Lock both resource inputs and outputs
+		 */
+		lock: func() {
+			assertNotBuilt()
+			self.lockInputs()
+			self.lockOutputs()
+		},
+
+		/**
+		 * Lock inputs and outputs and return resulting smart.Resource
+		 */
+		lockAndBuild: func() {
+			self.lock()
+			built = true
+			return super
+		},
+
+		/**
+		 * Lock outputs and return resulting smart.Resource
+		 */
+		lockOutputsAndBuild: func() {
+			self.lockOutputs()
+			built = true
+			return super
+		},
+
+		/**
+		 * Lock inputs and return resulting smart.Resource
+		 */
+		lockInputsAndBuild: func() {
+			self.lockInputs()
+			built = true
+			return super
+		},
+
+		/**
+		 * Return smart.Resource without locking inputs and outputs
+		 */
+		buildUnlocked: func() {
+			built = true
+			return super
+		}
+	}))
+
+	return self
+}
+
+/**
+ * Creates a structural resource and returns a builder from it.
+ *
+ * @params resourceType a resource type
+ * @params data, optional, bytes that will go in Data of the resource.
+ */
+structBuilder = func(resourceType, ...data) {
+	id := undefined
+	if len(data) > 0 {
+		id = tx.createStruct(resourceType.Name, resourceType.Version, data[0])
+	} else {
+		id = tx.createStruct(resourceType.Name, resourceType.Version)
+	}
+
+	return resourceBuilder(id)
+}
+
+/**
+ * @param isEph: is ephemeral map
+ */
+_mapBuilder := func(isEph) {
+	builder := isEph ? ephemeralBuilder(constants.RTYPE_MAP_EPH) : structBuilder(constants.RTYPE_MAP)
+	// ensure no outputs will be created
+	builder.lockOutputs()
+
+	self := undefined
+
+	self = ll.toStrict(oop.inherit(builder, {
+		/**
+		 * Adds a reference to the map by a given key.
+		 *
+		 * @param key: string - how the field will be named in the map
+		 * @param value: reference - a field or resource that will be set in the field
+		 * @return self: mapBuilder
+		 */
+		addRef: func(key, value) {
+			builder.createInputField(key).set(value)
+			return self
+		},
+
+		/**
+		 * Adds a primitive value that can be converted to JSON to the map.
+		 *
+		 * @param key: string - how the field will be named in the map
+		 * @param value: any - a primitive value, e.g. Tengo's map.
+		 * @return self: mapBuilder
+		 */
+		addJson: func(key, value) {
+			builder.createInputField(key).set(createJsonResource(value))
+			return self
+		},
+
+		/**
+		 * Adds object automatically converting non-reference objects into Json values.
+		 *
+		 * @param key: string - how the field will be named in the map
+		 * @param value: any - a reference or a primitive value
+		 * @return self: mapBuilder
+		 */
+		add: func(key, value) {
+			builder.createInputField(key).setRefOrJson(value)
+			return self
+		},
+
+
+		/**
+		 * Creates a map in the platforma
+		 *
+		 * @return nothing
+		 */
+		build: func() {
+			return builder.lockAndBuild()
+		}
+	}))
+
+	return self
+}
+
+mapBuilder = func() {
+	return _mapBuilder(false)
+}
+
+ephemeralMapBuilder = func() {
+	return _mapBuilder(true)
+}
+
+ephemeralBuilder = func(resourceType, ...data) {
+	id := undefined
+	if (len(data) > 0) {
+		id = tx.createEphemeral(resourceType.Name, resourceType.Version, data[0])
+	} else {
+		id = tx.createEphemeral(resourceType.Name, resourceType.Version)
+	}
+
+	return resourceBuilder(id)
+}
+
+createValueResource = func(resourceType, data) {
+	ll.assert(data != undefined, "can't create resource with undefined data")
+	return resource(tx.createValue(resourceType.Name, resourceType.Version, data))
+}
+
+createJsonResource = func(value) {
+	ll.assert(value != undefined, "can't create Json value from undefined")
+
+	// important: strict map can't be encoded to JSON
+
+	ll.assert(!ll.isStrict(value), "can't encode strict map: ", value)
+	// value = ll.ensureNonStrict(value)
+
+	encoded := json.encode(value)
+	return createValueResource(constants.RTYPE_JSON, encoded)
+}
+
+createMapResourceWithType := func(resourceType, keyToValue) {
+	builder := structBuilder(resourceType)
+
+	for key, value in keyToValue {
+		builder.createInputField(key).setRefOrJson(value)
+	}
+
+	return builder.lockAndBuild()
+}
+
+createMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_MAP, keyToValue)
+}
+
+createBinaryMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_BINARY_MAP, keyToValue)
+}
+
+createBlobMapResource = func(keyToValue) {
+	return createMapResourceWithType(constants.RTYPE_BLOB_MAP, keyToValue)
+}
+
+export ll.toStrict({
+	isResource: isResource,
+	isField: isField,
+	isReference: isReference,
+	isMapResource: isMapResource,
+	isEphMapResource: isEphMapResource,
+	isAnyMapResource: isAnyMapResource,
+	isLockedEphMapResource: isLockedEphMapResource,
+	isJsonResource: isJsonResource,
+	resource: resource,
+	field: field,
+	resourceBuilder: resourceBuilder,
+	structBuilder: structBuilder,
+	mapBuilder: mapBuilder,
+	ephemeralMapBuilder: ephemeralMapBuilder,
+	ephemeralBuilder: ephemeralBuilder,
+	createValueResource: createValueResource,
+	createJsonResource: createJsonResource,
+	createMapResourceWithType: createMapResourceWithType,
+	createMapResource: createMapResource,
+	createBinaryMapResource: createBinaryMapResource,
+	createBlobMapResource: createBlobMapResource
+})

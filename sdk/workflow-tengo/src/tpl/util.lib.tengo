@@ -1,0 +1,19 @@
+/* Templates/renderers utils */
+
+ll := import(":ll")
+
+// template field name in renderer resource
+TEMPLATE_FIELD := "template"
+// field name of a resource map with the inputs in renderer resource
+INPUTS_MAP_FIELD := "inputs"
+// prefix of output fields template results in renderer resource
+TEMPLATE_OUTPUT_PREFIX := "outputs/"
+// input field containing a map with resources to prepare for the body
+PREPARE_MAP_FIELD_NAME := "__prepare__"
+
+export ll.toStrict({
+	TEMPLATE_FIELD           : TEMPLATE_FIELD,
+	INPUTS_MAP_FIELD         : INPUTS_MAP_FIELD,
+	TEMPLATE_OUTPUT_PREFIX   : TEMPLATE_OUTPUT_PREFIX,
+	PREPARE_MAP_FIELD_NAME   : PREPARE_MAP_FIELD_NAME
+})

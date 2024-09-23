@@ -1,0 +1,29 @@
+/**
+ * Utility functions for working with objects.
+ */
+
+ll := import(":ll")
+
+/**
+ * Inherit all methods and properties of a super object
+ *
+ * @param super a parent from which we get all methods
+ * @param self an object in which we set all super methods
+ * @return self
+ */
+inherit := func(super, self) {
+	self["super"] = super
+
+	// inherit super methods
+	for k, v in super {
+		if self[k] == undefined {
+			self[k] = v
+		}
+	}
+
+	return ll.toStrict(self)
+}
+
+export ll.toStrict({
+	inherit: inherit
+})

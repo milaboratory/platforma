@@ -1,0 +1,64 @@
+/** API to retrieve assets packed with template code (like other templates). */
+
+plapi := import("plapi")
+json := import("json")
+ll := import(":ll")
+smart := import(":smart")
+
+/**
+ * Returns internal template identifier for loaded templates
+ *
+ * @param tplName: string - full name of a template, including namespace (package name).
+ * Local templates (within the same package) can omit namespace part and start the name with colon:
+ *  - "@company/package:someTemplateName"
+ *  - ":myLocalTemplate"
+ *
+ * @return template: smart.resource - resource of tengo template with given name.
+ */
+importTemplate := func(tplName) {
+	return smart.resource(plapi.getTemplateId(tplName))
+}
+
+/**
+ * Returns software description suitable for 'exec' operations.
+ *
+ * @param swName: string - full name of the software description, including namespace (package name).
+ * Local software definitions (within the same package) can omit namespace part and start the name with colon:
+ *  - "@company/package:some-oftware"
+ *  - ":my-local-software"
+ *
+ * @return softwareInfo: softwareInfo - structure with software info
+ */
+importSoftware := func(swName) {
+	sw := plapi.getSoftwareInfo(swName)
+	return ll.toStrict({
+		_type: "softwareDescriptor",
+
+		resource: smart.resource(sw.id),
+		name: sw.name,
+		version: sw.version,
+		blobRef: sw.blobRef,
+		descriptor: ll.toStrict(json.decode(sw.descriptor)) // raw sw.json data with software entrypoint descriptor
+	})
+}
+
+/**
+ * Checks if given item is a software info
+ *
+ * @param toCheck: any - item to check
+ *
+ * @return isSoftware: boolean - true for software info, loaded with importSoftware()
+ */
+isSoftwareInfo := func(toCheck) {
+	if !ll.isMap(toCheck) {
+		return false
+	}
+
+	return (ll.fromStrict(toCheck)._type) == "softwareDescriptor"
+}
+
+export ll.toStrict({
+	importTemplate: importTemplate,
+	importSoftware: importSoftware,
+	isSoftwareInfo: isSoftwareInfo
+})

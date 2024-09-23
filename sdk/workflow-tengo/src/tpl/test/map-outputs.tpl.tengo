@@ -1,0 +1,22 @@
+// simple1
+
+
+ll := import(":ll")
+smart := import(":smart")
+
+self := import(":tpl")
+
+self.defineOutputs(["simpleMap"])
+
+self.body(func(inputs) {
+
+	result := {
+
+		simpleMap: {
+			a: "a",
+			b: "b"
+		}
+	}
+
+	return result
+})

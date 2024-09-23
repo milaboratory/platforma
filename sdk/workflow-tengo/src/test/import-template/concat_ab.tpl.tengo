@@ -1,0 +1,14 @@
+tpl := import(":tpl")
+
+tpl.defineOutputs(["concat"])
+
+tpl.body(func(inputs) {
+
+	a := inputs.a
+	b := inputs.b
+
+	// output resource
+	return {
+		concat: "" + a + b
+	}
+})

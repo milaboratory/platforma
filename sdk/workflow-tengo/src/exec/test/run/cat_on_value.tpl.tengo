@@ -1,0 +1,26 @@
+/** Runs a cat on the file that was created from a content. */
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+file := import(":file")
+json := import("json")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("cat input.txt").
+		writeFile("input.txt", ">asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n").
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})

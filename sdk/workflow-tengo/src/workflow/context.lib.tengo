@@ -1,0 +1,56 @@
+/** Library to work with context resources */
+
+ll := import(":ll")
+smart := import(":smart")
+constants := import(":constants")
+oop := import(":oop")
+
+_BLOCK_ID_FIELD := "id"
+_PARENT_CTX_FIELD := "parent"
+_EXPORTS_OUTPUT_PREFIX := "values/"
+
+/**
+ * Create a new context builder
+ *
+ * @param block block (smart.Resource)
+ * @param parentContext parent context (smart.Resource)
+ */
+builder := func(block, parentContext) {
+
+	super := smart.ephemeralBuilder(constants.RTYPE_CONTEXT)
+
+	// set blockId associated with this context
+	super.createInputField(_BLOCK_ID_FIELD).setRefOrJson(block)
+
+	// set parent context
+	super.createInputField(_PARENT_CTX_FIELD).set(parentContext)
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(super, {
+
+		/**
+		 * Add export to the context
+		 *
+		 * @param name string name of the export field
+		 * @param value resource/field value
+		 *
+		 */
+		add: func(name, value) {
+			field := super.createInputField(_EXPORTS_OUTPUT_PREFIX + name)
+
+			field.setRefOrJson(value)
+
+			return self
+		},
+
+		build: func() {
+			return super.lockAndBuild()
+		}
+	}))
+
+	return self
+}
+
+export ll.toStrict({
+	builder: builder
+})
