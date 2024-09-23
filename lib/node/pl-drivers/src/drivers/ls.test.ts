@@ -41,8 +41,10 @@ test('should ok when list files from remote storage in ls driver', async () => {
 
     const storages = await driver.getStorageList();
     const library = storages.find((se) => se.name == 'library')!.handle;
-
+    
     const topLevelDir = await driver.listFiles(library, '');
+    console.log("HERE: ", storages, "___________", topLevelDir)
+
     expect(topLevelDir.entries.length).toBeGreaterThan(1);
 
     const testDir = topLevelDir.entries.find((d) =>
