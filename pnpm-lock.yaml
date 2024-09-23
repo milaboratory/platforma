@@ -22,8 +22,8 @@ catalogs:
       specifier: ^1.5.0
       version: 1.5.0
     '@milaboratories/software-small-binaries':
-      specifier: ^1.10.3
-      version: 1.10.3
+      specifier: ^1.10.4
+      version: 1.10.4
     '@milaboratories/tengo-tester':
       specifier: ^1.4.4
       version: 1.4.4
@@ -663,7 +663,7 @@ importers:
         version: 1.5.0
       '@milaboratories/software-small-binaries':
         specifier: 'catalog:'
-        version: 1.10.3
+        version: 1.10.4
       '@milaboratories/tengo-template-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-template-builder
@@ -1679,8 +1679,8 @@ packages:
   '@milaboratories/software-pframes-conv@1.5.0':
     resolution: {integrity: sha512-XVLlMGFQc2o0kqdrKEqoWGKvXpOlPjLRN7YaMd7RXDhzCXiq7G4jnEYvCF0pKeT5vwR2tlykTH3HQOC3C36T2g==}
 
-  '@milaboratories/software-small-binaries@1.10.3':
-    resolution: {integrity: sha512-H9eBJDJywWx/5EiGFczzv70CZh5sTaUGNMLe7Lzyz6vgrNVP+ggaVrhcIz1jhUG6tRoIlBtuMWMJ9GgHzTyLYA==}
+  '@milaboratories/software-small-binaries@1.10.4':
+    resolution: {integrity: sha512-Eb2T+wwQt+NzRdhpb5+8oWgVvB+6ZbNQJ/IdA2oZds6sjVGIXv4e/ps0YcpMN3Yt5sGZRHEZeKhVsv3ataa27Q==}
 
   '@milaboratories/tengo-tester@1.4.4':
     resolution: {integrity: sha512-UWT05MAwizVEbUQC+HDD7VPb26AtZesCAT67CEzWSg4GUbNrOw5c/+TCCLJAS1lq3UQY0i3VV9QOtI1kjVokRQ==}
@@ -5978,7 +5978,7 @@ snapshots:
 
   '@milaboratories/software-pframes-conv@1.5.0': {}
 
-  '@milaboratories/software-small-binaries@1.10.3': {}
+  '@milaboratories/software-small-binaries@1.10.4': {}
 
   '@milaboratories/tengo-tester@1.4.4': {}
 
