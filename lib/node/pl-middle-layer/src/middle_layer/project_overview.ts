@@ -1,5 +1,5 @@
-import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { Computable, ComputableStableDefined } from '@milaboratory/computable';
+import { PlTreeEntry } from '@milaboratories/pl-tree';
+import { Computable, ComputableStableDefined } from '@milaboratories/computable';
 import {
   BlockRenderingStateKey,
   ProjectCreatedTimestamp,
@@ -11,20 +11,20 @@ import {
   ProjectStructureAuthorKey,
   ProjectStructureKey
 } from '../model/project_model';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { Pl } from '@milaboratory/pl-client-v2';
+import { Pl } from '@milaboratories/pl-client';
 import {
   AuthorMarker,
   BlockCalculationStatus,
   ProjectMeta,
   ProjectOverview
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection, normalizeBlockConfig } from '@milaboratory/sdk-ui';
+import { BlockSection, normalizeBlockConfig } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import { NavigationStates } from './navigation_states';
 

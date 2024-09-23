@@ -1,6 +1,6 @@
-import { PlError, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
-import { PObject, PObjectSpec, ValueOrError } from '@milaboratory/sdk-ui';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { PlError, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'assert';
 import { Writable } from 'utility-types';
 import { derivePObjectId } from './data';

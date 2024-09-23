@@ -1,7 +1,7 @@
-import { PruningFunction, SynchronizedTreeState } from '@milaboratory/pl-tree';
-import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratory/pl-client-v2';
+import { PruningFunction, SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { PlClient, ResourceId, ResourceType, resourceTypesEqual } from '@milaboratories/pl-client';
 import { TreeAndComputableU } from './types';
-import { Computable, WatchableValue } from '@milaboratory/computable';
+import { Computable, WatchableValue } from '@milaboratories/computable';
 import {
   ProjectCreatedTimestamp,
   ProjectLastModifiedTimestamp,
@@ -9,8 +9,8 @@ import {
   ProjectMetaKey
 } from '../model/project_model';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { notEmpty } from '@milaboratory/ts-helpers';
-import { ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import { ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 
 export const ProjectsField = 'projects';
 export const ProjectsResourceType: ResourceType = { name: 'Projects', version: '1' };

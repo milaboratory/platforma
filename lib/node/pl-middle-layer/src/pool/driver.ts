@@ -1,8 +1,8 @@
-import { DownloadDriver } from '@milaboratory/pl-drivers';
-import type PFramesType from '@milaboratory/pframes-node';
-import { PFrameInternal } from '@milaboratory/pl-middle-layer-model';
-import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratory/pl-tree';
-import { ComputableCtx, ComputableStableDefined } from '@milaboratory/computable';
+import { DownloadDriver } from '@milaboratories/pl-drivers';
+import type PFramesType from '@milaboratories/pframes-node';
+import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
 import {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
@@ -27,15 +27,15 @@ import {
   JoinEntry,
   PTableDef,
   mapPTableDef
-} from '@milaboratory/sdk-ui';
+} from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'crypto';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 
 // special way of importing native node module
-const PFrames: PFramesType = require('@milaboratory/pframes-node');
+const PFrames: PFramesType = require('@milaboratories/pframes-node');
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);

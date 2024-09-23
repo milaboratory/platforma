@@ -1,5 +1,5 @@
-import { BlockConfigUniversal } from '@milaboratory/sdk-ui';
-import { BlockPackSpec } from '@milaboratory/pl-middle-layer-model';
+import { BlockConfigUniversal } from '@platforma-sdk/model';
+import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 
 /** Define structure of block-pack data section */
 export interface BlockPackInfo {

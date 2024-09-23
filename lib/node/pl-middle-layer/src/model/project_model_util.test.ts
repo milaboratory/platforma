@@ -1,7 +1,7 @@
 import { ProjectStructure } from './project_model';
 import { graphDiff, productionGraph, stagingGraph } from './project_model_util';
 import { outputRef } from './args';
-import { Ref } from '@milaboratory/sdk-ui';
+import { Ref } from '@platforma-sdk/model';
 
 function toRefs(...ids: string[]): Ref[] {
   return ids.map((id) => outputRef(id, ''));

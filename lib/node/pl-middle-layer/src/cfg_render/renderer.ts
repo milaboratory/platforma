@@ -3,13 +3,13 @@ import {
   CfgMapArrayValues,
   CfgMapRecordValues,
   CfgMapResourceFields
-} from '@milaboratory/sdk-ui';
+} from '@platforma-sdk/model';
 import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
-import { PlTreeEntry } from '@milaboratory/pl-tree';
+import { PlTreeEntry } from '@milaboratories/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfgUnsafe } from './executor';
-import { assertNever } from '@milaboratory/ts-helpers';
-import { Computable } from '@milaboratory/computable';
+import { assertNever } from '@milaboratories/ts-helpers';
+import { Computable } from '@milaboratories/computable';
 
 function res(result: unknown): OperationAction {
   return {

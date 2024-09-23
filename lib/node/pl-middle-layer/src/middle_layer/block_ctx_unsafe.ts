@@ -1,6 +1,6 @@
-import { ComputableCtx } from '@milaboratory/computable';
-import { PlTreeEntry } from '@milaboratory/pl-tree';
-import { PlResourceEntry, StdCtx } from '@milaboratory/sdk-ui';
+import { ComputableCtx } from '@milaboratories/computable';
+import { PlTreeEntry } from '@milaboratories/pl-tree';
+import { PlResourceEntry, StdCtx } from '@platforma-sdk/model';
 import { BlockContextAny } from './block_ctx';
 
 type SC = StdCtx<unknown, unknown>;

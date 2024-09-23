@@ -3,7 +3,7 @@
  * libraries and templates.
  */
 
-ll := import("@milaboratory/tengo-sdk:ll")
+ll := import(":ll")
 
 /**
  * Name of the field under which the iteration value like in "map" and "aggregate" is passed

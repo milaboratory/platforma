@@ -1,6 +1,6 @@
-import { ComputableCtx } from '@milaboratory/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratory/pl-tree';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { ComputableCtx } from '@milaboratories/computable';
+import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { Optional } from 'utility-types';
 import {
   Block,

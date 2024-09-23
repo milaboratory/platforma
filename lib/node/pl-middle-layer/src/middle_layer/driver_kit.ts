@@ -5,16 +5,16 @@ import {
   LogsStreamDriver,
   LsDriver,
   UploadDriver
-} from '@milaboratory/pl-drivers';
-import { HmacSha256Signer, MiLogger, Signer } from '@milaboratory/ts-helpers';
-import * as Sdk from '@milaboratory/sdk-model';
+} from '@milaboratories/pl-drivers';
+import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
+import * as Sdk from '@milaboratories/pl-model-common';
 import { DefaultDriverKitOps, DriverKitOps, DriverKitOpsConstructor } from './ops';
-import { createDownloadClient } from '@milaboratory/pl-drivers';
-import { createLogsClient } from '@milaboratory/pl-drivers';
-import { PlClient } from '@milaboratory/pl-client-v2';
-import { createUploadBlobClient } from '@milaboratory/pl-drivers';
-import { createUploadProgressClient } from '@milaboratory/pl-drivers';
-import { createLsFilesClient } from '@milaboratory/pl-drivers';
+import { createDownloadClient } from '@milaboratories/pl-drivers';
+import { createLogsClient } from '@milaboratories/pl-drivers';
+import { PlClient } from '@milaboratories/pl-client';
+import { createUploadBlobClient } from '@milaboratories/pl-drivers';
+import { createUploadProgressClient } from '@milaboratories/pl-drivers';
+import { createLsFilesClient } from '@milaboratories/pl-drivers';
 import { PFrameDriver } from '../pool';
 import * as os from 'node:os';
 

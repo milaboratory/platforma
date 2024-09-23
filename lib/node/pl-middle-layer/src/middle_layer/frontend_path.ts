@@ -1,14 +1,14 @@
-import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratory/pl-tree';
+import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { Computable, ComputableStableDefined } from '@milaboratory/computable';
-import { Pl, resourceTypesEqual } from '@milaboratory/pl-client-v2';
+import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import { Pl, resourceTypesEqual } from '@milaboratories/pl-client';
 import {
   FrontendFromFolderData,
   FrontendFromFolderResourceType,
   FrontendFromUrlData,
   FrontendFromUrlResourceType
 } from '../model';
-import { PathResult } from '@milaboratory/pl-drivers';
+import { PathResult } from '@milaboratories/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { getBlockCfg } from './util';

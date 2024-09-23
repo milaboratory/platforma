@@ -6,26 +6,26 @@ import {
   isTimeoutOrCancelError,
   Pl,
   ResourceId
-} from '@milaboratory/pl-client-v2';
-import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
+} from '@milaboratories/pl-client';
+import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
-import { SynchronizedTreeState } from '@milaboratory/pl-tree';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { NavigationState } from '@milaboratory/sdk-model';
+import { NavigationState } from '@milaboratories/pl-model-common';
 import { blockArgsAndUiState, blockOutputs } from './block';
 import { FrontendData } from '../model/frontend';
 import { projectFieldName, ProjectStructure } from '../model/project_model';
-import { notEmpty } from '@milaboratory/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { BlockPackInfo } from '../model/block_pack';
 import {
   ProjectOverview,
   AuthorMarker,
   BlockStateInternal
-} from '@milaboratory/pl-middle-layer-model';
+} from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
 

@@ -1,4 +1,4 @@
-import { Cfg } from '@milaboratory/sdk-ui';
+import { Cfg } from '@platforma-sdk/model';
 import { traverseCfg } from './traverse';
 
 export function mapRecord<T1, T2, Key extends string>(

@@ -4,23 +4,23 @@ import {
   PlClient,
   ResourceId,
   toGlobalResourceId
-} from '@milaboratory/pl-client-v2';
+} from '@milaboratories/pl-client';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
-import { SynchronizedTreeState } from '@milaboratory/pl-tree';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { DownloadUrlDriver } from '@milaboratory/pl-drivers';
-import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratory/ts-helpers';
-import { ComputableStableDefined, WatchableValue } from '@milaboratory/computable';
+import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
+import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
 import { randomUUID } from 'node:crypto';
 import { ProjectListEntry } from '../model';
-import { AuthorMarker, ProjectMeta } from '@milaboratory/pl-middle-layer-model';
+import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
-import { DriverKit } from '@milaboratory/sdk-ui';
+import { DriverKit } from '@platforma-sdk/model';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;

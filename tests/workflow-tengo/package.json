@@ -1,0 +1,27 @@
+{
+    "name": "@platforma-sdk/workflow-tengo-tests",
+    "private": true,
+    "version": "1.2.4",
+    "description": "Tengo SDK library tests",
+    "scripts": {
+      "check": "pl-tengo check",
+      "build": "rm -rf dist && pl-tengo check && pl-tengo build",
+      "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test",
+      "test": "rm -rf dist && pl-tengo check && pl-tengo build && pl-tengo test && vitest",
+      "format": "/usr/bin/env emacs --quick --script ./format.el",
+      "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
+      "vscode-tags": "./create_tags.sh .tags false",
+      "emacs-tags": "./create_tags.sh ../TAGS false -e"
+    },
+    "devDependencies": {
+      "@platforma-sdk/workflow-tengo": "workspace:*",
+      "@milaboratories/software-pframes-conv": "catalog:",
+      "@types/node": "catalog:",
+      "@milaboratories/tengo-template-builder": "catalog:",
+      "@milaboratory/pl-middle-layer": "^1.10.2",
+      "@milaboratory/sdk-test": "^1.5.3",
+      "@milaboratory/small-binaries": "^1.10.1",
+      "vitest": "^2.0.5"
+    }
+  }
+  

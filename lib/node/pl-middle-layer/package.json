@@ -24,43 +24,31 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
-    "@milaboratory/computable": "workspace:^",
-    "@milaboratory/pframes-node": "catalog:",
-    "@milaboratory/pl-block-tools": "workspace:^",
-    "@milaboratory/pl-client-v2": "workspace:^",
-    "@milaboratory/pl-drivers": "workspace:^",
-    "@milaboratory/pl-middle-layer-model": "workspace:^",
-    "@milaboratory/pl-tree": "workspace:^",
-    "@milaboratory/sdk-ui": "workspace:^",
-    "@milaboratory/ts-helpers": "workspace:^",
-    "@milaboratory/tengo-sdk": "^1.2.1",
+    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/pframes-node": "catalog:",
+    "@platforma-sdk/block-tools": "workspace:^",
+    "@milaboratories/pl-client": "workspace:^",
+    "@milaboratories/pl-drivers": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:^",
+    "@milaboratories/pl-model-middle-layer": "workspace:^",
+    "@milaboratories/pl-tree": "workspace:^",
+    "@platforma-sdk/model": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "@platforma-sdk/workflow-tengo": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:",
-    "quickjs-emscripten": "^0.30.0",
+    "quickjs-emscripten": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "ts-jest": "catalog:",
-    "tsup": "catalog:",
-    "typescript": "catalog:"
-  },
-  "tsup": {
-    "entry": {
-      "lib": "src/index.ts"
-    },
-    "splitting": false,
-    "clean": true,
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": true,
-    "minify": false,
-    "sourcemap": true
+    "ts-jest": "catalog:"
   }
 }

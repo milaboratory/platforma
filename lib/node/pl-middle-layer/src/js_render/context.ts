@@ -1,5 +1,5 @@
-import { Computable, ComputableCtx } from '@milaboratory/computable';
-import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { Computable, ComputableCtx } from '@milaboratories/computable';
+import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
@@ -19,8 +19,8 @@ import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
-} from '@milaboratory/sdk-ui';
-import { notEmpty } from '@milaboratory/ts-helpers';
+} from '@platforma-sdk/model';
+import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { QuickJSContext, QuickJSHandle, Scope, VmFunctionImplementation } from 'quickjs-emscripten';
 import { Optional } from 'utility-types';

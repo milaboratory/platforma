@@ -1,4 +1,4 @@
-import { AnyResourceRef, PlTransaction } from '@milaboratory/pl-client-v2';
+import { AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
 import {
   FrontendFromFolderData,
   FrontendFromFolderResourceType,
@@ -6,7 +6,7 @@ import {
   FrontendFromUrlResourceType,
   FrontendSpec
 } from '../../model';
-import { assertNever } from '@milaboratory/ts-helpers';
+import { assertNever } from '@milaboratories/ts-helpers';
 
 export function createFrontend(tx: PlTransaction, spec: FrontendSpec): AnyResourceRef {
   switch (spec.type) {

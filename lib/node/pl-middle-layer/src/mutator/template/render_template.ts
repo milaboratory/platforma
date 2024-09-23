@@ -1,5 +1,5 @@
-import { AnyRef, field, Pl, PlTransaction } from '@milaboratory/pl-client-v2';
-import { ResourceType } from '@milaboratory/sdk-ui';
+import { AnyRef, field, Pl, PlTransaction } from '@milaboratories/pl-client';
+import { ResourceType } from '@platforma-sdk/model';
 
 const EphRenderTemplate: ResourceType = {
   name: 'EphRenderTemplate',

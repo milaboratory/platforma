@@ -1,11 +1,11 @@
-import { TestHelpers } from '@milaboratory/pl-client-v2';
+import { TestHelpers } from '@milaboratories/pl-client';
 import { MiddleLayer } from './middle_layer';
 import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../block_registry';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratory/sdk-model';
+import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
 import { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev';
 

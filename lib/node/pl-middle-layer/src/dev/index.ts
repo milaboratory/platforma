@@ -1,4 +1,4 @@
-import { RegistryV1 } from '@milaboratory/pl-block-tools';
+import { RegistryV1 } from '@platforma-sdk/block-tools';
 import path from 'path';
 import { tryStat } from './util';
 

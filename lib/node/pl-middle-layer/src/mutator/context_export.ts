@@ -1,5 +1,5 @@
-import { AnyRef, PlTransaction } from '@milaboratory/pl-client-v2';
-import { Templates as SdkTemplates } from '@milaboratory/tengo-sdk';
+import { AnyRef, PlTransaction } from '@milaboratories/pl-client';
+import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 import { createRenderTemplate } from './template/render_template';
 import { prepareTemplateSpec } from './template/template_loading';
 import { TemplateSpecPrepared } from '../model/template_spec';
