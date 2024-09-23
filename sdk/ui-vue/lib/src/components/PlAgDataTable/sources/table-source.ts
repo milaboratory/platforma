@@ -136,7 +136,7 @@ function toDisplayValue(value: string | number | bigint | Uint8Array, valueType:
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(indices: number[], isAxis: boolean[], columns: PTableVector[]): unknown[] {
+function columns2rows(indices: number[], columns: PTableVector[]): unknown[] {
   const nCols = columns.length;
   const rowData = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
@@ -155,9 +155,7 @@ function columns2rows(indices: number[], isAxis: boolean[], columns: PTableVecto
         row[field] = toDisplayValue(value, valueType);
       }
 
-      if (isAxis[iCol]) {
-        index.push(valueType === 'Long' ? Number(value) : value);
-      }
+      index.push(valueType === 'Long' ? Number(value) : value);
     }
 
     // generate ID based on the axes information
@@ -186,7 +184,6 @@ export async function updatePFrameGridOptions(
     .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
     .filter((entry) => entry !== null);
   const columnDefs = indices.map((i) => getColDef(i, specs[i]));
-  const isAxis = indices.map((i) => specs[i].type === 'axis');
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
@@ -219,7 +216,7 @@ export async function updatePFrameGridOptions(
             offset: params.startRow,
             length,
           });
-          rowData = columns2rows(indices, isAxis, data);
+          rowData = columns2rows(indices, data);
         }
 
         params.successCallback(rowData, ptShape.rows);
