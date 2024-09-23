@@ -1,0 +1,32 @@
+{
+  "name": "@milaboratories/platforma-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "lint": "turbo build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\""
+  },
+  "devDependencies": {
+    "@changesets/cli": "catalog:",
+    "turbo": "catalog:",
+    "prettier": "catalog:"
+  },
+  "packageManager": "pnpm@9.10.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "@microsoft/api-extractor>typescript": "catalog:"
+    }
+  },
+  "//": {
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "@eslint/js": "catalog:",
+    "@types/eslint__js": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}

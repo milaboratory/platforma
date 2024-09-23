@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package MiLaboratories.Controller.Shared;
+
+option go_package = "github.com/milaboratory/pl/controllers/shared/grpc/progressapi;progressapi";
+
+import "google/protobuf/duration.proto";
+import "google/api/annotations.proto";
+
+//
+// Progress provides access to progress of any long-running process associated with resource.
+//
+service Progress {
+  rpc GetStatus(ProgressAPI.GetStatus.Request) returns (ProgressAPI.GetStatus.Response) {
+    option (google.api.http) = {
+      get: "/resources/{resource_id}/get-progress"
+    };
+  }
+
+  rpc RealtimeStatus(ProgressAPI.RealtimeStatus.Request) returns (stream ProgressAPI.RealtimeStatus.Response) {}
+}
+
+message ProgressAPI {
+  message Report {
+    float progress = 1;
+    uint64 bytes_processed = 2;
+    uint64 bytes_total = 3;
+    bool done = 4;
+
+    // Name of current progress stage (if any)
+    string name = 5;
+  }
+
+  message GetStatus {
+    message Request {
+      uint64 resource_id = 1;
+    }
+
+    message Response {
+      Report report = 1;
+    }
+  }
+
+  message RealtimeStatus {
+    message Request {
+      uint64 resource_id = 1;
+      google.protobuf.Duration update_interval = 2;
+    }
+
+    message Response {
+      Report report = 1;
+    }
+  }
+}

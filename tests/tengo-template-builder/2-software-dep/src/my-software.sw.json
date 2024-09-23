@@ -1,0 +1,14 @@
+{
+  "docker": {
+    "image": "quay.io/milaboratories/my-software:4.3.1",
+    "entrypoint": [
+      "..."
+    ]
+  },
+  "binary": {
+    "registry": "milaboratories",
+    "package": "milaboratories/my-software/4.3.1.tgz",
+    "cmd": "./dist/script.jar",
+    "runEnv": "corretto-21.0.2.13.1"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "version": "1.0.1",
+  "name": "@milaboratories/platforma-build-configs",
+  "private": true,
+  "exports": {
+    "./tsup": {
+      "types": "./src/tsup.ts",
+      "import": "./dist/tsup.mjs",
+      "require": "./dist/tsup.js"
+    },
+    "./vite": {
+      "types": "./src/vite.ts",
+      "import": "./dist/vite.mjs",
+      "require": "./dist/vite.js"
+    },
+    "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "tsup": "catalog:",
+    "vite": "catalog:",
+    "rollup-plugin-node-externals": "catalog:",
+    "@rollup/plugin-node-resolve": "catalog:",
+    "vite-plugin-dts": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

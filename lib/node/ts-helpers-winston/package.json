@@ -1,0 +1,31 @@
+{
+  "name": "@milaboratories/ts-helpers-winston",
+  "version": "1.0.2",
+  "description": "Useful helpers for our TS projects (winston-specific)",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "dependencies": {
+    "@milaboratories/ts-helpers": "workspace:^",
+    "winston": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

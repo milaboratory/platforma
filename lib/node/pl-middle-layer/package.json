@@ -1,0 +1,66 @@
+{
+  "name": "@milaboratory/pl-middle-layer",
+  "version": "1.10.10",
+  "description": "Pl Middle Layer",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@milaboratory/computable": "workspace:^",
+    "@milaboratory/pframes-node": "catalog:",
+    "@milaboratory/pl-block-tools": "workspace:^",
+    "@milaboratory/pl-client-v2": "workspace:^",
+    "@milaboratory/pl-drivers": "workspace:^",
+    "@milaboratory/pl-middle-layer-model": "workspace:^",
+    "@milaboratory/pl-tree": "workspace:^",
+    "@milaboratory/sdk-ui": "workspace:^",
+    "@milaboratory/ts-helpers": "workspace:^",
+    "@milaboratory/tengo-sdk": "^1.2.1",
+    "canonicalize": "catalog:",
+    "denque": "catalog:",
+    "quickjs-emscripten": "^0.30.0",
+    "undici": "catalog:",
+    "utility-types": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "ts-jest": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  },
+  "tsup": {
+    "entry": {
+      "lib": "src/index.ts"
+    },
+    "splitting": false,
+    "clean": true,
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "minify": false,
+    "sourcemap": true
+  }
+}
