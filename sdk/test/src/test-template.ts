@@ -3,7 +3,7 @@ import {
   ComputableCtx,
   ComputableStableDefined,
   UnwrapComputables
-} from '@milaboratory/computable';
+} from '@milaboratories/computable';
 import {
   AnyRef,
   createRenderTemplate,
@@ -20,13 +20,13 @@ import {
   ResourceId,
   TemplateSpecAny,
   toGlobalResourceId
-} from '@milaboratory/pl-middle-layer';
+} from '@milaboratories/pl-middle-layer';
 import {
   PlTreeEntry,
   PlTreeNodeAccessor,
   SynchronizedTreeState
-} from '@milaboratory/pl-tree';
-import { ConsoleLoggerAdapter } from '@milaboratory/ts-helpers';
+} from '@milaboratories/pl-tree';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
 import path from 'node:path';

@@ -11,14 +11,14 @@ packages:
   - lib/node/pl-client
   - lib/node/pl-tree
   - lib/node/pl-drivers
+  - lib/node/pl-middle-layer
 
   - tools/tengo-template-builder
   - tools/block-tools
 
   - sdk/model
   - sdk/workflow-tengo
-
-  - lib/node/pl-middle-layer
+  - sdk/test
 
 catalog:
   # Build
@@ -88,6 +88,7 @@ catalog:
 
   'jest': ^29.7.0
   'ts-jest': ^29.2.5
+  'vitest': ^2.1.1
 
   # Types
 

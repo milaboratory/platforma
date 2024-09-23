@@ -5,11 +5,11 @@ import {
   ResourceId,
   resourceIdToString,
   TestHelpers
-} from '@milaboratory/pl-middle-layer';
+} from '@milaboratories/pl-middle-layer';
 import {
   SynchronizedTreeOps,
   SynchronizedTreeState
-} from '@milaboratory/pl-tree';
+} from '@milaboratories/pl-tree';
 import { randomUUID } from 'crypto';
 import * as fsp from 'node:fs/promises';
 import path from 'path';

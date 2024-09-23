@@ -39,6 +39,7 @@
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "@types/node": "catalog:",
     "@protobuf-ts/plugin": "catalog:",
     "@types/http-proxy": "catalog:",
     "@types/jest": "catalog:",

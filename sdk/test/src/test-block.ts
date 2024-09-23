@@ -8,7 +8,7 @@ import {
   MiddleLayer,
   Platforma,
   Project
-} from '@milaboratory/pl-middle-layer';
+} from '@milaboratories/pl-middle-layer';
 import { plTest } from './test-pl';
 import { awaitStableState } from './util';
 
