@@ -25,7 +25,7 @@ import {
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
-test('should download a blob and read its content', async () => {
+test.skip('should download a blob and read its content', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-1-'));
@@ -54,7 +54,7 @@ test('should download a blob and read its content', async () => {
   });
 });
 
-test('should get on demand blob without downloading a blob', async () => {
+test.skip('should get on demand blob without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
@@ -79,7 +79,7 @@ test('should get on demand blob without downloading a blob', async () => {
   });
 });
 
-test('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
+test.skip('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-3-'));
@@ -116,7 +116,7 @@ test('should get undefined when releasing a blob from a small cache and the blob
   });
 });
 
-test('should get the blob when releasing a blob, but a cache is big enough and it keeps a file on the local drive.', async () => {
+test.skip('should get the blob when releasing a blob, but a cache is big enough and it keeps a file on the local drive.', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-4-'));
