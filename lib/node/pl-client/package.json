@@ -15,7 +15,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand; sleep 1000000"
   },
   "files": [
     "./dist/**/*",
