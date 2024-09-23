@@ -1,0 +1,12 @@
+node_modules
+dist
+*.iml
+*.tgz
+test_config.json
+.test_auth.json
+*.svg
+work
+download-file
+upload-file
+read-logs
+pnpm-lock.yaml
