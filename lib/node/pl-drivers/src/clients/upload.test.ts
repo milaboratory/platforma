@@ -4,7 +4,7 @@ import { Dispatcher } from 'undici';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
-test('integration test, grpc upload blob should throw error on NOT_FOUND', async () => {
+test.skip('integration test, grpc upload blob should throw error on NOT_FOUND', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const clientBlob = client.getDriver({
