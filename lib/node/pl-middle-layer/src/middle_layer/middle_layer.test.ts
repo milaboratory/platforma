@@ -621,7 +621,7 @@ test('should create upload-file block, render it and upload a file to pl server'
     const storages = await ml.driverKit.lsDriver.getStorageList();
     const local = storages.find((s) => s.name == 'local');
     expect(local).not.toBeUndefined();
-    const fileDir = path.resolve(__dirname, '..', '..', 'assets');
+    const fileDir = path.resolve(__dirname, '..', '..', '..', '..', '..', 'assets');
     const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
     const ourFile = files.entries.find(
       (f) => f.name == 'another_answer_to_the_ultimate_question.txt'
