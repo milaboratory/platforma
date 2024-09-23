@@ -1,0 +1,53 @@
+/**
+ * Contain field names and other constant used in PFrames
+ * libraries and templates.
+ */
+
+ll := import("@milaboratory/tengo-sdk:ll")
+
+/**
+ * Name of the field under which the iteration value like in "map" and "aggregate" is passed
+ * to the iteration body template.
+ */
+VALUE_FIELD_NAME := "__value__"
+
+/**
+ * Name of the field under which the iteration key like in "map" and "aggregate" is passed
+ * to the iteration body template.
+ */
+KEY_FIELD_NAME := "__key__"
+
+RTYPE_P_FRAME :=  { Name: "PFrame", Version: "1" }
+
+P_COLUMN_DATA_TYPE_PREFIX := "PColumnData/"
+RTYPE_P_COLUMN_DATA_JSON := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Json", Version: "1" }
+RTYPE_P_COLUMN_DATA_BINARY := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Binary", Version: "1" }
+RTYPE_P_COLUMN_DATA_RESOURCE_MAP := { Name: P_COLUMN_DATA_TYPE_PREFIX + "ResourceMap", Version: "1" }
+RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "Partitioned/ResourceMap", Version: "1" }
+RTYPE_P_COLUMN_DATA_JSON_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "JsonPartitioned", Version: "1" }
+RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED := { Name: P_COLUMN_DATA_TYPE_PREFIX + "BinaryPartitioned", Version: "1" }
+
+P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX := P_COLUMN_DATA_TYPE_PREFIX + "Partitioned/"
+RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX + "JsonPartitioned", Version: "1" }
+RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED := { Name: P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX + "BinaryPartitioned", Version: "1" }
+
+KIND_P_COLUMN := "PColumn"
+
+export ll.toStrict({
+	KIND_P_COLUMN                                 : KIND_P_COLUMN,
+	KEY_FIELD_NAME                                : KEY_FIELD_NAME,
+	VALUE_FIELD_NAME                              : VALUE_FIELD_NAME,
+	P_COLUMN_DATA_TYPE_PREFIX                     : P_COLUMN_DATA_TYPE_PREFIX,
+	P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX   : P_COLUMN_SUPER_PARTITIONED_DATA_TYPE_PREFIX,
+
+	RTYPE_P_FRAME                                 : RTYPE_P_FRAME,
+
+	RTYPE_P_COLUMN_DATA_JSON                      : RTYPE_P_COLUMN_DATA_JSON,
+	RTYPE_P_COLUMN_DATA_BINARY                    : RTYPE_P_COLUMN_DATA_BINARY,
+	RTYPE_P_COLUMN_DATA_RESOURCE_MAP              : RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+	RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED  : RTYPE_P_COLUMN_DATA_RESOURCE_MAP_PARTITIONED,
+	RTYPE_P_COLUMN_DATA_JSON_PARTITIONED          : RTYPE_P_COLUMN_DATA_JSON_PARTITIONED,
+	RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED        : RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED,
+	RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED    : RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED,
+	RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED  : RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED
+})

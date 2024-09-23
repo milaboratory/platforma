@@ -1,0 +1,107 @@
+//
+// wrap all p-frame files with file.exportFile
+//
+
+
+ll := import(":ll")
+tpl := import(":tpl")
+file := import(":file")
+text := import("text")
+smart := import(":smart")
+render := import(":render")
+assets := import(":assets")
+pframes := import(":pframes")
+constants := import(":constants")
+validation := import(":validation")
+
+
+// await all inputs are locked
+tpl.awaitState("pf", { wildcard: "*" }, "InputsLocked")
+tpl.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")
+
+// tpl.validateInputs({
+// 	pf: { `any`: validation.resource() }
+// })
+
+eMulTpl := assets.importTemplate(":pframes.export-multiple-pcolumns")
+
+tpl.body(func(inputs) {
+
+	columns := {}
+
+	getColumn := func(name) {
+		c := columns[name]
+		if is_undefined(c) {
+			c = {}
+			columns[name] = c
+		}
+		return c
+	}
+
+	pfResource := tpl.rawInputs().pf.getValue()
+
+	// rawFields := pfResource.inputs()
+
+	// if context is passed as an input we differently treat the field names (see below)
+	isContext := pfResource.checkResourceType(constants.RTYPE_CONTEXT)
+
+	for rawFieldName, fieldValue in pfResource.inputs() {
+		fieldName := rawFieldName
+		if isContext {
+			if text.has_prefix(fieldName, "values/") {
+				fieldName = fieldName[7:]
+			} else if fieldName == "id" || fieldName == "parent" {
+				// there are other fields in context resource, we are only interested in "values/..."
+				continue
+			} else {
+				ll.panic("Unexpected context field: %v", fieldName)
+			}
+		}
+
+		if text.has_suffix(fieldName, ".spec") {
+			if !(fieldValue.getValue().checkResourceType(constants.RTYPE_JSON) || fieldValue.getValue().checkResourceType(constants.RTYPE_OBJECT_SPEC)) {
+				ll.panic("Unexpected spec value type: %v", fieldValue.getValue().info().Type)
+			}
+			col := getColumn(fieldName[:len(fieldName) - 5])
+			col.spec = fieldValue.getValue().getDataAsJson()
+			col.specRaw = fieldValue
+		} else if text.has_suffix(fieldName, ".data") {
+			col := getColumn(fieldName[:len(fieldName) - 5])
+			col.data = fieldValue
+		} else {
+			ll.panic("Unexpected field name: %v", fieldName)
+		}
+	}
+
+	result := pframes.pFrameBuilder()
+
+	// serves as an input to the export-pcolumn template
+	eMulTplInput := smart.mapBuilder()
+	// export-pcolumn export instance
+	eMulTplRender := render.createEphemeral(eMulTpl, { data: eMulTplInput })
+
+	for colName, col in columns {
+		if is_undefined(col.spec) || (
+		    col.spec.kind == "PColumn" && (
+				is_undefined(col.spec.valueType) ||
+				col.spec.valueType == "file" || col.spec.valueType == "blob" ||
+				col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
+				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
+				col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
+				col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
+
+			result.add(colName, col.specRaw, eMulTplRender.output(colName))
+			eMulTplInput.add(colName, col.data)
+		} else if col.spec.kind == "File" {
+			result.add(colName, col.specRaw, file.exportFile(col.data))
+		} else {
+			result.add(colName, col.specRaw, col.data)
+		}
+	}
+
+	eMulTplInput.build()
+
+	return {
+		result: result.build()
+	}
+})

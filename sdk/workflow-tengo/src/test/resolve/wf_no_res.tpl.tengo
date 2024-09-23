@@ -1,0 +1,32 @@
+// workflow with resolve with no results
+
+ll := import("@milaboratory/tengo-sdk:ll")
+wf := import(":workflow")
+maps := import(":maps")
+
+
+wf.prepare(func(args){
+	ops := {
+		errIfMissing: args.errIfMissing
+	}
+
+	return {
+		resolvedRef: wf.resolve({
+			blockId: "",
+			name: ""
+		}, ops)
+	}
+})
+
+wf.body(func(args) {
+	// assert resolvedRef is present & undefined
+	ll.assert(maps.containsKey(args, "resolvedRef"), "")
+	ll.assert(is_undefined(args.resolvedRef), "")
+
+	return {
+		outputs: {
+			rr: "success"
+		},
+		exports: {}
+	}
+})

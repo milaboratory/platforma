@@ -1,0 +1,296 @@
+ll := import(":ll")
+smart := import(":smart")
+workdir := import(":workdir")
+oop := import(":oop")
+sets := import(":sets")
+validation := import(":validation")
+json := import("json")
+
+runEnvDescriptorScheme := {
+	registry: "string",
+	package: "string",
+	type: "string",
+	binDir: "string"
+}
+
+binaryDescriptorScheme := {
+	registry: "string",
+	package: "string",
+	cmd: ["string"],
+	runEnv: runEnvDescriptorScheme
+}
+
+localDescriptorScheme := {
+	hash: "string",
+	path: "string",
+	cmd: ["string"],
+	runEnv: runEnvDescriptorScheme
+}
+
+descriptorScheme := {
+	"isDev,omitempty": "bool",
+	"binary,omitempty": binaryDescriptorScheme,
+	"local,omitempty": localDescriptorScheme
+}
+
+softwareInfoScheme := {
+	"name": "string",
+	"version": "string",
+	"descriptor": descriptorScheme
+}
+
+META_KEY_DESCRIPTOR := "ctl/runner/package/descriptor"
+
+_RTYPE_PACKAGE_GET := { Name: "PackageGet", Version: "1" }
+_INPUT_PACKAGE_NAME := "packageName"
+_INPUT_REGISTRY := "registry"
+_OUTPUT_ARCHIVE := "archive"
+
+get := func(registryName, pkgName) {
+	res := smart.structBuilder(_RTYPE_PACKAGE_GET)
+
+	res.getField(_INPUT_REGISTRY).setRefOrJson(registryName)
+	res.getField(_INPUT_PACKAGE_NAME).setRefOrJson(pkgName)
+
+	self := undefined
+	self = oop.inherit(res, {
+		/**
+		 * Reference to the software package archive downloaded by 'get'
+		 *
+		 * @return archive: field - output field, where info on downloaded archive will appear
+		 */
+		archive: func() {
+			return res.outputs()[_OUTPUT_ARCHIVE]
+		}
+	})
+
+	return self
+}
+
+_RTYPE_PACKAGE_INSTALL := { Name: "PackageInstall", Version: "1" }
+_INPUT_ARCHIVE := "archive"
+_OUTPUT_PACKAGE := "package"
+
+install := func(archive) {
+	ll.assert(smart.isReference(archive),
+		"package.install: <archive> must be reference to package archive. It is usually obtained from package.get().archive")
+
+	res := smart.structBuilder(_RTYPE_PACKAGE_INSTALL)
+
+	res.getField(_INPUT_ARCHIVE).set(archive)
+
+	self := undefined
+	self = oop.inherit(res, {
+		/**
+		 * Reference to installed package
+		 *
+		 * @return package: smart.field - output field, where installed package will appear
+		 */
+		package: func() {
+			return res.getField(_OUTPUT_PACKAGE)
+		}
+	})
+
+	return self
+}
+
+_RTYPE_PACKAGE_USE := { Name: "PackageUse", Version: "1" }
+_INPUT_PACKAGE_USE_SETTINGS := "settings"
+
+_useSettingsSchema := {
+	hash: ["or", "bytes", "string"],
+	path: "string",
+	descriptor: "any",
+	origin: {
+		registry: "string",
+		url: "string",
+		packageName: "string"
+	}
+}
+
+use := func(settings) {
+	res := smart.structBuilder(_RTYPE_PACKAGE_USE)
+
+	validation.assertJsonSchema(settings, _useSettingsSchema, "package.use(<settings>): settings have invalid format")
+	settingsRes := smart.createJsonResource(settings)
+
+	res.getField(_INPUT_PACKAGE_USE_SETTINGS).set(settingsRes)
+
+	self := undefined
+	self = oop.inherit(res, {
+		/**
+		 * Reference to installed package
+		 *
+		 * @return package: field - output field, where installed package will appear
+		 */
+		package: func() {
+			return res.outputs()[_OUTPUT_PACKAGE]
+		}
+	})
+
+	return self
+}
+
+
+_RTYPE_PACKAGE_PUT_ASSET := { Name: "PackagePutAssetsToWD", Version: "1" }
+_INPUT_PACKAGE := "package"
+_INPUT_WD_IN := "workdirIn"
+_OUTPUT_WD_OUT := "workdirOut"
+
+/**
+ * Load assets and provide them as files or raw content.
+ *
+ * @param pkg: package - installed package (usually from package.install(<archive>))
+ *
+ * @return loader: assetsLoader - builder that provides requested files and content after load() call
+ */
+assetsLoader := func(pkg) {
+	ll.assert(smart.isReference(pkg),
+		"package.loadAssets: <pkg> must be reference to installed package. It is usually obtained from package.install().package")
+
+	filePaths := []
+	fileContentPaths := []
+
+	self := undefined
+
+	self = {
+		saveFile: func(path) {
+			validation.assertJsonSchema(path, "string", "package.assetsLoader.saveFile: <path> must be string")
+			filePaths = append(filePaths, path)
+
+			return self
+		},
+
+		saveFiles: func(paths) {
+			validation.assertJsonSchema(paths, ["string"], "package.assetsLoader.saveFiles: <paths> must be array of strings")
+			for p in paths {
+				self.saveFile(p)
+			}
+
+			return self
+		},
+
+		saveFileContent: func(path) {
+			validation.assertJsonSchema(path, "string", "package.assetsLoader.saveFileContent: <path> must be string")
+			fileContentPaths = append(fileContentPaths, path)
+			return self
+		},
+
+		saveFilesContent: func(paths) {
+			validation.assertJsonSchema(paths, ["string"], "package.assetsLoader.saveFilesContent: <paths> must be array of strings")
+			for p in paths {
+				self.saveFileContent(p)
+			}
+
+			return self
+		},
+
+		load: func() {
+			wd := workdir.create()
+
+			allPaths := sets.fromSlice(filePaths)
+			allPaths = sets.add(allPaths, fileContentPaths...)
+
+			res := smart.ephemeralBuilder(_RTYPE_PACKAGE_PUT_ASSET, json.encode({
+				paths: sets.toSlice(allPaths)
+			}))
+
+			res.getField(_INPUT_PACKAGE).set(pkg)
+			res.getField(_INPUT_WD_IN).set(wd)
+
+			wdAfter := res.getField(_OUTPUT_WD_OUT)
+
+			wdSaveBuilder := workdir.save(wdAfter)
+			for p in filePaths {
+				wdSaveBuilder.saveFile(p)
+			}
+			for p in fileContentPaths {
+				wdSaveBuilder.saveFileContent(p)
+			}
+			wdSave := wdSaveBuilder.build()
+
+			return {
+				files: wdSave.files,
+				filesContent: wdSave.filesContent,
+				progress: wdSave.progress,
+
+				/**
+				 * Retrieves selected asset file by its path (use saveFile() to provide asset as file)
+				 *
+				 * @param fileName: string
+				 * @return file: smart.field - a reference to the file resource.
+				 */
+				getFile: func(fileName) {
+					return wdSave.files.getFutureInputField(fileName)
+				},
+
+				/**
+				 * Retrieves selected asset data by its path (use saveFileContent() to provide asset's data)
+				 *
+				 * @param fileName: string
+				 * @return file: smart.field - a reference to the file resource.
+				 */
+				getFileContent: func(fileName) {
+					return wdSave.filesContent.getFutureInputField(fileName)
+				}
+			}
+		}
+	}
+
+	return ll.toStrict(self)
+}
+
+/**
+ * Load single asset by its path inside package, providing it as file.
+ *
+ * @param pkg: package - installed package (usually from package.install(<archive>))
+ * @param assetPath: string - path to asset inside package <pkg>
+ *
+ * @return file: singleAsset - object with reference to the file resource and progress report
+ */
+loadAssetFile := func(pkg, assetPath) {
+	assets := assetsLoader(pkg).
+		saveFile(assetPath).
+		load()
+
+	return {
+		file: assets.getFile(assetPath),
+		progress: assets.progress
+	}
+}
+
+/**
+ * Load single asset by its path inside package, providing its raw content.
+ *
+ * @param pkg: package - installed package (usually from package.install(<archive>))
+ * @param assetPath: string - path to asset inside package <pkg>
+ *
+ * @return content: singleAsset - object with reference to the asset content resource and progress report
+ */
+loadAssetContent := func(pkg, assetPath) {
+	assets := assetsLoader(pkg).
+		saveFileContent(assetPath).
+		load()
+
+	return {
+		content: assets.getFileContent(assetPath),
+		progress: assets.progress
+	}
+}
+
+
+export ll.toStrict({
+	softwareInfoScheme                 : softwareInfoScheme,
+	binaryDescriptorScheme             : binaryDescriptorScheme,
+	localDescriptorScheme              : localDescriptorScheme,
+	runEnvDescriptorScheme             : runEnvDescriptorScheme,
+
+	META_KEY_DESCRIPTOR                : META_KEY_DESCRIPTOR,
+
+	get                                : get,
+	install                            : install,
+	use                                : use,
+	assetsLoader                       : assetsLoader,
+	loadAssetFile                      : loadAssetFile,
+	loadAssetContent                   : loadAssetContent
+})

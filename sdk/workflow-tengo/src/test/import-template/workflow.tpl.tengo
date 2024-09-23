@@ -1,0 +1,25 @@
+ll := import(":ll")
+assets := import(":assets")
+wf := import(":workflow")
+smart := import(":smart")
+render := import(":render")
+fmt := import("fmt")
+
+concat_ab := assets.importTemplate(":test.import-template.concat_ab")
+
+wf.body(func(args) {
+	run := render.create(concat_ab, {
+		a: args.a,
+		b: args.b
+	})
+
+	// output resource
+	outputs := {
+		main: run.output("concat")
+	}
+
+	return {
+		outputs: outputs,
+		exports: {}
+	}
+})

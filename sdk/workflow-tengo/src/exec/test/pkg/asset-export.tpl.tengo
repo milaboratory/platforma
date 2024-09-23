@@ -1,0 +1,33 @@
+assets := import(":assets")
+self := import(":tpl")
+pkg := import(":exec.package")
+file := import(":file")
+
+sw := assets.importSoftware(":exec.test.pkg.sleep")
+
+self.defineOutputs(["assetFile", "assetContent"])
+
+self.prepare(func(inputs) {
+	binaryDescriptor := sw.descriptor.binary
+
+	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
+	installed := pkg.install(archive)
+
+	assetName := "package.sw.json"
+
+	assetFile := pkg.loadAssetFile(installed.package(), assetName)
+	assetContent := pkg.loadAssetContent(installed.package(), assetName)
+
+	return {
+		assetFile: assetFile.file,
+		assetContent: assetContent.content
+	}
+})
+
+self.body(func(inputs) {
+	return {
+		assetFile: file.exportFile(inputs["assetFile"]),
+		assetContent: inputs["assetContent"].getDataAsJson()
+	}
+
+})

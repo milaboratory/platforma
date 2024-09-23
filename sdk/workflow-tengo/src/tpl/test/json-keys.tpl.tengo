@@ -1,0 +1,13 @@
+// simple1
+
+self := import(":tpl")
+
+key := "{\"a\":\"b\"}"
+
+self.defineOutputs([key])
+
+self.body(func(inputs) {
+	results := {}
+	results[key] = "a"
+	return results
+})

@@ -1,0 +1,100 @@
+//
+// read p-frame from the directory
+//
+
+self := import(":workdir.proc")
+
+ll := import(":ll")
+text := import("text")
+json := import("json")
+util := import(":pframes.util")
+smart := import(":smart")
+constants := import(":pframes.constants")
+validation := import(":validation")
+
+// json schema of .datainfo file
+_DATA_INFO_SCHEMA := [`or`,
+	{
+		partitionKeyLength: `number`,
+		type: `string,regex=JsonPartitioned`,
+		parts: {
+			any: `string`
+		}
+	},
+	{
+		partitionKeyLength: `number`,
+		type: `string,regex=BinaryPartitioned`,
+		parts: {
+			any: {
+				index: `string`,
+				values: `string`
+			}
+		}
+	}]
+
+self.readFiles(func(inputs) {
+	dInfo := {}
+
+	// search for .datainfo files
+	for f in inputs.files {
+		if text.has_suffix(f, ".datainfo") {
+			dInfo[f] = f
+		}
+	}
+
+	// @TODO assert .datainfo files are contained in the spec
+	return dInfo
+})
+
+/**
+ * Returns p-column resource type given it's storage type specified in .datainfo
+ */
+_getPColumnRType := func(storageType) {
+	if storageType == "JsonPartitioned" {
+		return constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED
+	} else if storageType == "BinaryPartitioned" {
+		return constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED
+	} else {
+		ll.panic("unknown type in .datainfo: ", storageType)
+	}
+}
+
+self.body(func(inputs) {
+	spec := inputs.args
+
+	// columns
+	outputs := {}
+	for c in spec.columns {
+
+		id := util.xsvColumnId(c)
+
+		dInfo := inputs["out/" + id + ".datainfo"].getDataAsJson()
+
+		// validate dataInfo type
+		validation.assertJsonSchema(dInfo, _DATA_INFO_SCHEMA)
+
+		// p-column resource builder
+		rData := { partitionKeyLength: dInfo.partitionKeyLength }
+		rBuilder := smart.structBuilder(_getPColumnRType(dInfo.type), json.encode(rData))
+
+		for part, data in dInfo.parts {
+			if dInfo.type == "BinaryPartitioned" {
+
+				// pf data is always exported in out dir
+				indexFile := self.saveFile("out/" + data.index)
+				valuesFile := self.saveFile("out/" + data.values)
+
+				rBuilder.createInputField(part + ".index").set(indexFile)
+				rBuilder.createInputField(part + ".values").set(valuesFile)
+			} else if dInfo.type == "JsonPartitioned" {
+
+				valuesFile := self.saveFile("out/" + data)
+				rBuilder.createInputField(part).set(valuesFile)
+			}
+		}
+
+		outputs[id] = rBuilder.lockAndBuild()
+	}
+
+	return outputs
+})

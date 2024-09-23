@@ -1,0 +1,22 @@
+/**
+* Utilities for working with objects
+*/
+
+ll := import(":ll")
+
+/**
+* Deletes entries with undefined values from object
+*/
+deleteUndefined := func(obj) {
+    for k, v in obj {
+        if is_undefined(v) {
+            delete(obj, k)
+        }
+    }
+
+    return obj
+}
+
+export ll.toStrict({
+    deleteUndefined: deleteUndefined
+})

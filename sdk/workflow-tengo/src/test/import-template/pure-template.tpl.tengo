@@ -1,0 +1,24 @@
+ll := import(":ll")
+assets := import(":assets")
+self := import(":tpl")
+smart := import(":smart")
+render := import(":render")
+fmt := import("fmt")
+
+concat_ab := assets.importTemplate(":test.import-template.concat_ab")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := render.create(concat_ab, {
+		a: inputs.a,
+		b: inputs.b
+	})
+
+	// output resource
+	result := {
+		main: run.output("concat")
+	}
+
+	return result
+})

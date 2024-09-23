@@ -1,0 +1,24 @@
+/** Runs a simple echo and returns stdout */
+
+self := import(":tpl")
+smart := import(":smart")
+exec := import(":exec")
+fmt := import("fmt")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("printf '%s' " + fmt.sprintf("%q", inputs.text)).
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})

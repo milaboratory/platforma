@@ -1,0 +1,51 @@
+/**
+ * Utility functions to work with export objects & p-frames
+ */
+
+ll := import(":ll")
+constants := import(":constants")
+json := import("json")
+smart := import(":smart")
+validation := import(":validation")
+
+
+//
+_pObjectSpecSchema := {
+	"__options__,closed": "",
+
+	"kind": "string",
+
+	"valueType,omitempty": `string,regex=json|File|DynamicFile|String|Double|Long|Int`,
+
+	"name,omitempty": {",any": "string"},
+
+	"domain,omitempty": {",any": "string"},
+
+	"axesSpec,omitempty": [{
+		"type": "string,regex=String",
+		"name": "string",
+		"domain,omitempty": {",any": "string"},
+		"annotations,omitempty": {",any": "string"}
+	}],
+
+	"annotations,omitempty": {",any": "string"}
+}
+
+
+/**
+ * Creates export object spec from a given map
+ *
+ * @param spec: map
+ */
+createSpec := func(spec) {
+	ll.assert(ll.isMap(spec), "expected map got %v", spec)
+
+	// @TODO fix validation
+	// validation.assertValidJson(spec, _pObjectSpecSchema)
+
+	return smart.createValueResource(constants.RTYPE_BOBJECT_SPEC, json.encode(spec))
+}
+
+export ll.toStrict({
+	createSpec: createSpec
+})

@@ -1,0 +1,65 @@
+slices := import(":slices")
+ll := import(":ll")
+validation := import(":validation")
+
+assert := func(got, want, ...msg) {
+	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
+}
+
+TestValidateJSONGeneral := func() {
+	schema := {
+		"__options__,closed": "",
+		"settings,omitempty": {
+			"__options__,closed": "",
+			"splitBy": {
+				"__options__,closed": "",
+				"chain,omitempty": "bool",
+				"isotype,omitempty": "bool",
+				"vGene,omitempty": "bool",
+				"jGene,omitempty": "bool",
+				"cGene,omitempty": "bool"
+			}
+		},
+		"metrics,omitempty": [{
+			"__options__,closed": "",
+			"label": "string",
+			"weight": `string,regex=Read|UMI|Cell`,
+			"diversityMetric": `string,regex=Observed`,
+			"downsampling": "any"
+		}]
+	}
+	js := {
+		settings: {
+			splitBy: {
+				chain: true,
+				isotype: false,
+				vGene: false,
+				jGene: false,
+				cGene: false
+			}
+		},
+		metrics: [{
+			label: "abc",
+			weight: "Read",
+			diversityMetric: "Observed",
+			downsampling: {
+				type: "DownsampleTop",
+				abundanceMeasure: "Read",
+				keepOutliers: true,
+				topN: 10
+			}
+		}]
+	}
+
+	got := validation.checkJson(js, schema)
+
+	assert(got, validation.success)
+}
+
+TestValidateJSONOrArrays := func() {
+	schema := ["or", "bytes", "string", validation.reference]
+
+	assert(validation.checkJson("aString", schema), validation.success)
+	assert(validation.checkJson(bytes("bytes"), schema), validation.success)
+	assert(validation.isValid(42, schema), false)
+}

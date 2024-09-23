@@ -1,0 +1,19 @@
+// simple1
+
+self := import(":tpl")
+smart := import(":smart")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+
+	// input resource value
+	inputValue := inputs.input1
+
+	// output resource
+	result := {
+		main: inputValue.testValue + " Show"
+	}
+
+	return result
+})

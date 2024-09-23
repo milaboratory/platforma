@@ -1,0 +1,163 @@
+ll := import(":ll")
+validation := import(":validation")
+constants := import(":pframes.constants")
+objects := import(":objects")
+
+//
+// pfconv params validation
+//
+// link to the full schema:
+//
+//    https://github.com/milaboratory/pframes/blob/main/packages/conv/include/import_csv.h#L53
+//
+
+_SPEC_AXES_SCHEMA := {
+	`column`: `string`,
+	`spec`: {
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`name,omitempty`: `string`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [`number`]
+	}
+}
+
+_SPEC_COLUMN_SCHEMA := {
+	`column`: `string`,
+	`id,omitempty`: `string`,
+	`allowNA,omitempty`: `bool`,
+	`spec`: {
+		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		`name,omitempty`: `string`,
+		`domain,omitempty`: { any: `string` },
+		`annotations,omitempty`: { any: `string` },
+		`parentAxes,omitempty`: [ `number` ]
+	}
+}
+
+_SPEC_INDEX_SCHEMA := {
+	`name`: `string`,
+	`domain,omitempty`: { any: `string` },
+	`annotations,omitempty`: { any: `string` },
+	`parentAxes,omitempty`: [`number`]
+}
+
+PFCONV_CFG_SCHEMA := {
+	`storageFormat` : `string,regex=Binary|Json`,
+	`partitionKeyLength` : `number`,
+
+	`axes`: [_SPEC_AXES_SCHEMA],
+	`columns`: [_SPEC_COLUMN_SCHEMA],
+	`index,omitempty`: _SPEC_INDEX_SCHEMA,
+
+	`naStr,omitempty`: `string`,
+	`nullStr,omitempty`: `string`,
+	`separator,omitempty`: `string`,
+	`emptyStrAsNA,omitempty`: `bool`,
+	`columnNamePrefix,omitempty`: `string`,
+	`allowColumnLabelDuplicates,omitempty`: `bool`
+}
+
+
+/**
+ * Get column id from the column spec
+ */
+xsvColumnId := func(c) {
+	id := c.id
+	if is_undefined(id) {
+		id = c.column
+	}
+	return id
+}
+
+/**
+ * Removes all annotations & domain information from spec, to pass it to pfconv
+ */
+purifySpec := func(spec) {
+	newSpec := copy(spec)
+
+	newAxes := []
+	for ax in spec.axes {
+		newAxes = append(newAxes, {
+			column: ax.column,
+			spec: { type: ax.spec.type }
+		})
+	}
+	newSpec.axes = newAxes
+
+	newCols := []
+	for col in spec.columns {
+		newCols = append(newCols, objects.deleteUndefined({
+			column: col.column,
+			id: col.id,
+			allowNA: col.allowNA,
+			spec: { valueType: col.spec.valueType }
+		}))
+	}
+	newSpec.columns = newCols
+
+	validation.assertJsonSchema(newSpec, PFCONV_CFG_SCHEMA)
+
+	return newSpec
+}
+
+/**
+ * Split given pfconv config into:
+ *
+ *  (1) purified cfg with minimal required settings to be passed to the pfconv binary,
+ *      to maximize caching retention when domains and annotations changes
+ *  (2) complete columns specs, that can be directly rendered into BObjectSpecs and
+ *      returned as workflow exports
+ *
+ * This method comes in handy in situations where actual csv -> pframe export is broadcasted
+ * onto multiple objects, and then converges, so that each export operation only requires purified
+ * config, and only data is saved for such operations, and actual specs are added somewhere
+ * upstream.
+ *
+ * @param cfg  full pfconv config object
+ * @param ops  additional options
+ *               {
+ *                 additionalAxesSpec  - array of additional axes spec to prepend to each column spec
+ *               }
+ *
+ * @return {
+ *           purifiedCfg  - purified pfconv config
+ *           columnsSpec   - map of full column specs by ids from the original cfg
+ *         }
+ */
+decomposePfconvCfg := func(cfg, ...ops) {
+	ll.assert(len(ops) <= 1, "too many options for decomposePfconvCfg: %v", len(ops))
+
+	axesSpec := []
+	if len(ops) == 1 && !is_undefined(ops[0].additionalAxesSpec) {
+		axesSpec = ops[0].additionalAxesSpec
+	}
+
+	for axis in cfg.axes {
+		axesSpec = append(axesSpec, axis.spec)
+	}
+
+	columnsSpec := {}
+
+	for column in cfg.columns {
+		id := xsvColumnId(column)
+		ll.assert(is_undefined(columnsSpec[id]), "repeated column spec id in pfconv cfg: %v", id)
+		columnsSpec[id] = column.spec
+		columnsSpec[id].axesSpec = axesSpec
+		// make sure spec contain correct kind value
+		columnsSpec[id].kind = "PColumn"
+	}
+
+	return {
+		purifiedCfg: purifySpec(cfg),
+		columnsSpec: columnsSpec
+	}
+}
+
+export ll.toStrict({
+	PFCONV_CFG_SCHEMA: PFCONV_CFG_SCHEMA,
+
+	xsvColumnId: xsvColumnId,
+	purifySpec: purifySpec,
+	decomposePfconvCfg: decomposePfconvCfg
+})

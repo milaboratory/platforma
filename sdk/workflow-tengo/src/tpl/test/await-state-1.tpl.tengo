@@ -1,0 +1,14 @@
+// await-state-1
+
+self := import(":tpl")
+
+self.defineOutputs(["main"])
+
+self.awaitState("input1", "nestedField", "ResourceReady")
+
+self.body(func(inputs) {
+	res := inputs["input1"].get("nestedField")
+	return {
+		main: res.isReady() ? "A" : "B"
+	}
+})

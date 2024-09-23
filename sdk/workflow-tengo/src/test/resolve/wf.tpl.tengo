@@ -1,0 +1,32 @@
+// wf with resolve
+
+ll := import(":ll")
+assets := import(":assets")
+smart := import(":smart")
+render := import(":render")
+fmt := import("fmt")
+
+self := import(":workflow")
+
+self.prepare(func(args) {
+
+	concat_ab := assets.importTemplate(":test.resolve.concat_ab")
+	run := render.create(concat_ab, {
+		a: args.a,
+		b: args.b
+	})
+
+	return {
+		concat: run.output("concat")
+	}
+})
+
+self.body(func(args) {
+	return {
+		outputs: {
+			main: args.concat + "cd"
+		},
+
+		exports: {}
+	}
+})

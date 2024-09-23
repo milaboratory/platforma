@@ -1,0 +1,25 @@
+wf := import(":workflow")
+
+wf.body(func(args) {
+
+	// build outputs
+	outputs := {}
+	outputs["concat"] = args.a + args.b
+
+	// build exports
+	exports := {}
+	exports["e1"] = {
+		spec: {
+			kind: "Json",
+			annotations: {
+				"pl7.app/isSpecies": "true"
+			}
+		},
+		data: ["a", "b"]
+	}
+
+	return {
+		outputs: outputs,
+		exports: exports
+	}
+})

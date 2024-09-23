@@ -1,0 +1,105 @@
+// helper template to save files in a working dir
+
+self := import(":tpl")
+text := import("text")
+smart := import(":smart")
+wdSave := import(":workdir.save")
+
+self.body(func(inputs) {
+
+	wdBefore := inputs.workdir
+
+	// simple 'save' rules
+	files := inputs.files
+	filesContent := inputs.filesContent
+
+	// regex 'save' rules
+	fileSets := inputs.fileSets
+	fileSetsContent := inputs.fileSetsContent
+
+	wdBuilder := wdSave.builder(wdBefore)
+
+	for file, _ in files {
+		wdBuilder.saveFile(file)
+	}
+	for content, _ in filesContent {
+		wdBuilder.saveFileContent(content)
+	}
+
+	// calculate actual file sets:
+	//
+	//    name -> list of files
+	//
+	fileSetsMatch := {}
+	fileSetsContentMatch := {}
+
+	if len(fileSets) > 0 || len(fileSetsContent) > 0 {
+		for k, _ in fileSets {
+			fileSetsMatch[k] = []
+		}
+
+		for k, _ in fileSetsContent {
+			fileSetsContentMatch[k] = []
+		}
+
+		files := wdBefore.getDataAsJson()["files"]
+
+		for name in files {
+			for fSetName, regex in fileSets {
+				if text.re_match(regex, name) {
+					fileSetsMatch[fSetName] = append(fileSetsMatch[fSetName], name)
+				}
+			}
+
+			for fSetName, regex in fileSetsContent {
+				if text.re_match(regex, name) {
+					fileSetsContentMatch[fSetName] = append(fileSetsContentMatch[fSetName], name)
+				}
+			}
+		}
+
+		for _, list in fileSetsMatch {
+			for file in list {
+				wdBuilder.saveFile(file)
+			}
+		}
+
+		for _, list in fileSetsContentMatch {
+			for file in list {
+				wdBuilder.saveFileContent(file)
+			}
+		}
+	}
+
+	wd := wdBuilder.build()
+
+	filesResult := wd.getSavedFiles()
+	filesContentResult := wd.getSavedFilesContent()
+
+	fileSetsResult := smart.mapBuilder()
+	for fSetName, list in fileSetsMatch {
+		r := smart.mapBuilder()
+		for f in list {
+			r.addRef(f, filesResult.getFutureInputField(f))
+		}
+		fileSetsResult.addRef(fSetName, r.build())
+	}
+
+	fileSetsContentResult := smart.mapBuilder()
+	for fSetName, list in fileSetsContentMatch {
+		r := smart.mapBuilder()
+		for f in list {
+			r.addRef(f, filesContentResult.getFutureInputField(f))
+		}
+		fileSetsContentResult.addRef(fSetName, r.build())
+	}
+
+	return {
+		files           : filesResult,
+		filesContent    : filesContentResult,
+		fileSets        : fileSetsResult.build(),
+		fileSetsContent : fileSetsContentResult.build(),
+		workdir         : wd.getWorkdirAfter(),
+		progress        : wd.getProgress()
+	}
+})

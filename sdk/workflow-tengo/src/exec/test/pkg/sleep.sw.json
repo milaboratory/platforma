@@ -1,0 +1,8 @@
+{
+  "binary": {
+    "registry": "milaboratories",
+    "package": "common/sleep/1.5.1-{os}-{arch}.tgz",
+    "entrypoint": [],
+    "cmd": "main"
+  }
+}

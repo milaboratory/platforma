@@ -1,0 +1,233 @@
+/* Low level pl API */
+
+plapi := import("plapi")
+json := import("json")
+fmt := import("fmt")
+log := import("log")
+text := import("text")
+
+/**
+ * Prints message to the pl log
+ */
+print := func(txt, ...args) {
+	plapi.print(txt, args...)
+}
+
+/**
+ * Panics in a template, prints the error and
+ * stops the execution of the template.
+ * After that, the controller will set errors to outputs.
+ */
+panic := func(msg, ...args) {
+	txt := fmt.sprintf(msg, args...)
+	plapi.print(txt)
+
+	// next statement actually terminates the execution
+	plapi.setTemplateError(txt)
+}
+
+/**
+ * Asserts a given condition and panics if it is not met
+ */
+assert := func(condition, msg, ...args) {
+	if !condition {
+		panic("assertion error: condition failed: "+msg, args...)
+	}
+}
+
+/**
+ * Checks whether the given object is a strict map
+ *
+ * @param obj any
+ * @return strict: bool - whether obj is a 'strict' map
+ */
+isStrict := func(obj) {
+	return plapi.isStrictMap(obj)
+}
+
+/**
+ * Checks whether the given object is a map, a strict map or an immutable map.
+ *
+ * @param obj any
+ * @return bool whether obj is any kind of map object (map/immutable map/strict map)
+ */
+isMap := func(obj) {
+	return is_map(obj) || is_immutable_map(obj) || isStrict(obj)
+}
+
+/**
+ * Converts 'strict' map into a normal one
+ *
+ * @param r: map|strictMap (will panic if not)
+ *
+ * @return map: std map
+ */
+fromStrict := func(r) {
+	if is_map(r) {
+		return r
+	}
+
+	if !isStrict(r) {
+		panic("not a map", r)
+	}
+
+	return plapi.strictToMap(r)
+}
+
+/**
+ * If input is a strict map, converts it to a normal one, otherwise returns the object as is
+ *
+ * @param r: any object (possible strict map)
+ * @return map: tengo object
+ */
+ensureNonStrict := func(r) {
+	if isStrict(r) {
+		return fromStrict(r)
+	}
+
+	return r
+}
+
+/**
+ * Converts map into a 'strict' map, which will panic on
+ * access to non-existing elements.
+ *
+ * @param m: map|strictMap
+ *
+ * @return strict: strictMap
+ */
+toStrict := func(v) {
+	if isStrict(v) {
+		return v
+	}
+
+	if(!is_map(v)) {
+		panic("toStrict(<v>): <v> is not a map", v)
+	}
+	return plapi.mapToStrict(v)
+}
+
+/**
+ * Creates a field Id struct from given resource id and field name
+ */
+fieldId := func(resourceId, fieldName) {
+	return plapi.newFieldID(resourceId, fieldName)
+}
+
+/**
+ * Returns current template renderer
+ */
+getCurrentTemplateRenderer := func() {
+	return plapi.getTemplate()
+}
+
+/**
+ * @return isInit: bool - true when current template is initializing (executed for the first time)
+ */
+isInitializing := func() {
+	return plapi.isInit
+}
+
+/**
+ * Get the list of executors available in current Platforma installation.
+ *
+ * @return executors: []string - list of executors, say ['executor', 'docker', ...]
+ */
+getExecutorsList := func() {
+	return plapi.getExecutors()
+}
+
+/**
+ * Joins path elements into a single path.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathJoin := func(...elems) {
+	return plapi.filepathJoin(elems...)
+}
+
+/**
+ * Like filepathJoin, joins elements to a single path,
+ * but can be used safely in regexps.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathRegexpJoin := func(...elems) {
+	escapedSeparator := plapi.regexpQuoteMeta(plapi.osSeparator)
+	return text.join(elems, escapedSeparator)
+}
+
+/**
+ * Joins elements of the filepath and canonizes it, i.e.
+ * semantically resolves ../ and ./ and changes slash
+ * to a pathSeparator.
+ *
+ * @param elems: ...string - any number of elements.
+ */
+filepathCanonize := func(...elem) {
+	return plapi.filepathCanonize(elem...)
+}
+
+/**
+ * Returns a path separator. "/" on Unix-like systems, "\\" on Windows.
+ *
+ * @return separator: string
+ */
+pathSeparator := plapi.osSeparator
+
+/**
+ * Parses URL and returns a structure containing separe parts of the URL.
+ *
+ * The general form represented is:
+ *
+ *   [scheme:][//[userinfo@]host][/]path[?query][#fragment]
+ *
+ * URLs that do not start with a slash after the scheme are interpreted as:
+ *
+ *   scheme:opaque[?query][#fragment]
+ *
+ * Returns the floowing structure:
+ *
+ *   {
+ *     Scheme: string,
+ *     Host: string,
+ *     Port: number,
+ *     Path: string,
+ *     RawPath: string,
+ *     Query: string
+ *   }
+ *
+ * @param url: string with the url
+ * @return url structure: (see above)
+ */
+parseUrl := func(url) {
+	return plapi.urlParse(url)
+}
+
+/**
+ * Returns current execution context, which cab be used is a simple kv-store associated with the renderer instance.
+ */
+getCtx := func() {
+	return plapi.getCtx()
+}
+
+export toStrict({
+	print: print,
+	panic: panic,
+	assert: assert,
+	isStrict: isStrict,
+	isMap: isMap,
+	fromStrict: fromStrict,
+	ensureNonStrict: ensureNonStrict,
+	toStrict: toStrict,
+	fieldId: fieldId,
+	getCurrentTemplateRenderer: getCurrentTemplateRenderer,
+	isInitializing: isInitializing,
+	getExecutorsList: getExecutorsList,
+	filepathJoin: filepathJoin,
+	filepathRegexpJoin: filepathRegexpJoin,
+	pathSeparator: pathSeparator,
+	filepathCanonize: filepathCanonize,
+	parseUrl: parseUrl,
+	getCtx: getCtx
+})
