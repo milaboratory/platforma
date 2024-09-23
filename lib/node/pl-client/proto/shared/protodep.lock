@@ -1,0 +1,9 @@
+proto_outdir = "./.proto"
+
+[[dependencies]]
+  target = "github.com/googleapis/googleapis"
+  subgroup = ""
+  revision = "0f35802cb7b4bd752c4adaa9dbdcaaa1ae6bd40a"
+  branch = ""
+  path = "./"
+  protocol = ""

@@ -4,12 +4,12 @@
 
 tx := import("tx")
 ll := import(":ll")
+oop := import(":oop")
 maps := import(":maps")
 json := import("json")
 constants := import(":constants")
-oop := import(":oop")
 
-//////////////// definitions ///////////////////////////
+//////////////// definitions ////////////////
 
 /**
  * A read-only wrapper object around raw platforma resource
@@ -238,6 +238,10 @@ resource = func(r) {
 	self := undefined
 	strictSelf := undefined
 
+	if isResource(r) {
+		return r
+	}
+
 	id := ll.isStrict(r) ? r.ID : r
 
 	if !is_int(id) {
@@ -296,13 +300,22 @@ resource = func(r) {
 		},
 
 		/**
-		 * Get resource data as Json
+		 * Get raw resource data
+		 *
+		 * @return data: []byte - raw resource data
 		 */
-		getDataAsJson: func() {
+		getData: func() {
 			if self.hasError() {
 				ll.panic("resource has errors: ", self.info())
 			}
-			return json.decode(self.info().Data);
+			return self.info().Data;
+		},
+
+		/**
+		 * Get resource data as Json
+		 */
+		getDataAsJson: func() {
+			return json.decode(self.getData());
 		},
 
 		/**
@@ -389,7 +402,7 @@ resource = func(r) {
 		outputs: func() {
 			if(self._outputs == undefined) {
 				info := self.info()
-				outputs := maps.mapValues(info.Outputs, field)
+				outputs := ll.toStrict(maps.mapValues(info.Outputs, field))
 				if !info.OutputsLocked {
 					return outputs
 				}
@@ -423,13 +436,21 @@ resource = func(r) {
 		},
 
 		/**
-		 * Get future input field given field name
+		 * Get future input field given field name or a path
 		 *
-		 * @param name field name
+		 * @param nameOrPath field name or an array representing a path to be traversed
 		 * @return field: smart field
 		 */
-		getFutureInputField: func(name) {
-			return self.getFutureField(name, "input")
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
 		},
 
 		/**
@@ -675,13 +696,21 @@ field = func(f) {
 		},
 
 		/**
-		 * Get future input field given field name
+		 * Get future input field given field name or a path
 		 *
-		 * @param name field name
+		 * @param nameOrPath field name or an array representing a path to be traversed
 		 * @return field: smart field
 		 */
-		getFutureInputField: func(name) {
-			return self.getFutureField(name, "input")
+		getFutureInputField: func(nameOrPath) {
+			if is_array(nameOrPath) {
+				current := strictSelf
+				for name in nameOrPath {
+					current = current.getFutureField(name, "input")
+				}
+				return current
+			} else {
+				return self.getFutureField(nameOrPath, "input")
+			}
 		},
 
 		/**
@@ -722,7 +751,7 @@ resourceBuilder = func(r) {
 		 * Create new field with given name and field type.
 		 *
 		 * @param name field name
-		 * @param fieldType field type: input, output, dynamic, service, OTW (one-time writable)
+		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use F_TYPE_* constants.
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
@@ -842,7 +871,7 @@ _mapBuilder := func(isEph) {
 
 	self := undefined
 
-	self = ll.toStrict({
+	self = ll.toStrict(oop.inherit(builder, {
 		/**
 		 * Adds a reference to the map by a given key.
 		 *
@@ -888,7 +917,7 @@ _mapBuilder := func(isEph) {
 		build: func() {
 			return builder.lockAndBuild()
 		}
-	})
+	}))
 
 	return self
 }

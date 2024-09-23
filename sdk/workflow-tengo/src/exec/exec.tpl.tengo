@@ -13,14 +13,16 @@ render := import(":render")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 stream := import(":exec.stream")
+execInternal := import(":exec.internal")
+pkg := import(":exec.package")
 sets := import(":sets")
+validation := import(":validation")
 
 self.defineOutputs(
 	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
 )
 
-self.body(func(inputs) {
-
+_runBinaryCommand := func(inputs) {
 	//
 	// Create and fill the workdir with files that were passed from inputs.
 	//
@@ -38,37 +40,56 @@ self.body(func(inputs) {
 	// working directory with input files added; before run
 	wdBefore := wdBuilder.build()
 
-
 	//
 	// Build runcmd resource
 	//
 
 	runBuilder := runcmd.builder(wdBefore)
-	// options
-	ops := inputs.runOptions
-	// exec command
-	if ops.cmd.isExec {
-		runBuilder.cmdExecutable(ops.cmd.cmd, ops.cmd.pathToBinary)
-	} else {
-		runBuilder.cmd(ops.cmd.value)
+
+	opts := execInternal.binaryRunOptions(inputs.runOptions)
+
+	// Attach installed software to the command
+	for varInfo in opts.variables {
+		runBuilder.ref(varInfo.refName, varInfo.reference)
+		runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
 	}
+
+	// Patch command's PATH env variable
+	for p in opts.customPaths {
+		runBuilder.addToPath(p.value, p.hasVars)
+	}
+
+	// exec command
+	if opts.cmd.hasVars {
+		runBuilder.cmdVar(opts.cmd.value)
+	} else {
+		runBuilder.cmd(opts.cmd.value)
+	}
+
 	// cmd args
-	for name, arg in ops.args {
-		if arg.isExec {
-			runBuilder.argExecutable(arg.arg, arg.pathToBinary)
+
+	for name, arg in opts.args {
+		if arg.hasVars {
+			runBuilder.argVar(arg.value)
 		} else {
 			runBuilder.arg(arg.value)
 		}
 	}
+
 	// env vars
-	for name, value in ops.envs {
-		runBuilder.env(name, value)
+	for name, value in opts.envs {
+		if value.hasVars {
+			runBuilder.envVar(name, value.value)
+		} else {
+			runBuilder.env(name, value.value)
+		}
 	}
+
 	// other options
-	runBuilder.inQueue(ops.queue)
-	runBuilder.stdout(ops.stdout)
-	runBuilder.stderr(ops.stderr)
-	runBuilder.nErrorLines(ops.nErrorLines)
+	runBuilder.inQueue(opts.queue)
+	runBuilder.stdout(opts.stdout)
+	runBuilder.stderr(opts.stderr)
+	runBuilder.nErrorLines(opts.nErrorLines)
 	run := runBuilder.build()
 	// get the workdir containing all the files, including produced by the run command
 	wdAfter := run.workdir
@@ -133,4 +154,29 @@ self.body(func(inputs) {
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress
 	}
+}
+
+self.body(func(inputs) {
+	// assert we have inputs we expect.
+	validation.assertJsonSchema(inputs, {
+		"softwareInfo,omitempty": validation.resource(),
+		files: { any: validation.resource() },
+		values: { any: "any" },
+		dirs: ["string"],
+		runOptions: {
+			"software,omitempty": pkg.softwareInfoScheme,
+			"cmd,omitempty": "string",
+			"args,omitempty": ["string"],
+			envs: { any: "string" },
+			queue: "string",
+			stdout: "string",
+			stderr: "string",
+			nErrorLines: "number"
+		},
+		saveFiles: ["string"],
+		saveFilesContents: ["string"],
+		streams: ["string"]
+	})
+
+	return _runBinaryCommand(inputs)
 })

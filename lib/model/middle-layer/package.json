@@ -1,0 +1,33 @@
+{
+  "name": "@milaboratories/pl-model-middle-layer",
+  "version": "1.2.18",
+  "description": "Common model between middle layer and non-block UI code",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:^",
+    "zod": "catalog:",
+    "utility-types": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

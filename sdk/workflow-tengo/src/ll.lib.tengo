@@ -58,10 +58,15 @@ isMap := func(obj) {
 /**
  * Converts 'strict' map into a normal one
  *
- * @param r 'strict' map (will panic if not)
- * @return map std map
+ * @param r: map|strictMap (will panic if not)
+ *
+ * @return map: std map
  */
 fromStrict := func(r) {
+	if is_map(r) {
+		return r
+	}
+
 	if !isStrict(r) {
 		panic("not a map", r)
 	}
@@ -87,13 +92,19 @@ ensureNonStrict := func(r) {
  * Converts map into a 'strict' map, which will panic on
  * access to non-existing elements.
  *
- * @return strict map
+ * @param m: map|strictMap
+ *
+ * @return strict: strictMap
  */
-toStrict := func(r) {
-	if(!is_map(r)) {
-		panic("not a map", r)
+toStrict := func(v) {
+	if isStrict(v) {
+		return v
 	}
-	return plapi.mapToStrict(r)
+
+	if(!is_map(v)) {
+		panic("toStrict(<v>): <v> is not a map", v)
+	}
+	return plapi.mapToStrict(v)
 }
 
 /**

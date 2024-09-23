@@ -12,91 +12,7 @@ util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
 
-//
-// pfconv params validation
-//
-// link to the full schema:
-//
-//    https://github.com/milaboratory/pframes/blob/main/packages/conv/include/import_csv.h#L53
-//
-
-_SPEC_AXES_SCHEMA := {
-	`column`: `string`,
-	`spec`: {
-		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
-		`name,omitempty`: `string`,
-		`domain,omitempty`: { any: `string` },
-		`annotations,omitempty`: { any: `string` },
-		`parentAxes,omitempty`: [`number`]
-	}
-}
-
-_SPEC_COLUMN_SCHEMA := {
-	`column`: `string`,
-	`id,omitempty`: `string`,
-	`allowNA,omitempty`: `bool`,
-	`spec`: {
-		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
-		`name,omitempty`: `string`,
-		`domain,omitempty`: { any: `string` },
-		`annotations,omitempty`: { any: `string` },
-		`parentAxes,omitempty`: [ `number` ]
-	}
-}
-
-_SPEC_INDEX_SCHEMA := {
-	`name`: `string`,
-	`domain,omitempty`: { any: `string` },
-	`annotations,omitempty`: { any: `string` },
-	`parentAxes,omitempty`: [`number`]
-}
-
-_SPEC_SCHEMA := {
-	`storageFormat` : `string,regex=Binary|Json`,
-	`partitionKeyLength` : `number`,
-
-	`axes`: [_SPEC_AXES_SCHEMA],
-	`columns`: [_SPEC_COLUMN_SCHEMA],
-	`index,omitempty`: _SPEC_INDEX_SCHEMA,
-
-	`naStr,omitempty`: `string`,
-	`nullStr,omitempty`: `string`,
-	`separator,omitempty`: `string`,
-	`emptyStrAsNA,omitempty`: `bool`,
-	`columnNamePrefix,omitempty`: `string`,
-	`allowColumnLabelDuplicates,omitempty`: `bool`
-}
-
-/**
- * Removes all annotations & domain information from spec, to pass it to pfconv
- */
-purifySpec := func(spec) {
-	newSpec := copy(spec)
-
-	newAxes := []
-	for ax in spec.axes {
-		newAxes = append(newAxes, {
-			column: ax.column,
-			spec: { type: ax.spec.type }
-		})
-	}
-	newSpec.axes = newAxes
-
-	newCols := []
-	for col in spec.columns {
-		newCols = append(newCols, objects.deleteUndefined({
-			column: col.column,
-			id: col.id,
-			allowNA: col.allowNA,
-			spec: { valueType: col.spec.valueType }
-		}))
-	}
-	newSpec.columns = newCols
-
-	validation.assertJsonSchema(newSpec, _SPEC_SCHEMA)
-
-	return newSpec
-}
+pfconvSw := assets.importSoftware("@milaboratory/pframes-conv:main")
 
 /**
  * Calculate axes spec from pfconv spec
@@ -109,8 +25,13 @@ getAxesSpec := func(spec) {
 	return axes
 }
 
-getOps := func(...ops) {
-	o := { dataOnly: false, splitDataAndSpec: false }
+renderOps := func(defaults, ...ops) {
+	o := { }
+
+	for k, v in defaults {
+		o[k] = v
+	}
+
 	if len(ops) > 0 {
 		for k, v in ops[0] {
 			o[k] = v
@@ -145,7 +66,7 @@ getColumnSpec := func(axesSpec, col) {
 importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-	validation.assertJsonSchema(spec, _SPEC_SCHEMA)
+	validation.assertJsonSchema(spec, util.PFCONV_CFG_SCHEMA)
 
 	xsvFileName := "file." + xsvType
 
@@ -153,11 +74,11 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	importDirTpl := assets.importTemplate(":pframes.import-dir")
 
 	// spec without any metadata (for caching purposes)
-	pureSpec := purifySpec(spec)
+	pureSpec := util.purifySpec(spec)
 
 	// convert csv to p-frame and read resulting data
 	pfconv := exec.builder().
-		cmd("pfconv"). // @TODO change to software once possible
+		software(pfconvSw).
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
@@ -167,7 +88,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		processWorkdir("pf", importDirTpl, pureSpec).
 		run()
 
-    ops := getOps(ops...)
+    ops := renderOps({ dataOnly: false }, ops...)
 
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
@@ -195,14 +116,30 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  * @param xsvFile: reference - a reference to a file
  * @param xsvType: string - either csv or tsv
  * @param spec: object - xsv conversion specification
+ * @param ops: object - additional options
+ *               {
+ *                 dataOnly: boolean  - set to true to completely skip creation of specs
+ *                 splitDataAndSpec: boolean  - if true, resulting map will have nested structures,
+ *                                              with "spec" + "data" fields in nested maps
+ *                 additionalAxesSpec: AxisSpec[]  - array of additional axes spec to prepend to
+ *                                                   each column spec
+ *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
 importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 
 	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
 
+	ops := renderOps({
+	    dataOnly: false,
+		splitDataAndSpec: false,
+		additionalAxesSpec: []
+	  }, ops...)
+
 	// spec without any metadata (for caching purposes)
-	pureSpec := purifySpec(spec)
+	decomposedSpec := util.decomposePfconvCfg(spec, { additionalAxesSpec: ops.additionalAxesSpec })
+	pureSpec := decomposedSpec.purifiedCfg
+	columnsSpec := decomposedSpec.columnsSpec
 
 	r := render.createEphemeral(importXsvMapTpl, {
 		xsvMap: xsvMap,
@@ -210,7 +147,10 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		spec: pureSpec,
 		ops: { dataOnly: true }
 	})
-    ops := getOps(ops...)
+
+	if ops.dataOnly && ops.splitDataAndSpec {
+		ll.panic("Can't use both options dataOnly and splitDataAndSpec at the same time.")
+	}
 
 	result := {}
 	axesSpec := getAxesSpec(spec)
@@ -221,11 +161,11 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		} else if ops.splitDataAndSpec {
 			result[id] = {
 				data: r.output(id),
-				spec: getColumnSpec(axesSpec, c)
+				spec: columnsSpec[id]
 			}
 		} else {
 			result[id + ".data"] = r.output(id)
-			result[id + ".spec"] = getColumnSpec(axesSpec, c)
+			result[id + ".spec"] = columnsSpec[id]
 		}
 	}
 

@@ -155,7 +155,13 @@ self.body(func(inputs) {
 			}
 			renderResult := render.createUniversal(body, eph, renderInputs)
 			for output in outputs {
-				outputMaps[output.name].createInputField(sGroupKey).set(renderResult.output(output.name))
+				path := output.path
+				if is_undefined(path) {
+					path = [output.name]
+				}
+				outputMaps[output.name].
+						createInputField(sGroupKey).
+						set(renderResult.output(path[0]).getFutureInputField(path[1:]))
 			}
 		}
 

@@ -1,0 +1,49 @@
+{
+  "name": "@milaboratories/pl-drivers",
+  "version": "1.2.17",
+  "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "jest --runInBand"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "dependencies": {
+    "@grpc/grpc-js": "catalog:",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/pl-client": "workspace:^",
+    "@milaboratories/pl-tree": "workspace:^",
+    "@milaboratories/pl-model-common": "workspace:^",
+    "@protobuf-ts/grpc-transport": "catalog:",
+    "@protobuf-ts/runtime": "catalog:",
+    "@protobuf-ts/runtime-rpc": "catalog:",
+    "@protobuf-ts/plugin": "catalog:",
+    "denque": "catalog:",
+    "tar-fs": "catalog:",
+    "undici": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/tar-fs": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:"
+  }
+}

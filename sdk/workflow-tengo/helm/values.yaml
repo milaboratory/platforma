@@ -180,6 +180,10 @@ app:
     AWS_REGION: eu-central-1
     PL_DUMP_CONFIG_BEFORE_RUN: yes
   envValueFrom:
+    PL_LICENSE:
+      secretKeyRef:
+        name: pl-license-secret
+        key: pl-license-key
     AWS_ACCESS_KEY_ID:
       secretKeyRef:
         name: pl-ci-aws-secrets
@@ -225,6 +229,9 @@ app:
       listen: "0.0.0.0:9091"
     grpcServer:
       listen: "0.0.0.0:6345"
+
+    license:
+      value: "env:PL_LICENSE"
 
     core:
       logging:
@@ -282,15 +289,13 @@ app:
               maxConcurrency: 1
             - name: "ui-tasks"
               maxConcurrency: 50
-          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+          packagesRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
 
         softwareLoader:
-          softwareRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
+          packagesRoot: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
           registries:
           - name: "milaboratories"
             endpoints:
-              - type: "local"
-                path: {{ .Values.app.runnersConfig.softwareLoader.pl_config.path }}
               - type: "url"
                 url: "https://bin.registry.platforma.bio/"
 

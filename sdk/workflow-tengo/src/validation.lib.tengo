@@ -163,7 +163,6 @@ _parseTags := func(rule) {
  * @return either fail or success
  */
 _validateJson := func(js, schema, keyPath, ...stack) {
-
 	if is_undefined(schema) {
 		if len(stack) == 0 {
 			return fail(keyPath, "key is not defined by schema, but exists in the JSON")
@@ -191,7 +190,7 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	}
 
 	// if the schema is an array with "or" at the beginning,
-	// we should check if the element is succesed with
+	// we should check if the element is succeed with
 	// any of the following elements.
 	if is_array(schema) && len(schema) > 0 && schema[0] == "or" {
 		for i, elem in schema[1:] {
@@ -325,11 +324,18 @@ isValid := func(js, schema) {
  *
  * @param js: any - the JSON to assert.
  * @param schema: any - the schema to assert against.
+ * @param failMsg: string - optional parameter with custom message to be printed on validation error
  */
-assertJsonSchema := func(js, schema) {
+assertJsonSchema := func(js, schema, ...failMsg) {
 	r := _validateJson(js, schema, "")
+
+	msg := "JSON validation error"
+	if len(failMsg) > 0 {
+		msg = failMsg[0]
+	}
+
 	if isFail(r) {
-		ll.panic("JSON validation error: %s", r.message)
+		ll.panic("%s: %s", msg, r.message)
 	}
 }
 

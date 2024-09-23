@@ -3,8 +3,12 @@
  */
 
 ll := import(":ll")
+oop := import(":oop")
+json := import("json")
+smart := import(":smart")
 assets := import(":assets")
 render := import(":render")
+constants := import(":pframes.constants")
 
 /**
  * Given a reference to the p-frame, converts all inner resource files into resources that can be
@@ -14,6 +18,67 @@ exportFrame := func(pf) {
     return render.createEphemeral(assets.importTemplate(":pframes.export-pframe"), { pf: pf }).output("result")
 }
 
+/**
+ * Export single PColumn data
+ */
+exportColumnData := func(data) {
+    return render.createEphemeral(assets.importTemplate(":pframes.export-single-pcolumn"), { data: data }).output("result")
+}
+
+/** 
+ * Creates a builder for p-frame resource.
+ */
+pFrameBuilder := func() {
+    r := smart.structBuilder(constants.RTYPE_P_FRAME)
+
+    self := undefined
+    self = ll.toStrict(oop.inherit(r, {
+
+        add: func(column, spec, data) {
+            if (!is_undefined(spec)) {
+                r.createInputField(column + ".spec").setRefOrJson(spec)
+            }
+            if (!is_undefined(data)) {
+		        r.createInputField(column + ".data").setRefOrJson(data)
+            }
+            return self
+        },
+
+        build: func() {
+            return r.lockAndBuild()
+        }
+    }))
+    return self
+}
+
+/** 
+ * Creates a builder for a resource map p-column's data.
+ */
+pColumnResourceMapDataBuilder := func(keyLength) {
+    r := smart.structBuilder(
+		constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: 1 })
+	)
+
+    self := undefined
+    self = ll.toStrict(oop.inherit(r, {
+
+        add: func(key, data) {
+            ll.assert(is_array(key), "key must be an array, got ", key)
+            r.createInputField(json.encode(key)).setRefOrJson(data)
+            return self
+        },
+
+        build: func() {
+            return r.lockAndBuild()
+        }
+    }))
+    return self
+}
+
 export ll.toStrict({
-    exportFrame: exportFrame
+    exportFrame: exportFrame,
+    pFrameBuilder: pFrameBuilder,
+    exportColumnData: exportColumnData,
+    pColumnResourceMapDataBuilder: pColumnResourceMapDataBuilder
 })

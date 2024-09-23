@@ -1,0 +1,38 @@
+{
+  "name": "@platforma-sdk/model",
+  "version": "1.2.24",
+  "description": "Platforma.bio SDK / Block Model",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
+    "build": "node ./scripts/save-package-version.cjs && vite build",
+    "test": "node ./scripts/save-package-version.cjs && jest"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md"
+  ],
+  "dependencies": {
+    "@milaboratories/pl-model-common": "workspace:^",
+    "utility-types": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:"
+  }
+}

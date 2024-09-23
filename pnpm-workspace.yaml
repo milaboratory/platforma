@@ -1,0 +1,91 @@
+packages:
+  - lib/util/build-configs
+
+  - lib/model/common
+  - lib/model/middle-layer
+
+  - lib/node/ts-helpers
+  - lib/node/ts-helpers-oclif
+  - lib/node/ts-helpers-winston
+  - lib/node/computable
+  - lib/node/pl-client
+  - lib/node/pl-tree
+  - lib/node/pl-drivers
+
+  - tools/tengo-template-builder
+  - tools/block-tools
+
+  - sdk/model
+
+catalog:
+  # Build
+
+  'typescript': ~5.6.2
+  'tsup': ~8.2.4
+  'vite': ^5.4.7
+  'rollup-plugin-node-externals' : ^7.1.3
+  '@rollup/plugin-node-resolve': ^15.2.3
+  'vite-plugin-dts': ^4.2.1
+
+  # Build util / linters
+
+  'prettier': ^3.3.3
+  '@protobuf-ts/plugin': ^2.9.4
+
+  '@changesets/cli': ^2.27.8
+
+  'eslint': ^9.10.0
+  '@eslint/js': ^9.10.0
+  'typescript-eslint': ^8.6.0
+
+  'oclif': ^4.14.35
+
+  'turbo': ^2.1.2
+
+  # Net
+
+  'undici': ^6.19.8
+  '@grpc/grpc-js': ^1.11.3
+  '@protobuf-ts/grpc-transport': ^2.9.4
+  '@protobuf-ts/runtime': ^2.9.4
+  '@protobuf-ts/runtime-rpc': ^2.9.4
+  'https-proxy-agent': ^7.0.5
+  '@aws-sdk/client-s3': ^3.654.0
+
+  # Util
+
+  'utility-types': ^3.11.0
+  'denque': ^2.1.0
+  'canonicalize': ^2.0.0
+  'long': ^5.2.3
+  'mime-types': ^2.1.35
+  'semver': ^7.6.3
+
+  'tar': ^7.4.3
+  'tar-fs': ^3.0.6
+
+  'zod': ^3.23.8
+
+  'yaml': ^2.5.1
+
+  '@oclif/core': ^4.0.22
+
+  'winston': ^3.14.2
+
+  '@milaboratories/tengo-tester': ^1.4.4
+  '@milaboratories/pframes-node': ^1.5.0
+
+  # Test
+
+  'jest': ^29.7.0
+  'ts-jest': ^29.2.5
+
+  # Types
+
+  '@types/jest': ^29.5.13
+  '@types/http-proxy': ^1.17.15
+  '@types/node': ~20.16.5
+  '@types/eslint__js': ^8.42.3
+  '@types/semver': ^7.5.8
+  '@types/mime-types': ^2.1.4
+  '@types/tar-fs': ^2.0.4

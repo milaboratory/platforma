@@ -1,0 +1,40 @@
+{
+  "name": "@milaboratories/pl-tree",
+  "version": "1.3.8",
+  "description": "Reactive pl tree state",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "jest --runInBand"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "dependencies": {
+    "@milaboratories/computable": "workspace:^",
+    "@milaboratories/pl-client": "workspace:^",
+    "@milaboratories/ts-helpers": "workspace:^",
+    "denque": "catalog:",
+    "utility-types": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:"
+  }
+}

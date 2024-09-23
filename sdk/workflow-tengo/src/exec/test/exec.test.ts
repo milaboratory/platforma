@@ -3,19 +3,44 @@ import { tplTest } from '@milaboratory/sdk-test';
 import * as env from '../../test/env';
 
 tplTest(
-  'should run bash from the template, echo a string to stdout and returns a value resource',
+  'run-hello-world-go',
   async ({ helper, expect }) => {
+    const helloText = "Hello from go!"
+
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_echo_to_value',
+      'exec.test.run.hello_go',
       ['main'],
-      (tx) => ({})
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+      })
     );
     const mainResult = result.computeOutput('main', (a) =>
       a?.getDataAsString()
     );
 
-    expect(await mainResult.awaitStableValue()).eq('Hello from bash\n');
+    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+  }
+);
+
+tplTest(
+  'should run bash from the template, echo a string to stdout and returns a value resource',
+  async ({ helper, expect }) => {
+    const helloText = "Hello from bash"
+
+    const result = await helper.renderTemplate(
+      false,
+      'exec.test.run.echo_to_value',
+      ['main'],
+      (tx) => ({
+        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+      })
+    );
+    const mainResult = result.computeOutput('main', (a) =>
+      a?.getDataAsString()
+    );
+
+    expect(await mainResult.awaitStableValue()).eq(helloText);
   }
 );
 
@@ -24,7 +49,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_echo_to_stream',
+      'exec.test.run.echo_to_stream',
       ['main'],
       (tx) => ({})
     );
@@ -54,7 +79,7 @@ tplTest(
 
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_cat_on_file',
+      'exec.test.run.cat_on_file',
       ['main'],
       (tx) => ({
         file: tx.createValue(
@@ -77,7 +102,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_cat_on_value',
+      'exec.test.run.cat_on_value',
       ['main'],
       (tx) => ({})
     );
@@ -97,7 +122,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_and_save_file_set',
+      'exec.test.run.save_file_set',
       ['p', 'x', 'all'],
       (tx) => ({})
     );
@@ -123,7 +148,7 @@ tplTest(
   async ({ driverKit, helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
-      'exec.test.run_with_wd_processor',
+      'exec.test.run.with_wd_processor',
       ['p'],
       (tx) => ({})
     );
