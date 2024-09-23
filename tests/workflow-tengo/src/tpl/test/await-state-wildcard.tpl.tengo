@@ -1,6 +1,6 @@
 // await-state-1-wildcard
 
-self := import(":tpl")
+self := import("@platforma-sdk/workflow-tengo:tpl")
 
 self.defineOutputs(["main"])
 

@@ -1,6 +1,6 @@
 // simple1
 
-self := import(":tpl")
+self := import("@platforma-sdk/workflow-tengo:tpl")
 
 key := "{\"a\":\"b\"}"
 

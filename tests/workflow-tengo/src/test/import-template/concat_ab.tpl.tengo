@@ -1,4 +1,4 @@
-tpl := import(":tpl")
+tpl := import("@platforma-sdk/workflow-tengo:tpl")
 
 tpl.defineOutputs(["concat"])
 

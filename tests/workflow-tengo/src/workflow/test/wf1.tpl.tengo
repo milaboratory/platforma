@@ -1,8 +1,8 @@
 // simple wf with pre-run
 
-wf := import(":workflow")
-ll := import(":ll")
-assets := import(":assets")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 
 wf.setPreRun(assets.importTemplate(":workflow.test.wf1-prerun"))

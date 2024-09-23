@@ -1,7 +1,7 @@
 // simple1
 
-self := import(":tpl")
-smart := import(":smart")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 
 self.defineOutputs(["main"])
 

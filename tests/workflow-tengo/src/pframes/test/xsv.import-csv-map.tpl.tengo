@@ -1,12 +1,12 @@
 // read_pf_from_csv.tpl
 
-self := import(":tpl")
-exec := import(":exec")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
 json := import("json")
-pfc := import(":pframes.constants")
-xsv := import(":pframes.xsv")
-smart := import(":smart")
-pframes := import(":pframes")
+pfc := import("@platforma-sdk/workflow-tengo:pframes.constants")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 self.defineOutputs("pf")
 

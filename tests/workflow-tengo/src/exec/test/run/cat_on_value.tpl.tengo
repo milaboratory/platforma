@@ -1,9 +1,9 @@
 /** Runs a cat on the file that was created from a content. */
 
-self := import(":tpl")
-smart := import(":smart")
-exec := import(":exec")
-file := import(":file")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
 json := import("json")
 
 self.defineOutputs(["main"])

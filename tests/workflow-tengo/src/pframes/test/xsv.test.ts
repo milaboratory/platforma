@@ -1,5 +1,5 @@
-import { field, Pl } from '@milaboratory/pl-middle-layer';
-import { awaitStableState, tplTest } from '@milaboratory/sdk-test';
+import { field, Pl } from '@milaboratories/pl-middle-layer';
+import { awaitStableState, tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../..';
 
 // dummy csv data

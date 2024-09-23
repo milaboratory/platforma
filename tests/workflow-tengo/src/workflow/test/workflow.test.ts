@@ -1,5 +1,5 @@
-import { Pl, type PlTransaction } from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
+import { Pl, type PlTransaction } from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
 
 function createObject(tx: PlTransaction, value: any) {
   return tx.createValue(Pl.JsonObject, JSON.stringify(value));

@@ -1,14 +1,14 @@
 /** Runs a cat on the file and returns it's content as a value resource. */
 
-self := import(":tpl")
-assets := import(":assets")
-smart := import(":smart")
-exec := import(":exec")
-file := import(":file")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 self.defineOutputs(["main"])
 
-sw := assets.importSoftware("@milaboratory/small-binaries:hello-world")
+sw := assets.importSoftware("@milaboratories/software-small-binaries:hello-world")
 
 self.body(func(inputs) {
 	run := exec.builder().

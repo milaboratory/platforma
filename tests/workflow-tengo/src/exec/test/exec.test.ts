@@ -1,5 +1,5 @@
-import { Pl } from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
+import { Pl } from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 
 tplTest(

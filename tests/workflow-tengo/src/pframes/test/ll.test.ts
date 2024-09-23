@@ -1,5 +1,5 @@
-import { AnyRef, Pl, field, resourceType } from '@milaboratory/pl-middle-layer';
-import { awaitStableState, tplTest } from '@milaboratory/sdk-test';
+import { AnyRef, Pl, field, resourceType } from '@milaboratories/pl-middle-layer';
+import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 tplTest.for([
   {

@@ -1,8 +1,8 @@
 /** Runs a simple echo and returns stdout */
 
-self := import(":tpl")
-smart := import(":smart")
-exec := import(":exec")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
 fmt := import("fmt")
 
 self.defineOutputs(["main"])

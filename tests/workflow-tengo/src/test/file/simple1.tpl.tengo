@@ -1,7 +1,7 @@
 // file import template
 
-self := import(":tpl")
-file := import(":file")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 self.defineOutputs(["file", "progress"])
 

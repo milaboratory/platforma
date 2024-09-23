@@ -1,4 +1,4 @@
-import { tplTest } from "@milaboratory/sdk-test";
+import { tplTest } from "@platforma-sdk/test";
 
 tplTest("software-info-loads", async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
@@ -18,7 +18,7 @@ tplTest("software-info-loads", async ({ helper, expect }) => {
    }
 
 
-  expect(val.name).eq("@milaboratory/tengo-sdk:exec.test.pkg.sleep")
+  expect(val.name).eq("@platforma-sdk/workflow-tengo-tests:exec.test.pkg.sleep")
   expect(val.version).not.eq("")
   expect(val.execs.length).gt(0)
   expect(val).toHaveProperty("blobRef")

@@ -1,8 +1,8 @@
 // test wd processor
 
-self := import(":workdir.proc")
-ll := import(":ll")
-slices := import(":slices")
+self := import("@platforma-sdk/workflow-tengo:workdir.proc")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+slices := import("@platforma-sdk/workflow-tengo:slices")
 
 self.readFiles(func(inputs) {
 	i := slices.findElement(inputs.files, "file1.txt")

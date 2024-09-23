@@ -1,10 +1,10 @@
 // agg_body_pure
 
-self := import(":tpl")
-smart := import(":smart")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 
-ll := import(":ll")
-pConstants := import(":pframes.constants")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 
 self.defineOutputs(
 	"result"

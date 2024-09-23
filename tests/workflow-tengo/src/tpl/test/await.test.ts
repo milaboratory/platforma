@@ -4,8 +4,8 @@ import {
   field,
   resourceType,
   toGlobalResourceId
-} from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
+} from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
 import { Templates } from '../../..';
 import { json } from 'stream/consumers';
 

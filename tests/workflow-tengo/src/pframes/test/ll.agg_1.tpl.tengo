@@ -1,10 +1,10 @@
 // ll_agg_1
 
-self := import(":tpl")
+self := import("@platforma-sdk/workflow-tengo:tpl")
 
-ll := import(":ll")
-assets := import(":assets")
-pLl := import(":pframes.ll")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pLl := import("@platforma-sdk/workflow-tengo:pframes.ll")
 
 bodyTpl := assets.importTemplate(":pframes.test.agg_body_pure")
 
