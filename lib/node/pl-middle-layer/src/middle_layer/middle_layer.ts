@@ -9,7 +9,6 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
@@ -21,6 +20,7 @@ import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
+import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;

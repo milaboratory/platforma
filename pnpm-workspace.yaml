@@ -11,7 +11,6 @@ packages:
   - lib/node/pl-client
   - lib/node/pl-tree
   - lib/node/pl-drivers
-  - lib/node/pl-middle-layer
 
   - tools/tengo-template-builder
   - tools/block-tools
@@ -19,10 +18,12 @@ packages:
   - sdk/model
   - sdk/workflow-tengo
 
+  - lib/node/pl-middle-layer
+
 catalog:
   # Build
 
-  'typescript': ~5.6.2
+  'typescript': ~5.5.4
   'tsup': ~8.2.4
   'vite': ^5.4.7
   'rollup-plugin-node-externals': ^7.1.3

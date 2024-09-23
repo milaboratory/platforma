@@ -114,22 +114,22 @@ test.each(getTestSetups())(
     expect(synchronized.active).toEqual(false);
     expect(await res2.getValue()).toEqual(2);
     expect(synchronized.active).toEqual(true);
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(4);
     expect(synchronized.active).toEqual(true);
     observableSource.setValue(10);
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(20);
     expect(synchronized.active).toEqual(true);
     await sleep(20);
     expect(synchronized.active).toEqual(false);
 
     observableSource.setValue(20);
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(synchronized.active).toEqual(false);
     expect(await res2.getValue()).toEqual(20);
     expect(synchronized.active).toEqual(true);
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(40);
     expect(synchronized.active).toEqual(true);
 
@@ -141,7 +141,7 @@ test.each(getTestSetups())(
   'simple reactor test listen in $context context',
   async ({ observableSource, synchronized, res2 }) => {
     expect(await res2.getValue()).toEqual(2);
-    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(4);
 
     // indefinite listener
@@ -172,15 +172,15 @@ test.each(getTestSetups())(
 test.each(getTestSetups())(
   'simple reactor test pre-calculation in $context context',
   async ({ observableSource, synchronized, res2 }) => {
-    res2.preCalculateValueTree();
-    await new Promise((resolve) => setImmediate(resolve));
+    res2 = res2.withPreCalculatedValueTree();
+    await new Promise((resolve) => setTimeout(resolve, 1));
     expect(await res2.getValue()).toEqual(4);
 
     expect(synchronized.active).toEqual(true);
     await sleep(20);
     expect(synchronized.active).toEqual(false);
 
-    res2.preCalculateValueTree();
+    res2 = res2.withPreCalculatedValueTree();
 
     expect(synchronized.active).toEqual(true);
     await sleep(20);
