@@ -21,6 +21,9 @@ catalogs:
     '@milaboratories/software-pframes-conv':
       specifier: ^1.5.0
       version: 1.5.0
+    '@milaboratories/software-small-binaries':
+      specifier: ^1.10.3
+      version: 1.10.3
     '@milaboratories/tengo-tester':
       specifier: ^1.4.4
       version: 1.4.4
@@ -646,6 +649,36 @@ importers:
       '@milaboratories/tengo-template-builder':
         specifier: workspace:^
         version: link:../../tools/tengo-template-builder
+
+  tests/workflow-tengo:
+    devDependencies:
+      '@milaboratories/pl-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../lib/util/build-configs
+      '@milaboratories/software-pframes-conv':
+        specifier: 'catalog:'
+        version: 1.5.0
+      '@milaboratories/software-small-binaries':
+        specifier: 'catalog:'
+        version: 1.10.3
+      '@milaboratories/tengo-template-builder':
+        specifier: workspace:*
+        version: link:../../tools/tengo-template-builder
+      '@platforma-sdk/test':
+        specifier: workspace:*
+        version: link:../../sdk/test
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../sdk/workflow-tengo
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.5
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.1(@types/node@20.16.5)
 
   tools/block-tools:
     dependencies:
@@ -1645,6 +1678,9 @@ packages:
 
   '@milaboratories/software-pframes-conv@1.5.0':
     resolution: {integrity: sha512-XVLlMGFQc2o0kqdrKEqoWGKvXpOlPjLRN7YaMd7RXDhzCXiq7G4jnEYvCF0pKeT5vwR2tlykTH3HQOC3C36T2g==}
+
+  '@milaboratories/software-small-binaries@1.10.3':
+    resolution: {integrity: sha512-H9eBJDJywWx/5EiGFczzv70CZh5sTaUGNMLe7Lzyz6vgrNVP+ggaVrhcIz1jhUG6tRoIlBtuMWMJ9GgHzTyLYA==}
 
   '@milaboratories/tengo-tester@1.4.4':
     resolution: {integrity: sha512-UWT05MAwizVEbUQC+HDD7VPb26AtZesCAT67CEzWSg4GUbNrOw5c/+TCCLJAS1lq3UQY0i3VV9QOtI1kjVokRQ==}
@@ -5941,6 +5977,8 @@ snapshots:
       zod: 3.23.8
 
   '@milaboratories/software-pframes-conv@1.5.0': {}
+
+  '@milaboratories/software-small-binaries@1.10.3': {}
 
   '@milaboratories/tengo-tester@1.4.4': {}
 

@@ -1,7 +1,7 @@
-assets := import(":assets")
-self := import(":tpl")
-pkg := import(":exec.package")
-file := import(":file")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pkg := import("@platforma-sdk/workflow-tengo:exec.package")
+file := import("@platforma-sdk/workflow-tengo:file")
 
 sw := assets.importSoftware(":exec.test.pkg.sleep")
 

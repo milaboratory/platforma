@@ -1,10 +1,10 @@
 /** Runs a simple echo and returns stdout */
 
-self := import(":tpl")
-assets := import(":assets")
-smart := import(":smart")
-exec := import(":exec")
-ll := import(":ll")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["p"])
 

@@ -1,4 +1,4 @@
-wf := import(":workflow")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
 
 wf.body(func(args) {
 

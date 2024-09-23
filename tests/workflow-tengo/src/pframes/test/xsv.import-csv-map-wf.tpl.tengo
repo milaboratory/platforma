@@ -1,13 +1,13 @@
 // read_pf_from_csv_wf.tpl
 
-wf := import(":workflow")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
 
-exec := import(":exec")
+exec := import("@platforma-sdk/workflow-tengo:exec")
 json := import("json")
-pfc := import(":pframes.constants")
-xsv := import(":pframes.xsv")
-smart := import(":smart")
-pframes := import(":pframes")
+pfc := import("@platforma-sdk/workflow-tengo:pframes.constants")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 wf.body(func(args) {
 	// map with csv as text

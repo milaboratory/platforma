@@ -1,8 +1,8 @@
 // workflow with resolve with no results
 
-ll := import("@milaboratory/tengo-sdk:ll")
-wf := import(":workflow")
-maps := import(":maps")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 
 
 wf.prepare(func(args){

@@ -1,7 +1,7 @@
 // simple wf without pre-run
 
-wf := import(":workflow")
-ll := import(":ll")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 
 wf.body(func(args) {
 	testValue := args.testValue

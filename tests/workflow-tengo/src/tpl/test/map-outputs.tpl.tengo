@@ -1,10 +1,10 @@
 // simple1
 
 
-ll := import(":ll")
-smart := import(":smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 
-self := import(":tpl")
+self := import("@platforma-sdk/workflow-tengo:tpl")
 
 self.defineOutputs(["simpleMap"])
 

@@ -1,8 +1,8 @@
-ll := import(":ll")
-assets := import(":assets")
-self := import(":tpl")
-smart := import(":smart")
-render := import(":render")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+render := import("@platforma-sdk/workflow-tengo:render")
 fmt := import("fmt")
 
 concat_ab := assets.importTemplate(":test.import-template.concat_ab")

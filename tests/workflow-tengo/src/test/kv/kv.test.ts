@@ -1,5 +1,5 @@
-import { Pl, resourceType } from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
+import { Pl, resourceType } from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
 
 tplTest('test reading kv existing', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(

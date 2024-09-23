@@ -1,12 +1,12 @@
 // wf with resolve
 
-ll := import(":ll")
-assets := import(":assets")
-smart := import(":smart")
-render := import(":render")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+render := import("@platforma-sdk/workflow-tengo:render")
 fmt := import("fmt")
 
-self := import(":workflow")
+self := import("@platforma-sdk/workflow-tengo:workflow")
 
 self.prepare(func(args) {
 

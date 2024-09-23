@@ -1,5 +1,5 @@
-import { Pl } from '@milaboratory/pl-middle-layer';
-import { awaitStableState, tplTest } from "@milaboratory/sdk-test";
+import { Pl } from '@milaboratories/pl-middle-layer';
+import { awaitStableState, tplTest } from "@platforma-sdk/test";
 
 tplTest("package-loads-and-installs", async ({ helper, expect }) => {
   const result = await helper.renderTemplate(
