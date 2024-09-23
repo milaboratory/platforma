@@ -29,6 +29,7 @@ jobs:
       build-script-name: 'build'
       test: true
       test-script-name: 'test'
+      interactive-debug: 'build'
     secrets:
       env: |
         {
