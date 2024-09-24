@@ -3,73 +3,140 @@ validation := import(":validation")
 constants := import(":pframes.constants")
 objects := import(":objects")
 
-//
-// pfconv params validation
-//
-// link to the full schema:
-//
-//    https://github.com/milaboratory/pframes/blob/main/packages/conv/docs/import_csv.d.ts
-//
-
 _PRE_PROCESS_STEP_SCHEMA := [`or`,
 	{
+		// Replace cell value with the first full RegEx match
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/match
 		`type`: `string,regex=regexpExtract`,
+		// String representing ECMAScript RegEx
+		// If there are no or more than one matches - result would become NA
 		`pattern`: `string`
 	},
 	{
+		// Perform JS String.prototype.replace() operation
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace
 		`type`: `string,regex=regexpReplace`,
+		// String representing ECMAScript RegEx with at least one capturing group.
+		// If you need to reorder capturing groups - use RegExp matching the whole string
+		// (must start with string begin anchor ^, end with string end anchor $).
+		// Use regex playground https://regexr.com/ to test your ideas.
 		`pattern`: `string`,
+		// Replacement pattern used to construct result string from captured groups
+		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_string_as_the_replacement
+		// Empty string as result would become NA.
 		`replacement`: `string`
 	}]
 
 _SPEC_AXES_SCHEMA := {
+	// Column label from XSV
 	`column`: `string`,
+	// Pre-processing operations to be performed just after reading XSV, before any other operations
 	`preProcess,omitempty`: [_PRE_PROCESS_STEP_SCHEMA],
+	// Should the N/A values (or empty rows) be allowed;
+	// default: false
 	`allowNA,omitempty`: `bool`,
+	// Specification of the axis
 	`spec`: {
+		// Type of the axis value
 		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		// Name of the axis to be used in spec;
+		// default: column label
 		`name,omitempty`: `string`,
+		// Auxiliary information to the axis name, type and parents to form a unique identifier;
+		// default: empty
 		`domain,omitempty`: { any: `string` },
+		// Any additional information attached to the axis that does not affect its identifier;
+		// default: "pl7.app/label": Column label from XSV
 		`annotations,omitempty`: { any: `string` },
+		// A list of zero-based indices of parent axes in the overall axes specification;
+		// default: empty
 		`parentAxes,omitempty`: [`number`]
 	}
 }
 
 _SPEC_COLUMN_SCHEMA := {
+	// Column label from XSV
 	`column`: `string`,
+	// ID of the column to be used in spec and as a saved filename;
+	// default: column label with all special characters replaced with '_'
 	`id,omitempty`: `string`,
+	// Pre-processing operations to be performed just after reading XSV, before any other operations;
+	// warning: when pre-processing is used, spec valueType must be set
 	`preProcess,omitempty`: [_PRE_PROCESS_STEP_SCHEMA],
+	// Should the N/A values (or empty rows) be allowed;
+	// default: true
 	`allowNA,omitempty`: `bool`,
-	`spec`: {
-		`type`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+	// Specification of the column
+	`spec,omitempty`: {
+		// Type of column values;
+		// default: automatically detected to be one of Long, Double, String
+		`type,omitempty`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+		// Name of the column to be used in spec;
+		// default: column label
 		`name,omitempty`: `string`,
+		// Auxiliary information to the column name, type and parents to form a unique identifier;
+		// default: empty
 		`domain,omitempty`: { any: `string` },
+		// Any additional information attached to the axis that does not affect its identifier;
+		// default: "pl7.app/label": Column label from XSV
 		`annotations,omitempty`: { any: `string` },
+		// A list of zero-based indices of parent axes in the overall axes specification;
+		// default: empty
 		`parentAxes,omitempty`: [ `number` ]
 	}
 }
 
 _SPEC_INDEX_SCHEMA := {
+	// Name of the axis
 	`name`: `string`,
+	// Auxiliary information to the column name, type and parents to form a unique identifier;
+	// default: empty
 	`domain,omitempty`: { any: `string` },
+	// Any additional information attached to the axis that does not affect its identifier;
+	// default: "pl7.app/label": name
 	`annotations,omitempty`: { any: `string` },
+	// A list of zero-based indices of parent axes in the overall axes specification;
+	// default: empty
 	`parentAxes,omitempty`: [`number`]
 }
 
 PFCONV_CFG_SCHEMA := {
-	`storageFormat` : `string,regex=Binary|Json`,
-	`partitionKeyLength` : `number`,
-
+	// Columns would be stored using specified format;
+	// default: Binary
+	`storageFormat,omitempty` : `string,regex=Binary|Json`,
+	// Partitioning key length;
+	// default: 0
+	`partitionKeyLength,omitempty` : `number`,
+	// XSV columns to use as PColumn axes, order of axes in resulting columns
+	// would match the order of spec entries provided here
 	`axes`: [_SPEC_AXES_SCHEMA],
+	// XSV columns to use as PColumn values, each exported individually
 	`columns`: [_SPEC_COLUMN_SCHEMA],
+	// Axis of type Int with XSV row numbers (would be the last one);
+	// default: do not create additional axis with indexes
 	`index,omitempty`: _SPEC_INDEX_SCHEMA,
-
+	// String representing NA values of types Int, Long, Float, Double
+	// default: NaN
 	`naStr,omitempty`: `string`,
+	// String representing NA values of types String, Bytes
+	// default: null
 	`nullStr,omitempty`: `string`,
+	// Single ASCII character to be used as separator;
+	// default: ',' for .csv, '\t' for .tsv
 	`separator,omitempty`: `string`,
+	// Interpret empty string as NA value
+	// default: true
 	`emptyStrAsNA,omitempty`: `bool`,
+	// Prefix all column names with given string;
+	// default: names would be preserved
 	`columnNamePrefix,omitempty`: `string`,
-	`allowColumnLabelDuplicates,omitempty`: `bool`
+	// Resolve duplicates by adding sequential suffixes to column labels;
+	// default: true
+	`allowColumnLabelDuplicates,omitempty`: `bool`,
+	// When columns spec is provided but no such column was found in XSV - create such column
+	// filled with NA values instead of failing;
+	// default: false
+	`allowArtificialColumns,omitempty`: `bool`
 }
 
 
