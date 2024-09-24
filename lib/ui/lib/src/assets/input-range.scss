@@ -1,0 +1,34 @@
+.ui-input-range {
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 6px;
+    background: var(--bg-elevated-01);
+    width: 56px;
+    padding: 6px 4px;
+    position: relative;
+
+    input {
+        outline: none;
+        border: none;
+        display: flex;
+        background: var(--bg-elevated-01);
+        width: 100%;
+        padding: 0;
+    }
+
+    input:first-child {
+        text-align: right;
+    }
+
+    input:last-child {
+        text-align: left;
+    }
+
+    &__separator {
+        color: var(--txt-01);
+        min-width: 12px;
+        text-align: center;
+    }
+}

@@ -1,0 +1,268 @@
+@import "@/assets/mixins";
+
+.ui-dropdown {
+  $root: &;
+
+  --contour-color: var(--txt-01);
+  --contour-border-width: 1px;
+  --options-bg: #fff;
+  --option-hover-bg: var(--btn-sec-hover-grey);
+
+  --label-offset-left-x: 8px;
+  --label-offset-right-x: 8px;
+  --label-color: var(--txt-01);
+
+  [data-theme='dark'] & {
+    --options-bg: #1b1b1f;
+  }
+
+  position: relative;
+  outline: none;
+  min-height: var(--control-height);
+  border-radius: 6px;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weigh-base);
+
+  &__envelope {
+    font-family: var(--control-font-family);
+    min-width: 160px;
+  }
+
+  label {
+    @include outlined-control-label();
+  }
+
+  &__container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: 6px;
+    min-height: var(--control-height);
+    color: var(--txt-01);
+  }
+
+  &__contour {
+    border-radius: var(--border-radius-control);
+    border: var(--contour-border-width) solid var(--contour-color);
+    box-shadow: var(--contour-box-shadow);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__options {
+    position: relative;
+    background-color: var(--options-bg);
+    border-radius: 0 0 6px 6px;
+    max-height: 244px;
+    @include scrollbar;
+    border-top: 1px solid var(--color-div-black);
+
+    .nothing-found {
+      padding: 0 10px;
+      height: var(--control-height);
+      line-height: var(--control-height);
+      background-color: #fff;
+      opacity: 0.5;
+      font-style: italic;
+    }
+
+    .option {
+      position: relative;
+      padding: 0 30px 0 10px;
+      height: var(--control-height);
+      line-height: var(--control-height);
+      cursor: pointer;
+      user-select: none;
+
+      .checkmark {
+        position: absolute;
+        display: none;
+        @include abs-center-y();
+        right: 10px;
+      }
+
+      > span {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 100%;
+        text-overflow: ellipsis;
+      }
+
+      &.selected {
+        background-color: var(--color-active-select);
+        .checkmark {
+          display: block;
+        }
+      }
+
+      &.active:not(.selected) {
+        background-color: var(--option-hover-bg);
+      }
+
+      &:hover {
+        background-color: var(--option-hover-bg);
+      }
+    }
+  }
+
+  &__field {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    background: transparent;
+    padding: 0 11px;
+
+    min-height: var(--control-height);
+    line-height: var(--control-height);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .input-value {
+      outline: 1px solid red;
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      padding: 0 48px 0 11px;
+      pointer-events: none;
+      line-height: var(--control-height);
+      color: var(--contour-color);
+      overflow: hidden;
+      white-space: pre;
+      text-overflow: ellipsis;
+    }
+
+    input {
+      min-height: calc(var(--control-height) - 2px);
+      line-height: calc(var(--control-height) - 2px);
+      font-family: inherit;
+      font-size: inherit;
+      background-color: transparent;
+      border: none;
+      padding: 0;
+      width: calc(100% - 40px);
+      color: var(--txt-01);
+      caret-color: var(--border-color-focus);
+
+      &:focus {
+        outline: none;
+      }
+
+      &:placeholder-shown {
+        text-overflow: ellipsis;
+      }
+
+      &::placeholder {
+        color: var(--color-placeholder);
+      }
+    }
+
+    &:hover {
+      .clear {
+        display: block;
+      }
+    }
+  }
+
+  &__helper {
+    @include field-helper();
+  }
+
+  &__error {
+    @include field-error();
+  }
+
+  &__append {
+    padding-right: 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    .icon {
+      cursor: pointer;
+    }
+    .mask {
+      background-color: var(--control-mask-fill);
+      cursor: pointer;
+    }
+  }
+
+  .arrow {
+    position: absolute;
+    @include abs-center-y;
+    right: 12px;
+    background-color: var(--control-mask-fill);
+    @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+  }
+
+  .arrow-altered {
+    position: absolute;
+    @include abs-center-y;
+    right: 12px;
+  }
+
+  .clear {
+    display: none;
+    position: absolute;
+    @include abs-center-y;
+    right: 36px;
+    z-index: 1;
+    @include icon(url('@/assets/images/16_clear.svg'), 16px); // @todo mask-image
+    cursor: pointer;
+  }
+
+  &.open,
+  &:focus-within {
+    z-index: 1;
+    --label-color: var(--txt-focus);
+  }
+
+  &.open {
+    #{$root}__container {
+      z-index: 1000;
+    }
+
+    #{$root}__field {
+      border-radius: 6px 6px 0 0;
+    }
+
+    .arrow {
+      background-color: var(--control-mask-fill);
+      @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
+    }
+  }
+
+  &:hover {
+    --contour-color: var(--control-hover-color);
+  }
+
+  &:focus-within:not(.error) {
+    --label-color: var(--txt-focus);
+    --contour-color: var(--border-color-focus);
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--border-color-focus-shadow);
+  }
+
+  &:focus-within.error {
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+  }
+
+  &.error {
+    --contour-color: var(--txt-error);
+    --label-color: var(--txt-error);
+  }
+
+  &.disabled {
+    --contour-color: var(--color-dis-01);
+    --control-mask-fill: var(--color-dis-01);
+    --label-color: var(--color-dis-01);
+    cursor: not-allowed;
+  }
+}

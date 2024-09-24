@@ -1,0 +1,54 @@
+@import '../mixins.scss';
+@import './icons-16-generated.scss';
+@import './icons-24-generated.scss';
+
+.icon-16 {
+  --icon-size: 16px;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: cover !important;
+  width: var(--icon-size);
+  height: var(--icon-size);
+
+  @each $name, $path in $icons16 {
+    &.icon-#{$name} {
+      background: url(@icons/icon-assets-min/16_#{$path});
+    }
+  }
+}
+
+.icon-24 {
+  --icon-size: 24px;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: cover !important;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  @each $name, $path in $icons24 {
+    &.icon-#{$name} {
+      background: url(@icons/icon-assets-min/24_#{$path});
+    }
+  }
+}
+
+.mask-16 {
+  --mask-size: 16px;
+  background-color: black;
+
+  @each $name, $path in $icons16 {
+    &.mask-#{$name} {
+      @include mask-var(url(@icons/icon-assets-min/16_#{$path}));
+    }
+  }
+}
+
+.mask-24 {
+  --mask-size: 24px;
+  background-color: black;
+
+  @each $name, $path in $icons24 {
+    &.mask-#{$name} {
+      @include mask-var(url(@icons/icon-assets-min/24_#{$path}));
+    }
+  }
+}

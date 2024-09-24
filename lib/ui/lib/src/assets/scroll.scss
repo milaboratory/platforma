@@ -1,0 +1,65 @@
+.ui-scrollable {
+  position: relative;
+  overflow: hidden;
+  padding-right: 14px;
+  &__container {
+    overflow: hidden;
+    max-height: 100%;
+  }
+}
+
+.v-scroll {
+  --v-scroll-width: 14px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--v-scroll-width);
+  border: 1px solid #E1E3EB;
+  background-color: #FFF;
+  transition-delay: 1s;
+  z-index: 10;
+  &__scrollbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      bottom: 2px;
+      background-color: var(--color-ic-02);
+      border-radius: 4px;
+    }
+  }
+}
+
+.h-scroll {
+  --v-scroll-width: 14px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--v-scroll-width);
+  border: 1px solid #E1E3EB;
+  background-color: #FFF;
+  transition-delay: 1s;
+  z-index: 9;
+  &__scrollbar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      bottom: 2px;
+      background-color: var(--color-ic-02);
+      border-radius: 4px;
+    }
+  }
+}

@@ -1,0 +1,10 @@
+.sortable {
+  &__item {
+    z-index: 1;
+    user-select: none;
+  }
+
+  &__animate {
+    transition: transform 0.15s ease-in-out;
+  }
+}
