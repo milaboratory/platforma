@@ -22,8 +22,8 @@ catalogs:
       specifier: ^1.5.0
       version: 1.5.0
     '@milaboratories/software-pframes-conv':
-      specifier: ^1.5.0
-      version: 1.5.0
+      specifier: ^1.5.1
+      version: 1.5.1
     '@milaboratories/software-small-binaries':
       specifier: ^1.10.4
       version: 1.10.4
@@ -686,7 +686,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 1.5.1
     devDependencies:
       '@milaboratories/tengo-template-builder':
         specifier: workspace:^
@@ -733,7 +733,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.5.0
+        version: 1.5.1
       '@milaboratories/software-small-binaries':
         specifier: 'catalog:'
         version: 1.10.4
@@ -1749,8 +1749,8 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.2.18':
     resolution: {integrity: sha512-gOSy+9BQ1Hqq6npf/ZRBhderAecvV8CwtOnlX7XN9W8t7oim8Cu8db4N0RaC3IpS2dwuQrQ5QHZTRKwFLVWXYg==}
 
-  '@milaboratories/software-pframes-conv@1.5.0':
-    resolution: {integrity: sha512-XVLlMGFQc2o0kqdrKEqoWGKvXpOlPjLRN7YaMd7RXDhzCXiq7G4jnEYvCF0pKeT5vwR2tlykTH3HQOC3C36T2g==}
+  '@milaboratories/software-pframes-conv@1.5.1':
+    resolution: {integrity: sha512-NiK/wZzAqVCCqTZcSJZf7MYqSLQhl73uMCVyJCbuT0hLtgIRD9w1vcaIXJc7Xsot10Qvuf3N/W2849vrc7gO4A==}
 
   '@milaboratories/software-small-binaries@1.10.4':
     resolution: {integrity: sha512-Eb2T+wwQt+NzRdhpb5+8oWgVvB+6ZbNQJ/IdA2oZds6sjVGIXv4e/ps0YcpMN3Yt5sGZRHEZeKhVsv3ataa27Q==}
@@ -6049,7 +6049,7 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@1.5.0': {}
+  '@milaboratories/software-pframes-conv@1.5.1': {}
 
   '@milaboratories/software-small-binaries@1.10.4': {}
 

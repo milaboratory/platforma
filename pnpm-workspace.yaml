@@ -91,7 +91,7 @@ catalog:
 
   # SW
 
-  '@milaboratories/software-pframes-conv': ^1.5.0
+  '@milaboratories/software-pframes-conv': ^1.5.1
   '@milaboratories/software-small-binaries': ^1.10.4
 
   # Test
