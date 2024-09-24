@@ -8,7 +8,7 @@ work/
 *.tgz
 .turbo
 log/platforma.log
-
+tmp/
 
 test_config.json
 .test_auth.json

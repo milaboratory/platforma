@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import {
-  ContentAbsoluteBinaryLocal,
-  ContentAbsoluteTextLocal,
   ContentExplicitBase64,
-  ContentExplicitString,
-  ContentRelative,
-  ContentRelativeBinary,
-  ContentRelativeText,
   DescriptionContentBinary,
   DescriptionContentText
 } from './content_types';
@@ -38,13 +32,6 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
   DescriptionContentBinary
 );
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
-
-// prettier-ignore
-export const BlockPackMetaManifest = BlockPackMeta(
-  ContentRelativeText,
-  ContentRelativeBinary
-);
-export type BlockPackMetaManifest = z.infer<typeof BlockPackMetaManifest>;
 
 // prettier-ignore
 export const BlockPackMetaEmbeddedContent = BlockPackMeta(

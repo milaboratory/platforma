@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ContentRelative, ContentRelativeBinary } from './content_types';
+import { ContentRelativeBinary } from './content_types';
 import { mapRemoteToAbsolute } from './content_conversion';
 
 export type BlockPackComponents = {};
@@ -26,7 +26,7 @@ export function BlockComponents<
   const UI extends z.ZodTypeAny
 >(wfAndModel: WfAndModel, ui: UI) {
   return z.object({
-    workflow: wfAndModel,
+    workflow: Workflow(wfAndModel),
     model: wfAndModel,
     ui
   });
@@ -34,9 +34,6 @@ export function BlockComponents<
 
 export const BlockComponentsDescriptionRaw = BlockComponents(z.string(), z.string());
 export type BlockComponentsDescriptionRaw = z.infer<typeof BlockComponentsDescriptionRaw>;
-
-export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
-export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
 
 export function BlockComponentsAbsoluteUrl(prefix: string) {
   return BlockComponents(

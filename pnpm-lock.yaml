@@ -97,7 +97,7 @@ catalogs:
       specifier: ^7.11.0
       version: 7.18.0
     '@vitejs/plugin-vue':
-      specifier: ^5.0.0
+      specifier: ^5.1.3
       version: 5.1.4
     '@vue/test-utils':
       specifier: ^2.4.6
@@ -199,10 +199,10 @@ catalogs:
       specifier: ^2.1.1
       version: 2.1.1
     vue:
-      specifier: ^3.4.35
+      specifier: ^3.4.38
       version: 3.5.8
     vue-tsc:
-      specifier: ^2.0.6
+      specifier: ^2.1.6
       version: 2.1.6
     winston:
       specifier: ^3.14.2
@@ -1028,6 +1028,59 @@ importers:
       '@milaboratories/tengo-template-builder':
         specifier: workspace:^
         version: link:../../tools/tengo-template-builder
+
+  tests/blocks/enter-numbers/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(@microsoft/api-extractor@7.47.7(@types/node@22.5.5))(postcss@8.4.47)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.5.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
+
+  tests/blocks/enter-numbers/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers.model':
+        specifier: workspace:*
+        version: link:../model
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.8(typescript@5.5.4)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.7(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
+
+  tests/blocks/enter-numbers/workflow:
+    devDependencies:
+      '@milaboratories/tengo-template-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-template-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
 
   tests/helper:
     dependencies:
@@ -1955,7 +2008,6 @@ packages:
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
     engines: {node: '>=10.10.0'}
-    deprecated: Use @eslint/config-array instead
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -1963,7 +2015,6 @@ packages:
 
   '@humanwhocodes/object-schema@2.0.3':
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
-    deprecated: Use @eslint/object-schema instead
 
   '@inquirer/confirm@3.2.0':
     resolution: {integrity: sha512-oOIwPs0Dvq5220Z8lGL/6LHRTEr9TgLHmiI99Rj1PJ1p1czTys+olrgBqZk4E2qC0YTzeHprxSQmoHioVdJ7Lw==}
@@ -2957,7 +3008,6 @@ packages:
   are-we-there-yet@2.0.0:
     resolution: {integrity: sha512-Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer supported.
 
   arg@4.1.3:
     resolution: {integrity: sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA==}
@@ -3651,7 +3701,6 @@ packages:
   gauge@3.0.2:
     resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer supported.
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -3699,7 +3748,6 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
 
   globals@11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -3840,7 +3888,6 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
-    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -4422,7 +4469,6 @@ packages:
 
   npmlog@5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
-    deprecated: This package is no longer supported.
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
@@ -4756,7 +4802,6 @@ packages:
 
   rimraf@3.0.2:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
-    deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
   rimraf@5.0.10:
@@ -7049,6 +7094,15 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
+  '@microsoft/api-extractor-model@7.29.6(@types/node@22.5.5)':
+    dependencies:
+      '@microsoft/tsdoc': 0.15.0
+      '@microsoft/tsdoc-config': 0.17.0
+      '@rushstack/node-core-library': 5.7.0(@types/node@22.5.5)
+    transitivePeerDependencies:
+      - '@types/node'
+    optional: true
+
   '@microsoft/api-extractor@7.47.7(@types/node@20.16.5)':
     dependencies:
       '@microsoft/api-extractor-model': 7.29.6(@types/node@20.16.5)
@@ -7066,6 +7120,25 @@ snapshots:
       typescript: 5.5.4
     transitivePeerDependencies:
       - '@types/node'
+
+  '@microsoft/api-extractor@7.47.7(@types/node@22.5.5)':
+    dependencies:
+      '@microsoft/api-extractor-model': 7.29.6(@types/node@22.5.5)
+      '@microsoft/tsdoc': 0.15.0
+      '@microsoft/tsdoc-config': 0.17.0
+      '@rushstack/node-core-library': 5.7.0(@types/node@22.5.5)
+      '@rushstack/rig-package': 0.5.3
+      '@rushstack/terminal': 0.14.0(@types/node@22.5.5)
+      '@rushstack/ts-command-line': 4.22.6(@types/node@22.5.5)
+      lodash: 4.17.21
+      minimatch: 3.0.8
+      resolve: 1.22.8
+      semver: 7.5.4
+      source-map: 0.6.1
+      typescript: 5.5.4
+    transitivePeerDependencies:
+      - '@types/node'
+    optional: true
 
   '@microsoft/tsdoc-config@0.17.0':
     dependencies:
@@ -7304,6 +7377,20 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.16.5
 
+  '@rushstack/node-core-library@5.7.0(@types/node@22.5.5)':
+    dependencies:
+      ajv: 8.13.0
+      ajv-draft-04: 1.0.0(ajv@8.13.0)
+      ajv-formats: 3.0.1(ajv@8.13.0)
+      fs-extra: 7.0.1
+      import-lazy: 4.0.0
+      jju: 1.4.0
+      resolve: 1.22.8
+      semver: 7.5.4
+    optionalDependencies:
+      '@types/node': 22.5.5
+    optional: true
+
   '@rushstack/rig-package@0.5.3':
     dependencies:
       resolve: 1.22.8
@@ -7316,6 +7403,14 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.16.5
 
+  '@rushstack/terminal@0.14.0(@types/node@22.5.5)':
+    dependencies:
+      '@rushstack/node-core-library': 5.7.0(@types/node@22.5.5)
+      supports-color: 8.1.1
+    optionalDependencies:
+      '@types/node': 22.5.5
+    optional: true
+
   '@rushstack/ts-command-line@4.22.6(@types/node@20.16.5)':
     dependencies:
       '@rushstack/terminal': 0.14.0(@types/node@20.16.5)
@@ -7324,6 +7419,16 @@ snapshots:
       string-argv: 0.3.2
     transitivePeerDependencies:
       - '@types/node'
+
+  '@rushstack/ts-command-line@4.22.6(@types/node@22.5.5)':
+    dependencies:
+      '@rushstack/terminal': 0.14.0(@types/node@22.5.5)
+      '@types/argparse': 1.0.38
+      argparse: 1.0.10
+      string-argv: 0.3.2
+    transitivePeerDependencies:
+      - '@types/node'
+    optional: true
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -10710,6 +10815,34 @@ snapshots:
       tree-kill: 1.2.2
     optionalDependencies:
       '@microsoft/api-extractor': 7.47.7(@types/node@20.16.5)
+      postcss: 8.4.47
+      typescript: 5.5.4
+    transitivePeerDependencies:
+      - jiti
+      - supports-color
+      - tsx
+      - yaml
+
+  tsup@8.2.4(@microsoft/api-extractor@7.47.7(@types/node@22.5.5))(postcss@8.4.47)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.5.1):
+    dependencies:
+      bundle-require: 5.0.0(esbuild@0.23.1)
+      cac: 6.7.14
+      chokidar: 3.6.0
+      consola: 3.2.3
+      debug: 4.3.7(supports-color@8.1.1)
+      esbuild: 0.23.1
+      execa: 5.1.1
+      globby: 11.1.0
+      joycon: 3.1.1
+      picocolors: 1.1.0
+      postcss-load-config: 6.0.1(postcss@8.4.47)(tsx@4.19.1)(yaml@2.5.1)
+      resolve-from: 5.0.0
+      rollup: 4.21.3
+      source-map: 0.8.0-beta.0
+      sucrase: 3.35.0
+      tree-kill: 1.2.2
+    optionalDependencies:
+      '@microsoft/api-extractor': 7.47.7(@types/node@22.5.5)
       postcss: 8.4.47
       typescript: 5.5.4
     transitivePeerDependencies:

@@ -2,7 +2,7 @@ import { Command, Flags } from '@oclif/core';
 import path from 'path';
 import fs from 'fs';
 import { loadPackDescriptionRaw } from '../v2';
-import { BlockPackMetaDescription, BlockPackMetaEmbed } from '../v2/model/meta';
+import { BlockPackMetaDescription, BlockPackMetaEmbed } from '../v2/model/block_meta';
 
 export default class BuildMeta extends Command {
   static override description =
