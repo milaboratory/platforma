@@ -3,7 +3,7 @@ import * as cmdOpts from '../core/cmd-opts';
 import * as util from '../core/util';
 import { Core } from '../core/core';
 
-export default class Sign extends Command {
+export class Sign extends Command {
     static override description = 'Sign all available build artifacts'
 
     static override examples = [

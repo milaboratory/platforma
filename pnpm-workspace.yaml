@@ -15,6 +15,7 @@ packages:
 
   - tools/tengo-template-builder
   - tools/block-tools
+  - tools/pl-package-builder
 
   - sdk/model
   - sdk/workflow-tengo

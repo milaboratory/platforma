@@ -1,13 +1,11 @@
 {
-  "name": "@milaboratory/pl-package-builder",
+  "name": "@platforma-sdk/package-builder",
   "version": "2.8.0",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
-    "build": "tsc",
-    "test:i:runenv": "cd integration-tests/runenv && npm run build",
-    "test:i:script": "cd integration-tests/software-pkg && npm run build",
-    "test:integration": "npm run test:i:runenv && npm run test:i:script",
-    "test": "rm -rf ./dist && npm run build && jest"
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "jest"
   },
   "bin": {
     "pl-pkg": "./bin/run.js"
@@ -19,26 +17,31 @@
   ],
   "keywords": [],
   "license": "UNLICENSED",
-  "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.10",
-    "ts-jest": "^29.1.5",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.5.3"
-  },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.623.0",
-    "@oclif/core": "^3.26.6",
-    "canonicalize": "^2.0.0",
-    "tar": "^7.4.3",
-    "winston": "^3.13.0",
-    "yaml": "^2.5.0",
-    "zod": "^3.23.8"
+    "@aws-sdk/client-s3": "catalog:",
+    "@oclif/core": "catalog:",
+    "canonicalize": "catalog:",
+    "tar": "catalog:",
+    "winston": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "ts-jest": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",
-    "commands": "./dist/commands",
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/index.js",
+      "identifier": "COMMANDS"
+    },
     "dirname": "pl-pkg",
     "topicSeparator": " "
   }
