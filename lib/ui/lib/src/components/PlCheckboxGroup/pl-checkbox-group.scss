@@ -1,0 +1,33 @@
+.ui-checkbox-group {
+  --color-label: var(--color-text);
+  --cursor-label: pointer;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-family-base);
+  &.disabled {
+    --color-label: var(--color-dis-01);
+    --cursor-label: default;
+    pointer-events: none;
+  }
+  label {
+    color: var(--color-label);
+    cursor: var(--cursor-label);
+  }
+  > label {
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  > div {
+    height: 32px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    > label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+}

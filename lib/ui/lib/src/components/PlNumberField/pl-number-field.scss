@@ -1,0 +1,143 @@
+.mi-number-field {
+  --contour-color: var(--txt-01);
+  --contour-border-width: 1px;
+  --options-bg: #fff;
+  --option-hover-bg: var(--btn-sec-hover-grey);
+  --label-offset-left-x: 8px;
+  --label-offset-right-x: 8px;
+  --label-color: var(--txt-01);
+  --color-hint: #9d9eae;
+
+  // overflow: hidden;
+
+  ::placeholder {
+    color: #cfd1db;
+    opacity: 1;
+  }
+
+  &__main-wrapper {
+    height: 40px;
+    position: relative;
+  }
+
+  &__wrapper {
+    padding-left: 12px;
+    // background-color: rgb(111, 94, 94);
+    border-radius: 6px;
+  }
+
+  &__icons {
+    // background-color: green;
+    width: 40px;
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid var(--contour-color);
+  }
+
+  &__icon {
+    line-height: 0;
+
+    &.disabled {
+      cursor: not-allowed;
+      position: relative;
+      z-index: 1;
+
+      svg path {
+        fill: #cfd1db;
+      }
+    }
+  }
+
+  &__icon:hover {
+    background-color: rgba(155, 171, 204, 0.16);
+  }
+
+  &__icon:first-child {
+    border-bottom: 1px solid var(--contour-color);
+  }
+
+  &__hint {
+    margin-top: 3px;
+    color: var(--color-hint);
+  }
+
+  input {
+    outline: none;
+    border: none;
+    width: 100%;
+    background: unset;
+  }
+
+  &__contour {
+    border-radius: var(--border-radius-control);
+    border: var(--contour-border-width) solid var(--contour-color);
+    box-shadow: var(--contour-box-shadow);
+    z-index: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+  }
+
+  &:focus-within:not(.error) {
+    --label-color: var(--txt-focus);
+    --contour-color: var(--border-color-focus);
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--border-color-focus-shadow);
+  }
+
+  &:focus-within.error {
+    --contour-border-width: 2px;
+    --contour-box-shadow: 0 0 0 4px var(--color-error-shadow);
+  }
+
+  &.error {
+    --contour-color: var(--txt-error);
+    --label-color: var(--txt-error);
+    --color-hint: var(--txt-error);
+  }
+
+  &.disabled {
+    --contour-color: var(--color-dis-01);
+    --control-mask-fill: var(--color-dis-01);
+    cursor: not-allowed;
+
+    label,
+    .mi-number-field__hint,
+    input {
+      color: var(--contour-color);
+    }
+
+    svg path {
+      fill: var(--contour-color);
+    }
+
+    .mi-number-field__icons {
+      pointer-events: none;
+    }
+  }
+
+  label {
+    position: absolute;
+    top: 0;
+    transform: translateY(-60%);
+    left: var(--label-offset-left-x);
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    overflow: hidden;
+    white-space: pre;
+    text-overflow: ellipsis;
+    cursor: inherit;
+    color: var(--label-color);
+    transition: color 0.3s;
+
+    .required {
+      display: inline-block;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--txt-error);
+      margin-right: 4px;
+    }
+  }
+}

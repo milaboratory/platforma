@@ -1,0 +1,30 @@
+{
+  "name": "@milaboratory/platforma-uikit.lib",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/pl-uikit.umd.js",
+  "module": "dist/pl-uikit.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test:unit": "vitest run",
+    "test": "npm run test:unit",
+    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
+    "tsc": "tsc",
+    "watch": "vite build --watch",
+    "type-check": "vue-tsc --project ./tsconfig.lib.json",
+    "preview": "vite preview",
+    "parse-icons-folder": "node scripts/parse-icons.js",
+    "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
+    "generate-icons": "npm run parse-icons-folder && npm run minify-icons",
+    "my-extra-script": "exit 0"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^24.1.1",
+    "resize-observer-polyfill": "^1.5.1",
+    "vitest": "^2.0.5"
+  }
+}

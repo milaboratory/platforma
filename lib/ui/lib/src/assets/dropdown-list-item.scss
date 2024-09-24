@@ -1,0 +1,65 @@
+@import "./mixins";
+
+.dropdown-list-item {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    // flex-direction: column;
+    min-height: 40px;
+
+    &__small {
+        padding: 4px 12px;
+        min-height: 32px;
+    }
+
+    &__title-container {
+        // height: 24px;
+        display: flex;
+        // align-items: center;
+        margin-right: 8px;
+        flex-grow: 1;
+        flex-direction: column;
+    }
+
+    &__title {
+        line-height: 24px !important;
+        display: flex;
+        align-items: center;
+    }
+
+    &__icon {
+        background-color: var(--control-mask-fill);
+        @include mask(url(./images/16_checkmark.svg), 16px);
+        min-width: 16px;
+        margin-top: 2px;
+    }
+
+    &.hovered-item {
+        background-color: var(--bg-elevated-02);
+    }
+
+    &:hover {
+        background-color: var(--bg-elevated-02);
+        cursor: pointer;
+    }
+
+    &__selected {
+        background-color: var(--color-active-select) !important;
+    }
+
+    &__checkbox {
+        margin-right: 8px;
+        background-color: var(--control-mask-fill);
+        @include mask(url(./images/24_checkbox-base-dark.svg), 24px);
+    }
+
+    &__checkbox.checked {
+        margin-right: 8px;
+        background-color: red;
+        @include mask(url(./images/24_checkbox-checked-dark.svg), 24px);
+    }
+
+    &__description {
+        color: var(--txt-03);
+    }
+}

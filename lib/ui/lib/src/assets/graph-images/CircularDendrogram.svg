@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <path d="M32 32L32 3" stroke="black"/>
+  <path d="M32 19L39 12" stroke="black"/>
+  <path d="M39 12L46 7" stroke="black"/>
+  <path d="M39 12L40 4" stroke="black"/>
+  <path d="M44 27L44 20" stroke="black"/>
+  <path d="M32 32L44 28" stroke="black"/>
+  <path d="M14 21L8 16" stroke="black"/>
+  <path d="M14 21L11 12" stroke="black"/>
+  <path d="M20 29L14 21" stroke="black"/>
+  <path d="M4 25L20 29" stroke="black"/>
+  <path d="M44 28L51 22" stroke="black"/>
+  <path d="M44 28L53 33" stroke="black"/>
+  <path d="M51 22L60 26" stroke="black"/>
+  <path d="M55 15L51 22" stroke="black"/>
+  <path d="M51 22L58 21" stroke="black"/>
+  <path d="M32 32L40 42" stroke="black"/>
+  <path d="M32 19L20 5.5" stroke="black"/>
+  <path d="M32 32L20 29" stroke="black"/>
+  <path d="M32 32L25 23" stroke="black"/>
+  <path d="M12 35L4 37.5" stroke="black"/>
+  <path d="M12 35L5.5 43" stroke="black"/>
+  <path d="M20 29L12 35" stroke="black"/>
+  <path d="M19 37L20 29" stroke="black"/>
+  <path d="M23 59L25 43" stroke="black"/>
+  <path d="M15 55L25 43" stroke="black"/>
+  <path d="M42 59L41 50" stroke="black"/>
+  <path d="M54 50L50 43" stroke="black"/>
+  <path d="M59 42L50 43" stroke="black"/>
+  <path d="M47 37L40 42" stroke="black"/>
+  <path d="M50 43L40 42" stroke="black"/>
+  <path d="M41.0001 50L39.9998 42" stroke="black"/>
+  <path d="M17 45L25 43" stroke="black"/>
+  <path d="M30 48L25 43" stroke="black"/>
+  <path d="M32 32L25 43" stroke="black"/>
+  <circle cx="32" cy="32" r="4" transform="rotate(-180 32 32)" fill="white" stroke="#110529"/>
+  <circle cx="32" cy="19" r="3" transform="rotate(-180 32 19)" fill="white" stroke="#110529"/>
+  <circle cx="25.4" cy="11.5" r="2" transform="rotate(-180 25.4 11.5)" fill="white" stroke="#110529"/>
+  <circle cx="12" cy="35" r="2" transform="rotate(-180 12 35)" fill="white" stroke="#110529"/>
+  <circle cx="14" cy="21" r="2" transform="rotate(-180 14 21)" fill="white" stroke="#110529"/>
+  <circle cx="53" cy="33" r="2" transform="rotate(-180 53 33)" fill="white" stroke="#110529"/>
+  <circle cx="51" cy="22" r="2" transform="rotate(-180 51 22)" fill="white" stroke="#110529"/>
+  <circle cx="39" cy="12" r="2" transform="rotate(-180 39 12)" fill="white" stroke="#110529"/>
+  <circle cx="50" cy="43" r="2" transform="rotate(-180 50 43)" fill="white" stroke="#110529"/>
+  <circle cx="41" cy="51" r="2" transform="rotate(-180 41 51)" fill="white" stroke="#110529"/>
+  <circle cx="23.9" cy="52" r="2" transform="rotate(-180 23.9 52)" fill="white" stroke="#110529"/>
+  <circle cx="44" cy="28" r="3" transform="rotate(-180 44 28)" fill="white" stroke="#110529"/>
+  <circle cx="40" cy="42" r="3" transform="rotate(-180 40 42)" fill="white" stroke="#110529"/>
+  <circle cx="20" cy="29" r="3" transform="rotate(-180 20 29)" fill="white" stroke="#110529"/>
+  <circle cx="25" cy="43" r="3" transform="rotate(-180 25 43)" fill="white" stroke="#110529"/>
+  <circle cx="58" cy="21" r="1.5" transform="rotate(-180 58 21)" fill="#845CFF"/>
+  <circle cx="44" cy="20" r="1.5" transform="rotate(-180 44 20)" fill="#845CFF"/>
+  <circle cx="55" cy="15" r="1.5" transform="rotate(-180 55 15)" fill="#845CFF"/>
+  <circle cx="46" cy="7" r="1.5" transform="rotate(-180 46 7)" fill="#845CFF"/>
+  <circle cx="40" cy="4" r="1.5" transform="rotate(-180 40 4)" fill="#845CFF"/>
+  <circle cx="47" cy="37" r="1.5" transform="rotate(-180 47 37)" fill="#845CFF"/>
+  <circle cx="25" cy="23" r="1.5" transform="rotate(-180 25 23)" fill="#845CFF"/>
+  <circle cx="30" cy="48" r="1.5" transform="rotate(-180 30 48)" fill="#845CFF"/>
+  <circle cx="19" cy="37" r="1.5" transform="rotate(-180 19 37)" fill="#845CFF"/>
+  <circle cx="4" cy="25" r="1.5" transform="rotate(-180 4 25)" fill="#845CFF"/>
+  <circle cx="11" cy="12" r="1.5" transform="rotate(-180 11 12)" fill="#845CFF"/>
+  <circle cx="8" cy="16" r="1.5" transform="rotate(-180 8 16)" fill="#845CFF"/>
+  <circle cx="4" cy="37.5" r="1.5" transform="rotate(-180 4 37.5)" fill="#845CFF"/>
+  <circle cx="5.5" cy="43" r="1.5" transform="rotate(-180 5.5 43)" fill="#845CFF"/>
+  <circle cx="17" cy="45" r="1.5" transform="rotate(-180 17 45)" fill="#845CFF"/>
+  <circle cx="15" cy="55" r="1.5" transform="rotate(-180 15 55)" fill="#845CFF"/>
+  <circle cx="32" cy="3" r="1.5" transform="rotate(-180 32 3)" fill="#845CFF"/>
+  <circle cx="20" cy="5.5" r="1.5" transform="rotate(-180 20 5.5)" fill="#845CFF"/>
+  <circle cx="42" cy="59" r="1.5" transform="rotate(-180 42 59)" fill="#845CFF"/>
+  <circle cx="23" cy="59" r="1.5" transform="rotate(-180 23 59)" fill="#845CFF"/>
+  <circle cx="60" cy="26" r="1.5" transform="rotate(-180 60 26)" fill="#845CFF"/>
+  <circle cx="54" cy="50" r="1.5" transform="rotate(-180 54 50)" fill="#845CFF"/>
+  <circle cx="59" cy="42" r="1.5" transform="rotate(-180 59 42)" fill="#845CFF"/>
+</svg>

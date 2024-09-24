@@ -1,0 +1,166 @@
+@use './variables.scss';
+
+:root {
+  --main-dark-color: #110529;
+
+  --color-div-grey: #e1e3eb;
+  --color-div-bw: #ffffff;
+  --color-div-black: #e8ecf2;
+  --border-color-focus-shadow: rgba(73, 204, 73, 0.24);
+  --color-error-shadow: #ff5c5c33;
+  --color-dis-00: #fff;
+  --color-dis-01: #cfd1db;
+  --color-accent-default: #845cff;
+  --color-accent-hover: #9470ff;
+  --color-sec-hover-white: rgba(255, 255, 255, 0.5);
+  --color-sec-hover-grey: rgba(155, 171, 204, 0.16);
+  --color-ic-link: #5f31cc;
+
+  --color-active-select: rgba(99, 224, 36, 0.24);
+  --color-border-default: #110529;
+  --color-text: var(--txt-01); // @todo
+  --color-primary-default: #110529;
+  --color-primary-hover: #20163d;
+  --color-placeholder: var(--txt-mask);
+  --color-ic-00: #ffffff;
+  --color-ic-01: #110529;
+  --color-ic-02: #cfd1db;
+
+  --bg-base-dark: #110529;
+  --bg-base-light: #f7f8fa;
+  --bg-elevated-01: #fff;
+  --bg-elevated-02: #e1e3eb;
+  --bg-notification-error: linear-gradient(90deg, #ffcecc 0%, #ffffff 100%);
+
+  --border-radius-control: 6px;
+
+  --font-family-base: 'Manrope', sans-serif;
+  --font-family-monospace: 'Spline Sans Mono', monospace;
+
+  --font-size-base: 14px;
+  --font-weigh-base: 500;
+
+  --control-height: 40px;
+  --control-hover-color: #363452;
+  --control-font-family: var(--font-family-base);
+  --control-mask-fill: var(--color-ic-01);
+
+  --contour-offset: 4px;
+
+  --btn-shape-shadow: inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
+  --btn-group-shape-shadow: inset 0px -3px 0px rgba(36, 34, 61, 0.12), inset 0px 3px 0px rgba(255, 255, 255, 0.4);
+  --btn-sec-hover-grey: rgba(155, 171, 204, 0.16);
+
+  --btn-switcher-bg: linear-gradient(180deg, #a1e69c 0%, #d0f5b0 100%);
+  --btn-switcher-option-color: var(--txt-01);
+  --btn-switcher-active-option-color: var(--txt-01);
+  --btn-switcher-active-option-border: 1px solid var(--color-border-default);
+
+  --chip-bg: var(--btn-sec-hover-grey);
+  --chip-close-ic-color: #cfd1db;
+  --chip-close-ic-hover-color: #110529;
+
+  --tooltip-link-color: hsla(160, 100%, 37%, 1);
+  --tooltip-bg: #24223d;
+
+  --theme-switcher-icon-color: var(--txt-01);
+
+  --shadow-m: 0px 6px 24px -2px rgba(15, 36, 77, 0.08), 0px 4px 12px -2px rgba(15, 36, 77, 0.08);
+
+  --title-bar-height: 0px; // @TODO
+
+  --divider-color: var(--txt-01); // @TODO
+}
+
+[data-theme='dark'] {
+  --color-div-grey: #232329;
+  --color-div-bw: #000000;
+  --color-div-black: #000000;
+  --border-color-focus-shadow: rgba(73, 204, 73, 0.24);
+  --color-error-shadow: rgba(250, 90, 101, 0.24);
+  --color-dis-00: #65656b;
+  --color-dis-01: #38383d;
+  --color-accent-default: #5f31cc;
+  --color-accent-hover: #5f31cc;
+  --color-sec-hover-white: rgba(131, 131, 163, 0.16);
+  --color-sec-hover-grey: rgba(131, 131, 163, 0.16);
+  --color-ic-link: #87e087;
+  --color-active-select: rgba(99, 224, 36, 0.24);
+  --color-border-default: #60616b;
+  --color-primary-default: #5f31cc;
+  --color-primary-hover: #6d3ddb;
+  --color-text: var(--txt-01);
+  --color-placeholder: var(--txt-mask);
+  --color-ic-00: #ffffff;
+  --color-ic-01: #dfe0e5;
+  --color-ic-02: #60616b;
+
+  --bg-base-dark: #0d0d0f;
+  --bg-base-light: #0d0d0f;
+  --bg-elevated-01: #1b1b1f;
+  --bg-elevated-02: #2d2d33;
+  --bg-notification-error: linear-gradient(90deg, #8f3343 0%, #292933 100%);
+
+  --border-radius-control: 6px;
+  --control-hover-color: #adaeb8;
+  --control-mask-fill: var(--color-ic-01);
+
+  --btn-shape-shadow: none;
+  --btn-group-shape-shadow: inset 0px -3px 0px rgba(13, 13, 15, 0.24), inset 0px 3px 0px rgba(255, 255, 255, 0.12);
+  --btn-sec-hover-grey: var(--color-sec-hover-white);
+
+  --btn-switcher-bg: #5e5e70;
+  --btn-switcher-option-color: var(--txt-03);
+  --btn-switcher-active-option-color: var(--txt-00);
+  --btn-switcher-active-option-border: 0px;
+
+  --chip-bg: var(--btn-sec-hover-grey);
+  --chip-close-ic-color: var(--color-ic-02);
+  --chip-close-ic-hover-color: var(--border-color-focus);
+
+  --theme-switcher-icon-color: var(--txt-01);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--main-dark-color);
+  box-sizing: border-box;
+  position: relative;
+  background-size: cover;
+  overflow: hidden;
+}
+
+body {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-family: var(--font-family-base);
+}
+
+/// @TODO
+.space-keeper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.base-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}

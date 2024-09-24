@@ -1,0 +1,28 @@
+@import "@/assets/mixins";
+
+.ui-btn-ghost {
+  @include base-btn;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  width: fit-content;
+
+  --color-text: var(--txt-01);
+  --color-btn-hover: var(--btn-sec-hover-grey);
+
+  [data-theme="dark"] & {
+    &:hover {
+      --color-text: #87E087;
+    }
+  }
+
+  &:disabled {
+    --color-text: var(--btn-disabled-bg);
+    box-shadow: none !important;
+    cursor: auto;
+  }
+
+  &.loading {
+    --color-text: var(--btn-disabled-bg);
+  }
+}

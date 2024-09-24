@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <path d="M16 42.4993C31.754 42.4996 32.2463 21.4995 48 21.4995" stroke="#110529"/>
+  <path d="M11 32.9995H16M21 32.9995H16M16 32.9995V51.9995M16 51.9995H21M16 51.9995H11" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 18 40.4993)" fill="white" stroke="#110529"/>
+  <path d="M43 11.9994H48M53 11.9994H48M48 11.9994V30.9994M48 30.9994H53M48 30.9994H43" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 50 19.4993)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 19.9999 18.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 15.9999 18.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 17.9999 49.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 17.9999 10.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 15.9999 30.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 19.9999 30.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 21.9999 26.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 17.9999 26.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 13.9999 26.9996)" fill="white" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 49.9999 9.99951)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 47.9999 23.4995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 51.9999 23.4995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 47.9999 40.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 51.9999 40.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 49.9999 52.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 49.9999 44.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 51.9999 33.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 55.9999 33.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 47.9999 33.9995)" fill="#DEDBFF" stroke="#110529"/>
+  <circle cx="2" cy="2" r="2" transform="matrix(-1 0 0 1 43.9999 33.9995)" fill="#DEDBFF" stroke="#110529"/>
+</svg>

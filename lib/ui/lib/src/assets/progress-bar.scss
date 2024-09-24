@@ -1,0 +1,28 @@
+.ui-progress-bar {
+  background-color: red;
+  height: 40px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color-default);
+  background-color: var(--bg-elevated-01);
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  &__indicator {
+    position: absolute;
+    height: 100%;
+    transition: width 0.4s ease-in-out;
+    background: linear-gradient(180deg, #a1e59c 0%, #d0f5b0 100%);
+  }
+
+  &__messages {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    z-index: 1;
+  }
+
+  &__percent {
+    transition: all 4s ease-in-out;
+  }
+}

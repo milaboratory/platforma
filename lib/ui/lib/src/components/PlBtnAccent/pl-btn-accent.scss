@@ -1,0 +1,30 @@
+@import "@/assets/mixins";
+
+.ui-btn-accent {
+  @include base-btn;
+
+  --color-btn-background: var(--color-accent-default);
+  --color-btn-hover: var(--color-accent-hover);
+
+  background-color: var(--color-btn-background);
+  border: none;
+
+  &.large {
+    --drop-shadow: 3px 3px 0px #000000;
+  }
+
+  &.loading {
+    background: rgba(7, 5, 41, 0.8);
+  }
+
+  &:disabled {
+    background-color: var(--btn-disabled-bg);
+    box-shadow: none !important;
+    cursor: auto;
+  }
+
+  &:active {
+    --active-shadow: inset 0px 3px 0px rgba(0, 0, 0, 0.24);
+    --drop-shadow: 0 0 0 0 transparent;
+  }
+}

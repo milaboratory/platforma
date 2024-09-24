@@ -1,0 +1,41 @@
+.ui-toggle-switch {
+  --handle-ml: 0;
+  --body-bg: var(--bg-base-light);
+  --body-shadow: var(--btn-group-shape-shadow);
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  outline: none;
+
+  &__body {
+    width: 40px;
+    height: 24px;
+    display: flex;
+    padding: 5px;
+    border-radius: 12px;
+    border: 1px solid var(--color-ic-01);
+    box-shadow: var(--body-shadow);
+    background: var(--body-bg);
+    cursor: pointer;
+  }
+
+  &__handle {
+    width: 12px;
+    height: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--color-ic-01);
+    background: var(--color-ic-00);
+    margin-left: var(--handle-ml);
+  }
+
+  &.active {
+    --body-bg: var(--btn-switcher-bg);
+    --handle-ml: auto;
+  }
+
+  &:focus-visible {
+    --label-color: var(--txt-focus);
+    --body-shadow: var(--btn-group-shape-shadow), 0 0 0 2px #fff,  0 0 0 4px var(--border-color-focus);
+  }
+}
