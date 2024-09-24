@@ -1,0 +1,34 @@
+{
+  "name": "pl-package-builder-runenv-1",
+  "version": "1.0.0",
+  "description": "Example of software to be used as runenv",
+  "scripts": {
+    "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
+  },
+  "block-software": {
+    "entrypoints": {
+      "1.2.3": {
+        "environment": {
+          "artifact": {
+            "registry": "example",
+            "name": "common/example",
+            "version": "1.2.3",
+
+            "type": "environment",
+            "runtime": "python",
+            "root": "./src",
+            "binDir": "."
+          }
+        }
+      }
+    }
+  },
+  "files": [
+    "dist/"
+  ],
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratory/pl-package-builder": "file:../../."
+  }
+}
