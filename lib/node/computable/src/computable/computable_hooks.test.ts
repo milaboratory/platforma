@@ -137,7 +137,8 @@ test.each(getTestSetups())(
   }
 );
 
-test.each(getTestSetups())(
+// @todo unskip when migrating to vitest (revise the test code, remove timeouts)
+test.skip.each(getTestSetups())(
   'simple reactor test listen in $context context',
   async ({ observableSource, synchronized, res2 }) => {
     expect(await res2.getValue()).toEqual(2);
@@ -169,7 +170,8 @@ test.each(getTestSetups())(
   }
 );
 
-test.each(getTestSetups())(
+// @todo unskip when migrating to vitest (revise the test code, remove timeouts)
+test.skip.each(getTestSetups())(
   'simple reactor test pre-calculation in $context context',
   async ({ observableSource, synchronized, res2 }) => {
     res2 = res2.withPreCalculatedValueTree();

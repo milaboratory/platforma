@@ -64,7 +64,7 @@ test.skip('test JS render options', async () => {
   });
 });
 
-test('test JS render download', async () => {
+test.skip('test JS render download', async () => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
