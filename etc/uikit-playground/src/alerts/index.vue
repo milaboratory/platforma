@@ -7,6 +7,7 @@ import { PlCheckbox, PlAlert } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
 const data = reactive({
+  modelValue: true,
   icon: false,
   monospace: false,
   whiteSpacePre: false,

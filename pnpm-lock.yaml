@@ -12,6 +12,9 @@ catalogs:
     '@changesets/cli':
       specifier: ^2.27.8
       version: 2.27.8
+    '@faker-js/faker':
+      specifier: ^8.4.0
+      version: 8.4.0
     '@grpc/grpc-js':
       specifier: ^1.11.3
       version: 1.11.3
@@ -66,6 +69,9 @@ catalogs:
     '@types/tar-fs':
       specifier: ^2.0.4
       version: 2.0.4
+    '@vitejs/plugin-vue':
+      specifier: ^5.0.0
+      version: 5.1.4
     canonicalize:
       specifier: ^2.0.0
       version: 2.0.0
@@ -164,6 +170,134 @@ importers:
       turbo:
         specifier: 'catalog:'
         version: 2.1.2
+
+  etc/ui-vue-playground:
+    dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../lib/util/helpers
+      '@milaboratories/ui-vue':
+        specifier: workspace:^
+        version: link:../../sdk/ui-vue
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../lib/ui/uikit
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../../sdk/model
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.8(typescript@5.5.4)
+    devDependencies:
+      '@ag-grid-community/client-side-row-model':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@ag-grid-community/core':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@ag-grid-community/infinite-row-model':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@ag-grid-community/styles':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@ag-grid-community/vue3':
+        specifier: ^32.1.0
+        version: 32.2.0(typescript@5.5.4)
+      '@ag-grid-enterprise/clipboard':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@ag-grid-enterprise/range-selection':
+        specifier: ^32.1.0
+        version: 32.2.0
+      '@faker-js/faker':
+        specifier: 8.4.0
+        version: 8.4.0
+      '@types/lodash':
+        specifier: ^4.17.7
+        version: 4.17.9
+      '@types/node':
+        specifier: 20.12.7
+        version: 20.12.7
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^7.11.0
+        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.5.4))(eslint@8.57.1)(typescript@5.5.4)
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.7(@types/node@20.12.7)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
+      canonicalize:
+        specifier: ^2.0.0
+        version: 2.0.0
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.0(eslint@8.57.1)
+      eslint-plugin-prettier:
+        specifier: ^5.1.3
+        version: 5.2.1(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.3.3)
+      eslint-plugin-vue:
+        specifier: ^9.26.0
+        version: 9.28.0(eslint@8.57.1)
+      happy-dom:
+        specifier: ^14.12.3
+        version: 14.12.3
+      husky:
+        specifier: ^9.1.4
+        version: 9.1.6
+      lodash:
+        specifier: 4.17.21
+        version: 4.17.21
+      sass:
+        specifier: 1.77.2
+        version: 1.77.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@20.12.7)(sass@1.77.2)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.1(@types/node@20.12.7)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
+
+  etc/uikit-playground:
+    dependencies:
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../lib/ui/uikit
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 8.4.0
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../lib/util/helpers
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.7(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.1(@types/node@22.5.5)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.8(typescript@5.5.4)
+      vue-router:
+        specifier: ~4.2.5
+        version: 4.2.5(vue@3.5.8(typescript@5.5.4))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
 
   lib/model/common:
     dependencies:
@@ -584,7 +718,7 @@ importers:
         specifier: workspace:*
         version: link:../../../sdk/model
       '@vitejs/plugin-vue':
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.1.4(vite@5.4.7(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
       '@vue/test-utils':
         specifier: ^2.4.6
@@ -778,7 +912,7 @@ importers:
         specifier: ^7.11.0
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.5.4))(eslint@8.57.1)(typescript@5.5.4)
       '@vitejs/plugin-vue':
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.1.4(vite@5.4.7(@types/node@20.12.7)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
       canonicalize:
         specifier: ^2.0.0
@@ -811,114 +945,20 @@ importers:
         specifier: ^4.16.2
         version: 4.19.1
       typescript:
-        specifier: ^5.4.5
+        specifier: 'catalog:'
         version: 5.5.4
       vite:
-        specifier: ^5.2.0
+        specifier: 'catalog:'
         version: 5.4.7(@types/node@20.12.7)(sass@1.77.2)
       vitest:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.1.1(@types/node@20.12.7)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
       vue-tsc:
-        specifier: ^2.0.6
+        specifier: 'catalog:'
         version: 2.1.6(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
         version: 3.23.8
-
-  sdk/ui-vue-playground:
-    dependencies:
-      '@milaboratories/helpers':
-        specifier: workspace:^
-        version: link:../../lib/util/helpers
-      '@milaboratories/ui-vue':
-        specifier: workspace:^
-        version: link:../ui-vue
-      '@milaboratories/uikit':
-        specifier: workspace:^
-        version: link:../../lib/ui/uikit
-      '@platforma-sdk/model':
-        specifier: workspace:^
-        version: link:../model
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.8(typescript@5.5.4)
-    devDependencies:
-      '@ag-grid-community/client-side-row-model':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@ag-grid-community/core':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@ag-grid-community/infinite-row-model':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@ag-grid-community/styles':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@ag-grid-community/vue3':
-        specifier: ^32.1.0
-        version: 32.2.0(typescript@5.5.4)
-      '@ag-grid-enterprise/clipboard':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@ag-grid-enterprise/range-selection':
-        specifier: ^32.1.0
-        version: 32.2.0
-      '@faker-js/faker':
-        specifier: 8.4.0
-        version: 8.4.0
-      '@types/lodash':
-        specifier: ^4.17.7
-        version: 4.17.9
-      '@types/node':
-        specifier: 20.12.7
-        version: 20.12.7
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^7.11.0
-        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.5.4))(eslint@8.57.1)(typescript@5.5.4)
-      '@vitejs/plugin-vue':
-        specifier: ^5.0.0
-        version: 5.1.4(vite@5.4.7(@types/node@20.12.7)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
-      canonicalize:
-        specifier: ^2.0.0
-        version: 2.0.0
-      eslint:
-        specifier: ^8.57.0
-        version: 8.57.1
-      eslint-config-prettier:
-        specifier: ^9.1.0
-        version: 9.1.0(eslint@8.57.1)
-      eslint-plugin-prettier:
-        specifier: ^5.1.3
-        version: 5.2.1(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.3.3)
-      eslint-plugin-vue:
-        specifier: ^9.26.0
-        version: 9.28.0(eslint@8.57.1)
-      happy-dom:
-        specifier: ^14.12.3
-        version: 14.12.3
-      husky:
-        specifier: ^9.1.4
-        version: 9.1.6
-      lodash:
-        specifier: 4.17.21
-        version: 4.17.21
-      sass:
-        specifier: 1.77.2
-        version: 1.77.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-      vite:
-        specifier: 'catalog:'
-        version: 5.4.7(@types/node@20.12.7)(sass@1.77.2)
-      vitest:
-        specifier: 'catalog:'
-        version: 2.1.1(@types/node@20.12.7)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.1.6(typescript@5.5.4)
 
   sdk/workflow-tengo:
     dependencies:
@@ -2728,6 +2768,9 @@ packages:
 
   '@vue/compiler-vue2@2.7.16':
     resolution: {integrity: sha512-qYC3Psj9S/mfu9uVi5WvNZIzq+xnXMhOwbTFKKDD7b1lhpnn71jXSFdTQ+WsIEk0ONCd7VV2IMm7ONl6tbQ86A==}
+
+  '@vue/devtools-api@6.6.4':
+    resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
 
   '@vue/language-core@2.1.6':
     resolution: {integrity: sha512-MW569cSky9R/ooKMh6xa2g1D0AtRKbL56k83dzus/bx//RDJk24RHWkMzbAlXjMdDNyxAaagKPRquBIxkxlCkg==}
@@ -5279,6 +5322,11 @@ packages:
     peerDependencies:
       eslint: '>=6.0.0'
 
+  vue-router@4.2.5:
+    resolution: {integrity: sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw==}
+    peerDependencies:
+      vue: ^3.2.0
+
   vue-tsc@2.1.6:
     resolution: {integrity: sha512-f98dyZp5FOukcYmbFpuSCJ4Z0vHSOSmxGttZJCsFeX0M4w/Rsq0s4uKXjcSRsZqsRgQa6z7SfuO+y0HVICE57Q==}
     hasBin: true
@@ -7617,7 +7665,7 @@ snapshots:
 
   '@types/http-proxy@1.17.15':
     dependencies:
-      '@types/node': 22.5.5
+      '@types/node': 20.12.7
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -7664,7 +7712,7 @@ snapshots:
 
   '@types/tar-fs@2.0.4':
     dependencies:
-      '@types/node': 22.5.5
+      '@types/node': 20.12.7
       '@types/tar-stream': 3.1.3
 
   '@types/tar-stream@3.1.3':
@@ -7876,6 +7924,8 @@ snapshots:
     dependencies:
       de-indent: 1.0.2
       he: 1.2.0
+
+  '@vue/devtools-api@6.6.4': {}
 
   '@vue/language-core@2.1.6(typescript@5.5.4)':
     dependencies:
@@ -10988,6 +11038,11 @@ snapshots:
       semver: 7.6.3
     transitivePeerDependencies:
       - supports-color
+
+  vue-router@4.2.5(vue@3.5.8(typescript@5.5.4)):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      vue: 3.5.8(typescript@5.5.4)
 
   vue-tsc@2.1.6(typescript@5.5.4):
     dependencies:

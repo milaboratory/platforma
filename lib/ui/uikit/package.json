@@ -39,7 +39,7 @@
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^24.1.1",
     "resize-observer-polyfill": "^1.5.1",
-    "@vitejs/plugin-vue": "^5.0.0",
+    "@vitejs/plugin-vue": "catalog:",
     "tsc-alias": "^1.8.10",
     "vitest": "catalog:",
     "vite": "catalog:",

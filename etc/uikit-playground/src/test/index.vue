@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import Layout from '@/Layout.vue';
 import Scrollable from '@/test/Scrollable.vue';
-import { PlTooltip, useTheme, useResizeObserver, MaskIcon } from '@milaboratories/uikit';
+import { PlTooltip, useTheme, useResizeObserver, MaskIcon16 } from '@milaboratories/uikit';
 
 const resizable = ref<HTMLElement | undefined>();
 
@@ -26,8 +26,8 @@ function onCloseTooltip() {
       <div>Item 2</div>
       <div>Item 3</div>
       <div>
-        <MaskIcon style="background-color: red" name="paper-clip" />
-        <MaskIcon style="background-color: red" name="checkmark" />
+        <MaskIcon16 style="background-color: red" name="play" />
+        <MaskIcon16 style="background-color: red" name="checkmark" />
       </div>
     </div>
     <div style="display: flex; background-color: #fff; padding: 12px; margin-top: 12px">

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive } from 'vue';
-import { PlTextField, PlBtnGroup, PlDropdown, Slider, ToggleSwitch } from '@milaboratories/uikit';
+import { PlTextField, PlBtnGroup, PlDropdown, Slider, PlToggleSwitch } from '@milaboratories/uikit';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 
@@ -43,8 +43,8 @@ const helper = computed(() => (data.state === 'helper' ? data.helper : ''));
       <PlDropdown v-model="data.text" label="Label Dropdown" :options="options" :helper="helper" :error="error" />
       <Slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" />
       <Slider v-model="data.num" label="Slider" :helper="helper" :error="error" :max="10" :breakpoints="true" />
-      <ToggleSwitch v-model="data.on" />
-      <ToggleSwitch v-model="data.on" label="With label" />
+      <PlToggleSwitch v-model="data.on" />
+      <PlToggleSwitch v-model="data.on" label="With label" />
     </Split>
   </Layout>
 </template>

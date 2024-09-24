@@ -53,8 +53,8 @@ const settings = computed(() => {
         width: 300,
       },
       {
-        id: 'gender',
-        label: 'Gender',
+        id: 'bio',
+        label: 'Bio',
         valueType: 'string',
         width: 300,
       },

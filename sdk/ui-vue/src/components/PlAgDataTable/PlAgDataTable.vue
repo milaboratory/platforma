@@ -127,6 +127,7 @@ watch(
     for (const sheet of sheets) {
       const sheetId = makeSheetId(sheet.axis);
       if (!state[sheetId]) {
+        // @vadimpiven
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         state[sheetId] = sheet.defaultValue ?? sheet.options[0].value;
@@ -186,6 +187,7 @@ watch(
 const onSheetChanged = (sheetId: string, newValue: string | number) => {
   const state = sheetsState.value;
   if (state[sheetId] === newValue) return;
+  // @vadimpiven
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
   state[sheetId] = newValue;

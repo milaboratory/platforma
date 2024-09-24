@@ -44,7 +44,7 @@
     "@types/lodash": "^4.17.7",
     "@types/node": "20.12.7",
     "@typescript-eslint/eslint-plugin": "^7.11.0",
-    "@vitejs/plugin-vue": "^5.0.0",
+    "@vitejs/plugin-vue": "catalog:",
     "canonicalize": "^2.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
@@ -55,10 +55,10 @@
     "lodash": "4.17.21",
     "sass": "1.77.2",
     "tsx": "^4.16.2",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.0",
-    "vitest": "^2.0.3",
-    "vue-tsc": "^2.0.6",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vue-tsc": "catalog:",
     "zod": "catalog:"
   },
   "optionalDependencies": {

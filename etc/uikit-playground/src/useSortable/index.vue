@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue';
 import Layout from '@/Layout.vue';
 import { utils } from '@milaboratories/helpers';
-import { ToggleSwitch, useSortable } from '@milaboratories/uikit';
+import { PlToggleSwitch, useSortable } from '@milaboratories/uikit';
 
 const data = reactive({
   show: true,
@@ -38,7 +38,7 @@ useSortable(list2Ref, {
 <template>
   <Layout>
     <div>
-      <ToggleSwitch v-model="data.show" label="Show/hide" />
+      <PlToggleSwitch v-model="data.show" label="Show/hide" />
     </div>
     <div>items1: {{ data.items1.map((it) => it.id).join(',') }}</div>
     <div>items2: {{ data.items2.map((it) => it.id).join(',') }}</div>
