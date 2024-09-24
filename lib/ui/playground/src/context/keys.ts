@@ -1,6 +1,6 @@
 import type { InjectionKey } from 'vue';
-import { randomString } from '@milaboratory/helpers/strings';
-import { tapIf } from '@milaboratory/helpers/utils';
+import { randomString } from '@milaboratories/helpers';
+import { tapIf } from '@milaboratories/helpers';
 
 export type Item = {
   id: number;

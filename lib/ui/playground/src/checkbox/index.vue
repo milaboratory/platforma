@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
-import { PlCheckbox, PlCheckboxGroup } from '@milaboratory/platforma-uikit.lib';
+import { PlCheckbox, PlCheckboxGroup } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
 const data = reactive({

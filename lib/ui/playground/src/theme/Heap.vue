@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
-import { PlDropdown } from '@milaboratory/platforma-uikit.lib';
+import { PlDropdown } from '@milaboratories/uikit';
 import { generate } from '@/imports';
 
 const data = reactive({

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { DataTable } from '@milaboratory/platforma-uikit.lib';
+import { DataTable } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
 const DataTableComponent = DataTable.Component;

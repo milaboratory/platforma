@@ -2,7 +2,7 @@
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import { reactive } from 'vue';
-import { PlDropdown } from '@milaboratory/platforma-uikit.lib';
+import { PlDropdown } from '@milaboratories/uikit';
 import { generate } from '@/imports';
 import { faker } from '@faker-js/faker';
 

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import type { GridTableSettings } from '@milaboratory/platforma-uikit.lib';
-import { GridTable } from '@milaboratory/platforma-uikit.lib';
-import { utils, strings } from '@milaboratory/helpers';
+import type { GridTableSettings } from '@milaboratories/uikit';
+import { GridTable } from '@milaboratories/uikit';
+import { utils, strings } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
 import { reactive } from 'vue';
 

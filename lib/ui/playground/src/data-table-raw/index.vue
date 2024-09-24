@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import { faker } from '@faker-js/faker';
-import { randomInt } from '@milaboratory/helpers';
-import { DataTable } from '@milaboratory/platforma-uikit.lib';
+import { randomInt } from '@milaboratories/helpers';
+import { DataTable } from '@milaboratories/uikit';
 import { computed, onMounted, reactive } from 'vue';
 import UserForm from './UserForm.vue';
 

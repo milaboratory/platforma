@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { PlBlockPage, PlBtnGroup, PlDropdown, PlRow, PlTextField, PlGrid, PlContainer, PlBtnGhost } from '@milaboratory/platforma-uikit.lib';
+import { PlBlockPage, PlBtnGroup, PlDropdown, PlRow, PlTextField, PlGrid, PlContainer, PlBtnGhost } from '@milaboratories/uikit';
 import { reactive } from 'vue';
 
 const data = reactive({

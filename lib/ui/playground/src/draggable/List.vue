@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
-import { useDraggable } from '@milaboratory/platforma-uikit.lib';
+import { useDraggable } from '@milaboratories/uikit';
 
 const squareRef = ref();
 

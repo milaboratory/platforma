@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlDropdownLine } from '@milaboratory/platforma-uikit.lib';
+import { PlDropdownLine } from '@milaboratories/uikit';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import { generate } from '@/imports';

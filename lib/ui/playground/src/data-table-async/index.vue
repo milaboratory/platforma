@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
-import { DataTable } from '@milaboratory/platforma-uikit.lib';
+import { DataTable } from '@milaboratories/uikit';
 import { computed } from 'vue';
 import MyWorker from './worker?worker';
 import type { WEvent, Person } from './worker';
-import { Deferred } from '@milaboratory/helpers/utils';
+import { Deferred } from '@milaboratories/helpers';
 
 const DataTableComponent = DataTable.Component;
 

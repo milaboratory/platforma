@@ -10,7 +10,7 @@ import {
   PlBtnGhost,
   type Size,
   maskIcons16,
-} from '@milaboratory/platforma-uikit.lib';
+} from '@milaboratories/uikit';
 import Split from '@/Split.vue';
 
 const props = reactive({

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, inject, unref } from 'vue';
 import { todoListKey } from './keys';
-import { notEmpty } from '@milaboratory/helpers/utils';
+import { notEmpty } from '@milaboratories/helpers';
 
 const props = defineProps<{
   id: number;

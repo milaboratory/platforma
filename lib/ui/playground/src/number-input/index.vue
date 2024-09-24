@@ -2,7 +2,7 @@
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
-import { PlNumberField } from '@milaboratory/platforma-uikit.lib';
+import { PlNumberField } from '@milaboratories/uikit';
 
 const models = reactive({
   model0: 0,

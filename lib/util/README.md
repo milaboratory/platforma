@@ -15,4 +15,4 @@ npm run test
 
 Install local package to another:
 
-npm install @milaboratory/helpers --workspace ./packages/pl-tools
+npm install @milaboratories/helpers --workspace ./packages/pl-tools

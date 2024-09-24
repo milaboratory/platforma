@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
 import Layout from '@/Layout.vue';
-import { utils } from '@milaboratory/helpers';
-import { ToggleSwitch, useSortable } from '@milaboratory/platforma-uikit.lib';
+import { utils } from '@milaboratories/helpers';
+import { ToggleSwitch, useSortable } from '@milaboratories/uikit';
 
 const data = reactive({
   show: true,
