@@ -1,0 +1,91 @@
+{
+  "name": "pl-package-builder-integration-1",
+  "version": "1.0.0",
+  "description": "The software description example",
+  "scripts": {
+    "build:descriptor": "pl-pkg build descriptors",
+    "build": "rm -rf dist && pl-pkg build --log-level=debug",
+    "publish": "pl-pkg publish"
+  },
+
+  "block-software": {
+    "registries": {
+      "binary": {
+        "milaboratories": { "storageURL": "s3://registry-bucket-name/?region=eu-central-1" },
+        "custom": { "storageURL": "s3://other-registry-bucket-name/pub/?region=eu-central-1" }
+      }
+    },
+
+    "artifacts": {
+      "with-environment": {
+        "registry": "custom",
+
+        "type": "python",
+        "root": "./src",
+        "environment": "pl-package-builder-runenv-1:1.2.3",
+        "dependencies": {
+          "toolset": "pip",
+          "requirements": "./requirements.txt"
+        }
+      },
+
+      "multiarch": {
+        "type": "binary",
+
+        "registry": { "name": "custom2", "storageURL": "s3e://minio.local/bucket" },
+        "roots": {
+          "linux-x64": "./x64/",
+          "linux-aarch64": "./x64/",
+          "macosx-x64": "./x64/",
+          "macosx-aarch64": "./arm64/",
+          "windows-x64": "./x64/"
+        }
+      }
+    },
+
+    "entrypoints": {
+      "hello": {
+        "binary": {
+          "artifact": "with-environment",
+          "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
+          "envVars": [ "MYVAR=1" ]
+        }
+      },
+      "goodbye": {
+        "binary": {
+          "artifact": "with-environment",
+          "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
+          "envVars": [ "MYVAR=2" ]
+        }
+      },
+      "hello2": {
+        "binary": {
+          "artifact": {
+            "type": "binary",
+
+            "registry": "milaboratories",
+            "root": "./src"
+          },
+          "cmd": [ "printf", "Hello from binary!\n" ]
+        }
+      },
+      "starter": {
+        "binary": {
+          "artifact": "multiarch",
+          "cmd": [ "true" ]
+        }
+      }
+    }
+  },
+
+  "files": [
+    "dist/"
+  ],
+
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratory/pl-package-builder": "file:../../.",
+    "pl-package-builder-runenv-1": "file:../runenv"
+  }
+}

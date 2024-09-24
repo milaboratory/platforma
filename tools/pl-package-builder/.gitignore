@@ -1,0 +1,6 @@
+.vscode
+node_modules
+dist/
+tsconfig.tsbuildinfo
+pkg-*.tgz
+package.sw.json
