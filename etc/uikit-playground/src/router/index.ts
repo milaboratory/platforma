@@ -47,11 +47,6 @@ export const routes = [
     component: () => import('@/text-component/index.vue'),
   },
   {
-    name: 'Dropdown list item',
-    path: '/dropdownlistitem',
-    component: () => import('@/dropdown-list-item/index.vue'),
-  },
-  {
     name: 'Typography',
     path: '/typography',
     component: () => import('@/typography/index.vue'),
