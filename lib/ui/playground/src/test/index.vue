@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import Layout from '@/Layout.vue';
 import Scrollable from '@/test/Scrollable.vue';
-import { PlTooltip, useTheme, useResizeObserver, MaskIcon } from '@milaboratory/platforma-uikit.lib';
+import { PlTooltip, useTheme, useResizeObserver, MaskIcon } from '@milaboratories/uikit';
 
 const resizable = ref<HTMLElement | undefined>();
 

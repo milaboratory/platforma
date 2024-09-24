@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import Layout from '@/Layout.vue';
-import { PlBtnGroup } from '@milaboratory/platforma-uikit.lib';
+import { PlBtnGroup } from '@milaboratories/uikit';
 import Split from '@/Split.vue';
 import { generate } from '@/imports';
 

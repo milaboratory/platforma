@@ -2,7 +2,7 @@
 import Layout from '@/Layout.vue';
 import BaseElement from '@/test/BaseElement.vue';
 import PrimaryElement from '@/test/PrimaryElement.vue';
-import { useLocalStorage, PlBtnPrimary, PlBtnSecondary } from '@milaboratory/platforma-uikit.lib';
+import { useLocalStorage, PlBtnPrimary, PlBtnSecondary } from '@milaboratories/uikit';
 import Process from '@/test2/Process.vue';
 
 const theme = useLocalStorage('theme');

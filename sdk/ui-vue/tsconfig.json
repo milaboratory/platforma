@@ -1,16 +1,11 @@
 {
-  "compilerOptions": {
-    "noUncheckedIndexedAccess": true,
-    "verbatimModuleSyntax": true,
-    "moduleResolution": "Bundler",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "allowJs": true,
-    "target": "ESNext",
-    "module": "ESNext",
-    "strict": true,
-    "noEmit": true,
-    "types": ["@milaboratory/sdk-ui"]
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
-import type { DataTable } from '@milaboratory/platforma-uikit.lib';
-import { randomString, uniqueId } from '@milaboratory/helpers/strings';
-import { arrayFrom, randomInt } from '@milaboratory/helpers/utils';
+import type { DataTable } from '@milaboratories/uikit';
+import { randomString, uniqueId } from '@milaboratories/helpers';
+import { arrayFrom, randomInt } from '@milaboratories/helpers';
 import { reactive, computed } from 'vue';
 import { faker } from '@faker-js/faker';
 import { asConst, renderSequence } from './helpers';

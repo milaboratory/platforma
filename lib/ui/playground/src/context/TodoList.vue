@@ -2,8 +2,8 @@
 import { inject, unref } from 'vue';
 import TodoItem from '@/context/TodoItem.vue';
 import { todoListKey } from './keys';
-import { notEmpty } from '@milaboratory/helpers/utils';
-import { randomString } from '@milaboratory/helpers/strings';
+import { notEmpty } from '@milaboratories/helpers';
+import { randomString } from '@milaboratories/helpers';
 
 const state = notEmpty(inject(todoListKey), 'Empty state');
 

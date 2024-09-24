@@ -2,7 +2,7 @@
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 import PropsDisplay from '@/PropsDisplay.vue';
-import { DropdownListItem } from '@milaboratory/platforma-uikit.lib';
+import { DropdownListItem } from '@milaboratories/uikit';
 
 const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
 

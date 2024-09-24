@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextField, MaskIcon, PlTextArea } from '@milaboratory/platforma-uikit.lib';
+import { PlTextField, MaskIcon, PlTextArea } from '@milaboratories/uikit';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 

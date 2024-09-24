@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { range, toList } from '@milaboratory/helpers/utils';
+import { range, toList } from '@milaboratories/helpers';
 
 export type WEvent = {
   type: 'query';

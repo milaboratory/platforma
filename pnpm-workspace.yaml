@@ -16,6 +16,8 @@ packages:
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
 
+  - lib/ui/uikit
+
   - tools/tengo-template-builder
   - tools/block-tools
   - tools/pl-package-builder
@@ -23,6 +25,8 @@ packages:
   - sdk/model
   - sdk/workflow-tengo
   - sdk/test
+  - sdk/ui-vue
+  - sdk/ui-vue-playground
 
   # Tests
 
@@ -88,6 +92,9 @@ catalog:
   '@milaboratories/pframes-node': ^1.5.0
 
   'quickjs-emscripten': ^0.31.0
+
+  'vue': ^3.4.35
+  'vue-tsc': ^2.0.6
 
   # SW
 

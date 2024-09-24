@@ -3,7 +3,7 @@ import Layout from '@/Layout.vue';
 import TodoList from '@/context/TodoList.vue';
 import { reactive } from 'vue';
 import type { TodoState } from '@/context/keys';
-import { ContextProvider } from '@milaboratory/platforma-uikit.lib';
+import { ContextProvider } from '@milaboratories/uikit';
 import { todoListKey, defaultState } from './keys';
 
 const todoApp1 = reactive<TodoState>(defaultState());

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Scrollable } from '@milaboratory/platforma-uikit.lib';
+import { Scrollable } from '@milaboratories/uikit';
 </script>
 
 <template>

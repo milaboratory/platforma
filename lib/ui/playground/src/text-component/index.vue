@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
-import { LongText } from '@milaboratory/platforma-uikit.lib';
+import { LongText } from '@milaboratories/uikit';
 </script>
 
 <template>

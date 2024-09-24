@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Layout from '@/Layout.vue';
 import Heap from '@/theme/Heap.vue';
-import { useTheme, ThemeSwitcher } from '@milaboratory/platforma-uikit.lib';
+import { useTheme, ThemeSwitcher } from '@milaboratories/uikit';
 
 const [theme] = useTheme((theme) => {
   console.log('changed', theme);
