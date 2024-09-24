@@ -1,0 +1,24 @@
+{
+  "name": "@milaboratories/helper-tests",
+  "private": true,
+  "version": "1.1.1",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/sequences": "workspace:*",
+    "@milaboratories/node-streams": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "jest": "catalog:",
+    "@jest/globals": "catalog:",
+    "ts-jest": "catalog:",
+    "@types/jest": "catalog:"
+  }
+}

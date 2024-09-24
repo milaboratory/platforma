@@ -15,6 +15,9 @@ catalogs:
     '@grpc/grpc-js':
       specifier: ^1.11.3
       version: 1.11.3
+    '@jest/globals':
+      specifier: ^29.7.0
+      version: 29.7.0
     '@milaboratories/pframes-node':
       specifier: ^1.5.0
       version: 1.5.0
@@ -218,6 +221,21 @@ importers:
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.5.4)))(typescript@5.5.4)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@20.16.5)
+
+  lib/node/node-streams:
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../util/build-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.5
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
@@ -572,6 +590,30 @@ importers:
         specifier: 'catalog:'
         version: 5.5.4
 
+  lib/util/helpers:
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)
+
+  lib/util/sequences:
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../build-configs
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)
+
   sdk/model:
     dependencies:
       '@milaboratories/pl-model-common':
@@ -649,6 +691,37 @@ importers:
       '@milaboratories/tengo-template-builder':
         specifier: workspace:^
         version: link:../../tools/tengo-template-builder
+
+  tests/helper:
+    dependencies:
+      '@milaboratories/helpers':
+        specifier: workspace:*
+        version: link:../../lib/util/helpers
+      '@milaboratories/node-streams':
+        specifier: workspace:*
+        version: link:../../lib/node/node-streams
+      '@milaboratories/sequences':
+        specifier: workspace:*
+        version: link:../../lib/util/sequences
+    devDependencies:
+      '@jest/globals':
+        specifier: 'catalog:'
+        version: 29.7.0
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../lib/util/build-configs
+      '@types/jest':
+        specifier: 'catalog:'
+        version: 29.5.13
+      jest:
+        specifier: 'catalog:'
+        version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4))
+      ts-jest:
+        specifier: 'catalog:'
+        version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4)))(typescript@5.5.4)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
 
   tests/workflow-tengo:
     devDependencies:
@@ -752,52 +825,6 @@ importers:
       vite-plugin-dts:
         specifier: 'catalog:'
         version: 4.2.1(@types/node@20.16.5)(rollup@4.21.3)(typescript@5.5.4)(vite@5.4.7(@types/node@20.16.5))
-
-  tools/pl-package-builder:
-    dependencies:
-      '@aws-sdk/client-s3':
-        specifier: 'catalog:'
-        version: 3.654.0
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.0.22
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.0.0
-      tar:
-        specifier: 'catalog:'
-        version: 7.4.3
-      winston:
-        specifier: 'catalog:'
-        version: 3.14.2
-      yaml:
-        specifier: 'catalog:'
-        version: 2.5.1
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@milaboratories/platforma-build-configs':
-        specifier: workspace:*
-        version: link:../../lib/util/build-configs
-      '@types/jest':
-        specifier: 'catalog:'
-        version: 29.5.13
-      '@types/node':
-        specifier: 'catalog:'
-        version: 20.16.5
-      jest:
-        specifier: 'catalog:'
-        version: 29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.5.4))
-      ts-jest:
-        specifier: 'catalog:'
-        version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.5.4)))(typescript@5.5.4)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-      vite:
-        specifier: 'catalog:'
-        version: 5.4.7(@types/node@20.16.5)
 
   tools/tengo-template-builder:
     dependencies:

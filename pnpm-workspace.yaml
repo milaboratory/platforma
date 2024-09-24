@@ -1,5 +1,7 @@
 packages:
   - lib/util/build-configs
+  - lib/util/helpers
+  - lib/util/sequences
 
   - lib/model/common
   - lib/model/middle-layer
@@ -7,6 +9,7 @@ packages:
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
+  - lib/node/node-streams
   - lib/node/computable
   - lib/node/pl-client
   - lib/node/pl-tree
@@ -24,6 +27,7 @@ packages:
   # Tests
 
   - tests/workflow-tengo
+  - tests/helper
 
 catalog:
   # Build
@@ -93,6 +97,7 @@ catalog:
   # Test
 
   'jest': ^29.7.0
+  '@jest/globals': ^29.7.0
   'ts-jest': ^29.2.5
   'vitest': ^2.1.1
 

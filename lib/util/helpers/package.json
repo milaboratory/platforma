@@ -1,0 +1,28 @@
+{
+  "name": "@milaboratories/helpers",
+  "version": "1.6.0",
+  "description": "",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

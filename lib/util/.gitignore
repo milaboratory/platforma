@@ -1,7 +1,0 @@
-.idea
-node_modules
-build
-dist
-packages/**/build/
-*.iml
-*.tsbuildinfo
