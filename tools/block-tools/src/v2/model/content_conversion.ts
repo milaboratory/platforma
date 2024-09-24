@@ -8,7 +8,6 @@ import {
   ContentAbsoluteFile,
   ContentAbsoluteFolder,
   ContentAbsoluteTextLocal,
-  ContentAbsoluteUrl,
   ContentAnyLocal,
   ContentExplicitBase64,
   ContentRelative
@@ -165,14 +164,4 @@ export function packFolderToRelativeTgz(
     fileAccumulator?.push(tgzName);
     return { type: 'relative', path: tgzName };
   };
-}
-
-export function mapRemoteToAbsolute(
-  rootUrl: string
-): <T extends ContentAnyLocal>(value: T) => Exclude<T, ContentRelative> | ContentAbsoluteUrl {
-  const rootWithSlash = rootUrl.endsWith('/') ? rootUrl : `${rootUrl}/`;
-  return <T extends ContentAnyLocal>(value: T) =>
-    value.type === 'relative'
-      ? { type: 'absolute-url', url: rootWithSlash + value.path }
-      : (value as Exclude<T, ContentRelative>);
 }

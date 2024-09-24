@@ -56,13 +56,13 @@ export type ContentAbsoluteUrl = z.infer<typeof ContentAbsoluteUrl>;
 // Special content types
 //
 
-export const ContentExplicit = z
+export const ContentExplicitBytes = z
   .object({
     type: z.literal('explicit'),
     content: z.instanceof(Uint8Array).describe('Raw content')
   })
   .strict();
-export type ContentExplicit = z.infer<typeof ContentExplicit>;
+export type ContentExplicitBytes = z.infer<typeof ContentExplicitBytes>;
 
 export const ContentAbsoluteFolder = z
   .object({
