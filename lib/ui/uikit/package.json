@@ -30,15 +30,16 @@
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
     "generate-icons": "npm run parse-icons-folder && npm run minify-icons",
-    "my-extra-script": "exit 0"
+    "lint": "eslint . --ext js,ts,vue",
+    "check": "pnpm type-check && pnpm test && pnpm lint"
   },
   "dependencies": {
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@vue/test-utils": "^2.4.6",
-    "jsdom": "^24.1.1",
-    "resize-observer-polyfill": "^1.5.1",
+    "@vue/test-utils": "catalog:",
+    "jsdom": "catalog:",
+    "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "tsc-alias": "^1.8.10",
     "vitest": "catalog:",
