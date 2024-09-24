@@ -81,7 +81,9 @@ tpl.body(func(inputs) {
 	eMulTplRender := render.createEphemeral(eMulTpl, { data: eMulTplInput })
 
 	for colName, col in columns {
-		if is_undefined(col.spec) || (
+		if is_undefined(col.data) {
+			result.add(colName, col.specRaw, undefined)
+		} else if is_undefined(col.spec) || (
 		    col.spec.kind == "PColumn" && (
 				is_undefined(col.spec.valueType) ||
 				col.spec.valueType == "file" || col.spec.valueType == "blob" ||
