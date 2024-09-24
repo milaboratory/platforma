@@ -1,0 +1,16 @@
+{
+  "name": "@milaboratory/node-streams",
+  "version": "1.0.1",
+  "description": "",
+  "main": "build/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "files": ["build/**"],
+  "dependencies": {},
+  "devDependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
