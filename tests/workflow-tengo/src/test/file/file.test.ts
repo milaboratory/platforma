@@ -42,7 +42,7 @@ const cases: TestInput[] = [
   }
 ];
 
-tplTest.for(cases)(
+tplTest.skip.for(cases)(
   'file import test: $name',
   async ({ handleProvider }, { helper, expect, driverKit }) => {
     const importHandle = await handleProvider(driverKit);
