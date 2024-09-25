@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.15
+
+### Patch Changes
+
+- a3c2b60: semver in dependant @platforma-sdk/block-tools has been moved to dev deps
+
 ## 1.10.14
 
 ### Patch Changes
