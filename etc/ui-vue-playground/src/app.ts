@@ -1,4 +1,4 @@
-import { defineApp } from '@milaboratories/ui-vue';
+import { defineApp } from '@platforma-sdk/ui-vue';
 import MainPage from './MainPage.vue';
 import SecondPage from './SecondPage.vue';
 import ThirdPage from './ThirdPage.vue';

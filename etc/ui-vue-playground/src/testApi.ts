@@ -1,5 +1,5 @@
 import { delay, randomInt, range, times, toList, unionize } from '@milaboratories/helpers';
-import { wrapValueOrErrors } from '@milaboratories/ui-vue';
+import { wrapValueOrErrors } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import type {
   BlockState,

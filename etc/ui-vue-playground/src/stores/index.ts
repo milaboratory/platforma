@@ -1,5 +1,5 @@
 import { computed, reactive } from 'vue';
-import { defineStore } from '@milaboratories/ui-vue';
+import { defineStore } from '@platforma-sdk/ui-vue';
 
 export const useStore = defineStore(() => {
   const state = reactive({

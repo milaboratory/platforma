@@ -171,6 +171,9 @@ catalogs:
     ts-jest:
       specifier: ^29.2.5
       version: 29.2.5
+    tsc-alias:
+      specifier: ^1.8.10
+      version: 1.8.10
     tsup:
       specifier: ~8.2.4
       version: 8.2.4
@@ -207,6 +210,9 @@ catalogs:
     yaml:
       specifier: ^2.5.1
       version: 2.5.1
+    yarpm:
+      specifier: ^1.2.0
+      version: 1.2.0
     zod:
       specifier: ^3.23.8
       version: 3.23.8
@@ -236,15 +242,15 @@ importers:
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
-      '@milaboratories/ui-vue':
-        specifier: workspace:^
-        version: link:../../sdk/ui-vue
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
       '@platforma-sdk/model':
         specifier: workspace:^
         version: link:../../sdk/model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
         version: 3.5.8(typescript@5.5.4)
@@ -325,7 +331,7 @@ importers:
   etc/uikit-playground:
     dependencies:
       '@milaboratories/uikit':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../lib/ui/uikit
     devDependencies:
       '@faker-js/faker':
@@ -772,7 +778,7 @@ importers:
         specifier: workspace:^
         version: link:../../util/helpers
       '@platforma-sdk/model':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../../sdk/model
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
@@ -787,7 +793,7 @@ importers:
         specifier: 'catalog:'
         version: 1.5.1
       tsc-alias:
-        specifier: ^1.8.10
+        specifier: 'catalog:'
         version: 1.8.10
       vite:
         specifier: 'catalog:'
@@ -798,6 +804,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.6(typescript@5.5.4)
+      yarpm:
+        specifier: 'catalog:'
+        version: 1.2.0
 
   lib/util/build-configs:
     dependencies:
@@ -927,10 +936,6 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.8(typescript@5.5.4)
-    optionalDependencies:
-      '@rollup/rollup-linux-x64-gnu':
-        specifier: 4.9.5
-        version: 4.9.5
     devDependencies:
       '@ag-grid-community/client-side-row-model':
         specifier: 'catalog:'
@@ -1007,6 +1012,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.6(typescript@5.5.4)
+      yarpm:
+        specifier: 'catalog:'
+        version: 1.2.0
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -2332,11 +2340,6 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@rollup/rollup-linux-x64-gnu@4.9.5':
-    resolution: {integrity: sha512-Dq1bqBdLaZ1Gb/l2e5/+o3B18+8TI9ANlA1SkejZqDgdU/jK/ThYaMPMJpVMMXy2uRHvGKbkz9vheVGdq3cJfA==}
-    cpu: [x64]
-    os: [linux]
-
   '@rollup/rollup-linux-x64-musl@4.21.3':
     resolution: {integrity: sha512-S0Yq+xA1VEH66uiMNhijsWAafffydd2X5b77eLHfRmfLsRSpbiAWiRHV6DEpz6aOToPsgid7TI9rGd6zB1rhbg==}
     cpu: [x64]
@@ -3210,6 +3213,9 @@ packages:
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
+
+  command-exists@1.2.9:
+    resolution: {integrity: sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w==}
 
   commander@10.0.1:
     resolution: {integrity: sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==}
@@ -5533,6 +5539,10 @@ packages:
     resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
     engines: {node: '>=12'}
 
+  yarpm@1.2.0:
+    resolution: {integrity: sha512-gxN4Ali09uey8EpLfbYG+bTXf1hF6TA5oAXFPpKi5Nt5aztXU9AIEksXE0lpuvC50vL4De/KIeP8JXgYOZ8KbQ==}
+    hasBin: true
+
   yn@3.1.1:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
     engines: {node: '>=6'}
@@ -7269,9 +7279,6 @@ snapshots:
   '@rollup/rollup-linux-x64-gnu@4.21.3':
     optional: true
 
-  '@rollup/rollup-linux-x64-gnu@4.9.5':
-    optional: true
-
   '@rollup/rollup-linux-x64-musl@4.21.3':
     optional: true
 
@@ -8394,6 +8401,8 @@ snapshots:
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
+
+  command-exists@1.2.9: {}
 
   commander@10.0.1: {}
 
@@ -11140,6 +11149,11 @@ snapshots:
       string-width: 4.2.3
       y18n: 5.0.8
       yargs-parser: 21.1.1
+
+  yarpm@1.2.0:
+    dependencies:
+      command-exists: 1.2.9
+      cross-spawn: 7.0.3
 
   yn@3.1.1:
     optional: true

@@ -2,7 +2,7 @@
 import { reactive, watch } from 'vue';
 // import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
-import { PlFileInput, useInterval } from '@milaboratories/ui-vue';
+import { PlFileInput, useInterval } from '@platforma-sdk/ui-vue';
 import { platforma } from './testApi';
 import type { ImportProgress } from '@platforma-sdk/model';
 

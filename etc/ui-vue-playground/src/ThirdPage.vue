@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
-import { ValueOrErrorsComponent } from '@milaboratories/ui-vue';
+import { ValueOrErrorsComponent } from '@platforma-sdk/ui-vue';
 
 const app = useApp();
 </script>

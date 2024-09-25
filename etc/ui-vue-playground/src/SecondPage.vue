@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
-import { computedResult, isDefined } from '@milaboratories/ui-vue';
+import { computedResult, isDefined } from '@platforma-sdk/ui-vue';
 
 const app = useApp();
 

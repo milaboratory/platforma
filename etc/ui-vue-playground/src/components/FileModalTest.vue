@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlFileDialog } from '@milaboratories/ui-vue';
+import { PlFileDialog } from '@platforma-sdk/ui-vue';
 import { PlBtnPrimary } from '@milaboratories/uikit';
 import '@milaboratories/uikit/styles';
 // import { useApp } from '../app';
