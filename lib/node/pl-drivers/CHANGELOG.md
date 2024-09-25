@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.2.18
+
+### Patch Changes
+
+- Updated dependencies [1a71473]
+  - @milaboratories/pl-tree@1.3.9
+
 ## 1.2.17
 
 ### Patch Changes
