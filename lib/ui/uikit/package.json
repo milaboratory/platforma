@@ -1,0 +1,51 @@
+{
+  "name": "@milaboratories/uikit",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/pl-uikit.umd.js",
+  "module": "dist/pl-uikit.js",
+  "types": "dist/src/index.d.ts",
+  "styles": "dist/style.css",
+  "exports": {
+    ".": {
+      "style": "./styles/main.css",
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/pl-uikit.js"
+    },
+    "./styles": {
+      "default": "./dist/style.css"
+    },
+    "./*": "./*"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run build:types",
+    "test:unit": "vitest run",
+    "test": "npm run test:unit",
+    "build:types": "vue-tsc --declaration --emitDeclarationOnly -p ./tsconfig.lib.json && tsc-alias -p tsconfig.lib.json",
+    "tsc": "tsc",
+    "watch": "vite build --watch",
+    "type-check": "vue-tsc --project ./tsconfig.lib.json",
+    "preview": "vite preview",
+    "parse-icons-folder": "node scripts/parse-icons.js",
+    "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
+    "generate-icons": "npm run parse-icons-folder && npm run minify-icons",
+    "lint": "eslint . --ext js,ts,vue",
+    "check": "pnpm type-check && pnpm test && pnpm lint"
+  },
+  "dependencies": {
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "catalog:",
+    "jsdom": "catalog:",
+    "resize-observer-polyfill": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "tsc-alias": "^1.8.10",
+    "vitest": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:",
+    "@milaboratories/helpers": "workspace:^",
+    "@platforma-sdk/model": "workspace:*"
+  }
+}
