@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.13
+
+### Patch Changes
+
+- 5da95a8: pframes-node version bump
+
 ## 1.10.12
 
 ### Patch Changes
