@@ -1,9 +1,9 @@
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import {
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type {
   ProjectListEntry as ProjectListEntryFromModel,
   ProjectMeta
 } from '@milaboratories/pl-model-middle-layer';
-import { BlockRenderingMode } from '@platforma-sdk/model';
+import type { BlockRenderingMode } from '@platforma-sdk/model';
 
 export interface ProjectListEntry extends ProjectListEntryFromModel {
   /** Project resource ID. */

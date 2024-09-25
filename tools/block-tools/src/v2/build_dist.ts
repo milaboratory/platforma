@@ -1,5 +1,6 @@
+import type {
+  BlockPackDescriptionAbsolute} from './model';
 import {
-  BlockPackDescriptionAbsolute,
   BlockPackDescriptionConsolidateToFolder,
   BlockPackDescriptionManifest,
   BlockPackManifest,

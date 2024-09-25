@@ -88,7 +88,7 @@ type PlConfigOverrides = Partial<
 function parseInt(s: string | null | undefined): number | undefined {
   if (!s) return undefined;
   const num = Number(s);
-  if (num === Number.NaN) throw new Error(`Can't parse number: ${s}`);
+  if (isNaN(num)) throw new Error(`Can't parse number: ${s}`);
   return num;
 }
 

@@ -1,13 +1,15 @@
-import {
+import type {
   BlockSection,
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ValueOrErrors
 } from '@milaboratories/pl-model-common';
-import { BlockModel, DeriveHref, StdCtx } from './builder';
+import type { DeriveHref, StdCtx } from './builder';
+import { BlockModel } from './builder';
+import type {
+  ConfigResult} from './config';
 import {
   Args,
-  ConfigResult,
   flatten,
   getBlobContent,
   getBlobContentAsJson,
@@ -26,7 +28,7 @@ import {
   mapArrayValues,
   mapRecordValues
 } from './config';
-import { InferHrefType, InferOutputsType } from './platforma';
+import type { InferHrefType, InferOutputsType } from './platforma';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]

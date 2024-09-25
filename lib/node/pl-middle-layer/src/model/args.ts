@@ -1,5 +1,5 @@
 import { assertNever } from '@milaboratories/ts-helpers';
-import { Ref } from '@platforma-sdk/model';
+import type { Ref } from '@platforma-sdk/model';
 
 export function outputRef(blockId: string, name: string): Ref {
   return { __isRef: true, blockId, name };

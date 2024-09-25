@@ -1,4 +1,4 @@
-import { AuthInformation } from './config';
+import type { AuthInformation } from './config';
 import { parsePlJwt } from '../util/pl';
 
 /** Returns a timestamp when current authorization information should be refreshed.

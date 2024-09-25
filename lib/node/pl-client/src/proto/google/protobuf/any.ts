@@ -212,8 +212,8 @@ class Any$Type extends MessageType<Any> {
     contains(any: Any, type: IMessageType<any> | string): boolean {
         if (!any.typeUrl.length)
             return false;
-        let wants = typeof type == "string" ? type : type.typeName;
-        let has = this.typeUrlToName(any.typeUrl);
+        const wants = typeof type == "string" ? type : type.typeName;
+        const has = this.typeUrlToName(any.typeUrl);
         return wants === has;
     }
     /**
@@ -228,12 +228,12 @@ class Any$Type extends MessageType<Any> {
     internalJsonWrite(any: Any, options: JsonWriteOptions): JsonValue {
         if (any.typeUrl === "")
             return {};
-        let typeName = this.typeUrlToName(any.typeUrl);
-        let opt = jsonWriteOptions(options);
-        let type = opt.typeRegistry?.find(t => t.typeName === typeName);
+        const typeName = this.typeUrlToName(any.typeUrl);
+        const opt = jsonWriteOptions(options);
+        const type = opt.typeRegistry?.find(t => t.typeName === typeName);
         if (!type)
             throw new globalThis.Error("Unable to convert google.protobuf.Any with typeUrl '" + any.typeUrl + "' to JSON. The specified type " + typeName + " is not available in the type registry.");
-        let value = type.fromBinary(any.value, { readUnknownField: false });
+        const value = type.fromBinary(any.value, { readUnknownField: false });
         let json = type.internalJsonWrite(value, opt);
         if (typeName.startsWith("google.protobuf.") || !isJsonObject(json))
             json = { value: json };
@@ -245,15 +245,15 @@ class Any$Type extends MessageType<Any> {
             throw new globalThis.Error("Unable to parse google.protobuf.Any from JSON " + typeofJsonValue(json) + ".");
         if (typeof json["@type"] != "string" || json["@type"] == "")
             return this.create();
-        let typeName = this.typeUrlToName(json["@type"]);
-        let type = options?.typeRegistry?.find(t => t.typeName == typeName);
+        const typeName = this.typeUrlToName(json["@type"]);
+        const type = options?.typeRegistry?.find(t => t.typeName == typeName);
         if (!type)
             throw new globalThis.Error("Unable to parse google.protobuf.Any from JSON. The specified type " + typeName + " is not available in the type registry.");
         let value;
         if (typeName.startsWith("google.protobuf.") && json.hasOwnProperty("value"))
             value = type.fromJson(json["value"], options);
         else {
-            let copy = Object.assign({}, json);
+            const copy = Object.assign({}, json);
             delete copy["@type"];
             value = type.fromJson(copy, options);
         }
@@ -271,8 +271,8 @@ class Any$Type extends MessageType<Any> {
     typeUrlToName(url: string): string {
         if (!url.length)
             throw new Error("invalid type url: " + url);
-        let slash = url.lastIndexOf("/");
-        let name = slash > 0 ? url.substring(slash + 1) : url;
+        const slash = url.lastIndexOf("/");
+        const name = slash > 0 ? url.substring(slash + 1) : url;
         if (!name.length)
             throw new Error("invalid type url: " + url);
         return name;
@@ -286,9 +286,9 @@ class Any$Type extends MessageType<Any> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: Any): Any {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string type_url */ 1:
                     message.typeUrl = reader.string();
@@ -297,10 +297,10 @@ class Any$Type extends MessageType<Any> {
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -314,7 +314,7 @@ class Any$Type extends MessageType<Any> {
         /* bytes value = 2; */
         if (message.value.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

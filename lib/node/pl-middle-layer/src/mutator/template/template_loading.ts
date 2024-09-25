@@ -1,6 +1,7 @@
-import { AnyRef, field, Pl, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import type { AnyRef, PlTransaction, ResourceType } from '@milaboratories/pl-client';
+import { field, Pl } from '@milaboratories/pl-client';
 import fs from 'node:fs';
-import {
+import type {
   ExplicitTemplate,
   TemplateFromRegistry,
   TemplateSpecAny,

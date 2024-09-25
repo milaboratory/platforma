@@ -3,7 +3,7 @@ import {utils} from '@milaboratories/helpers';
 import {sequence} from '@milaboratories/sequences';
 
 test('AsyncSequence 1', async () => {
-  let values = utils.arrayFrom(10, i => i);
+  const values = utils.arrayFrom(10, i => i);
 
   async function* gen() {
     while (values.length) {

@@ -1,4 +1,5 @@
-import { JitterOpts, jitter, sleep } from './temporal';
+import type { JitterOpts} from './temporal';
+import { jitter, sleep } from './temporal';
 
 export async function withRetries(
   nAttempts: number,

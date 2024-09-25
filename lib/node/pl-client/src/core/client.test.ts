@@ -1,8 +1,9 @@
 import { getTestClient, getTestClientConf } from '../test/test_config';
 import { PlClient } from './client';
-import { PlDriver, PlDriverDefinition } from './driver';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { Dispatcher, request } from 'undici';
+import type { PlDriver, PlDriverDefinition } from './driver';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { Dispatcher} from 'undici';
+import { request } from 'undici';
 
 test('test client init', async () => {
   const client = await getTestClient(undefined);

@@ -1,12 +1,12 @@
-import { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './accessor_provider';
-import {
+import type { AccessorProvider, TrackedAccessorProvider, UsageGuard } from './accessor_provider';
+import type {
   CellRenderingOps,
   ComputableCtx,
   IntermediateRenderingResult,
   UnwrapComputables
 } from './kernel';
 import { Computable } from './computable';
-import { Watcher } from '../watcher';
+import type { Watcher } from '../watcher';
 
 let ephKeyCounter = 1;
 

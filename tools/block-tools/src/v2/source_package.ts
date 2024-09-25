@@ -1,12 +1,14 @@
 import path from 'path';
 import { tryLoadFile } from '../util';
-import { ResolvedBlockPackDescriptionFromPackageJson, BlockPackDescriptionAbsolute } from './model';
+import type { BlockPackDescriptionAbsolute } from './model';
+import { ResolvedBlockPackDescriptionFromPackageJson } from './model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import fsp from 'node:fs/promises';
+import type {
+  BlockPackDescriptionRaw,
+  BlockPackId} from '@milaboratories/pl-model-middle-layer';
 import {
   BlockPackDescriptionFromPackageJsonRaw,
-  BlockPackDescriptionRaw,
-  BlockPackId,
   BlockPackMetaDescriptionRaw,
   SemVer
 } from '@milaboratories/pl-model-middle-layer';

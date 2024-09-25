@@ -1,4 +1,4 @@
-import {
+import type {
   Option,
   PColumn,
   PFrameDef,
@@ -11,16 +11,18 @@ import {
   PTableRecordFilter,
   PTableSorting,
   ResultCollection,
-  ValueOrError,
+  ValueOrError} from '@milaboratories/pl-model-common';
+import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
 } from '@milaboratories/pl-model-common';
-import { Optional } from 'utility-types';
+import type { Optional } from 'utility-types';
 import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor } from './accessor';
-import { FutureRef } from './future';
-import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
+import type { FutureRef } from './future';
+import type { GlobalCfgRenderCtx} from './internal';
+import { MainAccessorName, StagingAccessorName } from './internal';
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -133,7 +135,7 @@ export class RenderCtx<Args, UiState> {
           sorting?: PTableSorting[];
         }
   ): PTableHandle {
-    var rawDef: PTableDef<PColumn<TreeNodeAccessor>>;
+    let rawDef: PTableDef<PColumn<TreeNodeAccessor>>;
     if ('columns' in def) {
       rawDef = {
         src: {

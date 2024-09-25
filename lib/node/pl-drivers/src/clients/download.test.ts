@@ -1,10 +1,11 @@
-import { PlClient, TestHelpers } from '@milaboratories/pl-client';
+import type { PlClient} from '@milaboratories/pl-client';
+import { TestHelpers } from '@milaboratories/pl-client';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
-import { Dispatcher } from 'undici';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { Dispatcher } from 'undici';
 import { text } from 'node:stream/consumers';
 import { ClientDownload } from '../clients/download';
 

@@ -1,4 +1,4 @@
-import { ComputableKernel, UnwrapComputables } from './kernel';
+import type { ComputableKernel, UnwrapComputables } from './kernel';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]

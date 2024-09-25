@@ -1,9 +1,10 @@
-import { Code, isFunctionHandle, TypedConfigOrFunctionHandle } from '@platforma-sdk/model';
-import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
+import type { Code, TypedConfigOrFunctionHandle } from '@platforma-sdk/model';
+import { isFunctionHandle } from '@platforma-sdk/model';
+import type { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { computableFromCfg } from '../cfg_render/executor';
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';
-import { BlockContextAny } from './block_ctx';
+import type { BlockContextAny } from './block_ctx';
 
 export function computableFromCfgOrRF(
   env: MiddleLayerEnvironment,

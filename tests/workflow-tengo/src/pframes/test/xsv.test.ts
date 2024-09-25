@@ -18,10 +18,10 @@ const csvDataMap = (() => {
     cols.set(h, []);
   }
 
-  for (var iRow = 0; iRow < lines.length - 1; ++iRow) {
+  for (let iRow = 0; iRow < lines.length - 1; ++iRow) {
     const line = lines[iRow + 1].split(',');
 
-    for (var iCol = 0; iCol < header.length; ++iCol) {
+    for (let iCol = 0; iCol < header.length; ++iCol) {
       cols.get(header[iCol])?.push(line[iCol]);
     }
   }
@@ -92,9 +92,9 @@ const expectedPartitionKeys = function (spec: typeof baseSpec) {
     return r;
   }
 
-  for (var i = 0; i < csvNRows; ++i) {
+  for (let i = 0; i < csvNRows; ++i) {
     const row = [];
-    for (var j = 0; j < spec.partitionKeyLength; ++j) {
+    for (let j = 0; j < spec.partitionKeyLength; ++j) {
       const axis = csvDataMap.get(spec.axes[j].column)!;
       row.push(axis[i]);
     }
@@ -126,7 +126,7 @@ tplTest.for([
     { partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
   ) => {
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
@@ -226,9 +226,9 @@ function superPartitionKeys(keyLen: number): string[] {
     return r;
   }
 
-  for (var i = 0; i < base.length; ++i) {
+  for (let i = 0; i < base.length; ++i) {
     const row = [];
-    for (var j = 0; j < keyLen; ++j) {
+    for (let j = 0; j < keyLen; ++j) {
       row.push(base[i] + j);
     }
     r.push(JSON.stringify(row));
@@ -295,7 +295,7 @@ tplTest.for([
     { helper, expect }
   ) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys
@@ -473,7 +473,7 @@ tplTest.for([
     { helper, expect }
   ) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
-    var spec = baseSpec;
+    const spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
     // inner keys

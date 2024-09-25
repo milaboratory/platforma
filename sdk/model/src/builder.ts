@@ -1,8 +1,10 @@
-import { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratories/pl-model-common';
-import { Checked, ConfigResult, getImmediate, PlResourceEntry, TypedConfig } from './config';
+import type { BlockRenderingMode, BlockSection, ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { Checked, ConfigResult, PlResourceEntry, TypedConfig } from './config';
+import { getImmediate } from './config';
 import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
-import { Platforma } from './platforma';
-import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render';
+import type { Platforma } from './platforma';
+import type { InferRenderFunctionReturn, RenderFunction } from './render';
+import { RenderCtx } from './render';
 import { PlatformaSDKVersion } from './version';
 
 type StdCtxArgsOnly<Args, UiState = undefined> = {

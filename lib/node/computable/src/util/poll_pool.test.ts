@@ -1,5 +1,6 @@
 import * as tp from 'node:timers/promises';
-import { PollActor, PollComputablePool, PollPool } from './poll_pool';
+import type { PollActor} from './poll_pool';
+import { PollComputablePool, PollPool } from './poll_pool';
 import { ChangeSource } from '../change_source';
 
 class TestPollActor implements PollActor {

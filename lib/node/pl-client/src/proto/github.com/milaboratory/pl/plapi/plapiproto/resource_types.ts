@@ -221,9 +221,9 @@ class Number$$Type extends MessageType<Number$> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: Number$): Number$ {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* int32 int32 */ 1:
                     message.value = {
@@ -262,10 +262,10 @@ class Number$$Type extends MessageType<Number$> {
                     };
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -291,7 +291,7 @@ class Number$$Type extends MessageType<Number$> {
         /* double double = 6; */
         if (message.value.oneofKind === "double")
             writer.tag(6, WireType.Bit64).double(message.value.double);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -316,18 +316,18 @@ class ControllerSettings$Type extends MessageType<ControllerSettings> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerSettings): ControllerSettings {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string type */ 1:
                     message.type = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -338,7 +338,7 @@ class ControllerSettings$Type extends MessageType<ControllerSettings> {
         /* string type = 1; */
         if (message.type !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.type);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -365,9 +365,9 @@ class SubscriptionSettings$Type extends MessageType<SubscriptionSettings> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionSettings): SubscriptionSettings {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool blocking */ 1:
                     message.blocking = reader.bool();
@@ -376,10 +376,10 @@ class SubscriptionSettings$Type extends MessageType<SubscriptionSettings> {
                     message.randomizer = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -393,7 +393,7 @@ class SubscriptionSettings$Type extends MessageType<SubscriptionSettings> {
         /* uint64 randomizer = 2; */
         if (message.randomizer !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.randomizer);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -421,9 +421,9 @@ class NotificationFilter$Type extends MessageType<NotificationFilter> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationFilter): NotificationFilter {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.ResourceType resource_type */ 1:
                     message.resourceFilter = {
@@ -444,10 +444,10 @@ class NotificationFilter$Type extends MessageType<NotificationFilter> {
                     message.payload = NotificationFilter_Payload.internalBinaryRead(reader, reader.uint32(), options, message.payload);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -467,7 +467,7 @@ class NotificationFilter$Type extends MessageType<NotificationFilter> {
         /* MiLaboratories.PL.RTypes.NotificationFilter.Payload payload = 9; */
         if (message.payload)
             NotificationFilter_Payload.internalBinaryWrite(message.payload, writer.tag(9, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -506,9 +506,9 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationFilter_EventFilter): NotificationFilter_EventFilter {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* optional bool all */ 1:
                     message.all = reader.bool();
@@ -559,10 +559,10 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
                     message.dynamicChanged = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -618,7 +618,7 @@ class NotificationFilter_EventFilter$Type extends MessageType<NotificationFilter
         /* optional bool dynamic_changed = 11; */
         if (message.dynamicChanged !== undefined)
             writer.tag(11, WireType.Varint).bool(message.dynamicChanged);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -643,18 +643,18 @@ class NotificationFilter_Payload$Type extends MessageType<NotificationFilter_Pay
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationFilter_Payload): NotificationFilter_Payload {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* map<string, bytes> values */ 1:
                     this.binaryReadMap1(message.values, reader, options);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -664,7 +664,7 @@ class NotificationFilter_Payload$Type extends MessageType<NotificationFilter_Pay
     private binaryReadMap1(map: NotificationFilter_Payload["values"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof NotificationFilter_Payload["values"] | undefined, val: NotificationFilter_Payload["values"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.string();
@@ -679,9 +679,9 @@ class NotificationFilter_Payload$Type extends MessageType<NotificationFilter_Pay
     }
     internalBinaryWrite(message: NotificationFilter_Payload, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* map<string, bytes> values = 1; */
-        for (let k of globalThis.Object.keys(message.values))
+        for (const k of globalThis.Object.keys(message.values))
             writer.tag(1, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k).tag(2, WireType.LengthDelimited).bytes(message.values[k]).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

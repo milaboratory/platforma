@@ -1,6 +1,7 @@
+import type {
+  ResourceId} from '@milaboratories/pl-middle-layer';
 import {
   Pl,
-  ResourceId,
   field,
   resourceType,
   toGlobalResourceId

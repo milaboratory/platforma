@@ -1,4 +1,4 @@
-import { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { BlockOutputsBase, ValueOrErrors } from '@milaboratories/pl-model-common';
 
 export class OutputError extends Error {
   constructor(

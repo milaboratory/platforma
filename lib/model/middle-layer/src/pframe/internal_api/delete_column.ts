@@ -1,4 +1,4 @@
-import { ColumnAxesWithQualifications } from './common';
+import type { ColumnAxesWithQualifications } from './common';
 
 export interface DeleteColumnFromColumnsRequest {
   columns: ColumnAxesWithQualifications[];

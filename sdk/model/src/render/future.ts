@@ -1,4 +1,4 @@
-import { FutureAwait, FutureHandle } from './internal';
+import type { FutureAwait, FutureHandle } from './internal';
 import { registerFutureAwait } from '../internal';
 
 export class FutureRef<T = unknown> {

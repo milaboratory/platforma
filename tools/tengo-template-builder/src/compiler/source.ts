@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { TypedArtifactName, FullArtifactName, ArtifactType, CompileMode } from './package';
-import { ArtifactMap, createArtifactNameSet } from './artifactset';
+import type { TypedArtifactName, FullArtifactName, ArtifactType, CompileMode } from './package';
+import type { ArtifactMap} from './artifactset';
+import { createArtifactNameSet } from './artifactset';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
 const namePattern = '[_a-zA-Z][_a-zA-Z0-9]*';

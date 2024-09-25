@@ -7,8 +7,9 @@
  *
  */
 
-import { FutureFieldType, ResourceType } from '../core/types';
-import { AnyRef, field, FieldRef, PlTransaction, ResourceRef } from '../core/transaction';
+import type { FutureFieldType, ResourceType } from '../core/types';
+import type { AnyRef, FieldRef, PlTransaction, ResourceRef } from '../core/transaction';
+import { field } from '../core/transaction';
 
 function rt(name: string, version: string): ResourceType {
   return { name, version };

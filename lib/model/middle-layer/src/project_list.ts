@@ -1,4 +1,4 @@
-import { ProjectMeta } from './project';
+import type { ProjectMeta } from './project';
 
 /** Represents single entry in the list of projects owned by current user */
 export interface ProjectListEntry {

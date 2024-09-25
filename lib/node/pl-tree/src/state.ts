@@ -1,23 +1,27 @@
-import {
+import type {
   BasicResourceData,
   FieldType,
-  isNotNullResourceId,
-  isNullResourceId,
   KeyValue,
-  NullResourceId,
   OptionalResourceId,
   ResourceData,
   ResourceId,
-  resourceIdToString,
   ResourceKind,
-  ResourceType,
+  ResourceType} from '@milaboratories/pl-client';
+import {
+  isNotNullResourceId,
+  isNullResourceId,
+  NullResourceId,
+  resourceIdToString,
   stringifyWithResourceId
 } from '@milaboratories/pl-client';
-import { ChangeSource, Watcher } from '@milaboratories/computable';
+import type { Watcher } from '@milaboratories/computable';
+import { ChangeSource } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import { ValueAndError } from './value_and_error';
-import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
+import type { ValueAndError } from './value_and_error';
+import type { MiLogger} from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import type { FieldTraversalStep, GetFieldStep} from './traversal_ops';
+import { ResourceTraversalOps } from './traversal_ops';
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[];

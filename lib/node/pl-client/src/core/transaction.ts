@@ -1,9 +1,6 @@
-import {
+import type {
   AnyResourceId,
-  createLocalResourceId,
-  ensureResourceIdNotNull,
   LocalResourceId,
-  MaxTxId,
   OptionalResourceId,
   BasicResourceData,
   FieldData,
@@ -14,13 +11,18 @@ import {
   FutureFieldType
 } from './types';
 import {
+  createLocalResourceId,
+  ensureResourceIdNotNull,
+  MaxTxId
+} from './types';
+import type {
   ClientMessageRequest,
   LLPlTransaction,
   OneOfKind,
   ServerMessageResponse
 } from './ll_transaction';
 import { TxAPI_Open_Request_WritableTx } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { NonUndefined } from 'utility-types';
+import type { NonUndefined } from 'utility-types';
 import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 import { notEmpty } from '@milaboratories/ts-helpers';

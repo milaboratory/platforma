@@ -1,4 +1,4 @@
-import { ContentAbsoluteUrl, ContentAnyLocal, ContentRelative } from "./content_types";
+import type { ContentAbsoluteUrl, ContentAnyLocal, ContentRelative } from "./content_types";
 
 export function mapRemoteToAbsolute(
   rootUrl: string

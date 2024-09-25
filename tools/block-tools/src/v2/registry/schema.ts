@@ -1,4 +1,4 @@
-import { BlockPackId, BlockPackIdNoVersion } from '@milaboratories/pl-model-middle-layer';
+import type { BlockPackId, BlockPackIdNoVersion } from '@milaboratories/pl-model-middle-layer';
 
 const MainPrefix = 'v2/';
 

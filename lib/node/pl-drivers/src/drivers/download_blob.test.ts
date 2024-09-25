@@ -5,22 +5,26 @@ import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
 } from '@milaboratories/ts-helpers';
-import {
+import type {
   PlClient,
   PlTransaction,
+  FieldRef,
+  PollTxAccessor,
+  FieldId
+} from '@milaboratories/pl-client';
+import {
   TestHelpers,
   jsonToData,
-  FieldRef,
   poll,
-  PollTxAccessor,
-  BasicResourceData,
-  FieldId
+  BasicResourceData
 } from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
-import {
-  DownloadDriver,
+import type {
   OnDemandBlobResourceSnapshot
+} from './download_and_logs_blob';
+import {
+  DownloadDriver
 } from './download_and_logs_blob';
 
 const fileName = 'answer_to_the_ultimate_question.txt';

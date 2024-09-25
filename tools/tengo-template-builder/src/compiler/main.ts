@@ -3,11 +3,13 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { findNodeModules, pathType } from './util';
-import { TemplatesAndLibs, TengoTemplateCompiler } from './compiler';
+import type { TemplatesAndLibs} from './compiler';
+import { TengoTemplateCompiler } from './compiler';
+import type {
+  CompileMode,
+  FullArtifactName} from './package';
 import {
   artifactNameToString,
-  CompileMode,
-  FullArtifactName,
   fullNameToString,
   typedArtifactNameToString,
 } from './package';

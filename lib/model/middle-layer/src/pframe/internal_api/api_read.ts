@@ -1,14 +1,14 @@
-import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
-import {
+import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
+import type { DeleteColumnFromColumnsRequest, DeleteColumnFromColumnsResponse } from './delete_column';
+import type {
   PColumnInfo,
   PColumnSpec,
   PObjectId,
   UniqueValuesRequest,
   UniqueValuesResponse
 } from '@milaboratories/pl-model-common';
-import { CreateTableRequest } from './create_table';
-import { PTable } from './table';
+import type { CreateTableRequest } from './create_table';
+import type { PTable } from './table';
 
 /** Read interface exposed by PFrames library */
 export interface PFrameReadAPI {

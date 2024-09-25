@@ -1,4 +1,4 @@
-import { TemplateSpecPrepared } from '../model/template_spec';
+import type { TemplateSpecPrepared } from '../model/template_spec';
 import { ExplicitTemplateEnterNumbers, ExplicitTemplateSumNumbers } from './explicit_templates';
 
 export const TplSpecEnterExplicit: TemplateSpecPrepared = {

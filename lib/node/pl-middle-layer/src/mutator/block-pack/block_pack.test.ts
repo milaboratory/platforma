@@ -5,7 +5,7 @@ import {
   toGlobalResourceId
 } from '@milaboratories/pl-client';
 import { BlockPackPreparer, createBlockPack } from './block_pack';
-import { BlockPackSpecAny } from '../../model';
+import type { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 

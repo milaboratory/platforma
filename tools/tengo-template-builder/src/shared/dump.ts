@@ -1,4 +1,4 @@
-import winston from 'winston';
+import type winston from 'winston';
 import { getPackageInfo, newCompiler, parseSources } from '../compiler/main';
 import { typedArtifactNameToString } from '../compiler/package';
 

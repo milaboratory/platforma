@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import { AuthInformation, plAddressToConfig, PlClientConfig } from './config';
+import type { AuthInformation, PlClientConfig } from './config';
+import { plAddressToConfig } from './config';
 import canonicalize from 'canonicalize';
 import YAML from 'yaml';
 import * as os from 'node:os';
@@ -107,7 +108,7 @@ export async function defaultPlClient(): Promise<PlClient> {
   }
 
   if (config === undefined)
-    throw new Error("Can't find configuration to create default platform client.");
+    throw new Error('Can\'t find configuration to create default platform client.');
 
   if (process.env.PL_USER !== undefined) config.user = process.env.PL_USER;
 
@@ -131,7 +132,7 @@ export async function defaultPlClient(): Promise<PlClient> {
 
     if (await client.requireAuth()) {
       if (config.user === undefined || config.password === undefined)
-        throw new Error(`No auth information for found to authenticate with PL server.`);
+        throw new Error('No auth information for found to authenticate with PL server.');
       authInformation = await client.login(config.user, config.password);
     } else {
       // No authorization is required

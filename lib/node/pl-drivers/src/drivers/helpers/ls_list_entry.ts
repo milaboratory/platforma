@@ -1,7 +1,8 @@
-import { MiLogger, notEmpty, Signer } from '@milaboratories/ts-helpers';
-import * as sdk from '@milaboratories/pl-model-common';
-import { Timestamp } from '../../proto/google/protobuf/timestamp';
-import { Dirent, Stats } from 'node:fs';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { notEmpty } from '@milaboratories/ts-helpers';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type { Timestamp } from '../../proto/google/protobuf/timestamp';
+import type { Dirent, Stats } from 'node:fs';
 
 /** A duck-typing interface for grpc results. */
 export interface ListResponse {

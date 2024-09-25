@@ -1,4 +1,4 @@
-import { Watcher } from './watcher';
+import type { Watcher } from './watcher';
 import { Aborted } from '@milaboratories/ts-helpers';
 
 /**

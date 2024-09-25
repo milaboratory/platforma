@@ -1,8 +1,9 @@
-import { PlError, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import { PlError } from '@milaboratories/pl-tree';
+import type { PObject, PObjectSpec, ValueOrError } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import assert from 'assert';
-import { Writable } from 'utility-types';
+import type { Writable } from 'utility-types';
 import { derivePObjectId } from './data';
 
 /** Represents specific staging or prod ctx data */

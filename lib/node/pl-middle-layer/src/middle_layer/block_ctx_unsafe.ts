@@ -1,7 +1,7 @@
-import { ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry } from '@milaboratories/pl-tree';
-import { PlResourceEntry, StdCtx } from '@platforma-sdk/model';
-import { BlockContextAny } from './block_ctx';
+import type { ComputableCtx } from '@milaboratories/computable';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { PlResourceEntry, StdCtx } from '@platforma-sdk/model';
+import type { BlockContextAny } from './block_ctx';
 
 type SC = StdCtx<unknown, unknown>;
 type SCAO = Pick<SC, '$blockId' | '$ui' | '$args'>;

@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "pnpm -r lint",
+    "lint-draft": "eslint . --ext ts",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",

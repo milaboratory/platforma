@@ -1,6 +1,6 @@
-import { BlockOutputsBase, BlockState } from '@milaboratories/pl-model-common';
-import { AuthorMarker } from './author_marker';
-import { Optional } from 'utility-types';
+import type { BlockOutputsBase, BlockState } from '@milaboratories/pl-model-common';
+import type { AuthorMarker } from './author_marker';
+import type { Optional } from 'utility-types';
 
 export type BlockStateInternal<
   Args = unknown,

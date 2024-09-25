@@ -1,12 +1,14 @@
-import {
+import type {
   FieldData,
-  isNullResourceId,
   OptionalResourceId,
   PlTransaction,
   ResourceId
 } from '@milaboratories/pl-client';
+import {
+  isNullResourceId
+} from '@milaboratories/pl-client';
 import Denque from 'denque';
-import { ExtendedResourceData, PlTreeState } from './state';
+import type { ExtendedResourceData, PlTreeState } from './state';
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];

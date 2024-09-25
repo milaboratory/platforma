@@ -1,7 +1,7 @@
-import { TemporalSynchronizedTreeOps } from './types';
-import { DownloadDriverOps } from '@milaboratories/pl-drivers';
-import { UploadDriverOps } from '@milaboratories/pl-drivers';
-import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
+import type { TemporalSynchronizedTreeOps } from './types';
+import type { DownloadDriverOps } from '@milaboratories/pl-drivers';
+import type { UploadDriverOps } from '@milaboratories/pl-drivers';
+import type { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
 import * as os from 'node:os';
 
 /** Options required to initialize full set of middle layer driver kit */

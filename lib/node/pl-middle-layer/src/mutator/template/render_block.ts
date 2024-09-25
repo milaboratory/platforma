@@ -1,9 +1,10 @@
-import {
+import type {
   AnyRef,
-  field,
   PlTransaction,
   ResourceRef,
-  ResourceType,
+  ResourceType} from '@milaboratories/pl-client';
+import {
+  field,
   Pl
 } from '@milaboratories/pl-client';
 import { randomUUID } from 'node:crypto';

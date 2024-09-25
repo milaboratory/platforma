@@ -1,4 +1,5 @@
-import { CompileMode, TypedArtifactName, artifactKey } from './package';
+import type { CompileMode, TypedArtifactName} from './package';
+import { artifactKey } from './package';
 import { assertNever } from './util';
 
 export class ArtifactMap<T> {

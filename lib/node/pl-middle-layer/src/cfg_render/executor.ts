@@ -1,4 +1,4 @@
-import {
+import type {
   ArgumentKey,
   ArgumentValues,
   ExecutionEnvironment,
@@ -7,12 +7,13 @@ import {
 } from './operation';
 import Denque from 'denque';
 import { assertNever, notEmpty } from '@milaboratories/ts-helpers';
-import { Computable, ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
-import { Cfg } from '@platforma-sdk/model';
+import type { ComputableCtx, ComputableRenderingOps } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type { Cfg } from '@platforma-sdk/model';
 import { renderCfg, resOp } from './renderer';
 import canonicalize from 'canonicalize';
-import { BlockContextAny } from '../middle_layer/block_ctx';
-import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
+import type { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 import { NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx_unsafe';
 
 /** Addresses pending subroutines inside the stack */
@@ -36,7 +37,7 @@ const ReturnArgKey = 'return';
  * be exposed as a final result, and execution terminate at this point. */
 const ReturnDestination = { op: ReturnOpKey, arg: ReturnArgKey } as Destination;
 
-function isReturnDestination(destination: Destination): Boolean {
+function isReturnDestination(destination: Destination): boolean {
   return destination.op == ReturnOpKey && destination.arg == ReturnArgKey;
 }
 

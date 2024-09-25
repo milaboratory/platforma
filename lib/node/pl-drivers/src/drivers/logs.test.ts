@@ -1,15 +1,17 @@
-import {
+import type {
   PlClient,
   PlTransaction,
   ResourceType,
-  TestHelpers,
-  jsonToData,
   FieldRef,
   FieldId,
   AnyFieldRef,
   ResourceRef,
-  stringifyWithResourceId,
   ResourceId
+} from '@milaboratories/pl-client';
+import {
+  TestHelpers,
+  jsonToData,
+  stringifyWithResourceId
 } from '@milaboratories/pl-client';
 import {
   ConsoleLoggerAdapter,

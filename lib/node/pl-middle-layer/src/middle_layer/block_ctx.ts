@@ -1,10 +1,11 @@
-import { ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { Optional } from 'utility-types';
-import {
+import type { Optional } from 'utility-types';
+import type {
   Block,
-  ProjectStructure,
+  ProjectStructure} from '../model/project_model';
+import {
   ProjectStructureKey,
   blockFrontendStateKey,
   projectFieldName

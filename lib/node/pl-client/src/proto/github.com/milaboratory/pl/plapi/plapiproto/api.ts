@@ -2749,7 +2749,7 @@ class TxAPI$Type extends MessageType<TxAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -2826,9 +2826,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_ClientMessage): TxAPI_ClientMessage {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint32 request_id */ 1:
                     message.requestId = reader.uint32();
@@ -3140,10 +3140,10 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                     };
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -3307,7 +3307,7 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.ControllerAPI.ClearFeatures.Request controller_features_clear = 351; */
         if (message.request.oneofKind === "controllerFeaturesClear")
             ControllerAPI_ClearFeatures_Request.internalBinaryWrite(message.request.controllerFeaturesClear, writer.tag(351, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -3386,9 +3386,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_ServerMessage): TxAPI_ServerMessage {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint32 request_id */ 1:
                     message.requestId = reader.uint32();
@@ -3706,10 +3706,10 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                     message.error = Status.internalBinaryRead(reader, reader.uint32(), options, message.error);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -3879,7 +3879,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* google.rpc.Status error = 3; */
         if (message.error)
             Status.internalBinaryWrite(message.error, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -3908,9 +3908,9 @@ class TxAPI_ServerMessage_Multi$Type extends MessageType<TxAPI_ServerMessage_Mul
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_ServerMessage_Multi): TxAPI_ServerMessage_Multi {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint32 id */ 1:
                     message.id = reader.uint32();
@@ -3922,10 +3922,10 @@ class TxAPI_ServerMessage_Multi$Type extends MessageType<TxAPI_ServerMessage_Mul
                     message.isEmpty = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -3942,7 +3942,7 @@ class TxAPI_ServerMessage_Multi$Type extends MessageType<TxAPI_ServerMessage_Mul
         /* bool is_empty = 3; */
         if (message.isEmpty !== false)
             writer.tag(3, WireType.Varint).bool(message.isEmpty);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -3967,7 +3967,7 @@ class TxAPI_Open$Type extends MessageType<TxAPI_Open> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Open, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -3994,9 +3994,9 @@ class TxAPI_Open_Request$Type extends MessageType<TxAPI_Open_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Open_Request): TxAPI_Open_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
@@ -4005,10 +4005,10 @@ class TxAPI_Open_Request$Type extends MessageType<TxAPI_Open_Request> {
                     message.writable = reader.int32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4022,7 +4022,7 @@ class TxAPI_Open_Request$Type extends MessageType<TxAPI_Open_Request> {
         /* MiLaboratories.PL.API.TxAPI.Open.Request.WritableTx writable = 2; */
         if (message.writable !== 0)
             writer.tag(2, WireType.Varint).int32(message.writable);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4046,18 +4046,18 @@ class TxAPI_Open_Response$Type extends MessageType<TxAPI_Open_Response> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Open_Response): TxAPI_Open_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Tx tx */ 1:
                     message.tx = Tx.internalBinaryRead(reader, reader.uint32(), options, message.tx);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4068,7 +4068,7 @@ class TxAPI_Open_Response$Type extends MessageType<TxAPI_Open_Response> {
         /* MiLaboratories.PL.API.Tx tx = 1; */
         if (message.tx)
             Tx.internalBinaryWrite(message.tx, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4093,7 +4093,7 @@ class TxAPI_Commit$Type extends MessageType<TxAPI_Commit> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Commit, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4118,7 +4118,7 @@ class TxAPI_Commit_Request$Type extends MessageType<TxAPI_Commit_Request> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Commit_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4143,18 +4143,18 @@ class TxAPI_Commit_Response$Type extends MessageType<TxAPI_Commit_Response> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Commit_Response): TxAPI_Commit_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool success */ 1:
                     message.success = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4165,7 +4165,7 @@ class TxAPI_Commit_Response$Type extends MessageType<TxAPI_Commit_Response> {
         /* bool success = 1; */
         if (message.success !== false)
             writer.tag(1, WireType.Varint).bool(message.success);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4190,7 +4190,7 @@ class TxAPI_Discard$Type extends MessageType<TxAPI_Discard> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Discard, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4215,7 +4215,7 @@ class TxAPI_Discard_Request$Type extends MessageType<TxAPI_Discard_Request> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Discard_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4240,7 +4240,7 @@ class TxAPI_Discard_Response$Type extends MessageType<TxAPI_Discard_Response> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Discard_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4265,7 +4265,7 @@ class TxAPI_Sync$Type extends MessageType<TxAPI_Sync> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Sync, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4290,18 +4290,18 @@ class TxAPI_Sync_Request$Type extends MessageType<TxAPI_Sync_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TxAPI_Sync_Request): TxAPI_Sync_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 tx_id */ 1:
                     message.txId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4312,7 +4312,7 @@ class TxAPI_Sync_Request$Type extends MessageType<TxAPI_Sync_Request> {
         /* uint64 tx_id = 1; */
         if (message.txId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.txId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4337,7 +4337,7 @@ class TxAPI_Sync_Response$Type extends MessageType<TxAPI_Sync_Response> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: TxAPI_Sync_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4362,7 +4362,7 @@ class ResourceAPI$Type extends MessageType<ResourceAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4387,7 +4387,7 @@ class ResourceAPI_CreateStruct$Type extends MessageType<ResourceAPI_CreateStruct
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateStruct, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4414,9 +4414,9 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateStruct_Request): ResourceAPI_CreateStruct_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 2:
                     message.id = reader.uint64().toBigInt();
@@ -4428,10 +4428,10 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
                     message.data = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4448,7 +4448,7 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
         /* optional bytes data = 4; */
         if (message.data !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.data);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4473,18 +4473,18 @@ class ResourceAPI_CreateStruct_Response$Type extends MessageType<ResourceAPI_Cre
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateStruct_Response): ResourceAPI_CreateStruct_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4495,7 +4495,7 @@ class ResourceAPI_CreateStruct_Response$Type extends MessageType<ResourceAPI_Cre
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4520,7 +4520,7 @@ class ResourceAPI_CreateEphemeral$Type extends MessageType<ResourceAPI_CreateEph
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateEphemeral, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4547,9 +4547,9 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateEphemeral_Request): ResourceAPI_CreateEphemeral_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 2:
                     message.id = reader.uint64().toBigInt();
@@ -4561,10 +4561,10 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
                     message.data = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4581,7 +4581,7 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
         /* optional bytes data = 4; */
         if (message.data !== undefined)
             writer.tag(4, WireType.LengthDelimited).bytes(message.data);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4606,18 +4606,18 @@ class ResourceAPI_CreateEphemeral_Response$Type extends MessageType<ResourceAPI_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateEphemeral_Response): ResourceAPI_CreateEphemeral_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4628,7 +4628,7 @@ class ResourceAPI_CreateEphemeral_Response$Type extends MessageType<ResourceAPI_
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4653,7 +4653,7 @@ class ResourceAPI_CreateChild$Type extends MessageType<ResourceAPI_CreateChild> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateChild, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4680,9 +4680,9 @@ class ResourceAPI_CreateChild_Request$Type extends MessageType<ResourceAPI_Creat
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateChild_Request): ResourceAPI_CreateChild_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 1:
                     message.id = reader.uint64().toBigInt();
@@ -4694,10 +4694,10 @@ class ResourceAPI_CreateChild_Request$Type extends MessageType<ResourceAPI_Creat
                     message.parentField = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.parentField);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4714,7 +4714,7 @@ class ResourceAPI_CreateChild_Request$Type extends MessageType<ResourceAPI_Creat
         /* MiLaboratories.PL.Base.FieldRef parent_field = 3; */
         if (message.parentField)
             FieldRef.internalBinaryWrite(message.parentField, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4739,18 +4739,18 @@ class ResourceAPI_CreateChild_Response$Type extends MessageType<ResourceAPI_Crea
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateChild_Response): ResourceAPI_CreateChild_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4761,7 +4761,7 @@ class ResourceAPI_CreateChild_Response$Type extends MessageType<ResourceAPI_Crea
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4786,7 +4786,7 @@ class ResourceAPI_CreateValue$Type extends MessageType<ResourceAPI_CreateValue> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateValue, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4816,9 +4816,9 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateValue_Request): ResourceAPI_CreateValue_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 2:
                     message.id = reader.uint64().toBigInt();
@@ -4833,10 +4833,10 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
                     message.errorIfExists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4856,7 +4856,7 @@ class ResourceAPI_CreateValue_Request$Type extends MessageType<ResourceAPI_Creat
         /* bool error_if_exists = 7; */
         if (message.errorIfExists !== false)
             writer.tag(7, WireType.Varint).bool(message.errorIfExists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4881,18 +4881,18 @@ class ResourceAPI_CreateValue_Response$Type extends MessageType<ResourceAPI_Crea
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateValue_Response): ResourceAPI_CreateValue_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4903,7 +4903,7 @@ class ResourceAPI_CreateValue_Response$Type extends MessageType<ResourceAPI_Crea
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4928,7 +4928,7 @@ class ResourceAPI_GetValueID$Type extends MessageType<ResourceAPI_GetValueID> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_GetValueID, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -4954,9 +4954,9 @@ class ResourceAPI_GetValueID_Request$Type extends MessageType<ResourceAPI_GetVal
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_GetValueID_Request): ResourceAPI_GetValueID_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.ResourceType type */ 1:
                     message.type = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.type);
@@ -4965,10 +4965,10 @@ class ResourceAPI_GetValueID_Request$Type extends MessageType<ResourceAPI_GetVal
                     message.data = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -4982,7 +4982,7 @@ class ResourceAPI_GetValueID_Request$Type extends MessageType<ResourceAPI_GetVal
         /* bytes data = 2; */
         if (message.data.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.data);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5007,18 +5007,18 @@ class ResourceAPI_GetValueID_Response$Type extends MessageType<ResourceAPI_GetVa
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_GetValueID_Response): ResourceAPI_GetValueID_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5029,7 +5029,7 @@ class ResourceAPI_GetValueID_Response$Type extends MessageType<ResourceAPI_GetVa
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5054,7 +5054,7 @@ class ResourceAPI_CreateSingleton$Type extends MessageType<ResourceAPI_CreateSin
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateSingleton, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5084,9 +5084,9 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateSingleton_Request): ResourceAPI_CreateSingleton_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 2:
                     message.id = reader.uint64().toBigInt();
@@ -5101,10 +5101,10 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
                     message.errorIfExists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5124,7 +5124,7 @@ class ResourceAPI_CreateSingleton_Request$Type extends MessageType<ResourceAPI_C
         /* bool error_if_exists = 7; */
         if (message.errorIfExists !== false)
             writer.tag(7, WireType.Varint).bool(message.errorIfExists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5149,18 +5149,18 @@ class ResourceAPI_CreateSingleton_Response$Type extends MessageType<ResourceAPI_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateSingleton_Response): ResourceAPI_CreateSingleton_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5171,7 +5171,7 @@ class ResourceAPI_CreateSingleton_Response$Type extends MessageType<ResourceAPI_
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5196,7 +5196,7 @@ class ResourceAPI_GetSingleton$Type extends MessageType<ResourceAPI_GetSingleton
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_GetSingleton, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5224,9 +5224,9 @@ class ResourceAPI_GetSingleton_Request$Type extends MessageType<ResourceAPI_GetS
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_GetSingleton_Request): ResourceAPI_GetSingleton_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.ResourceType type */ 1:
                     message.type = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.type);
@@ -5238,10 +5238,10 @@ class ResourceAPI_GetSingleton_Request$Type extends MessageType<ResourceAPI_GetS
                     message.loadFields = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5258,7 +5258,7 @@ class ResourceAPI_GetSingleton_Request$Type extends MessageType<ResourceAPI_GetS
         /* bool load_fields = 3; */
         if (message.loadFields !== false)
             writer.tag(3, WireType.Varint).bool(message.loadFields);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5282,18 +5282,18 @@ class ResourceAPI_GetSingleton_Response$Type extends MessageType<ResourceAPI_Get
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_GetSingleton_Response): ResourceAPI_GetSingleton_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Resource resource */ 1:
                     message.resource = Resource.internalBinaryRead(reader, reader.uint32(), options, message.resource);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5304,7 +5304,7 @@ class ResourceAPI_GetSingleton_Response$Type extends MessageType<ResourceAPI_Get
         /* MiLaboratories.PL.API.Resource resource = 1; */
         if (message.resource)
             Resource.internalBinaryWrite(message.resource, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5329,7 +5329,7 @@ class ResourceAPI_LockInputs$Type extends MessageType<ResourceAPI_LockInputs> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_LockInputs, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5354,18 +5354,18 @@ class ResourceAPI_LockInputs_Request$Type extends MessageType<ResourceAPI_LockIn
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LockInputs_Request): ResourceAPI_LockInputs_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5376,7 +5376,7 @@ class ResourceAPI_LockInputs_Request$Type extends MessageType<ResourceAPI_LockIn
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5401,7 +5401,7 @@ class ResourceAPI_LockInputs_Response$Type extends MessageType<ResourceAPI_LockI
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_LockInputs_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5426,7 +5426,7 @@ class ResourceAPI_LockOutputs$Type extends MessageType<ResourceAPI_LockOutputs> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_LockOutputs, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5451,18 +5451,18 @@ class ResourceAPI_LockOutputs_Request$Type extends MessageType<ResourceAPI_LockO
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_LockOutputs_Request): ResourceAPI_LockOutputs_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5473,7 +5473,7 @@ class ResourceAPI_LockOutputs_Request$Type extends MessageType<ResourceAPI_LockO
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5498,7 +5498,7 @@ class ResourceAPI_LockOutputs_Response$Type extends MessageType<ResourceAPI_Lock
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_LockOutputs_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5523,7 +5523,7 @@ class ResourceAPI_Exists$Type extends MessageType<ResourceAPI_Exists> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Exists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5548,18 +5548,18 @@ class ResourceAPI_Exists_Request$Type extends MessageType<ResourceAPI_Exists_Req
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Exists_Request): ResourceAPI_Exists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5570,7 +5570,7 @@ class ResourceAPI_Exists_Request$Type extends MessageType<ResourceAPI_Exists_Req
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5595,18 +5595,18 @@ class ResourceAPI_Exists_Response$Type extends MessageType<ResourceAPI_Exists_Re
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Exists_Response): ResourceAPI_Exists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool exists */ 1:
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5617,7 +5617,7 @@ class ResourceAPI_Exists_Response$Type extends MessageType<ResourceAPI_Exists_Re
         /* bool exists = 1; */
         if (message.exists !== false)
             writer.tag(1, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5642,7 +5642,7 @@ class ResourceAPI_SetError$Type extends MessageType<ResourceAPI_SetError> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_SetError, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5669,9 +5669,9 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_SetError_Request): ResourceAPI_SetError_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -5680,10 +5680,10 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
                     message.errorResourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5697,7 +5697,7 @@ class ResourceAPI_SetError_Request$Type extends MessageType<ResourceAPI_SetError
         /* uint64 error_resource_id = 2; */
         if (message.errorResourceId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.errorResourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5722,7 +5722,7 @@ class ResourceAPI_SetError_Response$Type extends MessageType<ResourceAPI_SetErro
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_SetError_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5747,7 +5747,7 @@ class ResourceAPI_Get$Type extends MessageType<ResourceAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5774,9 +5774,9 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Get_Request): ResourceAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -5785,10 +5785,10 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
                     message.loadFields = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5802,7 +5802,7 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         /* bool load_fields = 2; */
         if (message.loadFields !== false)
             writer.tag(2, WireType.Varint).bool(message.loadFields);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5826,18 +5826,18 @@ class ResourceAPI_Get_Response$Type extends MessageType<ResourceAPI_Get_Response
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Get_Response): ResourceAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Resource resource */ 1:
                     message.resource = Resource.internalBinaryRead(reader, reader.uint32(), options, message.resource);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5848,7 +5848,7 @@ class ResourceAPI_Get_Response$Type extends MessageType<ResourceAPI_Get_Response
         /* MiLaboratories.PL.API.Resource resource = 1; */
         if (message.resource)
             Resource.internalBinaryWrite(message.resource, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5873,7 +5873,7 @@ class ResourceAPI_List$Type extends MessageType<ResourceAPI_List> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_List, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5898,7 +5898,7 @@ class ResourceAPI_List_ByType$Type extends MessageType<ResourceAPI_List_ByType> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_List_ByType, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5922,18 +5922,18 @@ class ResourceAPI_List_ByType_Request$Type extends MessageType<ResourceAPI_List_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_List_ByType_Request): ResourceAPI_List_ByType_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.ResourceType resource_type */ 1:
                     message.resourceType = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.resourceType);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5944,7 +5944,7 @@ class ResourceAPI_List_ByType_Request$Type extends MessageType<ResourceAPI_List_
         /* MiLaboratories.PL.Base.ResourceType resource_type = 1; */
         if (message.resourceType)
             ResourceType.internalBinaryWrite(message.resourceType, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -5969,18 +5969,18 @@ class ResourceAPI_List_ByType_Response$Type extends MessageType<ResourceAPI_List
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_List_ByType_Response): ResourceAPI_List_ByType_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* map<uint64, MiLaboratories.PL.API.Resource> resources */ 1:
                     this.binaryReadMap1(message.resources, reader, options);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -5990,7 +5990,7 @@ class ResourceAPI_List_ByType_Response$Type extends MessageType<ResourceAPI_List
     private binaryReadMap1(map: ResourceAPI_List_ByType_Response["resources"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof ResourceAPI_List_ByType_Response["resources"] | undefined, val: ResourceAPI_List_ByType_Response["resources"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.uint64().toString();
@@ -6005,13 +6005,13 @@ class ResourceAPI_List_ByType_Response$Type extends MessageType<ResourceAPI_List
     }
     internalBinaryWrite(message: ResourceAPI_List_ByType_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* map<uint64, MiLaboratories.PL.API.Resource> resources = 1; */
-        for (let k of globalThis.Object.keys(message.resources)) {
+        for (const k of globalThis.Object.keys(message.resources)) {
             writer.tag(1, WireType.LengthDelimited).fork().tag(1, WireType.Varint).uint64(k);
             writer.tag(2, WireType.LengthDelimited).fork();
             Resource.internalBinaryWrite(message.resources[k], writer, options);
             writer.join().join();
         }
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6036,7 +6036,7 @@ class ResourceAPI_CreateRoot$Type extends MessageType<ResourceAPI_CreateRoot> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_CreateRoot, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6062,9 +6062,9 @@ class ResourceAPI_CreateRoot_Request$Type extends MessageType<ResourceAPI_Create
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateRoot_Request): ResourceAPI_CreateRoot_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 2:
                     message.id = reader.uint64().toBigInt();
@@ -6073,10 +6073,10 @@ class ResourceAPI_CreateRoot_Request$Type extends MessageType<ResourceAPI_Create
                     message.type = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.type);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6090,7 +6090,7 @@ class ResourceAPI_CreateRoot_Request$Type extends MessageType<ResourceAPI_Create
         /* MiLaboratories.PL.Base.ResourceType type = 3; */
         if (message.type)
             ResourceType.internalBinaryWrite(message.type, writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6115,18 +6115,18 @@ class ResourceAPI_CreateRoot_Response$Type extends MessageType<ResourceAPI_Creat
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_CreateRoot_Response): ResourceAPI_CreateRoot_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6137,7 +6137,7 @@ class ResourceAPI_CreateRoot_Response$Type extends MessageType<ResourceAPI_Creat
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6162,7 +6162,7 @@ class ResourceAPI_Remove$Type extends MessageType<ResourceAPI_Remove> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Remove, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6187,18 +6187,18 @@ class ResourceAPI_Remove_Request$Type extends MessageType<ResourceAPI_Remove_Req
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Remove_Request): ResourceAPI_Remove_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 1:
                     message.id = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6209,7 +6209,7 @@ class ResourceAPI_Remove_Request$Type extends MessageType<ResourceAPI_Remove_Req
         /* uint64 id = 1; */
         if (message.id !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.id);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6234,7 +6234,7 @@ class ResourceAPI_Remove_Response$Type extends MessageType<ResourceAPI_Remove_Re
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Remove_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6259,7 +6259,7 @@ class ResourceAPI_Name$Type extends MessageType<ResourceAPI_Name> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6284,7 +6284,7 @@ class ResourceAPI_Name_Set$Type extends MessageType<ResourceAPI_Name_Set> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Set, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6311,9 +6311,9 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Set_Request): ResourceAPI_Name_Set_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -6322,10 +6322,10 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6339,7 +6339,7 @@ class ResourceAPI_Name_Set_Request$Type extends MessageType<ResourceAPI_Name_Set
         /* string name = 2; */
         if (message.name !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6364,7 +6364,7 @@ class ResourceAPI_Name_Set_Response$Type extends MessageType<ResourceAPI_Name_Se
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Set_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6389,7 +6389,7 @@ class ResourceAPI_Name_Get$Type extends MessageType<ResourceAPI_Name_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6414,18 +6414,18 @@ class ResourceAPI_Name_Get_Request$Type extends MessageType<ResourceAPI_Name_Get
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Get_Request): ResourceAPI_Name_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6436,7 +6436,7 @@ class ResourceAPI_Name_Get_Request$Type extends MessageType<ResourceAPI_Name_Get
         /* string name = 1; */
         if (message.name !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6461,18 +6461,18 @@ class ResourceAPI_Name_Get_Response$Type extends MessageType<ResourceAPI_Name_Ge
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Get_Response): ResourceAPI_Name_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6483,7 +6483,7 @@ class ResourceAPI_Name_Get_Response$Type extends MessageType<ResourceAPI_Name_Ge
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6508,7 +6508,7 @@ class ResourceAPI_Name_Exists$Type extends MessageType<ResourceAPI_Name_Exists> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Exists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6533,18 +6533,18 @@ class ResourceAPI_Name_Exists_Request$Type extends MessageType<ResourceAPI_Name_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Exists_Request): ResourceAPI_Name_Exists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6555,7 +6555,7 @@ class ResourceAPI_Name_Exists_Request$Type extends MessageType<ResourceAPI_Name_
         /* string name = 1; */
         if (message.name !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6580,18 +6580,18 @@ class ResourceAPI_Name_Exists_Response$Type extends MessageType<ResourceAPI_Name
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Exists_Response): ResourceAPI_Name_Exists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool exists */ 1:
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6602,7 +6602,7 @@ class ResourceAPI_Name_Exists_Response$Type extends MessageType<ResourceAPI_Name
         /* bool exists = 1; */
         if (message.exists !== false)
             writer.tag(1, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6627,7 +6627,7 @@ class ResourceAPI_Name_Delete$Type extends MessageType<ResourceAPI_Name_Delete> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Delete, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6652,18 +6652,18 @@ class ResourceAPI_Name_Delete_Request$Type extends MessageType<ResourceAPI_Name_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceAPI_Name_Delete_Request): ResourceAPI_Name_Delete_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6674,7 +6674,7 @@ class ResourceAPI_Name_Delete_Request$Type extends MessageType<ResourceAPI_Name_
         /* string name = 1; */
         if (message.name !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6699,7 +6699,7 @@ class ResourceAPI_Name_Delete_Response$Type extends MessageType<ResourceAPI_Name
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceAPI_Name_Delete_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6724,7 +6724,7 @@ class FieldAPI$Type extends MessageType<FieldAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6749,7 +6749,7 @@ class FieldAPI_Create$Type extends MessageType<FieldAPI_Create> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Create, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6775,9 +6775,9 @@ class FieldAPI_Create_Request$Type extends MessageType<FieldAPI_Create_Request> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Create_Request): FieldAPI_Create_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldType type */ 1:
                     message.type = reader.int32();
@@ -6786,10 +6786,10 @@ class FieldAPI_Create_Request$Type extends MessageType<FieldAPI_Create_Request> 
                     message.id = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.id);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6803,7 +6803,7 @@ class FieldAPI_Create_Request$Type extends MessageType<FieldAPI_Create_Request> 
         /* MiLaboratories.PL.Base.FieldRef id = 2; */
         if (message.id)
             FieldRef.internalBinaryWrite(message.id, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6827,18 +6827,18 @@ class FieldAPI_Create_Response$Type extends MessageType<FieldAPI_Create_Response
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Create_Response): FieldAPI_Create_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef global_id */ 1:
                     message.globalId = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.globalId);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6849,7 +6849,7 @@ class FieldAPI_Create_Response$Type extends MessageType<FieldAPI_Create_Response
         /* MiLaboratories.PL.Base.FieldRef global_id = 1; */
         if (message.globalId)
             FieldRef.internalBinaryWrite(message.globalId, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6874,7 +6874,7 @@ class FieldAPI_Exists$Type extends MessageType<FieldAPI_Exists> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Exists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6898,18 +6898,18 @@ class FieldAPI_Exists_Request$Type extends MessageType<FieldAPI_Exists_Request> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Exists_Request): FieldAPI_Exists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6920,7 +6920,7 @@ class FieldAPI_Exists_Request$Type extends MessageType<FieldAPI_Exists_Request> 
         /* MiLaboratories.PL.Base.FieldRef field = 1; */
         if (message.field)
             FieldRef.internalBinaryWrite(message.field, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6945,18 +6945,18 @@ class FieldAPI_Exists_Response$Type extends MessageType<FieldAPI_Exists_Response
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Exists_Response): FieldAPI_Exists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool exists */ 1:
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -6967,7 +6967,7 @@ class FieldAPI_Exists_Response$Type extends MessageType<FieldAPI_Exists_Response
         /* bool exists = 1; */
         if (message.exists !== false)
             writer.tag(1, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -6992,7 +6992,7 @@ class FieldAPI_Set$Type extends MessageType<FieldAPI_Set> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Set, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7017,9 +7017,9 @@ class FieldAPI_Set_Request$Type extends MessageType<FieldAPI_Set_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Set_Request): FieldAPI_Set_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
@@ -7028,10 +7028,10 @@ class FieldAPI_Set_Request$Type extends MessageType<FieldAPI_Set_Request> {
                     message.value = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.value);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7045,7 +7045,7 @@ class FieldAPI_Set_Request$Type extends MessageType<FieldAPI_Set_Request> {
         /* MiLaboratories.PL.Base.FieldRef value = 2; */
         if (message.value)
             FieldRef.internalBinaryWrite(message.value, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7070,7 +7070,7 @@ class FieldAPI_Set_Response$Type extends MessageType<FieldAPI_Set_Response> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Set_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7095,7 +7095,7 @@ class FieldAPI_SetError$Type extends MessageType<FieldAPI_SetError> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_SetError, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7121,9 +7121,9 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_SetError_Request): FieldAPI_SetError_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
@@ -7132,10 +7132,10 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
                     message.errResourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7149,7 +7149,7 @@ class FieldAPI_SetError_Request$Type extends MessageType<FieldAPI_SetError_Reque
         /* uint64 err_resource_id = 2; */
         if (message.errResourceId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.errResourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7174,7 +7174,7 @@ class FieldAPI_SetError_Response$Type extends MessageType<FieldAPI_SetError_Resp
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_SetError_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7199,7 +7199,7 @@ class FieldAPI_Get$Type extends MessageType<FieldAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7223,18 +7223,18 @@ class FieldAPI_Get_Request$Type extends MessageType<FieldAPI_Get_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Get_Request): FieldAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7245,7 +7245,7 @@ class FieldAPI_Get_Request$Type extends MessageType<FieldAPI_Get_Request> {
         /* MiLaboratories.PL.Base.FieldRef field = 1; */
         if (message.field)
             FieldRef.internalBinaryWrite(message.field, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7269,18 +7269,18 @@ class FieldAPI_Get_Response$Type extends MessageType<FieldAPI_Get_Response> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Get_Response): FieldAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Field field */ 1:
                     message.field = Field.internalBinaryRead(reader, reader.uint32(), options, message.field);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7291,7 +7291,7 @@ class FieldAPI_Get_Response$Type extends MessageType<FieldAPI_Get_Response> {
         /* MiLaboratories.PL.API.Field field = 1; */
         if (message.field)
             Field.internalBinaryWrite(message.field, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7316,7 +7316,7 @@ class FieldAPI_Reset$Type extends MessageType<FieldAPI_Reset> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Reset, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7340,18 +7340,18 @@ class FieldAPI_Reset_Request$Type extends MessageType<FieldAPI_Reset_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Reset_Request): FieldAPI_Reset_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7362,7 +7362,7 @@ class FieldAPI_Reset_Request$Type extends MessageType<FieldAPI_Reset_Request> {
         /* MiLaboratories.PL.Base.FieldRef field = 1; */
         if (message.field)
             FieldRef.internalBinaryWrite(message.field, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7387,7 +7387,7 @@ class FieldAPI_Reset_Response$Type extends MessageType<FieldAPI_Reset_Response> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Reset_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7412,7 +7412,7 @@ class FieldAPI_Remove$Type extends MessageType<FieldAPI_Remove> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Remove, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7436,18 +7436,18 @@ class FieldAPI_Remove_Request$Type extends MessageType<FieldAPI_Remove_Request> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldAPI_Remove_Request): FieldAPI_Remove_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef field */ 1:
                     message.field = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.field);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7458,7 +7458,7 @@ class FieldAPI_Remove_Request$Type extends MessageType<FieldAPI_Remove_Request> 
         /* MiLaboratories.PL.Base.FieldRef field = 1; */
         if (message.field)
             FieldRef.internalBinaryWrite(message.field, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7483,7 +7483,7 @@ class FieldAPI_Remove_Response$Type extends MessageType<FieldAPI_Remove_Response
         return target ?? this.create();
     }
     internalBinaryWrite(message: FieldAPI_Remove_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7508,7 +7508,7 @@ class NotificationAPI$Type extends MessageType<NotificationAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7533,7 +7533,7 @@ class NotificationAPI_Get$Type extends MessageType<NotificationAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7560,9 +7560,9 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationAPI_Get_Request): NotificationAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription */ 1:
                     message.subscription = reader.uint64().toBigInt();
@@ -7571,10 +7571,10 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
                     message.maxNotifications = reader.uint32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7588,7 +7588,7 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
         /* uint32 max_notifications = 2; */
         if (message.maxNotifications !== 0)
             writer.tag(2, WireType.Varint).uint32(message.maxNotifications);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7613,18 +7613,18 @@ class NotificationAPI_Get_Response$Type extends MessageType<NotificationAPI_Get_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationAPI_Get_Response): NotificationAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.Notification notifications */ 1:
                     message.notifications.push(Notification.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7635,7 +7635,7 @@ class NotificationAPI_Get_Response$Type extends MessageType<NotificationAPI_Get_
         /* repeated MiLaboratories.PL.API.Notification notifications = 1; */
         for (let i = 0; i < message.notifications.length; i++)
             Notification.internalBinaryWrite(message.notifications[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7660,7 +7660,7 @@ class NotificationAPI_Ack$Type extends MessageType<NotificationAPI_Ack> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI_Ack, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7687,9 +7687,9 @@ class NotificationAPI_Ack_Request$Type extends MessageType<NotificationAPI_Ack_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationAPI_Ack_Request): NotificationAPI_Ack_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription_id */ 1:
                     message.subscriptionId = reader.uint64().toBigInt();
@@ -7698,10 +7698,10 @@ class NotificationAPI_Ack_Request$Type extends MessageType<NotificationAPI_Ack_R
                     message.eventId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7715,7 +7715,7 @@ class NotificationAPI_Ack_Request$Type extends MessageType<NotificationAPI_Ack_R
         /* uint64 event_id = 2; */
         if (message.eventId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.eventId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7740,7 +7740,7 @@ class NotificationAPI_Ack_Response$Type extends MessageType<NotificationAPI_Ack_
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI_Ack_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7765,7 +7765,7 @@ class NotificationAPI_Discard$Type extends MessageType<NotificationAPI_Discard> 
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI_Discard, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7792,9 +7792,9 @@ class NotificationAPI_Discard_Request$Type extends MessageType<NotificationAPI_D
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: NotificationAPI_Discard_Request): NotificationAPI_Discard_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription_id */ 1:
                     message.subscriptionId = reader.uint64().toBigInt();
@@ -7803,10 +7803,10 @@ class NotificationAPI_Discard_Request$Type extends MessageType<NotificationAPI_D
                     message.eventId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7820,7 +7820,7 @@ class NotificationAPI_Discard_Request$Type extends MessageType<NotificationAPI_D
         /* uint64 event_id = 2; */
         if (message.eventId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.eventId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7845,7 +7845,7 @@ class NotificationAPI_Discard_Response$Type extends MessageType<NotificationAPI_
         return target ?? this.create();
     }
     internalBinaryWrite(message: NotificationAPI_Discard_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7870,7 +7870,7 @@ class SubscriptionAPI$Type extends MessageType<SubscriptionAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7895,7 +7895,7 @@ class SubscriptionAPI_CreateSubscription$Type extends MessageType<SubscriptionAP
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_CreateSubscription, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7924,9 +7924,9 @@ class SubscriptionAPI_CreateSubscription_Request$Type extends MessageType<Subscr
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_CreateSubscription_Request): SubscriptionAPI_CreateSubscription_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 1:
                     message.id = reader.uint64().toBigInt();
@@ -7938,10 +7938,10 @@ class SubscriptionAPI_CreateSubscription_Request$Type extends MessageType<Subscr
                     message.gc = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -7958,7 +7958,7 @@ class SubscriptionAPI_CreateSubscription_Request$Type extends MessageType<Subscr
         /* bool gc = 3; */
         if (message.gc !== false)
             writer.tag(3, WireType.Varint).bool(message.gc);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -7983,18 +7983,18 @@ class SubscriptionAPI_CreateSubscription_Response$Type extends MessageType<Subsc
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_CreateSubscription_Response): SubscriptionAPI_CreateSubscription_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription_id */ 1:
                     message.subscriptionId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8005,7 +8005,7 @@ class SubscriptionAPI_CreateSubscription_Response$Type extends MessageType<Subsc
         /* uint64 subscription_id = 1; */
         if (message.subscriptionId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.subscriptionId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8030,7 +8030,7 @@ class SubscriptionAPI_CreateFilter$Type extends MessageType<SubscriptionAPI_Crea
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_CreateFilter, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8056,9 +8056,9 @@ class SubscriptionAPI_CreateFilter_Request$Type extends MessageType<Subscription
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_CreateFilter_Request): SubscriptionAPI_CreateFilter_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 1:
                     message.id = reader.uint64().toBigInt();
@@ -8067,10 +8067,10 @@ class SubscriptionAPI_CreateFilter_Request$Type extends MessageType<Subscription
                     message.filter = NotificationFilter.internalBinaryRead(reader, reader.uint32(), options, message.filter);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8084,7 +8084,7 @@ class SubscriptionAPI_CreateFilter_Request$Type extends MessageType<Subscription
         /* MiLaboratories.PL.RTypes.NotificationFilter filter = 2; */
         if (message.filter)
             NotificationFilter.internalBinaryWrite(message.filter, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8109,18 +8109,18 @@ class SubscriptionAPI_CreateFilter_Response$Type extends MessageType<Subscriptio
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_CreateFilter_Response): SubscriptionAPI_CreateFilter_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 filter_id */ 1:
                     message.filterId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8131,7 +8131,7 @@ class SubscriptionAPI_CreateFilter_Response$Type extends MessageType<Subscriptio
         /* uint64 filter_id = 1; */
         if (message.filterId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.filterId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8156,7 +8156,7 @@ class SubscriptionAPI_ListSubscriptions$Type extends MessageType<SubscriptionAPI
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_ListSubscriptions, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8184,9 +8184,9 @@ class SubscriptionAPI_ListSubscriptions_SubscriptionInfo$Type extends MessageTyp
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_ListSubscriptions_SubscriptionInfo): SubscriptionAPI_ListSubscriptions_SubscriptionInfo {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Subscription subscription */ 1:
                     message.subscription = Subscription.internalBinaryRead(reader, reader.uint32(), options, message.subscription);
@@ -8198,10 +8198,10 @@ class SubscriptionAPI_ListSubscriptions_SubscriptionInfo$Type extends MessageTyp
                     message.notificationQueueSize = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8218,7 +8218,7 @@ class SubscriptionAPI_ListSubscriptions_SubscriptionInfo$Type extends MessageTyp
         /* uint64 notification_queue_size = 3; */
         if (message.notificationQueueSize !== 0n)
             writer.tag(3, WireType.Varint).uint64(message.notificationQueueSize);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8243,7 +8243,7 @@ class SubscriptionAPI_ListSubscriptions_Request$Type extends MessageType<Subscri
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_ListSubscriptions_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8268,18 +8268,18 @@ class SubscriptionAPI_ListSubscriptions_Response$Type extends MessageType<Subscr
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_ListSubscriptions_Response): SubscriptionAPI_ListSubscriptions_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.SubscriptionAPI.ListSubscriptions.SubscriptionInfo subscriptions */ 1:
                     message.subscriptions.push(SubscriptionAPI_ListSubscriptions_SubscriptionInfo.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8290,7 +8290,7 @@ class SubscriptionAPI_ListSubscriptions_Response$Type extends MessageType<Subscr
         /* repeated MiLaboratories.PL.API.SubscriptionAPI.ListSubscriptions.SubscriptionInfo subscriptions = 1; */
         for (let i = 0; i < message.subscriptions.length; i++)
             SubscriptionAPI_ListSubscriptions_SubscriptionInfo.internalBinaryWrite(message.subscriptions[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8315,7 +8315,7 @@ class SubscriptionAPI_AttachFilter$Type extends MessageType<SubscriptionAPI_Atta
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_AttachFilter, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8344,9 +8344,9 @@ class SubscriptionAPI_AttachFilter_Request$Type extends MessageType<Subscription
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_AttachFilter_Request): SubscriptionAPI_AttachFilter_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription_id */ 1:
                     message.subscriptionId = reader.uint64().toBigInt();
@@ -8358,10 +8358,10 @@ class SubscriptionAPI_AttachFilter_Request$Type extends MessageType<Subscription
                     message.filterId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8378,7 +8378,7 @@ class SubscriptionAPI_AttachFilter_Request$Type extends MessageType<Subscription
         /* uint64 filter_id = 3; */
         if (message.filterId !== 0n)
             writer.tag(3, WireType.Varint).uint64(message.filterId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8403,7 +8403,7 @@ class SubscriptionAPI_AttachFilter_Response$Type extends MessageType<Subscriptio
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_AttachFilter_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8428,7 +8428,7 @@ class SubscriptionAPI_DetachFilter$Type extends MessageType<SubscriptionAPI_Deta
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_DetachFilter, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8455,9 +8455,9 @@ class SubscriptionAPI_DetachFilter_Request$Type extends MessageType<Subscription
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: SubscriptionAPI_DetachFilter_Request): SubscriptionAPI_DetachFilter_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 subscription_id */ 1:
                     message.subscriptionId = reader.uint64().toBigInt();
@@ -8466,10 +8466,10 @@ class SubscriptionAPI_DetachFilter_Request$Type extends MessageType<Subscription
                     message.filterName = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8483,7 +8483,7 @@ class SubscriptionAPI_DetachFilter_Request$Type extends MessageType<Subscription
         /* string filter_name = 2; */
         if (message.filterName !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.filterName);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8508,7 +8508,7 @@ class SubscriptionAPI_DetachFilter_Response$Type extends MessageType<Subscriptio
         return target ?? this.create();
     }
     internalBinaryWrite(message: SubscriptionAPI_DetachFilter_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8533,7 +8533,7 @@ class ControllerAPI$Type extends MessageType<ControllerAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8558,7 +8558,7 @@ class ControllerAPI_Register$Type extends MessageType<ControllerAPI_Register> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Register, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8587,9 +8587,9 @@ class ControllerAPI_Register_Request$Type extends MessageType<ControllerAPI_Regi
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Register_Request): ControllerAPI_Register_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -8601,10 +8601,10 @@ class ControllerAPI_Register_Request$Type extends MessageType<ControllerAPI_Regi
                     message.resourceSchemas.push(ResourceSchema.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8614,7 +8614,7 @@ class ControllerAPI_Register_Request$Type extends MessageType<ControllerAPI_Regi
     private binaryReadMap2(map: ControllerAPI_Register_Request["filters"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof ControllerAPI_Register_Request["filters"] | undefined, val: ControllerAPI_Register_Request["filters"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.string();
@@ -8632,7 +8632,7 @@ class ControllerAPI_Register_Request$Type extends MessageType<ControllerAPI_Regi
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
         /* map<string, MiLaboratories.PL.RTypes.NotificationFilter> filters = 2; */
-        for (let k of globalThis.Object.keys(message.filters)) {
+        for (const k of globalThis.Object.keys(message.filters)) {
             writer.tag(2, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k);
             writer.tag(2, WireType.LengthDelimited).fork();
             NotificationFilter.internalBinaryWrite(message.filters[k], writer, options);
@@ -8641,7 +8641,7 @@ class ControllerAPI_Register_Request$Type extends MessageType<ControllerAPI_Regi
         /* repeated MiLaboratories.PL.API.ResourceSchema resource_schemas = 3; */
         for (let i = 0; i < message.resourceSchemas.length; i++)
             ResourceSchema.internalBinaryWrite(message.resourceSchemas[i], writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8668,9 +8668,9 @@ class ControllerAPI_Register_Response$Type extends MessageType<ControllerAPI_Reg
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Register_Response): ControllerAPI_Register_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 controller_id */ 1:
                     message.controllerId = reader.uint64().toBigInt();
@@ -8679,10 +8679,10 @@ class ControllerAPI_Register_Response$Type extends MessageType<ControllerAPI_Reg
                     message.subscriptionId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8696,7 +8696,7 @@ class ControllerAPI_Register_Response$Type extends MessageType<ControllerAPI_Reg
         /* uint64 subscription_id = 2; */
         if (message.subscriptionId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.subscriptionId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8721,7 +8721,7 @@ class ControllerAPI_Exists$Type extends MessageType<ControllerAPI_Exists> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Exists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8746,18 +8746,18 @@ class ControllerAPI_Exists_Request$Type extends MessageType<ControllerAPI_Exists
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Exists_Request): ControllerAPI_Exists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8768,7 +8768,7 @@ class ControllerAPI_Exists_Request$Type extends MessageType<ControllerAPI_Exists
         /* string controller_type = 1; */
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8793,18 +8793,18 @@ class ControllerAPI_Exists_Response$Type extends MessageType<ControllerAPI_Exist
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Exists_Response): ControllerAPI_Exists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool exists */ 1:
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8815,7 +8815,7 @@ class ControllerAPI_Exists_Response$Type extends MessageType<ControllerAPI_Exist
         /* bool exists = 1; */
         if (message.exists !== false)
             writer.tag(1, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8840,7 +8840,7 @@ class ControllerAPI_Update$Type extends MessageType<ControllerAPI_Update> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Update, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8869,9 +8869,9 @@ class ControllerAPI_Update_Request$Type extends MessageType<ControllerAPI_Update
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Update_Request): ControllerAPI_Update_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -8883,10 +8883,10 @@ class ControllerAPI_Update_Request$Type extends MessageType<ControllerAPI_Update
                     message.resourceSchemas.push(ResourceSchema.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -8896,7 +8896,7 @@ class ControllerAPI_Update_Request$Type extends MessageType<ControllerAPI_Update
     private binaryReadMap2(map: ControllerAPI_Update_Request["filters"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof ControllerAPI_Update_Request["filters"] | undefined, val: ControllerAPI_Update_Request["filters"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.string();
@@ -8914,7 +8914,7 @@ class ControllerAPI_Update_Request$Type extends MessageType<ControllerAPI_Update
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
         /* map<string, MiLaboratories.PL.RTypes.NotificationFilter> filters = 2; */
-        for (let k of globalThis.Object.keys(message.filters)) {
+        for (const k of globalThis.Object.keys(message.filters)) {
             writer.tag(2, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k);
             writer.tag(2, WireType.LengthDelimited).fork();
             NotificationFilter.internalBinaryWrite(message.filters[k], writer, options);
@@ -8923,7 +8923,7 @@ class ControllerAPI_Update_Request$Type extends MessageType<ControllerAPI_Update
         /* repeated MiLaboratories.PL.API.ResourceSchema resource_schemas = 3; */
         for (let i = 0; i < message.resourceSchemas.length; i++)
             ResourceSchema.internalBinaryWrite(message.resourceSchemas[i], writer.tag(3, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8948,7 +8948,7 @@ class ControllerAPI_Update_Response$Type extends MessageType<ControllerAPI_Updat
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Update_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8973,7 +8973,7 @@ class ControllerAPI_Deregister$Type extends MessageType<ControllerAPI_Deregister
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Deregister, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -8998,18 +8998,18 @@ class ControllerAPI_Deregister_Request$Type extends MessageType<ControllerAPI_De
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Deregister_Request): ControllerAPI_Deregister_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9020,7 +9020,7 @@ class ControllerAPI_Deregister_Request$Type extends MessageType<ControllerAPI_De
         /* string controller_type = 1; */
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9045,7 +9045,7 @@ class ControllerAPI_Deregister_Response$Type extends MessageType<ControllerAPI_D
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Deregister_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9070,7 +9070,7 @@ class ControllerAPI_Create$Type extends MessageType<ControllerAPI_Create> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Create, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9097,9 +9097,9 @@ class ControllerAPI_Create_Request$Type extends MessageType<ControllerAPI_Create
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Create_Request): ControllerAPI_Create_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 id */ 1:
                     message.id = reader.uint64().toBigInt();
@@ -9108,10 +9108,10 @@ class ControllerAPI_Create_Request$Type extends MessageType<ControllerAPI_Create
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9125,7 +9125,7 @@ class ControllerAPI_Create_Request$Type extends MessageType<ControllerAPI_Create
         /* string controller_type = 2; */
         if (message.controllerType !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9150,18 +9150,18 @@ class ControllerAPI_Create_Response$Type extends MessageType<ControllerAPI_Creat
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Create_Response): ControllerAPI_Create_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 controller_id */ 1:
                     message.controllerId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9172,7 +9172,7 @@ class ControllerAPI_Create_Response$Type extends MessageType<ControllerAPI_Creat
         /* uint64 controller_id = 1; */
         if (message.controllerId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.controllerId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9197,7 +9197,7 @@ class ControllerAPI_Get$Type extends MessageType<ControllerAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9222,18 +9222,18 @@ class ControllerAPI_Get_Request$Type extends MessageType<ControllerAPI_Get_Reque
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Get_Request): ControllerAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9244,7 +9244,7 @@ class ControllerAPI_Get_Request$Type extends MessageType<ControllerAPI_Get_Reque
         /* string controller_type = 1; */
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9268,18 +9268,18 @@ class ControllerAPI_Get_Response$Type extends MessageType<ControllerAPI_Get_Resp
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_Get_Response): ControllerAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Controller controller */ 1:
                     message.controller = Controller.internalBinaryRead(reader, reader.uint32(), options, message.controller);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9290,7 +9290,7 @@ class ControllerAPI_Get_Response$Type extends MessageType<ControllerAPI_Get_Resp
         /* MiLaboratories.PL.API.Controller controller = 1; */
         if (message.controller)
             Controller.internalBinaryWrite(message.controller, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9315,7 +9315,7 @@ class ControllerAPI_AttachSubscription$Type extends MessageType<ControllerAPI_At
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_AttachSubscription, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9342,9 +9342,9 @@ class ControllerAPI_AttachSubscription_Request$Type extends MessageType<Controll
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_AttachSubscription_Request): ControllerAPI_AttachSubscription_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 controller_id */ 1:
                     message.controllerId = reader.uint64().toBigInt();
@@ -9353,10 +9353,10 @@ class ControllerAPI_AttachSubscription_Request$Type extends MessageType<Controll
                     message.subscriptionId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9370,7 +9370,7 @@ class ControllerAPI_AttachSubscription_Request$Type extends MessageType<Controll
         /* uint64 subscription_id = 2; */
         if (message.subscriptionId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.subscriptionId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9395,7 +9395,7 @@ class ControllerAPI_AttachSubscription_Response$Type extends MessageType<Control
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_AttachSubscription_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9420,7 +9420,7 @@ class ControllerAPI_GetNotifications$Type extends MessageType<ControllerAPI_GetN
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_GetNotifications, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9447,9 +9447,9 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_GetNotifications_Request): ControllerAPI_GetNotifications_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -9458,10 +9458,10 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
                     message.maxNotifications = reader.uint32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9475,7 +9475,7 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
         /* uint32 max_notifications = 2; */
         if (message.maxNotifications !== 0)
             writer.tag(2, WireType.Varint).uint32(message.maxNotifications);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9500,18 +9500,18 @@ class ControllerAPI_GetNotifications_Response$Type extends MessageType<Controlle
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_GetNotifications_Response): ControllerAPI_GetNotifications_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.Notification notifications */ 1:
                     message.notifications.push(Notification.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9522,7 +9522,7 @@ class ControllerAPI_GetNotifications_Response$Type extends MessageType<Controlle
         /* repeated MiLaboratories.PL.API.Notification notifications = 1; */
         for (let i = 0; i < message.notifications.length; i++)
             Notification.internalBinaryWrite(message.notifications[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9547,7 +9547,7 @@ class ControllerAPI_WriteAliasesAndUrls$Type extends MessageType<ControllerAPI_W
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_WriteAliasesAndUrls, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9574,9 +9574,9 @@ class ControllerAPI_WriteAliasesAndUrls_Request$Type extends MessageType<Control
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_WriteAliasesAndUrls_Request): ControllerAPI_WriteAliasesAndUrls_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -9585,10 +9585,10 @@ class ControllerAPI_WriteAliasesAndUrls_Request$Type extends MessageType<Control
                     this.binaryReadMap2(message.aliasesToUrls, reader, options);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9598,7 +9598,7 @@ class ControllerAPI_WriteAliasesAndUrls_Request$Type extends MessageType<Control
     private binaryReadMap2(map: ControllerAPI_WriteAliasesAndUrls_Request["aliasesToUrls"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof ControllerAPI_WriteAliasesAndUrls_Request["aliasesToUrls"] | undefined, val: ControllerAPI_WriteAliasesAndUrls_Request["aliasesToUrls"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.string();
@@ -9616,9 +9616,9 @@ class ControllerAPI_WriteAliasesAndUrls_Request$Type extends MessageType<Control
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
         /* map<string, string> aliases_to_urls = 2; */
-        for (let k of globalThis.Object.keys(message.aliasesToUrls))
+        for (const k of globalThis.Object.keys(message.aliasesToUrls))
             writer.tag(2, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k).tag(2, WireType.LengthDelimited).string(message.aliasesToUrls[k]).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9643,7 +9643,7 @@ class ControllerAPI_WriteAliasesAndUrls_Response$Type extends MessageType<Contro
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_WriteAliasesAndUrls_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9668,7 +9668,7 @@ class ControllerAPI_GetUrl$Type extends MessageType<ControllerAPI_GetUrl> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_GetUrl, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9695,9 +9695,9 @@ class ControllerAPI_GetUrl_Request$Type extends MessageType<ControllerAPI_GetUrl
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_GetUrl_Request): ControllerAPI_GetUrl_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_alias */ 1:
                     message.controllerAlias = reader.string();
@@ -9706,10 +9706,10 @@ class ControllerAPI_GetUrl_Request$Type extends MessageType<ControllerAPI_GetUrl
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9723,7 +9723,7 @@ class ControllerAPI_GetUrl_Request$Type extends MessageType<ControllerAPI_GetUrl
         /* uint64 resource_id = 2; */
         if (message.resourceId !== 0n)
             writer.tag(2, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9748,18 +9748,18 @@ class ControllerAPI_GetUrl_Response$Type extends MessageType<ControllerAPI_GetUr
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_GetUrl_Response): ControllerAPI_GetUrl_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_url */ 2:
                     message.controllerUrl = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9770,7 +9770,7 @@ class ControllerAPI_GetUrl_Response$Type extends MessageType<ControllerAPI_GetUr
         /* string controller_url = 2; */
         if (message.controllerUrl !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.controllerUrl);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9795,7 +9795,7 @@ class ControllerAPI_RemoveAliasesAndUrls$Type extends MessageType<ControllerAPI_
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_RemoveAliasesAndUrls, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9820,18 +9820,18 @@ class ControllerAPI_RemoveAliasesAndUrls_Request$Type extends MessageType<Contro
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_RemoveAliasesAndUrls_Request): ControllerAPI_RemoveAliasesAndUrls_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9842,7 +9842,7 @@ class ControllerAPI_RemoveAliasesAndUrls_Request$Type extends MessageType<Contro
         /* string controller_type = 1; */
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9867,7 +9867,7 @@ class ControllerAPI_RemoveAliasesAndUrls_Response$Type extends MessageType<Contr
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_RemoveAliasesAndUrls_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9892,7 +9892,7 @@ class ControllerAPI_SetFeatures$Type extends MessageType<ControllerAPI_SetFeatur
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_SetFeatures, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9917,18 +9917,18 @@ class ControllerAPI_SetFeatures_Request$Type extends MessageType<ControllerAPI_S
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_SetFeatures_Request): ControllerAPI_SetFeatures_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.ResourceAPIFeature features */ 2:
                     message.features.push(ResourceAPIFeature.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -9939,7 +9939,7 @@ class ControllerAPI_SetFeatures_Request$Type extends MessageType<ControllerAPI_S
         /* repeated MiLaboratories.PL.API.ResourceAPIFeature features = 2; */
         for (let i = 0; i < message.features.length; i++)
             ResourceAPIFeature.internalBinaryWrite(message.features[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9964,7 +9964,7 @@ class ControllerAPI_SetFeatures_Response$Type extends MessageType<ControllerAPI_
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_SetFeatures_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -9989,7 +9989,7 @@ class ControllerAPI_ClearFeatures$Type extends MessageType<ControllerAPI_ClearFe
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_ClearFeatures, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10014,18 +10014,18 @@ class ControllerAPI_ClearFeatures_Request$Type extends MessageType<ControllerAPI
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerAPI_ClearFeatures_Request): ControllerAPI_ClearFeatures_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10036,7 +10036,7 @@ class ControllerAPI_ClearFeatures_Request$Type extends MessageType<ControllerAPI
         /* string controller_type = 1; */
         if (message.controllerType !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.controllerType);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10061,7 +10061,7 @@ class ControllerAPI_ClearFeatures_Response$Type extends MessageType<ControllerAP
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerAPI_ClearFeatures_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10086,7 +10086,7 @@ class ResourceKVAPI$Type extends MessageType<ResourceKVAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10111,7 +10111,7 @@ class ResourceKVAPI_List$Type extends MessageType<ResourceKVAPI_List> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_List, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10140,9 +10140,9 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_List_Request): ResourceKVAPI_List_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10154,10 +10154,10 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
                     message.limit = reader.uint32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10174,7 +10174,7 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         /* uint32 limit = 3; */
         if (message.limit !== 0)
             writer.tag(3, WireType.Varint).uint32(message.limit);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10200,9 +10200,9 @@ class ResourceKVAPI_List_Response$Type extends MessageType<ResourceKVAPI_List_Re
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_List_Response): ResourceKVAPI_List_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.ResourceKVAPI.List.Response.KV record */ 1:
                     message.record = ResourceKVAPI_List_Response_KV.internalBinaryRead(reader, reader.uint32(), options, message.record);
@@ -10211,10 +10211,10 @@ class ResourceKVAPI_List_Response$Type extends MessageType<ResourceKVAPI_List_Re
                     message.next = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10228,7 +10228,7 @@ class ResourceKVAPI_List_Response$Type extends MessageType<ResourceKVAPI_List_Re
         /* string next = 4; */
         if (message.next !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.next);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10255,9 +10255,9 @@ class ResourceKVAPI_List_Response_KV$Type extends MessageType<ResourceKVAPI_List
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_List_Response_KV): ResourceKVAPI_List_Response_KV {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string key */ 2:
                     message.key = reader.string();
@@ -10266,10 +10266,10 @@ class ResourceKVAPI_List_Response_KV$Type extends MessageType<ResourceKVAPI_List
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10283,7 +10283,7 @@ class ResourceKVAPI_List_Response_KV$Type extends MessageType<ResourceKVAPI_List
         /* bytes value = 3; */
         if (message.value.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10308,7 +10308,7 @@ class ResourceKVAPI_Set$Type extends MessageType<ResourceKVAPI_Set> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_Set, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10337,9 +10337,9 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_Set_Request): ResourceKVAPI_Set_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10351,10 +10351,10 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10371,7 +10371,7 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
         /* bytes value = 3; */
         if (message.value.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10396,7 +10396,7 @@ class ResourceKVAPI_Set_Response$Type extends MessageType<ResourceKVAPI_Set_Resp
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_Set_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10421,7 +10421,7 @@ class ResourceKVAPI_Get$Type extends MessageType<ResourceKVAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10448,9 +10448,9 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_Get_Request): ResourceKVAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10459,10 +10459,10 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10476,7 +10476,7 @@ class ResourceKVAPI_Get_Request$Type extends MessageType<ResourceKVAPI_Get_Reque
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10501,18 +10501,18 @@ class ResourceKVAPI_Get_Response$Type extends MessageType<ResourceKVAPI_Get_Resp
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_Get_Response): ResourceKVAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes value */ 1:
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10523,7 +10523,7 @@ class ResourceKVAPI_Get_Response$Type extends MessageType<ResourceKVAPI_Get_Resp
         /* bytes value = 1; */
         if (message.value.length)
             writer.tag(1, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10548,7 +10548,7 @@ class ResourceKVAPI_GetIfExists$Type extends MessageType<ResourceKVAPI_GetIfExis
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_GetIfExists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10575,9 +10575,9 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_GetIfExists_Request): ResourceKVAPI_GetIfExists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10586,10 +10586,10 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10603,7 +10603,7 @@ class ResourceKVAPI_GetIfExists_Request$Type extends MessageType<ResourceKVAPI_G
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10630,9 +10630,9 @@ class ResourceKVAPI_GetIfExists_Response$Type extends MessageType<ResourceKVAPI_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_GetIfExists_Response): ResourceKVAPI_GetIfExists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes value */ 1:
                     message.value = reader.bytes();
@@ -10641,10 +10641,10 @@ class ResourceKVAPI_GetIfExists_Response$Type extends MessageType<ResourceKVAPI_
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10658,7 +10658,7 @@ class ResourceKVAPI_GetIfExists_Response$Type extends MessageType<ResourceKVAPI_
         /* bool exists = 2; */
         if (message.exists !== false)
             writer.tag(2, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10683,7 +10683,7 @@ class ResourceKVAPI_Delete$Type extends MessageType<ResourceKVAPI_Delete> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_Delete, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10710,9 +10710,9 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_Delete_Request): ResourceKVAPI_Delete_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10721,10 +10721,10 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10738,7 +10738,7 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10763,7 +10763,7 @@ class ResourceKVAPI_Delete_Response$Type extends MessageType<ResourceKVAPI_Delet
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_Delete_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10788,7 +10788,7 @@ class ResourceKVAPI_SetFlag$Type extends MessageType<ResourceKVAPI_SetFlag> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_SetFlag, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10817,9 +10817,9 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_SetFlag_Request): ResourceKVAPI_SetFlag_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10831,10 +10831,10 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
                     message.value = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10851,7 +10851,7 @@ class ResourceKVAPI_SetFlag_Request$Type extends MessageType<ResourceKVAPI_SetFl
         /* bool value = 3; */
         if (message.value !== false)
             writer.tag(3, WireType.Varint).bool(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10876,7 +10876,7 @@ class ResourceKVAPI_SetFlag_Response$Type extends MessageType<ResourceKVAPI_SetF
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_SetFlag_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10901,7 +10901,7 @@ class ResourceKVAPI_GetFlag$Type extends MessageType<ResourceKVAPI_GetFlag> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ResourceKVAPI_GetFlag, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10928,9 +10928,9 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_GetFlag_Request): ResourceKVAPI_GetFlag_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -10939,10 +10939,10 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -10956,7 +10956,7 @@ class ResourceKVAPI_GetFlag_Request$Type extends MessageType<ResourceKVAPI_GetFl
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -10981,18 +10981,18 @@ class ResourceKVAPI_GetFlag_Response$Type extends MessageType<ResourceKVAPI_GetF
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceKVAPI_GetFlag_Response): ResourceKVAPI_GetFlag_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bool value */ 1:
                     message.value = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11003,7 +11003,7 @@ class ResourceKVAPI_GetFlag_Response$Type extends MessageType<ResourceKVAPI_GetF
         /* bool value = 1; */
         if (message.value !== false)
             writer.tag(1, WireType.Varint).bool(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11028,7 +11028,7 @@ class ControllerKVAPI$Type extends MessageType<ControllerKVAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerKVAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11053,7 +11053,7 @@ class ControllerKVAPI_Set$Type extends MessageType<ControllerKVAPI_Set> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerKVAPI_Set, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11082,9 +11082,9 @@ class ControllerKVAPI_Set_Request$Type extends MessageType<ControllerKVAPI_Set_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_Set_Request): ControllerKVAPI_Set_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -11096,10 +11096,10 @@ class ControllerKVAPI_Set_Request$Type extends MessageType<ControllerKVAPI_Set_R
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11116,7 +11116,7 @@ class ControllerKVAPI_Set_Request$Type extends MessageType<ControllerKVAPI_Set_R
         /* bytes value = 3; */
         if (message.value.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11141,7 +11141,7 @@ class ControllerKVAPI_Set_Response$Type extends MessageType<ControllerKVAPI_Set_
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerKVAPI_Set_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11166,7 +11166,7 @@ class ControllerKVAPI_Get$Type extends MessageType<ControllerKVAPI_Get> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerKVAPI_Get, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11193,9 +11193,9 @@ class ControllerKVAPI_Get_Request$Type extends MessageType<ControllerKVAPI_Get_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_Get_Request): ControllerKVAPI_Get_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -11204,10 +11204,10 @@ class ControllerKVAPI_Get_Request$Type extends MessageType<ControllerKVAPI_Get_R
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11221,7 +11221,7 @@ class ControllerKVAPI_Get_Request$Type extends MessageType<ControllerKVAPI_Get_R
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11246,18 +11246,18 @@ class ControllerKVAPI_Get_Response$Type extends MessageType<ControllerKVAPI_Get_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_Get_Response): ControllerKVAPI_Get_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes value */ 1:
                     message.value = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11268,7 +11268,7 @@ class ControllerKVAPI_Get_Response$Type extends MessageType<ControllerKVAPI_Get_
         /* bytes value = 1; */
         if (message.value.length)
             writer.tag(1, WireType.LengthDelimited).bytes(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11293,7 +11293,7 @@ class ControllerKVAPI_GetIfExists$Type extends MessageType<ControllerKVAPI_GetIf
         return target ?? this.create();
     }
     internalBinaryWrite(message: ControllerKVAPI_GetIfExists, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11320,9 +11320,9 @@ class ControllerKVAPI_GetIfExists_Request$Type extends MessageType<ControllerKVA
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetIfExists_Request): ControllerKVAPI_GetIfExists_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string controller_type */ 1:
                     message.controllerType = reader.string();
@@ -11331,10 +11331,10 @@ class ControllerKVAPI_GetIfExists_Request$Type extends MessageType<ControllerKVA
                     message.key = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11348,7 +11348,7 @@ class ControllerKVAPI_GetIfExists_Request$Type extends MessageType<ControllerKVA
         /* string key = 2; */
         if (message.key !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.key);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11375,9 +11375,9 @@ class ControllerKVAPI_GetIfExists_Response$Type extends MessageType<ControllerKV
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ControllerKVAPI_GetIfExists_Response): ControllerKVAPI_GetIfExists_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes value */ 1:
                     message.value = reader.bytes();
@@ -11386,10 +11386,10 @@ class ControllerKVAPI_GetIfExists_Response$Type extends MessageType<ControllerKV
                     message.exists = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11403,7 +11403,7 @@ class ControllerKVAPI_GetIfExists_Response$Type extends MessageType<ControllerKV
         /* bool exists = 2; */
         if (message.exists !== false)
             writer.tag(2, WireType.Varint).bool(message.exists);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11428,7 +11428,7 @@ class CacheAPI$Type extends MessageType<CacheAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11453,7 +11453,7 @@ class CacheAPI_SetToField$Type extends MessageType<CacheAPI_SetToField> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI_SetToField, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11478,9 +11478,9 @@ class CacheAPI_SetToField_Request$Type extends MessageType<CacheAPI_SetToField_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CacheAPI_SetToField_Request): CacheAPI_SetToField_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* MiLaboratories.PL.Base.FieldRef id */ 1:
                     message.id = FieldRef.internalBinaryRead(reader, reader.uint32(), options, message.id);
@@ -11489,10 +11489,10 @@ class CacheAPI_SetToField_Request$Type extends MessageType<CacheAPI_SetToField_R
                     message.period = Duration.internalBinaryRead(reader, reader.uint32(), options, message.period);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11506,7 +11506,7 @@ class CacheAPI_SetToField_Request$Type extends MessageType<CacheAPI_SetToField_R
         /* google.protobuf.Duration period = 2; */
         if (message.period)
             Duration.internalBinaryWrite(message.period, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11531,7 +11531,7 @@ class CacheAPI_SetToField_Response$Type extends MessageType<CacheAPI_SetToField_
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI_SetToField_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11556,7 +11556,7 @@ class CacheAPI_DeleteExpiredRecords$Type extends MessageType<CacheAPI_DeleteExpi
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI_DeleteExpiredRecords, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11581,7 +11581,7 @@ class CacheAPI_DeleteExpiredRecords_Request$Type extends MessageType<CacheAPI_De
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI_DeleteExpiredRecords_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11606,7 +11606,7 @@ class CacheAPI_DeleteExpiredRecords_Response$Type extends MessageType<CacheAPI_D
         return target ?? this.create();
     }
     internalBinaryWrite(message: CacheAPI_DeleteExpiredRecords_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11631,7 +11631,7 @@ class LocksAPI$Type extends MessageType<LocksAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11656,7 +11656,7 @@ class LocksAPI_Lease$Type extends MessageType<LocksAPI_Lease> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11681,7 +11681,7 @@ class LocksAPI_Lease_Create$Type extends MessageType<LocksAPI_Lease_Create> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease_Create, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11709,9 +11709,9 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LocksAPI_Lease_Create_Request): LocksAPI_Lease_Create_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -11723,10 +11723,10 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11743,7 +11743,7 @@ class LocksAPI_Lease_Create_Request$Type extends MessageType<LocksAPI_Lease_Crea
         /* string name = 4; */
         if (message.name !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11768,18 +11768,18 @@ class LocksAPI_Lease_Create_Response$Type extends MessageType<LocksAPI_Lease_Cre
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LocksAPI_Lease_Create_Response): LocksAPI_Lease_Create_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes lease_id */ 1:
                     message.leaseId = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11790,7 +11790,7 @@ class LocksAPI_Lease_Create_Response$Type extends MessageType<LocksAPI_Lease_Cre
         /* bytes lease_id = 1; */
         if (message.leaseId.length)
             writer.tag(1, WireType.LengthDelimited).bytes(message.leaseId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11815,7 +11815,7 @@ class LocksAPI_Lease_Update$Type extends MessageType<LocksAPI_Lease_Update> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease_Update, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11845,9 +11845,9 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LocksAPI_Lease_Update_Request): LocksAPI_Lease_Update_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -11862,10 +11862,10 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
                     message.name = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11885,7 +11885,7 @@ class LocksAPI_Lease_Update_Request$Type extends MessageType<LocksAPI_Lease_Upda
         /* string name = 4; */
         if (message.name !== "")
             writer.tag(4, WireType.LengthDelimited).string(message.name);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11910,7 +11910,7 @@ class LocksAPI_Lease_Update_Response$Type extends MessageType<LocksAPI_Lease_Upd
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease_Update_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11935,7 +11935,7 @@ class LocksAPI_Lease_Release$Type extends MessageType<LocksAPI_Lease_Release> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease_Release, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -11962,9 +11962,9 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LocksAPI_Lease_Release_Request): LocksAPI_Lease_Release_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -11973,10 +11973,10 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
                     message.leaseId = reader.bytes();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -11990,7 +11990,7 @@ class LocksAPI_Lease_Release_Request$Type extends MessageType<LocksAPI_Lease_Rel
         /* bytes lease_id = 2; */
         if (message.leaseId.length)
             writer.tag(2, WireType.LengthDelimited).bytes(message.leaseId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12015,7 +12015,7 @@ class LocksAPI_Lease_Release_Response$Type extends MessageType<LocksAPI_Lease_Re
         return target ?? this.create();
     }
     internalBinaryWrite(message: LocksAPI_Lease_Release_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12040,7 +12040,7 @@ class AuthAPI$Type extends MessageType<AuthAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: AuthAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12065,7 +12065,7 @@ class AuthAPI_ListMethods$Type extends MessageType<AuthAPI_ListMethods> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: AuthAPI_ListMethods, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12090,7 +12090,7 @@ class AuthAPI_ListMethods_Request$Type extends MessageType<AuthAPI_ListMethods_R
         return target ?? this.create();
     }
     internalBinaryWrite(message: AuthAPI_ListMethods_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12115,18 +12115,18 @@ class AuthAPI_ListMethods_Response$Type extends MessageType<AuthAPI_ListMethods_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListMethods_Response): AuthAPI_ListMethods_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.AuthAPI.ListMethods.MethodInfo methods */ 1:
                     message.methods.push(AuthAPI_ListMethods_MethodInfo.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12137,7 +12137,7 @@ class AuthAPI_ListMethods_Response$Type extends MessageType<AuthAPI_ListMethods_
         /* repeated MiLaboratories.PL.API.AuthAPI.ListMethods.MethodInfo methods = 1; */
         for (let i = 0; i < message.methods.length; i++)
             AuthAPI_ListMethods_MethodInfo.internalBinaryWrite(message.methods[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12166,9 +12166,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListMethods_MethodInfo): AuthAPI_ListMethods_MethodInfo {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string type */ 1:
                     message.type = reader.string();
@@ -12180,10 +12180,10 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
                     this.binaryReadMap3(message.info, reader, options);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12193,7 +12193,7 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
     private binaryReadMap3(map: AuthAPI_ListMethods_MethodInfo["info"], reader: IBinaryReader, options: BinaryReadOptions): void {
         let len = reader.uint32(), end = reader.pos + len, key: keyof AuthAPI_ListMethods_MethodInfo["info"] | undefined, val: AuthAPI_ListMethods_MethodInfo["info"][any] | undefined;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case 1:
                     key = reader.string();
@@ -12214,9 +12214,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         if (message.name !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.name);
         /* map<string, string> info = 3; */
-        for (let k of globalThis.Object.keys(message.info))
+        for (const k of globalThis.Object.keys(message.info))
             writer.tag(3, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k).tag(2, WireType.LengthDelimited).string(message.info[k]).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12241,7 +12241,7 @@ class AuthAPI_GetJWTToken$Type extends MessageType<AuthAPI_GetJWTToken> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: AuthAPI_GetJWTToken, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12265,18 +12265,18 @@ class AuthAPI_GetJWTToken_Request$Type extends MessageType<AuthAPI_GetJWTToken_R
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_GetJWTToken_Request): AuthAPI_GetJWTToken_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* google.protobuf.Duration expiration */ 1:
                     message.expiration = Duration.internalBinaryRead(reader, reader.uint32(), options, message.expiration);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12287,7 +12287,7 @@ class AuthAPI_GetJWTToken_Request$Type extends MessageType<AuthAPI_GetJWTToken_R
         /* google.protobuf.Duration expiration = 1; */
         if (message.expiration)
             Duration.internalBinaryWrite(message.expiration, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12312,18 +12312,18 @@ class AuthAPI_GetJWTToken_Response$Type extends MessageType<AuthAPI_GetJWTToken_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_GetJWTToken_Response): AuthAPI_GetJWTToken_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string token */ 1:
                     message.token = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12334,7 +12334,7 @@ class AuthAPI_GetJWTToken_Response$Type extends MessageType<AuthAPI_GetJWTToken_
         /* string token = 1; */
         if (message.token !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.token);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12359,7 +12359,7 @@ class MiscAPI$Type extends MessageType<MiscAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: MiscAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12384,7 +12384,7 @@ class MiscAPI_ListResourceTypes$Type extends MessageType<MiscAPI_ListResourceTyp
         return target ?? this.create();
     }
     internalBinaryWrite(message: MiscAPI_ListResourceTypes, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12409,7 +12409,7 @@ class MiscAPI_ListResourceTypes_Request$Type extends MessageType<MiscAPI_ListRes
         return target ?? this.create();
     }
     internalBinaryWrite(message: MiscAPI_ListResourceTypes_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12434,18 +12434,18 @@ class MiscAPI_ListResourceTypes_Response$Type extends MessageType<MiscAPI_ListRe
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: MiscAPI_ListResourceTypes_Response): MiscAPI_ListResourceTypes_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.Base.ResourceType types */ 1:
                     message.types.push(ResourceType.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12456,7 +12456,7 @@ class MiscAPI_ListResourceTypes_Response$Type extends MessageType<MiscAPI_ListRe
         /* repeated MiLaboratories.PL.Base.ResourceType types = 1; */
         for (let i = 0; i < message.types.length; i++)
             ResourceType.internalBinaryWrite(message.types[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12481,7 +12481,7 @@ class MaintenanceAPI$Type extends MessageType<MaintenanceAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: MaintenanceAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12506,7 +12506,7 @@ class MaintenanceAPI_Ping$Type extends MessageType<MaintenanceAPI_Ping> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: MaintenanceAPI_Ping, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12531,7 +12531,7 @@ class MaintenanceAPI_Ping_Request$Type extends MessageType<MaintenanceAPI_Ping_R
         return target ?? this.create();
     }
     internalBinaryWrite(message: MaintenanceAPI_Ping_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -12560,9 +12560,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: MaintenanceAPI_Ping_Response): MaintenanceAPI_Ping_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string core_version */ 1:
                     message.coreVersion = reader.string();
@@ -12574,10 +12574,10 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                     message.serverInfo = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -12594,7 +12594,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* string server_info = 3; */
         if (message.serverInfo !== "")
             writer.tag(3, WireType.LengthDelimited).string(message.serverInfo);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

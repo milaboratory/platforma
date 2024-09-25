@@ -1,4 +1,5 @@
-import { getJsonField, makeObject, TypedConfig } from './config';
+import type { TypedConfig } from './config';
+import { getJsonField, makeObject } from './config';
 
 export function fromPlRef<Source extends TypedConfig>(source: Source) {
   return makeObject({

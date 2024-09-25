@@ -1,4 +1,4 @@
-import { Watcher } from './watcher';
+import type { Watcher } from './watcher';
 
 const DEFAULT_CHANGE_SOURCE_RECHECK_PERIOD = 7;
 

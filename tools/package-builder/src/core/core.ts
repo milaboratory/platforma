@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { spawnSync } from "child_process";
-import winston from "winston";
-import { PackageInfo, PackageConfig, Entrypoint } from "./package-info";
+import type winston from "winston";
+import type { PackageConfig, Entrypoint } from "./package-info";
+import { PackageInfo } from "./package-info";
 import { Renderer, listSoftwareNames as listSoftwareEntrypoints, readEntrypointDescriptor } from "./renderer";
 import * as binSchema from './schemas/artifacts';
 import * as util from "./util";
@@ -100,7 +101,7 @@ export class Core {
             }
         }
 
-        var entrypoints = Array.from(this.entrypoints.entries())
+        let entrypoints = Array.from(this.entrypoints.entries())
         if (entrypointNames.length > 0) {
             entrypoints = entrypoints.filter(
                 ([epName, _]) => entrypointNames.includes(epName)

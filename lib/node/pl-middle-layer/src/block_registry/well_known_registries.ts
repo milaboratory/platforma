@@ -1,4 +1,4 @@
-import { RegistrySpec } from './registry_spec';
+import type { RegistrySpec } from './registry_spec';
 
 export const CentralRegistry: RegistrySpec = {
   type: 'remote_v1',

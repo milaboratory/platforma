@@ -1,6 +1,7 @@
-import { Dispatcher, request } from 'undici';
+import type { Dispatcher} from 'undici';
+import { request } from 'undici';
 import { Readable } from 'node:stream';
-import { ReadableStream } from 'node:stream/web';
+import type { ReadableStream } from 'node:stream/web';
 
 export interface DownloadResponse {
   content: ReadableStream;

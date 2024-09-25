@@ -1,4 +1,4 @@
-import { PObject, PObjectId, PObjectSpec } from '../../pool';
+import type { PObject, PObjectId, PObjectSpec } from '../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
 export type ValueType =

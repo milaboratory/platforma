@@ -1,15 +1,16 @@
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { ClientLogs } from '../../clients/logs';
-import {
+import type { ClientLogs } from '../../clients/logs';
+import type {
   PlClient,
   ResourceId,
-  BasicResourceData,
+  BasicResourceData} from '@milaboratories/pl-client';
+import {
   isNullResourceId,
   valErr,
   getField
 } from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 // TODO: remove this when we switch to refreshState.
 

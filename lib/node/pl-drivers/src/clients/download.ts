@@ -3,17 +3,18 @@ import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { DownloadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol.client';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 import { addRTypeToMetadata } from '@milaboratories/pl-client';
-import { Dispatcher } from 'undici';
-import {
+import type { Dispatcher } from 'undici';
+import type {
   DownloadAPI_GetDownloadURL_HTTPHeader,
   DownloadAPI_GetDownloadURL_Response
 } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
-import { ResourceInfo } from '@milaboratories/pl-tree';
-import { DownloadHelper, DownloadResponse } from '../helpers/download';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
+import type { DownloadResponse } from '../helpers/download';
+import { DownloadHelper } from '../helpers/download';
 
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;

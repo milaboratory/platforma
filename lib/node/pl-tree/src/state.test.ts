@@ -11,7 +11,8 @@ import {
   TestErrorResourceState2
 } from './test_utils';
 import { Computable } from '@milaboratories/computable';
-import { NullResourceId, ResourceId } from '@milaboratories/pl-client';
+import type { ResourceId } from '@milaboratories/pl-client';
+import { NullResourceId } from '@milaboratories/pl-client';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;

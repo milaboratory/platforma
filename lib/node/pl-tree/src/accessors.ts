@@ -1,30 +1,30 @@
-import { PlTreeResource, PlTreeState } from './state';
-import {
+import type { PlTreeResource, PlTreeState } from './state';
+import type {
   AccessorProvider,
   ComputableCtx,
   ComputableHooks,
   UsageGuard
 } from '@milaboratories/computable';
-import {
+import type {
   ResourceId,
-  resourceIdToString,
   ResourceType,
-  resourceTypesEqual,
-  resourceTypeToString,
-  NullResourceId,
   OptionalResourceId
 } from '@milaboratories/pl-client';
-import { mapValueAndError, ValueAndError } from './value_and_error';
 import {
+  resourceIdToString,
+  resourceTypesEqual,
+  resourceTypeToString,
+  NullResourceId
+} from '@milaboratories/pl-client';
+import type { ValueAndError } from './value_and_error';
+import { mapValueAndError } from './value_and_error';
+import type {
   CommonFieldTraverseOps,
   FieldTraversalStep,
   GetFieldStep,
   ResourceTraversalOps
 } from './traversal_ops';
-import { ValueOrError } from './value_or_error';
-import { ZodType, z } from 'zod';
-import { Optional, Writable } from 'utility-types';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import type { ValueOrError } from './value_or_error';
 
 /** Error encountered during traversal in field or resource. */
 export class PlError extends Error {
@@ -249,6 +249,7 @@ export class PlTreeNodeAccessor {
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
   ): ValueOrError<PlTreeNodeAccessor, string> | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let current: PlTreeNodeAccessor = this;
 
     for (const _step of steps) {

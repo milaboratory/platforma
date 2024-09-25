@@ -1,23 +1,26 @@
+import type {
+  MiLogger} from '@milaboratories/ts-helpers';
 import {
   CallersCounter,
-  MiLogger,
   TaskProcessor,
   notEmpty
 } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream';
-import {
-  ChangeSource,
-  Computable,
+import type {
   ComputableCtx,
   Watcher
+} from '@milaboratories/computable';
+import {
+  ChangeSource,
+  Computable
 } from '@milaboratories/computable';
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
 import { FilesCache } from './helpers/files_cache';
-import { Dispatcher } from 'undici';
+import type { Dispatcher } from 'undici';
 import { DownloadHelper, NetworkError400 } from '../helpers/download';
 
 export interface DownloadUrlSyncReader {

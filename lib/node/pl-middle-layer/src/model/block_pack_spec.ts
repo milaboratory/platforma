@@ -1,7 +1,7 @@
-import { ExplicitTemplate } from './template_spec';
-import { ResourceType } from '@milaboratories/pl-client';
-import { BlockConfig } from '@platforma-sdk/model';
-import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import type { ExplicitTemplate } from './template_spec';
+import type { ResourceType } from '@milaboratories/pl-client';
+import type { BlockConfig } from '@platforma-sdk/model';
+import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
 

@@ -142,7 +142,7 @@ class Duration$Type extends MessageType<Duration> {
      * Encode `Duration` to JSON string like "3.000001s".
      */
     internalJsonWrite(message: Duration, options: JsonWriteOptions): JsonValue {
-        let s = PbLong.from(message.seconds).toNumber();
+        const s = PbLong.from(message.seconds).toNumber();
         if (s > 315576000000 || s < -315576000000)
             throw new Error("Duration value out of range.");
         let text = message.seconds.toString();
@@ -165,18 +165,18 @@ class Duration$Type extends MessageType<Duration> {
     internalJsonRead(json: JsonValue, options: JsonReadOptions, target?: Duration): Duration {
         if (typeof json !== "string")
             throw new Error("Unable to parse Duration from JSON " + typeofJsonValue(json) + ". Expected string.");
-        let match = json.match(/^(-?)([0-9]+)(?:\.([0-9]+))?s/);
+        const match = json.match(/^(-?)([0-9]+)(?:\.([0-9]+))?s/);
         if (match === null)
             throw new Error("Unable to parse Duration from JSON string. Invalid format.");
         if (!target)
             target = this.create();
-        let [, sign, secs, nanos] = match;
-        let longSeconds = PbLong.from(sign + secs);
+        const [, sign, secs, nanos] = match;
+        const longSeconds = PbLong.from(sign + secs);
         if (longSeconds.toNumber() > 315576000000 || longSeconds.toNumber() < -315576000000)
             throw new Error("Unable to parse Duration from JSON string. Value out of range.");
         target.seconds = longSeconds.toBigInt();
         if (typeof nanos == "string") {
-            let nanosStr = sign + nanos + "0".repeat(9 - nanos.length);
+            const nanosStr = sign + nanos + "0".repeat(9 - nanos.length);
             target.nanos = parseInt(nanosStr);
         }
         return target;
@@ -190,9 +190,9 @@ class Duration$Type extends MessageType<Duration> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: Duration): Duration {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* int64 seconds */ 1:
                     message.seconds = reader.int64().toBigInt();
@@ -201,10 +201,10 @@ class Duration$Type extends MessageType<Duration> {
                     message.nanos = reader.int32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -218,7 +218,7 @@ class Duration$Type extends MessageType<Duration> {
         /* int32 nanos = 2; */
         if (message.nanos !== 0)
             writer.tag(2, WireType.Varint).int32(message.nanos);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

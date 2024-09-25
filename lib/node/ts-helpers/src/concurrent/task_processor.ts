@@ -1,7 +1,8 @@
-import { MiLogger } from '../log';
-import {
+import type { MiLogger } from '../log';
+import type {
   ExponentialWithMaxBackoffDelayRetryOptions,
-  InfiniteRetryOptions,
+  InfiniteRetryOptions} from '../temporal';
+import {
   LinearBackoffRetryOptions,
   RetryOptions,
   createInfiniteRetryState,

@@ -1,15 +1,17 @@
 import { Optional } from 'utility-types';
-import {
+import type {
   BasicResourceData,
   FieldData,
   FieldType,
-  NullResourceId,
   OptionalResourceId,
-  ResourceData,
   ResourceId,
   ResourceType
 } from '@milaboratories/pl-client';
-import { ExtendedResourceData } from './state';
+import {
+  NullResourceId,
+  ResourceData
+} from '@milaboratories/pl-client';
+import type { ExtendedResourceData } from './state';
 
 export const TestRootType1: ResourceType = {
   name: 'TestRootResource1',

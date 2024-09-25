@@ -1,21 +1,23 @@
-import { PlTreeEntry } from '@milaboratories/pl-tree';
-import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type {
+  ProjectRenderingState,
+  ProjectStructure} from '../model/project_model';
 import {
   BlockRenderingStateKey,
   ProjectCreatedTimestamp,
   projectFieldName,
   ProjectLastModifiedTimestamp,
   ProjectMetaKey,
-  ProjectRenderingState,
-  ProjectStructure,
   ProjectStructureAuthorKey,
   ProjectStructureKey
 } from '../model/project_model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { MiddleLayerEnvironment } from './middle_layer';
 import { Pl } from '@milaboratories/pl-client';
-import {
+import type {
   AuthorMarker,
   BlockCalculationStatus,
   ProjectMeta,
@@ -23,10 +25,11 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
-import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection, normalizeBlockConfig } from '@platforma-sdk/model';
+import type { BlockPackInfo } from '../model/block_pack';
+import type { BlockSection} from '@platforma-sdk/model';
+import { normalizeBlockConfig } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
-import { NavigationStates } from './navigation_states';
+import type { NavigationStates } from './navigation_states';
 
 type BlockInfo = {
   currentArguments: any;

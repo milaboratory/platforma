@@ -1,20 +1,23 @@
-import { PlClient } from '../core/client';
-import {
-  createRetryState,
-  nextRetryStateOrError,
-  notEmpty,
+import type { PlClient } from '../core/client';
+import type {
   RetryOptions
 } from '@milaboratories/ts-helpers';
 import {
+  createRetryState,
+  nextRetryStateOrError,
+  notEmpty
+} from '@milaboratories/ts-helpers';
+import type {
   FieldData,
   FieldType,
+  ResourceData,
+  ResourceId} from '../core/types';
+import {
   isNotNullResourceId,
   isNullResourceId,
-  ResourceData,
-  ResourceId,
   resourceIdToString
 } from '../core/types';
-import { PlTransaction } from '../core/transaction';
+import type { PlTransaction } from '../core/transaction';
 import * as tp from 'node:timers/promises';
 
 /** This error tells state assertion mechanism that required state is not yet ready */
@@ -143,7 +146,7 @@ export class PollTxAccessor {
 
   async throwError(error: ResourceId, path: string[] = []): Promise<never> {
     const errorRes = await this.get(error);
-    let errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
+    const errorText = Buffer.from(notEmpty(errorRes.data.data)).toString();
     throw new Error(`${path.join(' -> ')} = ${errorText}`);
   }
 }

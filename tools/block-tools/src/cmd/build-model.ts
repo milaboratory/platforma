@@ -43,6 +43,7 @@ export default class BuildModel extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(BuildModel);
     const modulePath = path.resolve(flags.modulePath); // i.e. folder with package.json file
+    // eslint-disable-next-line prefer-const
     let { model, platforma } = require(modulePath);
 
     if (!model) model = platforma;

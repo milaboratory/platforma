@@ -5,8 +5,8 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../block_registry';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
-import { Project } from './project';
+import type { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
+import type { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev';
 
 const registry = new BlockPackRegistry([

@@ -1,5 +1,5 @@
-import { Watcher } from '../watcher';
-import { ComputableCtx } from './kernel';
+import type { Watcher } from '../watcher';
+import type { ComputableCtx } from './kernel';
 
 /** Signals that accessor was used outside the scope of computable
  * kernel lambda. */

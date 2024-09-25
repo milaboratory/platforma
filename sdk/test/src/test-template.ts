@@ -1,27 +1,30 @@
-import {
-  Computable,
+import type {
   ComputableCtx,
   ComputableStableDefined,
   UnwrapComputables
 } from '@milaboratories/computable';
 import {
+  Computable
+} from '@milaboratories/computable';
+import type {
   AnyRef,
+  MiddleLayerDriverKit,
+  PlClient,
+  PlTransaction,
+  ResourceId,
+  TemplateSpecAny} from '@milaboratories/pl-middle-layer';
+import {
   createRenderTemplate,
   field,
   FieldRef,
   initDriverKit,
   loadTemplate,
   MiddleLayer,
-  MiddleLayerDriverKit,
   Pl,
-  PlClient,
-  PlTransaction,
   prepareTemplateSpec,
-  ResourceId,
-  TemplateSpecAny,
   toGlobalResourceId
 } from '@milaboratories/pl-middle-layer';
-import {
+import type {
   PlTreeEntry,
   PlTreeNodeAccessor,
   SynchronizedTreeState

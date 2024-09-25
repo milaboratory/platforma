@@ -1,13 +1,16 @@
-import { ArtifactSource } from './source';
-import { Template, TemplateData } from './template';
+import type { ArtifactSource } from './source';
+import type { TemplateData } from './template';
+import { Template } from './template';
+import type {
+  TypedArtifactName, FullArtifactName,
+  CompileMode
+} from './package';
 import {
-  TypedArtifactName,
   artifactKey,
   fullNameToString,
   typedArtifactNameToString,
   artifactNameToString,
-  formatArtefactNameAndVersion, typedArtifactNamesEquals, FullArtifactName,
-  CompileMode
+  formatArtefactNameAndVersion, typedArtifactNamesEquals
 } from './package';
 import { ArtifactStore } from './artifactset';
 import { assertNever } from './util';
@@ -38,7 +41,7 @@ export class TengoTemplateCompiler {
 
           const recursionStart = trace.indexOf(artifactNameToString(dep))
           if (recursionStart >= 0) {
-            let errorMessage = `library import recursion detected: ${trace.slice(recursionStart).join(" -> ")} -> ${artifactNameToString(dep)}`
+            const errorMessage = `library import recursion detected: ${trace.slice(recursionStart).join(" -> ")} -> ${artifactNameToString(dep)}`
             throw new Error(errorMessage)
           }
 

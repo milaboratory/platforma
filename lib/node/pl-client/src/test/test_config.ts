@@ -1,10 +1,12 @@
 import * as fs from 'node:fs';
 import { LLPlClient } from '../core/ll_client';
-import { AuthInformation, AuthOps, plAddressToConfig, PlClientConfig } from '../core/config';
+import type { AuthInformation, AuthOps, PlClientConfig } from '../core/config';
+import { plAddressToConfig } from '../core/config';
 import { UnauthenticatedPlClient } from '../core/unauth_client';
 import { PlClient } from '../core/client';
 import { randomUUID } from 'crypto';
-import { NullResourceId, OptionalResourceId, ResourceId, resourceIdToString } from '../core/types';
+import type { OptionalResourceId} from '../core/types';
+import { NullResourceId, ResourceId, resourceIdToString } from '../core/types';
 import { inferAuthRefreshTime } from '../core/auth';
 import * as path from 'node:path';
 

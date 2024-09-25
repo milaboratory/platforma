@@ -1,24 +1,26 @@
+import type {
+  BlockConfig,
+  InferOutputType,
+  PlResourceEntry,
+  TypedConfig
+} from '@platforma-sdk/model';
 import {
   Args,
-  BlockConfig,
   BlockModel,
   getJsonField,
   getResourceField,
   getResourceValueAsJson,
-  InferOutputType,
   isolate,
   It,
   MainOutputs,
   makeObject,
-  mapArrayValues,
-  PlResourceEntry,
-  TypedConfig
+  mapArrayValues
 } from '@platforma-sdk/model';
 import { computableFromCfg, computableFromCfgUnsafe } from './executor';
 import { field, Pl, TestHelpers } from '@milaboratories/pl-client';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
-import { Computable } from '@milaboratories/computable';
-import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
+import type { Computable } from '@milaboratories/computable';
+import type { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 
 test('local cfg test (no pl)', async () => {
   const args = {

@@ -1,5 +1,5 @@
-import { Computable } from './computable';
-import { ComputableHooks } from './computable_hooks';
+import type { Computable } from './computable';
+import type { ComputableHooks } from './computable_hooks';
 
 export type StartStopComputableHooksOps = {
   /** How long to wait after last computable request to send stopUpdating

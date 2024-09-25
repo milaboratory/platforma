@@ -1,11 +1,11 @@
-import { PObjectId } from '../../pool';
-import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec';
-import {
+import type { PObjectId } from '../../pool';
+import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
+import type { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec';
+import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse
 } from './table_calculate';
-import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
+import type { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 
 /** Read interface exposed by PFrames library */
 export interface PFrame {

@@ -71,7 +71,7 @@ class DownloadAPI$Type extends MessageType<DownloadAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: DownloadAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -96,7 +96,7 @@ class DownloadAPI_GetDownloadURL$Type extends MessageType<DownloadAPI_GetDownloa
         return target ?? this.create();
     }
     internalBinaryWrite(message: DownloadAPI_GetDownloadURL, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -121,18 +121,18 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DownloadAPI_GetDownloadURL_Request): DownloadAPI_GetDownloadURL_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -143,7 +143,7 @@ class DownloadAPI_GetDownloadURL_Request$Type extends MessageType<DownloadAPI_Ge
         /* uint64 resource_id = 1; */
         if (message.resourceId !== 0n)
             writer.tag(1, WireType.Varint).uint64(message.resourceId);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -170,9 +170,9 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DownloadAPI_GetDownloadURL_HTTPHeader): DownloadAPI_GetDownloadURL_HTTPHeader {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string Name = 1 [json_name = "Name"];*/ 1:
                     message.name = reader.string();
@@ -181,10 +181,10 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
                     message.value = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -198,7 +198,7 @@ class DownloadAPI_GetDownloadURL_HTTPHeader$Type extends MessageType<DownloadAPI
         /* string Value = 2 [json_name = "Value"]; */
         if (message.value !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.value);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -225,9 +225,9 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: DownloadAPI_GetDownloadURL_Response): DownloadAPI_GetDownloadURL_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string download_url */ 1:
                     message.downloadUrl = reader.string();
@@ -236,10 +236,10 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
                     message.headers.push(DownloadAPI_GetDownloadURL_HTTPHeader.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -253,7 +253,7 @@ class DownloadAPI_GetDownloadURL_Response$Type extends MessageType<DownloadAPI_G
         /* repeated MiLaboratories.Controller.Shared.DownloadAPI.GetDownloadURL.HTTPHeader headers = 2; */
         for (let i = 0; i < message.headers.length; i++)
             DownloadAPI_GetDownloadURL_HTTPHeader.internalBinaryWrite(message.headers[i], writer.tag(2, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

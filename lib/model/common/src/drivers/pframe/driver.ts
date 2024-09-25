@@ -1,17 +1,17 @@
-import { Branded } from '../../branding';
-import { PTable } from './table';
-import { PFrame } from './pframe';
-import { AddParameterToAllMethods } from './type_util';
-import { PTableShape, PTableVector, TableRange } from './data';
-import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
-import { PObjectId } from '../../pool';
-import { PColumnIdAndSpec, PColumnSpec } from './spec';
-import {
+import type { Branded } from '../../branding';
+import type { PTable } from './table';
+import type { PFrame } from './pframe';
+import type { AddParameterToAllMethods } from './type_util';
+import type { PTableShape, PTableVector, TableRange } from './data';
+import type { FindColumnsRequest, FindColumnsResponse } from './find_columns';
+import type { PObjectId } from '../../pool';
+import type { PColumnIdAndSpec, PColumnSpec } from './spec';
+import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse
 } from './table_calculate';
-import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
-import { PTableColumnSpec } from './table_common';
+import type { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
+import type { PTableColumnSpec } from './table_common';
 
 /** PFrame handle */
 export type PFrameHandle = Branded<string, 'PFrame'>;

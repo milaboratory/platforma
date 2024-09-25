@@ -217,7 +217,7 @@ class uploadapi$Type extends MessageType<uploadapi> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -255,7 +255,7 @@ class uploadapi_Init$Type extends MessageType<uploadapi_Init> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -297,21 +297,21 @@ class uploadapi_Init_Request$Type extends MessageType<uploadapi_Init_Request> {
     options: BinaryReadOptions,
     target?: uploadapi_Init_Request
   ): uploadapi_Init_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -332,7 +332,7 @@ class uploadapi_Init_Request$Type extends MessageType<uploadapi_Init_Request> {
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -383,10 +383,10 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
     options: BinaryReadOptions,
     target?: uploadapi_Init_Response
   ): uploadapi_Init_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 parts_count */ 1:
           message.partsCount = reader.uint64().toBigInt();
@@ -398,12 +398,12 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
           else message.uploadedParts.push(reader.uint64().toBigInt());
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -431,7 +431,7 @@ class uploadapi_Init_Response$Type extends MessageType<uploadapi_Init_Response> 
         writer.uint64(message.uploadedParts[i]);
       writer.join();
     }
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -471,7 +471,7 @@ class uploadapi_UpdateProgress$Type extends MessageType<uploadapi_UpdateProgress
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -525,10 +525,10 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
     options: BinaryReadOptions,
     target?: uploadapi_UpdateProgress_Request
   ): uploadapi_UpdateProgress_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -537,12 +537,12 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
           message.bytesProcessed = reader.int64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -566,7 +566,7 @@ class uploadapi_UpdateProgress_Request$Type extends MessageType<uploadapi_Update
     /* int64 bytes_processed = 2; */
     if (message.bytesProcessed !== 0n)
       writer.tag(2, WireType.Varint).int64(message.bytesProcessed);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -614,7 +614,7 @@ class uploadapi_UpdateProgress_Response$Type extends MessageType<uploadapi_Updat
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -653,7 +653,7 @@ class uploadapi_GetPartURL$Type extends MessageType<uploadapi_GetPartURL> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -715,10 +715,10 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
     options: BinaryReadOptions,
     target?: uploadapi_GetPartURL_Request
   ): uploadapi_GetPartURL_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -730,12 +730,12 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
           message.uploadedPartSize = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -762,7 +762,7 @@ class uploadapi_GetPartURL_Request$Type extends MessageType<uploadapi_GetPartURL
     /* uint64 uploaded_part_size = 3; */
     if (message.uploadedPartSize !== 0n)
       writer.tag(3, WireType.Varint).uint64(message.uploadedPartSize);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -817,10 +817,10 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
     options: BinaryReadOptions,
     target?: uploadapi_GetPartURL_HTTPHeader
   ): uploadapi_GetPartURL_HTTPHeader {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string Name = 1 [json_name = "Name"];*/ 1:
           message.name = reader.string();
@@ -829,12 +829,12 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
           message.value = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -858,7 +858,7 @@ class uploadapi_GetPartURL_HTTPHeader$Type extends MessageType<uploadapi_GetPart
     /* string Value = 2 [json_name = "Value"]; */
     if (message.value !== '')
       writer.tag(2, WireType.LengthDelimited).string(message.value);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -925,10 +925,10 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
     options: BinaryReadOptions,
     target?: uploadapi_GetPartURL_Response
   ): uploadapi_GetPartURL_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* string upload_url */ 1:
           message.uploadUrl = reader.string();
@@ -952,12 +952,12 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
           message.chunkEnd = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -996,7 +996,7 @@ class uploadapi_GetPartURL_Response$Type extends MessageType<uploadapi_GetPartUR
     /* uint64 chunk_end = 5; */
     if (message.chunkEnd !== 0n)
       writer.tag(5, WireType.Varint).uint64(message.chunkEnd);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -1035,7 +1035,7 @@ class uploadapi_Finalize$Type extends MessageType<uploadapi_Finalize> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -1077,21 +1077,21 @@ class uploadapi_Finalize_Request$Type extends MessageType<uploadapi_Finalize_Req
     options: BinaryReadOptions,
     target?: uploadapi_Finalize_Request
   ): uploadapi_Finalize_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -1112,7 +1112,7 @@ class uploadapi_Finalize_Request$Type extends MessageType<uploadapi_Finalize_Req
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -1152,7 +1152,7 @@ class uploadapi_Finalize_Response$Type extends MessageType<uploadapi_Finalize_Re
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,

@@ -1,4 +1,4 @@
-import { BlobDriver, LogsDriver, LsDriver, PFrameDriver } from './drivers';
+import type { BlobDriver, LogsDriver, LsDriver, PFrameDriver } from './drivers';
 
 /** Set of all drivers exposed in UI SDK via the platforma object. */
 export interface DriverKit {

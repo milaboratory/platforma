@@ -460,9 +460,9 @@ class Http$Type extends MessageType<Http> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: Http): Http {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated google.api.HttpRule rules */ 1:
                     message.rules.push(HttpRule.internalBinaryRead(reader, reader.uint32(), options));
@@ -471,10 +471,10 @@ class Http$Type extends MessageType<Http> {
                     message.fullyDecodeReservedExpansion = reader.bool();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -488,7 +488,7 @@ class Http$Type extends MessageType<Http> {
         /* bool fully_decode_reserved_expansion = 2; */
         if (message.fullyDecodeReservedExpansion !== false)
             writer.tag(2, WireType.Varint).bool(message.fullyDecodeReservedExpansion);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -526,9 +526,9 @@ class HttpRule$Type extends MessageType<HttpRule> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: HttpRule): HttpRule {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string selector */ 1:
                     message.selector = reader.string();
@@ -579,10 +579,10 @@ class HttpRule$Type extends MessageType<HttpRule> {
                     message.additionalBindings.push(HttpRule.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -620,7 +620,7 @@ class HttpRule$Type extends MessageType<HttpRule> {
         /* repeated google.api.HttpRule additional_bindings = 11; */
         for (let i = 0; i < message.additionalBindings.length; i++)
             HttpRule.internalBinaryWrite(message.additionalBindings[i], writer.tag(11, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -647,9 +647,9 @@ class CustomHttpPattern$Type extends MessageType<CustomHttpPattern> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: CustomHttpPattern): CustomHttpPattern {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string kind */ 1:
                     message.kind = reader.string();
@@ -658,10 +658,10 @@ class CustomHttpPattern$Type extends MessageType<CustomHttpPattern> {
                     message.path = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -675,7 +675,7 @@ class CustomHttpPattern$Type extends MessageType<CustomHttpPattern> {
         /* string path = 2; */
         if (message.path !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.path);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

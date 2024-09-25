@@ -1,6 +1,6 @@
-import { ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import {
+import type { ComputableCtx } from '@milaboratories/computable';
+import type { PlTreeEntry, PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type {
   Option,
   PObject,
   PObjectSpec,
@@ -8,23 +8,26 @@ import {
   Ref,
   ResultCollection,
   ResultPoolEntry,
-  ValueOrError,
+  ValueOrError} from '@platforma-sdk/model';
+import {
   executePSpecPredicate
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { outputRef } from '../model/args';
-import {
+import type {
   Block,
-  ProjectStructure,
+  ProjectStructure} from '../model/project_model';
+import {
   ProjectStructureKey,
   projectFieldName
 } from '../model/project_model';
 import { allBlocks, stagingGraph } from '../model/project_model_util';
-import { Optional } from 'utility-types';
+import type { Optional } from 'utility-types';
 import { derivePObjectId } from './data';
-import {
+import type {
   RawPObjectCollection,
-  RawPObjectEntry,
+  RawPObjectEntry} from './p_object_collection';
+import {
   parseRawPObjectCollection
 } from './p_object_collection';
 

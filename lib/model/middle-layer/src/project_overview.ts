@@ -1,7 +1,7 @@
-import { ProjectMeta } from './project';
-import { BlockPackSpec } from './block_pack';
-import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
-import { AuthorMarker } from './author_marker';
+import type { ProjectMeta } from './project';
+import type { BlockPackSpec } from './block_pack';
+import type { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
+import type { AuthorMarker } from './author_marker';
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockCalculationStatus = 'NotCalculated' | 'Running' | 'Done' | 'Limbo';

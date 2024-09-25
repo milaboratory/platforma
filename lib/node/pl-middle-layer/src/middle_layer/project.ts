@@ -1,27 +1,31 @@
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { MiddleLayerEnvironment } from './middle_layer';
+import type {
+  ResourceId
+} from '@milaboratories/pl-client';
 import {
   ensureResourceIdNotNull,
   field,
   isNotFoundError,
   isTimeoutOrCancelError,
-  Pl,
-  ResourceId
+  Pl
 } from '@milaboratories/pl-client';
-import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
+import type { ComputableStableDefined} from '@milaboratories/computable';
+import { Computable, WatchableValue } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
-import { BlockPackSpecAny } from '../model';
+import type { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
-import { NavigationState } from '@milaboratories/pl-model-common';
+import type { NavigationState } from '@milaboratories/pl-model-common';
 import { blockArgsAndUiState, blockOutputs } from './block';
-import { FrontendData } from '../model/frontend';
-import { projectFieldName, ProjectStructure } from '../model/project_model';
+import type { FrontendData } from '../model/frontend';
+import type { ProjectStructure } from '../model/project_model';
+import { projectFieldName } from '../model/project_model';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { BlockPackInfo } from '../model/block_pack';
-import {
+import type { BlockPackInfo } from '../model/block_pack';
+import type {
   ProjectOverview,
   AuthorMarker,
   BlockStateInternal

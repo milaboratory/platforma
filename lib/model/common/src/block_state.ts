@@ -1,5 +1,5 @@
-import { BlockOutputsBase } from './common_types';
-import { NavigationState } from './navigation';
+import type { BlockOutputsBase } from './common_types';
+import type { NavigationState } from './navigation';
 
 /**
  * @template Args    sets type of block arguments passed to the workflow

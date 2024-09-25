@@ -1,5 +1,5 @@
-import { ActGetImmediate } from './actions_kinds';
-import { Cfg } from './model';
+import type { ActGetImmediate } from './actions_kinds';
+import type { Cfg } from './model';
 
 // Higher kind types pattern taken from here: https://code.lol/post/programming/higher-kinded-types/
 

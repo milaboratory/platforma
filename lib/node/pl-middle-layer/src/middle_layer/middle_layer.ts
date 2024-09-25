@@ -1,25 +1,31 @@
+import type {
+  PlClient,
+  ResourceId} from '@milaboratories/pl-client';
 import {
   field,
   isNullResourceId,
-  PlClient,
-  ResourceId,
   toGlobalResourceId
 } from '@milaboratories/pl-client';
 import { createProjectList, ProjectsField, ProjectsResourceType } from './project_list';
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import type { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
-import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
+import type { Signer } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
+import type { ComputableStableDefined} from '@milaboratories/computable';
+import { WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
-import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
+import type { MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
+import { DefaultMiddleLayerOps } from './ops';
 import { randomUUID } from 'node:crypto';
-import { ProjectListEntry } from '../model';
-import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import type { ProjectListEntry } from '../model';
+import type { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 import { BlockUpdateWatcher } from '../block_registry/watcher';
-import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
-import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
-import { DriverKit } from '@platforma-sdk/model';
+import type { QuickJSWASMModule } from 'quickjs-emscripten';
+import { getQuickJS } from 'quickjs-emscripten';
+import type { MiddleLayerDriverKit } from './driver_kit';
+import { initDriverKit } from './driver_kit';
+import type { DriverKit } from '@platforma-sdk/model';
 import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 
 export interface MiddleLayerEnvironment {

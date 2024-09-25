@@ -1,7 +1,9 @@
-import { Dispatcher, request } from 'undici';
-import { RegistrySpec } from './registry_spec';
-import { BlockPackSpecAny } from '../model';
-import { BlockPackDescriptionAbsolute, RegistryV1 } from '@platforma-sdk/block-tools';
+import type { Dispatcher} from 'undici';
+import { request } from 'undici';
+import type { RegistrySpec } from './registry_spec';
+import type { BlockPackSpecAny } from '../model';
+import type { BlockPackDescriptionAbsolute} from '@platforma-sdk/block-tools';
+import { RegistryV1 } from '@platforma-sdk/block-tools';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
@@ -70,7 +72,7 @@ export async function getDevV1PacketMtime(devPath: string): Promise<string> {
 export async function getDevV2PacketMtime(
   description: BlockPackDescriptionAbsolute
 ): Promise<string> {
-  let mtime = 0n;
+  const mtime = 0n;
   const wfStats = await fs.promises.stat(description.components.workflow.file, { bigint: true });
   const modelStats = await fs.promises.stat(description.components.model.file, { bigint: true });
   return (wfStats.mtimeNs > modelStats.mtimeNs ? wfStats.mtimeNs : modelStats.mtimeNs).toString();

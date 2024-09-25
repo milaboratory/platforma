@@ -1,6 +1,7 @@
-import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
-import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
-import { Dispatcher } from 'undici';
+import type { PollPoolOps } from '@milaboratories/computable';
+import { PollComputablePool } from '@milaboratories/computable';
+import type { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import type { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 

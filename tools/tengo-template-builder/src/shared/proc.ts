@@ -1,5 +1,6 @@
-import { spawn, ChildProcess, ChildProcessByStdio } from 'child_process';
-import { Writable } from 'stream';
+import type { ChildProcess, ChildProcessByStdio } from 'child_process';
+import { spawn } from 'child_process';
+import type { Writable } from 'stream';
 
 export function spawnEmbed(
   cmd: string,

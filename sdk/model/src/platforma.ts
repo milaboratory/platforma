@@ -1,8 +1,8 @@
-import { BlockApi } from './block_api';
-import { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratories/pl-model-common';
-import { BlockConfig } from './builder';
-import { SdkInfo } from './sdk_info';
-import { BlockStatePatch } from './block_state_patch';
+import type { BlockApi } from './block_api';
+import type { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratories/pl-model-common';
+import type { BlockConfig } from './builder';
+import type { SdkInfo } from './sdk_info';
+import type { BlockStatePatch } from './block_state_patch';
 
 /** Defines all methods to interact with the platform environment from within a block UI. */
 export interface Platforma<

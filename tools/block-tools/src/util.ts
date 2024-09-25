@@ -1,4 +1,4 @@
-import { BigIntStats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import fsp from 'node:fs/promises';
 
 export async function tryLoadFile<T>(

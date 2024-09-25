@@ -1,4 +1,5 @@
-import { ZodTypeAny, string, z } from 'zod';
+import type { ZodTypeAny} from 'zod';
+import { string, z } from 'zod';
 import { BlockComponentsDescriptionRaw, BlockComponentsManifest } from './block_components';
 import { BlockPackId } from './block_pack_id';
 import { BlockPackMetaDescriptionRaw, BlockPackMetaManifest } from './meta';

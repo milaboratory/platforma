@@ -1,11 +1,11 @@
-import { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
-import { And, IsA, SyncConfAction } from './type_util';
-import {
+import type { ConfAction, ActionResult, InferVarTypeSafe, PlResourceEntry } from './type_engine';
+import type { And, IsA, SyncConfAction } from './type_util';
+import type {
   LocalBlobHandleAndSize,
   RemoteBlobHandleAndSize,
   ImportProgress
 } from '@milaboratories/pl-model-common';
-import { AnyLogHandle } from '@milaboratories/pl-model-common';
+import type { AnyLogHandle } from '@milaboratories/pl-model-common';
 
 //
 // Context

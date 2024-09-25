@@ -1,5 +1,6 @@
+import type {
+  SpawnSyncReturns} from 'child_process';
 import {
-  SpawnSyncReturns,
   spawnSync
 } from 'child_process';
 import { Command } from '@oclif/core';
@@ -8,7 +9,7 @@ import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import * as winston from 'winston';
+import type * as winston from 'winston';
 
 export default class Build extends Command {
   static override description =

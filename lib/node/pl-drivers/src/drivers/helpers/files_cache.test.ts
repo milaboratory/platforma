@@ -1,4 +1,5 @@
-import { CachedFile, FilesCache } from './files_cache';
+import type { CachedFile} from './files_cache';
+import { FilesCache } from './files_cache';
 import { CallersCounter } from '@milaboratories/ts-helpers';
 
 test('should delete blob3 when add 3 blobs, exceed a soft limit and nothing holds blob3', () => {

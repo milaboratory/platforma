@@ -1,4 +1,4 @@
-import { ValueType } from './spec';
+import type { ValueType } from './spec';
 
 export const PValueIntNA = -2147483648;
 export const PValueLongNA = -9007199254740991n;

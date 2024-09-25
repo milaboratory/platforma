@@ -1,7 +1,7 @@
-import { Optional } from 'utility-types';
-import { Branded } from '../branding';
-import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
-import {
+import type { Optional } from 'utility-types';
+import type { Branded } from '../branding';
+import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
+import type {
   Option,
   PColumn,
   PFrameDef,

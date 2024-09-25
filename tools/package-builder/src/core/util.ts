@@ -1,7 +1,8 @@
 import * as path from 'path';
 import * as os from 'os';
 import fs from 'fs';
-import { createHash, Hash } from 'crypto';
+import type { Hash } from 'crypto';
+import { createHash } from 'crypto';
 import winston from 'winston';
 
 export const packageJsonName = "package.json"
@@ -29,7 +30,7 @@ export function hashDirMetaSync(folder: string, hasher?: Hash): Hash {
     const hash = hasher ? hasher : createHash('sha256');
     const info = fs.readdirSync(folder, { withFileTypes: true });
 
-    for (let item of info) {
+    for (const item of info) {
         const fullPath = path.join(folder, item.name);
 
         if (item.isFile()) {
@@ -50,7 +51,7 @@ export function hashDirSync(rootDir: string, hasher?: Hash, subdir?: string): Ha
 
     const info = fs.readdirSync(folder, { withFileTypes: true });
 
-    for (let item of info) {
+    for (const item of info) {
         const relPath = path.join(subdir ?? ".", item.name)
         const fullPath = path.join(folder, item.name);
 
@@ -170,7 +171,7 @@ export function rSplit(input: string, delimiter: string, limit?: number): string
         parts.slice(0, -limit + 1).join(delimiter),
         ...parts.slice(-limit + 1)
     ];
-};
+}
 
 export const OSes = ['linux', 'macosx', 'windows'] as const;
 export type OSType = (typeof OSes)[number];

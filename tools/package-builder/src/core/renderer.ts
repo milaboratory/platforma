@@ -1,9 +1,10 @@
 
 import path from 'path';
 import fs from 'fs';
-import winston from 'winston';
+import type winston from 'winston';
 import { z } from 'zod';
-import { Entrypoint, PackageConfig, SoftwareEntrypoint } from './package-info';
+import type { Entrypoint, PackageConfig} from './package-info';
+import { SoftwareEntrypoint } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
 
@@ -207,7 +208,7 @@ export class Renderer {
                 info.isDev = true
             }
 
-            var hasDescriptors = false
+            let hasDescriptors = false
             for (const source of sources) {
                 switch (source) {
                     case 'binary':

@@ -1,25 +1,31 @@
-import { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
-import { LLPlClient, PlCallOps } from './ll_client';
-import { AnyResourceRef, PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
+import type { AuthOps, PlClientConfig, PlConnectionStatusListener } from './config';
+import type { PlCallOps } from './ll_client';
+import { LLPlClient } from './ll_client';
+import type { AnyResourceRef} from './transaction';
+import { PlTransaction, toGlobalResourceId, TxCommitConflict } from './transaction';
 import { createHash } from 'crypto';
-import {
-  ensureResourceIdNotNull,
-  isNullResourceId,
-  NullResourceId,
+import type {
   OptionalResourceId,
   ResourceId
 } from './types';
+import {
+  ensureResourceIdNotNull,
+  isNullResourceId,
+  NullResourceId
+} from './types';
 import { ClientRoot } from '../helpers/pl';
+import type {
+  RetryOptions
+} from '@milaboratories/ts-helpers';
 import {
   assertNever,
   createRetryState,
-  nextRetryStateOrError,
-  RetryOptions
+  nextRetryStateOrError
 } from '@milaboratories/ts-helpers';
-import { PlDriver, PlDriverDefinition } from './driver';
-import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
+import type { PlDriver, PlDriverDefinition } from './driver';
+import type { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
-import { Dispatcher } from 'undici';
+import type { Dispatcher } from 'undici';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -39,7 +45,7 @@ function alternativeRootFieldName(alternativeRoot: string): string {
 /** Client to access core PL API. */
 export class PlClient {
   private readonly ll: LLPlClient;
-  private readonly drivers = new Map<String, PlDriver>();
+  private readonly drivers = new Map<string, PlDriver>();
 
   /** Artificial delay introduced after write transactions completion, to
    * somewhat throttle the load on pl. Delay introduced after sync, if requested. */

@@ -1,9 +1,10 @@
-import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Code, FunctionHandle } from '@platforma-sdk/model';
-import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
+import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
+import type { Code, FunctionHandle } from '@platforma-sdk/model';
+import type { ComputableRenderingOps } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
-import { BlockContextAny } from '../middle_layer/block_ctx';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
 
 export function computableFromRF(
   env: MiddleLayerEnvironment,

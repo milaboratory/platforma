@@ -1,6 +1,6 @@
-import { PObjectId, PObjectSpec } from '@platforma-sdk/model';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import type { PObjectId, PObjectSpec } from '@platforma-sdk/model';
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
 import { createHash } from 'crypto';
 import canonicalize from 'canonicalize';
@@ -10,7 +10,7 @@ import {
   resourceTypeToString,
   resourceTypesEqual
 } from '@milaboratories/pl-client';
-import { Writable } from 'utility-types';
+import type { Writable } from 'utility-types';
 
 export function* allBlobs<B>(data: PFrameInternal.DataInfo<B>): Generator<B> {
   switch (data.type) {

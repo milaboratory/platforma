@@ -8,7 +8,7 @@ test('Throttle', async () => {
   const values = arrayFrom(20, i => i);
 
   async function* gen() {
-    let a = [...values];
+    const a = [...values];
     while (a.length) {
       yield a.shift()!;
       await delay(10);

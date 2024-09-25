@@ -95,7 +95,7 @@ test.skip('test JS render download', async () => {
 
 test.skip('basic quickjs code', async () => {
   const qJs = await getQuickJS();
-  let state = 10;
+  const state = 10;
 
   const start = Date.now();
   // const n = 1000;

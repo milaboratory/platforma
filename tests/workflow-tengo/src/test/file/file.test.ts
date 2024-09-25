@@ -1,6 +1,7 @@
-import {
+import type {
   ImportFileHandle,
-  MiddleLayerDriverKit,
+  MiddleLayerDriverKit} from '@milaboratories/pl-middle-layer';
+import {
   Pl
 } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';

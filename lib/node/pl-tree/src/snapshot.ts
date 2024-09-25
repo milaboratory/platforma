@@ -1,8 +1,9 @@
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
-import { Optional, Writable } from 'utility-types';
-import { ZodType, z } from 'zod';
-import { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from './accessors';
-import { ComputableCtx } from '@milaboratories/computable';
+import type { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import type { Optional, Writable } from 'utility-types';
+import type { ZodType, z } from 'zod';
+import type { PlTreeNodeAccessor } from './accessors';
+import { PlTreeEntry, PlTreeEntryAccessor } from './accessors';
+import type { ComputableCtx } from '@milaboratories/computable';
 import { notEmpty } from '@milaboratories/ts-helpers';
 
 /**

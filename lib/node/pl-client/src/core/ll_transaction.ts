@@ -1,10 +1,10 @@
-import {
+import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage
 } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
-import { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
+import type { DuplexStreamingCall } from '@protobuf-ts/runtime-rpc';
 import Denque from 'denque';
-import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
+import type { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import {
   PlErrorCodeNotFound,
   RecoverablePlError,
@@ -252,7 +252,7 @@ export class LLPlTransaction {
     this.closed = true;
 
     // Rejecting all messages
-    let handler: AnyResponseHandler | undefined = undefined;
+    const handler: AnyResponseHandler | undefined = undefined;
     while (true) {
       const handler = this.responseHandlerQueue.shift();
       if (!handler) break;

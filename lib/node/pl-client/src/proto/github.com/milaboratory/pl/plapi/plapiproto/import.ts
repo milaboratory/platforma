@@ -127,9 +127,9 @@ class _ImportWellKnown$Type extends MessageType<_ImportWellKnown> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: _ImportWellKnown): _ImportWellKnown {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* google.protobuf.Empty empty */ 1:
                     message.empty = Empty.internalBinaryRead(reader, reader.uint32(), options, message.empty);
@@ -180,10 +180,10 @@ class _ImportWellKnown$Type extends MessageType<_ImportWellKnown> {
                     message.struct = Struct.internalBinaryRead(reader, reader.uint32(), options, message.struct);
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -239,7 +239,7 @@ class _ImportWellKnown$Type extends MessageType<_ImportWellKnown> {
         /* google.protobuf.Struct struct = 16; */
         if (message.struct)
             Struct.internalBinaryWrite(message.struct, writer.tag(16, WireType.LengthDelimited).fork(), options).join();
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

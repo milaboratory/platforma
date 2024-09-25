@@ -1,5 +1,5 @@
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { Logger } from 'winston';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { Logger } from 'winston';
 
 export class WinstonLoggerAdapter implements MiLogger {
   constructor(private readonly logger: Logger) {}

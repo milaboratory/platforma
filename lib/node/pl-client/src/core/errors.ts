@@ -1,4 +1,4 @@
-import { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
+import type { Status } from '../proto/github.com/googleapis/googleapis/google/rpc/status';
 import { Aborted } from '@milaboratories/ts-helpers';
 
 export function isConnectionProblem(err: unknown, nested: boolean = false): boolean {

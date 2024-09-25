@@ -1,5 +1,6 @@
-import { AxisId } from '../drivers';
-import { PObjectSpec, isPColumnSpec } from './spec';
+import type { AxisId } from '../drivers';
+import type { PObjectSpec} from './spec';
+import { isPColumnSpec } from './spec';
 
 export type PSpecPredicate =
   | {

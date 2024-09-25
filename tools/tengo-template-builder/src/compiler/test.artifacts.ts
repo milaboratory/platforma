@@ -1,4 +1,4 @@
-import { FullArtifactName } from './package';
+import type { FullArtifactName } from './package';
 
 export interface TestArtifactSource {
   fullName: FullArtifactName;

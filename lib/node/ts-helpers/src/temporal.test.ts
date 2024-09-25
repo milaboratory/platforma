@@ -1,12 +1,13 @@
+import type {
+  InfiniteRetryOptions,
+  RetryOptions} from './temporal';
 import {
   Aborted,
   createInfiniteRetryState,
   createRetryState,
-  InfiniteRetryOptions,
   jitter,
   nextInfiniteRetryState,
   nextRetryStateOrError,
-  RetryOptions,
   sleep,
   tryNextRetryState
 } from './temporal';

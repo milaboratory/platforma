@@ -1,22 +1,24 @@
-import {
+import type {
   AnyRef,
   AnyResourceRef,
-  field,
-  isNotNullResourceId,
-  isNullResourceId,
   PlClient,
   PlTransaction,
   ResourceData,
-  ResourceId,
+  ResourceId} from '@milaboratories/pl-client';
+import {
+  field,
+  isNotNullResourceId,
+  isNullResourceId,
   TestHelpers,
   getField,
   valErr,
   Pl
 } from '@milaboratories/pl-client';
 import { loadTemplate } from './template_loading';
-import { createBContextEnd, createRenderHeavyBlock, HeavyBlockOutputs } from './render_block';
+import type { HeavyBlockOutputs } from './render_block';
+import { createBContextEnd, createRenderHeavyBlock } from './render_block';
 import { notEmpty, sleep } from '@milaboratories/ts-helpers';
-import { TemplateSpecPrepared } from '../../model/template_spec';
+import type { TemplateSpecPrepared } from '../../model/template_spec';
 import {
   TplSpecEnterExplicit,
   TplSpecEnterFromRegistry,

@@ -1,4 +1,4 @@
-import { PFrameReadAPI, PFrameFactoryAPI } from './index';
+import type { PFrameReadAPI, PFrameFactoryAPI } from './index';
 
 export interface PFrame extends PFrameFactoryAPI, PFrameReadAPI {
 }

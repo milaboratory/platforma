@@ -1,6 +1,7 @@
-import { Computable, ComputableCtx } from '@milaboratories/computable';
-import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
-import {
+import type { ComputableCtx } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
+import type {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   FieldTraversalStep as FieldTraversalStepFromSDK,
   JsRenderInternal,
@@ -15,20 +16,22 @@ import {
   PTableHandle,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
-  ValueOrError,
+  ValueOrError} from '@platforma-sdk/model';
+import {
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
-import { QuickJSContext, QuickJSHandle, Scope, VmFunctionImplementation } from 'quickjs-emscripten';
-import { Optional } from 'utility-types';
-import { BlockContextAny } from '../middle_layer/block_ctx';
-import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Block } from '../model/project_model';
+import type { QuickJSContext, QuickJSHandle, VmFunctionImplementation } from 'quickjs-emscripten';
+import { Scope } from 'quickjs-emscripten';
+import type { Optional } from 'utility-types';
+import type { BlockContextAny } from '../middle_layer/block_ctx';
+import type { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
+import type { Block } from '../model/project_model';
 import { parseFinalPObjectCollection } from '../pool/p_object_collection';
-import { ResultPool } from '../pool/result_pool';
+import type { ResultPool } from '../pool/result_pool';
 
 function isArrayBufferOrView(obj: unknown): obj is ArrayBufferLike {
   return obj instanceof ArrayBuffer || ArrayBuffer.isView(obj);

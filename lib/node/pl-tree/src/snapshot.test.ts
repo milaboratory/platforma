@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { InferSnapshot, makeResourceSnapshot, rsSchema } from './snapshot';
+import type { InferSnapshot} from './snapshot';
+import { makeResourceSnapshot, rsSchema } from './snapshot';
 import {
   TestDynamicRootId1,
   TestDynamicRootState1,
@@ -11,7 +12,7 @@ import {
 } from './test_utils';
 import { PlTreeState } from './state';
 import { Computable } from '@milaboratories/computable';
-import { ResourceId } from '@milaboratories/pl-client';
+import type { ResourceId } from '@milaboratories/pl-client';
 
 // schema definition
 const MyTestResourceState = rsSchema({

@@ -1,4 +1,4 @@
-import { Cfg } from '@platforma-sdk/model';
+import type { Cfg } from '@platforma-sdk/model';
 import { assertNever } from '@milaboratories/ts-helpers';
 
 export function* traverseCfg(cfg: Cfg, guide?: (cfg: Cfg) => boolean): Generator<Cfg> {

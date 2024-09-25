@@ -1,16 +1,18 @@
-import {
+import type {
   ComputableKernel,
   IntermediateRenderingResult,
-  ComputableCtx,
+  ComputableCtx} from './kernel';
+import {
   tryExtractComputableKernel,
   containComputables
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
-import { Writable } from 'utility-types';
-import { ComputableHooks } from './computable_hooks';
-import { Watcher } from '../watcher';
+import type { Writable } from 'utility-types';
+import type { ComputableHooks } from './computable_hooks';
+import type { Watcher } from '../watcher';
 import { setImmediate } from 'node:timers';
-import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, UsageGuard } from './accessor_provider';
+import { AccessorLeakException } from './accessor_provider';
 import * as console from 'node:console';
 
 interface ExecutionError {

@@ -1,7 +1,7 @@
-import { AxisId } from './spec';
-import { PTableRecordFilter } from './table_calculate';
-import { PTableVector } from './data';
-import { PObjectId } from '../../pool';
+import type { AxisId } from './spec';
+import type { PTableRecordFilter } from './table_calculate';
+import type { PTableVector } from './data';
+import type { PObjectId } from '../../pool';
 
 /** Calculate set of unique values for a specific axis for the filtered set of records */
 export interface UniqueValuesRequest {

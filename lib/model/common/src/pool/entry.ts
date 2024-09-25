@@ -1,4 +1,4 @@
-import { Ref } from '../ref';
+import type { Ref } from '../ref';
 import { PObject } from './spec';
 
 /** Result pool entry */

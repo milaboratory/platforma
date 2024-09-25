@@ -1,7 +1,7 @@
 import { ChangeSource } from './change_source';
-import { AccessorProvider, UsageGuard } from './computable/accessor_provider';
-import { Watcher } from './watcher';
-import { ComputableCtx } from './computable/kernel';
+import type { AccessorProvider, UsageGuard } from './computable/accessor_provider';
+import type { Watcher } from './watcher';
+import type { ComputableCtx } from './computable/kernel';
 import { Computable } from './computable/computable';
 
 export interface ObservableAccessor<T> {

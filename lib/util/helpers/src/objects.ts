@@ -1,6 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import { PartialBy } from "./types";
+import type { PartialBy } from "./types";
 
 export function isObject<V, T extends Record<string, V>>(obj: T | unknown): obj is T {
   return obj !== null && typeof obj === 'object';

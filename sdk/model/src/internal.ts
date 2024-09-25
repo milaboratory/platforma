@@ -1,6 +1,6 @@
-import { Platforma, PlatformaFactory } from './platforma';
-import { BlockConfig } from './builder';
-import { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
+import type { Platforma, PlatformaFactory } from './platforma';
+import type { BlockConfig } from './builder';
+import type { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
 declare global {
   /** Global factory method returning platforma instance */

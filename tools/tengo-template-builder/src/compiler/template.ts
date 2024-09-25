@@ -1,9 +1,10 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
 import canonicalize from 'canonicalize';
-import {
+import type {
   CompileMode,
   FullArtifactName,
-  FullArtifactNameWithoutType,
+  FullArtifactNameWithoutType} from './package';
+import {
   fullNameWithoutTypeToString,
   parseArtefactNameAndVersion
 } from './package';

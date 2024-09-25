@@ -1,5 +1,5 @@
-import { Block, ProjectStructure } from './project_model';
-import { Optional, Writable } from 'utility-types';
+import type { Block, ProjectStructure } from './project_model';
+import type { Optional, Writable } from 'utility-types';
 import { inferAllReferencedBlocks } from './args';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
@@ -51,7 +51,7 @@ export class BlockGraph {
     // used to deduplicate possible downstream / upstream blocks and process them only once
     const queued = new Set<string>(unprocessed);
     while (unprocessed.length > 0) {
-      let nextUnprocessed: string[] = [];
+      const nextUnprocessed: string[] = [];
       for (const blockId of unprocessed) {
         const info = this.nodes.get(blockId)!;
         cb(info);
@@ -149,7 +149,7 @@ export interface GraphDiff {
 }
 
 export function graphDiff(a: BlockGraph, b: BlockGraph): GraphDiff {
-  let matched = 0;
+  const matched = 0;
   const onlyInA = new Set<string>();
   const onlyInB = new Set<string>();
   const different = new Set<string>();

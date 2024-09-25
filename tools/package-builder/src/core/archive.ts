@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as tar from 'tar';
-import * as util from './util';
+import type * as util from './util';
 
 export type archiveOptions = {
     packageRoot: string,

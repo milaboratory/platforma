@@ -1,13 +1,15 @@
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { PlTreeEntry } from '@milaboratories/pl-tree';
-import { MiddleLayerEnvironment } from './middle_layer';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { MiddleLayerEnvironment } from './middle_layer';
 import { Computable } from '@milaboratories/computable';
-import { projectFieldName, ProjectStructure, ProjectStructureKey } from '../model/project_model';
+import type { ProjectStructure} from '../model/project_model';
+import { projectFieldName, ProjectStructureKey } from '../model/project_model';
 import { allBlocks } from '../model/project_model_util';
 import { Pl } from '@milaboratories/pl-client';
-import { BlockPackInfo } from '../model/block_pack';
+import type { BlockPackInfo } from '../model/block_pack';
 import { hasActiveCfgComponents } from '../cfg_render/util';
-import { Cfg, isFunctionHandle, normalizeBlockConfig } from '@platforma-sdk/model';
+import type { Cfg} from '@platforma-sdk/model';
+import { isFunctionHandle, normalizeBlockConfig } from '@platforma-sdk/model';
 import { constructBlockContext } from './block_ctx';
 import { computableFromCfg } from '../cfg_render/executor';
 

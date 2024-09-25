@@ -1,4 +1,4 @@
-import {
+import type {
   CellRenderingOps,
   ComputableCtx,
   ComputableKernel,
@@ -7,8 +7,9 @@ import {
   IntermediateRenderingResult,
   UnwrapComputables
 } from './kernel';
+import type {
+  CellState} from './computable_state';
 import {
-  CellState,
   createCellState,
   createCellStateWithoutValue,
   destroyState,

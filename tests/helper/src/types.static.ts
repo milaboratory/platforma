@@ -1,4 +1,4 @@
-import { Equal, Expect, Objectify, Unionize } from "@milaboratories/helpers";
+import type { Equal, Expect, Objectify, Unionize } from "@milaboratories/helpers";
 
 type _Test = {
   args: {

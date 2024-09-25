@@ -1,17 +1,20 @@
-import { PlClient } from '@milaboratories/pl-client';
+import type { PlClient } from '@milaboratories/pl-client';
+import type {
+  InternalLsDriver} from '@milaboratories/pl-drivers';
 import {
   createDownloadClient, createLogsClient, createLsFilesClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver,
-  InternalLsDriver,
   LogsDriver,
   LogsStreamDriver,
   LsDriver,
   UploadDriver
 } from '@milaboratories/pl-drivers';
-import * as Sdk from '@milaboratories/pl-model-common';
-import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
+import type * as Sdk from '@milaboratories/pl-model-common';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 import * as os from 'node:os';
 import { PFrameDriver } from '../pool';
-import { DefaultDriverKitOps, DriverKitOps, DriverKitOpsConstructor } from './ops';
+import type { DriverKitOps, DriverKitOpsConstructor } from './ops';
+import { DefaultDriverKitOps } from './ops';
 
 /**
  * Drivers offered by the middle-layer for internal consumers,

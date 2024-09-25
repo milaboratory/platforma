@@ -1,8 +1,9 @@
+import type {
+  ProjectField} from './project_model';
 import {
   blockFrontendStateKey,
   parseBlockFrontendStateKey,
   parseProjectField,
-  ProjectField,
   projectFieldName,
   ProjectStructureKey
 } from './project_model';

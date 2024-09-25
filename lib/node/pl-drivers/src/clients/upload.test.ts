@@ -1,7 +1,8 @@
-import { PlClient, ResourceId, TestHelpers } from '@milaboratories/pl-client';
+import type { PlClient, ResourceId} from '@milaboratories/pl-client';
+import { TestHelpers } from '@milaboratories/pl-client';
 import { ClientUpload } from '../clients/upload';
-import { Dispatcher } from 'undici';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { Dispatcher } from 'undici';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 test.skip('integration test, grpc upload blob should throw error on NOT_FOUND', async () => {

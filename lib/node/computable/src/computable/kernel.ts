@@ -1,7 +1,7 @@
-import { Watcher } from '../watcher';
-import { ComputableHooks } from './computable_hooks';
-import { AccessorProvider } from './accessor_provider';
-import { Computable } from './computable';
+import type { Watcher } from '../watcher';
+import type { ComputableHooks } from './computable_hooks';
+import type { AccessorProvider } from './accessor_provider';
+import type { Computable } from './computable';
 import { assertNever } from '@milaboratories/ts-helpers';
 
 export interface ComputableCtx {

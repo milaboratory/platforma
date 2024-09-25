@@ -1,7 +1,10 @@
-import {
+import type {
   AnyRef,
   AnyResourceRef,
   BasicResourceData,
+  PlTransaction,
+  ResourceId} from '@milaboratories/pl-client';
+import {
   ensureResourceIdNotNull,
   field,
   isNotNullResourceId,
@@ -10,20 +13,19 @@ import {
   isResourceRef,
   Pl,
   PlClient,
-  PlTransaction,
-  ResourceId,
   ResourceRef
 } from '@milaboratories/pl-client';
 import { createRenderHeavyBlock, createBContextFromUpstreams } from './template/render_block';
-import {
+import type {
   Block,
-  BlockRenderingStateKey,
   ProjectStructure,
+  ProjectField,
+  ProjectRenderingState} from '../model/project_model';
+import {
+  BlockRenderingStateKey,
   ProjectStructureKey,
   parseProjectField,
-  ProjectField,
   projectFieldName,
-  ProjectRenderingState,
   SchemaVersionCurrent,
   SchemaVersionKey,
   ProjectResourceType,
@@ -40,16 +42,17 @@ import {
   getServiceTemplateField
 } from '../model/project_model';
 import { BlockPackTemplateField, createBlockPack } from './block-pack/block_pack';
+import type {
+  BlockGraph} from '../model/project_model_util';
 import {
   allBlocks,
-  BlockGraph,
   graphDiff,
   productionGraph,
   stagingGraph
 } from '../model/project_model_util';
-import { BlockPackSpecPrepared } from '../model';
+import type { BlockPackSpecPrepared } from '../model';
 import { notEmpty } from '@milaboratories/ts-helpers';
-import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
+import type { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
 import Denque from 'denque';
 import { exportContext, getPreparedExportTemplateEnvelope } from './context_export';
 import { loadTemplate } from './template/template_loading';

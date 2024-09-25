@@ -1,5 +1,5 @@
-import { PObjectId } from '../../pool';
-import { AxisId, AxisSpec, PColumnSpec } from './spec';
+import type { PObjectId } from '../../pool';
+import type { AxisId, AxisSpec, PColumnSpec } from './spec';
 
 /** Unified spec object for axes and columns */
 export type PTableColumnSpec =

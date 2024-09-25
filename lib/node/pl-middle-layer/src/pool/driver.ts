@@ -1,9 +1,9 @@
-import { DownloadDriver } from '@milaboratories/pl-drivers';
+import type { DownloadDriver } from '@milaboratories/pl-drivers';
 import type PFramesType from '@milaboratories/pframes-node';
-import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
-import { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
-import {
+import type { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
+import type { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import type { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
+import type {
   CalculateTableDataRequest,
   CalculateTableDataResponse,
   FindColumnsRequest,
@@ -22,10 +22,11 @@ import {
   UniqueValuesResponse,
   PFrameDriver as SdkPFrameDriver,
   PColumn,
-  mapPObjectData,
   PFrameDef,
   JoinEntry,
-  PTableDef,
+  PTableDef} from '@platforma-sdk/model';
+import {
+  mapPObjectData,
   mapPTableDef
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';

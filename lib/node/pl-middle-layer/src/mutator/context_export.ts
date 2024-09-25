@@ -1,8 +1,8 @@
-import { AnyRef, PlTransaction } from '@milaboratories/pl-client';
+import type { AnyRef, PlTransaction } from '@milaboratories/pl-client';
 import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 import { createRenderTemplate } from './template/render_template';
 import { prepareTemplateSpec } from './template/template_loading';
-import { TemplateSpecPrepared } from '../model/template_spec';
+import type { TemplateSpecPrepared } from '../model/template_spec';
 import { createHash } from 'crypto';
 
 export type TemplateEnvelop = { spec: TemplateSpecPrepared; hash: string };

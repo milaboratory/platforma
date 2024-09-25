@@ -139,7 +139,7 @@ test('PushTestAsync', async () => {
     await it.next(3);
   })().catch(console.error);
 
-  // @ts-ignore
+  // @ts-expect-error (expected)
   for await (const v of it) {
     // console.log('v', v);
   }

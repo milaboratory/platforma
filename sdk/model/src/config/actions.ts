@@ -1,4 +1,4 @@
-import {
+import type {
   ActGetField,
   ActGetFromCtx,
   ActGetImmediate,
@@ -25,9 +25,9 @@ import {
   ActGetProgressLog,
   ActGetLogHandle
 } from './actions_kinds';
-import { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
-import { Cfg } from './model';
-import { CheckedSyncConf } from './type_util';
+import type { ExtractAction, POCExtractAction, PrimitiveOrConfig, TypedConfig } from './type_engine';
+import type { Cfg } from './model';
+import type { CheckedSyncConf } from './type_util';
 
 //
 // Helpers

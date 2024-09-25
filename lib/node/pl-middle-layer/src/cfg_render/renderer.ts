@@ -1,11 +1,11 @@
-import {
+import type {
   Cfg,
   CfgMapArrayValues,
   CfgMapRecordValues,
   CfgMapResourceFields
 } from '@platforma-sdk/model';
-import { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
-import { PlTreeEntry } from '@milaboratories/pl-tree';
+import type { ArgumentRequests, Operation, OperationAction, Subroutine } from './operation';
+import type { PlTreeEntry } from '@milaboratories/pl-tree';
 import { mapRecord } from './util';
 import { computableFromCfgUnsafe } from './executor';
 import { assertNever } from '@milaboratories/ts-helpers';

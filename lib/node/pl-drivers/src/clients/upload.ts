@@ -1,12 +1,14 @@
 import * as fs from 'node:fs/promises';
-import { GrpcTransport } from '@protobuf-ts/grpc-transport';
+import type { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { PlClient, addRTypeToMetadata } from '@milaboratories/pl-client';
+import type { PlClient} from '@milaboratories/pl-client';
+import { addRTypeToMetadata } from '@milaboratories/pl-client';
 import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
-import { MiLogger } from '@milaboratories/ts-helpers';
-import { Dispatcher, request } from 'undici';
-import { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import type { Dispatcher} from 'undici';
+import { request } from 'undici';
+import type { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
+import type { ResourceInfo } from '@milaboratories/pl-tree';
 
 export class MTimeError extends Error {}
 

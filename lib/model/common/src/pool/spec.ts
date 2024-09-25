@@ -1,5 +1,5 @@
-import { Branded } from '../branding';
-import { PColumn, PColumnSpec } from '../drivers';
+import type { Branded } from '../branding';
+import type { PColumn, PColumnSpec } from '../drivers';
 
 /** Any object exported into the result pool by the block always have spec attached to it */
 export interface PObjectSpec {

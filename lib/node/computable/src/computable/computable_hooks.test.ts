@@ -1,11 +1,13 @@
-import { WatchableValue, ObservableAccessor } from '../watchable_value';
+import type { ObservableAccessor } from '../watchable_value';
+import { WatchableValue } from '../watchable_value';
 
-import { AccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, UsageGuard } from './accessor_provider';
 import { Aborted, sleep } from '@milaboratories/ts-helpers';
 import { Computable } from './computable';
 import { ChangeSource } from '../change_source';
-import { ComputableCtx } from './kernel';
-import { PollingComputableHooks, StartStopComputableHooksOps } from './hooks_util';
+import type { ComputableCtx } from './kernel';
+import type { StartStopComputableHooksOps } from './hooks_util';
+import { PollingComputableHooks } from './hooks_util';
 
 class SynchronizedWatchableValue<T> implements AccessorProvider<ObservableAccessor<T>> {
   private readonly change = new ChangeSource();

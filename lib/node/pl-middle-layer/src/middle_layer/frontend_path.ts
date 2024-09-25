@@ -1,18 +1,20 @@
-import { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
-import { MiddleLayerEnvironment } from './middle_layer';
-import { Computable, ComputableStableDefined } from '@milaboratories/computable';
+import type { PlTreeEntry, PlTreeEntryAccessor } from '@milaboratories/pl-tree';
+import type { MiddleLayerEnvironment } from './middle_layer';
+import type { ComputableStableDefined } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
 import { Pl, resourceTypesEqual } from '@milaboratories/pl-client';
-import {
+import type {
   FrontendFromFolderData,
+  FrontendFromUrlData} from '../model';
+import {
   FrontendFromFolderResourceType,
-  FrontendFromUrlData,
   FrontendFromUrlResourceType
 } from '../model';
-import { PathResult } from '@milaboratories/pl-drivers';
+import type { PathResult } from '@milaboratories/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
 import { getBlockCfg } from './util';
-import { FrontendData } from '../model/frontend';
+import type { FrontendData } from '../model/frontend';
 
 function kernel(
   frontendRes: PlTreeEntryAccessor,

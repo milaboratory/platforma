@@ -3,7 +3,7 @@ import path from 'path';
 import fsp from 'node:fs/promises';
 import * as mime from 'mime-types';
 import * as tar from 'tar';
-import {
+import type {
   ContentAbsoluteBinaryLocal,
   ContentAbsoluteFile,
   ContentAbsoluteFolder,

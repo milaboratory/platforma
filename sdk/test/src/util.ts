@@ -1,6 +1,6 @@
-import { Computable } from '@milaboratories/computable';
+import type { Computable } from '@milaboratories/computable';
 import { isTimeoutOrCancelError } from '@milaboratories/pl-client';
-import { BigIntStats } from 'node:fs';
+import type { BigIntStats } from 'node:fs';
 import * as fsp from 'node:fs/promises';
 
 export async function tryStat(path: string): Promise<BigIntStats | undefined> {

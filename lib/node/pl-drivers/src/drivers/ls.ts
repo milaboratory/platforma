@@ -1,17 +1,20 @@
-import {
-  isNotNullResourceId,
+import type {
   PlClient,
   ResourceData,
   ResourceId
 } from '@milaboratories/pl-client';
-import { MiLogger, Signer } from '@milaboratories/ts-helpers';
-import * as sdk from '@milaboratories/pl-model-common';
-import { ClientLs } from '../clients/ls_api';
+import {
+  isNotNullResourceId
+} from '@milaboratories/pl-client';
+import type { MiLogger, Signer } from '@milaboratories/ts-helpers';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import type {
+  ListResponse} from './helpers/ls_list_entry';
 import {
   createUploadHandle,
-  ListResponse,
   toListItem,
   toLsEntries
 } from './helpers/ls_list_entry';

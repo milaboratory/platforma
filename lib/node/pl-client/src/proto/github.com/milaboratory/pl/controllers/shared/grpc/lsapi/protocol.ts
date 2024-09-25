@@ -133,7 +133,7 @@ class LsAPI$Type extends MessageType<LsAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LsAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -169,9 +169,9 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LsAPI_ListItem): LsAPI_ListItem {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
@@ -195,10 +195,10 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
                     message.version = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -227,7 +227,7 @@ class LsAPI_ListItem$Type extends MessageType<LsAPI_ListItem> {
         /* string version = 13; */
         if (message.version !== "")
             writer.tag(13, WireType.LengthDelimited).string(message.version);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -252,7 +252,7 @@ class LsAPI_List$Type extends MessageType<LsAPI_List> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: LsAPI_List, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -279,9 +279,9 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LsAPI_List_Request): LsAPI_List_Request {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -290,10 +290,10 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
                     message.location = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -307,7 +307,7 @@ class LsAPI_List_Request$Type extends MessageType<LsAPI_List_Request> {
         /* string location = 2; */
         if (message.location !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.location);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -334,9 +334,9 @@ class LsAPI_List_Response$Type extends MessageType<LsAPI_List_Response> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: LsAPI_List_Response): LsAPI_List_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* repeated MiLaboratories.Controller.Shared.LsAPI.ListItem items */ 1:
                     message.items.push(LsAPI_ListItem.internalBinaryRead(reader, reader.uint32(), options));
@@ -345,10 +345,10 @@ class LsAPI_List_Response$Type extends MessageType<LsAPI_List_Response> {
                     message.delimiter = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -362,7 +362,7 @@ class LsAPI_List_Response$Type extends MessageType<LsAPI_List_Response> {
         /* string delimiter = 2; */
         if (message.delimiter !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.delimiter);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

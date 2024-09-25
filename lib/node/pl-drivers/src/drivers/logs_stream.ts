@@ -1,24 +1,27 @@
+import type {
+  ComputableCtx,
+  Watcher
+} from '@milaboratories/computable';
 import {
   ChangeSource,
   Computable,
-  ComputableCtx,
-  PollingComputableHooks,
-  Watcher
+  PollingComputableHooks
 } from '@milaboratories/computable';
-import { ResourceId } from '@milaboratories/pl-client';
+import type { ResourceId } from '@milaboratories/pl-client';
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
-import { ClientLogs } from '../clients/logs';
+import type { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
-import {
+import type {
   PlTreeEntry,
-  ResourceInfo,
+  ResourceInfo} from '@milaboratories/pl-tree';
+import {
   treeEntryToResourceInfo
 } from '@milaboratories/pl-tree';
 import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
-import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
-import * as sdk from '@milaboratories/pl-model-common';
-import { PollingOps } from './helpers/polling_ops';
+import type { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
+import type * as sdk from '@milaboratories/pl-model-common';
+import type { PollingOps } from './helpers/polling_ops';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */

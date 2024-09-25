@@ -1,9 +1,10 @@
-import { Computable, ComputableCtx } from '@milaboratories/computable';
-import { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
+import type { ComputableCtx } from '@milaboratories/computable';
+import { Computable } from '@milaboratories/computable';
+import type { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
 import { bigintToResourceId } from '@milaboratories/pl-client';
-import { LogsStreamDriver } from './logs_stream';
-import { DownloadDriver } from './download_and_logs_blob';
-import * as sdk from '@milaboratories/pl-model-common';
+import type { LogsStreamDriver } from './logs_stream';
+import type { DownloadDriver } from './download_and_logs_blob';
+import type * as sdk from '@milaboratories/pl-model-common';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(

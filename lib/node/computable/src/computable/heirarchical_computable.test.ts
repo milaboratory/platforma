@@ -1,5 +1,7 @@
-import { FakeTreeAccessor, FakeTreeDriver, PersistentFakeTreeNode } from './test_backend';
-import { Computable, ComputableRenderingOps } from './computable';
+import type { FakeTreeAccessor, PersistentFakeTreeNode } from './test_backend';
+import { FakeTreeDriver } from './test_backend';
+import type { ComputableRenderingOps } from './computable';
+import { Computable } from './computable';
 
 test('simple computable state', async () => {
   const tree1 = new FakeTreeDriver();

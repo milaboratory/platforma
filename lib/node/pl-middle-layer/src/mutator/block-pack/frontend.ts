@@ -1,10 +1,12 @@
-import { AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
-import {
+import type { AnyResourceRef, PlTransaction } from '@milaboratories/pl-client';
+import type {
   FrontendFromFolderData,
-  FrontendFromFolderResourceType,
   FrontendFromUrlData,
-  FrontendFromUrlResourceType,
   FrontendSpec
+} from '../../model';
+import {
+  FrontendFromFolderResourceType,
+  FrontendFromUrlResourceType
 } from '../../model';
 import { assertNever } from '@milaboratories/ts-helpers';
 

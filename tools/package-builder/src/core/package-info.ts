@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import winston from 'winston';
+import type winston from 'winston';
 
 import { z, ZodError } from 'zod';
 import * as util from './util';
@@ -457,7 +457,7 @@ export class PackageInfo {
     private binRegistryFor(registry: artifacts.registry | string | undefined): artifacts.registry {
         const registries = this.binaryRegistries
 
-        var result: artifacts.registry = {
+        const result: artifacts.registry = {
             name: "default",
             storageURL: registries.default?.storageURL
         }
@@ -483,7 +483,7 @@ export class PackageInfo {
     }
 
     private validateConfig() {
-        var hasErrors: boolean = false
+        let hasErrors: boolean = false
 
         const blockSoftware = this.pkgJson['block-software']
 

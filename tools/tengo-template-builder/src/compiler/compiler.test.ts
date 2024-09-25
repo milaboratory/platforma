@@ -1,7 +1,9 @@
 import { TengoTemplateCompiler } from './compiler';
-import { ArtifactSource, parseSource } from './source';
-import {
-  TestArtifactSource, testLocalPackage,
+import type { ArtifactSource} from './source';
+import { parseSource } from './source';
+import type {
+  TestArtifactSource} from './test.artifacts';
+import { testLocalPackage,
   testPackage1,
   testPackage1Lib1Name,
   testPackage1Lib1Src, testPackage1Lib2Name, testPackage1Lib2Src,

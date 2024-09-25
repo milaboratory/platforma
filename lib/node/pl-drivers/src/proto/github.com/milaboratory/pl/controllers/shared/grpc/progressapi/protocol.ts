@@ -115,7 +115,7 @@ class ProgressAPI$Type extends MessageType<ProgressAPI> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -169,10 +169,10 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
     options: BinaryReadOptions,
     target?: ProgressAPI_Report
   ): ProgressAPI_Report {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* float progress */ 1:
           message.progress = reader.float();
@@ -190,12 +190,12 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
           message.name = reader.string();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -228,7 +228,7 @@ class ProgressAPI_Report$Type extends MessageType<ProgressAPI_Report> {
     /* string name = 5; */
     if (message.name !== '')
       writer.tag(5, WireType.LengthDelimited).string(message.name);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -266,7 +266,7 @@ class ProgressAPI_GetStatus$Type extends MessageType<ProgressAPI_GetStatus> {
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -312,21 +312,21 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
     options: BinaryReadOptions,
     target?: ProgressAPI_GetStatus_Request
   ): ProgressAPI_GetStatus_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -347,7 +347,7 @@ class ProgressAPI_GetStatus_Request$Type extends MessageType<ProgressAPI_GetStat
     /* uint64 resource_id = 1; */
     if (message.resourceId !== 0n)
       writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -387,10 +387,10 @@ class ProgressAPI_GetStatus_Response$Type extends MessageType<ProgressAPI_GetSta
     options: BinaryReadOptions,
     target?: ProgressAPI_GetStatus_Response
   ): ProgressAPI_GetStatus_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* MiLaboratories.Controller.Shared.ProgressAPI.Report report */ 1:
           message.report = ProgressAPI_Report.internalBinaryRead(
@@ -401,12 +401,12 @@ class ProgressAPI_GetStatus_Response$Type extends MessageType<ProgressAPI_GetSta
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -431,7 +431,7 @@ class ProgressAPI_GetStatus_Response$Type extends MessageType<ProgressAPI_GetSta
         writer.tag(1, WireType.LengthDelimited).fork(),
         options
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -472,7 +472,7 @@ class ProgressAPI_RealtimeStatus$Type extends MessageType<ProgressAPI_RealtimeSt
     writer: IBinaryWriter,
     options: BinaryWriteOptions
   ): IBinaryWriter {
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -522,10 +522,10 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
     options: BinaryReadOptions,
     target?: ProgressAPI_RealtimeStatus_Request
   ): ProgressAPI_RealtimeStatus_Request {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* uint64 resource_id */ 1:
           message.resourceId = reader.uint64().toBigInt();
@@ -539,12 +539,12 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -572,7 +572,7 @@ class ProgressAPI_RealtimeStatus_Request$Type extends MessageType<ProgressAPI_Re
         writer.tag(2, WireType.LengthDelimited).fork(),
         options
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,
@@ -613,10 +613,10 @@ class ProgressAPI_RealtimeStatus_Response$Type extends MessageType<ProgressAPI_R
     options: BinaryReadOptions,
     target?: ProgressAPI_RealtimeStatus_Response
   ): ProgressAPI_RealtimeStatus_Response {
-    let message = target ?? this.create(),
+    const message = target ?? this.create(),
       end = reader.pos + length;
     while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
+      const [fieldNo, wireType] = reader.tag();
       switch (fieldNo) {
         case /* MiLaboratories.Controller.Shared.ProgressAPI.Report report */ 1:
           message.report = ProgressAPI_Report.internalBinaryRead(
@@ -627,12 +627,12 @@ class ProgressAPI_RealtimeStatus_Response$Type extends MessageType<ProgressAPI_R
           );
           break;
         default:
-          let u = options.readUnknownField;
+          const u = options.readUnknownField;
           if (u === 'throw')
             throw new globalThis.Error(
               `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`
             );
-          let d = reader.skip(wireType);
+          const d = reader.skip(wireType);
           if (u !== false)
             (u === true ? UnknownFieldHandler.onRead : u)(
               this.typeName,
@@ -657,7 +657,7 @@ class ProgressAPI_RealtimeStatus_Response$Type extends MessageType<ProgressAPI_R
         writer.tag(1, WireType.LengthDelimited).fork(),
         options
       ).join();
-    let u = options.writeUnknownFields;
+    const u = options.writeUnknownFields;
     if (u !== false)
       (u == true ? UnknownFieldHandler.onWrite : u)(
         this.typeName,

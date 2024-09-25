@@ -1,13 +1,15 @@
 import path from 'path';
 import * as fsp from 'node:fs/promises';
+import type {
+  ImportFileHandleUpload,
+  InferBlockState,
+  Platforma,
+  Project
+} from '@milaboratories/pl-middle-layer';
 import {
   BlockModel,
   BlockState,
-  ImportFileHandleUpload,
-  InferBlockState,
-  MiddleLayer,
-  Platforma,
-  Project
+  MiddleLayer
 } from '@milaboratories/pl-middle-layer';
 import { plTest } from './test-pl';
 import { awaitStableState } from './util';

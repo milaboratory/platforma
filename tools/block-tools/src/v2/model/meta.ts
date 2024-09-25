@@ -11,7 +11,7 @@ import {
   cpAbsoluteToRelative,
   mapLocalToAbsolute
 } from './content_conversion';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { BlockPackMetaEmbeddedContent } from '@milaboratories/pl-model-middle-layer';
 
 export function BlockPackMetaDescription(root: string) {

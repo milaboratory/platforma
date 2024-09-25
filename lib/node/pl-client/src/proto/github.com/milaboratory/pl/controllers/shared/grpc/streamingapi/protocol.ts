@@ -263,7 +263,7 @@ class StreamingAPI$Type extends MessageType<StreamingAPI> {
         return target ?? this.create();
     }
     internalBinaryWrite(message: StreamingAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -292,9 +292,9 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_StreamBinary): StreamingAPI_StreamBinary {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -309,10 +309,10 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
                     message.readLimit = reader.int64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -332,7 +332,7 @@ class StreamingAPI_StreamBinary$Type extends MessageType<StreamingAPI_StreamBina
         /* optional int64 read_limit = 20; */
         if (message.readLimit !== undefined)
             writer.tag(20, WireType.Varint).int64(message.readLimit);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -360,9 +360,9 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_ReadBinary): StreamingAPI_ReadBinary {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -374,10 +374,10 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
                     message.chunkSize = reader.uint32();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -394,7 +394,7 @@ class StreamingAPI_ReadBinary$Type extends MessageType<StreamingAPI_ReadBinary> 
         /* optional uint32 chunk_size = 11; */
         if (message.chunkSize !== undefined)
             writer.tag(11, WireType.Varint).uint32(message.chunkSize);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -424,9 +424,9 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_StreamText): StreamingAPI_StreamText {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -444,10 +444,10 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
                     message.searchRe = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -470,7 +470,7 @@ class StreamingAPI_StreamText$Type extends MessageType<StreamingAPI_StreamText> 
         /* optional string search_re = 22; */
         if (message.searchRe !== undefined)
             writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -500,9 +500,9 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_ReadText): StreamingAPI_ReadText {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -520,10 +520,10 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
                     message.searchRe = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -546,7 +546,7 @@ class StreamingAPI_ReadText$Type extends MessageType<StreamingAPI_ReadText> {
         /* optional string search_re = 22; */
         if (message.searchRe !== undefined)
             writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -575,9 +575,9 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_LastLines): StreamingAPI_LastLines {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 1:
                     message.resourceId = reader.uint64().toBigInt();
@@ -595,10 +595,10 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
                     message.searchRe = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -621,7 +621,7 @@ class StreamingAPI_LastLines$Type extends MessageType<StreamingAPI_LastLines> {
         /* optional string search_re = 22; */
         if (message.searchRe !== undefined)
             writer.tag(22, WireType.LengthDelimited).string(message.searchRe);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -650,9 +650,9 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StreamingAPI_Response): StreamingAPI_Response {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* bytes data */ 1:
                     message.data = reader.bytes();
@@ -664,10 +664,10 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
                     message.newOffset = reader.uint64().toBigInt();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -684,7 +684,7 @@ class StreamingAPI_Response$Type extends MessageType<StreamingAPI_Response> {
         /* uint64 new_offset = 3; */
         if (message.newOffset !== 0n)
             writer.tag(3, WireType.Varint).uint64(message.newOffset);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

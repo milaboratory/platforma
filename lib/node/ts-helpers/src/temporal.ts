@@ -13,8 +13,9 @@ export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void>
     });
   else
     return new Promise((resolve, reject) => {
+      // eslint-disable-next-line prefer-const
       let timeoutRef: NodeJS.Timeout;
-      let abortHandler = () => {
+      const abortHandler = () => {
         clearTimeout(timeoutRef);
         reject(new Aborted(abortSignal?.reason));
       };
@@ -164,10 +165,10 @@ export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRe
 }
 
 function msToHumanReadable(ms: number): string {
-  let seconds = ms / 1000;
-  let minutes = ms / (1000 * 60);
-  let hours = ms / (1000 * 60 * 60);
-  let days = ms / (1000 * 60 * 60 * 24);
+  const seconds = ms / 1000;
+  const minutes = ms / (1000 * 60);
+  const hours = ms / (1000 * 60 * 60);
+  const days = ms / (1000 * 60 * 60 * 24);
   if (ms < 1000) return `${ms}ms`;
   if (seconds < 120) return `${seconds.toPrecision(3)}s`;
   else if (minutes < 120) return `${minutes.toPrecision(3)}m`;

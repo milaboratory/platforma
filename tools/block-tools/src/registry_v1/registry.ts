@@ -1,17 +1,18 @@
-import { RegistryStorage } from '../lib/storage';
+import type { RegistryStorage } from '../lib/storage';
 import { randomUUID } from 'node:crypto';
 import semver from 'semver/preload';
-import {
+import type {
   BlockPackageNameWithoutVersion,
   FullBlockPackageName,
   GlobalOverview,
+  PackageOverview} from './v1_repo_schema';
+import {
   GlobalOverviewPath,
   MetaFile,
-  PackageOverview,
   packageOverviewPath,
   payloadFilePath
 } from './v1_repo_schema';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import type { MiLogger } from '@milaboratories/ts-helpers';
 
 function fullNameToPath(name: FullBlockPackageName): string {
   return `${name.organization}/${name.package}/${name.version}`;
@@ -98,7 +99,7 @@ export class BlockRegistry {
       seedPaths.push(seedPath);
       const { packageKeyWithoutVersion, organization, pkg, version, seed } = match.groups!;
 
-      let update = packagesToUpdate.get(packageKeyWithoutVersion);
+      const update = packagesToUpdate.get(packageKeyWithoutVersion);
       let added = false;
       if (!update) {
         packagesToUpdate.set(packageKeyWithoutVersion, {
@@ -249,5 +250,5 @@ export class BlockRegistryPackConstructor {
 
 interface PackageUpdateInfo {
   package: BlockPackageNameWithoutVersion;
-  versions: Set<String>;
+  versions: Set<string>;
 }

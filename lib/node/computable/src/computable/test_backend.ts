@@ -1,8 +1,8 @@
-import { Watcher } from '../watcher';
+import type { Watcher } from '../watcher';
 import { ChangeSource } from '../change_source';
-import { AccessorProvider, UsageGuard } from './accessor_provider';
+import type { AccessorProvider, UsageGuard } from './accessor_provider';
 import { randomUUID } from 'node:crypto';
-import { ComputableCtx } from './kernel';
+import type { ComputableCtx } from './kernel';
 
 export interface PersistentFakeTreeNode extends AccessorProvider<FakeTreeAccessor> {
   readonly uuid: string;

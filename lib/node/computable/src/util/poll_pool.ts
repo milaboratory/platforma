@@ -1,8 +1,9 @@
 import * as tp from 'node:timers/promises';
-import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
-import { ComputableHooks } from '../computable/computable_hooks';
+import type { MiLogger } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
+import type { ComputableHooks } from '../computable/computable_hooks';
 import { Computable } from '../computable/computable';
-import { ComputableCtx, UnwrapComputables } from '../computable/kernel';
+import type { ComputableCtx, UnwrapComputables } from '../computable/kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { ChangeSource } from '../change_source';
 
@@ -100,7 +101,9 @@ export class PollPool<A extends PollActor = PollActor> {
       try {
         const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
         await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
-      } catch {}
+      } catch {
+        // do nothing
+      }
     }
   }
 
@@ -250,7 +253,8 @@ export abstract class PollComputablePool<Req, Res> {
   protected abstract resultsEqual(res1: Res, res2: Res): boolean;
 
   private createEntry(req: Req): PollComputablePoolEntry<Res> {
-    const watcher = new HierarchicalWatcher();
+    const watcher = new HierarchicalWatcher(); // @TODO unused var? Dmitry Bolotin?
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const parent = this;
     return new (class implements PollComputablePoolEntry<Res> {
       value: Res | undefined = undefined;

@@ -1,4 +1,4 @@
-import { GroupBy } from "./types";
+import type { GroupBy } from "./types";
 
 export function arrayDiff<T>(arr1: T[], arr2: T[]): T[] {
   return arr1.filter(x => !arr2.includes(x));

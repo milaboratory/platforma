@@ -86,9 +86,9 @@ class ResourceType$Type extends MessageType<ResourceType> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: ResourceType): ResourceType {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* string name */ 1:
                     message.name = reader.string();
@@ -97,10 +97,10 @@ class ResourceType$Type extends MessageType<ResourceType> {
                     message.version = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -114,7 +114,7 @@ class ResourceType$Type extends MessageType<ResourceType> {
         /* string version = 2; */
         if (message.version !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.version);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;
@@ -141,9 +141,9 @@ class FieldRef$Type extends MessageType<FieldRef> {
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: FieldRef): FieldRef {
-        let message = target ?? this.create(), end = reader.pos + length;
+        const message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
+            const [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
                 case /* uint64 resource_id */ 2:
                     message.resourceId = reader.uint64().toBigInt();
@@ -152,10 +152,10 @@ class FieldRef$Type extends MessageType<FieldRef> {
                     message.fieldName = reader.string();
                     break;
                 default:
-                    let u = options.readUnknownField;
+                    const u = options.readUnknownField;
                     if (u === "throw")
                         throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
+                    const d = reader.skip(wireType);
                     if (u !== false)
                         (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
             }
@@ -169,7 +169,7 @@ class FieldRef$Type extends MessageType<FieldRef> {
         /* string field_name = 3; */
         if (message.fieldName !== "")
             writer.tag(3, WireType.LengthDelimited).string(message.fieldName);
-        let u = options.writeUnknownFields;
+        const u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
         return writer;

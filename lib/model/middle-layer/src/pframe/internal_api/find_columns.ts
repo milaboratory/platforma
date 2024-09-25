@@ -1,5 +1,5 @@
-import { ColumnFilter, PColumnIdAndSpec } from '@milaboratories/pl-model-common';
-import { AxisQualification, ColumnAxesWithQualifications } from './common';
+import type { ColumnFilter, PColumnIdAndSpec } from '@milaboratories/pl-model-common';
+import type { AxisQualification, ColumnAxesWithQualifications } from './common';
 
 export interface FindColumnsRequest {
   columnFilter: ColumnFilter;

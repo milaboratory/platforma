@@ -1,13 +1,15 @@
-import {
-  NullResourceId,
+import type {
   OptionalResourceId,
   PlClient,
-  ResourceId,
+  ResourceId} from '@milaboratories/pl-middle-layer';
+import {
+  NullResourceId,
   resourceIdToString,
   TestHelpers
 } from '@milaboratories/pl-middle-layer';
+import type {
+  SynchronizedTreeOps} from '@milaboratories/pl-tree';
 import {
-  SynchronizedTreeOps,
   SynchronizedTreeState
 } from '@milaboratories/pl-tree';
 import { randomUUID } from 'crypto';
@@ -24,6 +26,7 @@ export const plTest = test.extend<{
   rootTree: SynchronizedTreeState;
   tmpFolder: string;
 }>({
+  // eslint-disable-next-line no-empty-pattern
   tmpFolder: async ({}, use) => {
     const workFolder = path.resolve(`work/${randomUUID()}`);
     await fsp.mkdir(workFolder, { recursive: true });

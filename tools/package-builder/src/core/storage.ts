@@ -2,7 +2,7 @@ import pathPosix from 'node:path/posix';
 import { S3 } from '@aws-sdk/client-s3';
 import path from 'path';
 import * as util from './util';
-import { Readable } from 'stream';
+import type { Readable } from 'stream';
 
 export const supportedTypes = ['S3'] as const; // add other types when we support them
 export type storageType = (typeof supportedTypes)[number];

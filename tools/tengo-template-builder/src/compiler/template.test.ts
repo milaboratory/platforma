@@ -1,5 +1,6 @@
 import { Template } from './template';
-import { formatArtefactNameAndVersion, FullArtifactName } from './package';
+import type { FullArtifactName } from './package';
+import { formatArtefactNameAndVersion } from './package';
 
 test('template serialization / deserialization', () => {
   const name: FullArtifactName = {

@@ -1,17 +1,18 @@
-import {
+import type {
   AnyLogHandle,
   ImportProgress,
   LocalBlobHandleAndSize,
   PColumn,
   PObject,
-  RemoteBlobHandleAndSize,
+  RemoteBlobHandleAndSize} from '@milaboratories/pl-model-common';
+import {
   isPColumn,
   mapPObjectData
 } from '@milaboratories/pl-model-common';
 import { getCfgRenderCtx } from '../internal';
 import { FutureRef } from './future';
-import { AccessorHandle } from './internal';
-import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
+import type { AccessorHandle } from './internal';
+import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './traversal_ops';
 
 function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
