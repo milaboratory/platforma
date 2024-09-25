@@ -88,6 +88,13 @@ export const ContentAny = z.discriminatedUnion('type', [
 ]);
 export type ContentAny = z.infer<typeof ContentAny>;
 
+export const ContentExplicitOrRelative = z.discriminatedUnion('type', [
+  ContentExplicitString,
+  ContentExplicitBase64,
+  ContentRelative
+]);
+export type ContentExplicitOrRelative = z.infer<typeof ContentExplicitOrRelative>;
+
 export const ContentAnyLocal = z.discriminatedUnion('type', [
   ContentExplicitString,
   ContentExplicitBase64,

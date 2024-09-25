@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/milaboratories.test-enter-numbers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-enter-numbers.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-enter-numbers.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-enter-numbers.ui/dist"
+    },
+    "meta": {
+      "title": "Enter Numbers",
+      "description": "Enter Numbers",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      }
+    }
+  }
+}

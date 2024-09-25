@@ -18,8 +18,8 @@ export async function buildBlockPackDist(
     await BlockPackDescriptionConsolidateToFolder(dst, files).parseAsync(description);
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {
-      const bytes = await fsp.readFile(f);
-      const sha256 = Buffer.from(await crypto.subtle.digest('sha256', bytes)).toString('hex');
+      const bytes = await fsp.readFile(path.resolve(dst, f));
+      const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', bytes)).toString('hex');
       return { name: f, size: bytes.length, sha256 };
     })
   );
