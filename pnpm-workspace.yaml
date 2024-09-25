@@ -46,6 +46,8 @@ catalog:
   'rollup-plugin-node-externals': ^7.1.3
   '@rollup/plugin-node-resolve': ^15.2.3
   'vite-plugin-dts': ^4.2.1
+  'tsc-alias': ^1.8.10
+  'yarpm': ^1.2.0
 
   # Build util / linters
 

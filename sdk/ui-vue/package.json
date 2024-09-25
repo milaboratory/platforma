@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/ui-vue",
-  "version": "1.0.0",
+  "name": "@platforma-sdk/ui-vue",
+  "version": "1.3.4",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -25,16 +25,15 @@
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
     "lint": "eslint . --ext js,ts,vue",
-    "check": "pnpm type-check && pnpm lint && pnpm test"
+    "check": "yarpm type-check && yarpm lint && yarpm test"
   },
-  "peerDependencies": {
+  "dependencies": {
+    "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "vue": "catalog:"
   },
-  "dependencies": {
-    "@milaboratories/uikit": "workspace:^"
-  },
   "devDependencies": {
+    "@milaboratories/helpers": "workspace:^",
     "@ag-grid-community/client-side-row-model": "catalog:",
     "@ag-grid-community/core": "catalog:",
     "@ag-grid-community/infinite-row-model": "catalog:",
@@ -60,9 +59,6 @@
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
     "zod": "catalog:",
-    "@milaboratories/helpers": "workspace:^"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.9.5"
+    "yarpm": "catalog:"
   }
 }

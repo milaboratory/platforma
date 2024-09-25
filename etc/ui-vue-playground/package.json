@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@milaboratories/ui-vue": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
     "vue": "catalog:",
     "@platforma-sdk/model": "workspace:^",

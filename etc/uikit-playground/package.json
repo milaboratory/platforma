@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@milaboratories/uikit": "workspace:^"
+    "@milaboratories/uikit": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",
