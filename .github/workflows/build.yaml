@@ -30,8 +30,6 @@ jobs:
       test-script-name: 'test'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
-      pnpm-build-args: |
-        --concurrency=1
       pnpm-tests-args: |
         --concurrency=1
       npmrc-config: |
