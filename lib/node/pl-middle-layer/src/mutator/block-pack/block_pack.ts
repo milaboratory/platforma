@@ -105,7 +105,9 @@ export class BlockPackPreparer {
             encoding: 'utf-8'
           })
         ) as BlockConfig;
-        const workflowContent = await fs.promises.readFile(description.components.workflow.file);
+        const workflowContent = await fs.promises.readFile(
+          description.components.workflow.main.file
+        );
         const frontendPath = description.components.ui.folder;
         const source = { ...spec };
         if (spec.mtime === undefined)
