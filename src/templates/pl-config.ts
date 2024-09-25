@@ -54,7 +54,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const localRoot = options?.localRoot ?? state.path('local-pl');
 
   const log: types.logSettings = {
-    level: options?.log?.level ?? 'info',
+    level: options?.log?.level ?? 'warn',
     path: options?.log?.path ?? `${localRoot}/platforma.log`
   };
 
@@ -229,51 +229,19 @@ controllers:
               downloadable: false
 
     storages:
-      - &mainStorage      ${JSON.stringify(options.storages.primary)}
-      - &libraryStorage   ${JSON.stringify(options.storages.library)}
-      - &workStorage      ${JSON.stringify(options.storages.work)}
+      - ${JSON.stringify(options.storages.primary)}
+      - ${JSON.stringify(options.storages.library)}
+      - ${JSON.stringify(options.storages.work)}
 
   runner:
-    main:
-      storages: [ 'work' ]
+    type: local
+    storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
 
-    executor:
-      id: 'work'
-      storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
-      packagesRoot: '${options.localRoot}/packages'
-      defaultQueueName: 'heavy'
-      queues:
-        - name: 'heavy'
-          maxConcurrency: 1
-        - name: 'ui-tasks'
-          maxConcurrency: 50
+  packageLoader:
+    packagesRoot: '${options.localRoot}/packages'
 
-    softwareLoader:
-      packagesRoot: '${options.localRoot}/packages'
-      registries:
-        - name: 'milaboratories'
-          endpoints:
-            - type: 'local'
-              path: '${options.localRoot}/packages-local'
-            - type: 'url'
-              url: 'https://bin.registry.platforma.bio/'
-
-  templates:
-    registries:
-      - name: 'milaboratories'
-        endpoints:
-          - type: 'local'
-            path: '${options.localRoot}/blocks-local'
-          - type: 'url'
-            url: 'https://block.registry.platforma.bio/'
-
-  `;
-}
-
-function randomStr(len: number): string {
-  return randomBytes(Math.ceil(len / 2))
-    .toString('hex')
-    .slice(0, len);
+  workflows: {}
+`;
 }
 
 function defaultBool(v: boolean | undefined, def: boolean): boolean {

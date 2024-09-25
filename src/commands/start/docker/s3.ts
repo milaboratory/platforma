@@ -15,6 +15,9 @@ export default class S3 extends Command {
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
+    ...cmdOpts.StoragePrimaryURLFlag,
+    ...cmdOpts.StorageLibraryURLFlag,
+
     ...cmdOpts.LicenseFlags,
     ...cmdOpts.AuthFlags
   };
@@ -40,6 +43,9 @@ export default class S3 extends Command {
 
       license: flags['license'],
       licenseFile: flags['license-file'],
+
+      primaryURL: flags['storage-primary'],
+      libraryURL: flags['storage-library'],
 
       auth: authOptions
     });
