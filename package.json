@@ -3,15 +3,19 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "lint": "turbo build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\""
+    "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",
+    "prepare": "husky",
+    "check": "pnpm -r check"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
-    "turbo": "catalog:",
-    "prettier": "catalog:"
+    "husky": "^9.1.6",
+    "prettier": "catalog:",
+    "turbo": "catalog:"
   },
   "packageManager": "pnpm@9.10.0",
   "engines": {

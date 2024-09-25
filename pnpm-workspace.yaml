@@ -16,6 +16,8 @@ packages:
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
 
+  - lib/ui/uikit
+
   - tools/tengo-template-builder
   - tools/block-tools
   - tools/pl-package-builder
@@ -23,11 +25,17 @@ packages:
   - sdk/model
   - sdk/workflow-tengo
   - sdk/test
+  - sdk/ui-vue
 
   # Tests
 
   - tests/workflow-tengo
   - tests/helper
+
+  # Etc
+
+  - etc/ui-vue-playground
+  - etc/uikit-playground
 
 catalog:
   # Build
@@ -46,9 +54,13 @@ catalog:
 
   '@changesets/cli': ^2.27.8
 
-  'eslint': ^9.10.0
+  'eslint': ^8.57.0
   '@eslint/js': ^9.10.0
   'typescript-eslint': ^8.6.0
+  '@typescript-eslint/eslint-plugin': ^7.11.0
+  'eslint-config-prettier': ^9.1.0
+  'eslint-plugin-prettier': '^5.1.3'
+  'eslint-plugin-vue': '^9.26.0'
 
   'oclif': ^4.14.35
 
@@ -89,6 +101,21 @@ catalog:
 
   'quickjs-emscripten': ^0.31.0
 
+  # UI
+
+  'vue': ^3.4.35
+  'vue-tsc': ^2.0.6
+  '@vitejs/plugin-vue': ^5.0.0
+  'sass': '1.77.2'
+
+  '@ag-grid-community/client-side-row-model': ^32.1.0
+  '@ag-grid-community/core': ^32.1.0
+  '@ag-grid-community/infinite-row-model': "^32.1.0"
+  '@ag-grid-community/styles': '^32.1.0'
+  '@ag-grid-community/vue3': '^32.1.0'
+  '@ag-grid-enterprise/clipboard': ^32.1.0
+  '@ag-grid-enterprise/range-selection': ^32.1.0
+
   # SW
 
   '@milaboratories/software-pframes-conv': ^1.5.1
@@ -100,6 +127,11 @@ catalog:
   '@jest/globals': ^29.7.0
   'ts-jest': ^29.2.5
   'vitest': ^2.1.1
+  '@faker-js/faker': ^8.4.0
+  'happy-dom': ^14.12.3
+  'jsdom': ^24.1.1
+  '@vue/test-utils': ^2.4.6
+  'resize-observer-polyfill': ^1.5.1
 
   # Types
 
@@ -110,3 +142,8 @@ catalog:
   '@types/semver': ^7.5.8
   '@types/mime-types': ^2.1.4
   '@types/tar-fs': ^2.0.4
+
+  # To remove
+
+  'lodash': '4.17.21'
+  '@types/lodash': '^4.17.7'
