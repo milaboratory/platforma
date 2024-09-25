@@ -25,10 +25,24 @@ jobs:
       app-name-slug: 'platforma-sdk'
       notify-telegram: true
       node-version: '20.x'
-      always-auth: 'true'
       build-script-name: 'build'
       test: true
       test-script-name: 'test'
+      turbo-build-concurrency: '1'
+      turbo-test-concurrency: '1'
+      npmrc-config: |
+        {
+          "registries": {
+            "https://registry.npmjs.org/": {
+              "scopes": ["milaboratories", "platforma-sdk"],
+              "tokenVar": "NPMJS_TOKEN"
+            },
+            "https://npm.pkg.github.com/": {
+              "scopes": ["milaboratory"],
+              "tokenVar": "NODE_AUTH_TOKEN"
+            }
+          }
+        }
     secrets:
       env: |
         {
