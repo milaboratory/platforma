@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.1.8
+
+### Patch Changes
+
+- e019b36: semver moved to dev deps
+
 ## 2.1.7
 
 ### Patch Changes
