@@ -1,5 +1,11 @@
 # @milaboratories/pl-tree
 
+## 1.3.9
+
+### Patch Changes
+
+- 1a71473: test fix
+
 ## 1.3.8
 
 ### Patch Changes
