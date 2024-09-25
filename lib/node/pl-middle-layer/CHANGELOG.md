@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.17
+
+### Patch Changes
+
+- aa8d4c0: test fix (isolated modules)
+
 ## 1.10.16
 
 ### Patch Changes
