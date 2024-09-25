@@ -28,8 +28,12 @@ jobs:
       build-script-name: 'build'
       test: true
       test-script-name: 'test'
-      turbo-build-concurrency: '1'
-      turbo-test-concurrency: '1'
+      pnpm-recursive-build: false
+      pnpm-recursive-tests: false
+      pnpm-build-args: |
+        --concurrency=1
+      pnpm-tests-args: |
+        --concurrency=1
       npmrc-config: |
         {
           "registries": {
