@@ -1,13 +1,22 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
+import { compare as compareSemver, satisfies } from 'semver';
 import { RegistryStorage } from '../../lib/storage';
-import { BlockPackIdNoVersion } from '@milaboratories/pl-model-middle-layer';
-import { PackageUpdatePattern, VersionUpdatesPrefix } from './schema_internal';
+import { BlockPackIdNoVersion, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
 import {
-  GlobalOverview,
+  GlobalUpdateSeedInFile,
+  GlobalUpdateSeedOutFile,
+  PackageUpdatePattern,
+  VersionUpdatesPrefix
+} from './schema_internal';
+import {
+  GlobalOverviewReg,
   GlobalOverviewPath,
+  ManifestSuffix,
+  packageContentPrefix,
   PackageOverview,
   packageOverviewPath
 } from './schema_public';
+import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReader } from '../model';
 
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
@@ -51,11 +60,12 @@ export class BlockRegistryV2 {
 
     // loading global overview
     const overviewContent = await this.storage.getFile(GlobalOverviewPath);
-    let overview: GlobalOverview =
+    const overview: GlobalOverviewReg =
       overviewContent === undefined
         ? { schema: 'v2', packages: [] }
-        : GlobalOverview.parse(JSON.parse(overviewContent.toString()));
-    this.logger?.info(`Global overview loaded, ${overview.packages.length} records`);
+        : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
+    let overviewPackages = overview.packages;
+    this.logger?.info(`Global overview loaded, ${overviewPackages.length} records`);
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
@@ -71,52 +81,118 @@ export class BlockRegistryV2 {
       );
 
       // removing versions that we will update
-      packageOverview = packageOverview.filter((e) => !packageInfo.versions.has(e.version));
+      const newVersions = packageOverview.versions.filter(
+        (e) => !packageInfo.versions.has(e.id.version)
+      );
 
       // reading new entries
       for (const [v] of packageInfo.versions.entries()) {
         const version = v.toString();
-        const metaContent = await this.storage.getFile(
-          payloadFilePath(
-            {
-              ...packageInfo.package,
-              version
-            },
-            MetaFile
+        const manifestContent = await this.storage.getFile(
+          packageContentPrefix({
+            ...packageInfo.package,
+            version
+          }) + ManifestSuffix
+        );
+        if (!manifestContent) continue; // absent package
+        newVersions.push(
+          BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
+            JSON.parse(manifestContent.toString('utf8'))
           )
         );
-        if (!metaContent) continue;
-        packageOverview.push({ version, meta: JSON.parse(metaContent.toString()) });
       }
 
       // sorting entries according to version
-      packageOverview.sort((e1, e2) => semver.compare(e2.version, e1.version));
+      newVersions.sort((e1, e2) => compareSemver(e2.id.version, e1.id.version));
 
       // write package overview back
-      await this.storage.putFile(overviewFile, Buffer.from(JSON.stringify(packageOverview)));
-      this.logger?.info(`Done (${packageOverview.length} records)`);
+      await this.storage.putFile(
+        overviewFile,
+        Buffer.from(
+          JSON.stringify({ schema: 'v2', versions: newVersions } satisfies PackageOverview)
+        )
+      );
+      this.logger?.info(`Done (${newVersions.length} records)`);
 
       // patching corresponding entry in overview
-      overview = overview.filter(
+      overviewPackages = overviewPackages.filter(
         (e) =>
-          e.organization !== packageInfo.package.organization ||
-          e.package !== packageInfo.package.package
+          e.id.organization !== packageInfo.package.organization ||
+          e.id.name !== packageInfo.package.name
       );
-      overview.push({
-        organization: packageInfo.package.organization,
-        package: packageInfo.package.package,
-        allVersions: packageOverview.map((e) => e.version).reverse(),
-        latestVersion: packageOverview[0].version,
-        latestMeta: packageOverview[0].meta
+      overviewPackages.push({
+        id: {
+          organization: packageInfo.package.organization,
+          name: packageInfo.package.name
+        },
+        allVersions: newVersions.map((e) => e.id.version).reverse(),
+        latest: BlockPackDescriptionManifestAddRelativePathPrefix(packageInfo.package.name).parse(
+          newVersions[0]
+        )
       });
     }
 
     // writing global overview
-    await this.storage.putFile(GlobalOverviewPath, Buffer.from(JSON.stringify(overview)));
-    this.logger?.info(`Global overview updated (${overview.length} records)`);
+    await this.storage.putFile(
+      GlobalOverviewPath,
+      Buffer.from(
+        JSON.stringify({ schema: 'v2', packages: overviewPackages } satisfies GlobalOverviewReg)
+      )
+    );
+    this.logger?.info(`Global overview updated (${overviewPackages.length} records)`);
 
     // deleting seeds
     await this.storage.deleteFiles(...seedPaths.map((sp) => `${VersionUpdatesPrefix}${sp}`));
     this.logger?.info(`Version update requests cleared`);
+  }
+
+  public async updateIfNeeded(force: boolean = false): Promise<void> {
+    // implementation of main convergence algorithm
+
+    this.logger?.info(`Checking if registry requires refresh...`);
+    const updateRequestSeed = await this.storage.getFile(GlobalUpdateSeedInFile);
+    const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
+    if (!force && updateRequestSeed === undefined && currentUpdatedSeed === undefined) return;
+    if (
+      !force &&
+      updateRequestSeed !== undefined &&
+      currentUpdatedSeed !== undefined &&
+      updateRequestSeed.equals(currentUpdatedSeed)
+    )
+      return;
+
+    await this.updateRegistry();
+
+    if (updateRequestSeed) {
+      await this.storage.putFile(GlobalUpdateSeedOutFile, updateRequestSeed);
+      this.logger?.info(`Refresh finished`);
+    }
+  }
+
+  public async getPackageOverview(
+    name: BlockPackIdNoVersion
+  ): Promise<undefined | PackageOverview> {
+    const content = await this.storage.getFile(packageOverviewPath(name));
+    if (content === undefined) return undefined;
+    return PackageOverview.parse(JSON.parse(content.toString()));
+  }
+
+  public async getGlobalOverview(): Promise<undefined | GlobalOverviewReg> {
+    const content = await this.storage.getFile(GlobalOverviewPath);
+    if (content === undefined) return undefined;
+    return GlobalOverviewReg.parse(JSON.parse(content.toString()));
+  }
+
+  public async getGlobalOverviewExplicitBytes(): Promise<undefined | GlobalOverviewReg> {
+    const content = await this.storage.getFile(GlobalOverviewPath);
+    if (content === undefined) return undefined;
+    return GlobalOverviewReg.parse(JSON.parse(content.toString()));
+  }
+
+  public async publishPackage(
+    manifest: BlockPackManifest,
+    fileReader: RelativeContentReader
+  ): Promise<void> {
+    
   }
 }

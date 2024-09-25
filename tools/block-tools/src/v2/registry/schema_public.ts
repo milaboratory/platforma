@@ -1,10 +1,15 @@
 import {
+  BlockComponentsManifest,
   BlockPackDescriptionManifest,
   BlockPackId,
   BlockPackIdNoVersion,
-  BlockPackManifest
+  BlockPackMeta,
+  ContentRelativeBinary,
+  ContentRelativeText,
+  CreateBlockPackDescriptionSchema
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
+import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitText } from '../model';
 
 const MainPrefix = 'v2/';
 
@@ -32,16 +37,54 @@ export function packageOverviewPath(bp: BlockPackIdNoVersion): string {
 
 export const GlobalOverviewPath = `${MainPrefix}overview.json`;
 
-export const GlobalOverviewEntry = z.object({
-  id: BlockPackIdNoVersion,
-  allVersions: z.array(z.string()),
-  latestVersion: z.string(),
-  latestDescription: BlockPackDescriptionManifest
-});
-export type GlobalOverviewEntry = z.infer<typeof GlobalOverviewEntry>;
+export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
+  descriptionType: Description
+) {
+  return z.object({
+    id: BlockPackIdNoVersion,
+    allVersions: z.array(z.string()),
+    latest: descriptionType
+  });
+}
 
-export const GlobalOverview = z.object({
-  schema: z.literal('v2'),
-  packages: z.array(GlobalOverviewEntry)
-});
-export type GlobalOverview = z.infer<typeof GlobalOverview>;
+export function GlobalOverview<const Description extends z.ZodTypeAny>(
+  descriptionType: Description
+) {
+  return z.object({
+    schema: z.literal('v2'),
+    packages: z.array(GlobalOverviewEntry(descriptionType))
+  });
+}
+
+export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);
+export type GlobalOverviewReg = z.infer<typeof GlobalOverviewReg>;
+
+export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReader) {
+  return GlobalOverview(
+    CreateBlockPackDescriptionSchema(
+      BlockComponentsManifest,
+      BlockPackMeta(
+        ContentRelativeText.transform(relativeToExplicitText(reader)),
+        ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
+      )
+    )
+  );
+}
+export type GlobalOverviewExplicitBinaryBytes = z.infer<
+  ReturnType<typeof GlobalOverviewToExplicitBinaryBytes>
+>;
+
+export function GlobalOverviewToExplicitBinaryBase64(reader: RelativeContentReader) {
+  return GlobalOverview(
+    CreateBlockPackDescriptionSchema(
+      BlockComponentsManifest,
+      BlockPackMeta(
+        ContentRelativeText.transform(relativeToExplicitText(reader)),
+        ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
+      )
+    )
+  );
+}
+export type GlobalOverviewExplicitBinaryBase64 = z.infer<
+  ReturnType<typeof GlobalOverviewToExplicitBinaryBase64>
+>;

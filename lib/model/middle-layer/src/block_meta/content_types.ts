@@ -58,7 +58,11 @@ export type ContentAbsoluteUrl = z.infer<typeof ContentAbsoluteUrl>;
 
 export const ContentExplicitBytes = z
   .object({
-    type: z.literal('explicit'),
+    type: z.literal('explicit-bytes'),
+    mimeType: z
+      .string()
+      .regex(/\w+\/[-+.\w]+/)
+      .describe('MIME type to interpret content'),
     content: z.instanceof(Uint8Array).describe('Raw content')
   })
   .strict();
