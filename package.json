@@ -2,9 +2,9 @@
   "name": "@milaboratories/platforma-monorepo",
   "private": true,
   "scripts": {
-    "type-check": "turbo run type-check --output-logs=new-only",
-    "build": "turbo run build --output-logs=new-only",
-    "test": "turbo run test --output-logs=new-only",
+    "type-check": "turbo run type-check",
+    "build": "turbo run build",
+    "test": "turbo run test",
     "lint": "pnpm -r lint",
     "changeset": "changeset",
     "version-packages": "changeset version",
