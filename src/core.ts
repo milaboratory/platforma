@@ -198,6 +198,7 @@ export default class Core {
     image?: string;
     version?: string;
     primaryURL?: string;
+    libraryURL?: string;
     auth?: types.authOptions;
     license?: string;
     licenseFile?: string;
@@ -242,6 +243,27 @@ export default class Core {
         if (primary.region) envs['PL_DATA_PRIMARY_S3_REGION'] = primary.region;
       } else {
         throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
+      }
+    }
+
+    if (options?.libraryURL) {
+      const library = plCfg.storageSettingsFromURL(options.libraryURL, '.');
+
+      switch (library.type) {
+        case 'S3':
+          envs['PL_DATA_PRIMARY_TYPE'] = 'S3';
+          envs['PL_DATA_LIBRARY_S3_BUCKET'] = library.bucketName!;
+
+          if (library.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = library.endpoint;
+          if (library.presignEndpoint) envs['PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT'] = library.presignEndpoint;
+          if (library.key) envs['PL_DATA_LIBRARY_S3_KEY'] = library.key;
+          if (library.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = library.secret;
+          if (library.region) envs['PL_DATA_LIBRARY_S3_REGION'] = library.region;
+
+          break;
+
+        default:
+          throw new Error(`${library.type} storage type is not supported for library storage`);
       }
     }
 

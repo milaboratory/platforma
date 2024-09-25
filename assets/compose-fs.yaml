@@ -33,10 +33,10 @@ services:
 
     volumes:
       - ${PL_AUTH_HTPASSWD_PATH}:/etc/platforma/users.htpasswd
-      - primary:/storage/controllers/file/primary
-      - library:/storage/controllers/file/library
-      - work:/storage/controllers/file/work
-      - software:/storage/controllers/runner/software
+      - primary:/storage/controllers/data/primary
+      - library:/storage/controllers/data/library
+      - work:/storage/controllers/data/work
+      - packages:/storage/controllers/packageLoader
       - db:/storage/rocksdb
       - ${PL_LICENSE_FILE:-/dev/null}:/storage/mi.license
 
@@ -64,5 +64,5 @@ volumes:
       o: 'bind'
       device: '${PL_STORAGE_LIBRARY}'
 
-  software:
+  packages:
   db:
