@@ -237,6 +237,78 @@ importers:
         specifier: 'catalog:'
         version: 2.1.2
 
+  etc/blocks/enter-numbers/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-enter-numbers.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-enter-numbers.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/enter-numbers/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(@microsoft/api-extractor@7.47.7(@types/node@22.5.5))(postcss@8.4.47)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.5.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
+
+  etc/blocks/enter-numbers/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers.model':
+        specifier: workspace:*
+        version: link:../model
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.8(typescript@5.5.4)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.7(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
+
+  etc/blocks/enter-numbers/workflow:
+    devDependencies:
+      '@milaboratories/tengo-template-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-template-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+
   etc/ui-vue-playground:
     dependencies:
       '@milaboratories/helpers':
@@ -1028,59 +1100,6 @@ importers:
       '@milaboratories/tengo-template-builder':
         specifier: workspace:^
         version: link:../../tools/tengo-template-builder
-
-  tests/blocks/enter-numbers/model:
-    dependencies:
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../../sdk/model
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@platforma-sdk/block-tools':
-        specifier: workspace:*
-        version: link:../../../../tools/block-tools
-      tsup:
-        specifier: 'catalog:'
-        version: 8.2.4(@microsoft/api-extractor@7.47.7(@types/node@22.5.5))(postcss@8.4.47)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.5.1)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-      vite:
-        specifier: 'catalog:'
-        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
-
-  tests/blocks/enter-numbers/ui:
-    dependencies:
-      '@milaboratories/milaboratories.test-enter-numbers.model':
-        specifier: workspace:*
-        version: link:../model
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.8(typescript@5.5.4)
-    devDependencies:
-      '@vitejs/plugin-vue':
-        specifier: 'catalog:'
-        version: 5.1.4(vite@5.4.7(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.8(typescript@5.5.4))
-      typescript:
-        specifier: 'catalog:'
-        version: 5.5.4
-      vite:
-        specifier: 'catalog:'
-        version: 5.4.7(@types/node@22.5.5)(sass@1.77.2)
-      vue-tsc:
-        specifier: 'catalog:'
-        version: 2.1.6(typescript@5.5.4)
-
-  tests/blocks/enter-numbers/workflow:
-    devDependencies:
-      '@milaboratories/tengo-template-builder':
-        specifier: workspace:*
-        version: link:../../../../tools/tengo-template-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../../sdk/workflow-tengo
 
   tests/helper:
     dependencies:

@@ -29,9 +29,10 @@ packages:
 
   # Test blocks
 
-  - tests/blocks/enter-numbers/workflow
-  - tests/blocks/enter-numbers/model
-  - tests/blocks/enter-numbers/ui
+  - etc/blocks/enter-numbers/workflow
+  - etc/blocks/enter-numbers/model
+  - etc/blocks/enter-numbers/ui
+  - etc/blocks/enter-numbers/block
 
   # Tests
 
@@ -119,7 +120,7 @@ catalog:
 
   '@ag-grid-community/client-side-row-model': ^32.1.0
   '@ag-grid-community/core': ^32.1.0
-  '@ag-grid-community/infinite-row-model': "^32.1.0"
+  '@ag-grid-community/infinite-row-model': '^32.1.0'
   '@ag-grid-community/styles': '^32.1.0'
   '@ag-grid-community/vue3': '^32.1.0'
   '@ag-grid-enterprise/clipboard': ^32.1.0
