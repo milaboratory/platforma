@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.2.6
+
+### Patch Changes
+
+- bb145f7: pfconv pre-preocess support
+
 ## 1.2.5
 
 ### Patch Changes
