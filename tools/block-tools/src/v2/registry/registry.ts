@@ -6,6 +6,7 @@ import {
   GlobalUpdateSeedInFile,
   GlobalUpdateSeedOutFile,
   PackageUpdatePattern,
+  packageUpdateSeedPath,
   VersionUpdatesPrefix
 } from './schema_internal';
 import {
@@ -14,9 +15,11 @@ import {
   ManifestSuffix,
   packageContentPrefix,
   PackageOverview,
-  packageOverviewPath
+  packageOverviewPath,
+  ManifestFileName
 } from './schema_public';
 import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReader } from '../model';
+import { randomUUID } from 'node:crypto';
 
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
@@ -97,7 +100,7 @@ export class BlockRegistryV2 {
         if (!manifestContent) continue; // absent package
         newVersions.push(
           BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
-            JSON.parse(manifestContent.toString('utf8'))
+            BlockPackManifest.parse(JSON.parse(manifestContent.toString('utf8'))).description
           )
         );
       }
@@ -183,16 +186,48 @@ export class BlockRegistryV2 {
     return GlobalOverviewReg.parse(JSON.parse(content.toString()));
   }
 
-  public async getGlobalOverviewExplicitBytes(): Promise<undefined | GlobalOverviewReg> {
-    const content = await this.storage.getFile(GlobalOverviewPath);
-    if (content === undefined) return undefined;
-    return GlobalOverviewReg.parse(JSON.parse(content.toString()));
-  }
+  // public async getGlobalOverviewExplicitBytes(): Promise<undefined | GlobalOverviewReg> {
+  //   const content = await this.storage.getFile(GlobalOverviewPath);
+  //   if (content === undefined) return undefined;
+  //   return GlobalOverviewReg.parse(JSON.parse(content.toString()));
+  // }
 
   public async publishPackage(
     manifest: BlockPackManifest,
     fileReader: RelativeContentReader
   ): Promise<void> {
-    
+    const prefix = packageContentPrefix(manifest.description.id);
+    // uploading content files
+    for (const f of manifest.files) {
+      const bytes = await fileReader(f.name);
+      if (bytes.length !== f.size)
+        throw new Error(
+          `Actual file size don't match file size from the manifest file for ${f.name} (actual = ${bytes.length}; manifest = ${f.size})`
+        );
+      const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', bytes))
+        .toString('hex')
+        .toUpperCase();
+      if (sha256 !== f.sha256.toUpperCase())
+        throw new Error(
+          `Actual file SHA-256 don't match the checksum from the manifest file for ${f.name} (actual = ${sha256}; manifest = ${f.sha256.toUpperCase()})`
+        );
+
+      const dst = prefix + '/' + f.name;
+      this.logger?.info(`Uploading ${f.name} -> ${dst} ...`);
+      await this.storage.putFile(dst, bytes);
+    }
+
+    // uploading manifest as the last upload action
+    const manifestDst = prefix + '/' + ManifestFileName;
+    this.logger?.info(`Uploading manifest to ${manifestDst} ...`);
+    await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(manifest)));
+
+    // adding update seed
+    const seed = randomUUID();
+    const seedPath = packageUpdateSeedPath(manifest.description.id, seed);
+    this.logger?.info(`Creating update seed at ${seedPath} ...`);
+    await this.storage.putFile(seedPath, Buffer.from(seed));
+    this.logger?.info(`Touching global update seed ${GlobalUpdateSeedInFile} ...`);
+    await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(seed));
   }
 }
