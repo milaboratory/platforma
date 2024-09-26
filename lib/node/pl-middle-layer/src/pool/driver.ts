@@ -1,5 +1,4 @@
 import { DownloadDriver } from '@milaboratories/pl-drivers';
-import { PFrame } from '@milaboratories/pframes-node';
 import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
@@ -33,6 +32,7 @@ import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'crypto';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
+import { PFrame } from '@milaboratories/pframes-node';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);

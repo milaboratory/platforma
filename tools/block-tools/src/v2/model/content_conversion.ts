@@ -13,6 +13,7 @@ import {
   ContentExplicitBase64,
   ContentRelative
 } from '@milaboratories/pl-model-middle-layer';
+import { createRequire } from 'node:module';
 
 type ContentCtxFs = {
   type: 'local';
@@ -29,6 +30,7 @@ type ContentCtxUrl = {
 /** Describes a place relative to which any content references should be interpreted */
 export type ContentCtx = ContentCtxFs | ContentCtxUrl;
 
+const require = createRequire(import.meta.url);
 function tryResolve(root: string, request: string): string | undefined {
   try {
     return require.resolve(request, {
