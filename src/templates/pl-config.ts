@@ -240,6 +240,12 @@ controllers:
   packageLoader:
     packagesRoot: '${options.localRoot}/packages'
 
+    registries:
+      - name: "milaboratories"
+        endpoints:
+          - type: "url"
+            url: "https://bin.registry.platforma.bio/"
+
   workflows: {}
 `;
 }
