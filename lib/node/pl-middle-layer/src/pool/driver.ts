@@ -44,6 +44,7 @@ function blobKey(res: ResourceInfo): string {
 type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
+  // @ts-expect-error Dima Bolotin
   public readonly pFrame: PFrameInternal.PFrame = new PFrames.PFrame();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<

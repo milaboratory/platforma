@@ -1,0 +1,17 @@
+# @milaboratories/uikit-playground
+
+## 0.0.2
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/uikit@1.2.4
+
+## 0.0.1
+
+### Patch Changes
+
+- a58af16: minor fixes for ui repos build scripts
+- Updated dependencies [a58af16]
+  - @milaboratories/uikit@1.2.3

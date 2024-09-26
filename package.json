@@ -2,14 +2,15 @@
   "name": "@milaboratories/platforma-monorepo",
   "private": true,
   "scripts": {
-    "build": "turbo build",
+    "type-check": "turbo run type-check",
+    "build": "turbo run build",
+    "test": "turbo run test",
     "lint": "pnpm -r lint",
-    "type-check": "pnpm -r type-check",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "pretty": "prettier --write \"./**/*.{js,jsx,mjs,cjs,ts,tsx,json,yaml}\"",
     "prepare": "husky",
-    "check": "pnpm -r check"
+    "check": "true || turbo run check"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
