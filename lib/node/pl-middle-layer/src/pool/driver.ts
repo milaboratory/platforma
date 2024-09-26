@@ -1,5 +1,5 @@
 import { DownloadDriver } from '@milaboratories/pl-drivers';
-import type PFramesType from '@milaboratories/pframes-node';
+import { PFrame } from '@milaboratories/pframes-node';
 import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
@@ -34,9 +34,6 @@ import { createHash } from 'crypto';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 
-// special way of importing native node module
-const PFrames: PFramesType = require('@milaboratories/pframes-node');
-
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
 }
@@ -44,8 +41,7 @@ function blobKey(res: ResourceInfo): string {
 type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
-  // @ts-expect-error Dima Bolotin
-  public readonly pFrame: PFrameInternal.PFrame = new PFrames.PFrame();
+  public readonly pFrame = new PFrame();
   private readonly blobIdToResource = new Map<string, ResourceInfo>();
   private readonly blobHandleComputables = new Map<
     string,
