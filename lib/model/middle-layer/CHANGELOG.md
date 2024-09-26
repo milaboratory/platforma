@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.2.19
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/pl-model-common@1.3.12
+
 ## 1.2.18
 
 ### Patch Changes
