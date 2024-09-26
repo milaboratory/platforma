@@ -1,5 +1,24 @@
 # @milaboratories/pl-drivers
 
+## 1.2.19
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/pl-model-common@1.3.12
+  - @milaboratories/computable@2.1.5
+  - @milaboratories/pl-client@2.4.13
+  - @milaboratories/pl-tree@1.3.10
+  - @milaboratories/ts-helpers@1.0.25
+
+## 1.2.18
+
+### Patch Changes
+
+- Updated dependencies [1a71473]
+  - @milaboratories/pl-tree@1.3.9
+
 ## 1.2.17
 
 ### Patch Changes

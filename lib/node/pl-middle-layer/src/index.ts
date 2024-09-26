@@ -10,7 +10,7 @@ export { type ProjectListEntry } from './model';
 
 // needed by users of middle-layer
 export * from '@milaboratories/pl-client';
-export { FieldType, ResourceType } from '@milaboratories/pl-client';
+export type { FieldType, ResourceType } from '@milaboratories/pl-client';
 
 // for tests etc..
 export * from './mutator/template/template_loading';
