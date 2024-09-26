@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.19
+
+### Patch Changes
+
+- bd7a10e: pframes-node version bump
+- Updated dependencies [6d4cf3e]
+  - @milaboratories/pl-model-common@1.3.13
+  - @milaboratories/pl-model-middle-layer@1.2.20
+  - @milaboratories/pl-drivers@1.2.20
+  - @platforma-sdk/model@1.2.26
+  - @platforma-sdk/workflow-tengo@1.2.7
+  - @platforma-sdk/block-tools@2.1.10
+
 ## 1.10.18
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/tengo-template-builder
 
+## 1.14.9
+
+### Patch Changes
+
+- c52a9a2: Warn instead of error if universal-ctags failed
+
 ## 1.14.8
 
 ### Patch Changes
