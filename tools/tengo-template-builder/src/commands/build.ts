@@ -33,15 +33,21 @@ export default class Build extends Command {
     dts += `declare const Templates: Record<TplName, TemplateFromFile>;\n`;
     dts += `export { Templates };\n`;
     let cjs = `module.exports = { Templates: {\n`;
-    let mjs = `export const Templates = {\n`;
-    const records = compiledDist.templates
+    let mjs = `import { resolve } from 'node:path';\nexport const Templates = {\n`;
+    const recordsCjs = compiledDist.templates
       .map(
         (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`
       )
       .join(',\n');
-    cjs += records;
-    mjs += records;
+    const recordsMjs = compiledDist.templates
+      .map(
+        (tpl) =>
+          `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+      )
+      .join(',\n');
+    cjs += recordsCjs;
+    mjs += recordsMjs;
     cjs += `\n}};\n`;
     mjs += `\n};\n`;
 
