@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.3.12
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+
 ## 1.3.11
 
 ### Patch Changes

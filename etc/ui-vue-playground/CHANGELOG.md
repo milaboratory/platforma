@@ -1,5 +1,16 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.2
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/uikit@1.2.4
+  - @milaboratories/helpers@1.6.2
+  - @platforma-sdk/model@1.2.25
+  - @platforma-sdk/ui-vue@1.3.6
+
 ## 0.0.1
 
 ### Patch Changes

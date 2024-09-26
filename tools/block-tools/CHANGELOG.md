@@ -1,5 +1,15 @@
 # @platforma-sdk/block-tools
 
+## 2.1.9
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/pl-model-middle-layer@1.2.19
+  - @milaboratories/ts-helpers@1.0.25
+  - @milaboratories/ts-helpers-oclif@1.1.3
+
 ## 2.1.8
 
 ### Patch Changes

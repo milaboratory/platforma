@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.18
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/pl-model-common@1.3.12
+  - @milaboratories/pl-model-middle-layer@1.2.19
+  - @milaboratories/computable@2.1.5
+  - @milaboratories/pl-client@2.4.13
+  - @milaboratories/pl-drivers@1.2.19
+  - @milaboratories/pl-tree@1.3.10
+  - @milaboratories/ts-helpers@1.0.25
+  - @platforma-sdk/model@1.2.25
+  - @platforma-sdk/workflow-tengo@1.2.7
+  - @platforma-sdk/block-tools@2.1.9
+
 ## 1.10.17
 
 ### Patch Changes
