@@ -1,5 +1,11 @@
 # @milaboratories/tengo-template-builder
 
+## 1.14.8
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+
 ## 1.14.7
 
 ### Patch Changes
