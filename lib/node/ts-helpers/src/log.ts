@@ -7,8 +7,10 @@ export interface MiLogger {
   error(msg: string | any): void;
 }
 
+const globalConsole = console;
+
 export class ConsoleLoggerAdapter implements MiLogger {
-  constructor(private readonly console: Console = require('console')) {}
+  constructor(private readonly console: Console = globalConsole) {}
 
   info(msg: string): void {
     this.console.log(msg);

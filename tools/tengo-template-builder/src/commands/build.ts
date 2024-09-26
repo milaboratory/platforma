@@ -1,7 +1,4 @@
-import {
-  SpawnSyncReturns,
-  spawnSync
-} from 'child_process';
+import { SpawnSyncReturns, spawnSync } from 'child_process';
 import { Command } from '@oclif/core';
 import { compile, savePacks, createLogger } from '../compiler/main';
 import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
@@ -11,8 +8,7 @@ import * as path from 'node:path';
 import * as winston from 'winston';
 
 export default class Build extends Command {
-  static override description =
-    'build tengo sources into single distributable pack file';
+  static override description = 'build tengo sources into single distributable pack file';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 
@@ -36,34 +32,40 @@ export default class Build extends Command {
       .join(' | ')};\n`;
     dts += `declare const Templates: Record<TplName, TemplateFromFile>;\n`;
     dts += `export { Templates };\n`;
-    let js = `module.exports = { Templates: {\n`;
-    js += compiledDist.templates
+    let cjs = `module.exports = { Templates: {\n`;
+    let mjs = `import { resolve } from 'node:path';\nexport const Templates = {\n`;
+    const recordsCjs = compiledDist.templates
       .map(
         (tpl) =>
-          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+          `  '${tpl.fullName.id}': { type: 'from-file', path: require.resolve('./tengo/tpl/${tpl.fullName.id}.plj.gz') }`
       )
       .join(',\n');
-    js += `\n}}\n`;
+    const recordsMjs = compiledDist.templates
+      .map(
+        (tpl) =>
+          `  '${tpl.fullName.id}': { type: 'from-file', path: resolve(import.meta.dirname, './tengo/tpl/${tpl.fullName.id}.plj.gz') }`
+      )
+      .join(',\n');
+    cjs += recordsCjs;
+    mjs += recordsMjs;
+    cjs += `\n}};\n`;
+    mjs += `\n};\n`;
 
-    await fsp.writeFile('index.d.ts', dts);
-    await fsp.writeFile('index.js', js);
+    await fsp.writeFile('dist/index.d.ts', dts);
+    await fsp.writeFile('dist/index.cjs', cjs);
+    await fsp.writeFile('dist/index.mjs', mjs);
 
-    // const compiledDev = compile(logger, 'dev')
-    // savePacks(logger, compiledDev, 'dev')
-    // logger.info('')
-
-    mergeTagsEnvs(flags)
-    if (flags['generate-tags'])
-      checkAndGenerateCtags(logger, flags)
+    mergeTagsEnvs(flags);
+    if (flags['generate-tags']) checkAndGenerateCtags(logger, flags);
 
     logger.info('Template Pack build done.');
   }
 }
 
 function mergeTagsEnvs(flags: {
-  'generate-tags': boolean,
-  'tags-file': string,
-  'tags-additional-args': string[] | string,
+  'generate-tags': boolean;
+  'tags-file': string;
+  'tags-additional-args': string[] | string;
 }) {
   if (process.env.GENERATE_TAGS != undefined) {
     flags['generate-tags'] = process.env.GENERATE_TAGS == 'true';
@@ -74,39 +76,45 @@ function mergeTagsEnvs(flags: {
   }
 
   if (process.env.TAGS_ADDITIONAL_ARGS != undefined) {
-    flags['tags-additional-args'] = process.env.TAGS_ADDITIONAL_ARGS.split(",");
+    flags['tags-additional-args'] = process.env.TAGS_ADDITIONAL_ARGS.split(',');
   }
 }
 
-function checkAndGenerateCtags(logger: winston.Logger, flags: {
-  'tags-file': string,
-  'tags-additional-args': string[],
-}) {
-
+function checkAndGenerateCtags(
+  logger: winston.Logger,
+  flags: {
+    'tags-file': string;
+    'tags-additional-args': string[];
+  }
+) {
   const fileName = path.resolve(flags['tags-file']);
   const rootDir = path.dirname(fileName);
   const additionalArgs = flags['tags-additional-args'];
 
   // all tengo files in dirs and subdirs
-  const tengoFiles = getTengoFiles(rootDir)
+  const tengoFiles = getTengoFiles(rootDir);
 
   logger.info(
     `Generating tags for tengo autocompletion from "${rootDir}" \
 in "${fileName}", additional arguments: "${additionalArgs}".
-Found ${tengoFiles.length} tengo files...`)
+Found ${tengoFiles.length} tengo files...`
+  );
 
   // see https://docs.ctags.io/en/lates// t/man/ctags-optlib.7.html#perl-pod
   const result = spawnSync(
     'ctags',
     [
-      "-f", fileName, ...additionalArgs,
-      "--langdef=tengo",
-      "--map-tengo=+.tengo",
-      "--kinddef-tengo=f,function,function",
-      "--regex-tengo=/^\\s*(.*)(:| :=| =) ?func.*/\\1/f/",
-      "--kinddef-tengo=c,constant,constant",
-      "--regex-tengo=/^\\s*(.*) := (\"|\\{).*/\\1/c/",
-      "-R", ...tengoFiles
+      '-f',
+      fileName,
+      ...additionalArgs,
+      '--langdef=tengo',
+      '--map-tengo=+.tengo',
+      '--kinddef-tengo=f,function,function',
+      '--regex-tengo=/^\\s*(.*)(:| :=| =) ?func.*/\\1/f/',
+      '--kinddef-tengo=c,constant,constant',
+      '--regex-tengo=/^\\s*(.*) := ("|\\{).*/\\1/c/',
+      '-R',
+      ...tengoFiles
     ],
     {
       env: process.env,
@@ -123,24 +131,24 @@ with "brew install universal-ctags" on OSX
 or "sudo apt install universal-ctags" on Ubuntu.
 
 For vscode, you should also install ctags extension:
-https://marketplace.visualstudio.com/items?itemName=jaydenlin.ctags-support`)
+https://marketplace.visualstudio.com/items?itemName=jaydenlin.ctags-support`);
 
-    return
+    return;
   }
 
   checkRunError(result, 'failed to generate ctags');
 
-  logger.info('Generation of tags is done.')
+  logger.info('Generation of tags is done.');
 }
 
 function getTengoFiles(dir: string): string[] {
   const files = fs.readdirSync(dir, { withFileTypes: true, recursive: true });
   const tengoFiles: string[] = [];
 
-  files.forEach(file => {
+  files.forEach((file) => {
     if (!file.isDirectory() && file.name.endsWith('.tengo')) {
       // Note that VS Code extension likes only relatives paths to the root of the opened dir.
-      const relativePath = path.join(file.parentPath, file.name).replace(dir, ".")
+      const relativePath = path.join(file.parentPath, file.name).replace(dir, '.');
       tengoFiles.push(relativePath);
     }
   });
