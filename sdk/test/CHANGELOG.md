@@ -1,5 +1,18 @@
 # @platforma-sdk/test
 
+## 1.5.13
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/computable@2.1.5
+  - @milaboratories/pl-client@2.4.13
+  - @milaboratories/pl-middle-layer@1.10.18
+  - @milaboratories/pl-tree@1.3.10
+  - @milaboratories/ts-helpers@1.0.25
+  - @platforma-sdk/model@1.2.25
+
 ## 1.5.12
 
 ### Patch Changes

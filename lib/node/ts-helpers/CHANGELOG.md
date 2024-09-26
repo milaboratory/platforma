@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.0.25
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+
 ## 1.0.24
 
 ### Patch Changes

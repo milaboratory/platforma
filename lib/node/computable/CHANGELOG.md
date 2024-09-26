@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.1.5
+
+### Patch Changes
+
+- da1e029: add isolatedModules true to the root tsonfig
+- Updated dependencies [da1e029]
+  - @milaboratories/ts-helpers@1.0.25
+
 ## 2.1.4
 
 ### Patch Changes
