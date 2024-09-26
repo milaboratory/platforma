@@ -151,7 +151,6 @@ export class PlTreeEntryAccessor {
 
 /**
  * Helper type to simplify implementation of APIs requiring type information.
- * @deprecated
  * */
 export type ResourceInfo = {
   readonly id: ResourceId;
