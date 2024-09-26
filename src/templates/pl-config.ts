@@ -54,7 +54,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
   const localRoot = options?.localRoot ?? state.path('local-pl');
 
   const log: types.logSettings = {
-    level: options?.log?.level ?? 'warn',
+    level: options?.log?.level ?? 'info',
     path: options?.log?.path ?? `${localRoot}/platforma.log`
   };
 
