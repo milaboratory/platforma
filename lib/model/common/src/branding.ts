@@ -1,4 +1,3 @@
-declare const __brand: unique symbol;
-type Brand<B> = { [__brand]: B };
+type Brand<B> = { __pl_model_brand__: B };
 
 export type Branded<T, B> = T & Brand<B>;
