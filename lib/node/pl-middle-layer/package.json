@@ -48,6 +48,7 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",
+    "@jest/globals": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",
     "ts-jest": "catalog:"

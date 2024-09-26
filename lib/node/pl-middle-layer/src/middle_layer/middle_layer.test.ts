@@ -8,6 +8,7 @@ import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../bloc
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
 import { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev';
+import {test, expect} from '@jest/globals';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,

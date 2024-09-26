@@ -7,6 +7,7 @@ import {
   ProjectStructureKey
 } from './project_model';
 import { randomUUID } from 'node:crypto';
+import {test, expect} from '@jest/globals';
 
 test('project field parsing test', () => {
   const field: ProjectField = { fieldName: 'stagingCtx', blockId: randomUUID() };

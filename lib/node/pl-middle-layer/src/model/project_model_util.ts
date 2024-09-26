@@ -1,6 +1,6 @@
 import { Block, ProjectStructure } from './project_model';
 import { Optional, Writable } from 'utility-types';
-import { inferAllReferencedBlocks } from './args';
+import { excludeDuplicatedUpstreams, inferAllReferencedBlocks } from './args';
 
 export function allBlocks(structure: ProjectStructure): Iterable<Block> {
   return {
@@ -114,6 +114,8 @@ export function productionGraph(
     if (args === undefined) continue;
 
     const upstreams = inferAllReferencedBlocks(args, possibleUpstreams);
+    excludeDuplicatedUpstreams(upstreams.upstreams, result);
+
     const node: BlockGraphNode = {
       id,
       missingReferences: upstreams.missingReferences,

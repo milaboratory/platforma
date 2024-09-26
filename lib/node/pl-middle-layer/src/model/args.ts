@@ -60,3 +60,37 @@ export function inferAllReferencedBlocks(args: any, allowed?: Set<string>): Bloc
   addAllReferencedBlocks(result, args, allowed);
   return result;
 }
+
+/** Excludes a direct upstream dependency if it can be found transitively. */
+export function excludeDuplicatedUpstreams(
+  upstreams: Set<string>,
+  previousUpstreams: Map<string, {upstream: Set<string>}>,
+) {
+  const nonDirectAscendants = new Set<string>();
+  for (const parent of upstreams) {
+    for (const id of getAllAscendants(parent, previousUpstreams)) {
+      nonDirectAscendants.add(id);
+    }
+  }
+
+  for (const id of upstreams) {
+    if (nonDirectAscendants.has(id))
+      upstreams.delete(id);
+  }
+}
+
+/** Gets all children of children of children... for the given block id. */
+function getAllAscendants(
+  blockId: string,
+  previousUpstreams: Map<string, {upstream: Set<string>}>,
+): Set<string> {
+  const result = new Set<string>();
+  for (const children of previousUpstreams.get(blockId)!.upstream) {
+    result.add(children);
+    for (const ascendant of getAllAscendants(children, previousUpstreams)) {
+      result.add(ascendant);
+    }
+  }
+
+  return result;
+}
