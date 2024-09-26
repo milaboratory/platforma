@@ -150,12 +150,12 @@ function getTengoFiles(dir: string): string[] {
 
 function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
   if (result.error) {
-    throw result.error;
+    console.log(result.error);
   }
 
   const msg = message ?? 'failed to run command';
 
   if (result.status !== 0) {
-    throw new Error(`${msg}, process exited with code '${result.status}'`);
+    console.log(`WARN: ${msg} the build will continue as-is`);
   }
 }
