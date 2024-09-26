@@ -193,19 +193,20 @@ monitoring${disableMon}:
 debug${disableDbg}:
   listen: '${options.debug.listen}'
 
-grpcServer:
-  listen: '${options.grpc.listen}'
-
-  tls${disableTLS}:
-    clientAuthMode: '${options.grpc.tls.clientAuthMode}'
-    certificates:
-      - certFile: '${options.grpc.tls.certFile}'
-        keyFile: '${options.grpc.tls.keyFile}'
-
 core:
   logging:
     extendedInfo: true
     dumpResourceData: true
+
+  grpc:
+    listen: '${options.grpc.listen}'
+
+    tls${disableTLS}:
+      clientAuthMode: '${options.grpc.tls.clientAuthMode}'
+      certificates:
+        - certFile: '${options.grpc.tls.certFile}'
+          keyFile: '${options.grpc.tls.keyFile}'
+
 
   authEnabled: ${JSON.stringify(options.core.auth.enabled)}
   auth: ${JSON.stringify(options.core.auth.drivers)}
@@ -239,12 +240,6 @@ controllers:
 
   packageLoader:
     packagesRoot: '${options.localRoot}/packages'
-
-    registries:
-      - name: "milaboratories"
-        endpoints:
-          - type: "url"
-            url: "https://bin.registry.platforma.bio/"
 
   workflows: {}
 `;
