@@ -1,5 +1,23 @@
 # @platforma-sdk/block-tools
 
+## 2.1.11
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- 41b10cd: another set of fixes for ESM / CJS compatibility
+- Updated dependencies [fcbc2df]
+- Updated dependencies [41b10cd]
+  - @milaboratories/ts-helpers@1.0.26
+  - @milaboratories/resolve-helper@1.0.1
+  - @milaboratories/ts-helpers-oclif@1.1.4
+
+## 2.1.10
+
+### Patch Changes
+
+- @milaboratories/pl-model-middle-layer@1.2.20
+
 ## 2.1.9
 
 ### Patch Changes

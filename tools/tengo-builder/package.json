@@ -1,6 +1,6 @@
 {
-  "name": "@milaboratories/tengo-template-builder",
-  "version": "1.14.8",
+  "name": "@platforma-sdk/tengo-builder",
+  "version": "1.14.11",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",

@@ -1,5 +1,15 @@
 # @milaboratories/pl-tree
 
+## 1.3.11
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- Updated dependencies [fcbc2df]
+  - @milaboratories/ts-helpers@1.0.26
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+
 ## 1.3.10
 
 ### Patch Changes

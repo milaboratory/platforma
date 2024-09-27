@@ -1,5 +1,32 @@
 # @platforma-sdk/test
 
+## 1.5.16
+
+### Patch Changes
+
+- Updated dependencies [43f07a1]
+  - @milaboratories/pl-middle-layer@1.10.21
+
+## 1.5.15
+
+### Patch Changes
+
+- Updated dependencies [fcbc2df]
+- Updated dependencies [41b10cd]
+  - @milaboratories/pl-middle-layer@1.10.20
+  - @milaboratories/ts-helpers@1.0.26
+  - @milaboratories/pl-tree@1.3.11
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+
+## 1.5.14
+
+### Patch Changes
+
+- Updated dependencies [bd7a10e]
+  - @milaboratories/pl-middle-layer@1.10.19
+  - @platforma-sdk/model@1.2.26
+
 ## 1.5.13
 
 ### Patch Changes

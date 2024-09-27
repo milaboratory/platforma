@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.2.6
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- 41b10cd: another set of fixes for ESM / CJS compatibility
+
 ## 1.2.5
 
 ### Patch Changes

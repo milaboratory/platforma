@@ -9,7 +9,7 @@ import {
   CompileMode,
   FullArtifactName,
   fullNameToString,
-  typedArtifactNameToString,
+  typedArtifactNameToString
 } from './package';
 import { ArtifactSource, parseSourceFile } from './source';
 import { Template } from './template';
@@ -18,6 +18,7 @@ import winston from 'winston';
 interface PackageJson {
   name: string;
   version: string;
+  type: string;
 }
 
 const compiledTplSuffix = '.plj.gz';
@@ -50,9 +51,7 @@ export function createLogger(level: string = 'debug'): winston.Logger {
 }
 
 export function getPackageInfo(): PackageJson {
-  const packageInfo: PackageJson = JSON.parse(
-    fs.readFileSync('package.json').toString()
-  );
+  const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
   return packageInfo;
 }
 
@@ -89,7 +88,7 @@ function loadDependencies(
       }
     }
 
-    return
+    return;
   }
 
   // we are in package folder
@@ -106,9 +105,7 @@ function loadDependencies(
     return;
 
   // we are in tengo dependency folder
-  const packageJson: PackageJson = JSON.parse(
-    fs.readFileSync(packageJsonPath).toString()
-  );
+  const packageJson: PackageJson = JSON.parse(fs.readFileSync(packageJsonPath).toString());
 
   // in a workspace we will find ourselves in node_modules, ignoring
   if (packageJson.name === packageInfo.name) return;
@@ -119,15 +116,15 @@ function loadDependencies(
     );
 
   if (libDistExists) {
-    loadLibsFromDir(logger, packageJson, 'dist', libDistFolder, compiler)
+    loadLibsFromDir(logger, packageJson, 'dist', libDistFolder, compiler);
   }
 
   if (tplDistExists) {
-    loadTemplatesFromDir(logger, packageJson, 'dist', tplDistFolder, compiler)
+    loadTemplatesFromDir(logger, packageJson, 'dist', tplDistFolder, compiler);
   }
 
   if (softwareDistExists) {
-    loadSoftwareFromDir(logger, packageJson, 'dist', softwareDistFolder, compiler)
+    loadSoftwareFromDir(logger, packageJson, 'dist', softwareDistFolder, compiler);
   }
 }
 
@@ -140,8 +137,7 @@ function loadLibsFromDir(
 ) {
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
-    if (!f.endsWith(compiledLibSuffix))
-      throw new Error(`unexpected file in 'lib' folder: ${file}`);
+    if (!f.endsWith(compiledLibSuffix)) throw new Error(`unexpected file in 'lib' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'library',
       pkg: packageJson.name,
@@ -150,13 +146,10 @@ function loadLibsFromDir(
     };
     const src = parseSourceFile(mode, file, fullName, true);
     compiler.addLib(src);
-    logger.debug(
-      `Adding dependency ${fullNameToString(fullName)} from ${file}`
-    );
+    logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     if (src.dependencies.length > 0) {
       logger.debug('Dependencies:');
-      for (const dep of src.dependencies)
-        logger.debug(`  - ${typedArtifactNameToString(dep)}`);
+      for (const dep of src.dependencies) logger.debug(`  - ${typedArtifactNameToString(dep)}`);
     }
   }
 }
@@ -171,8 +164,7 @@ function loadTemplatesFromDir(
   // adding templates
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
-    if (!f.endsWith(compiledTplSuffix))
-      throw new Error(`unexpected file in 'tpl' folder: ${file}`);
+    if (!f.endsWith(compiledTplSuffix)) throw new Error(`unexpected file in 'tpl' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'template',
       pkg: packageJson.name,
@@ -181,9 +173,7 @@ function loadTemplatesFromDir(
     };
     const tpl = new Template(mode, fullName, { content: fs.readFileSync(file) });
     compiler.addTemplate(tpl);
-    logger.debug(
-      `Adding dependency ${fullNameToString(fullName)} from ${file}`
-    );
+    logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
   }
 }
 
@@ -192,7 +182,8 @@ function loadSoftwareFromDir(
   packageJson: PackageJson,
   mode: CompileMode,
   folder: string,
-  compiler: TengoTemplateCompiler) {
+  compiler: TengoTemplateCompiler
+) {
   // adding software
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
@@ -207,9 +198,7 @@ function loadSoftwareFromDir(
 
     const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, []);
     compiler.addSoftware(software);
-    logger.debug(
-      `Adding dependency ${fullNameToString(fullName)} from ${file}`
-    );
+    logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
   }
 }
 
@@ -232,12 +221,10 @@ export function parseSources(
       continue;
     }
 
-    const artifactName = (f === "index.lib.tengo") ? `${path.basename(subdir)}.lib.tengo` : inRootPath
+    const artifactName =
+      f === 'index.lib.tengo' ? `${path.basename(subdir)}.lib.tengo` : inRootPath;
 
-    const fullName = fullNameFromFileName(
-      packageInfo,
-      artifactName.replaceAll(path.sep, '.')
-    );
+    const fullName = fullNameFromFileName(packageInfo, artifactName.replaceAll(path.sep, '.'));
     if (!fullName) {
       continue; // skip unknown file types
     }
@@ -254,8 +241,7 @@ export function parseSources(
     const newSrc = parseSourceFile(mode, file, fullName, true);
     if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
-      for (const dep of newSrc.dependencies)
-        logger.debug(`  - ${typedArtifactNameToString(dep)}`);
+      for (const dep of newSrc.dependencies) logger.debug(`  - ${typedArtifactNameToString(dep)}`);
     }
 
     sources.push(newSrc);

@@ -1,5 +1,40 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.21
+
+### Patch Changes
+
+- 43f07a1: another fix for EXM/CJS compatibility
+
+## 1.10.20
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- 41b10cd: another set of fixes for ESM / CJS compatibility
+- Updated dependencies [fcbc2df]
+- Updated dependencies [41b10cd]
+  - @milaboratories/ts-helpers@1.0.26
+  - @platforma-sdk/workflow-tengo@1.2.8
+  - @platforma-sdk/block-tools@2.1.11
+  - @milaboratories/pl-tree@1.3.11
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+  - @milaboratories/pl-drivers@1.2.21
+
+## 1.10.19
+
+### Patch Changes
+
+- bd7a10e: pframes-node version bump
+- Updated dependencies [6d4cf3e]
+  - @milaboratories/pl-model-common@1.3.13
+  - @milaboratories/pl-model-middle-layer@1.2.20
+  - @milaboratories/pl-drivers@1.2.20
+  - @platforma-sdk/model@1.2.26
+  - @platforma-sdk/workflow-tengo@1.2.7
+  - @platforma-sdk/block-tools@2.1.10
+
 ## 1.10.18
 
 ### Patch Changes
