@@ -1,5 +1,21 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.20
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- 41b10cd: another set of fixes for ESM / CJS compatibility
+- Updated dependencies [fcbc2df]
+- Updated dependencies [41b10cd]
+  - @milaboratories/ts-helpers@1.0.26
+  - @platforma-sdk/workflow-tengo@1.2.8
+  - @platforma-sdk/block-tools@2.1.11
+  - @milaboratories/pl-tree@1.3.11
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+  - @milaboratories/pl-drivers@1.2.21
+
 ## 1.10.19
 
 ### Patch Changes

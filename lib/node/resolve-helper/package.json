@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/resolve-helper",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Helper functions to resolve packages in a ESM / CJS independent manner",
   "types": "./src/index.d.ts",
   "main": "./src/index.js",
