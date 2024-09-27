@@ -9,6 +9,7 @@ packages:
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
+  - lib/node/resolve-helper
   - lib/node/node-streams
   - lib/node/computable
   - lib/node/pl-client

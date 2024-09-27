@@ -30,6 +30,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",
@@ -41,12 +42,12 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "semver": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "@rollup/plugin-node-resolve": "catalog:",
     "vite-plugin-dts": "catalog:",
+    "semver": "catalog:",
     "@types/jest": "catalog:",
     "@types/mime-types": "catalog:",
     "@types/node": "catalog:",

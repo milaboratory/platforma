@@ -1,6 +1,6 @@
 import { SpawnSyncReturns, spawnSync } from 'child_process';
 import { Command } from '@oclif/core';
-import { compile, savePacks, createLogger } from '../compiler/main';
+import { compile, savePacks, createLogger, getPackageInfo } from '../compiler/main';
 import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
@@ -21,6 +21,7 @@ export default class Build extends Command {
     const { flags } = await this.parse(Build);
     const logger = createLogger(flags['log-level']);
 
+    const packageInfo = getPackageInfo();
     const compiledDist = compile(logger, 'dist');
     savePacks(logger, compiledDist, 'dist');
     logger.info('');
@@ -52,8 +53,13 @@ export default class Build extends Command {
     mjs += `\n};\n`;
 
     await fsp.writeFile('dist/index.d.ts', dts);
-    await fsp.writeFile('dist/index.cjs', cjs);
-    await fsp.writeFile('dist/index.mjs', mjs);
+    if (packageInfo.type === 'module') {
+      await fsp.writeFile('dist/index.cjs', cjs);
+      await fsp.writeFile('dist/index.js', mjs);
+    } else {
+      await fsp.writeFile('dist/index.js', cjs);
+      await fsp.writeFile('dist/index.mjs', mjs);
+    }
 
     mergeTagsEnvs(flags);
     if (flags['generate-tags']) checkAndGenerateCtags(logger, flags);
