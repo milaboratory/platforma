@@ -19,7 +19,7 @@ packages:
 
   - lib/ui/uikit
 
-  - tools/tengo-template-builder
+  - tools/tengo-builder
   - tools/block-tools
   - tools/pl-package-builder
 

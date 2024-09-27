@@ -24,7 +24,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@milaboratories/tengo-template-builder": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/software-pframes-conv": "catalog:",

@@ -9,6 +9,6 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@milaboratories/tengo-template-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }
