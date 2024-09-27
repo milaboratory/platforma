@@ -28,6 +28,13 @@ packages:
   - sdk/test
   - sdk/ui-vue
 
+  # Test blocks
+
+  - etc/blocks/enter-numbers/workflow
+  - etc/blocks/enter-numbers/model
+  - etc/blocks/enter-numbers/ui
+  - etc/blocks/enter-numbers/block
+
   # Tests
 
   - tests/workflow-tengo
@@ -69,6 +76,8 @@ catalog:
 
   'turbo': ^2.1.2
 
+  '@vitejs/plugin-vue': ^5.1.4
+
   # Net
 
   'undici': ^6.19.8
@@ -107,8 +116,7 @@ catalog:
   # UI
 
   'vue': ^3.5.9
-  'vue-tsc': ^2.0.6
-  '@vitejs/plugin-vue': ^5.0.0
+  'vue-tsc': ^2.1.6
   'sass': ~1.77.2
 
   '@ag-grid-community/client-side-row-model': ^32.2.1

@@ -1,6 +1,7 @@
 import BuildMeta from './build-meta';
 import BuildModel from './build-model';
 import PackBlock from './pack-block';
+import Publish from './publish';
 import UploadPackageV1 from './upload-package-v1';
 
 // prettier-ignore
@@ -9,4 +10,5 @@ export const COMMANDS = {
   'pack': PackBlock,
   'build-model': BuildModel,
   'build-meta': BuildMeta,
+  'publish': Publish,
 };

@@ -3,10 +3,14 @@ import {
   ResolvedModuleFile,
   ResolvedModuleFolder,
   packFolderToRelativeTgz,
-  cpAbsoluteToRelative,
-  mapRemoteToAbsolute,
+  cpAbsoluteToRelative
 } from './content_conversion';
-import { BlockComponents, BlockComponentsManifest, ContentAbsoluteBinaryLocal, ContentAbsoluteFolder, ContentRelativeBinary } from '@milaboratories/pl-model-middle-layer';
+import {
+  BlockComponents,
+  BlockComponentsManifest,
+  ContentAbsoluteBinaryLocal,
+  ContentAbsoluteFolder
+} from '@milaboratories/pl-model-middle-layer';
 
 export function BlockComponentsDescription(moduleRoot: string) {
   return BlockComponents(
@@ -23,10 +27,10 @@ export function BlockComponentsConsolidate(dstFolder: string, fileAccumulator?: 
   ).pipe(BlockComponentsManifest);
 }
 
-export function BlockComponentsAbsoluteUrl(prefix: string) {
-  return BlockComponents(
-    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix)),
-    ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
-  );
-}
-export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;
+// export function BlockComponentsAbsoluteUrl(prefix: string) {
+//   return BlockComponents(
+//     ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix)),
+//     ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
+//   );
+// }
+// export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;
