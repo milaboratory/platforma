@@ -1,6 +1,7 @@
 import { RegistryV1 } from '@platforma-sdk/block-tools';
 import path from 'path';
 import { tryStat } from './util';
+import { tryResolve } from '@milaboratories/resolve-helper';
 
 export const LegacyDevBlockPackMetaYaml = [RegistryV1.PlPackageYamlConfigFile];
 export const LegacyDevBlockPackMetaJson = [RegistryV1.PlPackageJsonConfigFile];
@@ -34,17 +35,6 @@ export async function isLegacyDevPackage(packageRoot: string): Promise<boolean> 
     (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackConfig))) !== undefined ||
     (await tryStat(path.join(packageRoot, ...LegacyDevBlockPackTemplate))) !== undefined
   );
-}
-
-function tryResolve(root: string, request: string): string | undefined {
-  try {
-    return require.resolve(request, {
-      paths: [root]
-    });
-  } catch (err: any) {
-    if (err.code !== 'MODULE_NOT_FOUND') throw err;
-  }
-  return undefined;
 }
 
 function mustResolve(root: string, request: string): string {

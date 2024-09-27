@@ -1,5 +1,12 @@
 # @milaboratories/computable
 
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies [fcbc2df]
+  - @milaboratories/ts-helpers@1.0.26
+
 ## 2.1.5
 
 ### Patch Changes

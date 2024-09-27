@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.3.13
+
+### Patch Changes
+
+- 6d4cf3e: migrate away from unique-symbol based branding to branding with string field names
+
 ## 1.3.12
 
 ### Patch Changes

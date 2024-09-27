@@ -1,5 +1,5 @@
 import { Pl, type PlTransaction } from '@milaboratories/pl-middle-layer';
-import { tplTest } from '@platforma-sdk/test';
+import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 function createObject(tx: PlTransaction, value: any) {
   return tx.createValue(Pl.JsonObject, JSON.stringify(value));
@@ -12,13 +12,12 @@ tplTest('should return export', async ({ helper, expect }) => {
   });
 
   const out1 = wf1.output('concat', (a) => a?.getDataAsJson());
-  expect(await out1.awaitStableValue()).eq('ab');
+  expect(await awaitStableState(out1)).eq('ab');
 
-  const exp1 = await wf1
-    .export('e1.spec', (a) => a?.getDataAsJson())
-    .awaitStableValue();
+  const exp1 = await awaitStableState(wf1
+    .export('e1.spec', (a) => a?.getDataAsJson()));
 
-  const ctx = await wf1.context().awaitStableValue();
+  const ctx = await awaitStableState(wf1.context());
 
   const wf2 = await helper.renderWorkflow(
     'workflow.test.exports.wf2',
@@ -27,13 +26,11 @@ tplTest('should return export', async ({ helper, expect }) => {
     {parent: ctx}
   );
 
-  const query = await wf2
-    .output('query', (a) => a?.getDataAsJson())
-    .awaitStableValue();
+  const query = await awaitStableState(wf2
+    .output('query', (a) => a?.getDataAsJson()));
   console.dir(query, { depth: 5 });
 
-  const join = await wf2
-    .output('join', (a) => a?.getDataAsJson())
-    .awaitStableValue();
+  const join = await awaitStableState(wf2
+    .output('join', (a) => a?.getDataAsJson()));
   expect(join).eq('ab');
 });

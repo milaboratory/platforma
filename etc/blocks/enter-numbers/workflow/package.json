@@ -9,6 +9,6 @@
   },
   "devDependencies": {
     "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@milaboratories/tengo-template-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "workspace:*"
   }
 }

@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.0.26
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+
 ## 1.0.25
 
 ### Patch Changes

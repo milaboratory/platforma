@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratories/ts-helpers';
-import { LegacyDevBlockPackFiles } from '../dev';
+import { LegacyDevBlockPackFiles } from '../dev_env';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 
 /**
