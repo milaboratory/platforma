@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.21
+
+### Patch Changes
+
+- 43f07a1: another fix for EXM/CJS compatibility
+
 ## 1.10.20
 
 ### Patch Changes
