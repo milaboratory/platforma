@@ -17,7 +17,7 @@ export default class Core {
 
   public startLast() {
     const result = run.rerunLast(this.logger, { stdio: 'inherit' });
-    this.checkRunError(result, 'failed to bring back Platforma Backend in the last started configuration');
+    checkRunError(result, 'failed to bring back Platforma Backend in the last started configuration');
   }
 
   public startLocal(options?: startLocalOptions): ChildProcess {
@@ -174,7 +174,7 @@ export default class Core {
       }
     );
 
-    this.checkRunError(result, 'failed to start MinIO service in docker');
+    checkRunError(result, 'failed to start MinIO service in docker');
   }
 
   public buildPlatforma(options: { repoRoot: string; binPath?: string }): string {
@@ -190,7 +190,7 @@ export default class Core {
       stdio: 'inherit'
     });
 
-    this.checkRunError(result, "failed to build platforma binary from sources using 'go build' command");
+    checkRunError(result, "failed to build platforma binary from sources using 'go build' command");
     return binPath;
   }
 
@@ -280,7 +280,7 @@ export default class Core {
       }
     );
 
-    this.checkRunError(result, 'failed to start Platforma Backend in Docker');
+    checkRunError(result, 'failed to start Platforma Backend in Docker');
     state.isActive = true;
   }
 
@@ -366,7 +366,7 @@ export default class Core {
       }
     );
 
-    this.checkRunError(result, 'failed to start Platforma Backend in Docker');
+    checkRunError(result, 'failed to start Platforma Backend in Docker');
     state.isActive = true;
   }
 
@@ -590,17 +590,17 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
   private writeComposeFile(fPath: string, data: any) {
     fs.writeFileSync(fPath, yaml.stringify(data));
   }
+}
 
-  private checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
-    if (result.error) {
-      throw result.error;
-    }
+export function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string) {
+  if (result.error) {
+    throw result.error;
+  }
 
-    const msg = message ?? 'failed to run command';
+  const msg = message ?? 'failed to run command';
 
-    if (result.status !== 0) {
-      throw new Error(`${msg}, process exited with code '${result.status}'`);
-    }
+  if (result.status !== 0) {
+    throw new Error(`${msg}, process exited with code '${result.status}'`);
   }
 }
 
