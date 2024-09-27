@@ -10,13 +10,12 @@ export default class CreateBlock extends Command {
 
   static override flags = {
     ...cmdOpts.GlobalFlags,
-    ...cmdOpts.CreateBlockFlags
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(CreateBlock);
     const logger = util.createLogger(flags['log-level']);
 
-    block.createBlock(logger, flags);
+    await block.createBlock(logger);
   }
 }
