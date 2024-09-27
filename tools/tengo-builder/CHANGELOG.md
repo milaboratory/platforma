@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.14.11
+
+### Patch Changes
+
+- 902b21f: tengo builder moved to @platforma-sdk scope
+
 ## 1.14.10
 
 ### Patch Changes
