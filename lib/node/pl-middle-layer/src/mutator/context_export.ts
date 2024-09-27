@@ -8,10 +8,10 @@ import { createRequire } from 'node:module';
 // Workaround to prevent bundling of @platforma-sdk/workflow-tengo
 // if bundling happens import.meta.dirname will be transfered as is without transferring corresponding assets
 // Construct like new URL(…, import.meta.url) also does not work properly.
+// const require = createRequire(import.meta.url);
+// const SdkTemplates = require('@platforma-sdk/workflow-tengo').Templates;
 
-// import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
-const require = createRequire(import.meta.url);
-const SdkTemplates = require('@platforma-sdk/workflow-tengo').Templates;
+import { Templates as SdkTemplates } from '@platforma-sdk/workflow-tengo';
 
 export type TemplateEnvelop = { spec: TemplateSpecPrepared; hash: string };
 

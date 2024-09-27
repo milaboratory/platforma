@@ -702,6 +702,8 @@ importers:
         specifier: 'catalog:'
         version: 5.4.8(@types/node@22.5.5)(sass@1.77.2)
 
+  lib/node/resolve-helper: {}
+
   lib/node/ts-helpers:
     dependencies:
       denque:
@@ -1098,6 +1100,9 @@ importers:
       '@milaboratories/pl-model-middle-layer':
         specifier: workspace:^
         version: link:../../lib/model/middle-layer
+      '@milaboratories/resolve-helper':
+        specifier: workspace:*
+        version: link:../../lib/node/resolve-helper
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../../lib/node/ts-helpers

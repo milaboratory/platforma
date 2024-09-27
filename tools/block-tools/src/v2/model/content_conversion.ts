@@ -13,7 +13,7 @@ import {
   ContentExplicitBase64,
   ContentRelative
 } from '@milaboratories/pl-model-middle-layer';
-import { createRequire } from 'node:module';
+import { tryResolve } from '@milaboratories/resolve-helper';
 
 type ContentCtxFs = {
   type: 'local';
@@ -29,18 +29,6 @@ type ContentCtxUrl = {
 
 /** Describes a place relative to which any content references should be interpreted */
 export type ContentCtx = ContentCtxFs | ContentCtxUrl;
-
-const require = createRequire(import.meta.url);
-function tryResolve(root: string, request: string): string | undefined {
-  try {
-    return require.resolve(request, {
-      paths: [root]
-    });
-  } catch (err: any) {
-    if (err.code !== 'MODULE_NOT_FOUND') throw err;
-  }
-  return undefined;
-}
 
 function mustResolve(root: string, request: string): string {
   const res = tryResolve(root, request);
