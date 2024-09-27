@@ -30,7 +30,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
-    "@milaboratories/resolve-helper": "workspace:*",
+    "@milaboratories/resolve-helper": "workspace:^",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",

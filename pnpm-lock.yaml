@@ -606,6 +606,9 @@ importers:
       '@milaboratories/pl-tree':
         specifier: workspace:^
         version: link:../pl-tree
+      '@milaboratories/resolve-helper':
+        specifier: workspace:^
+        version: link:../resolve-helper
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
@@ -1101,7 +1104,7 @@ importers:
         specifier: workspace:^
         version: link:../../lib/model/middle-layer
       '@milaboratories/resolve-helper':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../lib/node/resolve-helper
       '@milaboratories/ts-helpers':
         specifier: workspace:^

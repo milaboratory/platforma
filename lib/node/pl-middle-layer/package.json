@@ -26,6 +26,7 @@
   "dependencies": {
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pframes-node": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:^",
     "@platforma-sdk/block-tools": "workspace:^",
     "@milaboratories/pl-client": "workspace:^",
     "@milaboratories/pl-drivers": "workspace:^",
