@@ -9,6 +9,17 @@ export const GlobalFlags = {
   })
 };
 
+export const CreateBlockFlags = {
+  'block-name': Flags.string({
+    required: true,
+    description: 'The name of the block, e.g. "milaboratories.hello-world"'
+  }),
+  path: Flags.directory({
+    required: true,
+    description: 'The directory where the block will be created. It must be empty or must not exist.'
+  })
+};
+
 export const ImageFlag = {
   image: Flags.string({
     description: 'use custom docker image to run platforma'
