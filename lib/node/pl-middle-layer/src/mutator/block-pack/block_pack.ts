@@ -8,7 +8,7 @@ import { createFrontend } from './frontend';
 import { BlockConfig } from '@platforma-sdk/model';
 import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
-import { resolveDevPacket } from '../../dev';
+import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };

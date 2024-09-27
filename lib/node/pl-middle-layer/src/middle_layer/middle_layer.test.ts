@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
 import { Project } from './project';
-import { LegacyDevBlockPackConfig } from '../dev';
+import { LegacyDevBlockPackConfig } from '../dev_env';
 
 const registry = new BlockPackRegistry([
   CentralRegistry,
