@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.3.0
+
+### Minor Changes
+
+- 81aa0c7: model for V2 registry
+
 ## 1.2.20
 
 ### Patch Changes

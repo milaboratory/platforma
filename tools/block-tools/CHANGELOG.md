@@ -1,5 +1,16 @@
 # @platforma-sdk/block-tools
 
+## 2.2.0
+
+### Minor Changes
+
+- 81aa0c7: initial implementation of publish command for V2 block registry
+
+### Patch Changes
+
+- Updated dependencies [81aa0c7]
+  - @milaboratories/pl-model-middle-layer@1.3.0
+
 ## 2.1.11
 
 ### Patch Changes

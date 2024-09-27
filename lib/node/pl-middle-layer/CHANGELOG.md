@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.22
+
+### Patch Changes
+
+- 81aa0c7: cosmetics & model migration
+- Updated dependencies [81aa0c7]
+- Updated dependencies [81aa0c7]
+  - @platforma-sdk/block-tools@2.2.0
+  - @milaboratories/pl-model-middle-layer@1.3.0
+
 ## 1.10.21
 
 ### Patch Changes
