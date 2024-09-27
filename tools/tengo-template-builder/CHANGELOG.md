@@ -1,5 +1,12 @@
 # @milaboratories/tengo-template-builder
 
+## 1.14.10
+
+### Patch Changes
+
+- fcbc2df: fixes for proper bundling and require/import compatibility
+- 41b10cd: another set of fixes for ESM / CJS compatibility
+
 ## 1.14.9
 
 ### Patch Changes
