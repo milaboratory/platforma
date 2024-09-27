@@ -1,61 +1,86 @@
-import { spawnSync } from 'child_process';
-import fs from 'fs';
+import fs, { createWriteStream } from 'fs';
 import path from 'path';
-import * as util from './util';
 import winston from 'winston';
-import * as core from './core';
+import { Writable, Transform } from 'node:stream';
 import os from 'os';
+import readlineSync from 'readline-sync';
+import { z } from 'zod';
+import decompress from 'decompress';
+
+const CreateBlockOptions = z.object({
+  npmOrgName: z.string().min(1),
+  orgName: z.string().min(1),
+  blockName: z.string().min(1)
+});
+export type CreateBlockOptions = z.infer<typeof CreateBlockOptions>;
 
 /** Creates a block by cloning block-boilerplate repository. */
-export function createBlock(
-  logger: winston.Logger,
-  options: {
-    'block-name': string;
-    path: string;
-  }
-) {
-  const targetPath = util.resolveTilde(options.path);
-  const tempDir = path.join(os.tmpdir(), fs.mkdtempSync('create-block'));
-  const templateName = 'block-boilerplate';
-  const repoDir = path.join(tempDir, templateName);
+export async function createBlock(logger: winston.Logger) {
+  const options = askForOptions();
+  const targetPath = path.join(process.cwd(), options.blockName);
 
-  gitClone(logger, tempDir, 'git@github.com:milaboratory/block-boilerplate.git', 'failed to clone block-boilerplate');
-  cleanupRepository(repoDir);
-  applyOptionsToRepository(logger, repoDir, options);
-  moveRepositoryToTarget(logger, repoDir, targetPath);
-}
+  logger.info(`Downloading boilerplate code...`);
+  await downloadAndUnzip(
+    'https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/main.zip',
+    "platforma-block-boilerplate-main",
+    targetPath,
+  )
 
-function gitClone(logger: winston.Logger, dir: string, url: string, errorMsg: string) {
-  logger.info(`cloning "${url}" into "${dir}"...`);
-  fs.mkdirSync(dir);
-  core.checkRunError(
-    spawnSync('git', ['clone', url], { cwd: dir, env: { ...process.env }, stdio: 'inherit' }),
-    errorMsg
+  logger.info(`Replace everything in the template with provided options...`);
+  replaceInAllFiles(
+    targetPath,
+    /pl-open\/my-org.block-boilerplate/g,
+    `${options.npmOrgName}/${options.orgName}.${options.blockName}`
   );
 }
 
-function cleanupRepository(dir: string) {
-  fs.rmSync(path.join(dir, '.git'), { recursive: true });
+function askForOptions(): CreateBlockOptions {
+  let npmOrgName = readlineSync.question(
+    "Write an organization name for npm. Default is \"pl-open\": ",
+  );
+  if (npmOrgName === "") {
+    npmOrgName = "pl-open";
+  }
+  const orgName = readlineSync.question("Write an organization name, e.g. \"my-org\": ");
+  const blockName = readlineSync.question("Write a name of the block, e.g. \"hello-world\": ");
+
+  return CreateBlockOptions.parse({ npmOrgName, orgName, blockName });
 }
 
-function applyOptionsToRepository(
-  logger: winston.Logger,
+async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: string) {
+  const response = await fetch(url);
+  const content = await response.blob();
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'create-repo'));
+
+  const tmpFile = path.join(tmpDir, "packed-repo.zip");
+  const f = Writable.toWeb(createWriteStream(tmpFile));
+  await content.stream().pipeTo(f);
+
+  const tmpRepo = path.join(tmpDir, "unpacked-repo");
+  fs.mkdirSync(tmpRepo);
+  await decompress(tmpFile, tmpRepo);
+
+  fs.cpSync(path.join(tmpRepo, pathInArchive), outputPath, { recursive: true });
+}
+
+function replaceInAllFiles(
   dir: string,
-  options: { 'block-name': string; path: string }
+  from: RegExp,
+  to: string,
 ) {
-  logger.info(`replace everything in the template with provided options...`);
-  const files = getAllFiles(dir).filter((f) => f.isFile());
-  files.forEach((f) => {
-    const fPath = path.join(f.parentPath, f.name);
-    replaceInFile(fPath, /milaboratories.block-boilerplate/g, options['block-name']);
-  });
+  getAllFiles(dir).forEach((fPath) => replaceInFile(fPath, from, to));
 }
 
-function getAllFiles(dir: string): fs.Dirent[] {
-  return fs.readdirSync(dir, {
+function getAllFiles(dir: string): string[] {
+  const allDirents = fs.readdirSync(dir, {
     withFileTypes: true,
     recursive: true
   });
+
+  return allDirents
+    .filter((f) => f.isFile())
+    .map((f) => path.join(f.parentPath, f.name));
 }
 
 function replaceInFile(fPath: string, from: RegExp, to: string) {
@@ -64,7 +89,3 @@ function replaceInFile(fPath: string, from: RegExp, to: string) {
   fs.writeFileSync(fPath, newContent);
 }
 
-function moveRepositoryToTarget(logger: winston.Logger, fromDir: string, toDir: string) {
-  logger.info(`move block-boilerplate into ${toDir}`);
-  fs.cpSync(fromDir, toDir, { recursive: true });
-}

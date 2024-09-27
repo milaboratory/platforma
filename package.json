@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/pl-bootstrap",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "pl-version": "1.11.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
@@ -21,6 +21,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
+    "@types/decompress": "^4.2.7",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.10",
     "@types/readline-sync": "^1.4.8",
@@ -33,10 +34,12 @@
   "dependencies": {
     "@oclif/core": "^3.26.6",
     "canonicalize": "^2.0.0",
+    "decompress": "^4.2.1",
     "readline-sync": "^1.4.10",
     "tar": "^7.4.3",
     "winston": "^3.13.0",
-    "yaml": "^2.5.0"
+    "yaml": "^2.5.0",
+    "zod": "^3.23.8"
   },
   "oclif": {
     "bin": "pl-service",

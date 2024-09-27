@@ -3,8 +3,7 @@ import path from 'path';
 
 import winston from 'winston';
 import { randomBytes } from 'crypto';
-
-const readlineSync = require('readline-sync');
+import readlineSync from 'readline-sync';
 
 export function askYN(prompt: string): boolean {
   const answer = readlineSync.question(`${prompt} [y/N] `);
