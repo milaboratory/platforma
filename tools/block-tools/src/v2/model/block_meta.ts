@@ -1,5 +1,6 @@
 import {
   BlockPackMeta,
+  BlockPackMetaEmbeddedContent,
   ContentAbsoluteBinaryLocal,
   ContentAbsoluteTextLocal,
   DescriptionContentBinary,
@@ -12,7 +13,6 @@ import {
   mapLocalToAbsolute
 } from './content_conversion';
 import { z } from 'zod';
-import { BlockPackMetaEmbeddedContent } from '@milaboratories/pl-model-middle-layer';
 
 export function BlockPackMetaDescription(root: string) {
   return BlockPackMeta(

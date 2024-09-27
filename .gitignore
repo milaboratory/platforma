@@ -1,6 +1,5 @@
 node_modules/
 dist/
-block-pack/
 dev/
 work/
 .test_auth.json
@@ -8,7 +7,7 @@ work/
 *.tgz
 .turbo
 log/platforma.log
-
+tmp/
 
 test_config.json
 .test_auth.json
