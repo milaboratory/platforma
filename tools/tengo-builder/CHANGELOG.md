@@ -1,4 +1,4 @@
-# @milaboratories/tengo-template-builder
+# @platforma-sdk/tengo-builder
 
 ## 1.14.10
 

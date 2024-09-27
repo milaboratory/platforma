@@ -1,5 +1,5 @@
 {
-  "name": "@milaboratories/tengo-template-builder",
+  "name": "@platforma-sdk/tengo-builder",
   "version": "1.14.10",
   "description": "Pl Tengo Template Builder",
   "scripts": {
