@@ -23,7 +23,7 @@ jobs:
     uses: milaboratory/github-ci-internal/.github/workflows/node-simple.yaml@v4
     with:
       app-name: PL bootstrap scripts
-      app-name-slug: 'pl-bootstrap'
+      app-name-slug: 'bootstrap'
       notify-telegram: true
 
       node-version: '20.x'
