@@ -1,35 +1,14 @@
+import { test, expect } from '@jest/globals';
 import { BlockPackRegistry } from './registry';
 import path from 'node:path';
-import { CentralDevSnapshotRegistry, CentralRegistry } from './well_known_registries';
-
-test('testing local dev registry', async () => {
-  const registry = new BlockPackRegistry([
-    {
-      type: 'folder_with_dev_packages',
-      label: 'Local dev',
-      path: path.resolve('integration')
-    }
-  ]);
-
-  expect(await registry.getPackagesOverview()).toHaveLength(2);
-});
-
-test.skip('testing local dev registry with v2', async () => {
-  const registry = new BlockPackRegistry([
-    {
-      type: 'folder_with_dev_packages',
-      label: 'Local dev',
-      path: path.resolve('/Volumes/Data/Projects/MiLaboratory/blocks-beta')
-    }
-  ]);
-
-  console.dir(await registry.getPackagesOverview(), { depth: 5 });
-});
+import { CentralBlockRegistry } from './well_known_registries';
+import { V2RegistryProvider } from './registry-v2-provider';
+import { Agent } from 'undici';
 
 test('testing remote registry', async () => {
-  const registry = new BlockPackRegistry([CentralRegistry, CentralDevSnapshotRegistry]);
-
-  const packages = await registry.getPackagesOverview();
-  console.log(packages);
-  expect(packages.length).toBeGreaterThanOrEqual(2);
+  const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
+    { id: 'central', spec: CentralBlockRegistry }
+  ]);
+  const listing = await registry.listBlockPacks();
+  expect(listing.blockPacks.length).toBeGreaterThanOrEqual(2);
 });

@@ -16,7 +16,7 @@ import {
 } from './schema_public';
 import { BlockPackMetaEmbedBytes } from '../model';
 
-export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryLabel'>;
+export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryId'>;
 
 export class RegistryV2Reader {
   private readonly metaCache = new Map<

@@ -4,25 +4,30 @@ import { outputRef } from '../model/args';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
-import { BlockPackRegistry, CentralRegistry, getDevV1PacketMtime } from '../block_registry';
+import { BlockPackRegistry, CentralBlockRegistry, getDevV1PacketMtime } from '../block_registry';
 import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
 import { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev_env';
+import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
+import { Agent } from 'undici';
 
-const registry = new BlockPackRegistry([
-  CentralRegistry,
+const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
+  { id: 'central', spec: CentralBlockRegistry },
   {
-    type: 'folder_with_dev_packages',
-    label: 'Local dev registry',
-    path: path.resolve('./integration')
+    id: 'dev',
+    title: 'Local dev registry',
+    spec: {
+      type: 'local-dev',
+      path: path.resolve('./integration')
+    }
   }
 ]);
 
 async function getStandardBlockSpecs() {
-  const blocksFromRegistry = await registry.getPackagesOverview();
+  const blocksFromRegistry = (await registry.listBlockPacks()).blockPacks;
   return {
     enterNumbersSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/Central/) && b.package === 'enter-numbers'
+      (b) => b.registryId=== 'central' && b.package === 'enter-numbers'
     )!.latestSpec,
 
     enterNumbersSpecFromDev: blocksFromRegistry.find(

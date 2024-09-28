@@ -9,6 +9,19 @@ export const BlockPackDevV2 = z.object({
 });
 export type BlockPackDevV2 = z.infer<typeof BlockPackDevV2>;
 
+/**
+ * Block pack from registry with version 2 layout, to be loaded directly
+ * from the client.
+ * @deprecated don't use
+ * */
+export const BlockPackFromRegistryV1 = z.object({
+  type: z.literal('from-registry-v1'),
+  registryUrl: z.string(),
+  id: BlockPackId
+});
+/** @deprecated don't use */
+export type BlockPackFromRegistryV1 = z.infer<typeof BlockPackFromRegistryV1>;
+
 /** Block pack from registry with version 2 layout, to be loaded directly
  * from the client. */
 export const BlockPackFromRegistryV2 = z.object({
@@ -21,6 +34,7 @@ export type BlockPackFromRegistryV2 = z.infer<typeof BlockPackFromRegistryV2>;
 /** Information about block origin, can be used to instantiate new blocks */
 export const BlockPackSpec = z.discriminatedUnion('type', [
   BlockPackDevV2,
+  BlockPackFromRegistryV1,
   BlockPackFromRegistryV2
 ]);
 export type BlockPackSpec = z.infer<typeof BlockPackSpec>;

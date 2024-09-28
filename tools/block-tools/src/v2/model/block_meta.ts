@@ -11,6 +11,7 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import {
   absoluteToBase64,
+  absoluteToBytes,
   absoluteToString,
   cpAbsoluteToRelative,
   mapLocalToAbsolute,
@@ -39,6 +40,11 @@ export const BlockPackMetaEmbedAbsoluteBase64 = BlockPackMeta(
   ContentAbsoluteTextLocal.transform(absoluteToString()),
   ContentAbsoluteBinaryLocal.transform(absoluteToBase64())
 ).pipe(BlockPackMetaEmbeddedBase64);
+
+export const BlockPackMetaEmbedAbsoluteBytes = BlockPackMeta(
+  ContentAbsoluteTextLocal.transform(absoluteToString()),
+  ContentAbsoluteBinaryLocal.transform(absoluteToBytes())
+).pipe(BlockPackMetaEmbeddedBytes);
 
 export function BlockPackMetaEmbedBytes(reader: RelativeContentReader) {
   return BlockPackMeta(
