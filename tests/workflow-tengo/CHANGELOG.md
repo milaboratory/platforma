@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.2.7
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+
 ## 1.2.6
 
 ### Patch Changes
