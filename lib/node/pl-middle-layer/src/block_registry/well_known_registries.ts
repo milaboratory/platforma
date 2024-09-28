@@ -1,4 +1,4 @@
-import { RegistrySpec } from './registry_spec';
+import { RegistrySpec } from '../../../../model/middle-layer/src/block_registry/registry_spec';
 
 export const CentralRegistry: RegistrySpec = {
   type: 'remote_v1',

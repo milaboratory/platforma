@@ -1,6 +1,6 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
-import { RegistryStorage } from '../../lib/storage';
+import { RegistryStorage } from '../../io/storage';
 import { BlockPackIdNoVersion, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
 import {
   GlobalUpdateSeedInFile,
@@ -75,7 +75,7 @@ export class BlockRegistryV2 {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      let packageOverview: PackageOverview =
+      const packageOverview: PackageOverview =
         pOverviewContent === undefined
           ? { schema: 'v2', versions: [] }
           : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
@@ -135,9 +135,9 @@ export class BlockRegistryV2 {
           name: packageInfo.package.name
         },
         allVersions: newVersions.map((e) => e.description.id.version).reverse(),
-        latest: BlockPackDescriptionManifestAddRelativePathPrefix(packageInfo.package.name).parse(
-          newVersions[0]
-        ),
+        latest: BlockPackDescriptionManifestAddRelativePathPrefix(
+          `${packageInfo.package.organization}/${packageInfo.package.name}`
+        ).parse(newVersions[0].description),
         latestManifestSha256: newVersions[0].manifestSha256
       });
     }
