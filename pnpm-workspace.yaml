@@ -39,6 +39,7 @@ packages:
 
   - tests/workflow-tengo
   - tests/helper
+  - tests/block-repo
 
   # Etc
 

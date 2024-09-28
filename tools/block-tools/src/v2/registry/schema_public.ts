@@ -6,7 +6,8 @@ import {
   BlockPackMeta,
   ContentRelativeBinary,
   ContentRelativeText,
-  CreateBlockPackDescriptionSchema
+  CreateBlockPackDescriptionSchema,
+  Sha256Schema
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
 import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitText } from '../model';
@@ -25,9 +26,14 @@ export const ManifestSuffix = '/' + ManifestFileName;
 //   return `${MainPrefix}${bp.organization}/${bp.name}/${bp.version}/${file}`;
 // }
 
+export const PackageOverviewVersionEntry = z.object({
+  description: BlockPackDescriptionManifest,
+  manifestSha256: Sha256Schema
+});
+
 export const PackageOverview = z.object({
   schema: z.literal('v2'),
-  versions: z.array(BlockPackDescriptionManifest)
+  versions: z.array(PackageOverviewVersionEntry)
 });
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
@@ -43,7 +49,8 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   return z.object({
     id: BlockPackIdNoVersion,
     allVersions: z.array(z.string()),
-    latest: descriptionType
+    latest: descriptionType,
+    latestManifestSha256: Sha256Schema
   });
 }
 
@@ -59,6 +66,15 @@ export function GlobalOverview<const Description extends z.ZodTypeAny>(
 export const GlobalOverviewReg = GlobalOverview(BlockPackDescriptionManifest);
 export type GlobalOverviewReg = z.infer<typeof GlobalOverviewReg>;
 
+export function BlockDescriptionToExplicitBinaryBytes(reader: RelativeContentReader) {
+  return CreateBlockPackDescriptionSchema(
+    BlockComponentsManifest,
+    BlockPackMeta(
+      ContentRelativeText.transform(relativeToExplicitText(reader)),
+      ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
+    )
+  );
+}
 export function GlobalOverviewToExplicitBinaryBytes(reader: RelativeContentReader) {
   return GlobalOverview(
     CreateBlockPackDescriptionSchema(
