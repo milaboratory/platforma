@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.0
+
+### Minor Changes
+
+- fa6d0f2: V2 Registry API
+
 ## 1.3.0
 
 ### Minor Changes
