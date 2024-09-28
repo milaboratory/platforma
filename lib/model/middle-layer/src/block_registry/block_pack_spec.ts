@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { BlockPackId } from '../block_meta';
 
+/** Block pack from local folder, to be used during block development. Old layout.
+ * @deprecated don't use */
+export const BlockPackDevV1 = z.object({
+  type: z.literal('dev-v1'),
+  folder: z.string(),
+  mtime: z.string().optional()
+});
+/** @deprecated don't use */
+export type BlockPackDevV1 = z.infer<typeof BlockPackDevV1>;
+
 /** Block pack from local folder, to be used during block development. New layout. */
 export const BlockPackDevV2 = z.object({
   type: z.literal('dev-v2'),
@@ -33,6 +43,7 @@ export type BlockPackFromRegistryV2 = z.infer<typeof BlockPackFromRegistryV2>;
 
 /** Information about block origin, can be used to instantiate new blocks */
 export const BlockPackSpec = z.discriminatedUnion('type', [
+  BlockPackDevV1,
   BlockPackDevV2,
   BlockPackFromRegistryV1,
   BlockPackFromRegistryV2

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { RegistryStorage, S3Storage, storageByUrl } from '../lib/storage';
+import { RegistryStorage, storageByUrl } from '../io';
 import fs from 'node:fs';
 import { BlockRegistry } from './registry';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';

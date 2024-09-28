@@ -25,7 +25,6 @@ export class BlockUpdateWatcher extends PollComputablePool<
 
   protected getKey(req: BlockPackSpec): string {
     switch (req.type) {
-      case 'dev':
       case 'dev-v1':
         return `dev_1_${req.folder}_${req.mtime}`;
       case 'dev-v2':
@@ -38,7 +37,6 @@ export class BlockUpdateWatcher extends PollComputablePool<
   protected async readValue(req: BlockPackSpec): Promise<BlockPackSpec | undefined> {
     try {
       switch (req.type) {
-        case 'dev':
         case 'dev-v1': {
           const mtime = await getDevV1PacketMtime(req.folder);
           if (mtime === req.mtime) return undefined;
@@ -65,7 +63,12 @@ export class BlockUpdateWatcher extends PollComputablePool<
   ): boolean {
     if (res1 === undefined && res2 === undefined) return true;
     if (res1 === undefined || res2 === undefined) return false;
-    if (res1.type === 'from-registry-v1' || res2.type === 'from-registry-v1')
+    if (
+      res1.type === 'from-registry-v1' ||
+      res2.type === 'from-registry-v1' ||
+      res1.type === 'from-registry-v2' ||
+      res2.type === 'from-registry-v2'
+    )
       throw new Error('Unexpected, not yet supported.');
     return res1.folder === res2.folder && res1.mtime === res2.mtime;
   }

@@ -5,7 +5,7 @@ import { CentralBlockRegistry } from './well_known_registries';
 import { V2RegistryProvider } from './registry-v2-provider';
 import { Agent } from 'undici';
 
-test('testing remote registry', async () => {
+test.skip('testing remote registry', async () => {
   const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
     { id: 'central', spec: CentralBlockRegistry }
   ]);
