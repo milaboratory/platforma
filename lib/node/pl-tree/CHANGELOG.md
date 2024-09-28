@@ -1,5 +1,15 @@
 # @milaboratories/pl-tree
 
+## 1.3.12
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+- Updated dependencies [fa6d0f2]
+  - @milaboratories/ts-helpers@1.0.27
+  - @milaboratories/computable@2.1.7
+  - @milaboratories/pl-client@2.4.15
+
 ## 1.3.11
 
 ### Patch Changes

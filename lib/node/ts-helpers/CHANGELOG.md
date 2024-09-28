@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.0.27
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+
 ## 1.0.26
 
 ### Patch Changes
