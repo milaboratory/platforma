@@ -3,8 +3,7 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
-    "build": "rm -rf ./block-pack && block-tools pack",
-    "test": "block-tools publish -r file:./test-block-repo"
+    "build": "rm -rf ./block-pack && block-tools pack"
   },
   "files": [
     "index.d.ts",
@@ -28,9 +27,11 @@
     "meta": {
       "title": "Enter Numbers",
       "description": "Enter Numbers",
+      "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",
-        "url": "https://milaboratories.com/"
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
       }
     }
   }

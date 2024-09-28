@@ -45,6 +45,7 @@
     "@types/jest": "catalog:",
     "@types/tar-fs": "catalog:",
     "jest": "catalog:",
+    "@jest/globals": "catalog:",
     "ts-jest": "catalog:"
   }
 }

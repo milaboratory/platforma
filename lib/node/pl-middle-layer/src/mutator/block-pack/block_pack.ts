@@ -32,7 +32,6 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
-      case 'dev':
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
@@ -50,11 +49,15 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
 
         return (await configResponse.body.json()) as BlockConfig;
+      }
+
+      case 'from-registry-v2': {
+        throw new Error('NOT YET SUPPORTED!');
       }
 
       default:
@@ -67,7 +70,6 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec;
 
-      case 'dev':
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
 
@@ -132,7 +134,7 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const templateUrl = `${urlPrefix}/template.plj.gz`;
         // template
@@ -161,6 +163,10 @@ export class BlockPackPreparer {
           },
           source: spec
         };
+      }
+
+      case 'from-registry-v2': {
+        throw new Error('NOT YET SUPPORTED!');
       }
 
       default:

@@ -35,6 +35,8 @@
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",
     "@oclif/core": "catalog:",
+    "canonicalize": "catalog:",
+    "undici": "catalog:",
     "mime-types": "catalog:",
     "tar": "catalog:",
     "yaml": "catalog:",
@@ -53,6 +55,7 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "jest": "catalog:",
+    "@jest/globals": "catalog:",
     "oclif": "catalog:",
     "ts-jest": "catalog:"
   },

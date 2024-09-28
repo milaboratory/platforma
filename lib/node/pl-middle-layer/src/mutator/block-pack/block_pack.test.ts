@@ -1,9 +1,4 @@
-import {
-  isNullResourceId,
-  poll,
-  TestHelpers,
-  toGlobalResourceId
-} from '@milaboratories/pl-client';
+import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
 import { BlockPackPreparer, createBlockPack } from './block_pack';
 import { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
@@ -16,14 +11,16 @@ test.each([
     spec: {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'enter-numbers',
-      version: '0.4.1'
+      id: {
+        organization: 'milaboratory',
+        name: 'enter-numbers',
+        version: '0.4.1'
+      }
     } as BlockPackSpecAny
   },
   {
     spec: {
-      type: 'dev',
+      type: 'dev-v1',
       folder: path.resolve('integration', 'block-beta-sum-numbers')
     } as BlockPackSpecAny
   }

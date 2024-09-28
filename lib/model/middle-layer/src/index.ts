@@ -1,5 +1,5 @@
 export * from './author_marker';
-export * from './block_pack';
+export * from './block_registry';
 export * from './block_state';
 export * from './block_meta';
 export * from './project';

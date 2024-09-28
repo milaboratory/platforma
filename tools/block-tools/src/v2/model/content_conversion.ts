@@ -122,6 +122,28 @@ export function absoluteToBase64(): (
   };
 }
 
+export function absoluteToBytes(): (
+  value: ContentAbsoluteBinaryLocal
+) => Promise<ContentExplicitBytes> {
+  return async (value) => {
+    if (value.type === 'absolute-file') {
+      const mimeType = mime.lookup(value.file);
+      if (!mimeType) throw new Error(`Can't recognize mime type of the file: ${value.file}.`);
+      return {
+        type: 'explicit-bytes',
+        mimeType,
+        content: Buffer.from(await fsp.readFile(value.file))
+      };
+    } else if (value.type === 'explicit-base64') {
+      return {
+        type: 'explicit-bytes',
+        mimeType: value.mimeType,
+        content: Buffer.from(value.content, 'base64')
+      };
+    } else return value;
+  };
+}
+
 export function cpAbsoluteToRelative(
   dstFolder: string,
   fileAccumulator?: string[]
@@ -162,13 +184,20 @@ export function packFolderToRelativeTgz(
 
 export type RelativeContentReader = (relativePath: string) => Promise<Buffer>;
 
-export function relativeToExplicitText(
+export function relativeToExplicitString(
   reader: RelativeContentReader
 ): (value: ContentRelativeText) => Promise<ContentExplicitString> {
   return async (value) =>
     value.type === 'explicit-string'
       ? value
       : { type: 'explicit-string', content: (await reader(value.path)).toString('utf8') };
+}
+
+export function relativeToContentString(
+  reader: RelativeContentReader
+): (value: ContentRelativeText) => Promise<string> {
+  return async (value) =>
+    value.type === 'explicit-string' ? value.content : (await reader(value.path)).toString('utf8');
 }
 
 export function relativeToExplicitBinary64(

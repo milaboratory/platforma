@@ -1,6 +1,6 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
-import { RegistryStorage } from '../../lib/storage';
+import { RegistryStorage } from '../../io/storage';
 import { BlockPackIdNoVersion, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
 import {
   GlobalUpdateSeedInFile,
@@ -75,7 +75,7 @@ export class BlockRegistryV2 {
       // reading existing overview
       const overviewFile = packageOverviewPath(packageInfo.package);
       const pOverviewContent = await this.storage.getFile(overviewFile);
-      let packageOverview: PackageOverview =
+      const packageOverview: PackageOverview =
         pOverviewContent === undefined
           ? { schema: 'v2', versions: [] }
           : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
@@ -85,7 +85,7 @@ export class BlockRegistryV2 {
 
       // removing versions that we will update
       const newVersions = packageOverview.versions.filter(
-        (e) => !packageInfo.versions.has(e.id.version)
+        (e) => !packageInfo.versions.has(e.description.id.version)
       );
 
       // reading new entries
@@ -98,15 +98,21 @@ export class BlockRegistryV2 {
           }) + ManifestSuffix
         );
         if (!manifestContent) continue; // absent package
-        newVersions.push(
-          BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
+        const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', manifestContent))
+          .toString('hex')
+          .toUpperCase();
+        newVersions.push({
+          description: BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
             BlockPackManifest.parse(JSON.parse(manifestContent.toString('utf8'))).description
-          )
-        );
+          ),
+          manifestSha256: sha256
+        });
       }
 
       // sorting entries according to version
-      newVersions.sort((e1, e2) => compareSemver(e2.id.version, e1.id.version));
+      newVersions.sort((e1, e2) =>
+        compareSemver(e2.description.id.version, e1.description.id.version)
+      );
 
       // write package overview back
       await this.storage.putFile(
@@ -128,10 +134,11 @@ export class BlockRegistryV2 {
           organization: packageInfo.package.organization,
           name: packageInfo.package.name
         },
-        allVersions: newVersions.map((e) => e.id.version).reverse(),
-        latest: BlockPackDescriptionManifestAddRelativePathPrefix(packageInfo.package.name).parse(
-          newVersions[0]
-        )
+        allVersions: newVersions.map((e) => e.description.id.version).reverse(),
+        latest: BlockPackDescriptionManifestAddRelativePathPrefix(
+          `${packageInfo.package.organization}/${packageInfo.package.name}`
+        ).parse(newVersions[0].description),
+        latestManifestSha256: newVersions[0].manifestSha256
       });
     }
 
