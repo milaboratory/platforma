@@ -7,7 +7,7 @@ import { RegistryEntry } from './registry_spec';
  * Latest information about specific block pack. Contain information about latest version of the package.
  * */
 export const BlockPackOverview = z.object({
-  registryLabel: z.string(),
+  registryId: z.string(),
   id: BlockPackId,
   meta: BlockPackMetaEmbeddedBytes,
   spec: BlockPackSpec,

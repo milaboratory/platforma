@@ -6,13 +6,25 @@ export const LocalDevFolder = z.object({
 });
 export type LocalDevFolder = z.infer<typeof LocalDevFolder>;
 
+/** @deprecated don't use */
+export const RemoteRegistryV1Spec = z.object({
+  type: z.literal('remote-v1'),
+  url: z.string().url()
+});
+/** @deprecated don't use */
+export type RemoteRegistryV1Spec = z.infer<typeof RemoteRegistryV1Spec>;
+
 export const RemoteRegistryV2Spec = z.object({
   type: z.literal('remote-v2'),
   url: z.string().url()
 });
 export type RemoteRegistryV2Spec = z.infer<typeof RemoteRegistryV2Spec>;
 
-export const RegistrySpec = z.discriminatedUnion('type', [RemoteRegistryV2Spec, LocalDevFolder]);
+export const RegistrySpec = z.discriminatedUnion('type', [
+  RemoteRegistryV1Spec,
+  RemoteRegistryV2Spec,
+  LocalDevFolder
+]);
 export type RegistrySpec = z.infer<typeof RegistrySpec>;
 
 export const RegistryEntry = z.object({
