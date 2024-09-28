@@ -5,6 +5,7 @@ import pathPosix from 'node:path/posix';
 import fsp from 'node:fs/promises';
 
 export interface FolderReader {
+  relativeReader(relativePath: string): FolderReader;
   readFile(file: string): Promise<Buffer>;
   getContentReader(relativePath?: string): RelativeContentReader;
 }
@@ -38,12 +39,12 @@ export class FSFolderReader implements FolderReader {
   constructor(private readonly root: string) {}
 
   public async readFile(file: string): Promise<Buffer> {
-    const targetPath = path.resolve(file);
+    const targetPath = path.join(this.root, ...file.split(pathPosix.sep));
     return await fsp.readFile(targetPath);
   }
 
   public relativeReader(relativePath: string): FSFolderReader {
-    return new FSFolderReader(path.resolve(this.root, relativePath));
+    return new FSFolderReader(path.join(this.root, ...relativePath.split(pathPosix.sep)));
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
@@ -65,7 +66,7 @@ export function folderReaderByUrl(address: string, httpDispatcher?: Dispatcher):
   const url = new URL(address, `file:${localToPosix(path.resolve('.'))}/`);
   switch (url.protocol) {
     case 'file:':
-      const root = path.resolve(posixToLocalPath(url.pathname));
+      const root = posixToLocalPath(url.pathname);
       return new FSFolderReader(root);
     case 'https:':
     case 'http:':

@@ -1,5 +1,5 @@
 import { Dispatcher, request } from 'undici';
-import { RegistrySpec } from './registry_spec';
+import { RegistrySpec } from '../../../../model/middle-layer/src/block_registry/registry_spec';
 import { BlockPackSpecAny } from '../model';
 import { BlockPackDescriptionAbsolute, RegistryV1 } from '@platforma-sdk/block-tools';
 import fs from 'node:fs';
@@ -8,31 +8,6 @@ import YAML from 'yaml';
 import { assertNever } from '@milaboratories/ts-helpers';
 import { LegacyDevBlockPackFiles } from '../dev_env';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
-
-/**
- * Information specified by the developer of the block.
- * */
-export type BlockPackMeta = {
-  title: string;
-  description: string;
-  [metaField: string]: unknown;
-};
-
-/**
- * Information about specific package with specific organization and package names.
- * Mainly contain information about latest version of the package.
- * */
-export type BlockPackPackageOverview = {
-  organization: string;
-  /** @deprecated */
-  package: string;
-  name: string;
-  latestVersion: string;
-  latestMeta: BlockPackMeta;
-  registryLabel: string;
-  latestSpec: BlockPackSpecAny;
-  otherVersions: string[];
-};
 
 async function getFileContent(path: string) {
   try {

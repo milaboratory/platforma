@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   ContentExplicitBase64,
+  ContentExplicitBytes,
   DescriptionContentBinary,
   DescriptionContentText
 } from './content_types';
@@ -34,8 +35,15 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
 export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
 
 // prettier-ignore
-export const BlockPackMetaEmbeddedContent = BlockPackMeta(
+export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(
   z.string(),
   ContentExplicitBase64
 );
-export type BlockPackMetaEmbeddedContent = z.infer<typeof BlockPackMetaEmbeddedContent>;
+export type BlockPackMetaEmbeddedBase64 = z.infer<typeof BlockPackMetaEmbeddedBase64>;
+
+// prettier-ignore
+export const BlockPackMetaEmbeddedBytes = BlockPackMeta(
+  z.string(),
+  ContentExplicitBytes
+);
+export type BlockPackMetaEmbeddedBytes = z.infer<typeof BlockPackMetaEmbeddedBytes>;

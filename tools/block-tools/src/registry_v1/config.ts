@@ -8,7 +8,7 @@ import {
 } from './config_schema';
 import * as os from 'node:os';
 import { BlockRegistry } from './registry';
-import { storageByUrl } from '../lib/storage';
+import { storageByUrl } from '../io/storage';
 import { FullBlockPackageName } from './v1_repo_schema';
 import { MiLogger } from '@milaboratories/ts-helpers';
 

@@ -2,7 +2,7 @@ import { Command, Flags } from '@oclif/core';
 import path from 'path';
 import fs from 'fs';
 import { loadPackDescriptionRaw } from '../v2';
-import { BlockPackMetaDescription, BlockPackMetaEmbed } from '../v2/model/block_meta';
+import { BlockPackMetaDescription, BlockPackMetaEmbedAbsoluteBase64 } from '../v2/model/block_meta';
 
 export default class BuildMeta extends Command {
   static override description =
@@ -29,7 +29,7 @@ export default class BuildMeta extends Command {
     const { flags } = await this.parse(BuildMeta);
     const modulePath = path.resolve(flags.modulePath);
     const descriptionRaw = await loadPackDescriptionRaw(modulePath);
-    const metaEmbedded = await BlockPackMetaEmbed.parseAsync(
+    const metaEmbedded = await BlockPackMetaEmbedAbsoluteBase64.parseAsync(
       BlockPackMetaDescription(modulePath).parse(descriptionRaw.meta)
     );
 

@@ -4,6 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src"],
+  "include": ["src", "../../model/middle-layer/src/block_registry/registry_spec.ts"],
   "exclude": ["src/**/*.test.ts"]
 }

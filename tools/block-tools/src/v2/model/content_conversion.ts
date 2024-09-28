@@ -162,13 +162,20 @@ export function packFolderToRelativeTgz(
 
 export type RelativeContentReader = (relativePath: string) => Promise<Buffer>;
 
-export function relativeToExplicitText(
+export function relativeToExplicitString(
   reader: RelativeContentReader
 ): (value: ContentRelativeText) => Promise<ContentExplicitString> {
   return async (value) =>
     value.type === 'explicit-string'
       ? value
       : { type: 'explicit-string', content: (await reader(value.path)).toString('utf8') };
+}
+
+export function relativeToContentString(
+  reader: RelativeContentReader
+): (value: ContentRelativeText) => Promise<string> {
+  return async (value) =>
+    value.type === 'explicit-string' ? value.content : (await reader(value.path)).toString('utf8');
 }
 
 export function relativeToExplicitBinary64(

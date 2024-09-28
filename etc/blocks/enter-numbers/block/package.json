@@ -27,9 +27,11 @@
     "meta": {
       "title": "Enter Numbers",
       "description": "Enter Numbers",
+      "logo": "file:logos/block-logo.png",
       "organization": {
         "name": "MiLaboratories Inc",
-        "url": "https://milaboratories.com/"
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
       }
     }
   }

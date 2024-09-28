@@ -1,4 +1,4 @@
-import { RegistryStorage } from '../lib/storage';
+import { RegistryStorage } from '../io/storage';
 import { randomUUID } from 'node:crypto';
 import semver from 'semver';
 import {
