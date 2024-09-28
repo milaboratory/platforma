@@ -10,6 +10,16 @@
       "outputs": ["./dist/**"],
       "dependsOn": ["type-check", "^build"]
     },
+    "@milaboratories/milaboratories.test-enter-numbers#build": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["./block-pack/**"],
+      "dependsOn": ["^build"]
+    },
+    "@milaboratories/block-repo-tests#build": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": ["./the-reg/**"],
+      "dependsOn": ["^build"]
+    },
     "test": {
       "dependsOn": ["build"],
       "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
