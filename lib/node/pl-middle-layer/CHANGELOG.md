@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.23
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+- Updated dependencies [fa6d0f2]
+- Updated dependencies [5eb6127]
+- Updated dependencies [5f95b40]
+  - @milaboratories/pl-model-middle-layer@1.4.0
+  - @platforma-sdk/block-tools@2.3.0
+  - @milaboratories/ts-helpers@1.0.27
+  - @milaboratories/pl-tree@1.3.12
+  - @platforma-sdk/model@1.2.27
+  - @milaboratories/computable@2.1.7
+  - @milaboratories/pl-client@2.4.15
+  - @milaboratories/pl-drivers@1.2.22
+
 ## 1.10.22
 
 ### Patch Changes

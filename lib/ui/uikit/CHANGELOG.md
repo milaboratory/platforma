@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.5
+
+### Patch Changes
+
+- 5f95b40: This fixes #29
+
 ## 1.2.4
 
 ### Patch Changes
