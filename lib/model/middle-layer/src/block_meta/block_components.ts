@@ -42,3 +42,6 @@ export function BlockComponentsAbsoluteUrl(prefix: string) {
   );
 }
 export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;
+
+// export const BlockComponentsExplicit = BlockComponents(, ContentRelative);
+// export type BlockComponentsExplicit = z.infer<typeof BlockComponentsExplicit>;

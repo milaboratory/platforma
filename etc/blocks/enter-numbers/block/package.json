@@ -3,8 +3,7 @@
   "version": "1.0.1",
   "private": true,
   "scripts": {
-    "build": "rm -rf ./block-pack && block-tools pack",
-    "test": "block-tools publish -r file:./test-block-repo"
+    "build": "rm -rf ./block-pack && block-tools pack"
   },
   "files": [
     "index.d.ts",

@@ -33,6 +33,7 @@
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "jest": "catalog:",
+    "@jest/globals": "catalog:",
     "ts-jest": "catalog:"
   },
   "oclif": {
