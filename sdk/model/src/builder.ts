@@ -155,7 +155,7 @@ export class BlockModel<
 
   /** Initiates configuration builder */
   public static create<Args, UiState = undefined>(
-    renderingMode: BlockRenderingMode
+    renderingMode: BlockRenderingMode = 'Heavy'
   ): BlockModel<Args, {}, UiState> {
     return new BlockModel<Args, {}, UiState>(
       renderingMode,
