@@ -16,6 +16,3 @@ export type { FieldType, ResourceType } from '@milaboratories/pl-client';
 export * from './mutator/template/template_loading';
 export * from './mutator/template/render_template';
 export * from './model/template_spec';
-
-// TODO change to rich meta information from V2 registry
-export { type BlockPackMeta } from './block_registry';

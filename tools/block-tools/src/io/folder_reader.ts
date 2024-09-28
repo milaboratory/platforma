@@ -25,7 +25,7 @@ export class HttpFolderReader implements FolderReader {
   }
 
   public relativeReader(relativePath: string): HttpFolderReader {
-    return new HttpFolderReader(new URL(this.root, relativePath), this.httpDispatcher);
+    return new HttpFolderReader(new URL(relativePath, this.root), this.httpDispatcher);
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {

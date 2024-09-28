@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import { TestHelpers } from '@milaboratories/pl-client';
 import { MiddleLayer } from './middle_layer';
 import { outputRef } from '../model/args';
@@ -10,6 +11,7 @@ import { Project } from './project';
 import { LegacyDevBlockPackConfig } from '../dev_env';
 import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
 import { Agent } from 'undici';
+import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 
 const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
   { id: 'central', spec: CentralBlockRegistry },
@@ -24,35 +26,42 @@ const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
 ]);
 
 async function getStandardBlockSpecs() {
-  const blocksFromRegistry = (await registry.listBlockPacks()).blockPacks;
   return {
-    enterNumbersSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryId=== 'central' && b.package === 'enter-numbers'
-    )!.latestSpec,
-
-    enterNumbersSpecFromDev: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/dev/) && b.package === 'enter-numbers'
-    )!.latestSpec,
-
-    sumNumbersSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/Central/) && b.package === 'sum-numbers'
-    )!.latestSpec,
-
-    sumNumbersSpecFromDev: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/dev/) && b.package === 'sum-numbers'
-    )!.latestSpec,
-
-    downloadFileSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/Central/) && b.package === 'download-file'
-    )!.latestSpec,
-
-    uploadFileSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/Central/) && b.package === 'upload-file'
-    )!.latestSpec,
-
-    readLogsSpecFromRemote: blocksFromRegistry.find(
-      (b) => b.registryLabel.match(/Central/) && b.package === 'read-logs'
-    )!.latestSpec
+    enterNumbersSpecFromRemote: {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
+    } satisfies BlockPackSpec,
+    enterNumbersSpecFromDev: {
+      type: 'dev-v1',
+      folder: path.resolve('./integration/block-beta-enter-numbers'),
+      mtime: '1727099575979300176'
+    } satisfies BlockPackSpec,
+    sumNumbersSpecFromRemote: {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      id: { organization: 'milaboratory', name: 'sum-numbers', version: '1.0.1' }
+    } satisfies BlockPackSpec,
+    sumNumbersSpecFromDev: {
+      type: 'dev-v1',
+      folder: path.resolve('./integration/block-beta-sum-numbers'),
+      mtime: '1727099575981045820'
+    } satisfies BlockPackSpec,
+    downloadFileSpecFromRemote: {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      id: { organization: 'milaboratory', name: 'download-file', version: '1.2.0' }
+    } satisfies BlockPackSpec,
+    uploadFileSpecFromRemote: {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      id: { organization: 'milaboratory', name: 'upload-file', version: '1.0.7' }
+    } satisfies BlockPackSpec,
+    readLogsSpecFromRemote: {
+      type: 'from-registry-v1',
+      registryUrl: 'https://block.registry.platforma.bio/releases',
+      id: { organization: 'milaboratory', name: 'read-logs', version: '1.0.7' }
+    } satisfies BlockPackSpec
   };
 }
 
@@ -449,7 +458,7 @@ test('block update test', async () => {
     });
     const mtime = await getDevV1PacketMtime(devBlockPath);
     const block1Id = await prj.addBlock('Block 1', {
-      type: 'dev',
+      type: 'dev-v1',
       folder: devBlockPath,
       mtime
     });
@@ -484,9 +493,7 @@ test('project open and close test', async () => {
     const blockId = await prj.addBlock('Test Block', {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'enter-numbers',
-      version: '1.1.1'
+      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
     });
     await prj.setBlockArgs(blockId, { numbers: [1, 2, 3] });
     const overview1 = await prj.overview.awaitStableValue();

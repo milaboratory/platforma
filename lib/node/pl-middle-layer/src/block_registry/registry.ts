@@ -126,7 +126,34 @@ export class BlockPackRegistry {
             path.join(devPath, RegistryV1.PlPackageYamlConfigFile)
           );
           if (legacyYamlContent !== undefined) {
-            // DEPRECATED FORMAT
+            const config = RegistryV1.PlPackageConfigData.parse(YAML.parse(legacyYamlContent));
+
+            const mtime = await getDevV1PacketMtime(devPath);
+
+            const id = {
+              organization: config.organization,
+              name: config.package,
+              version: 'DEV'
+            };
+
+            result.push({
+              registryId: regEntry.id,
+              id,
+              meta: {
+                title: (config.meta['title'] as string) ?? 'No title',
+                description: (config.meta['description'] as string) ?? 'No Description',
+                organization: {
+                  name: config.organization,
+                  url: 'https://unknown.com'
+                }
+              },
+              spec: {
+                type: 'dev-v2',
+                folder: devPath,
+                mtime
+              },
+              otherVersions: []
+            });
           } else {
             const v2Description = await tryLoadPackDescription(devPath);
             if (v2Description !== undefined) {
