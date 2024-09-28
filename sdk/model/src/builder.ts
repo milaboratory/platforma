@@ -224,13 +224,14 @@ export class BlockModel<
   }
 
   /** Sets custom configuration predicate on the block args at which block can be executed */
-  public inputsValid<Cfg extends TypedConfig>(
+  public argsValid<Cfg extends TypedConfig>(
     cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
-  public inputsValid<RF extends RenderFunction<Args, UiState, boolean>>(
+  /** Sets custom configuration predicate on the block args at which block can be executed */
+  public argsValid<RF extends RenderFunction<Args, UiState, boolean>>(
     rf: RF
   ): BlockModel<Args, OutputsCfg, UiState, Href>;
-  public inputsValid(
+  public argsValid(
     cfgOrRf: TypedConfig | Function
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
     if (typeof cfgOrRf === 'function') {
@@ -250,6 +251,20 @@ export class BlockModel<
         cfgOrRf,
         this._sections
       );
+  }
+
+  /** @deprecated use argsValid()  */
+  public inputsValid<Cfg extends TypedConfig>(
+    cfg: Cfg & InputsValidCfgChecked<Cfg, Args, UiState>
+  ): BlockModel<Args, OutputsCfg, UiState, Href>;
+  /** @deprecated use argsValid()  */
+  public inputsValid<RF extends RenderFunction<Args, UiState, boolean>>(
+    rf: RF
+  ): BlockModel<Args, OutputsCfg, UiState, Href>;
+  public inputsValid(
+    cfgOrRf: TypedConfig | Function
+  ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
+    return this.argsValid(cfgOrRf as any);
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
