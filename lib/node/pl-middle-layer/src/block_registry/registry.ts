@@ -1,38 +1,24 @@
 import { Dispatcher, request } from 'undici';
-import { RegistrySpec } from './registry_spec';
 import { BlockPackSpecAny } from '../model';
-import { BlockPackDescriptionAbsolute, RegistryV1 } from '@platforma-sdk/block-tools';
+import {
+  BlockPackDescriptionAbsolute,
+  BlockPackMetaEmbedAbsoluteBytes,
+  RegistryV1
+} from '@platforma-sdk/block-tools';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 import { assertNever } from '@milaboratories/ts-helpers';
 import { LegacyDevBlockPackFiles } from '../dev_env';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
-
-/**
- * Information specified by the developer of the block.
- * */
-export type BlockPackMeta = {
-  title: string;
-  description: string;
-  [metaField: string]: unknown;
-};
-
-/**
- * Information about specific package with specific organization and package names.
- * Mainly contain information about latest version of the package.
- * */
-export type BlockPackPackageOverview = {
-  organization: string;
-  /** @deprecated */
-  package: string;
-  name: string;
-  latestVersion: string;
-  latestMeta: BlockPackMeta;
-  registryLabel: string;
-  latestSpec: BlockPackSpecAny;
-  otherVersions: string[];
-};
+import { V2RegistryProvider } from './registry-v2-provider';
+import {
+  BlockPackListing,
+  BlockPackOverview,
+  RegistryEntry,
+  RegistrySpec,
+  RegistryStatus
+} from '@milaboratories/pl-model-middle-layer';
 
 async function getFileContent(path: string) {
   try {
@@ -80,14 +66,16 @@ export async function getDevV2PacketMtime(
 
 export class BlockPackRegistry {
   constructor(
-    private readonly registrySpecs: RegistrySpec[],
+    private readonly v2Provider: V2RegistryProvider,
+    private readonly registries: RegistryEntry[],
     private readonly http?: Dispatcher
   ) {}
 
-  private async getPackagesForRoot(regSpec: RegistrySpec): Promise<BlockPackPackageOverview[]> {
-    const result: BlockPackPackageOverview[] = [];
+  private async getPackagesForRoot(regEntry: RegistryEntry): Promise<BlockPackOverview[]> {
+    const result: BlockPackOverview[] = [];
+    const regSpec = regEntry.spec;
     switch (regSpec.type) {
-      case 'remote_v1':
+      case 'remote-v1':
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
         const overviewResponse = await request(
@@ -97,27 +85,39 @@ export class BlockPackRegistry {
         const overview = (await overviewResponse.body.json()) as RegistryV1.GlobalOverview;
         for (const overviewEntry of overview) {
           const { organization, package: pkg, latestMeta, latestVersion } = overviewEntry;
-          result.push({
+          const id = {
             organization,
-            package: pkg,
             name: pkg,
-            latestVersion,
-            latestMeta: latestMeta as BlockPackMeta,
-            registryLabel: regSpec.label,
-            latestSpec: {
+            version: latestVersion
+          };
+          result.push({
+            registryId: regEntry.id,
+            id,
+            meta: {
+              title: latestMeta['title'] ?? 'No title',
+              description: latestMeta['description'] ?? 'No Description',
+              organization: {
+                name: organization,
+                url: 'https://unknown.com'
+              }
+            },
+            spec: {
               type: 'from-registry-v1',
-              registryUrl: regSpec.url,
-              organization,
-              package: pkg,
-              version: latestVersion
-              // `${regSpec.url}/${packageContentPrefix({ organization, package: pkg, version: latestVersion })}`
+              id,
+              registryUrl: regSpec.url
             },
             otherVersions: overviewEntry.allVersions
           });
         }
         return result;
 
-      case 'folder_with_dev_packages':
+      case 'remote-v2':
+        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) => ({
+          ...e,
+          registryId: regEntry.id
+        }));
+
+      case 'local-dev':
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
           if (!entry.isDirectory()) continue;
           const devPath = path.join(regSpec.path, entry.name);
@@ -130,39 +130,46 @@ export class BlockPackRegistry {
 
             const mtime = await getDevV1PacketMtime(devPath);
 
-            result.push({
+            const id = {
               organization: config.organization,
-              package: config.package, // TODO delete
               name: config.package,
-              latestVersion: 'DEV',
-              latestMeta: config.meta as BlockPackMeta,
-              registryLabel: regSpec.label,
-              latestSpec: {
-                type: 'dev-v1',
-                folder: devPath,
-                mtime
-              },
-              otherVersions: []
-            });
-          }
+              version: 'DEV'
+            };
 
-          const v2Description = await tryLoadPackDescription(devPath);
-          if (v2Description !== undefined) {
-            const mtime = await getDevV2PacketMtime(v2Description);
             result.push({
-              organization: v2Description.id.organization,
-              package: v2Description.id.name, // TODO delete
-              name: v2Description.id.name,
-              latestVersion: `${v2Description.id.version}-DEV`,
-              latestMeta: v2Description.meta,
-              registryLabel: regSpec.label,
-              latestSpec: {
+              registryId: regEntry.id,
+              id,
+              meta: {
+                title: (config.meta['title'] as string) ?? 'No title',
+                description: (config.meta['description'] as string) ?? 'No Description',
+                organization: {
+                  name: config.organization,
+                  url: 'https://unknown.com'
+                }
+              },
+              spec: {
                 type: 'dev-v2',
                 folder: devPath,
                 mtime
               },
               otherVersions: []
             });
+          } else {
+            const v2Description = await tryLoadPackDescription(devPath);
+            if (v2Description !== undefined) {
+              const mtime = await getDevV2PacketMtime(v2Description);
+              result.push({
+                registryId: regEntry.id,
+                id: v2Description.id,
+                meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
+                spec: {
+                  type: 'dev-v2',
+                  folder: devPath,
+                  mtime
+                },
+                otherVersions: []
+              });
+            }
           }
 
           continue;
@@ -173,10 +180,13 @@ export class BlockPackRegistry {
     }
   }
 
-  public async getPackagesOverview(): Promise<BlockPackPackageOverview[]> {
-    const packages: BlockPackPackageOverview[] = [];
-    for (const regSpecs of this.registrySpecs)
-      packages.push(...(await this.getPackagesForRoot(regSpecs)));
-    return packages;
+  public async listBlockPacks(): Promise<BlockPackListing> {
+    const blockPacks: BlockPackOverview[] = [];
+    const registries: RegistryStatus[] = [];
+    for (const regSpecs of this.registries) {
+      registries.push({ ...regSpecs, status: 'online' });
+      blockPacks.push(...(await this.getPackagesForRoot(regSpecs)));
+    }
+    return { registries, blockPacks };
   }
 }

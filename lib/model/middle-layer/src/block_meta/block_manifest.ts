@@ -17,14 +17,16 @@ export const BlockPackDescriptionManifest = CreateBlockPackDescriptionSchema(
 );
 export type BlockPackDescriptionManifest = z.infer<typeof BlockPackDescriptionManifest>;
 
+export const Sha256Schema = z
+  .string()
+  .regex(/[0-9a-fA-F]/)
+  .toUpperCase()
+  .length(64); // 256 / 4 (bits per hex register);
+
 export const ManifestFileInfo = z.object({
   name: z.string(),
   size: z.number().int(),
-  sha256: z
-    .string()
-    .regex(/[0-9a-fA-F]/)
-    .toUpperCase()
-    .length(64) // 256 / 4 (bits per hex register)
+  sha256: Sha256Schema
 });
 export type ManifestFileInfo = z.infer<typeof ManifestFileInfo>;
 

@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import { awaitBlockDone, withMl } from './middle_layer.test';
 import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
 import * as tp from 'node:timers/promises';
@@ -11,9 +12,7 @@ test('test JS render enter numbers', async () => {
     const block1Id = await prj.addBlock('Block 1', {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'enter-numbers',
-      version: '1.1.1'
+      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
     });
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
@@ -35,14 +34,12 @@ test.skip('test JS render options', async () => {
     const block1Id = await prj.addBlock('Block 1', {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'enter-numbers',
-      version: '1.1.1'
+      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
     });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
 
     const block2Id = await prj.addBlock('Block 2', {
-      type: 'dev',
+      type: 'dev-v1',
       folder: '../../blocks-beta/block-beta-sum-numbers'
     });
 
@@ -73,9 +70,7 @@ test.skip('test JS render download', async () => {
     const block1Id = await prj.addBlock('Block 1', {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'download-file',
-      version: '1.2.0'
+      id: { organization: 'milaboratory', name: 'download-file', version: '1.2.0' }
     });
 
     await prj.setBlockArgs(block1Id, {

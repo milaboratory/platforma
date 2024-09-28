@@ -32,6 +32,7 @@
     "vite": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
+    "@jest/globals": "catalog:",
     "ts-jest": "catalog:"
   }
 }

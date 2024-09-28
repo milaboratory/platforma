@@ -1,16 +1,23 @@
 import {
   BlockPackMeta,
-  BlockPackMetaEmbeddedContent,
+  BlockPackMetaEmbeddedBase64,
+  BlockPackMetaEmbeddedBytes,
   ContentAbsoluteBinaryLocal,
   ContentAbsoluteTextLocal,
+  ContentRelativeBinary,
+  ContentRelativeText,
   DescriptionContentBinary,
   DescriptionContentText
 } from '@milaboratories/pl-model-middle-layer';
 import {
   absoluteToBase64,
+  absoluteToBytes,
   absoluteToString,
   cpAbsoluteToRelative,
-  mapLocalToAbsolute
+  mapLocalToAbsolute,
+  RelativeContentReader,
+  relativeToContentString,
+  relativeToExplicitBytes
 } from './content_conversion';
 import { z } from 'zod';
 
@@ -29,8 +36,19 @@ export function BlockPackMetaConsolidate(dstFolder: string, fileAccumulator?: st
   );
 }
 
-export const BlockPackMetaEmbed = BlockPackMeta(
+export const BlockPackMetaEmbedAbsoluteBase64 = BlockPackMeta(
   ContentAbsoluteTextLocal.transform(absoluteToString()),
   ContentAbsoluteBinaryLocal.transform(absoluteToBase64())
-).pipe(BlockPackMetaEmbeddedContent);
-export type BlockPackMetaEmbed = z.infer<typeof BlockPackMetaEmbed>;
+).pipe(BlockPackMetaEmbeddedBase64);
+
+export const BlockPackMetaEmbedAbsoluteBytes = BlockPackMeta(
+  ContentAbsoluteTextLocal.transform(absoluteToString()),
+  ContentAbsoluteBinaryLocal.transform(absoluteToBytes())
+).pipe(BlockPackMetaEmbeddedBytes);
+
+export function BlockPackMetaEmbedBytes(reader: RelativeContentReader) {
+  return BlockPackMeta(
+    ContentRelativeText.transform(relativeToContentString(reader)),
+    ContentRelativeBinary.transform(relativeToExplicitBytes(reader))
+  ).pipe(BlockPackMetaEmbeddedBytes);
+}

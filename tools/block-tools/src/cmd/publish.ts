@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 import { ManifestFileName } from '../v2/registry/schema_public';
 import { BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
-import { storageByUrl } from '../lib/storage';
+import { storageByUrl } from '../io/storage';
 import { BlockRegistryV2 } from '../v2/registry/registry';
 import path from 'node:path';
 

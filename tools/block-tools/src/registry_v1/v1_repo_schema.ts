@@ -36,7 +36,7 @@ export interface GlobalOverviewEntry {
   package: string;
   allVersions: string[];
   latestVersion: string;
-  latestMeta: object;
+  latestMeta: any;
 }
 
 export type GlobalOverview = GlobalOverviewEntry[];
