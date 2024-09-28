@@ -63,8 +63,8 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     tls: {
       enable: defaultBool(options?.grpc?.tls?.enable, false),
       clientAuthMode: options?.grpc?.tls?.clientAuthMode ?? 'NoAuth',
-      certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/server-cert.pem`,
-      keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/server-key.pem`,
+      certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/tls.cert`,
+      keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/tls.key`,
 
       ...options?.grpc?.tls
     }
@@ -174,7 +174,6 @@ function defaultStorageSettings(
 export function render(options: types.plSettings): string {
   const disableMon = options.monitoring.enabled ? '' : ' disabled';
   const disableDbg = options.debug.enabled ? '' : ' disabled';
-  const disableTLS = options.grpc.tls.enable ? '' : ' disabled';
   const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
 
   return `
@@ -201,7 +200,8 @@ core:
   grpc:
     listen: '${options.grpc.listen}'
 
-    tls${disableTLS}:
+    tlsEnabled: ${JSON.stringify(options.grpc.tls.enable)}
+    tls:
       clientAuthMode: '${options.grpc.tls.clientAuthMode}'
       certificates:
         - certFile: '${options.grpc.tls.certFile}'
