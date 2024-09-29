@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.2
+
+### Patch Changes
+
+- 7f86668: Added `changelog` field to block description model
+
 ## 1.4.1
 
 ### Patch Changes
