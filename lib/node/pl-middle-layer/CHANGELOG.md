@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.24
+
+### Patch Changes
+
+- 2ea865e: final implementation for registry v2 reader and block materializer
+- Updated dependencies [2ea865e]
+  - @milaboratories/pl-model-middle-layer@1.4.1
+  - @platforma-sdk/block-tools@2.3.1
+
 ## 1.10.23
 
 ### Patch Changes
