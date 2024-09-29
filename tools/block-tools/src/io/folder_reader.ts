@@ -5,19 +5,20 @@ import pathPosix from 'node:path/posix';
 import fsp from 'node:fs/promises';
 
 export interface FolderReader {
+  readonly rootUrl: URL;
   relativeReader(relativePath: string): FolderReader;
   readFile(file: string): Promise<Buffer>;
   getContentReader(relativePath?: string): RelativeContentReader;
 }
 
-export class HttpFolderReader implements FolderReader {
+class HttpFolderReader implements FolderReader {
   constructor(
-    private readonly root: URL,
+    public readonly rootUrl: URL,
     private readonly httpDispatcher: Dispatcher
   ) {}
 
   public async readFile(file: string): Promise<Buffer> {
-    const targetUrl = new URL(file, this.root);
+    const targetUrl = new URL(file, this.rootUrl);
     const response = await request(targetUrl, {
       dispatcher: this.httpDispatcher
     });
@@ -25,7 +26,7 @@ export class HttpFolderReader implements FolderReader {
   }
 
   public relativeReader(relativePath: string): HttpFolderReader {
-    return new HttpFolderReader(new URL(relativePath, this.root), this.httpDispatcher);
+    return new HttpFolderReader(new URL(relativePath, this.rootUrl), this.httpDispatcher);
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
@@ -35,8 +36,11 @@ export class HttpFolderReader implements FolderReader {
   }
 }
 
-export class FSFolderReader implements FolderReader {
-  constructor(private readonly root: string) {}
+class FSFolderReader implements FolderReader {
+  constructor(
+    public readonly rootUrl: URL,
+    private readonly root: string
+  ) {}
 
   public async readFile(file: string): Promise<Buffer> {
     const targetPath = path.join(this.root, ...file.split(pathPosix.sep));
@@ -44,7 +48,10 @@ export class FSFolderReader implements FolderReader {
   }
 
   public relativeReader(relativePath: string): FSFolderReader {
-    return new FSFolderReader(path.join(this.root, ...relativePath.split(pathPosix.sep)));
+    return new FSFolderReader(
+      new URL(relativePath, this.rootUrl),
+      path.join(this.root, ...relativePath.split(pathPosix.sep))
+    );
   }
 
   public getContentReader(relativePath?: string): RelativeContentReader {
@@ -63,11 +70,12 @@ function localToPosix(p: string): string {
 }
 
 export function folderReaderByUrl(address: string, httpDispatcher?: Dispatcher): FolderReader {
+  if (!address.endsWith('/')) address = address + '/';
   const url = new URL(address, `file:${localToPosix(path.resolve('.'))}/`);
   switch (url.protocol) {
     case 'file:':
-      const root = posixToLocalPath(url.pathname);
-      return new FSFolderReader(root);
+      const rootPath = posixToLocalPath(url.pathname);
+      return new FSFolderReader(url, rootPath);
     case 'https:':
     case 'http:':
       return new HttpFolderReader(url, httpDispatcher ?? new Agent());

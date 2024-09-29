@@ -7,6 +7,7 @@ import {
 import { BlockPackDescriptionAbsolute, BlockPackDescriptionConsolidateToFolder } from './model';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { calculateSha256 } from '../util';
 
 export async function buildBlockPackDist(
   description: BlockPackDescriptionAbsolute,
@@ -19,7 +20,7 @@ export async function buildBlockPackDist(
   const filesForManifest = await Promise.all(
     files.map(async (f): Promise<ManifestFileInfo> => {
       const bytes = await fsp.readFile(path.resolve(dst, f));
-      const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', bytes)).toString('hex');
+      const sha256 = await calculateSha256(bytes);
       return { name: f, size: bytes.length, sha256 };
     })
   );
