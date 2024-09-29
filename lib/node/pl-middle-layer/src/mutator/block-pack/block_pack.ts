@@ -10,6 +10,7 @@ import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
+import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -23,6 +24,7 @@ function tSlash(str: string): string {
 
 export class BlockPackPreparer {
   constructor(
+    private readonly v2RegistryProvider: V2RegistryProvider,
     private readonly signer: Signer,
     private readonly http?: Dispatcher
   ) {}
@@ -57,7 +59,12 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v2': {
-        throw new Error('NOT YET SUPPORTED!');
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
+        const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+        const components = await registry.getComponents(spec.id);
+        return (await (
+          await request(components.model.url, httpOptions)
+        ).body.json()) as BlockConfig;
       }
 
       default:
@@ -166,7 +173,29 @@ export class BlockPackPreparer {
       }
 
       case 'from-registry-v2': {
-        throw new Error('NOT YET SUPPORTED!');
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
+        const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+        const components = await registry.getComponents(spec.id);
+        const getModel = async () =>
+          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfig;
+        const getWorkflow = async () =>
+          await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
+
+        const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
+
+        return {
+          type: 'explicit',
+          template: {
+            type: 'explicit',
+            content: Buffer.from(workflow)
+          },
+          config: model,
+          frontend: {
+            type: 'url',
+            url: components.ui.url
+          },
+          source: spec
+        };
       }
 
       default:

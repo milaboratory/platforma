@@ -9,7 +9,7 @@ export class V2RegistryProvider {
   public getRegistry(url: string): RegistryV2Reader {
     const fromCache = this.registries.get(url);
     if (fromCache) return fromCache;
-    const newRegistry = new RegistryV2Reader(url, folderReaderByUrl(url, this.http));
+    const newRegistry = new RegistryV2Reader(folderReaderByUrl(url, this.http));
     this.registries.set(url, newRegistry);
     return newRegistry;
   }

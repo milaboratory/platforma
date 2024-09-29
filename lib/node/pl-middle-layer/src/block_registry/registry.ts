@@ -16,7 +16,6 @@ import {
   BlockPackListing,
   BlockPackOverview,
   RegistryEntry,
-  RegistrySpec,
   RegistryStatus
 } from '@milaboratories/pl-model-middle-layer';
 
