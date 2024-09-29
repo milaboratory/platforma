@@ -9,8 +9,10 @@ test('simple repo test', async ({ expect }) => {
   const ten = overview.find((o) => o.id.name === 'test-enter-numbers');
   expect(ten?.meta.logo?.mimeType).toStrictEqual('image/png');
   expect(ten?.meta.organization.logo?.mimeType).toStrictEqual('image/png');
+  // console.dir(ten, { depth: 5 });
   const components = await reg.getComponents(ten!.id);
   expect(await stat(new URL(components.workflow.main.url).pathname)).toBeDefined();
   expect(await stat(new URL(components.model.url).pathname)).toBeDefined();
   expect(await stat(new URL(components.ui.url).pathname)).toBeDefined();
 });
+
