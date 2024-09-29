@@ -175,7 +175,7 @@ export function packFolderToRelativeTgz(
         file: dst,
         cwd: value.folder
       },
-      [value.folder]
+      ['.']
     );
     fileAccumulator?.push(tgzName);
     return { type: 'relative', path: tgzName };
