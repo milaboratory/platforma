@@ -4,20 +4,24 @@ import { mapRemoteToAbsolute } from './content_conversion';
 
 export type BlockPackComponents = {};
 
+export function WorkflowV1<const Content extends z.ZodTypeAny>(contentType: Content) {
+  return z.object({
+    type: z.literal('workflow-v1'),
+    main: contentType.describe('Main workflow')
+  });
+}
+
 export function Workflow<const Content extends z.ZodTypeAny>(contentType: Content) {
   return z.union([
     // string is converted to v1 workflow
-    contentType.transform((value) => ({
-      type: 'workflow-v1',
-      main: value
-    })),
+    contentType
+      .transform((value: z.infer<typeof contentType>) => ({
+        type: 'workflow-v1' as const,
+        main: value
+      }))
+      .pipe(WorkflowV1(contentType)),
     // structured objects are decoded as union with type descriptor
-    z.discriminatedUnion('type', [
-      z.object({
-        type: z.literal('workflow-v1'),
-        main: contentType.describe('Main workflow')
-      })
-    ])
+    z.discriminatedUnion('type', [WorkflowV1(contentType)])
   ]);
 }
 

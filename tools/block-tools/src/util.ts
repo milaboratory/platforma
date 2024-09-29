@@ -23,3 +23,9 @@ export async function tryStat(path: string): Promise<BigIntStats | undefined> {
     throw error;
   }
 }
+
+export async function calculateSha256(bytes: ArrayBuffer) {
+  return Buffer.from(await crypto.subtle.digest('sha-256', bytes))
+    .toString('hex')
+    .toUpperCase();
+}

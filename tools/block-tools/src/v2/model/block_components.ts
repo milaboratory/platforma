@@ -9,7 +9,9 @@ import {
   BlockComponents,
   BlockComponentsManifest,
   ContentAbsoluteBinaryLocal,
-  ContentAbsoluteFolder
+  ContentAbsoluteFolder,
+  ContentRelative,
+  mapRemoteToAbsolute
 } from '@milaboratories/pl-model-middle-layer';
 
 export function BlockComponentsDescription(moduleRoot: string) {
@@ -27,10 +29,10 @@ export function BlockComponentsConsolidate(dstFolder: string, fileAccumulator?: 
   ).pipe(BlockComponentsManifest);
 }
 
-// export function BlockComponentsAbsoluteUrl(prefix: string) {
-//   return BlockComponents(
-//     ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix)),
-//     ContentRelativeBinary.transform(mapRemoteToAbsolute(prefix))
-//   );
-// }
-// export type BlockComponentsAbsolute = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;
+export function BlockComponentsAbsoluteUrl(prefix: string) {
+  return BlockComponents(
+    ContentRelative.transform(mapRemoteToAbsolute(prefix)),
+    ContentRelative.transform(mapRemoteToAbsolute(prefix))
+  );
+}
+export type BlockComponentsAbsoluteUrl = z.infer<ReturnType<typeof BlockComponentsAbsoluteUrl>>;
