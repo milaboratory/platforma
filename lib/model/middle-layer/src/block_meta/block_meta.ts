@@ -14,6 +14,7 @@ export function BlockPackMeta<
     title: z.string(),
     description: z.string(),
     longDescription: longString.optional(),
+    changelog: longString.optional(),
     logo: binary.optional(),
     url: z.string().url().optional(),
     docs: z.string().url().optional(),
