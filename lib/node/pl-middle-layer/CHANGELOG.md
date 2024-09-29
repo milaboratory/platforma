@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.25
+
+### Patch Changes
+
+- 3faf729: export v2 registry types
+
 ## 1.10.24
 
 ### Patch Changes
