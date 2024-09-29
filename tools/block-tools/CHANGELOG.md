@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.4
+
+### Patch Changes
+
+- 1654819: fix for absolute path in ui tgz file
+
 ## 2.3.3
 
 ### Patch Changes
