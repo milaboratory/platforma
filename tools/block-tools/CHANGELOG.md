@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.2
+
+### Patch Changes
+
+- 314e9ed: fix for relative path resolution in V2 registry reader
+
 ## 2.3.1
 
 ### Patch Changes
