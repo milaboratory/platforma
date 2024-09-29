@@ -2,7 +2,7 @@ import { RegistrySpec } from '@milaboratories/pl-model-middle-layer';
 
 export const CentralBlockRegistry: RegistrySpec = {
   type: 'remote-v2',
-  url: 'https://blocks.pl-open.science/releases'
+  url: 'https://blocks.pl-open.science/'
 };
 
 export const V1CentralRegistry: RegistrySpec = {
