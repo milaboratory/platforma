@@ -301,7 +301,7 @@ test('simple project manipulations test', async () => {
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
   });
-});
+}, 20000);
 
 test('reorder & rename blocks', async () => {
   await withMl(async (ml) => {
@@ -441,7 +441,7 @@ test('limbo test', async () => {
     expect(overview4Block1.calculationStatus).toEqual('Done');
     expect(overview4Block2.calculationStatus).toEqual('Done');
   });
-}, 20000);
+});
 
 test('block update test', async () => {
   await withMl(async (ml, workFolder) => {

@@ -26,6 +26,7 @@ class HttpFolderReader implements FolderReader {
   }
 
   public relativeReader(relativePath: string): HttpFolderReader {
+    if (!relativePath.endsWith('/')) relativePath = relativePath + '/';
     return new HttpFolderReader(new URL(relativePath, this.rootUrl), this.httpDispatcher);
   }
 
@@ -48,6 +49,7 @@ class FSFolderReader implements FolderReader {
   }
 
   public relativeReader(relativePath: string): FSFolderReader {
+    if (!relativePath.endsWith('/')) relativePath = relativePath + '/';
     return new FSFolderReader(
       new URL(relativePath, this.rootUrl),
       path.join(this.root, ...relativePath.split(pathPosix.sep))

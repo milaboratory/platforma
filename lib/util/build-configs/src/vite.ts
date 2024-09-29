@@ -15,6 +15,12 @@ export function PlViteStdNode() {
       sourcemap: true,
       rollupOptions: {}
     },
-    plugins: [nodeExternals(), nodeResolve(), dts()]
+    plugins: [
+      nodeExternals(),
+      nodeResolve(),
+      dts({
+        staticImport: true
+      })
+    ]
   });
 }

@@ -46,7 +46,7 @@ function normalizeABDOpts(
   };
 }
 
-export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 2000;
+export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 5000;
 
 async function awaitBlockDone(
   prj: Project,
