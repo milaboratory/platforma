@@ -2,7 +2,7 @@
   "name": "@milaboratories/block-repo-tests",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "build": "rm -rf ./the-reg && block-tools publish -m ./node_modules/@milaboratories/milaboratories.test-enter-numbers/block-pack/manifest.json -r file:./the-reg",
     "test": "vitest"

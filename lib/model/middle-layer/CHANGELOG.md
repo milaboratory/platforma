@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.1
+
+### Patch Changes
+
+- 2ea865e: final implementation for registry v2 reader and block materializer
+
 ## 1.4.0
 
 ### Minor Changes
