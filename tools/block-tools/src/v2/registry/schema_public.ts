@@ -19,8 +19,12 @@ export const GlobalOverviewFileName = 'overview.json';
 export const PackageOverviewFileName = 'overview.json';
 export const ManifestFileName = 'manifest.json';
 
+export function packageContentPrefixInsideV2(bp: BlockPackId): string {
+  return `${bp.organization}/${bp.name}/${bp.version}`;
+}
+
 export function packageContentPrefix(bp: BlockPackId): string {
-  return `${MainPrefix}${bp.organization}/${bp.name}/${bp.version}`;
+  return `${MainPrefix}${packageContentPrefixInsideV2(bp)}`;
 }
 
 export const ManifestSuffix = '/' + ManifestFileName;

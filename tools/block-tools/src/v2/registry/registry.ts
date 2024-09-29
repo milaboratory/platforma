@@ -20,6 +20,7 @@ import {
 } from './schema_public';
 import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReader } from '../model';
 import { randomUUID } from 'node:crypto';
+import { calculateSha256 } from '../../util';
 
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
@@ -98,9 +99,7 @@ export class BlockRegistryV2 {
           }) + ManifestSuffix
         );
         if (!manifestContent) continue; // absent package
-        const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', manifestContent))
-          .toString('hex')
-          .toUpperCase();
+        const sha256 = await calculateSha256(manifestContent);
         newVersions.push({
           description: BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
             BlockPackManifest.parse(JSON.parse(manifestContent.toString('utf8'))).description
@@ -211,9 +210,7 @@ export class BlockRegistryV2 {
         throw new Error(
           `Actual file size don't match file size from the manifest file for ${f.name} (actual = ${bytes.length}; manifest = ${f.size})`
         );
-      const sha256 = Buffer.from(await crypto.subtle.digest('sha-256', bytes))
-        .toString('hex')
-        .toUpperCase();
+      const sha256 = await calculateSha256(bytes);
       if (sha256 !== f.sha256.toUpperCase())
         throw new Error(
           `Actual file SHA-256 don't match the checksum from the manifest file for ${f.name} (actual = ${sha256}; manifest = ${f.sha256.toUpperCase()})`
