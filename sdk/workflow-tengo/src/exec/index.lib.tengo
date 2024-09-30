@@ -141,7 +141,7 @@ builder := func() {
 			validation.assertJsonSchema([secretName, envName], ["string"])
 			secrets[envName] = "{secrets."+secretName+"}"
 			return self
-		}
+		},
 
 		/**
 		 * Sets the execution queue to the heavy queue.
