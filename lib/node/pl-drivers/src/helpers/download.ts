@@ -23,6 +23,7 @@ export class DownloadHelper {
       headers: reqHeaders,
       signal
     });
+
     if (400 <= statusCode && statusCode < 500) {
       throw new NetworkError400(
         `Http error: statusCode: ${statusCode} url: ${url.toString()}`

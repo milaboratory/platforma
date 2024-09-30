@@ -17,9 +17,9 @@
   ],
   "scripts": {
     "type-check": "pl-tengo check",
-    "build": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags",
-    "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags && pl-tengo test",
-    "test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../.tags && pl-tengo test",
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../../../.tags",
+    "tengo-test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../../../.tags && pl-tengo test",
+    "test": "rm -rf dist && pl-tengo check && pl-tengo build --tags-file=../../../.tags && pl-tengo test",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el"
   },
