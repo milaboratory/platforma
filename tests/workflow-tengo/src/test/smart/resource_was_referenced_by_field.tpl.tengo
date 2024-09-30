@@ -1,8 +1,8 @@
 // resource was referenced by field.
 
-self := import(":tpl")
-smart := import(":smart")
-ll := import(":ll")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["outputRes", "outputField"])
 

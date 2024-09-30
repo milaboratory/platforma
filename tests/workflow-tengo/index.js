@@ -26,6 +26,8 @@ module.exports = { Templates: {
   'test.resolve.pure-template': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.resolve.pure-template.plj.gz') },
   'test.resolve.wf': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.resolve.wf.plj.gz') },
   'test.resolve.wf_no_res': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.resolve.wf_no_res.plj.gz') },
+  'test.smart.map_was_referenced_by_field': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.smart.map_was_referenced_by_field.plj.gz') },
+  'test.smart.resource_was_referenced_by_field': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/test.smart.resource_was_referenced_by_field.plj.gz') },
   'tpl.test.await-state-1': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/tpl.test.await-state-1.plj.gz') },
   'tpl.test.await-state-match': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/tpl.test.await-state-match.plj.gz') },
   'tpl.test.await-state-wildcard': { type: 'from-file', path: require.resolve('./dist/tengo/tpl/tpl.test.await-state-wildcard.plj.gz') },

@@ -1,8 +1,8 @@
 // map was referenced by field.
 
-smart := import(":smart")
-self := import(":tpl")
-ll := import(":ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["outputMap", "outputFromCache", "outputField"])
 

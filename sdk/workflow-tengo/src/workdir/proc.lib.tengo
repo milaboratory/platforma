@@ -133,9 +133,9 @@ proc := func() {
 		 */
 		body: func(cb) {
 			tpl.body(func(inputs) {
-
-				inputs.files = self.filesInWd()
-				result := cb(inputs)
+				newInputs := copy(input) // make them mutable
+				newInputs.files = self.filesInWd()
+				result := cb(smart.immutablify(newInputs))
 				wd := self.wdFinalBuilder().build()
 
 				return {
