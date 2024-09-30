@@ -2,6 +2,7 @@
 
 tpl := import(":tpl")
 ll := import(":ll")
+smart := import(":smart")
 wdSave := import(":workdir.save")
 
 // the template has a defined outputs
@@ -133,7 +134,7 @@ proc := func() {
 		 */
 		body: func(cb) {
 			tpl.body(func(inputs) {
-				newInputs := copy(input) // make them mutable
+				newInputs := copy(inputs) // make them mutable
 				newInputs.files = self.filesInWd()
 				result := cb(smart.immutablify(newInputs))
 				wd := self.wdFinalBuilder().build()

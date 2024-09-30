@@ -1,6 +1,6 @@
-import { field, Pl, PlResourceEntry, resourceType } from '@milaboratory/pl-middle-layer';
-import { tplTest } from '@milaboratory/sdk-test';
-import { PlTreeNodeAccessor } from '@milaboratory/pl-tree';
+import { field, Pl, PlResourceEntry, resourceType } from '@milaboratories/pl-middle-layer';
+import { tplTest } from '@platforma-sdk/test';
+import { PlTreeNodeAccessor } from '@milaboratories/pl-tree';
 
 tplTest('should get the resource by a field it was got from', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(

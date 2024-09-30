@@ -220,7 +220,7 @@ decomposePfconvCfg := func(cfg, ...ops) {
 
 	columnsSpec := {}
 
-	for column in cfg.columns {
+	for column in copy(cfg.columns) {
 		id := xsvColumnId(column)
 		ll.assert(is_undefined(columnsSpec[id]), "repeated column spec id in pfconv cfg: %v", id)
 		columnsSpec[id] = column.spec
