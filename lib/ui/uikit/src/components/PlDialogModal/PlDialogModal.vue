@@ -33,7 +33,7 @@ const modal = ref<HTMLElement>();
 const $attrs = useAttrs();
 
 function onClickShadow(ev: Event) {
-  if (modal.value && !modal.value.contains(ev.target as Node)) {
+  if (modal.value && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
     emit('update:modelValue', false);
   }
 }
