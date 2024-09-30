@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.7
+
+### Patch Changes
+
+- add109d: fix modal shadow click
+
 ## 1.2.6
 
 ### Patch Changes

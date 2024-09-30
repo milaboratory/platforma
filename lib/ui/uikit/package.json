@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "type": "module",
   "main": "dist/pl-uikit.umd.js",
   "module": "dist/pl-uikit.js",
