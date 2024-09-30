@@ -74,6 +74,12 @@ export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 
+/**
+ * Technical
+ * @TODO move it from here maybe
+ */
+export { useLabelNotch } from './utils/useLabelNotch.ts';
+
 //for new version
 import LongText from './components/LongText.vue';
 import SliderRangeTriple from './components/SliderRangeTriple.vue';
