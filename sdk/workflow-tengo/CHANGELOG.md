@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.2.9
+
+### Patch Changes
+
+- 8e9727f: added support for pl secrets API
+
 ## 1.2.8
 
 ### Patch Changes
