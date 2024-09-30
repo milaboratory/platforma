@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [838493b]
+  - @platforma-sdk/model@1.2.28
+
 ## 1.0.2
 
 ### Patch Changes
