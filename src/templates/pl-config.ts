@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import fs from 'fs';
 import * as types from './types';
 import { assertNever, resolveTilde } from '../util';
 import state from '../state';
@@ -176,6 +176,11 @@ export function render(options: types.plSettings): string {
   const disableDbg = options.debug.enabled ? '' : ' disabled';
   const libraryDownloadable = options.hacks.libraryDownloadable ? 'true' : 'false';
 
+  var miLicenseSecret = options.license.value;
+  if (options.license.file != '') {
+    miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
+  }
+
   return `
 license:
   value: '${options.license.value}'
@@ -237,6 +242,9 @@ controllers:
   runner:
     type: local
     storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
+    secrets:
+      - map:
+          MI_LICENSE: ${JSON.stringify(miLicenseSecret)}
 
   packageLoader:
     packagesRoot: '${options.localRoot}/packages'
