@@ -1,7 +1,7 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "1.20.0",
-  "pl-version": "1.12.1",
+  "version": "1.21.0",
+  "pl-version": "1.13.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "build": "rm -rf ./dist/ && tsc",
