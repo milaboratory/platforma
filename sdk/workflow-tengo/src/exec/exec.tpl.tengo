@@ -85,6 +85,11 @@ _runBinaryCommand := func(inputs) {
 		}
 	}
 
+	// secrets
+	for envName, secretVar in inputs.secrets {
+		runBuilder.envVar(envName, secretVar)
+	}
+
 	// other options
 	runBuilder.inQueue(opts.queue)
 	runBuilder.stdout(opts.stdout)
@@ -168,6 +173,7 @@ self.body(func(inputs) {
 			"cmd,omitempty": "string",
 			"args,omitempty": ["string"],
 			envs: { any: "string" },
+			secrets: { any: "string" },
 			queue: "string",
 			stdout: "string",
 			stderr: "string",
