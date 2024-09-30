@@ -39,7 +39,9 @@ defineProps<{
   height: 200px !important;
   width: 300px !important;
   mask-size: contain !important;
+  mask-position: center !important;
   background-size: contain;
+  background-position: center;
 }
 .grid-overlay-container > span {
   color: var(--txt-mask);

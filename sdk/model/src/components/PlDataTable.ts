@@ -19,7 +19,7 @@ export type PlDataTableGridState = {
   };
 
   /** current sheet selections */
-  sheets?: Record<string, string>;
+  sheets?: Record<string, string | number>;
 };
 
 /**

@@ -22,6 +22,7 @@
   height: 300px;
   width: 300px;
   background-size: contain;
+  background-position: center;
 }
 .grid-overlay-container > span {
   color: var(--txt-mask);
