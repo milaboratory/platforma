@@ -1,5 +1,19 @@
 # @milaboratories/pl-client
 
+## 2.4.15
+
+### Patch Changes
+
+- Updated dependencies [fa6d0f2]
+  - @milaboratories/ts-helpers@1.0.27
+
+## 2.4.14
+
+### Patch Changes
+
+- Updated dependencies [fcbc2df]
+  - @milaboratories/ts-helpers@1.0.26
+
 ## 2.4.13
 
 ### Patch Changes

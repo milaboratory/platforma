@@ -28,6 +28,7 @@ jobs:
       build-script-name: 'build'
       test: true
       test-script-name: 'test'
+      publish-to-public: 'true'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
       pnpm-tests-args: |

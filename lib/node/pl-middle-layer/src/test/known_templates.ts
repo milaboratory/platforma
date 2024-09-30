@@ -9,7 +9,7 @@ export const TplSpecEnterExplicit: TemplateSpecPrepared = {
 export const TplSpecEnterFromRegistry: TemplateSpecPrepared = {
   type: 'from-registry',
   registry: 'milaboratories',
-  path: 'releases/v1/milaboratory/enter-numbers/0.4.1/template.plj.gz'
+  path: 'v1/milaboratory/enter-numbers/0.4.1/template.plj.gz'
 };
 
 export const TplSpecSumExplicit: TemplateSpecPrepared = {
@@ -20,5 +20,5 @@ export const TplSpecSumExplicit: TemplateSpecPrepared = {
 export const TplSpecSumFromRegistry: TemplateSpecPrepared = {
   type: 'from-registry',
   registry: 'milaboratories',
-  path: 'releases/v1/milaboratory/sum-numbers/0.4.2/template.plj.gz'
+  path: 'v1/milaboratory/sum-numbers/0.4.2/template.plj.gz'
 };

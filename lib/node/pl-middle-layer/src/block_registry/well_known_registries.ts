@@ -1,13 +1,16 @@
-import { RegistrySpec } from './registry_spec';
+import { RegistrySpec } from '@milaboratories/pl-model-middle-layer';
 
-export const CentralRegistry: RegistrySpec = {
-  type: 'remote_v1',
-  label: 'Central Release Registry',
+export const CentralBlockRegistry: RegistrySpec = {
+  type: 'remote-v2',
+  url: 'https://blocks.pl-open.science/'
+};
+
+export const V1CentralRegistry: RegistrySpec = {
+  type: 'remote-v1',
   url: 'https://block.registry.platforma.bio/releases'
 };
 
-export const CentralDevSnapshotRegistry: RegistrySpec = {
-  type: 'remote_v1',
-  label: 'Central Dev Snapshot registry',
+export const V1CentralDevSnapshotRegistry: RegistrySpec = {
+  type: 'remote-v1',
   url: 'https://block.registry.platforma.bio/dev'
 };

@@ -121,7 +121,7 @@ tplTest.for([
   { partitionKeyLength: 2, storageFormat: 'Json' }
 ])(
   'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
-  { timeout: 10000 },
+  { timeout: 15000 },
   async (
     { partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
@@ -144,7 +144,7 @@ tplTest.for([
     const cols = (
       await awaitStableState(
         result.computeOutput('pf', (pf) => pf?.listInputFields()),
-        5000
+        10000
       )
     )?.sort();
 

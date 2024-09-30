@@ -1,0 +1,63 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+json := import("json")
+
+mapToPValueData := func(map) {
+	data := {}
+	for key, value in map {
+		data[json.encode([key])] = value
+	}
+	result := {
+		keyLength: 1,
+		data: data
+	}
+	return result
+}
+
+createJsonPColumnData := func(data) {
+	return smart.createValueResource(pConstants.RTYPE_P_COLUMN_DATA_JSON, data)
+}
+
+wf.body(func(args) {
+	blockId := wf.blockId().getDataAsJson()
+
+	numbersMap := {}
+
+	for i, v in args.numbers {
+		numbersMap[string(i)] = v
+	}
+
+	return {
+		outputs: {
+			numbers: smart.createJsonResource(numbersMap)
+		},
+		exports: {
+			numbers: {
+				spec: {
+					kind: "PColumn",
+					name: "pl7.app/test/numbers",
+					valueType: "Double",
+					annotations: {
+						"pl7.app/label": "Numbers"
+					},
+					domain: {
+						"pl7.app/blockId": blockId
+					},
+					axesSpec: [{
+						type: "Int",
+						name: "pl7.app/test/numberIndex",
+						annotations: {
+							"pl7.app/label": "Index"
+						},
+						domain: {
+							"pl7.app/blockId": blockId
+						}
+					}]
+				},
+				data: createJsonPColumnData(json.encode(mapToPValueData(numbersMap)))
+			}
+		}
+	}
+})

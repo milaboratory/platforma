@@ -1,5 +1,86 @@
 # @platforma-sdk/test
 
+## 1.5.23
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.10.28
+
+## 1.5.22
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.10.27
+
+## 1.5.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.10.26
+
+## 1.5.20
+
+### Patch Changes
+
+- Updated dependencies [3faf729]
+  - @milaboratories/pl-middle-layer@1.10.25
+
+## 1.5.19
+
+### Patch Changes
+
+- Updated dependencies [2ea865e]
+  - @milaboratories/pl-middle-layer@1.10.24
+
+## 1.5.18
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+- Updated dependencies [fa6d0f2]
+- Updated dependencies [5eb6127]
+- Updated dependencies [5f95b40]
+  - @milaboratories/pl-middle-layer@1.10.23
+  - @milaboratories/ts-helpers@1.0.27
+  - @milaboratories/pl-tree@1.3.12
+  - @platforma-sdk/model@1.2.27
+  - @milaboratories/computable@2.1.7
+  - @milaboratories/pl-client@2.4.15
+
+## 1.5.17
+
+### Patch Changes
+
+- Updated dependencies [81aa0c7]
+  - @milaboratories/pl-middle-layer@1.10.22
+
+## 1.5.16
+
+### Patch Changes
+
+- Updated dependencies [43f07a1]
+  - @milaboratories/pl-middle-layer@1.10.21
+
+## 1.5.15
+
+### Patch Changes
+
+- Updated dependencies [fcbc2df]
+- Updated dependencies [41b10cd]
+  - @milaboratories/pl-middle-layer@1.10.20
+  - @milaboratories/ts-helpers@1.0.26
+  - @milaboratories/pl-tree@1.3.11
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+
+## 1.5.14
+
+### Patch Changes
+
+- Updated dependencies [bd7a10e]
+  - @milaboratories/pl-middle-layer@1.10.19
+  - @platforma-sdk/model@1.2.26
+
 ## 1.5.13
 
 ### Patch Changes

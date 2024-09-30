@@ -1,5 +1,20 @@
 # @platforma-sdk/model
 
+## 1.2.27
+
+### Patch Changes
+
+- fa6d0f2: V2 Registry API
+- 5eb6127: Default to 'Heavy' block type in BlockModel.create()
+- 5f95b40: This fixes #29
+
+## 1.2.26
+
+### Patch Changes
+
+- Updated dependencies [6d4cf3e]
+  - @milaboratories/pl-model-common@1.3.13
+
 ## 1.2.25
 
 ### Patch Changes

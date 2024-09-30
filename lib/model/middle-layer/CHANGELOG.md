@@ -1,5 +1,36 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.2
+
+### Patch Changes
+
+- 7f86668: Added `changelog` field to block description model
+
+## 1.4.1
+
+### Patch Changes
+
+- 2ea865e: final implementation for registry v2 reader and block materializer
+
+## 1.4.0
+
+### Minor Changes
+
+- fa6d0f2: V2 Registry API
+
+## 1.3.0
+
+### Minor Changes
+
+- 81aa0c7: model for V2 registry
+
+## 1.2.20
+
+### Patch Changes
+
+- Updated dependencies [6d4cf3e]
+  - @milaboratories/pl-model-common@1.3.13
+
 ## 1.2.19
 
 ### Patch Changes

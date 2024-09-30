@@ -56,13 +56,17 @@ export type ContentAbsoluteUrl = z.infer<typeof ContentAbsoluteUrl>;
 // Special content types
 //
 
-export const ContentExplicit = z
+export const ContentExplicitBytes = z
   .object({
-    type: z.literal('explicit'),
+    type: z.literal('explicit-bytes'),
+    mimeType: z
+      .string()
+      .regex(/\w+\/[-+.\w]+/)
+      .describe('MIME type to interpret content'),
     content: z.instanceof(Uint8Array).describe('Raw content')
   })
   .strict();
-export type ContentExplicit = z.infer<typeof ContentExplicit>;
+export type ContentExplicitBytes = z.infer<typeof ContentExplicitBytes>;
 
 export const ContentAbsoluteFolder = z
   .object({
@@ -87,6 +91,13 @@ export const ContentAny = z.discriminatedUnion('type', [
   ContentAbsoluteUrl
 ]);
 export type ContentAny = z.infer<typeof ContentAny>;
+
+export const ContentExplicitOrRelative = z.discriminatedUnion('type', [
+  ContentExplicitString,
+  ContentExplicitBase64,
+  ContentRelative
+]);
+export type ContentExplicitOrRelative = z.infer<typeof ContentExplicitOrRelative>;
 
 export const ContentAnyLocal = z.discriminatedUnion('type', [
   ContentExplicitString,

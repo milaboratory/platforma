@@ -1,8 +1,18 @@
 {
   "name": "@platforma-sdk/workflow-tengo-tests",
   "private": true,
-  "version": "1.2.5",
+  "version": "1.2.7",
   "description": "Tengo SDK library tests",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
   "scripts": {
     "build": "rm -rf dist && pl-tengo build",
     "test": "vitest",
@@ -14,7 +24,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@milaboratories/tengo-template-builder": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/software-pframes-conv": "catalog:",

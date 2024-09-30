@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.2.25",
+  "version": "1.2.27",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -33,6 +33,7 @@
     "vite": "catalog:",
     "@types/jest": "catalog:",
     "jest": "catalog:",
+    "@jest/globals": "catalog:",
     "ts-jest": "catalog:"
   }
 }

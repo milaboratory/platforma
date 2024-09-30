@@ -1,5 +1,32 @@
 # @milaboratories/pl-drivers
 
+## 1.2.22
+
+### Patch Changes
+
+- Updated dependencies [fa6d0f2]
+  - @milaboratories/ts-helpers@1.0.27
+  - @milaboratories/pl-tree@1.3.12
+  - @milaboratories/computable@2.1.7
+  - @milaboratories/pl-client@2.4.15
+
+## 1.2.21
+
+### Patch Changes
+
+- Updated dependencies [fcbc2df]
+  - @milaboratories/ts-helpers@1.0.26
+  - @milaboratories/pl-tree@1.3.11
+  - @milaboratories/computable@2.1.6
+  - @milaboratories/pl-client@2.4.14
+
+## 1.2.20
+
+### Patch Changes
+
+- Updated dependencies [6d4cf3e]
+  - @milaboratories/pl-model-common@1.3.13
+
 ## 1.2.19
 
 ### Patch Changes

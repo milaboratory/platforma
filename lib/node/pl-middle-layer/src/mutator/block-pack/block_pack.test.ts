@@ -1,29 +1,31 @@
-import {
-  isNullResourceId,
-  poll,
-  TestHelpers,
-  toGlobalResourceId
-} from '@milaboratories/pl-client';
+import { isNullResourceId, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
 import { BlockPackPreparer, createBlockPack } from './block_pack';
 import { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
+import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
+import { Agent } from 'undici';
 
-const preparation = new BlockPackPreparer(new HmacSha256Signer(HmacSha256Signer.generateSecret()));
+const preparation = new BlockPackPreparer(
+  new V2RegistryProvider(new Agent()),
+  new HmacSha256Signer(HmacSha256Signer.generateSecret())
+);
 
 test.each([
   {
     spec: {
       type: 'from-registry-v1',
       registryUrl: 'https://block.registry.platforma.bio/releases',
-      organization: 'milaboratory',
-      package: 'enter-numbers',
-      version: '0.4.1'
+      id: {
+        organization: 'milaboratory',
+        name: 'enter-numbers',
+        version: '0.4.1'
+      }
     } as BlockPackSpecAny
   },
   {
     spec: {
-      type: 'dev',
+      type: 'dev-v1',
       folder: path.resolve('integration', 'block-beta-sum-numbers')
     } as BlockPackSpecAny
   }

@@ -8,8 +8,9 @@ import { createFrontend } from './frontend';
 import { BlockConfig } from '@platforma-sdk/model';
 import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
-import { resolveDevPacket } from '../../dev';
+import { resolveDevPacket } from '../../dev_env';
 import { getDevV2PacketMtime } from '../../block_registry';
+import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
 
 export const BlockPackCustomType: ResourceType = { name: 'BlockPackCustom', version: '1' };
 export const BlockPackTemplateField = 'template';
@@ -23,6 +24,7 @@ function tSlash(str: string): string {
 
 export class BlockPackPreparer {
   constructor(
+    private readonly v2RegistryProvider: V2RegistryProvider,
     private readonly signer: Signer,
     private readonly http?: Dispatcher
   ) {}
@@ -32,7 +34,6 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec.config;
 
-      case 'dev':
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
@@ -50,11 +51,20 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
 
         return (await configResponse.body.json()) as BlockConfig;
+      }
+
+      case 'from-registry-v2': {
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
+        const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+        const components = await registry.getComponents(spec.id);
+        return (await (
+          await request(components.model.url, httpOptions)
+        ).body.json()) as BlockConfig;
       }
 
       default:
@@ -67,7 +77,6 @@ export class BlockPackPreparer {
       case 'explicit':
         return spec;
 
-      case 'dev':
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
 
@@ -105,7 +114,9 @@ export class BlockPackPreparer {
             encoding: 'utf-8'
           })
         ) as BlockConfig;
-        const workflowContent = await fs.promises.readFile(description.components.workflow.file);
+        const workflowContent = await fs.promises.readFile(
+          description.components.workflow.main.file
+        );
         const frontendPath = description.components.ui.folder;
         const source = { ...spec };
         if (spec.mtime === undefined)
@@ -130,7 +141,7 @@ export class BlockPackPreparer {
       case 'from-registry-v1': {
         const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
 
-        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix(spec)}`;
+        const urlPrefix = `${tSlash(spec.registryUrl)}${RegistryV1.packageContentPrefix({ organization: spec.id.organization, package: spec.id.name, version: spec.id.version })}`;
 
         const templateUrl = `${urlPrefix}/template.plj.gz`;
         // template
@@ -156,6 +167,32 @@ export class BlockPackPreparer {
           frontend: {
             type: 'url',
             url: `${urlPrefix}/frontend.tgz`
+          },
+          source: spec
+        };
+      }
+
+      case 'from-registry-v2': {
+        const httpOptions = this.http !== undefined ? { dispatcher: this.http } : {};
+        const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+        const components = await registry.getComponents(spec.id);
+        const getModel = async () =>
+          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfig;
+        const getWorkflow = async () =>
+          await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
+
+        const [model, workflow] = await Promise.all([getModel(), getWorkflow()]);
+
+        return {
+          type: 'explicit',
+          template: {
+            type: 'explicit',
+            content: Buffer.from(workflow)
+          },
+          config: model,
+          frontend: {
+            type: 'url',
+            url: components.ui.url
           },
           source: spec
         };

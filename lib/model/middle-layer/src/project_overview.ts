@@ -1,5 +1,5 @@
 import { ProjectMeta } from './project';
-import { BlockPackSpec } from './block_pack';
+import { BlockPackSpec } from './block_registry/block_pack_spec';
 import { BlockRenderingMode, BlockSection, NavigationState } from '@milaboratories/pl-model-common';
 import { AuthorMarker } from './author_marker';
 

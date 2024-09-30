@@ -21,6 +21,7 @@ import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
 import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -197,7 +198,13 @@ export class MiddleLayer {
 
     const driverKit = await initDriverKit(pl, logger, ops);
 
-    const bpPreparer = new BlockPackPreparer(driverKit.signer);
+    const v2RegistryProvider = new V2RegistryProvider(pl.httpDispatcher);
+
+    const bpPreparer = new BlockPackPreparer(
+      v2RegistryProvider,
+      driverKit.signer,
+      pl.httpDispatcher
+    );
 
     const frontendDownloadDriver = new DownloadUrlDriver(
       logger,
