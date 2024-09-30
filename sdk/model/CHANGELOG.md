@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.2.28
+
+### Patch Changes
+
+- 838493b: PlAgDataTable: fixed state type, display label-columns in place of labeled axes
+
 ## 1.2.27
 
 ### Patch Changes
