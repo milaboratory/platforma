@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.6
+
+### Patch Changes
+
+- d9f5f2b: export useLabelNotch
+
 ## 1.2.5
 
 ### Patch Changes
