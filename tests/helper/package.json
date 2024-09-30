@@ -19,6 +19,7 @@
     "jest": "catalog:",
     "@jest/globals": "catalog:",
     "ts-jest": "catalog:",
-    "@types/jest": "catalog:"
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:"
   }
 }
