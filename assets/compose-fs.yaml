@@ -4,9 +4,9 @@ services:
   backend:
     image: ${PL_IMAGE}
     ports:
-      - 6345:6345
-      - 9090:9090
-      - 9091:9091
+      - ${PL_GRPC_PORT:-6345}:6345
+      - ${PL_MONITORING_PORT:-9090}:9090
+      - ${PL_DEBUG_PORT:-9091}:9091
     tmpfs: [ /tmp ]
 
     logging:
