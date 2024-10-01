@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.2.10
+
+### Patch Changes
+
+- 15a545d: fix for copyOptional=true and absent file extension
+
 ## 1.2.9
 
 ### Patch Changes
