@@ -1184,6 +1184,9 @@ importers:
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/pl-tree':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-tree
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs

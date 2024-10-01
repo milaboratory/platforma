@@ -700,7 +700,7 @@ resource = func(r, ...fromWhatFieldID) {
 		 *
 		 * @return fromWhatField: field | undefined
 		 */
-		gotFromField: func() {
+		getFromField: func() {
 			if is_undefined(_fromFieldID) {
 				return undefined
 			}
@@ -826,11 +826,11 @@ field = func(f) {
 		set: func(reference) {
 			ll.assert(!self.isSet(), "field ", self.name(), " is already set")
 
-			if isResource(reference) && isField(reference.gotFromField()) {
+			if isResource(reference) && isField(reference.getFromField()) {
 				// Special case: if the resource was got from the field's getValue,
 				// then we sets this field to the resource's field for saving
 				// the topology in pl-core.
-				tx.setFieldToField(self.id, reference.gotFromField().id)
+				tx.setFieldToField(self.id, reference.getFromField().id)
 			} else if isResource(reference) {
 				tx.setFieldToResource(self.id, reference.id)
 			} else if isField(reference) {

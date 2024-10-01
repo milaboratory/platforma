@@ -209,11 +209,6 @@ builder := func() {
 		 */
 		addFile: func(fileName, file) {
 			assertNotBuilt()
-			// Windows does not support hardlinks, thus we have a hack in pl-core that helps to use
-			// files without linking them on Windows IF there is an extension.
-			// If it's too restrictive, unset 'copyOptional' flag from a workdir fill rule
-			// and this assert.
-			ll.assert(path.getExtension(fileName) != "", "file %s should contain a proper extension", fileName)
 
 			fileName = path.canonize(fileName)
 			filesToAdd[fileName] = file
@@ -240,11 +235,6 @@ builder := func() {
 		 */
 		writeFile: func(fileName, data) {
 			assertNotBuilt()
-			// Windows does not support hardlinks, thus we have a hack in pl-core that helps to use
-			// files without linking them on Windows IF there is an extension.
-			// If it's too restrictive, unset 'copyOptional' flag from a fill rule
-			// and this assert.
-			ll.assert(path.getExtension(fileName) != "", "file %s should contain a proper extension", fileName)
 
 			validation.assertJsonSchema(data, ["or",
 				"string",
