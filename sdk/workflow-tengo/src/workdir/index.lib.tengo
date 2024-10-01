@@ -28,7 +28,7 @@ _getFileFillRule := func(filePath, extension) {
 		permissions: 0o600,
 		pathKey: filePath,
 		blobKey: filePath,
-		copyOptional: true,
+		copyOptional: false,
 		fileExtension: extension
 	}
 }
