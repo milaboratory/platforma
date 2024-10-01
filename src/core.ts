@@ -30,7 +30,7 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir)
+          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir, options.minioPort)
         }
       };
     }
@@ -39,7 +39,7 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir)
+          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir, options.minioPort)
         }
       };
     }
@@ -111,26 +111,34 @@ export default class Core {
   public startLocalS3(options?: startLocalOptions): ChildProcess {
     this.logger.debug("starting platforma in 'local s3' mode...");
     if (!options?.libraryURL || !options?.primaryURL) {
-      this.startMinio();
+      this.startMinio(options);
     }
+
+    const minioPort = options?.minioPort ?? 9000;
 
     if (!options?.primaryURL) {
       options = {
         ...options,
-        primaryURL: 's3e://testuser:testpassword@localhost:9000/main-bucket/?region=fake-region'
+        primaryURL: `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=fake-region`
       };
     }
     if (!options?.libraryURL) {
       options = {
         ...options,
-        libraryURL: 's3e://testuser:testpassword@localhost:9000/library-bucket/?region=fake-region'
+        libraryURL: `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=fake-region`
       };
     }
 
     return this.startLocal(options);
   }
 
-  public startMinio(options?: { storage?: string; image?: string; version?: string }) {
+  public startMinio(options?: {
+    minioPort?: number;
+    minioConsolePort?: number;
+    storage?: string;
+    image?: string;
+    version?: string;
+  }) {
     this.logger.debug('  starting minio...');
     var composeMinioSrc = pkg.assets('compose-minio.yaml');
     var composeMinioDst = state.path('compose-minio.yaml');
@@ -142,9 +150,14 @@ export default class Core {
 
     const storage = options?.storage;
 
+    const minioPort = options?.minioPort ?? 9000;
+    const minioConsolePort = options?.minioConsolePort ?? 9001;
+
     const envs = {
       MINIO_IMAGE: image,
-      MINIO_STORAGE: ''
+      MINIO_STORAGE: '',
+      MINIO_PORT: minioPort.toString(),
+      MINIO_CONSOLE_PORT: minioConsolePort.toString()
     };
     const compose = this.readComposeFile(composeMinioSrc);
 
@@ -202,6 +215,9 @@ export default class Core {
     auth?: types.authOptions;
     license?: string;
     licenseFile?: string;
+    'grpc-port'?: number;
+    'monitoring-port'?: number;
+    'debug-port'?: number;
   }) {
     const composeS3Path = pkg.assets('compose-s3.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
@@ -214,6 +230,9 @@ export default class Core {
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile
     };
+    if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
+    if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
+    if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
 
     if (options?.auth) {
       if (options.auth.enabled) {
@@ -293,6 +312,9 @@ export default class Core {
     auth?: types.authOptions;
     license?: string;
     licenseFile?: string;
+    'grpc-port'?: number;
+    'monitoring-port'?: number;
+    'debug-port'?: number;
   }) {
     var composeFSPath = pkg.assets('compose-fs.yaml');
     var composeRunPath = state.path('compose-fs.yaml');
@@ -311,6 +333,10 @@ export default class Core {
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile
     };
+    if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
+    if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
+    if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
+
     const compose = this.readComposeFile(composeFSPath);
 
     if (options?.auth) {
@@ -615,4 +641,6 @@ export type startLocalFSOptions = {
 export type startLocalOptions = startLocalFSOptions & {
   primaryURL?: string;
   libraryURL?: string;
+  minioPort?: number;
+  minioConsolePort?: number;
 };

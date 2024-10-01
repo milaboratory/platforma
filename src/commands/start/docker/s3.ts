@@ -12,6 +12,7 @@ export default class S3 extends Command {
   static override flags = {
     ...cmdOpts.GlobalFlags,
 
+    ...cmdOpts.AddressesFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
@@ -47,7 +48,11 @@ export default class S3 extends Command {
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
 
-      auth: authOptions
+      auth: authOptions,
+
+      'grpc-port': flags['grpc-port'],
+      'debug-port': flags['debug-port'],
+      'monitoring-port': flags['monitoring-port']
     });
   }
 }

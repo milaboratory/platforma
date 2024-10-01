@@ -9,7 +9,7 @@ export default class CreateBlock extends Command {
   static override examples = ['<%= name %>'];
 
   static override flags = {
-    ...cmdOpts.GlobalFlags,
+    ...cmdOpts.GlobalFlags
   };
 
   public async run(): Promise<void> {
