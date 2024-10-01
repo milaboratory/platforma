@@ -42,6 +42,7 @@ builder := func() {
 	}
 
 	envs := {}
+	secrets := {} // { "env_name": "{secrets.secret_name}", ... }
 	queue := _HEAVY_QUEUE
 	cache := 0
 	nErrorLines := 200
@@ -137,6 +138,18 @@ builder := func() {
 		envMap: func(envMap) {
 			assertNotBuilt()
 			enum.each(envMap, self.env)
+			return self
+		},
+
+		/**
+		 * Set environment variable to value of given secret.
+		 *
+		 * @param secretName: string - name of secret to pass as environment variable.
+		 * @param envName: string - name of environment variable to set with value of secret.
+		 */
+		secret: func(secretName, envName) {
+			validation.assertJsonSchema([secretName, envName], ["string"])
+			secrets[envName] = "{secrets."+secretName+"}"
 			return self
 		},
 
@@ -419,6 +432,7 @@ builder := func() {
 					cmd: cmd,
 					args: args,
 					envs: envs,
+					secrets: secrets,
 					queue: queue,
 					stdout: stdout,
 					stderr: stderr,

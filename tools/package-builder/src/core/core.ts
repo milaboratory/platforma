@@ -181,7 +181,7 @@ export class Core {
         this.logger.debug("  rendering 'package.sw.json' to be embedded into package archive")
         const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
 
-        const swJsonPath = path.resolve(contentRoot, "package.sw.json")
+        const swJsonPath = path.join(contentRoot, "package.sw.json")
         fs.writeFileSync(swJsonPath, JSON.stringify(swJson))
 
         this.logger.info("  packing software into a package")

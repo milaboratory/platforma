@@ -17,6 +17,8 @@ import {
   type PTableColumnSpec,
   type PTableHandle,
   type PTableVector,
+  type PColumnSpec,
+  getAxesId,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
@@ -136,7 +138,7 @@ function toDisplayValue(value: string | number | bigint | Uint8Array, valueType:
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(indices: number[], columns: PTableVector[]): unknown[] {
+function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
   const nCols = columns.length;
   const rowData = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
@@ -144,7 +146,7 @@ function columns2rows(indices: number[], columns: PTableVector[]): unknown[] {
 
     const index = [];
     for (let iCol = 0; iCol < nCols; ++iCol) {
-      const field = indices[iCol].toString();
+      const field = fields[iCol].toString();
       const value = columns[iCol].data[iRow];
       const valueType = columns[iCol].type;
       if (isValueAbsent(columns[iCol].absent, iRow)) {
@@ -183,7 +185,22 @@ export async function updatePFrameGridOptions(
   const indices = specs
     .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
     .filter((entry) => entry !== null);
-  const columnDefs = indices.map((i) => getColDef(i, specs[i]));
+  const fields = lodash.cloneDeep(indices);
+
+  for (let i = indices.length - 1; i >= 0; --i) {
+    const idx = indices[i];
+    if (specs[idx].type !== 'column' || specs[idx].spec.name !== 'pl7.app/label') continue;
+
+    let axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
+    let axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
+    if (axisIdx === -1) continue;
+
+    indices[axisIdx] = idx;
+    indices.splice(idx, 1);
+    fields.splice(idx, 1);
+  }
+
+  const columnDefs = fields.map((i) => getColDef(i, specs[i]));
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
@@ -216,7 +233,7 @@ export async function updatePFrameGridOptions(
             offset: params.startRow,
             length,
           });
-          rowData = columns2rows(indices, data);
+          rowData = columns2rows(fields, data);
         }
 
         params.successCallback(rowData, ptShape.rows);

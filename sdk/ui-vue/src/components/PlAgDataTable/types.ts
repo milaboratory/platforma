@@ -1,11 +1,13 @@
-import type { AxisId, LocalBlobHandleAndSize, PTableHandle, RemoteBlobHandleAndSize, ValueOrErrors } from '@platforma-sdk/model';
+import type { AxisId, LocalBlobHandleAndSize, PObjectId, PTableHandle, RemoteBlobHandleAndSize, ValueOrErrors } from '@platforma-sdk/model';
 
 export type PlDataTableSheet = {
   /** id of the axis to use */
   axis: AxisId;
+  /** id of label column to use in filter instead of axis */
+  column?: PObjectId;
   /** options to show in the filter tan */
   options: {
-    /** value of the option (should be one of the values in the axis) */
+    /** value of the option (should be one of the values in the axis or column) */
     value: string | number;
     /** corresponding label */
     text: string;

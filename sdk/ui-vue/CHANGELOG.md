@@ -1,5 +1,28 @@
 # @platforma-sdk/ui-vue
 
+## 1.3.11
+
+### Patch Changes
+
+- 838493b: PlAgDataTable: fixed state type, display label-columns in place of labeled axes
+- Updated dependencies [838493b]
+  - @platforma-sdk/model@1.2.28
+  - @milaboratories/uikit@1.2.7
+
+## 1.3.10
+
+### Patch Changes
+
+- Updated dependencies [add109d]
+  - @milaboratories/uikit@1.2.7
+
+## 1.3.9
+
+### Patch Changes
+
+- Updated dependencies [d9f5f2b]
+  - @milaboratories/uikit@1.2.6
+
 ## 1.3.8
 
 ### Patch Changes

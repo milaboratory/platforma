@@ -21,7 +21,7 @@ packages:
 
   - tools/tengo-builder
   - tools/block-tools
-  - tools/pl-package-builder
+  - tools/package-builder
 
   - sdk/model
   - sdk/workflow-tengo
