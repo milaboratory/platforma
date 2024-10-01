@@ -22,9 +22,9 @@ export async function createBlock(logger: winston.Logger) {
   logger.info(`Downloading boilerplate code...`);
   await downloadAndUnzip(
     'https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/main.zip',
-    "platforma-block-boilerplate-main",
-    targetPath,
-  )
+    'platforma-block-boilerplate-main',
+    targetPath
+  );
 
   logger.info(`Replace everything in the template with provided options...`);
   replaceInAllFiles(
@@ -35,14 +35,12 @@ export async function createBlock(logger: winston.Logger) {
 }
 
 function askForOptions(): CreateBlockOptions {
-  let npmOrgName = readlineSync.question(
-    "Write an organization name for npm. Default is \"pl-open\": ",
-  );
-  if (npmOrgName === "") {
-    npmOrgName = "pl-open";
+  let npmOrgName = readlineSync.question('Write an organization name for npm. Default is "pl-open": ');
+  if (npmOrgName === '') {
+    npmOrgName = 'pl-open';
   }
-  const orgName = readlineSync.question("Write an organization name, e.g. \"my-org\": ");
-  const blockName = readlineSync.question("Write a name of the block, e.g. \"hello-world\": ");
+  const orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
+  const blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
 
   return CreateBlockOptions.parse({ npmOrgName, orgName, blockName });
 }
@@ -53,22 +51,18 @@ async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: 
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'create-repo'));
 
-  const tmpFile = path.join(tmpDir, "packed-repo.zip");
+  const tmpFile = path.join(tmpDir, 'packed-repo.zip');
   const f = Writable.toWeb(createWriteStream(tmpFile));
   await content.stream().pipeTo(f);
 
-  const tmpRepo = path.join(tmpDir, "unpacked-repo");
+  const tmpRepo = path.join(tmpDir, 'unpacked-repo');
   fs.mkdirSync(tmpRepo);
   await decompress(tmpFile, tmpRepo);
 
   fs.cpSync(path.join(tmpRepo, pathInArchive), outputPath, { recursive: true });
 }
 
-function replaceInAllFiles(
-  dir: string,
-  from: RegExp,
-  to: string,
-) {
+function replaceInAllFiles(dir: string, from: RegExp, to: string) {
   getAllFiles(dir).forEach((fPath) => replaceInFile(fPath, from, to));
 }
 
@@ -78,9 +72,7 @@ function getAllFiles(dir: string): string[] {
     recursive: true
   });
 
-  return allDirents
-    .filter((f) => f.isFile())
-    .map((f) => path.join(f.parentPath, f.name));
+  return allDirents.filter((f) => f.isFile()).map((f) => path.join(f.parentPath, f.name));
 }
 
 function replaceInFile(fPath: string, from: RegExp, to: string) {
@@ -88,4 +80,3 @@ function replaceInFile(fPath: string, from: RegExp, to: string) {
   const newContent = content.toString().replaceAll(from, to);
   fs.writeFileSync(fPath, newContent);
 }
-

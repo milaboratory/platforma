@@ -50,9 +50,9 @@ class State {
   public readonly filePath: string;
   private readonly dirPath: string;
 
-  constructor() {
-    const home = os.homedir();
-    const stateDir = path.resolve(home, '.config', 'pl-bootstrap');
+  constructor(stateDir?: string) {
+    stateDir = stateDir ?? path.resolve(os.homedir(), '.config', 'pl-bootstrap');
+
     const stateFile = path.join(stateDir, 'state.json');
 
     this.dirPath = stateDir;

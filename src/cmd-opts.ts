@@ -32,6 +32,40 @@ export const LicenseFlags = {
   })
 };
 
+export const AddressesFlags = {
+  'grpc-port': Flags.integer({
+    description: "port that the platform's grpc server will listen, by default it's 6345",
+    default: 6345,
+    env: 'PLATFORMA_GRPC_PORT'
+  }),
+
+  'monitoring-port': Flags.integer({
+    description: "port that the platform's monitoring server will listen, by default it's 9090",
+    default: 9090,
+    env: 'PLATFORMA_MONITORING_PORT'
+  }),
+
+  'debug-port': Flags.integer({
+    description: "port that the platform's debug server will listen, by default it's 9091",
+    default: 9091,
+    env: 'PLATFORMA_DEBUG_PORT'
+  })
+};
+
+export const S3AddressesFlags = {
+  's3-address-port': Flags.integer({
+    description: 'port that S3 will listen, default is 9000',
+    default: 9000,
+    env: 'PLATFORMA_S3_PORT'
+  }),
+
+  's3-console-address-port': Flags.integer({
+    description: 'port that a console of S3 will listen, default is 9001',
+    default: 9001,
+    env: 'PLATFORMA_S3_CONSOLE_PORT'
+  })
+};
+
 export const StorageFlag = {
   storage: Flags.string({
     description: 'specify path on host to be used as storage for all Platforma Backend data'

@@ -12,6 +12,7 @@ export default class FS extends Command {
   static override flags = {
     ...cmdOpts.GlobalFlags,
 
+    ...cmdOpts.AddressesFlags,
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
@@ -49,7 +50,11 @@ export default class FS extends Command {
       license: flags['license'],
       licenseFile: flags['license-file'],
 
-      auth: authOptions
+      auth: authOptions,
+
+      'grpc-port': flags['grpc-port'],
+      'debug-port': flags['debug-port'],
+      'monitoring-port': flags['monitoring-port']
     });
   }
 }

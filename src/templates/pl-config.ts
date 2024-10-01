@@ -5,9 +5,10 @@ import state from '../state';
 
 export { plOptions } from './types';
 
-export function storageSettingsFromURL(storageURL: string, baseDir?: string): types.storageOptions {
+export function storageSettingsFromURL(storageURL: string, baseDir?: string, minioPort?: number): types.storageOptions {
   storageURL = resolveTilde(storageURL);
   const url = new URL(storageURL, `file:${baseDir}`);
+  minioPort = minioPort ?? 9000;
 
   switch (url.protocol) {
     case 's3:':
@@ -16,7 +17,8 @@ export function storageSettingsFromURL(storageURL: string, baseDir?: string): ty
       return {
         type: 'S3',
         bucketName,
-        region
+        region,
+        presignEndpoint: `http://localhost:${minioPort}`
       } as types.storageOptions;
 
     case 's3e:':
@@ -26,7 +28,8 @@ export function storageSettingsFromURL(storageURL: string, baseDir?: string): ty
         bucketName: url.pathname.split('/')[1], // '/bucket/key' -> ['', 'bucket', 'key']. Leading slash causes '' to be first element
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : ''
+        secret: url.password ? `static:${url.password}` : '',
+        presignEndpoint: `http://localhost:${minioPort}`
       } as types.storageOptions;
 
     case 's3es:':
@@ -36,7 +39,8 @@ export function storageSettingsFromURL(storageURL: string, baseDir?: string): ty
         bucketName: url.pathname.split('/')[1], // '/bucket/key' -> ['', 'bucket', 'key']. Leading slash causes '' to be first element
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : ''
+        secret: url.password ? `static:${url.password}` : '',
+        presignEndpoint: `http://localhost:${minioPort}`
       } as types.storageOptions;
 
     case 'file:':

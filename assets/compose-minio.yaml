@@ -6,8 +6,8 @@ services:
     command: server /data --address "0.0.0.0:9000" --console-address "0.0.0.0:9001"
     
     ports:
-      - "9001:9001"
-      - "9000:9000"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     
     environment:
       MINIO_ROOT_USER: testuser
