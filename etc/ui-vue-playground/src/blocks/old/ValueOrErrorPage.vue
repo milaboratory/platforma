@@ -8,7 +8,6 @@ const app = useApp();
 
 <template>
   <div class="test-container">
-    <h3>ValueOrErrorsComponent</h3>
     <Navigate />
 
     <ValueOrErrorsComponent v-slot="{ value }" :value-or-error="app.outputs.x"> X Value: {{ value }} </ValueOrErrorsComponent>

@@ -3,8 +3,7 @@ import { reactive } from 'vue';
 import { PlFileDialog } from '@platforma-sdk/ui-vue';
 import { PlBtnPrimary } from '@milaboratories/uikit';
 import '@milaboratories/uikit/styles';
-// import { useApp } from '../app';
-import { platforma } from '../testApi';
+import { platforma } from '../model';
 
 window.platforma = platforma;
 

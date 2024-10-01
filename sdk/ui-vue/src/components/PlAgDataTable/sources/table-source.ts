@@ -191,8 +191,8 @@ export async function updatePFrameGridOptions(
     const idx = indices[i];
     if (specs[idx].type !== 'column' || specs[idx].spec.name !== 'pl7.app/label') continue;
 
-    let axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
-    let axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
+    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
+    const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) continue;
 
     indices[axisIdx] = idx;

@@ -3,10 +3,7 @@ import { reactive, watch } from 'vue';
 // import { useApp } from './app';
 import Navigate from './components/Navigate.vue';
 import { PlFileInput, useInterval } from '@platforma-sdk/ui-vue';
-import { platforma } from './testApi';
 import type { ImportProgress } from '@platforma-sdk/model';
-
-window.platforma = platforma;
 
 const startProgress = () => ({
   done: false,
@@ -61,7 +58,6 @@ useInterval(() => {
 
 <template>
   <div class="test-container">
-    <h3>Form</h3>
     <Navigate />
 
     <div class="test-container">
