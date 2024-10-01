@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.3.12
+
+### Patch Changes
+
+- 6994f68: upgrade playground for ui-vue
+
 ## 1.3.11
 
 ### Patch Changes
