@@ -15,6 +15,8 @@ export default class S3 extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
+    ...cmdOpts.AddressesFlags,
+    ...cmdOpts.S3AddressesFlags,
     ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.PlSourcesFlag,
 
@@ -59,8 +61,13 @@ export default class S3 extends Command {
 
       primaryURL: flags['storage-primary'],
       libraryURL: flags['storage-library'],
+      minioPort: flags['s3-address-port'],
+      minioConsolePort: flags['s3-console-address-port'],
 
       configOptions: {
+        grpc: { listen: `127.0.0.1:${flags['grpc-port']}` },
+        monitoring: { listen: `127.0.0.1:${flags['monitoring-port']}` },
+        debug: { listen: `127.0.0.1:${flags['debug-port']}` },
         license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,

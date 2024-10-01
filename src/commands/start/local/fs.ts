@@ -17,6 +17,7 @@ export default class FS extends Command {
     ...cmdOpts.GlobalFlags,
     ...cmdOpts.VersionFlag,
 
+    ...cmdOpts.AddressesFlags,
     ...cmdOpts.PlBinaryFlag,
     ...cmdOpts.PlSourcesFlag,
 
@@ -60,6 +61,9 @@ export default class FS extends Command {
       workdir: flags['pl-workdir'],
 
       configOptions: {
+        grpc: { listen: flags['grpc-listen'] },
+        monitoring: { listen: flags['monitoring-listen'] },
+        debug: { listen: flags['debug-listen'] },
         license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,
