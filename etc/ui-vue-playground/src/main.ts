@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import './style.css';
-import { BlockLayout } from '@platforma-sdk/ui-vue';
+import App from './App.vue';
 import '@platforma-sdk/ui-vue/styles';
-import { sdkPlugin } from './app';
+import { router } from './router';
 
-createApp(BlockLayout).use(sdkPlugin).mount('#app');
+createApp(App).use(router).mount('#parent-app');

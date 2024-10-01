@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@platforma-sdk/ui-vue": "workspace:^",
+    "@milaboratories/helpers": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
-    "vue": "catalog:",
     "@platforma-sdk/model": "workspace:^",
-    "@milaboratories/helpers": "workspace:^"
+    "@platforma-sdk/ui-vue": "workspace:^",
+    "vue": "catalog:",
+    "vue-router": "4"
   },
   "devDependencies": {
     "@ag-grid-community/client-side-row-model": "catalog:",

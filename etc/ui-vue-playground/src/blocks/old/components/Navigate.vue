@@ -27,7 +27,7 @@ const href = computed({
       },
       {
         text: 'Outputs basics',
-        value: '/second',
+        value: '/outputs-basics',
       },
       {
         text: 'Form',
@@ -35,7 +35,7 @@ const href = computed({
       },
       {
         text: 'ValueOrError',
-        value: '/third',
+        value: '/value-or-error-page',
       },
       {
         text: 'File Dialogs',

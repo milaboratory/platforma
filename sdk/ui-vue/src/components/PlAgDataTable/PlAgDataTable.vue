@@ -77,13 +77,15 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
   return (
     settings.value.sheets?.map((sheet) => ({
       type: 'bySingleColumn',
-      column: sheet.column ? ({
-        type: 'column',
-        id: sheet.column,
-      }) : ({
-        type: 'axis',
-        id: sheet.axis,
-      }),
+      column: sheet.column
+        ? {
+            type: 'column',
+            id: sheet.column,
+          }
+        : {
+            type: 'axis',
+            id: sheet.axis,
+          },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
