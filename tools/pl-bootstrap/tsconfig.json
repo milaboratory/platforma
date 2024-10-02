@@ -1,21 +1,10 @@
 {
+  "extends": "@milaboratories/platforma-build-configs/tsconfig_lib_bundled.json",
   "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "sourceMap": true,
-    "declaration": true,
-    "skipLibCheck": true
+    "rootDir": "./src"
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }
+

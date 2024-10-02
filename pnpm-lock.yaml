@@ -1394,6 +1394,9 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../lib/util/build-configs
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
@@ -1418,6 +1421,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.8(@types/node@20.16.5)(sass@1.77.2)
 
   tools/tengo-builder:
     dependencies:
