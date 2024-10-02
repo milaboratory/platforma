@@ -25,12 +25,14 @@ export class DownloadHelper {
     });
 
     if (400 <= statusCode && statusCode < 500) {
+      body.on('error', (_) => {}).destroy();
       throw new NetworkError400(
         `Http error: statusCode: ${statusCode} url: ${url.toString()}`
       );
     }
     if (statusCode != 200) {
-      throw Error(
+      body.on('error', (_) => {}).destroy();
+      throw new Error(
         `Http error: statusCode: ${statusCode} url: ${url.toString()}`
       );
     }
