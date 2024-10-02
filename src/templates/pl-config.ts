@@ -5,42 +5,59 @@ import state from '../state';
 
 export { plOptions } from './types';
 
-export function storageSettingsFromURL(storageURL: string, baseDir?: string, minioPort?: number): types.storageOptions {
+export function storageSettingsFromURL(
+  storageURL: string,
+  baseDir?: string,
+  defaults?: types.storageOptions
+): types.storageOptions {
   storageURL = resolveTilde(storageURL);
   const url = new URL(storageURL, `file:${baseDir}`);
-  minioPort = minioPort ?? 9000;
 
   switch (url.protocol) {
     case 's3:':
       var bucketName = url.hostname;
       var region = url.searchParams.get('region');
+
       return {
+        ...defaults,
+
         type: 'S3',
         bucketName,
-        region,
-        presignEndpoint: `http://localhost:${minioPort}`
+        region
       } as types.storageOptions;
 
     case 's3e:':
+      var p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      var bucketName = p[0];
+      var keyPrefix = p.length > 1 ? p[1] : '';
+
       return {
+        ...defaults,
+
         type: 'S3',
         endpoint: `http://${url.host}/`,
-        bucketName: url.pathname.split('/')[1], // '/bucket/key' -> ['', 'bucket', 'key']. Leading slash causes '' to be first element
+        bucketName,
+        keyPrefix,
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : '',
-        presignEndpoint: `http://localhost:${minioPort}`
+        secret: url.password ? `static:${url.password}` : ''
       } as types.storageOptions;
 
     case 's3es:':
+      var p = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+      var bucketName = p[0];
+      var keyPrefix = p.length > 1 ? p[1] : '';
+
       return {
+        ...defaults,
+
         type: 'S3',
         endpoint: `https://${url.host}/`,
-        bucketName: url.pathname.split('/')[1], // '/bucket/key' -> ['', 'bucket', 'key']. Leading slash causes '' to be first element
+        bucketName,
+        keyPrefix,
         region: url.searchParams.get('region'),
         key: url.username ? `static:${url.username}` : '',
-        secret: url.password ? `static:${url.password}` : '',
-        presignEndpoint: `http://localhost:${minioPort}`
+        secret: url.password ? `static:${url.password}` : ''
       } as types.storageOptions;
 
     case 'file:':
@@ -163,6 +180,7 @@ function defaultStorageSettings(
       storage.forcePathStyle = defaultBool(options?.forcePathStyle, true);
       storage.key = options?.key ?? '';
       storage.secret = options?.secret ?? '';
+      storage.keyPrefix = options?.keyPrefix ?? '';
       storage.accessPrefixes = options?.accessPrefixes ?? [''];
       storage.uploadKeyPrefix = options?.uploadKeyPrefix ?? '';
       break;

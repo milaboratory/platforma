@@ -85,7 +85,7 @@ export type tlsAuthMode = 'NoAuth' | 'RequestAnyCert' | 'RequireAnyCert' | 'Requ
 
 export type storagesSettings = {
   primary: storageSettings;
-  work: storageSettings;
+  work: fsStorageSettings;
   library: storageSettings;
 };
 export type storagesOptions = {
@@ -117,6 +117,7 @@ export function emptyS3Settings(id: string): s3StorageSettings {
     forcePathStyle: false,
     key: '',
     secret: '',
+    keyPrefix: '',
     accessPrefixes: [],
     uploadKeyPrefix: ''
   };
@@ -132,6 +133,7 @@ type s3StorageTypeSettings = {
   forcePathStyle: boolean;
   key: string;
   secret: string;
+  keyPrefix: string;
   accessPrefixes: string[];
   uploadKeyPrefix: string;
 };
