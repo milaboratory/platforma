@@ -1,6 +1,7 @@
 import { Dispatcher, request } from 'undici';
 import { Readable } from 'node:stream';
 import { ReadableStream } from 'node:stream/web';
+import { text } from 'node:stream/consumers';
 
 export interface DownloadResponse {
   content: ReadableStream;
@@ -24,21 +25,25 @@ export class DownloadHelper {
       signal
     });
 
-    if (400 <= statusCode && statusCode < 500) {
-      body.on('error', (_) => {}).destroy();
-      throw new NetworkError400(
-        `Http error: statusCode: ${statusCode} url: ${url.toString()}`
-      );
-    }
+    const webBody = Readable.toWeb(body);
+
     if (statusCode != 200) {
-      body.on('error', (_) => {}).destroy();
+      const textBody = await text(webBody)
+      const beginning = textBody.substring(0, Math.min(textBody.length, 1000));
+
+      if (400 <= statusCode && statusCode < 500) {
+        throw new NetworkError400(
+          `Http error: statusCode: ${statusCode} url: ${url.toString()}, beginning of body: ${beginning}`
+        );
+      }
+
       throw new Error(
         `Http error: statusCode: ${statusCode} url: ${url.toString()}`
       );
     }
 
     return {
-      content: Readable.toWeb(body),
+      content: webBody,
       size: Number(headers['content-length'])
     };
   }
