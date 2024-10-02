@@ -1,17 +1,7 @@
 import type { ColDef, GridApi, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
 import {
   type ValueType,
-  type PValueInt,
-  PValueIntNA,
-  PValueLongNA,
-  type PValueFloat,
-  PValueFloatNA,
-  type PValueDouble,
-  PValueDoubleNA,
-  type PValueString,
-  PValueStringNA,
-  type PValueBytes,
-  PValueBytesNA,
+  type PValue,
   type PFrameDriver,
   type PTableColumnId,
   type PTableColumnSpec,
@@ -19,6 +9,8 @@ import {
   type PTableVector,
   type PColumnSpec,
   getAxesId,
+  isValueNA,
+  isValueAbsent
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
@@ -79,45 +71,14 @@ function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
 }
 
 /**
- * Check if value is NA
- */
-function isValueNA(value: unknown, valueType: ValueType): boolean {
-  switch (valueType) {
-    case 'Int':
-      return (value as PValueInt) === PValueIntNA;
-    case 'Long':
-      return (value as bigint) === PValueLongNA;
-    case 'Float':
-      return (value as PValueFloat) === PValueFloatNA;
-    case 'Double':
-      return (value as PValueDouble) === PValueDoubleNA;
-    case 'String':
-      return (value as PValueString) === PValueStringNA;
-    case 'Bytes':
-      return (value as PValueBytes) === PValueBytesNA;
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
-}
-
-/**
- * Check if value is absent
- */
-function isValueAbsent(array: Uint8Array, index: number): boolean {
-  const chunkIndex = Math.floor(index / 8);
-  const mask = 1 << (7 - (index % 8));
-  return (array[chunkIndex] & mask) > 0;
-}
-
-/**
  * Convert value to displayable form
  */
-function toDisplayValue(value: string | number | bigint | Uint8Array, valueType: ValueType): string | number {
+function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): string | number {
   switch (valueType) {
     case 'Int':
       return value as number;
     case 'Long':
-      return Number(value as bigint);
+      return typeof value === 'bigint' ? Number(value as bigint) : value as number;
     case 'Float':
       return value as number;
     case 'Double':
@@ -182,22 +143,21 @@ export async function updatePFrameGridOptions(
   datasource: IDatasource;
 }> {
   const specs = await pfDriver.getSpec(pt);
-  const indices = specs
-    .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
-    .filter((entry) => entry !== null);
+  const indices = [...specs.keys()]
+    .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)));
   const fields = lodash.cloneDeep(indices);
 
   for (let i = indices.length - 1; i >= 0; --i) {
     const idx = indices[i];
-    if (specs[idx].type !== 'column' || specs[idx].spec.name !== 'pl7.app/label') continue;
+    if (!(specs[idx].type === 'column' && specs[idx].spec.axesSpec.length === 1 && specs[idx].spec.name === 'pl7.app/label')) continue;
 
-    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
+    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec)[0];
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) continue;
 
     indices[axisIdx] = idx;
-    indices.splice(idx, 1);
-    fields.splice(idx, 1);
+    indices.splice(i, 1);
+    fields.splice(i, 1);
   }
 
   const columnDefs = fields.map((i) => getColDef(i, specs[i]));

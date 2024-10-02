@@ -134,6 +134,6 @@ export type AxesId = AxisId[];
 export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map((s) => {
     const { type, name, domain } = s;
-    return { type, name, domain };
+    return { type, name, ...(domain) && { domain } };
   });
 }
