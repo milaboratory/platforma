@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.3.15
+
+### Patch Changes
+
+- 583c929: add env injection example
+- Updated dependencies [aff132f]
+  - @milaboratories/uikit@1.2.10
+
 ## 1.3.14
 
 ### Patch Changes

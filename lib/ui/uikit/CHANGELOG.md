@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.10
+
+### Patch Changes
+
+- aff132f: Create ui-examples block, add PlSlideModal example
+
 ## 1.2.9
 
 ### Patch Changes
