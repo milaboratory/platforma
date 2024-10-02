@@ -26,7 +26,9 @@ export default class S3 extends Command {
     ...cmdOpts.LicenseFlags,
 
     ...cmdOpts.StorageFlag,
+    ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
+    ...cmdOpts.StorageLibraryURLFlag,
 
     ...cmdOpts.PlLogFileFlag,
     ...cmdOpts.PlWorkdirFlag,
@@ -57,6 +59,9 @@ export default class S3 extends Command {
       version: flags.version,
       configPath: flags.config,
       workdir: flags['pl-workdir'],
+
+      primaryURL: flags['storage-primary'],
+      libraryURL: flags['storage-library'],
 
       minioPort: flags['s3-address-port'],
       minioConsolePort: flags['s3-console-address-port'],
