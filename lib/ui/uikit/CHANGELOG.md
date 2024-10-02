@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.11
+
+### Patch Changes
+
+- 60223f4: Update example blocks, fix h1-h6 colors in uikit
+
 ## 1.2.10
 
 ### Patch Changes
