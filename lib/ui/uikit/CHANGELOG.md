@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.8
+
+### Patch Changes
+
+- 4fe1674: add basic ui to test-enter-numbers block
+
 ## 1.2.7
 
 ### Patch Changes
