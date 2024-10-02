@@ -77,6 +77,8 @@
 }
 
 @mixin scrollbar($y: true, $x: false, $over: auto) {
+  --thumb-color: var(--ic-02);
+
   &::-webkit-scrollbar {
     width: 6px;
     height: 5px;
@@ -86,7 +88,7 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--color-ic-02);
+    background: var(--thumb-color);
     border-radius: 5px;
   }
 
@@ -99,7 +101,7 @@
   }
 
   &:hover {
-    --color-ic-02: var(--border-color-focus);
+    --thumb-color: var(--border-color-focus);
   }
 }
 

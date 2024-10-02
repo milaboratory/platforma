@@ -1,0 +1,40 @@
+@import "@/assets/mixins";
+
+.pl-log-view {
+  height: 100%;
+  max-height: 100%;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--border-color-div-grey);
+  background: var(--bg-base-light);
+  display: flex;
+  position: relative;
+  min-height: 44px;
+
+  &__copy {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: var(--ic-02);
+    cursor: pointer;
+    &:hover {
+      background-color: var(--txt-01);
+    }
+  }
+
+  &__content {
+    margin: 12px;
+    max-height: 100%;
+    max-width: 100%;
+    flex: 1;
+    color: var(--txt-01);
+    font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+    font-family: var(--font-family-monospace);
+    white-space: pre;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px; /* 142.857% */
+    @include scrollbar(true, true);
+  }
+}

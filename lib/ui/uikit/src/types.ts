@@ -50,7 +50,7 @@ export const maskIcons16 = [
 
 export type MaskIconName16 = (typeof maskIcons16)[number];
 
-export const maskIcons24 = ['paper-clip', 'cloud-up', 'success', 'restart', 'close'];
+export const maskIcons24 = ['paper-clip', 'cloud-up', 'success', 'restart', 'close', 'clipboard'];
 
 export type MaskIconName24 = (typeof maskIcons24)[number];
 

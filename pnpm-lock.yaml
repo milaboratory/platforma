@@ -270,10 +270,13 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.9(typescript@5.5.4)
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
     devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 8.4.0
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../../../lib/util/helpers
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.1.4(vite@5.4.8(@types/node@22.5.5)(sass@1.77.2))(vue@3.5.9(typescript@5.5.4))
@@ -286,6 +289,9 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.6(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
 
   etc/block-components/enter-numbers/workflow:
     devDependencies:
