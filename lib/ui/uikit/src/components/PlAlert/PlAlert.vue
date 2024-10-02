@@ -23,7 +23,7 @@ withDefaults(
      *
      * @default true
      */
-    modelValue: boolean;
+    modelValue?: boolean;
     /**
      * The type of alert, which determines the alert's style and icon.
      * Can be one of `'success' | 'info' | 'warn' | 'error'`.

@@ -264,9 +264,15 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers.model':
         specifier: workspace:*
         version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../../../sdk/ui-vue
       vue:
         specifier: 'catalog:'
         version: 3.5.9(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'

@@ -1,6 +1,11 @@
 import { BlockModel, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
+import {z} from 'zod';
 
-export type BlockArgs = { numbers: number[] };
+export const $BlockArgs = z.object({
+  numbers: z.array(z.coerce.number())
+});
+
+export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export const platforma = BlockModel.create<BlockArgs>('Heavy')
 
