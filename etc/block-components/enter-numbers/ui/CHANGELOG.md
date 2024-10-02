@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.5
+
+### Patch Changes
+
+- 156a72d: Add PlLogView component
+  - @platforma-sdk/ui-vue@1.3.14
+
 ## 1.0.4
 
 ### Patch Changes
