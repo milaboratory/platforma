@@ -1,5 +1,15 @@
 # @milaboratories/pl-drivers
 
+## 1.2.23
+
+### Patch Changes
+
+- 60dc4db: undici: close all bodies, because they can hold resources
+- 864a686: clear lastError from API when the loading is done
+- Updated dependencies [1d1ff16]
+  - @milaboratories/pl-client@2.4.16
+  - @milaboratories/pl-tree@1.3.13
+
 ## 1.2.22
 
 ### Patch Changes
