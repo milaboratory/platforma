@@ -18,7 +18,8 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
   .sections((ctx) => {
     return [
       { type: 'link', href: '/', label: 'PlLogView' }, 
-      { type: 'link', href: '/slide-modal', label: 'PlSlideModal' }
+      { type: 'link', href: '/slide-modal', label: 'PlSlideModal' },
+      { type: 'link', href: '/inject-env', label: 'Inject env' },
     ];
   })
 

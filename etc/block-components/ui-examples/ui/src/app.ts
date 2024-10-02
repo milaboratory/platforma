@@ -3,6 +3,7 @@ import { defineApp } from '@platforma-sdk/ui-vue';
 import LogViewPage from './LogViewPage.vue';
 import SlideModalPage from './SlideModalPage.vue';
 import { computed, reactive } from 'vue';
+import InjectEnvPage from './InjectEnvPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -22,7 +23,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     argsAsJson,
     routes: {
       '/': LogViewPage,
-      '/slide-modal' : SlideModalPage, 
+      '/slide-modal' : SlideModalPage,
+      '/inject-env': InjectEnvPage 
     }
   };
 });
