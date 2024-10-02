@@ -237,26 +237,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.2
 
-  etc/blocks/enter-numbers/block:
-    dependencies:
-      '@milaboratories/milaboratories.test-enter-numbers.model':
-        specifier: workspace:*
-        version: link:../model
-      '@milaboratories/milaboratories.test-enter-numbers.ui':
-        specifier: workspace:*
-        version: link:../ui
-      '@milaboratories/milaboratories.test-enter-numbers.workflow':
-        specifier: workspace:*
-        version: link:../workflow
-      '@platforma-sdk/model':
-        specifier: workspace:*
-        version: link:../../../../sdk/model
-    devDependencies:
-      '@platforma-sdk/block-tools':
-        specifier: workspace:*
-        version: link:../../../../tools/block-tools
-
-  etc/blocks/enter-numbers/model:
+  etc/block-components/enter-numbers/model:
     dependencies:
       '@platforma-sdk/model':
         specifier: workspace:*
@@ -278,7 +259,7 @@ importers:
         specifier: 'catalog:'
         version: 5.4.8(@types/node@22.5.5)(sass@1.77.2)
 
-  etc/blocks/enter-numbers/ui:
+  etc/block-components/enter-numbers/ui:
     dependencies:
       '@milaboratories/milaboratories.test-enter-numbers.model':
         specifier: workspace:*
@@ -300,7 +281,7 @@ importers:
         specifier: 'catalog:'
         version: 2.1.6(typescript@5.5.4)
 
-  etc/blocks/enter-numbers/workflow:
+  etc/block-components/enter-numbers/workflow:
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
@@ -308,6 +289,25 @@ importers:
       '@platforma-sdk/workflow-tengo':
         specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
+
+  etc/blocks/enter-numbers:
+    dependencies:
+      '@milaboratories/milaboratories.test-enter-numbers.model':
+        specifier: workspace:*
+        version: link:../../block-components/enter-numbers/model
+      '@milaboratories/milaboratories.test-enter-numbers.ui':
+        specifier: workspace:*
+        version: link:../../block-components/enter-numbers/ui
+      '@milaboratories/milaboratories.test-enter-numbers.workflow':
+        specifier: workspace:*
+        version: link:../../block-components/enter-numbers/workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../tools/block-tools
 
   etc/ui-vue-playground:
     dependencies:
@@ -1134,7 +1134,7 @@ importers:
     devDependencies:
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
-        version: link:../../etc/blocks/enter-numbers/block
+        version: link:../../etc/blocks/enter-numbers
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs

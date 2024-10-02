@@ -16,6 +16,7 @@ mapToPValueData := func(map) {
 	return result
 }
 
+
 createJsonPColumnData := func(data) {
 	return smart.createValueResource(pConstants.RTYPE_P_COLUMN_DATA_JSON, data)
 }

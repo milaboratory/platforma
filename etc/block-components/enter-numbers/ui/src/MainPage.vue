@@ -2,5 +2,5 @@
 </script>
 
 <template>
-  Hi!
+  Hi1!
 </template>
