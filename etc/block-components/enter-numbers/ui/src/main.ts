@@ -1,4 +1,6 @@
-import { createApp } from "vue";
-import MainPage from "./MainPage.vue";
+import { createApp } from 'vue';
+import { sdkPlugin } from './app';
+import '@platforma-sdk/ui-vue/styles';
+import { BlockLayout } from '@platforma-sdk/ui-vue';
 
-createApp(MainPage).mount('#app');
+createApp(BlockLayout).use(sdkPlugin).mount('#app');
