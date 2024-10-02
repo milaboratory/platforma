@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.6
+
+### Patch Changes
+
+- aff132f: Create ui-examples block, add PlSlideModal example
+- 583c929: add env injection example
+- Updated dependencies [583c929]
+  - @platforma-sdk/ui-vue@1.3.15
+
 ## 1.0.5
 
 ### Patch Changes
