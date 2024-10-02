@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.4
+
+### Patch Changes
+
+- 4fe1674: add basic ui to test-enter-numbers block
+- Updated dependencies [4fe1674]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.4
+  - @platforma-sdk/ui-vue@1.3.13
+
 ## 1.0.3
 
 ### Patch Changes

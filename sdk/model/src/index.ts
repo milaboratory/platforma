@@ -13,3 +13,4 @@ export * from './sdk_info';
 export * from '@milaboratories/pl-model-common';
 
 export * as JsRenderInternal from './render/internal';
+export { getEnvironmentValue } from './env_value';

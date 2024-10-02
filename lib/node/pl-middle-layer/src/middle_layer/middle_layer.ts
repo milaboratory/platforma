@@ -22,6 +22,7 @@ import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
 import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
+import { RetryAgent } from 'undici';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
@@ -198,12 +199,17 @@ export class MiddleLayer {
 
     const driverKit = await initDriverKit(pl, logger, ops);
 
-    const v2RegistryProvider = new V2RegistryProvider(pl.httpDispatcher);
+    const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher, {
+      minTimeout: 250,
+      maxRetries: 4
+    });
+
+    const v2RegistryProvider = new V2RegistryProvider(retryHttpDispatcher);
 
     const bpPreparer = new BlockPackPreparer(
       v2RegistryProvider,
       driverKit.signer,
-      pl.httpDispatcher
+      retryHttpDispatcher
     );
 
     const frontendDownloadDriver = new DownloadUrlDriver(
@@ -221,7 +227,7 @@ export class MiddleLayer {
       driverKit,
       blockUpdateWatcher: new BlockUpdateWatcher({
         minDelay: ops.devBlockUpdateRecheckInterval,
-        http: pl.httpDispatcher
+        http: retryHttpDispatcher
       }),
       quickJs: await getQuickJS()
     };

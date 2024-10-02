@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.4
+
+### Patch Changes
+
+- 4fe1674: add basic ui to test-enter-numbers block
+- Updated dependencies [164fc89]
+  - @platforma-sdk/model@1.2.29
+
 ## 1.0.3
 
 ### Patch Changes
