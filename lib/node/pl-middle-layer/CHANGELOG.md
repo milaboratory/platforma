@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.32
+
+### Patch Changes
+
+- Updated dependencies [4bb85dc]
+  - @milaboratories/pl-drivers@1.2.24
+
+## 1.10.31
+
+### Patch Changes
+
+- 1d1ff16: increased stability of http requests
+- Updated dependencies [60dc4db]
+- Updated dependencies [864a686]
+- Updated dependencies [1d1ff16]
+- Updated dependencies [164fc89]
+  - @milaboratories/pl-drivers@1.2.23
+  - @milaboratories/pl-client@2.4.16
+  - @platforma-sdk/model@1.2.29
+  - @milaboratories/pl-tree@1.3.13
+
 ## 1.10.30
 
 ### Patch Changes

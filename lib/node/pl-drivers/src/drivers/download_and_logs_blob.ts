@@ -668,7 +668,7 @@ export class Download {
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
       if (await fileOrDirExists(this.path)) {
-        content.cancel(`the file already existed`); // we don't need the blob
+        await content.cancel(`the file already existed`); // we don't need the blob
       } else {
         const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
         await content.pipeTo(fileToWrite);

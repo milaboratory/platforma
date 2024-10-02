@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.4
+
+### Patch Changes
+
+- 6d7f739: restructuring of test block folders
+- Updated dependencies [4fe1674]
+- Updated dependencies [164fc89]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.4
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.4
+  - @platforma-sdk/model@1.2.29
+
 ## 1.0.3
 
 ### Patch Changes

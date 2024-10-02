@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.4.16
+
+### Patch Changes
+
+- 1d1ff16: increased stability of http requests
+
 ## 2.4.15
 
 ### Patch Changes
