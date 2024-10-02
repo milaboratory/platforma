@@ -1,0 +1,97 @@
+name: "platforma"
+
+services:
+  minio:
+    image: ${MINIO_IMAGE}
+    command: server /data --address "0.0.0.0:9000" --console-address "0.0.0.0:9001"
+
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    
+    environment:
+      MINIO_ROOT_USER: testuser
+      MINIO_ROOT_PASSWORD: testpassword
+
+    volumes:
+      - "${MINIO_STORAGE}:/data"
+
+  backend:
+    image: ${PL_IMAGE}
+    ports:
+      - ${PL_GRPC_PORT:-6345}:6345
+      - ${PL_MONITORING_PORT:-9090}:9090
+      - ${PL_DEBUG_PORT:-9091}:9091
+    tmpfs: [ /tmp ]
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "4"
+
+    environment:
+      # Make docker container to write final configuration to stdout at start
+      - "PL_DUMP_CONFIG_BEFORE_RUN=true"
+
+      # License settings. You have to have license to start platforma
+      - "PL_LICENSE=${PL_LICENSE:-}"
+      - "PL_LICENSE_FILE=${PL_LICENSE_FILE:+/storage/mi.license}"
+
+      # Network: listen ports for services
+      - "PL_API_ADDR=0.0.0.0:${PL_API_PORT:-6345}"
+      - "PL_MONITORING_ENABLED=${PL_MONITORING_ENABLED:-true}"
+      - "PL_MONITORING_ADDR=0.0.0.0:${PL_MONITORING_PORT:-9090}"
+      - "PL_DEBUG_ENABLED=${PL_DEBUG_ENABLED:-true}"
+      - "PL_DEBUG_ADDR=0.0.0.0:${PL_DEBUG_PORT:-9091}"
+
+      # Logging
+      - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
+      - "PL_LOG_DESTINATION=${PL_LOG_DESTINATION:-/var/log/platforma.log}"
+      - "PL_LOG_COMMIT_SUMMARY=${PL_LOG_COMMIT_SUMMARY:-false}"
+      - "PL_LOG_RESOURCE_DATA=${PL_LOG_RESOURCE_DATA:-false}"
+
+      - "PL_AUTH_ENABLED=${PL_AUTH_ENABLED:-false}"
+
+      # Data Controller: general settings
+      - "PL_DATA_CREATE_BUCKET=true" # try to automatically create buckets for storages if they not exist
+      - "PL_DATA_HARDLINK_MODE=auto" # wether to use hardlinks when copying data between storages and within storage.
+
+      # Data Controller: primary storage
+      - "PL_DATA_PRIMARY_TYPE=${PL_DATA_PRIMARY_TYPE:-S3}"
+      - "PL_DATA_PRIMARY_S3_ENDPOINT=${PL_DATA_PRIMARY_S3_ENDPOINT:-http://minio:9000/}"
+      - "PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT=${PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT:-${PL_DATA_PRIMARY_S3_ENDPOINT:-http://localhost:9000/}}"
+      - "PL_DATA_PRIMARY_S3_KEY_PREFIX=${PL_DATA_PRIMARY_S3_KEY_PREFIX:-}"
+      - "PL_DATA_PRIMARY_S3_REGION=${PL_DATA_PRIMARY_S3_REGION:-eu-central-1}"
+      - "PL_DATA_PRIMARY_S3_BUCKET=${PL_DATA_PRIMARY_S3_BUCKET:-platforma-primary-bucket}"
+      - "PL_DATA_PRIMARY_S3_KEY=${PL_DATA_PRIMARY_S3_KEY:-static:testuser}"
+      - "PL_DATA_PRIMARY_S3_SECRET=${PL_DATA_PRIMARY_S3_SECRET:-static:testpassword}"
+
+      # Data Controller: library storage
+      - "PL_DATA_LIBRARY_TYPE=${PL_DATA_LIBRARY_TYPE:-FS}" # change it to 'S3' to use library located in S3 bucket
+      - "PL_DATA_LIBRARY_S3_ENDPOINT=${PL_DATA_LIBRARY_S3_ENDPOINT:-http://minio:9000/}"
+      - "PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT=${PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT:-${PL_DATA_LIBRARY_S3_ENDPOINT:-http://localhost:9000/}}"
+      - "PL_DATA_LIBRARY_S3_KEY_PREFIX=${PL_DATA_LIBRARY_S3_KEY_PREFIX:-}"
+      - "PL_DATA_LIBRARY_S3_REGION=${PL_DATA_LIBRARY_S3_REGION:-eu-central-1}"
+      - "PL_DATA_LIBRARY_S3_BUCKET=${PL_DATA_LIBRARY_S3_BUCKET:-platforma-library-bucket}"
+      - "PL_DATA_LIBRARY_S3_KEY=${PL_DATA_PRIMARY_S3_KEY:-static:testuser}"
+      - "PL_DATA_LIBRARY_S3_SECRET=${PL_DATA_PRIMARY_S3_SECRET:-static:testpassword}"
+
+    volumes:
+      - ${PL_AUTH_HTPASSWD_PATHL-/dev/null}:/etc/platforma/users.htpasswd
+      - ${PL_LICENSE_FILE:-/dev/null}:/storage/mi.license
+      - ${PL_LOG_FILE:-/dev/null}:/var/log/platforma.log
+      - ${PL_DATA_DB_ROOT}:/storage/rocksdb
+      - ${PL_DATA_PRIMARY_ROOT}:/storage/controllers/data/primary
+      - ${PL_DATA_LIBRARY_ROOT}:/storage/controllers/data/library
+      - ${PL_DATA_WORKDIR_ROOT}:/storage/controllers/data/work
+      - ${PL_DATA_PACKAGE_ROOT}:/storage/controllers/packageLoader
+
+    restart: always
+
+volumes:
+  primary:
+  library:
+  work:
+  packages:
+  db:
