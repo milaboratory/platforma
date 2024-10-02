@@ -157,8 +157,10 @@ export default class Core {
 
     return this.startLocal({
       ...options,
-      primaryURL: `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
-      libraryURL: `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`
+      primaryURL:
+        options?.primaryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
+      libraryURL:
+        options?.libraryURL ?? `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`
     });
   }
 
@@ -688,7 +690,7 @@ export type startLocalOptions = {
 
 export type startLocalFSOptions = startLocalOptions;
 
-export type startLocalS3Options = Omit<startLocalOptions, 'primaryURL' | 'libraryURL'> & {
+export type startLocalS3Options = startLocalOptions & {
   minioPort?: number;
   minioConsolePort?: number;
 };
