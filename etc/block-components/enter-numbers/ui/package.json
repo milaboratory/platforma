@@ -12,13 +12,15 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:^",
-    "zod": "catalog:"
+    "@platforma-sdk/ui-vue": "workspace:^"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "@faker-js/faker": "catalog:",
+    "@milaboratories/helpers": "workspace:^",
+    "zod": "catalog:"
   }
 }
