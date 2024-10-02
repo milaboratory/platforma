@@ -3,8 +3,7 @@ import { PlAlert, PlBlockPage, PlLogView, PlTextField, useInterval } from '@plat
 import { useApp } from './app';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
-import { computed, reactive } from 'vue';
-import { times } from '@milaboratories/helpers';
+import { reactive } from 'vue';
 
 const data = reactive({
   logContent: ''
@@ -36,6 +35,8 @@ useInterval(() => {
   data.logContent += '\n';
   data.logContent += faker.lorem.paragraph();
 }, 1000);
+
+const VITE_PLATFORMA_AG_LICENSE = window.getEnvironmentValue('VITE_PLATFORMA_AG_LICENSE');
 </script>
 
 <template>
@@ -45,6 +46,7 @@ useInterval(() => {
       {{ args.error }}
     </PlAlert>  
     <h3>Args</h3>
+    VITE_PLATFORMA_AG_LICENSE: {{ VITE_PLATFORMA_AG_LICENSE }}
     <code>
       {{ args.model  }}
     </code>
