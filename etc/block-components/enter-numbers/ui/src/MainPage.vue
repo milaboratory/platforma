@@ -4,10 +4,6 @@ import { useApp } from './app';
 import { z } from 'zod';
 import { reactive } from 'vue';
 
-const data = reactive({
-  logContent: ''
-});
-
 const $Transformed = z.object({
   numbers: z.string()
 });
@@ -29,8 +25,6 @@ const args = app.createArgsModel({
     return {numbers};
   }
 });
-
-const VITE_PLATFORMA_AG_LICENSE = window.getEnvironmentValue('VITE_PLATFORMA_AG_LICENSE');
 </script>
 
 <template>
@@ -40,7 +34,6 @@ const VITE_PLATFORMA_AG_LICENSE = window.getEnvironmentValue('VITE_PLATFORMA_AG_
       {{ args.error }}
     </PlAlert>  
     <h3>Args</h3>
-    VITE_PLATFORMA_AG_LICENSE: {{ VITE_PLATFORMA_AG_LICENSE }}
     <code>
       {{ args.model  }}
     </code>
