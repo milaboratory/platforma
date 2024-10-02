@@ -1,12 +1,21 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "1.22.1",
+  "version": "1.23.0",
   "pl-version": "1.13.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
   "scripts": {
     "build": "rm -rf ./dist/ && tsc",
-    "test": "jest",
-    "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write"
+    "test": "jest --passWithNoTests"
   },
   "bin": {
     "pl-service": "./bin/run.js"
@@ -21,25 +30,24 @@
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
-    "@types/decompress": "^4.2.7",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.10",
-    "@types/readline-sync": "^1.4.8",
-    "prettier": "^3.3.3",
-    "ts-jest": "^29.1.5",
-    "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.5.3"
+    "@types/decompress": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "@types/readline-sync": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
+    "tsconfig-paths": "catalog:",
+    "typescript": "catalog:"
   },
   "dependencies": {
-    "@oclif/core": "^3.26.6",
-    "canonicalize": "^2.0.0",
-    "decompress": "^4.2.1",
-    "readline-sync": "^1.4.10",
-    "tar": "^7.4.3",
-    "winston": "^3.13.0",
-    "yaml": "^2.5.0",
-    "zod": "^3.23.8"
+    "@oclif/core": "catalog:",
+    "canonicalize": "catalog:",
+    "decompress": "catalog:",
+    "readline-sync": "catalog:",
+    "tar": "catalog:",
+    "winston": "catalog:",
+    "yaml": "catalog:",
+    "zod": "catalog:"
   },
   "oclif": {
     "bin": "pl-service",
