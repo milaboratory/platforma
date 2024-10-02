@@ -32,7 +32,7 @@ const scrollDown = () => {
   tapIf(contentRef.value, (el) => {
     // 100px from bottom (temp)
     if (el.clientHeight + el.scrollTop + 100 > el.scrollHeight) {
-      el.scrollTo(0, el.scrollHeight);
+      el.scrollTo(el.scrollLeft, el.scrollHeight);
     }
   });
 };
