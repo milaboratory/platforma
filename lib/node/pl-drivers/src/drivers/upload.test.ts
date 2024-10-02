@@ -23,6 +23,7 @@ import {
   createUploadProgressClient
 } from '../clients/helpers';
 import { Writable, Readable } from 'node:stream';
+import { test, expect } from '@jest/globals';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -243,7 +244,7 @@ test('index a blob', async () => {
   await withTest(async ({ client, uploader }: TestArg) => {
     const uploadId = await createBlobIndex(
       client,
-      'another_answer_to_the_ultimate_question.txt',
+      './another_answer_to_the_ultimate_question.txt',
       'library'
     );
     const handleRes = await getHandleField(client, uploadId);
