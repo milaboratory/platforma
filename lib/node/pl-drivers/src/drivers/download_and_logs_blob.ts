@@ -473,7 +473,7 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-              `from cache along with ${toDelete.map((d) => d.path)}`
+            `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );
@@ -667,7 +667,9 @@ export class Download {
       // check in case we already have a file by this resource id
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
-      if (!(await fileOrDirExists(this.path))) {
+      if (await fileOrDirExists(this.path)) {
+        content.cancel(`the file already existed`); // we don't need the blob
+      } else {
         const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
         await content.pipeTo(fileToWrite);
       }

@@ -81,7 +81,7 @@ export class ClientUpload {
       this.prepareUploadOpts(info, chunk)
     );
 
-    const body = await (await resp.body.blob()).text();
+    const body = await resp.body.text();
     this.logger.info(
       `uploaded chunk ${partNumber} from ${partsOverall} of resource: ${id},` +
         ` response: '${body.toString()}', ` +

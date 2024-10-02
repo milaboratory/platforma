@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { DownloadUrlDriver } from './download_url';
+import {test, expect} from '@jest/globals';
 
 test('should download a tar archive and extracts its content and then deleted', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -39,7 +40,7 @@ test('should download a tar archive and extracts its content and then deleted', 
   });
 });
 
-test('should show a error when 403 status code', async () => {
+test('should show a error when 404 status code', async () => {
   try {
     await TestHelpers.withTempRoot(async (client) => {
       const logger = new ConsoleLoggerAdapter();
