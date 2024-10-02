@@ -102,6 +102,9 @@ catalogs:
     '@vue/test-utils':
       specifier: ^2.4.6
       version: 2.4.6
+    cacheable-lookup:
+      specifier: ^6.1.0
+      version: 6.1.0
     canonicalize:
       specifier: ^2.0.0
       version: 2.0.0
@@ -547,6 +550,9 @@ importers:
       '@protobuf-ts/runtime-rpc':
         specifier: 'catalog:'
         version: 2.9.4
+      cacheable-lookup:
+        specifier: 'catalog:'
+        version: 6.1.0
       canonicalize:
         specifier: 'catalog:'
         version: 2.0.0
@@ -3338,6 +3344,10 @@ packages:
   cac@6.7.14:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
     engines: {node: '>=8'}
+
+  cacheable-lookup@6.1.0:
+    resolution: {integrity: sha512-KJ/Dmo1lDDhmW2XDPMo+9oiy/CeqosPguPCrgcVzKyZrL6pM1gU2GmPY/xo6OQPTUaA/c0kwHuywB4E6nmT9ww==}
+    engines: {node: '>=10.6.0'}
 
   cacheable-lookup@7.0.0:
     resolution: {integrity: sha512-+qJyx4xiKra8mZrcwhjMRMUhD5NR1R8esPkzIYxX96JiecFoxAXFuz/GpR3+ev4PE1WamHip78wV0vcmPQtp8w==}
@@ -8873,6 +8883,8 @@ snapshots:
       load-tsconfig: 0.2.5
 
   cac@6.7.14: {}
+
+  cacheable-lookup@6.1.0: {}
 
   cacheable-lookup@7.0.0: {}
 

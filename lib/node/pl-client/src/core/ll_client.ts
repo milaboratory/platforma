@@ -16,8 +16,10 @@ import {
 import { GrpcOptions, GrpcTransport } from '@protobuf-ts/grpc-transport';
 import { LLPlTransaction } from './ll_transaction';
 import { parsePlJwt } from '../util/pl';
-import { Agent, Dispatcher, ProxyAgent } from 'undici';
+import { Agent, Client, Dispatcher, ProxyAgent } from 'undici';
 import { inferAuthRefreshTime } from './auth';
+import { Resolver } from 'node:dns/promises';
+import CacheableLookup from 'cacheable-lookup';
 
 export interface PlCallOps {
   timeout?: number;
@@ -93,10 +95,24 @@ export class LLPlClient {
     this.grpcTransport = new GrpcTransport(grpcOptions);
     this.grpcPl = new PlatformClient(this.grpcTransport);
 
+    const cacheableLookup = new CacheableLookup({ resolver: new Resolver({ tries: 10 }) });
+
+    const httpOptions: Client.Options = {
+      // allowH2: true,
+      headersTimeout: 3e3,
+      keepAliveTimeout: 3e3,
+      keepAliveMaxTimeout: 60e3,
+      maxRedirections: 6,
+      connect: {
+        // bug in undici typings
+        lookup: cacheableLookup.lookup.bind(cacheableLookup) as any
+      }
+    };
+
     // setting up http(s)
     if (this.conf.httpProxy !== undefined)
-      this.httpDispatcher = new ProxyAgent(this.conf.httpProxy);
-    else this.httpDispatcher = new Agent();
+      this.httpDispatcher = new ProxyAgent({ uri: this.conf.httpProxy, ...httpOptions });
+    else this.httpDispatcher = new Agent(httpOptions);
 
     if (statusListener !== undefined) {
       this.statusListener = statusListener;
