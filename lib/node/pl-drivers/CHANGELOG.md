@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.2.24
+
+### Patch Changes
+
+- 4bb85dc: read bodies in case of errors, body.destroy is too scary
+
 ## 1.2.23
 
 ### Patch Changes
