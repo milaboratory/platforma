@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.2.29
+
+### Patch Changes
+
+- 164fc89: getEnvironmentValue for UI SDK
+
 ## 1.2.28
 
 ### Patch Changes
