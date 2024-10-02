@@ -1409,6 +1409,9 @@ importers:
       '@types/readline-sync':
         specifier: 'catalog:'
         version: 1.4.8
+      jest:
+        specifier: 'catalog:'
+        version: 29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.5.4))
       prettier:
         specifier: 'catalog:'
         version: 3.3.3
