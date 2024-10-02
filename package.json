@@ -4,6 +4,7 @@
   "scripts": {
     "type-check": "turbo run type-check",
     "build": "turbo run build",
+    "watch-build": "turbo watch build",
     "test": "turbo run test --concurrency 1",
     "lint": "pnpm -r lint",
     "changeset": "changeset",
