@@ -3,7 +3,7 @@ import * as types from './types';
 import { assertNever, resolveTilde } from '../util';
 import state from '../state';
 
-export { plOptions } from './types';
+export type { plOptions } from './types';
 
 export function storageSettingsFromURL(
   storageURL: string,

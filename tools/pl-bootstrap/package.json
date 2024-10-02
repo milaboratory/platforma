@@ -3,33 +3,28 @@
   "version": "1.23.0",
   "pl-version": "1.13.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
-  "types": "./dist/lib.d.ts",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "exports": {
-    ".": {
-      "types": "./dist/lib.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
-    }
-  },
   "scripts": {
-    "build": "rm -rf ./dist/ && tsc",
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
     "test": "jest --passWithNoTests"
   },
   "bin": {
     "pl-service": "./bin/run.js"
   },
   "files": [
+    "./dist/**/*",
+    "./src/**/*",
+    "README.md",
     "bin/run.cmd",
     "bin/run.js",
-    "dist",
     "assets",
     "postinstall.js"
   ],
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "vite": "catalog:",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
