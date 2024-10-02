@@ -382,6 +382,8 @@ class ProgressUpdater {
 
   private setDone(done: boolean) {
     this.progress.done = done;
+    if (done)
+      this.progress.lastError = undefined;
   }
 
   async updateStatus() {
