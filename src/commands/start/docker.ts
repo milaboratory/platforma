@@ -1,10 +1,13 @@
-import { Command } from '@oclif/core';
-import Core from '../../../core';
-import * as cmdOpts from '../../../cmd-opts';
-import * as util from '../../../util';
-import * as types from '../../../templates/types';
+import path from 'path';
 
-export default class FS extends Command {
+import { Command } from '@oclif/core';
+import Core from '../../core';
+import * as cmdOpts from '../../cmd-opts';
+import * as util from '../../util';
+import * as types from '../../templates/types';
+import state from '../../state';
+
+export default class Docker extends Command {
   static override description = "Run platforma backend service with 'FS' primary storage type";
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
@@ -19,13 +22,14 @@ export default class FS extends Command {
     ...cmdOpts.AuthFlags,
     ...cmdOpts.LicenseFlags,
 
-    ...cmdOpts.StoragePrimaryPathFlag,
+    ...cmdOpts.StorageFlag,
+    ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryPathFlag
+    ...cmdOpts.StorageLibraryURLFlag
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(FS);
+    const { flags } = await this.parse(Docker);
 
     const logger = util.createLogger(flags['log-level']);
     const core = new Core(logger);
@@ -38,11 +42,12 @@ export default class FS extends Command {
           drivers: core.initAuthDriversList(flags, '.')
         }
       : undefined;
+    const storage = flags.storage ? path.join('.', flags.storage) : state.path('data', 'docker');
 
-    core.startDockerFS({
-      primaryStorage: flags['storage-primary'],
-      workStorage: flags['storage-work'],
-      libraryStorage: flags['storage-library'],
+    core.startDocker(storage, {
+      primaryStorageURL: flags['storage-primary'],
+      workStoragePath: flags['storage-work'],
+      libraryStorageURL: flags['storage-library'],
 
       image: flags.image,
       version: flags.version,

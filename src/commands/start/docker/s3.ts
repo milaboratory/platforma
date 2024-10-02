@@ -1,8 +1,11 @@
+import path from 'path';
+
 import { Command } from '@oclif/core';
 import Core from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as util from '../../../util';
 import * as types from '../../../templates/types';
+import state from '../../../state';
 
 export default class S3 extends Command {
   static override description = "Run platforma backend service with 'S3' primary storage type";
@@ -16,8 +19,7 @@ export default class S3 extends Command {
     ...cmdOpts.ImageFlag,
     ...cmdOpts.VersionFlag,
 
-    ...cmdOpts.StoragePrimaryURLFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
+    ...cmdOpts.StorageFlag,
 
     ...cmdOpts.LicenseFlags,
     ...cmdOpts.AuthFlags
@@ -38,15 +40,14 @@ export default class S3 extends Command {
         }
       : undefined;
 
-    core.startDockerS3({
+    const storage = flags.storage ? path.join('.', flags.storage) : state.path('data', 'docker-s3');
+
+    core.startDockerS3(storage, {
       image: flags.image,
       version: flags.version,
 
       license: flags['license'],
       licenseFile: flags['license-file'],
-
-      primaryURL: flags['storage-primary'],
-      libraryURL: flags['storage-library'],
 
       auth: authOptions,
 

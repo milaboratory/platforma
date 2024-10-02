@@ -4,9 +4,7 @@ import Core, { startLocalOptions } from '../../core';
 import * as cmdOpts from '../../cmd-opts';
 import * as platforma from '../../platforma';
 import * as util from '../../util';
-import * as os from 'node:os';
-import * as fs from 'node:fs';
-import * as pkg from '../../package';
+import state from '../../state';
 
 export default class Local extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -43,7 +41,7 @@ export default class Local extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : undefined;
+    const storage = flags.storage ? path.join(workdir, flags.storage) : state.path('data', 'local');
     const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);

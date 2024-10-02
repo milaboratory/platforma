@@ -1,10 +1,11 @@
-import { Command } from '@oclif/core';
 import path from 'path';
+
+import { Command } from '@oclif/core';
 import Core, { startLocalS3Options } from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
 import * as util from '../../../util';
-import * as types from '../../../templates/types';
+import state from '../../../state';
 
 export default class S3 extends Command {
   static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
@@ -40,7 +41,7 @@ export default class S3 extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : undefined;
+    const storage = flags.storage ? path.join(workdir, flags.storage) : state.path('data', 'local-s3');
     const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);

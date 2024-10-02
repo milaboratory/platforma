@@ -99,11 +99,13 @@ export default class Core {
       case 'FS':
         configReport.push(`${column('primary')}: ${configOptions.storages.primary.rootPath}`);
         break;
+
       case 'S3':
         configReport.push(
           `${column('primary')}: S3 at '${configOptions.storages.primary.endpoint ?? 'AWS'}', bucket '${configOptions.storages.primary.bucketName}', prefix: '${configOptions.storages.primary.keyPrefix}'`
         );
         break;
+
       default:
         util.assertNever(primaryType);
     }
@@ -113,11 +115,13 @@ export default class Core {
       case 'FS':
         configReport.push(`${column('library')}: ${configOptions.storages.library.rootPath}`);
         break;
+
       case 'S3':
         configReport.push(
           `${column('library')}: S3 at '${configOptions.storages.library.endpoint ?? 'AWS'}', bucket '${configOptions.storages.library.bucketName}', prefix: '${configOptions.storages.library.keyPrefix}'`
         );
         break;
+
       default:
         util.assertNever(libraryType);
     }
@@ -142,9 +146,14 @@ export default class Core {
 
   public startLocalS3(options?: startLocalS3Options): ChildProcess {
     this.logger.debug("starting platforma in 'local s3' mode...");
-    this.startMinio(options);
 
     const minioPort = options?.minioPort ?? 9000;
+    const localRoot = options?.configOptions?.localRoot;
+    this.startMinio({
+      minioPort: minioPort,
+      minioConsolePort: options?.minioConsolePort,
+      storage: localRoot ? path.join(localRoot, 'minio') : undefined
+    });
 
     return this.startLocal({
       ...options,
@@ -154,51 +163,37 @@ export default class Core {
   }
 
   public startMinio(options?: {
+    image?: string;
+    version?: string;
     minioPort?: number;
     minioConsolePort?: number;
     storage?: string;
-    image?: string;
-    version?: string;
   }) {
     this.logger.debug('  starting minio...');
-    var composeMinioSrc = pkg.assets('compose-minio.yaml');
-    var composeMinioDst = state.path('compose-minio.yaml');
+    var composeMinio = pkg.assets('compose-backend.yaml');
 
     const version = options?.version ? `:${options.version!}` : '';
     this.logger.debug(`    minio version: ${version}`);
     const image = options?.image ?? `quay.io/minio/minio${version}`;
     this.logger.debug(`    minio image: ${image}`);
 
-    const storage = options?.storage;
+    const storage = options?.storage ?? state.path('data', 'minio');
 
     const minioPort = options?.minioPort ?? 9000;
     const minioConsolePort = options?.minioConsolePort ?? 9001;
 
     const envs = {
       MINIO_IMAGE: image,
-      MINIO_STORAGE: '',
+      MINIO_STORAGE: path.resolve(storage),
       MINIO_PORT: minioPort.toString(),
       MINIO_CONSOLE_PORT: minioConsolePort.toString()
     };
-    const compose = this.readComposeFile(composeMinioSrc);
-
-    if (storage) {
-      const storagePath = path.resolve(storage);
-      this.logger.debug(`    creating minio storage persistent directory '${storagePath}'...`);
-      fs.mkdirSync(storagePath, { recursive: true });
-      envs['MINIO_STORAGE'] = storagePath;
-    } else {
-      this.logger.debug(`    configuring minio to have temporary storage...`);
-      compose.volumes.storage = null;
-    }
-
-    this.logger.debug(`    rendering minio docker compose '${composeMinioDst}'...`);
-    this.writeComposeFile(composeMinioDst, compose);
+    const compose = this.readComposeFile(composeMinio);
 
     this.logger.debug(`    spawning child 'docker' process...`);
     const result = spawnSync(
       'docker',
-      ['compose', `--file=${composeMinioDst}`, 'up', '--detach', '--remove-orphans', '--pull=missing'],
+      ['compose', `--file=${composeMinio}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'minio'],
       {
         env: {
           ...process.env,
@@ -228,29 +223,68 @@ export default class Core {
     return binPath;
   }
 
-  public startDockerS3(options?: {
-    image?: string;
-    version?: string;
-    primaryURL?: string;
-    libraryURL?: string;
-    auth?: types.authOptions;
-    license?: string;
-    licenseFile?: string;
-    'grpc-port'?: number;
-    'monitoring-port'?: number;
-    'debug-port'?: number;
-  }) {
-    const composeS3Path = pkg.assets('compose-s3.yaml');
+  public startDockerS3(
+    localRoot: string,
+    options?: {
+      image?: string;
+      version?: string;
+      auth?: types.authOptions;
+      license?: string;
+      licenseFile?: string;
+      'grpc-port'?: number;
+      'monitoring-port'?: number;
+      'debug-port'?: number;
+    }
+  ) {
+    const composeS3Path = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
 
     this.checkLicense(options?.license, options?.licenseFile);
 
+    const storagePath = (s: string) => path.join(localRoot, s);
+    const logFilePath = storagePath('platforma.log');
+    if (!fs.existsSync(logFilePath)) {
+      fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
+      fs.writeFileSync(logFilePath, '');
+    }
+
+    const primary = plCfg.storageSettingsFromURL('s3e://testuser:testpassword@minio:9000/main-bucket');
+    if (primary.type !== 'S3') {
+      throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
+    } else {
+      primary.presignEndpoint = 'http://localhost:9000';
+    }
+
+    const library = plCfg.storageSettingsFromURL('s3e://testuser:testpassword@minio:9000/library-bucket');
+    if (library.type !== 'S3') {
+      throw new Error(`${library.type} storage type is not supported for library storage`);
+    } else {
+      library.presignEndpoint = 'http://localhost:9000';
+    }
+
     const envs: NodeJS.ProcessEnv = {
+      MINIO_IMAGE: 'quay.io/minio/minio',
+      MINIO_STORAGE: storagePath('minio'),
+
       PL_IMAGE: image,
+
       PL_AUTH_HTPASSWD_PATH: pkg.assets('users.htpasswd'),
       PL_LICENSE: options?.license,
-      PL_LICENSE_FILE: options?.licenseFile
+      PL_LICENSE_FILE: options?.licenseFile,
+
+      PL_LOG_LEVEL: 'info',
+      PL_LOG_FILE: logFilePath,
+
+      PL_DATA_DB_ROOT: storagePath('db'),
+      PL_DATA_PRIMARY_ROOT: storagePath('primary'),
+      PL_DATA_LIBRARY_ROOT: storagePath('library'),
+      PL_DATA_WORKDIR_ROOT: storagePath('work'),
+      PL_DATA_PACKAGE_ROOT: storagePath('packages'),
+
+      ...this.configureDockerStorage('primary', primary),
+      ...this.configureDockerStorage('library', library)
     };
+
     if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
     if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
     if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
@@ -270,46 +304,18 @@ export default class Core {
       }
     }
 
-    if (options?.primaryURL) {
-      const primary = plCfg.storageSettingsFromURL(options.primaryURL, '.');
-
-      if (primary.type === 'S3') {
-        envs['PL_DATA_PRIMARY_S3_BUCKET'] = primary.bucketName!;
-
-        if (primary.endpoint) envs['PL_DATA_PRIMARY_S3_ENDPOINT'] = primary.endpoint;
-        if (primary.presignEndpoint) envs['PL_DATA_PRIMARY_S3_PRESIGN_ENDPOINT'] = primary.presignEndpoint;
-        if (primary.key) envs['PL_DATA_PRIMARY_S3_KEY'] = primary.key;
-        if (primary.secret) envs['PL_DATA_PRIMARY_S3_SECRET'] = primary.secret;
-        if (primary.region) envs['PL_DATA_PRIMARY_S3_REGION'] = primary.region;
-      } else {
-        throw new Error("primary storage must have 'S3' type in 'docker s3' configuration");
-      }
-    }
-
-    if (options?.libraryURL) {
-      const library = plCfg.storageSettingsFromURL(options.libraryURL, '.');
-
-      switch (library.type) {
-        case 'S3':
-          envs['PL_DATA_PRIMARY_TYPE'] = 'S3';
-          envs['PL_DATA_LIBRARY_S3_BUCKET'] = library.bucketName!;
-
-          if (library.endpoint) envs['PL_DATA_LIBRARY_S3_ENDPOINT'] = library.endpoint;
-          if (library.presignEndpoint) envs['PL_DATA_LIBRARY_S3_PRESIGN_ENDPOINT'] = library.presignEndpoint;
-          if (library.key) envs['PL_DATA_LIBRARY_S3_KEY'] = library.key;
-          if (library.secret) envs['PL_DATA_LIBRARY_S3_SECRET'] = library.secret;
-          if (library.region) envs['PL_DATA_LIBRARY_S3_REGION'] = library.region;
-
-          break;
-
-        default:
-          throw new Error(`${library.type} storage type is not supported for library storage`);
-      }
-    }
-
     const result = run.runDocker(
       this.logger,
-      ['compose', `--file=${composeS3Path}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'backend'],
+      [
+        'compose',
+        `--file=${composeS3Path}`,
+        'up',
+        '--detach',
+        '--remove-orphans',
+        '--pull=missing',
+        'minio',
+        'backend'
+      ],
       {
         env: envs,
         stdio: 'inherit'
@@ -324,36 +330,57 @@ export default class Core {
     state.isActive = true;
   }
 
-  public startDockerFS(options?: {
-    primaryStorage?: string;
-    workStorage?: string;
-    libraryStorage?: string;
-    image?: string;
-    version?: string;
-    auth?: types.authOptions;
-    license?: string;
-    licenseFile?: string;
-    'grpc-port'?: number;
-    'monitoring-port'?: number;
-    'debug-port'?: number;
-  }) {
-    var composeFSPath = pkg.assets('compose-fs.yaml');
-    var composeRunPath = state.path('compose-fs.yaml');
+  public startDocker(
+    localRoot: string,
+    options?: {
+      primaryStorageURL?: string;
+      workStoragePath?: string;
+      libraryStorageURL?: string;
+
+      image?: string;
+      version?: string;
+      auth?: types.authOptions;
+
+      license?: string;
+      licenseFile?: string;
+      'grpc-port'?: number;
+      'monitoring-port'?: number;
+      'debug-port'?: number;
+    }
+  ) {
+    var composeFSPath = pkg.assets('compose-backend.yaml');
     const image = options?.image ?? pkg.plImageTag(options?.version);
-    const primaryStorage = options?.primaryStorage ?? state.lastRun?.docker?.primaryPath;
-    const workStorage = options?.workStorage ?? state.lastRun?.docker?.workPath;
-    const libraryStorage = options?.libraryStorage ?? state.lastRun?.docker?.libraryPath;
 
     this.checkLicense(options?.license, options?.licenseFile);
-    this.checkVolumeConfig('primary', primaryStorage, state.lastRun?.docker?.primaryPath);
-    this.checkVolumeConfig('library', libraryStorage, state.lastRun?.docker?.libraryPath);
+
+    const storagePath = (s: string) => path.join(localRoot, s);
+
+    const primaryFSPath = storagePath('primary');
+    const workFSPath = storagePath('work');
+    const libraryFSPath = storagePath('library');
+
+    const primary = plCfg.storageSettingsFromURL(options?.primaryStorageURL ?? `file:.`, '.');
+    const library = plCfg.storageSettingsFromURL(options?.libraryStorageURL ?? `file:.`, '.');
 
     const envs: NodeJS.ProcessEnv = {
+      MINIO_IMAGE: 'quay.io/minio/minio',
+      MINIO_STORAGE: storagePath('minio'),
+
       PL_IMAGE: image,
       PL_AUTH_HTPASSWD_PATH: pkg.assets('users.htpasswd'),
       PL_LICENSE: options?.license,
-      PL_LICENSE_FILE: options?.licenseFile
+      PL_LICENSE_FILE: options?.licenseFile,
+
+      PL_DATA_DB_ROOT: storagePath('db'),
+      PL_DATA_PRIMARY_ROOT: primaryFSPath,
+      PL_DATA_LIBRARY_ROOT: libraryFSPath,
+      PL_DATA_WORKDIR_ROOT: storagePath('work'),
+      PL_DATA_PACKAGE_ROOT: storagePath('packages'),
+
+      ...this.configureDockerStorage('primary', primary),
+      ...this.configureDockerStorage('library', library)
     };
+
     if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
     if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
     if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
@@ -375,28 +402,6 @@ export default class Core {
       }
     }
 
-    if (primaryStorage) {
-      fs.mkdirSync(path.resolve(primaryStorage), { recursive: true });
-      envs['PL_STORAGE_PRIMARY'] = path.resolve(primaryStorage);
-    } else {
-      compose.volumes.primary = null;
-    }
-
-    if (workStorage) {
-      fs.mkdirSync(path.resolve(workStorage), { recursive: true });
-      envs['PL_STORAGE_PRIMARY'] = path.resolve(workStorage);
-    } else {
-      compose.volumes.work = null;
-    }
-
-    if (libraryStorage) {
-      envs['PL_STORAGE_LIBRARY'] = path.resolve(libraryStorage);
-    } else {
-      compose.volumes.library = null;
-    }
-
-    this.writeComposeFile(composeRunPath, compose);
-
     const result = run.runDocker(
       this.logger,
       ['compose', `--file=${composeFSPath}`, 'up', '--detach', '--remove-orphans', '--pull=missing', 'backend'],
@@ -407,9 +412,9 @@ export default class Core {
       {
         plImage: image,
         composePath: composeFSPath,
-        primaryPath: primaryStorage ? path.resolve(primaryStorage) : '',
-        workPath: workStorage ? path.resolve(workStorage) : '',
-        libraryPath: libraryStorage ? path.resolve(libraryStorage) : ''
+        primaryPath: primaryFSPath,
+        workPath: workFSPath,
+        libraryPath: libraryFSPath
       }
     );
 
@@ -453,7 +458,7 @@ export default class Core {
       "last command run cache ('pl-service start' shorthand will stop working until next full start command call)",
       `'platforma' docker compose service containers and volumes`
     ];
-    const dirsToRemove: string[] = [];
+    const dirsToRemove: string[] = [state.path('data')];
     if (state.lastRun?.docker?.primaryPath) {
       dirsToRemove.push(state.lastRun!.docker!.primaryPath!);
     }
@@ -570,17 +575,20 @@ ${storageWarns}
   }
 
   private destroyDocker(composePath: string, image: string) {
+    const stubStoragePath = state.path('data', 'stub');
     const result = spawnSync('docker', ['compose', '--file', composePath, 'down', '--volumes', '--remove-orphans'], {
       env: {
         ...process.env,
         PL_IMAGE: 'scratch',
-        PL_STORAGE_PRIMARY: '',
-        PL_STORAGE_WORK: '',
-        PL_STORAGE_LIBRARY: '',
-        PL_AUTH_HTPASSWD_PATH: '.',
+
+        PL_DATA_DB_ROOT: stubStoragePath,
+        PL_DATA_PRIMARY_ROOT: stubStoragePath,
+        PL_DATA_LIBRARY_ROOT: stubStoragePath,
+        PL_DATA_WORKDIR_ROOT: stubStoragePath,
+        PL_DATA_PACKAGE_ROOT: stubStoragePath,
 
         MINIO_IMAGE: 'scratch',
-        MINIO_STORAGE: ''
+        MINIO_STORAGE: stubStoragePath
       },
       stdio: 'inherit'
     });
@@ -608,26 +616,34 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
     throw new Error(`The license was not provided.`);
   }
 
-  private checkVolumeConfig(volumeID: string, newPath?: string, lastRunPath?: string) {
-    if (newPath === undefined) {
-      return;
-    }
-    if (lastRunPath === undefined) {
-      return;
+  private configureDockerStorage(storageID: string, storage: types.storageOptions): NodeJS.ProcessEnv {
+    const envs: NodeJS.ProcessEnv = {};
+    const sType = storage.type;
+    storageID = storageID.toUpperCase();
+
+    switch (sType) {
+      case 'S3':
+        envs[`PL_DATA_${storageID}_TYPE`] = 'S3';
+        envs[`PL_DATA_${storageID}_S3_BUCKET`] = storage.bucketName!;
+
+        if (storage.endpoint) envs[`PL_DATA_${storageID}_S3_ENDPOINT`] = storage.endpoint;
+        if (storage.presignEndpoint) envs[`PL_DATA_${storageID}_S3_PRESIGN_ENDPOINT`] = storage.presignEndpoint;
+        if (storage.region) envs[`PL_DATA_${storageID}_S3_REGION`] = storage.region;
+        if (storage.key) envs[`PL_DATA_${storageID}_S3_KEY`] = storage.key;
+        if (storage.secret) envs[`PL_DATA_${storageID}_S3_SECRET`] = storage.secret;
+
+        return envs;
+
+      case 'FS':
+        envs[`PL_DATA_${storageID}_TYPE`] = 'FS';
+
+        return envs;
+
+      default:
+        util.assertNever(sType);
     }
 
-    if (path.resolve(newPath) == path.resolve(lastRunPath)) {
-      return;
-    }
-
-    this.logger.error(
-      `'${volumeID}' storage is given to Platforma Backend as docker volume.\n` +
-        `Docker Compose does not migrate volumes on itself. It seems you used different path for '${volumeID}' storage earlier.\n` +
-        `  current bind path: '${lastRunPath}'\n` +
-        `  new bind path:     '${path.resolve(newPath)}'\n` +
-        `Your '${volumeID}' storage path change would not have effect until reset (pl-service reset)`
-    );
-    throw new Error(`cannot change '${volumeID}' storage path`);
+    return {};
   }
 
   private readComposeFile(fPath: string): any {
