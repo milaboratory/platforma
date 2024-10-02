@@ -18,6 +18,9 @@ import { parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings } from './types';
 import * as lodash from 'lodash';
 
+// @todo add license to AgGrid
+// const license = window.getEnvironmentValue('VITE_PLATFORMA_AG_GRID_LICENSE_KEY');
+
 ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, InfiniteRowModelModule, RangeSelectionModule]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
