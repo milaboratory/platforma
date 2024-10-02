@@ -36,6 +36,11 @@ packages:
   - etc/block-components/enter-numbers/ui
   - etc/blocks/enter-numbers
 
+  - etc/block-components/ui-examples/workflow
+  - etc/block-components/ui-examples/model
+  - etc/block-components/ui-examples/ui
+  - etc/blocks/ui-examples
+
   # Tests
 
   - tests/workflow-tengo

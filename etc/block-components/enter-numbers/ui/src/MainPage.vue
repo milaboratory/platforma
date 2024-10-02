@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlLogView, PlTextField, useInterval } from '@platforma-sdk/ui-vue';
+import { PlAlert, PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
 import { useApp } from './app';
 import { z } from 'zod';
-import { faker } from '@faker-js/faker';
 import { reactive } from 'vue';
 
 const data = reactive({
@@ -31,11 +30,6 @@ const args = app.createArgsModel({
   }
 });
 
-useInterval(() => {
-  data.logContent += '\n';
-  data.logContent += faker.lorem.paragraph();
-}, 1000);
-
 const VITE_PLATFORMA_AG_LICENSE = window.getEnvironmentValue('VITE_PLATFORMA_AG_LICENSE');
 </script>
 
@@ -50,8 +44,5 @@ const VITE_PLATFORMA_AG_LICENSE = window.getEnvironmentValue('VITE_PLATFORMA_AG_
     <code>
       {{ args.model  }}
     </code>
-
-    <h1>My Logs</h1>
-    <PlLogView v-if="true" :value="data.logContent" />
   </PlBlockPage>
 </template>
