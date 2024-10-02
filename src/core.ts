@@ -178,6 +178,7 @@ export default class Core {
     this.logger.debug(`    minio image: ${image}`);
 
     const storage = options?.storage ?? state.path('data', 'minio');
+    const stubStorage = state.path('data', 'stub');
 
     const minioPort = options?.minioPort ?? 9000;
     const minioConsolePort = options?.minioConsolePort ?? 9001;
@@ -186,7 +187,14 @@ export default class Core {
       MINIO_IMAGE: image,
       MINIO_STORAGE: path.resolve(storage),
       MINIO_PORT: minioPort.toString(),
-      MINIO_CONSOLE_PORT: minioConsolePort.toString()
+      MINIO_CONSOLE_PORT: minioConsolePort.toString(),
+
+      PL_DATA_DB_ROOT: stubStorage,
+      PL_DATA_PRIMARY_ROOT: stubStorage,
+      PL_DATA_LIBRARY_ROOT: stubStorage,
+      PL_DATA_WORKDIR_ROOT: stubStorage,
+      PL_DATA_PACKAGE_ROOT: stubStorage,
+      PL_IMAGE: 'scratch'
     };
     const compose = this.readComposeFile(composeMinio);
 
