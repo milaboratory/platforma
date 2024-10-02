@@ -30,7 +30,7 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir, options.minioPort)
+          primary: plCfg.storageSettingsFromURL(options.primaryURL, workdir, options.configOptions?.storages?.primary)
         }
       };
     }
@@ -39,7 +39,7 @@ export default class Core {
         ...options.configOptions,
         storages: {
           ...options.configOptions?.storages,
-          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir, options.minioPort)
+          library: plCfg.storageSettingsFromURL(options.libraryURL, workdir, options.configOptions?.storages?.library)
         }
       };
     }
@@ -83,12 +83,49 @@ export default class Core {
     }
 
     if (!configPath) {
-      configPath = state.path('config-lastrun.yaml');
+      configPath = state.path('config-local.yaml');
       this.logger.debug(`  rendering configuration '${configPath}'...`);
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
-    this.logger.debug(`  starting platforma service...`);
+    var configReport: string[] = [];
+    const column = (t: string) => t.padStart(10, ' ');
+    configReport.push(`${column('config')}: ${configPath}`);
+    configReport.push(`${column('API')}: ${configOptions.grpc.listen}`);
+    configReport.push(`${column('log')}: ${configOptions.log.path}`);
+
+    const primaryType = configOptions.storages.primary.type;
+    switch (primaryType) {
+      case 'FS':
+        configReport.push(`${column('primary')}: ${configOptions.storages.primary.rootPath}`);
+        break;
+      case 'S3':
+        configReport.push(
+          `${column('primary')}: S3 at '${configOptions.storages.primary.endpoint ?? 'AWS'}', bucket '${configOptions.storages.primary.bucketName}', prefix: '${configOptions.storages.primary.keyPrefix}'`
+        );
+        break;
+      default:
+        util.assertNever(primaryType);
+    }
+
+    const libraryType = configOptions.storages.library.type;
+    switch (libraryType) {
+      case 'FS':
+        configReport.push(`${column('library')}: ${configOptions.storages.library.rootPath}`);
+        break;
+      case 'S3':
+        configReport.push(
+          `${column('library')}: S3 at '${configOptions.storages.library.endpoint ?? 'AWS'}', bucket '${configOptions.storages.library.bucketName}', prefix: '${configOptions.storages.library.keyPrefix}'`
+        );
+        break;
+      default:
+        util.assertNever(libraryType);
+    }
+
+    configReport.push(`${column('workdirs')}: ${configOptions.storages.work.rootPath}`);
+
+    this.logger.info(`Starting platforma:\n${configReport.join('\n')}`);
+
     return run.runProcess(
       this.logger,
       cmd,
@@ -103,33 +140,17 @@ export default class Core {
     );
   }
 
-  public startLocalFS(options?: startLocalFSOptions): ChildProcess {
-    this.logger.debug("starting platforma in 'local fs' mode...");
-    return this.startLocal(options);
-  }
-
-  public startLocalS3(options?: startLocalOptions): ChildProcess {
+  public startLocalS3(options?: startLocalS3Options): ChildProcess {
     this.logger.debug("starting platforma in 'local s3' mode...");
-    if (!options?.libraryURL || !options?.primaryURL) {
-      this.startMinio(options);
-    }
+    this.startMinio(options);
 
     const minioPort = options?.minioPort ?? 9000;
 
-    if (!options?.primaryURL) {
-      options = {
-        ...options,
-        primaryURL: `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=fake-region`
-      };
-    }
-    if (!options?.libraryURL) {
-      options = {
-        ...options,
-        libraryURL: `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=fake-region`
-      };
-    }
-
-    return this.startLocal(options);
+    return this.startLocal({
+      ...options,
+      primaryURL: `s3e://testuser:testpassword@localhost:${minioPort}/main-bucket/?region=no-region`,
+      libraryURL: `s3e://testuser:testpassword@localhost:${minioPort}/library-bucket/?region=no-region`
+    });
   }
 
   public startMinio(options?: {
@@ -630,17 +651,20 @@ export function checkRunError(result: SpawnSyncReturns<Buffer>, message?: string
   }
 }
 
-export type startLocalFSOptions = {
+export type startLocalOptions = {
   version?: string;
   binaryPath?: string;
   configPath?: string;
   configOptions?: plCfg.plOptions;
   workdir?: string;
-};
 
-export type startLocalOptions = startLocalFSOptions & {
   primaryURL?: string;
   libraryURL?: string;
+};
+
+export type startLocalFSOptions = startLocalOptions;
+
+export type startLocalS3Options = Omit<startLocalOptions, 'primaryURL' | 'libraryURL'> & {
   minioPort?: number;
   minioConsolePort?: number;
 };

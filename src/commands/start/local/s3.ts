@@ -1,6 +1,6 @@
 import { Command } from '@oclif/core';
 import path from 'path';
-import Core, { startLocalOptions } from '../../../core';
+import Core, { startLocalS3Options } from '../../../core';
 import * as cmdOpts from '../../../cmd-opts';
 import * as platforma from '../../../platforma';
 import * as util from '../../../util';
@@ -25,9 +25,7 @@ export default class S3 extends Command {
     ...cmdOpts.LicenseFlags,
 
     ...cmdOpts.StorageFlag,
-    ...cmdOpts.StoragePrimaryURLFlag,
     ...cmdOpts.StorageWorkPathFlag,
-    ...cmdOpts.StorageLibraryURLFlag,
 
     ...cmdOpts.PlLogFileFlag,
     ...cmdOpts.PlWorkdirFlag,
@@ -42,8 +40,8 @@ export default class S3 extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.resolve(workdir, flags.storage) : undefined;
-    const logFile = flags['pl-log-file'] ? path.resolve(workdir, flags['pl-log-file']) : 'stdout';
+    const storage = flags.storage ? path.join(workdir, flags.storage) : undefined;
+    const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
     const authEnabled = flags['auth-enabled'] ?? authDrivers !== undefined;
@@ -53,14 +51,12 @@ export default class S3 extends Command {
       binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] });
     }
 
-    const startOptions: startLocalOptions = {
+    const startOptions: startLocalS3Options = {
       binaryPath: binaryPath,
       version: flags.version,
       configPath: flags.config,
       workdir: flags['pl-workdir'],
 
-      primaryURL: flags['storage-primary'],
-      libraryURL: flags['storage-library'],
       minioPort: flags['s3-address-port'],
       minioConsolePort: flags['s3-console-address-port'],
 
