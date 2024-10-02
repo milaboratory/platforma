@@ -30,10 +30,10 @@ packages:
 
   # Test blocks
 
-  - etc/blocks/enter-numbers/workflow
-  - etc/blocks/enter-numbers/model
-  - etc/blocks/enter-numbers/ui
-  - etc/blocks/enter-numbers/block
+  - etc/block-components/enter-numbers/workflow
+  - etc/block-components/enter-numbers/model
+  - etc/block-components/enter-numbers/ui
+  - etc/blocks/enter-numbers
 
   # Tests
 
