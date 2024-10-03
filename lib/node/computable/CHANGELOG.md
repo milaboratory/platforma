@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.1.9
+
+### Patch Changes
+
+- 86c8d0f: logging of poll pool termination & and notification of poll actors
+
 ## 2.1.8
 
 ### Patch Changes
