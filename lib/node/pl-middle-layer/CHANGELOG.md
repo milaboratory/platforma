@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.34
+
+### Patch Changes
+
+- 86c8d0f: watcher for v2 block updates (fixes #38) & central logger in middle layer
+- Updated dependencies [86c8d0f]
+- Updated dependencies [86c8d0f]
+  - @milaboratories/computable@2.1.9
+  - @platforma-sdk/block-tools@2.3.6
+  - @milaboratories/pl-drivers@1.2.26
+  - @milaboratories/pl-tree@1.3.15
+
 ## 1.10.33
 
 ### Patch Changes

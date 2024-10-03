@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.6
+
+### Patch Changes
+
+- 86c8d0f: multilayer caching of results in V2 registry reader
+
 ## 2.3.5
 
 ### Patch Changes
