@@ -51,6 +51,15 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
     error.value = undefined;
   };
 
+  const setError = (cause: unknown) => {
+    const err = ensureError(cause);
+    if (isZodError(err)) {
+      error.value = Error(formatZodError(err)); // @todo temp
+    } else {
+      error.value = err;
+    }
+  };
+
   const setValue = (v: M) => {
     error.value = undefined;
     try {
@@ -59,12 +68,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
         save();
       }
     } catch (cause: unknown) {
-      const err = ensureError(cause);
-      if (isZodError(err)) {
-        error.value = Error(formatZodError(err)); // @todo temp
-      } else {
-        error.value = err as Error; // @todo ensureError
-      }
+      setError(cause);
     }
   };
 
@@ -104,5 +108,6 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
     errorString,
     save,
     revert,
+    setError,
   });
 }
