@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.9
+
+### Patch Changes
+
+- 95f1b0d: Make any dropdown option accept "label" or "text" fields (for backward compatibility)
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.4
+  - @platforma-sdk/ui-vue@1.3.18
+
 ## 1.0.8
 
 ### Patch Changes

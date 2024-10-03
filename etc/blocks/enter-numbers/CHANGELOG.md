@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.9
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.1
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.4
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.9
+
 ## 1.0.8
 
 ### Patch Changes
