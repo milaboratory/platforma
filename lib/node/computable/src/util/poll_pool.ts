@@ -36,72 +36,83 @@ export class PollPool<A extends PollActor = PollActor> {
   }
 
   private async mainLoop() {
-    while (true) {
-      if (this.terminated) break;
+    try {
+      while (true) {
+        if (this.terminated) break;
 
-      // select actors for this iteration and cleaning up the pool
+        // select actors for this iteration and cleaning up the pool
 
-      const activeActors = [];
-      for (const [key, wrapper] of this.actors) {
-        const actor = wrapper.actor.deref();
-        if (actor === undefined) {
-          this.actors.delete(key);
+        const activeActors = [];
+        for (const [key, wrapper] of this.actors) {
+          const actor = wrapper.actor.deref();
+          if (actor === undefined) {
+            // actor was collected by GC
+            this.actors.delete(key);
+            continue;
+          }
+
+          if (
+            actor.pollPauseRequest !== undefined &&
+            wrapper.lastPauseRequest === actor.pollPauseRequest
+          )
+            continue;
+
+          // saving last pause request, to check if it remains the same on the next cycle
+          wrapper.lastPauseRequest = actor.pollPauseRequest;
+
+          activeActors.push(actor);
+        }
+
+        if (activeActors.length === 0) {
+          const watcher = new HierarchicalWatcher();
+
+          this.actorsMapChange.attachWatcher(watcher);
+          for (const wrapper of this.actors.values()) {
+            const actor = wrapper.actor.deref()!; // "!" because we performed cleanup above
+            actor.pollPauseRequestChange.attachWatcher(watcher);
+          }
+
+          // awaiting at least one of the actors to change pause request
+          try {
+            await watcher.awaitChange(this.terminateController.signal);
+          } catch (e) {
+            // will terminate on next iteration
+          }
+
+          // initiate new loop
           continue;
         }
 
-        // actor was collected by GC
-        if (
-          actor.pollPauseRequest !== undefined &&
-          wrapper.lastPauseRequest === actor.pollPauseRequest
-        )
-          continue;
+        // saving timestamp before we started polling actors, to estimate how long
+        // of a delay we should add in the end to satisfy the min delay parameter
+        const begin = Date.now();
 
-        // saving last pause request, to check if it remains the same on the next cycle
-        wrapper.lastPauseRequest = actor.pollPauseRequest;
-
-        activeActors.push(actor);
-      }
-
-      if (activeActors.length === 0) {
-        const watcher = new HierarchicalWatcher();
-
-        this.actorsMapChange.attachWatcher(watcher);
-        for (const wrapper of this.actors.values()) {
-          const actor = wrapper.actor.deref()!; // "!" because we performed cleanup above
-          actor.pollPauseRequestChange.attachWatcher(watcher);
+        for (const actor of activeActors) {
+          // prevent any errors from terminating the loop
+          try {
+            await actor.poll();
+          } catch (e: unknown) {
+            this.logger.error(e);
+          }
         }
 
-        // awaiting at least one of the actors to change pause request
+        if (this.terminated) break;
+
         try {
-          await watcher.awaitChange(this.terminateController.signal);
-        } catch (e) {
-          // will terminate on next iteration
-        }
-
-        // initiate new loop
-        continue;
+          const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
+          await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
+        } catch {}
       }
-
-      // saving timestamp before we started polling actors, to estimate how long
-      // of a delay we should add in the end to satisfy the min delay parameter
-      const begin = Date.now();
-
-      for (const actor of activeActors) {
-        // prevent any errors from terminating the loop
-        try {
-          await actor.poll();
-        } catch (e: unknown) {
-          this.logger.error(e);
-        }
-      }
-
-      if (this.terminated) break;
-
-      try {
-        const delay = Math.max(0, this.ops.minDelay - (Date.now() - begin));
-        await tp.setTimeout(delay, undefined, { signal: this.terminateController.signal });
-      } catch {}
+    } catch (err: unknown) {
+      this.logger.error(err);
     }
+
+    for (const [, actor] of this.actors)
+      try {
+        actor.actor.deref()?.onPoolTerminated();
+      } catch (err: unknown) {
+        this.logger.error(err);
+      }
   }
 
   public createIfAbsent(key: string | symbol, factory: () => A): A {
@@ -154,6 +165,9 @@ export interface PollActor {
 
   /** Must report all pollPauseRequest value changes */
   readonly pollPauseRequestChange: ChangeSource;
+
+  /** Called after pool is terminated */
+  onPoolTerminated(): void;
 }
 
 type RefreshListener = {
@@ -212,7 +226,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
     this.refreshPauseRequestIfNeeded();
   }
 
-  refreshState(instance: Computable<unknown>): Promise<void> {
+  public refreshState(instance: Computable<unknown>): Promise<void> {
     if (this.refreshListeners === undefined) this.refreshListeners = [];
     const result = new Promise<void>((resolve, reject) => {
       this.refreshListeners!.push({ resolve, reject });
@@ -226,6 +240,7 @@ class PollPoolPauseComputableAdapter implements ComputableHooks {
 interface PollComputablePoolEntry<Res> extends PollActor {
   readonly hooks: ComputableHooks;
   readonly value: Res | undefined;
+  readonly error: unknown;
   readonly change: ChangeSource;
 }
 
@@ -234,7 +249,7 @@ export abstract class PollComputablePool<Req, Res> {
 
   protected constructor(
     ops: PollPoolOps,
-    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
+    protected readonly logger: MiLogger = new ConsoleLoggerAdapter()
   ) {
     this.pool = new PollPool(ops, logger);
   }
@@ -254,6 +269,7 @@ export abstract class PollComputablePool<Req, Res> {
     const parent = this;
     return new (class implements PollComputablePoolEntry<Res> {
       value: Res | undefined = undefined;
+      error: unknown = undefined;
       readonly change = new ChangeSource();
 
       readonly hooks = new PollPoolPauseComputableAdapter();
@@ -277,14 +293,22 @@ export abstract class PollComputablePool<Req, Res> {
               !parent.resultsEqual(this.value, newValue))
           ) {
             this.value = newValue;
+            this.error = undefined;
             this.change.markChanged();
           }
         } catch (e: unknown) {
+          this.error = e;
+          this.value = undefined;
           if (listeners !== undefined) for (const listener of listeners) listener.reject(e);
           throw e;
         }
 
         if (listeners !== undefined) for (const listener of listeners) listener.resolve();
+      }
+
+      onPoolTerminated(): void {
+        this.error = new Error('Polling pool terminated');
+        this.value = undefined;
       }
     })();
   }
@@ -302,7 +326,8 @@ export abstract class PollComputablePool<Req, Res> {
     ctx.attacheHooks(entry.hooks);
     entry.change.attachWatcher(ctx.watcher);
 
-    return entry.value;
+    if (entry.error) throw entry.error;
+    else return entry.value;
   }
 
   public async terminate() {
