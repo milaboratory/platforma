@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.8.2
+
+### Patch Changes
+
+- 7cd0fa6: regression: add missing commands after transfering to monorepo
+
 ## 2.8.1
 
 ### Patch Changes
