@@ -1,9 +1,8 @@
-import winston from "winston";
 import { run } from "./run";
-import { configLocalYaml, wdPath } from "./workdir";
-import fs from 'fs/promises';
 import { LocalPlBinary } from "./binary";
-import { fileExists } from '@milaboratories/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
+import { getBinary } from "./binary_download";
+import { configPath, writeConfig } from "./config";
 
 export type LocalPlOptions = {
   workingDir: string;
@@ -12,15 +11,26 @@ export type LocalPlOptions = {
   binary: LocalPlBinary;
 };
 
-export async function runPl(logger: winston.Logger, opts: LocalPlOptions) {
-  const configPath = wdPath(opts.workingDir, configLocalYaml);
-  if (!(await fileExists(configPath))) {
-    logger.debug(`writing configuration '${configPath}'...`);
-    await fs.writeFile(configPath, opts.config);
+export async function runPl(logger: MiLogger, opts: LocalPlOptions) {
+  const config = configPath(opts.workingDir);
+  writeConfig(logger, config, opts.config);
+
+  let binaryPath = '';
+  
+  if (opts.binary.type == 'Download') {
+    binaryPath = await getBinary(logger, {
+      version: opts.binary.version,
+      saveTo: opts.binary.dir,
+    })
+  } else if (opts.binary.type == 'Local') {
+    binaryPath = opts.binary.path;
   }
 
-  // run(
-  //   logger, 
-  // )
+  return run(
+    logger,
+    binaryPath,
+    ['-config', config],
+    {env: {...process.env}}
+  )
 }
 

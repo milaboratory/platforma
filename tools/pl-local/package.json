@@ -6,7 +6,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --passWithNoTests"
+    "test": "vitest"
   },
   "bin": {
     "pl-service": "./bin/run.js"
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "vite": "catalog:",
+    "vitest": "catalog:",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
@@ -36,13 +37,13 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "undici": "catalog:",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "decompress": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",
-    "winston": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   },

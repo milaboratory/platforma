@@ -1,10 +1,24 @@
 import os from 'os';
 import fs from 'fs';
-import https from 'https';
-import * as tar from 'tar';
-import winston from 'winston';
-import * as pkg from './package';
 import path from 'path';
+import { request } from 'undici';
+import { Writable, Readable } from 'stream';
+import { text } from 'stream/consumers';
+import * as tar from 'tar';
+import * as pkg from './package';
+import { MiLogger } from '@milaboratories/ts-helpers';
+
+export async function getBinary(
+  logger: MiLogger,
+  options: {
+    version: string;
+    saveTo: string;
+  }
+): Promise<string> {
+  const archivePath = await downloadArchive(logger, options);
+  const targetDir = extractArchive(logger, { archivePath });
+  return targetDir;
+}
 
 export const OSes = ['linux', 'macos', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
@@ -46,22 +60,20 @@ export function archiveArch(archName?: string): ArchType {
   }
 }
 
-export function downloadArchive(
-  logger: winston.Logger,
-  options?: {
+export async function downloadArchive(
+  logger: MiLogger,
+  options: {
     version?: string;
-    showProgress?: boolean;
     downloadURL?: string;
-    saveTo?: string;
+    saveTo: string;
   }
 ): Promise<string> {
   const version = options?.version ?? pkg.getPackageJson()['pl-version'];
-  const showProgress = options?.showProgress ?? process.stdout.isTTY;
 
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
   const downloadURL = options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
 
-  const archiveFilePath = options?.saveTo ?? pkg.binaries(archiveName);
+  const archiveFilePath = options.saveTo;
   if (fs.existsSync(archiveFilePath)) {
     logger.info(`Platforma Backend archive download skipped: '${archiveFilePath}' already exists`);
     return Promise.resolve(archiveFilePath);
@@ -71,59 +83,23 @@ export function downloadArchive(
 
   logger.info(`Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`);
 
-  const request = https.get(downloadURL);
+  const { body, statusCode } = await request(downloadURL);
+  if (statusCode != 200) {
+    const textBody = await text(body);
+    throw new Error(`failed to download archive: ${statusCode}, response: ${textBody.slice(0, 1000)}`);
+  }
 
-  return new Promise((resolve, reject) => {
-    request.on('response', (response) => {
-      if (!response.statusCode) {
-        const err = new Error('failed to download archive: no HTTP status code in response from server');
-        request.destroy();
-        reject(err);
-        return;
-      }
-      if (response.statusCode !== 200) {
-        const err = new Error(`failed to download archive: ${response.statusCode} ${response.statusMessage}`);
-        request.destroy();
-        reject(err);
-        return;
-      }
+  const archive = Writable.toWeb(fs.createWriteStream(archiveFilePath));
+  await Readable.toWeb(body).pipeTo(archive);
 
-      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
-      let downloadedBytes = 0;
-
-      const archive = fs.createWriteStream(archiveFilePath);
-
-      response.pipe(archive);
-      response.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
-        const progress = (downloadedBytes / totalBytes) * 100;
-        if (showProgress) {
-          process.stdout.write(`  downloading: ${progress.toFixed(2)}%\r`);
-        }
-      });
-
-      response.on('error', (err: Error) => {
-        fs.unlinkSync(archiveFilePath);
-        logger.error(`Failed to download Platforma Binary: ${err.message}`);
-        request.destroy();
-        reject(err);
-      });
-
-      archive.on('finish', () => {
-        archive.close();
-        logger.info(`  ... download done.`);
-        request.destroy();
-        resolve(archiveFilePath);
-      });
-    });
-  });
+  return archiveFilePath;
 }
 
 export function extractArchive(
   logger: winston.Logger,
-  options?: {
+  options: {
     version?: string;
-    archivePath?: string;
+    archivePath: string;
     extractTo?: string;
   }
 ): string {
@@ -133,7 +109,7 @@ export function extractArchive(
   logger.debug(`  version: '${version}'`);
   const archiveName = `${binaryDirName({ version })}.tgz`;
 
-  const archivePath = options?.archivePath ?? pkg.binaries(archiveName);
+  const archivePath = options?.archivePath;
   logger.debug(`  archive path: '${archivePath}'`);
 
   const targetDir = options?.extractTo ?? trimExtension(archivePath);
@@ -169,20 +145,9 @@ export function extractArchive(
   return targetDir;
 }
 
-export function getBinary(
-  logger: winston.Logger,
-  options?: { version?: string; showProgress?: boolean }
-): Promise<string> {
-  return downloadArchive(logger, options).then((archivePath) => extractArchive(logger, { archivePath }));
-}
-
-function binaryDirName(options?: { version?: string }): string {
+export function binaryDirName(options?: { version?: string }): string {
   const version = options?.version ?? pkg.getPackageJson()['pl-version'];
   return `pl-${version}-${archiveArch()}`;
-}
-
-export function binaryPath(version?: string, ...p: string[]): string {
-  return pkg.binaries(binaryDirName({ version }), ...p);
 }
 
 function trimExtension(filename: string): string {

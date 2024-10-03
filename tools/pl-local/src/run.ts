@@ -1,19 +1,19 @@
 import fs from 'fs';
 import { SpawnOptions, ChildProcess, spawn } from 'child_process';
-import winston from 'winston';
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 export function run(
-  logger: winston.Logger,
+  logger: MiLogger,
   cmd: string,
   args: readonly string[],
   options: SpawnOptions
 ): ChildProcess {
-  logger.debug(
-    `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
-  );
+  logger.info(`Running:
+env: ${JSON.stringify(options.env)}
+cmd: ${JSON.stringify([cmd, ...args])}
+wd: ${options.cwd}`);
 
-  options.env = { ...process.env, ...options.env };
-  logger.debug('  spawning child process');
+  logger.info('  spawning child process');
   const child = spawn(cmd, args, options);
   var exitAfterChild: boolean = false;
 
@@ -25,7 +25,7 @@ export function run(
     exitAfterChild = true;
   };
 
-  logger.debug('  setting up signal handler');
+  logger.info('  setting up signal handler');
   process.on('SIGINT', sigintHandler);
 
   child.on('close', (code) => {
