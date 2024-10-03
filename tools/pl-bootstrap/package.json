@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "pl-version": "1.13.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
@@ -45,7 +45,7 @@
     "zod": "catalog:"
   },
   "oclif": {
-    "bin": "pl-service",    
+    "bin": "pl-service",
     "commands": {
       "strategy": "explicit",
       "target": "./dist/index.js",
