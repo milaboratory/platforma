@@ -12,11 +12,9 @@
     "pl-service": "./bin/run.js"
   },
   "files": [
-    "./dist/**/*",
-    "./src/**/*",
-    "README.md",
     "bin/run.cmd",
     "bin/run.js",
+    "dist",
     "assets",
     "postinstall.js"
   ],
@@ -47,8 +45,12 @@
     "zod": "catalog:"
   },
   "oclif": {
-    "bin": "pl-service",
-    "commands": "./dist/commands",
+    "bin": "pl-service",    
+    "commands": {
+      "strategy": "explicit",
+      "target": "./dist/index.js",
+      "identifier": "COMMANDS"
+    },
     "dirname": "pl-service",
     "topicSeparator": " "
   }
