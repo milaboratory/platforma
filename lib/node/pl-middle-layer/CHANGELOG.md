@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.37
+
+### Patch Changes
+
+- a8bd20e: fix for equality function in updates
+
 ## 1.10.36
 
 ### Patch Changes
