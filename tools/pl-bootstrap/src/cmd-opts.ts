@@ -34,21 +34,33 @@ export const LicenseFlags = {
 
 export const AddressesFlags = {
   'grpc-port': Flags.integer({
-    description: "port that the platform's grpc server will listen, by default it's 6345",
-    default: 6345,
+    description: 'port for Platforma Backend gRPC API. Default is 6345',
     env: 'PLATFORMA_GRPC_PORT'
   }),
 
+  'grpc-listen': Flags.string({
+    description: 'full listen addr for Platforma Backend gRPC API. Default is 127.0.0.1:6345',
+    env: 'PLATFORMA_GRPC_LISTEN'
+  }),
+
   'monitoring-port': Flags.integer({
-    description: "port that the platform's monitoring server will listen, by default it's 9090",
-    default: 9090,
+    description: 'port for Platforma Backend monitoring API. Default is 9090',
     env: 'PLATFORMA_MONITORING_PORT'
   }),
 
+  'monitoring-listen': Flags.string({
+    description: 'full listen addr for Platforma Backend monitoring API. Default is 127.0.0.1:9090',
+    env: 'PLATFORMA_MONITORING_LISTEN'
+  }),
+
   'debug-port': Flags.integer({
-    description: "port that the platform's debug server will listen, by default it's 9091",
-    default: 9091,
+    description: 'port for Platforma Backend debug API. Default is 9091',
     env: 'PLATFORMA_DEBUG_PORT'
+  }),
+
+  'debug-listen': Flags.string({
+    description: 'full listen addr for Platforma Backend debug API. Default is 127.0.0.1:9091',
+    env: 'PLATFORMA_DEBUG_LISTEN'
   })
 };
 

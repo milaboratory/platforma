@@ -13,7 +13,7 @@ import * as util from './util';
 import winston from 'winston';
 
 export default class Core {
-  constructor(private readonly logger: winston.Logger) {}
+  constructor(private readonly logger: winston.Logger) { }
 
   public startLast() {
     const result = run.rerunLast(this.logger, { stdio: 'inherit' });
@@ -83,52 +83,22 @@ export default class Core {
     }
 
     if (!configPath) {
-      configPath = state.path('config-local.yaml');
+      configPath = path.join(configOptions.localRoot, 'config.yaml');
       this.logger.debug(`  rendering configuration '${configPath}'...`);
       fs.writeFileSync(configPath, plCfg.render(configOptions));
     }
 
-    var configReport: string[] = [];
-    const column = (t: string) => t.padStart(10, ' ');
-    configReport.push(`${column('config')}: ${configPath}`);
-    configReport.push(`${column('API')}: ${configOptions.grpc.listen}`);
-    configReport.push(`${column('log')}: ${configOptions.log.path}`);
+    const runInfo = this.renderRunInfo({
+      configPath,
+      dbPath: configOptions.core.db.path,
+      apiAddr: configOptions.grpc.listen,
+      logPath: configOptions.log.path,
+      primary: configOptions.storages.primary,
+      work: configOptions.storages.work,
+      library: configOptions.storages.library
+    });
 
-    const primaryType = configOptions.storages.primary.type;
-    switch (primaryType) {
-      case 'FS':
-        configReport.push(`${column('primary')}: ${configOptions.storages.primary.rootPath}`);
-        break;
-
-      case 'S3':
-        configReport.push(
-          `${column('primary')}: S3 at '${configOptions.storages.primary.endpoint ?? 'AWS'}', bucket '${configOptions.storages.primary.bucketName}', prefix: '${configOptions.storages.primary.keyPrefix}'`
-        );
-        break;
-
-      default:
-        util.assertNever(primaryType);
-    }
-
-    const libraryType = configOptions.storages.library.type;
-    switch (libraryType) {
-      case 'FS':
-        configReport.push(`${column('library')}: ${configOptions.storages.library.rootPath}`);
-        break;
-
-      case 'S3':
-        configReport.push(
-          `${column('library')}: S3 at '${configOptions.storages.library.endpoint ?? 'AWS'}', bucket '${configOptions.storages.library.bucketName}', prefix: '${configOptions.storages.library.keyPrefix}'`
-        );
-        break;
-
-      default:
-        util.assertNever(libraryType);
-    }
-
-    configReport.push(`${column('workdirs')}: ${configOptions.storages.work.rootPath}`);
-
-    this.logger.info(`Starting platforma:\n${configReport.join('\n')}`);
+    this.logger.info(`Starting platforma:\n${runInfo}`);
 
     return run.runProcess(
       this.logger,
@@ -179,8 +149,10 @@ export default class Core {
     const image = options?.image ?? `quay.io/minio/minio${version}`;
     this.logger.debug(`    minio image: ${image}`);
 
-    const storage = options?.storage ?? state.path('data', 'minio');
-    const stubStorage = state.path('data', 'stub');
+    const storage = options?.storage ?? state.data('minio');
+    util.ensureDir(storage)
+    const stubStorage = state.data('stub');
+    util.ensureDir(stubStorage)
 
     const minioPort = options?.minioPort ?? 9000;
     const minioConsolePort = options?.minioConsolePort ?? 9001;
@@ -198,7 +170,6 @@ export default class Core {
       PL_DATA_PACKAGE_ROOT: stubStorage,
       PL_IMAGE: 'scratch'
     };
-    const compose = this.readComposeFile(composeMinio);
 
     this.logger.debug(`    spawning child 'docker' process...`);
     const result = spawnSync(
@@ -238,12 +209,21 @@ export default class Core {
     options?: {
       image?: string;
       version?: string;
+      logLevel?: string;
+
       auth?: types.authOptions;
+
       license?: string;
       licenseFile?: string;
-      'grpc-port'?: number;
-      'monitoring-port'?: number;
-      'debug-port'?: number;
+
+      grpcPort?: number;
+      grpcAddr?: string;
+
+      monitoringPort?: number;
+      monitoringAddr?: string;
+
+      debugPort?: number;
+      debugAddr?: string;
     }
   ) {
     const composeS3Path = pkg.assets('compose-backend.yaml');
@@ -252,6 +232,12 @@ export default class Core {
     this.checkLicense(options?.license, options?.licenseFile);
 
     const storagePath = (s: string) => path.join(localRoot, s);
+    const storageDir = (s: string) => {
+      const p = storagePath(s)
+      util.ensureDir(p)
+      return p
+    }
+
     const logFilePath = storagePath('platforma.log');
     if (!fs.existsSync(logFilePath)) {
       fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
@@ -272,33 +258,42 @@ export default class Core {
       library.presignEndpoint = 'http://localhost:9000';
     }
 
+    const dbFSPath = storageDir('db')
+    const workFSPath = storageDir('work');
+    const usersFSPath = storagePath('users.htpasswd')
+    if (!fs.existsSync(usersFSPath)) {
+      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath)
+    }
+
     const envs: NodeJS.ProcessEnv = {
       MINIO_IMAGE: 'quay.io/minio/minio',
-      MINIO_STORAGE: storagePath('minio'),
+      MINIO_STORAGE: storageDir('minio'),
 
       PL_IMAGE: image,
 
-      PL_AUTH_HTPASSWD_PATH: pkg.assets('users.htpasswd'),
+      PL_AUTH_HTPASSWD_PATH: usersFSPath,
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile,
 
-      PL_LOG_LEVEL: 'info',
+      PL_LOG_LEVEL: options?.logLevel ?? 'info',
       PL_LOG_FILE: logFilePath,
 
-      PL_DATA_DB_ROOT: storagePath('db'),
-      PL_DATA_PRIMARY_ROOT: storagePath('primary'),
-      PL_DATA_LIBRARY_ROOT: storagePath('library'),
-      PL_DATA_WORKDIR_ROOT: storagePath('work'),
-      PL_DATA_PACKAGE_ROOT: storagePath('packages'),
+      PL_DATA_DB_ROOT: dbFSPath,
+      PL_DATA_PRIMARY_ROOT: storageDir('primary'),
+      PL_DATA_LIBRARY_ROOT: storageDir('library'),
+      PL_DATA_WORKDIR_ROOT: workFSPath,
+      PL_DATA_PACKAGE_ROOT: storageDir('packages'),
 
       ...this.configureDockerStorage('primary', primary),
       ...this.configureDockerStorage('library', library)
     };
 
-    if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
-    if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
-    if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
-
+    if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
+    if (options?.grpcPort) envs.PL_GRPC_PORT = options.grpcPort.toString();
+    if (options?.monitoringAddr) envs.PL_MONITORING_ADDR = options.monitoringAddr;
+    if (options?.monitoringPort) envs.PL_MONITORING_PORT = options.monitoringPort.toString();
+    if (options?.debugAddr) envs.PL_DEBUG_ADDR = options.debugAddr;
+    if (options?.debugPort) envs.PL_DEBUG_PORT = options.debugPort.toString();
     if (options?.auth) {
       if (options.auth.enabled) {
         envs['PL_AUTH_ENABLED'] = 'true';
@@ -338,6 +333,18 @@ export default class Core {
 
     checkRunError(result, 'failed to start Platforma Backend in Docker');
     state.isActive = true;
+
+    const runInfo = this.renderRunInfo({
+      apiPort: options?.grpcPort,
+      apiAddr: options?.grpcAddr,
+      logPath: logFilePath,
+      primary: primary,
+      work: { type: 'FS', rootPath: workFSPath },
+      library: library,
+      dbPath: dbFSPath
+    });
+
+    this.logger.info(`Started platforma:\n${runInfo}`);
   }
 
   public startDocker(
@@ -349,13 +356,21 @@ export default class Core {
 
       image?: string;
       version?: string;
+
+      logLevel?: string;
+
       auth?: types.authOptions;
 
       license?: string;
       licenseFile?: string;
-      'grpc-port'?: number;
-      'monitoring-port'?: number;
-      'debug-port'?: number;
+      grpcPort?: number;
+      grpcAddr?: string;
+
+      monitoringPort?: number;
+      monitoringAddr?: string;
+
+      debugPort?: number;
+      debugAddr?: string;
     }
   ) {
     var composeFSPath = pkg.assets('compose-backend.yaml');
@@ -364,38 +379,58 @@ export default class Core {
     this.checkLicense(options?.license, options?.licenseFile);
 
     const storagePath = (s: string) => path.join(localRoot, s);
+    const storageDir = (s: string) => {
+      const p = storagePath(s)
+      util.ensureDir(p)
+      return p
+    }
 
-    const primaryFSPath = storagePath('primary');
-    const workFSPath = storagePath('work');
-    const libraryFSPath = storagePath('library');
+    const logFilePath = storagePath('platforma.log');
+    if (!fs.existsSync(logFilePath)) {
+      fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
+      fs.writeFileSync(logFilePath, '');
+    }
 
-    const primary = plCfg.storageSettingsFromURL(options?.primaryStorageURL ?? `file:.`, '.');
-    const library = plCfg.storageSettingsFromURL(options?.libraryStorageURL ?? `file:.`, '.');
+    const dbFSPath = storageDir('db')
+    const primaryFSPath = storageDir('primary')
+    const libraryFSPath = storageDir('library')
+    const workFSPath = storageDir('work')
+    const usersFSPath = storagePath('users.htpasswd')
+    if (!fs.existsSync(usersFSPath)) {
+      fs.copyFileSync(pkg.assets('users.htpasswd'), usersFSPath)
+    }
+
+    const primary = plCfg.storageSettingsFromURL(options?.primaryStorageURL ?? `file:${primaryFSPath}`, '.');
+    const library = plCfg.storageSettingsFromURL(options?.libraryStorageURL ?? `file:${libraryFSPath}`, '.');
 
     const envs: NodeJS.ProcessEnv = {
       MINIO_IMAGE: 'quay.io/minio/minio',
-      MINIO_STORAGE: storagePath('minio'),
+      MINIO_STORAGE: storageDir('minio'),
 
       PL_IMAGE: image,
-      PL_AUTH_HTPASSWD_PATH: pkg.assets('users.htpasswd'),
+      PL_AUTH_HTPASSWD_PATH: usersFSPath,
       PL_LICENSE: options?.license,
       PL_LICENSE_FILE: options?.licenseFile,
 
-      PL_DATA_DB_ROOT: storagePath('db'),
+      PL_LOG_LEVEL: 'info',
+      PL_LOG_FILE: logFilePath,
+
+      PL_DATA_DB_ROOT: dbFSPath,
       PL_DATA_PRIMARY_ROOT: primaryFSPath,
       PL_DATA_LIBRARY_ROOT: libraryFSPath,
-      PL_DATA_WORKDIR_ROOT: storagePath('work'),
-      PL_DATA_PACKAGE_ROOT: storagePath('packages'),
+      PL_DATA_WORKDIR_ROOT: workFSPath,
+      PL_DATA_PACKAGE_ROOT: storageDir('packages'),
 
       ...this.configureDockerStorage('primary', primary),
       ...this.configureDockerStorage('library', library)
     };
 
-    if (options?.['grpc-port'] != undefined) envs.PL_GRPC_PORT = options['grpc-port'].toString();
-    if (options?.['monitoring-port'] != undefined) envs.PL_MONITORING_PORT = options['monitoring-port'].toString();
-    if (options?.['debug-port'] != undefined) envs.PL_DEBUG_PORT = options['debug-port'].toString();
-
-    const compose = this.readComposeFile(composeFSPath);
+    if (options?.grpcAddr) envs.PL_GRPC_ADDR = options.grpcAddr;
+    if (options?.grpcPort) envs.PL_GRPC_PORT = options.grpcPort.toString();
+    if (options?.monitoringAddr) envs.PL_MONITORING_ADDR = options.monitoringAddr;
+    if (options?.monitoringPort) envs.PL_MONITORING_PORT = options.monitoringPort.toString();
+    if (options?.debugAddr) envs.PL_DEBUG_ADDR = options.debugAddr;
+    if (options?.debugPort) envs.PL_DEBUG_PORT = options.debugPort.toString();
 
     if (options?.auth) {
       if (options.auth.enabled) {
@@ -430,6 +465,18 @@ export default class Core {
 
     checkRunError(result, 'failed to start Platforma Backend in Docker');
     state.isActive = true;
+
+    const runInfo = this.renderRunInfo({
+      apiPort: options?.grpcPort,
+      apiAddr: options?.grpcAddr,
+      logPath: logFilePath,
+      primary: primary,
+      work: { type: 'FS', rootPath: workFSPath },
+      library: library,
+      dbPath: dbFSPath
+    });
+
+    this.logger.info(`Started platforma:\n${runInfo}`);
   }
 
   public stop() {
@@ -454,8 +501,10 @@ export default class Core {
         return;
 
       case 'process':
+        if (state.isValidPID) {
+          process.kill(lastRun.process!.pid!);
+        }
         state.isActive = false;
-        process.kill(lastRun.process!.pid!);
         return;
 
       default:
@@ -468,16 +517,33 @@ export default class Core {
       "last command run cache ('pl-service start' shorthand will stop working until next full start command call)",
       `'platforma' docker compose service containers and volumes`
     ];
-    const dirsToRemove: string[] = [state.path('data')];
+    const defaultDataRoot = state.data();
+    const dirsToRemove: string[] = [defaultDataRoot];
+
     if (state.lastRun?.docker?.primaryPath) {
-      dirsToRemove.push(state.lastRun!.docker!.primaryPath!);
+      const dockerStoragePath = state.lastRun?.docker?.primaryPath;
+      if (!dockerStoragePath.startsWith(defaultDataRoot)) {
+        dirsToRemove.push(dockerStoragePath);
+      }
     }
+
+    if (state.lastRun?.docker?.workPath) {
+      const workStoragePath = state.lastRun?.docker?.workPath;
+      if (!workStoragePath.startsWith(defaultDataRoot)) {
+        dirsToRemove.push(workStoragePath);
+      }
+    }
+
     if (state.lastRun?.process?.storagePath) {
-      dirsToRemove.push(state.lastRun!.process!.storagePath!);
+      const localStoragePath = state.lastRun?.process?.storagePath;
+      if (!localStoragePath.startsWith(defaultDataRoot)) {
+        dirsToRemove.push(localStoragePath);
+      }
     }
+
     const storageWarns =
       dirsToRemove.length > 0
-        ? `  - storages (you'll loose all projects and calculation results stored in the service instance):\n    - ${dirsToRemove.join('\n    - ')}`
+        ? `  - storages (you'll loose all projects and calculation results stored in service instances):\n    - ${dirsToRemove.join('\n    - ')}`
         : '';
 
     var warnMessage = `
@@ -511,7 +577,7 @@ ${storageWarns}
     fs.rmSync(state.path(), { recursive: true, force: true });
 
     this.logger.info(
-      `\nIf you want to remove all downloaded platforma binaries, delete '${pkg.binaries()}' dir manually\n`
+      `\nIf you want to remove all downloaded platforma binaries, delete '${state.binaries()}' dir manually\n`
     );
   }
 
@@ -574,7 +640,7 @@ ${storageWarns}
     let lastJwt = '';
     try {
       lastJwt = fs.readFileSync(jwtFile, { encoding });
-    } catch (e: any) {}
+    } catch (e: any) { }
 
     if (lastJwt == '') {
       lastJwt = util.randomStr(64);
@@ -585,7 +651,7 @@ ${storageWarns}
   }
 
   private destroyDocker(composePath: string, image: string) {
-    const stubStoragePath = state.path('data', 'stub');
+    const stubStoragePath = state.data('stub');
     const result = spawnSync('docker', ['compose', '--file', composePath, 'down', '--volumes', '--remove-orphans'], {
       env: {
         ...process.env,
@@ -654,6 +720,87 @@ You can obtain the license from "https://licensing.milaboratories.com".`);
     }
 
     return {};
+  }
+
+  private renderRunInfo(
+    runInfo: {
+      configPath?: string;
+      apiPort?: number;
+      apiAddr?: string;
+      logPath?: string;
+      dbPath?: string;
+      primary?: types.storageOptions;
+      work?: types.fsStorageOptions;
+      library?: types.storageOptions;
+    },
+    indent: number = 10
+  ) {
+    const report: string[] = [];
+
+    const column = (t: string) => t.padStart(indent, ' ');
+    if (runInfo.configPath) {
+      report.push(`${column('config')}: ${runInfo.configPath}`);
+    }
+
+    if (runInfo.apiAddr) {
+      report.push(`${column('API')}: ${runInfo.apiAddr}`);
+    } else if (runInfo.apiPort) {
+      report.push(`${column('API')}: 127.0.0.1:${runInfo.apiPort.toString()}`);
+    } else {
+      report.push(`${column('API')}: 127.0.0.1:6345`);
+    }
+
+    if (runInfo.logPath) {
+      report.push(`${column('log')}: ${runInfo.logPath}`);
+    }
+
+    const primaryType = runInfo.primary?.type;
+    switch (primaryType) {
+      case undefined:
+        break;
+
+      case 'FS':
+        report.push(`${column('primary')}: ${runInfo.primary!.rootPath!}`);
+        break;
+
+      case 'S3':
+        report.push(
+          `${column('primary')}: S3 at '${runInfo.primary!.endpoint ?? 'AWS'}', bucket '${runInfo.primary!.bucketName!}', prefix: '${runInfo.primary!.keyPrefix ?? ''}'`
+        );
+        break;
+
+      default:
+        util.assertNever(primaryType);
+    }
+
+    const libraryType = runInfo.library?.type;
+    switch (libraryType) {
+      case undefined:
+        break;
+
+      case 'FS':
+        report.push(`${column('library')}: ${runInfo.library!.rootPath!}`);
+        break;
+
+      case 'S3':
+        report.push(
+          `${column('library')}: S3 at '${runInfo.library!.endpoint ?? 'AWS'}', bucket '${runInfo.library!.bucketName!}', prefix: '${runInfo.library!.keyPrefix ?? ''}'`
+        );
+        break;
+
+      default:
+        util.assertNever(libraryType);
+    }
+
+    if (runInfo.work) {
+      report.push(`${column('workdirs')}: ${runInfo.work.rootPath}`);
+    }
+
+    if (runInfo.dbPath) {
+      report.push(`${column('db')}: ${runInfo.dbPath}`);
+    }
+
+    return report.join('\n');
   }
 
   private readComposeFile(fPath: string): any {

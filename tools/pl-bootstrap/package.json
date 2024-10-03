@@ -24,16 +24,17 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "vite": "catalog:",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
+    "jest": "catalog:",
     "prettier": "catalog:",
     "ts-jest": "catalog:",
-    "jest": "catalog:",
+    "ts-node": "catalog:",
     "tsconfig-paths": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:"
   },
   "dependencies": {
     "@oclif/core": "catalog:",

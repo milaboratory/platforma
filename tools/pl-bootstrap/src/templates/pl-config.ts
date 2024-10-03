@@ -72,7 +72,7 @@ export function storageSettingsFromURL(
 }
 
 export function loadDefaults(jwtKey: string, options?: types.plOptions): types.plSettings {
-  const localRoot = options?.localRoot ?? state.path('data', 'local-custom');
+  const localRoot = options?.localRoot ?? state.data('local-custom');
 
   const log: types.logSettings = {
     level: options?.log?.level ?? 'info',
@@ -98,6 +98,9 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
         { driver: 'jwt', key: jwtKey },
         { driver: 'htpasswd', path: `${localRoot}/users.htpasswd` }
       ]
+    },
+    db: {
+      path: `${localRoot}/db`
     }
   };
 
@@ -238,7 +241,7 @@ core:
   authEnabled: ${JSON.stringify(options.core.auth.enabled)}
   auth: ${JSON.stringify(options.core.auth.drivers)}
   db:
-    path: '${options.localRoot}/db'
+    path: '${options.core.db.path}'
 
 controllers:
   data:

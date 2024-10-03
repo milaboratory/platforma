@@ -1,5 +1,7 @@
 import os from 'os';
+import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 import winston from 'winston';
 import { randomBytes } from 'crypto';
@@ -52,4 +54,32 @@ export function resolveTilde(p: string): string {
     return path.join(os.homedir(), p.slice(1));
   }
   return p;
+}
+
+export function ensureDir(p: string) {
+  if (fs.existsSync(p)) {
+    return
+  }
+
+  fs.mkdirSync(p, {recursive: true})
+}
+
+export function getProcessName(pid: number): string {
+  try {
+    if (os.platform() !== 'win32') {
+      return execSync(`ps -p ${pid} -o comm=`, { encoding: 'utf8' }).trim();
+    }
+
+    const command = `wmic process where processid=${pid} get Caption`;
+    const lines = execSync(command, { encoding: 'utf8' }).split('\n');
+
+    // lines = ["Caption:", "<process name>"]
+    if (lines.length <= 1) {
+      return '';
+    }
+
+    return lines[1].trim();
+  } catch (e) {
+    return '';
+  }
 }

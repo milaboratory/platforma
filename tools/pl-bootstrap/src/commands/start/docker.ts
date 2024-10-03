@@ -42,7 +42,7 @@ export default class Docker extends Command {
           drivers: core.initAuthDriversList(flags, '.')
         }
       : undefined;
-    const storage = flags.storage ? path.join('.', flags.storage) : state.path('data', 'docker');
+    const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker');
 
     core.startDocker(storage, {
       primaryStorageURL: flags['storage-primary'],
@@ -57,9 +57,14 @@ export default class Docker extends Command {
 
       auth: authOptions,
 
-      'grpc-port': flags['grpc-port'],
-      'debug-port': flags['debug-port'],
-      'monitoring-port': flags['monitoring-port']
+      grpcAddr: flags['grpc-listen'],
+      grpcPort: flags['grpc-port'],
+
+      monitoringAddr: flags['monitoring-listen'],
+      monitoringPort: flags['monitoring-port'],
+
+      debugAddr: flags['debug-listen'],
+      debugPort: flags['debug-port']
     });
   }
 }

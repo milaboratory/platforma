@@ -40,7 +40,7 @@ export default class S3 extends Command {
         }
       : undefined;
 
-    const storage = flags.storage ? path.join('.', flags.storage) : state.path('data', 'docker-s3');
+    const storage = flags.storage ? path.join('.', flags.storage) : state.data('docker-s3');
 
     core.startDockerS3(storage, {
       image: flags.image,
@@ -51,9 +51,14 @@ export default class S3 extends Command {
 
       auth: authOptions,
 
-      'grpc-port': flags['grpc-port'],
-      'debug-port': flags['debug-port'],
-      'monitoring-port': flags['monitoring-port']
+      grpcAddr: flags['grpc-listen'],
+      grpcPort: flags['grpc-port'],
+
+      monitoringAddr: flags['monitoring-listen'],
+      monitoringPort: flags['monitoring-port'],
+
+      debugAddr: flags['debug-listen'],
+      debugPort: flags['debug-port']
     });
   }
 }

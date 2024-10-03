@@ -41,9 +41,11 @@ export type logOptions = DeepPartial<logSettings>;
 
 export type coreSettings = {
   auth: authSettings;
+  db: dbSettings;
 };
 export type coreOptions = {
   auth?: authOptions;
+  db?: dbOptions;
 };
 
 export type authSettings = {
@@ -51,6 +53,11 @@ export type authSettings = {
   drivers: authDriver[];
 };
 export type authOptions = Partial<authSettings>;
+
+export type dbSettings = {
+  path: string;
+};
+export type dbOptions = Partial<dbSettings>;
 
 export type authDriver =
   | {
