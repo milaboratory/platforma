@@ -7,7 +7,7 @@ import { Command } from '@oclif/core';
 import * as opts from './cmd-opts'
 import * as util from './util';
 
-export class GenerateOclifIndex extends Command {
+export default class OclifIndex extends Command {
   static flags = {
     ...opts.LogLevelFlag,
     ...opts.CommandsRootFlag,
@@ -16,7 +16,7 @@ export class GenerateOclifIndex extends Command {
   };
 
   async run() {
-    const { flags } = await this.parse(GenerateOclifIndex);
+    const { flags } = await this.parse(OclifIndex);
     const logger = util.createLogger(flags['log-level']);
 
     const commandsRoot = flags['commands-root'];

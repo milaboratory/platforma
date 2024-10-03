@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/oclif-index",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Small script for building static oclif commands indexes",
   "scripts": {
     "build": "vite build",
@@ -10,12 +10,14 @@
     "oclif-index": "./bin/run.js"
   },
   "files": [
-    "bin/run.cmd",
-    "bin/run.js",
-    "dist"
+    "./bin/run.cmd",
+    "./bin/run.js",
+    "./dist/"
   ],
   "keywords": [],
   "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
   "oclif": {
     "bin": "oclif-index",
     "commands": {

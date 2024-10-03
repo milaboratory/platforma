@@ -11,19 +11,19 @@ export const LogLevelFlag = {
 
 export const CommandsRootFlag = {
     'commands-root': Flags.string({
-        description: 'path to directory, where command declaration files are located',
-        default: './src/commands',
+        description: "path to directory, where command declaration files are located. Default is './src/commands/'",
+        default: './src/commands/',
     }),
 }
 
 export const SourceExtensionFlag = {
     'source-extension': Flags.string({
-        description: 'extension of files with command declarations',
+        description: "extension of files with command declarations. Default is '.ts'",
         default: '.ts',
     }),
 }
 export const IndexFileFlag = {
     'index-file': Flags.string({
-        description: 'path to file to be generated. Default is ./src/index.<ext>',
+        description: "path to file to be generated. Default is './src/index.<ext>'",
     })
 }
