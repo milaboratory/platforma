@@ -49,6 +49,23 @@ export function constructTreeLoadingRequest(
   return { seedResources, finalResources, pruningFunction };
 }
 
+// export type TreeLoadingStat = {
+//   resourceRequested: number;
+//   retrievedFields: number;
+//   prunnedFields: number;
+//   finalResources: number;
+//   retrievedKeyValues: number;
+//   millisSpent: number;
+// };
+
+// export function initialTreeLoadingStat(): TreeLoadingStat {
+//   return {
+//     resourceRequested: 0,
+//     retrievedFields: 0,
+//     prunnedFields: 0
+//   };
+// }
+
 /** Given the transaction (preferably read-only) and loading request, executes
  * the tree traversal algorithm, and collects fresh states of resources
  * to update the tree state. */
