@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.12
+
+### Patch Changes
+
+- 95f1b0d: Make any dropdown option accept "label" or "text" fields (for backward compatibility)
+
 ## 1.2.11
 
 ### Patch Changes

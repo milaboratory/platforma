@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.8
+
+### Patch Changes
+
+- 05cd19b: Use oclif-index script to build index file with commands
+
 ## 2.3.7
 
 ### Patch Changes
