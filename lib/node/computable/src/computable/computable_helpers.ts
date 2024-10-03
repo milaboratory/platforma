@@ -16,7 +16,8 @@ function nextEphemeralKey(): string {
 
 const DefaultRenderingOps: CellRenderingOps = {
   mode: 'Live',
-  resetValueOnError: true
+  resetValueOnError: true,
+  postprocessTimeout: 5000
 };
 
 function noopPostprocessValue<IR>(): (
