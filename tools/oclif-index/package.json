@@ -7,11 +7,11 @@
     "test": "jest"
   },
   "bin": {
-    "oclif-index": "./bin/run.js"
+    "oclif-index": "./bin/run.mjs"
   },
   "files": [
     "./bin/run.cmd",
-    "./bin/run.js",
+    "./bin/run.mjs",
     "./dist/"
   ],
   "keywords": [],
