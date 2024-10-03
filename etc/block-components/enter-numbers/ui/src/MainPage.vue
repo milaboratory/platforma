@@ -37,5 +37,10 @@ const args = app.createArgsModel({
     <code>
       {{ args.model  }}
     </code>
+    <h3>Outputs</h3>
+    <code>{{ app.outputValues }}</code>
+    <PlAlert type="error" v-if="app.hasErrors">
+      {{ app.outputErrors }}
+    </PlAlert>
   </PlBlockPage>
 </template>

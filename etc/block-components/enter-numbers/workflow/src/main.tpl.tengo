@@ -47,7 +47,7 @@ wf.body(func(args) {
 						"pl7.app/blockId": blockId
 					},
 					axesSpec: [{
-						type: "Int",
+						type: "String",
 						name: "pl7.app/test/numberIndex",
 						annotations: {
 							"pl7.app/label": "Index"
