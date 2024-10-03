@@ -161,8 +161,10 @@ builder := func() {
 
 		/**
 		 * Sets the cache time.
+		 * @deprecated use `cacheMillis`, `cacheSeconds`, `cacheMinutes` and `cacheHours` instead.
+		 * It wasn't obvious what time should be used.
 		 *
-		 * @param time: duration - the cache time from 'times' library.
+		 * @param time: duration - the cache time in nanoseconds.
 		 */
 		cache: func(time) {
 			ll.assert(
@@ -171,6 +173,15 @@ builder := func() {
 					"Did you forget to import a standard tengo library 'time'?")
 			cache = time
 			return self
+		},
+
+		cacheMillis: func(time) {
+			ll.assert(
+				is_int(time),
+				"cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'time'?")
+			cache = time
+			return self			
 		},
 
 		/**
