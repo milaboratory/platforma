@@ -20,6 +20,7 @@ packages:
   - lib/ui/uikit
 
   - tools/tengo-builder
+  - tools/oclif-index
   - tools/block-tools
   - tools/package-builder
   - tools/pl-bootstrap
