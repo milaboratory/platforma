@@ -14,7 +14,8 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
+    "build": "pnpm run oclif:index && vite build",
     "readme": "exec oclif readme",
     "test": "jest"
   },
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@platforma-sdk/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "rollup-plugin-node-externals": "catalog:",

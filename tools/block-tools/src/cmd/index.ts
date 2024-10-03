@@ -1,14 +1,14 @@
-import BuildMeta from './build-meta';
-import BuildModel from './build-model';
-import PackBlock from './pack-block';
-import Publish from './publish';
-import UploadPackageV1 from './upload-package-v1';
+import Cmd0 from './build-meta';
+import Cmd1 from './build-model';
+import Cmd3 from './pack';
+import Cmd4 from './publish';
+import Cmd5 from './upload-package-v1';
 
 // prettier-ignore
 export const COMMANDS = {
-  'upload-package-v1': UploadPackageV1,
-  'pack': PackBlock,
-  'build-model': BuildModel,
-  'build-meta': BuildMeta,
-  'publish': Publish,
+  'build-meta': Cmd0,
+  'build-model': Cmd1,
+  'pack': Cmd3,
+  'publish': Cmd4,
+  'upload-package-v1': Cmd5
 };
