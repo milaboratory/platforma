@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.14.12
+
+### Patch Changes
+
+- 7cd0fa6: regression: add missing commands after transfering to monorepo
+
 ## 1.14.11
 
 ### Patch Changes
