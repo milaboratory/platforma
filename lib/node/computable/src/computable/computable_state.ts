@@ -3,7 +3,8 @@ import {
   IntermediateRenderingResult,
   ComputableCtx,
   tryExtractComputableKernel,
-  containComputables
+  containComputables,
+  CellRenderingOps
 } from './kernel';
 import { HierarchicalWatcher } from '../hierarchical_watcher';
 import { Writable } from 'utility-types';
@@ -12,6 +13,7 @@ import { Watcher } from '../watcher';
 import { setImmediate } from 'node:timers';
 import { AccessorLeakException, AccessorProvider, UsageGuard } from './accessor_provider';
 import * as console from 'node:console';
+import { withTimeout } from '@milaboratories/ts-helpers';
 
 interface ExecutionError {
   error: unknown;
@@ -318,10 +320,17 @@ function calculateNodeValue(node: unknown, childStates: ChildrenStates): any {
 async function runPostprocessing<IR, T>(
   iResult: IntermediateRenderingResult<IR, T>,
   childrenStates: ChildrenStates,
-  stable: boolean
+  stable: boolean,
+  ops: CellRenderingOps
 ): Promise<T> {
   const iv = calculateNodeValue(iResult.ir, childrenStates);
-  return iResult.postprocessValue === undefined ? iv : await iResult.postprocessValue(iv, stable);
+  if (iResult.postprocessValue === undefined) return iv;
+  else if (ops.postprocessTimeout > 0)
+    return await withTimeout(
+      Promise.resolve(iResult.postprocessValue(iv, stable)),
+      ops.postprocessTimeout
+    );
+  else return await iResult.postprocessValue(iv, stable);
 }
 
 async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T): Promise<void> {
@@ -337,7 +346,8 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
           value = await runPostprocessing(
             state.selfState.iResult,
             state.childrenStates,
-            state.stable
+            state.stable,
+            ops
           );
         } catch (e: unknown) {
           // Adding postprocess error

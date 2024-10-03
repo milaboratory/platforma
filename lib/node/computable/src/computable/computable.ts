@@ -119,7 +119,8 @@ export interface ComputableRenderingOps extends CellRenderingOps {
 
 const DefaultRenderingOps: CellRenderingOps = {
   mode: 'Live',
-  resetValueOnError: true
+  resetValueOnError: true,
+  postprocessTimeout: 5000
 };
 
 /** This runs state cleanup logic */

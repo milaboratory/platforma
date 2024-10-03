@@ -1,30 +1,47 @@
+import * as tp from 'node:timers/promises';
+import { MiLogger } from './log';
+
 export class Aborted extends Error {
-  constructor(cause?: unknown) {
-    super('aborted', { cause });
+  constructor(ops?: { cause?: unknown; msg?: string }) {
+    super(ops?.msg ?? 'aborted', { cause: ops?.cause });
     this.name = 'AbortError';
   }
 }
 
-/** @deprecated */
-export function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
-  if (timeout === 0)
-    return new Promise((resolve, reject) => {
-      setImmediate(resolve);
-    });
-  else
-    return new Promise((resolve, reject) => {
-      let timeoutRef: NodeJS.Timeout;
-      let abortHandler = () => {
-        clearTimeout(timeoutRef);
-        reject(new Aborted(abortSignal?.reason));
-      };
-      if (abortSignal?.aborted) reject(new Aborted(abortSignal.reason));
-      timeoutRef = setTimeout(() => {
-        abortSignal?.removeEventListener('abort', abortHandler);
-        resolve();
-      }, timeout);
-      abortSignal?.addEventListener('abort', abortHandler);
-    });
+export async function sleep(timeout: number, abortSignal?: AbortSignal): Promise<void> {
+  try {
+    await tp.setTimeout(timeout, undefined, { signal: abortSignal });
+  } catch (e: any) {
+    throw new Aborted({ cause: abortSignal?.reason });
+  }
+}
+
+export async function withTimeout<T>(
+  targetPromise: Promise<T>,
+  timeout: number,
+  ops?: { msg?: string; logger?: MiLogger }
+): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined = undefined;
+
+  const timeoutPromise = new Promise<never>(
+    (resolve, reject) =>
+      (timeoutId = setTimeout(() => {
+        // resetting timeoutId, signaling the fact that we are in the timeout branch
+        timeoutId = undefined;
+        reject(new Aborted({ msg: ops?.msg ?? `Timeout after: ${timeout}ms` }));
+      }, timeout))
+  );
+
+  try {
+    return await Promise.race([targetPromise, timeoutPromise]);
+  } catch (e: unknown) {
+    if (e instanceof Aborted && timeoutId === undefined && ops?.logger)
+      // if user provided logger, we prevent abundand promise to throw unhandled rejection
+      targetPromise.catch((err) => ops!.logger!.warn(err));
+    throw e;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 export interface JitterOpts {

@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import {
   Aborted,
   createInfiniteRetryState,
@@ -8,7 +9,8 @@ import {
   nextRetryStateOrError,
   RetryOptions,
   sleep,
-  tryNextRetryState
+  tryNextRetryState,
+  withTimeout
 } from './temporal';
 
 test('timeout', async () => {
@@ -103,4 +105,8 @@ test('delay exponential with max delay reached max', () => {
   }
 
   expect(states[states.length - 1].nextDelay).toEqual(15000);
+});
+
+test('test timeout', () => {
+  expect(() => withTimeout(sleep(1000), 1)).rejects.toThrow(Aborted);
 });
