@@ -4,6 +4,7 @@ import LogViewPage from './LogViewPage.vue';
 import SlideModalPage from './SlideModalPage.vue';
 import { computed, reactive } from 'vue';
 import InjectEnvPage from './InjectEnvPage.vue';
+import PlDropdownPage from './PlDropdownPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -24,7 +25,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     routes: {
       '/': LogViewPage,
       '/slide-modal' : SlideModalPage,
-      '/inject-env': InjectEnvPage 
+      '/inject-env': InjectEnvPage,
+      '/pl-dropdown': PlDropdownPage, 
     }
   };
 });
