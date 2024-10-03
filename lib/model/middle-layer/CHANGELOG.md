@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.3
+
+### Patch Changes
+
+- 094fbf7: block id equality methods
+
 ## 1.4.2
 
 ### Patch Changes
