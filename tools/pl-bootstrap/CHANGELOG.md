@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.0.2
+
+### Patch Changes
+
+- 05cd19b: Use oclif-index script to build index file with commands
+
 ## 2.0.1
 
 ### Patch Changes

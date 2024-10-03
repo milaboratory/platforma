@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.14.13
+
+### Patch Changes
+
+- 05cd19b: Use oclif-index script to build index file with commands
+
 ## 1.14.12
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.3
+
+### Patch Changes
+
+- 95f1b0d: Make any dropdown option accept "label" or "text" fields (for backward compatibility)
+
 ## 1.6.2
 
 ### Patch Changes
