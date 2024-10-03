@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.3.17
+
+### Patch Changes
+
+- 23aef61: Add basic README to the ui-vue package
+
 ## 1.3.16
 
 ### Patch Changes
