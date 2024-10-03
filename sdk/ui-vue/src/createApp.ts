@@ -6,6 +6,7 @@ import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalRes
 import { createModel } from './createModel';
 import { parseQuery } from './urls';
 import { MultiError, unwrapValueOrErrors } from './utils';
+import { pick } from 'lodash';
 
 export function createApp<
   Args = unknown,
@@ -13,6 +14,11 @@ export function createApp<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
 >(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>) {
+  type AppModel = {
+    args: Args;
+    ui: UiState;
+  };
+
   const innerState = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
@@ -84,6 +90,23 @@ export function createApp<
         autoSave: true,
         onSave(newData) {
           platforma.setBlockUiState(newData);
+        },
+      });
+    },
+    createAppModel<T = AppModel>(options: StateModelOptions<AppModel, T> = {}) {
+      return createModel<T, AppModel>({
+        get() {
+          if (options.transform) {
+            return options.transform(innerState);
+          }
+
+          return pick(innerState, 'args', 'ui') as T;
+        },
+        validate: options.validate,
+        autoSave: true,
+        onSave(newData) {
+          console.log('save both...');
+          platforma.setBlockArgsAndUiState(newData.args, newData.ui);
         },
       });
     },
@@ -202,7 +225,9 @@ export function createApp<
     hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
   };
 
-  return reactive(Object.assign(methods, getters));
+  const main = methods.createAppModel();
+
+  return reactive(Object.assign(main, methods, getters));
 }
 
 export type BaseApp<
