@@ -36,6 +36,7 @@
     "@milaboratories/ts-helpers-oclif": "workspace:^",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
+    "lru-cache": "catalog:",
     "undici": "catalog:",
     "mime-types": "catalog:",
     "tar": "catalog:",

@@ -102,6 +102,7 @@ catalog:
 
   'utility-types': ^3.11.0
   'denque': ^2.1.0
+  'lru-cache': ^11.0.1
   'canonicalize': ^2.0.0
   'long': ^5.2.3
   'mime-types': ^2.1.35
