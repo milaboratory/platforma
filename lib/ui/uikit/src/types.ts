@@ -25,8 +25,20 @@ export type SimpleOption<T = unknown> = {
   value: T;
 };
 
-export type ListOption<T = unknown> = {
-  text: string;
+export type ListOption<T = unknown> =
+  | {
+      text: string;
+      description?: string;
+      value: T;
+    }
+  | {
+      label: string;
+      description?: string;
+      value: T;
+    };
+
+export type ListOptionNormalized<T = unknown> = {
+  label: string;
   description?: string;
   value: T;
 };

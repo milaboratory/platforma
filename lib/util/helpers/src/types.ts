@@ -1,6 +1,6 @@
 export type AnyFunction = (...args: any[]) => any;
 
-export type AnyAsyncFuntion = (...args: any[]) => Promise<any>;
+export type AnyAsyncFunction = (...args: any[]) => Promise<any>;
 
 export type Optional<T> = T | undefined;
 

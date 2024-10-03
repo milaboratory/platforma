@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ListOption } from '@/types';
+import type { ListOptionNormalized } from '@/types';
 
 const props = withDefaults(
   defineProps<{
-    item: ListOption;
+    option: ListOptionNormalized;
     isSelected: boolean;
     isHovered: boolean;
   }>(),
@@ -13,6 +13,8 @@ const props = withDefaults(
     isHovered: false,
   },
 );
+
+const label = computed(() => props.option.label);
 
 const classes = computed<string>(() => {
   const classList: string[] = [];
@@ -28,7 +30,7 @@ const classes = computed<string>(() => {
 <template>
   <div :class="classes" class="dropdown-tab-item">
     <div class="dropdown-tab-item__title text-caps13">
-      {{ props.item['text'] }}
+      {{ label }}
     </div>
   </div>
 </template>
