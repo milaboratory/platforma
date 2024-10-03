@@ -1,10 +1,12 @@
 import os from 'os';
 import fs from 'fs';
 import https from 'https';
+import path from 'path';
+
 import * as tar from 'tar';
 import winston from 'winston';
 import * as pkg from './package';
-import path from 'path';
+import state from './state';
 
 export const OSes = ['linux', 'macos', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
@@ -61,7 +63,7 @@ export function downloadArchive(
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
   const downloadURL = options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
 
-  const archiveFilePath = options?.saveTo ?? pkg.binaries(archiveName);
+  const archiveFilePath = options?.saveTo ?? state.binaries(archiveName);
   if (fs.existsSync(archiveFilePath)) {
     logger.info(`Platforma Backend archive download skipped: '${archiveFilePath}' already exists`);
     return Promise.resolve(archiveFilePath);
@@ -133,7 +135,7 @@ export function extractArchive(
   logger.debug(`  version: '${version}'`);
   const archiveName = `${binaryDirName({ version })}.tgz`;
 
-  const archivePath = options?.archivePath ?? pkg.binaries(archiveName);
+  const archivePath = options?.archivePath ?? state.binaries(archiveName);
   logger.debug(`  archive path: '${archivePath}'`);
 
   const targetDir = options?.extractTo ?? trimExtension(archivePath);
@@ -182,7 +184,7 @@ function binaryDirName(options?: { version?: string }): string {
 }
 
 export function binaryPath(version?: string, ...p: string[]): string {
-  return pkg.binaries(binaryDirName({ version }), ...p);
+  return state.binaries(binaryDirName({ version }), ...p);
 }
 
 function trimExtension(filename: string): string {

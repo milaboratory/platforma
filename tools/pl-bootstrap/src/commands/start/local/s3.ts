@@ -43,7 +43,7 @@ export default class S3 extends Command {
     core.mergeLicenseEnvs(flags);
 
     const workdir = flags['pl-workdir'] ?? '.';
-    const storage = flags.storage ? path.join(workdir, flags.storage) : state.path('data', 'local-s3');
+    const storage = flags.storage ? path.join(workdir, flags.storage) : state.data('local-s3');
     const logFile = flags['pl-log-file'] ? path.join(workdir, flags['pl-log-file']) : undefined;
 
     const authDrivers = core.initAuthDriversList(flags, workdir);
@@ -53,6 +53,18 @@ export default class S3 extends Command {
     if (flags['pl-sources']) {
       binaryPath = core.buildPlatforma({ repoRoot: flags['pl-sources'] });
     }
+
+    var listenGrpc: string = '127.0.0.1:6345';
+    if (flags['grpc-listen']) listenGrpc = flags['grpc-listen'];
+    else if (flags['grpc-port']) listenGrpc = `127.0.0.1:${flags['grpc-port']}`;
+
+    var listenMon: string = '127.0.0.1:9090';
+    if (flags['monitoring-listen']) listenMon = flags['monitoring-listen'];
+    else if (flags['monitoring-port']) listenMon = `127.0.0.1:${flags['monitoring-port']}`;
+
+    var listenDbg: string = '127.0.0.1:9091';
+    if (flags['debug-listen']) listenDbg = flags['debug-listen'];
+    else if (flags['debug-port']) listenDbg = `127.0.0.1:${flags['debug-port']}`;
 
     const startOptions: startLocalS3Options = {
       binaryPath: binaryPath,
@@ -67,9 +79,9 @@ export default class S3 extends Command {
       minioConsolePort: flags['s3-console-address-port'],
 
       configOptions: {
-        grpc: { listen: `127.0.0.1:${flags['grpc-port']}` },
-        monitoring: { listen: `127.0.0.1:${flags['monitoring-port']}` },
-        debug: { listen: `127.0.0.1:${flags['debug-port']}` },
+        grpc: { listen: listenGrpc },
+        monitoring: { listen: listenMon },
+        debug: { listen: listenDbg },
         license: { value: flags['license'], file: flags['license-file'] },
         log: { path: logFile },
         localRoot: storage,

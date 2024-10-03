@@ -2,6 +2,7 @@ import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import * as pkg from './package';
+import * as util from './util';
 
 export type runMode = 'docker' | 'process';
 
@@ -44,7 +45,7 @@ class State {
 
   private state: state = {
     lastRun: undefined,
-    isActive: false
+    isActive: false,
   };
 
   public readonly filePath: string;
@@ -79,12 +80,37 @@ class State {
     return path.join(this.dirPath, ...p);
   }
 
+  public data(...p: string[]): string {
+    return this.path('data', ...p);
+  }
+
+  public binaries(...p: string[]): string {
+    return this.path('binaries', ...p);
+  }
+
   private writeState() {
     fs.writeFileSync(this.filePath, JSON.stringify(this.state));
   }
 
   get isActive(): boolean {
-    return this.state.isActive;
+    if (this.state.isActive) {
+      return this.state.isActive;
+    }
+
+    if (!this.state.lastRun?.process?.pid) {
+      return false;
+    }
+
+    return this.isValidPID;
+  }
+
+  get isValidPID(): boolean {
+    if (!this.state.lastRun?.process?.pid) {
+      return false;
+    }
+
+    const processName = util.getProcessName(this.state.lastRun.process.pid);
+    return processName === 'platforma' || processName.endsWith('/platforma') || processName.endsWith('\\platforma');
   }
 
   set isActive(value: boolean) {

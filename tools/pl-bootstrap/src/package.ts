@@ -14,10 +14,6 @@ export function assets(...p: string[]): string {
   return path('assets', ...p);
 }
 
-export function binaries(...p: string[]): string {
-  return path('binaries', ...p);
-}
-
 export function composeFiles(): string[] {
   const dockerDirEntries = fs.readdirSync(assets());
   return dockerDirEntries
