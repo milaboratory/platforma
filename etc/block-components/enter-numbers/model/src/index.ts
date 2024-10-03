@@ -9,10 +9,10 @@ export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export const platforma = BlockModel.create<BlockArgs>('Heavy')
 
-  .initialArgs({ numbers: [] })
+  .initialArgs({ numbers: [1, 2, 3] })
 
   .output('numbers', (ctx) =>
-    ctx.prerun?.resolve({ field: 'numbers', assertFieldType: 'Input' })?.getDataAsJson<number[]>()
+    ctx.outputs?.resolve('numbers')?.getDataAsJson()
   )
 
   .sections((ctx) => {
