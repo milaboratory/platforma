@@ -1,0 +1,42 @@
+{
+  "name": "@platforma-sdk/oclif-index",
+  "version": "0.0.0",
+  "description": "Small script for building static oclif commands indexes",
+  "scripts": {
+    "build": "vite build",
+    "test": "true"
+  },
+  "bin": {
+    "oclif-index": "./bin/run.mjs"
+  },
+  "files": [
+    "./bin/run.cmd",
+    "./bin/run.mjs",
+    "./dist/"
+  ],
+  "keywords": [],
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.js",
+  "oclif": {
+    "bin": "oclif-index",
+    "commands": {
+      "strategy": "single",
+      "target": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "winston": "catalog:",
+    "@oclif/core": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "jest": "catalog:",
+    "@jest/globals": "catalog:",
+    "ts-jest": "catalog:"
+  }
+}
