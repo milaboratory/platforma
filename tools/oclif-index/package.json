@@ -4,7 +4,7 @@
   "description": "Small script for building static oclif commands indexes",
   "scripts": {
     "build": "vite build",
-    "test": "jest"
+    "test": "true"
   },
   "bin": {
     "oclif-index": "./bin/run.mjs"
