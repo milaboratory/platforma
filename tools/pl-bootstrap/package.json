@@ -5,23 +5,25 @@
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "oclif-index && vite build",
     "test": "jest --passWithNoTests"
   },
   "bin": {
     "pl-service": "./bin/run.js"
   },
   "files": [
+    "./dist/**/*",
+    "README.md",
     "bin/run.cmd",
     "bin/run.js",
-    "dist",
-    "assets",
-    "postinstall.js"
+    "./assets/**",
+    "./postinstall.js"
   ],
   "keywords": [],
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@platforma-sdk/oclif-index": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
