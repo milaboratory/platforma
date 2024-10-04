@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.2.30
+
+### Patch Changes
+
+- 3c85025: getRawPlatformaInstance
+
 ## 1.2.29
 
 ### Patch Changes
