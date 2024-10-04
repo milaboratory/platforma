@@ -29,7 +29,7 @@
     "preview": "vite preview",
     "parse-icons-folder": "node scripts/parse-icons.js",
     "minify-icons": "svgo -f src/assets/icons/icon-assets -o src/assets/icons/icon-assets-min",
-    "generate-icons": "yarpm run parse-icons-folder && yarpm run minify-icons",
+    "generate-icons": "pnpm run parse-icons-folder && pnpm run minify-icons",
     "lint": "eslint . --ext js,ts,vue",
     "check": "yarpm type-check && yarpm test && yarpm lint",
     "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
