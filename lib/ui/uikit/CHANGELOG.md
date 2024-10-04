@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.13
+
+### Patch Changes
+
+- 09fa81a: Added settings-2 icon
+
 ## 1.2.12
 
 ### Patch Changes
