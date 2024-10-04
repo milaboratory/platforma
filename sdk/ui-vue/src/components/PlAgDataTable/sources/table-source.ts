@@ -181,15 +181,18 @@ export async function updatePFrameGridOptions(
   columnDefs: ColDef[];
   datasource: IDatasource;
 }> {
+  console.log('here platforma 1');
   const specs = await pfDriver.getSpec(pt);
+  console.log('here platforma 2');
   const indices = specs
-    .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
+    .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id) || lodash.isEqual(sheet.column, spec.id)) ? i : null))
     .filter((entry) => entry !== null);
+  console.log(specs, sheets, indices);
   const fields = lodash.cloneDeep(indices);
 
   for (let i = indices.length - 1; i >= 0; --i) {
     const idx = indices[i];
-    if (specs[idx].type !== 'column' || specs[idx].spec.name !== 'pl7.app/label') continue;
+    if (!(specs[idx].type === 'column' && specs[idx].spec.axesSpec.length === 1 && specs[idx].spec.name === 'pl7.app/label')) continue;
 
     const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
