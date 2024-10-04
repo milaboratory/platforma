@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.1.1
+
+### Patch Changes
+
+- c107f11: Allow docker to write dirs in user home
+
 ## 2.1.0
 
 ### Minor Changes
