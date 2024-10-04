@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.0
+
+### Minor Changes
+
+- 6495dcc: add default app model (initial version)
+
 ## 1.3.19
 
 ### Patch Changes

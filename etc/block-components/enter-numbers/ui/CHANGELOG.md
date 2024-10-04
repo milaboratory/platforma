@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.12
+
+### Patch Changes
+
+- 6495dcc: add default app model (initial version)
+- Updated dependencies [6495dcc]
+  - @platforma-sdk/ui-vue@1.4.0
+
 ## 1.0.11
 
 ### Patch Changes
