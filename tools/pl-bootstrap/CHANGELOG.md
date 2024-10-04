@@ -1,5 +1,12 @@
 # @platforma-sdk/bootstrap
 
+## 2.1.0
+
+### Minor Changes
+
+- 31d2654: Use pl 1.13.4 as default version
+- 1564695: Use pl 1.13.3 as default version
+
 ## 2.0.2
 
 ### Patch Changes
