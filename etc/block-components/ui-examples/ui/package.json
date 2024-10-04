@@ -12,6 +12,7 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "vue": "catalog:",
+    "@platforma-sdk/model": "workspace:^",
     "@platforma-sdk/ui-vue": "workspace:^"
   },
   "devDependencies": {
