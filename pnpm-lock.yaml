@@ -486,6 +486,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.1.4(vite@5.4.8(@types/node@20.16.5)(sass@1.77.2))(vue@3.5.9(typescript@5.5.4))
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
       canonicalize:
         specifier: 'catalog:'
         version: 2.0.0
@@ -507,6 +510,9 @@ importers:
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
+      resize-observer-polyfill:
+        specifier: 'catalog:'
+        version: 1.5.1
       sass:
         specifier: 'catalog:'
         version: 1.77.2

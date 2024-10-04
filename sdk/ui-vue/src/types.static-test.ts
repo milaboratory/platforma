@@ -2,7 +2,7 @@ import type { Expect, Equal } from '@milaboratories/helpers';
 import { z } from 'zod';
 import type { ModelOptions, Model } from './types';
 import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma } from '@platforma-sdk/model';
-import type { BaseApp, createApp } from './createApp';
+import type { BaseApp, createApp } from './internal/createApp';
 import type { App } from './defineApp';
 import { computed, type Component } from 'vue';
 
@@ -22,8 +22,8 @@ const __model1 = __createModel({
   },
   validate,
   autoSave: true,
-  onSave(seed) {
-    console.log('save', seed);
+  onSave(_seed) {
+    //
   },
 });
 
@@ -33,8 +33,8 @@ const __model2 = __createModel({
   },
   validate,
   autoSave: true,
-  onSave(seed) {
-    console.log('save', seed);
+  onSave(_seed) {
+    //
   },
 });
 

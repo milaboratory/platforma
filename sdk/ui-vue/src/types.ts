@@ -18,12 +18,13 @@ export interface ModelOptions<M, V = M> extends ReadableComputed<M> {
 
 export type Model<T> = {
   model: T;
-  valid: boolean;
-  isChanged: boolean;
-  error: Error | undefined;
-  errorString: string | undefined;
-  save: () => void;
-  revert: () => void;
+  readonly valid: boolean;
+  readonly isChanged: boolean;
+  readonly error: Error | undefined;
+  readonly errorString: string | undefined;
+  readonly save: () => void;
+  readonly revert: () => void;
+  readonly setError: (cause: unknown) => void;
 };
 
 interface ReadableComputed<T> {
