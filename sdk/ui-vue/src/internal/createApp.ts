@@ -1,11 +1,11 @@
-import { deepClone } from '@milaboratories/helpers';
+import { deepClone, throttle } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from './types';
-import { createModel } from './createModel';
-import { parseQuery } from './urls';
-import { MultiError, unwrapValueOrErrors } from './utils';
+import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from '../types';
+import { createModel } from '../createModel';
+import { parseQuery } from '../urls';
+import { MultiError, unwrapValueOrErrors } from '../utils';
 import { pick } from 'lodash';
 
 export function createApp<
@@ -19,7 +19,15 @@ export function createApp<
     ui: UiState;
   };
 
-  const innerState = reactive({
+  const throttleSpan = 100; // @todo settings and more flexible
+
+  const setBlockArgs = throttle(platforma.setBlockArgs, throttleSpan);
+
+  const setBlockUiState = throttle(platforma.setBlockUiState, throttleSpan);
+
+  const setBlockArgsAndUiState = throttle(platforma.setBlockArgsAndUiState, throttleSpan);
+
+  const snapshot = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
     ui: Object.freeze(state.ui),
@@ -34,43 +42,43 @@ export function createApp<
   platforma.onStateUpdates(async (updates) => {
     updates.forEach((patch) => {
       if (patch.key === 'args') {
-        innerState.args = Object.freeze(patch.value);
+        snapshot.args = Object.freeze(patch.value);
       }
 
       if (patch.key === 'ui') {
-        innerState.ui = Object.freeze(patch.value);
+        snapshot.ui = Object.freeze(patch.value);
       }
 
       if (patch.key === 'outputs') {
-        innerState.outputs = Object.freeze(patch.value);
+        snapshot.outputs = Object.freeze(patch.value);
       }
 
       if (patch.key === 'navigationState') {
-        innerState.navigationState = Object.freeze(patch.value);
+        snapshot.navigationState = Object.freeze(patch.value);
       }
     });
 
     await nextTick(); // @todo remove
   });
 
-  const cloneArgs = () => deepClone(innerState.args) as Args;
-  const cloneUiState = () => deepClone(innerState.ui) as UiState;
-  const cloneNavigationState = () => deepClone(innerState.navigationState) as Mutable<NavigationState<Href>>;
+  const cloneArgs = () => deepClone(snapshot.args) as Args;
+  const cloneUiState = () => deepClone(snapshot.ui) as UiState;
+  const cloneNavigationState = () => deepClone(snapshot.navigationState) as Mutable<NavigationState<Href>>;
 
   const methods = {
     createArgsModel<T = Args>(options: StateModelOptions<Args, T> = {}) {
       return createModel<T, Args>({
         get() {
           if (options.transform) {
-            return options.transform(innerState.args);
+            return options.transform(snapshot.args);
           }
 
-          return innerState.args as T;
+          return snapshot.args as T;
         },
         validate: options.validate,
         autoSave: true,
         onSave(newArgs) {
-          platforma.setBlockArgs(newArgs);
+          setBlockArgs(newArgs);
         },
       });
     },
@@ -81,15 +89,15 @@ export function createApp<
       return createModel<T, UiState>({
         get() {
           if (options.transform) {
-            return options.transform(innerState.ui);
+            return options.transform(snapshot.ui);
           }
 
-          return (innerState.ui ?? defaultUiState()) as T;
+          return (snapshot.ui ?? defaultUiState()) as T;
         },
         validate: options.validate,
         autoSave: true,
         onSave(newData) {
-          platforma.setBlockUiState(newData);
+          setBlockUiState(newData);
         },
       });
     },
@@ -97,16 +105,15 @@ export function createApp<
       return createModel<T, AppModel>({
         get() {
           if (options.transform) {
-            return options.transform(innerState);
+            return options.transform(snapshot);
           }
 
-          return pick(innerState, 'args', 'ui') as T;
+          return { args: snapshot.args, ui: snapshot.ui } as T;
         },
         validate: options.validate,
         autoSave: true,
         onSave(newData) {
-          console.log('save both...');
-          platforma.setBlockArgsAndUiState(newData.args, newData.ui);
+          setBlockArgsAndUiState(newData.args, newData.ui);
         },
       });
     },
@@ -122,7 +129,7 @@ export function createApp<
       });
 
       watch(
-        () => innerState.outputs,
+        () => snapshot.outputs,
         () => {
           try {
             Object.assign(data, {
@@ -147,7 +154,7 @@ export function createApp<
      * @returns
      */
     unwrapOutputs<K extends keyof Outputs>(...keys: K[]): UnwrapOutputs<Outputs, K> {
-      const outputs = innerState.outputs;
+      const outputs = snapshot.outputs;
       const entries = keys.map((key) => [key, unwrapValueOrErrors(outputs[key])]);
       return Object.fromEntries(entries);
     },
@@ -156,13 +163,15 @@ export function createApp<
      * @see outputs
      */
     getOutputField(key: keyof Outputs) {
-      return innerState.outputs[key];
+      return snapshot.outputs[key];
     },
     /**
      * @deprecated use outputValues instead
      * @see outputValues
      */
     getOutputFieldOkOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
+      console.warn('use reactive app.outputValues.fieldName instead instead of getOutputFieldOkOptional(fieldName)');
+
       const result = this.getOutputField(key);
 
       if (result && result.ok) {
@@ -172,6 +181,8 @@ export function createApp<
       return undefined;
     },
     getOutputFieldErrorsOptional<K extends keyof Outputs>(key: K): string[] | undefined {
+      console.warn('use reactive app.outputErrors.fieldName instead instead of getOutputFieldErrorsOptional(fieldName)');
+
       const result = this.getOutputField(key);
 
       if (result && !result.ok) {
@@ -202,32 +213,29 @@ export function createApp<
   };
 
   const getters = {
-    args: computed(() => innerState.args),
-    outputs: computed(() => innerState.outputs),
-    ui: computed(() => innerState.ui),
-    navigationState: computed(() => innerState.navigationState),
-    href: computed(() => innerState.navigationState.href),
+    args: computed(() => snapshot.args),
+    outputs: computed(() => snapshot.outputs),
+    ui: computed(() => snapshot.ui),
+    navigationState: computed(() => snapshot.navigationState),
+    href: computed(() => snapshot.navigationState.href),
 
     outputValues: computed<OutputValues<Outputs>>(() => {
-      const entries = Object.entries(innerState.outputs).map(([k, vOrErr]) => [
-        k,
-        vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined,
-      ]);
+      const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
       return Object.fromEntries(entries);
     }),
 
     outputErrors: computed<OutputErrors<Outputs>>(() => {
-      const entries = Object.entries(innerState.outputs).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
+      const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
       return Object.fromEntries(entries);
     }),
 
-    queryParams: computed(() => parseQuery<Href>(innerState.navigationState.href)),
-    hasErrors: computed(() => Object.values(innerState.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
+    queryParams: computed(() => parseQuery<Href>(snapshot.navigationState.href)),
+    hasErrors: computed(() => Object.values(snapshot.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
   };
 
-  const main = methods.createAppModel();
+  const appModel = methods.createAppModel();
 
-  return reactive(Object.assign(main, methods, getters));
+  return reactive(Object.assign(appModel, methods, getters));
 }
 
 export type BaseApp<
