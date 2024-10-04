@@ -1,5 +1,15 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.1
+
+### Patch Changes
+
+- 21a9b9c: Automatic AGGrid license injection & Reactive file content helper
+- c9d051f: getContentString for ReactiveFileContent
+- Updated dependencies [3c85025]
+  - @platforma-sdk/model@1.2.30
+  - @milaboratories/uikit@1.2.13
+
 ## 1.4.0
 
 ### Minor Changes

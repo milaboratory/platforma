@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.2.29",
+  "version": "1.2.30",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,7 +15,8 @@
   "scripts": {
     "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
     "build": "node ./scripts/save-package-version.cjs && vite build",
-    "test": "node ./scripts/save-package-version.cjs && jest"
+    "test": "node ./scripts/save-package-version.cjs && jest",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

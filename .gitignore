@@ -12,4 +12,4 @@ tmp/
 test_config.json
 .test_auth.json
 
-vite.config.mts.timestamp-*
+vite.config.*.timestamp-*

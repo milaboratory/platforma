@@ -8,6 +8,7 @@ export * from './platforma';
 export * from './ref_util';
 export * from './render';
 export * from './sdk_info';
+export * from './raw_globals';
 
 // reexporting everything from SDK model
 export * from '@milaboratories/pl-model-common';
