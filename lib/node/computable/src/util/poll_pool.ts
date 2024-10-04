@@ -265,7 +265,7 @@ export abstract class PollComputablePool<Req, Res> {
   protected abstract resultsEqual(res1: Res, res2: Res): boolean;
 
   private createEntry(req: Req): PollComputablePoolEntry<Res> {
-    const watcher = new HierarchicalWatcher();
+    // const watcher = new HierarchicalWatcher();
     const parent = this;
     return new (class implements PollComputablePoolEntry<Res> {
       value: Res | undefined = undefined;
@@ -287,7 +287,7 @@ export abstract class PollComputablePool<Req, Res> {
         try {
           const newValue = await parent.readValue(req);
           if (
-            !(newValue === undefined && this.value === undefined) &&
+            (newValue !== undefined || this.value !== undefined) &&
             (newValue === undefined ||
               this.value === undefined ||
               !parent.resultsEqual(this.value, newValue))
@@ -299,6 +299,7 @@ export abstract class PollComputablePool<Req, Res> {
         } catch (e: unknown) {
           this.error = e;
           this.value = undefined;
+          this.change.markChanged();
           if (listeners !== undefined) for (const listener of listeners) listener.reject(e);
           throw e;
         }
@@ -309,6 +310,7 @@ export abstract class PollComputablePool<Req, Res> {
       onPoolTerminated(): void {
         this.error = new Error('Polling pool terminated');
         this.value = undefined;
+        this.change.markChanged();
       }
     })();
   }

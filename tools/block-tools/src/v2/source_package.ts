@@ -1,7 +1,7 @@
 import path from 'path';
 import { tryLoadFile } from '../util';
 import { ResolvedBlockPackDescriptionFromPackageJson, BlockPackDescriptionAbsolute } from './model';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import fsp from 'node:fs/promises';
 import {
   BlockPackDescriptionFromPackageJsonRaw,
@@ -27,7 +27,8 @@ export function parsePackageName(packageName: string): Pick<BlockPackId, 'organi
 }
 
 export async function tryLoadPackDescription(
-  moduleRoot: string
+  moduleRoot: string,
+  logger?: MiLogger
 ): Promise<BlockPackDescriptionAbsolute | undefined> {
   const fullPackageJsonPath = path.resolve(moduleRoot, 'package.json');
   try {
@@ -51,6 +52,7 @@ export async function tryLoadPackDescription(
     if (descriptionParsingResult.success) return descriptionParsingResult.data;
     return undefined;
   } catch (e: any) {
+    logger?.info(e);
     return undefined;
   }
 }

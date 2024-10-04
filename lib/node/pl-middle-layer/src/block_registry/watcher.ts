@@ -36,7 +36,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
       case 'dev-v2':
         return `dev_2_${req.folder}_${req.mtime}`;
       case 'from-registry-v2':
-        return `from_registry_v2_${req.registryUrl}_${req.id.organization}_${req.id.name}`;
+        return `from_registry_v2_${req.registryUrl}_${req.id.organization}_${req.id.name}_${req.id.version}`;
       default:
         return NoUpdatesKey;
     }
@@ -58,7 +58,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
 
         case 'dev-v2': {
           try {
-            const description = await tryLoadPackDescription(req.folder);
+            const description = await tryLoadPackDescription(req.folder, this.logger);
             if (description === undefined) return undefined;
             const mtime = await getDevV2PacketMtime(description);
             if (mtime === req.mtime) return undefined;
@@ -86,6 +86,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
           return undefined;
       }
     } catch (e: unknown) {
+      this.logger.warn(e);
       return undefined;
     }
   }
