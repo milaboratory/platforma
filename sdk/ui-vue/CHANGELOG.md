@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.3
+
+### Patch Changes
+
+- ae39723: fix for ReactiveFileContent
+
 ## 1.4.2
 
 ### Patch Changes
