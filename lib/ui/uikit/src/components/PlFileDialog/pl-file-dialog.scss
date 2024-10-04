@@ -5,18 +5,9 @@
   flex-direction: column;
   gap: 24px;
   overflow: auto;
-
-  &__title {
-    font-weight: 500;
-    font-size: 28px;
-    line-height: 32px;
-    letter-spacing: -0.56px;
-    color: var(--txt-01);
-    margin-bottom: 16px;
-    margin: 0 24px 16px 24px;
-  }
-
+  
   &__search {
+    padding-top: 6px;
     display: flex;
     flex-direction: column;
     gap: 24px;

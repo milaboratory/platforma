@@ -1,6 +1,8 @@
-import { BlobHandleAndSize, getRawPlatformaInstance } from '@platforma-sdk/model';
-import { computed, ComputedRef, ref, Ref, shallowRef, ShallowRef, watch } from 'vue';
-import { ZodSchema } from 'zod';
+import type { BlobHandleAndSize } from '@platforma-sdk/model';
+import { getRawPlatformaInstance } from '@platforma-sdk/model';
+import type { ComputedRef, ShallowRef } from 'vue';
+import { computed, shallowRef } from 'vue';
+import type { ZodSchema } from 'zod';
 
 type FileHandle = BlobHandleAndSize['handle'];
 
@@ -40,6 +42,7 @@ export class ReactiveFileContent {
         return new TextDecoder().decode(bytes.value);
       } catch (e: unknown) {
         console.error(e);
+        return undefined;
       }
     });
   }
@@ -60,6 +63,7 @@ export class ReactiveFileContent {
         return data;
       } catch (e: unknown) {
         console.error(e);
+        return undefined;
       }
     });
   }

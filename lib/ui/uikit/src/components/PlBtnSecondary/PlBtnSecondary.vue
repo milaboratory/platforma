@@ -41,7 +41,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <BtnBase v-bind="props" class="ui-btn-secondary">
+  <BtnBase v-bind="props" class="pl-btn-secondary">
     <slot />
   </BtnBase>
 </template>

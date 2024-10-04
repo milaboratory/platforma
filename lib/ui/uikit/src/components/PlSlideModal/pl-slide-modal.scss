@@ -1,0 +1,88 @@
+@import '@/assets/mixins.scss';
+
+.pl-slide-modal {
+  --padding-top: 24px;
+  position: absolute;
+  top: var(--title-bar-height);
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-slide-dialog);
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--padding-top);
+
+  min-width: 368px;
+  width: 368px;
+  max-width: 100%;
+
+  will-change: transform;
+
+  background-color: #fff;
+
+  border-left: 1px solid var(--div-grey);
+  /* Shadow L */
+  box-shadow:
+    0px 8px 16px -4px rgba(15, 36, 77, 0.16),
+    0px 12px 32px -4px rgba(15, 36, 77, 0.16);
+
+  .close-dialog-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    cursor: pointer;
+    background-color: #d3d7e0;
+    @include mask(url('@/assets/images/24_close.svg'), 24px);
+    &:hover {
+      background-color: var(--main-dark-color);
+    }
+  }
+
+  &.has-title {
+    --padding-top: 0;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-family-base);
+    font-size: 28px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 32px; /* 114.286% */
+    letter-spacing: -0.56px;
+    padding: 24px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    min-height: 88px;
+    padding: 0 24px;
+    button {
+      min-width: 160px;
+    }
+  }
+
+  // Closes modal too
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px 0;
+    margin: 0 24px;
+  }
+
+  &__shadow {
+    position: absolute;
+    z-index: var(--z-slide-shadow);
+    top: var(--title-bar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.64);
+  }
+}
