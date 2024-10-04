@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.2
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+- Updated dependencies [8db877c]
+  - @milaboratories/uikit@1.2.14
+
 ## 1.4.1
 
 ### Patch Changes

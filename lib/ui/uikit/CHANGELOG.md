@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.14
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+
 ## 1.2.13
 
 ### Patch Changes
