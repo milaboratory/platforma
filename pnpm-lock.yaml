@@ -353,6 +353,9 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers.model':
         specifier: workspace:*
         version: link:../../enter-numbers/model
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../../../../sdk/model
       '@platforma-sdk/ui-vue':
         specifier: workspace:^
         version: link:../../../../sdk/ui-vue

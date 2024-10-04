@@ -1,10 +1,30 @@
 <script setup lang="ts">
-import { PlBlockPage, PlLogView, useInterval } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlCheckbox, PlLogView, PlRow, PlTextArea, useInterval } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
+import { ValueOrErrors } from '@platforma-sdk/model';
 
 const data = reactive({
-  logContent: ''
+  logContent: '',
+  showError: false,
+  text: 'my text'
+});
+
+const error = computed(() => data.showError ? faker.lorem.paragraph() : undefined);
+
+const output = computed<ValueOrErrors<string> | undefined>(() => {
+  if (data.showError) {
+    return {
+      ok: false as const,
+      errors: ['Error1', 'Error2'],
+      moreErrors: false
+    }
+  }
+
+  return {
+    ok: true as const,
+    value: data.logContent,
+  }
 });
 
 useInterval(() => {
@@ -16,6 +36,12 @@ useInterval(() => {
 <template>
   <PlBlockPage style="max-width: 100%">
     <template #title>PlLogView</template>
-    <PlLogView :value="data.logContent" />
+    <PlRow>
+      <PlCheckbox v-model="data.showError">Show error</PlCheckbox>
+    </PlRow>
+    <h4>Value and Error</h4>
+    <PlLogView :value="data.logContent" :error="error" />
+    <h4>Output (ValueOrErrors)</h4>
+    <PlLogView :output="output" />
   </PlBlockPage>
 </template>
