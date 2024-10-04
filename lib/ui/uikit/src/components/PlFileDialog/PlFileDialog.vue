@@ -14,11 +14,11 @@ import { PlBtnPrimary } from '../PlBtnPrimary';
 import { PlBtnGhost } from '../PlBtnGhost';
 import { useEventListener } from '@/composition/useEventListener';
 
-const vFocus = {
-  mounted: (el: HTMLElement) => {
-    (el.querySelector('button.ui-btn-primary') as HTMLButtonElement | null)?.focus();
-  },
-};
+// const vFocus = {
+//   mounted: (el: HTMLElement) => {
+//     (el.querySelector('button.pl-btn-primary') as HTMLButtonElement | null)?.focus();
+//   },
+// };
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -279,6 +279,10 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
     ev.preventDefault();
     data.showHiddenItems = !data.showHiddenItems;
   }
+
+  if (ev.code === 'Enter') {
+    submit();
+  }
 });
 
 onUpdated(loadAvailableStorages);
@@ -294,9 +298,17 @@ const vTextOverflown = {
 </script>
 
 <template>
-  <PlDialogModal class="split" :model-value="modelValue" width="688px" height="720px" @update:model-value="closeModal" @click.stop="deselectAll">
-    <div v-focus class="file-dialog" @keyup.enter="submit">
-      <div class="file-dialog__title">{{ title ?? 'Select files' }}</div>
+  <PlDialogModal
+    :no-content-gutters="true"
+    class="split"
+    :model-value="modelValue"
+    width="688px"
+    height="720px"
+    @update:model-value="closeModal"
+    @click.stop="deselectAll"
+  >
+    <template #title>{{ title ?? 'Select files' }}</template>
+    <div class="file-dialog">
       <div class="file-dialog__search">
         <PlDropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
         <PlTextField :model-value="data.dirPath" label="Enter path" @update:model-value="updateDirPathDebounced" />
@@ -338,10 +350,9 @@ const vTextOverflown = {
         </div>
       </div>
     </div>
-    <!--@todo fix uikit css-->
-    <div style="padding-top: 24px; display: flex; gap: 12px; border-top: 1px solid rgb(225, 227, 235)" class="form-modal__actions bordered">
+    <template #actions>
       <PlBtnPrimary style="min-width: 160px" :disabled="!isReady" @click.stop="submit">Import</PlBtnPrimary>
       <PlBtnGhost :justify-center="false" @click.stop="closeModal">Cancel</PlBtnGhost>
-    </div>
+    </template>
   </PlDialogModal>
 </template>

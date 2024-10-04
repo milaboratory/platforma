@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PlBlockPage, PlCheckbox, PlLogView, PlRow, PlTextArea, useInterval } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlCheckbox, PlLogView, PlRow, useInterval } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
-import { ValueOrErrors } from '@platforma-sdk/model';
+import type { ValueOrErrors } from '@platforma-sdk/model';
 
 const data = reactive({
   logContent: '',
@@ -10,7 +10,7 @@ const data = reactive({
   text: 'my text'
 });
 
-const error = computed(() => data.showError ? faker.lorem.paragraph() : undefined);
+const error = computed(() => (data.showError ? faker.lorem.paragraph() : undefined));
 
 const output = computed<ValueOrErrors<string> | undefined>(() => {
   if (data.showError) {
@@ -18,13 +18,13 @@ const output = computed<ValueOrErrors<string> | undefined>(() => {
       ok: false as const,
       errors: ['Error1', 'Error2'],
       moreErrors: false
-    }
+    };
   }
 
   return {
     ok: true as const,
-    value: data.logContent,
-  }
+    value: data.logContent
+  };
 });
 
 useInterval(() => {
