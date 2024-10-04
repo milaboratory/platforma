@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.14
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+- Updated dependencies [8db877c]
+  - @platforma-sdk/ui-vue@1.4.2
+
 ## 1.0.13
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/helper-tests
 
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [8db877c]
+  - @milaboratories/helpers@1.6.4
+
 ## 1.1.4
 
 ### Patch Changes

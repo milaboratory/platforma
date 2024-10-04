@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.4
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+
 ## 1.6.3
 
 ### Patch Changes
