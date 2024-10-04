@@ -1,7 +1,7 @@
 {
   "name": "@platforma-sdk/bootstrap",
   "version": "2.0.2",
-  "pl-version": "1.13.3",
+  "pl-version": "1.13.4",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
