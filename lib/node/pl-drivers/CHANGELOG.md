@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.2.27
+
+### Patch Changes
+
+- Updated dependencies [bfd40b4]
+  - @milaboratories/computable@2.1.10
+  - @milaboratories/pl-tree@1.3.16
+
 ## 1.2.26
 
 ### Patch Changes
