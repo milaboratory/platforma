@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers.workflow
 
+## 1.0.2
+
+### Patch Changes
+
+- c549960: fix test enter-numbers wf
+
 ## 1.0.1
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [c549960]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.5
+
 ## 1.0.9
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.10
+
+### Patch Changes
+
+- c549960: fix test enter-numbers wf
+- Updated dependencies [c549960]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.5
+
 ## 1.0.9
 
 ### Patch Changes

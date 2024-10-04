@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.38
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+- Updated dependencies [bfd40b4]
+  - @milaboratories/computable@2.1.10
+  - @platforma-sdk/block-tools@2.3.9
+  - @milaboratories/pl-drivers@1.2.27
+  - @milaboratories/pl-tree@1.3.16
+
 ## 1.10.37
 
 ### Patch Changes
