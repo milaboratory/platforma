@@ -9,7 +9,7 @@ import {
   PlBtnLink,
   PlBtnGhost,
   type Size,
-  maskIcons16,
+  maskIcons16
 } from '@milaboratories/uikit';
 import Split from '@/Split.vue';
 
@@ -18,7 +18,7 @@ const props = reactive({
   disabled: false,
   reverse: false,
   loading: false,
-  justifyCenter: false,
+  justifyCenter: false
 });
 
 const sizeOptions = ['small', 'medium', 'large'].map((it) => ({ text: it, value: it }));
@@ -35,10 +35,18 @@ function onClick() {
     <Split name="Buttons">
       <div class="flex-row gap-12">
         <PlBtnGroup v-model="props.size" :options="sizeOptions" />
-        <label style="user-select: none"> <input v-model="props.disabled" type="checkbox" />Disabled </label>
-        <label style="user-select: none"> <input v-model="props.reverse" type="checkbox" />Reverse </label>
-        <label style="user-select: none"> <input v-model="props.loading" type="checkbox" />Loading </label>
-        <label style="user-select: none"> <input v-model="props.justifyCenter" type="checkbox" />Justify center </label>
+        <label style="user-select: none">
+          <input v-model="props.disabled" type="checkbox" />Disabled
+        </label>
+        <label style="user-select: none">
+          <input v-model="props.reverse" type="checkbox" />Reverse
+        </label>
+        <label style="user-select: none">
+          <input v-model="props.loading" type="checkbox" />Loading
+        </label>
+        <label style="user-select: none">
+          <input v-model="props.justifyCenter" type="checkbox" />Justify center
+        </label>
       </div>
       <div class="test-buttons">
         <fieldset>
@@ -75,7 +83,9 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in maskIcons16" :key="icon" :icon="icon">Icon: {{ icon }}</PlBtnGhost>
+          <PlBtnGhost v-for="icon in maskIcons16" :size="props.size" :key="icon" :icon="icon"
+            >Icon: {{ icon }}</PlBtnGhost
+          >
         </fieldset>
       </div>
     </Split>
