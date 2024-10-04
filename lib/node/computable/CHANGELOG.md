@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.1.10
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+
 ## 2.1.9
 
 ### Patch Changes
