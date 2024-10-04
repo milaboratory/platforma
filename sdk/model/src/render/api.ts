@@ -110,7 +110,7 @@ export class ResultPool {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
-    return this.getData().entries.find((f) => f.ref === ref)?.obj;
+    return this.getData().entries.find((f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name)?.obj;
   }
 
   /**
