@@ -27,15 +27,15 @@ export type SimpleOption<T = unknown> = {
 
 export type ListOption<T = unknown> =
   | {
-      text: string;
-      description?: string;
-      value: T;
-    }
+    text: string;
+    description?: string;
+    value: T;
+  }
   | {
-      label: string;
-      description?: string;
-      value: T;
-    };
+    label: string;
+    description?: string;
+    value: T;
+  };
 
 export type ListOptionNormalized<T = unknown> = {
   label: string;
@@ -58,6 +58,7 @@ export const maskIcons16 = [
   'close',
   'restart',
   'stop',
+  'settings-2',
 ] as const;
 
 export type MaskIconName16 = (typeof maskIcons16)[number];
