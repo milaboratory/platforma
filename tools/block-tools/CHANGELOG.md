@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.9
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+
 ## 2.3.8
 
 ### Patch Changes
