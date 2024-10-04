@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.16
+
+### Patch Changes
+
+- 6495dcc: add default app model (initial version)
+- Updated dependencies [6495dcc]
+  - @platforma-sdk/ui-vue@1.4.0
+
 ## 0.0.15
 
 ### Patch Changes
