@@ -25,7 +25,7 @@ core:
   authEnabled: false
   auth: []
   db:
-    path: './.test/state/db'
+    path: './db'
 
 controllers:
   data:
@@ -43,18 +43,18 @@ controllers:
       - id: "main"
         type: "FS"
         indexCachePeriod: "1m"
-        rootPath: "./.test/state/storages/main"
+        rootPath: "./storages/main"
 
       - id: "work"
         type: "FS"
         indexCachePeriod: "1m"
-        rootPath: "./.test/state/storages/work"
+        rootPath: "./storages/work"
 
   runner:
     type: local
-    storageRoot: "./.test/state/storages/work"
+    storageRoot: "./storages/work"
 
   packageLoader:
-    packagesRoot: "./.test/state/packages"
+    packagesRoot: "./packages"
 
   workflows: {}

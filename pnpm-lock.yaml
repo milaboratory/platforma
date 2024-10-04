@@ -1553,9 +1553,6 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 6.19.8
-      winston:
-        specifier: 'catalog:'
-        version: 3.14.2
       yaml:
         specifier: 'catalog:'
         version: 2.5.1

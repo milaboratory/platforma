@@ -6,7 +6,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "bin": {
     "pl-service": "./bin/run.js"
