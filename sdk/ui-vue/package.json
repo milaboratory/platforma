@@ -39,6 +39,7 @@
     "@ag-grid-community/infinite-row-model": "catalog:",
     "@ag-grid-community/styles": "catalog:",
     "@ag-grid-community/vue3": "catalog:",
+    "@ag-grid-enterprise/core": "catalog:",
     "@ag-grid-enterprise/clipboard": "catalog:",
     "@ag-grid-enterprise/range-selection": "catalog:",
     "@faker-js/faker": "catalog:",
