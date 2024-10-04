@@ -14,7 +14,8 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build"
+    "build": "vite build",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*",

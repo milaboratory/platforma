@@ -21,6 +21,8 @@ export * from './computedResult';
 
 export * from './composition/useWatchResult';
 
+export * from './composition/fileContent';
+
 export * from '@milaboratories/uikit';
 
 export type * from '@milaboratories/uikit';
