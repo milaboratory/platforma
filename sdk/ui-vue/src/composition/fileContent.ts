@@ -1,5 +1,5 @@
 import { BlobHandleAndSize, getRawPlatformaInstance } from '@platforma-sdk/model';
-import { shallowRef, ShallowRef, watch } from 'vue';
+import { computed, ComputedRef, ref, Ref, shallowRef, ShallowRef, watch } from 'vue';
 import { ZodSchema } from 'zod';
 
 type FileHandle = BlobHandleAndSize['handle'];
@@ -29,39 +29,39 @@ export class ReactiveFileContent {
     return newRef;
   }
 
-  private readonly fileContentJson = new Map<FileHandle, ShallowRef<unknown | undefined>>();
-
-  public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ShallowRef<T | undefined>;
-  public getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ShallowRef<T | undefined> | undefined;
-  public getContentJson<T = unknown>(handle: FileHandle): ShallowRef<T | undefined>;
-  public getContentJson<T = unknown>(handle: FileHandle | undefined): ShallowRef<T | undefined> | undefined;
-  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined
-  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined {
+  public getContentString(handle: FileHandle): ComputedRef<string | undefined>;
+  public getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined;
+  public getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined {
     if (handle === undefined) return undefined;
-
-    const refFromMap = this.fileContentJson.get(handle);
-    if (refFromMap !== undefined) return refFromMap as ShallowRef<T | undefined>;
-
-    const newRef = shallowRef<T | undefined>();
-    this.fileContentJson.set(handle, newRef);
-
     const bytes = this.getContentBytes(handle);
-    watch(
-      bytes,
-      (b) => {
-        if (b === undefined) return;
-        try {
-          let data = JSON.parse(new TextDecoder().decode(b)) as T;
-          if (schema) data = schema.parse(data);
-          newRef.value = data;
-        } catch (e: unknown) {
-          console.error(e);
-        }
-      },
-      { immediate: true },
-    );
+    return computed(() => {
+      if (bytes.value === undefined) return;
+      try {
+        return new TextDecoder().decode(bytes.value);
+      } catch (e: unknown) {
+        console.error(e);
+      }
+    });
+  }
 
-    return newRef;
+  public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
+  public getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
+  public getContentJson<T = unknown>(handle: FileHandle | undefined): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
+  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined {
+    if (handle === undefined) return undefined;
+    const stringValue = this.getContentString(handle);
+    return computed(() => {
+      if (stringValue.value === undefined) return;
+      try {
+        let data = JSON.parse(stringValue.value) as T;
+        if (schema) data = schema.parse(data);
+        return data;
+      } catch (e: unknown) {
+        console.error(e);
+      }
+    });
   }
 
   private static globalInstance = new ReactiveFileContent();
@@ -72,11 +72,17 @@ export class ReactiveFileContent {
     return ReactiveFileContent.globalInstance.getContentBytes(handle);
   }
 
-  public static getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ShallowRef<T | undefined>;
-  public static getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ShallowRef<T | undefined> | undefined;
-  public static getContentJson<T = unknown>(handle: FileHandle): ShallowRef<T | undefined>;
-  public static getContentJson<T = unknown>(handle: FileHandle | undefined): ShallowRef<T | undefined> | undefined;
-  public static getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined {
+  public static getContentString(handle: FileHandle): ComputedRef<string | undefined>;
+  public static getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined;
+  public static getContentString(handle: FileHandle | undefined): ComputedRef<string | undefined> | undefined {
+    return ReactiveFileContent.globalInstance.getContentString(handle);
+  }
+
+  public static getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
+  public static getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ComputedRef<T | undefined> | undefined;
+  public static getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
+  public static getContentJson<T = unknown>(handle: FileHandle | undefined): ComputedRef<T | undefined> | undefined;
+  public static getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ComputedRef<T | undefined> | undefined {
     return ReactiveFileContent.globalInstance.getContentJson(handle, schema);
   }
 }
