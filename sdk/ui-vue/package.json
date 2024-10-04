@@ -25,7 +25,8 @@
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
     "lint": "eslint . --ext js,ts,vue",
-    "check": "yarpm type-check && yarpm lint && yarpm test"
+    "check": "yarpm type-check && yarpm lint && yarpm test",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@milaboratories/uikit": "workspace:^",

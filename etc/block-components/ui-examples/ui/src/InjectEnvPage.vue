@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { getEnvironmentValue } from '@platforma-sdk/model';
 import { PlBlockPage } from '@platforma-sdk/ui-vue';
 
-const VITE_PLATFORMA_TEST_ENV = window.getEnvironmentValue('VITE_PLATFORMA_TEST_ENV');
+const VITE_PLATFORMA_TEST_ENV = getEnvironmentValue('VITE_PLATFORMA_TEST_ENV');
 </script>
 
 <template>

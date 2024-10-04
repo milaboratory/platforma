@@ -8,12 +8,8 @@ export class ReactiveFileContent {
   private readonly fileContentBytes = new Map<FileHandle, ShallowRef<Uint8Array | undefined>>();
 
   public getContentBytes(handle: FileHandle): ShallowRef<Uint8Array | undefined>;
-  public getContentBytes(
-    handle: FileHandle | undefined
-  ): ShallowRef<Uint8Array | undefined> | undefined;
-  public getContentBytes(
-    handle: FileHandle | undefined
-  ): ShallowRef<Uint8Array | undefined> | undefined {
+  public getContentBytes(handle: FileHandle | undefined): ShallowRef<Uint8Array | undefined> | undefined;
+  public getContentBytes(handle: FileHandle | undefined): ShallowRef<Uint8Array | undefined> | undefined {
     if (handle === undefined) return undefined;
     const refFromMap = this.fileContentBytes.get(handle);
     if (refFromMap !== undefined) return refFromMap;
@@ -36,18 +32,11 @@ export class ReactiveFileContent {
   private readonly fileContentJson = new Map<FileHandle, ShallowRef<unknown | undefined>>();
 
   public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ShallowRef<T | undefined>;
-  public getContentJson<T>(
-    handle: FileHandle | undefined,
-    schema: ZodSchema<T>
-  ): ShallowRef<T | undefined> | undefined;
+  public getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ShallowRef<T | undefined> | undefined;
   public getContentJson<T = unknown>(handle: FileHandle): ShallowRef<T | undefined>;
-  public getContentJson<T = unknown>(
-    handle: FileHandle | undefined
-  ): ShallowRef<T | undefined> | undefined;
-  public getContentJson<T>(
-    handle: FileHandle | undefined,
-    schema?: ZodSchema<T>
-  ): ShallowRef<T | undefined> | undefined {
+  public getContentJson<T = unknown>(handle: FileHandle | undefined): ShallowRef<T | undefined> | undefined;
+  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined
+  public getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined {
     if (handle === undefined) return undefined;
 
     const refFromMap = this.fileContentJson.get(handle);
@@ -69,9 +58,25 @@ export class ReactiveFileContent {
           console.error(e);
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
 
     return newRef;
+  }
+
+  private static globalInstance = new ReactiveFileContent();
+
+  public static getContentBytes(handle: FileHandle): ShallowRef<Uint8Array | undefined>;
+  public static getContentBytes(handle: FileHandle | undefined): ShallowRef<Uint8Array | undefined> | undefined;
+  public static getContentBytes(handle: FileHandle | undefined): ShallowRef<Uint8Array | undefined> | undefined {
+    return ReactiveFileContent.globalInstance.getContentBytes(handle);
+  }
+
+  public static getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ShallowRef<T | undefined>;
+  public static getContentJson<T>(handle: FileHandle | undefined, schema: ZodSchema<T>): ShallowRef<T | undefined> | undefined;
+  public static getContentJson<T = unknown>(handle: FileHandle): ShallowRef<T | undefined>;
+  public static getContentJson<T = unknown>(handle: FileHandle | undefined): ShallowRef<T | undefined> | undefined;
+  public static getContentJson<T>(handle: FileHandle | undefined, schema?: ZodSchema<T>): ShallowRef<T | undefined> | undefined {
+    return ReactiveFileContent.globalInstance.getContentJson(handle, schema);
   }
 }
