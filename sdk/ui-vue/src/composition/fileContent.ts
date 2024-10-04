@@ -20,7 +20,7 @@ export class ReactiveFileContent {
     (async () => {
       try {
         const content = await getRawPlatformaInstance().blobDriver.getContent(handle);
-        newRef.value = JSON.parse(new TextDecoder().decode(content));
+        newRef.value = content;
       } catch (err: unknown) {
         console.error(err);
       }
