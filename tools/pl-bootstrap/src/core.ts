@@ -150,7 +150,7 @@ export default class Core {
     this.logger.debug(`    minio image: ${image}`);
 
     const storage = options?.storage ?? state.data('minio');
-    util.ensureDir(storage)
+    util.ensureDir(storage, { mode: "0775" })
     const stubStorage = state.data('stub');
     util.ensureDir(stubStorage)
 
@@ -234,7 +234,7 @@ export default class Core {
     const storagePath = (s: string) => path.join(localRoot, s);
     const storageDir = (s: string) => {
       const p = storagePath(s)
-      util.ensureDir(p)
+      util.ensureDir(p, { mode: "0775" })
       return p
     }
 
@@ -381,7 +381,7 @@ export default class Core {
     const storagePath = (s: string) => path.join(localRoot, s);
     const storageDir = (s: string) => {
       const p = storagePath(s)
-      util.ensureDir(p)
+      util.ensureDir(p, { mode: "0775" })
       return p
     }
 

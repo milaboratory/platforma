@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,8 +12,8 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/ui-vue": "workspace:^",
-    "@platforma-sdk/model": "workspace:^"
+    "@platforma-sdk/model": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:^"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",

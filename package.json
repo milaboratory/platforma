@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "watch-build": "turbo watch build",
     "test": "turbo run test --concurrency 1",
+    "do-pack": "turbo run do-pack",
     "lint": "pnpm -r lint",
     "changeset": "changeset",
     "version-packages": "changeset version",

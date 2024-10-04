@@ -23,6 +23,10 @@
     "test": {
       "dependsOn": ["build"],
       "passThroughEnv": ["PL_ADDRESS", "PL_TEST_PASSWORD", "PL_TEST_USER", "PL_TEST_PROXY", "DEBUG"]
+    },
+    "do-pack": {
+      "dependsOn": ["build"],
+      "outputs": ["package.tgz"]
     }
   }
 }

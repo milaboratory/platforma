@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.10.38",
+  "version": "1.10.39",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,7 +15,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest"
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*",
