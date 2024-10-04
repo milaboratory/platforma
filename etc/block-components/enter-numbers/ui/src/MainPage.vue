@@ -5,8 +5,6 @@ import { computed } from 'vue';
 
 const app = useApp();
 
-const model = app.model;
-
 const numbers = computed({
   get() {
     return app.model.args.numbers.join(',');
@@ -14,10 +12,10 @@ const numbers = computed({
   set(v) {
     const numbers = v.split(',').map(Number);
 
+    app.model.args.numbers = v.split(',').map(Number);
+
     if (numbers.some(n => isNaN(n))) {
       app.setError('Invalid value: contains NaNs +++');
-    } else {
-      app.model.args.numbers = v.split(',').map(Number)
     }
   }
 });

@@ -27,6 +27,12 @@ export abstract class BlockMock<
     await this.doUpdate();
   }
 
+  async setBlockArgsAndUiState(args: Args, ui: UiState) {
+    this.args = args;
+    this.ui = ui;
+    await this.doUpdate();
+  }
+
   getState(): BlockState<Args, Outputs, UiState, Href> {
     return deepClone({
       args: this.args,

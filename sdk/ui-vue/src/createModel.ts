@@ -2,6 +2,7 @@ import { reactive, computed, ref, watch, unref } from 'vue';
 import type { ZodError } from 'zod';
 import type { ModelOptions, Model } from './types';
 import { deepEqual, deepClone } from '@milaboratories/helpers';
+import { isJsonEqual } from './utils';
 
 const identity = <T, V = T>(v: T): V => v as unknown as V;
 
@@ -85,7 +86,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   watch(
     local,
     (v) => {
-      if (!deepEqual(options.get(), v)) {
+      if (!isJsonEqual(options.get(), v)) {
         setValue(v as M);
       }
     },

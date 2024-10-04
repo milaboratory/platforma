@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:^",
@@ -40,6 +41,8 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "vue-tsc": "catalog:"
+    "@vue/test-utils": "catalog:",
+    "vue-tsc": "catalog:",
+    "resize-observer-polyfill": "catalog:"
   }
 }
