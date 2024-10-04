@@ -10,6 +10,7 @@ import {
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
+  Ref,
   ResultCollection,
   ValueOrError,
   mapPObjectData,
@@ -25,11 +26,36 @@ import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './int
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
 
+  /**
+   * @deprecated use getOptions()
+   */
   public calculateOptions(predicate: PSpecPredicate): Option[] {
     return this.ctx.calculateOptions(predicate);
   }
 
+  private defaultLabelFn = (spec: PObjectSpec, ref: Ref) =>
+    spec.annotations?.['pl7.app/label'] ?? `Unlabelled`;
+
+  public getOptions(
+    predicate: (spec: PObjectSpec) => boolean,
+    labelFn: (spec: PObjectSpec, ref: Ref) => string = this.defaultLabelFn
+  ): Option[] {
+    return this.getSpecs()
+      .entries.filter((s) => predicate(s.obj))
+      .map((s) => ({
+        ref: s.ref,
+        label: labelFn(s.obj, s.ref)
+      }));
+  }
+
+  /**
+   * @deprecated use getData()
+   */
   public getDataFromResultPool(): ResultCollection<PObject<TreeNodeAccessor>> {
+    return this.getData();
+  }
+
+  public getData(): ResultCollection<PObject<TreeNodeAccessor>> {
     const result = this.ctx.getDataFromResultPool();
     return {
       isComplete: result.isComplete,
@@ -43,7 +69,16 @@ export class ResultPool {
     };
   }
 
+  /**
+   * @deprecated use getDataWithErrors()
+   */
   public getDataWithErrorsFromResultPool(): ResultCollection<
+    Optional<PObject<ValueOrError<TreeNodeAccessor, string>>, 'id'>
+  > {
+    return this.getDataWithErrors();
+  }
+
+  public getDataWithErrors(): ResultCollection<
     Optional<PObject<ValueOrError<TreeNodeAccessor, string>>, 'id'>
   > {
     const result = this.ctx.getDataWithErrorsFromResultPool();
@@ -59,8 +94,31 @@ export class ResultPool {
     };
   }
 
+  /**
+   * @deprecated use getSpecs()
+   */
   public getSpecsFromResultPool(): ResultCollection<PObjectSpec> {
+    return this.getSpecs();
+  }
+
+  public getSpecs(): ResultCollection<PObjectSpec> {
     return this.ctx.getSpecsFromResultPool();
+  }
+
+  /**
+   * @param ref a Ref
+   * @returns data associated with the ref
+   */
+  public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
+    return this.getData().entries.find((f) => f.ref === ref)?.obj;
+  }
+
+  /**
+   * @param ref a Ref
+   * @returns object spec associated with the ref
+   */
+  public getSpecByRef(ref: Ref): PObjectSpec | undefined {
+    return this.getSpecs().entries.find((f) => f.ref === ref)?.obj;
   }
 }
 
