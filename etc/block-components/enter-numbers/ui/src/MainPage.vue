@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary } from '@platforma-sdk/ui-vue';
+import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, useWatchFetch } from '@platforma-sdk/ui-vue';
 import { useApp } from './app';
 import { computed } from 'vue';
+import { delay } from '@milaboratories/helpers';
 
 const app = useApp();
 
@@ -18,6 +19,17 @@ const numbers = computed({
       app.setError('Invalid value: contains NaNs +++');
     }
   }
+});
+
+const fetchTestResult = async (n: number) => {
+  await delay(1000);
+  return n;
+};
+
+const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y);
+
+const resultRef = useWatchFetch(() => app.outputValues.numbers, (numbers) => {
+  return fetchTestResult(sumNumbers(numbers));
 });
 </script>
 
@@ -37,6 +49,8 @@ const numbers = computed({
     </fieldset>  
     <h3>Outputs</h3>
     <code>{{ app.outputValues }}</code>
+    <h4>Result ref</h4>
+    <code>{{ resultRef }}</code>
     <PlAlert type="error" v-if="app.hasErrors">
       {{ app.outputErrors }}
     </PlAlert>

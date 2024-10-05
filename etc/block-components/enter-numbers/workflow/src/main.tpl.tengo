@@ -30,9 +30,15 @@ wf.body(func(args) {
 		numbersMap[string(i)] = v
 	}
 
+	numbers := []
+
+	for i, v in args.numbers {
+		numbers = append(numbers, v)
+	}
+
 	return {
 		outputs: {
-			numbers: smart.createJsonResource(numbersMap)
+			numbers: smart.createJsonResource(numbers)
 		},
 		exports: {
 			numbers: {

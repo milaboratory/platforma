@@ -43,6 +43,8 @@ export type ListOptionNormalized<T = unknown> = {
   value: T;
 };
 
+export type ListOptionType<Type> = Type extends ListOption<infer X>[] ? X : never;
+
 export const maskIcons16 = [
   'checkmark',
   'import',

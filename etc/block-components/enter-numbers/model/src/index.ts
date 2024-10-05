@@ -12,7 +12,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
   .initialArgs({ numbers: [1, 2, 3] })
 
   .output('numbers', (ctx) =>
-    ctx.outputs?.resolve('numbers')?.getDataAsJson()
+    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
   )
 
   .sections((ctx) => {
