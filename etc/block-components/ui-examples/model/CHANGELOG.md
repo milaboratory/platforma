@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.10
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
 ## 1.0.9
 
 ### Patch Changes

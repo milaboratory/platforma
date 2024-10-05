@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.5
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
 ## 1.6.4
 
 ### Patch Changes

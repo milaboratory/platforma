@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.16
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
 ## 1.2.15
 
 ### Patch Changes
