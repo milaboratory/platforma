@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack"
