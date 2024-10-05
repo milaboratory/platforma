@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.15
+
+### Patch Changes
+
+- 9ea877e: modals modals modals
+
 ## 1.2.14
 
 ### Patch Changes

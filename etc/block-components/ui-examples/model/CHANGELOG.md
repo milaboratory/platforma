@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.9
+
+### Patch Changes
+
+- 9ea877e: modals modals modals
+
 ## 1.0.8
 
 ### Patch Changes

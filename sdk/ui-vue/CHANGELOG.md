@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.4
+
+### Patch Changes
+
+- 9ea877e: modals modals modals
+- Updated dependencies [9ea877e]
+  - @milaboratories/uikit@1.2.15
+
 ## 1.4.3
 
 ### Patch Changes
