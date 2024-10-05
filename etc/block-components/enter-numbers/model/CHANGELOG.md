@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.7
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
 ## 1.0.6
 
 ### Patch Changes
