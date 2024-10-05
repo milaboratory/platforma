@@ -5,6 +5,7 @@ import ModalsPage from './ModalsPage.vue';
 import { computed, reactive } from 'vue';
 import InjectEnvPage from './InjectEnvPage.vue';
 import PlDropdownPage from './PlDropdownPage.vue';
+import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -26,7 +27,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/': LogViewPage,
       '/modals': ModalsPage,
       '/inject-env': InjectEnvPage,
-      '/pl-dropdown': PlDropdownPage
+      '/pl-dropdown': PlDropdownPage,
+      '/use-watch-fetch': UseWatchFetchPage
     }
   };
 });

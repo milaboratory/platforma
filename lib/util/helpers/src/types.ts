@@ -54,8 +54,6 @@ export type GroupBy<Item extends Record<string, unknown>, key extends keyof Item
   [P in keyof Item]: P extends key ? Item[P] : Item[P][]
 };
 
-export type OptionType<Type> = Type extends Option<infer X>[] ? X : never;
-
 export type Result<T, E = string> =
   | { ok: true; value: T }
   | { ok: false; error: E };
@@ -91,3 +89,11 @@ declare const __brand: unique symbol
 export type Branded<T, B> = T & { readonly [__brand]: B };
 
 export type Undef<T> = T | undefined;
+
+export type SimpleErrorOrValue<S, F = Error> = {
+  value: S;
+  error?: undefined;
+} | {
+  error: F;
+  value?: undefined;
+};
