@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.5
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+- Updated dependencies [7a12b39]
+  - @milaboratories/uikit@1.2.16
+
 ## 1.4.4
 
 ### Patch Changes

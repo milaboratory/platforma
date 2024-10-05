@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.17
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+- Updated dependencies [7a12b39]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.7
+  - @platforma-sdk/ui-vue@1.4.5
+
 ## 1.0.16
 
 ### Patch Changes
