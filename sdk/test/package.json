@@ -17,7 +17,7 @@
     "build": "vite build",
     "test": "vitest",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*"
