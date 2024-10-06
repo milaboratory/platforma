@@ -110,6 +110,8 @@ export class ResultPool {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
+    // https://github.com/milaboratory/platforma/issues/100
+    // @TODO use native pool method when available
     return this.getData().entries.find((f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name)?.obj;
   }
 
@@ -118,7 +120,9 @@ export class ResultPool {
    * @returns object spec associated with the ref
    */
   public getSpecByRef(ref: Ref): PObjectSpec | undefined {
-    return this.getSpecs().entries.find((f) => f.ref === ref)?.obj;
+    // https://github.com/milaboratory/platforma/issues/100
+    // @TODO use native pool method when available
+    return this.getSpecs().entries.find((f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name)?.obj;
   }
 }
 
