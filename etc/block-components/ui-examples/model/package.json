@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.model",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "private": true,
   "description": "Block model",
   "type": "module",
