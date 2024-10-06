@@ -16,7 +16,7 @@ self.body(func(inputs) {
 	base := inputs.base
 	nested := bool(inputs.nested)
 
-	if !is_array(key) {
+	if !ll.isArray(key) {
 		ll.panic("key is not an array: %v", key)
 	}
 

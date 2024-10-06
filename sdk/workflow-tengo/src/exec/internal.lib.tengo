@@ -134,7 +134,9 @@ _binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
 
 	cmd := _newArg(true, descriptor.cmd[0])
 
-	for arg in splice(descriptor.cmd, 1) {
+	// copy makes the array mutable, splice could not work otherwise.
+	descriptorCmd := copy(descriptor.cmd)
+	for arg in splice(descriptorCmd, 1) {
 		args = append(args, _newArg(true, arg))
 	}
 	for arg in runOptions.args {

@@ -74,6 +74,23 @@ findElement := func(slice, element) {
 }
 
 /**
+ * Returns an index of an element that satisfies a predicate.
+ *
+ * @param slice: []any
+ * @param fn: func(any) bool
+ * @return index: int - index of the element or -1
+ */
+findElementBy := func(slice, fn) {
+	for i, elem in slice {
+		if fn(elem) {
+			return i
+		}
+	}
+
+	return -1
+}
+
+/**
  * Returns a boolean of whether an element is in a slice.
  *
  * @param slice: []any
@@ -82,6 +99,17 @@ findElement := func(slice, element) {
  */
 hasElement := func(slice, element) {
 	return findElement(slice, element) != -1
+}
+
+/**
+ * Same as hasElement but gets an arbitrary predicate.
+ *
+ * @param slice: []any
+ * @param fn: func(any) bool
+ * @return found: bool
+ */
+hasElementBy := func(slice, fn) {
+	return findElementBy(slice, fn) != -1
 }
 
 /**
@@ -191,7 +219,9 @@ export ll.toStrict({
 	length: length,
 	safeAppend: safeAppend,
 	findElement: findElement,
+	findElementBy: findElementBy,
 	hasElement: hasElement,
+	hasElementBy: hasElementBy,
 	removeElement: removeElement,
 	filter: filter,
 	map: map,

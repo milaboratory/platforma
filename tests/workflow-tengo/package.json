@@ -17,15 +17,14 @@
     "build": "rm -rf dist && pl-tengo build",
     "test": "vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
-    "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-    "vscode-tags": "./create_tags.sh .tags false",
-    "emacs-tags": "./create_tags.sh ../TAGS false -e"
+    "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/software-pframes-conv": "catalog:",
     "@milaboratories/software-small-binaries": "catalog:",

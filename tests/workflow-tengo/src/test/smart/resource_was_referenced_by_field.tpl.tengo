@@ -1,0 +1,19 @@
+// resource was referenced by field.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["outputRes", "outputField"])
+
+// In the body, res from inputs will be created
+// with a reference to a field it was got from.
+self.body(func(inputs) {
+	res := inputs.res
+
+	// outputRes should set the field.
+	return {
+		outputRes: res,
+		outputField: res.gotFromField()
+	}
+})

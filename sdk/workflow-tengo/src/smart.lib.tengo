@@ -6,6 +6,7 @@ tx := import("tx")
 ll := import(":ll")
 oop := import(":oop")
 maps := import(":maps")
+slices := import(":slices")
 json := import("json")
 constants := import(":constants")
 
@@ -172,6 +173,83 @@ isJsonResource := func(r) {
 	return isResource(r) && r.info().Type.Name == constants.RTYPE_JSON.Name
 }
 
+resourceTypesEqual := func(rType1, rType2) {
+	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+}
+
+////////////////// map cache ////////////////////////////////
+
+/**
+ * A cache of maps to resources that these maps were got from.
+ * In case we pass the map as-is from inputs to outputs in the template,
+ * we should not recreate the whole map, we should pass the original resource.
+ * It helps to save the topology of this workflow which leads to a better deduplication in pl-core.
+ *
+ * The cache here implemented as a slice of pairs [map, resource] -
+ *     The cache is not a map because
+ *     maps do not accept arbitrary objects as keys, only strings and ints.
+ *     And map to string 1 to 1 conversion is hard in tengo due to irregular encoding in jsons.
+ *     Performance-wise, usually it is up to 20 maps per template run,
+ *     so it can be faster than calculate a hash of the key (and it's much simpler).
+ *
+ * @param getStateFn: func() -> a map with a key that points to a cache.
+ *     Use ll.getCtx here for storing a global cache.
+ *     Also, set up a hook _cacheMap.close() for clearing ll.context before exit.
+ */
+_cacheMap := func(getStateFn) {
+	ll.assert(ll.isMap(getStateFn()), "state must be a map, got %v", getStateFn())
+
+	_ctxKey := "smart/cacheKey"
+
+	_getMapToResource := func() {
+		state := getStateFn()
+		if is_undefined(state[_ctxKey]) {
+			state[_ctxKey] = []
+		}
+
+		return state[_ctxKey]
+	}
+
+	self := undefined
+	self = {
+		/** Sets an association between a map and a resource. */
+		set: func(m, res) {
+			state := getStateFn()
+			state[_ctxKey] = append(_getMapToResource(), [m, res])
+		},
+
+		/** Returns a resource by a map value. */
+		get: func(m) {
+			for _, pair in _getMapToResource() {
+				if pair[0] == m {
+					return pair[1]
+				}
+			}
+			return undefined
+		},
+
+		/** Deletes a state before exiting, or else it will be stored between restarts. */
+		close: func() {
+			delete(getStateFn(), _ctxKey)
+		},
+
+		/** Debug function that returns a printable representation of state. */
+		info: func() {
+			return slices.map(
+				_getMapToResource(),
+				func(mr) { return [mr[0], mr[1].info()] }
+			)
+		}
+	}
+
+	return ll.toStrict(self)
+}
+
+/** A la singleton instance that access a global context */
+cacheMap := func() { return _cacheMap(ll.getCtx) }
+
+/////////////////////////// marshal and unmarshal trees ///////////////////////
+
 // deep check whether map has resources somewhere inside
 _hasReferenceValues := func(object) {
 	if isReference(object) {
@@ -183,7 +261,7 @@ _hasReferenceValues := func(object) {
 				return true
 			}
 		}
-	} else if is_array(object) {
+	} else if ll.isArray(object) {
 		for v in object {
 			if _hasReferenceValues(v) {
 				return true
@@ -197,11 +275,17 @@ _hasReferenceValues := func(object) {
  * Convert given object to resource. If object is a true json, then
  * a simple Json resource will be created, otherwise a resource map.
  */
-_toRefOrJson := func(object) {
+_marshalToRefOrJson := func(object) {
 	if isReference(object) {
 		// first check is reference since resource/field will return true on ll.isMap
 		return object
 	} else if ll.isMap(object) {
+		res := cacheMap().get(object)
+		if !is_undefined(res) {
+			// if it was passed as-is, then don't create new object,
+			// pass an old one for saving topology (which leads to better deduplication).
+			return res
+		}
 
 		// just json if there are no nested resources
 		if !_hasReferenceValues(object)  {
@@ -210,11 +294,11 @@ _toRefOrJson := func(object) {
 
 		mb := mapBuilder()
 		for k, v in object {
-			mb.add(k, _toRefOrJson(v))
+			mb.add(k, _marshalToRefOrJson(v))
 		}
 
 		return mb.build()
-	} else if is_array(object) {
+	} else if ll.isArray(object) {
 
 		// assert we are not having refs inside
 		ll.assert(!_hasReferenceValues(object), "array can't contain references")
@@ -225,21 +309,93 @@ _toRefOrJson := func(object) {
 	}
 }
 
-resourceTypesEqual := func(rType1, rType2) {
-	return rType1.Name == rType2.Name && rType1.Version == rType2.Version
+/**
+ * Unmarshal resource according by:
+ *  - converting all json resources (potentially nested) into a tengo objects (maps, arrays, strings etc)
+ *  - converting all pl.maps (resource maps) into tengo maps
+ *
+ * @param resource: smart resource to unmarshal
+ * @param preprocessors: input preprocessors
+ * @return object: unmarshaled resource
+ */
+unmarshal := func(resource, preprocessors) {
+	ll.assert(isResource(resource), "expected resource, found ", resource)
+
+	// instance of this
+	self := func(resource) { return unmarshal(resource, preprocessors) }
+
+	// try preprocessors first
+	for preproc in preprocessors {
+		if preproc.canParse(resource) {
+			return preproc.parse(resource, self)
+		}
+	}
+
+	if isReference(resource) && resource.hasError() {
+		ll.panic("input resource has errors: ", resource, resource.getError())
+	}
+
+	if isJsonResource(resource) || resource.checkResourceType(constants.RTYPE_BOBJECT_SPEC) {
+
+		// parse json data of the resource
+		return resource.getDataAsJson()
+
+	} else if isMapResource(resource) || isLockedEphMapResource(resource) {
+
+		// unmarshal map
+		result := {}
+		for field, value in resource.inputs() {
+			if value.isErrorSet() {
+				ll.panic("input %v field has error: %v", field, field.getError().getDataAsJson().message)
+			} else if value.isSet() {
+				result[field] = unmarshal(value.getValue(), preprocessors)
+			} else {
+				result[field] = value
+			}
+		}
+		cacheMap().set(result, resource)
+
+		return result
+	} else {
+		// nothing todo
+		return resource
+	}
+}
+
+/**
+ * Makes a json primitive object deeply immutable.
+ * This assumes that all objects that are not maps nor arrays are immutable.
+ *
+ * @param obj: any - any primitive json object
+ */
+immutablify := func(obj) {
+	if is_array(obj) {
+		return immutable(slices.map(obj, immutablify))
+	}
+	if is_map(obj) {
+		return immutable(maps.mapValues(obj, immutablify))
+	}
+
+	return obj
 }
 
 ////////////////// implementation ///////////////////////////
 
 /**
- * @param r either resource id or resource info
+ * @param r: either resource id or resource info
+ * @param fromWhatFieldID: field ID | nothing - what field the resource was got from.
  */
-resource = func(r) {
+resource = func(r, ...fromWhatFieldID) {
 	self := undefined
 	strictSelf := undefined
 
 	if isResource(r) {
 		return r
+	}
+
+	_fromFieldID := undefined
+	if !is_undefined(fromWhatFieldID) && len(fromWhatFieldID) == 1 {
+		_fromFieldID = fromWhatFieldID[0]
 	}
 
 	id := ll.isStrict(r) ? r.ID : r
@@ -442,7 +598,7 @@ resource = func(r) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath) {
-			if is_array(nameOrPath) {
+			if ll.isArray(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
 					current = current.getFutureField(name, "input")
@@ -534,6 +690,21 @@ resource = func(r) {
 		 */
 		kvSetJson: func(key, value) {
 			self.kvSet(key, json.encode(value))
+		},
+
+		/**
+		 * Returns a field from which this resource was got from.
+		 * If the client wants to set this resource to some field,
+		 * it should be set to the field we got the resource from
+		 * so that the topology will be stored in pl-core (which leads to better deduplication).
+		 *
+		 * @return fromWhatField: field | undefined
+		 */
+		getFromField: func() {
+			if is_undefined(_fromFieldID) {
+				return undefined
+			}
+			return field(_fromFieldID)
 		}
 	}
 
@@ -619,14 +790,14 @@ field = func(f) {
 
 			ll.assert(self.isSet(), "field value is not set; ", self.name())
 
-			return resource(self.info().Value)
+			return resource(self.info().Value, self.id)
 		},
 
 		/**
 		 * Returns a smart.Resource object from the resolved field error
 		 */
 		getError: func() {
-			return resource(self.info().Error)
+			return resource(self.info().Error, self.id)
 		},
 
 		/**
@@ -655,7 +826,12 @@ field = func(f) {
 		set: func(reference) {
 			ll.assert(!self.isSet(), "field ", self.name(), " is already set")
 
-			if isResource(reference) {
+			if isResource(reference) && isField(reference.getFromField()) {
+				// Special case: if the resource was got from the field's getValue,
+				// then we sets this field to the resource's field for saving
+				// the topology in pl-core.
+				tx.setFieldToField(self.id, reference.getFromField().id)
+			} else if isResource(reference) {
 				tx.setFieldToResource(self.id, reference.id)
 			} else if isField(reference) {
 				tx.setFieldToField(self.id, reference.id)
@@ -674,7 +850,7 @@ field = func(f) {
 			if is_undefined(refOrJson) {
 				ll.panic("attempt to assign undefined value to field %v", self.name())
 			}
-			self.set(_toRefOrJson(refOrJson))
+			self.set(_marshalToRefOrJson(refOrJson))
 		},
 
 		/**
@@ -702,7 +878,7 @@ field = func(f) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath) {
-			if is_array(nameOrPath) {
+			if ll.isArray(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
 					current = current.getFutureField(name, "input")
@@ -864,7 +1040,7 @@ structBuilder = func(resourceType, ...data) {
 /**
  * @param isEph: is ephemeral map
  */
-_mapBuilder := func(isEph) {
+mapBuilderUniversal := func(isEph) {
 	builder := isEph ? ephemeralBuilder(constants.RTYPE_MAP_EPH) : structBuilder(constants.RTYPE_MAP)
 	// ensure no outputs will be created
 	builder.lockOutputs()
@@ -923,11 +1099,11 @@ _mapBuilder := func(isEph) {
 }
 
 mapBuilder = func() {
-	return _mapBuilder(false)
+	return mapBuilderUniversal(false)
 }
 
 ephemeralMapBuilder = func() {
-	return _mapBuilder(true)
+	return mapBuilderUniversal(true)
 }
 
 ephemeralBuilder = func(resourceType, ...data) {
@@ -995,11 +1171,19 @@ export ll.toStrict({
 	structBuilder: structBuilder,
 	mapBuilder: mapBuilder,
 	ephemeralMapBuilder: ephemeralMapBuilder,
+	mapBuilderUniversal: mapBuilderUniversal,
 	ephemeralBuilder: ephemeralBuilder,
 	createValueResource: createValueResource,
 	createJsonResource: createJsonResource,
 	createMapResourceWithType: createMapResourceWithType,
 	createMapResource: createMapResource,
 	createBinaryMapResource: createBinaryMapResource,
-	createBlobMapResource: createBlobMapResource
+	createBlobMapResource: createBlobMapResource,
+
+	unmarshal: unmarshal,
+	immutablify: immutablify,
+
+	cacheMap: cacheMap,
+	_hasReferenceValues: _hasReferenceValues, // exclusively for tests
+	_cacheMap: _cacheMap // exclusively for tests
 })

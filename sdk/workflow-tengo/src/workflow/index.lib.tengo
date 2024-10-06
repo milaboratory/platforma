@@ -62,8 +62,8 @@ args := func() {
 		// template inputs
 		inputs := self.inputs()
 
-		// original args from inputs
-		_args = inputs.args
+		// original args from inputs, but mutable
+		_args = copy(inputs.args)
 		if is_undefined(_args) || smart.isReference(_args) {
 			ll.panic("Unexpected args type: %v", _args)
 		}
@@ -81,6 +81,9 @@ args := func() {
 			}
 		}
 	}
+
+	_args = smart.immutablify(_args)
+
 	return _args
 }
 
@@ -190,7 +193,7 @@ _buildOutputs := func(results) {
  * Query results pool.
  *
  * @param spec: query spec
- * @return result: an array of {ref: spec: data:} objects (data will be absent if not requested)
+ * @return result: an array of { ref: spec: data: } objects (data will be absent if not requested)
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, _parentContext(), options...)
@@ -199,8 +202,8 @@ query := func(spec, ...options) {
 /**
  * Query results pool to find spec & data for a given ref.
  *
- * @param ref: a ref object ({blockId: name:})
- * @return result: a {ref: spec: data:} object
+ * @param ref: a ref object ({ blockId: name: })
+ * @return result: a { ref: spec: data: } object
  */
 resolve := func(ref, ...options) {
 	r := bquery.resolve(ref, _parentContext(), options...)

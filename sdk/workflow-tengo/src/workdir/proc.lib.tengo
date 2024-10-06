@@ -2,6 +2,7 @@
 
 tpl := import(":tpl")
 ll := import(":ll")
+smart := import(":smart")
 wdSave := import(":workdir.save")
 
 // the template has a defined outputs
@@ -68,9 +69,11 @@ proc := func() {
 		 */
 		readFiles: func(cb) {
 			tpl.prepare(func(inputs){
-				inputs.files = self.filesInWd()
+				newInputs := copy(inputs) // make newInputs mutable
+				newInputs.files = self.filesInWd()
+
 				// key -> file name
-				files := cb(inputs)
+				files := cb(newInputs)
 
 				wdBuilder := wdSave.builder(self.wdBefore())
 				for _, fName in files {
@@ -131,9 +134,9 @@ proc := func() {
 		 */
 		body: func(cb) {
 			tpl.body(func(inputs) {
-
-				inputs.files = self.filesInWd()
-				result := cb(inputs)
+				newInputs := copy(inputs) // make them mutable
+				newInputs.files = self.filesInWd()
+				result := cb(smart.immutablify(newInputs))
 				wd := self.wdFinalBuilder().build()
 
 				return {
