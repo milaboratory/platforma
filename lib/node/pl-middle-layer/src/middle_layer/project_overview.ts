@@ -164,7 +164,7 @@ export function projectOverview(
           }) || {};
 
         const updatedBlockPack = ifNotUndef(bpInfo, (info) =>
-          env.blockUpdateWatcher.get(info.source, ctx)
+          env.blockUpdateWatcher.get(info.source)
         );
 
         return {
