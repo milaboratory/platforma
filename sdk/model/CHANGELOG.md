@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.2.31
+
+### Patch Changes
+
+- 7812ae6: Improve result pool API
+
 ## 1.2.30
 
 ### Patch Changes
