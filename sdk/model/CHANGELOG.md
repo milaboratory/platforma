@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.2.32
+
+### Patch Changes
+
+- 892ef23: Fix bug with ref equals in resultPool.getSpecByRef
+
 ## 1.2.31
 
 ### Patch Changes
