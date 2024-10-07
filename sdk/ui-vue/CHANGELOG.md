@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.8
+
+### Patch Changes
+
+- 407e16c: smallfix
+
 ## 1.4.7
 
 ### Patch Changes
