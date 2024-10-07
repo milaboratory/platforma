@@ -1447,12 +1447,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@platforma-sdk/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@rollup/plugin-node-resolve':
         specifier: 'catalog:'
         version: 15.3.0(rollup@4.21.3)
@@ -1554,12 +1554,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@platforma-sdk/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.13
@@ -1606,12 +1606,12 @@ importers:
         specifier: 'catalog:'
         version: 3.23.8
     devDependencies:
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@platforma-sdk/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@types/decompress':
         specifier: 'catalog:'
         version: 4.2.7
@@ -1664,12 +1664,12 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@platforma-sdk/oclif-index':
-        specifier: workspace:*
-        version: link:../oclif-index
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.13
