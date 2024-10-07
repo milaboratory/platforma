@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.26
+
+### Patch Changes
+
+- bc6d116: app.model final version
+- Updated dependencies [bc6d116]
+  - @platforma-sdk/ui-vue@1.5.0
+
 ## 0.0.25
 
 ### Patch Changes
