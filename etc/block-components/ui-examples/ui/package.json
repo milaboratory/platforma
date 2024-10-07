@@ -1,17 +1,19 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.0.8",
+  "version": "1.0.19",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "watch": "vue-tsc && vite build --watch",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,ts,vue"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "vue": "catalog:",
+    "@platforma-sdk/model": "workspace:^",
     "@platforma-sdk/ui-vue": "workspace:^"
   },
   "devDependencies": {

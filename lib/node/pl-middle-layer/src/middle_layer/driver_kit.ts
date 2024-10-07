@@ -1,6 +1,11 @@
 import { PlClient } from '@milaboratories/pl-client';
 import {
-  createDownloadClient, createLogsClient, createLsFilesClient, createUploadBlobClient, createUploadProgressClient, DownloadDriver,
+  createDownloadClient,
+  createLogsClient,
+  createLsFilesClient,
+  createUploadBlobClient,
+  createUploadProgressClient,
+  DownloadDriver,
   InternalLsDriver,
   LogsDriver,
   LogsStreamDriver,
@@ -45,22 +50,21 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
 
 export async function initDriverKit(
   pl: PlClient,
-  logger: MiLogger,
   _ops: DriverKitOpsConstructor
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = { ...DefaultDriverKitOps, ..._ops };
-  checkStorageNamesDoNotIntersect(logger, ops);
+  checkStorageNamesDoNotIntersect(ops.logger, ops);
 
   const signer = new HmacSha256Signer(ops.localSecret);
 
-  const downloadClient = createDownloadClient(logger, pl, ops.platformLocalStorageNameToPath);
-  const logsClient = createLogsClient(pl, logger);
-  const uploadBlobClient = createUploadBlobClient(pl, logger);
-  const uploadProgressClient = createUploadProgressClient(pl, logger);
-  const lsClient = createLsFilesClient(pl, logger);
+  const downloadClient = createDownloadClient(ops.logger, pl, ops.platformLocalStorageNameToPath);
+  const logsClient = createLogsClient(pl, ops.logger);
+  const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
+  const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
+  const lsClient = createLsFilesClient(pl, ops.logger);
 
   const blobDriver = new DownloadDriver(
-    logger,
+    ops.logger,
     downloadClient,
     logsClient,
     ops.blobDownloadPath,
@@ -68,7 +72,7 @@ export async function initDriverKit(
     ops.blobDriverOps
   );
   const uploadDriver = new UploadDriver(
-    logger,
+    ops.logger,
     signer,
     uploadBlobClient,
     uploadProgressClient,
@@ -76,7 +80,7 @@ export async function initDriverKit(
   );
   const logsStreamDriver = new LogsStreamDriver(logsClient, ops.logStreamDriverOps);
   const logDriver = new LogsDriver(logsStreamDriver, blobDriver);
-  const lsDriver = new LsDriver(logger, lsClient, pl, signer, ops.localStorageNameToPath);
+  const lsDriver = new LsDriver(ops.logger, lsClient, pl, signer, ops.localStorageNameToPath);
 
   const pFrameDriver = new PFrameDriver(blobDriver);
 

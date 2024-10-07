@@ -82,6 +82,9 @@ export interface CellRenderingOps {
   mode: CellRenderingMode;
   /** If true, any error in current or child resources will reset the value so the "value" field will be undefined. */
   resetValueOnError: boolean;
+  /** Computable postporcess (async) part is meant to be quick, and internally guarded by the timeout.
+   * Timeout is in milliseconds. Default value is 5000. */
+  postprocessTimeout: number;
 }
 
 /** Extended by kernel intermediate returned value, and adds recover method. */

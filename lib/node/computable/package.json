@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.1.7",
+  "version": "2.1.10",
   "description": "Watcher / Computable Abstraction",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,7 +15,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

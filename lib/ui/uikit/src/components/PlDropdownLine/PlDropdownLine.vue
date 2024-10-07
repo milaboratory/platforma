@@ -11,6 +11,7 @@ import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import TabItem from '@/components/TabItem.vue';
 import type { ListOption } from '@/types';
+import { normalizeListOptions } from '@/helpers/utils';
 
 const emit = defineEmits(['update:modelValue']); // at the top always
 
@@ -64,11 +65,11 @@ const modelText = computed<string>(() => {
   if (props.modelValue) {
     const index = getIndexForModelInItems();
     if (index !== -1) {
-      const item = props.options[index];
-      if (typeof item['text'] === 'object') {
-        return item['text']['title'];
+      const item = normalizeListOptions(props.options)[index];
+      if (typeof item['label'] === 'object') {
+        return item['label']['title'];
       } else {
-        return item['text'];
+        return item['label'];
       }
     }
   }
@@ -271,7 +272,7 @@ function clearModel() {
     <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles" class="ui-line-dropdown__items-tabs">
       <template v-for="(item, index) in options" :key="index">
         <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-          <TabItem :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
+          <TabItem :option="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
         </slot>
       </template>
       <div v-if="options.length === 0" class="ui-line-dropdown__no-item">

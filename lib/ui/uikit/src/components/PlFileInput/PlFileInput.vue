@@ -147,7 +147,7 @@ useLabelNotch(rootRef);
 
 <template>
   <div class="pl-file-input__envelope">
-    <div ref="rootRef" class="pl-file-input" :class="{ dashed, error: hasErrors }">
+    <div ref="rootRef" class="pl-file-input" tabindex="0" :class="{ dashed, error: hasErrors }" @keyup.enter="openFileDialog">
       <div class="pl-file-input__progress" :style="progressStyle" />
       <label v-if="label" ref="label">
         <i v-if="required" class="required-icon" />

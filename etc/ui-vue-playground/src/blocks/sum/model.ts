@@ -1,8 +1,7 @@
 import type {
   ValueOrErrors,
 } from '@platforma-sdk/model';
-import { createMockApi } from '../../mock/api';
-import { BlockMock } from '../../mock/block';
+import { createMockApi, BlockMock } from '../../mock';
 
 type Args = {
   x: number;

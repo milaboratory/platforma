@@ -1,10 +1,14 @@
 import type { Expect, Equal } from '@milaboratories/helpers';
 import { z } from 'zod';
 import type { ModelOptions, Model } from './types';
-import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma } from '@platforma-sdk/model';
-import type { BaseApp, createApp } from './createApp';
-import type { App } from './defineApp';
+import type { BlockOutputsBase, InferHrefType, InferOutputsType, Platforma, ValueOrErrors } from '@platforma-sdk/model';
+import type { BaseApp, createApp } from './internal/createApp';
+import { type App } from './defineApp';
 import { computed, type Component } from 'vue';
+
+// declare const __platforma: Platforma<{}, { x: ValueOrErrors<number> }, {}, '/'>;
+
+// const p = defineApp()
 
 declare function __createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M>;
 
@@ -22,8 +26,8 @@ const __model1 = __createModel({
   },
   validate,
   autoSave: true,
-  onSave(seed) {
-    console.log('save', seed);
+  onSave(_seed) {
+    //
   },
 });
 
@@ -33,8 +37,8 @@ const __model2 = __createModel({
   },
   validate,
   autoSave: true,
-  onSave(seed) {
-    console.log('save', seed);
+  onSave(_seed) {
+    //
   },
 });
 
@@ -43,8 +47,21 @@ type InferUiState<Pl extends Platforma> = Pl extends Platforma<unknown, BlockOut
 
 export type TestApp<P extends Platforma> = ReturnType<typeof createApp<InferArgs<P>, InferOutputsType<P>, InferUiState<P>, InferHrefType<P>>>;
 
-type _App1 = BaseApp<1, BlockOutputsBase, unknown, '/'>;
-type _App2 = TestApp<Platforma<1, BlockOutputsBase, unknown, '/'>>;
+type _Args = {
+  x: number;
+  y: string[];
+};
+
+type _Outputs = {
+  sum: ValueOrErrors<number>;
+};
+
+type _UiState = {
+  flag: boolean;
+};
+
+type _App1 = BaseApp<_Args, _Outputs, _UiState, '/'>;
+type _App2 = TestApp<Platforma<_Args, _Outputs, _UiState, '/'>>;
 
 const local = () => {
   const counter = computed(() => 1);
@@ -64,9 +81,9 @@ const local = () => {
 
 type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof local>>;
 
-declare const app: ExtApp;
+declare const _app: ExtApp;
 
-app.counter;
+type _UpdateArgsParams = Parameters<Parameters<_App1['updateArgs']>[0]>[0];
 
 type __cases = [
   Expect<Equal<Model<string>, typeof __model1>>,
@@ -77,4 +94,10 @@ type __cases = [
   Expect<Equal<ExtApp['counter'], number>>,
   Expect<Equal<ExtApp['label'], string>>,
   Expect<Equal<ExtApp['method'], () => number>>,
+  Expect<Equal<_App1['args'], Readonly<_Args>>>,
+  Expect<Equal<_App1['outputValues']['sum'], number | undefined>>,
+  Expect<Equal<_App1['ui'], Readonly<_UiState>>>,
+  Expect<Equal<_App1['model']['args'], _Args>>,
+  Expect<Equal<_App1['model']['ui'], _UiState>>,
+  Expect<Equal<_UpdateArgsParams, _Args>>,
 ];

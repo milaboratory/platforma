@@ -18,12 +18,13 @@ export interface ModelOptions<M, V = M> extends ReadableComputed<M> {
 
 export type Model<T> = {
   model: T;
-  valid: boolean;
-  isChanged: boolean;
-  error: Error | undefined;
-  errorString: string | undefined;
-  save: () => void;
-  revert: () => void;
+  readonly valid: boolean;
+  readonly isChanged: boolean;
+  readonly error: Error | undefined;
+  readonly errorString: string | undefined;
+  readonly save: () => void;
+  readonly revert: () => void;
+  readonly setError: (cause: unknown) => void;
 };
 
 interface ReadableComputed<T> {
@@ -54,6 +55,12 @@ export type LocalState<Href extends `/${string}` = `/${string}`> = {
   routes: Routes<Href>;
 };
 
+export type FetchResult<V, E = unknown> = {
+  loading: boolean;
+  value: V | undefined;
+  error: E;
+};
+
 // Results (ValueOrErrors)
 
 export type UnwrapValueOrError<W> = W extends {
@@ -78,6 +85,17 @@ export type ModelResult<T, E = unknown> =
       error: E;
     };
 
+export type OutputValues<Outputs extends BlockOutputsBase> = {
+  [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
+};
+
+export type OutputErrors<Outputs extends BlockOutputsBase> = {
+  [P in keyof Outputs]?: Error;
+};
+
+/**
+ * @deprecated
+ */
 export type OptionalResult<T> =
   | {
       errors?: undefined;
@@ -88,19 +106,6 @@ export type OptionalResult<T> =
       errors: string[];
     };
 
-export type OutputValues<Outputs extends BlockOutputsBase> = {
-  [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
-};
-
-export type OutputErrors<Outputs extends BlockOutputsBase> = {
-  [P in keyof Outputs]?: Error;
-};
-
-// declare global {
-//   const platforma: Platforma | undefined;
-//   interface Window {
-//     platforma: Platforma | undefined;
-//   }
-// }
+// Static tests
 
 type _cases = [Expect<Equal<number, UnwrapValueOrError<ValueOrErrors<number>>>>];

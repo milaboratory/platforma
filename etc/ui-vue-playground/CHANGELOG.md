@@ -1,5 +1,92 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.23
+
+### Patch Changes
+
+- Updated dependencies [892ef23]
+  - @platforma-sdk/model@1.2.32
+  - @milaboratories/uikit@1.2.16
+  - @platforma-sdk/ui-vue@1.4.7
+
+## 0.0.22
+
+### Patch Changes
+
+- Updated dependencies [7812ae6]
+  - @platforma-sdk/model@1.2.31
+  - @milaboratories/uikit@1.2.16
+  - @platforma-sdk/ui-vue@1.4.6
+
+## 0.0.21
+
+### Patch Changes
+
+- Updated dependencies [7a12b39]
+  - @milaboratories/helpers@1.6.5
+  - @milaboratories/uikit@1.2.16
+  - @platforma-sdk/ui-vue@1.4.5
+
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [9ea877e]
+  - @milaboratories/uikit@1.2.15
+  - @platforma-sdk/ui-vue@1.4.4
+
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [ae39723]
+  - @platforma-sdk/ui-vue@1.4.3
+
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies [8db877c]
+  - @milaboratories/helpers@1.6.4
+  - @milaboratories/uikit@1.2.14
+  - @platforma-sdk/ui-vue@1.4.2
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [21a9b9c]
+- Updated dependencies [c9d051f]
+- Updated dependencies [3c85025]
+  - @platforma-sdk/ui-vue@1.4.1
+  - @platforma-sdk/model@1.2.30
+  - @milaboratories/uikit@1.2.13
+
+## 0.0.16
+
+### Patch Changes
+
+- 6495dcc: add default app model (initial version)
+- Updated dependencies [6495dcc]
+  - @platforma-sdk/ui-vue@1.4.0
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [09fa81a]
+  - @milaboratories/uikit@1.2.13
+  - @platforma-sdk/ui-vue@1.3.19
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [95f1b0d]
+  - @milaboratories/helpers@1.6.3
+  - @milaboratories/uikit@1.2.12
+  - @platforma-sdk/ui-vue@1.3.18
+
 ## 0.0.13
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.6.2",
+  "version": "1.6.5",
   "description": "",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build"
+    "build": "vite build",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

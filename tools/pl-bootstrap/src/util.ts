@@ -56,12 +56,17 @@ export function resolveTilde(p: string): string {
   return p;
 }
 
-export function ensureDir(p: string) {
+export function ensureDir(p: string, options?: {
+  mode?: fs.Mode
+}) {
   if (fs.existsSync(p)) {
     return
   }
 
-  fs.mkdirSync(p, {recursive: true})
+  fs.mkdirSync(p, { recursive: true })
+  if (options?.mode) {
+    fs.chmodSync(p, options.mode)
+  }
 }
 
 export function getProcessName(pid: number): string {

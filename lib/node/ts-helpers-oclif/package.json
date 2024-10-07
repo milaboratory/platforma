@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers-oclif",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Useful helpers for our TS projects (oclif-specific)",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build"
+    "build": "vite build",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*",

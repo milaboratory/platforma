@@ -9,7 +9,7 @@ import type {
   StorageHandle,
 } from '@platforma-sdk/model';
 import { getLsFilesResult } from './utils';
-import { BlockMock } from './block';
+import { BlockMock } from './BlockMock';
 
 export function createMockApi<
   Args,
@@ -29,7 +29,6 @@ export function createMockApi<
   };
 
   block.onNewState(async patches => {
-    console.log('patches fom back', patches);
     await setPatches(patches);
   });
 
@@ -60,12 +59,21 @@ export function createMockApi<
         key: 'ui',
         value
       }]);
+
+      await block.setBlockUiState(value);
     },
-    setBlockArgsAndUiState: function (_args: unknown, _state: unknown): Promise<void> {
-      throw new Error('Function not implemented.');
+    async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<void> {
+      await setPatches([{
+        key: 'args',
+        value: args
+      }, {
+        key: 'ui',
+        value: uiState
+      }]);
+
+      await block.setBlockArgsAndUiState(args, uiState);
     },
     async setNavigationState(navigationState: NavigationState<Href>): Promise<void> {
-      console.log('set navigation', navigationState);
       await setPatches([{
         key: 'navigationState',
         value: navigationState

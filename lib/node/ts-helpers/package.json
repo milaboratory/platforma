@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "description": "Useful helpers for our TS projects",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -15,7 +15,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

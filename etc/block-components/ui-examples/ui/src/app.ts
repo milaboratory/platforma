@@ -1,14 +1,16 @@
 import { platforma } from '@milaboratories/milaboratories.test-enter-numbers.model';
 import { defineApp } from '@platforma-sdk/ui-vue';
 import LogViewPage from './LogViewPage.vue';
-import SlideModalPage from './SlideModalPage.vue';
+import ModalsPage from './ModalsPage.vue';
 import { computed, reactive } from 'vue';
 import InjectEnvPage from './InjectEnvPage.vue';
+import PlDropdownPage from './PlDropdownPage.vue';
+import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
   const data = reactive({
-    counter: 0,
+    counter: 0
   });
 
   function incrementCounter() {
@@ -23,8 +25,10 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     argsAsJson,
     routes: {
       '/': LogViewPage,
-      '/slide-modal' : SlideModalPage,
-      '/inject-env': InjectEnvPage 
+      '/modals': ModalsPage,
+      '/inject-env': InjectEnvPage,
+      '/pl-dropdown': PlDropdownPage,
+      '/use-watch-fetch': UseWatchFetchPage
     }
   };
 });

@@ -1,15 +1,20 @@
 @import "@/assets/mixins";
 
 .pl-log-view {
+  --log-background: var(--bg-base-light);
   height: 100%;
   max-height: 100%;
   max-width: 100%;
   border-radius: 6px;
   border: 1px solid var(--border-color-div-grey);
-  background: var(--bg-base-light);
+  background: var(--log-background);
   display: flex;
   position: relative;
   min-height: 44px;
+
+  &.has-error {
+    --log-background: var(--notification-error);
+  }
 
   &__copy {
     position: absolute;
@@ -32,9 +37,23 @@
     font-family: var(--font-family-monospace);
     white-space: pre;
     font-size: 14px;
-    font-style: normal;
     font-weight: 400;
-    line-height: 20px; /* 142.857% */
+    line-height: 20px;
+    @include scrollbar(true, true);
+  }
+
+  &__error {
+    margin: 12px;
+    max-height: 100%;
+    max-width: 100%;
+    flex: 1;
+    color: var(--txt-01);
+    font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
+    font-family: var(--font-family-monospace);
+    white-space: pre;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
     @include scrollbar(true, true);
   }
 }

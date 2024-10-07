@@ -1,8 +1,10 @@
 import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
-import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import { blockPackIdEquals, BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 import { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
-import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
+import { RegistryV2Reader, tryLoadPackDescription } from '@platforma-sdk/block-tools';
+import { assertNever, MiLogger } from '@milaboratories/ts-helpers';
+import { V2RegistryProvider } from './registry-v2-provider';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
   minDelay: 1500
@@ -18,8 +20,12 @@ export class BlockUpdateWatcher extends PollComputablePool<
 > {
   private readonly http?: Dispatcher;
 
-  constructor(ops: BlockUpdateWatcherOps = {}) {
-    super({ ...ops, ...DefaultBlockUpdateWatcherOps });
+  constructor(
+    private readonly registryProvider: V2RegistryProvider,
+    logger: MiLogger,
+    ops: BlockUpdateWatcherOps = {}
+  ) {
+    super({ ...ops, ...DefaultBlockUpdateWatcherOps }, logger);
     this.http = ops.http;
   }
 
@@ -29,6 +35,8 @@ export class BlockUpdateWatcher extends PollComputablePool<
         return `dev_1_${req.folder}_${req.mtime}`;
       case 'dev-v2':
         return `dev_2_${req.folder}_${req.mtime}`;
+      case 'from-registry-v2':
+        return `from_registry_v2_${req.registryUrl}_${req.id.organization}_${req.id.name}_${req.id.version}`;
       default:
         return NoUpdatesKey;
     }
@@ -38,21 +46,47 @@ export class BlockUpdateWatcher extends PollComputablePool<
     try {
       switch (req.type) {
         case 'dev-v1': {
-          const mtime = await getDevV1PacketMtime(req.folder);
-          if (mtime === req.mtime) return undefined;
-          else return { ...req, mtime };
+          try {
+            const mtime = await getDevV1PacketMtime(req.folder);
+            if (mtime === req.mtime) return undefined;
+            else return { ...req, mtime };
+          } catch (err: unknown) {
+            this.logger.warn(err);
+            return undefined;
+          }
         }
+
         case 'dev-v2': {
-          const description = await tryLoadPackDescription(req.folder);
-          if (description === undefined) return undefined;
-          const mtime = await getDevV2PacketMtime(description);
-          if (mtime === req.mtime) return undefined;
-          else return { ...req, mtime: mtime };
+          try {
+            const description = await tryLoadPackDescription(req.folder, this.logger);
+            if (description === undefined) return undefined;
+            const mtime = await getDevV2PacketMtime(description);
+            if (mtime === req.mtime) return undefined;
+            else return { ...req, mtime: mtime };
+          } catch (err: unknown) {
+            this.logger.warn(err);
+            return undefined;
+          }
         }
+
+        case 'from-registry-v2': {
+          try {
+            const registry = this.registryProvider.getRegistry(req.registryUrl);
+            const spec = (await registry.getOverviewForSpec(req.id))?.spec;
+            if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
+            if (blockPackIdEquals(spec.id, req.id)) return undefined;
+            return spec;
+          } catch (err: unknown) {
+            this.logger.warn(err);
+            return undefined;
+          }
+        }
+
         default:
           return undefined;
       }
     } catch (e: unknown) {
+      this.logger.warn(e);
       return undefined;
     }
   }
@@ -63,13 +97,22 @@ export class BlockUpdateWatcher extends PollComputablePool<
   ): boolean {
     if (res1 === undefined && res2 === undefined) return true;
     if (res1 === undefined || res2 === undefined) return false;
-    if (
-      res1.type === 'from-registry-v1' ||
-      res2.type === 'from-registry-v1' ||
-      res1.type === 'from-registry-v2' ||
-      res2.type === 'from-registry-v2'
-    )
-      throw new Error('Unexpected, not yet supported.');
-    return res1.folder === res2.folder && res1.mtime === res2.mtime;
+    if (res1.type !== res2.type) return false;
+    switch (res1.type) {
+      case 'from-registry-v1':
+        if (res2.type !== 'from-registry-v1') return false;
+        return res1.registryUrl === res2.registryUrl && blockPackIdEquals(res1.id, res2.id);
+      case 'from-registry-v2':
+        if (res2.type !== 'from-registry-v2') return false;
+        return res1.registryUrl === res2.registryUrl && blockPackIdEquals(res1.id, res2.id);
+      case 'dev-v1':
+        if (res2.type !== 'dev-v1') return false;
+        return res1.folder === res2.folder && res1.mtime === res2.mtime;
+      case 'dev-v2':
+        if (res2.type !== 'dev-v2') return false;
+        return res1.folder === res2.folder && res1.mtime === res2.mtime;
+      default:
+        assertNever(res1);
+    }
   }
 }

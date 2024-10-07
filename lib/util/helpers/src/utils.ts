@@ -189,7 +189,7 @@ export function match<T extends string, R = unknown>(matcher: Matcher<T, R>) {
   return (key: T) => matcher[key]();
 }
 
-export function okOptional<V>(v: Result<V> | undefined) {
+export function okOptional<V>(v: {ok: true, value: V} | {ok: false} | undefined) {
   if (!v) {
     return undefined;
   }

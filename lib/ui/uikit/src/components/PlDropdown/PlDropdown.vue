@@ -14,11 +14,12 @@ import { tap, tapIf } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
-import type { ListOption } from '@/types';
+import type { ListOption, ListOptionNormalized } from '@/types';
 import { scrollIntoView } from '@/helpers/dom';
 import { deepEqual } from '@/helpers/objects';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import LongText from '@/components/LongText.vue';
+import { normalizeListOptions } from '@/helpers/utils';
 
 const emit = defineEmits<{
   /**
@@ -123,10 +124,21 @@ const computedError = computed(() => {
   return undefined;
 });
 
-const textValue = computed(() => {
-  const item: ListOption | undefined = props.options.find((o) => deepEqual(o.value, props.modelValue));
+const optionsRef = computed(() =>
+  normalizeListOptions(props.options).map((opt, index) => ({
+    ...opt,
+    index,
+    isSelected: index === selectedIndex.value,
+    isActive: index === data.activeIndex,
+  })),
+);
 
-  return item?.text || props.modelValue; // @todo show inner value?
+const textValue = computed(() => {
+  const options = unref(optionsRef);
+
+  const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
+
+  return item?.label || props.modelValue; // @todo show inner value?
 });
 
 const computedPlaceholder = computed(() => {
@@ -141,23 +153,14 @@ const hasValue = computed(() => {
   return props.modelValue !== undefined && props.modelValue !== null;
 });
 
-const optionsRef = computed(() =>
-  props.options.map((opt, index) => ({
-    ...opt,
-    index,
-    isSelected: index === selectedIndex.value,
-    isActive: index === data.activeIndex,
-  })),
-);
-
 const filteredRef = computed(() => {
   const options = optionsRef.value;
 
   if (data.search) {
-    return options.filter((o: ListOption) => {
+    return options.filter((o: ListOptionNormalized) => {
       const search = data.search.toLowerCase();
 
-      if (o.text.toLowerCase().includes(search)) {
+      if (o.label.toLowerCase().includes(search)) {
         return true;
       }
 

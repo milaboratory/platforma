@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.3.4",
+  "version": "2.3.9",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -14,7 +14,8 @@
   },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
+    "build": "pnpm run oclif:index && vite build",
     "readme": "exec oclif readme",
     "test": "jest"
   },
@@ -36,6 +37,7 @@
     "@milaboratories/ts-helpers-oclif": "workspace:^",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
+    "lru-cache": "catalog:",
     "undici": "catalog:",
     "mime-types": "catalog:",
     "tar": "catalog:",
@@ -44,6 +46,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@platforma-sdk/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "rollup-plugin-node-externals": "catalog:",

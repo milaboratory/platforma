@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-btn-primary {
+.pl-btn-primary {
   @include base-btn;
 
   --color-btn-hover: var(--color-primary-hover);
@@ -10,6 +10,7 @@
 
   background-color: var(--color-btn-background);
   border: none;
+  min-width: 160px;
 
   --append-shadow: inset 0 0 0 1px #110529;
 

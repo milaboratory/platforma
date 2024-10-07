@@ -1,8 +1,6 @@
-declare global {
-  function getEnvironmentValue(name: string): string | undefined;
-}
+import {} from './global';
 
 export function getEnvironmentValue(name: string): string | undefined {
-  if (typeof getEnvironmentValue !== 'function') return undefined;
-  else return getEnvironmentValue(name);
+  if (typeof globalThis.getEnvironmentValue !== 'function') return undefined;
+  else return globalThis.getEnvironmentValue(name);
 }
