@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "@platforma-sdk/oclif-index": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
