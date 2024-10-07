@@ -472,7 +472,7 @@ export class PackageInfo {
             }
         }
 
-        const regNameUpper = (result.name).toUpperCase()
+        const regNameUpper = (result.name).toUpperCase().replaceAll(/[^A-Z0-9_]/g, '_')
 
         const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
         if (uploadTo) {
