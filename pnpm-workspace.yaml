@@ -16,6 +16,7 @@ packages:
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
+  - lib/node/pl-local
 
   - lib/ui/uikit
 
@@ -24,7 +25,6 @@ packages:
   - tools/block-tools
   - tools/package-builder
   - tools/pl-bootstrap
-  - tools/pl-local
 
   - sdk/model
   - sdk/workflow-tengo

@@ -1,5 +1,5 @@
 {
-  "name": "@platforma-sdk/local",
+  "name": "@milaboratories/pl-local",
   "version": "1.0.0",
   "pl-version": "1.13.0",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
