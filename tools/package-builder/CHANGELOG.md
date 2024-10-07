@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.9.1
+
+### Patch Changes
+
+- d4dce67: Bring back lost commands to package-builder
+
 ## 2.9.0
 
 ### Minor Changes
