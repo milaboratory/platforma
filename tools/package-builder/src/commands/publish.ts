@@ -3,7 +3,7 @@ import * as cmdOpts from '../core/cmd-opts';
 import * as util from '../core/util';
 import { Core } from '../core/core';
 
-export class Publish extends Command {
+export default class Publish extends Command {
     static override description = 'publish software package archive to its registry'
 
     static override examples = [
