@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.9.0
+
+### Minor Changes
+
+- 1443049: For registries with non-alnum chars in name, use env var only with '\_'
+
 ## 2.8.2
 
 ### Patch Changes
