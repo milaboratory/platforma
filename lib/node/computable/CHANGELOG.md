@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.1.11
+
+### Patch Changes
+
+- d5ef69e: fixes GC-induced polling termination in PollComputablePool
+- Updated dependencies [1e10161]
+  - @milaboratories/ts-helpers@1.0.29
+
 ## 2.1.10
 
 ### Patch Changes

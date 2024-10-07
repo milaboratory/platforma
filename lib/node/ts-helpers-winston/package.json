@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers-winston",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Useful helpers for our TS projects (winston-specific)",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
