@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.9.2
+
+### Patch Changes
+
+- b22072c: bring back lost 'build commands
+
 ## 2.9.1
 
 ### Patch Changes
