@@ -32,7 +32,8 @@
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "lru-cache": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "canonicalize": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/helpers": "workspace:^",
@@ -49,7 +50,6 @@
     "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "canonicalize": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-prettier": "catalog:",
