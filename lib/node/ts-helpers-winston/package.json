@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*",

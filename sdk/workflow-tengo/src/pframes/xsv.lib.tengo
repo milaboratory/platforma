@@ -79,6 +79,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	// convert csv to p-frame and read resulting data
 	pfconv := exec.builder().
 		software(pfconvSw).
+		printErrStreamToStdout().
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
