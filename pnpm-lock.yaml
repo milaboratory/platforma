@@ -1557,6 +1557,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
+      '@platforma-sdk/oclif-index':
+        specifier: workspace:*
+        version: link:../oclif-index
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.13
