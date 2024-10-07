@@ -1,5 +1,38 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [892ef23]
+  - @platforma-sdk/model@1.2.32
+
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [7812ae6]
+  - @platforma-sdk/model@1.2.31
+
+## 1.0.7
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [3c85025]
+  - @platforma-sdk/model@1.2.30
+
+## 1.0.5
+
+### Patch Changes
+
+- c549960: fix test enter-numbers wf
+
 ## 1.0.4
 
 ### Patch Changes

@@ -1,35 +1,30 @@
+import {} from './global';
 import { Platforma, PlatformaFactory } from './platforma';
 import { BlockConfig } from './builder';
 import { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
-declare global {
-  /** Global factory method returning platforma instance */
-  const getPlatforma: PlatformaFactory;
-  const platforma: Platforma;
-
-  /** Global rendering context, present only in rendering environment */
-  const cfgRenderCtx: GlobalCfgRenderCtx;
-}
-
 /** Utility code helping to identify whether the code is running in actual UI environment */
 export function isInUI() {
-  return typeof getPlatforma !== 'undefined' || typeof platforma !== 'undefined';
+  return (
+    typeof globalThis.getPlatforma !== 'undefined' || typeof globalThis.platforma !== 'undefined'
+  );
 }
 
 /** Utility code helping to retrieve a platforma instance form the environment */
-export function getPlatformaInstance(config: BlockConfig): Platforma {
-  if (typeof getPlatforma === 'function') return getPlatforma(config);
-  else if (typeof platforma !== 'undefined') return platforma;
+export function getPlatformaInstance(config?: BlockConfig): Platforma {
+  if (config && typeof globalThis.getPlatforma === 'function')
+    return globalThis.getPlatforma(config);
+  else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;
   else throw new Error("Can't get platforma instance.");
 }
 
 export function tryGetCfgRenderCtx(): GlobalCfgRenderCtx | undefined {
-  if (typeof cfgRenderCtx !== 'undefined') return cfgRenderCtx;
+  if (typeof globalThis.cfgRenderCtx !== 'undefined') return globalThis.cfgRenderCtx;
   else return undefined;
 }
 
 export function getCfgRenderCtx(): GlobalCfgRenderCtx {
-  if (typeof cfgRenderCtx !== 'undefined') return cfgRenderCtx;
+  if (typeof globalThis.cfgRenderCtx !== 'undefined') return globalThis.cfgRenderCtx;
   else throw new Error('Not in config rendering context');
 }
 

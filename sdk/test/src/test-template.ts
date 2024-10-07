@@ -21,11 +21,7 @@ import {
   TemplateSpecAny,
   toGlobalResourceId
 } from '@milaboratories/pl-middle-layer';
-import {
-  PlTreeEntry,
-  PlTreeNodeAccessor,
-  SynchronizedTreeState
-} from '@milaboratories/pl-tree';
+import { PlTreeEntry, PlTreeNodeAccessor, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
@@ -57,9 +53,7 @@ export class TestRenderResults<O extends string> {
 export class TestWorkflowResults {
   constructor(
     public readonly renderResult: TestRenderResults<'context' | 'result'>,
-    public readonly processedExportsResult:
-      | TestRenderResults<'result'>
-      | undefined,
+    public readonly processedExportsResult: TestRenderResults<'result'> | undefined,
     public readonly blockId: string
   ) {}
 
@@ -67,18 +61,14 @@ export class TestWorkflowResults {
    * Returns context id of this workflow
    * */
   public context(): ComputableStableDefined<ResourceId> {
-    return this.renderResult
-      .computeOutput('context', (cb) => cb?.id)
-      .withStableType();
+    return this.renderResult.computeOutput('context', (cb) => cb?.id).withStableType();
   }
 
   /**
    * Returns context id of this workflow
    * */
   public result(): ComputableStableDefined<ResourceId> {
-    return this.renderResult
-      .computeOutput('result', (cb) => cb?.id)
-      .withStableType();
+    return this.renderResult.computeOutput('result', (cb) => cb?.id).withStableType();
   }
 
   public export<R>(
@@ -87,17 +77,11 @@ export class TestWorkflowResults {
   ) {
     if (this.processedExportsResult !== undefined)
       return this.processedExportsResult.computeOutput('result', (acc, ctx) => {
-        return cb(
-          acc?.traverse({ field: name, assertFieldType: 'Input' }),
-          ctx
-        );
+        return cb(acc?.traverse({ field: name, assertFieldType: 'Input' }), ctx);
       });
     else
       return this.renderResult.computeOutput('context', (acc, ctx) => {
-        return cb(
-          acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }),
-          ctx
-        );
+        return cb(acc?.traverse({ field: `values/${name}`, assertFieldType: 'Input' }), ctx);
       });
   }
 
@@ -122,9 +106,7 @@ export class TplTestHelpers {
     ephemeral: boolean,
     template: string | TemplateSpecAny,
     outputs: O[],
-    inputs: (
-      tx: PlTransaction
-    ) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>
+    inputs: (tx: PlTransaction) => Record<string, AnyRef> | Promise<Record<string, AnyRef>>
   ): Promise<TestRenderResults<O>> {
     const runId = randomUUID();
     const spec =
@@ -134,23 +116,20 @@ export class TplTestHelpers {
             path: `./dist/tengo/tpl/${template}.plj.gz`
           })
         : await prepareTemplateSpec(template);
-    const { resultMapRid } = await this.pl.withWriteTx(
-      'TemplateRender',
-      async (tx) => {
-        const tpl = loadTemplate(tx, spec);
-        const renderedInputs = await inputs(tx);
-        // prettier-ignore
-        const futureOutputs = await createRenderTemplate(
+    const { resultMapRid } = await this.pl.withWriteTx('TemplateRender', async (tx) => {
+      const tpl = loadTemplate(tx, spec);
+      const renderedInputs = await inputs(tx);
+      // prettier-ignore
+      const futureOutputs = await createRenderTemplate(
           tx, tpl, ephemeral, renderedInputs, outputs);
-        const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);
-        tx.createField(field(this.resultRootRid, runId), 'Dynamic', resultMap);
-        const resultMapRid = await toGlobalResourceId(resultMap);
-        await tx.commit();
-        return {
-          resultMapRid
-        };
-      }
-    );
+      const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);
+      tx.createField(field(this.resultRootRid, runId), 'Dynamic', resultMap);
+      const resultMapRid = await toGlobalResourceId(resultMap);
+      await tx.commit();
+      return {
+        resultMapRid
+      };
+    });
     await this.resultRootTree.refreshState();
     return new TestRenderResults(this.resultRootTree.entry(resultMapRid));
   }
@@ -166,8 +145,11 @@ export class TplTestHelpers {
     ops: WorkflowRenderOps = {}
   ): Promise<TestWorkflowResults> {
     const blockId = randomUUID();
-    const mainResult: TestRenderResults<'result' | 'context'> =
-      await this.renderTemplate(true, workflow, ['result', 'context'], (tx) => {
+    const mainResult: TestRenderResults<'result' | 'context'> = await this.renderTemplate(
+      true,
+      workflow,
+      ['result', 'context'],
+      (tx) => {
         let ctx = undefined;
         if (ops.parent) {
           ctx = ops.parent;
@@ -182,22 +164,14 @@ export class TplTestHelpers {
           isProduction: this.createObject(tx, !preRun),
           context: ctx
         };
-      });
+      }
+    );
 
     const exports: TestRenderResults<'result'> | undefined = undefined;
     if (ops.exportProcessor !== undefined) {
-      const exports = await this.renderTemplate(
-        true,
-        ops.exportProcessor,
-        ['result'],
-        (tx) => ({
-          pf: tx.getFutureFieldValue(
-            mainResult.resultEntry.rid,
-            'context',
-            'Input'
-          )
-        })
-      );
+      const exports = await this.renderTemplate(true, ops.exportProcessor, ['result'], (tx) => ({
+        pf: tx.getFutureFieldValue(mainResult.resultEntry.rid, 'context', 'Input')
+      }));
     }
 
     return new TestWorkflowResults(mainResult, exports, blockId);
@@ -222,7 +196,7 @@ export const tplTest = plTest.extend<{
   driverKit: async ({ pl, tmpFolder }, use) => {
     const downloadFolder = path.join(tmpFolder, 'download');
     await fsp.mkdir(downloadFolder, { recursive: true });
-    const driverKit = await initDriverKit(pl, new ConsoleLoggerAdapter(), {
+    const driverKit = await initDriverKit(pl, {
       blobDownloadPath: downloadFolder,
       localSecret: MiddleLayer.generateLocalSecret()
     });

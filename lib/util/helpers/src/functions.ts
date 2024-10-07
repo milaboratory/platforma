@@ -126,7 +126,6 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
 
   return async function(...params: A[]): Promise<{
     ok: false;
-    error?: string;
   } | {
     ok: true;
     value: R;
@@ -139,11 +138,10 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
       // ignoring the error here, original caller will receive any rejections
     }
 
-    // checkig that this update is still the most recent
+    // checking that this update is still the most recent
     if (counter !== myId) {
       return {
         ok: false,
-        error: 'skipped'
       }
     }
 

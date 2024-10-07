@@ -140,3 +140,10 @@ export function throttle<F extends AnyFunction>(callback: F, ms: number, trailin
 export function listToOptions<T>(list: T[] | readonly T[]): ListOption<T>[] {
   return list.map((value) => ({ text: String(value), value }));
 }
+
+export function normalizeListOptions<V = unknown>(options: Readonly<ListOption<V>[]>) {
+  return options.map((it) => ({
+    label: 'label' in it ? it.label : it.text,
+    value: it.value,
+  }));
+}

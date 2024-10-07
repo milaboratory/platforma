@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-btn-secondary {
+.pl-btn-secondary {
   @include base-btn;
 
   --color-border: var(--color-border-default);
@@ -9,6 +9,7 @@
 
   border: 1px solid var(--color-border);
   background: transparent;
+  min-width: 160px;
 
   &:disabled {
     --color-text: var(--color-dis-01);

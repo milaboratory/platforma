@@ -154,10 +154,23 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
 
   e.code === 'ArrowUp' ? increment() : e.code === 'ArrowDown' ? decrement() : undefined;
 }
+
+// https://stackoverflow.com/questions/880512/prevent-text-selection-after-double-click#:~:text=If%20you%20encounter%20a%20situation,none%3B%20to%20the%20summary%20element.
+const onMousedown = (ev: MouseEvent) => {
+  if (ev.detail > 1) {
+    ev.preventDefault();
+  }
+};
 </script>
 
 <template>
-  <div ref="root" :class="{ error: !!errors.trim(), disabled: disabled }" class="mi-number-field d-flex-column" @keydown="handleKeyPress($event)">
+  <div
+    ref="root"
+    :class="{ error: !!errors.trim(), disabled: disabled }"
+    class="mi-number-field d-flex-column"
+    @mousedown="onMousedown"
+    @keydown="handleKeyPress($event)"
+  >
     <div class="mi-number-field__main-wrapper d-flex">
       <DoubleContour class="mi-number-field__contour" />
       <div class="mi-number-field__wrapper flex-grow d-flex flex-align-center">

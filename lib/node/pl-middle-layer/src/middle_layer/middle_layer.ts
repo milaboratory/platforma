@@ -60,6 +60,7 @@ export class MiddleLayer {
     private readonly projectListResourceId: ResourceId,
     private readonly openedProjectsList: WatchableValue<ResourceId[]>,
     private readonly projectListTree: SynchronizedTreeState,
+    public readonly blockRegistryProvider: V2RegistryProvider,
     projectList: ComputableStableDefined<ProjectListEntry[]>
   ) {
     this.projectList = projectList;
@@ -195,10 +196,11 @@ export class MiddleLayer {
       }
     });
 
-    const logger = new ConsoleLoggerAdapter(console);
+    const logger = ops.logger;
 
-    const driverKit = await initDriverKit(pl, logger, ops);
+    const driverKit = await initDriverKit(pl, ops);
 
+    // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher, {
       minTimeout: 250,
       maxRetries: 4
@@ -225,7 +227,7 @@ export class MiddleLayer {
       bpPreparer,
       frontendDownloadDriver,
       driverKit,
-      blockUpdateWatcher: new BlockUpdateWatcher({
+      blockUpdateWatcher: new BlockUpdateWatcher(v2RegistryProvider, logger, {
         minDelay: ops.devBlockUpdateRecheckInterval,
         http: retryHttpDispatcher
       }),
@@ -242,6 +244,7 @@ export class MiddleLayer {
       projects,
       openedProjects,
       projectListTC.tree,
+      v2RegistryProvider,
       projectListTC.computable
     );
   }

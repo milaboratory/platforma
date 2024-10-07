@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers-winston",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Useful helpers for our TS projects (winston-specific)",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -13,7 +13,8 @@
     }
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "dist/**/*",

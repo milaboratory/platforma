@@ -27,7 +27,7 @@ const onClickOption = (opt: ContextOption) => {
   position: absolute;
   top: 50px;
   left: 50px;
-  z-index: 1001;
+  z-index: var(--z-context-menu);
 
   margin: 0;
   padding: 3px 0 4px;

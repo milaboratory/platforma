@@ -2,11 +2,11 @@
 import { computed } from 'vue';
 import CheckboxUncheckedSvg from '@/assets/images/24_checkbox-base.svg?raw';
 import CheckboxCheckedSvg from '@/assets/images/24_checkbox-checked.svg?raw';
-import type { ListOption } from '@/types';
+import type { ListOptionNormalized } from '@/types';
 
 const props = withDefaults(
   defineProps<{
-    option: ListOption;
+    option: ListOptionNormalized;
     isSelected: boolean;
     size: 'small' | 'medium';
     isHovered: boolean;
@@ -53,7 +53,7 @@ const checkboxSvg = computed(() => (props.isSelected ? CheckboxCheckedSvg : Chec
     <!--eslint-enable-->
     <div class="dropdown-list-item__title-container">
       <div class="dropdown-list-item__title text-s">
-        {{ option.text }}
+        {{ option.label }}
       </div>
       <div v-if="option.description" class="dropdown-list-item__description text-description">
         {{ option.description }}

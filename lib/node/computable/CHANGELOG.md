@@ -1,5 +1,25 @@
 # @milaboratories/computable
 
+## 2.1.10
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+
+## 2.1.9
+
+### Patch Changes
+
+- 86c8d0f: logging of poll pool termination & and notification of poll actors
+
+## 2.1.8
+
+### Patch Changes
+
+- e65f21d: postprocessing timeout
+- Updated dependencies [e65f21d]
+  - @milaboratories/ts-helpers@1.0.28
+
 ## 2.1.7
 
 ### Patch Changes

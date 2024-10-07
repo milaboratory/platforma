@@ -19,6 +19,7 @@ import type { ListOption } from '@/types';
 import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
+import { normalizeListOptions } from '@/helpers/utils';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -95,18 +96,20 @@ const placeholderRef = computed(() => {
 });
 
 const selectedOptionsRef = computed(() => {
-  return props.options.filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
+  return normalizeListOptions(props.options).filter((opt) => deepIncludes(selectedValuesRef.value, opt.value));
 });
 
 const filteredOptionsRef = computed(() => {
   const selectedValues = unref(selectedValuesRef);
 
+  const options = normalizeListOptions(props.options);
+
   return (
     data.search
-      ? props.options.filter((opt) => {
+      ? options.filter((opt) => {
           const search = data.search.toLowerCase();
 
-          if (opt.text.toLowerCase().includes(search)) {
+          if (opt.label.toLowerCase().includes(search)) {
             return true;
           }
 
@@ -116,7 +119,7 @@ const filteredOptionsRef = computed(() => {
 
           return opt.value === data.search;
         })
-      : [...props.options]
+      : [...options]
   ).map((opt) => ({
     ...opt,
     selected: deepIncludes(selectedValues, opt.value),
@@ -244,7 +247,7 @@ watchPostEffect(() => {
           />
           <div v-if="!data.open" class="chips-container" @click="setFocusOnInput">
             <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @click.stop="data.open = true" @close="unselectOption(opt.value)">
-              {{ opt.text || opt.value }}
+              {{ opt.label || opt.value }}
             </PlChip>
           </div>
           <div class="arrow" @click.stop="toggleModel" />
@@ -262,9 +265,9 @@ watchPostEffect(() => {
           </PlTooltip>
         </label>
         <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
-          <div class="ui-multi-dropdown__open-chips-conteiner">
+          <div class="ui-multi-dropdown__open-chips-container">
             <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
-              {{ opt.text || opt.value }}
+              {{ opt.label || opt.value }}
             </PlChip>
           </div>
           <DropdownListItem

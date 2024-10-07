@@ -1,5 +1,84 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.41
+
+### Patch Changes
+
+- Updated dependencies [892ef23]
+  - @platforma-sdk/model@1.2.32
+
+## 1.10.40
+
+### Patch Changes
+
+- Updated dependencies [7812ae6]
+  - @platforma-sdk/model@1.2.31
+
+## 1.10.39
+
+### Patch Changes
+
+- Updated dependencies [3c85025]
+  - @platforma-sdk/model@1.2.30
+
+## 1.10.38
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+- Updated dependencies [bfd40b4]
+  - @milaboratories/computable@2.1.10
+  - @platforma-sdk/block-tools@2.3.9
+  - @milaboratories/pl-drivers@1.2.27
+  - @milaboratories/pl-tree@1.3.16
+
+## 1.10.37
+
+### Patch Changes
+
+- a8bd20e: fix for equality function in updates
+
+## 1.10.36
+
+### Patch Changes
+
+- Updated dependencies [05cd19b]
+  - @platforma-sdk/block-tools@2.3.8
+  - @platforma-sdk/workflow-tengo@1.2.10
+
+## 1.10.35
+
+### Patch Changes
+
+- Updated dependencies [094fbf7]
+  - @milaboratories/pl-model-middle-layer@1.4.3
+  - @platforma-sdk/block-tools@2.3.7
+
+## 1.10.34
+
+### Patch Changes
+
+- 86c8d0f: watcher for v2 block updates (fixes #38) & central logger in middle layer
+- Updated dependencies [86c8d0f]
+- Updated dependencies [86c8d0f]
+  - @milaboratories/computable@2.1.9
+  - @platforma-sdk/block-tools@2.3.6
+  - @milaboratories/pl-drivers@1.2.26
+  - @milaboratories/pl-tree@1.3.15
+
+## 1.10.33
+
+### Patch Changes
+
+- Updated dependencies [e65f21d]
+- Updated dependencies [e65f21d]
+  - @milaboratories/ts-helpers@1.0.28
+  - @milaboratories/computable@2.1.8
+  - @milaboratories/pl-client@2.4.17
+  - @milaboratories/pl-drivers@1.2.25
+  - @milaboratories/pl-tree@1.3.14
+  - @platforma-sdk/block-tools@2.3.5
+
 ## 1.10.32
 
 ### Patch Changes

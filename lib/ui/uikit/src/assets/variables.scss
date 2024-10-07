@@ -66,6 +66,10 @@
   --main-spacing: 24px;
   --gap-v: 24px;
   --gap-h: 12px;
+  --z-slide-shadow: 80;
+  --z-slide-dialog: 81;
+  --z-dialog: 100;
+  --z-context-menu: 1001;
 }
 
 [data-theme='dark'] {

@@ -2,10 +2,17 @@ import { TemporalSynchronizedTreeOps } from './types';
 import { DownloadDriverOps } from '@milaboratories/pl-drivers';
 import { UploadDriverOps } from '@milaboratories/pl-drivers';
 import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
+import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import * as os from 'node:os';
 
 /** Options required to initialize full set of middle layer driver kit */
 export type DriverKitOps = {
+  //
+  // Common
+  //
+
+  readonly logger: MiLogger;
+
   //
   // Signer
   //
@@ -72,12 +79,14 @@ export type DriverKitOps = {
 /** Some defaults fot MiddleLayerOps. */
 export const DefaultDriverKitOps: Pick<
   DriverKitOps,
+  | 'logger'
   | 'platformLocalStorageNameToPath'
   | 'blobDriverOps'
   | 'uploadDriverOps'
   | 'logStreamDriverOps'
   | 'localStorageNameToPath'
 > = {
+  logger: new ConsoleLoggerAdapter(),
   platformLocalStorageNameToPath: {},
   localStorageNameToPath: { local: os.homedir() },
   blobDriverOps: {

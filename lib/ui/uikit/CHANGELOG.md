@@ -1,5 +1,35 @@
 # @milaboratories/uikit
 
+## 1.2.16
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+
+## 1.2.15
+
+### Patch Changes
+
+- 9ea877e: modals modals modals
+
+## 1.2.14
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+
+## 1.2.13
+
+### Patch Changes
+
+- 09fa81a: Added settings-2 icon
+
+## 1.2.12
+
+### Patch Changes
+
+- 95f1b0d: Make any dropdown option accept "label" or "text" fields (for backward compatibility)
+
 ## 1.2.11
 
 ### Patch Changes

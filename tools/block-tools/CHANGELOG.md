@@ -1,5 +1,38 @@
 # @platforma-sdk/block-tools
 
+## 2.3.9
+
+### Patch Changes
+
+- bfd40b4: Additional logging and fixes for block watcher & poll pool
+
+## 2.3.8
+
+### Patch Changes
+
+- 05cd19b: Use oclif-index script to build index file with commands
+
+## 2.3.7
+
+### Patch Changes
+
+- Updated dependencies [094fbf7]
+  - @milaboratories/pl-model-middle-layer@1.4.3
+
+## 2.3.6
+
+### Patch Changes
+
+- 86c8d0f: multilayer caching of results in V2 registry reader
+
+## 2.3.5
+
+### Patch Changes
+
+- Updated dependencies [e65f21d]
+  - @milaboratories/ts-helpers@1.0.28
+  - @milaboratories/ts-helpers-oclif@1.1.6
+
 ## 2.3.4
 
 ### Patch Changes

@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import { WatchableValue } from './watchable_value';
 import { Computable } from './computable/computable';
 

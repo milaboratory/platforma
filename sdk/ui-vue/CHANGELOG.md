@@ -1,5 +1,81 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.7
+
+### Patch Changes
+
+- Updated dependencies [892ef23]
+  - @platforma-sdk/model@1.2.32
+  - @milaboratories/uikit@1.2.16
+
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [7812ae6]
+  - @platforma-sdk/model@1.2.31
+  - @milaboratories/uikit@1.2.16
+
+## 1.4.5
+
+### Patch Changes
+
+- 7a12b39: Add useWatchFetch usable
+- Updated dependencies [7a12b39]
+  - @milaboratories/uikit@1.2.16
+
+## 1.4.4
+
+### Patch Changes
+
+- 9ea877e: modals modals modals
+- Updated dependencies [9ea877e]
+  - @milaboratories/uikit@1.2.15
+
+## 1.4.3
+
+### Patch Changes
+
+- ae39723: fix for ReactiveFileContent
+
+## 1.4.2
+
+### Patch Changes
+
+- 8db877c: Implement "output" prop for PlLogView component
+- Updated dependencies [8db877c]
+  - @milaboratories/uikit@1.2.14
+
+## 1.4.1
+
+### Patch Changes
+
+- 21a9b9c: Automatic AGGrid license injection & Reactive file content helper
+- c9d051f: getContentString for ReactiveFileContent
+- Updated dependencies [3c85025]
+  - @platforma-sdk/model@1.2.30
+  - @milaboratories/uikit@1.2.13
+
+## 1.4.0
+
+### Minor Changes
+
+- 6495dcc: add default app model (initial version)
+
+## 1.3.19
+
+### Patch Changes
+
+- Updated dependencies [09fa81a]
+  - @milaboratories/uikit@1.2.13
+
+## 1.3.18
+
+### Patch Changes
+
+- Updated dependencies [95f1b0d]
+  - @milaboratories/uikit@1.2.12
+
 ## 1.3.17
 
 ### Patch Changes

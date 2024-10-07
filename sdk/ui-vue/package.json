@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.3.17",
+  "version": "1.4.7",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -25,7 +25,8 @@
     "type-check": "vue-tsc --noEmit --project ./tsconfig.json",
     "preview": "vite preview",
     "lint": "eslint . --ext js,ts,vue",
-    "check": "yarpm type-check && yarpm lint && yarpm test"
+    "check": "yarpm type-check && yarpm lint && yarpm test",
+    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@milaboratories/uikit": "workspace:^",
@@ -39,6 +40,7 @@
     "@ag-grid-community/infinite-row-model": "catalog:",
     "@ag-grid-community/styles": "catalog:",
     "@ag-grid-community/vue3": "catalog:",
+    "@ag-grid-enterprise/core": "catalog:",
     "@ag-grid-enterprise/clipboard": "catalog:",
     "@ag-grid-enterprise/range-selection": "catalog:",
     "@faker-js/faker": "catalog:",

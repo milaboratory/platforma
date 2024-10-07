@@ -19,7 +19,9 @@ export * from './utils';
 
 export * from './computedResult';
 
-export * from './composition/useWatchResult';
+export * from './composition/useWatchFetch';
+
+export * from './composition/fileContent';
 
 export * from '@milaboratories/uikit';
 

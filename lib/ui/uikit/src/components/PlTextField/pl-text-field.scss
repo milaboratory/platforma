@@ -12,6 +12,7 @@
   --prefix-color: var(--color-placeholder);
 
   width: 100%;
+  min-width: 160px;
   min-height: var(--control-height);
   position: relative;
   border-radius: var(--border-radius-control);

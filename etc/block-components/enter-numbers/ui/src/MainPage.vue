@@ -1,41 +1,59 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
+import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, useWatchFetch } from '@platforma-sdk/ui-vue';
 import { useApp } from './app';
-import { z } from 'zod';
-import { reactive } from 'vue';
-
-const $Transformed = z.object({
-  numbers: z.string()
-});
+import { computed } from 'vue';
+import { delay } from '@milaboratories/helpers';
 
 const app = useApp();
 
-const args = app.createArgsModel({  
-  transform(argsValue) {
-    return {numbers: argsValue.numbers.join(',')}
+const numbers = computed({
+  get() {
+    return app.model.args.numbers.join(',');
   },
-  validate(v) {
-    const t = $Transformed.parse(v);
-    const numbers = t.numbers.split(',').map(v => v ? Number(v) : NaN);
+  set(v) {
+    const numbers = v.split(',').map(Number);
 
-    if (numbers.some(isNaN)) {
-      throw Error('Numbers contain NaNs');
+    app.model.args.numbers = v.split(',').map(Number);
+
+    if (numbers.some(n => isNaN(n))) {
+      app.setError('Invalid value: contains NaNs +++');
     }
-
-    return {numbers};
   }
+});
+
+const fetchTestResult = async (n: number) => {
+  await delay(1000);
+  return n;
+};
+
+const sumNumbers = (numbers: number[] | undefined) => (numbers ?? []).reduce((x, y) => x + y);
+
+const resultRef = useWatchFetch(() => app.outputValues.numbers, (numbers) => {
+  return fetchTestResult(sumNumbers(numbers));
 });
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <PlTextField label="Enter numbers (as comma-separated string)" v-model:model-value="args.model.numbers" />
-    <PlAlert v-if="args.error" type="error">
-      {{ args.error }}
-    </PlAlert>  
-    <h3>Args</h3>
-    <code>
-      {{ args.model  }}
-    </code>
+    <PlTextField label="Enter numbers (as comma-separated string)" v-model:model-value="numbers" />
+    <PlAlert v-if="app.error" type="error">
+      {{ app.error }}
+    </PlAlert>
+    <fieldset>
+      <legend>Args (snapshot)</legend>
+      {{ app.args  }}
+    </fieldset>  
+    <fieldset>
+      <legend>Args (model)</legend>
+      {{ app.model.args }}
+    </fieldset>  
+    <h3>Outputs</h3>
+    <code>{{ app.outputValues }}</code>
+    <h4>Result ref</h4>
+    <code>{{ resultRef }}</code>
+    <PlAlert type="error" v-if="app.hasErrors">
+      {{ app.outputErrors }}
+    </PlAlert>
+    <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>
   </PlBlockPage>
 </template>
