@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/oclif-index",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Small script for building static oclif commands indexes",
   "scripts": {
     "build": "vite build",
