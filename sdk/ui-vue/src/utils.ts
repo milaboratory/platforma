@@ -1,5 +1,6 @@
 import type { ValueOrErrors } from '@platforma-sdk/model';
 import type { OptionalResult } from './types';
+import type { ZodError } from 'zod';
 import canonicalize from 'canonicalize';
 
 export class UnresolvedError extends Error {}
@@ -62,3 +63,25 @@ export function isDefined<T>(v: T | undefined): v is T {
 export function isJsonEqual(a: unknown, b: unknown) {
   return canonicalize(a) === canonicalize(b);
 }
+
+export const identity = <T, V = T>(v: T): V => v as unknown as V;
+
+export const ensureError = (cause: unknown) => {
+  if (cause instanceof Error) {
+    return cause;
+  }
+
+  return Error(String(cause));
+};
+
+export const isZodError = (err: Error): err is ZodError => {
+  return err.name === 'ZodError';
+};
+
+export const formatZodError = (err: ZodError) => {
+  const { formErrors, fieldErrors } = err.flatten();
+  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
+    return field + ':' + errors?.join(',');
+  });
+  return formErrors.concat(_fieldErrors).join('; ');
+};

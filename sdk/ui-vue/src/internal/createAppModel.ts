@@ -1,20 +1,26 @@
-import { reactive, computed, ref, watch, unref } from 'vue';
-import type { ModelOptions, Model } from './types';
+import { reactive, computed, ref, watch, unref, type ComputedRef, type UnwrapNestedRefs } from 'vue';
+import type { ModelOptions, Model } from '../types';
 import { deepClone } from '@milaboratories/helpers';
-import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from './utils';
+import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from '../utils';
 
-export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
+export function createAppModel<
+  M extends Record<string, unknown>,
+  V = unknown,
+  E extends Record<string, ComputedRef<unknown>> = Record<string, ComputedRef<unknown>>,
+>(options: ModelOptions<M, V>, extended?: E): Model<M & UnwrapNestedRefs<E>> {
+  type R = M & UnwrapNestedRefs<E>;
+
   const validate = options.validate ?? identity;
 
   const { autoSave } = options;
 
   const error = ref<Error | undefined>();
 
-  const local = ref<{ model: M }>();
+  const local = ref<{ model: R }>();
 
   const setSource = (v: M) => {
     local.value = {
-      model: deepClone(v),
+      model: Object.assign(deepClone(v), extended ?? {}) as R,
     };
   };
 
@@ -54,13 +60,12 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
     }
   };
 
-  const model = computed<M>({
+  const model = computed<R>({
     get: () => {
-      return local.value?.model as M;
+      return local.value?.model as R;
     },
-    set(v) {
-      setSource(v);
-      setValue(v);
+    set() {
+      throw Error('Cannot replace base model');
     },
   });
 
@@ -77,7 +82,7 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   const valid = computed(() => !error.value);
 
   const isChanged = computed(() => {
-    return !isJsonEqual(options.get(), unref(local)); // @TODO, can be slow
+    return !isJsonEqual(options.get(), unref(local));
   });
 
   const errorString = computed(() => (error.value ? error.value.message : ''));
