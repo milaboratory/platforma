@@ -1,30 +1,7 @@
 import { reactive, computed, ref, watch, unref } from 'vue';
-import type { ZodError } from 'zod';
 import type { ModelOptions, Model } from './types';
 import { deepClone } from '@milaboratories/helpers';
-import { isJsonEqual } from './utils';
-
-const identity = <T, V = T>(v: T): V => v as unknown as V;
-
-const ensureError = (cause: unknown) => {
-  if (cause instanceof Error) {
-    return cause;
-  }
-
-  return Error(String(cause));
-};
-
-const isZodError = (err: Error): err is ZodError => {
-  return err.name === 'ZodError';
-};
-
-const formatZodError = (err: ZodError) => {
-  const { formErrors, fieldErrors } = err.flatten();
-  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return field + ':' + errors?.join(',');
-  });
-  return formErrors.concat(_fieldErrors).join('; ');
-};
+import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from './utils';
 
 export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
   const validate = options.validate ?? identity;
@@ -89,9 +66,9 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
 
   watch(
     local,
-    (v, old) => {
-      if (v && v === old) {
-        setValue(v.model);
+    (n, o) => {
+      if (n && n === o) {
+        setValue(n.model);
       }
     },
     { deep: true },
