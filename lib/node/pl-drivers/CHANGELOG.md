@@ -1,5 +1,17 @@
 # @milaboratories/pl-drivers
 
+## 1.2.28
+
+### Patch Changes
+
+- 1e10161: new pl-local package that launches platforma
+- Updated dependencies [1e10161]
+- Updated dependencies [d5ef69e]
+  - @milaboratories/ts-helpers@1.0.29
+  - @milaboratories/computable@2.1.11
+  - @milaboratories/pl-client@2.4.18
+  - @milaboratories/pl-tree@1.3.17
+
 ## 1.2.27
 
 ### Patch Changes

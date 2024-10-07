@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.0.29
+
+### Patch Changes
+
+- 1e10161: new pl-local package that launches platforma
+
 ## 1.0.28
 
 ### Patch Changes

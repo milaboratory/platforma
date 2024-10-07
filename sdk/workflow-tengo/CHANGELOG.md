@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.2.11
+
+### Patch Changes
+
+- d5ef69e: added printErrStreamToStdout() to pfconv execution to see a better error message
+
 ## 1.2.10
 
 ### Patch Changes
