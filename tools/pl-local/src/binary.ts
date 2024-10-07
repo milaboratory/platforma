@@ -1,7 +1,11 @@
-import { MiLogger } from "@milaboratories/ts-helpers";
+import { assertNever, MiLogger } from "@milaboratories/ts-helpers";
 import { getBinary, getBinaryOptions } from "./binary_download";
 
-export type LocalPlBinary = LocalPlBinaryDownload | LocalPlBinaryLocal | LocalPlBinarySource;
+/** Shows how the binary should be got. */
+export type LocalPlBinary =
+  | LocalPlBinaryDownload
+  | LocalPlBinaryLocal
+  | LocalPlBinarySource;
 
 export type LocalPlBinaryDownload = {
   readonly type: 'Download';
@@ -22,17 +26,23 @@ export type LocalPlBinarySource = {
 export async function getBinaryPath(
   logger: MiLogger,
   opts: LocalPlBinary,
-) {
-  if (opts.type == 'Download') {
-    return await getBinary(logger, getBinaryOptions({
-      version: opts.version,
-      saveDir: opts.dir,
-    }))
+): Promise<string> {
 
-  } else if (opts.type == 'Local') {
-    return opts.path;
+  const t = opts.type; // without this assignment assertNever doesn't work
+  switch (t) {
+    case 'Download':
+      return await getBinary(logger, getBinaryOptions({
+        version: opts.version,
+        saveDir: opts.dir,
+      }))
 
-  } else {
-    throw new Error('todo: implement');
+    case 'Local':
+      return opts.path;
+
+    case 'Source':
+      throw new Error('todo: implement');
+
+    default:
+      assertNever(t);
   }
 }

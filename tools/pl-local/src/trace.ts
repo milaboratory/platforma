@@ -1,5 +1,7 @@
 import { MiLogger } from "@milaboratories/ts-helpers";
 
+/** Records all inputs and outputs of one's choice, so if the error happened
+ * one can check how it was by just printing this structure. */
 export type Trace = Record<string, any>;
 
 export function newTrace(): Trace {
@@ -11,6 +13,8 @@ export function trace(t: Trace, k: string, v: any) {
   return v;
 }
 
+/** Creates a trace and runs a function with it. The function can record all its
+ * logs or traces using `trace` fn. */
 export async function withTrace<T>(
   logger: MiLogger,
   fn: (

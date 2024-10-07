@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { SpawnOptions, ChildProcess, spawn } from 'child_process';
 import { MiLogger, sleep } from '@milaboratories/ts-helpers';
 
