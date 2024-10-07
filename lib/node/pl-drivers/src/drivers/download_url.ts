@@ -2,7 +2,8 @@ import {
   CallersCounter,
   MiLogger,
   TaskProcessor,
-  notEmpty
+  notEmpty,
+  fileExists,
 } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
@@ -281,15 +282,6 @@ class Download {
 }
 
 class URLAborted extends Error {}
-
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await fsp.access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /** Gets a directory size by calculating sizes recursively. */
 async function dirSize(dir: string): Promise<number> {

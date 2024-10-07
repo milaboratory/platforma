@@ -24,6 +24,7 @@ packages:
   - tools/block-tools
   - tools/package-builder
   - tools/pl-bootstrap
+  - tools/pl-local
 
   - sdk/model
   - sdk/workflow-tengo
