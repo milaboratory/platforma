@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.0
+
+### Minor Changes
+
+- bc6d116: app.model final version
+
 ## 1.4.9
 
 ### Patch Changes
