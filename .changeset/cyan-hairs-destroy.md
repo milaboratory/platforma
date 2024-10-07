@@ -1,5 +1,5 @@
 ---
-'@platforma-sdk/local': minor
+'@milaboratories/pl-local': minor
 '@milaboratories/pl-drivers': patch
 '@milaboratories/ts-helpers': patch
 ---
