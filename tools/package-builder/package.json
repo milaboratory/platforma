@@ -4,7 +4,7 @@
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
-    "build": "vite build",
+    "build": "oclif-index && vite build",
     "test": "jest"
   },
   "bin": {
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
+    "@platforma-sdk/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "@types/jest": "catalog:",
