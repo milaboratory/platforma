@@ -1596,18 +1596,6 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../../lib/node/ts-helpers
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.0.23
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.0.0
-      decompress:
-        specifier: 'catalog:'
-        version: 4.2.1
-      readline-sync:
-        specifier: 'catalog:'
-        version: 1.4.10
       tar:
         specifier: 'catalog:'
         version: 7.4.3
@@ -1624,18 +1612,12 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
-      '@types/decompress':
-        specifier: 'catalog:'
-        version: 4.2.7
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.13
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.5
-      '@types/readline-sync':
-        specifier: 'catalog:'
-        version: 1.4.8
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@20.16.5)(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.5.4))

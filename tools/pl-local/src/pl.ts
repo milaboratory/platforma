@@ -7,6 +7,11 @@ import { filePid, readPid, writePid } from "./pid";
 import { Trace, withTrace } from "./trace";
 import { getLicenseFromEnv, mergeLicense } from "./license";
 
+/**
+ * Represents a local running pl-core,
+ * and has methods to start, check if it's running, stop and wait for stopping it.
+ * Also, a hook on pl-core closed can be provided.
+ */
 export class Pl {
   private instance?: ChildProcess;
   public pid?: number;
@@ -25,7 +30,7 @@ export class Pl {
   async start() {
     await withTrace(this.logger, async (trace, t) => {
       const instance = processRun(this.logger, this.startOptions)
-      instance.on('error', (e) => {
+      instance.on('error', (e: any) => {
         this.logger.error(`error ${e}, while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`)
         this.restart();
       })
@@ -75,27 +80,43 @@ export class Pl {
   }
 }
 
+/** Options to start a local pl-core. */
 export type LocalPlOptions = {
+  /** From what directory start a process. */
   readonly workingDir: string;
+  /** A string representation of yaml config. */
   readonly config: string;
+  /** Should we read environment variables for license and other secrets? */
   readonly shouldGetLicenseFromEnv: boolean;
+  /** How to get a binary, download it or get an existing one. */
   readonly binary: LocalPlBinary;
+  /** Additional options for a process, environments, stdout, stderr etc. */
   readonly spawnOptions: SpawnOptions,
+  /**
+   * If the previous pl-core was started from the same directory,
+   * we can check if it's still running and then stop it before starting a new one.
+   */
   readonly closeOld: boolean;
+  /** What should we do on closing or if the process exit with error */
   readonly restartMode: LocalPlRestart;
 };
 
 export type LocalPlRestart = LocalPlRestartSilent | LocalPlRestartHook;
 
+/** Do nothing if the error happened or a process exited. */
 export type LocalPlRestartSilent = {
   type: 'silent'
 }
 
+/** Run a hook if the error happened or a process exited. */
 export type LocalPlRestartHook = {
   type: 'hook',
   hook(pl: Pl): void;
 }
 
+/**
+ * Starts pl-core, if the option was provided downloads a binary, reads license environments etc.
+ */
 export async function platformaInit(
   logger: MiLogger,
   opts: LocalPlOptions,
@@ -143,6 +164,8 @@ export async function platformaInit(
   })
 }
 
+/** Reads a pid of the old pl-core if it was started in the same working directory,
+ * and closes it. */
 async function platformaReadPidAndStop(
   logger: MiLogger, workingDir: string
 ): Promise<Record<string, any>> {

@@ -26,10 +26,8 @@
     "@milaboratories/platforma-build-configs": "workspace:*",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
-    "@types/readline-sync": "catalog:",
     "prettier": "catalog:",
     "ts-jest": "catalog:",
     "jest": "catalog:",
@@ -38,19 +36,9 @@
   },
   "dependencies": {
     "undici": "catalog:",
-    "@oclif/core": "catalog:",
-    "canonicalize": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
-    "decompress": "catalog:",
-    "readline-sync": "catalog:",
     "tar": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
-  },
-  "oclif": {
-    "bin": "pl-service",
-    "commands": "./dist/commands",
-    "dirname": "pl-service",
-    "topicSeparator": " "
   }
 }
