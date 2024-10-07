@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { useWatchFetch } from '@platforma-sdk/ui-vue'
+import { useWatchFetch } from '@platforma-sdk/ui-vue';
 import { isReactive, reactive } from 'vue';
 import { Deferred, delay } from '@milaboratories/helpers';
 
 describe('useWatchFetch', () => {
   it('basic', async () => {
     const data = reactive({
-      number: 0,
+      number: 0
     });
 
     const nums = [1, 2, 4, 12, 1, 2, 6, 3];
@@ -15,14 +15,17 @@ describe('useWatchFetch', () => {
 
     const deferred = new Deferred<void>();
 
-    const result = useWatchFetch(() => data.number, async (n) => {
-      await delay(n === 2 ? 20 : n);
-      if (n === last) {
-        console.log('>>>> last', n);
-        deferred.resolve();
+    const result = useWatchFetch(
+      () => data.number,
+      async (n) => {
+        await delay(n === 2 ? 20 : n);
+        if (n === last) {
+          console.log('>>>> last', n);
+          deferred.resolve();
+        }
+        return n;
       }
-      return n;
-    });
+    );
 
     expect(isReactive(result)).toEqual(true);
 

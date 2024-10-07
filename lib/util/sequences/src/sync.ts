@@ -1,8 +1,7 @@
-import {mapIterable, filterIterable, sliceIterable} from './iterators/sync';
+import { mapIterable, filterIterable, sliceIterable } from './iterators/sync';
 
 export class SyncSequence<T> {
-  constructor(private iterable: Iterable<T>) {
-  }
+  constructor(private iterable: Iterable<T>) {}
 
   map<R>(cb: (v: T) => R) {
     return new SyncSequence(mapIterable(this.iterable, cb));

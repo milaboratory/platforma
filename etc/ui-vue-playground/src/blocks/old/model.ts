@@ -1,6 +1,4 @@
-import type {
-  ValueOrErrors,
-} from '@platforma-sdk/model';
+import type { ValueOrErrors } from '@platforma-sdk/model';
 import { createMockApi, BlockMock } from '../../mock';
 
 type Args = {
@@ -10,7 +8,7 @@ type Args = {
 
 const defaultArgs = () => ({
   x: 0,
-  y: 0,
+  y: 0
 });
 
 type Outputs = {
@@ -23,7 +21,7 @@ const defaultOutputs = (): Outputs => {
   return {
     x: {
       ok: true,
-      value: 0,
+      value: 0
     },
     y: {
       ok: true,
@@ -33,22 +31,22 @@ const defaultOutputs = (): Outputs => {
       ok: true,
       value: 0
     }
-  }
+  };
 };
 
 class BlockOld extends BlockMock<Args, Outputs, unknown, `/${string}`> {
   async process(): Promise<void> {
-    const {args} = this;
+    const { args } = this;
 
     this.outputs.x = {
       ok: true,
       value: args.x
-    }
+    };
 
     this.outputs.y = {
       ok: true,
       value: args.y
-    }
+    };
 
     this.outputs.sum = {
       ok: true,
@@ -57,4 +55,6 @@ class BlockOld extends BlockMock<Args, Outputs, unknown, `/${string}`> {
   }
 }
 
-export const platforma = createMockApi<Args, Outputs>(new BlockOld(defaultArgs(), defaultOutputs(), undefined, '/'));
+export const platforma = createMockApi<Args, Outputs>(
+  new BlockOld(defaultArgs(), defaultOutputs(), undefined, '/')
+);

@@ -1,8 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  ResourceId,
-  stringifyWithResourceId
-} from '@milaboratories/pl-client';
+import { ResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
 import {
   Watcher,
   ChangeSource,
@@ -19,12 +16,7 @@ import {
 } from '@milaboratories/ts-helpers';
 import * as sdk from '@milaboratories/pl-model-common';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
-import {
-  ClientUpload,
-  MTimeError,
-  NoFileForUploading,
-  UnexpectedEOF
-} from '../clients/upload';
+import { ClientUpload, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
 import {
   InferSnapshot,
   isPlTreeEntry,
@@ -57,9 +49,7 @@ export const UploadResourceSnapshot = rsSchema({
   }
 });
 
-export type UploadResourceSnapshot = InferSnapshot<
-  typeof UploadResourceSnapshot
->;
+export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot>;
 
 export type UploadDriverOps = PollingOps & {
   /** How much parts of a file can be multipart-uploaded to S3 at once. */
@@ -111,19 +101,13 @@ export class UploadDriver {
   }
 
   /** Returns a progress id and schedules an upload task if it's necessary. */
-  getProgressId(
-    res: UploadResourceSnapshot | PlTreeEntry
-  ): Computable<sdk.ImportProgress>;
-  getProgressId(
-    res: UploadResourceSnapshot | PlTreeEntry,
-    ctx: ComputableCtx
-  ): sdk.ImportProgress;
+  getProgressId(res: UploadResourceSnapshot | PlTreeEntry): Computable<sdk.ImportProgress>;
+  getProgressId(res: UploadResourceSnapshot | PlTreeEntry, ctx: ComputableCtx): sdk.ImportProgress;
   getProgressId(
     res: UploadResourceSnapshot | PlTreeEntry,
     ctx?: ComputableCtx
   ): Computable<sdk.ImportProgress> | sdk.ImportProgress {
-    if (ctx == undefined)
-      return Computable.make((ctx) => this.getProgressId(res, ctx));
+    if (ctx == undefined) return Computable.make((ctx) => this.getProgressId(res, ctx));
 
     const rInfo: UploadResourceSnapshot = isPlTreeEntry(res)
       ? makeResourceSnapshot(res, UploadResourceSnapshot, ctx)
@@ -135,9 +119,7 @@ export class UploadDriver {
 
     const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
     if (!isProgressStable(result)) {
-      ctx.markUnstable(
-        `upload/index progress was got, but it's not stable: ${result}`
-      );
+      ctx.markUnstable(`upload/index progress was got, but it's not stable: ${result}`);
     }
 
     return result;
@@ -148,8 +130,7 @@ export class UploadDriver {
     res: UploadResourceSnapshot,
     callerId: string
   ): sdk.ImportProgress {
-    const blobExists =
-      res.fields.blob != undefined || res.fields.incarnation != undefined;
+    const blobExists = res.fields.blob != undefined || res.fields.incarnation != undefined;
 
     const value = this.idToProgress.get(res.id);
 
@@ -195,10 +176,7 @@ export class UploadDriver {
 
   private scheduledOnNextState: ScheduledRefresh[] = [];
 
-  private scheduleOnNextState(
-    resolve: () => void,
-    reject: (err: any) => void
-  ): void {
+  private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
     this.scheduledOnNextState.push({ resolve, reject });
   }
 
@@ -226,9 +204,7 @@ export class UploadDriver {
       try {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
-          this.getAllNotDoneProgresses().map(
-            (p) => async () => await p.updateStatus()
-          )
+          this.getAllNotDoneProgresses().map((p) => async () => await p.updateStatus())
         );
 
         toNotify.forEach((n) => n.resolve());
@@ -299,9 +275,7 @@ class ProgressUpdater {
     }
 
     if (this.uploadingTerminallyFailed) {
-      this.logger.error(
-        `Uploading terminally failed: ${this.progress.lastError}`
-      );
+      this.logger.error(`Uploading terminally failed: ${this.progress.lastError}`);
       throw new Error(this.progress.lastError);
     }
 
@@ -346,9 +320,7 @@ class ProgressUpdater {
     if (this.counter.isZero()) return;
     const parts = await this.clientBlob.initUpload(this.res);
 
-    this.logger.info(
-      `start to upload blob ${this.res.id}, parts count: ${parts.length}`
-    );
+    this.logger.info(`start to upload blob ${this.res.id}, parts count: ${parts.length}`);
 
     const partUploadFn = (part: bigint) => async () => {
       if (this.counter.isZero()) return;
@@ -382,8 +354,7 @@ class ProgressUpdater {
 
   private setDone(done: boolean) {
     this.progress.done = done;
-    if (done)
-      this.progress.lastError = undefined;
+    if (done) this.progress.lastError = undefined;
   }
 
   async updateStatus() {
@@ -394,15 +365,12 @@ class ProgressUpdater {
       this.progress.status = protoToStatus(status);
       this.setDone(status.done);
 
-      if (status.done || status.progress != oldStatus?.progress)
-        this.change.markChanged();
+      if (status.done || status.progress != oldStatus?.progress) this.change.markChanged();
     } catch (e: any) {
       this.setLastError(e);
 
       if (e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') {
-        this.logger.warn(
-          `deadline exceeded while getting a status of BlobImport`
-        );
+        this.logger.warn(`deadline exceeded while getting a status of BlobImport`);
         return;
       }
 
@@ -423,37 +391,25 @@ class ProgressUpdater {
 }
 
 function isProgressStable(p: sdk.ImportProgress) {
-  return (
-    p.done &&
-    p.status !== undefined &&
-    p.status !== null &&
-    p.status.progress >= 1.0
-  );
+  return p.done && p.status !== undefined && p.status !== null && p.status.progress >= 1.0;
 }
 
 export function importToUploadOpts(res: UploadResourceSnapshot): UploadOpts {
   if (res.data == undefined || !('modificationTime' in res.data)) {
     throw new Error(
-      'no upload options in BlobUpload resource data: ' +
-        stringifyWithResourceId(res.data)
+      'no upload options in BlobUpload resource data: ' + stringifyWithResourceId(res.data)
     );
   }
 
   const opts = res.data;
   if (opts.modificationTime === undefined) {
-    throw new Error(
-      'no modification time in data: ' + stringifyWithResourceId(res.data)
-    );
+    throw new Error('no modification time in data: ' + stringifyWithResourceId(res.data));
   }
   if (opts.localPath === undefined) {
-    throw new Error(
-      'no local path in data: ' + stringifyWithResourceId(res.data)
-    );
+    throw new Error('no local path in data: ' + stringifyWithResourceId(res.data));
   }
   if (opts.pathSignature === undefined) {
-    throw new Error(
-      'no path signature in data: ' + stringifyWithResourceId(res.data)
-    );
+    throw new Error('no path signature in data: ' + stringifyWithResourceId(res.data));
   }
 
   return {
@@ -481,11 +437,7 @@ function isSignMatch(signer: Signer, path: string, signature: string): boolean {
 }
 
 function nonRecoverableError(e: any) {
-  return (
-    e instanceof MTimeError ||
-    e instanceof UnexpectedEOF ||
-    e instanceof NoFileForUploading
-  );
+  return e instanceof MTimeError || e instanceof UnexpectedEOF || e instanceof NoFileForUploading;
 }
 
 function isResourceWasDeletedError(e: any) {

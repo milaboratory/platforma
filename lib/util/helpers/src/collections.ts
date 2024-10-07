@@ -1,7 +1,7 @@
-import { GroupBy } from "./types";
+import { GroupBy } from './types';
 
 export function arrayDiff<T>(arr1: T[], arr2: T[]): T[] {
-  return arr1.filter(x => !arr2.includes(x));
+  return arr1.filter((x) => !arr2.includes(x));
 }
 
 export function pushValueIm<T>(arr: T[], value: T): T[] {
@@ -22,12 +22,12 @@ export function pushUnique<T>(arr: T[], value: T) {
 }
 
 export function intersection<T>(a: T[], b: T[]): T[] {
-  return a.filter(value => b.includes(value));
+  return a.filter((value) => b.includes(value));
 }
 
 export function unionUnique<T>(a: T[], b: T[]): T[] {
   const arr = [...a];
-  b.forEach(v => pushUnique(arr, v));
+  b.forEach((v) => pushUnique(arr, v));
   return arr;
 }
 
@@ -50,14 +50,17 @@ export function maxValue(arr: number[]) {
 }
 
 export function mutableDeleteIndices<T>(arr: T[], indices: number[]) {
-  [...indices].sort((a, b) => b - a).forEach(i => arr.splice(i, 1));
+  [...indices].sort((a, b) => b - a).forEach((i) => arr.splice(i, 1));
 }
 
 export function deleteIndices<T>(arr: T[], indices: number[]): T[] {
   return arr.filter((v, i) => !indices.includes(i));
 }
 
-export function aggregateBy<It extends Record<string, unknown>, K extends keyof It>(items: It[], groupKey: K) {
+export function aggregateBy<It extends Record<string, unknown>, K extends keyof It>(
+  items: It[],
+  groupKey: K
+) {
   const map = items.reduce((m, it) => {
     const groupValue = it[groupKey] as string;
 
@@ -67,12 +70,14 @@ export function aggregateBy<It extends Record<string, unknown>, K extends keyof 
 
     const r = m.get(groupValue) as Record<string, unknown[]>;
 
-    Object.keys(it).filter(k => k !== groupKey).forEach(k => {
-      r[k] = addUnique(r[k] || [], it[k]);
-    });
+    Object.keys(it)
+      .filter((k) => k !== groupKey)
+      .forEach((k) => {
+        r[k] = addUnique(r[k] || [], it[k]);
+      });
 
     return m;
-  }, new Map<string, Record<string, unknown>>);
+  }, new Map<string, Record<string, unknown>>());
 
   return [...map.entries()].map(([k, m]) => {
     return {
@@ -86,7 +91,7 @@ export function predicateUnique<V, I, A extends V[]>(value: V, index: I, array: 
   return array.indexOf(value) === index;
 }
 
-export function *iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
+export function* iterateByPairs<T>(iterable: Iterable<T>): Generator<[T, T]> {
   const acc: T[] = [];
   for (const it of iterable) {
     acc.push(it);
@@ -118,9 +123,9 @@ export function toSorted<T>(arr: readonly T[], compareFn?: (a: T, b: T) => numbe
 
 /**
  * Returns a first contiguous copy of a section of an array where predicate is true
- * @param arr 
- * @param predicate 
- * @returns 
+ * @param arr
+ * @param predicate
+ * @returns
  */
 export function sliceBy<T>(arr: readonly T[], predicate: (el: T, index: number) => boolean): T[] {
   const left = arr.findIndex(predicate);
@@ -134,7 +139,7 @@ export function sliceBy<T>(arr: readonly T[], predicate: (el: T, index: number) 
       if (predicate(arr[i], i)) {
         continue;
       }
-  
+
       return i;
     }
 

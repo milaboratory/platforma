@@ -1,10 +1,6 @@
 import { randomInt, range, times, toList } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
-import type {
-  ImportFileHandleUpload,
-  ListFilesResult,
-  LsEntry,
-} from '@platforma-sdk/model';
+import type { ImportFileHandleUpload, ListFilesResult, LsEntry } from '@platforma-sdk/model';
 
 export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -33,7 +29,7 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
           return {
             type: 'dir',
             name,
-            fullPath: dirPath + '/' + name,
+            fullPath: dirPath + '/' + name
           };
         }
 
@@ -48,22 +44,22 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
 
         const handle = `upload://upload/${encodeURIComponent(
           JSON.stringify({
-            localPath: dirPath + '/' + name,
-          }),
+            localPath: dirPath + '/' + name
+          })
         )}` as ImportFileHandleUpload;
 
         return {
           type: 'file',
           name,
           fullPath: dirPath + '/' + name,
-          handle,
+          handle
         };
-      }),
+      })
     );
   }
 
   return {
     parent: '/',
-    entries: d.get(path)!,
+    entries: d.get(path)!
   };
 };

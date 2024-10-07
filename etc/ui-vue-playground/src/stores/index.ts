@@ -4,7 +4,7 @@ import { defineStore } from '@platforma-sdk/ui-vue';
 export const useStore = defineStore(() => {
   const state = reactive({
     age: 1,
-    name: 'Ivan',
+    name: 'Ivan'
   });
 
   const doubleAge = computed(() => state.age * 2);

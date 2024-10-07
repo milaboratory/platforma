@@ -74,7 +74,12 @@ export function rerunLast(logger: winston.Logger, options: SpawnOptions): SpawnS
   return runSync(logger, state.lastRun.cmd, state.lastRun.args, options);
 }
 
-function run(logger: winston.Logger, cmd: string, args: readonly string[], options: SpawnOptions): ChildProcess {
+function run(
+  logger: winston.Logger,
+  cmd: string,
+  args: readonly string[],
+  options: SpawnOptions
+): ChildProcess {
   logger.debug(
     `Running:\n  env: ${JSON.stringify(options.env)}\n  cmd: ${JSON.stringify([cmd, ...args])}\n  wd: ${options.cwd}`
   );

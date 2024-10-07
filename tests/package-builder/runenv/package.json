@@ -13,7 +13,6 @@
             "registry": "example",
             "name": "common/example",
             "version": "1.2.3",
-
             "type": "environment",
             "runtime": "python",
             "root": "./src",

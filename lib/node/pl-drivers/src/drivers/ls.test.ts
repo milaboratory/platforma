@@ -1,7 +1,4 @@
-import {
-  ConsoleLoggerAdapter,
-  HmacSha256Signer
-} from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { LsDriver } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratories/pl-client';
@@ -22,9 +19,7 @@ test('should ok when get all storages from ls driver', async () => {
     expect(got.find((se) => se.name == 'library')?.handle).toContain('library');
     expect(got.find((se) => se.name == 'library')?.initialFullPath).toEqual('');
     expect(got.find((se) => se.name == 'local')?.handle).toContain('/');
-    expect(got.find((se) => se.name == 'local')?.initialFullPath).toEqual(
-      os.homedir()
-    );
+    expect(got.find((se) => se.name == 'local')?.initialFullPath).toEqual(os.homedir());
 
     console.log('got all storage entries: ', got);
   });
@@ -45,9 +40,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
     const topLevelDir = await driver.listFiles(library, '');
     expect(topLevelDir.entries.length).toBeGreaterThan(1);
 
-    const testDir = topLevelDir.entries.find((d) =>
-      d.name.includes('ls_dir_structure')
-    );
+    const testDir = topLevelDir.entries.find((d) => d.name.includes('ls_dir_structure'));
     expect(testDir).toBeDefined();
     expect(testDir!.type).toEqual('dir');
     expect(testDir!.fullPath).toEqual('/ls_dir_structure_test');
@@ -57,9 +50,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
     expect(secondDirs.parent).toEqual('/ls_dir_structure_test/');
     expect(secondDirs.entries).toHaveLength(2);
     expect(secondDirs.entries[0].type).toEqual('dir');
-    expect(secondDirs.entries[0].fullPath).toEqual(
-      '/ls_dir_structure_test/abc'
-    );
+    expect(secondDirs.entries[0].fullPath).toEqual('/ls_dir_structure_test/abc');
     expect(secondDirs.entries[0].name).toEqual('abc');
 
     const f = await driver.listFiles(library, secondDirs.entries[0].fullPath);

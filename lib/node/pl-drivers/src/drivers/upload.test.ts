@@ -6,11 +6,7 @@ import {
   ResourceId,
   TestHelpers
 } from '@milaboratories/pl-client';
-import {
-  ConsoleLoggerAdapter,
-  HmacSha256Signer,
-  Signer
-} from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
@@ -18,10 +14,7 @@ import * as path from 'node:path';
 import { PlClient } from '@milaboratories/pl-client';
 import { poll } from '@milaboratories/pl-client';
 import { UploadOpts, UploadDriver, UploadResourceSnapshot } from './upload';
-import {
-  createUploadBlobClient,
-  createUploadProgressClient
-} from '../clients/helpers';
+import { createUploadBlobClient, createUploadProgressClient } from '../clients/helpers';
 import { Writable, Readable } from 'node:stream';
 import { test, expect } from '@jest/globals';
 
@@ -215,9 +208,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
 
     const { uploadIds } = await createMapOfUploads(client, n, settings);
 
-    const handles = await Promise.all(
-      uploadIds.map((id) => getHandleField(client, id))
-    );
+    const handles = await Promise.all(uploadIds.map((id) => getHandleField(client, id)));
     const computables = handles.map((handle) => uploader.getProgressId(handle));
 
     for (const c of computables) {
@@ -302,8 +293,7 @@ async function writeFile(
   tmpDir?: string,
   fileName: string = 'testUploadABlob.txt'
 ): Promise<FileStat> {
-  if (tmpDir == undefined)
-    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+  if (tmpDir == undefined) tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
 
   const fPath = path.join(tmpDir, fileName);
 
@@ -321,11 +311,7 @@ async function getFileStats(signer: Signer, fPath: string): Promise<FileStat> {
   return { fPath, mtime, fileSignature, size: stats.size };
 }
 
-async function createMapOfUploads(
-  c: PlClient,
-  n: number,
-  settings: FileStat[]
-) {
+async function createMapOfUploads(c: PlClient, n: number, settings: FileStat[]) {
   return await c.withWriteTx(
     'UploaderCreateMapOfUploads',
     async (tx: PlTransaction) => {
@@ -340,11 +326,7 @@ async function createMapOfUploads(
         tx.setField(fId, uploadId);
       }
 
-      tx.createField(
-        { resourceId: c.clientRoot, fieldName: 'project1' },
-        'Dynamic',
-        mapId
-      );
+      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', mapId);
       await tx.commit();
 
       return {
@@ -356,20 +338,13 @@ async function createMapOfUploads(
   );
 }
 
-async function createBlobUpload(
-  c: PlClient,
-  stat: FileStat
-): Promise<ResourceId> {
+async function createBlobUpload(c: PlClient, stat: FileStat): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
       const uploadId = await createBlobUploadTx(tx, stat);
 
-      tx.createField(
-        { resourceId: c.clientRoot, fieldName: 'project1' },
-        'Dynamic',
-        uploadId
-      );
+      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', uploadId);
       await tx.commit();
 
       return uploadId;
@@ -378,10 +353,7 @@ async function createBlobUpload(
   );
 }
 
-async function createBlobUploadTx(
-  tx: PlTransaction,
-  stat: FileStat
-): Promise<ResourceId> {
+async function createBlobUploadTx(tx: PlTransaction, stat: FileStat): Promise<ResourceId> {
   const settings = {
     modificationTime: stat.mtime.toString(),
     localPath: stat.fPath,
@@ -394,11 +366,7 @@ async function createBlobUploadTx(
   return await upload.globalId;
 }
 
-async function createBlobIndex(
-  c: PlClient,
-  path: string,
-  storageId: string
-): Promise<ResourceId> {
+async function createBlobIndex(c: PlClient, path: string, storageId: string): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
@@ -407,10 +375,7 @@ async function createBlobIndex(
         path: path
       };
       const data = new TextEncoder().encode(JSON.stringify(settings));
-      const importInternal = tx.createStruct(
-        { name: 'BlobImportInternal', version: '1' },
-        data
-      );
+      const importInternal = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, data);
       tx.createField(
         { resourceId: c.clientRoot, fieldName: 'project1' },
         'Dynamic',
@@ -433,9 +398,7 @@ async function getHandleField(
     const handle = await upload.get('handle');
 
     const blob = handle.data.fields.find((f) => f.name == 'blob')?.value;
-    const incarnation = handle.data.fields.find(
-      (f) => f.name == 'incarnation'
-    )?.value;
+    const incarnation = handle.data.fields.find((f) => f.name == 'incarnation')?.value;
 
     const fields = {
       blob: undefined as ResourceId | undefined,

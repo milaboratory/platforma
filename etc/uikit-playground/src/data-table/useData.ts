@@ -26,7 +26,7 @@ export function useData() {
     numColumns: 15,
     numRows: 10000,
     tableData: undefined as DataTable.Types.TableData | undefined,
-    rows: [] as Record<string, unknown>[],
+    rows: [] as Record<string, unknown>[]
   });
 
   const columnsRef = computed(() => {
@@ -38,7 +38,7 @@ export function useData() {
         id: uniqueId(),
         valueType,
         width: 200,
-        editable: true,
+        editable: true
       } as DataTable.Types.TableSettings['columns'][number];
     });
 
@@ -47,9 +47,9 @@ export function useData() {
         id: 'frozen',
         label: 'Frozen',
         width: 200,
-        frozen: true,
+        frozen: true
       }),
-      ...rest,
+      ...rest
     ];
   });
 
@@ -63,7 +63,7 @@ export function useData() {
           }
 
           return [col.id, colIndex % 2 === 0 ? randomInt(0, 1000) : lorem()];
-        }),
+        })
       );
       rows.push(row);
     }

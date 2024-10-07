@@ -1,8 +1,4 @@
-import {
-  ImportFileHandle,
-  MiddleLayerDriverKit,
-  Pl
-} from '@milaboratories/pl-middle-layer';
+import { ImportFileHandle, MiddleLayerDriverKit, Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import tp from 'timers/promises';
 import path from 'path';
@@ -10,9 +6,7 @@ import * as env from '../env';
 
 type TestInput = {
   name: string;
-  handleProvider: (
-    driverKit: MiddleLayerDriverKit
-  ) => Promise<ImportFileHandle>;
+  handleProvider: (driverKit: MiddleLayerDriverKit) => Promise<ImportFileHandle>;
 };
 
 const cases: TestInput[] = [
@@ -31,11 +25,8 @@ const cases: TestInput[] = [
       const library = storages.find((s) => s.name == env.libraryStorage);
       if (library === undefined) throw new Error('Library not found');
       const files = await driverKit.lsDriver.listFiles(library!.handle, '');
-      const ourFile = files.entries.find(
-        (f) => f.name == 'answer_to_the_ultimate_question.txt'
-      );
-      if (ourFile === undefined)
-        throw new Error('Test file not found in the library');
+      const ourFile = files.entries.find((f) => f.name == 'answer_to_the_ultimate_question.txt');
+      if (ourFile === undefined) throw new Error('Test file not found in the library');
       if (ourFile.type !== 'file') throw new Error('Dir');
       return ourFile.handle;
     }
@@ -51,10 +42,7 @@ tplTest.for(cases)(
       'test.file.simple1',
       ['file', 'progress'],
       (tx) => ({
-        importHandle: tx.createValue(
-          Pl.JsonObject,
-          JSON.stringify(importHandle)
-        )
+        importHandle: tx.createValue(Pl.JsonObject, JSON.stringify(importHandle))
       })
     );
     const progress = result

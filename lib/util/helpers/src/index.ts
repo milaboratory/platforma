@@ -12,11 +12,4 @@ export * from './collections';
 export * from './functions';
 export * from './types';
 
-export {
-  utils,
-  strings,
-  objects,
-  collections,
-  functions,
-  prettyBytes,
-}
+export { utils, strings, objects, collections, functions, prettyBytes };

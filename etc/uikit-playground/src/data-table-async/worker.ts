@@ -20,7 +20,7 @@ const data = toList(range(0, 20000)).map((id) => ({
   name: faker.person.fullName(),
   age: faker.number.int(),
   bio: faker.person.bio(),
-  job: faker.person.jobType(),
+  job: faker.person.jobType()
 }));
 
 onmessage = (e: { data: WEvent }) => {

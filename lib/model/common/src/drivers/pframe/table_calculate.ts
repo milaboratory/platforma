@@ -66,11 +66,7 @@ export interface OuterJoin<Col> {
  * the PColumns. Common axis are those axis which have equal {@link AxisId} derived
  * from the columns axes spec.
  * */
-export type JoinEntry<Col> =
-  | ColumnJoinEntry<Col>
-  | InnerJoin<Col>
-  | FullJoin<Col>
-  | OuterJoin<Col>;
+export type JoinEntry<Col> = ColumnJoinEntry<Col> | InnerJoin<Col> | FullJoin<Col> | OuterJoin<Col>;
 
 /** Container representing whole data stored in specific PTable column. */
 export interface FullPTableColumnData {
@@ -260,17 +256,11 @@ export type CalculateTableDataRequest<Col> = PTableDef<Col>;
 /** Response for {@link CalculateTableDataRequest} */
 export type CalculateTableDataResponse = FullPTableColumnData[];
 
-export function mapPTableDef<C1, C2>(
-  def: PTableDef<C1>,
-  cb: (c: C1) => C2
-): PTableDef<C2> {
+export function mapPTableDef<C1, C2>(def: PTableDef<C1>, cb: (c: C1) => C2): PTableDef<C2> {
   return { ...def, src: mapJoinEntry(def.src, cb) };
 }
 
-export function mapJoinEntry<C1, C2>(
-  entry: JoinEntry<C1>,
-  cb: (c: C1) => C2
-): JoinEntry<C2> {
+export function mapJoinEntry<C1, C2>(entry: JoinEntry<C1>, cb: (c: C1) => C2): JoinEntry<C2> {
   switch (entry.type) {
     case 'column':
       return {

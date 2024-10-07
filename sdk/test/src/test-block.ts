@@ -22,15 +22,10 @@ export type AwaitBlockDoneNormalized = {
   ignoreBlockError: boolean;
 };
 
-function normalizeABDOpts(
-  timeoutOrOps?: number | AwaitBlockDoneOps
-): AwaitBlockDoneNormalized {
+function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlockDoneNormalized {
   let ops: AwaitBlockDoneOps = {};
   if (timeoutOrOps !== undefined) {
-    if (
-      typeof timeoutOrOps === 'object' &&
-      !(timeoutOrOps instanceof AbortSignal)
-    )
+    if (typeof timeoutOrOps === 'object' && !(timeoutOrOps instanceof AbortSignal))
       ops = { ...ops, ...timeoutOrOps };
     else ops.timeout = timeoutOrOps;
   }
@@ -59,14 +54,12 @@ async function awaitBlockDone(
   while (true) {
     const overviewSnapshot = (await overview.getValue())!;
     const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
-    if (blockOverview === undefined)
-      throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
     if (blockOverview.outputErrors) {
       if (ops.ignoreBlockError) return;
       else {
         let errorMessage = blockOverview.outputsError;
-        if (errorMessage === undefined)
-          errorMessage = blockOverview.exportsError;
+        if (errorMessage === undefined) errorMessage = blockOverview.exportsError;
         throw new Error('Block error: ' + (errorMessage ?? 'no message'));
       }
     }
@@ -86,10 +79,7 @@ async function awaitBlockDone(
 }
 
 export interface RawHelpers {
-  awaitBlockDone(
-    blockId: string,
-    timeoutOrOps?: number | AwaitBlockDoneOps
-  ): Promise<void>;
+  awaitBlockDone(blockId: string, timeoutOrOps?: number | AwaitBlockDoneOps): Promise<void>;
   awaitBlockDoneAndGetStableBlockState<Pl extends Platforma>(
     blockId: string,
     timeoutOrOps?: number | AwaitBlockDoneOps
@@ -122,10 +112,7 @@ export const blockTest = plTest.extend<{
     await ml.close();
   },
   rawPrj: async ({ ml }, use) => {
-    const pRid1 = await ml.createProject(
-      { label: 'Test Project' },
-      'test_project'
-    );
+    const pRid1 = await ml.createProject({ label: 'Test Project' }, 'test_project');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
     await use(prj);
@@ -148,9 +135,7 @@ export const blockTest = plTest.extend<{
         )) as InferBlockState<Pl>;
       },
       async getLocalFileHandle(localPath) {
-        return await ml.internalDriverKit.lsDriver.getLocalFileHandle(
-          path.resolve(localPath)
-        );
+        return await ml.internalDriverKit.lsDriver.getLocalFileHandle(path.resolve(localPath));
       }
     });
   }

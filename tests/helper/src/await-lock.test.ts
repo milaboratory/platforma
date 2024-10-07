@@ -1,5 +1,5 @@
-import {expect, test} from '@jest/globals';
-import {utils} from '@milaboratories/helpers';
+import { expect, test } from '@jest/globals';
+import { utils } from '@milaboratories/helpers';
 import { functions } from '@milaboratories/helpers';
 
 test('Await lock', async () => {
@@ -17,7 +17,7 @@ test('Await lock', async () => {
   }
 
   function all(length: number, cb: () => Promise<void>) {
-    return Promise.all(Array.from({length}, () => cb())).then(res => {
+    return Promise.all(Array.from({ length }, () => cb())).then((res) => {
       return res.length;
     });
   }
@@ -33,9 +33,9 @@ test('Await lock', async () => {
 
   const repeats = 100;
 
-  await expect( all(repeats, call)).rejects.toThrow('concurrent');
+  await expect(all(repeats, call)).rejects.toThrow('concurrent');
 
   isRunning = false;
 
-  await expect( all(repeats, lockCall)).resolves.toEqual(repeats);
+  await expect(all(repeats, lockCall)).resolves.toEqual(repeats);
 });

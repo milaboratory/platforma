@@ -27,19 +27,20 @@ export async function createBlock(logger: winston.Logger) {
   );
 
   logger.info(`Replace everything in the template with provided options...`);
-  replaceInAllFiles(
-    targetPath,
-    [{from: /platforma-open/g, to: options.npmOrgName},
-     {from: /my-org/g, to: options.orgName},
-     {from: /block-boilerplate/g, to: options.blockName}]
-  );
+  replaceInAllFiles(targetPath, [
+    { from: /platforma-open/g, to: options.npmOrgName },
+    { from: /my-org/g, to: options.orgName },
+    { from: /block-boilerplate/g, to: options.blockName }
+  ]);
 
   logger.info(`Remove github actions directory`);
-  fs.rmSync(path.join(targetPath, ".github"), {recursive: true, force: true});
+  fs.rmSync(path.join(targetPath, '.github'), { recursive: true, force: true });
 }
 
 function askForOptions(): CreateBlockOptions {
-  let npmOrgName = readlineSync.question('Write an organization name for npm. Default is "platforma-open": ');
+  let npmOrgName = readlineSync.question(
+    'Write an organization name for npm. Default is "platforma-open": '
+  );
   if (npmOrgName === '') {
     npmOrgName = 'platforma-open';
   }
@@ -66,11 +67,11 @@ async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: 
   fs.cpSync(path.join(tmpRepo, pathInArchive), outputPath, { recursive: true });
 }
 
-function replaceInAllFiles(dir: string, patterns: {from: RegExp, to: string}[]) {
+function replaceInAllFiles(dir: string, patterns: { from: RegExp; to: string }[]) {
   const files = getAllFiles(dir);
-  patterns.forEach(({from, to}) => {
-    files.forEach((fPath) => replaceInFile(fPath, from, to))
-  })
+  patterns.forEach(({ from, to }) => {
+    files.forEach((fPath) => replaceInFile(fPath, from, to));
+  });
 }
 
 function getAllFiles(dir: string): string[] {

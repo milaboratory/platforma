@@ -1,5 +1,5 @@
-import {expect, test} from '@jest/globals';
-import {utils} from '@milaboratories/helpers';
+import { expect, test } from '@jest/globals';
+import { utils } from '@milaboratories/helpers';
 
 test('Deferred ok', async () => {
   const deferred = new utils.Deferred<number>();

@@ -25,8 +25,7 @@ export function toLsEntries(info: {
   signer: Signer;
   remote: boolean;
 }): sdk.ListFilesResult {
-  const parent =
-    info.list.items.length > 0 ? info.list.items[0]?.directory : undefined;
+  const parent = info.list.items.length > 0 ? info.list.items[0]?.directory : undefined;
 
   return {
     parent: parent,
@@ -132,9 +131,7 @@ export function toListItem(
   }
 ): ListItem | undefined {
   if (!(info.dirent.isFile() || info.dirent.isDirectory())) {
-    logger.warn(
-      `tried to get non-dir and non-file ${info.dirent.name}, skip it`
-    );
+    logger.warn(`tried to get non-dir and non-file ${info.dirent.name}, skip it`);
     return;
   }
 

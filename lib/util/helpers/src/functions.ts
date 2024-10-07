@@ -1,4 +1,4 @@
-import type {AnyFunction} from './types';
+import type { AnyFunction } from './types';
 
 /**
  * A utility class that ensures asynchronous locks, allowing only one task to proceed at a time.
@@ -35,17 +35,24 @@ export class AwaitLock {
  * A utility to add a timeout to a promise, rejecting the promise if the timeout is exceeded.
  */
 export function promiseTimeout<T>(prom: PromiseLike<T>, ms: number): Promise<T> {
-  return Promise.race<T>([prom, new Promise((_r, reject) => setTimeout(() => reject(`Timeout exceeded ${ms}`), ms))]);
+  return Promise.race<T>([
+    prom,
+    new Promise((_r, reject) => setTimeout(() => reject(`Timeout exceeded ${ms}`), ms))
+  ]);
 }
 
 /**
  * Debounce utility: delays the execution of a function until a certain time has passed since the last call.
- * @param callback 
- * @param ms 
+ * @param callback
+ * @param ms
  * @param immediate (if first call is required)
- * @returns 
+ * @returns
  */
-export function debounce<F extends AnyFunction>(callback: F, ms: number, immediate?: boolean): (...args: Parameters<F>) => void {
+export function debounce<F extends AnyFunction>(
+  callback: F,
+  ms: number,
+  immediate?: boolean
+): (...args: Parameters<F>) => void {
   let timeout: any | undefined;
   return function (this: unknown, ...args: Parameters<F>) {
     const i = immediate && !timeout;
@@ -60,21 +67,27 @@ export function debounce<F extends AnyFunction>(callback: F, ms: number, immedia
 
 /**
  * Throttle utility: ensures a function is called at most once every `ms` milliseconds.
- * @param callback 
+ * @param callback
  * @param ms milliseconds
  * @param trailing (ensure last call)
- * @returns 
+ * @returns
  */
-export function throttle<F extends AnyFunction>(callback: F, ms: number, trailing = true): (...args: Parameters<F>) => void {
-  let t = 0, call: AnyFunction | null;
+export function throttle<F extends AnyFunction>(
+  callback: F,
+  ms: number,
+  trailing = true
+): (...args: Parameters<F>) => void {
+  let t = 0,
+    call: AnyFunction | null;
   return function (this: unknown, ...args: Parameters<F>) {
     call = () => {
       callback.apply(this, args);
       t = new Date().getTime() + ms;
       call = null;
-      trailing && setTimeout(() => {
-        call && call();
-      }, ms);
+      trailing &&
+        setTimeout(() => {
+          call && call();
+        }, ms);
     };
     if (new Date().getTime() > t) call();
   };
@@ -85,7 +98,7 @@ export function throttle<F extends AnyFunction>(callback: F, ms: number, trailin
  */
 export const memoize = <F extends AnyFunction>(fn: F) => {
   const cache = new Map();
-  return function ( ...args: Parameters<F>): ReturnType<F> {
+  return function (...args: Parameters<F>): ReturnType<F> {
     const key = JSON.stringify(args);
     return cache.has(key)
       ? cache.get(key)
@@ -96,10 +109,7 @@ export const memoize = <F extends AnyFunction>(fn: F) => {
 /**
  * Function wrapper utility: executes a function before the main function is called.
  */
-export const wrapFunction = <T extends unknown[], U>(
-  fn: (...args: T) => U,
-  before: () => void
-) => {
+export const wrapFunction = <T extends unknown[], U>(fn: (...args: T) => U, before: () => void) => {
   return (...args: T): U => {
     before();
     return fn(...args);
@@ -112,7 +122,7 @@ export const wrapFunction = <T extends unknown[], U>(
 export function pipe<A, B>(cb: (a: A) => B) {
   const fn = (a: A) => cb(a);
 
-  fn.pipe = <C,>(next: (b: B) => C) => pipe((a: A) => next(cb(a)))
+  fn.pipe = <C>(next: (b: B) => C) => pipe((a: A) => next(cb(a)));
 
   return fn;
 }
@@ -124,12 +134,15 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
   let counter = 0n;
   let ongoingOperation: Promise<R> | undefined;
 
-  return async function(...params: A[]): Promise<{
-    ok: false;
-  } | {
-    ok: true;
-    value: R;
-  }> {
+  return async function (...params: A[]): Promise<
+    | {
+        ok: false;
+      }
+    | {
+        ok: true;
+        value: R;
+      }
+  > {
     const myId = ++counter;
 
     try {
@@ -141,8 +154,8 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
     // checking that this update is still the most recent
     if (counter !== myId) {
       return {
-        ok: false,
-      }
+        ok: false
+      };
     }
 
     const promise = request(...params);
@@ -154,6 +167,6 @@ export function exclusiveRequest<A, R>(request: (...args: A[]) => Promise<R>) {
     return {
       ok: true,
       value
-    }
-  }
+    };
+  };
 }

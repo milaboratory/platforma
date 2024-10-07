@@ -1,12 +1,15 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import { PartialBy } from "./types";
+import { PartialBy } from './types';
 
 export function isObject<V, T extends Record<string, V>>(obj: T | unknown): obj is T {
   return obj !== null && typeof obj === 'object';
 }
 
-export function map<U, T extends Record<string, unknown>>(obj: T, callback: (curr: T[keyof T], key: keyof T) => U) {
+export function map<U, T extends Record<string, unknown>>(
+  obj: T,
+  callback: (curr: T[keyof T], key: keyof T) => U
+) {
   const keys = Object.keys(obj) as Array<keyof T>;
 
   return keys.map((key: keyof T) => {
@@ -23,7 +26,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     return false;
   }
 
-  return Object.keys(a).every(k => deepEqual(a[k], b[k]));
+  return Object.keys(a).every((k) => deepEqual(a[k], b[k]));
 }
 
 export function deepClone<T>(obj: T): T {
@@ -66,7 +69,11 @@ export function shallowDiff<T>(to: T, from: T): Partial<T> {
   return diff;
 }
 
-export function iSet<T extends Record<string, any>, K extends keyof T>(obj: T, key: K, value: T[K]): T {
+export function iSet<T extends Record<string, any>, K extends keyof T>(
+  obj: T,
+  key: K,
+  value: T[K]
+): T {
   return Object.assign({}, obj, {
     [key]: value
   });
@@ -94,22 +101,22 @@ export function getProp<O, K extends keyof O>(obj: O, key: K): O[K] {
 }
 
 export function shiftProp<O, K extends keyof O>(obj: O, key: K): [O[K], Omit<O, K>] {
-  obj = {...obj};
+  obj = { ...obj };
   const val = obj[key];
   delete obj[key];
   return [val, obj];
 }
 
 export function pick<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
-  return Object.assign({}, ...keys.map(k => ({[k]: obj[k]})));
+  return Object.assign({}, ...keys.map((k) => ({ [k]: obj[k] })));
 }
 
 export function pickValues<T, K extends keyof T>(obj: T, ...keys: K[]) {
-  return keys.map(k => obj[k]);
+  return keys.map((k) => obj[k]);
 }
 
 export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
   const o = Object.assign({}, obj) as PartialBy<T, K>;
-  keys.forEach(k => delete o[k]);
+  keys.forEach((k) => delete o[k]);
   return o;
 }

@@ -6,7 +6,9 @@ function getRandomInt(min: number, max: number) {
 
 export function camelToKebab(str: string) {
   str = str.replace(' ', '-');
-  return (str[0] || '').toLowerCase() + str.slice(1).replace(/[A-Z]/g, l => `-${l.toLowerCase()}`);
+  return (
+    (str[0] || '').toLowerCase() + str.slice(1).replace(/[A-Z]/g, (l) => `-${l.toLowerCase()}`)
+  );
 }
 
 export function trimChars(str: string, chars: string[] = []) {
@@ -47,13 +49,14 @@ export function extractPaths(e: DragEvent, extensions?: string[]) {
   return paths;
 }
 
-export const pluralize = (count: number, noun: string, suffix = 's') => `${count} ${noun}${count !== 1 ? suffix : ''}`;
+export const pluralize = (count: number, noun: string, suffix = 's') =>
+  `${count} ${noun}${count !== 1 ? suffix : ''}`;
 
 export function isRegexpValid(exp: string) {
   try {
     new RegExp(exp);
     return true;
-  } catch(e) {
+  } catch (e) {
     return false;
   }
 }
@@ -103,11 +106,13 @@ export function assertString(v: unknown): asserts v is string {
 }
 
 export function hashCode(str: string) {
-  let hash = 0, i, chr;
+  let hash = 0,
+    i,
+    chr;
   if (str.length === 0) return hash;
   for (i = 0; i < str.length; i++) {
     chr = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + chr;
+    hash = (hash << 5) - hash + chr;
     hash |= 0; // Convert to 32bit integer
   }
   return hash;

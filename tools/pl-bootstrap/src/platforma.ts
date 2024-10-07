@@ -61,7 +61,8 @@ export function downloadArchive(
   const showProgress = options?.showProgress ?? process.stdout.isTTY;
 
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
-  const downloadURL = options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
+  const downloadURL =
+    options?.downloadURL ?? `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`;
 
   const archiveFilePath = options?.saveTo ?? state.binaries(archiveName);
   if (fs.existsSync(archiveFilePath)) {
@@ -71,20 +72,26 @@ export function downloadArchive(
 
   fs.mkdirSync(path.dirname(archiveFilePath), { recursive: true });
 
-  logger.info(`Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`);
+  logger.info(
+    `Downloading Platforma Backend archive:\n  URL:     ${downloadURL}\n  Save to: ${archiveFilePath}`
+  );
 
   const request = https.get(downloadURL);
 
   return new Promise((resolve, reject) => {
     request.on('response', (response) => {
       if (!response.statusCode) {
-        const err = new Error('failed to download archive: no HTTP status code in response from server');
+        const err = new Error(
+          'failed to download archive: no HTTP status code in response from server'
+        );
         request.destroy();
         reject(err);
         return;
       }
       if (response.statusCode !== 200) {
-        const err = new Error(`failed to download archive: ${response.statusCode} ${response.statusMessage}`);
+        const err = new Error(
+          `failed to download archive: ${response.statusCode} ${response.statusMessage}`
+        );
         request.destroy();
         reject(err);
         return;
@@ -157,7 +164,9 @@ export function extractArchive(
     fs.mkdirSync(targetDir, { recursive: true });
   }
 
-  logger.info(`Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`);
+  logger.info(
+    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${targetDir}`
+  );
 
   tar.x({
     file: archivePath,
@@ -175,7 +184,9 @@ export function getBinary(
   logger: winston.Logger,
   options?: { version?: string; showProgress?: boolean }
 ): Promise<string> {
-  return downloadArchive(logger, options).then((archivePath) => extractArchive(logger, { archivePath }));
+  return downloadArchive(logger, options).then((archivePath) =>
+    extractArchive(logger, { archivePath })
+  );
 }
 
 function binaryDirName(options?: { version?: string }): string {

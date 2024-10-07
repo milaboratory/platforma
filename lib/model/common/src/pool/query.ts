@@ -37,10 +37,7 @@ function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);
 }
 
-export function executePSpecPredicate(
-  predicate: PSpecPredicate,
-  spec: PObjectSpec
-): boolean {
+export function executePSpecPredicate(predicate: PSpecPredicate, spec: PObjectSpec): boolean {
   switch (predicate.type) {
     case 'and':
       for (const operator of predicate.operands)
@@ -81,8 +78,7 @@ export function executePSpecPredicate(
                 Object.keys(matcher.domain).length === 0 ||
                 (axisSpec.domain !== undefined &&
                   Object.entries(matcher.domain).every(
-                    ([domain, domainValue]) =>
-                      axisSpec.domain![domain] === domainValue
+                    ([domain, domainValue]) => axisSpec.domain![domain] === domainValue
                   )))
           )
         )

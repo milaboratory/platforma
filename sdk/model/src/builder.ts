@@ -151,7 +151,7 @@ export class BlockModel<
     private readonly _outputs: OutputsCfg,
     private readonly _inputsValid: TypedConfigOrFunctionHandle,
     private readonly _sections: TypedConfigOrFunctionHandle
-  ) { }
+  ) {}
 
   /** Initiates configuration builder */
   public static create<Args, UiState = undefined>(
@@ -268,7 +268,9 @@ export class BlockModel<
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
-  public sections<const S extends SectionsExpectedType,>(rf: S): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
+  public sections<const S extends SectionsExpectedType>(
+    rf: S
+  ): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, UiState, Ret>
@@ -284,8 +286,8 @@ export class BlockModel<
   public sections(
     arrOrCfgOrRf: SectionsExpectedType | TypedConfig | Function
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
-    if (Array.isArray(arrOrCfgOrRf)){
-      return this.sections(getImmediate(arrOrCfgOrRf))
+    if (Array.isArray(arrOrCfgOrRf)) {
+      return this.sections(getImmediate(arrOrCfgOrRf));
     } else if (typeof arrOrCfgOrRf === 'function') {
       tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
       return new BlockModel<Args, OutputsCfg, UiState>(
@@ -304,7 +306,6 @@ export class BlockModel<
         arrOrCfgOrRf as TypedConfig
       );
   }
-
 
   /** Sets initial args for the block, this value must be specified. */
   public initialArgs(value: Args): BlockModel<Args, OutputsCfg, UiState, Href> {

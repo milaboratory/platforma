@@ -45,7 +45,7 @@ class State {
 
   private state: state = {
     lastRun: undefined,
-    isActive: false,
+    isActive: false
   };
 
   public readonly filePath: string;
@@ -110,7 +110,11 @@ class State {
     }
 
     const processName = util.getProcessName(this.state.lastRun.process.pid);
-    return processName === 'platforma' || processName.endsWith('/platforma') || processName.endsWith('\\platforma');
+    return (
+      processName === 'platforma' ||
+      processName.endsWith('/platforma') ||
+      processName.endsWith('\\platforma')
+    );
   }
 
   set isActive(value: boolean) {

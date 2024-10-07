@@ -1,50 +1,10 @@
-const BYTE_UNITS = [
-  'B',
-  'kB',
-  'MB',
-  'GB',
-  'TB',
-  'PB',
-  'EB',
-  'ZB',
-  'YB',
-];
+const BYTE_UNITS = ['B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
-const BIBYTE_UNITS = [
-  'B',
-  'kiB',
-  'MiB',
-  'GiB',
-  'TiB',
-  'PiB',
-  'EiB',
-  'ZiB',
-  'YiB',
-];
+const BIBYTE_UNITS = ['B', 'kiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 
-const BIT_UNITS = [
-  'b',
-  'kbit',
-  'Mbit',
-  'Gbit',
-  'Tbit',
-  'Pbit',
-  'Ebit',
-  'Zbit',
-  'Ybit',
-];
+const BIT_UNITS = ['b', 'kbit', 'Mbit', 'Gbit', 'Tbit', 'Pbit', 'Ebit', 'Zbit', 'Ybit'];
 
-const BIBIT_UNITS = [
-  'b',
-  'kibit',
-  'Mibit',
-  'Gibit',
-  'Tibit',
-  'Pibit',
-  'Eibit',
-  'Zibit',
-  'Yibit',
-];
+const BIBIT_UNITS = ['b', 'kibit', 'Mibit', 'Gibit', 'Tibit', 'Pibit', 'Eibit', 'Zibit', 'Yibit'];
 
 type Options = {
   bits?: boolean;
@@ -60,7 +20,7 @@ Formats the given number using `Number#toLocaleString`.
 - If no value for locale is specified, the number is returned unmodified.
 */
 const toLocaleString = (number: number, locale: string | undefined) => {
-  let result= String(number);
+  let result = String(number);
   if (typeof locale === 'string' || Array.isArray(locale)) {
     result = number.toLocaleString(locale);
   } else if (locale === true) {
@@ -79,19 +39,23 @@ export function prettyBytes(number: number | bigint, options: Options) {
 
   Object.assign(options, {
     bits: false,
-    binary: false,
+    binary: false
   });
 
   const UNITS = options.bits
-    ? (options.binary ? BIBIT_UNITS : BIT_UNITS)
-    : (options.binary ? BIBYTE_UNITS : BYTE_UNITS);
+    ? options.binary
+      ? BIBIT_UNITS
+      : BIT_UNITS
+    : options.binary
+      ? BIBYTE_UNITS
+      : BYTE_UNITS;
 
   if (options.signed && number === 0) {
     return ` 0 ${UNITS[0]}`;
   }
 
   const isNegative = number < 0;
-  const prefix = isNegative ? '-' : (options.signed ? '+' : '');
+  const prefix = isNegative ? '-' : options.signed ? '+' : '';
 
   if (isNegative) {
     number = -number;
@@ -104,7 +68,10 @@ export function prettyBytes(number: number | bigint, options: Options) {
     return prefix + numberString + ' ' + UNITS[0];
   }
 
-  const exponent = Math.min(Math.floor(options.binary ? Math.log(number) / Math.log(1024) : Math.log10(number) / 3), UNITS.length - 1);
+  const exponent = Math.min(
+    Math.floor(options.binary ? Math.log(number) / Math.log(1024) : Math.log10(number) / 3),
+    UNITS.length - 1
+  );
   number /= (options.binary ? 1024 : 1000) ** exponent;
 
   if (!localeOptions) {

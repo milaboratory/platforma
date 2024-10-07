@@ -15,4 +15,3 @@ test('simple repo test', async ({ expect }) => {
   expect(await stat(new URL(components.model.url).pathname)).toBeDefined();
   expect(await stat(new URL(components.ui.url).pathname)).toBeDefined();
 });
-

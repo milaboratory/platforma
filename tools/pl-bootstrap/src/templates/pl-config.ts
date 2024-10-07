@@ -122,7 +122,9 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
       break;
 
     default:
-      throw new Error("work storage MUST have 'FS' type as it is used for working directories management");
+      throw new Error(
+        "work storage MUST have 'FS' type as it is used for working directories management"
+      );
   }
 
   const library = defaultStorageSettings(

@@ -14,9 +14,7 @@ export function isImportFileHandleUpload(
   return handle.startsWith(uploadPrefix);
 }
 
-export function isImportFileHandleIndex(
-  handle: ImportFileHandle
-): handle is ImportFileHandleIndex {
+export function isImportFileHandleIndex(handle: ImportFileHandle): handle is ImportFileHandleIndex {
   return handle.startsWith(indexPrefix);
 }
 

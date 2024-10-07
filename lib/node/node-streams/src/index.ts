@@ -1,8 +1,8 @@
 import * as util from 'util';
 import * as stream from 'stream';
-import {once} from 'events';
+import { once } from 'events';
 import readline from 'readline';
-import type {Readable} from 'node:stream';
+import type { Readable } from 'node:stream';
 
 export const finished = util.promisify(stream.finished);
 
@@ -44,7 +44,10 @@ export async function* concatStreams<T>(...iterables: AsyncIterable<T>[]) {
   }
 }
 
-export async function* readByLine(rs: Readable, transform: (line: string) => string | Promise<string>): AsyncGenerator<string, void, unknown> {
+export async function* readByLine(
+  rs: Readable,
+  transform: (line: string) => string | Promise<string>
+): AsyncGenerator<string, void, unknown> {
   if (rs.destroyed) {
     throw Error('Cannot read destroyed stream');
   }
@@ -61,7 +64,10 @@ export async function* readByLine(rs: Readable, transform: (line: string) => str
   rs.destroy();
 }
 
-export async function* readByLineNumbered(rs: Readable, transform: (line: string) => string | Promise<string>): AsyncGenerator<[number, string], void, unknown> {
+export async function* readByLineNumbered(
+  rs: Readable,
+  transform: (line: string) => string | Promise<string>
+): AsyncGenerator<[number, string], void, unknown> {
   if (rs.destroyed) {
     throw Error('Cannot read destroyed stream');
   }

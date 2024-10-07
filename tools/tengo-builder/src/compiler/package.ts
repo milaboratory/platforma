@@ -20,9 +20,9 @@ import canonicalize from 'canonicalize';
 
  */
 
-export type CompileMode = 'dist'
+export type CompileMode = 'dist';
 
-export type ArtifactType = 'library' | 'template' | 'test' | 'software'
+export type ArtifactType = 'library' | 'template' | 'test' | 'software';
 
 /** Artifact Name including package version */
 export interface FullArtifactName {
@@ -60,10 +60,12 @@ export function typedArtifactNameToString(name: TypedArtifactName): string {
   return `${name.type}:${name.pkg}:${name.id}`;
 }
 
-export function typedArtifactNamesEquals(name1: TypedArtifactName, name2: TypedArtifactName): boolean {
+export function typedArtifactNamesEquals(
+  name1: TypedArtifactName,
+  name2: TypedArtifactName
+): boolean {
   return name1.type == name2.type && name1.pkg == name2.pkg && name1.id == name2.id;
 }
-
 
 /** used to format artefact name while generating output files */
 export function artifactNameToString(name: ArtifactName): string {
@@ -71,21 +73,22 @@ export function artifactNameToString(name: ArtifactName): string {
 }
 
 /** used to format artefact name and version while generating output files */
-export function formatArtefactNameAndVersion(name: FullArtifactName): { name: string, version: string } {
+export function formatArtefactNameAndVersion(name: FullArtifactName): {
+  name: string;
+  version: string;
+} {
   return { name: artifactNameToString(name), version: name.version };
 }
 
 /** used to format artefact name and version while generating output files */
 export function parseArtefactNameAndVersion(nameAndVersion: {
-  name: string,
-  version: string
+  name: string;
+  version: string;
 }): FullArtifactNameWithoutType {
   const match = nameAndVersion.name.match(/^(?<pkg>[^:]*):(?<id>[^:]*)$/);
-  if (!match)
-    throw new Error(`malformed artifact name: ${nameAndVersion.name}`);
+  if (!match) throw new Error(`malformed artifact name: ${nameAndVersion.name}`);
   return { pkg: match.groups!['pkg'], id: match.groups!['id'], version: nameAndVersion.version };
 }
-
 
 export function fullNameWithoutTypeToString(name: FullArtifactNameWithoutType): string {
   return `${name.pkg}:${name.id}:${name.version}`;

@@ -7,7 +7,8 @@ import * as util from '../../util';
 import state from '../../state';
 
 export default class Local extends Command {
-  static override description = 'Run Platforma Backend service as local process on current host (no docker container)';
+  static override description =
+    'Run Platforma Backend service as local process on current host (no docker container)';
 
   static override examples = ['<%= config.bin %> <%= command.id %>'];
 

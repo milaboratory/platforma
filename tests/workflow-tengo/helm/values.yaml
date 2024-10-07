@@ -2,9 +2,9 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 #
-nameOverride: ""
-fullnameOverride: ""
-githubRunID: ""
+nameOverride: ''
+fullnameOverride: ''
+githubRunID: ''
 #
 rbac:
   create: true
@@ -18,7 +18,7 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: ''
   automountServiceAccountToken: true
 hook:
   scale:
@@ -26,7 +26,7 @@ hook:
     name: kubectl
     image:
       repository: bitnami/kubectl
-      tag: "1.28"
+      tag: '1.28'
       pullPolicy: IfNotPresent
     restartPolicy: Never
     backoffLimit: 2
@@ -35,7 +35,7 @@ hook:
     name: handler
     image:
       repository: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl-data-handler
-      tag: "0.1.5"
+      tag: '0.1.5'
       pullPolicy: IfNotPresent
     restartPolicy: Never
     backoffLimit: 1
@@ -43,10 +43,10 @@ hook:
       - name: regcred
     env:
       AWS_REGION: eu-central-1
-      GITHUB_RUN_ID: ""
-      PL_VERSION: ""
-      VERSION_TYPE: ""
-      COUCHDB_DB_NAME: "pl-ci-dumps"
+      GITHUB_RUN_ID: ''
+      PL_VERSION: ''
+      VERSION_TYPE: ''
+      COUCHDB_DB_NAME: 'pl-ci-dumps'
     envValueFrom:
       COUCHDB_USER:
         secretKeyRef:
@@ -82,11 +82,11 @@ app:
     # -- Image repository
     repository: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl
     # -- Tag to override with, will default to the application version
-    tag: ""
+    tag: ''
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Override command for the container
-    command: ""
+    command: ''
     # -- Argument list for the command
     args: []
   # -- Deployment init container
@@ -94,7 +94,7 @@ app:
     name: prestop-hook-check
     image:
       repository: busybox
-      tag: "latest"
+      tag: 'latest'
       pullPolicy: IfNotPresent
   # -- Container restart policy
   restartPolicy: Always
@@ -103,10 +103,10 @@ app:
   #-- Deployment annotations
   annotations: {}
   # -- Name of Priority Class
-  priorityClassName: ""
+  priorityClassName: ''
   #  Use an alternate scheduler, e.g. "stork".
   #  ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
-  schedulerName: ""
+  schedulerName: ''
   # -- Only Pod's additional labels
   podLabels: {}
   # -- Only Pod's annotations
@@ -131,7 +131,7 @@ app:
     readOnlyRootFilesystem: false
     allowPrivilegeEscalation: false
     capabilities:
-      drop: ["ALL"]
+      drop: ['ALL']
   # -- Pod's security context.
   # ref: [https://kubernetes.io/docs/tasks/configure-pod-container/security-context/](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/)
   podSecurityContext:
@@ -149,7 +149,7 @@ app:
   #
   replicaCount: 0
   #
-  containerWorkingDir: "/app"
+  containerWorkingDir: '/app'
   # -- See `kubectl explain poddisruptionbudget.spec` for more.
   # ref: [https://kubernetes.io/docs/tasks/run-application/configure-pdb/](https://kubernetes.io/docs/tasks/run-application/configure-pdb/)
   podDisruptionBudget:
@@ -329,7 +329,7 @@ app:
   # backing up the data.
   dataHandler:
     download:
-      archivePath: ""
+      archivePath: ''
       bucketName: milab-euce1-prod-data-s3-platforma-ci-dumps
       region: eu-central-1
     upload:
@@ -342,36 +342,36 @@ app:
       type: ldap
     db:
       pl_config:
-        path: "/db"
+        path: '/db'
       data_handler_config:
-        dumpPrefix: "db"
+        dumpPrefix: 'db'
         restoreTo: FS
       pvc_config:
-        mountPath: "/db"
+        mountPath: '/db'
         accessModes:
           - ReadWriteOnce
         storageClass: local-path
-        reclaimPolicy: ""
+        reclaimPolicy: ''
         size: 20Gi
-        existingClaim: ""
+        existingClaim: ''
         annotations: {}
         extraLabels: {}
         matchLabels: {}
   runnersConfig:
     softwareLoader:
       pl_config:
-        path: "/storage/controllers/software-loader"
+        path: '/storage/controllers/software-loader'
       data_handler_config:
-        dumpPrefix: "softwareloader"
+        dumpPrefix: 'softwareloader'
         restoreTo: FS
       pvc_config:
-        mountPath: "/storage/controllers/software-loader"
+        mountPath: '/storage/controllers/software-loader'
         accessModes:
           - ReadWriteOnce
         storageClass: local-path
-        reclaimPolicy: ""
+        reclaimPolicy: ''
         size: 10Gi
-        existingClaim: ""
+        existingClaim: ''
         annotations: {}
         extraLabels: {}
         matchLabels: {}
@@ -382,54 +382,54 @@ app:
       defaultDownloadable: primary
     storages:
       - pl_config:
-          id: "primary"
+          id: 'primary'
           type: S3
-          region: "eu-central-1"
-          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
-          keyPrefix: "platforma-ci-primary/"
+          region: 'eu-central-1'
+          bucketName: 'milab-euce1-prod-data-s3-platforma-ci'
+          keyPrefix: 'platforma-ci-primary/'
           mode: primary
           downloadable: true
         data_handler_config:
-          dumpPrefix: "primary"
+          dumpPrefix: 'primary'
           restoreTo: S3
       - pl_config:
-          id: "raw"
+          id: 'raw'
           type: S3
-          region: "eu-central-1"
-          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
-          keyPrefix: "corp-library/"
+          region: 'eu-central-1'
+          bucketName: 'milab-euce1-prod-data-s3-platforma-ci'
+          keyPrefix: 'corp-library/'
           mode: passive
           downloadable: false
         data_handler_config:
-          dumpPrefix: ""
+          dumpPrefix: ''
       - pl_config:
-          id: "test-assets"
+          id: 'test-assets'
           type: S3
-          region: "eu-central-1"
-          bucketName: "milab-euce1-prod-data-s3-platforma-ci"
-          keyPrefix: "test-assets/"
+          region: 'eu-central-1'
+          bucketName: 'milab-euce1-prod-data-s3-platforma-ci'
+          keyPrefix: 'test-assets/'
           mode: passive
           downloadable: true
         data_handler_config:
-          dumpPrefix: ""
+          dumpPrefix: ''
       - pl_config:
-          id: "work"
+          id: 'work'
           type: FS
-          indexCachePeriod: "1m"
-          rootPath: "/data/work"
+          indexCachePeriod: '1m'
+          rootPath: '/data/work'
           mode: active
           downloadable: false
         data_handler_config:
-          dumpPrefix: "work"
+          dumpPrefix: 'work'
           restoreTo: FS
         pvc_config:
-          mountPath: "/data/work"
+          mountPath: '/data/work'
           accessModes:
             - ReadWriteOnce
           storageClass: local-path
-          reclaimPolicy: ""
+          reclaimPolicy: ''
           size: 100Gi
-          existingClaim: ""
+          existingClaim: ''
           annotations: {}
           extraLabels: {}
           matchLabels: {}
@@ -501,7 +501,7 @@ app:
     ingressClassName: nginx
     # -- Ingress annotations
     annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      nginx.ingress.kubernetes.io/backend-protocol: 'GRPC'
     # -- Ingress extra labels
     extraLabels: {}
     # -- Array of host objects
@@ -522,11 +522,11 @@ app:
     # -- Service labels
     extraLabels: {}
     # -- Service ClusterIP
-    clusterIP: ""
+    clusterIP: ''
     # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
     externalIPs: []
     # -- Service load balacner IP
-    loadBalancerIP: ""
+    loadBalancerIP: ''
     # -- Load balancer source range
     loadBalancerSourceRanges: []
     # -- Service port
@@ -578,11 +578,11 @@ app:
       # -- Service labels
       extraLabels: {}
       # -- Service ClusterIP
-      clusterIP: ""
+      clusterIP: ''
       # -- Service External IPs. ref: [https://kubernetes.io/docs/user-guide/services/#external-ips]( https://kubernetes.io/docs/user-guide/services/#external-ips)
       externalIPs: []
       # -- Service load balacner IP
-      loadBalancerIP: ""
+      loadBalancerIP: ''
       # -- Load balancer source range
       loadBalancerSourceRanges: []
       # -- Service port
@@ -610,5 +610,5 @@ app:
   hostNetwork: false
   # dnsPolicy and dnsConfig for Deployments if you want non-default settings.
   # These will be passed directly to the PodSpec of same.
-  dnsPolicy: ""
-  dnsConfig: ""
+  dnsPolicy: ''
+  dnsConfig: ''

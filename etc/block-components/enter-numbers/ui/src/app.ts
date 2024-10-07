@@ -6,7 +6,7 @@ import { computed, reactive } from 'vue';
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
   const data = reactive({
-    counter: 0,
+    counter: 0
   });
 
   function incrementCounter() {

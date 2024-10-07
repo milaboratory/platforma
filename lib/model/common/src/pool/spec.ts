@@ -38,23 +38,13 @@ export function isPColumn<T>(obj: PObject<T>): obj is PColumn<T> {
 }
 
 export function ensurePColumn<T>(obj: PObject<T>): PColumn<T> {
-  if (!isPColumn(obj))
-    throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
+  if (!isPColumn(obj)) throw new Error(`not a PColumn (kind = ${obj.spec.kind})`);
   return obj;
 }
 
-export function mapPObjectData<D1, D2>(
-  pObj: PColumn<D1>,
-  cb: (d: D1) => D2
-): PColumn<D2>;
-export function mapPObjectData<D1, D2>(
-  pObj: PObject<D1>,
-  cb: (d: D1) => D2
-): PObject<D2>;
-export function mapPObjectData<D1, D2>(
-  pObj: PObject<D1>,
-  cb: (d: D1) => D2
-): PObject<D2> {
+export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
+export function mapPObjectData<D1, D2>(pObj: PObject<D1>, cb: (d: D1) => D2): PObject<D2>;
+export function mapPObjectData<D1, D2>(pObj: PObject<D1>, cb: (d: D1) => D2): PObject<D2> {
   return {
     ...pObj,
     data: cb(pObj.data)

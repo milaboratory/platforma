@@ -6,7 +6,7 @@ import type {
   ListFilesResult,
   NavigationState,
   Platforma,
-  StorageHandle,
+  StorageHandle
 } from '@platforma-sdk/model';
 import { getLsFilesResult } from './utils';
 import { BlockMock } from './BlockMock';
@@ -17,7 +17,6 @@ export function createMockApi<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`
 >(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs> {
-
   type MyPatch = BlockStatePatch<Args, Outputs, UiState, Href>;
 
   type OnUpdates = (updates: MyPatch[]) => Promise<void>;
@@ -25,16 +24,16 @@ export function createMockApi<
   const onUpdateListeners: OnUpdates[] = [];
 
   const setPatches = async (updates: MyPatch[]) => {
-    await onUpdateListeners.map(cb => cb(updates));
+    await onUpdateListeners.map((cb) => cb(updates));
   };
 
-  block.onNewState(async patches => {
+  block.onNewState(async (patches) => {
     await setPatches(patches);
   });
 
   return {
     sdkInfo: {
-      sdkVersion: 'dev',
+      sdkVersion: 'dev'
     },
     loadBlockState: async function (): Promise<BlockState<Args, Outputs>> {
       return block.getState();
@@ -47,37 +46,46 @@ export function createMockApi<
       };
     },
     async setBlockArgs(value: Args): Promise<void> {
-      await setPatches([{
-        key: 'args',
-        value
-      }]);
+      await setPatches([
+        {
+          key: 'args',
+          value
+        }
+      ]);
 
       await block.setBlockArgs(value);
     },
     async setBlockUiState(value: UiState): Promise<void> {
-      await setPatches([{
-        key: 'ui',
-        value
-      }]);
+      await setPatches([
+        {
+          key: 'ui',
+          value
+        }
+      ]);
 
       await block.setBlockUiState(value);
     },
     async setBlockArgsAndUiState(args: Args, uiState: UiState): Promise<void> {
-      await setPatches([{
-        key: 'args',
-        value: args
-      }, {
-        key: 'ui',
-        value: uiState
-      }]);
+      await setPatches([
+        {
+          key: 'args',
+          value: args
+        },
+        {
+          key: 'ui',
+          value: uiState
+        }
+      ]);
 
       await block.setBlockArgsAndUiState(args, uiState);
     },
     async setNavigationState(navigationState: NavigationState<Href>): Promise<void> {
-      await setPatches([{
-        key: 'navigationState',
-        value: navigationState
-      }]);
+      await setPatches([
+        {
+          key: 'navigationState',
+          value: navigationState
+        }
+      ]);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blobDriver: undefined as any,
@@ -90,16 +98,16 @@ export function createMockApi<
           {
             name: 'local',
             handle: 'local://test',
-            initialFullPath: '/',
-          },
+            initialFullPath: '/'
+          }
         ];
       },
       async listFiles(_storage: StorageHandle, fullPath: string): Promise<ListFilesResult> {
         await delay(10);
         return getLsFilesResult(fullPath);
-      },
+      }
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pFrameDriver: undefined as any,
-  }
+    pFrameDriver: undefined as any
+  };
 }

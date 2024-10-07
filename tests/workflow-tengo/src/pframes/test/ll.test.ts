@@ -58,42 +58,37 @@ tplTest.for([
   'should correctly execute low level aggregation routine $name',
   { timeout: 10000 },
   async ({ indices, expectedResult, nested, base }, { helper, expect }) => {
-    const result = await helper.renderTemplate(
-      true,
-      'pframes.test.ll.agg_1',
-      ['result'],
-      (tx) => {
-        const v1 = tx.createValue(Pl.JsonObject, JSON.stringify(1));
+    const result = await helper.renderTemplate(true, 'pframes.test.ll.agg_1', ['result'], (tx) => {
+      const v1 = tx.createValue(Pl.JsonObject, JSON.stringify(1));
 
-        const data = tx.createStruct(
-          resourceType('PColumnData/ResourceMap', '1'),
+      const data = tx.createStruct(
+        resourceType('PColumnData/ResourceMap', '1'),
+        JSON.stringify({
+          keyLength: 2
+        })
+      );
+      tx.createField(field(data, '[1, 1]'), 'Input', v1);
+      tx.createField(field(data, '[1, 2]'), 'Input', v1);
+      tx.lockInputs(data);
+
+      const inputs: Record<string, AnyRef> = {
+        params: tx.createValue(
+          Pl.JsonObject,
           JSON.stringify({
-            keyLength: 2
+            indices,
+            eph: false
           })
-        );
-        tx.createField(field(data, '[1, 1]'), 'Input', v1);
-        tx.createField(field(data, '[1, 2]'), 'Input', v1);
-        tx.lockInputs(data);
+        ),
+        nested: tx.createValue(Pl.JsonObject, JSON.stringify(nested)),
+        data: data
+      };
 
-        const inputs: Record<string, AnyRef> = {
-          params: tx.createValue(
-            Pl.JsonObject,
-            JSON.stringify({
-              indices,
-              eph: false
-            })
-          ),
-          nested: tx.createValue(Pl.JsonObject, JSON.stringify(nested)),
-          data: data
-        };
-
-        if (base !== undefined) {
-          inputs['base'] = tx.createValue(Pl.JsonObject, JSON.stringify(base));
-        }
-
-        return inputs;
+      if (base !== undefined) {
+        inputs['base'] = tx.createValue(Pl.JsonObject, JSON.stringify(base));
       }
-    );
+
+      return inputs;
+    });
     const r = result.computeOutput('result', (a, ctx) => {
       if (a === undefined) return undefined;
       if (!a.getIsReadyOrError()) {

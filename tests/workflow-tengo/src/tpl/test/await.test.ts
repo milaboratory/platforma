@@ -16,9 +16,7 @@ tplTest('test await simple state', async ({ pl, helper, expect }) => {
     Templates['tpl.test.await-state-1'],
     ['main'],
     async (tx) => {
-      inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestEph', '1'))
-      );
+      inputResource = await toGlobalResourceId(tx.createStruct(resourceType('TestEph', '1')));
       return {
         input1: inputResource
       };
@@ -43,10 +41,7 @@ tplTest('test await simple state', async ({ pl, helper, expect }) => {
   expect(await mainResult.getValue()).toBeUndefined();
 
   await pl.withWriteTx('Test', async (tx) => {
-    tx.setField(
-      field(inputResource, 'nestedField'),
-      tx.createValue(Pl.JsonObject, '{}')
-    );
+    tx.setField(field(inputResource, 'nestedField'), tx.createValue(Pl.JsonObject, '{}'));
     await tx.commit();
   });
   await mainResult.refreshState();
@@ -60,9 +55,7 @@ tplTest('test error field absent', async ({ pl, helper, expect }) => {
     'tpl.test.await-state-1',
     ['main'],
     async (tx) => {
-      inputResource = await toGlobalResourceId(
-        tx.createStruct(resourceType('TestEph', '1'))
-      );
+      inputResource = await toGlobalResourceId(tx.createStruct(resourceType('TestEph', '1')));
       return {
         input1: inputResource
       };
@@ -83,119 +76,101 @@ tplTest('test error field absent', async ({ pl, helper, expect }) => {
     tx.lockInputs(inputResource);
     await tx.commit();
   });
-  await expect(
-    async () => await mainResult.awaitStableFullValue()
-  ).rejects.toThrow(/not found and inputs locked/);
+  await expect(async () => await mainResult.awaitStableFullValue()).rejects.toThrow(
+    /not found and inputs locked/
+  );
 });
 
-tplTest(
-  'test await state with wildcards #1',
-  async ({ pl, helper, expect }) => {
-    let inputResource: ResourceId = 0n as ResourceId; // hack
-    const result = await helper.renderTemplate(
-      true,
-      Templates['tpl.test.await-state-wildcard'],
-      ['main'],
-      async (tx) => {
-        inputResource = await toGlobalResourceId(
-          tx.createStruct(resourceType('TestEph', '1'))
-        );
-        return {
-          input1: inputResource
-        };
-      }
-    );
-    const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+tplTest('test await state with wildcards #1', async ({ pl, helper, expect }) => {
+  let inputResource: ResourceId = 0n as ResourceId; // hack
+  const result = await helper.renderTemplate(
+    true,
+    Templates['tpl.test.await-state-wildcard'],
+    ['main'],
+    async (tx) => {
+      inputResource = await toGlobalResourceId(tx.createStruct(resourceType('TestEph', '1')));
+      return {
+        input1: inputResource
+      };
+    }
+  );
+  const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.createField(field(inputResource, 'nestedField'), 'Input');
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.createField(field(inputResource, 'nestedField'), 'Input');
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.lockInputs(inputResource);
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.lockInputs(inputResource);
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.setField(
-        field(inputResource, 'nestedField'),
-        tx.createValue(Pl.JsonObject, '{}')
-      );
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.awaitStableValue()).eq('A');
-  }
-);
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.setField(field(inputResource, 'nestedField'), tx.createValue(Pl.JsonObject, '{}'));
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.awaitStableValue()).eq('A');
+});
 
-tplTest(
-  'test await state with wildcards #2',
-  async ({ pl, helper, expect }) => {
-    let inputResource: ResourceId = 0n as ResourceId; // hack
-    const result = await helper.renderTemplate(
-      true,
-      Templates['tpl.test.await-state-wildcard'],
-      ['main'],
-      async (tx) => {
-        inputResource = await toGlobalResourceId(
-          tx.createStruct(resourceType('Test', '1'))
-        );
-        return {
-          input1: inputResource
-        };
-      }
-    );
-    const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+tplTest('test await state with wildcards #2', async ({ pl, helper, expect }) => {
+  let inputResource: ResourceId = 0n as ResourceId; // hack
+  const result = await helper.renderTemplate(
+    true,
+    Templates['tpl.test.await-state-wildcard'],
+    ['main'],
+    async (tx) => {
+      inputResource = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
+      return {
+        input1: inputResource
+      };
+    }
+  );
+  const mainResult = result.computeOutput('main', (a) => a?.getDataAsJson());
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.createField(field(inputResource, 'nestedField'), 'Input');
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.createField(field(inputResource, 'nestedField'), 'Input');
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    let nestedResource1: ResourceId = 0n as ResourceId; // hack
+  let nestedResource1: ResourceId = 0n as ResourceId; // hack
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.setField(
-        field(inputResource, 'nestedField'),
-        tx.createValue(Pl.JsonObject, '{}')
-      );
-      nestedResource1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('Test', '1'))
-      );
-      tx.createField(field(inputResource, 'nestedField123'), 'Input');
-      tx.setField(field(inputResource, 'nestedField123'), nestedResource1);
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.setField(field(inputResource, 'nestedField'), tx.createValue(Pl.JsonObject, '{}'));
+    nestedResource1 = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
+    tx.createField(field(inputResource, 'nestedField123'), 'Input');
+    tx.setField(field(inputResource, 'nestedField123'), nestedResource1);
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.lockInputs(inputResource);
-      await tx.commit();
-    });
-    await mainResult.refreshState();
-    expect(await mainResult.getValue()).toBeUndefined();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.lockInputs(inputResource);
+    await tx.commit();
+  });
+  await mainResult.refreshState();
+  expect(await mainResult.getValue()).toBeUndefined();
 
-    await pl.withWriteTx('Test', async (tx) => {
-      tx.lockInputs(nestedResource1);
-      await tx.commit();
-    });
-    await mainResult.refreshState();
+  await pl.withWriteTx('Test', async (tx) => {
+    tx.lockInputs(nestedResource1);
+    await tx.commit();
+  });
+  await mainResult.refreshState();
 
-    expect(await mainResult.awaitStableValue()).eq('AA');
-  }
-);
+  expect(await mainResult.awaitStableValue()).eq('AA');
+});
 
 tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
   let inputResource1: ResourceId = 0n as ResourceId; // hack
@@ -204,9 +179,7 @@ tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
     Templates['tpl.test.await-state-match'],
     ['main'],
     async (tx) => {
-      inputResource1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('Test', '1'))
-      );
+      inputResource1 = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
       return {
         input1: inputResource1
       };
@@ -231,14 +204,8 @@ tplTest('test await state with match #1', async ({ pl, helper, expect }) => {
       field(inputResource1, 'the_prefix.nestedField'),
       tx.createValue(Pl.JsonObject, '{}')
     );
-    nestedResource1 = await toGlobalResourceId(
-      tx.createStruct(resourceType('Test', '1'))
-    );
-    tx.createField(
-      field(inputResource1, 'nestedFieldWithoutPrefix'),
-      'Input',
-      nestedResource1
-    );
+    nestedResource1 = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
+    tx.createField(field(inputResource1, 'nestedFieldWithoutPrefix'), 'Input', nestedResource1);
     await tx.commit();
   });
   await mainResult.refreshState();
@@ -261,9 +228,7 @@ tplTest(
       Templates['tpl.test.await-state-match'],
       ['main'],
       async (tx) => {
-        inputResource1 = await toGlobalResourceId(
-          tx.createStruct(resourceType('Test', '1'))
-        );
+        inputResource1 = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
         return {
           input1: inputResource1
         };
@@ -274,10 +239,7 @@ tplTest(
     expect(await mainResult.getValue()).toBeUndefined();
 
     await pl.withWriteTx('Test', async (tx) => {
-      tx.createField(
-        field(inputResource1, 'nestedFieldWithoutPrefix'),
-        'Input'
-      );
+      tx.createField(field(inputResource1, 'nestedFieldWithoutPrefix'), 'Input');
       tx.createField(field(inputResource1, 'the_prefix.nestedField'), 'Input');
       await tx.commit();
     });
@@ -294,14 +256,8 @@ tplTest(
           JSON.stringify({ message: 'the_test_error' })
         )
       );
-      nestedResource1 = await toGlobalResourceId(
-        tx.createStruct(resourceType('Test', '1'))
-      );
-      tx.createField(
-        field(inputResource1, 'nestedFieldWithoutPrefix'),
-        'Input',
-        nestedResource1
-      );
+      nestedResource1 = await toGlobalResourceId(tx.createStruct(resourceType('Test', '1')));
+      tx.createField(field(inputResource1, 'nestedFieldWithoutPrefix'), 'Input', nestedResource1);
       await tx.commit();
     });
     await mainResult.refreshState();
@@ -312,8 +268,6 @@ tplTest(
       await tx.commit();
     });
     await mainResult.refreshState();
-    expect(async () => await mainResult.awaitStableValue()).rejects.toThrow(
-      /the_test_error/
-    );
+    expect(async () => await mainResult.awaitStableValue()).rejects.toThrow(/the_test_error/);
   }
 );

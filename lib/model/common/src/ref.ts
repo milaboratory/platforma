@@ -6,11 +6,7 @@ export const Ref = z
       .literal(true)
       .describe('Crucial marker for the block dependency tree reconstruction'),
     blockId: z.string().describe('Upstream block id'),
-    name: z
-      .string()
-      .describe(
-        "Name of the output provided to the upstream block's output context"
-      )
+    name: z.string().describe("Name of the output provided to the upstream block's output context")
   })
   .describe(
     'Universal reference type, allowing to set block connections. It is crucial that ' +

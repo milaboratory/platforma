@@ -2,31 +2,21 @@ import { Pl } from '@milaboratories/pl-middle-layer';
 import { tplTest } from '@platforma-sdk/test';
 import * as env from '../../test/env';
 
-tplTest(
-  'run-hello-world-go',
-  async ({ helper, expect }) => {
-    const helloText = "Hello from go!"
+tplTest('run-hello-world-go', async ({ helper, expect }) => {
+  const helloText = 'Hello from go!';
 
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.hello_go',
-      ['main'],
-      (tx) => ({
-        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
-      })
-    );
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
+  const result = await helper.renderTemplate(false, 'exec.test.run.hello_go', ['main'], (tx) => ({
+    text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+  }));
+  const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
-    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
-  }
-);
+  expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+});
 
 tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',
   async ({ helper, expect }) => {
-    const helloText = "Hello from bash"
+    const helloText = 'Hello from bash';
 
     const result = await helper.renderTemplate(
       false,
@@ -36,9 +26,7 @@ tplTest(
         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
       })
     );
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
+    const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
     expect(await mainResult.awaitStableValue()).eq(helloText);
   }
@@ -71,9 +59,7 @@ tplTest(
     const library = storages.find((s) => s.name == env.libraryStorage);
     expect(library).toBeDefined();
     const files = await driverKit.lsDriver.listFiles(library!.handle, '');
-    const ourFile = files.entries.find(
-      (f) => f.name == 'answer_to_the_ultimate_question.txt'
-    );
+    const ourFile = files.entries.find((f) => f.name == 'answer_to_the_ultimate_question.txt');
     expect(ourFile).toBeDefined();
     expect(ourFile?.type).toBe('file');
 
@@ -82,16 +68,11 @@ tplTest(
       'exec.test.run.cat_on_file',
       ['main'],
       (tx) => ({
-        file: tx.createValue(
-          Pl.JsonObject,
-          JSON.stringify((ourFile as any).handle)
-        )
+        file: tx.createValue(Pl.JsonObject, JSON.stringify((ourFile as any).handle))
       })
     );
 
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
+    const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
     expect(await mainResult.awaitStableValue()).eq('42');
   }
@@ -107,9 +88,7 @@ tplTest(
       (tx) => ({})
     );
 
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
+    const mainResult = result.computeOutput('main', (a) => a?.getDataAsString());
 
     expect(await mainResult.awaitStableValue()).eq(
       '>asd\nATGCTA\n>asdasd\nASD\n>asdasd\nD\n>asdasd\nAD\n'
@@ -117,54 +96,40 @@ tplTest(
   }
 );
 
-tplTest(
-  'should save file set by regex',
-  async ({ driverKit, helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.save_file_set',
-      ['p', 'x', 'all'],
-      (tx) => ({})
-    );
+tplTest('should save file set by regex', async ({ driverKit, helper, expect }) => {
+  const result = await helper.renderTemplate(
+    false,
+    'exec.test.run.save_file_set',
+    ['p', 'x', 'all'],
+    (tx) => ({})
+  );
 
-    const p = await result
-      .computeOutput('p', (p) => p?.listInputFields())
-      .awaitStableValue();
-    const x = await result
-      .computeOutput('x', (x) => x?.listInputFields())
-      .awaitStableValue();
-    const all = await result
-      .computeOutput('all', (all) => all?.listInputFields())
-      .awaitStableValue();
+  const p = await result.computeOutput('p', (p) => p?.listInputFields()).awaitStableValue();
+  const x = await result.computeOutput('x', (x) => x?.listInputFields()).awaitStableValue();
+  const all = await result.computeOutput('all', (all) => all?.listInputFields()).awaitStableValue();
 
-    expect(p?.sort()).toEqual(['p1', 'p2', 'p3', 'p4'].sort());
-    expect(x?.sort()).toEqual(['x1', 'x2'].sort());
-    //expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
-  }
-);
+  expect(p?.sort()).toEqual(['p1', 'p2', 'p3', 'p4'].sort());
+  expect(x?.sort()).toEqual(['x1', 'x2'].sort());
+  //expect(all?.sort()).toContainAll(['p1', 'p2', 'p3', 'p4', 'x1', 'x2'].sort());
+});
 
-tplTest(
-  'should run workdir processor',
-  async ({ driverKit, helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.with_wd_processor',
-      ['p'],
-      (tx) => ({})
-    );
+tplTest('should run workdir processor', async ({ driverKit, helper, expect }) => {
+  const result = await helper.renderTemplate(
+    false,
+    'exec.test.run.with_wd_processor',
+    ['p'],
+    (tx) => ({})
+  );
 
-    const p = await result
-      .computeOutput('p', (p) => p?.listInputFields())
-      .awaitStableValue();
+  const p = await result.computeOutput('p', (p) => p?.listInputFields()).awaitStableValue();
 
-    const data = await result
-      .computeOutput('p', (p) => p?.traverse('data')?.getDataAsString())
-      .awaitStableValue();
+  const data = await result
+    .computeOutput('p', (p) => p?.traverse('data')?.getDataAsString())
+    .awaitStableValue();
 
-    // const file = await result
-    //   .computeOutput('p', (p) => driverKit.blobDriver.get p?.traverse('file')?.)
-    //   .awaitStableValue();
+  // const file = await result
+  //   .computeOutput('p', (p) => driverKit.blobDriver.get p?.traverse('file')?.)
+  //   .awaitStableValue();
 
-    expect(data).eq('text1\n');
-  }
-);
+  expect(data).eq('text1\n');
+});

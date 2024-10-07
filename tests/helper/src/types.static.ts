@@ -1,4 +1,4 @@
-import { Equal, Expect, Objectify, Unionize } from "@milaboratories/helpers";
+import { Equal, Expect, Objectify, Unionize } from '@milaboratories/helpers';
 
 type _Test = {
   args: {
@@ -9,6 +9,4 @@ type _Test = {
   outputs: readonly number[];
 };
 
-type _cases = [
-  Expect<Equal<_Test, Objectify<Unionize<_Test>>>>
-];
+type _cases = [Expect<Equal<_Test, Objectify<Unionize<_Test>>>>];

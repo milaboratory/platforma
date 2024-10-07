@@ -7,8 +7,5 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest'
   },
-  modulePathIgnorePatterns: [
-    '<rootDir>/src/commands/test.ts',
-    '<rootDir>/dist/commands/test.js',
-  ]
+  modulePathIgnorePatterns: ['<rootDir>/src/commands/test.ts', '<rootDir>/dist/commands/test.js']
 };

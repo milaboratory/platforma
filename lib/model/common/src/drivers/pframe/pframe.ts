@@ -1,10 +1,7 @@
 import { PObjectId } from '../../pool';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { PColumn, PColumnIdAndSpec, PColumnSpec } from './spec';
-import {
-  CalculateTableDataRequest,
-  CalculateTableDataResponse
-} from './table_calculate';
+import { CalculateTableDataRequest, CalculateTableDataResponse } from './table_calculate';
 import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 
 /** Read interface exposed by PFrames library */

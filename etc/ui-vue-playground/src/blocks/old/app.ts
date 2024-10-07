@@ -14,7 +14,7 @@ export const sdkPlugin = defineApp(platforma, () => {
       '/outputs-basics': OutputsBasicsPage,
       '/form': FormPage,
       '/value-or-error-page': ValueOrErrorPage
-    },
+    }
   };
 });
 

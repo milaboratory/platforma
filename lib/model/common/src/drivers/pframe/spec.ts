@@ -1,13 +1,7 @@
 import { PObject, PObjectId, PObjectSpec } from '../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
-export type ValueType =
-  | 'Int'
-  | 'Long'
-  | 'Float'
-  | 'Double'
-  | 'String'
-  | 'Bytes';
+export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String' | 'Bytes';
 
 /**
  * Specification of an individual axis.

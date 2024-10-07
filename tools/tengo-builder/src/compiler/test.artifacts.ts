@@ -114,17 +114,17 @@ lib := import("package1:other-lib-1")
 
 export const testLocalLib1: TestArtifactSource = {
   fullName: testLocalLib1Name,
-  src: testLocalLib1Src,
+  src: testLocalLib1Src
 };
 
 export const testLocalTpl1: TestArtifactSource = {
   fullName: testLocalTpl1Name,
-  src: testLocalTpl1Src,
+  src: testLocalTpl1Src
 };
 
 export const testLocalTpl2: TestArtifactSource = {
   fullName: testLocalTpl2Name,
-  src: testLocalTpl2Src,
+  src: testLocalTpl2Src
 };
 
 export const testLocalPackage = [testLocalTpl1, testLocalLib1, testLocalTpl2];
@@ -175,21 +175,22 @@ export const testPackage1Tpl3Src = `
 lib := import("package1:other-lib-1")
 `;
 
-export const testPackage1Tpl3CompiledBase64 = 'H4sIAAAAAAAAE22PQQqDMBREr/KZVQsxELsL9CZ/E+VjQ2MiJpUWyd2LglCo2xlm3syK4LsMu2Jy/dMNYmwqD5mb4LvGbHp0o8Ce2wp57mHBUd5TmgutHImIGDmNwrDEWFx4iWFwrByhsMicfYqwMLrVN9Sq/hhFxim4Is3tBxF8R3fy4wa68OkgxnVnHPntWFUon2mvD7pIHFJz2HppzwZ9AanB7OAUAQAA';
+export const testPackage1Tpl3CompiledBase64 =
+  'H4sIAAAAAAAAE22PQQqDMBREr/KZVQsxELsL9CZ/E+VjQ2MiJpUWyd2LglCo2xlm3syK4LsMu2Jy/dMNYmwqD5mb4LvGbHp0o8Ce2wp57mHBUd5TmgutHImIGDmNwrDEWFx4iWFwrByhsMicfYqwMLrVN9Sq/hhFxim4Is3tBxF8R3fy4wa68OkgxnVnHPntWFUon2mvD7pIHFJz2HppzwZ9AanB7OAUAQAA';
 
 export const testPackage1Lib1: TestArtifactSource = {
   fullName: testPackage1Lib1Name,
-  src: testPackage1Lib1Src,
+  src: testPackage1Lib1Src
 };
 
 export const testPackage1Lib2: TestArtifactSource = {
   fullName: testPackage1Lib2Name,
-  src: testPackage1Lib2Src,
+  src: testPackage1Lib2Src
 };
 
 export const testPackage1Tpl3: TestArtifactSource = {
   fullName: testPackage1Tpl3Name,
-  src: testPackage1Tpl3Src,
+  src: testPackage1Tpl3Src
 };
 
 export const testPackage1 = [testPackage1Lib1, testPackage1Lib2, testPackage1Tpl3];

@@ -51,7 +51,6 @@ tplTest(
   }
 );
 
-
 tplTest('should return undefined on no result in resolve', async ({ helper, expect }) => {
   const result = await helper.renderWorkflow('test.resolve.wf_no_res', false, {
     errIfMissing: false
@@ -59,7 +58,7 @@ tplTest('should return undefined on no result in resolve', async ({ helper, expe
 
   const mainResult = result.output('rr', (a) => a?.getDataAsJson());
 
-  console.dir(mainResult, {depth: 5})
+  console.dir(mainResult, { depth: 5 });
 
   expect(await mainResult.awaitStableValue()).eq('success');
 });

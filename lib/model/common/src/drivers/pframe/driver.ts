@@ -6,10 +6,7 @@ import { PTableShape, PTableVector, TableRange } from './data';
 import { FindColumnsRequest, FindColumnsResponse } from './find_columns';
 import { PObjectId } from '../../pool';
 import { PColumnIdAndSpec, PColumnSpec } from './spec';
-import {
-  CalculateTableDataRequest,
-  CalculateTableDataResponse
-} from './table_calculate';
+import { CalculateTableDataRequest, CalculateTableDataResponse } from './table_calculate';
 import { UniqueValuesRequest, UniqueValuesResponse } from './unique_values';
 import { PTableColumnSpec } from './table_common';
 
@@ -29,16 +26,10 @@ export interface PFrameDriver {
    * Finds columns given filtering criteria on column name, annotations etc.
    * and a set of axes ids to find only columns with compatible specs.
    * */
-  findColumns(
-    handle: PFrameHandle,
-    request: FindColumnsRequest
-  ): Promise<FindColumnsResponse>;
+  findColumns(handle: PFrameHandle, request: FindColumnsRequest): Promise<FindColumnsResponse>;
 
   /** Retrieve single column spec */
-  getColumnSpec(
-    handle: PFrameHandle,
-    columnId: PObjectId
-  ): Promise<PColumnSpec>;
+  getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec>;
 
   /** Retrieve information about all columns currently added to the PFrame */
   listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]>;
@@ -93,16 +84,9 @@ export interface PFrameDriver {
 // PFrame and PTable interfaces.
 //
 
-type ExpectedPFrameDriverTypeF = AddParameterToAllMethods<
-  PFrame,
-  [handle: PFrameHandle]
->;
-type ExpectedPFrameDriverTypeT = AddParameterToAllMethods<
-  PTable,
-  [handle: PTableHandle]
->;
-type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF &
-  ExpectedPFrameDriverTypeT;
+type ExpectedPFrameDriverTypeF = AddParameterToAllMethods<PFrame, [handle: PFrameHandle]>;
+type ExpectedPFrameDriverTypeT = AddParameterToAllMethods<PTable, [handle: PTableHandle]>;
+type ExpectedPFrameDriverType = ExpectedPFrameDriverTypeF & ExpectedPFrameDriverTypeT;
 
 type TypeEqualityGuard<A, B> = Exclude<A, B> | Exclude<B, A>;
 function assert<T extends never>() {}

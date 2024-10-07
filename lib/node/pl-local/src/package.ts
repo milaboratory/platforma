@@ -8,4 +8,3 @@ async function getPackageJson() {
 export async function getPlVersion(): Promise<string> {
   return (await getPackageJson())['pl-version'];
 }
-

@@ -33,14 +33,8 @@ export class ClientUpload {
 
   close() {}
 
-  public async initUpload(
-    { id, type }: ResourceInfo,
-    options?: RpcOptions
-  ): Promise<bigint[]> {
-    const init = await this.grpcClient.init(
-      { resourceId: id },
-      addRTypeToMetadata(type, options)
-    );
+  public async initUpload({ id, type }: ResourceInfo, options?: RpcOptions): Promise<bigint[]> {
+    const init = await this.grpcClient.init({ resourceId: id }, addRTypeToMetadata(type, options));
     return this.partsToUpload(init.response);
   }
 
@@ -61,25 +55,14 @@ export class ClientUpload {
       addRTypeToMetadata(type, options)
     ).response;
 
-    const { chunk, mTime } = await this.readChunk(
-      path,
-      info.chunkStart,
-      info.chunkEnd
-    );
+    const { chunk, mTime } = await this.readChunk(path, info.chunkStart, info.chunkEnd);
     if (mTime > expectedMTimeUnix) {
       throw new MTimeError(
-        'file was modified, expected mtime: ' +
-          expectedMTimeUnix +
-          ', got: ' +
-          mTime +
-          '.'
+        'file was modified, expected mtime: ' + expectedMTimeUnix + ', got: ' + mTime + '.'
       );
     }
 
-    const resp = await request(
-      info.uploadUrl,
-      this.prepareUploadOpts(info, chunk)
-    );
+    const resp = await request(info.uploadUrl, this.prepareUploadOpts(info, chunk));
 
     const body = await resp.body.text();
     this.logger.info(
@@ -104,14 +87,8 @@ export class ClientUpload {
     );
   }
 
-  public async finalizeUpload(
-    { id, type }: ResourceInfo,
-    options?: RpcOptions
-  ) {
-    return await this.grpcClient.finalize(
-      { resourceId: id },
-      addRTypeToMetadata(type, options)
-    );
+  public async finalizeUpload({ id, type }: ResourceInfo, options?: RpcOptions) {
+    return await this.grpcClient.finalize({ resourceId: id }, addRTypeToMetadata(type, options));
   }
 
   private async readChunk(
@@ -144,12 +121,7 @@ export class ClientUpload {
 
   /** Read len bytes from a given position. The reason the method exists
       is that FileHandle.read can read less bytes than it's needed. */
-  async readBytesFromPosition(
-    f: fs.FileHandle,
-    b: Buffer,
-    len: number,
-    position: number
-  ) {
+  async readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, position: number) {
     let bytesReadTotal = 0;
     while (bytesReadTotal < len) {
       const { bytesRead } = await f.read(
@@ -169,10 +141,7 @@ export class ClientUpload {
 
   /** Calculates parts that need to be uploaded from the parts that were
    * already uploaded. */
-  private partsToUpload(info: {
-    partsCount: bigint;
-    uploadedParts: bigint[];
-  }): bigint[] {
+  private partsToUpload(info: { partsCount: bigint; uploadedParts: bigint[] }): bigint[] {
     const toUpload: bigint[] = [];
     const uploaded = new Set(info.uploadedParts);
 
@@ -183,10 +152,7 @@ export class ClientUpload {
     return toUpload;
   }
 
-  private prepareUploadOpts(
-    info: uploadapi_GetPartURL_Response,
-    chunk: Buffer
-  ): any {
+  private prepareUploadOpts(info: uploadapi_GetPartURL_Response, chunk: Buffer): any {
     const headers = info.headers.map(({ name, value }) => [name, value]);
 
     return {

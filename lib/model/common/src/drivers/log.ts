@@ -53,9 +53,7 @@ export interface LogsDriver {
  * The caller should give a handle to retrieve it.
  * It can be OK or outdated, in which case the handle
  * should be issued again. */
-export type StreamingApiResponse =
-  | StreamingApiResponseOk
-  | StreamingApiResponseHandleOutdated;
+export type StreamingApiResponse = StreamingApiResponseOk | StreamingApiResponseHandleOutdated;
 
 export type StreamingApiResponseOk = {
   /** The handle don't have to be updated,

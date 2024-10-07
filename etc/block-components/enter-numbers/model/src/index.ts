@@ -1,5 +1,5 @@
 import { BlockModel, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
-import {z} from 'zod';
+import { z } from 'zod';
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number())
@@ -11,9 +11,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
 
   .initialArgs({ numbers: [1, 2, 3] })
 
-  .output('numbers', (ctx) =>
-    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
-  )
+  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];

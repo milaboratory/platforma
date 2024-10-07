@@ -20,22 +20,13 @@ test('client download from a local file', async () => {
 
     const clientDownload = client.getDriver({
       name: 'ClientDownload',
-      init: (
-        pl: PlClient,
-        grpcTransport: GrpcTransport,
-        httpDispatcher: Dispatcher
-      ) =>
-        new ClientDownload(
-          grpcTransport,
-          httpDispatcher,
-          new ConsoleLoggerAdapter(),
-          { tmp: storageRoot }
-        )
+      init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+        new ClientDownload(grpcTransport, httpDispatcher, new ConsoleLoggerAdapter(), {
+          tmp: storageRoot
+        })
     });
 
-    const localFile = await clientDownload.readLocalFile(
-      `storage://tmp/${fName}`
-    );
+    const localFile = await clientDownload.readLocalFile(`storage://tmp/${fName}`);
 
     expect(localFile.size).toBe(2);
     expect(await text(localFile.content)).toBe('42');

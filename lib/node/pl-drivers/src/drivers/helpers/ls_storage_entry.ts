@@ -1,9 +1,5 @@
 import * as sdk from '@milaboratories/pl-model-common';
-import {
-  bigintToResourceId,
-  ResourceId,
-  ResourceType
-} from '@milaboratories/pl-client';
+import { bigintToResourceId, ResourceId, ResourceType } from '@milaboratories/pl-client';
 import { assertNever } from '@milaboratories/ts-helpers';
 
 /**
@@ -19,16 +15,12 @@ export function toStorageEntry(
   return localEntries.concat(remoteEntries);
 }
 
-export type StorageHandleData =
-  | RemoteStorageHandleData
-  | LocalStorageHandleData;
+export type StorageHandleData = RemoteStorageHandleData | LocalStorageHandleData;
 
 /**
  * Gets a storage handle and gives an underlying data from it.
  */
-export function fromStorageHandle(
-  handle: sdk.StorageHandle
-): StorageHandleData {
+export function fromStorageHandle(handle: sdk.StorageHandle): StorageHandleData {
   if (isRemoteStorageHandle(handle)) {
     return fromRemoteHandle(handle);
   } else if (isLocalStorageHandle(handle)) {
@@ -58,9 +50,7 @@ function localToEntry([name, path]: [string, string]): sdk.StorageEntry {
 
 const localHandleRegex = /^local:\/\/(?<name>.*)\/(?<path>.*)$/;
 
-export function isLocalStorageHandle(
-  handle: sdk.StorageHandle
-): handle is sdk.StorageHandleLocal {
+export function isLocalStorageHandle(handle: sdk.StorageHandle): handle is sdk.StorageHandleLocal {
   return localHandleRegex.test(handle);
 }
 
@@ -70,8 +60,7 @@ function toLocalHandle(name: string, path: string): sdk.StorageHandleLocal {
 
 function fromLocalHandle(handle: string): LocalStorageHandleData {
   const parsed = handle.match(localHandleRegex);
-  if (parsed == null)
-    throw new Error(`Local list handle wasn't parsed: ${handle}`);
+  if (parsed == null) throw new Error(`Local list handle wasn't parsed: ${handle}`);
 
   const { name, path } = parsed.groups!;
 
@@ -109,17 +98,13 @@ export function isRemoteStorageHandle(
   return remoteHandleRegex.test(handle);
 }
 
-function toRemoteHandle(
-  name: string,
-  rId: ResourceId
-): sdk.StorageHandleRemote {
+function toRemoteHandle(name: string, rId: ResourceId): sdk.StorageHandleRemote {
   return `remote://${name}/${BigInt(rId)}`;
 }
 
 function fromRemoteHandle(handle: string): RemoteStorageHandleData {
   const parsed = handle.match(remoteHandleRegex);
-  if (parsed == null)
-    throw new Error(`Remote list handle wasn't parsed: ${handle}`);
+  if (parsed == null) throw new Error(`Remote list handle wasn't parsed: ${handle}`);
   const { name, resourceId } = parsed.groups!;
 
   return {

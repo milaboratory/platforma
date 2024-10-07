@@ -1,9 +1,5 @@
 import { deepClone, unionize } from '@milaboratories/helpers';
-import type {
-  BlockOutputsBase,
-  BlockState,
-  BlockStatePatch,
-} from '@platforma-sdk/model';
+import type { BlockOutputsBase, BlockState, BlockStatePatch } from '@platforma-sdk/model';
 
 export abstract class BlockMock<
   Args = unknown,
@@ -11,11 +7,16 @@ export abstract class BlockMock<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`
 > {
-  #afterUpdate: ((updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>) | undefined;
+  #afterUpdate:
+    | ((updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>)
+    | undefined;
 
-  constructor(public args: Args, public outputs: Outputs, public ui: UiState, public href: Href) {
-
-  }
+  constructor(
+    public args: Args,
+    public outputs: Outputs,
+    public ui: UiState,
+    public href: Href
+  ) {}
 
   async setBlockArgs(args: Args) {
     this.args = args;
@@ -45,9 +46,11 @@ export abstract class BlockMock<
   }
 
   getPatches(): BlockStatePatch<Args, Outputs, UiState, Href>[] {
-    return unionize(deepClone({
-      outputs: this.outputs,
-    }));
+    return unionize(
+      deepClone({
+        outputs: this.outputs
+      })
+    );
   }
 
   private async doUpdate() {

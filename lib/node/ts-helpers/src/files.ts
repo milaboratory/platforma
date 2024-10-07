@@ -8,4 +8,3 @@ export async function fileExists(path: string): Promise<boolean> {
     return false;
   }
 }
-

@@ -14,7 +14,7 @@ export interface TemplateLibData {
   /** i.e. 1.2.3 */
   version: string;
   /** full source code */
-  src: string,
+  src: string;
 }
 
 export interface TemplateSoftwareData {
@@ -23,7 +23,7 @@ export interface TemplateSoftwareData {
   /** i.e. 4.2.3 */
   version: string;
   /** full contents of software dependency description */
-  src: string,
+  src: string;
 }
 
 export interface TemplateData {
@@ -56,8 +56,8 @@ export class Template {
     public readonly compileMode: CompileMode,
     public readonly fullName: FullArtifactName,
     body: {
-      data?: TemplateData,
-      content?: Uint8Array
+      data?: TemplateData;
+      content?: Uint8Array;
     }
   ) {
     let { data, content } = body;
@@ -68,23 +68,27 @@ export class Template {
 
     if (data === undefined) {
       data = JSON.parse(decoder.decode(gunzipSync(content!))) as TemplateData;
-      if (data.type !== 'pl.tengo-template.v2')
-        throw new Error('malformed template');
+      if (data.type !== 'pl.tengo-template.v2') throw new Error('malformed template');
     }
 
-    if (content === undefined)
-      content = gzipSync(encoder.encode(canonicalize(data!)));
+    if (content === undefined) content = gzipSync(encoder.encode(canonicalize(data!)));
 
     const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data);
 
-    if (nameFromData.pkg !== fullName.pkg || nameFromData.id !== fullName.id || nameFromData.version !== fullName.version)
-      throw new Error(`Compiled template name don't match it's package and file names: ${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`);
+    if (
+      nameFromData.pkg !== fullName.pkg ||
+      nameFromData.id !== fullName.id ||
+      nameFromData.version !== fullName.version
+    )
+      throw new Error(
+        `Compiled template name don't match it's package and file names: ${fullNameWithoutTypeToString(nameFromData)} != ${fullNameWithoutTypeToString(fullName)}`
+      );
 
     this.data = data;
     this.content = content;
   }
 
   toJSON() {
-    return { compileMode: this.compileMode, fullName: this.fullName, data: this.data }
+    return { compileMode: this.compileMode, fullName: this.fullName, data: this.data };
   }
 }

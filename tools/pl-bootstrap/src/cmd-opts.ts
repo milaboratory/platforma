@@ -23,7 +23,8 @@ export const VersionFlag = {
 
 export const LicenseFlags = {
   license: Flags.string({
-    description: 'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
+    description:
+      'pass a license code. The license can be got from "https://licensing.milaboratories.com".'
   }),
   'license-file': Flags.file({
     exists: true,
@@ -104,7 +105,8 @@ export const PlBinaryFlag = {
 
 export const PlSourcesFlag = {
   ['pl-sources']: Flags.file({
-    description: 'path to pl repository root: build Platforma Backend from sources and start the resulting binary'
+    description:
+      'path to pl repository root: build Platforma Backend from sources and start the resulting binary'
   })
 };
 
@@ -174,7 +176,8 @@ export const LDAPAddressFlag = {
 
 export const LDAPDefaultDNFlag = {
   'auth-ldap-default-dn': Flags.string({
-    description: 'DN to use when checking user with LDAP bind operation: e.g. cn=%u,ou=users,dc=example,dc=com'
+    description:
+      'DN to use when checking user with LDAP bind operation: e.g. cn=%u,ou=users,dc=example,dc=com'
   })
 };
 

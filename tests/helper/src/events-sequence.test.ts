@@ -1,8 +1,8 @@
-import {test, expect} from '@jest/globals';
-import {utils} from '@milaboratories/helpers';
-import {sequence, Emitter} from '@milaboratories/sequences';
+import { test, expect } from '@jest/globals';
+import { utils } from '@milaboratories/helpers';
+import { sequence, Emitter } from '@milaboratories/sequences';
 
-const {delay, timer} = utils;
+const { delay, timer } = utils;
 
 test('test 1', async () => {
   async function* gen() {
@@ -13,7 +13,11 @@ test('test 1', async () => {
 
   const s = sequence(gen());
 
-  const values = await s.map(v => v + 1).map(v => v * 10).filter(v => v % 2 === 0).toArray();
+  const values = await s
+    .map((v) => v + 1)
+    .map((v) => v * 10)
+    .filter((v) => v % 2 === 0)
+    .toArray();
 
   expect(values.reduce((x, y) => x + y)).toBe(650);
 }, 100000);
@@ -33,7 +37,7 @@ test('InfiniteTest', async () => {
     }
   }
 
-  const s = sequence(gen()).map(v => `dt: ${v} ms`);
+  const s = sequence(gen()).map((v) => `dt: ${v} ms`);
 
   const dt = timer();
 
@@ -43,7 +47,6 @@ test('InfiniteTest', async () => {
 
   expect(dt()).toBeGreaterThan(DELAY_MS);
 }, 100000);
-
 
 test('MergeTest', async () => {
   async function* gen(delta: number) {
@@ -59,8 +62,8 @@ test('MergeTest', async () => {
     }
   }
 
-  const s1 = sequence(gen(10)).map(v => ['s1', v]);
-  const s2 = sequence(gen(5)).map(v => ['s2', v]);
+  const s1 = sequence(gen(10)).map((v) => ['s1', v]);
+  const s2 = sequence(gen(5)).map((v) => ['s2', v]);
 
   for await (const v of s1.merge(s2).it()) {
     // console.log('tuple', v);
@@ -112,7 +115,6 @@ test('PushTestSync', async () => {
   await it.next('hello');
   await it.next('hello again');
 }, 100000);
-
 
 test('PushTestAsync', async () => {
   async function* gen() {

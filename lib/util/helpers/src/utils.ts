@@ -1,4 +1,4 @@
-import type { Option, AwaitedStruct, Unionize, Result } from "./types";
+import type { Option, AwaitedStruct, Unionize, Result } from './types';
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -60,11 +60,13 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
         return Promise.resolve(result.value);
       }
 
-      return Promise.resolve(result.value).then(res => {
-        return handle(generator.next(res));
-      }).catch(err => {
-        return handle(generator.throw(err));
-      });
+      return Promise.resolve(result.value)
+        .then((res) => {
+          return handle(generator.next(res));
+        })
+        .catch((err) => {
+          return handle(generator.throw(err));
+        });
     }
 
     try {
@@ -72,7 +74,7 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
     } catch (ex) {
       return Promise.reject(ex);
     }
-  }
+  };
 }
 
 export class Deferred<T> {
@@ -88,11 +90,11 @@ export class Deferred<T> {
 }
 
 export function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function tear() {
-  return new Promise<void>(r => queueMicrotask(r));
+  return new Promise<void>((r) => queueMicrotask(r));
 }
 
 export function timer() {
@@ -155,8 +157,7 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 }
 
 export class Interval {
-  constructor(private _delay: number) {
-  }
+  constructor(private _delay: number) {}
   async *generate(): AsyncGenerator<number> {
     let i = 0;
     while (true) {
@@ -174,7 +175,7 @@ export class Interval {
 }
 
 export function arrayFrom<T>(length: number, cb: (i: number) => T) {
-  return Array.from({length}, (_, i) => cb(i));
+  return Array.from({ length }, (_, i) => cb(i));
 }
 
 export function exhaustive(v: never, message: string): never {
@@ -189,7 +190,7 @@ export function match<T extends string, R = unknown>(matcher: Matcher<T, R>) {
   return (key: T) => matcher[key]();
 }
 
-export function okOptional<V>(v: {ok: true, value: V} | {ok: false} | undefined) {
+export function okOptional<V>(v: { ok: true; value: V } | { ok: false } | undefined) {
   if (!v) {
     return undefined;
   }
@@ -221,12 +222,16 @@ export function flatValue<T>(v: T | T[]): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-export async function resolveAwaited<O extends Record<string, unknown>>(obj: O): Promise<AwaitedStruct<O>> {
-  return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v])));
+export async function resolveAwaited<O extends Record<string, unknown>>(
+  obj: O
+): Promise<AwaitedStruct<O>> {
+  return Object.fromEntries(
+    await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v]))
+  );
 }
 
 export function alike(obj: Record<string, unknown>, to: Record<string, unknown>) {
-  return Object.keys(to).every(bKey => obj[bKey] === to[bKey]);
+  return Object.keys(to).every((bKey) => obj[bKey] === to[bKey]);
 }
 
 export const identity = <T>(v: T): T => v;

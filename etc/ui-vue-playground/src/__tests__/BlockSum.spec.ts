@@ -9,13 +9,13 @@ import { delay } from '@milaboratories/helpers';
 const Page = defineComponent({
   // type inference enabled
   template: `<div id="app"></div>`
-})
+});
 
 export const sdkPlugin = defineApp(platforma, () => {
   return {
     routes: {
-      '/': Page,
-    },
+      '/': Page
+    }
   };
 });
 

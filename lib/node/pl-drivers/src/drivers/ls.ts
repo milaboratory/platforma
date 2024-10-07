@@ -1,20 +1,10 @@
-import {
-  isNotNullResourceId,
-  PlClient,
-  ResourceData,
-  ResourceId
-} from '@milaboratories/pl-client';
+import { isNotNullResourceId, PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
 import { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import * as sdk from '@milaboratories/pl-model-common';
 import { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import {
-  createUploadHandle,
-  ListResponse,
-  toListItem,
-  toLsEntries
-} from './helpers/ls_list_entry';
+import { createUploadHandle, ListResponse, toListItem, toLsEntries } from './helpers/ls_list_entry';
 import { fromStorageHandle, toStorageEntry } from './helpers/ls_storage_entry';
 
 /**
@@ -40,9 +30,7 @@ export class LsDriver implements InternalLsDriver {
     private readonly localStorageToPath: Record<string, string>
   ) {}
 
-  public async getLocalFileHandle(
-    localPath: string
-  ): Promise<sdk.ImportFileHandleUpload> {
+  public async getLocalFileHandle(localPath: string): Promise<sdk.ImportFileHandleUpload> {
     const stat = await fs.stat(localPath, { bigint: true });
     return createUploadHandle(
       localPath,
@@ -53,10 +41,7 @@ export class LsDriver implements InternalLsDriver {
   }
 
   public async getStorageList(): Promise<sdk.StorageEntry[]> {
-    return toStorageEntry(
-      this.localStorageToPath,
-      await this.getAvailableStorageIds()
-    );
+    return toStorageEntry(this.localStorageToPath, await this.getAvailableStorageIds());
   }
 
   public async listFiles(
@@ -127,9 +112,7 @@ export class LsDriver implements InternalLsDriver {
   }
 }
 
-async function doGetAvailableStorageIds(
-  client: PlClient
-): Promise<Record<string, ResourceId>> {
+async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, ResourceId>> {
   return client.withReadTx('GetAvailableStorageIds', async (tx) => {
     const lsProviderId = await tx.getResourceByName('LSProvider');
     const provider = await tx.getResourceData(lsProviderId, true);

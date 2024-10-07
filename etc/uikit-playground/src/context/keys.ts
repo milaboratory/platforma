@@ -19,22 +19,22 @@ export function defaultState(): TodoState {
     items: [
       {
         id: 1,
-        text: randomString(10),
-      },
+        text: randomString(10)
+      }
     ],
     addItem(text: string) {
       const id = this.items.map((it) => it.id).reduce((x, y) => (x > y ? x : y)) + 1;
       this.items.push({
         id,
-        text,
+        text
       });
     },
     markAsCompleted(id: number) {
       tapIf(
         this.items.find((it) => it.id === id),
-        (it) => (it.completed = true),
+        (it) => (it.completed = true)
       );
-    },
+    }
   };
 }
 

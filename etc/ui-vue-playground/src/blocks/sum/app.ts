@@ -7,8 +7,8 @@ window.platforma = platforma;
 export const sdkPlugin = defineApp(platforma, () => {
   return {
     routes: {
-      '/': MainPage,
-    },
+      '/': MainPage
+    }
   };
 });
 

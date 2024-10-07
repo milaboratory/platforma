@@ -6,10 +6,7 @@ import {
   resourceIdToString,
   TestHelpers
 } from '@milaboratories/pl-middle-layer';
-import {
-  SynchronizedTreeOps,
-  SynchronizedTreeState
-} from '@milaboratories/pl-tree';
+import { SynchronizedTreeOps, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { randomUUID } from 'crypto';
 import * as fsp from 'node:fs/promises';
 import path from 'path';
@@ -17,10 +14,7 @@ import { test } from 'vitest';
 
 export const plTest = test.extend<{
   pl: PlClient;
-  createTree: (
-    res: ResourceId,
-    ops?: SynchronizedTreeOps
-  ) => Promise<SynchronizedTreeState>;
+  createTree: (res: ResourceId, ops?: SynchronizedTreeOps) => Promise<SynchronizedTreeState>;
   rootTree: SynchronizedTreeState;
   tmpFolder: string;
 }>({
