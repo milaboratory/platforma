@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.1.2
+
+### Patch Changes
+
+- ad7680f: fix boilerplate-code, replace all occurrences
+
 ## 2.1.1
 
 ### Patch Changes
