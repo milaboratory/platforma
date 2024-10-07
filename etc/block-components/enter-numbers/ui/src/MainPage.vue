@@ -47,8 +47,8 @@ const resultRef = useWatchFetch(() => app.outputValues.numbers, (numbers) => {
       <legend>Args (model)</legend>
       {{ app.model.args }}
     </fieldset>  
-    <h3>Outputs</h3>
-    <code>{{ app.outputValues }}</code>
+    <h3>app.model</h3>
+    <code>{{ app.model }}</code>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>
     <PlAlert type="error" v-if="app.hasErrors">
