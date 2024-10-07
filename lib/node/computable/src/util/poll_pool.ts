@@ -315,21 +315,17 @@ export abstract class PollComputablePool<Req, Res> {
     })();
   }
 
-  public get(req: Req, ctx: ComputableCtx): Res | undefined;
-  public get(req: Req): Computable<UnwrapComputables<Res> | undefined>;
-  public get(
-    req: Req,
-    ctx?: ComputableCtx
-  ): (Res | undefined) | Computable<UnwrapComputables<Res> | undefined> {
-    if (ctx === undefined) return Computable.make((ctx1) => this.get(req, ctx1));
-
+  public get(req: Req): Computable<UnwrapComputables<Res> | undefined> {
     const key = this.getKey(req);
     const entry = this.pool.createIfAbsent(key, () => this.createEntry(req));
-    ctx.attacheHooks(entry.hooks);
-    entry.change.attachWatcher(ctx.watcher);
+    // the returned computable will catch and hold reference to the entry (thus preventing it from being GC-ed)
+    return Computable.make((ctx) => {
+      ctx.attacheHooks(entry.hooks);
+      entry.change.attachWatcher(ctx.watcher);
 
-    if (entry.error) throw entry.error;
-    else return entry.value;
+      if (entry.error) throw entry.error;
+      else return entry.value;
+    });
   }
 
   public async terminate() {

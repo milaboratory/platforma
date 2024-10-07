@@ -32,7 +32,7 @@
     "generate-icons": "pnpm run parse-icons-folder && pnpm run minify-icons",
     "lint": "eslint . --ext js,ts,vue",
     "check": "yarpm type-check && yarpm test && yarpm lint",
-    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "vue": "catalog:"

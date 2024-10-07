@@ -16,7 +16,7 @@
     "type-check": "node ./scripts/save-package-version.cjs && tsc --noEmit --composite false",
     "build": "node ./scripts/save-package-version.cjs && vite build",
     "test": "node ./scripts/save-package-version.cjs && jest",
-    "do-pack": "rm *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

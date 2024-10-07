@@ -22,7 +22,8 @@
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
     "vscode-tags": "./create_tags.sh .tags false",
-    "emacs-tags": "./create_tags.sh ../TAGS false -e"
+    "emacs-tags": "./create_tags.sh ../TAGS false -e",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
     "@milaboratories/software-pframes-conv": "catalog:"
