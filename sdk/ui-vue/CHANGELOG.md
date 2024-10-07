@@ -1,5 +1,12 @@
 # @platforma-sdk/ui-vue
 
+## 1.4.9
+
+### Patch Changes
+
+- cfb6385: more effective createModel
+- 43efc40: export activateAgGrid function
+
 ## 1.4.8
 
 ### Patch Changes
