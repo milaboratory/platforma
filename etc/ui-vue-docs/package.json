@@ -1,0 +1,24 @@
+{
+  "name": "@milaboratories/ui-vue-docs",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "docs:build": "vitepress build qwerty",
+    "docs:preview": "vitepress preview qwerty",
+    "docs:test": "echo 'Hola!'"
+  },
+  "devDependencies": {
+    "sass": "catalog:",
+    "vitepress": "catalog:"
+  },
+  "dependencies": {
+    "@milaboratories/helpers": "workspace:^",
+    "@milaboratories/uikit": "workspace:^",
+    "@platforma-sdk/model": "workspace:^",
+    "@platforma-sdk/ui-vue": "workspace:^",
+    "vue": "catalog:",
+    "highlight.js": "catalog:"
+  }
+}
