@@ -1,7 +1,9 @@
+import { test, expect } from '@jest/globals';
 import { field, TestHelpers } from '@milaboratories/pl-client';
 import { TestStructuralResourceType1 } from './test_utils';
 import { Computable } from '@milaboratories/computable';
 import { SynchronizedTreeState } from './synchronized_tree';
+import { ConsoleLoggerAdapter } from '@milaboratories/ts-helpers';
 
 test('simple synchronized tree test', async () => {
   await TestHelpers.withTempRoot(async (pl) => {
@@ -18,10 +20,16 @@ test('simple synchronized tree test', async () => {
       { sync: true }
     );
 
-    const treeState = await SynchronizedTreeState.init(pl, r1, {
-      stopPollingDelay: 10,
-      pollingInterval: 10
-    });
+    const treeState = await SynchronizedTreeState.init(
+      pl,
+      r1,
+      {
+        stopPollingDelay: 10,
+        pollingInterval: 10,
+        logStat: 'cumulative'
+      },
+      new ConsoleLoggerAdapter(require('console'))
+    );
 
     const theComputable = Computable.make((c) =>
       c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString()
@@ -113,10 +121,16 @@ test('synchronized tree test with KV', async () => {
       { sync: true }
     );
 
-    const treeState = await SynchronizedTreeState.init(pl, r1, {
-      stopPollingDelay: 10,
-      pollingInterval: 10
-    });
+    const treeState = await SynchronizedTreeState.init(
+      pl,
+      r1,
+      {
+        stopPollingDelay: 10,
+        pollingInterval: 10,
+        logStat: 'cumulative'
+      },
+      new ConsoleLoggerAdapter(require('console'))
+    );
 
     const theComputable = Computable.make((c) =>
       c.accessor(treeState.entry()).node().traverse('a')?.getKeyValueAsString('b', true)
@@ -182,10 +196,16 @@ test('termination test', async () => {
       { sync: true }
     );
 
-    const treeState = await SynchronizedTreeState.init(pl, r1, {
-      stopPollingDelay: 10,
-      pollingInterval: 10
-    });
+    const treeState = await SynchronizedTreeState.init(
+      pl,
+      r1,
+      {
+        stopPollingDelay: 10,
+        pollingInterval: 10,
+        logStat: 'cumulative'
+      },
+      new ConsoleLoggerAdapter(require('console'))
+    );
 
     const entry = treeState.entry();
     const theComputable = Computable.make((c) =>
