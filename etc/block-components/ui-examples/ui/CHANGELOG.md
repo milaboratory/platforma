@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.23
+
+### Patch Changes
+
+- f7f1691: Fix slide modal content scroll
+  - @platforma-sdk/ui-vue@1.5.38
+
 ## 1.0.22
 
 ### Patch Changes

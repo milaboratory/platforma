@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.1.1
+
+### Patch Changes
+
+- 5f57a27: pl-config initial
+
 ## 1.1.0
 
 ### Minor Changes
