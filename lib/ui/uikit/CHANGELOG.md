@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.17
+
+### Patch Changes
+
+- f7f1691: Fix slide modal content scroll
+
 ## 1.2.16
 
 ### Patch Changes

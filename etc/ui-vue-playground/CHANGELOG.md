@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies [f7f1691]
+  - @milaboratories/uikit@1.2.17
+  - @platforma-sdk/ui-vue@1.5.38
+
 ## 0.0.26
 
 ### Patch Changes
