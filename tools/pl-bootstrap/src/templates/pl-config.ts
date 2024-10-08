@@ -267,6 +267,7 @@ controllers:
   runner:
     type: local
     storageRoot: '${(options.storages.work as types.fsStorageSettings).rootPath}'
+    workdirCacheOnFailure: 1h
     secrets:
       - map:
           MI_LICENSE: ${JSON.stringify(miLicenseSecret)}
