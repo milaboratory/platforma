@@ -2,14 +2,16 @@
 
 .pl-slide-modal {
   --padding-top: 24px;
+  --padding-bottom: 24px;
   position: absolute;
   top: var(--title-bar-height);
   right: 0;
   bottom: 0;
   z-index: var(--z-slide-dialog);
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
   padding-top: var(--padding-top);
+  padding-bottom: var(--padding-bottom);
 
   min-width: 368px;
   width: 368px;
@@ -41,6 +43,10 @@
     --padding-top: 0;
   }
 
+  &.has-actions {
+    --padding-bottom: 0;
+  }
+
   &__title {
     display: flex;
     align-items: center;
@@ -65,15 +71,14 @@
     }
   }
 
-  // Closes modal too
-
   &__content {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    padding: 16px 0;
-    margin: 0 24px;
+    padding: 16px 24px;
+    margin: 0 0;
+    @include scrollbar(true);
   }
 
   &__shadow {
