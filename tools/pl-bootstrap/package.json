@@ -23,7 +23,7 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "@platforma-sdk/oclif-index": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
     "@types/decompress": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",

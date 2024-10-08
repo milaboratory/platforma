@@ -1,5 +1,22 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.22
+
+### Patch Changes
+
+- bc6d116: app.model final version
+- Updated dependencies [bc6d116]
+  - @platforma-sdk/ui-vue@1.5.0
+
+## 1.0.21
+
+### Patch Changes
+
+- cfb6385: more effective createModel
+- Updated dependencies [cfb6385]
+- Updated dependencies [43efc40]
+  - @platforma-sdk/ui-vue@1.4.9
+
 ## 1.0.20
 
 ### Patch Changes

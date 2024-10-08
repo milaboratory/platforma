@@ -83,7 +83,7 @@ catalog:
   'eslint-plugin-prettier': '^5.1.3'
   'eslint-plugin-vue': '^9.26.0'
 
-  'oclif': ^4.15.2
+  'oclif': ^4.15.5
 
   'turbo': ^2.1.3
 
@@ -92,12 +92,12 @@ catalog:
   # Net
 
   'undici': ^6.19.8
-  '@grpc/grpc-js': ^1.11.3
+  '@grpc/grpc-js': ^1.12.0
   '@protobuf-ts/grpc-transport': ^2.9.4
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.5
-  '@aws-sdk/client-s3': ^3.658.1
+  '@aws-sdk/client-s3': ^3.666.0
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs
@@ -124,7 +124,7 @@ catalog:
   'winston': ^3.14.2
 
   '@milaboratories/tengo-tester': ^1.4.4
-  '@milaboratories/pframes-node': ^1.5.9
+  '@milaboratories/pframes-node': &pframes-version ^1.5.10
 
   'quickjs-emscripten': ^0.31.0
 
@@ -134,18 +134,18 @@ catalog:
   'vue-tsc': ^2.1.6
   'sass': ~1.77.2
 
-  '@ag-grid-community/client-side-row-model': ^32.2.1
-  '@ag-grid-community/core': ^32.2.1
-  '@ag-grid-community/infinite-row-model': ^32.2.1
-  '@ag-grid-community/styles': ^32.2.1
-  '@ag-grid-community/vue3': ^32.2.1
-  '@ag-grid-enterprise/core': ^32.2.1
-  '@ag-grid-enterprise/clipboard': ^32.2.1
-  '@ag-grid-enterprise/range-selection': ^32.2.1
+  '@ag-grid-community/client-side-row-model': ^32.2.2
+  '@ag-grid-community/core': ^32.2.2
+  '@ag-grid-community/infinite-row-model': ^32.2.2
+  '@ag-grid-community/styles': ^32.2.2
+  '@ag-grid-community/vue3': ^32.2.2
+  '@ag-grid-enterprise/core': ^32.2.2
+  '@ag-grid-enterprise/clipboard': ^32.2.2
+  '@ag-grid-enterprise/range-selection': ^32.2.2
 
   # SW
 
-  '@milaboratories/software-pframes-conv': ^1.5.9
+  '@milaboratories/software-pframes-conv': *pframes-version
   '@milaboratories/software-small-binaries': ^1.10.4
 
   # Test

@@ -1,5 +1,18 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.0
+
+### Minor Changes
+
+- bc6d116: app.model final version
+
+## 1.4.9
+
+### Patch Changes
+
+- cfb6385: more effective createModel
+- 43efc40: export activateAgGrid function
+
 ## 1.4.8
 
 ### Patch Changes

@@ -19,9 +19,9 @@ const args = app.createArgsModel();
 
     <div>Sum or error: {{ app.outputs.sum }}</div>
 
-    <div>Sum or undefined: {{ app.outputValues.sum }}</div>
+    <div>Sum or undefined: {{ app.model.outputs.sum }}</div>
 
-    <div>Error: {{ app.outputErrors.sum }}</div>
+    <div>Error: {{ app.model.outputErrors.sum }}</div>
   </div>
 </template>
 
