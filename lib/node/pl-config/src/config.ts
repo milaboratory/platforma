@@ -2,7 +2,7 @@ import { MiLogger } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
-import { MiddleLayerOps, MiddleLayerOpsConstructor } from '@milaboratories/pl-middle-layer';
+import { MiddleLayerOpsConstructor } from '@milaboratories/pl-middle-layer';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
 import { PlConfig, PlLogLevel } from './types';
 import { getLicense, licenseEnvsForMixcr, licenseForConfig, PlLicenseMode } from './license';
@@ -34,19 +34,30 @@ export async function writeConfig(logger: MiLogger, configPath: string, config: 
 }
 
 export type PlConfigOptions = {
+  /** Logger for Middle-Layer */
   logger: MiLogger;
+  /** Working dir for a local platforma. */
   workingDir: string;
+  /** Log level of a local platforma. */
   logLevel: PlLogLevel;
+  /** How to choose ports for platforma. */
   portsMode: PlConfigPorts;
+  /** How to get license. */
   licenseMode: PlLicenseMode;
 };
 
 export type PlLocalConfigs = {
+  /** Working directory for a local platforma. */
+  workingDir: string;
+  /** Configuration for a local platforma. */
   plLocal: string;
+  /** Configuration for middle layer. */
   ml: MiddleLayerOpsConstructor;
+  /** Configuration for pl-client. */
   clientAddr: string;
   user: string;
   password: string;
+  /** Version of the local platforma. */
   plVersion: string;
 };
 
@@ -65,6 +76,7 @@ export async function getDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlL
   await fs.mkdir(frontendDownloadPath, { recursive: true });
 
   return {
+    workingDir: opts.workingDir,
     plVersion: await getPlVersion(),
     clientAddr: ports.grpc,
     user,
