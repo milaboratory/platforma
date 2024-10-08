@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.2.0
+
+### Minor Changes
+
+- 7cb960f: Release pl 1.13.5
+
 ## 2.1.2
 
 ### Patch Changes
