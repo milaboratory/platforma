@@ -1,11 +1,11 @@
-import { MiLogger } from "@milaboratories/ts-helpers";
+import { MiLogger } from '@milaboratories/ts-helpers';
 
 /** Records all inputs and outputs of one's choice, so if the error happened
  * one can check how it was by just printing this structure. */
 export type Trace = Record<string, any>;
 
 export function newTrace(): Trace {
-  return {}
+  return {};
 }
 
 export function trace(t: Trace, k: string, v: any) {
@@ -17,10 +17,7 @@ export function trace(t: Trace, k: string, v: any) {
  * logs or traces using `trace` fn. */
 export async function withTrace<T>(
   logger: MiLogger,
-  fn: (
-    trace: (k: string, v: any) => typeof v,
-    t: Trace,
-  ) => Promise<T>,
+  fn: (trace: (k: string, v: any) => typeof v, t: Trace) => Promise<T>
 ): Promise<T> {
   const t = newTrace();
   try {

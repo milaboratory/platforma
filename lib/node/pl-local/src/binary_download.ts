@@ -8,12 +8,8 @@ import { text } from 'stream/consumers';
 import * as tar from 'tar';
 import { fileExists, MiLogger } from '@milaboratories/ts-helpers';
 
-export function getBinaryOptions(options: {
-  version: string;
-  saveDir: string;
-}): GetBinaryOptions {
-  const version = options?.version;
-  const extractToDirName = `pl-${version}-${archiveArch()}`;
+export function getBinaryOptions(options: { version: string; saveDir: string }): GetBinaryOptions {
+  const extractToDirName = `pl-${options.version}-${archiveArch()}`;
   const archiveName = `${extractToDirName}.tgz`;
   const extractTo = path.join(options.saveDir, extractToDirName);
 
@@ -21,8 +17,8 @@ export function getBinaryOptions(options: {
     downloadUrl: `https://cdn.platforma.bio/software/pl/${archiveOS()}/${archiveName}`,
     archivePath: path.join(options.saveDir, archiveName),
     extractTo,
-    pathToBinary: path.join(extractTo, "binaries", "platforma")
-  }
+    pathToBinary: path.join(extractTo, 'binaries', 'platforma')
+  };
 }
 
 export interface GetBinaryOptions {
@@ -32,32 +28,32 @@ export interface GetBinaryOptions {
   pathToBinary: string;
 }
 
-export async function getBinary(
-  logger: MiLogger,
-  options: GetBinaryOptions,
-): Promise<string> {
+export async function getBinary(logger: MiLogger, options: GetBinaryOptions): Promise<string> {
   await downloadArchive(logger, options);
   await extractArchive(logger, options);
   return options.pathToBinary;
 }
 
-export async function downloadArchive(
-  logger: MiLogger,
-  options: GetBinaryOptions
-) {
+export async function downloadArchive(logger: MiLogger, options: GetBinaryOptions) {
   if (await fileExists(options.archivePath)) {
-    logger.info(`Platforma Backend archive download skipped: '${options.archivePath}' already exists`);
+    logger.info(
+      `Platforma Backend archive download skipped: '${options.archivePath}' already exists`
+    );
     return options.archivePath;
   }
 
   await fsp.mkdir(path.dirname(options.archivePath), { recursive: true });
 
-  logger.info(`Downloading Platforma Backend archive:\n  URL:     ${options.downloadUrl}\n  Save to: ${options.archivePath}`);
+  logger.info(
+    `Downloading Platforma Backend archive:\n  URL:     ${options.downloadUrl}\n  Save to: ${options.archivePath}`
+  );
 
   const { body, statusCode } = await request(options.downloadUrl);
   if (statusCode != 200) {
     const textBody = await text(body);
-    throw new Error(`failed to download archive: ${statusCode}, response: ${textBody.slice(0, 1000)}`);
+    throw new Error(
+      `failed to download archive: ${statusCode}, response: ${textBody.slice(0, 1000)}`
+    );
   }
 
   const archive = Writable.toWeb(fs.createWriteStream(options.archivePath));
@@ -93,7 +89,9 @@ export async function extractArchive(
     await fsp.mkdir(options.extractTo, { recursive: true });
   }
 
-  logger.info(`Unpacking Platforma Backend archive:\n  Archive:   ${options.archivePath}\n  Target dir: ${options.extractTo}`);
+  logger.info(
+    `Unpacking Platforma Backend archive:\n  Archive:   ${options.archivePath}\n  Target dir: ${options.extractTo}`
+  );
 
   tar.x({
     file: options.archivePath,
@@ -144,4 +142,3 @@ export function archiveArch(archName?: string): ArchType {
       );
   }
 }
-

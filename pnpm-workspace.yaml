@@ -17,6 +17,7 @@ packages:
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
   - lib/node/pl-local
+  - lib/node/pl-config
 
   - lib/ui/uikit
 
