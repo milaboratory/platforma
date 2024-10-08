@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.43
+
+### Patch Changes
+
+- 23215d9: Fix super-partitioning key processing
+
 ## 1.10.42
 
 ### Patch Changes
