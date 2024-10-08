@@ -374,7 +374,12 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
-    const projectTree = await SynchronizedTreeState.init(env.pl, rid, env.ops.defaultTreeOptions);
+    const projectTree = await SynchronizedTreeState.init(
+      env.pl,
+      rid,
+      env.ops.defaultTreeOptions,
+      env.logger
+    );
     return new Project(env, rid, projectTree);
   }
 }
