@@ -128,7 +128,7 @@ export function parseDataInfoResource(
       if (keys === undefined) throw new Error(`no partition keys for super key ${superKey}`);
 
       for (const key of keys) {
-        const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+        const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
         parts[partKey] = superPart.traverse({ field: key, errorIfFieldNotSet: true }).resourceInfo;
       }
     }
@@ -194,7 +194,7 @@ export function parseDataInfoResource(
         if (field.endsWith('.index')) {
           const key = field.slice(0, field.length - 6);
 
-          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+          const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
@@ -207,7 +207,7 @@ export function parseDataInfoResource(
         } else if (field.endsWith('.values')) {
           const key = field.slice(0, field.length - 7);
 
-          const partKey = superKey.slice(0, superKey.length - 1) + ',' + key.slice(1, key.length);
+          const partKey = JSON.stringify([...JSON.parse(superKey), ...JSON.parse(key)]);
           let part = parts[partKey];
           if (part === undefined) {
             part = {};
