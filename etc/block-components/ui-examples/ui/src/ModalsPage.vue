@@ -31,7 +31,7 @@ const data = reactive({
   sliderWidth: '368px' // default and min
 });
 
-const lorem = faker.lorem.paragraph();
+const lorem = faker.lorem.paragraph(1000);
 </script>
 
 <template>
