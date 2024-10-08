@@ -1,16 +1,18 @@
 license:
-  value: ''
+  value: 'abc'
   file: ''
 
 logging:
   level: 'info'
   destinations:
-    - path: 'stdout'
+    - path: 'platforma.log'
 
 monitoring:
+  enabled: true
   listen: '127.0.0.1:11235'
 
 debug:
+  enabled: true
   listen: '127.0.0.1:11236'
 
 core:
@@ -20,17 +22,24 @@ core:
 
   grpc:
     listen: '127.0.0.1:11234'
-    tlsEnabled: false
+    tls:
+      enabled: false
 
-  authEnabled: false
-  auth: []
+  authEnabled: true
+  auth:
+    - driver: htpasswd
+      path: 'users.htpasswd'
   db:
-    path: './db'
+    path: 'db'
 
 controllers:
   data:
     main:
       storages:
+        root:
+          mode: passive
+          downloadable: true
+
         main:
           mode: primary
           downloadable: true
@@ -40,21 +49,29 @@ controllers:
           downloadable: false
 
     storages:
-      - id: 'main'
+      - id: 'root'
         type: 'FS'
         indexCachePeriod: '1m'
-        rootPath: './storages/main'
+        rootPath: '/'
 
       - id: 'work'
         type: 'FS'
         indexCachePeriod: '1m'
-        rootPath: './storages/work'
+        rootPath: 'storages/work'
+
+      - id: 'main'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: 'storages/main'
 
   runner:
     type: local
-    storageRoot: './storages/work'
+    storageRoot: 'storages/work'
+    secrets:
+      - map:
+          MI_LICENSE: 'abc'
 
   packageLoader:
-    packagesRoot: './packages'
+    packagesRoot: 'packages'
 
   workflows: {}

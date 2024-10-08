@@ -39,7 +39,7 @@ export type PlCoreSettings = {
   logging: PlCoreLoggingSettings;
   grpc: PlGrpcSettings;
   authEnabled: boolean;
-  auth: PlAuthSettings[];
+  auth: PlAuthDriver[];
   db: PlDbSettings;
 };
 
@@ -48,20 +48,16 @@ export type PlCoreLoggingSettings = {
   dumpResourceData: boolean;
 };
 
-export type PlAuthSettings = {
-  drivers: PlAuthDriver[];
-};
-
 export type PlDbSettings = {
   path: string;
 };
 
 export type PlAuthDriver =
   | {
-    driver: 'ldap';
-    serverUrl: string; // 'ldaps://ldap.example.com:1111'
-    defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
-  }
+      driver: 'ldap';
+      serverUrl: string; // 'ldaps://ldap.example.com:1111'
+      defaultDN: string; // 'cn=%u,ou=users,ou=users,dc=example,dc=com'
+    }
   | {
       driver: 'jwt';
       key: string;
@@ -76,12 +72,16 @@ export type PlGrpcSettings = {
   tls: PlTlsSettings;
 };
 
-export type PlTlsSettings = {
-  enable: boolean;
-  clientAuthMode?: PlTlsAuthMode;
-  certFile?: string;
-  keyFile?: string;
-};
+export type PlTlsSettings =
+  | {
+      enabled: false;
+    }
+  | {
+      enabled: true;
+      clientAuthMode: PlTlsAuthMode;
+      certFile: string;
+      keyFile: string;
+    };
 
 export type PlTlsAuthMode =
   | 'NoAuth'
@@ -94,27 +94,28 @@ export type PlControllersSettings = {
   data: PlControllerDataSettings;
   runner: PlControllerRunnerSettings;
   packageLoader: PlControllerPackageLoaderSettings;
-  workflows: PlControllerWorkflowsSettings
+  workflows: PlControllerWorkflowsSettings;
 };
 
 export type PlControllerDataSettings = {
   main: PlControllerDataMainSettings;
   storages: PlControllerDataStoragesSettings[];
-}
+};
 
 export type PlControllerDataMainSettings = {
-  storages: PlControllerDataMainStoragesSettings[];
-}
+  storages: Record<string, PlControllerDataMainStoragesSettings>;
+};
 
 export type PlControllerDataMainStoragesSettings = {
   mode: 'primary' | 'active' | 'passive';
   downloadable: boolean;
-}
+};
 
-export type PlControllerDataStoragesSettings =PlS3StorageSettings | PlFsStorageSettings;
+export type PlControllerDataStoragesSettings = PlS3StorageSettings | PlFsStorageSettings;
 
-type PlStorageID = { id: string };
-type PlCommonStorageSettings = {
+export type PlStorageID = { id: string };
+
+export type PlCommonStorageSettings = {
   indexCachePeriod: string;
 };
 
@@ -123,8 +124,8 @@ export type PlS3StorageSettings = PlStorageID &
   PlCommonStorageSettings &
   PlS3StorageTypeSettings;
 
-type PlS3StorageType = { type: 'S3' };
-type PlS3StorageTypeSettings = {
+export type PlS3StorageType = { type: 'S3' };
+export type PlS3StorageTypeSettings = {
   endpoint: string;
   presignEndpoint: string;
   region: string;
@@ -143,16 +144,8 @@ export type PlFsStorageSettings = PlStorageID &
   PlCommonStorageSettings &
   PlFsStorageTypeSettings;
 
-export function emptyFSSettings(id: string): PlFsStorageSettings {
-  return {
-    id: id,
-    type: 'FS',
-    indexCachePeriod: '0s',
-    rootPath: ''
-  };
-}
-
 type PlFsStorageType = { type: 'FS' };
+
 type PlFsStorageTypeSettings = {
   rootPath: string;
 };
@@ -160,16 +153,15 @@ type PlFsStorageTypeSettings = {
 export type PlControllerRunnerSettings = {
   type: string;
   storageRoot: string;
-  secrets: PlControllerRunnerSecretsSettings;
-}
+  secrets: PlControllerRunnerSecretsSettings[];
+};
 
 export type PlControllerRunnerSecretsSettings = {
-  map: Record<string, string>
-}
+  map: Record<string, string>;
+};
 
 export type PlControllerPackageLoaderSettings = {
   packagesRoot: string;
-}
+};
 
-export type PlControllerWorkflowsSettings = {
-}
+export type PlControllerWorkflowsSettings = {};
