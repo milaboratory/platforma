@@ -53,6 +53,7 @@ packages:
 
   - etc/ui-vue-playground
   - etc/uikit-playground
+  - etc/ui-vue-docs
 
 catalog:
   # Build
@@ -133,6 +134,8 @@ catalog:
   'vue': ^3.5.11
   'vue-tsc': ^2.1.6
   'sass': ~1.77.2
+  'vitepress': '1.4.0'
+  'highlight.js': '11.10.0'
 
   '@ag-grid-community/client-side-row-model': ^32.2.1
   '@ag-grid-community/core': ^32.2.1
