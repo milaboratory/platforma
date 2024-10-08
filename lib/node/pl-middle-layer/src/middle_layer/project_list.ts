@@ -26,10 +26,15 @@ export async function createProjectList(
   openedProjects: WatchableValue<ResourceId[]>,
   env: MiddleLayerEnvironment
 ): Promise<TreeAndComputableU<ProjectListEntry[]>> {
-  const tree = await SynchronizedTreeState.init(pl, rid, {
-    ...env.ops.defaultTreeOptions,
-    pruning: ProjectsListTreePruningFunction
-  });
+  const tree = await SynchronizedTreeState.init(
+    pl,
+    rid,
+    {
+      ...env.ops.defaultTreeOptions,
+      pruning: ProjectsListTreePruningFunction
+    },
+    env.logger
+  );
 
   const c = Computable.make((ctx) => {
     const node = ctx.accessor(tree.entry()).node();

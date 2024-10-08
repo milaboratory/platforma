@@ -1,12 +1,14 @@
 import {
   FieldData,
   isNullResourceId,
+  NullResourceId,
   OptionalResourceId,
   PlTransaction,
   ResourceId
 } from '@milaboratories/pl-client';
 import Denque from 'denque';
 import { ExtendedResourceData, PlTreeState } from './state';
+import { msToHumanReadable } from '@milaboratories/ts-helpers';
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
@@ -49,13 +51,59 @@ export function constructTreeLoadingRequest(
   return { seedResources, finalResources, pruningFunction };
 }
 
+export type TreeLoadingStat = {
+  requests: number;
+  roundtrips: number;
+  retrievedResources: number;
+  retrievedFields: number;
+  retrievedKeyValues: number;
+  retrievedResourceDataBytes: number;
+  prunnedFields: number;
+  finalResourcesSkipped: number;
+  millisSpent: number;
+};
+
+export function initialTreeLoadingStat(): TreeLoadingStat {
+  return {
+    requests: 0,
+    roundtrips: 0,
+    retrievedResources: 0,
+    retrievedFields: 0,
+    retrievedKeyValues: 0,
+    retrievedResourceDataBytes: 0,
+    prunnedFields: 0,
+    finalResourcesSkipped: 0,
+    millisSpent: 0
+  };
+}
+
+export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
+  let result = `Requests: ${stat.requests}\n`;
+  result += `Total time: ${msToHumanReadable(stat.millisSpent)}\n`;
+  result += `Roundtrips: ${stat.roundtrips}\n`;
+  result += `Resources: ${stat.retrievedResources}\n`;
+  result += `Fields: ${stat.retrievedFields}\n`;
+  result += `KV: ${stat.retrievedKeyValues}\n`;
+  result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
+  result += `Pruned fields: ${stat.prunnedFields}\n`;
+  result += `Final resources skipped: ${stat.finalResourcesSkipped}`;
+  return result;
+}
+
 /** Given the transaction (preferably read-only) and loading request, executes
  * the tree traversal algorithm, and collects fresh states of resources
  * to update the tree state. */
 export async function loadTreeState(
   tx: PlTransaction,
-  loadingRequest: TreeLoadingRequest
+  loadingRequest: TreeLoadingRequest,
+  stats?: TreeLoadingStat
 ): Promise<ExtendedResourceData[]> {
+  // saving start timestamp to add time spent in this function to the stats at the end of the method
+  const startTimestamp = Date.now();
+
+  // countind the request
+  if (stats) stats.requests++;
+
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
 
   // Main idea of using a queue here is that responses will arrive in the same order as they were
@@ -65,10 +113,20 @@ export async function loadTreeState(
 
   const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
+  // vars to calculate number of roundtrips for stats
+  let roundtripToggle: boolean = true;
+  let numberOfRoundtrips = 0;
+
   // tracking resources we already requested
   const requested = new Set<ResourceId>();
   const requestState = (rid: OptionalResourceId) => {
-    if (isNullResourceId(rid) || requested.has(rid) || finalResources.has(rid)) return;
+    if (isNullResourceId(rid) || requested.has(rid)) return;
+
+    // separate check to collect stats
+    if (finalResources.has(rid)) {
+      if (stats) stats.finalResourcesSkipped++;
+      return;
+    }
 
     // adding the id, so we will not request it's state again if somebody else
     // references the same resource
@@ -78,11 +136,20 @@ export async function loadTreeState(
     const resourceData = tx.getResourceDataIfExists(rid, true);
     const kvData = tx.listKeyValuesIfResourceExists(rid);
 
+    // counting roundrip (begin)
+    const addRT = roundtripToggle;
+    if (roundtripToggle) roundtripToggle = false;
+
     // pushing combined promise
     pending.push(
       (async () => {
-        const resource = await resourceData;
-        const kv = await kvData;
+        const [resource, kv] = await Promise.all([resourceData, kvData]);
+
+        // counting roundrip, actually incrementing counter and returning toggle back, so the next request can acquire it
+        if (addRT) {
+          numberOfRoundtrips++;
+          roundtripToggle = true;
+        }
 
         if (resource === undefined) return undefined;
 
@@ -110,9 +177,13 @@ export async function loadTreeState(
       // ignoring resources that were not found (this may happen for seed resource ids)
       continue;
 
-    // apply field pruning, if requested
-    if (pruningFunction !== undefined)
-      nextResource = { ...nextResource, fields: pruningFunction(nextResource) };
+    if (pruningFunction !== undefined) {
+      // apply field pruning, if requested
+      const fieldsAfterPruning = pruningFunction(nextResource);
+      // collecting stats
+      if (stats) stats.prunnedFields += nextResource.fields.length - fieldsAfterPruning.length;
+      nextResource = { ...nextResource, fields: fieldsAfterPruning };
+    }
 
     // continue traversal over the referenced resource
     requestState(nextResource.error);
@@ -121,8 +192,22 @@ export async function loadTreeState(
       requestState(field.error);
     }
 
+    // collecting stats
+    if (stats) {
+      stats.retrievedResources++;
+      stats.retrievedFields += nextResource.fields.length;
+      stats.retrievedKeyValues += nextResource.kv.length;
+      stats.retrievedResourceDataBytes += nextResource.data?.length ?? 0;
+    }
+
     // aggregating the state
     result.push(nextResource);
+  }
+
+  // adding the time we spent in this method to stats
+  if (stats) {
+    stats.millisSpent += Date.now() - startTimestamp;
+    stats.roundtrips += numberOfRoundtrips;
   }
 
   return result;
