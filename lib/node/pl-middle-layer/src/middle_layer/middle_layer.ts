@@ -9,7 +9,7 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
@@ -26,6 +26,7 @@ import { RetryAgent } from 'undici';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
+  readonly logger: MiLogger,
   readonly signer: Signer;
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
@@ -178,6 +179,10 @@ export class MiddleLayer {
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
 
+    if (process.env.MI_LOG_TREE_STAT)
+      ops.defaultTreeOptions.logStat =
+        process.env.MI_LOG_TREE_STAT === 'cumulative' ? 'cumulative' : 'per-request';
+
     const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
       tx.createField(projectsField, 'Dynamic');
@@ -223,6 +228,7 @@ export class MiddleLayer {
     const env: MiddleLayerEnvironment = {
       pl,
       signer: driverKit.signer,
+      logger,
       ops,
       bpPreparer,
       frontendDownloadDriver,

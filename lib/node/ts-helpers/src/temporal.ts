@@ -180,7 +180,7 @@ export function nextInfiniteRetryState(previous: InfiniteRetryState): InfiniteRe
   };
 }
 
-function msToHumanReadable(ms: number): string {
+export function msToHumanReadable(ms: number): string {
   let seconds = ms / 1000;
   let minutes = ms / (1000 * 60);
   let hours = ms / (1000 * 60 * 60);
