@@ -15,6 +15,8 @@ export * from './types';
 
 export * from './defineStore';
 
+export * from './aggrid';
+
 export * from './utils';
 
 export * from './computedResult';

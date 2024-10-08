@@ -23,7 +23,7 @@ const sum2 = computedResult(() => {
 });
 
 const sumOptional = computed(() => {
-  const { x, y } = app.outputValues;
+  const { x, y } = app.model.outputs;
 
   if (isDefined(x) && isDefined(y)) {
     return x + y;
@@ -44,19 +44,19 @@ const sumOptional = computed(() => {
     <div v-if="partial.value">(Partial) Sum: {{ partial.value.x }} + {{ partial.value.y }} = {{ partial.value.x + partial.value.y }}</div>
     <div v-else class="alert-error">Error: {{ partial.errors }}</div>
 
-    <fieldset v-if="app.outputValues.x !== undefined">
+    <fieldset v-if="app.model.outputs.x !== undefined">
       <legend>x</legend>
-      {{ app.outputValues.x }}
+      {{ app.model.outputs.x }}
     </fieldset>
 
-    <fieldset v-if="app.outputValues.y !== undefined">
+    <fieldset v-if="app.model.outputs.y !== undefined">
       <legend>y</legend>
-      {{ app.outputValues.y }}
+      {{ app.model.outputs }}
     </fieldset>
 
-    <fieldset v-if="app.outputErrors.y !== undefined" class="alert-error">
+    <fieldset v-if="app.model.outputs !== undefined" class="alert-error">
       <legend>y error:</legend>
-      {{ app.outputErrors.y }}
+      {{ app.model.outputErrors.y }}
     </fieldset>
 
     <fieldset>
@@ -71,11 +71,11 @@ const sumOptional = computed(() => {
 
     <div>sum optional: {{ sumOptional }}</div>
 
-    <div>{{ app.outputs.x }}</div>
+    <div>{{ app.model.outputs.x }}</div>
 
     <fieldset>
       <legend>Outputs</legend>
-      <div>{{ app.outputs }}</div>
+      <div>{{ app.model.outputs }}</div>
     </fieldset>
   </div>
 </template>

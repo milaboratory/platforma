@@ -1,30 +1,7 @@
 import { reactive, computed, ref, watch, unref } from 'vue';
-import type { ZodError } from 'zod';
 import type { ModelOptions, Model } from './types';
-import { deepEqual, deepClone } from '@milaboratories/helpers';
-import { isJsonEqual } from './utils';
-
-const identity = <T, V = T>(v: T): V => v as unknown as V;
-
-const ensureError = (cause: unknown) => {
-  if (cause instanceof Error) {
-    return cause;
-  }
-
-  return Error(String(cause));
-};
-
-const isZodError = (err: Error): err is ZodError => {
-  return err.name === 'ZodError';
-};
-
-const formatZodError = (err: ZodError) => {
-  const { formErrors, fieldErrors } = err.flatten();
-  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return field + ':' + errors?.join(',');
-  });
-  return formErrors.concat(_fieldErrors).join('; ');
-};
+import { deepClone } from '@milaboratories/helpers';
+import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from './utils';
 
 export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
   const validate = options.validate ?? identity;
@@ -33,22 +10,26 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
 
   const error = ref<Error | undefined>();
 
-  const local = ref<M>();
+  const local = ref<{ model: M }>();
+
+  const setSource = (v: M) => {
+    local.value = {
+      model: deepClone(v),
+    };
+  };
 
   watch(
     () => options.get(),
-    (v) => {
-      local.value = deepClone(v);
-    },
+    (v) => setSource(v),
     { immediate: true },
   );
 
   const save = () => {
-    options.onSave(validate(deepClone(local.value)));
+    options.onSave(validate(deepClone(local.value?.model)));
   };
 
   const revert = () => {
-    local.value = deepClone(options.get());
+    setSource(options.get());
     error.value = undefined;
   };
 
@@ -75,19 +56,19 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
 
   const model = computed<M>({
     get: () => {
-      return local.value as M;
+      return local.value?.model as M;
     },
     set(v) {
-      local.value = v;
+      setSource(v);
       setValue(v);
     },
   });
 
   watch(
     local,
-    (v) => {
-      if (!isJsonEqual(options.get(), v)) {
-        setValue(v as M);
+    (n, o) => {
+      if (n && n === o) {
+        setValue(n.model);
       }
     },
     { deep: true },
@@ -96,13 +77,13 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
   const valid = computed(() => !error.value);
 
   const isChanged = computed(() => {
-    return !deepEqual(options.get(), unref(local));
+    return !isJsonEqual(options.get(), unref(local)); // @TODO, can be slow
   });
 
   const errorString = computed(() => (error.value ? error.value.message : ''));
 
   return reactive({
-    model: model,
+    model,
     valid,
     isChanged,
     error,
