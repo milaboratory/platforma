@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.18
+
+### Patch Changes
+
+- 4628369: fix new sass nesting rules
+
 ## 1.2.17
 
 ### Patch Changes
