@@ -238,7 +238,8 @@ export class LLPlClient {
   }
 
   /** Closes underlying transport */
-  public close() {
+  public async close() {
     this.grpcTransport.close();
+    await this.httpDispatcher.destroy();
   }
 }
