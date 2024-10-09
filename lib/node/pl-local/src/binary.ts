@@ -2,7 +2,10 @@ import { assertNever, MiLogger } from '@milaboratories/ts-helpers';
 import { getBinary, getBinaryOptions } from './binary_download';
 
 /** Shows how the binary should be got. */
-export type LocalPlBinary = LocalPlBinaryDownload | LocalPlBinaryLocal | LocalPlBinarySource;
+export type LocalPlBinary =
+  | LocalPlBinaryDownload
+  | LocalPlBinaryLocal
+  | LocalPlBinarySource;
 
 export type LocalPlBinaryDownload = {
   readonly type: 'Download';
