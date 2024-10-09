@@ -1,5 +1,13 @@
 # @milaboratories/uikit-playground
 
+## 0.0.16
+
+### Patch Changes
+
+- 4628369: fix new sass nesting rules
+- Updated dependencies [4628369]
+  - @milaboratories/uikit@1.2.18
+
 ## 0.0.15
 
 ### Patch Changes
