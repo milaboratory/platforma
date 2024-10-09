@@ -1,5 +1,18 @@
 # @milaboratories/pl-config
 
+## 1.2.0
+
+### Minor Changes
+
+- e546f86: integration test for pl-config, pl-local and ml
+
+### Patch Changes
+
+- Updated dependencies [7a04201]
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/pl-middle-layer@1.10.44
+
 ## 1.1.0
 
 ### Minor Changes

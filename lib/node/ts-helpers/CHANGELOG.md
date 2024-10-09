@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.0.30
+
+### Patch Changes
+
+- 7a04201: export of msToHumanReadable function
+
 ## 1.0.29
 
 ### Patch Changes
