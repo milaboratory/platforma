@@ -15,7 +15,9 @@ oop := import(":oop")
 validation := import(":validation")
 constants := import(":constants")
 
-_HEAVY_QUEUE := "heavy"
+_HEAVY_QUEUE    := "heavy"
+_MEDIUM_QUEUE   := "medium"
+_LIGHT_QUEUE    := "light"
 _UI_TASKS_QUEUE := "ui-tasks"
 
 /**
@@ -148,6 +150,22 @@ builder := func() {
 		 */
 		inHeavyQueue: func() {
 			queue = _HEAVY_QUEUE
+			return self
+		},
+
+		/**
+		 * Sets the execution queue to the medium queue.
+		 */
+		inMediumQueue: func() {
+			queue = _MEDIUM_QUEUE
+			return self
+		},
+
+		/**
+		 * Sets the execution queue to the light queue.
+		 */
+		inLightQueue: func() {
+			queue = _LIGHT_QUEUE
 			return self
 		},
 
