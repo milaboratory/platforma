@@ -731,9 +731,6 @@ importers:
 
   lib/node/pl-config:
     dependencies:
-      '@milaboratories/pl-middle-layer':
-        specifier: workspace:^
-        version: link:../pl-middle-layer
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
@@ -911,9 +908,15 @@ importers:
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
+      '@milaboratories/pl-config':
+        specifier: workspace:^
+        version: link:../pl-config
       '@milaboratories/pl-drivers':
         specifier: workspace:^
         version: link:../pl-drivers
+      '@milaboratories/pl-local':
+        specifier: workspace:^
+        version: link:../pl-local
       '@milaboratories/pl-model-common':
         specifier: workspace:^
         version: link:../../model/common
