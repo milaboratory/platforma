@@ -146,7 +146,7 @@ builder := func() {
 		},
 
 		/**
-		 * Sets the execution queue to the heavy queue.
+		 * Execute command in the 'heavy' queue.
 		 */
 		inHeavyQueue: func() {
 			queue = _HEAVY_QUEUE
@@ -154,7 +154,7 @@ builder := func() {
 		},
 
 		/**
-		 * Sets the execution queue to the medium queue.
+		 * Execute command in the 'medium' queue.
 		 */
 		inMediumQueue: func() {
 			queue = _MEDIUM_QUEUE
@@ -162,7 +162,7 @@ builder := func() {
 		},
 
 		/**
-		 * Sets the execution queue to the light queue.
+		 * Execute command in the 'light' queue.
 		 */
 		inLightQueue: func() {
 			queue = _LIGHT_QUEUE
@@ -170,7 +170,7 @@ builder := func() {
 		},
 
 		/**
-		 * Sets the execution queue to the UI tasks queue.
+		 * Execute command in the 'ui-tasks' queue.
 		 */
 		inUiQueue: func() {
 			queue = _UI_TASKS_QUEUE
