@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.44
+
+### Patch Changes
+
+- 7a04201: tree stats aggregation and logging
+- Updated dependencies [7a04201]
+- Updated dependencies [89cf026]
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-tree@1.3.18
+  - @milaboratories/pl-client@2.4.19
+  - @milaboratories/pl-drivers@1.2.29
+  - @platforma-sdk/block-tools@2.3.11
+
 ## 1.10.43
 
 ### Patch Changes
