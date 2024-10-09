@@ -58,6 +58,7 @@ export type TreeLoadingStat = {
   retrievedFields: number;
   retrievedKeyValues: number;
   retrievedResourceDataBytes: number;
+  retrievedKeyValueBytes: number;
   prunnedFields: number;
   finalResourcesSkipped: number;
   millisSpent: number;
@@ -71,6 +72,7 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     retrievedFields: 0,
     retrievedKeyValues: 0,
     retrievedResourceDataBytes: 0,
+    retrievedKeyValueBytes: 0,
     prunnedFields: 0,
     finalResourcesSkipped: 0,
     millisSpent: 0
@@ -85,6 +87,7 @@ export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   result += `Fields: ${stat.retrievedFields}\n`;
   result += `KV: ${stat.retrievedKeyValues}\n`;
   result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
+  result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
   result += `Pruned fields: ${stat.prunnedFields}\n`;
   result += `Final resources skipped: ${stat.finalResourcesSkipped}`;
   return result;
@@ -198,6 +201,7 @@ export async function loadTreeState(
       stats.retrievedFields += nextResource.fields.length;
       stats.retrievedKeyValues += nextResource.kv.length;
       stats.retrievedResourceDataBytes += nextResource.data?.length ?? 0;
+      for (const kv of nextResource.kv) stats.retrievedKeyValueBytes += kv.value.length;
     }
 
     // aggregating the state

@@ -66,8 +66,8 @@ export interface PlClientConfig {
   retryJitter: number;
 }
 
-export const DEFAULT_REQUEST_TIMEOUT = 1000;
-export const DEFAULT_TX_TIMEOUT = 10_000;
+export const DEFAULT_REQUEST_TIMEOUT = 2000;
+export const DEFAULT_TX_TIMEOUT = 30_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
