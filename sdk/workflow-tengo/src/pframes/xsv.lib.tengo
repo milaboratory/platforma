@@ -80,6 +80,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	pfconv := exec.builder().
 		software(pfconvSw).
 		printErrStreamToStdout().
+		inLightQueue().
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
