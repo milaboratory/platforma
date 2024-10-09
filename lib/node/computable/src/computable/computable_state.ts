@@ -386,6 +386,7 @@ function renderSelfState<T>(
   try {
     // stable by default
     ctx.stable = true;
+    ctx.unstableMarker = undefined;
 
     // initialize ctx for the call
     ctx.beforeCall(selfWatcher);

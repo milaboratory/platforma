@@ -1,6 +1,6 @@
-# @milaboratories/pl-config
+# @milaboratories/config-local-ml-integration
 
-## 1.2.0
+## 1.1.0
 
 ### Minor Changes
 
@@ -9,17 +9,10 @@
 ### Patch Changes
 
 - Updated dependencies [7a04201]
+- Updated dependencies [e546f86]
 - Updated dependencies [7a04201]
   - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/pl-config@1.2.0
+  - @milaboratories/pl-local@1.2.0
   - @milaboratories/pl-middle-layer@1.10.44
-
-## 1.1.0
-
-### Minor Changes
-
-- 5f57a27: pl-config initial
-
-### Patch Changes
-
-- Updated dependencies [23215d9]
-  - @milaboratories/pl-middle-layer@1.10.43
+  - @milaboratories/pl-client@2.4.19

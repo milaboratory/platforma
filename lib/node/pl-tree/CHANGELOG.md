@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.3.18
+
+### Patch Changes
+
+- 7a04201: tree stats aggregation and logging
+- Updated dependencies [7a04201]
+- Updated dependencies [89cf026]
+  - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-client@2.4.19
+
 ## 1.3.17
 
 ### Patch Changes
