@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.5.40
+
+### Patch Changes
+
+- 13013ee: PlAdDataTable auto-join label-columns
+- Updated dependencies [13013ee]
+  - @milaboratories/pl-model-common@1.3.14
+
 ## 1.2.32
 
 ### Patch Changes

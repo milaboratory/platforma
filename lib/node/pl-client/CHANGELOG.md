@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.4.20
+
+### Patch Changes
+
+- 36736de: destroy http dispatcher in close method and await termination
+
 ## 2.4.19
 
 ### Patch Changes
