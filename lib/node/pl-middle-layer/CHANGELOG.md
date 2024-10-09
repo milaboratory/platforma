@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.45
+
+### Patch Changes
+
+- 36736de: Close pl client and retry http dispacher in ml close routine
+- Updated dependencies [13013ee]
+- Updated dependencies [36736de]
+  - @milaboratories/pl-model-common@1.3.14
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/pl-client@2.4.20
+  - @milaboratories/pl-model-middle-layer@1.4.4
+  - @milaboratories/pl-drivers@1.2.30
+  - @milaboratories/pl-tree@1.3.19
+  - @platforma-sdk/block-tools@2.3.12
+
 ## 1.10.44
 
 ### Patch Changes

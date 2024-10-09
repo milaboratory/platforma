@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.40
+
+### Patch Changes
+
+- 13013ee: PlAdDataTable auto-join label-columns
+- Updated dependencies [13013ee]
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/uikit@1.2.17
+
 ## 1.5.38
 
 ### Patch Changes
