@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.4.21
+
+### Patch Changes
+
+- a5562e9: Added KeepAlive time
+
 ## 2.4.20
 
 ### Patch Changes
