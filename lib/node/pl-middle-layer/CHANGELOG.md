@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.49
+
+### Patch Changes
+
+- Updated dependencies [8c0d6fe]
+- Updated dependencies [d6edf35]
+  - @milaboratories/pl-config@1.2.3
+  - @milaboratories/pl-local@1.2.3
+  - @milaboratories/pl-model-common@1.3.14
+  - @milaboratories/pl-model-middle-layer@1.4.4
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-client@2.4.20
+  - @milaboratories/pl-drivers@1.2.30
+  - @milaboratories/pl-tree@1.3.19
+  - @milaboratories/ts-helpers@1.0.30
+  - @platforma-sdk/model@1.5.40
+  - @platforma-sdk/block-tools@2.3.12
+
 ## 1.10.48
 
 ### Patch Changes
