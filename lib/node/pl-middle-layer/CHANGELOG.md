@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.11.0
+
+### Minor Changes
+
+- a5562e9: Significant performance enhancement for project tree synchronization, prunning of tree and final resource detection
+
+### Patch Changes
+
+- Updated dependencies [a5562e9]
+- Updated dependencies [a5562e9]
+  - @milaboratories/pl-tree@1.4.0
+  - @milaboratories/pl-client@2.4.21
+  - @milaboratories/pl-drivers@1.2.31
+
 ## 1.10.49
 
 ### Patch Changes

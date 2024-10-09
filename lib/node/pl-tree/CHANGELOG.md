@@ -1,5 +1,16 @@
 # @milaboratories/pl-tree
 
+## 1.4.0
+
+### Minor Changes
+
+- a5562e9: Multiple fixes and enhancements for tree pruning and final resource detection lambdas, additional synced tree stats
+
+### Patch Changes
+
+- Updated dependencies [a5562e9]
+  - @milaboratories/pl-client@2.4.21
+
 ## 1.3.19
 
 ### Patch Changes
