@@ -27,6 +27,8 @@ core:
 
   authEnabled: true
   auth:
+    - driver: jwt
+      key: defaultStr
     - driver: htpasswd
       path: 'users.htpasswd'
   db:

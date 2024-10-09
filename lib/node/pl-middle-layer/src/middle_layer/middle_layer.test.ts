@@ -585,29 +585,25 @@ test('should create download-file block, render it and gets outputs from its con
     console.dir({ block3StableFrontend }, { depth: 5 });
 
     const block3StateComputable = prj.getBlockState(block3Id);
-    const block3StableState = await block3StateComputable.getFullValue();
+
+    const block3StableState = await block3StateComputable.awaitStableFullValue();
 
     console.dir(block3StableState, { depth: 5 });
 
-    if (
-      block3StableState.type == 'ok' &&
-      (block3StableState.value.outputs!['content'] as any).value != undefined
-    ) {
-      expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
+    expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
+    const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any)
+                        .value as LocalBlobHandleAndSize;
+    const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any)
+                         .value as RemoteBlobHandleAndSize;
 
-      const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any)
-        .value as LocalBlobHandleAndSize;
-      const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any)
-        .value as RemoteBlobHandleAndSize;
+    expect(
+      Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
+    ).toEqual('42\n');
 
-      expect(
-        Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
-      ).toEqual('42\n');
+    expect(
+      Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
+    ).toEqual('42\n');
 
-      expect(
-        Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
-      ).toEqual('42\n');
-    }
   });
 });
 
