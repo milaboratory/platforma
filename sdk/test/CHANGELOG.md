@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.5.40
+
+### Patch Changes
+
+- Updated dependencies [36736de]
+- Updated dependencies [13013ee]
+- Updated dependencies [36736de]
+  - @milaboratories/pl-middle-layer@1.10.45
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/pl-client@2.4.20
+  - @milaboratories/pl-tree@1.3.19
+
 ## 1.5.39
 
 ### Patch Changes

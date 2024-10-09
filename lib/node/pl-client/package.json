@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.4.19",
+  "version": "2.4.20",
   "description": "New TS/JS client for Platform API",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
