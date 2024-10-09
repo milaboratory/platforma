@@ -348,7 +348,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has input field with specified name
+		 * Whether resource has input field with specified name
 		 *
 		 * @param name field name
 		 */
@@ -357,7 +357,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has output field with specified name
+		 * Whether resource has output field with specified name
 		 *
 		 * @param name field name
 		 */
@@ -366,7 +366,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has any field with specified name
+		 * Whether resource has any field with specified name
 		 *
 		 * @param name field name
 		 */
