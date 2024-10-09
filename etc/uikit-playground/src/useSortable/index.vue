@@ -77,10 +77,10 @@ useSortable(list2Ref, {
       min-width: 240px;
       border: 1px solid var(--txt-01);
       background-color: #ddd;
+      user-select: none;
       button {
         margin-left: auto;
       }
-      user-select: none;
     }
   }
 }

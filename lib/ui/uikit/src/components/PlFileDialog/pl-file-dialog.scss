@@ -114,11 +114,11 @@
   .ls-body {
     padding: 12px;
     height: 366px;
-    @include scrollbar(true);
     overflow: auto;
     user-select: none;
     display: flex;
     flex-direction: column;
+    @include scrollbar(true);
     > div {
       font-family: var(--font-family-monospace);
       color: var(--txt-01);

@@ -2,13 +2,16 @@
 
 .ui-btn-ghost {
   @include base-btn;
-  gap: 10px;
-  background: transparent;
-  border: none;
-  width: fit-content;
 
-  --color-text: var(--txt-01);
-  --color-btn-hover: var(--btn-sec-hover-grey);
+  & {
+    gap: 10px;
+    background: transparent;
+    border: none;
+    width: fit-content;
+  
+    --color-text: var(--txt-01);
+    --color-btn-hover: var(--btn-sec-hover-grey);
+  }
 
   [data-theme="dark"] & {
     &:hover {

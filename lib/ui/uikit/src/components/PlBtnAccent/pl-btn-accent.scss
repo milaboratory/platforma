@@ -3,11 +3,13 @@
 .ui-btn-accent {
   @include base-btn;
 
-  --color-btn-background: var(--color-accent-default);
-  --color-btn-hover: var(--color-accent-hover);
+  & {
+    --color-btn-background: var(--color-accent-default);
+    --color-btn-hover: var(--color-accent-hover);
 
-  background-color: var(--color-btn-background);
-  border: none;
+    background-color: var(--color-btn-background);
+    border: none;
+  }
 
   &.large {
     --drop-shadow: 3px 3px 0px #000000;

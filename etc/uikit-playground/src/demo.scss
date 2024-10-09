@@ -31,13 +31,13 @@ main {
     grid-template-columns: 1fr 1fr;
     height: 100%;
 
-    >div:first-child {
-      grid-column: 1 / span 2;
-    }
-
     border-radius: 6px;
     resize: both;
     overflow: auto;
+
+    >div:first-child {
+      grid-column: 1 / span 2;
+    }
 
     &__header {
       background-color: #0D0D0F;
