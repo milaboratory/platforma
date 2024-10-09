@@ -76,7 +76,14 @@ export class LLPlClient {
     }
 
     grpcInterceptors.push(this.createErrorInterceptor());
-
+    
+    //
+    // Leaving it here for now
+    // https://github.com/grpc/grpc-node/issues/2788
+    //
+    // We should implement message pooling algorithm to overcome hardcoded NO_DELAY behaviour
+    // of HTTP/2 and allow our small messages to batch together.
+    //
     const grpcOptions: GrpcOptions = {
       host: this.conf.hostAndPort,
       timeout: this.conf.defaultRequestTimeout,
@@ -84,7 +91,7 @@ export class LLPlClient {
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
       clientOptions: {
-        'grpc.use_local_subchannel_pool': 1,
+        'grpc.keepalive_time_ms': 3000,
         interceptors: grpcInterceptors
       }
     };

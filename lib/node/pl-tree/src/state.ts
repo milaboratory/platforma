@@ -29,6 +29,13 @@ export class TreeStateUpdateError extends Error {
   }
 }
 
+/** Interface of PlTreeResource exposed to outer world, like {@link FinalPredicate}. */
+export interface PlTreeFieldI {
+  readonly type: FieldType;
+  readonly value: OptionalResourceId;
+  readonly error: OptionalResourceId;
+}
+
 class PlTreeField {
   readonly change = new ChangeSource();
 
@@ -48,6 +55,7 @@ const decoder = new TextDecoder();
 /** Interface of PlTreeResource exposed to outer world, like {@link FinalPredicate}. */
 export interface PlTreeResourceI extends BasicResourceData {
   readonly final: boolean;
+  readonly fields: Map<string, PlTreeFieldI>;
 }
 
 /** Predicate of resource state used to determine if it's state is considered to be final,
@@ -604,6 +612,9 @@ export class PlTreeState {
 
         // adding kv
         for (const kv of rd.kv) resource.kv.set(kv.key, kv.value);
+
+        // checking that resource is final, and if so, marking it
+        if (this.isFinalPredicate(resource)) resource.markFinal();
 
         // adding the resource to the heap
         this.resources.set(resource.id, resource);

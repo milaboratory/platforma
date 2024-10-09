@@ -213,7 +213,14 @@ export class SynchronizedTreeState {
     logger?: MiLogger
   ) {
     const tree = new SynchronizedTreeState(pl, root, ops, logger);
-    await tree.refresh();
+
+    let stat = ops.logStat ? initialTreeLoadingStat() : undefined;
+
+    await tree.refresh(stat);
+
+    // logging stats if we were asked to (even if error occured)
+    if (stat && logger) logger.info(`Tree stat (initial load): ${JSON.stringify(stat)}`);
+
     return tree;
   }
 }
