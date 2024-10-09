@@ -1,5 +1,13 @@
 # @milaboratories/computable
 
+## 2.1.12
+
+### Patch Changes
+
+- 89cf026: fix unstable marker reset in computed value recalcualtion
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+
 ## 2.1.11
 
 ### Patch Changes
