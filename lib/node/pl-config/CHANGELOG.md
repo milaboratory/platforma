@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.2.2
+
+### Patch Changes
+
+- pl-config: remove ml dep, add more auths
+
 ## 1.2.1
 
 ### Patch Changes
