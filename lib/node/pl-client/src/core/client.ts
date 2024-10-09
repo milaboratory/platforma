@@ -284,8 +284,8 @@ export class PlClient {
   }
 
   /** Closes underlying transport */
-  public close() {
-    this.ll.close();
+  public async close() {
+    await this.ll.close();
   }
 
   public static async init(
