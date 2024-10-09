@@ -1,4 +1,4 @@
-import { PTableRecordFilter, PTableSorting } from '@milaboratories/pl-model-common';
+import { JoinEntry, PColumnIdAndSpec, PTableRecordFilter, PTableSorting } from '@milaboratories/pl-model-common';
 
 /** Data table state */
 export type PlDataTableGridState = {
@@ -26,6 +26,8 @@ export type PlDataTableGridState = {
  * Params used to get p-table handle from the driver
  */
 export type PTableParams = {
+  /** For sourceType: 'pframe' the join is original one, enriched with label columns */
+  join?: JoinEntry<PColumnIdAndSpec>;
   sorting?: PTableSorting[];
   filters?: PTableRecordFilter[];
 };

@@ -50,6 +50,8 @@
     "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "canonicalize": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-plugin-prettier": "catalog:",
