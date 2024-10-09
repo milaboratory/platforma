@@ -37,10 +37,7 @@ test(
       },
       spawnOptions: {},
       closeOld: true,
-      restartMode: {
-        type: 'hook',
-        hook: (pl: Pl) => pl.start()
-      }
+      onCloseAndErrorNoStop: async (pl: Pl) => await pl.start()
     }
     const plLocal = await platformaInit(logger, plOpts);
 

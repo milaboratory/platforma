@@ -6,7 +6,7 @@ import {
   processRun
 } from './process';
 import { getBinaryPath, LocalPlBinary } from './binary';
-import { MiLogger, notEmpty, sleep } from '@milaboratories/ts-helpers';
+import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { getConfigPath, writeConfig } from './config';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
@@ -29,7 +29,10 @@ export class Pl {
     private readonly workingDir: string,
     private readonly startOptions: ProcessOptions,
     private readonly initialStartHistory: Trace,
-    private readonly restartMode: LocalPlRestart
+    private readonly onClose?: (pl: Pl) => Promise<void>,
+    private readonly onError?: (pl: Pl) => Promise<void>,
+    private readonly onCloseAndError?: (pl: Pl) => Promise<void>,
+    private readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>,
   ) {}
 
   async start() {
@@ -37,13 +40,27 @@ export class Pl {
       const instance = processRun(this.logger, this.startOptions);
       instance.on('error', (e: any) => {
         this.logger.error(
-          `error ${e}, while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`
+          `error '${e}', while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`
         );
-        this.restart();
+
+        // keep in mind there are no awaits here, it will be asynchronous
+        if (this.onError !== undefined)
+          this.onError(this);
+        if (this.onCloseAndError !== undefined)
+          this.onCloseAndError(this);
+        if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
+          this.onCloseAndErrorNoStop(this);
       });
       instance.on('close', () => {
         this.logger.warn(`platforma was closed, started opts: ${JSON.stringify(this.debugInfo())}`);
-        this.restart();
+
+        // keep in mind there are no awaits here, it will be asynchronous
+        if (this.onClose !== undefined)
+          this.onClose(this);
+        if (this.onCloseAndError !== undefined)
+          this.onCloseAndError(this);
+        if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
+          this.onCloseAndErrorNoStop(this);
       });
 
       trace('started', true);
@@ -57,10 +74,6 @@ export class Pl {
       this.pid = instance.pid;
       this.lastRunHistory = t;
     });
-  }
-
-  private restart() {
-    if (this.restartMode.type == 'hook' && !this.wasStopped) this.restartMode.hook(this);
   }
 
   stop() {
@@ -82,7 +95,8 @@ export class Pl {
       nRuns: this.nRuns,
       pid: this.pid,
       workingDir: this.workingDir,
-      initialStartHistory: this.initialStartHistory
+      initialStartHistory: this.initialStartHistory,
+      wasStopped: this.wasStopped,
     };
   }
 }
@@ -102,21 +116,11 @@ export type LocalPlOptions = {
    * we can check if it's still running and then stop it before starting a new one.
    */
   readonly closeOld: boolean;
-  /** What should we do on closing or if the process exit with error */
-  readonly restartMode: LocalPlRestart;
-};
 
-export type LocalPlRestart = LocalPlRestartSilent | LocalPlRestartHook;
-
-/** Do nothing if the error happened or a process exited. */
-export type LocalPlRestartSilent = {
-  type: 'silent';
-};
-
-/** Run a hook if the error happened or a process exited. */
-export type LocalPlRestartHook = {
-  type: 'hook';
-  hook(pl: Pl): void;
+  readonly onClose?: (pl: Pl) => Promise<void>;
+  readonly onError?: (pl: Pl) => Promise<void>;
+  readonly onCloseAndError?: (pl: Pl) => Promise<void>;
+  readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>;
 };
 
 /**
@@ -151,7 +155,7 @@ export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Pro
       cwd: processOpts.opts.cwd
     });
 
-    const pl = new Pl(logger, opts.workingDir, processOpts, t, opts.restartMode);
+    const pl = new Pl(logger, opts.workingDir, processOpts, t, opts.onClose, opts.onError, opts.onCloseAndError, opts.onCloseAndErrorNoStop);
     await pl.start();
 
     return pl;
