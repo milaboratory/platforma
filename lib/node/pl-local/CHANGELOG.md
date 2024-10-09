@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 1.2.3
+
+### Patch Changes
+
+- d6edf35: add do-pack
+  - @milaboratories/ts-helpers@1.0.30
+
 ## 1.2.2
 
 ### Patch Changes
