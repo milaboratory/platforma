@@ -28,7 +28,6 @@ test(
         stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
       },
       closeOld: false,
-      restartMode: { type: 'silent' }
     };
 
     const pl = await platformaInit(logger, opts);
@@ -61,7 +60,6 @@ test(
       },
       spawnOptions: {},
       closeOld: true,
-      restartMode: { type: 'silent' }
     };
 
     const oldPl = await platformaInit(logger, options);
@@ -98,12 +96,7 @@ test(
       },
       spawnOptions: {},
       closeOld: false,
-      restartMode: {
-        type: 'hook',
-        hook: async (pl) => {
-          await pl.start();
-        }
-      }
+      onCloseAndErrorNoStop: async (pl) => await pl.start()
     });
     await sleep(1000);
 
