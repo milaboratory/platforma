@@ -96,7 +96,7 @@ export async function initDriverKit(
 
 function checkStorageNamesDoNotIntersect(logger: MiLogger, ops: DriverKitOps) {
   if (ops.localStorageNameToPath.local != os.homedir())
-    logger.warn(`'local' storage with homedir was overwrote: ${ops.localStorageNameToPath.local}`);
+    logger.info(`'local' storage with homedir was overwrote: ${ops.localStorageNameToPath.local}`);
 
   const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
   const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>

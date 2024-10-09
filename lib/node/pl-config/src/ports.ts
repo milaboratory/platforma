@@ -1,4 +1,5 @@
 import { assertNever } from '@milaboratories/ts-helpers';
+import net, { AddressInfo } from "net"
 
 export type Ports = {
   grpc: number;
@@ -38,12 +39,30 @@ export async function getPorts(opts: PlConfigPorts): Promise<Ports> {
     case 'custom':
       return opts.ports;
     case 'pickFree':
-      throw new Error('todo: implement');
+      return await getFreePorts(opts);
     case 'random':
       return getRandomPorts(opts);
     default:
       assertNever(t);
   }
+}
+
+async function getFreePorts(opts: PlConfigPortsPickFree): Promise<Ports> {
+  return {
+    grpc: await getFreePort(),
+    monitoring: await getFreePort(),
+    debug: await getFreePort()
+  }
+}
+
+async function getFreePort(): Promise<number> {
+  return new Promise( res => {
+    const srv = net.createServer();
+    srv.listen(0, () => {
+      const port = (srv.address() as AddressInfo).port
+      srv.close((err) => res(port))
+    });
+  })
 }
 
 function getRandomPorts(opts: PlConfigPortsRandom): Ports {

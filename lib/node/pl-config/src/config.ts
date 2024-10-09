@@ -2,7 +2,6 @@ import { MiLogger } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
-import { MiddleLayerOpsConstructor } from '@milaboratories/pl-middle-layer';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
 import { PlConfig, PlLogLevel } from './types';
 import {
@@ -12,7 +11,7 @@ import {
   licenseForConfig,
   PlLicenseMode
 } from './license';
-import { createHtpasswdFile } from './auth';
+import { createHtpasswdFile, getDefaultAuthMethods, randomStr } from './auth';
 import { createDefaultLocalStorages, StoragesSettings } from './storages';
 import { getPlVersion } from './package';
 import { createDefaultPackageSettings } from './packageloader';
@@ -40,14 +39,26 @@ export type PlLocalConfigs = {
   workingDir: string;
   /** Configuration for a local platforma. */
   plLocal: string;
-  /** Configuration for middle layer. */
-  ml: MiddleLayerOpsConstructor;
+  /** Minimal configuration for middle layer.
+   * It is duck typed because of circular dependencies
+   * between pl-middle-layer and pl-config.
+   * Please let me know if you know a better way to solve this. */
+  ml: MLConfig;
   /** Configuration for pl-client. */
   clientAddr: string;
   user: string;
   password: string;
   /** Version of the local platforma. */
   plVersion: string;
+};
+
+export type MLConfig = {
+  logger: MiLogger;
+  localSecret: string;
+  blobDownloadPath: string;
+  frontendDownloadPath: string;
+  platformLocalStorageNameToPath: Record<string, string>;
+  localStorageNameToPath: Record<string, string>;
 };
 
 export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlLocalConfigs> {
@@ -93,10 +104,11 @@ async function createDefaultPlLocalConfig(
 ): Promise<string> {
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
+  const jwtKey = 'defaultStr';
 
   const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
 
-  let config = getPlConfig(opts, ports, license, htpasswdAuth, packageLoaderPath, storages);
+  let config = getPlConfig(opts, ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
   if (opts.extraPlConfig) config = opts.extraPlConfig(config);
 
@@ -108,6 +120,7 @@ function getPlConfig(
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,
+  jwtKey: string,
   packageLoaderPath: string,
   storages: StoragesSettings
 ): PlConfig {
@@ -138,12 +151,7 @@ function getPlConfig(
         tls: { enabled: false }
       },
       authEnabled: true,
-      auth: [
-        {
-          driver: 'htpasswd',
-          path: htpasswdAuth
-        }
-      ],
+      auth: getDefaultAuthMethods(htpasswdAuth, jwtKey),
       db: { path: dbPath }
     },
     controllers: {

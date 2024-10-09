@@ -45,7 +45,6 @@
   "dependencies": {
     "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
-    "@milaboratories/pl-middle-layer": "workspace:^",
     "yaml": "catalog:",
     "zod": "catalog:"
   }
