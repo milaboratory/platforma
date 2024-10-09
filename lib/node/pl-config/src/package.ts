@@ -1,11 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
+declare const PL_VERSION: string;
 
-async function getPackageJson() {
-  const packageJson = await fs.readFile(path.join(__dirname, '..', 'package.json'));
-  return JSON.parse(packageJson.toString());
-}
-
-export async function getPlVersion(): Promise<string> {
-  return (await getPackageJson())['pl-version'];
+export function getPlVersion(): string {
+  return PL_VERSION;
 }

@@ -77,7 +77,7 @@ export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<
 
   return {
     workingDir: opts.workingDir,
-    plVersion: await getPlVersion(),
+    plVersion: getPlVersion(),
     clientAddr: ports.grpc,
     user,
     password,
