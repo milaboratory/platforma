@@ -16,7 +16,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",
