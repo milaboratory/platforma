@@ -8,11 +8,38 @@ export const PValueStringNA = null;
 export const PValueBytesNA = null;
 
 export type PValueInt = number;
-export type PValueLong = number; // use bigint only if extra integer precision is needed
+export type PValueLong = number | bigint; // use bigint only if extra integer precision is needed
 export type PValueFloat = number;
 export type PValueDouble = number;
 export type PValueString = string | null;
 export type PValueBytes = Uint8Array | null;
+
+export type PValue =
+  | PValueInt
+  | PValueLong
+  | PValueFloat
+  | PValueDouble
+  | PValueString
+  | PValueBytes;
+
+export function isValueNA(value: unknown, valueType: ValueType): boolean {
+  switch (valueType) {
+    case 'Int':
+      return value === PValueIntNA;
+    case 'Long':
+      return value === Number(PValueLongNA) || value === PValueLongNA;
+    case 'Float':
+      return value === PValueFloatNA;
+    case 'Double':
+      return value === PValueDoubleNA;
+    case 'String':
+      return value === PValueStringNA;
+    case 'Bytes':
+      return value === PValueBytesNA;
+    default:
+      throw Error(`unsupported data type: ${valueType satisfies never}`);
+  }
+}
 
 export type PVectorDataInt = Int32Array;
 export type PVectorDataLong = BigInt64Array;
@@ -41,11 +68,16 @@ export interface PTableVector {
 
   /**
    * Encoded bit array marking some elements of this vector as absent,
-   *
-   * Encoding described here:
-   * https://gist.github.com/vadimpiven/45f8279d84f47b9857df845126694c39
+   * call {@link isValueAbsent} to read the data.
    * */
   readonly absent: Uint8Array;
+}
+
+/** Used to read bit array with value absence information */
+export function isValueAbsent(absent: Uint8Array, index: number): boolean {
+  const chunkIndex = Math.floor(index / 8);
+  const mask = 1 << (7 - (index % 8));
+  return (absent[chunkIndex] & mask) > 0;
 }
 
 /** Used in requests to partially retrieve table's data */
