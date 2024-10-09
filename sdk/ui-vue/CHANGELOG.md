@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.42
+
+### Patch Changes
+
+- 4628369: fix new sass nesting rules
+- Updated dependencies [4628369]
+  - @milaboratories/uikit@1.2.18
+
 ## 1.5.40
 
 ### Patch Changes
