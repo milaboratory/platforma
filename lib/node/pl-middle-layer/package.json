@@ -43,7 +43,9 @@
     "undici": "catalog:",
     "utility-types": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@milaboratories/pl-config": "workspace:^",
+    "@milaboratories/pl-local": "workspace:^"
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",

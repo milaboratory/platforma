@@ -49,6 +49,7 @@ export class Pl {
       trace('started', true);
 
       const pidFile = trace('pidFile', filePid(this.workingDir));
+      trace('pid', instance.pid!);
       trace('pidWritten', await writePid(pidFile, instance.pid!));
 
       this.nRuns++;
