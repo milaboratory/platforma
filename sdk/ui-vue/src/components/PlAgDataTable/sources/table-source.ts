@@ -10,7 +10,13 @@ import {
   type PColumnSpec,
   getAxesId,
   isValueNA,
-  isValueAbsent
+  isValueAbsent,
+  PFrameHandle,
+  AxisId,
+  PColumnIdAndSpec,
+  JoinEntry,
+  mapJoinEntry,
+  PObjectId
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
@@ -90,6 +96,144 @@ function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): str
     default:
       throw Error(`unsupported data type: ${valueType satisfies never}`);
   }
+};
+
+function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec[] {
+  const columns: PColumnIdAndSpec[] = [];
+  mapJoinEntry(join, (idAndSpec) => {
+    columns.push(idAndSpec);
+    return idAndSpec;
+  });
+  return columns;
+}
+
+async function getLabelColumns(
+  pfDriver: PFrameDriver,
+  pFrame: PFrameHandle,
+  idsAndSpecs: PColumnIdAndSpec[]
+): Promise<PColumnIdAndSpec[]> {
+  if (!idsAndSpecs.length) return [];
+
+  const response = await pfDriver.findColumns(pFrame, {
+    columnFilter: {
+      name: ['pl7.app/label']
+    },
+    compatibleWith: lodash.uniqWith(
+      idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(),
+      lodash.isEqual
+    ),
+    strictlyCompatible: true
+  });
+  return response.hits.filter((idAndSpec) => idAndSpec.spec.axesSpec.length === 1);
+}
+
+export async function enrichJoinWithLabelColumns(
+  pfDriver: PFrameDriver,
+  pFrame: PFrameHandle,
+  join: JoinEntry<PColumnIdAndSpec>
+): Promise<JoinEntry<PColumnIdAndSpec>> {
+  const columns = getColumnsFromJoin(join);
+  const labelColumns = await getLabelColumns(pfDriver, pFrame, columns);
+  const missingLabelColumns = labelColumns.filter((column) => !lodash.find(columns, (c) => column.columnId === c.columnId));
+  if (missingLabelColumns.length === 0) return join;
+  return {
+    type: 'outer',
+    primary: join,
+    secondary: missingLabelColumns.map((column) => ({
+      type: 'column',
+      column,
+    }))
+  }
+}
+
+export async function makeSheets(
+  pfDriver: PFrameDriver,
+  pFrameHandle: PFrameHandle,
+  sheetAxes: AxisId[],
+  join: JoinEntry<PColumnIdAndSpec>
+): Promise<PlDataTableSheet[]> {
+  const axes = sheetAxes.filter((spec) => spec.type !== 'Bytes');
+
+  const columns = getColumnsFromJoin(join);
+
+  const mapping: [number, number][][] = axes.map((_) => []);
+  const labelCol: (PObjectId | null)[] = axes.map((_) => null);
+  for (let i = 0; i < columns.length; ++i) {
+    const axesId = getAxesId(columns[i].spec.axesSpec);
+    for (let j = 0; j < axesId.length; ++j) {
+      const k = lodash.findIndex(axes, (axis) => lodash.isEqual(axis, axesId[j]));
+      if (k === -1 || labelCol[k]) continue;
+
+      if (axesId.length === 1 && columns[i].spec.name === 'pl7.app/label') {
+        mapping[k] = [[i, j]];
+        labelCol[k] = columns[i].columnId;
+      } else {
+        mapping[k].push([i, j]);
+      }
+    }
+  }
+
+  for (let i = axes.length - 1; i >= 0; --i) {
+    if (!mapping[i].length) {
+      labelCol.splice(i, 1);
+      mapping.splice(i, 1);
+      axes.splice(i, 1);
+    }
+  }
+
+  const limit = 100;
+  const possibleValues: Set<string | number>[] = axes.map((_) => new Set());
+
+  loop1: for (let i = axes.length - 1; i >= 0; --i) {
+    for (const [column, _] of mapping[i]) {
+      const response = await pfDriver.getUniqueValues(pFrameHandle, {
+        columnId: columns[column].columnId,
+        ...(!labelCol[i] && { axis: lodash.cloneDeep(axes[i]) }),
+        filters: [],
+        limit
+      });
+      if (response.overflow) {
+        labelCol.splice(i, 1);
+        mapping.splice(i, 1);
+        axes.splice(i, 1);
+        continue loop1;
+      }
+
+      const valueType = response.values.type;
+      for (const value of response.values.data) {
+        if (isValueNA(value, valueType) || value === null) continue;
+        possibleValues[i].add(toDisplayValue(value, valueType));
+
+        if (possibleValues[i].size === limit) {
+          labelCol.splice(i, 1);
+          mapping.splice(i, 1);
+          axes.splice(i, 1);
+          continue loop1;
+        }
+      }
+    }
+
+    if (!possibleValues[i].size) {
+      labelCol.splice(i, 1);
+      mapping.splice(i, 1);
+      axes.splice(i, 1);
+      continue loop1;
+    }
+  }
+
+  return axes.map((axis, i) => {
+    const options = [...possibleValues[i]].map((value) => ({
+      value: value,
+      text: value.toString()
+    }));
+    const defaultValue = options[0].value;
+    return {
+      axis: lodash.cloneDeep(axis),
+      ...(labelCol[i] && { column: labelCol[i] }),
+      options,
+      defaultValue
+    } as PlDataTableSheet;
+  });
 }
 
 /**

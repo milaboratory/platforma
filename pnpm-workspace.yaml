@@ -133,6 +133,7 @@ catalog:
   # UI
 
   'vue': ^3.5.11
+  '@vueuse/core': ^11.1.0
   'vue-tsc': ^2.1.6
   'sass': ~1.77.8
 
@@ -176,5 +177,5 @@ catalog:
 
   # To remove
 
-  'lodash': '4.17.21'
-  '@types/lodash': '^4.17.10'
+  'lodash': ^4.17.21
+  '@types/lodash': ^4.17.10
