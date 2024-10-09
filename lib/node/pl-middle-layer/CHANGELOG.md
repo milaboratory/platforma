@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.10.46
+
+### Patch Changes
+
+- pl-config: remove ml dep, add more auths
+- Updated dependencies
+  - @milaboratories/pl-config@1.2.2
+  - @milaboratories/pl-local@1.2.1
+
 ## 1.10.45
 
 ### Patch Changes
