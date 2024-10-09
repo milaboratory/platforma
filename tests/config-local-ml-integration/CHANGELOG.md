@@ -1,5 +1,14 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.1.3
+
+### Patch Changes
+
+- 8dae1d6: remote restart-hooks, add onClose, onError etc
+- Updated dependencies [8dae1d6]
+  - @milaboratories/pl-local@1.2.2
+  - @milaboratories/pl-middle-layer@1.10.47
+
 ## 1.1.2
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.3.0
+
+### Minor Changes
+
+- 76f51e5: More execution queues available (heavy, medium, light, ui-tasks)
+
 ## 1.2.11
 
 ### Patch Changes

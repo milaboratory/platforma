@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.2
+
+### Patch Changes
+
+- 8dae1d6: remote restart-hooks, add onClose, onError etc
+
 ## 1.2.1
 
 ### Patch Changes

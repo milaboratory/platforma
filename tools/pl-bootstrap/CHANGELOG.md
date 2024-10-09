@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.4.0
+
+### Minor Changes
+
+- b4261a7: Release pl 1.14.0 to bootstrap
+
 ## 2.2.0
 
 ### Minor Changes
