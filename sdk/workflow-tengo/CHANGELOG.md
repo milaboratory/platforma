@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.4.0
+
+### Minor Changes
+
+- 4982844: Use light queue for pfconv.
+
 ## 1.3.0
 
 ### Minor Changes
