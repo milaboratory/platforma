@@ -1387,6 +1387,40 @@ importers:
         specifier: 'catalog:'
         version: 2.1.2(@types/node@20.16.5)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
 
+  tests/config-local-ml-integration:
+    dependencies:
+      '@milaboratories/pl-client':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-client
+      '@milaboratories/pl-config':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-config
+      '@milaboratories/pl-local':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-local
+      '@milaboratories/pl-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../../lib/node/ts-helpers
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../lib/util/build-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.5
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.8(@types/node@20.16.5)(sass@1.77.2)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.2(@types/node@20.16.5)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.2)
+
   tests/helper:
     dependencies:
       '@milaboratories/helpers':

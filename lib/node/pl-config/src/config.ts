@@ -5,45 +5,34 @@ import yaml from 'yaml';
 import { MiddleLayerOpsConstructor } from '@milaboratories/pl-middle-layer';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
 import { PlConfig, PlLogLevel } from './types';
-import { getLicense, licenseEnvsForMixcr, licenseForConfig, PlLicenseMode } from './license';
+import {
+  getLicense,
+  License,
+  licenseEnvsForMixcr,
+  licenseForConfig,
+  PlLicenseMode
+} from './license';
 import { createHtpasswdFile } from './auth';
 import { createDefaultLocalStorages, StoragesSettings } from './storages';
 import { getPlVersion } from './package';
-
-export const configLocalYaml = 'config-local.yaml';
-
-export function getConfigPath(dir: string) {
-  return path.join(dir, configLocalYaml);
-}
-
-export function parseConfig(config: string) {
-  return yaml.parse(config);
-}
-
-export function stringifyConfig(config: any) {
-  return yaml.stringify(config);
-}
-
-export async function readConfig(configPath: string) {
-  return (await fs.readFile(configPath)).toString();
-}
-
-export async function writeConfig(logger: MiLogger, configPath: string, config: string) {
-  logger.info(`writing configuration '${configPath}'...`);
-  await fs.writeFile(configPath, config);
-}
+import { createDefaultPackageSettings } from './packageloader';
 
 export type PlConfigOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
   /** Working dir for a local platforma. */
   workingDir: string;
-  /** Log level of a local platforma. */
-  logLevel: PlLogLevel;
   /** How to choose ports for platforma. */
   portsMode: PlConfigPorts;
   /** How to get license. */
   licenseMode: PlLicenseMode;
+  /**
+   * A hook that allows to override any default configuration.
+   * Check the docs of platforma configuration for the specific fields.
+   *
+   * @param config - a parsed yaml.
+   */
+  extraPlConfig?: (config: PlConfig) => PlConfig;
 };
 
 export type PlLocalConfigs = {
@@ -61,7 +50,7 @@ export type PlLocalConfigs = {
   plVersion: string;
 };
 
-export async function getDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlLocalConfigs> {
+export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlLocalConfigs> {
   const user = 'default-user';
   const password = 'default-password';
   const ports = withLocalhost(await getPorts(opts.portsMode));
@@ -81,7 +70,7 @@ export async function getDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlL
     clientAddr: ports.grpc,
     user,
     password,
-    plLocal: await getDefaultPlLocalConfig(opts, ports, user, password, storages),
+    plLocal: await createDefaultPlLocalConfig(opts, ports, user, password, storages),
     ml: {
       logger: opts.logger,
       localSecret: 'secret', // @TODO: what to do with this?
@@ -95,7 +84,7 @@ export async function getDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlL
   };
 }
 
-async function getDefaultPlLocalConfig(
+async function createDefaultPlLocalConfig(
   opts: PlConfigOptions,
   ports: Endpoints,
   user: string,
@@ -105,15 +94,30 @@ async function getDefaultPlLocalConfig(
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
 
+  const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
+
+  let config = getPlConfig(opts, ports, license, htpasswdAuth, packageLoaderPath, storages);
+
+  if (opts.extraPlConfig) config = opts.extraPlConfig(config);
+
+  return yaml.stringify(config);
+}
+
+function getPlConfig(
+  opts: PlConfigOptions,
+  ports: Endpoints,
+  license: License,
+  htpasswdAuth: string,
+  packageLoaderPath: string,
+  storages: StoragesSettings
+): PlConfig {
   const dbPath = 'db';
   const logPath = 'platforma.log';
-  const packageLoaderPath = 'packages';
-  await fs.mkdir(path.join(opts.workingDir, packageLoaderPath), { recursive: true });
 
-  const config: PlConfig = {
+  return {
     license: licenseForConfig(license),
     logging: {
-      level: opts.logLevel,
+      level: 'info',
       destinations: [{ path: logPath }]
     },
     monitoring: {
@@ -160,6 +164,4 @@ async function getDefaultPlLocalConfig(
       }
     }
   };
-
-  return yaml.stringify(config);
 }

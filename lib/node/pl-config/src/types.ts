@@ -162,6 +162,22 @@ export type PlControllerRunnerSecretsSettings = {
 
 export type PlControllerPackageLoaderSettings = {
   packagesRoot: string;
+  registries?: PlControllerPackageLoaderRegistry[];
 };
+
+export type PlControllerPackageLoaderRegistry = {
+  name: string;
+  endpoints: PlControllerPackageLoaderEndpoint[];
+};
+
+export type PlControllerPackageLoaderEndpoint =
+  | {
+      type: 'local';
+      path: string;
+    }
+  | {
+      type: 'url';
+      url: string;
+    };
 
 export type PlControllerWorkflowsSettings = {};
