@@ -12,10 +12,6 @@
   --label-offset-right-x: 8px;
   --label-color: var(--txt-01);
 
-  [data-theme='dark'] & {
-    --options-bg: #1b1b1f;
-  }
-
   position: relative;
   outline: none;
   min-height: var(--control-height);
@@ -23,6 +19,10 @@
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);
+
+  [data-theme='dark'] & {
+    --options-bg: #1b1b1f;
+  }
 
   &__envelope {
     font-family: var(--control-font-family);
@@ -56,8 +56,9 @@
     background-color: var(--options-bg);
     border-radius: 0 0 6px 6px;
     max-height: 244px;
-    @include scrollbar;
     border-top: 1px solid var(--color-div-black);
+
+    @include scrollbar;
 
     .nothing-found {
       padding: 0 10px;
@@ -79,8 +80,8 @@
       .checkmark {
         position: absolute;
         display: none;
-        @include abs-center-y();
         right: 10px;
+        @include abs-center-y();
       }
 
       > span {
