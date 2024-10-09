@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.2.3
+
+### Patch Changes
+
+- 8c0d6fe: Bundle pl-version in pl-config
+- d6edf35: add do-pack
+  - @milaboratories/ts-helpers@1.0.30
+
 ## 1.2.2
 
 ### Patch Changes
