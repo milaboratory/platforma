@@ -2,7 +2,7 @@ import { test } from 'vitest';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
-import { getDefaultLocalConfigs, PlConfigOptions } from './config';
+import { createDefaultLocalConfigs, PlConfigOptions } from './config';
 import { getRootDir } from './storages';
 import yaml from 'yaml';
 
@@ -24,9 +24,10 @@ test('should return the right configs', async ({ expect }) => {
     }
   };
 
-  const got = await getDefaultLocalConfigs(opts);
+  const got = await createDefaultLocalConfigs(opts);
 
   expect(got.clientAddr).toEqual('127.0.0.1:11234');
+  expect(got.plVersion).not.empty;
   expect(got.ml).toEqual({
     logger: opts.logger,
     localSecret: 'secret', // @TODO: what to do with this?

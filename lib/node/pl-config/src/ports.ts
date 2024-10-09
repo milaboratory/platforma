@@ -12,7 +12,10 @@ export type Endpoints = {
   debug: string;
 };
 
-export type PlConfigPorts = PlConfigPortsCustom | PlConfigPortsRandom | PlConfigPortsPickFree;
+export type PlConfigPorts =
+  | PlConfigPortsCustom
+  | PlConfigPortsRandom
+  | PlConfigPortsPickFree;
 
 export type PlConfigPortsCustom = {
   type: 'custom';

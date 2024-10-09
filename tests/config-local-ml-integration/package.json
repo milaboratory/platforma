@@ -1,0 +1,25 @@
+{
+  "name": "@milaboratories/config-local-ml-integration",
+  "private": true,
+  "description": "Tests for block registry reader",
+  "version": "1.0.2",
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-local": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

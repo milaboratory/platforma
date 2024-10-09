@@ -49,6 +49,7 @@ packages:
   - tests/workflow-tengo
   - tests/helper
   - tests/block-repo
+  - tests/config-local-ml-integration
 
   # Etc
 
