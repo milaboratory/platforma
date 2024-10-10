@@ -34,7 +34,8 @@ test('should return the right configs', async ({ expect }) => {
     blobDownloadPath: path.join(workingDir, 'drivers', 'blobs'),
     frontendDownloadPath: path.join(workingDir, 'drivers', 'frontend'),
     platformLocalStorageNameToPath: {
-      root: getRootDir()
+      root: getRootDir(),
+      main: path.join('storages', 'main'),
     },
     localStorageNameToPath: {}
   });
