@@ -35,7 +35,7 @@ test('should return the right configs', async ({ expect }) => {
     frontendDownloadPath: path.join(workingDir, 'drivers', 'frontend'),
     platformLocalStorageNameToPath: {
       root: getRootDir(),
-      main: path.join('storages', 'main'),
+      main: path.resolve(workingDir, 'storages', 'main'),
     },
     localStorageNameToPath: {}
   });
