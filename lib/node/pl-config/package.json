@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-config",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "pl-version": "1.14.4",
   "description": "MiLaboratories Platforma Backend and Middle Layer config generator",
   "types": "./dist/index.d.ts",

@@ -1,5 +1,15 @@
 # @platforma-sdk/bootstrap
 
+## 2.4.1
+
+### Patch Changes
+
+- dddf97f: bump pl version, change pl-bootstrap to get pl-version from pl-config
+- Updated dependencies [c7dc613]
+- Updated dependencies [dddf97f]
+  - @milaboratories/pl-local@1.2.4
+  - @milaboratories/pl-config@1.2.4
+
 ## 2.4.0
 
 ### Minor Changes
