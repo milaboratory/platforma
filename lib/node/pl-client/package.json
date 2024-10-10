@@ -30,6 +30,7 @@
     "@protobuf-ts/runtime-rpc": "catalog:",
     "canonicalize": "catalog:",
     "denque": "catalog:",
+    "lru-cache": "catalog:",
     "https-proxy-agent": "catalog:",
     "cacheable-lookup": "catalog:",
     "long": "catalog:",

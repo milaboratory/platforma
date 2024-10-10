@@ -53,10 +53,10 @@ const InitialResourceVersion = 0;
 const decoder = new TextDecoder();
 
 /** Interface of PlTreeResource exposed to outer world, like {@link FinalPredicate}. */
-export interface PlTreeResourceI extends BasicResourceData {
+export type PlTreeResourceI = BasicResourceData & {
   readonly final: boolean;
   readonly fields: Map<string, PlTreeFieldI>;
-}
+};
 
 /** Predicate of resource state used to determine if it's state is considered to be final,
  * and not expected to change in the future. */

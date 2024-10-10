@@ -691,6 +691,9 @@ importers:
       long:
         specifier: 'catalog:'
         version: 5.2.3
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.0.1
       undici:
         specifier: 'catalog:'
         version: 6.19.8
