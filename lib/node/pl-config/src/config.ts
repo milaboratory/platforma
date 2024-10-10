@@ -12,7 +12,7 @@ import {
   PlLicenseMode
 } from './license';
 import { createHtpasswdFile, getDefaultAuthMethods, randomStr } from './auth';
-import { createDefaultLocalStorages, StoragesSettings } from './storages';
+import { createDefaultLocalStorages, StoragesSettings, storagesToMl } from './storages';
 import { getPlVersion } from './package';
 import { createDefaultPackageSettings } from './packageloader';
 
@@ -87,9 +87,7 @@ export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<
       localSecret: 'secret', // @TODO: what to do with this?
       blobDownloadPath,
       frontendDownloadPath,
-      platformLocalStorageNameToPath: {
-        root: storages.root
-      },
+      platformLocalStorageNameToPath: storagesToMl(storages),
       localStorageNameToPath: {}
     }
   };
