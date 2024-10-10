@@ -15,7 +15,6 @@ import {
   GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
-  packageContentPrefix,
   packageContentPrefixInsideV2
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
