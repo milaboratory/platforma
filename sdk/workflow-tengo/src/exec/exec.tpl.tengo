@@ -86,7 +86,7 @@ _runBinaryCommand := func(inputs) {
 	}
 
 	// secrets
-	for envName, secretVar in inputs.secrets {
+	for envName, secretVar in inputs.runOptions.secrets {
 		runBuilder.envVar(envName, secretVar)
 	}
 
