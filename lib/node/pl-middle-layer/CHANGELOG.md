@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [c7dc613]
+- Updated dependencies [dddf97f]
+  - @milaboratories/pl-local@1.2.4
+  - @milaboratories/pl-config@1.2.4
+  - @platforma-sdk/block-tools@2.3.12
+
 ## 1.11.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.4
+
+### Patch Changes
+
+- c7dc613: add stopped property
+
 ## 1.2.3
 
 ### Patch Changes
