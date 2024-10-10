@@ -1,6 +1,7 @@
 import { resolve, join } from 'path';
 import fs from 'fs';
 import os from 'os';
+import { getPlVersion } from '@milaboratories/pl-config';
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);
@@ -27,23 +28,9 @@ export function readFileSync(...p: string[]): Buffer {
   return fs.readFileSync(path(...p));
 }
 
-export type packageJson = {
-  'pl-version': string;
-};
-
-var _packageJson: packageJson;
-
-export function getPackageJson(): packageJson {
-  if (!_packageJson) {
-    _packageJson = JSON.parse(readFileSync('package.json').toString());
-  }
-
-  return _packageJson;
-}
-
 export function plImageTag(version?: string): string {
   if (!version) {
-    version = getPackageJson()['pl-version'];
+    version = getPlVersion();
   }
 
   return `quay.io/milaboratories/platforma:${version}`;
