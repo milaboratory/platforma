@@ -7,6 +7,7 @@ import * as tar from 'tar';
 import winston from 'winston';
 import * as pkg from './package';
 import state from './state';
+import { getPlVersion } from '@milaboratories/pl-config';
 
 export const OSes = ['linux', 'macos', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
@@ -57,7 +58,7 @@ export function downloadArchive(
     saveTo?: string;
   }
 ): Promise<string> {
-  const version = options?.version ?? pkg.getPackageJson()['pl-version'];
+  const version = options?.version ?? getPlVersion();
   const showProgress = options?.showProgress ?? process.stdout.isTTY;
 
   const archiveName = `pl-${version}-${archiveArch()}.tgz`;
@@ -131,7 +132,7 @@ export function extractArchive(
 ): string {
   logger.debug('extracting archive...');
 
-  const version = options?.version ?? pkg.getPackageJson()['pl-version'];
+  const version = options?.version ?? getPlVersion();
   logger.debug(`  version: '${version}'`);
   const archiveName = `${binaryDirName({ version })}.tgz`;
 
@@ -179,7 +180,7 @@ export function getBinary(
 }
 
 function binaryDirName(options?: { version?: string }): string {
-  const version = options?.version ?? pkg.getPackageJson()['pl-version'];
+  const version = options?.version ?? getPlVersion();
   return `pl-${version}-${archiveArch()}`;
 }
 

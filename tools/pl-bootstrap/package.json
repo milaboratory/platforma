@@ -1,7 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
   "version": "2.4.0",
-  "pl-version": "1.14.0",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -37,6 +36,8 @@
     "vite": "catalog:"
   },
   "dependencies": {
+    "@milaboratories/pl-config": "workspace:*",
+    "@milaboratories/pl-local": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "decompress": "catalog:",

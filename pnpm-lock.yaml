@@ -1673,6 +1673,12 @@ importers:
 
   tools/pl-bootstrap:
     dependencies:
+      '@milaboratories/pl-config':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-config
+      '@milaboratories/pl-local':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-local
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.27
