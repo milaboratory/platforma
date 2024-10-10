@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.2.6
+
+### Patch Changes
+
+- 7207876: fix ml paths
+
 ## 1.2.5
 
 ### Patch Changes
