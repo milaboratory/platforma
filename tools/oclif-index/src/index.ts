@@ -69,10 +69,10 @@ export default class OclifIndex extends Command {
 
       const cmdKey = cmdFile.replaceAll(path.sep, ":").slice(0, -sourceExtension.length)
 
-      var relativeImport = path.relative(indexDir, cmdFilePath)
+      var relativeImport = path.relative(indexDir, cmdFilePath).replaceAll(path.sep, '/');
 
       // js/ts 'import' statements have to start from './' or '../' to be relative
-      if (!relativeImport.startsWith('.')) relativeImport = `.${path.sep}${relativeImport}`
+      if (!relativeImport.startsWith('.')) relativeImport = `./${relativeImport}`
 
       relativeImport = relativeImport.slice(0, -sourceExtension.length) // cut '.ts'/'.js' extension
 
