@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.4.2
+
+### Patch Changes
+
+- 4e5c436: Use strict maps in exec inputs
+
 ## 1.4.1
 
 ### Patch Changes

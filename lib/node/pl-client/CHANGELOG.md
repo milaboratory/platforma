@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.0
+
+### Minor Changes
+
+- dd26f39: resource data caching layer
+
 ## 2.4.21
 
 ### Patch Changes
