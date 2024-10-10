@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.2.5
+
+### Patch Changes
+
+- 2716eb1: fix storages
+
 ## 1.2.4
 
 ### Patch Changes
