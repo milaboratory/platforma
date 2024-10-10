@@ -37,6 +37,7 @@ export class Pl {
 
   async start() {
     await withTrace(this.logger, async (trace, t) => {
+      this.wasStopped = false;
       const instance = processRun(this.logger, this.startOptions);
       instance.on('error', (e: any) => {
         this.logger.error(
@@ -83,6 +84,10 @@ export class Pl {
 
   async waitStopped() {
     await processWaitStopped(notEmpty(this.pid), 10000);
+  }
+
+  stopped() {
+    return this.wasStopped;
   }
 
   async isAlive(): Promise<boolean> {
