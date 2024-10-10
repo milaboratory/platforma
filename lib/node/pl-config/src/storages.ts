@@ -16,18 +16,20 @@ export interface StorageSettings {
 export async function createDefaultLocalStorages(dir: string): Promise<StoragesSettings> {
   const rootPath = getRootDir();
   const workPath = path.join('storages', 'work');
+  const fullWorkPath = path.resolve(dir, workPath);
   const mainPath = path.join('storages', 'main');
+  const fullMainPath = path.resolve(dir, mainPath);
 
-  await fs.mkdir(path.join(dir, mainPath), { recursive: true });
-  await fs.mkdir(path.join(dir, workPath), { recursive: true });
+  await fs.mkdir(fullWorkPath, { recursive: true });
+  await fs.mkdir(fullMainPath, { recursive: true });
 
-  return getDefaultConfigStorages(rootPath, workPath, mainPath);
+  return getDefaultConfigStorages(rootPath, workPath, fullWorkPath, mainPath, fullMainPath);
 }
 
 function getDefaultConfigStorages(
   rootPath: string,
-  workPath: string,
-  mainPath: string
+  workPath: string, fullWorkPath: string,
+  mainPath: string, fullMainPath: string
 ): StoragesSettings {
   const root: StorageSettings = {
     mlPath: rootPath,
@@ -44,7 +46,7 @@ function getDefaultConfigStorages(
   };
 
   const main: StorageSettings = {
-    mlPath: mainPath,
+    mlPath: fullMainPath,
     main: {
       mode: 'primary',
       downloadable: true
@@ -58,7 +60,7 @@ function getDefaultConfigStorages(
   };
 
   const work: StorageSettings = {
-    mlPath: workPath,
+    mlPath: fullWorkPath,
     main: {
       mode: 'active',
       downloadable: false
