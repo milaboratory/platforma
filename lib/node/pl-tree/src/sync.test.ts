@@ -1,8 +1,10 @@
+import { test, expect } from '@jest/globals';
 import { field, TestHelpers } from '@milaboratories/pl-client';
 import { PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState } from './sync';
 import { Computable } from '@milaboratories/computable';
 import { TestStructuralResourceType1 } from './test_utils';
+import * as tp from 'node:timers/promises';
 
 test('load resources', async () => {
   await TestHelpers.withTempRoot(async (cl) => {
@@ -89,6 +91,9 @@ test('load resources', async () => {
       },
       { sync: true }
     );
+
+    // sync is not perfect, delay introduced to allow pl to propagate the state
+    await tp.setTimeout(10);
 
     await refreshState();
 

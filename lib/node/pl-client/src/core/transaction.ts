@@ -11,7 +11,9 @@ import {
   ResourceData,
   ResourceId,
   ResourceType,
-  FutureFieldType
+  FutureFieldType,
+  isLocalResourceId,
+  extractBasicResourceData
 } from './types';
 import {
   ClientMessageRequest,
@@ -25,6 +27,9 @@ import { toBytes } from '../util/util';
 import { fieldTypeToProto, protoToField, protoToResource } from './type_conversion';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { isNotFoundError } from './errors';
+import { FinalResourceDataPredicate } from './final';
+import { LRUCache } from 'lru-cache';
+import { ResourceDataCacheRecord } from './cache';
 
 /** Reference to resource, used only within transaction */
 export interface ResourceRef {
@@ -132,6 +137,9 @@ export class PlTransaction {
   private readonly globalTxId: Promise<bigint>;
   private readonly localTxId: number = PlTransaction.nextLocalTxId();
 
+  /** Used in caching */
+  private readonly txOpenTimestamp = Date.now();
+
   private localResourceIdCounter = 0;
 
   /** Store logical tx open / closed state to prevent invalid sequence of requests.
@@ -148,7 +156,9 @@ export class PlTransaction {
     private readonly ll: LLPlTransaction,
     public readonly name: string,
     public readonly writable: boolean,
-    private readonly _clientRoot: OptionalResourceId
+    private readonly _clientRoot: OptionalResourceId,
+    private readonly finalPredicate: FinalResourceDataPredicate,
+    private readonly sharedResourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>
   ) {
     // initiating transaction
     this.globalTxId = this.sendSingleAndParse(
@@ -436,23 +446,82 @@ export class PlTransaction {
     );
   }
 
+  /** This method may return stale resource state from cache if resource was removed */
   public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
+  /** This method may return stale resource state from cache if resource was removed */
   public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
+  /** This method may return stale resource state from cache if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean
   ): Promise<BasicResourceData | ResourceData>;
+  /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
   public async getResourceData(
     rId: AnyResourceRef,
-    loadFields: boolean = true
+    loadFields: true,
+    ignoreCache: boolean
+  ): Promise<ResourceData>;
+  /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
+  public async getResourceData(
+    rId: AnyResourceRef,
+    loadFields: false,
+    ignoreCache: boolean
+  ): Promise<BasicResourceData>;
+  /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
+  public async getResourceData(
+    rId: AnyResourceRef,
+    loadFields: boolean,
+    ignoreCache: boolean
+  ): Promise<BasicResourceData | ResourceData>;
+  public async getResourceData(
+    rId: AnyResourceRef,
+    loadFields: boolean = true,
+    ignoreCache: boolean = false
   ): Promise<BasicResourceData | ResourceData> {
-    return await this.sendSingleAndParse(
+    if (!ignoreCache && !isResourceRef(rId) && !isLocalResourceId(rId)) {
+      // checking if we can return result from cache
+      const fromCache = this.sharedResourceDataCache.get(rId);
+      if (fromCache && fromCache.cacheTxOpenTimestamp < this.txOpenTimestamp) {
+        if (!loadFields) return fromCache.basicData;
+        else if (fromCache.data) return fromCache.data;
+      }
+    }
+
+    const result = await this.sendSingleAndParse(
       {
         oneofKind: 'resourceGet',
         resourceGet: { resourceId: toResourceId(rId), loadFields: loadFields }
       },
       (r) => protoToResource(notEmpty(r.resourceGet.resource))
     );
+
+    // we will cache only final resource data states
+    // caching result even if we were ignore the cache
+    if (!isResourceRef(rId) && !isLocalResourceId(rId) && this.finalPredicate(result)) {
+      const fromCache = this.sharedResourceDataCache.get(rId);
+      if (fromCache) {
+        if (loadFields && !fromCache.data) {
+          fromCache.data = result;
+          // updating timestamp becuse we updated the record
+          fromCache.cacheTxOpenTimestamp = this.txOpenTimestamp;
+        }
+      } else {
+        if (loadFields)
+          this.sharedResourceDataCache.set(rId, {
+            basicData: extractBasicResourceData(result),
+            data: result,
+            cacheTxOpenTimestamp: this.txOpenTimestamp
+          });
+        else
+          this.sharedResourceDataCache.set(rId, {
+            basicData: extractBasicResourceData(result),
+            data: undefined,
+            cacheTxOpenTimestamp: this.txOpenTimestamp
+          });
+      }
+    }
+
+    return result;
   }
 
   public async getResourceDataIfExists(
@@ -471,7 +540,17 @@ export class PlTransaction {
     rId: AnyResourceRef,
     loadFields: boolean = true
   ): Promise<BasicResourceData | ResourceData | undefined> {
-    return notFoundToUndefined(async () => await this.getResourceData(rId, loadFields));
+    // calling this mehtod will ignore cache, because user intention is to detect resource absence
+    // which cache will prevent
+    const result = await notFoundToUndefined(
+      async () => await this.getResourceData(rId, loadFields, true)
+    );
+
+    // cleaning cache record if resorce was removed from the db
+    if (result === undefined && !isResourceRef(rId) && !isLocalResourceId(rId))
+      this.sharedResourceDataCache.delete(rId);
+
+    return result;
   }
 
   /**
