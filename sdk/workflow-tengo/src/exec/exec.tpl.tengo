@@ -171,7 +171,7 @@ self.body(func(inputs) {
 		runOptions: {
 			"software,omitempty": pkg.softwareInfoScheme,
 			"cmd,omitempty": "string",
-			"args,omitempty": ["string"],
+			args: ["string"],
 			envs: { any: "string" },
 			secrets: { any: "string" },
 			queue: "string",
@@ -183,6 +183,9 @@ self.body(func(inputs) {
 		saveFilesContents: ["string"],
 		streams: ["string"]
 	})
+
+	ll.toStrict(inputs)
+	inputs.runOptions = ll.toStrict(inputs.runOptions)
 
 	return _runBinaryCommand(inputs)
 })
