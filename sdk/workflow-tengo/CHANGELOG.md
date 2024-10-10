@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.4.1
+
+### Patch Changes
+
+- ba7fd8a: Pass secrets to running command
+- 37e5128: Solve deduplication issues with pure future field getter
+
 ## 1.4.0
 
 ### Minor Changes
