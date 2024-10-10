@@ -1,5 +1,11 @@
 # @milaboratories/pl-config
 
+## 1.2.4
+
+### Patch Changes
+
+- dddf97f: bump pl version, change pl-bootstrap to get pl-version from pl-config
+
 ## 1.2.3
 
 ### Patch Changes
