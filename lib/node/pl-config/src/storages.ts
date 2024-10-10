@@ -5,12 +5,12 @@ import { PlControllerDataMainStoragesSettings, PlControllerDataStoragesSettings 
 export interface StoragesSettings {
   runner: string;
   storages: StorageSettings[];
-  root: string;
 }
 
 export interface StorageSettings {
   storage: PlControllerDataStoragesSettings;
   main: PlControllerDataMainStoragesSettings;
+  mlPath: string;
 }
 
 export async function createDefaultLocalStorages(dir: string): Promise<StoragesSettings> {
@@ -30,6 +30,7 @@ function getDefaultConfigStorages(
   mainPath: string
 ): StoragesSettings {
   const root: StorageSettings = {
+    mlPath: rootPath,
     main: {
       mode: 'passive',
       downloadable: true
@@ -43,6 +44,7 @@ function getDefaultConfigStorages(
   };
 
   const main: StorageSettings = {
+    mlPath: mainPath,
     main: {
       mode: 'primary',
       downloadable: true
@@ -56,6 +58,7 @@ function getDefaultConfigStorages(
   };
 
   const work: StorageSettings = {
+    mlPath: workPath,
     main: {
       mode: 'active',
       downloadable: false
@@ -71,8 +74,13 @@ function getDefaultConfigStorages(
   return {
     runner: workPath,
     storages: [root, work, main],
-    root: rootPath
   };
+}
+
+export function storagesToMl(settings: StoragesSettings): Record<string, string> {
+  return Object.fromEntries(settings.storages
+    .filter(s => s.main.downloadable)
+    .map(s => [s.storage.id, s.mlPath]));
 }
 
 export function getRootDir() {
