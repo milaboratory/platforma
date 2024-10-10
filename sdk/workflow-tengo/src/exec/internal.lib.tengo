@@ -185,7 +185,7 @@ _remotePackageCallOptions := func(runOptions) {
 }
 
 binaryRunOptions := func(runOptions) {
-	if (is_undefined(runOptions.software)) {
+	if (is_undefined(ll.fromStrict(runOptions).software)) {
 		//
 		// Simple local command run, no software pacakges involved (backward compatibility)
 		//
