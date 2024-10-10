@@ -184,5 +184,8 @@ self.body(func(inputs) {
 		streams: ["string"]
 	})
 
+	ll.toStrict(inputs)
+	inputs.runOptions = ll.toStrict(inputs.runOptions)
+
 	return _runBinaryCommand(inputs)
 })
