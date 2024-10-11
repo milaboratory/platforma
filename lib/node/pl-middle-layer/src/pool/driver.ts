@@ -35,6 +35,7 @@ import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-node';
 import * as fsp from 'node:fs/promises';
 import { LRUCache } from 'lru-cache';
+import { ConcurrencyLimitingExecutor } from '@milaboratories/ts-helpers';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
@@ -117,6 +118,8 @@ export class PFrameDriver implements SdkPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTable>>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
+  /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
+  private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
 
   constructor(private readonly blobDriver: DownloadDriver) {
     const blobContentCache = new LRUCache<string, Uint8Array>({
@@ -124,7 +127,9 @@ export class PFrameDriver implements SdkPFrameDriver {
       fetchMethod: async (key) => await fsp.readFile(key),
       sizeCalculation: (v) => v.length
     });
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(2);
     this.blobContentCache = blobContentCache;
+    this.concurrencyLimiter = concurrencyLimiter;
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(private readonly blobDriver: DownloadDriver) {
         super();
@@ -148,10 +153,13 @@ export class PFrameDriver implements SdkPFrameDriver {
       }
       protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTable> {
         const pFrame = this.pFrames.getByKey(params.pFrameHandle);
-        const rawPTable = await pFrame.pFrame.createTable({
-          src: joinEntryToInternal(params.def.src),
-          filters: params.def.filters
-        });
+        const rawPTable = await concurrencyLimiter.run(
+          async () =>
+            await pFrame.pFrame.createTable({
+              src: joinEntryToInternal(params.def.src),
+              filters: params.def.filters
+            })
+        );
         return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
       }
       protected calculateParamsKey(params: FullPTableDef): string {
@@ -198,37 +206,50 @@ export class PFrameDriver implements SdkPFrameDriver {
           : []
     };
     return {
-      hits: (await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest)).hits.map(
-        (h) => h.hit
-      )
+      hits: (
+        await this.concurrencyLimiter.run(
+          async () => await this.pFrames.getByKey(handle).pFrame.findColumns(iRequest)
+        )
+      ).hits.map((h) => h.hit)
     };
   }
 
   public async getColumnSpec(handle: PFrameHandle, columnId: PObjectId): Promise<PColumnSpec> {
-    return this.pFrames.getByKey(handle).pFrame.getColumnSpec(columnId);
+    return await this.concurrencyLimiter.run(
+      async () => await this.pFrames.getByKey(handle).pFrame.getColumnSpec(columnId)
+    );
   }
 
   public async listColumns(handle: PFrameHandle): Promise<PColumnIdAndSpec[]> {
-    return this.pFrames.getByKey(handle).pFrame.listColumns();
+    return await this.concurrencyLimiter.run(
+      async () => await this.pFrames.getByKey(handle).pFrame.listColumns()
+    );
   }
 
   public async calculateTableData(
     handle: PFrameHandle,
     request: CalculateTableDataRequest<PObjectId>
   ): Promise<CalculateTableDataResponse> {
-    let table = await this.pFrames.getByKey(handle).pFrame.createTable({
-      src: joinEntryToInternal(request.src),
-      filters: request.filters
-    });
+    let table = await this.concurrencyLimiter.run(
+      async () =>
+        await this.pFrames.getByKey(handle).pFrame.createTable({
+          src: joinEntryToInternal(request.src),
+          filters: request.filters
+        })
+    );
 
     if (request.sorting.length > 0) {
-      const sortedTable = await table.sort(request.sorting);
+      const sortedTable = await this.concurrencyLimiter.run(
+        async () => await table.sort(request.sorting)
+      );
       table.dispose();
       table = sortedTable;
     }
 
     const spec = table.getSpec();
-    const data = await table.getData([...spec.keys()]);
+    const data = await this.concurrencyLimiter.run(
+      async () => await table.getData([...spec.keys()])
+    );
     table.dispose();
 
     return spec.map((spec, i) => ({
@@ -241,7 +262,9 @@ export class PFrameDriver implements SdkPFrameDriver {
     handle: PFrameHandle,
     request: UniqueValuesRequest
   ): Promise<UniqueValuesResponse> {
-    return await this.pFrames.getByKey(handle).pFrame.getUniqueValues(request);
+    return await this.concurrencyLimiter.run(
+      async () => await this.pFrames.getByKey(handle).pFrame.getUniqueValues(request)
+    );
   }
 
   //
@@ -249,13 +272,13 @@ export class PFrameDriver implements SdkPFrameDriver {
   //
 
   public async getShape(handle: PTableHandle): Promise<PTableShape> {
-    const pTable = await this.pTables.getByKey(handle);
+    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
     return pTable.getShape();
   }
 
   public async getSpec(handle: PTableHandle): Promise<PTableColumnSpec[]> {
-    const pTable = await this.pTables.getByKey(handle);
-    return pTable.getSpec();
+    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    return pTable.getSpec(); // sync operation
   }
 
   public async getData(
@@ -263,8 +286,10 @@ export class PFrameDriver implements SdkPFrameDriver {
     columnIndices: number[],
     range?: TableRange
   ): Promise<PTableVector[]> {
-    const pTable = await this.pTables.getByKey(handle);
-    return pTable.getData(columnIndices, range);
+    const pTable = await this.pTables.getByKey(handle); // internally concurrency limited
+    return await this.concurrencyLimiter.run(
+      async () => await pTable.getData(columnIndices, range)
+    );
   }
 }
 
