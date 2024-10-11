@@ -22,6 +22,8 @@ export class DownloadHelper {
       dispatcher: this.httpClient,
       headers: reqHeaders,
       signal,
+      headersTimeout: 30000,
+      bodyTimeout: 30000
     });
 
     if (statusCode != 200) {
