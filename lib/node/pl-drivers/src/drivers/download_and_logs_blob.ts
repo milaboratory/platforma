@@ -672,15 +672,19 @@ export class Download {
       // check in case we already have a file by this resource id
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
+      console.log("download before if: ", this.path)
       if (await fileOrDirExists(this.path)) {
         content.on('close', () => {}).destroy(); // we don't need the blob
       } else {
+        console.log("download in if", this.path)
         const toFile = fs.createWriteStream(this.path);
         await pipeline(content, toFile);
       }
 
+      console.log("download after if", this.path)
       this.setDone(size);
     } catch (e: any) {
+      console.log("download catch: ", e)
       if (
         e instanceof DownloadAborted ||
         e instanceof NetworkError400 ||

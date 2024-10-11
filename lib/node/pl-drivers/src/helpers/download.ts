@@ -26,6 +26,7 @@ export class DownloadHelper {
       bodyTimeout: 30000
     });
 
+    console.log("downloadRemoteFile: ", statusCode, headers);
     if (statusCode != 200) {
       const textBody = await body.text();
       const beginning = textBody.substring(0, Math.min(textBody.length, 1000));
