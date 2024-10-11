@@ -666,13 +666,16 @@ export class Download {
         this.rInfo
       );
 
+      console.log("download before if fileOrDirExists: ", this.path, path.dirname(this.path));
+
       if (!(await fileOrDirExists(path.dirname(this.path))))
         await fsp.mkdir(path.dirname(this.path), { recursive: true });
+
+      console.log("download after if fileOrDirExists: ", this.path, path.dirname(this.path));
 
       // check in case we already have a file by this resource id
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
-      console.log("download before if: ", this.path)
       if (await fileOrDirExists(this.path)) {
         content.on('close', () => {}).destroy(); // we don't need the blob
       } else {
