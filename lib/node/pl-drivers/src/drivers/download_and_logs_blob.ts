@@ -595,7 +595,17 @@ class LastLinesGetter {
 
 async function fileOrDirExists(path: string): Promise<boolean> {
   try {
-    await fsp.access(path);
+    let timeout = new Promise(function (resolve, reject) {
+      setTimeout(function () {
+        reject('Time out! Your promise couldnt be fulfilled in half second :c');
+      }, 500);
+    });
+
+    const a = await Promise.race([fsp.access(path), timeout]);
+    if (typeof a == 'string' && a.includes('Time out!')) {
+      throw a;
+    }
+
     return true;
   } catch {
     return false;
