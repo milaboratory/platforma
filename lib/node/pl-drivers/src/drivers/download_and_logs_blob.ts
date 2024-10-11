@@ -607,7 +607,8 @@ async function fileOrDirExists(path: string): Promise<boolean> {
   try {
     await access(1000, path);
     return true;
-  } catch {
+  } catch (e) {
+    console.log("fileOrDirExists: ", e);
     return false;
   }
 }
