@@ -39,6 +39,7 @@
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:",
+    "lru-cache": "catalog:",
     "quickjs-emscripten": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",

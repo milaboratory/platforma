@@ -953,6 +953,9 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.0.1
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.31.0
