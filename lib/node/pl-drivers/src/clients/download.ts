@@ -93,7 +93,7 @@ export class ClientDownload {
     const size = stat.size;
 
     return {
-      content: Readable.toWeb(fs.createReadStream(fullPath)),
+      content: fs.createReadStream(fullPath),
       size
     };
   }
