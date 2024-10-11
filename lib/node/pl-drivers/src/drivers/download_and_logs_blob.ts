@@ -593,19 +593,19 @@ class LastLinesGetter {
   }
 }
 
+async function access(timeout: number, ...args: Parameters<typeof fsp.access>) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      reject('Timeout expired' + timeout);
+    }, timeout);
+
+    return fsp.access(...args).then(resolve).catch(reject);
+  });
+}
+
 async function fileOrDirExists(path: string): Promise<boolean> {
   try {
-    let timeout = new Promise(function (resolve, reject) {
-      setTimeout(function () {
-        reject('Time out! Your promise couldnt be fulfilled in half second :c');
-      }, 500);
-    });
-
-    const a = await Promise.race([fsp.access(path), timeout]);
-    if (typeof a == 'string' && a.includes('Time out!')) {
-      throw a;
-    }
-
+    await access(1000, path);
     return true;
   } catch {
     return false;
