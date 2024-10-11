@@ -33,6 +33,8 @@ import { createHash } from 'crypto';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
 import { PFrame } from '@milaboratories/pframes-node';
+import * as fsp from 'node:fs/promises';
+import { LRUCache } from 'lru-cache';
 
 function blobKey(res: ResourceInfo): string {
   return String(res.id);
@@ -50,6 +52,7 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
 
   constructor(
     private readonly blobDriver: DownloadDriver,
+    private readonly blobContentCache: LRUCache<string, Uint8Array>,
     private readonly columns: InternalPFrameData
   ) {
     // pframe initialization
@@ -93,6 +96,12 @@ class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
     return this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
   };
 
+  public readonly resolveBlobContent = async (blobId: string): Promise<Uint8Array> => {
+    const computable = this.getOrCreateComputableForBlob(blobId);
+    const path = this.blobDriver.getLocalPath((await computable.awaitStableValue()).handle);
+    return await this.blobContentCache.forceFetch(path);
+  };
+
   [Symbol.dispose](): void {
     for (const computable of this.blobHandleComputables.values()) computable.resetState();
     this.pFrame.dispose();
@@ -107,14 +116,21 @@ type FullPTableDef = {
 export class PFrameDriver implements SdkPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
   private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTable>>;
+  private readonly blobContentCache: LRUCache<string, Uint8Array>;
 
   constructor(private readonly blobDriver: DownloadDriver) {
+    const blobContentCache = new LRUCache<string, Uint8Array>({
+      maxSize: 1_000_000_000, // 1Gb
+      fetchMethod: async (key) => await fsp.readFile(key),
+      sizeCalculation: (v) => v.length
+    });
+    this.blobContentCache = blobContentCache;
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(private readonly blobDriver: DownloadDriver) {
         super();
       }
       protected createNewResource(params: InternalPFrameData): PFrameHolder {
-        return new PFrameHolder(this.blobDriver, params);
+        return new PFrameHolder(this.blobDriver, blobContentCache, params);
       }
       protected calculateParamsKey(params: InternalPFrameData): string {
         return stableKeyFromPFrameData(params);

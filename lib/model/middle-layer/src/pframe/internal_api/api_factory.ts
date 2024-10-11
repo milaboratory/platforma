@@ -46,8 +46,11 @@ export type PFrameDataSource = {
    */
   preloadBlob(blobIds: PFrameBlobId[]): Promise<void>;
 
-  /** Allows to read actual data given the blob id from {@link DataInfo}. */
+  /** Returns file name allowing to read actual data given the blob id from {@link DataInfo}. */
   resolveBlob(blobId: PFrameBlobId): Promise<FilePath>;
+
+  /** Returns raw blob data given the blob id from {@link DataInfo}. */
+  resolveBlobContent(blobId: PFrameBlobId): Promise<Uint8Array>;
 };
 
 /** API exposed by PFrames library allowing to create and provide data for
