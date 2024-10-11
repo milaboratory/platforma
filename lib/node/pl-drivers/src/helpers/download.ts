@@ -1,10 +1,9 @@
 import { Dispatcher, request } from 'undici';
 import { Readable } from 'node:stream';
-import { ReadableStream } from 'node:stream/web';
 import { text } from 'node:stream/consumers';
 
 export interface DownloadResponse {
-  content: ReadableStream;
+  content: Readable;
   size: number;
 }
 
@@ -22,13 +21,11 @@ export class DownloadHelper {
     const { statusCode, body, headers } = await request(url, {
       dispatcher: this.httpClient,
       headers: reqHeaders,
-      signal
+      signal,
     });
 
-    const webBody = Readable.toWeb(body);
-
     if (statusCode != 200) {
-      const textBody = await text(webBody)
+      const textBody = await body.text();
       const beginning = textBody.substring(0, Math.min(textBody.length, 1000));
 
       if (400 <= statusCode && statusCode < 500) {
@@ -43,7 +40,7 @@ export class DownloadHelper {
     }
 
     return {
-      content: webBody,
+      content: body,
       size: Number(headers['content-length'])
     };
   }

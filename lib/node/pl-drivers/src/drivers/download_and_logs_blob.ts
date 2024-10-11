@@ -56,6 +56,7 @@ import {
 import { dataToHandle, handleToData, isReadyLogHandle } from './logs';
 import { z } from 'zod';
 import { NetworkError400 } from '../helpers/download';
+import { pipeline } from 'node:stream/promises';
 
 /** ResourceSnapshot that can be passed to OnDemandBlob */
 export const OnDemandBlobResourceSnapshot = rsSchema({
@@ -198,7 +199,11 @@ export class DownloadDriver implements BlobDriver {
     const result = remoteHandleToData(handle, this.signer);
     const { content } = await this.clientDownload.downloadBlob(result);
 
-    return await buffer(content);
+    const chunks = []
+    for await (let chunk of content) {
+      chunks.push(chunk)
+    }
+    return Buffer.concat(chunks);
   }
 
   private getDownloadedBlobNoCtx(
@@ -668,10 +673,10 @@ export class Download {
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
       if (await fileOrDirExists(this.path)) {
-        await content.cancel(`the file already existed`); // we don't need the blob
+        content.on('close', () => {}).destroy(); // we don't need the blob
       } else {
-        const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
-        await content.pipeTo(fileToWrite);
+        const toFile = fs.createWriteStream(this.path);
+        await pipeline(content, toFile);
       }
 
       this.setDone(size);

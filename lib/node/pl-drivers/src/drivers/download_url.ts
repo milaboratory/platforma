@@ -8,6 +8,7 @@ import {
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import {
   ChangeSource,
   Computable,
@@ -245,14 +246,14 @@ class Download {
       {},
       signal
     );
-    let content = resp.content;
+    const content = resp.content;
+    const extractTo = tar.extract(this.path);
 
     if (withGunzip) {
-      const gunzip = Transform.toWeb(zlib.createGunzip());
-      content = content.pipeThrough(gunzip, { signal });
+      await pipeline(content, zlib.createGunzip(), extractTo);
+    } else {
+      await pipeline(content, extractTo);
     }
-    const untar = Writable.toWeb(tar.extract(this.path));
-    await content.pipeTo(untar, { signal });
 
     return resp.size;
   }
