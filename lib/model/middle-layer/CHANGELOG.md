@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.5.0
+
+### Minor Changes
+
+- 9e6e912: PFrames factory resolveBlob returning local blob file name dropped in favor of direct blob reading viw Node's API with additional layer of caching
+
 ## 1.4.5
 
 ### Patch Changes
