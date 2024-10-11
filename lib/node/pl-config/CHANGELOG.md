@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.2.7
+
+### Patch Changes
+
+- 0899a98: Relese pl=1.14.7 to UI and bootstrap
+- Updated dependencies [9e6e912]
+  - @milaboratories/ts-helpers@1.1.0
+
 ## 1.2.6
 
 ### Patch Changes
