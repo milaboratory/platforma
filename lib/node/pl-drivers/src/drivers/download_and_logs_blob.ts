@@ -668,8 +668,7 @@ export class Download {
 
       console.log("download before if fileOrDirExists: ", this.path, path.dirname(this.path));
 
-      if (!(await fileOrDirExists(path.dirname(this.path))))
-        await fsp.mkdir(path.dirname(this.path), { recursive: true });
+      await fsp.mkdir(path.dirname(this.path), { recursive: true });
 
       console.log("download after if fileOrDirExists: ", this.path, path.dirname(this.path));
 
