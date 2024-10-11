@@ -668,7 +668,7 @@ export class Download {
 
       console.log("download before if fileOrDirExists: ", this.path, path.dirname(this.path));
 
-      await fsp.mkdir(path.dirname(this.path), { recursive: true });
+      // await fsp.mkdir(path.dirname(this.path), { recursive: true });
 
       console.log("download after if fileOrDirExists: ", this.path, path.dirname(this.path));
 
@@ -676,9 +676,11 @@ export class Download {
       // in the directory. It can happen when we forgot to call removeAll
       // in the previous launch.
       if (await fileOrDirExists(this.path)) {
+        console.log("download in if this path exists, then branch before: ", this.path)
         content.on('close', () => {}).destroy(); // we don't need the blob
+        console.log("download in if this path exists, then branch after: ", this.path)
       } else {
-        console.log("download in if", this.path)
+        console.log("download in if this path exists, else branch before", this.path)
         const toFile = fs.createWriteStream(this.path);
         await pipeline(content, toFile);
       }
