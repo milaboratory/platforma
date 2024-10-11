@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.11.6
+
+### Patch Changes
+
+- 4a6e11f: Cached raw blob data provider for PFrame library.
+- Updated dependencies [4a6e11f]
+- Updated dependencies [33e8fbc]
+  - @milaboratories/pl-model-middle-layer@1.4.5
+  - @milaboratories/pl-local@1.2.5
+  - @platforma-sdk/block-tools@2.3.13
+
 ## 1.11.5
 
 ### Patch Changes

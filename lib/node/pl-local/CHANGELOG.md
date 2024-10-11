@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.2.5
+
+### Patch Changes
+
+- 33e8fbc: remove .test dir that was created after tests from build
+
 ## 1.2.4
 
 ### Patch Changes

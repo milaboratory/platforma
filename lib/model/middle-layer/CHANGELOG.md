@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.4.5
+
+### Patch Changes
+
+- 4a6e11f: Added API, to allow PFrame to request raw data for blobs, instead of requesting file names.
+
 ## 1.4.4
 
 ### Patch Changes
