@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.4.21",
+  "version": "2.5.1",
   "description": "New TS/JS client for Platform API",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -30,6 +30,7 @@
     "@protobuf-ts/runtime-rpc": "catalog:",
     "canonicalize": "catalog:",
     "denque": "catalog:",
+    "lru-cache": "catalog:",
     "https-proxy-agent": "catalog:",
     "cacheable-lookup": "catalog:",
     "long": "catalog:",

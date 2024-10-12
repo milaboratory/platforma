@@ -1,5 +1,48 @@
 # @milaboratories/pl-middle-layer
 
+## 1.12.0
+
+### Minor Changes
+
+- 9e6e912: PFrame concurrency limited to prevent deadlock with Node's IO threads, PFrame upgrade.
+
+### Patch Changes
+
+- Updated dependencies [0899a98]
+- Updated dependencies [9e6e912]
+- Updated dependencies [9e6e912]
+  - @milaboratories/pl-config@1.2.7
+  - @milaboratories/ts-helpers@1.1.0
+  - @milaboratories/pl-model-middle-layer@1.5.0
+  - @milaboratories/computable@2.1.13
+  - @milaboratories/pl-client@2.5.1
+  - @milaboratories/pl-drivers@1.2.33
+  - @milaboratories/pl-local@1.2.6
+  - @milaboratories/pl-tree@1.4.2
+  - @platforma-sdk/block-tools@2.3.14
+
+## 1.11.6
+
+### Patch Changes
+
+- 4a6e11f: Cached raw blob data provider for PFrame library.
+- Updated dependencies [4a6e11f]
+- Updated dependencies [33e8fbc]
+  - @milaboratories/pl-model-middle-layer@1.4.5
+  - @milaboratories/pl-local@1.2.5
+  - @platforma-sdk/block-tools@2.3.13
+
+## 1.11.5
+
+### Patch Changes
+
+- Updated dependencies [dd26f39]
+- Updated dependencies [4e5c436]
+  - @milaboratories/pl-client@2.5.0
+  - @platforma-sdk/workflow-tengo@1.4.2
+  - @milaboratories/pl-drivers@1.2.32
+  - @milaboratories/pl-tree@1.4.1
+
 ## 1.11.4
 
 ### Patch Changes

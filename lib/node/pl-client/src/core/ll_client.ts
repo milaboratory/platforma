@@ -76,7 +76,7 @@ export class LLPlClient {
     }
 
     grpcInterceptors.push(this.createErrorInterceptor());
-    
+
     //
     // Leaving it here for now
     // https://github.com/grpc/grpc-node/issues/2788
@@ -91,7 +91,7 @@ export class LLPlClient {
         ? ChannelCredentials.createSsl()
         : ChannelCredentials.createInsecure(),
       clientOptions: {
-        'grpc.keepalive_time_ms': 3000,
+        'grpc.keepalive_time_ms': 30_000, // 30 seconds
         interceptors: grpcInterceptors
       }
     };
