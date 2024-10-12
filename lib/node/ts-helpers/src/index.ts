@@ -4,6 +4,7 @@ export * from './vore';
 export * from './temporal';
 export * from './concurrent';
 export * from './concurrent/async_queue';
+export * from './concurrent/concurrency_limiter';
 export * from './concurrent/task_processor';
 export * from './retries';
 export * from './counter';

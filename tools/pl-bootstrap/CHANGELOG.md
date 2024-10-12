@@ -1,5 +1,24 @@
 # @platforma-sdk/bootstrap
 
+## 2.5.0
+
+### Minor Changes
+
+- 0899a98: Relese pl=1.14.7 to UI and bootstrap
+
+### Patch Changes
+
+- Updated dependencies [0899a98]
+  - @milaboratories/pl-config@1.2.7
+  - @milaboratories/pl-local@1.2.6
+
+## 2.4.4
+
+### Patch Changes
+
+- Updated dependencies [33e8fbc]
+  - @milaboratories/pl-local@1.2.5
+
 ## 2.4.3
 
 ### Patch Changes

@@ -46,11 +46,11 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: ^1.5.10
-      version: 1.5.10
+      specifier: ^1.6.0
+      version: 1.6.1
     '@milaboratories/software-pframes-conv':
-      specifier: ^1.5.10
-      version: 1.5.10
+      specifier: ^1.6.0
+      version: 1.6.1
     '@milaboratories/software-small-binaries':
       specifier: ^1.11.2
       version: 1.12.0
@@ -691,6 +691,9 @@ importers:
       long:
         specifier: 'catalog:'
         version: 5.2.3
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.0.1
       undici:
         specifier: 'catalog:'
         version: 6.19.8
@@ -907,7 +910,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 1.5.10(@milaboratories/pl-model-common@lib+model+common)
+        version: 1.6.1(@milaboratories/pl-model-common@lib+model+common)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -950,6 +953,9 @@ importers:
       denque:
         specifier: 'catalog:'
         version: 2.1.0
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.0.1
       quickjs-emscripten:
         specifier: 'catalog:'
         version: 0.31.0
@@ -1372,7 +1378,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.5.10
+        version: 1.6.1
       '@milaboratories/software-small-binaries':
         specifier: 'catalog:'
         version: 1.12.0
@@ -1477,7 +1483,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.5.10
+        version: 1.6.1
       '@milaboratories/software-small-binaries':
         specifier: 'catalog:'
         version: 1.12.0
@@ -2725,19 +2731,19 @@ packages:
   '@microsoft/tsdoc@0.15.0':
     resolution: {integrity: sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==}
 
-  '@milaboratories/pframes-node@1.5.10':
-    resolution: {integrity: sha512-H/OUDfEKrmjg7qn0apbWCJQJsp3Jdmlho/bGYGRNeg8W570C6TexufdCvWqoPIg71BcBiKP2gQcof78OutliEQ==}
+  '@milaboratories/pframes-node@1.6.1':
+    resolution: {integrity: sha512-Abc9UApwliFooicMVBX7Qgt2X51IaoIynYcx0cVODTHcxC7hBDNyNEcSa2xg9CdHyaMdLFXrEsTSjk+5ot+1PQ==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pl-model-common@1.3.13':
-    resolution: {integrity: sha512-BTeh254CBUQH5dkbjxnwwtmhsjLKBOMKLb8Be4K77k/Mvl6vNJmth14bGIPceS6DXHt41HshgJ9mSr5GSL+5qQ==}
+  '@milaboratories/pl-model-common@1.3.14':
+    resolution: {integrity: sha512-X4bDeqQ10o/dKKlihj56Y0bfitcTdBJrUlaaPV3hFrF+D4v+FTbeCFFSIlPELu0ova4YnF4iOW4kfuiIWVppzA==}
 
-  '@milaboratories/pl-model-middle-layer@1.2.20':
-    resolution: {integrity: sha512-vhARtl5oS5kRzBN/5ddIbdj9rGmhrmh9D//10k05fXN6owtILcYbhHrYBWKttJSQVxBhwBcVhW8G/T2EXpS1bQ==}
+  '@milaboratories/pl-model-middle-layer@1.5.0':
+    resolution: {integrity: sha512-xml3u/vQT6YYy/bXvkWb8Grk8kKc235oC/isHqjieCE6tjmb2q27nafZPEHAXnP6ox2f3M3Eg4LZBalXachfcw==}
 
-  '@milaboratories/software-pframes-conv@1.5.10':
-    resolution: {integrity: sha512-v9NlEFCEta2JnNiWkkJcjMaIA0B5r13fsvj5C7/ZnEwacgwXK0THqZqgrg3rDJaP719PDeqYuO30aqCrfpecSA==}
+  '@milaboratories/software-pframes-conv@1.6.1':
+    resolution: {integrity: sha512-vVcc1si0xPA8yIdn0IRhsJdQLZ/hwJathx8Fg/M3mo1DuxUmh2cX5EPJ81aAo1zdUjGLgrdMSoRkYuNlXIpQ1Q==}
 
   '@milaboratories/software-small-binaries@1.12.0':
     resolution: {integrity: sha512-5jLgrrPlylBVIDwcIQUOGyFW5QxUycjtip3pdqe3OvSF5ss/idxVYW+nNB0F1jnq3opA89e5+cNZ8+i3+oUZ1g==}
@@ -7888,26 +7894,26 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@milaboratories/pframes-node@1.5.10(@milaboratories/pl-model-common@lib+model+common)':
+  '@milaboratories/pframes-node@1.6.1(@milaboratories/pl-model-common@lib+model+common)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.2.20
+      '@milaboratories/pl-model-middle-layer': 1.5.0
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pl-model-common@1.3.13':
+  '@milaboratories/pl-model-common@1.3.14':
     dependencies:
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.2.20':
+  '@milaboratories/pl-model-middle-layer@1.5.0':
     dependencies:
-      '@milaboratories/pl-model-common': 1.3.13
+      '@milaboratories/pl-model-common': 1.3.14
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@1.5.10': {}
+  '@milaboratories/software-pframes-conv@1.6.1': {}
 
   '@milaboratories/software-small-binaries@1.12.0': {}
 

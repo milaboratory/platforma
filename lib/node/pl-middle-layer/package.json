@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.11.4",
+  "version": "1.12.0",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -39,6 +39,7 @@
     "@platforma-sdk/workflow-tengo": "workspace:*",
     "canonicalize": "catalog:",
     "denque": "catalog:",
+    "lru-cache": "catalog:",
     "quickjs-emscripten": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
