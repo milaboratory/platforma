@@ -52,8 +52,8 @@ catalogs:
       specifier: ^1.5.10
       version: 1.5.10
     '@milaboratories/software-small-binaries':
-      specifier: ^1.10.4
-      version: 1.10.4
+      specifier: ^1.11.2
+      version: 1.12.0
     '@milaboratories/tengo-tester':
       specifier: ^1.4.4
       version: 1.4.4
@@ -1373,6 +1373,9 @@ importers:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 1.5.10
+      '@milaboratories/software-small-binaries':
+        specifier: 'catalog:'
+        version: 1.12.0
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:^
@@ -1477,7 +1480,7 @@ importers:
         version: 1.5.10
       '@milaboratories/software-small-binaries':
         specifier: 'catalog:'
-        version: 1.10.4
+        version: 1.12.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -2736,8 +2739,8 @@ packages:
   '@milaboratories/software-pframes-conv@1.5.10':
     resolution: {integrity: sha512-v9NlEFCEta2JnNiWkkJcjMaIA0B5r13fsvj5C7/ZnEwacgwXK0THqZqgrg3rDJaP719PDeqYuO30aqCrfpecSA==}
 
-  '@milaboratories/software-small-binaries@1.10.4':
-    resolution: {integrity: sha512-Eb2T+wwQt+NzRdhpb5+8oWgVvB+6ZbNQJ/IdA2oZds6sjVGIXv4e/ps0YcpMN3Yt5sGZRHEZeKhVsv3ataa27Q==}
+  '@milaboratories/software-small-binaries@1.12.0':
+    resolution: {integrity: sha512-5jLgrrPlylBVIDwcIQUOGyFW5QxUycjtip3pdqe3OvSF5ss/idxVYW+nNB0F1jnq3opA89e5+cNZ8+i3+oUZ1g==}
 
   '@milaboratories/tengo-tester@1.4.4':
     resolution: {integrity: sha512-UWT05MAwizVEbUQC+HDD7VPb26AtZesCAT67CEzWSg4GUbNrOw5c/+TCCLJAS1lq3UQY0i3VV9QOtI1kjVokRQ==}
@@ -7906,7 +7909,7 @@ snapshots:
 
   '@milaboratories/software-pframes-conv@1.5.10': {}
 
-  '@milaboratories/software-small-binaries@1.10.4': {}
+  '@milaboratories/software-small-binaries@1.12.0': {}
 
   '@milaboratories/tengo-tester@1.4.4': {}
 
