@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.5.0
+
+### Minor Changes
+
+- 0b6fac6: Support table transposition in xsv.import
+
 ## 1.4.2
 
 ### Patch Changes
