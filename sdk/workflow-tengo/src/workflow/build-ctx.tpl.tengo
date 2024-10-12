@@ -26,13 +26,27 @@ tpl.body(func(inputs) {
 
 	data := tpl.rawInputs().data.getValue()
 
-	for prefix, mapField in tpl.rawInputs().data.getValue().inputs() {
+	for prefix, mapField in data.inputs() {
 		map := mapField.getValue()
-		if !map.checkResourceType(constants.RTYPE_MAP) && !map.checkResourceType(pConstants.RTYPE_P_FRAME) {
-			ll.panic("Unknown input PObject collection container type: " + map.info().Type)
+		
+		if !map.checkResourceType(constants.RTYPE_JSON) && !map.checkResourceType(constants.RTYPE_MAP) && !map.checkResourceType(pConstants.RTYPE_P_FRAME) {
+			ll.panic("Unknown input PObject collection container type: " + map.info())
 		}
 
-		for key, value in map.inputs() {
+		iterable := undefined
+
+		// this map can be a json resource if export objects are json-s
+		if smart.isJsonResource(map) {
+			iterable = map.getDataAsJson()
+
+			if !ll.isMap(iterable) {
+				ll.panic("Illegal JSON structure of input collection: " + iterable)
+			}
+		} else {
+			iterable = map.inputs()
+		}
+
+		for key, value in iterable {
 			// @TODO check whether we have both .data & .spec for all exports
 
 			if prefix == wConstants.NO_PREFIX_EXPORT {
