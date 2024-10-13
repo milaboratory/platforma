@@ -822,6 +822,9 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 6.19.8
+      utility-types:
+        specifier: 'catalog:'
+        version: 3.11.0
       zod:
         specifier: 'catalog:'
         version: 3.23.8

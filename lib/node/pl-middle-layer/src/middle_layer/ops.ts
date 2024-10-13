@@ -1,5 +1,5 @@
 import { TemporalSynchronizedTreeOps } from './types';
-import { DownloadDriverOps } from '@milaboratories/pl-drivers';
+import { DownloadDriverOps, OpenFileDialogCallback } from '@milaboratories/pl-drivers';
 import { UploadDriverOps } from '@milaboratories/pl-drivers';
 import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
@@ -74,6 +74,13 @@ export type DriverKitOps = {
    * e.g., {'local': '/'}.
    * */
   readonly localStorageNameToPath: Record<string, string>;
+
+  /**
+   * Callback to access system file open dialog, must be provided by the environment,
+   * to allow for {@link showOpenSingleFileDialog} / {@link showOpenMultipleFilesDialog}
+   * calls from the UI.
+   */
+  readonly openFileDialogCallback: OpenFileDialogCallback;
 };
 
 /** Some defaults fot MiddleLayerOps. */

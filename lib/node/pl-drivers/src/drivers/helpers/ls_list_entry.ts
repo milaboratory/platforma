@@ -102,9 +102,16 @@ export function createUploadHandle(
   return `upload://upload/${encodeURIComponent(JSON.stringify(data))}`;
 }
 
-export function parseUploadHandle(handle: sdk.ImportFileHandle): ImportFileHandleUploadData {
+export function parseUploadHandle(handle: sdk.ImportFileHandleUpload): ImportFileHandleUploadData {
   const url = new URL(handle);
   return ImportFileHandleUploadData.parse(
+    JSON.parse(decodeURIComponent(url.pathname.substring(1)))
+  );
+}
+
+export function parseIndexHandle(handle: sdk.ImportFileHandleIndex): ImportFileHandleIndexData {
+  const url = new URL(handle);
+  return ImportFileHandleIndexData.parse(
     JSON.parse(decodeURIComponent(url.pathname.substring(1)))
   );
 }

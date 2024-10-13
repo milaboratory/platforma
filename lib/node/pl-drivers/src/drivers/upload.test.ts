@@ -10,18 +10,11 @@ import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratories/pl-client';
-import { poll } from '@milaboratories/pl-client';
-import {
-  ImportResourceSnapshot,
-  makeBlobImportSnapshot,
-  UploadDriver,
-  UploadResourceSnapshot
-} from './upload';
+import { ImportResourceSnapshot, makeBlobImportSnapshot, UploadDriver } from './upload';
 import { createUploadBlobClient, createUploadProgressClient } from '../clients/helpers';
 
 import { test, expect } from '@jest/globals';
-import { ImportFileHandleData, ImportFileHandleUploadData } from './types';
-import { makeResourceSnapshot, SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { Computable } from '@milaboratories/computable';
 
 test('upload a blob', async () => {
@@ -412,38 +405,12 @@ async function getSnapshot(
       if (!handle) return undefined;
       else return makeBlobImportSnapshot(handle, ctx);
     }).withStableType();
-    while (true){
+    while (true) {
       const value = await computable.getValue();
-      if(value !== undefined)
-        return value;
+      if (value !== undefined) return value;
       await computable.awaitChange();
     }
   } finally {
     await tree.terminate();
   }
-
-  // return await poll(client, async (tx: PollTxAccessor) => {
-  //   const upload = await tx.get(uploadId);
-  //   const handle = await upload.get('handle');
-  //
-  //   const blob = handle.data.fields.find((f) => f.name == 'blob')?.value;
-  //   const incarnation = handle.data.fields.find((f) => f.name == 'incarnation')?.value;
-  //
-  //   const fields = {
-  //     blob: undefined as ResourceId | undefined,
-  //     incarnation: undefined as ResourceId | undefined
-  //   };
-  //   if (blob != undefined && isNotNullResourceId(blob)) fields.blob = blob;
-  //   if (incarnation != undefined && isNotNullResourceId(incarnation))
-  //     fields.incarnation = incarnation;
-  //
-  //   const dataStr = Buffer.from(handle.data.data!).toString();
-  //   console.log(dataStr);
-  //   return {
-  //     ...handle.data,
-  //     data: ImportFileHandleData.parse(JSON.parse(dataStr)),
-  //     fields,
-  //     kv: undefined
-  //   };
-  // });
 }
