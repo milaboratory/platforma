@@ -2,7 +2,7 @@ import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
 import { blockPackIdEquals, BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 import { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
-import { RegistryV2Reader, tryLoadPackDescription } from '@platforma-sdk/block-tools';
+import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import { assertNever, MiLogger } from '@milaboratories/ts-helpers';
 import { V2RegistryProvider } from './registry-v2-provider';
 
@@ -75,8 +75,17 @@ export class BlockUpdateWatcher extends PollComputablePool<
             const spec = (await registry.getOverviewForSpec(req.id))?.spec;
             if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
             if (blockPackIdEquals(spec.id, req.id)) return undefined;
+
             // warming cache
-            await registry.getComponents(spec.id);
+            // noinspection ES6MissingAwait
+            (async () => {
+              try {
+                await registry.getComponents(spec.id);
+              } catch (e: unknown) {
+                this.logger.warn(e);
+              }
+            })();
+
             return spec;
           } catch (err: unknown) {
             this.logger.warn(err);

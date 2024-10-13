@@ -11,14 +11,14 @@ import {
   TestErrorResourceState2
 } from './test_utils';
 import { Computable } from '@milaboratories/computable';
-import { NullResourceId, ResourceId } from '@milaboratories/pl-client';
+import { DefaultFinalResourceDataPredicate, NullResourceId, ResourceId } from '@milaboratories/pl-client';
 
 function rid(id: bigint): ResourceId {
   return id as ResourceId;
 }
 
 test('simple tree test 1', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const entry = tree.entry();
   expect(isPlTreeEntry(entry)).toStrictEqual(true);
   const c1 = Computable.make((c) => {
@@ -68,7 +68,7 @@ test('simple tree test 1', async () => {
 });
 
 test('simple tree kv test', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
     c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
   );
@@ -121,7 +121,7 @@ test('simple tree kv test', async () => {
 });
 
 test('partial tree update', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
     c
       .accessor(tree.entry())
@@ -157,7 +157,7 @@ test('partial tree update', async () => {
 });
 
 test('resource error', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
     c.accessor(tree.entry()).node().traverse('a', 'b')?.getKeyValueAsString('thekey')
   );
@@ -180,7 +180,7 @@ test('resource error', async () => {
 });
 
 test('field error', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   const c1 = Computable.make((c) =>
     c.accessor(tree.entry()).node().traverse('b', 'a')?.getKeyValueAsString('thekey')
   );
@@ -206,7 +206,7 @@ test('field error', async () => {
 });
 
 test('exception - deletion of input field', () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
@@ -224,7 +224,7 @@ test('exception - deletion of input field', () => {
 });
 
 test('exception - addition of input field', () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
@@ -254,7 +254,7 @@ test('exception - addition of input field', () => {
 });
 
 test('exception - ready without locks 1', () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   expect(() =>
     tree.updateFromResourceData([
@@ -278,7 +278,7 @@ test('exception - ready without locks 1', () => {
 });
 
 test('exception - ready without locks 2', () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   tree.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField('b'), dField('a', rid(1n))] },
