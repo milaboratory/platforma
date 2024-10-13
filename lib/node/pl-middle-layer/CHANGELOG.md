@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.12.2
+
+### Patch Changes
+
+- 11d30ad: Pre-warming of block content cache if update is detected, fixes #128
+- 11d30ad: Common final predicate function for pl-client and pl-tree
+- Updated dependencies [11d30ad]
+  - @milaboratories/pl-client@2.5.2
+  - @milaboratories/pl-tree@1.4.3
+  - @milaboratories/pl-drivers@1.2.34
+
 ## 1.12.1
 
 ### Patch Changes
