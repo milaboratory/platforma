@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.2
+
+### Patch Changes
+
+- 11d30ad: Common final predicate function for pl-client and pl-tree
+
 ## 2.5.1
 
 ### Patch Changes
