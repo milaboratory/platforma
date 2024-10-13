@@ -133,7 +133,7 @@ async function readTestConfig() {
 }
 
 async function prepareDirForTestConfig() {
-  const dir = path.join(__dirname, '.test');
+  const dir = path.join(__dirname, '..', '.test');
   await fs.rm(dir, { recursive: true, force: true });
   await fs.mkdir(dir);
 

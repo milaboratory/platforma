@@ -126,7 +126,7 @@ catalog:
   'winston': ^3.14.2
 
   '@milaboratories/tengo-tester': ^1.4.4
-  '@milaboratories/pframes-node': &pframes-version ^1.5.10
+  '@milaboratories/pframes-node': &pframes-version ^1.6.0
 
   'quickjs-emscripten': ^0.31.0
 
@@ -149,7 +149,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@milaboratories/software-small-binaries': ^1.10.4
+  '@milaboratories/software-small-binaries': ^1.11.2
 
   # Test
 
