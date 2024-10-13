@@ -78,7 +78,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       return false;
     default:
       if (r.type.name.startsWith('Blob/')) return true;
-      else if (r.type.name.startsWith('BlobUpload/')) {
+      else if (r.type.name.startsWith('BlobUpload/') || r.type.name.startsWith('BlobIndex/')) {
         return readyAndHasAllOutputsFilled(r);
       } else if (r.type.name.startsWith('PColumnData/')) {
         return readyOrDuplicateOrError(r);

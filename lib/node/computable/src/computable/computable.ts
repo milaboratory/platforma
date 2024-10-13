@@ -15,7 +15,7 @@ import {
   updateCellState,
   updateCellStateWithoutValue
 } from './computable_state';
-import { notEmpty } from '@milaboratories/ts-helpers';
+import { Aborted, notEmpty } from '@milaboratories/ts-helpers';
 import { randomUUID } from 'node:crypto';
 import { setImmediate } from 'node:timers/promises';
 import { formatError } from './error';
@@ -274,15 +274,28 @@ export class Computable<T, StableT extends T = T> {
    * Waits for the next stable state and returns the fully stable result.
    * Similar behavior to {@link getFullValue}.
    *
-   * @param abortSignal Optional signal to abort the pending operation.
+   * @param abortSignalOrTimeout Optional signal to abort the pending operation or timeout in milliseconds
    */
   public async awaitStableFullValue(
-    abortSignal?: AbortSignal
+    abortSignalOrTimeout?: AbortSignal | number
   ): Promise<ComputableResultOk<StableT>> {
-    while (true) {
-      const value = await this.getFullValue();
-      if (value.stable) return value as ComputableResultOk<StableT>;
-      await this.awaitChange(abortSignal);
+    try {
+      const abortSignal =
+        typeof abortSignalOrTimeout === 'number'
+          ? AbortSignal.timeout(abortSignalOrTimeout)
+          : abortSignalOrTimeout;
+      while (true) {
+        const value = await this.getFullValue();
+        if (value.stable) return value as ComputableResultOk<StableT>;
+        await this.awaitChange(abortSignal);
+      }
+    } catch (e: any) {
+      if (e.name === 'AbortError')
+        throw new Aborted({
+          cause: e,
+          msg: `Computable is still unstable; marker = ${this.state?.unstableMarker}`
+        });
+      throw e;
     }
   }
 
@@ -290,10 +303,10 @@ export class Computable<T, StableT extends T = T> {
    * Waits for the next stable state and returns the stable value.
    * Similar behavior to {@link getValue}.
    *
-   * @param abortSignal Optional signal to abort the pending operation.
+   * @param abortSignalOrTimeout Optional signal to abort the pending operation or timeout in milliseconds
    */
-  public async awaitStableValue(abortSignal?: AbortSignal): Promise<StableT> {
-    return (await this.awaitStableFullValue(abortSignal)).value;
+  public async awaitStableValue(abortSignalOrTimeout?: AbortSignal | number): Promise<StableT> {
+    return (await this.awaitStableFullValue(abortSignalOrTimeout)).value;
   }
 
   /**
