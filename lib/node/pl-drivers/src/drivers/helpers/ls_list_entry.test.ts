@@ -2,7 +2,7 @@ import {
   ConsoleLoggerAdapter,
   HmacSha256Signer
 } from '@milaboratories/ts-helpers';
-import { fromFileHandle, toFileHandle, toListItem } from './ls_list_entry';
+import { parseUploadHandle, toFileHandle, toListItem } from './ls_list_entry';
 import type { Dirent, Stats } from 'node:fs';
 
 test('toFileHandle should ok when encode data for UploadBlob', () => {
@@ -21,7 +21,7 @@ test('toFileHandle should ok when encode data for UploadBlob', () => {
       lastModified: { seconds: 150n, nanos: 260 }
     }
   });
-  const got = fromFileHandle(handle);
+  const got = parseUploadHandle(handle);
 
   expect(got.modificationTime).toEqual('150');
   expect(got.localPath).toEqual('C:\\programFiles\\file.txt');

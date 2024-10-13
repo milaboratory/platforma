@@ -1,21 +1,18 @@
-import {
-  isNotNullResourceId,
-  PlClient,
-  ResourceData,
-  ResourceId
-} from '@milaboratories/pl-client';
+import { isNotNullResourceId, PlClient, ResourceData, ResourceId } from '@milaboratories/pl-client';
 import { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import * as sdk from '@milaboratories/pl-model-common';
 import { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import {
-  createUploadHandle,
-  ListResponse,
-  toListItem,
-  toLsEntries
-} from './helpers/ls_list_entry';
+import { createUploadHandle, ListResponse, toListItem, toLsEntries } from './helpers/ls_list_entry';
 import { fromStorageHandle, toStorageEntry } from './helpers/ls_storage_entry';
+import {
+  LocalImportFileHandle,
+  OpenDialogOps,
+  OpenMultipleFilesResponse,
+  OpenSingleFileResponse,
+  TableRange
+} from '@milaboratories/pl-model-common';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -23,11 +20,16 @@ import { fromStorageHandle, toStorageEntry } from './helpers/ls_storage_entry';
  */
 export interface InternalLsDriver extends sdk.LsDriver {
   /**
-   * Given local path, generates well structured and signed upload handle.
+   * Given local path, generates well-structured and signed upload handle.
    * To be used in tests and in implementation of the native file selection UI API.
    * */
   getLocalFileHandle(localPath: string): Promise<sdk.ImportFileHandleUpload>;
 }
+
+export type OpenFileDialogCallback = (
+  ops: OpenDialogOps,
+  multipleFiles: boolean
+) => Promise<undefined | string[]>;
 
 export class LsDriver implements InternalLsDriver {
   private storageIdToResourceId?: Record<string, ResourceId>;
@@ -38,25 +40,47 @@ export class LsDriver implements InternalLsDriver {
     private readonly client: PlClient,
     private readonly signer: Signer,
     private readonly localStorageToPath: Record<string, string>
+    // private readonly openFileDialogCallback: OpenFileDialogCallback
   ) {}
+
+  // getLocalFileContent(file: LocalImportFileHandle, range: TableRange): Promise<Uint8Array> {
+  //   return Promise.resolve(undefined);
+  // }
+  //
+  // getLocalFileSize(file: LocalImportFileHandle): Promise<number> {
+  //   return Promise.resolve(0);
+  // }
+  //
+  // public async showOpenMultipleFilesDialog(ops: OpenDialogOps): Promise<OpenMultipleFilesResponse> {
+  //   const result = await this.openFileDialogCallback(ops, true);
+  //   if (result === undefined) return {};
+  //   return {
+  //     files: await Promise.all(result.map((localPath) => this.getLocalFileHandle(localPath)))
+  //   };
+  // }
+  //
+  // public async showOpenSingleFileDialog(ops: OpenDialogOps): Promise<OpenSingleFileResponse> {
+  //   const result = await this.openFileDialogCallback(ops, false);
+  //   if (result === undefined) return {};
+  //   return {
+  //     file: await this.getLocalFileHandle(result[0])
+  //   };
+  // }
 
   public async getLocalFileHandle(
     localPath: string
-  ): Promise<sdk.ImportFileHandleUpload> {
+  ): Promise<sdk.ImportFileHandleUpload & LocalImportFileHandle> {
     const stat = await fs.stat(localPath, { bigint: true });
     return createUploadHandle(
       localPath,
       this.signer,
       stat.size,
       stat.mtimeMs / 1000n // integer division
-    );
+    ) as sdk.ImportFileHandleUpload & LocalImportFileHandle;
   }
 
   public async getStorageList(): Promise<sdk.StorageEntry[]> {
-    return toStorageEntry(
-      this.localStorageToPath,
-      await this.getAvailableStorageIds()
-    );
+    return toStorageEntry(this.localStorageToPath, await this.getAvailableStorageIds());
   }
 
   public async listFiles(
@@ -127,9 +151,7 @@ export class LsDriver implements InternalLsDriver {
   }
 }
 
-async function doGetAvailableStorageIds(
-  client: PlClient
-): Promise<Record<string, ResourceId>> {
+async function doGetAvailableStorageIds(client: PlClient): Promise<Record<string, ResourceId>> {
   return client.withReadTx('GetAvailableStorageIds', async (tx) => {
     const lsProviderId = await tx.getResourceByName('LSProvider');
     const provider = await tx.getResourceData(lsProviderId, true);
