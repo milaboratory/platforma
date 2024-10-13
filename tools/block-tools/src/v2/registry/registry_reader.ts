@@ -4,8 +4,7 @@ import {
   blockPackIdNoVersionEquals,
   BlockPackManifest,
   BlockPackMetaEmbeddedBytes,
-  BlockPackOverview,
-  BlockPackSpec
+  BlockPackOverview
 } from '@milaboratories/pl-model-middle-layer';
 import { FolderReader } from '../../io';
 import canonicalize from 'canonicalize';
@@ -52,12 +51,11 @@ export class RegistryV2Reader {
     GlobalOverviewEntryReg
   >({
     max: 500,
-    fetchMethod: async (key, staleValue, options) => {
+    fetchMethod: async (_key, _staleValue, options) => {
       const rootContentReader = this.v2RootFolderReader.getContentReader();
-      const meta = await BlockPackMetaEmbedBytes(rootContentReader).parseAsync(
+      return await BlockPackMetaEmbedBytes(rootContentReader).parseAsync(
         options.context.latest.meta
       );
-      return meta;
     }
   });
 
@@ -80,8 +78,7 @@ export class RegistryV2Reader {
     )
       return this.listCache;
     try {
-      const rootContentReader = this.v2RootFolderReader.getContentReader();
-
+      // const rootContentReader = this.v2RootFolderReader.getContentReader();
       const globalOverview = GlobalOverviewReg.parse(
         JSON.parse(
           Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString()

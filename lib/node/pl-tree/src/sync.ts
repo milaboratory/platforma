@@ -1,7 +1,6 @@
 import {
   FieldData,
   isNullResourceId,
-  NullResourceId,
   OptionalResourceId,
   PlTransaction,
   ResourceId
@@ -41,7 +40,7 @@ export function constructTreeLoadingRequest(
   const seedResources: ResourceId[] = [];
   const finalResources = new Set<ResourceId>();
   tree.forEachResource((res) => {
-    if (res.final) finalResources.add(res.id);
+    if (res.finalState) finalResources.add(res.id);
     else seedResources.push(res.id);
   });
 
@@ -53,13 +52,13 @@ export function constructTreeLoadingRequest(
 
 export type TreeLoadingStat = {
   requests: number;
-  roundtrips: number;
+  roundTrips: number;
   retrievedResources: number;
   retrievedFields: number;
   retrievedKeyValues: number;
   retrievedResourceDataBytes: number;
   retrievedKeyValueBytes: number;
-  prunnedFields: number;
+  prunedFields: number;
   finalResourcesSkipped: number;
   millisSpent: number;
 };
@@ -67,13 +66,13 @@ export type TreeLoadingStat = {
 export function initialTreeLoadingStat(): TreeLoadingStat {
   return {
     requests: 0,
-    roundtrips: 0,
+    roundTrips: 0,
     retrievedResources: 0,
     retrievedFields: 0,
     retrievedKeyValues: 0,
     retrievedResourceDataBytes: 0,
     retrievedKeyValueBytes: 0,
-    prunnedFields: 0,
+    prunedFields: 0,
     finalResourcesSkipped: 0,
     millisSpent: 0
   };
@@ -82,13 +81,13 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
 export function formatTreeLoadingStat(stat: TreeLoadingStat): string {
   let result = `Requests: ${stat.requests}\n`;
   result += `Total time: ${msToHumanReadable(stat.millisSpent)}\n`;
-  result += `Roundtrips: ${stat.roundtrips}\n`;
+  result += `Round-trips: ${stat.roundTrips}\n`;
   result += `Resources: ${stat.retrievedResources}\n`;
   result += `Fields: ${stat.retrievedFields}\n`;
   result += `KV: ${stat.retrievedKeyValues}\n`;
   result += `Data Bytes: ${stat.retrievedResourceDataBytes}\n`;
   result += `KV Bytes: ${stat.retrievedKeyValueBytes}\n`;
-  result += `Pruned fields: ${stat.prunnedFields}\n`;
+  result += `Pruned fields: ${stat.prunedFields}\n`;
   result += `Final resources skipped: ${stat.finalResourcesSkipped}`;
   return result;
 }
@@ -104,7 +103,7 @@ export async function loadTreeState(
   // saving start timestamp to add time spent in this function to the stats at the end of the method
   const startTimestamp = Date.now();
 
-  // countind the request
+  // counting the request
   if (stats) stats.requests++;
 
   const { seedResources, finalResources, pruningFunction } = loadingRequest;
@@ -117,8 +116,8 @@ export async function loadTreeState(
   const pending = new Denque<Promise<ExtendedResourceData | undefined>>();
 
   // vars to calculate number of roundtrips for stats
-  let roundtripToggle: boolean = true;
-  let numberOfRoundtrips = 0;
+  let roundTripToggle: boolean = true;
+  let numberOfRoundTrips = 0;
 
   // tracking resources we already requested
   const requested = new Set<ResourceId>();
@@ -139,19 +138,19 @@ export async function loadTreeState(
     const resourceData = tx.getResourceDataIfExists(rid, true);
     const kvData = tx.listKeyValuesIfResourceExists(rid);
 
-    // counting roundrip (begin)
-    const addRT = roundtripToggle;
-    if (roundtripToggle) roundtripToggle = false;
+    // counting round-trip (begin)
+    const addRT = roundTripToggle;
+    if (roundTripToggle) roundTripToggle = false;
 
     // pushing combined promise
     pending.push(
       (async () => {
         const [resource, kv] = await Promise.all([resourceData, kvData]);
 
-        // counting roundrip, actually incrementing counter and returning toggle back, so the next request can acquire it
+        // counting round-trip, actually incrementing counter and returning toggle back, so the next request can acquire it
         if (addRT) {
-          numberOfRoundtrips++;
-          roundtripToggle = true;
+          numberOfRoundTrips++;
+          roundTripToggle = true;
         }
 
         if (resource === undefined) return undefined;
@@ -184,7 +183,7 @@ export async function loadTreeState(
       // apply field pruning, if requested
       const fieldsAfterPruning = pruningFunction(nextResource);
       // collecting stats
-      if (stats) stats.prunnedFields += nextResource.fields.length - fieldsAfterPruning.length;
+      if (stats) stats.prunedFields += nextResource.fields.length - fieldsAfterPruning.length;
       nextResource = { ...nextResource, fields: fieldsAfterPruning };
     }
 
@@ -211,7 +210,7 @@ export async function loadTreeState(
   // adding the time we spent in this method to stats
   if (stats) {
     stats.millisSpent += Date.now() - startTimestamp;
-    stats.roundtrips += numberOfRoundtrips;
+    stats.roundTrips += numberOfRoundTrips;
   }
 
   return result;
