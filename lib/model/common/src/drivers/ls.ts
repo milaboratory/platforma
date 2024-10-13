@@ -72,7 +72,7 @@ export type OpenDialogOps = {
   /** Custom label for the confirmation button, when left empty the default label will be used. */
   readonly buttonLabel?: string;
   /** Limits of file types user can select */
-  readonly filters: OpenDialogFilter[];
+  readonly filters?: OpenDialogFilter[];
 };
 
 export type OpenSingleFileResponse = {
@@ -101,17 +101,17 @@ export interface LsDriver {
 
   listFiles(storage: StorageHandle, fullPath: string): Promise<ListFilesResult>;
 
-  // /** Opens system file open dialog allowing to select single file and awaits user action */
-  // showOpenSingleFileDialog(ops: OpenDialogOps): Promise<OpenSingleFileResponse>;
-  //
-  // /** Opens system file open dialog allowing to multiple files and awaits user action */
-  // showOpenMultipleFilesDialog(ops: OpenDialogOps): Promise<OpenMultipleFilesResponse>;
-  //
-  // /** Given a handle to a local file, allows to get file size */
-  // getLocalFileSize(file: LocalImportFileHandle): Promise<number>;
-  //
-  // /** Given a handle to a local file, allows to get its content */
-  // getLocalFileContent(file: LocalImportFileHandle, range: TableRange): Promise<Uint8Array>;
+  /** Opens system file open dialog allowing to select single file and awaits user action */
+  showOpenSingleFileDialog(ops: OpenDialogOps): Promise<OpenSingleFileResponse>;
+
+  /** Opens system file open dialog allowing to multiple files and awaits user action */
+  showOpenMultipleFilesDialog(ops: OpenDialogOps): Promise<OpenMultipleFilesResponse>;
+
+  /** Given a handle to a local file, allows to get file size */
+  getLocalFileSize(file: LocalImportFileHandle): Promise<number>;
+
+  /** Given a handle to a local file, allows to get its content */
+  getLocalFileContent(file: LocalImportFileHandle, range?: TableRange): Promise<Uint8Array>;
 }
 
 /** Gets a file path from an import handle. */

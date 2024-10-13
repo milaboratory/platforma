@@ -3,10 +3,17 @@ import { MiLogger, Signer } from '@milaboratories/ts-helpers';
 import * as sdk from '@milaboratories/pl-model-common';
 import { ClientLs } from '../clients/ls_api';
 import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
-import { createUploadHandle, ListResponse, toListItem, toLsEntries } from './helpers/ls_list_entry';
+import * as fsp from 'node:fs/promises';
+import {
+  createUploadHandle,
+  ListResponse,
+  parseUploadHandle,
+  toListItem,
+  toLsEntries
+} from './helpers/ls_list_entry';
 import { fromStorageHandle, toStorageEntry } from './helpers/ls_storage_entry';
 import {
+  isImportFileHandleUpload,
   LocalImportFileHandle,
   OpenDialogOps,
   OpenMultipleFilesResponse,
@@ -27,8 +34,8 @@ export interface InternalLsDriver extends sdk.LsDriver {
 }
 
 export type OpenFileDialogCallback = (
-  ops: OpenDialogOps,
-  multipleFiles: boolean
+  multipleFiles: boolean,
+  ops?: OpenDialogOps
 ) => Promise<undefined | string[]>;
 
 export class LsDriver implements InternalLsDriver {
@@ -39,38 +46,77 @@ export class LsDriver implements InternalLsDriver {
     private readonly clientLs: ClientLs,
     private readonly client: PlClient,
     private readonly signer: Signer,
-    private readonly localStorageToPath: Record<string, string>
-    // private readonly openFileDialogCallback: OpenFileDialogCallback
+    private readonly localStorageToPath: Record<string, string>,
+    private readonly openFileDialogCallback: OpenFileDialogCallback
   ) {}
 
-  // getLocalFileContent(file: LocalImportFileHandle, range: TableRange): Promise<Uint8Array> {
-  //   return Promise.resolve(undefined);
-  // }
-  //
-  // getLocalFileSize(file: LocalImportFileHandle): Promise<number> {
-  //   return Promise.resolve(0);
-  // }
-  //
-  // public async showOpenMultipleFilesDialog(ops: OpenDialogOps): Promise<OpenMultipleFilesResponse> {
-  //   const result = await this.openFileDialogCallback(ops, true);
-  //   if (result === undefined) return {};
-  //   return {
-  //     files: await Promise.all(result.map((localPath) => this.getLocalFileHandle(localPath)))
-  //   };
-  // }
-  //
-  // public async showOpenSingleFileDialog(ops: OpenDialogOps): Promise<OpenSingleFileResponse> {
-  //   const result = await this.openFileDialogCallback(ops, false);
-  //   if (result === undefined) return {};
-  //   return {
-  //     file: await this.getLocalFileHandle(result[0])
-  //   };
-  // }
+  public async getLocalFileContent(
+    file: LocalImportFileHandle,
+    range?: TableRange
+  ): Promise<Uint8Array> {
+    const localPath = await this.decodeLocalFileHandle(file);
+    if (range) throw new Error('Range request not yet supported.');
+    return await fsp.readFile(localPath);
+  }
 
+  public async getLocalFileSize(file: LocalImportFileHandle): Promise<number> {
+    const localPath = await this.decodeLocalFileHandle(file);
+    const stat = await fsp.stat(localPath);
+    return stat.size;
+  }
+
+  public async showOpenMultipleFilesDialog(
+    ops?: OpenDialogOps
+  ): Promise<OpenMultipleFilesResponse> {
+    const result = await this.openFileDialogCallback(true, ops);
+    if (result === undefined) return {};
+    return {
+      files: await Promise.all(result.map((localPath) => this.getLocalFileHandle(localPath)))
+    };
+  }
+
+  public async showOpenSingleFileDialog(ops?: OpenDialogOps): Promise<OpenSingleFileResponse> {
+    const result = await this.openFileDialogCallback(false, ops);
+    if (result === undefined) return {};
+    return {
+      file: await this.getLocalFileHandle(result[0])
+    };
+  }
+
+  /**
+   * Resolves local handle to local file path.
+   *
+   * @param handle handle to be resolved
+   * @private
+   */
+  private async decodeLocalFileHandle(handle: LocalImportFileHandle): Promise<string> {
+    if (!isImportFileHandleUpload(handle))
+      throw new Error(
+        'Local mode pl index requests are not yet supported / not a local file handle.'
+      );
+    const handleData = parseUploadHandle(handle);
+
+    // checking it is a valid local handle from out machine
+    this.signer.verify(
+      handleData.localPath,
+      handleData.pathSignature,
+      'Failed to validate local file handle signature.'
+    );
+
+    const localPath = handleData.localPath;
+
+    const stat = await fsp.stat(localPath, { bigint: true });
+    if (String(stat.mtimeMs / 1000n) !== handleData.modificationTime)
+      throw new Error('File has changed since the handle was created.');
+
+    return localPath;
+  }
+
+  // @todo extend to local mode case
   public async getLocalFileHandle(
     localPath: string
   ): Promise<sdk.ImportFileHandleUpload & LocalImportFileHandle> {
-    const stat = await fs.stat(localPath, { bigint: true });
+    const stat = await fsp.stat(localPath, { bigint: true });
     return createUploadHandle(
       localPath,
       this.signer,
@@ -123,7 +169,7 @@ export class LsDriver implements InternalLsDriver {
       ? pathInStorage
       : path.resolve(path.join(storagePath, pathInStorage));
 
-    const files = await fs.opendir(fullPath);
+    const files = await fsp.opendir(fullPath);
     const direntsWithStats: any[] = [];
     for await (const dirent of files) {
       // We cannot use no dirent.path no dirent.parentPath,
@@ -135,7 +181,7 @@ export class LsDriver implements InternalLsDriver {
         directory: fullPath,
         fullName,
         dirent,
-        stat: await fs.stat(fullName)
+        stat: await fsp.stat(fullName)
       });
     }
 

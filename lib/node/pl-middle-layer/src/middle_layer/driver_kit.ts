@@ -10,6 +10,7 @@ import {
   LogsDriver,
   LogsStreamDriver,
   LsDriver,
+  OpenFileDialogCallback,
   UploadDriver
 } from '@milaboratories/pl-drivers';
 import * as Sdk from '@milaboratories/pl-model-common';
@@ -80,7 +81,14 @@ export async function initDriverKit(
   );
   const logsStreamDriver = new LogsStreamDriver(logsClient, ops.logStreamDriverOps);
   const logDriver = new LogsDriver(logsStreamDriver, blobDriver);
-  const lsDriver = new LsDriver(ops.logger, lsClient, pl, signer, ops.localStorageNameToPath);
+  const lsDriver = new LsDriver(
+    ops.logger,
+    lsClient,
+    pl,
+    signer,
+    ops.localStorageNameToPath,
+    ops.openFileDialogCallback
+  );
 
   const pFrameDriver = new PFrameDriver(blobDriver);
 
