@@ -30,6 +30,7 @@ export * from './components/PlBtnGroup';
 export * from './components/PlTextField';
 export * from './components/PlTextArea';
 export * from './components/PlDropdown';
+export * from './components/PlDropdownRef';
 export * from './components/PlDropdownLine';
 export * from './components/PlTooltip';
 export * from './components/PlProgressBar';

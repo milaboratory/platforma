@@ -49,7 +49,7 @@ const data = reactive({
         </PlDropdown>
         <PlDropdown v-model="data.value" label="Has error" :options="testItemOptions" error="Some error description" />
         <PlDropdown v-model="data.value" label="Disabled" :disabled="true" :options="testItemOptions" />
-        <PlDropdown v-model="data.value" label="Altered arrow icon" :options="testItemOptions" arrow-icon="clips" />
+        <PlDropdown v-model="data.value" label="Altered arrow icon" :options="testItemOptions" arrow-icon="icon-filter" />
       </div>
     </Split>
   </Layout>

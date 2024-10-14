@@ -1,7 +1,12 @@
 import { PollingComputableHooks } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import { isTimeoutOrCancelError, PlClient, ResourceId } from '@milaboratories/pl-client';
-import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
+import {
+  FinalResourceDataPredicate,
+  isTimeoutOrCancelError,
+  PlClient,
+  ResourceId
+} from '@milaboratories/pl-client';
+import { PlTreeState, TreeStateUpdateError } from './state';
 import {
   constructTreeLoadingRequest,
   initialTreeLoadingStat,
@@ -15,7 +20,11 @@ import { MiLogger } from '@milaboratories/ts-helpers';
 type StatLoggingMode = 'cumulative' | 'per-request';
 
 export type SynchronizedTreeOps = {
-  finalPredicate?: FinalPredicate;
+  /** Override final predicate from the PlClient */
+  finalPredicateOverride?: FinalResourceDataPredicate;
+
+  /** Pruning function to limit set of fields through which tree will
+   * traverse during state synchronization */
   pruning?: PruningFunction;
 
   /** Interval after last sync to sleep before the next one */
@@ -33,7 +42,7 @@ type ScheduledRefresh = {
 };
 
 export class SynchronizedTreeState {
-  private readonly finalPredicate: FinalPredicate | undefined;
+  private readonly finalPredicate: FinalResourceDataPredicate;
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
@@ -47,12 +56,12 @@ export class SynchronizedTreeState {
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger
   ) {
-    const { finalPredicate, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
+    const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
     this.pruning = pruning;
     this.pollingInterval = pollingInterval;
-    this.finalPredicate = finalPredicate;
+    this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
     this.logStat = logStat;
-    this.state = new PlTreeState(root, finalPredicate);
+    this.state = new PlTreeState(root, this.finalPredicate);
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),

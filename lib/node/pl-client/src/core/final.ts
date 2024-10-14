@@ -1,5 +1,5 @@
 import { Optional } from 'utility-types';
-import { BasicResourceData, isNotNullResourceId, isNullResourceId, ResourceData } from './types';
+import { BasicResourceData, getField, isNotNullResourceId, isNullResourceId, ResourceData } from './types';
 
 /**
  * Function is used to guide multiple layers of caching in pl-client and derived pl-tree.
@@ -29,12 +29,20 @@ function readyAndHasAllOutputsFilled(r: Optional<ResourceData, 'fields'>): boole
   return true;
 }
 
-// solaly for logging
+// solely for logging
 const unknownResourceTypeNames = new Set<string>();
 
 /** Default implementation, defining behaviour for built-in resource types. */
 export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r): boolean => {
   switch (r.type.name) {
+    case 'StreamManager':
+      if(!readyOrDuplicateOrError(r))
+        return false;
+      if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
+      if(isNotNullResourceId(r.error)) return true;
+      const downloadable = getField(r as ResourceData, "downloadable");
+      const stream = getField(r as ResourceData, "stream");
+      return stream.value === downloadable.value
     case 'StdMap':
     case 'std/map':
     case 'EphStdMap':
@@ -62,8 +70,11 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'Frontend/FromUrl':
     case 'Frontend/FromFolder':
     case 'BObjectSpec':
+    case 'Blob':
       return true;
     case 'UserProject':
+    case 'Projects':
+    case 'ClientRoot':
       return false;
     default:
       if (r.type.name.startsWith('Blob/')) return true;

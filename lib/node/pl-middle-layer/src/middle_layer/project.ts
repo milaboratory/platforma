@@ -4,20 +4,17 @@ import {
   field,
   FieldData,
   isNotFoundError,
-  isNotNullResourceId,
-  isNullResourceId,
   isTimeoutOrCancelError,
   Pl,
   ResourceId
 } from '@milaboratories/pl-client';
-import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
+import { Computable, ComputableStableDefined } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
 import {
   ExtendedResourceData,
-  PlTreeResourceI,
   SynchronizedTreeState
 } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
@@ -35,7 +32,6 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
-import { string } from 'zod';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -387,7 +383,6 @@ export class Project {
       rid,
       {
         ...env.ops.defaultTreeOptions,
-        finalPredicate: projectFinalPredicate,
         pruning: projectTreePruning
       },
       env.logger
@@ -416,73 +411,4 @@ function projectTreePruning(r: ExtendedResourceData): FieldData[] {
     default:
       return r.fields;
   }
-}
-
-function readyOrDuplicateOrError(r: Omit<PlTreeResourceI, 'final'>): boolean {
-  return (
-    r.resourceReady || isNotNullResourceId(r.originalResourceId) || isNotNullResourceId(r.error)
-  );
-}
-
-function readyAndHasAllOutputsFilled(r: Omit<PlTreeResourceI, 'final'>): boolean {
-  if (!readyOrDuplicateOrError(r)) return false;
-  if (!r.outputsLocked) return false;
-  for (const [, f] of r.fields)
-    if (isNullResourceId(f.error) && isNullResourceId(f.value)) return false;
-  return true;
-}
-
-// solaly for logging
-const unknownResourceTypeNames = new Set<string>();
-
-function projectFinalPredicate(r: Omit<PlTreeResourceI, 'final'>): boolean {
-  switch (r.type.name) {
-    case 'StdMap':
-    case 'std/map':
-    case 'EphStdMap':
-    case 'PFrame':
-    case 'BContext':
-    case 'BlockPackCustom':
-    case 'BinaryMap':
-    case 'BinaryValue':
-    case 'BlobMap':
-    case 'BResolveSingle':
-    case 'BResolveSingleNoResult':
-    case 'BQueryResult':
-    case 'TengoTemplate': // just in case, should not be in the tree because of pruning
-    case 'TengoLib': // just in case, should not be in the tree because of pruning
-    case 'SoftwareInfo': // just in case, should not be in the tree because of pruning
-    case 'Dummy':
-      // if (readyOrDuplicateOrError(r)) console.log('NOT_READY: ' + JSON.stringify(r.type));
-      return readyOrDuplicateOrError(r);
-    case 'json/resourceError':
-      return r.type.version === '1';
-    case 'json/object':
-    case 'json/string':
-    case 'json/array':
-    case 'json/number':
-    case 'BContextEnd':
-    case 'Frontend/FromUrl':
-    case 'Frontend/FromFolder':
-    case 'BObjectSpec':
-      return true;
-    case 'UserProject':
-      return false;
-    default:
-      if (r.type.name.startsWith('Blob/')) return true;
-      else if (r.type.name.startsWith('BlobUpload/')) {
-        return readyAndHasAllOutputsFilled(r);
-      } else if (r.type.name.startsWith('PColumnData/')) {
-        // if (!readyOrDuplicateOrError(r)) console.log('NOT_READY: ' + JSON.stringify(r.type));
-        return readyOrDuplicateOrError(r);
-      } else {
-        // Unknonw resource type detected
-        // Set used to log this message only once
-        if (!unknownResourceTypeNames.has(r.type.name)) {
-          console.log('UNKNOWN RESOURCE TYPE: ' + r.type.name);
-          unknownResourceTypeNames.add(r.type.name);
-        }
-      }
-  }
-  return false;
 }
