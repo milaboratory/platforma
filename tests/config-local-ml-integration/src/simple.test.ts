@@ -32,7 +32,6 @@ test(
       config: configs.plLocal,
       binary: {
         type: 'Download',
-        dir: path.join(configs.workingDir, 'binaries'),
         version: configs.plVersion
       },
       spawnOptions: {},
