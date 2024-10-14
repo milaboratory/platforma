@@ -32,7 +32,6 @@ test(
       config: configs.plLocal,
       binary: {
         type: 'Download',
-        dir: path.join(configs.workingDir, 'binaries'),
         version: configs.plVersion
       },
       spawnOptions: {},
@@ -54,7 +53,7 @@ test(
     const auth = await uaClient.login(configs.user, configs.password);
     const client = await PlClient.init(configs.clientAddr, { authInformation: auth })
 
-    // start midlle-layer
+    // start middle-layer
     const ml = await MiddleLayer.init(client, configs.ml);
 
     // assertions that everything is working
