@@ -21,13 +21,12 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {
         stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
       },
-      closeOld: false,
+      closeOld: false
     };
 
     const pl = await platformaInit(logger, opts);
@@ -55,11 +54,10 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {},
-      closeOld: true,
+      closeOld: true
     };
 
     const oldPl = await platformaInit(logger, options);
@@ -91,8 +89,7 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {},
       closeOld: false,
