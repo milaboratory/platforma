@@ -1,5 +1,5 @@
 import { test, expect } from '@jest/globals';
-import { field, TestHelpers } from '@milaboratories/pl-client';
+import { DefaultFinalResourceDataPredicate, field, TestHelpers } from '@milaboratories/pl-client';
 import { PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState } from './sync';
 import { Computable } from '@milaboratories/computable';
@@ -21,7 +21,7 @@ test('load resources', async () => {
       { sync: true }
     );
 
-    const treeState = new PlTreeState(r1);
+    const treeState = new PlTreeState(r1, DefaultFinalResourceDataPredicate);
 
     const theComputable = Computable.make((c) =>
       c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString()

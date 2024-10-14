@@ -7,10 +7,13 @@ import {
 } from './process';
 import { getBinaryPath, LocalPlBinary } from './binary';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { getConfigPath, writeConfig } from './config';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
 import { Trace, withTrace } from './trace';
+import path from 'path';
+import fsp from 'fs/promises';
+
+export const LocalConfigYaml = 'config-local.yaml';
 
 /**
  * Represents a local running pl-core,
@@ -32,7 +35,7 @@ export class Pl {
     private readonly onClose?: (pl: Pl) => Promise<void>,
     private readonly onError?: (pl: Pl) => Promise<void>,
     private readonly onCloseAndError?: (pl: Pl) => Promise<void>,
-    private readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>,
+    private readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>
   ) {}
 
   async start() {
@@ -45,10 +48,8 @@ export class Pl {
         );
 
         // keep in mind there are no awaits here, it will be asynchronous
-        if (this.onError !== undefined)
-          this.onError(this);
-        if (this.onCloseAndError !== undefined)
-          this.onCloseAndError(this);
+        if (this.onError !== undefined) this.onError(this);
+        if (this.onCloseAndError !== undefined) this.onCloseAndError(this);
         if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
           this.onCloseAndErrorNoStop(this);
       });
@@ -56,10 +57,8 @@ export class Pl {
         this.logger.warn(`platforma was closed, started opts: ${JSON.stringify(this.debugInfo())}`);
 
         // keep in mind there are no awaits here, it will be asynchronous
-        if (this.onClose !== undefined)
-          this.onClose(this);
-        if (this.onCloseAndError !== undefined)
-          this.onCloseAndError(this);
+        if (this.onClose !== undefined) this.onClose(this);
+        if (this.onCloseAndError !== undefined) this.onCloseAndError(this);
         if (this.onCloseAndErrorNoStop !== undefined && !this.wasStopped)
           this.onCloseAndErrorNoStop(this);
       });
@@ -101,7 +100,7 @@ export class Pl {
       pid: this.pid,
       workingDir: this.workingDir,
       initialStartHistory: this.initialStartHistory,
-      wasStopped: this.wasStopped,
+      wasStopped: this.wasStopped
     };
   }
 }
@@ -135,21 +134,28 @@ export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Pro
   return await withTrace(logger, async (trace, t) => {
     trace('startOptions', { ...opts, config: 'too wordy' });
 
+    const workDir = path.resolve(opts.workingDir);
+
     if (opts.closeOld) {
-      trace('closeOld', await platformaReadPidAndStop(logger, opts.workingDir));
+      trace('closeOld', await platformaReadPidAndStop(logger, workDir));
     }
 
-    const configPath = trace('configPath', getConfigPath(opts.workingDir));
-    trace('configWritten', await writeConfig(logger, configPath, opts.config));
+    const configPath = path.join(workDir, LocalConfigYaml);
 
-    const binaryPath = trace('binaryPath', await getBinaryPath(logger, opts.binary));
+    logger.info(`writing configuration '${configPath}'...`);
+    await fsp.writeFile(configPath, opts.config);
+
+    const binaryPath = trace(
+      'binaryPath',
+      await getBinaryPath(logger, path.join(workDir, 'binaries'), opts.binary)
+    );
 
     const processOpts: ProcessOptions = {
       cmd: binaryPath,
       args: ['-config', configPath],
       opts: {
         env: { ...process.env },
-        cwd: opts.workingDir,
+        cwd: workDir,
         stdio: ['ignore', 'ignore', 'inherit'],
         ...opts.spawnOptions
       }
@@ -160,7 +166,16 @@ export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Pro
       cwd: processOpts.opts.cwd
     });
 
-    const pl = new Pl(logger, opts.workingDir, processOpts, t, opts.onClose, opts.onError, opts.onCloseAndError, opts.onCloseAndErrorNoStop);
+    const pl = new Pl(
+      logger,
+      opts.workingDir,
+      processOpts,
+      t,
+      opts.onClose,
+      opts.onError,
+      opts.onCloseAndError,
+      opts.onCloseAndErrorNoStop
+    );
     await pl.start();
 
     return pl;

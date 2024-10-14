@@ -1,16 +1,16 @@
 import { test } from 'vitest';
 import { LocalPlOptions, platformaInit } from './pl';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
-import fs from 'fs/promises';
+import * as fs from 'fs/promises';
 import { createWriteStream } from 'fs';
-import path from 'path';
+import * as path from 'path';
 import { processStop } from './process';
-import yaml from 'yaml';
-import os from 'os';
+import * as yaml from 'yaml';
+import * as os from 'os';
 
 test(
   'should start and stop platforma of the current version with hardcoded config',
-  { timeout: 15000 },
+  { timeout: 25000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
@@ -21,13 +21,12 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {
         stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
       },
-      closeOld: false,
+      closeOld: false
     };
 
     const pl = await platformaInit(logger, opts);
@@ -44,7 +43,7 @@ test(
 
 test(
   'should close old platforma when starting a new one if the option is set',
-  { timeout: 15000 },
+  { timeout: 25000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
 
@@ -55,11 +54,10 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {},
-      closeOld: true,
+      closeOld: true
     };
 
     const oldPl = await platformaInit(logger, options);
@@ -80,7 +78,7 @@ test(
 
 test(
   'should restart platforma if restart option was provided',
-  { timeout: 15000 },
+  { timeout: 25000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
     const config = await readTestConfig();
@@ -91,8 +89,7 @@ test(
       config,
       binary: {
         type: 'Download',
-        version: await getPlVersion(),
-        dir: path.join(dir, 'binaries')
+        version: await getPlVersion()
       },
       spawnOptions: {},
       closeOld: false,
