@@ -15,7 +15,7 @@
   justify-content: center;
 }
 .grid-icon-sad-cat {
-  background-image: url(./assets/sad-cat.png);
+  background-image: url(./assets/no-data-cat.png);
   background-repeat: no-repeat;
 }
 .grid-overlay-container > div {
