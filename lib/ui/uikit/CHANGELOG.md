@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.20
+
+### Patch Changes
+
+- db794fa: fix padding in the base dropdown
+
 ## 1.2.19
 
 ### Patch Changes
