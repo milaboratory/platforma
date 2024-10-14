@@ -14,12 +14,7 @@ import { computed, ref, watch, shallowRef, toRefs } from 'vue';
 import OverlayLoading from './OverlayLoading.vue';
 import OverlayNoRows from './OverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import {
-  parseColId,
-  makeSheets,
-  updatePFrameGridOptions,
-  enrichJoinWithLabelColumns
-} from './sources/table-source';
+import { parseColId, makeSheets, updatePFrameGridOptions, enrichJoinWithLabelColumns } from './sources/table-source';
 import type { PlDataTableSheet, PlDataTableSettings } from './types';
 import * as lodash from 'lodash';
 import { computedAsync } from '@vueuse/core';
@@ -35,19 +30,15 @@ const { settings } = toRefs(props);
 watch(
   () => settings.value,
   async (settings, oldSettings) => {
-    if (
-      settings.sourceType !== 'pframe' ||
-      !settings.pFrame?.ok ||
-      !settings.pFrame.value ||
-      !settings.join
-    ) return;
-    
+    if (settings.sourceType !== 'pframe' || !settings.pFrame?.ok || !settings.pFrame.value || !settings.join) return;
+
     if (
       oldSettings &&
-      oldSettings.sourceType === 'pframe' && 
+      oldSettings.sourceType === 'pframe' &&
       lodash.isEqual(settings.pFrame, oldSettings.pFrame) &&
       lodash.isEqual(settings.join, oldSettings.join)
-    ) return;
+    )
+      return;
 
     const platforma = window.platforma;
     if (!platforma) throw Error('platforma not set');
@@ -68,39 +59,37 @@ watch(
     state.pTableParams.join = enrichedJoin;
 
     tableState.value = state;
-  } 
-);
-
-const sheets = computedAsync<PlDataTableSheet[]>(
-  async () => {
-    const sourceType = settings.value.sourceType;
-    switch(sourceType) {
-      case 'pframe': {
-        const platforma = window.platforma;
-        if (!platforma) throw Error('platforma not set');
-
-        const pfDriver = platforma.pFrameDriver;
-        if (!pfDriver) throw Error('platforma.pFrameDriver not set');
-
-        if (!settings.value.pFrame?.ok || !settings.value.pFrame.value) return [];
-        const pFrame = settings.value.pFrame.value;
-
-        const join = tableState.value.pTableParams?.join;
-        if (!join) return [];
-
-        return await makeSheets(pfDriver, pFrame, settings.value.sheetAxes, join);
-      }
-      case 'ptable': {
-        return settings.value.sheets ?? [];
-      }
-      case 'xsv': {
-        return [];
-      }
-      default: throw Error(`unsupported source type: ${sourceType satisfies never}`);
-    }
   },
-  []
 );
+
+const sheets = computedAsync<PlDataTableSheet[]>(async () => {
+  const sourceType = settings.value.sourceType;
+  switch (sourceType) {
+    case 'pframe': {
+      const platforma = window.platforma;
+      if (!platforma) throw Error('platforma not set');
+
+      const pfDriver = platforma.pFrameDriver;
+      if (!pfDriver) throw Error('platforma.pFrameDriver not set');
+
+      if (!settings.value.pFrame?.ok || !settings.value.pFrame.value) return [];
+      const pFrame = settings.value.pFrame.value;
+
+      const join = tableState.value.pTableParams?.join;
+      if (!join) return [];
+
+      return await makeSheets(pfDriver, pFrame, settings.value.sheetAxes, join);
+    }
+    case 'ptable': {
+      return settings.value.sheets ?? [];
+    }
+    case 'xsv': {
+      return [];
+    }
+    default:
+      throw Error(`unsupported source type: ${sourceType satisfies never}`);
+  }
+}, []);
 
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
@@ -199,7 +188,12 @@ watch(
     const [settings, sheets] = state;
     if (oldState) {
       const [oldSettings, oldSheets] = oldState;
-      if ((settings.sourceType === 'ptable' || settings.sourceType === 'pframe') && settings.sourceType === oldSettings?.sourceType && lodash.isEqual(sheets, oldSheets)) return;
+      if (
+        (settings.sourceType === 'ptable' || settings.sourceType === 'pframe') &&
+        settings.sourceType === oldSettings?.sourceType &&
+        lodash.isEqual(sheets, oldSheets)
+      )
+        return;
     }
 
     if (settings.sourceType !== 'ptable' && settings.sourceType !== 'pframe') {

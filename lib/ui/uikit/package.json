@@ -48,6 +48,7 @@
     "vitest": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
-    "yarpm": "catalog:"
+    "yarpm": "catalog:",
+    "svgo": "catalog:"
   }
 }
