@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.14
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+
 ## 1.0.13
 
 ### Patch Changes

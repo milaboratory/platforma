@@ -1,5 +1,13 @@
 # @milaboratories/uikit-playground
 
+## 0.0.17
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+- Updated dependencies [60e38dc]
+  - @milaboratories/uikit@1.2.19
+
 ## 0.0.16
 
 ### Patch Changes

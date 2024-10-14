@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.26
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+- Updated dependencies [60e38dc]
+  - @platforma-sdk/ui-vue@1.5.56
+
 ## 1.0.25
 
 ### Patch Changes

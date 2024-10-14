@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.56
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+- Updated dependencies [60e38dc]
+  - @milaboratories/uikit@1.2.19
+
 ## 1.5.42
 
 ### Patch Changes
