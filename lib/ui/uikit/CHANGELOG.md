@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.19
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+
 ## 1.2.18
 
 ### Patch Changes
