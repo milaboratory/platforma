@@ -163,12 +163,6 @@
         color: var(--color-placeholder);
       }
     }
-
-    &:hover {
-      .clear {
-        display: block;
-      }
-    }
   }
 
   &__helper {
@@ -179,43 +173,30 @@
     @include field-error();
   }
 
-  &__append {
-    padding-right: 24px;
+  &__controls {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 4px;
-    .icon {
+    gap: 6px;
+    margin-left: auto;
+
+    .icon-clear {
       cursor: pointer;
     }
-    .mask {
+
+    .mask-16,.mask-24 {
       background-color: var(--control-mask-fill);
       cursor: pointer;
     }
   }
 
-  .arrow {
-    position: absolute;
-    @include abs-center-y;
-    right: 12px;
-    background-color: var(--control-mask-fill);
-    @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
-  }
-
-  .arrow-altered {
-    position: absolute;
-    @include abs-center-y;
-    right: 12px;
-  }
-
-  .clear {
-    display: none;
-    position: absolute;
-    @include abs-center-y;
-    right: 36px;
-    z-index: 1;
-    @include icon(url('@/assets/images/16_clear.svg'), 16px); // @todo mask-image
+  .arrow-icon {
     cursor: pointer;
+    // Default "arrow" icon (16x16) 
+    &.arrow-icon-default {
+      background-color: var(--control-mask-fill);
+      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+    }
   }
 
   &.open,

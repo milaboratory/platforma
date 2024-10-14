@@ -11,10 +11,6 @@
     @include icon(url("./images/16_attention.svg"), var(--icon-size));
   }
 
-  &--clear {
-    @include icon(url("./images/16_clear.svg"), var(--icon-size));
-  }
-
   &--chevron-right {
     @include icon(url("./images/16_chevron-right.svg"), var(--icon-size));
   }
