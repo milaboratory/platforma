@@ -13,8 +13,8 @@ import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
 import './ag-theme.css';
-import OverlayLoading from './OverlayLoading.vue';
-import OverlayNoRows from './OverlayNoRows.vue';
+import PlOverlayLoading from './PlAgOverlayLoading.vue';
+import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import {
   enrichJoinWithLabelColumns,
@@ -245,8 +245,8 @@ const gridOptions: GridOptions = {
   getRowId: (params) => params.data.id,
   loading: true,
   loadingOverlayComponentParams: { notReady: true },
-  loadingOverlayComponent: OverlayLoading,
-  noRowsOverlayComponent: OverlayNoRows,
+  loadingOverlayComponent: PlOverlayLoading,
+  noRowsOverlayComponent: PlOverlayNoRows,
 };
 
 const reloadKey = ref(0);
