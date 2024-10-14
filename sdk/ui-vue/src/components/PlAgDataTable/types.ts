@@ -1,4 +1,14 @@
-import type { AxisId, JoinEntry, LocalBlobHandleAndSize, PColumnIdAndSpec, PFrameHandle, PObjectId, PTableHandle, RemoteBlobHandleAndSize, ValueOrErrors } from '@platforma-sdk/model';
+import type {
+  AxisId,
+  JoinEntry,
+  LocalBlobHandleAndSize,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PObjectId,
+  PTableHandle,
+  RemoteBlobHandleAndSize,
+  ValueOrErrors,
+} from '@platforma-sdk/model';
 
 export type PlDataTableSheet = {
   /** id of the axis to use */
@@ -22,19 +32,19 @@ export type PlDataTableSettings =
       /** The type of the source to feed the data into the table */
       sourceType: 'pframe';
       /** PFrame handle output */
-      pFrame: ValueOrErrors<PFrameHandle | undefined> | undefined;
+      pFrame: PFrameHandle | undefined;
       /** Join used to construct pTable, will be enriched with label-columns */
       join: JoinEntry<PColumnIdAndSpec> | undefined;
       /** Partitioning axes to make sheets */
       sheetAxes: AxisId[];
       /** PTable handle output */
-      pTable: ValueOrErrors<PTableHandle | undefined> | undefined;
+      pTable: PTableHandle | undefined;
     }
   | {
       /** The type of the source to feed the data into the table */
       sourceType: 'ptable';
       /** PTable handle output */
-      pTable: ValueOrErrors<PTableHandle | undefined> | undefined;
+      pTable: PTableHandle | undefined;
       /** Sheets that we want to show in our table */
       sheets?: PlDataTableSheet[];
     }

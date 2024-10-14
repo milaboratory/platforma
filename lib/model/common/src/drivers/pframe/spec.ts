@@ -1,13 +1,7 @@
 import { PObject, PObjectId, PObjectSpec } from '../../pool';
 
 /** PFrame columns and axes within them may store one of these types. */
-export type ValueType =
-  | 'Int'
-  | 'Long'
-  | 'Float'
-  | 'Double'
-  | 'String'
-  | 'Bytes';
+export type ValueType = 'Int' | 'Long' | 'Float' | 'Double' | 'String' | 'Bytes';
 
 /**
  * Specification of an individual axis.
@@ -133,10 +127,24 @@ export type AxesId = AxisId[];
 /** Extracts axis ids from axis spec */
 export function getAxisId(spec: AxisSpec): AxisId {
   const { type, name, domain } = spec;
-  return { type, name, ...(domain) && { domain } };
+  return { type, name, ...(domain && { domain }) };
 }
 
 /** Extracts axes ids from axes spec array from column spec */
 export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
+}
+
+function matchDomain(query?: Record<string, string>, match?: Record<string, string>) {
+  if (query === undefined) return match === undefined;
+  if (match === undefined) return false;
+  for (const k in match) {
+    if (query[k] !== match[k]) return false;
+  }
+  return true;
+}
+
+/** Returns whether "match" axis id is compatible with the "query" */
+export function matchAxisId(query: AxisId, match: AxisId): boolean {
+  return query.name === match.name && matchDomain(query.domain, match.domain);
 }
