@@ -130,7 +130,7 @@
       left: 0;
       bottom: 0;
       right: 0;
-      padding: 0 48px 0 11px;
+      padding: 0 60px 0 11px; // @TODO padding-right based on controls width
       pointer-events: none;
       line-height: var(--control-height);
       color: var(--contour-color);
