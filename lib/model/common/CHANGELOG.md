@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.3.15
+
+### Patch Changes
+
+- eb079e9: Support heterogeneous axes in PlAgDataTable
+
 ## 1.3.14
 
 ### Patch Changes
