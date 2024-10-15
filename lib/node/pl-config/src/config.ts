@@ -1,5 +1,4 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
-import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
@@ -11,8 +10,8 @@ import {
   licenseForConfig,
   PlLicenseMode
 } from './license';
-import { createHtpasswdFile, getDefaultAuthMethods, randomStr } from './auth';
-import { createDefaultLocalStorages, StoragesSettings, storagesToMl } from './storages';
+import { createHtpasswdFile, getDefaultAuthMethods } from './auth';
+import { createDefaultLocalStorages, StoragesSettings } from './storages';
 import { createDefaultPackageSettings } from './packageloader';
 import { FSKVStorage } from './fskvstorage';
 import * as crypto from 'node:crypto';
@@ -33,6 +32,20 @@ export type PlConfigGeneratorOptions = {
    * @param config - a parsed yaml.
    */
   plConfigPostprocessing?: (config: PlConfig) => PlConfig;
+};
+
+/** Defines which storages from pl are available via local paths */
+export type LocalStorageProjection = {
+  /** Pl storage id */
+  readonly storageId: string;
+
+  /**
+   * Local path, the storage is mounted at.
+   *
+   * Empty string means that this storage accepts absolute paths, and operates inside the same OS.
+   * This matches the behaviour how pl interprets FS storage config.
+   * */
+  readonly localPath: string;
 };
 
 export type LocalPlConfigGenerationResult = {
@@ -61,24 +74,7 @@ export type LocalPlConfigGenerationResult = {
   // Data for configuration of blob drivers
   //
 
-  /**
-   * If Platforma is running in local mode and a download driver
-   * needs to download files from local storage, it will open files
-   * from the specified directory. Otherwise, setting should be empty.
-   *
-   * storage_name -> local_path
-   * */
-  readonly downloadLocalStorageNameToPath: Record<string, string>;
-
-  /**
-   * If the client wants to upload files from their local machine to Platforma,
-   * this option should be set. Set any unique storage names
-   * to any paths from where the client will upload files,
-   * e.g., {'local': '/'}.
-   *
-   * storage_name -> local_path
-   * */
-  readonly uploadLocalStorageNameToPath: Record<string, string>;
+  readonly localStorageProjections: LocalStorageProjection[];
 };
 
 export async function generateLocalPlConfigs(
@@ -105,16 +101,12 @@ export async function generateLocalPlConfigs(
     plUser: user,
     plPassword: password,
 
-    localStorageNameToPath: {}
-
-    ml: {
-      logger: opts.logger,
-      localSecret: 'secret', // @TODO: what to do with this?
-      blobDownloadPath,
-      frontendDownloadPath,
-      platformLocalStorageNameToPath: storagesToMl(storages),
-
-    }
+    localStorageProjections: storages.storages
+      .filter((s) => s.main.downloadable && s.localPath)
+      .map((s) => ({
+        storageId: s.storage.id,
+        localPath: s.localPath!
+      }))
   };
 }
 

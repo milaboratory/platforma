@@ -12,27 +12,22 @@ export interface StorageSettings {
   main: PlControllerDataMainStoragesSettings;
 
   /** Via this path storage is available for the local observer (like middle-layer in desktop app) */
-  localPath: string;
+  localPath?: string;
 }
 
 export async function createDefaultLocalStorages(workdir: string): Promise<StoragesSettings> {
-  const rootPath = getRootDir();
   const workPath = path.join(workdir, 'storages', 'work');
   const mainPath = path.join(workdir, 'storages', 'main');
 
   await fs.mkdir(workPath, { recursive: true });
   await fs.mkdir(mainPath, { recursive: true });
 
-  return getDefaultConfigStorages(rootPath, workPath, mainPath);
+  return getDefaultConfigStorages(workPath, mainPath);
 }
 
-function getDefaultConfigStorages(
-  rootPath: string,
-  workPath: string,
-  mainPath: string
-): StoragesSettings {
+function getDefaultConfigStorages(workPath: string, mainPath: string): StoragesSettings {
   const root: StorageSettings = {
-    localPath: rootPath,
+    localPath: '',
     main: {
       mode: 'passive',
       downloadable: true
@@ -41,7 +36,7 @@ function getDefaultConfigStorages(
       id: 'root',
       type: 'FS',
       indexCachePeriod: '1m',
-      rootPath: ""
+      rootPath: ''
     }
   };
 
@@ -60,7 +55,6 @@ function getDefaultConfigStorages(
   };
 
   const work: StorageSettings = {
-    localPath: mainPath,
     main: {
       mode: 'active',
       downloadable: false
@@ -77,14 +71,4 @@ function getDefaultConfigStorages(
     runner: workPath,
     storages: [root, work, main]
   };
-}
-
-export function storagesToMl(settings: StoragesSettings): Record<string, string> {
-  return Object.fromEntries(
-    settings.storages.filter((s) => s.main.downloadable).map((s) => [s.storage.id, s.localPath])
-  );
-}
-
-export function getRootDir() {
-  return path.parse(process.cwd()).root;
 }

@@ -4,6 +4,7 @@ import * as sdk from '@milaboratories/pl-model-common';
 import {
   isImportFileHandleIndex,
   LocalImportFileHandle,
+  LsEntry,
   OpenDialogOps,
   OpenMultipleFilesResponse,
   OpenSingleFileResponse,
@@ -15,10 +16,8 @@ import * as fsp from 'node:fs/promises';
 import {
   createIndexImportHandle,
   createUploadImportHandle,
-  ListResponse,
   parseIndexHandle,
-  parseUploadHandle,
-  toListItem
+  parseUploadHandle
 } from './helpers/ls_list_entry';
 import {
   createLocalStorageHandle,
@@ -26,6 +25,9 @@ import {
   parseStorageHandle
 } from './helpers/ls_storage_entry';
 import { LocalStorageProjection } from './types';
+import * as os from 'node:os';
+import * as fs from 'node:fs';
+import { createLsFilesClient } from '../clients/helpers';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -36,7 +38,7 @@ export interface InternalLsDriver extends sdk.LsDriver {
    * Given local path, generates well-structured and signed upload handle.
    * To be used in tests and in implementation of the native file selection UI API.
    * */
-  getLocalFileHandle(localPath: string): Promise<sdk.ImportFileHandleUpload>;
+  getLocalFileHandle(localPath: string): Promise<sdk.LocalImportFileHandle>;
 }
 
 export type OpenFileDialogCallback = (
@@ -61,38 +63,32 @@ function validateAbsolute(p: string): string {
   return p;
 }
 
-// /** Throws error on paths like this: /a/b/../c */
-// function validateNormalized(p: string): string {
-//   if (path.normalize(p) !== p) throw new Error(`Path is not normalized.`);
-//   return p;
-// }
+export function DefaultVirtualLocalStorages(): VirtualLocalStorageSpec[] {
+  const home = os.homedir();
+  return path.sep === '/'
+    ? [{ name: 'local', root: '/', initialPath: home }]
+    : [
+        {
+          name: 'local',
+          root: path.parse(home).root, // disk where home directory resides
+          initialPath: home
+        }
+      ];
+}
 
 export class LsDriver implements InternalLsDriver {
-  /** Pl storage id, to resource id. THe resource id can be used to make LS GRPC calls to. */
-  private storageIdToResourceId?: Record<string, ResourceId>;
-  /** Virtual storages by name */
-  private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>;
-  /** Local projections by storageId */
-  private readonly localProjectionsMap: Map<string, LocalStorageProjection>;
-
-  constructor(
+  private constructor(
     private readonly logger: MiLogger,
-    private readonly clientLs: ClientLs,
-    private readonly client: PlClient,
+    private readonly lsClient: ClientLs,
+    /** Pl storage id, to resource id. The resource id can be used to make LS GRPC calls to. */
+    private readonly storageIdToResourceId: Record<string, ResourceId>,
     private readonly signer: Signer,
-    virtualStorages: VirtualLocalStorageSpec[],
-    /** Pl storages available locally */
-    localProjections: LocalStorageProjection[],
+    /** Virtual storages by name */
+    private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>,
+    /** Local projections by storageId */
+    private readonly localProjectionsMap: Map<string, LocalStorageProjection>,
     private readonly openFileDialogCallback: OpenFileDialogCallback
-  ) {
-    // validating inputs
-    for (const vp of virtualStorages) validateAbsolute(vp.root);
-    for (const lp of localProjections) validateAbsolute(lp.localPath);
-
-    // creating indexed maps for quick access
-    this.virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));
-    this.localProjectionsMap = new Map(localProjections.map((s) => [s.storageId, s]));
-  }
+  ) {}
 
   public async getLocalFileContent(
     file: LocalImportFileHandle,
@@ -161,7 +157,7 @@ export class LsDriver implements InternalLsDriver {
 
   public async getLocalFileHandle(
     localPath: string
-  ): Promise<sdk.ImportFileHandleUpload & LocalImportFileHandle> {
+  ): Promise<sdk.ImportFileHandle & LocalImportFileHandle> {
     validateAbsolute(localPath);
 
     // Checking if local path is directly reachable by pl, because it is in one of the
@@ -177,7 +173,7 @@ export class LsDriver implements InternalLsDriver {
         return createIndexImportHandle(
           lp.storageId,
           pathWithinStorage
-        ) as sdk.ImportFileHandleUpload & LocalImportFileHandle;
+        ) as sdk.ImportFileHandleIndex & LocalImportFileHandle;
       }
     }
 
@@ -209,58 +205,77 @@ export class LsDriver implements InternalLsDriver {
 
   public async listFiles(
     storageHandle: sdk.StorageHandle,
-    path: string
+    fullPath: string
   ): Promise<sdk.ListFilesResult> {
-    const storageHandleData = parseStorageHandle(storageHandle);
+    const storageData = parseStorageHandle(storageHandle);
 
-    if (storageHandleData.isRemote) {
-      const list = await this.clientLs.list(storageHandleData, path);
-
+    if (storageData.isRemote) {
+      const response = await this.lsClient.list(storageData, fullPath);
+      return {
+        entries: response.items.map((e) => ({
+          type: e.isDir ? 'dir' : 'file',
+          name: e.name,
+          fullPath: e.fullName,
+          handle: createIndexImportHandle(storageData.name, e.fullName)
+        }))
+      };
     } else {
-      list = await this.getLocalFiles(this.logger, storageHandleData.rootPath, path);
-    }
+      if (path.sep === '/' && fullPath === '') fullPath = '/';
 
-    // return toLsEntries({
-    //   storageName: storageHandleData.name,
-    //   list,
-    //   signer: this.signer,
-    //   remote: storageHandleData.isRemote
-    // });
+      const lsRoot =
+        storageData.rootPath === ''
+          ? validateAbsolute(fullPath)
+          : path.join(storageData.rootPath, fullPath);
+
+      const entries: LsEntry[] = [];
+      for await (const dirent of await fsp.opendir(lsRoot)) {
+        if (!dirent.isFile() && !dirent.isDirectory()) continue;
+
+        // We cannot use no dirent.fullPath no dirent.parentPath,
+        // since the former is deprecated
+        // and the later works differently on different versions.
+        const absolutePath = path.join(lsRoot, dirent.name);
+
+        entries.push({
+          type: dirent.isFile() ? 'file' : 'dir',
+          name: dirent.name,
+          fullPath: absolutePath,
+          handle: await this.getLocalFileHandle(absolutePath)
+        });
+      }
+
+      return { entries };
+    }
   }
 
-  private async getLocalFiles(
+  public static async init(
     logger: MiLogger,
-    storagePath: string,
-    pathInStorage: string
-  ): Promise<ListResponse> {
-    if (storagePath !== '') validateAbsolute(storagePath);
+    client: PlClient,
+    signer: Signer,
+    virtualStorages: VirtualLocalStorageSpec[],
+    /** Pl storages available locally */
+    localProjections: LocalStorageProjection[],
+    openFileDialogCallback: OpenFileDialogCallback
+  ): Promise<LsDriver> {
+    const lsClient = createLsFilesClient(client, logger);
 
-    const fullPath =
-      storagePath === '' ? validateAbsolute(pathInStorage) : path.join(storagePath, pathInStorage);
+    // validating inputs
+    for (const vp of virtualStorages) validateAbsolute(vp.root);
+    for (const lp of localProjections) validateAbsolute(lp.localPath);
 
-    const files = await fsp.opendir(fullPath);
-    const direntsWithStats: any[] = [];
-    for await (const dirent of files) {
-      // We cannot use no dirent.path no dirent.parentPath,
-      // since the former is deprecated
-      // and the later works differently on different versions.
-      const fullName = path.join(fullPath, dirent.name);
+    // creating indexed maps for quick access
+    const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));
+    const localProjectionsMap = new Map(localProjections.map((s) => [s.storageId, s]));
 
-      direntsWithStats.push({
-        directory: fullPath,
-        fullName,
-        dirent,
-        stat: await fsp.stat(fullName)
-      });
-    }
-
-    return {
-      delimiter: path.sep,
-      items: direntsWithStats
-        .map((ds) => toListItem(logger, ds))
-        .filter((item) => item != undefined)
-        .map((item) => item!)
-    };
+    return new LsDriver(
+      logger,
+      lsClient,
+      await doGetAvailableStorageIds(client),
+      signer,
+      virtualStoragesMap,
+      localProjectionsMap,
+      openFileDialogCallback
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { LsDriver } from './ls';
+import { DefaultVirtualLocalStorages, LsDriver } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
@@ -10,14 +10,12 @@ test('should ok when get all storages from ls driver', async () => {
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(
+    const driver = await LsDriver.init(
       logger,
-      lsClient,
       client,
       signer,
-      {
-        local: os.homedir()
-      },
+      DefaultVirtualLocalStorages(),
+      [],
       () => {
         throw Error();
       }
@@ -39,15 +37,12 @@ test('should ok when list files from remote storage in ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(
+    const driver = await LsDriver.init(
       logger,
-      lsClient,
       client,
       signer,
-      {
-        local: os.homedir()
-      },
+      DefaultVirtualLocalStorages(),
+      [],
       () => {
         throw Error();
       }
@@ -66,14 +61,12 @@ test('should ok when list files from remote storage in ls driver', async () => {
     expect(testDir!.name).toEqual('ls_dir_structure_test');
 
     const secondDirs = await driver.listFiles(library, testDir!.fullPath);
-    expect(secondDirs.parent).toEqual('/ls_dir_structure_test/');
     expect(secondDirs.entries).toHaveLength(2);
     expect(secondDirs.entries[0].type).toEqual('dir');
     expect(secondDirs.entries[0].fullPath).toEqual('/ls_dir_structure_test/abc');
     expect(secondDirs.entries[0].name).toEqual('abc');
 
     const f = await driver.listFiles(library, secondDirs.entries[0].fullPath);
-    expect(f.parent).toEqual('/ls_dir_structure_test/abc/');
     expect(f.entries).toHaveLength(1);
     expect(f.entries[0].type).toEqual('file');
     expect(f.entries[0].fullPath).toEqual('/ls_dir_structure_test/abc/42.txt');
@@ -86,15 +79,12 @@ test('should ok when list files from local storage in ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(
+    const driver = await LsDriver.init(
       logger,
-      lsClient,
       client,
       signer,
-      {
-        local: os.homedir()
-      },
+      DefaultVirtualLocalStorages(),
+      [],
       () => {
         throw Error();
       }
@@ -112,15 +102,12 @@ test('should ok when get file using local dialog, and read its content', async (
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const lsClient = createLsFilesClient(client, logger);
-    const driver = new LsDriver(
+    const driver = await LsDriver.init(
       logger,
-      lsClient,
       client,
       signer,
-      {
-        local: os.homedir()
-      },
+      DefaultVirtualLocalStorages(),
+      [],
       async () => [path.resolve('../../../assets/answer_to_the_ultimate_question.txt')]
     );
 
