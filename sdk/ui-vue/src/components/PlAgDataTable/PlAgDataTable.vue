@@ -1,7 +1,5 @@
 <script lang="ts" setup>
-import './ag-theme.css';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import canonicalize from 'canonicalize';
 import type { GridApi, GridOptions, SortState } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { InfiniteRowModelModule } from '@ag-grid-community/infinite-row-model';
@@ -10,14 +8,21 @@ import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
-import { computed, ref, watch, shallowRef, toRefs } from 'vue';
-import OverlayLoading from './OverlayLoading.vue';
-import OverlayNoRows from './OverlayNoRows.vue';
-import { updateXsvGridOptions } from './sources/file-source';
-import { parseColId, makeSheets, updatePFrameGridOptions, enrichJoinWithLabelColumns } from './sources/table-source';
-import type { PlDataTableSheet, PlDataTableSettings } from './types';
-import * as lodash from 'lodash';
 import { computedAsync } from '@vueuse/core';
+import canonicalize from 'canonicalize';
+import * as lodash from 'lodash';
+import { computed, ref, shallowRef, toRefs, watch } from 'vue';
+import './ag-theme.css';
+import PlOverlayLoading from './PlAgOverlayLoading.vue';
+import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
+import { updateXsvGridOptions } from './sources/file-source';
+import {
+  enrichJoinWithLabelColumns,
+  makeSheets,
+  parseColId,
+  updatePFrameGridOptions
+} from './sources/table-source';
+import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, InfiniteRowModelModule, RangeSelectionModule]);
 
@@ -30,15 +35,18 @@ const { settings } = toRefs(props);
 watch(
   () => settings.value,
   async (settings, oldSettings) => {
-    if (settings.sourceType !== 'pframe' || !settings.pFrame?.ok || !settings.pFrame.value || !settings.join) return;
+    if (
+      settings.sourceType !== 'pframe' ||
+      !settings.pFrame ||
+      !settings.join
+    ) return;
 
     if (
       oldSettings &&
       oldSettings.sourceType === 'pframe' &&
       lodash.isEqual(settings.pFrame, oldSettings.pFrame) &&
       lodash.isEqual(settings.join, oldSettings.join)
-    )
-      return;
+    ) return;
 
     const platforma = window.platforma;
     if (!platforma) throw Error('platforma not set');
@@ -46,7 +54,7 @@ watch(
     const pfDriver = platforma.pFrameDriver;
     if (!pfDriver) throw Error('platforma.pFrameDriver not set');
 
-    const enrichedJoin = await enrichJoinWithLabelColumns(pfDriver, settings.pFrame.value, settings.join);
+    const enrichedJoin = await enrichJoinWithLabelColumns(pfDriver, settings.pFrame, settings.join);
 
     const state = tableState.value;
 
@@ -59,37 +67,39 @@ watch(
     state.pTableParams.join = enrichedJoin;
 
     tableState.value = state;
-  },
+  }
 );
 
-const sheets = computedAsync<PlDataTableSheet[]>(async () => {
-  const sourceType = settings.value.sourceType;
-  switch (sourceType) {
-    case 'pframe': {
-      const platforma = window.platforma;
-      if (!platforma) throw Error('platforma not set');
+const sheets = computedAsync<PlDataTableSheet[]>(
+  async () => {
+    const sourceType = settings.value.sourceType;
+    switch (sourceType) {
+      case 'pframe': {
+        const platforma = window.platforma;
+        if (!platforma) throw Error('platforma not set');
 
-      const pfDriver = platforma.pFrameDriver;
-      if (!pfDriver) throw Error('platforma.pFrameDriver not set');
+        const pfDriver = platforma.pFrameDriver;
+        if (!pfDriver) throw Error('platforma.pFrameDriver not set');
 
-      if (!settings.value.pFrame?.ok || !settings.value.pFrame.value) return [];
-      const pFrame = settings.value.pFrame.value;
+        if (!settings.value.pFrame) return [];
+        const pFrame = settings.value.pFrame;
 
-      const join = tableState.value.pTableParams?.join;
-      if (!join) return [];
+        const join = tableState.value.pTableParams?.join;
+        if (!join) return [];
 
-      return await makeSheets(pfDriver, pFrame, settings.value.sheetAxes, join);
+        return await makeSheets(pfDriver, pFrame, settings.value.sheetAxes, join);
+      }
+      case 'ptable': {
+        return settings.value.sheets ?? [];
+      }
+      case 'xsv': {
+        return [];
+      }
+      default: throw Error(`unsupported source type: ${sourceType satisfies never}`);
     }
-    case 'ptable': {
-      return settings.value.sheets ?? [];
-    }
-    case 'xsv': {
-      return [];
-    }
-    default:
-      throw Error(`unsupported source type: ${sourceType satisfies never}`);
-  }
-}, []);
+  },
+  []
+);
 
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
@@ -114,9 +124,11 @@ const gridState = computed({
     };
   },
   set: (gridState) => {
-    const sorting = makeSorting(gridState.sort);
 
     const state = tableState.value;
+
+    // do not apply driver sorting for client side rendering
+    const sorting = gridOptions.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
     state.gridState.columnOrder = gridState.columnOrder;
     state.gridState.sort = gridState.sort;
@@ -144,13 +156,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-            type: 'column',
-            id: sheet.column,
-          }
+          type: 'column',
+          id: sheet.column,
+        }
         : {
-            type: 'axis',
-            id: sheet.axis,
-          },
+          type: 'axis',
+          id: sheet.axis,
+        },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -188,12 +200,7 @@ watch(
     const [settings, sheets] = state;
     if (oldState) {
       const [oldSettings, oldSheets] = oldState;
-      if (
-        (settings.sourceType === 'ptable' || settings.sourceType === 'pframe') &&
-        settings.sourceType === oldSettings?.sourceType &&
-        lodash.isEqual(sheets, oldSheets)
-      )
-        return;
+      if ((settings.sourceType === 'ptable' || settings.sourceType === 'pframe') && settings.sourceType === oldSettings?.sourceType && lodash.isEqual(sheets, oldSheets)) return;
     }
 
     if (settings.sourceType !== 'ptable' && settings.sourceType !== 'pframe') {
@@ -217,7 +224,7 @@ const gridApi = shallowRef<GridApi>();
 const gridOptions: GridOptions = {
   animateRows: false,
   suppressColumnMoveAnimation: true,
-  enableRangeSelection: true,
+  cellSelection: true,
   initialState: tableState.value.gridState,
   onGridReady: (event) => {
     gridApi.value = event.api;
@@ -232,14 +239,14 @@ const gridOptions: GridOptions = {
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
   },
-  rowModelType: 'infinite',
+  // rowModelType: 'infinite', // will be set with the first data set 
   maxBlocksInCache: 10000,
   cacheBlockSize: 100,
   getRowId: (params) => params.data.id,
   loading: true,
   loadingOverlayComponentParams: { notReady: true },
-  loadingOverlayComponent: OverlayLoading,
-  noRowsOverlayComponent: OverlayNoRows,
+  loadingOverlayComponent: PlOverlayLoading,
+  noRowsOverlayComponent: PlOverlayNoRows,
 };
 
 const reloadKey = ref(0);
@@ -285,7 +292,7 @@ watch(
         if (!pfDriver) throw Error('platforma.pFrameDriver not set');
 
         const pTable = settings.pTable;
-        if (!pTable?.ok || !pTable.value) {
+        if (!pTable) {
           return gridApi.updateGridOptions({
             loading: true,
             loadingOverlayComponentParams: { notReady: true },
@@ -294,9 +301,9 @@ watch(
           });
         }
 
-        const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable.value, sheets);
+        const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable, sheets);
         return gridApi.updateGridOptions({
-          loading: true,
+          loading: options.rowModelType === 'infinite',
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
@@ -335,13 +342,9 @@ watch(
   <div class="ap-ag-data-table-container">
     <Transition name="ap-ag-data-table-sheets-transition">
       <div v-if="sheets.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine
-          v-for="(sheet, i) in sheets"
-          :key="i"
-          :model-value="sheetsState[makeSheetId(sheet.axis)]"
+        <PlDropdownLine v-for="(sheet, i) in sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
           :options="sheet.options"
-          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-        />
+          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
       </div>
     </Transition>
     <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" />
@@ -355,14 +358,17 @@ watch(
   height: 100%;
   gap: 12px;
 }
+
 .ap-ag-data-table-sheets-transition-enter-active,
 .ap-ag-data-table-sheets-transition-leave-active {
   transition: all 0.2s ease-in-out;
 }
+
 .ap-ag-data-table-sheets-transition-enter-from,
 .ap-ag-data-table-sheets-transition-leave-to {
   margin-top: -52px;
 }
+
 .ap-ag-data-table-sheets {
   display: flex;
   flex-direction: row;
@@ -370,6 +376,7 @@ watch(
   flex-wrap: wrap;
   z-index: 3;
 }
+
 .ap-ag-data-table-grid {
   flex: 1;
 }

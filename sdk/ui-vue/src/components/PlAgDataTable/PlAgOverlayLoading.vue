@@ -29,7 +29,7 @@ defineProps<{
   justify-content: center;
 }
 .grid-icon-cat-in-bag {
-  background-image: url(./assets/cat-in-bag.png);
+  background-image: url(./assets/loading-cat.png);
   background-repeat: no-repeat;
 }
 .grid-mask-loading {
