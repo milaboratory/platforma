@@ -5,13 +5,14 @@ import {
   processWaitStopped,
   processRun
 } from './process';
-import { getBinaryPath, LocalPlBinary } from './binary';
+import { resolvePlBinaryPath, PlBinarySource, getDefaultPlBinarySource } from './pl_binary';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
 import { ChildProcess, SpawnOptions } from 'child_process';
 import { filePid, readPid, writePid } from './pid';
 import { Trace, withTrace } from './trace';
 import path from 'path';
 import fsp from 'fs/promises';
+import { Required } from 'utility-types';
 
 export const LocalConfigYaml = 'config-local.yaml';
 
@@ -77,6 +78,7 @@ export class Pl {
   }
 
   stop() {
+    // TODO use this.instance to stop the process
     this.wasStopped = true;
     processStop(notEmpty(this.pid));
   }
@@ -111,15 +113,16 @@ export type LocalPlOptions = {
   readonly workingDir: string;
   /** A string representation of yaml config. */
   readonly config: string;
-  /** How to get a binary, download it or get an existing one. */
-  readonly binary: LocalPlBinary;
+  /** How to get a binary, download it or get an existing one (default: download latest version) */
+  readonly plBinary?: PlBinarySource;
   /** Additional options for a process, environments, stdout, stderr etc. */
-  readonly spawnOptions: SpawnOptions;
+  readonly spawnOptions?: SpawnOptions;
   /**
    * If the previous pl-core was started from the same directory,
    * we can check if it's still running and then stop it before starting a new one.
+   * (default: true)
    */
-  readonly closeOld: boolean;
+  readonly closeOld?: boolean;
 
   readonly onClose?: (pl: Pl) => Promise<void>;
   readonly onError?: (pl: Pl) => Promise<void>;
@@ -127,27 +130,37 @@ export type LocalPlOptions = {
   readonly onCloseAndErrorNoStop?: (pl: Pl) => Promise<void>;
 };
 
+type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' | 'closeOld'>;
+
 /**
  * Starts pl-core, if the option was provided downloads a binary, reads license environments etc.
  */
-export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Promise<Pl> {
+export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<Pl> {
+  // filling-in default values
+  const ops = {
+    ..._ops,
+    plBinary: getDefaultPlBinarySource(),
+    spawnOptions: {},
+    closeOld: true
+  } satisfies LocalPlOptionsFull;
+
   return await withTrace(logger, async (trace, t) => {
-    trace('startOptions', { ...opts, config: 'too wordy' });
+    trace('startOptions', { ...ops, config: 'too wordy' });
 
-    const workDir = path.resolve(opts.workingDir);
+    const workDir = path.resolve(ops.workingDir);
 
-    if (opts.closeOld) {
+    if (ops.closeOld) {
       trace('closeOld', await platformaReadPidAndStop(logger, workDir));
     }
 
     const configPath = path.join(workDir, LocalConfigYaml);
 
     logger.info(`writing configuration '${configPath}'...`);
-    await fsp.writeFile(configPath, opts.config);
+    await fsp.writeFile(configPath, ops.config);
 
     const binaryPath = trace(
       'binaryPath',
-      await getBinaryPath(logger, path.join(workDir, 'binaries'), opts.binary)
+      await resolvePlBinaryPath(logger, path.join(workDir, 'binaries'), ops.plBinary)
     );
 
     const processOpts: ProcessOptions = {
@@ -157,7 +170,7 @@ export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Pro
         env: { ...process.env },
         cwd: workDir,
         stdio: ['ignore', 'ignore', 'inherit'],
-        ...opts.spawnOptions
+        ...ops.spawnOptions
       }
     };
     trace('processOpts', {
@@ -168,13 +181,13 @@ export async function platformaInit(logger: MiLogger, opts: LocalPlOptions): Pro
 
     const pl = new Pl(
       logger,
-      opts.workingDir,
+      ops.workingDir,
       processOpts,
       t,
-      opts.onClose,
-      opts.onError,
-      opts.onCloseAndError,
-      opts.onCloseAndErrorNoStop
+      ops.onClose,
+      ops.onError,
+      ops.onCloseAndError,
+      ops.onCloseAndErrorNoStop
     );
     await pl.start();
 
@@ -196,7 +209,7 @@ async function platformaReadPidAndStop(
 
     if (oldPid !== undefined && alive) {
       trace('stopped', processStop(oldPid));
-      trace('waitStopped', await processWaitStopped(oldPid, 10000));
+      trace('waitStopped', await processWaitStopped(oldPid, 10_000));
     }
 
     return t;

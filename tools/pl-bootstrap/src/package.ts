@@ -1,7 +1,7 @@
 import { resolve, join } from 'path';
 import fs from 'fs';
 import os from 'os';
-import { getPlVersion } from '@milaboratories/pl-config';
+import { getDefaultPlVersion } from '@milaboratories/pl-config';
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);
@@ -30,7 +30,7 @@ export function readFileSync(...p: string[]): Buffer {
 
 export function plImageTag(version?: string): string {
   if (!version) {
-    version = getPlVersion();
+    version = getDefaultPlVersion();
   }
 
   return `quay.io/milaboratories/platforma:${version}`;

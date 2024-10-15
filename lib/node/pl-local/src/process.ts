@@ -26,7 +26,7 @@ export async function isProcessAlive(pid: number) {
 }
 
 export function processStop(pid: number) {
-  process.kill(pid, 'SIGINT');
+  return process.kill(pid, 'SIGINT');
 }
 
 export async function processWaitStopped(pid: number, maxMs: number) {

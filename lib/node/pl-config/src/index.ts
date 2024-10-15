@@ -4,4 +4,4 @@ export * from './ports';
 export * from './license';
 export * from './auth';
 export * from './storages';
-export * from './package';
+export * from '../../pl-local/src/pl_version';

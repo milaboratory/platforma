@@ -7,7 +7,7 @@ import * as os from 'node:os';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
-  /** Common root where to put downloaded blobs. */
+  /** Common root where to put downloaded blobs / downloaded blob cache */
   readonly blobDownloadPath: string;
 
   /**
