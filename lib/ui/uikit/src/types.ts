@@ -1,4 +1,4 @@
-import type { ImportFileHandle, Platforma, StorageHandle } from '@platforma-sdk/model';
+import type { ImportFileHandle, Platforma, StorageHandle, Ref as ModelRef } from '@platforma-sdk/model';
 import type { Ref, ComputedRef } from 'vue';
 
 export type Size = 'small' | 'medium' | 'large';
@@ -36,6 +36,13 @@ export type ListOption<T = unknown> =
       description?: string;
       value: T;
     };
+
+export type { ModelRef };
+
+export type RefOption = {
+  readonly label: string;
+  readonly ref: ModelRef;
+};
 
 export type ListOptionNormalized<T = unknown> = {
   label: string;

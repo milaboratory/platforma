@@ -1,4 +1,14 @@
-import type { AxisId, JoinEntry, LocalBlobHandleAndSize, PColumnIdAndSpec, PFrameHandle, PObjectId, PTableHandle, RemoteBlobHandleAndSize, ValueOrErrors } from '@platforma-sdk/model';
+import type {
+  AxisId,
+  JoinEntry,
+  LocalBlobHandleAndSize,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PObjectId,
+  PTableHandle,
+  RemoteBlobHandleAndSize,
+  ValueOrErrors,
+} from '@platforma-sdk/model';
 
 export type PlDataTableSheet = {
   /** id of the axis to use */

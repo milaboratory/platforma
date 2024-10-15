@@ -5,7 +5,7 @@ license:
 logging:
   level: 'info'
   destinations:
-    - path: 'stdout'
+    - path: 'platforma.log'
 
 monitoring:
   listen: '127.0.0.1:11235'

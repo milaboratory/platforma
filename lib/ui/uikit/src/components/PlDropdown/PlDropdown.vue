@@ -67,9 +67,13 @@ const props = withDefaults(
      */
     disabled?: boolean;
     /**
-     * Custom icon class for the dropdown arrow (optional)
+     * Custom icon (16px) class for the dropdown arrow (optional)
      */
     arrowIcon?: string;
+    /**
+     * Custom icon (24px) class for the dropdown arrow (optional)
+     */
+    arrowIconLarge?: string;
     /**
      * Option list item size
      */
@@ -84,6 +88,7 @@ const props = withDefaults(
     required: false,
     disabled: false,
     arrowIcon: undefined,
+    arrowIconLarge: undefined,
     optionSize: 'small',
   },
 );
@@ -301,14 +306,14 @@ watchPostEffect(() => {
 
           <div v-if="!data.open" @click="setFocusOnInput">
             <LongText class="input-value"> {{ textValue }} </LongText>
-            <div v-if="clearable" class="close" @click.stop="clear" />
           </div>
 
-          <div v-if="arrowIcon" class="arrow-altered icon" :class="[`icon--${arrowIcon}`]" @click.stop="toggleOpen" />
-          <div v-else class="arrow" @click.stop="toggleOpen" />
-          <div class="ui-dropdown__append">
-            <div v-if="clearable && hasValue" class="icon icon--clear" @click.stop="clear" />
+          <div class="ui-dropdown__controls">
+            <div v-if="clearable && hasValue" class="icon-16 icon-clear" @click.stop="clear" />
             <slot name="append" />
+            <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
+            <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
+            <div v-else class="arrow-icon arrow-icon-default" @click.stop="toggleOpen" />
           </div>
         </div>
         <label v-if="label">

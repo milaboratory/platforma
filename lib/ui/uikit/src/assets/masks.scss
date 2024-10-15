@@ -15,10 +15,6 @@
     @include mask(url("./images/16_attention.svg"), var(--mask-size));
   }
 
-  &--clear {
-    @include mask(url("./images/16_clear.svg"), var(--mask-size));
-  }
-
   &--chevron-right {
     @include mask(url("./images/16_chevron-right.svg"), var(--mask-size));
   }

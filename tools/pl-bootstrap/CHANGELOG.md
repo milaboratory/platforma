@@ -1,5 +1,18 @@
 # @platforma-sdk/bootstrap
 
+## 2.5.2
+
+### Patch Changes
+
+- d5872af: Load default list of users for backend in docker with auth enabled
+
+## 2.5.1
+
+### Patch Changes
+
+- Updated dependencies [073c259]
+  - @milaboratories/pl-local@1.3.0
+
 ## 2.5.0
 
 ### Minor Changes
