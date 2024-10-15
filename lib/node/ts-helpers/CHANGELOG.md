@@ -1,5 +1,17 @@
 # @milaboratories/ts-helpers
 
+## 1.1.0
+
+### Minor Changes
+
+- 9e6e912: Concurrency limiting executor
+
+## 1.0.30
+
+### Patch Changes
+
+- 7a04201: export of msToHumanReadable function
+
 ## 1.0.29
 
 ### Patch Changes

@@ -3,7 +3,6 @@
 .block {
   flex: 1;
   background-color: #fff;
-  @include scrollbar(true, true);
   max-height: 100%;
   max-width: 100%;
   width: 100%;
@@ -12,6 +11,8 @@
 
   display: flex;
   flex-direction: column;
+
+  @include scrollbar(true, true);
 
   &__not-found {
     display: flex;
@@ -48,11 +49,11 @@
     max-height: 50vh;
     padding: 16px 24px;
     user-select: auto;
-    @include scrollbar(true, true); // @todo scrollbar persistent
     width: 100%;
     overflow: auto;
     display: flex;
     flex-direction: column;
+    @include scrollbar(true, true); // @todo scrollbar persistent
     pre {
       white-space: pre-wrap;
       margin: 0;

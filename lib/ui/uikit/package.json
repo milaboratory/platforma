@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "1.2.16",
+  "version": "1.2.20",
   "type": "module",
   "main": "dist/pl-uikit.umd.js",
   "module": "dist/pl-uikit.js",
@@ -48,6 +48,7 @@
     "vitest": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:",
-    "yarpm": "catalog:"
+    "yarpm": "catalog:",
+    "svgo": "catalog:"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.3.10",
+  "version": "2.3.14",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@milaboratories/platforma-build-configs": "workspace:*",
-    "@platforma-sdk/oclif-index": "workspace:*",
+    "@milaboratories/oclif-index": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
     "rollup-plugin-node-externals": "catalog:",

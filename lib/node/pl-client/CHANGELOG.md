@@ -1,5 +1,43 @@
 # @milaboratories/pl-client
 
+## 2.5.2
+
+### Patch Changes
+
+- 11d30ad: Common final predicate function for pl-client and pl-tree
+
+## 2.5.1
+
+### Patch Changes
+
+- Updated dependencies [9e6e912]
+  - @milaboratories/ts-helpers@1.1.0
+
+## 2.5.0
+
+### Minor Changes
+
+- dd26f39: resource data caching layer
+
+## 2.4.21
+
+### Patch Changes
+
+- a5562e9: Added KeepAlive time
+
+## 2.4.20
+
+### Patch Changes
+
+- 36736de: destroy http dispatcher in close method and await termination
+
+## 2.4.19
+
+### Patch Changes
+
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+
 ## 2.4.18
 
 ### Patch Changes

@@ -4,9 +4,9 @@ import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@
 import { reactive, nextTick, computed, watch } from 'vue';
 import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from '../types';
 import { createModel } from '../createModel';
+import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
-import { pick } from 'lodash';
 
 export function createApp<
   Args = unknown,
@@ -101,22 +101,23 @@ export function createApp<
         },
       });
     },
-    createAppModel<T = AppModel>(options: StateModelOptions<AppModel, T> = {}) {
-      return createModel<T, AppModel>({
-        get() {
-          if (options.transform) {
-            return options.transform(snapshot);
-          }
+    // @TODO currently disabled but will be used
+    // createAppModel<T extends AppModel = AppModel>(options: StateModelOptions<AppModel, T> = {}) {
+    //   return createAppModel<T, AppModel>({
+    //     get() {
+    //       if (options.transform) {
+    //         return options.transform(snapshot);
+    //       }
 
-          return { args: snapshot.args, ui: snapshot.ui } as T;
-        },
-        validate: options.validate,
-        autoSave: true,
-        onSave(newData) {
-          setBlockArgsAndUiState(newData.args, newData.ui);
-        },
-      });
-    },
+    //       return { args: snapshot.args, ui: snapshot.ui } as T;
+    //     },
+    //     validate: options.validate,
+    //     autoSave: true,
+    //     onSave(newData) {
+    //       setBlockArgsAndUiState(newData.args, newData.ui);
+    //     },
+    //   });
+    // },
     /**
      * Note: Don't forget to list the output names, like: useOutputs('output1', 'output2', ...etc)
      * @param keys - List of output names
@@ -212,28 +213,71 @@ export function createApp<
     },
   };
 
+  const outputs = computed<OutputValues<Outputs>>(() => {
+    const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
+    return Object.fromEntries(entries);
+  });
+
+  const outputErrors = computed<OutputErrors<Outputs>>(() => {
+    const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
+    return Object.fromEntries(entries);
+  });
+
   const getters = {
-    args: computed(() => snapshot.args),
-    outputs: computed(() => snapshot.outputs),
-    ui: computed(() => snapshot.ui),
-    navigationState: computed(() => snapshot.navigationState),
-    href: computed(() => snapshot.navigationState.href),
-
-    outputValues: computed<OutputValues<Outputs>>(() => {
-      const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr.ok && vOrErr.value !== undefined ? vOrErr.value : undefined]);
-      return Object.fromEntries(entries);
-    }),
-
-    outputErrors: computed<OutputErrors<Outputs>>(() => {
-      const entries = Object.entries(snapshot.outputs).map(([k, vOrErr]) => [k, vOrErr && !vOrErr.ok ? new MultiError(vOrErr.errors) : undefined]);
-      return Object.fromEntries(entries);
-    }),
-
+    snapshot,
     queryParams: computed(() => parseQuery<Href>(snapshot.navigationState.href)),
+    href: computed(() => snapshot.navigationState.href),
     hasErrors: computed(() => Object.values(snapshot.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
+
+    /** @deprecated */
+    outputValues: computed(() => {
+      console.warn('Change app.outputValues to app.model.outputs');
+      return outputs.value;
+    }),
+
+    /** @deprecated */
+    outputErrors: computed(() => {
+      console.warn('Change app.outputErrors to app.model.outputErrors');
+      return outputErrors.value;
+    }),
+
+    /** @deprecated */
+    args: computed(() => {
+      console.warn('Change app.args to app.snapshot.args');
+      return snapshot.args;
+    }),
+    /** @deprecated */
+    outputs: computed(() => {
+      console.warn('Change app.outputs to app.snapshot.outputs');
+      return snapshot.outputs;
+    }),
+    /** @deprecated */
+    ui: computed(() => {
+      console.warn('Change app.ui to app.snapshot.ui');
+      return snapshot.ui;
+    }),
+    /** @deprecated */
+    navigationState: computed(() => {
+      console.warn('Change app.navigationState to app.snapshot.navigationState');
+      return snapshot.navigationState;
+    }),
   };
 
-  const appModel = methods.createAppModel();
+  const appModel = createAppModel(
+    {
+      get() {
+        return { args: snapshot.args, ui: snapshot.ui } as AppModel;
+      },
+      autoSave: true,
+      onSave(newData: AppModel) {
+        setBlockArgsAndUiState(newData.args, newData.ui);
+      },
+    },
+    {
+      outputs,
+      outputErrors,
+    },
+  );
 
   return reactive(Object.assign(appModel, methods, getters));
 }

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/workflow-tengo",
-  "version": "1.2.11",
+  "version": "1.5.0",
   "description": "Tengo SDK library",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -26,7 +26,8 @@
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "dependencies": {
-    "@milaboratories/software-pframes-conv": "catalog:"
+    "@milaboratories/software-pframes-conv": "catalog:",
+    "@milaboratories/software-small-binaries": "catalog:"
   },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "workspace:^"

@@ -9,7 +9,12 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
+import {
+  ConsoleLoggerAdapter,
+  HmacSha256Signer,
+  MiLogger,
+  Signer
+} from '@milaboratories/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
 import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
@@ -22,10 +27,13 @@ import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
 import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
-import { RetryAgent } from 'undici';
+import { Dispatcher, RetryAgent } from 'undici';
 
 export interface MiddleLayerEnvironment {
   readonly pl: PlClient;
+  readonly logger: MiLogger;
+  readonly httpDispatcher: Dispatcher;
+  readonly retryHttpDispatcher: Dispatcher;
   readonly signer: Signer;
   readonly ops: MiddleLayerOps;
   readonly bpPreparer: BlockPackPreparer;
@@ -159,8 +167,10 @@ export class MiddleLayer {
    * them. */
   public async close() {
     await Promise.all([...this.openedProjectsByRid.values()].map((prj) => prj.destroy()));
-    this.env.quickJs;
+    // this.env.quickJs;
     await this.projectListTree.terminate();
+    await this.env.retryHttpDispatcher.destroy();
+    await this.pl.close();
   }
 
   /** @deprecated */
@@ -177,6 +187,10 @@ export class MiddleLayer {
   /** Initialize middle layer */
   public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
+
+    if (process.env.MI_LOG_TREE_STAT)
+      ops.defaultTreeOptions.logStat =
+        process.env.MI_LOG_TREE_STAT === 'cumulative' ? 'cumulative' : 'per-request';
 
     const projects = await pl.withWriteTx('MLInitialization', async (tx) => {
       const projectsField = field(tx.clientRoot, ProjectsField);
@@ -223,6 +237,9 @@ export class MiddleLayer {
     const env: MiddleLayerEnvironment = {
       pl,
       signer: driverKit.signer,
+      logger,
+      httpDispatcher: pl.httpDispatcher,
+      retryHttpDispatcher: retryHttpDispatcher,
       ops,
       bpPreparer,
       frontendDownloadDriver,

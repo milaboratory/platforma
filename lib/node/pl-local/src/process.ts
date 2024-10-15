@@ -7,10 +7,7 @@ export type ProcessOptions = {
   opts: SpawnOptions;
 };
 
-export function processRun(
-  logger: MiLogger,
-  opts: ProcessOptions,
-): ChildProcess {
+export function processRun(logger: MiLogger, opts: ProcessOptions): ChildProcess {
   logger.info(`Running:
 cmd: ${JSON.stringify([opts.cmd, ...opts.args])}
 wd: ${opts.opts.cwd}`);
@@ -39,7 +36,7 @@ export async function processWaitStopped(pid: number, maxMs: number) {
     await sleep(sleepMs);
     total += sleepMs;
     if (total > maxMs) {
-      throw new Error(`The process did not stopped after ${maxMs} ms.`)
+      throw new Error(`The process did not stopped after ${maxMs} ms.`);
     }
   }
 }

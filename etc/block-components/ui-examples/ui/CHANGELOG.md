@@ -1,5 +1,57 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.27
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.5.57
+
+## 1.0.26
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+- Updated dependencies [60e38dc]
+  - @platforma-sdk/ui-vue@1.5.56
+
+## 1.0.25
+
+### Patch Changes
+
+- Updated dependencies [4628369]
+  - @platforma-sdk/ui-vue@1.5.42
+
+## 1.0.24
+
+### Patch Changes
+
+- Updated dependencies [13013ee]
+  - @platforma-sdk/ui-vue@1.5.40
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.10
+
+## 1.0.23
+
+### Patch Changes
+
+- f7f1691: Fix slide modal content scroll
+  - @platforma-sdk/ui-vue@1.5.38
+
+## 1.0.22
+
+### Patch Changes
+
+- Updated dependencies [bc6d116]
+  - @platforma-sdk/ui-vue@1.5.0
+
+## 1.0.21
+
+### Patch Changes
+
+- Updated dependencies [cfb6385]
+- Updated dependencies [43efc40]
+  - @platforma-sdk/ui-vue@1.4.9
+
 ## 1.0.20
 
 ### Patch Changes

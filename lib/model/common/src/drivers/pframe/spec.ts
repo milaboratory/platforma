@@ -130,10 +130,13 @@ export interface AxisId {
 /** Array of axis ids */
 export type AxesId = AxisId[];
 
+/** Extracts axis ids from axis spec */
+export function getAxisId(spec: AxisSpec): AxisId {
+  const { type, name, domain } = spec;
+  return { type, name, ...(domain) && { domain } };
+}
+
 /** Extracts axes ids from axes spec array from column spec */
 export function getAxesId(spec: AxesSpec): AxesId {
-  return spec.map((s) => {
-    const { type, name, domain } = s;
-    return { type, name, domain };
-  });
+  return spec.map(getAxisId);
 }

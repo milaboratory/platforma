@@ -45,6 +45,9 @@ export interface PlClientConfig {
   /** Last resort measure to solve complicated race conditions in pl. */
   forceSync: boolean;
 
+  /** Maximal number of bytes of resource state to cache */
+  maxCacheBytes: number;
+
   //
   // Retry
   //
@@ -54,22 +57,29 @@ export interface PlClientConfig {
    * (pl uses optimistic transaction model with regular retries in write transactions)
    * */
   retryBackoffAlgorithm: 'exponential' | 'linear';
+
   /** Maximal number of attempts in */
   retryMaxAttempts: number;
+
   /** Delay after first failed attempt, in ms. */
   retryInitialDelay: number;
+
   /** Each time delay will be multiplied by this number (1.5 means plus on 50% each attempt) */
   retryExponentialBackoffMultiplier: number;
+
   /** [used only for ] This value will be added to the delay from the previous step, in ms */
   retryLinearBackoffStep: number;
+
   /** Value from 0 to 1, determine level of randomness to introduce to the backoff delays sequence. (0 meaning no randomness) */
   retryJitter: number;
 }
 
-export const DEFAULT_REQUEST_TIMEOUT = 1000;
-export const DEFAULT_TX_TIMEOUT = 10_000;
+export const DEFAULT_REQUEST_TIMEOUT = 2000;
+export const DEFAULT_TX_TIMEOUT = 30_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
+
+export const DEFAULT_MAX_CACHE_BYTES = 35_000_000; // 35 Mb
 
 export const DEFAULT_RETRY_BACKOFF_ALGORITHM = 'exponential';
 export const DEFAULT_RETRY_MAX_ATTEMPTS = 10;
@@ -110,6 +120,8 @@ export function plAddressToConfig(
       txDelay: 0,
       forceSync: false,
 
+      maxCacheBytes: DEFAULT_MAX_CACHE_BYTES,
+
       retryBackoffAlgorithm: DEFAULT_RETRY_BACKOFF_ALGORITHM,
       retryMaxAttempts: DEFAULT_RETRY_MAX_ATTEMPTS,
       retryInitialDelay: DEFAULT_RETRY_INITIAL_DELAY,
@@ -148,6 +160,8 @@ export function plAddressToConfig(
     password: url.password === '' ? undefined : url.password,
     txDelay: parseInt(url.searchParams.get('tx-delay')) ?? 0,
     forceSync: Boolean(url.searchParams.get('force-sync')) ?? false,
+
+    maxCacheBytes: parseInt(url.searchParams.get('max-cache-bytes')) ?? DEFAULT_MAX_CACHE_BYTES,
 
     retryBackoffAlgorithm: (url.searchParams.get('retry-backoff-algorithm') ??
       DEFAULT_RETRY_BACKOFF_ALGORITHM) as any,

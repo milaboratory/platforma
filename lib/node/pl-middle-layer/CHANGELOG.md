@@ -1,5 +1,198 @@
 # @milaboratories/pl-middle-layer
 
+## 1.12.3
+
+### Patch Changes
+
+- Updated dependencies [073c259]
+  - @milaboratories/pl-local@1.3.0
+
+## 1.12.2
+
+### Patch Changes
+
+- 11d30ad: Pre-warming of block content cache if update is detected, fixes #128
+- 11d30ad: Common final predicate function for pl-client and pl-tree
+- Updated dependencies [11d30ad]
+  - @milaboratories/pl-client@2.5.2
+  - @milaboratories/pl-tree@1.4.3
+  - @milaboratories/pl-drivers@1.2.34
+
+## 1.12.1
+
+### Patch Changes
+
+- Updated dependencies [0b6fac6]
+  - @platforma-sdk/workflow-tengo@1.5.0
+
+## 1.12.0
+
+### Minor Changes
+
+- 9e6e912: PFrame concurrency limited to prevent deadlock with Node's IO threads, PFrame upgrade.
+
+### Patch Changes
+
+- Updated dependencies [0899a98]
+- Updated dependencies [9e6e912]
+- Updated dependencies [9e6e912]
+  - @milaboratories/pl-config@1.2.7
+  - @milaboratories/ts-helpers@1.1.0
+  - @milaboratories/pl-model-middle-layer@1.5.0
+  - @milaboratories/computable@2.1.13
+  - @milaboratories/pl-client@2.5.1
+  - @milaboratories/pl-drivers@1.2.33
+  - @milaboratories/pl-local@1.2.6
+  - @milaboratories/pl-tree@1.4.2
+  - @platforma-sdk/block-tools@2.3.14
+
+## 1.11.6
+
+### Patch Changes
+
+- 4a6e11f: Cached raw blob data provider for PFrame library.
+- Updated dependencies [4a6e11f]
+- Updated dependencies [33e8fbc]
+  - @milaboratories/pl-model-middle-layer@1.4.5
+  - @milaboratories/pl-local@1.2.5
+  - @platforma-sdk/block-tools@2.3.13
+
+## 1.11.5
+
+### Patch Changes
+
+- Updated dependencies [dd26f39]
+- Updated dependencies [4e5c436]
+  - @milaboratories/pl-client@2.5.0
+  - @platforma-sdk/workflow-tengo@1.4.2
+  - @milaboratories/pl-drivers@1.2.32
+  - @milaboratories/pl-tree@1.4.1
+
+## 1.11.4
+
+### Patch Changes
+
+- Updated dependencies [7207876]
+  - @milaboratories/pl-config@1.2.6
+
+## 1.11.3
+
+### Patch Changes
+
+- Updated dependencies [2716eb1]
+  - @milaboratories/pl-config@1.2.5
+
+## 1.11.2
+
+### Patch Changes
+
+- Updated dependencies [ba7fd8a]
+- Updated dependencies [37e5128]
+  - @platforma-sdk/workflow-tengo@1.4.1
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [c7dc613]
+- Updated dependencies [dddf97f]
+  - @milaboratories/pl-local@1.2.4
+  - @milaboratories/pl-config@1.2.4
+  - @platforma-sdk/block-tools@2.3.12
+
+## 1.11.0
+
+### Minor Changes
+
+- a5562e9: Significant performance enhancement for project tree synchronization, prunning of tree and final resource detection
+
+### Patch Changes
+
+- Updated dependencies [a5562e9]
+- Updated dependencies [a5562e9]
+  - @milaboratories/pl-tree@1.4.0
+  - @milaboratories/pl-client@2.4.21
+  - @milaboratories/pl-drivers@1.2.31
+
+## 1.10.49
+
+### Patch Changes
+
+- Updated dependencies [8c0d6fe]
+- Updated dependencies [d6edf35]
+  - @milaboratories/pl-config@1.2.3
+  - @milaboratories/pl-local@1.2.3
+  - @milaboratories/pl-model-common@1.3.14
+  - @milaboratories/pl-model-middle-layer@1.4.4
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-client@2.4.20
+  - @milaboratories/pl-drivers@1.2.30
+  - @milaboratories/pl-tree@1.3.19
+  - @milaboratories/ts-helpers@1.0.30
+  - @platforma-sdk/model@1.5.40
+  - @platforma-sdk/block-tools@2.3.12
+
+## 1.10.48
+
+### Patch Changes
+
+- Updated dependencies [4982844]
+  - @platforma-sdk/workflow-tengo@1.4.0
+
+## 1.10.47
+
+### Patch Changes
+
+- Updated dependencies [8dae1d6]
+- Updated dependencies [76f51e5]
+  - @milaboratories/pl-local@1.2.2
+  - @platforma-sdk/workflow-tengo@1.3.0
+
+## 1.10.46
+
+### Patch Changes
+
+- pl-config: remove ml dep, add more auths
+- Updated dependencies
+  - @milaboratories/pl-config@1.2.2
+  - @milaboratories/pl-local@1.2.1
+
+## 1.10.45
+
+### Patch Changes
+
+- 36736de: Close pl client and retry http dispacher in ml close routine
+- Updated dependencies [13013ee]
+- Updated dependencies [36736de]
+  - @milaboratories/pl-model-common@1.3.14
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/pl-client@2.4.20
+  - @milaboratories/pl-model-middle-layer@1.4.4
+  - @milaboratories/pl-drivers@1.2.30
+  - @milaboratories/pl-tree@1.3.19
+  - @platforma-sdk/block-tools@2.3.12
+
+## 1.10.44
+
+### Patch Changes
+
+- 7a04201: tree stats aggregation and logging
+- Updated dependencies [7a04201]
+- Updated dependencies [89cf026]
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-tree@1.3.18
+  - @milaboratories/pl-client@2.4.19
+  - @milaboratories/pl-drivers@1.2.29
+  - @platforma-sdk/block-tools@2.3.11
+
+## 1.10.43
+
+### Patch Changes
+
+- 23215d9: Fix super-partitioning key processing
+
 ## 1.10.42
 
 ### Patch Changes

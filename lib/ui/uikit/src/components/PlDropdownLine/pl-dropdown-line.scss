@@ -123,8 +123,8 @@
         max-height: 320px;
         overflow-y: auto;
         background-color: var(--bg-elevated-01);
-        @include scrollbar;
         box-shadow: var(--shadow-m);
+        @include scrollbar;
     }
 
     &__items-tabs {
@@ -138,7 +138,7 @@
         padding: 6px 12px 12px 12px;
         border: 1px solid var(--color-div-grey);
         border-radius: 6px;
-        @include scrollbar(false, true);
         box-shadow: var(--shadow-m);
+        @include scrollbar(false, true);
     }
 }

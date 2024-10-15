@@ -5,7 +5,7 @@ license:
 logging:
   level: 'info'
   destinations:
-    - path: "stdout"
+    - path: 'platforma.log'
 
 monitoring:
   listen: '127.0.0.1:11235'
@@ -31,30 +31,30 @@ controllers:
   data:
     main:
       storages:
-          main:
-              mode: primary
-              downloadable: true
+        main:
+          mode: primary
+          downloadable: true
 
-          work:
-              mode: active
-              downloadable: false
+        work:
+          mode: active
+          downloadable: false
 
     storages:
-      - id: "main"
-        type: "FS"
-        indexCachePeriod: "1m"
-        rootPath: "./storages/main"
+      - id: 'main'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: './storages/main'
 
-      - id: "work"
-        type: "FS"
-        indexCachePeriod: "1m"
-        rootPath: "./storages/work"
+      - id: 'work'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: './storages/work'
 
   runner:
     type: local
-    storageRoot: "./storages/work"
+    storageRoot: './storages/work'
 
   packageLoader:
-    packagesRoot: "./packages"
+    packagesRoot: './packages'
 
   workflows: {}

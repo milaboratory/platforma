@@ -70,7 +70,7 @@ export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): bo
 }
 
 /** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
-export interface BasicResourceData {
+export type BasicResourceData = {
   readonly id: ResourceId;
   readonly originalResourceId: OptionalResourceId;
 
@@ -88,30 +88,57 @@ export interface BasicResourceData {
   /** This value is derived from resource state by the server and can be used as
    * a robust criteria to determine resource is in final state. */
   readonly final: boolean;
+};
+
+export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
+  const {
+    id,
+    originalResourceId,
+    kind,
+    type,
+    data,
+    error,
+    inputsLocked,
+    outputsLocked,
+    resourceReady,
+    final
+  } = rd;
+  return {
+    id,
+    originalResourceId,
+    kind,
+    type,
+    data,
+    error,
+    inputsLocked,
+    outputsLocked,
+    resourceReady,
+    final
+  };
 }
 
 export const jsonToData = (data: unknown) => Buffer.from(JSON.stringify(data));
 
 export const resDataToJson = (res: ResourceData) => JSON.parse(notEmpty(res.data).toString());
 
-export interface ResourceData extends BasicResourceData {
-  fields: FieldData[];
-}
+export type ResourceData = BasicResourceData & {
+  readonly fields: FieldData[];
+};
 
 export function getField(r: ResourceData, name: string): FieldData {
   return notEmpty(r.fields.find((f) => f.name === name));
 }
 
-export interface FieldData {
-  name: string;
-  type: FieldType;
-  status: FieldStatus;
-  value: OptionalResourceId;
-  error: OptionalResourceId;
+export type FieldData = {
+  readonly name: string;
+  readonly type: FieldType;
+  readonly status: FieldStatus;
+  readonly value: OptionalResourceId;
+  readonly error: OptionalResourceId;
 
   /** True if value the fields points to is in final state. */
-  valueIsFinal: boolean;
-}
+  readonly valueIsFinal: boolean;
+};
 
 //
 // Local / Global ResourceId arithmetics

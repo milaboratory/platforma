@@ -85,6 +85,8 @@ declare const _app: ExtApp;
 
 type _UpdateArgsParams = Parameters<Parameters<_App1['updateArgs']>[0]>[0];
 
+type _ccc = _App1['model']['args'];
+
 type __cases = [
   Expect<Equal<Model<string>, typeof __model1>>,
   Expect<Equal<Model<number>, typeof __model2>>,
@@ -95,7 +97,8 @@ type __cases = [
   Expect<Equal<ExtApp['label'], string>>,
   Expect<Equal<ExtApp['method'], () => number>>,
   Expect<Equal<_App1['args'], Readonly<_Args>>>,
-  Expect<Equal<_App1['outputValues']['sum'], number | undefined>>,
+  Expect<Equal<_App1['model']['outputs']['sum'], number | undefined>>,
+  Expect<Equal<_App1['model']['outputErrors']['sum'], Error | undefined>>,
   Expect<Equal<_App1['ui'], Readonly<_UiState>>>,
   Expect<Equal<_App1['model']['args'], _Args>>,
   Expect<Equal<_App1['model']['ui'], _UiState>>,

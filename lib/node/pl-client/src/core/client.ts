@@ -20,6 +20,9 @@ import { PlDriver, PlDriverDefinition } from './driver';
 import { MaintenanceAPI_Ping_Response } from '../proto/github.com/milaboratory/pl/plapi/plapiproto/api';
 import * as tp from 'node:timers/promises';
 import { Dispatcher } from 'undici';
+import { LRUCache } from 'lru-cache';
+import { ResourceDataCacheRecord } from './cache';
+import { DefaultFinalResourceDataPredicate, FinalResourceDataPredicate } from './final';
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -56,17 +59,33 @@ export class PlClient {
 
   private _serverInfo: MaintenanceAPI_Ping_Response | undefined = undefined;
 
+  //
+  // Caching
+  //
+
+  /** This function determines whether resource data can be cached */
+  public readonly finalPredicate: FinalResourceDataPredicate;
+
+  /** Resource data cache, to minimize redundant data rereading from remote db */
+  private readonly resourceDataCache: LRUCache<ResourceId, ResourceDataCacheRecord>;
+
   private constructor(
     configOrAddress: PlClientConfig | string,
     auth: AuthOps,
     ops: {
       statusListener?: PlConnectionStatusListener;
+      finalPredicate?: FinalResourceDataPredicate;
     } = {}
   ) {
     this.ll = new LLPlClient(configOrAddress, { auth, ...ops });
     const conf = this.ll.conf;
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
+    this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
+    this.resourceDataCache = new LRUCache({
+      maxSize: conf.maxCacheBytes,
+      sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64
+    });
     switch (conf.retryBackoffAlgorithm) {
       case 'exponential':
         this.defaultRetryOptions = {
@@ -199,7 +218,14 @@ export class PlClient {
       // opening low-level tx
       const llTx = this.ll.createTx(ops);
       // wrapping it into high-level tx (this also asynchronously sends initialization message)
-      const tx = new PlTransaction(llTx, name, writable, clientRoot);
+      const tx = new PlTransaction(
+        llTx,
+        name,
+        writable,
+        clientRoot,
+        this.finalPredicate,
+        this.resourceDataCache
+      );
 
       let ok = false;
       let result: T | undefined = undefined;
@@ -284,8 +310,8 @@ export class PlClient {
   }
 
   /** Closes underlying transport */
-  public close() {
-    this.ll.close();
+  public async close() {
+    await this.ll.close();
   }
 
   public static async init(

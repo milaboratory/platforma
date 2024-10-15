@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.3.14
+
+### Patch Changes
+
+- 13013ee: PlAdDataTable auto-join label-columns
+
 ## 1.3.13
 
 ### Patch Changes

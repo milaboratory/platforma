@@ -4,7 +4,7 @@ import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
 import { createApp, type BaseApp } from './internal/createApp';
 import type { LocalState, Routes } from './types';
-import { setAgGridLicense } from './aggrid';
+import { activateAgGrid } from './aggrid';
 
 const pluginKey = Symbol('sdk-vue');
 
@@ -22,7 +22,7 @@ export function defineApp<
 >(platforma: Platforma<Args, Outputs, UiState, Href>, extendApp: (app: BaseApp<Args, Outputs, UiState, Href>) => Local) {
   let app: undefined | App<Args, Outputs, UiState, Href, Local> = undefined;
 
-  setAgGridLicense();
+  activateAgGrid();
 
   const loadApp = () => {
     platforma

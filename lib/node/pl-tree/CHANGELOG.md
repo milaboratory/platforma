@@ -1,5 +1,58 @@
 # @milaboratories/pl-tree
 
+## 1.4.3
+
+### Patch Changes
+
+- 11d30ad: Common final predicate function for pl-client and pl-tree
+- Updated dependencies [11d30ad]
+  - @milaboratories/pl-client@2.5.2
+
+## 1.4.2
+
+### Patch Changes
+
+- Updated dependencies [9e6e912]
+  - @milaboratories/ts-helpers@1.1.0
+  - @milaboratories/computable@2.1.13
+  - @milaboratories/pl-client@2.5.1
+
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [dd26f39]
+  - @milaboratories/pl-client@2.5.0
+
+## 1.4.0
+
+### Minor Changes
+
+- a5562e9: Multiple fixes and enhancements for tree pruning and final resource detection lambdas, additional synced tree stats
+
+### Patch Changes
+
+- Updated dependencies [a5562e9]
+  - @milaboratories/pl-client@2.4.21
+
+## 1.3.19
+
+### Patch Changes
+
+- Updated dependencies [36736de]
+  - @milaboratories/pl-client@2.4.20
+
+## 1.3.18
+
+### Patch Changes
+
+- 7a04201: tree stats aggregation and logging
+- Updated dependencies [7a04201]
+- Updated dependencies [89cf026]
+  - @milaboratories/ts-helpers@1.0.30
+  - @milaboratories/computable@2.1.12
+  - @milaboratories/pl-client@2.4.19
+
 ## 1.3.17
 
 ### Patch Changes

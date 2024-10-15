@@ -1,5 +1,19 @@
 # @milaboratories/ts-helpers-oclif
 
+## 1.1.9
+
+### Patch Changes
+
+- Updated dependencies [9e6e912]
+  - @milaboratories/ts-helpers@1.1.0
+
+## 1.1.8
+
+### Patch Changes
+
+- Updated dependencies [7a04201]
+  - @milaboratories/ts-helpers@1.0.30
+
 ## 1.1.7
 
 ### Patch Changes

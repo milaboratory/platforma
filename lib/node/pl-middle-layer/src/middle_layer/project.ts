@@ -2,17 +2,21 @@ import { MiddleLayerEnvironment } from './middle_layer';
 import {
   ensureResourceIdNotNull,
   field,
+  FieldData,
   isNotFoundError,
   isTimeoutOrCancelError,
   Pl,
   ResourceId
 } from '@milaboratories/pl-client';
-import { Computable, ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
+import { Computable, ComputableStableDefined } from '@milaboratories/computable';
 import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import {
+  ExtendedResourceData,
+  SynchronizedTreeState
+} from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
 import { NavigationState } from '@milaboratories/pl-model-common';
@@ -374,7 +378,37 @@ export class Project {
   }
 
   public static async init(env: MiddleLayerEnvironment, rid: ResourceId): Promise<Project> {
-    const projectTree = await SynchronizedTreeState.init(env.pl, rid, env.ops.defaultTreeOptions);
+    const projectTree = await SynchronizedTreeState.init(
+      env.pl,
+      rid,
+      {
+        ...env.ops.defaultTreeOptions,
+        pruning: projectTreePruning
+      },
+      env.logger
+    );
     return new Project(env, rid, projectTree);
+  }
+}
+
+function projectTreePruning(r: ExtendedResourceData): FieldData[] {
+  // console.log(
+  //   JSON.stringify(
+  //     { ...r, kv: [], data: undefined } satisfies ExtendedResourceData,
+  //     (_, v) => {
+  //       if (typeof v === 'bigint') return v.toString();
+  //       return v;
+  //     }
+  //   )
+  // );
+  switch (r.type.name) {
+    case 'BlockPackCustom':
+      return r.fields.filter((f) => f.name !== 'template');
+    case 'UserProject':
+      return r.fields.filter((f) => !f.name.startsWith('__serviceTemplate'));
+    case 'Blob':
+      return [];
+    default:
+      return r.fields;
   }
 }

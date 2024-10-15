@@ -1,4 +1,14 @@
-import type { AxisId, LocalBlobHandleAndSize, PObjectId, PTableHandle, RemoteBlobHandleAndSize, ValueOrErrors } from '@platforma-sdk/model';
+import type {
+  AxisId,
+  JoinEntry,
+  LocalBlobHandleAndSize,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PObjectId,
+  PTableHandle,
+  RemoteBlobHandleAndSize,
+  ValueOrErrors,
+} from '@platforma-sdk/model';
 
 export type PlDataTableSheet = {
   /** id of the axis to use */
@@ -16,25 +26,30 @@ export type PlDataTableSheet = {
   defaultValue?: string | number;
 };
 
-/**
- * Data table settings
- */
+/** Data table settings */
 export type PlDataTableSettings =
   | {
-      /**
-       * The type of the source to feed the data into the table.
-       */
+      /** The type of the source to feed the data into the table */
+      sourceType: 'pframe';
+      /** PFrame handle output */
+      pFrame: ValueOrErrors<PFrameHandle | undefined> | undefined;
+      /** Join used to construct pTable, will be enriched with label-columns */
+      join: JoinEntry<PColumnIdAndSpec> | undefined;
+      /** Partitioning axes to make sheets */
+      sheetAxes: AxisId[];
+      /** PTable handle output */
+      pTable: ValueOrErrors<PTableHandle | undefined> | undefined;
+    }
+  | {
+      /** The type of the source to feed the data into the table */
       sourceType: 'ptable';
-      /**
-       * PTable handle output
-       */
-      pTable?: ValueOrErrors<PTableHandle | undefined> | undefined;
-      /**
-       * Sheets that we want to show in our table
-       */
+      /** PTable handle output */
+      pTable: ValueOrErrors<PTableHandle | undefined> | undefined;
+      /** Sheets that we want to show in our table */
       sheets?: PlDataTableSheet[];
     }
   | {
+      /** The type of the source to feed the data into the table */
       sourceType: 'xsv';
-      xsvFile?: ValueOrErrors<RemoteBlobHandleAndSize | undefined> | ValueOrErrors<LocalBlobHandleAndSize | undefined> | undefined;
+      xsvFile: ValueOrErrors<RemoteBlobHandleAndSize | undefined> | ValueOrErrors<LocalBlobHandleAndSize | undefined> | undefined;
     };

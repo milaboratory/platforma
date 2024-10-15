@@ -1,5 +1,17 @@
 @import "./mixins";
 
+.pl-scrollable {
+  @include scrollbar(true, true);
+}
+
+.pl-scrollable-y {
+  @include scrollbar(true, false);
+}
+
+.pl-scrollable-x {
+  @include scrollbar(false, true);
+}
+
 span.ripple {
   position: absolute;
   border-radius: 50%;

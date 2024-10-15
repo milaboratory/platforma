@@ -70,7 +70,7 @@ useEventListener(document, 'keydown', (evt: KeyboardEvent) => {
         :style="{ width }"
         v-bind="$attrs"
         class="pl-slide-modal"
-        :class="{ 'has-title': slots.title }"
+        :class="{ 'has-title': slots.title, 'has-actions': slots.actions }"
         @keyup.esc="emit('update:modelValue', false)"
       >
         <div class="close-dialog-btn" @click="emit('update:modelValue', false)" />
