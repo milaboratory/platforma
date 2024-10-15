@@ -1,4 +1,5 @@
 import type { ColDef, GridApi, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
+import type { PFrameHandle, AxisId, PColumnIdAndSpec, JoinEntry, PObjectId } from '@platforma-sdk/model';
 import {
   type ValueType,
   type PValue,
@@ -11,12 +12,7 @@ import {
   getAxesId,
   isValueNA,
   isValueAbsent,
-  PFrameHandle,
-  AxisId,
-  PColumnIdAndSpec,
-  JoinEntry,
   mapJoinEntry,
-  PObjectId
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
@@ -84,7 +80,7 @@ function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): str
     case 'Int':
       return value as number;
     case 'Long':
-      return typeof value === 'bigint' ? Number(value as bigint) : value as number;
+      return typeof value === 'bigint' ? Number(value as bigint) : (value as number);
     case 'Float':
       return value as number;
     case 'Double':
@@ -96,7 +92,7 @@ function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): str
     default:
       throw Error(`unsupported data type: ${valueType satisfies never}`);
   }
-};
+}
 
 function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec[] {
   const columns: PColumnIdAndSpec[] = [];
@@ -107,22 +103,15 @@ function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec
   return columns;
 }
 
-async function getLabelColumns(
-  pfDriver: PFrameDriver,
-  pFrame: PFrameHandle,
-  idsAndSpecs: PColumnIdAndSpec[]
-): Promise<PColumnIdAndSpec[]> {
+async function getLabelColumns(pfDriver: PFrameDriver, pFrame: PFrameHandle, idsAndSpecs: PColumnIdAndSpec[]): Promise<PColumnIdAndSpec[]> {
   if (!idsAndSpecs.length) return [];
 
   const response = await pfDriver.findColumns(pFrame, {
     columnFilter: {
-      name: ['pl7.app/label']
+      name: ['pl7.app/label'],
     },
-    compatibleWith: lodash.uniqWith(
-      idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(),
-      lodash.isEqual
-    ),
-    strictlyCompatible: true
+    compatibleWith: lodash.uniqWith(idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(), lodash.isEqual),
+    strictlyCompatible: true,
   });
   return response.hits.filter((idAndSpec) => idAndSpec.spec.axesSpec.length === 1);
 }
@@ -130,7 +119,7 @@ async function getLabelColumns(
 export async function enrichJoinWithLabelColumns(
   pfDriver: PFrameDriver,
   pFrame: PFrameHandle,
-  join: JoinEntry<PColumnIdAndSpec>
+  join: JoinEntry<PColumnIdAndSpec>,
 ): Promise<JoinEntry<PColumnIdAndSpec>> {
   const columns = getColumnsFromJoin(join);
   const labelColumns = await getLabelColumns(pfDriver, pFrame, columns);
@@ -142,15 +131,15 @@ export async function enrichJoinWithLabelColumns(
     secondary: missingLabelColumns.map((column) => ({
       type: 'column',
       column,
-    }))
-  }
+    })),
+  };
 }
 
 export async function makeSheets(
   pfDriver: PFrameDriver,
   pFrameHandle: PFrameHandle,
   sheetAxes: AxisId[],
-  join: JoinEntry<PColumnIdAndSpec>
+  join: JoinEntry<PColumnIdAndSpec>,
 ): Promise<PlDataTableSheet[]> {
   const axes = sheetAxes.filter((spec) => spec.type !== 'Bytes');
 
@@ -190,7 +179,7 @@ export async function makeSheets(
         columnId: columns[column].columnId,
         ...(!labelCol[i] && { axis: lodash.cloneDeep(axes[i]) }),
         filters: [],
-        limit
+        limit,
       });
       if (response.overflow) {
         labelCol.splice(i, 1);
@@ -224,14 +213,14 @@ export async function makeSheets(
   return axes.map((axis, i) => {
     const options = [...possibleValues[i]].map((value) => ({
       value: value,
-      text: value.toString()
+      text: value.toString(),
     }));
     const defaultValue = options[0].value;
     return {
       axis: lodash.cloneDeep(axis),
       ...(labelCol[i] && { column: labelCol[i] }),
       options,
-      defaultValue
+      defaultValue,
     } as PlDataTableSheet;
   });
 }
@@ -287,8 +276,9 @@ export async function updatePFrameGridOptions(
   datasource: IDatasource;
 }> {
   const specs = await pfDriver.getSpec(pt);
-  const indices = [...specs.keys()]
-    .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)));
+  const indices = [...specs.keys()].filter(
+    (i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)),
+  );
   const fields = lodash.cloneDeep(indices);
 
   for (let i = indices.length - 1; i >= 0; --i) {
