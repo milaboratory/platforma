@@ -114,7 +114,7 @@ export const blockTest = plTest.extend<{
       frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
       blobDownloadPath: path.resolve(downloadFolder),
-      localStorageNameToPath: { local: '' }
+      uploadLocalStorageNameToPath: { local: '' }
     });
 
     await use(ml);

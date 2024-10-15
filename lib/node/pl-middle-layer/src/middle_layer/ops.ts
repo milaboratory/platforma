@@ -5,8 +5,33 @@ import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import * as os from 'node:os';
 
+/** Paths part of {@link DriverKitOps}. */
+export type DriverKitOpsPaths = {
+  /** Common root where to put downloaded blobs. */
+  readonly blobDownloadPath: string;
+
+  /**
+   * If Platforma is running in local mode and a download driver
+   * needs to download files from local storage, it will open files
+   * from the specified directory. Otherwise, setting should be empty.
+   *
+   * storage_name -> local_path
+   * */
+  readonly downloadLocalStorageNameToPath: Record<string, string>;
+
+  /**
+   * If the client wants to upload files from their local machine to Platforma,
+   * this option should be set. Set any unique storage names
+   * to any paths from where the client will upload files,
+   * e.g., {'local': '/'}.
+   *
+   * storage_name -> local_path
+   * */
+  readonly uploadLocalStorageNameToPath: Record<string, string>;
+};
+
 /** Options required to initialize full set of middle layer driver kit */
-export type DriverKitOps = {
+export type DriverKitOps = DriverKitOpsPaths & {
   //
   // Common
   //
@@ -35,16 +60,6 @@ export type DriverKitOps = {
    */
   readonly blobDriverOps: DownloadDriverOps;
 
-  /** Common root where to put downloaded blobs. */
-  readonly blobDownloadPath: string;
-
-  /**
-   * If Platforma is running in local mode and a download driver
-   * needs to download files from local storage, it will open files
-   * from the specified directory. Otherwise, it should be empty.
-   * */
-  readonly platformLocalStorageNameToPath: Record<string, string>;
-
   //
   // Upload Driver
   //
@@ -68,14 +83,6 @@ export type DriverKitOps = {
   //
 
   /**
-   * If the client wants to upload files from their local machine to Platforma,
-   * this option should be set. Set any unique storage names
-   * to any paths from where the client will upload files,
-   * e.g., {'local': '/'}.
-   * */
-  readonly localStorageNameToPath: Record<string, string>;
-
-  /**
    * Callback to access system file open dialog, must be provided by the environment,
    * to allow for {@link showOpenSingleFileDialog} / {@link showOpenMultipleFilesDialog}
    * calls from the UI.
@@ -87,15 +94,15 @@ export type DriverKitOps = {
 export const DefaultDriverKitOps: Pick<
   DriverKitOps,
   | 'logger'
-  | 'platformLocalStorageNameToPath'
+  | 'downloadLocalStorageNameToPath'
   | 'blobDriverOps'
   | 'uploadDriverOps'
   | 'logStreamDriverOps'
-  | 'localStorageNameToPath'
+  | 'uploadLocalStorageNameToPath'
 > = {
   logger: new ConsoleLoggerAdapter(),
-  platformLocalStorageNameToPath: {},
-  localStorageNameToPath: { local: os.homedir() },
+  downloadLocalStorageNameToPath: {},
+  uploadLocalStorageNameToPath: { local: os.homedir() }, // TODO ???
   blobDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
     nConcurrentDownloads: 10
@@ -117,6 +124,11 @@ export const DefaultDriverKitOps: Pick<
 export type DriverKitOpsConstructor = Omit<DriverKitOps, keyof typeof DefaultDriverKitOps> &
   Partial<typeof DefaultDriverKitOps>;
 
+export type MiddleLayerOpsPaths = DriverKitOpsPaths & {
+  /** Common root where to put frontend code. */
+  readonly frontendDownloadPath: string;
+}
+
 /** Configuration controlling different aspects of middle layer behaviour. */
 export type MiddleLayerOps = DriverKitOps & {
   /** Contain temporal options controlling how often should pl trees be
@@ -133,9 +145,6 @@ export type MiddleLayerOps = DriverKitOps & {
 
   /** How often to check for dev block updates */
   readonly devBlockUpdateRecheckInterval: number;
-
-  /** Common root where to put frontend code. */
-  readonly frontendDownloadPath: string;
 };
 
 /** Some defaults fot MiddleLayerOps. */
@@ -145,7 +154,7 @@ export const DefaultMiddleLayerOps: Pick<
   | 'defaultTreeOptions'
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
-  | 'platformLocalStorageNameToPath'
+  | 'downloadLocalStorageNameToPath'
   | 'devBlockUpdateRecheckInterval'
 > = {
   ...DefaultDriverKitOps,
