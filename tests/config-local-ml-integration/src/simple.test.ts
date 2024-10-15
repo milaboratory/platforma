@@ -1,5 +1,5 @@
 import { test } from 'vitest';
-import { createDefaultLocalConfigs, PlConfigOptions } from '@milaboratories/pl-config';
+import { generateLocalPlConfigs, PlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import path from 'path';
 import { LocalPlOptions, Pl, platformaInit } from '@milaboratories/pl-local';
@@ -14,7 +14,7 @@ test(
     const workingDir = path.join(__dirname, ".test");
 
     // create configs for everything
-    const configOpts: PlConfigOptions = {
+    const configOpts: PlConfigGeneratorOptions = {
       logger,
       workingDir,
       portsMode: {
@@ -24,13 +24,13 @@ test(
       },
       licenseMode: { type: 'env' }
     }
-    const configs = await createDefaultLocalConfigs(configOpts);
+    const configs = await generateLocalPlConfigs(configOpts);
 
     // start local platforma
     const plOpts: LocalPlOptions = {
       workingDir: configs.workingDir,
-      config: configs.plLocal,
-      binary: {
+      config: configs.plConfigContent,
+      plBinary: {
         type: 'Download',
         version: configs.plVersion
       },
@@ -41,7 +41,7 @@ test(
     const plLocal = await platformaInit(logger, plOpts);
 
     // start pl-client
-    const uaClient = new UnauthenticatedPlClient(configs.clientAddr);
+    const uaClient = new UnauthenticatedPlClient(configs.plAddress);
     while (true) {
       try {
         await uaClient.ping();
@@ -50,8 +50,8 @@ test(
         await sleep(30);
       }
     }
-    const auth = await uaClient.login(configs.user, configs.password);
-    const client = await PlClient.init(configs.clientAddr, { authInformation: auth })
+    const auth = await uaClient.login(configs.plUser, configs.plPassword);
+    const client = await PlClient.init(configs.plAddress, { authInformation: auth })
 
     // start middle-layer
     const ml = await MiddleLayer.init(client, configs.ml);

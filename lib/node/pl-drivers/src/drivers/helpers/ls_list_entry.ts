@@ -20,64 +20,66 @@ export interface ListItem {
   directory: string;
 }
 
-/**  */
-export function toLsEntries(info: {
-  storageName: string;
-  list: ListResponse;
-  signer: Signer;
-  remote: boolean;
-}): sdk.ListFilesResult {
-  const parent = info.list.items.length > 0 ? info.list.items[0]?.directory : undefined;
+// export function toLsEntries(info: {
+//   storageName: string;
+//   list: ListResponse;
+//   signer: Signer;
+//   remote: boolean;
+// }): sdk.ListFilesResult {
+//   const parent = info.list.items.length > 0 ? info.list.items[0]?.directory : undefined;
+//
+//   return {
+//     parent: parent,
+//     entries: info.list.items.map((item) => toLsEntry(item, info))
+//   };
+// }
 
-  return {
-    parent: parent,
-    entries: info.list.items.map((item) => toLsEntry(item, info))
-  };
-}
+// function toLsEntry(
+//   item: ListItem,
+//   info: {
+//     storageName: string;
+//     list: ListResponse;
+//     signer: Signer;
+//     remote: boolean;
+//   }
+// ): sdk.LsEntry {
+//   if (item.isDir)
+//     return {
+//       type: 'dir',
+//       name: item.name,
+//       fullPath: item.fullName
+//     };
+//
+//   return {
+//     type: 'file',
+//     name: item.name,
+//     fullPath: item.fullName,
+//     handle: toFileHandle({ item: item, ...info })
+//   };
+// }
+//
+// export function toFileHandle(info: {
+//   storageName: string;
+//   item: ListItem;
+//   signer: Signer;
+//   remote: boolean;
+// }): sdk.ImportFileHandle {
+//   if (info.remote) {
+//     return createIndexImportHandle(info.storageName, info.item.fullName);
+//   }
+//
+//   return createUploadImportHandle(
+//     info.item.fullName,
+//     info.signer,
+//     info.item.size,
+//     notEmpty(info.item.lastModified).seconds
+//   );
+// }
 
-function toLsEntry(
-  item: ListItem,
-  info: {
-    storageName: string;
-    list: ListResponse;
-    signer: Signer;
-    remote: boolean;
-  }
-): sdk.LsEntry {
-  if (item.isDir)
-    return {
-      type: 'dir',
-      name: item.name,
-      fullPath: item.fullName
-    };
-
-  return {
-    type: 'file',
-    name: item.name,
-    fullPath: item.fullName,
-    handle: toFileHandle({ item: item, ...info })
-  };
-}
-
-export function toFileHandle(info: {
-  storageName: string;
-  item: ListItem;
-  signer: Signer;
-  remote: boolean;
-}): sdk.ImportFileHandle {
-  if (info.remote) {
-    return createIndexHandle(info.storageName, info.item.fullName);
-  }
-
-  return createUploadHandle(
-    info.item.fullName,
-    info.signer,
-    info.item.size,
-    notEmpty(info.item.lastModified).seconds
-  );
-}
-
-function createIndexHandle(storageName: string, path: string): sdk.ImportFileHandleIndex {
+export function createIndexImportHandle(
+  storageName: string,
+  path: string
+): sdk.ImportFileHandleIndex {
   const data: ImportFileHandleIndexData = {
     storageId: storageName,
     path: path
@@ -86,7 +88,7 @@ function createIndexHandle(storageName: string, path: string): sdk.ImportFileHan
   return `index://index/${encodeURIComponent(JSON.stringify(data))}`;
 }
 
-export function createUploadHandle(
+export function createUploadImportHandle(
   localPath: string,
   signer: Signer,
   sizeBytes: bigint,
@@ -111,9 +113,7 @@ export function parseUploadHandle(handle: sdk.ImportFileHandleUpload): ImportFil
 
 export function parseIndexHandle(handle: sdk.ImportFileHandleIndex): ImportFileHandleIndexData {
   const url = new URL(handle);
-  return ImportFileHandleIndexData.parse(
-    JSON.parse(decodeURIComponent(url.pathname.substring(1)))
-  );
+  return ImportFileHandleIndexData.parse(JSON.parse(decodeURIComponent(url.pathname.substring(1))));
 }
 
 export function toListItem(

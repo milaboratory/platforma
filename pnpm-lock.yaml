@@ -825,9 +825,6 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 6.19.8
-      utility-types:
-        specifier: 'catalog:'
-        version: 3.11.0
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -902,6 +899,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
+      utility-types:
+        specifier: 'catalog:'
+        version: 3.11.0
       vite:
         specifier: 'catalog:'
         version: 5.4.8(@types/node@20.16.11)(sass@1.77.8)

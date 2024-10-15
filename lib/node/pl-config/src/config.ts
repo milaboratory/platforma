@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
-import { PlConfig, PlLogLevel } from './types';
+import { PlConfig } from './types';
 import {
   getLicense,
   License,
@@ -13,10 +13,11 @@ import {
 } from './license';
 import { createHtpasswdFile, getDefaultAuthMethods, randomStr } from './auth';
 import { createDefaultLocalStorages, StoragesSettings, storagesToMl } from './storages';
-import { getPlVersion } from './package';
 import { createDefaultPackageSettings } from './packageloader';
+import { FSKVStorage } from './fskvstorage';
+import * as crypto from 'node:crypto';
 
-export type PlConfigOptions = {
+export type PlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
   /** Working dir for a local platforma. */
@@ -31,70 +32,94 @@ export type PlConfigOptions = {
    *
    * @param config - a parsed yaml.
    */
-  extraPlConfig?: (config: PlConfig) => PlConfig;
+  plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
-export type PlLocalConfigs = {
-  /** Working directory for a local platforma. */
+export type LocalPlConfigGenerationResult = {
+  //
+  // Pl Instance data
+  //
+
+  /** Working directory for a local platforma */
   workingDir: string;
-  /** Configuration for a local platforma. */
-  plLocal: string;
-  /** Minimal configuration for middle layer.
-   * It is duck typed because of circular dependencies
-   * between pl-middle-layer and pl-config.
-   * Please let me know if you know a better way to solve this. */
-  ml: MLConfig;
-  /** Configuration for pl-client. */
-  clientAddr: string;
-  user: string;
-  password: string;
-  /** Version of the local platforma. */
-  plVersion: string;
+
+  /** Configuration content for a local platforma */
+  plConfigContent: string;
+
+  //
+  // Data for pl client configuration
+  //
+
+  /** Address to connect client to */
+  plAddress: string;
+  /** Authorization credentials: user */
+  plUser: string;
+  /** Authorization credentials: password */
+  plPassword: string;
+
+  //
+  // Data for configuration of blob drivers
+  //
+
+  /**
+   * If Platforma is running in local mode and a download driver
+   * needs to download files from local storage, it will open files
+   * from the specified directory. Otherwise, setting should be empty.
+   *
+   * storage_name -> local_path
+   * */
+  readonly downloadLocalStorageNameToPath: Record<string, string>;
+
+  /**
+   * If the client wants to upload files from their local machine to Platforma,
+   * this option should be set. Set any unique storage names
+   * to any paths from where the client will upload files,
+   * e.g., {'local': '/'}.
+   *
+   * storage_name -> local_path
+   * */
+  readonly uploadLocalStorageNameToPath: Record<string, string>;
 };
 
-export type MLConfig = {
-  logger: MiLogger;
-  localSecret: string;
-  blobDownloadPath: string;
-  frontendDownloadPath: string;
-  platformLocalStorageNameToPath: Record<string, string>;
-  localStorageNameToPath: Record<string, string>;
-};
+export async function generateLocalPlConfigs(
+  opts: PlConfigGeneratorOptions
+): Promise<LocalPlConfigGenerationResult> {
+  const workdir = path.resolve(opts.workingDir);
 
-export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlLocalConfigs> {
+  // settings that must be persisted between independent generation invocations
+  const kv = await FSKVStorage.init(path.join(workdir, 'gen'));
+
   const user = 'default-user';
-  const password = 'default-password';
+  const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
+
   const ports = withLocalhost(await getPorts(opts.portsMode));
 
-  const storages = await createDefaultLocalStorages(opts.workingDir);
-
-  // TODO: do we need this in a local deployment?
-  const blobDownloadPath = path.join(opts.workingDir, 'drivers', 'blobs');
-  await fs.mkdir(blobDownloadPath, { recursive: true });
-
-  const frontendDownloadPath = path.join(opts.workingDir, 'drivers', 'frontend');
-  await fs.mkdir(frontendDownloadPath, { recursive: true });
+  const storages = await createDefaultLocalStorages(workdir);
 
   return {
     workingDir: opts.workingDir,
-    plVersion: getPlVersion(),
-    clientAddr: ports.grpc,
-    user,
-    password,
-    plLocal: await createDefaultPlLocalConfig(opts, ports, user, password, storages),
+
+    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, storages),
+
+    plAddress: ports.grpc,
+    plUser: user,
+    plPassword: password,
+
+    localStorageNameToPath: {}
+
     ml: {
       logger: opts.logger,
       localSecret: 'secret', // @TODO: what to do with this?
       blobDownloadPath,
       frontendDownloadPath,
       platformLocalStorageNameToPath: storagesToMl(storages),
-      localStorageNameToPath: {}
+
     }
   };
 }
 
 async function createDefaultPlLocalConfig(
-  opts: PlConfigOptions,
+  opts: PlConfigGeneratorOptions,
   ports: Endpoints,
   user: string,
   password: string,
@@ -108,13 +133,13 @@ async function createDefaultPlLocalConfig(
 
   let config = getPlConfig(opts, ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
-  if (opts.extraPlConfig) config = opts.extraPlConfig(config);
+  if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
   return yaml.stringify(config);
 }
 
 function getPlConfig(
-  opts: PlConfigOptions,
+  opts: PlConfigGeneratorOptions,
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,

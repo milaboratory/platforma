@@ -1,5 +1,5 @@
 import { SpawnOptions } from 'child_process';
-import { LocalPlBinary } from './binary';
+import { PlBinarySource } from './pl_binary';
 
 /** Options to start a local pl-core. */
 export type LocalPlOptions = {
@@ -10,7 +10,7 @@ export type LocalPlOptions = {
   /** Should we read environment variables for license and other secrets? */
   readonly shouldGetLicenseFromEnv: boolean;
   /** How to get a binary, download it or get an existing one. */
-  readonly binary: LocalPlBinary;
+  readonly binary: PlBinarySource;
   /** Additional options for a process, environments, stdout, stderr etc. */
   readonly spawnOptions: SpawnOptions;
   /**

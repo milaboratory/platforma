@@ -16,20 +16,15 @@ test(
     const config = await readTestConfig();
 
     const dir = await prepareDirForTestConfig();
-    const opts: LocalPlOptions = {
+
+    const pl = await platformaInit(logger, {
       workingDir: dir,
       config,
-      binary: {
-        type: 'Download',
-        version: await getPlVersion()
-      },
       spawnOptions: {
         stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
       },
       closeOld: false
-    };
-
-    const pl = await platformaInit(logger, opts);
+    });
 
     await sleep(5000);
 
@@ -51,13 +46,7 @@ test(
     const dir = await prepareDirForTestConfig();
     const options: LocalPlOptions = {
       workingDir: dir,
-      config,
-      binary: {
-        type: 'Download',
-        version: await getPlVersion()
-      },
-      spawnOptions: {},
-      closeOld: true
+      config
     };
 
     const oldPl = await platformaInit(logger, options);
@@ -87,11 +76,6 @@ test(
     const pl = await platformaInit(logger, {
       workingDir: dir,
       config,
-      binary: {
-        type: 'Download',
-        version: await getPlVersion()
-      },
-      spawnOptions: {},
       closeOld: false,
       onCloseAndErrorNoStop: async (pl) => await pl.start()
     });
@@ -139,9 +123,4 @@ async function prepareDirForTestConfig() {
   await fs.mkdir(path.join(dir, 'packages'), { recursive: true });
 
   return dir;
-}
-
-async function getPlVersion() {
-  const packageJson = await fs.readFile(path.join('..', 'pl-config', 'package.json'));
-  return JSON.parse(packageJson.toString())['pl-version'];
 }

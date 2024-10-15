@@ -2,14 +2,14 @@ import { test } from 'vitest';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import fs from 'fs/promises';
 import path from 'path';
-import { createDefaultLocalConfigs, PlConfigOptions } from './config';
+import { generateLocalPlConfigs, PlConfigGeneratorOptions } from './config';
 import { getRootDir } from './storages';
 import yaml from 'yaml';
 
 test('should return the right configs', async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();
   const workingDir = path.join(__dirname, '.test');
-  const opts: PlConfigOptions = {
+  const opts: PlConfigGeneratorOptions = {
     logger,
     workingDir,
     licenseMode: { type: 'plain', value: 'abc' },
@@ -24,9 +24,9 @@ test('should return the right configs', async ({ expect }) => {
     }
   };
 
-  const got = await createDefaultLocalConfigs(opts);
+  const got = await generateLocalPlConfigs(opts);
 
-  expect(got.clientAddr).toEqual('127.0.0.1:11234');
+  expect(got.plAddress).toEqual('127.0.0.1:11234');
   expect(got.plVersion).not.empty;
   expect(got.ml).toEqual({
     logger: opts.logger,
@@ -41,5 +41,5 @@ test('should return the right configs', async ({ expect }) => {
   });
 
   const testConfig = await fs.readFile(path.join(__dirname, 'config.test.yaml'));
-  expect(yaml.parse(got.plLocal)).toEqual(yaml.parse(testConfig.toString()));
+  expect(yaml.parse(got.plConfigContent)).toEqual(yaml.parse(testConfig.toString()));
 });
