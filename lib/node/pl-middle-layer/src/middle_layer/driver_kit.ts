@@ -58,7 +58,7 @@ export async function initDriverKit(
 
   const signer = new HmacSha256Signer(ops.localSecret);
 
-  const downloadClient = createDownloadClient(ops.logger, pl, ops.platformLocalStorageNameToPath);
+  const downloadClient = createDownloadClient(ops.logger, pl, ops.downloadLocalStorageNameToPath);
   const logsClient = createLogsClient(pl, ops.logger);
   const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
   const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
@@ -86,7 +86,7 @@ export async function initDriverKit(
     lsClient,
     pl,
     signer,
-    ops.localStorageNameToPath,
+    ops.uploadLocalStorageNameToPath,
     ops.openFileDialogCallback
   );
 
@@ -103,11 +103,11 @@ export async function initDriverKit(
 }
 
 function checkStorageNamesDoNotIntersect(logger: MiLogger, ops: DriverKitOps) {
-  if (ops.localStorageNameToPath.local != os.homedir())
-    logger.info(`'local' storage with homedir was overwrote: ${ops.localStorageNameToPath.local}`);
+  if (ops.uploadLocalStorageNameToPath.local != os.homedir())
+    logger.info(`'local' storage with homedir was overwrote: ${ops.uploadLocalStorageNameToPath.local}`);
 
-  const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
-  const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>
+  const platformStorages = Object.keys(ops.downloadLocalStorageNameToPath);
+  const intersected = Object.keys(ops.uploadLocalStorageNameToPath).find((name) =>
     platformStorages.includes(name)
   );
 
