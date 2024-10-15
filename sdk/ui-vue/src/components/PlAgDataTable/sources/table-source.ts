@@ -1,22 +1,27 @@
-import type { ColDef, GridApi, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
-import type { PFrameHandle, AxisId, PColumnIdAndSpec, JoinEntry, PObjectId } from '@platforma-sdk/model';
+import type { ColDef, GridApi, IDatasource, IGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import {
-  type ValueType,
-  type PValue,
+  type PColumnSpec,
   type PFrameDriver,
   type PTableColumnId,
   type PTableColumnSpec,
   type PTableHandle,
   type PTableVector,
-  type PColumnSpec,
+  type PValue,
+  type ValueType,
+  AxisId,
   getAxesId,
-  isValueNA,
   isValueAbsent,
+  isValueNA,
+  JoinEntry,
   mapJoinEntry,
+  PColumnIdAndSpec,
+  PFrameHandle,
+  PObjectId,
 } from '@platforma-sdk/model';
-import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
+import * as lodash from 'lodash';
 import { type PlDataTableSheet } from '../types';
+import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 
 /**
  * Generate unique colId based on the column spec.
@@ -35,6 +40,17 @@ export function parseColId(str: string) {
   return JSON.parse(str) as PTableColumnId;
 }
 
+export const defaultValueFormatter = (value: any) => {
+  if (!value) {
+    return 'ERROR';
+  } else if (value.value === undefined) {
+    return 'NULL';
+  } else if (value.value === null) {
+    return 'NA';
+  } else {
+    return value.value.toString();
+  }
+};
 /**
  * Calculates column definition for a given p-table column
  */
@@ -44,17 +60,7 @@ function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
-    valueFormatter: (value) => {
-      if (!value) {
-        return 'ERROR';
-      } else if (value.value === undefined) {
-        return 'NULL';
-      } else if (value.value === null) {
-        return 'NA';
-      } else {
-        return value.value.toString();
-      }
-    },
+    valueFormatter: defaultValueFormatter,
     cellDataType: ((valueType: ValueType) => {
       switch (valueType) {
         case 'Int':
@@ -255,13 +261,15 @@ function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
     }
 
     // generate ID based on the axes information
-    row['id'] = JSON.stringify(index);
+    row['id'] = iRow.toString();
 
     rowData.push(row);
   }
 
   return rowData;
 }
+
+const isLabelColumn = (col: PTableColumnSpec) => col.type === 'column' && col.spec.axesSpec.length === 1 && col.spec.name === 'pl7.app/label';
 
 /**
  * Calculate GridOptions for p-table data source type
@@ -273,31 +281,55 @@ export async function updatePFrameGridOptions(
   sheets: PlDataTableSheet[],
 ): Promise<{
   columnDefs: ColDef[];
-  datasource: IDatasource;
+  datasource?: IDatasource;
+  rowModelType: RowModelType;
+  rowData?: unknown[];
 }> {
   const specs = await pfDriver.getSpec(pt);
+
+  // column indices in the specs array that we are going to process
   const indices = [...specs.keys()].filter(
     (i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)),
   );
   const fields = lodash.cloneDeep(indices);
 
+  // get columns with heterogeneous axes
+  const hColumns = getHeterogeneousColumns(specs, indices);
+
+  // process label columns
   for (let i = indices.length - 1; i >= 0; --i) {
     const idx = indices[i];
-    if (!(specs[idx].type === 'column' && specs[idx].spec.axesSpec.length === 1 && specs[idx].spec.name === 'pl7.app/label')) continue;
+    if (!isLabelColumn(specs[idx])) continue;
 
     const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec)[0];
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) continue;
 
+    // replace in h-columns
     indices[axisIdx] = idx;
+    for (const hCol of hColumns) {
+      if (hCol.axisIdx === idx) {
+        hCol.axisIdx = axisIdx;
+      }
+    }
+
+    // remove original axis
     indices.splice(i, 1);
     fields.splice(i, 1);
   }
 
-  const columnDefs = fields.map((i) => getColDef(i, specs[i]));
-
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
+  const columnDefs = fields.map((i) => getColDef(i, specs[i]));
+
+  if (hColumns.length > 1) {
+    console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
+  }
+
+  if (hColumns.length === 1) {
+    // return data
+    return updatePFrameGridOptionsHeterogeneousAxes(hColumns, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
+  }
 
   let lastParams: IGetRowsParams | undefined = undefined;
   const datasource = {
@@ -340,6 +372,7 @@ export async function updatePFrameGridOptions(
   } satisfies IDatasource;
 
   return {
+    rowModelType: 'infinite',
     columnDefs,
     datasource,
   };
