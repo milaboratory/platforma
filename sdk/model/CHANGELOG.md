@@ -1,5 +1,13 @@
 # @platforma-sdk/model
 
+## 1.6.0
+
+### Patch Changes
+
+- eb079e9: Support heterogeneous axes in PlAgDataTable
+- Updated dependencies [eb079e9]
+  - @milaboratories/pl-model-common@1.3.15
+
 ## 1.5.40
 
 ### Patch Changes
