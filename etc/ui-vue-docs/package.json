@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
-    "docs:build": "vitepress build qwerty",
-    "docs:preview": "vitepress preview qwerty",
+    "build": "vitepress build docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "docs:test": "echo 'Hola!'"
   },
   "devDependencies": {
