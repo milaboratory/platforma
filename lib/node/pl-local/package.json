@@ -1,15 +1,22 @@
 {
   "name": "@milaboratories/pl-local",
-  "version": "1.1.0",
-  "pl-version": "1.13.0",
+  "version": "1.3.0",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
-    "test": "vitest run"
-  },
-  "bin": {
-    "pl-service": "./bin/run.js"
+    "test": "vitest",
+    "do-pack": "rm -rf src/.test && rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "files": [
     "./dist/**/*",

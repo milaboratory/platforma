@@ -1,17 +1,8 @@
 import type { ColDef, GridApi, IDatasource, IGetRowsParams } from '@ag-grid-community/core';
+import type { PFrameHandle, AxisId, PColumnIdAndSpec, JoinEntry, PObjectId } from '@platforma-sdk/model';
 import {
   type ValueType,
-  type PValueInt,
-  PValueIntNA,
-  PValueLongNA,
-  type PValueFloat,
-  PValueFloatNA,
-  type PValueDouble,
-  PValueDoubleNA,
-  type PValueString,
-  PValueStringNA,
-  type PValueBytes,
-  PValueBytesNA,
+  type PValue,
   type PFrameDriver,
   type PTableColumnId,
   type PTableColumnSpec,
@@ -19,6 +10,9 @@ import {
   type PTableVector,
   type PColumnSpec,
   getAxesId,
+  isValueNA,
+  isValueAbsent,
+  mapJoinEntry,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import canonicalize from 'canonicalize';
@@ -79,45 +73,14 @@ function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
 }
 
 /**
- * Check if value is NA
- */
-function isValueNA(value: unknown, valueType: ValueType): boolean {
-  switch (valueType) {
-    case 'Int':
-      return (value as PValueInt) === PValueIntNA;
-    case 'Long':
-      return (value as bigint) === PValueLongNA;
-    case 'Float':
-      return (value as PValueFloat) === PValueFloatNA;
-    case 'Double':
-      return (value as PValueDouble) === PValueDoubleNA;
-    case 'String':
-      return (value as PValueString) === PValueStringNA;
-    case 'Bytes':
-      return (value as PValueBytes) === PValueBytesNA;
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
-}
-
-/**
- * Check if value is absent
- */
-function isValueAbsent(array: Uint8Array, index: number): boolean {
-  const chunkIndex = Math.floor(index / 8);
-  const mask = 1 << (7 - (index % 8));
-  return (array[chunkIndex] & mask) > 0;
-}
-
-/**
  * Convert value to displayable form
  */
-function toDisplayValue(value: string | number | bigint | Uint8Array, valueType: ValueType): string | number {
+function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): string | number {
   switch (valueType) {
     case 'Int':
       return value as number;
     case 'Long':
-      return Number(value as bigint);
+      return typeof value === 'bigint' ? Number(value as bigint) : (value as number);
     case 'Float':
       return value as number;
     case 'Double':
@@ -129,6 +92,137 @@ function toDisplayValue(value: string | number | bigint | Uint8Array, valueType:
     default:
       throw Error(`unsupported data type: ${valueType satisfies never}`);
   }
+}
+
+function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec[] {
+  const columns: PColumnIdAndSpec[] = [];
+  mapJoinEntry(join, (idAndSpec) => {
+    columns.push(idAndSpec);
+    return idAndSpec;
+  });
+  return columns;
+}
+
+async function getLabelColumns(pfDriver: PFrameDriver, pFrame: PFrameHandle, idsAndSpecs: PColumnIdAndSpec[]): Promise<PColumnIdAndSpec[]> {
+  if (!idsAndSpecs.length) return [];
+
+  const response = await pfDriver.findColumns(pFrame, {
+    columnFilter: {
+      name: ['pl7.app/label'],
+    },
+    compatibleWith: lodash.uniqWith(idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(), lodash.isEqual),
+    strictlyCompatible: true,
+  });
+  return response.hits.filter((idAndSpec) => idAndSpec.spec.axesSpec.length === 1);
+}
+
+export async function enrichJoinWithLabelColumns(
+  pfDriver: PFrameDriver,
+  pFrame: PFrameHandle,
+  join: JoinEntry<PColumnIdAndSpec>,
+): Promise<JoinEntry<PColumnIdAndSpec>> {
+  const columns = getColumnsFromJoin(join);
+  const labelColumns = await getLabelColumns(pfDriver, pFrame, columns);
+  const missingLabelColumns = labelColumns.filter((column) => !lodash.find(columns, (c) => column.columnId === c.columnId));
+  if (missingLabelColumns.length === 0) return join;
+  return {
+    type: 'outer',
+    primary: join,
+    secondary: missingLabelColumns.map((column) => ({
+      type: 'column',
+      column,
+    })),
+  };
+}
+
+export async function makeSheets(
+  pfDriver: PFrameDriver,
+  pFrameHandle: PFrameHandle,
+  sheetAxes: AxisId[],
+  join: JoinEntry<PColumnIdAndSpec>,
+): Promise<PlDataTableSheet[]> {
+  const axes = sheetAxes.filter((spec) => spec.type !== 'Bytes');
+
+  const columns = getColumnsFromJoin(join);
+
+  const mapping: [number, number][][] = axes.map((_) => []);
+  const labelCol: (PObjectId | null)[] = axes.map((_) => null);
+  for (let i = 0; i < columns.length; ++i) {
+    const axesId = getAxesId(columns[i].spec.axesSpec);
+    for (let j = 0; j < axesId.length; ++j) {
+      const k = lodash.findIndex(axes, (axis) => lodash.isEqual(axis, axesId[j]));
+      if (k === -1 || labelCol[k]) continue;
+
+      if (axesId.length === 1 && columns[i].spec.name === 'pl7.app/label') {
+        mapping[k] = [[i, j]];
+        labelCol[k] = columns[i].columnId;
+      } else {
+        mapping[k].push([i, j]);
+      }
+    }
+  }
+
+  for (let i = axes.length - 1; i >= 0; --i) {
+    if (!mapping[i].length) {
+      labelCol.splice(i, 1);
+      mapping.splice(i, 1);
+      axes.splice(i, 1);
+    }
+  }
+
+  const limit = 100;
+  const possibleValues: Set<string | number>[] = axes.map((_) => new Set());
+
+  loop1: for (let i = axes.length - 1; i >= 0; --i) {
+    for (const [column, _] of mapping[i]) {
+      const response = await pfDriver.getUniqueValues(pFrameHandle, {
+        columnId: columns[column].columnId,
+        ...(!labelCol[i] && { axis: lodash.cloneDeep(axes[i]) }),
+        filters: [],
+        limit,
+      });
+      if (response.overflow) {
+        labelCol.splice(i, 1);
+        mapping.splice(i, 1);
+        axes.splice(i, 1);
+        continue loop1;
+      }
+
+      const valueType = response.values.type;
+      for (const value of response.values.data) {
+        if (isValueNA(value, valueType) || value === null) continue;
+        possibleValues[i].add(toDisplayValue(value, valueType));
+
+        if (possibleValues[i].size === limit) {
+          labelCol.splice(i, 1);
+          mapping.splice(i, 1);
+          axes.splice(i, 1);
+          continue loop1;
+        }
+      }
+    }
+
+    if (!possibleValues[i].size) {
+      labelCol.splice(i, 1);
+      mapping.splice(i, 1);
+      axes.splice(i, 1);
+      continue loop1;
+    }
+  }
+
+  return axes.map((axis, i) => {
+    const options = [...possibleValues[i]].map((value) => ({
+      value: value,
+      text: value.toString(),
+    }));
+    const defaultValue = options[0].value;
+    return {
+      axis: lodash.cloneDeep(axis),
+      ...(labelCol[i] && { column: labelCol[i] }),
+      options,
+      defaultValue,
+    } as PlDataTableSheet;
+  });
 }
 
 /**
@@ -182,22 +276,22 @@ export async function updatePFrameGridOptions(
   datasource: IDatasource;
 }> {
   const specs = await pfDriver.getSpec(pt);
-  const indices = specs
-    .map((spec, i) => (!lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, spec.id)) ? i : null))
-    .filter((entry) => entry !== null);
+  const indices = [...specs.keys()].filter(
+    (i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)),
+  );
   const fields = lodash.cloneDeep(indices);
 
   for (let i = indices.length - 1; i >= 0; --i) {
     const idx = indices[i];
-    if (specs[idx].type !== 'column' || specs[idx].spec.name !== 'pl7.app/label') continue;
+    if (!(specs[idx].type === 'column' && specs[idx].spec.axesSpec.length === 1 && specs[idx].spec.name === 'pl7.app/label')) continue;
 
-    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec).map(lodash.cloneDeep)[0];
+    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec)[0];
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) continue;
 
     indices[axisIdx] = idx;
-    indices.splice(idx, 1);
-    fields.splice(idx, 1);
+    indices.splice(i, 1);
+    fields.splice(i, 1);
   }
 
   const columnDefs = fields.map((i) => getColDef(i, specs[i]));

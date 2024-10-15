@@ -1,5 +1,73 @@
 # @platforma-sdk/bootstrap
 
+## 2.5.2
+
+### Patch Changes
+
+- d5872af: Load default list of users for backend in docker with auth enabled
+
+## 2.5.1
+
+### Patch Changes
+
+- Updated dependencies [073c259]
+  - @milaboratories/pl-local@1.3.0
+
+## 2.5.0
+
+### Minor Changes
+
+- 0899a98: Relese pl=1.14.7 to UI and bootstrap
+
+### Patch Changes
+
+- Updated dependencies [0899a98]
+  - @milaboratories/pl-config@1.2.7
+  - @milaboratories/pl-local@1.2.6
+
+## 2.4.4
+
+### Patch Changes
+
+- Updated dependencies [33e8fbc]
+  - @milaboratories/pl-local@1.2.5
+
+## 2.4.3
+
+### Patch Changes
+
+- Updated dependencies [7207876]
+  - @milaboratories/pl-config@1.2.6
+
+## 2.4.2
+
+### Patch Changes
+
+- Updated dependencies [2716eb1]
+  - @milaboratories/pl-config@1.2.5
+
+## 2.4.1
+
+### Patch Changes
+
+- dddf97f: bump pl version, change pl-bootstrap to get pl-version from pl-config
+- Updated dependencies [c7dc613]
+- Updated dependencies [dddf97f]
+  - @milaboratories/pl-local@1.2.4
+  - @milaboratories/pl-config@1.2.4
+
+## 2.4.0
+
+### Minor Changes
+
+- b4261a7: Release pl 1.14.0 to bootstrap
+
+## 2.2.0
+
+### Minor Changes
+
+- 7cb960f: Release pl 1.13.5
+
 ## 2.1.2
 
 ### Patch Changes

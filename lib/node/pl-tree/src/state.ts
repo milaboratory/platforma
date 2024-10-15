@@ -1,5 +1,7 @@
 import {
   BasicResourceData,
+  FieldData,
+  FieldStatus,
   FieldType,
   isNotNullResourceId,
   isNullResourceId,
@@ -17,7 +19,8 @@ import { ChangeSource, Watcher } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
 import { ValueAndError } from './value_and_error';
 import { MiLogger, notEmpty } from '@milaboratories/ts-helpers';
-import { FieldTraversalStep, GetFieldStep, ResourceTraversalOps } from './traversal_ops';
+import { FieldTraversalStep, GetFieldStep } from './traversal_ops';
+import { FinalResourceDataPredicate } from '@milaboratories/pl-client';
 
 export type ExtendedResourceData = ResourceData & {
   kv: KeyValue[];
@@ -29,13 +32,16 @@ export class TreeStateUpdateError extends Error {
   }
 }
 
-class PlTreeField {
+class PlTreeField implements FieldData {
   readonly change = new ChangeSource();
 
   constructor(
+    public readonly name: string,
     public type: FieldType,
     public value: OptionalResourceId,
     public error: OptionalResourceId,
+    public status: FieldStatus,
+    public valueIsFinal: boolean,
     /** Last version of resource this field was observed, used to garbage collect fields in tree patching procedure */
     public resourceVersion: number
   ) {}
@@ -45,17 +51,12 @@ const InitialResourceVersion = 0;
 
 const decoder = new TextDecoder();
 
-/** Interface of PlTreeResource exposed to outer world, like {@link FinalPredicate}. */
-export interface PlTreeResourceI extends BasicResourceData {
-  readonly final: boolean;
-}
-
-/** Predicate of resource state used to determine if it's state is considered to be final,
- * and not expected to change in the future. */
-export type FinalPredicate = (r: Omit<PlTreeResourceI, 'final'>) => boolean;
+export type ResourceDataWithFinalState = ResourceData & {
+  finalState: boolean;
+};
 
 /** Never store instances of this class, always get fresh instance from {@link PlTreeState} */
-export class PlTreeResource implements PlTreeResourceI {
+export class PlTreeResource implements ResourceDataWithFinalState {
   /** Tracks number of other resources referencing this resource. Used to perform garbage collection in tree patching procedure */
   refCount: number = 0;
 
@@ -64,7 +65,7 @@ export class PlTreeResource implements PlTreeResourceI {
   /** Set to resource version when resource state, or it's fields have changed */
   dataVersion: number = InitialResourceVersion;
 
-  readonly fields: Map<string, PlTreeField> = new Map();
+  readonly fieldsMap: Map<string, PlTreeField> = new Map();
 
   readonly kv = new Map<string, Uint8Array>();
 
@@ -100,8 +101,8 @@ export class PlTreeResource implements PlTreeResourceI {
   resourceReady: boolean;
   finalFlag: boolean;
 
-  /** Set externally by the tree, using {@link FinalPredicate} */
-  _final: boolean = false;
+  /** Set externally by the tree, using {@link FinalResourceDataPredicate} */
+  _finalState: boolean = false;
 
   private readonly logger?: MiLogger;
 
@@ -130,7 +131,15 @@ export class PlTreeResource implements PlTreeResourceI {
   }
 
   get final(): boolean {
-    return this._final;
+    return this.finalFlag;
+  }
+
+  get finalState(): boolean {
+    return this._finalState;
+  }
+
+  get fields(): FieldData[] {
+    return [...this.fieldsMap.values()];
   }
 
   public getField(
@@ -152,7 +161,7 @@ export class PlTreeResource implements PlTreeResourceI {
   ): ValueAndError<ResourceId> | undefined {
     const step: FieldTraversalStep = typeof _step === 'string' ? { field: _step } : _step;
 
-    const field = this.fields.get(step.field);
+    const field = this.fieldsMap.get(step.field);
     if (field === undefined) {
       if (step.errorIfFieldNotFound || step.errorIfFieldNotSet)
         throw new Error(
@@ -176,7 +185,7 @@ export class PlTreeResource implements PlTreeResourceI {
       }
 
       this.dynamicFieldListChanged?.attachWatcher(watcher);
-      if (!this._final && !step.stableIfNotFound) onUnstable('field_not_found:' + step.field);
+      if (!this._finalState && !step.stableIfNotFound) onUnstable('field_not_found:' + step.field);
 
       return undefined;
     } else {
@@ -222,7 +231,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public getIsFinal(watcher: Watcher): boolean {
     this.finalChanged?.attachWatcher(watcher);
-    return this._final;
+    return this._finalState;
   }
 
   public getIsReadyOrError(watcher: Watcher): boolean {
@@ -244,7 +253,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public listInputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
-    this.fields.forEach((field, name) => {
+    this.fieldsMap.forEach((field, name) => {
       if (field.type === 'Input' || field.type === 'Service') ret.push(name);
     });
     if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
@@ -254,7 +263,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public listOutputFields(watcher: Watcher): string[] {
     const ret: string[] = [];
-    this.fields.forEach((field, name) => {
+    this.fieldsMap.forEach((field, name) => {
       if (field.type === 'Output') ret.push(name);
     });
     if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
@@ -264,7 +273,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
   public listDynamicFields(watcher: Watcher): string[] {
     const ret: string[] = [];
-    this.fields.forEach((field, name) => {
+    this.fieldsMap.forEach((field, name) => {
       if (field.type !== 'Input' && field.type !== 'Output') ret.push(name);
     });
     this.dynamicFieldListChanged?.attachWatcher(watcher);
@@ -315,10 +324,11 @@ export class PlTreeResource implements PlTreeResourceI {
     };
   }
 
+  /** Called when {@link FinalResourceDataPredicate} returns true for the state. */
   markFinal() {
-    if (this._final) return;
+    if (this._finalState) return;
 
-    this._final = true;
+    this._finalState = true;
     notEmpty(this.finalChanged).markChanged();
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
@@ -330,7 +340,7 @@ export class PlTreeResource implements PlTreeResourceI {
 
   /** Used for invalidation */
   markAllChanged() {
-    this.fields.forEach((field) => field.change.markChanged());
+    this.fieldsMap.forEach((field) => field.change.markChanged());
     this.finalChanged?.markChanged();
     this.resourceStateChange?.markChanged();
     this.lockedChange?.markChanged();
@@ -342,9 +352,6 @@ export class PlTreeResource implements PlTreeResourceI {
   }
 }
 
-// TODO implement invalidate tree
-// TODO make invalid state permanent
-// TODO invalidate on update errors
 export class PlTreeState {
   /** resource heap */
   private resources: Map<ResourceId, PlTreeResource> = new Map();
@@ -357,10 +364,10 @@ export class PlTreeState {
   constructor(
     /** This will be the only resource not deleted during GC round */
     public readonly root: ResourceId,
-    public readonly isFinalPredicate: FinalPredicate = (r) => false
+    public readonly isFinalPredicate: FinalResourceDataPredicate
   ) {}
 
-  public forEachResource(cb: (res: PlTreeResourceI) => void): void {
+  public forEachResource(cb: (res: ResourceDataWithFinalState) => void): void {
     this.resources.forEach((v) => cb(v));
   }
 
@@ -406,7 +413,7 @@ export class PlTreeState {
       if (resource !== undefined) {
         // updating existing resource
 
-        if (resource.final)
+        if (resource.finalState)
           unexpectedTransitionError('resource state can\t be updated after it is marked as final');
 
         let changed = false;
@@ -435,12 +442,20 @@ export class PlTreeState {
 
         // updating fields
         for (const fd of rd.fields) {
-          let field = resource.fields.get(fd.name);
+          let field = resource.fieldsMap.get(fd.name);
 
           if (!field) {
             // new field
 
-            field = new PlTreeField(fd.type, fd.value, fd.error, resource.version);
+            field = new PlTreeField(
+              fd.name,
+              fd.type,
+              fd.value,
+              fd.error,
+              fd.status,
+              fd.valueIsFinal,
+              resource.version
+            );
             if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
             if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
 
@@ -460,7 +475,7 @@ export class PlTreeState {
               notEmpty(resource.dynamicFieldListChanged).markChanged();
             }
 
-            resource.fields.set(fd.name, field);
+            resource.fieldsMap.set(fd.name, field);
 
             changed = true;
           } else {
@@ -508,12 +523,26 @@ export class PlTreeState {
               changed = true;
             }
 
+            // field status
+            if (field.status !== fd.status) {
+              field.status = fd.status;
+              field.change.markChanged();
+              changed = true;
+            }
+
+            // field valueIsFinal flag
+            if (field.valueIsFinal !== fd.valueIsFinal) {
+              field.valueIsFinal = fd.valueIsFinal;
+              field.change.markChanged();
+              changed = true;
+            }
+
             field.resourceVersion = resource.version;
           }
         }
 
         // detecting removed fields
-        resource.fields.forEach((field, fieldName, fields) => {
+        resource.fieldsMap.forEach((field, fieldName, fields) => {
           if (field.resourceVersion !== resource!.version) {
             if (field.type === 'Input' || field.type === 'Service' || field.type === 'Output')
               unexpectedTransitionError(`removal of ${field.type} field ${fieldName}`);
@@ -596,14 +625,25 @@ export class PlTreeState {
         resource.verifyReadyState();
         if (isNotNullResourceId(resource.error)) incrementRefs.push(resource.error);
         for (const fd of rd.fields) {
-          const field = new PlTreeField(fd.type, fd.value, fd.error, InitialResourceVersion);
+          const field = new PlTreeField(
+            fd.name,
+            fd.type,
+            fd.value,
+            fd.error,
+            fd.status,
+            fd.valueIsFinal,
+            InitialResourceVersion
+          );
           if (isNotNullResourceId(fd.value)) incrementRefs.push(fd.value);
           if (isNotNullResourceId(fd.error)) incrementRefs.push(fd.error);
-          resource.fields.set(fd.name, field);
+          resource.fieldsMap.set(fd.name, field);
         }
 
         // adding kv
         for (const kv of rd.kv) resource.kv.set(kv.key, kv.value);
+
+        // checking that resource is final, and if so, marking it
+        if (this.isFinalPredicate(resource)) resource.markFinal();
 
         // adding the resource to the heap
         this.resources.set(resource.id, resource);
@@ -636,7 +676,7 @@ export class PlTreeState {
         // garbage collection
         if (res.refCount === 0 && res.id !== this.root) {
           // removing fields
-          res.fields.forEach((field) => {
+          res.fieldsMap.forEach((field) => {
             if (isNotNullResourceId(field.value)) nextRefs.push(field.value);
             if (isNotNullResourceId(field.error)) nextRefs.push(field.error);
             field.change.markChanged();

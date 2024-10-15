@@ -12,6 +12,7 @@ util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
 
+transposeXsvSw := assets.importSoftware("@milaboratories/software-small-binaries:table-converter")
 pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
 
 /**
@@ -60,7 +61,22 @@ getColumnSpec := func(axesSpec, col) {
  * @param xsvFile: reference - a reference to a file
  * @param xsvType: string - either csv or tsv
  * @param spec: object - xsv conversion specification
- * @param ops: dict - additional params (internal)
+ * @param ops: object - additional options
+ *               {
+ *                 dataOnly: boolean  - set to true to completely skip creation of specs
+ *                 transpose: object - if specified, then the input table will be transposed
+ *                            { 
+ *                              separator: string - (optional) use separator instead of inferring from the file extension
+ *                              pAxisIdx: index - (optional) the index of the primary axis (column in the input xsv); default 0
+ *                              pAxisName: string - (optional) the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisSearch: regex - (optional) the regex pattern of the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisNameOverride: string - (optional) override primary axis header in the output; default undefined
+ *                              sAxisSearch: string - (optional) regex to filter secondary axis columns in the input table;
+ *                              sAxisName: string - (optional) the name of the secondary axis (column name in the output xsv); default "Metric"
+ *                              valueName: string - (optional) the name of the value column; default "Value"
+ *                              separatorOverride: string - (optional) specify separator in the output (optional)
+ *                            }
+ *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
 importFile := func(xsvFile, xsvType, spec, ...ops) {
@@ -69,6 +85,58 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	validation.assertJsonSchema(spec, util.PFCONV_CFG_SCHEMA)
 
 	xsvFileName := "file." + xsvType
+
+	ops := renderOps({ dataOnly: false }, ops...)
+
+	if ops.transpose != undefined {
+
+		tops := ops.transpose
+
+		transposedFileName := "fileTransposed." + xsvType
+
+		// convert csv to p-frame and read resulting data
+		transposeXsv := exec.builder().
+			software(transposeXsvSw).
+			printErrStreamToStdout().
+			inLightQueue()
+			
+		if (tops.separator != undefined) {
+			transposeXsv = transposeXsv.arg("-input-separator").arg(tops.separator)
+		}
+		if (tops.pAxisIdx != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-i").arg("" + tops.pAxisIdx) // always convert to string
+		}
+		if (tops.pAxisName != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-name").arg(tops.pAxisName)
+		}
+		if (tops.pAxisSearch != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-column-search").arg(tops.pAxisSearch)
+		}
+		if (tops.pAxisNameOverride != undefined) {
+			transposeXsv = transposeXsv.arg("-sample-label").arg(tops.pAxisNameOverride)
+		}
+		if (tops.sAxisSearch != undefined) {
+			transposeXsv = transposeXsv.arg("-metric-columns-search").arg(tops.sAxisSearch)
+		}
+		if (tops.sAxisName != undefined) {
+			transposeXsv = transposeXsv.arg("-metric-label").arg(tops.sAxisName)	
+		}
+		if (tops.valueName != undefined) {
+			transposeXsv = transposeXsv.arg("-value-label").arg(tops.valueName)	
+		}
+		if (tops.separatorOverride != undefined) {
+			transposeXsv = transposeXsv.arg("-separator").arg(tops.separatorOverride)	
+		}
+		
+		transposeXsv = transposeXsv.
+			arg(xsvFileName).
+			arg(transposedFileName).
+			addFile(xsvFileName, xsvFile).
+			saveFile(transposedFileName).
+			run()
+
+		xsvFile = transposeXsv.getFile(transposedFileName)
+	}
 
 	// import p-frame from directory tpl
 	importDirTpl := assets.importTemplate(":pframes.import-dir")
@@ -80,6 +148,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	pfconv := exec.builder().
 		software(pfconvSw).
 		printErrStreamToStdout().
+		inLightQueue().
 		arg("importCsv").
 		arg(xsvFileName).
 		arg("-p").arg("spec.json").
@@ -88,8 +157,6 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		writeFile("spec.json", json.encode(pureSpec)).
 		processWorkdir("pf", importDirTpl, pureSpec).
 		run()
-
-    ops := renderOps({ dataOnly: false }, ops...)
 
 	// p-columns data
 	pf := pfconv.getProcessorResult("pf")
@@ -124,6 +191,18 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  *                                              with "spec" + "data" fields in nested maps
  *                 additionalAxesSpec: AxisSpec[]  - array of additional axes spec to prepend to
  *                                                   each column spec
+ *                 transpose: object - if specified, then the input table will be transposed
+ *                            { 
+ *                              separator: string - (optional) use separator instead of inferring from the file extension
+ *                              pAxisIdx: index - (optional) the index of the primary axis (column in the input xsv); default 0
+ *                              pAxisName: string - (optional) the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisSearch: regex - (optional) the regex pattern of the name of the primary axis (column name in the input xsv); default undefined
+ *                              pAxisNameOverride: string - (optional) override primary axis header in the output; default undefined
+ *                              sAxisSearch: string - (optional) regex to filter secondary axis columns in the input table;
+ *                              sAxisName: string - (optional) the name of the secondary axis (column name in the output xsv); default "Metric"
+ *                              valueName: string - (optional) the name of the value column; default "Value"
+ *                              separatorOverride: string - (optional) specify separator in the output (optional)
+ *                            }
  *               }
  * @return map: reference - a reference to a map resource storing imported data.
  */
@@ -134,7 +213,8 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	ops := renderOps({
 	    dataOnly: false,
 		splitDataAndSpec: false,
-		additionalAxesSpec: []
+		additionalAxesSpec: [],
+		transpose: undefined
 	  }, ops...)
 
 	// spec without any metadata (for caching purposes)
@@ -146,7 +226,7 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 		xsvMap: xsvMap,
 		xsvType: xsvType,
 		spec: pureSpec,
-		ops: { dataOnly: true }
+		ops: { dataOnly: true, transpose: ops.transpose }
 	})
 
 	if ops.dataOnly && ops.splitDataAndSpec {
@@ -169,7 +249,7 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 			result[id + ".spec"] = columnsSpec[id]
 		}
 	}
-
+	
 	return result
 }
 

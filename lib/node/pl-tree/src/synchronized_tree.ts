@@ -1,19 +1,39 @@
 import { PollingComputableHooks } from '@milaboratories/computable';
 import { PlTreeEntry } from './accessors';
-import { isTimeoutOrCancelError, PlClient, ResourceId } from '@milaboratories/pl-client';
-import { FinalPredicate, PlTreeState, TreeStateUpdateError } from './state';
-import { constructTreeLoadingRequest, loadTreeState, PruningFunction } from './sync';
+import {
+  FinalResourceDataPredicate,
+  isTimeoutOrCancelError,
+  PlClient,
+  ResourceId
+} from '@milaboratories/pl-client';
+import { PlTreeState, TreeStateUpdateError } from './state';
+import {
+  constructTreeLoadingRequest,
+  initialTreeLoadingStat,
+  loadTreeState,
+  PruningFunction,
+  TreeLoadingStat
+} from './sync';
 import * as tp from 'node:timers/promises';
 import { MiLogger } from '@milaboratories/ts-helpers';
 
+type StatLoggingMode = 'cumulative' | 'per-request';
+
 export type SynchronizedTreeOps = {
-  finalPredicate?: FinalPredicate;
+  /** Override final predicate from the PlClient */
+  finalPredicateOverride?: FinalResourceDataPredicate;
+
+  /** Pruning function to limit set of fields through which tree will
+   * traverse during state synchronization */
   pruning?: PruningFunction;
 
   /** Interval after last sync to sleep before the next one */
   pollingInterval: number;
   /** For how long to continue polling after the last derived value access */
   stopPollingDelay: number;
+
+  /** If one of the values, tree will log stats of each polling request */
+  logStat?: StatLoggingMode;
 };
 
 type ScheduledRefresh = {
@@ -22,10 +42,11 @@ type ScheduledRefresh = {
 };
 
 export class SynchronizedTreeState {
-  private readonly finalPredicate: FinalPredicate | undefined;
+  private readonly finalPredicate: FinalResourceDataPredicate;
   private state: PlTreeState;
   private readonly pollingInterval: number;
   private readonly pruning?: PruningFunction;
+  private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
 
@@ -35,11 +56,12 @@ export class SynchronizedTreeState {
     ops: SynchronizedTreeOps,
     private readonly logger?: MiLogger
   ) {
-    const { finalPredicate, pruning, pollingInterval, stopPollingDelay } = ops;
+    const { finalPredicateOverride, pruning, pollingInterval, stopPollingDelay, logStat } = ops;
     this.pruning = pruning;
     this.pollingInterval = pollingInterval;
-    this.finalPredicate = finalPredicate;
-    this.state = new PlTreeState(root, finalPredicate);
+    this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
+    this.logStat = logStat;
+    this.state = new PlTreeState(root, this.finalPredicate);
     this.hooks = new PollingComputableHooks(
       () => this.startUpdating(),
       () => this.stopUpdating(),
@@ -91,11 +113,11 @@ export class SynchronizedTreeState {
   private currentLoop: Promise<void> | undefined = undefined;
 
   /** Executed from the main loop, and initialization procedure. */
-  private async refresh(): Promise<void> {
+  private async refresh(stats?: TreeLoadingStat): Promise<void> {
     if (this.terminated) throw new Error('tree synchronization is terminated');
     const request = constructTreeLoadingRequest(this.state, this.pruning);
     const data = await this.pl.withReadTx('ReadingTree', async (tx) => {
-      return await loadTreeState(tx, request);
+      return await loadTreeState(tx, request, stats);
     });
     this.state.updateFromResourceData(data, true);
   }
@@ -104,6 +126,9 @@ export class SynchronizedTreeState {
   private terminated = false;
 
   private async mainLoop() {
+    // will hold request stats
+    let stat = this.logStat ? initialTreeLoadingStat() : undefined;
+
     while (true) {
       if (!this.keepRunning) break;
 
@@ -117,12 +142,21 @@ export class SynchronizedTreeState {
       }
 
       try {
+        // resetting stats if we were asked to collect non-cumulative stats
+        if (this.logStat === 'per-request') stat = initialTreeLoadingStat();
+
         // actual tree synchronization
-        await this.refresh();
+        await this.refresh(stat);
+
+        // logging stats if we were asked to
+        if (stat && this.logger) this.logger.info(`Tree stat (success): ${JSON.stringify(stat)}`);
 
         // notifying that we got new state
         if (toNotify !== undefined) for (const n of toNotify) n.resolve();
       } catch (e: any) {
+        // logging stats if we were asked to (even if error occured)
+        if (stat && this.logger) this.logger.info(`Tree stat (error): ${JSON.stringify(stat)}`);
+
         // notifying that we failed to refresh the state
         if (toNotify !== undefined) for (const n of toNotify) n.reject(e);
 
@@ -181,9 +215,21 @@ export class SynchronizedTreeState {
     await this.currentLoop;
   }
 
-  public static async init(pl: PlClient, root: ResourceId, ops: SynchronizedTreeOps) {
-    const tree = new SynchronizedTreeState(pl, root, ops);
-    await tree.refresh();
+  public static async init(
+    pl: PlClient,
+    root: ResourceId,
+    ops: SynchronizedTreeOps,
+    logger?: MiLogger
+  ) {
+    const tree = new SynchronizedTreeState(pl, root, ops, logger);
+
+    let stat = ops.logStat ? initialTreeLoadingStat() : undefined;
+
+    await tree.refresh(stat);
+
+    // logging stats if we were asked to (even if error occured)
+    if (stat && logger) logger.info(`Tree stat (initial load): ${JSON.stringify(stat)}`);
+
     return tree;
   }
 }

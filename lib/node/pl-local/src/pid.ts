@@ -13,9 +13,9 @@ export async function readPid(filePath: string): Promise<number | undefined> {
 
   const text = await fs.readFile(filePath);
 
-  return Number(text.toString())
+  return Number(text.toString());
 }
 
 export async function writePid(filePath: string, pid: number) {
-  await fs.writeFile(filePath, JSON.stringify(pid))
+  await fs.writeFile(filePath, JSON.stringify(pid));
 }

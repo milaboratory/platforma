@@ -121,14 +121,16 @@ isReference := func(f) {
  * Gets future field by given field name and field type.
  *
  * @param from: reference - whether a resource or a field we get a field from.
- * @param name: field name
+ * @param name: string - field name
  * @param fieldType: field type: input, output
+ * @param isEph: bool - resolve in ephemeral or pure mode
+ *
  * @return field: smart field
  */
-_getFutureField := func(from, name, fieldType) {
+_getFutureField := func(from, name, fieldType, isEph) {
 	ll.assert(isReference(from), "'from' must be either a resource or a field, got: %#v", from)
 
-	futureField := tx.createFutureFieldID(fieldType, name)
+	futureField := tx.createFutureFieldID(fieldType, name, !isEph)
 	f := field(futureField.ResourceFID)
 	f.set(from)
 
@@ -348,7 +350,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has input field with specified name
+		 * Whether resource has input field with specified name
 		 *
 		 * @param name field name
 		 */
@@ -357,7 +359,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has output field with specified name
+		 * Whether resource has output field with specified name
 		 *
 		 * @param name field name
 		 */
@@ -366,7 +368,7 @@ resource = func(r) {
 		},
 
 		/**
-		 * Whether ressource has any field with specified name
+		 * Whether resource has any field with specified name
 		 *
 		 * @param name field name
 		 */
@@ -427,40 +429,53 @@ resource = func(r) {
 		/**
 		 * Get future field given field name and field type.
 		 *
-		 * @param name: field name
-		 * @param fieldType: field type: input, output
-		 * @return field: smart field
+		 * @param name: string - field name
+		 * @param fieldType: field type - input, output
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field
 		 */
-		getFutureField: func(name, fieldType) {
-			return _getFutureField(strictSelf, name, fieldType)
+		getFutureField: func(name, fieldType, ...eph) {
+			isEph := true
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
 		/**
 		 * Get future input field given field name or a path
 		 *
-		 * @param nameOrPath field name or an array representing a path to be traversed
-		 * @return field: smart field
+		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field
 		 */
-		getFutureInputField: func(nameOrPath) {
+		getFutureInputField: func(nameOrPath, ...eph) {
 			if is_array(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
-					current = current.getFutureField(name, "input")
+					current = current.getFutureField(name, "input", eph...)
 				}
 				return current
 			} else {
-				return self.getFutureField(nameOrPath, "input")
+				return self.getFutureField(nameOrPath, "input", eph...)
 			}
 		},
 
 		/**
 		 * Get future output field given field name
 		 *
-		 * @param name field name
-		 * @return field: smart field
+		 * @param name: string - field name
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field
 		 */
-		getFutureOutputField: func(name) {
-			return self.getFutureField(name, "output")
+		getFutureOutputField: func(name, ...eph) {
+			return self.getFutureField(name, "output", eph...)
 		},
 
 		/**
@@ -687,40 +702,53 @@ field = func(f) {
 		/**
 		 * Get future field given field name and field type.
 		 *
-		 * @param name: field name
+		 * @param name: string - field name
 		 * @param fieldType: field type: input, output
-		 * @return field: smart field
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
+		 * @return field: smart.field
 		 */
-		getFutureField: func(name, fieldType) {
-			return _getFutureField(strictSelf, name, fieldType)
+		getFutureField: func(name, fieldType, ...eph) {
+			isEph := true
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
 		/**
 		 * Get future input field given field name or a path
 		 *
-		 * @param nameOrPath field name or an array representing a path to be traversed
+		 * @param nameOrPath: string|string[] - field name or an array representing a path to be traversed
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
 		 * @return field: smart field
 		 */
-		getFutureInputField: func(nameOrPath) {
+		getFutureInputField: func(nameOrPath, ...eph) {
 			if is_array(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
-					current = current.getFutureField(name, "input")
+					current = current.getFutureField(name, "input", eph...)
 				}
 				return current
 			} else {
-				return self.getFutureField(nameOrPath, "input")
+				return self.getFutureField(nameOrPath, "input", eph...)
 			}
 		},
 
 		/**
 		 * Get future output field given field name
 		 *
-		 * @param name field name
+		 * @param name: string - field name
+		 * @param eph: bool (optional) - when false, the operation becomes pure function, waiting for resource
+		 *                               to pass deduplication before resolution.
+		 *
 		 * @return field: smart field
 		 */
-		getFutureOutputField: func(name) {
-			return self.getFutureField(name, "output")
+		getFutureOutputField: func(name, ...eph) {
+			return self.getFutureField(name, "output", eph...)
 		}
 	}
 

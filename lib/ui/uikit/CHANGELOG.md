@@ -1,5 +1,29 @@
 # @milaboratories/uikit
 
+## 1.2.20
+
+### Patch Changes
+
+- db794fa: fix padding in the base dropdown
+
+## 1.2.19
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+
+## 1.2.18
+
+### Patch Changes
+
+- 4628369: fix new sass nesting rules
+
+## 1.2.17
+
+### Patch Changes
+
+- f7f1691: Fix slide modal content scroll
+
 ## 1.2.16
 
 ### Patch Changes

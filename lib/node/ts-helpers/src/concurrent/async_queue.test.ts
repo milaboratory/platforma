@@ -1,6 +1,7 @@
+import { test, expect } from '@jest/globals';
 import { AsyncQueue } from './async_queue';
 
-test('simple test 1', async () => {
+test('simple queue test 1', async () => {
   const queue = new AsyncQueue<string>();
   let fullstring = '';
 
@@ -23,7 +24,7 @@ test('simple test 1', async () => {
   expect(fullstring).toEqual('ABBA');
 });
 
-test('simple test 2', async () => {
+test('simple queue test 2', async () => {
   const queue = new AsyncQueue<string>();
   let fullstring = '';
 
@@ -48,7 +49,7 @@ test('simple test 2', async () => {
   expect(fullstring).toEqual('ABBA');
 });
 
-test('simple test 3', async () => {
+test('simple queue test 3', async () => {
   const queue = new AsyncQueue<string>();
   let fullstring = '';
 

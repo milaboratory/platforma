@@ -1,5 +1,36 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.5.0
+
+### Minor Changes
+
+- 0b6fac6: Support table transposition in xsv.import
+
+## 1.4.2
+
+### Patch Changes
+
+- 4e5c436: Use strict maps in exec inputs
+
+## 1.4.1
+
+### Patch Changes
+
+- ba7fd8a: Pass secrets to running command
+- 37e5128: Solve deduplication issues with pure future field getter
+
+## 1.4.0
+
+### Minor Changes
+
+- 4982844: Use light queue for pfconv.
+
+## 1.3.0
+
+### Minor Changes
+
+- 76f51e5: More execution queues available (heavy, medium, light, ui-tasks)
+
 ## 1.2.11
 
 ### Patch Changes

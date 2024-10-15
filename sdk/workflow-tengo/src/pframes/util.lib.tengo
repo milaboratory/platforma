@@ -159,10 +159,11 @@ purifySpec := func(spec) {
 
 	newAxes := []
 	for ax in spec.axes {
-		newAxes = append(newAxes, {
+		newAxes = append(newAxes, objects.deleteUndefined({
 			column: ax.column,
+			preProcess: ax.preProcess,
 			spec: { type: ax.spec.type }
-		})
+		}))
 	}
 	newSpec.axes = newAxes
 
@@ -170,6 +171,7 @@ purifySpec := func(spec) {
 	for col in spec.columns {
 		newCols = append(newCols, objects.deleteUndefined({
 			column: col.column,
+			preProcess: col.preProcess,
 			id: col.id,
 			allowNA: col.allowNA,
 			spec: { valueType: col.spec.valueType }

@@ -1,0 +1,79 @@
+license:
+  value: 'abc'
+  file: ''
+
+logging:
+  level: 'info'
+  destinations:
+    - path: 'platforma.log'
+
+monitoring:
+  enabled: true
+  listen: '127.0.0.1:11235'
+
+debug:
+  enabled: true
+  listen: '127.0.0.1:11236'
+
+core:
+  logging:
+    extendedInfo: true
+    dumpResourceData: true
+
+  grpc:
+    listen: '127.0.0.1:11234'
+    tls:
+      enabled: false
+
+  authEnabled: true
+  auth:
+    - driver: jwt
+      key: defaultStr
+    - driver: htpasswd
+      path: 'users.htpasswd'
+  db:
+    path: 'db'
+
+controllers:
+  data:
+    main:
+      storages:
+        root:
+          mode: passive
+          downloadable: true
+
+        main:
+          mode: primary
+          downloadable: true
+
+        work:
+          mode: active
+          downloadable: false
+
+    storages:
+      - id: 'root'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: '/'
+
+      - id: 'work'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: 'storages/work'
+
+      - id: 'main'
+        type: 'FS'
+        indexCachePeriod: '1m'
+        rootPath: 'storages/main'
+
+  runner:
+    type: local
+    storageRoot: 'storages/work'
+    secrets:
+      - map:
+          MI_LICENSE: 'abc'
+
+  packageLoader:
+    packagesRoot: 'packages'
+
+  workflows: {}

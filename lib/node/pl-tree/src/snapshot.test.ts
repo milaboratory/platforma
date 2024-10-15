@@ -11,7 +11,7 @@ import {
 } from './test_utils';
 import { PlTreeState } from './state';
 import { Computable } from '@milaboratories/computable';
-import { ResourceId } from '@milaboratories/pl-client';
+import { DefaultFinalResourceDataPredicate, ResourceId } from '@milaboratories/pl-client';
 
 // schema definition
 const MyTestResourceState = rsSchema({
@@ -26,7 +26,7 @@ const MyTestResourceState = rsSchema({
 type MyTestResourceState = InferSnapshot<typeof MyTestResourceState>;
 
 test('simple snapshot test', async () => {
-  const tree = new PlTreeState(TestDynamicRootId1);
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
 
   const c1 = Computable.make((ctx) => {
     const accessor = ctx.accessor(tree.entry()).node().traverse('a');

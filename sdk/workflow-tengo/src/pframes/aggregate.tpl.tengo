@@ -161,7 +161,7 @@ self.body(func(inputs) {
 				}
 				outputMaps[output.name].
 						createInputField(sGroupKey).
-						set(renderResult.output(path[0]).getFutureInputField(path[1:]))
+						set(renderResult.output(path[0]).getFutureInputField(path[1:], eph))
 			}
 		}
 

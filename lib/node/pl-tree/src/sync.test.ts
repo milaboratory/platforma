@@ -1,8 +1,10 @@
-import { field, TestHelpers } from '@milaboratories/pl-client';
+import { test, expect } from '@jest/globals';
+import { DefaultFinalResourceDataPredicate, field, TestHelpers } from '@milaboratories/pl-client';
 import { PlTreeState } from './state';
 import { constructTreeLoadingRequest, loadTreeState } from './sync';
 import { Computable } from '@milaboratories/computable';
 import { TestStructuralResourceType1 } from './test_utils';
+import * as tp from 'node:timers/promises';
 
 test('load resources', async () => {
   await TestHelpers.withTempRoot(async (cl) => {
@@ -19,7 +21,7 @@ test('load resources', async () => {
       { sync: true }
     );
 
-    const treeState = new PlTreeState(r1);
+    const treeState = new PlTreeState(r1, DefaultFinalResourceDataPredicate);
 
     const theComputable = Computable.make((c) =>
       c.accessor(treeState.entry()).node().traverse('a', 'b')?.getDataAsString()
@@ -89,6 +91,9 @@ test('load resources', async () => {
       },
       { sync: true }
     );
+
+    // sync is not perfect, delay introduced to allow pl to propagate the state
+    await tp.setTimeout(10);
 
     await refreshState();
 

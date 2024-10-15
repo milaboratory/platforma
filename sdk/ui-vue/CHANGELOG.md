@@ -1,5 +1,57 @@
 # @platforma-sdk/ui-vue
 
+## 1.5.57
+
+### Patch Changes
+
+- Updated dependencies [db794fa]
+  - @milaboratories/uikit@1.2.20
+
+## 1.5.56
+
+### Patch Changes
+
+- 60e38dc: Add PlDropdownRef component, update examples
+- Updated dependencies [60e38dc]
+  - @milaboratories/uikit@1.2.19
+
+## 1.5.42
+
+### Patch Changes
+
+- 4628369: fix new sass nesting rules
+- Updated dependencies [4628369]
+  - @milaboratories/uikit@1.2.18
+
+## 1.5.40
+
+### Patch Changes
+
+- 13013ee: PlAdDataTable auto-join label-columns
+- Updated dependencies [13013ee]
+  - @platforma-sdk/model@1.5.40
+  - @milaboratories/uikit@1.2.17
+
+## 1.5.38
+
+### Patch Changes
+
+- Updated dependencies [f7f1691]
+  - @milaboratories/uikit@1.2.17
+
+## 1.5.0
+
+### Minor Changes
+
+- bc6d116: app.model final version
+
+## 1.4.9
+
+### Patch Changes
+
+- cfb6385: more effective createModel
+- 43efc40: export activateAgGrid function
+
 ## 1.4.8
 
 ### Patch Changes
