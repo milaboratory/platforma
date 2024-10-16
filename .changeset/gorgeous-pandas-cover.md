@@ -1,5 +1,7 @@
 ---
-'@milaboratories/pl-local': patch
+'@milaboratories/pl-local': minor
+'@milaboratories/pl-config': minor
 ---
 
-Refactoring
+Major refactoring
+Information about default pl version moved to pl-local
