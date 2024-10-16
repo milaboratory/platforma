@@ -44,6 +44,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "decompress": "catalog:",
     "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "tar": "catalog:",
