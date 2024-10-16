@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.6.0
+
+### Minor Changes
+
+- eb079e9: Support heterogeneous axes in PlAgDataTable
+
+### Patch Changes
+
+- Updated dependencies [eb079e9]
+  - @platforma-sdk/model@1.6.0
+  - @milaboratories/uikit@1.2.20
+
 ## 1.5.57
 
 ### Patch Changes
