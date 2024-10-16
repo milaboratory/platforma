@@ -20,9 +20,6 @@ test(
     const pl = await platformaInit(logger, {
       workingDir: dir,
       config,
-      spawnOptions: {
-        stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
-      },
       closeOld: false
     });
 
