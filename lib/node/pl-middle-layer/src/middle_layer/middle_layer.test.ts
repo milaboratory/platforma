@@ -69,9 +69,6 @@ export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
 
   await TestHelpers.withTempRoot(async (pl) => {
     const ml = await MiddleLayer.init(pl, workFolder, {
