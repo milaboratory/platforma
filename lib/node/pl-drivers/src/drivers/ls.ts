@@ -267,6 +267,15 @@ export class LsDriver implements InternalLsDriver {
     const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));
     const localProjectionsMap = new Map(localProjections.map((s) => [s.storageId, s]));
 
+    // validating there is no intersection
+    if (
+      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size !==
+      virtualStoragesMap.size + localProjectionsMap.size
+    )
+      throw new Error(
+        'Intersection between local projection storage ids and virtual storages names detected.'
+      );
+
     return new LsDriver(
       logger,
       lsClient,

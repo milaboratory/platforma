@@ -10,14 +10,18 @@ import { createProject, withProject, withProjectAuthored } from '../mutator/proj
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
 import {
-  ConsoleLoggerAdapter,
   HmacSha256Signer,
   MiLogger,
   Signer
 } from '@milaboratories/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
-import { DefaultMiddleLayerOps, MiddleLayerOps, MiddleLayerOpsConstructor } from './ops';
+import {
+  DefaultMiddleLayerOpsPaths,
+  DefaultMiddleLayerOpsSettings,
+  MiddleLayerOps,
+  MiddleLayerOpsConstructor
+} from './ops';
 import { randomUUID } from 'node:crypto';
 import { ProjectListEntry } from '../model';
 import { AuthorMarker, ProjectMeta } from '@milaboratories/pl-model-middle-layer';
@@ -26,7 +30,7 @@ import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
 import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
-import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
+import { V2RegistryProvider } from '../block_registry';
 import { Dispatcher, RetryAgent } from 'undici';
 
 export interface MiddleLayerEnvironment {
@@ -185,8 +189,16 @@ export class MiddleLayer {
   }
 
   /** Initialize middle layer */
-  public static async init(pl: PlClient, _ops: MiddleLayerOpsConstructor): Promise<MiddleLayer> {
-    const ops: MiddleLayerOps = { ...DefaultMiddleLayerOps, ..._ops };
+  public static async init(
+    pl: PlClient,
+    workdir: string,
+    _ops: MiddleLayerOpsConstructor
+  ): Promise<MiddleLayer> {
+    const ops: MiddleLayerOps = {
+      ...DefaultMiddleLayerOpsSettings,
+      ...DefaultMiddleLayerOpsPaths(workdir),
+      ..._ops
+    };
 
     if (process.env.MI_LOG_TREE_STAT)
       ops.defaultTreeOptions.logStat =
@@ -212,7 +224,7 @@ export class MiddleLayer {
 
     const logger = ops.logger;
 
-    const driverKit = await initDriverKit(pl, ops);
+    const driverKit = await initDriverKit(pl, workdir, ops);
 
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher, {
