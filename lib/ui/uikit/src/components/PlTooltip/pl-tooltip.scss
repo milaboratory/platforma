@@ -1,5 +1,5 @@
 .pl-tooltip {
-  z-index: 3;
+  z-index: var(--z-tooltip);
   position: absolute;
   display: inline-block;
   padding: 7px 12px 9px 12px;

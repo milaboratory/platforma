@@ -13,7 +13,8 @@ import {
   PlDropdown,
   PlDialogModal,
   PlRow,
-  PlFileInput
+  PlFileInput,
+  PlTooltip
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -79,6 +80,15 @@ const lorem = faker.lorem.paragraph(1000);
         :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
       ></PlDropdown>
       <PlCheckbox v-model="data.slideModal">Also closes the modal window</PlCheckbox>
+      <PlCheckbox :model-value="true">
+        Drop outliers
+        <PlTooltip class="info" position="top">
+          <template #tooltip>
+            Drop samples which are below downsampling value as computed according to specified
+            default downsampling option.
+          </template>
+        </PlTooltip>
+      </PlCheckbox>
       <p>{{ lorem }}</p>
       <PlTextField v-model="data.sliderWidth" label="Slider width (css format: px, %)" />
       <template v-if="data.actions" #actions>
