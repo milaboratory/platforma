@@ -4,7 +4,7 @@ import { deepClone } from '@milaboratories/helpers';
 import { isJsonEqual, identity, ensureError, isZodError, formatZodError } from '../utils';
 
 export function createAppModel<
-  M extends Record<string, unknown>,
+  M extends { args: unknown; ui: unknown },
   V = unknown,
   E extends Record<string, ComputedRef<unknown>> = Record<string, ComputedRef<unknown>>,
 >(options: ModelOptions<M, V>, extended?: E): Model<M & UnwrapNestedRefs<E>> {
@@ -16,11 +16,12 @@ export function createAppModel<
 
   const error = ref<Error | undefined>();
 
-  const local = ref<{ model: R }>();
+  const local = ref<{ model: R; readonly stage: symbol }>();
 
   const setSource = (v: M) => {
     local.value = {
       model: Object.assign(deepClone(v), extended ?? {}) as R,
+      stage: Symbol(),
     };
   };
 
@@ -70,10 +71,10 @@ export function createAppModel<
   });
 
   watch(
-    local,
-    (n, o) => {
-      if (n && n === o) {
-        setValue(n.model);
+    [() => ({ args: model.value.args, ui: model.value.ui }), () => local.value?.stage],
+    ([n, newStage], [_, oldStage]) => {
+      if (newStage === oldStage) {
+        setValue(n as M);
       }
     },
     { deep: true },

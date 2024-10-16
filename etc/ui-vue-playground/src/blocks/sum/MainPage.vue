@@ -3,19 +3,14 @@ import { useApp } from './app';
 import { PlNumberField } from '@platforma-sdk/ui-vue';
 
 const app = useApp();
-
-const args = app.createArgsModel();
-
 </script>
 
 <template>
   <div class="test-container">
-    <Navigate />
-
     <div>Args</div>
 
-    <PlNumberField label="X" v-model="args.model.x" />
-    <PlNumberField label="Y" v-model="args.model.y" />
+    <PlNumberField label="X" v-model="app.model.args.x" />
+    <PlNumberField label="Y" v-model="app.model.args.y" />
 
     <div>Sum or error: {{ app.outputs.sum }}</div>
 
