@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.4.1
+
+### Patch Changes
+
+- 97e2682: windows fix
+
 ## 1.4.0
 
 ### Minor Changes
