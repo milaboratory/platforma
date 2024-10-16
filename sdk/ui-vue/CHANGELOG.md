@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.2
+
+### Patch Changes
+
+- 8c34a07: This fixes #175
+
 ## 1.7.1
 
 ### Patch Changes
