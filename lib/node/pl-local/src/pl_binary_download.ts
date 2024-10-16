@@ -35,7 +35,7 @@ function prepareOptions(plVersion: string, baseDir: string, arch: ArchType, os: 
   const targetFolder = path.join(baseDir, baseName);
 
   const binaryPath = path.join(targetFolder, 'binaries', osToBinaryName[os]);
-  
+
   return {
     archiveUrl,
     archivePath,
@@ -117,8 +117,12 @@ export async function extractArchive(
         cwd: dstFolder,
         gzip: true
       });
+      break;
+
     case 'zip':
       await decompress(archivePath, dstFolder);
+      break;
+
     default:
       assertNever(archiveType);
   }
