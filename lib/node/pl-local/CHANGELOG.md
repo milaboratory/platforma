@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 1.4.0
+
+### Minor Changes
+
+- d9f6d13: Major refactoring
+  Information about default pl version moved to pl-local
+
 ## 1.3.0
 
 ### Minor Changes

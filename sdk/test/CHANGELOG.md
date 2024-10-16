@@ -1,5 +1,22 @@
 # @platforma-sdk/test
 
+## 1.7.0
+
+### Minor Changes
+
+- 66383b6: Migration to new optiona structure
+
+### Patch Changes
+
+- Updated dependencies [66383b6]
+- Updated dependencies [66383b6]
+- Updated dependencies [66383b6]
+  - @milaboratories/computable@2.2.0
+  - @milaboratories/pl-client@2.5.3
+  - @milaboratories/pl-middle-layer@1.13.0
+  - @milaboratories/pl-tree@1.4.4
+  - @platforma-sdk/model@1.7.0
+
 ## 1.6.0
 
 ### Patch Changes

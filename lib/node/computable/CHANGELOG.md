@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.2.0
+
+### Minor Changes
+
+- 66383b6: Allow numerically set timeout in addition to abort signal in await stable state methods
+
 ## 2.1.13
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.3
+
+### Patch Changes
+
+- 66383b6: Additional resource types support in default "final predicate"
+
 ## 2.5.2
 
 ### Patch Changes

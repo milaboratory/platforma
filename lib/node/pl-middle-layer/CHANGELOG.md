@@ -1,5 +1,29 @@
 # @milaboratories/pl-middle-layer
 
+## 1.13.0
+
+### Minor Changes
+
+- 66383b6: Migration to new optiona structure
+
+### Patch Changes
+
+- Updated dependencies [66383b6]
+- Updated dependencies [352e182]
+- Updated dependencies [d9f6d13]
+- Updated dependencies [66383b6]
+- Updated dependencies [66383b6]
+  - @milaboratories/computable@2.2.0
+  - @milaboratories/pl-drivers@1.3.0
+  - @milaboratories/pl-local@1.4.0
+  - @milaboratories/pl-config@1.3.0
+  - @milaboratories/pl-client@2.5.3
+  - @milaboratories/pl-model-common@1.4.0
+  - @milaboratories/pl-tree@1.4.4
+  - @milaboratories/pl-model-middle-layer@1.5.2
+  - @platforma-sdk/model@1.7.0
+  - @platforma-sdk/block-tools@2.3.16
+
 ## 1.12.4
 
 ### Patch Changes
