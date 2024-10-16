@@ -1,5 +1,11 @@
 import { Optional } from 'utility-types';
-import { BasicResourceData, getField, isNotNullResourceId, isNullResourceId, ResourceData } from './types';
+import {
+  BasicResourceData,
+  getField,
+  isNotNullResourceId,
+  isNullResourceId,
+  ResourceData
+} from './types';
 
 /**
  * Function is used to guide multiple layers of caching in pl-client and derived pl-tree.
@@ -36,13 +42,12 @@ const unknownResourceTypeNames = new Set<string>();
 export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r): boolean => {
   switch (r.type.name) {
     case 'StreamManager':
-      if(!readyOrDuplicateOrError(r))
-        return false;
+      if (!readyOrDuplicateOrError(r)) return false;
       if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
-      if(isNotNullResourceId(r.error)) return true;
-      const downloadable = getField(r as ResourceData, "downloadable");
-      const stream = getField(r as ResourceData, "stream");
-      return stream.value === downloadable.value
+      if (isNotNullResourceId(r.error)) return true;
+      const downloadable = getField(r as ResourceData, 'downloadable');
+      const stream = getField(r as ResourceData, 'stream');
+      return stream.value === downloadable.value;
     case 'StdMap':
     case 'std/map':
     case 'EphStdMap':
@@ -71,6 +76,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'Frontend/FromFolder':
     case 'BObjectSpec':
     case 'Blob':
+    case 'LSProvider':
       return true;
     case 'UserProject':
     case 'Projects':

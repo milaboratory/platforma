@@ -4,6 +4,10 @@ import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { test, expect } from '@jest/globals';
+import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
+
+const assetsPath = path.resolve('../../../assets');
 
 test('should ok when get all storages from ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
@@ -91,10 +95,53 @@ test('should ok when list files from local storage in ls driver', async () => {
     );
 
     const storages = await driver.getStorageList();
-    const local = storages.find((se) => se.name == 'local')!.handle;
+    const local = storages.find((se) => se.name == 'local')!;
 
-    const topLevelDir = await driver.listFiles(local, '');
-    expect(topLevelDir.entries.length).toBeGreaterThan(1);
+    const defaultDir = await driver.listFiles(local.handle, local.initialFullPath);
+    expect(defaultDir.entries.length).toBeGreaterThan(1);
+  });
+});
+
+test('should ok when list files from local storage in ls driver and correctly apply local projections', async () => {
+  const signer = new HmacSha256Signer('abc');
+  const logger = new ConsoleLoggerAdapter();
+  await TestHelpers.withTempRoot(async (client) => {
+    let dialogRet = '';
+    const driver = await LsDriver.init(
+      logger,
+      client,
+      signer,
+      DefaultVirtualLocalStorages(),
+      [{ storageId: 'test_storage', localPath: path.join(assetsPath, 'ls_dir_structure_test') }],
+      async () => [dialogRet]
+    );
+
+    const storages = await driver.getStorageList();
+    const local = storages.find((se) => se.name == 'local')!;
+
+    {
+      dialogRet = path.join(assetsPath, 'ls_dir_structure_test', 'abc', '42.txt');
+      const result = await driver.showOpenSingleFileDialog();
+      expect(result.file).toBeDefined();
+
+      expect(isImportFileHandleIndex(result.file!)).toStrictEqual(true);
+      const size = await driver.getLocalFileSize(result.file!);
+      expect(size).toStrictEqual(3);
+      const content = await driver.getLocalFileContent(result.file!);
+      expect(Buffer.from(content).toString()).toStrictEqual('42\n');
+    }
+
+    {
+      dialogRet = path.join(assetsPath, 'answer_to_the_ultimate_question.txt');
+      const result = await driver.showOpenSingleFileDialog();
+      expect(result.file).toBeDefined();
+
+      expect(isImportFileHandleUpload(result.file!)).toStrictEqual(true);
+      const size = await driver.getLocalFileSize(result.file!);
+      expect(size).toStrictEqual(3);
+      const content = await driver.getLocalFileContent(result.file!);
+      expect(Buffer.from(content).toString()).toStrictEqual('42\n');
+    }
   });
 });
 
@@ -108,7 +155,7 @@ test('should ok when get file using local dialog, and read its content', async (
       signer,
       DefaultVirtualLocalStorages(),
       [],
-      async () => [path.resolve('../../../assets/answer_to_the_ultimate_question.txt')]
+      async () => [path.join(assetsPath, 'answer_to_the_ultimate_question.txt')]
     );
 
     const result = await driver.showOpenSingleFileDialog();

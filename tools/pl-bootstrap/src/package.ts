@@ -1,7 +1,6 @@
 import { resolve, join } from 'path';
 import fs from 'fs';
-import os from 'os';
-import { getDefaultPlVersion } from '@milaboratories/pl-config';
+import { getDefaultPlVersion } from '@milaboratories/pl-local';
 
 export function path(...p: string[]): string {
   return resolve(__dirname, '..', ...p);

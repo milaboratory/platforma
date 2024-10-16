@@ -87,6 +87,7 @@ export async function generateLocalPlConfigs(
 
   const user = 'default-user';
   const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
+  const jwt = await kv.getOrCreate('jwt', () => crypto.randomBytes(32).toString('hex'));
 
   const ports = withLocalhost(await getPorts(opts.portsMode));
 
@@ -95,7 +96,7 @@ export async function generateLocalPlConfigs(
   return {
     workingDir: opts.workingDir,
 
-    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, storages),
+    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, jwt, storages),
 
     plAddress: ports.grpc,
     plUser: user,
@@ -115,11 +116,11 @@ async function createDefaultPlLocalConfig(
   ports: Endpoints,
   user: string,
   password: string,
+  jwtKey: string,
   storages: StoragesSettings
 ): Promise<string> {
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
-  const jwtKey = 'defaultStr';
 
   const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
 
