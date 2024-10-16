@@ -7,7 +7,7 @@ import yaml from 'yaml';
 
 test('should return the right configs', async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();
-  const workingDir = path.join(__dirname, '..', '.test');
+  const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
   const opts: PlConfigGeneratorOptions = {
     logger,
     workingDir,
