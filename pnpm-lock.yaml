@@ -933,6 +933,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
+      utility-types:
+        specifier: 'catalog:'
+        version: 3.11.0
       vite:
         specifier: 'catalog:'
         version: 5.4.8(@types/node@20.16.11)(sass@1.77.8)
@@ -1722,9 +1725,6 @@ importers:
 
   tools/pl-bootstrap:
     dependencies:
-      '@milaboratories/pl-config':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-config
       '@milaboratories/pl-local':
         specifier: workspace:*
         version: link:../../lib/node/pl-local

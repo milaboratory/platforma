@@ -36,7 +36,6 @@
     "vite": "catalog:"
   },
   "dependencies": {
-    "@milaboratories/pl-config": "workspace:*",
     "@milaboratories/pl-local": "workspace:*",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",

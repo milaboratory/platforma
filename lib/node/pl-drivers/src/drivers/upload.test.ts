@@ -1,35 +1,27 @@
 import {
-  FieldId,
   isNotNullResourceId,
   PlTransaction,
   PollTxAccessor,
   ResourceId,
   TestHelpers
 } from '@milaboratories/pl-client';
-import {
-  ConsoleLoggerAdapter,
-  HmacSha256Signer,
-  Signer
-} from '@milaboratories/ts-helpers';
-import * as fs from 'node:fs';
+import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratories/pl-client';
-import { poll } from '@milaboratories/pl-client';
-import { UploadOpts, UploadDriver, UploadResourceSnapshot } from './upload';
-import {
-  createUploadBlobClient,
-  createUploadProgressClient
-} from '../clients/helpers';
-import { Writable, Readable } from 'node:stream';
+import { ImportResourceSnapshot, makeBlobImportSnapshot, UploadDriver } from './upload';
+import { createUploadBlobClient, createUploadProgressClient } from '../clients/helpers';
+
 import { test, expect } from '@jest/globals';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { Computable } from '@milaboratories/computable';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
     const stats = await writeFile('42', signer);
     const uploadId = await createBlobUpload(client, stats);
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const c = uploader.getProgressId(handleRes);
 
@@ -61,7 +53,7 @@ test('upload a big blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
     const stats = await writeFile(hugeString, signer);
     const uploadId = await createBlobUpload(client, stats);
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const c = uploader.getProgressId(handleRes);
 
@@ -113,7 +105,7 @@ test.skip('upload a very big blob', async () => {
       '/home/snyssfx/Downloads/Kung Fu Hustle (2004) Open Matte 1080p.mkv'
     );
     const uploadId = await createBlobUpload(client, stats);
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const c = uploader.getProgressId(handleRes);
 
@@ -139,7 +131,7 @@ test('upload a blob with wrong modification time', async () => {
     const stats = await writeFile('42', signer);
     stats.mtime -= 1000n;
     const uploadId = await createBlobUpload(client, stats);
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const c = uploader.getProgressId(handleRes);
 
@@ -162,7 +154,7 @@ test('upload a duplicate blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
     const stats = await writeFile('42', signer);
     const uploadId = await createBlobUpload(client, stats);
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const cOrig = uploader.getProgressId(handleRes);
     const cDupl = uploader.getProgressId(handleRes);
@@ -215,9 +207,7 @@ test('upload lots of duplicate blobs concurrently', async () => {
 
     const { uploadIds } = await createMapOfUploads(client, n, settings);
 
-    const handles = await Promise.all(
-      uploadIds.map((id) => getHandleField(client, id))
-    );
+    const handles = await Promise.all(uploadIds.map((id) => getSnapshot(client, id)));
     const computables = handles.map((handle) => uploader.getProgressId(handle));
 
     for (const c of computables) {
@@ -247,7 +237,7 @@ test('index a blob', async () => {
       './another_answer_to_the_ultimate_question.txt',
       'library'
     );
-    const handleRes = await getHandleField(client, uploadId);
+    const handleRes = await getSnapshot(client, uploadId);
 
     const c = uploader.getProgressId(handleRes);
 
@@ -302,8 +292,7 @@ async function writeFile(
   tmpDir?: string,
   fileName: string = 'testUploadABlob.txt'
 ): Promise<FileStat> {
-  if (tmpDir == undefined)
-    tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
+  if (tmpDir == undefined) tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test'));
 
   const fPath = path.join(tmpDir, fileName);
 
@@ -321,11 +310,7 @@ async function getFileStats(signer: Signer, fPath: string): Promise<FileStat> {
   return { fPath, mtime, fileSignature, size: stats.size };
 }
 
-async function createMapOfUploads(
-  c: PlClient,
-  n: number,
-  settings: FileStat[]
-) {
+async function createMapOfUploads(c: PlClient, n: number, settings: FileStat[]) {
   return await c.withWriteTx(
     'UploaderCreateMapOfUploads',
     async (tx: PlTransaction) => {
@@ -340,11 +325,7 @@ async function createMapOfUploads(
         tx.setField(fId, uploadId);
       }
 
-      tx.createField(
-        { resourceId: c.clientRoot, fieldName: 'project1' },
-        'Dynamic',
-        mapId
-      );
+      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', mapId);
       await tx.commit();
 
       return {
@@ -356,20 +337,13 @@ async function createMapOfUploads(
   );
 }
 
-async function createBlobUpload(
-  c: PlClient,
-  stat: FileStat
-): Promise<ResourceId> {
+async function createBlobUpload(c: PlClient, stat: FileStat): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
       const uploadId = await createBlobUploadTx(tx, stat);
 
-      tx.createField(
-        { resourceId: c.clientRoot, fieldName: 'project1' },
-        'Dynamic',
-        uploadId
-      );
+      tx.createField({ resourceId: c.clientRoot, fieldName: 'project1' }, 'Dynamic', uploadId);
       await tx.commit();
 
       return uploadId;
@@ -378,10 +352,7 @@ async function createBlobUpload(
   );
 }
 
-async function createBlobUploadTx(
-  tx: PlTransaction,
-  stat: FileStat
-): Promise<ResourceId> {
+async function createBlobUploadTx(tx: PlTransaction, stat: FileStat): Promise<ResourceId> {
   const settings = {
     modificationTime: stat.mtime.toString(),
     localPath: stat.fPath,
@@ -394,11 +365,7 @@ async function createBlobUploadTx(
   return await upload.globalId;
 }
 
-async function createBlobIndex(
-  c: PlClient,
-  path: string,
-  storageId: string
-): Promise<ResourceId> {
+async function createBlobIndex(c: PlClient, path: string, storageId: string): Promise<ResourceId> {
   return await c.withWriteTx(
     'UploadDriverCreateTest',
     async (tx: PlTransaction) => {
@@ -407,10 +374,7 @@ async function createBlobIndex(
         path: path
       };
       const data = new TextEncoder().encode(JSON.stringify(settings));
-      const importInternal = tx.createStruct(
-        { name: 'BlobImportInternal', version: '1' },
-        data
-      );
+      const importInternal = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, data);
       tx.createField(
         { resourceId: c.clientRoot, fieldName: 'project1' },
         'Dynamic',
@@ -424,32 +388,29 @@ async function createBlobIndex(
   );
 }
 
-async function getHandleField(
+async function getSnapshot(
   client: PlClient,
   uploadId: ResourceId
-): Promise<UploadResourceSnapshot> {
-  return await poll(client, async (tx: PollTxAccessor) => {
-    const upload = await tx.get(uploadId);
-    const handle = await upload.get('handle');
-
-    const blob = handle.data.fields.find((f) => f.name == 'blob')?.value;
-    const incarnation = handle.data.fields.find(
-      (f) => f.name == 'incarnation'
-    )?.value;
-
-    const fields = {
-      blob: undefined as ResourceId | undefined,
-      incarnation: undefined as ResourceId | undefined
-    };
-    if (blob != undefined && isNotNullResourceId(blob)) fields.blob = blob;
-    if (incarnation != undefined && isNotNullResourceId(incarnation))
-      fields.incarnation = incarnation;
-
-    return {
-      ...handle.data,
-      data: JSON.parse(handle.data.data!.toString()) as UploadOpts,
-      fields,
-      kv: undefined
-    };
+): Promise<ImportResourceSnapshot> {
+  const tree = await SynchronizedTreeState.init(client, uploadId, {
+    stopPollingDelay: 600,
+    pollingInterval: 300
   });
+  try {
+    const computable = Computable.make((ctx) => {
+      const handle = ctx
+        .accessor(tree.entry())
+        .node()
+        .traverse({ field: 'handle', assertFieldType: 'Output' });
+      if (!handle) return undefined;
+      else return makeBlobImportSnapshot(handle, ctx);
+    }).withStableType();
+    while (true) {
+      const value = await computable.getValue();
+      if (value !== undefined) return value;
+      await computable.awaitChange();
+    }
+  } finally {
+    await tree.terminate();
+  }
 }

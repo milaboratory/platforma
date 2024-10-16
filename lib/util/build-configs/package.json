@@ -15,6 +15,10 @@
     },
     "./tsconfig_lib_bundled.json": "./tsconfig_lib_bundled.json"
   },
+  "files": [
+    "./dist/**",
+    "./tsconfig_lib_bundled.json"
+  ],
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build"

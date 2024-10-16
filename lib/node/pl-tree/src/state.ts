@@ -199,7 +199,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       if (isNotNullResourceId(field.error)) ret.error = field.error;
       if (ret.value === undefined && ret.error === undefined)
         // this method returns value and error of the field, thus those values are considered to be accessed;
-        // any existing but not resolved field here is considered to be unstable, in the sence it is
+        // any existing but not resolved field here is considered to be unstable, in the sense it is
         // considered to acquire some resolved value eventually
         onUnstable('field_not_resolved:' + step.field);
       field.change.attachWatcher(watcher);

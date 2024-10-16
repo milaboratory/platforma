@@ -69,17 +69,16 @@ export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
-  const frontendFolder = path.join(workFolder, 'frontend');
-  const downloadFolder = path.join(workFolder, 'download');
-  await fs.promises.mkdir(frontendFolder, { recursive: true });
 
   await TestHelpers.withTempRoot(async (pl) => {
-    const ml = await MiddleLayer.init(pl, {
+    const ml = await MiddleLayer.init(pl, workFolder, {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
-      frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder)
+      localProjections: [], // TODO must be different with local pl
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
     });
     try {
       await cb(ml, workFolder);
@@ -592,9 +591,9 @@ test('should create download-file block, render it and gets outputs from its con
 
     expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
     const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any)
-                        .value as LocalBlobHandleAndSize;
+      .value as LocalBlobHandleAndSize;
     const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any)
-                         .value as RemoteBlobHandleAndSize;
+      .value as RemoteBlobHandleAndSize;
 
     expect(
       Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
@@ -603,7 +602,6 @@ test('should create download-file block, render it and gets outputs from its con
     expect(
       Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
     ).toEqual('42\n');
-
   });
 });
 

@@ -1,5 +1,5 @@
 import { test } from 'vitest';
-import { createDefaultLocalConfigs, PlConfigOptions } from '@milaboratories/pl-config';
+import { generateLocalPlConfigs, PlConfigGeneratorOptions } from '@milaboratories/pl-config';
 import { ConsoleLoggerAdapter, sleep } from '@milaboratories/ts-helpers';
 import path from 'path';
 import { LocalPlOptions, Pl, platformaInit } from '@milaboratories/pl-local';
@@ -11,10 +11,10 @@ test(
   { timeout: 15000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
-    const workingDir = path.join(__dirname, ".test");
+    const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
 
     // create configs for everything
-    const configOpts: PlConfigOptions = {
+    const configOpts: PlConfigGeneratorOptions = {
       logger,
       workingDir,
       portsMode: {
@@ -23,25 +23,18 @@ test(
         to: 11237
       },
       licenseMode: { type: 'env' }
-    }
-    const configs = await createDefaultLocalConfigs(configOpts);
+    };
+    const genResult = await generateLocalPlConfigs(configOpts);
 
     // start local platforma
-    const plOpts: LocalPlOptions = {
-      workingDir: configs.workingDir,
-      config: configs.plLocal,
-      binary: {
-        type: 'Download',
-        version: configs.plVersion
-      },
-      spawnOptions: {},
-      closeOld: true,
+    const plLocal = await platformaInit(logger, {
+      workingDir: genResult.workingDir,
+      config: genResult.plConfigContent,
       onCloseAndErrorNoStop: async (pl: Pl) => await pl.start()
-    }
-    const plLocal = await platformaInit(logger, plOpts);
+    });
 
     // start pl-client
-    const uaClient = new UnauthenticatedPlClient(configs.clientAddr);
+    const uaClient = new UnauthenticatedPlClient(genResult.plAddress);
     while (true) {
       try {
         await uaClient.ping();
@@ -50,11 +43,17 @@ test(
         await sleep(30);
       }
     }
-    const auth = await uaClient.login(configs.user, configs.password);
-    const client = await PlClient.init(configs.clientAddr, { authInformation: auth })
+    const auth = await uaClient.login(genResult.plUser, genResult.plPassword);
+    const client = await PlClient.init(genResult.plAddress, { authInformation: auth });
 
     // start middle-layer
-    const ml = await MiddleLayer.init(client, configs.ml);
+    const ml = await MiddleLayer.init(client, workingDir, {
+      localSecret: MiddleLayer.generateLocalSecret(),
+      localProjections: genResult.localStorageProjections,
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
+    });
 
     // assertions that everything is working
     expect(await plLocal.isAlive()).toBeTruthy();
@@ -69,5 +68,4 @@ test(
     plLocal.stop();
     await plLocal.waitStopped();
   }
-)
-
+);
