@@ -14,11 +14,14 @@ import {
 } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/downloadapi/protocol';
 import { ResourceInfo } from '@milaboratories/pl-tree';
 import { DownloadHelper, DownloadResponse } from '../helpers/download';
+import { LocalStorageProjection } from '../drivers/types';
+import { validateAbsolute } from '../helpers/validate';
 
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
 
 export class UnknownStorageError extends Error {}
+
 export class WrongLocalFileUrl extends Error {}
 
 /** Gets URLs for downloading from pl-core, parses them and reads or downloads
@@ -26,15 +29,21 @@ export class WrongLocalFileUrl extends Error {}
 export class ClientDownload {
   public readonly grpcClient: DownloadClient;
   private readonly downloadHelper: DownloadHelper;
+  private readonly localStorageIdsToRoot: Map<string, string>;
 
   constructor(
     public readonly grpcTransport: GrpcTransport,
     public readonly httpClient: Dispatcher,
     public readonly logger: MiLogger,
-    private readonly localStorageIdsToRoot: Record<string, string>
+    /** Pl storages available locally */
+    localProjections: LocalStorageProjection[]
   ) {
+    for (const lp of localProjections) if (lp.localPath !== '') validateAbsolute(lp.localPath);
     this.grpcClient = new DownloadClient(this.grpcTransport);
     this.downloadHelper = new DownloadHelper(httpClient);
+    this.localStorageIdsToRoot = new Map(
+      localProjections.map((lp) => [lp.storageId, lp.localPath])
+    );
   }
 
   close() {}
@@ -83,12 +92,11 @@ export class ClientDownload {
 
     const [_, storageId, localPath] = parsed;
 
-    if (this.localStorageIdsToRoot[storageId] == undefined)
+    const storageRoot = this.localStorageIdsToRoot.get(storageId);
+    if (storageRoot === undefined)
       throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
 
-    const storageRoot = this.localStorageIdsToRoot[storageId];
-
-    const fullPath = path.join(storageRoot, localPath);
+    const fullPath = storageRoot === '' ? localPath : path.join(storageRoot, localPath);
     const stat = await fsp.stat(fullPath);
     const size = stat.size;
 

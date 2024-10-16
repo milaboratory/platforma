@@ -1,9 +1,8 @@
 import { MiLogger } from '@milaboratories/ts-helpers';
-import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'yaml';
 import { Endpoints, getPorts, PlConfigPorts, withLocalhost } from './ports';
-import { PlConfig, PlLogLevel } from './types';
+import { PlConfig } from './types';
 import {
   getLicense,
   License,
@@ -11,12 +10,13 @@ import {
   licenseForConfig,
   PlLicenseMode
 } from './license';
-import { createHtpasswdFile, getDefaultAuthMethods, randomStr } from './auth';
-import { createDefaultLocalStorages, StoragesSettings, storagesToMl } from './storages';
-import { getPlVersion } from './package';
+import { createHtpasswdFile, getDefaultAuthMethods } from './auth';
+import { createDefaultLocalStorages, StoragesSettings } from './storages';
 import { createDefaultPackageSettings } from './packageloader';
+import { FSKVStorage } from './fskvstorage';
+import * as crypto from 'node:crypto';
 
-export type PlConfigOptions = {
+export type PlConfigGeneratorOptions = {
   /** Logger for Middle-Layer */
   logger: MiLogger;
   /** Working dir for a local platforma. */
@@ -31,90 +31,108 @@ export type PlConfigOptions = {
    *
    * @param config - a parsed yaml.
    */
-  extraPlConfig?: (config: PlConfig) => PlConfig;
+  plConfigPostprocessing?: (config: PlConfig) => PlConfig;
 };
 
-export type PlLocalConfigs = {
-  /** Working directory for a local platforma. */
+/** Defines which storages from pl are available via local paths */
+export type LocalStorageProjection = {
+  /** Pl storage id */
+  readonly storageId: string;
+
+  /**
+   * Local path, the storage is mounted at.
+   *
+   * Empty string means that this storage accepts absolute paths, and operates inside the same OS.
+   * This matches the behaviour how pl interprets FS storage config.
+   * */
+  readonly localPath: string;
+};
+
+export type LocalPlConfigGenerationResult = {
+  //
+  // Pl Instance data
+  //
+
+  /** Working directory for a local platforma */
   workingDir: string;
-  /** Configuration for a local platforma. */
-  plLocal: string;
-  /** Minimal configuration for middle layer.
-   * It is duck typed because of circular dependencies
-   * between pl-middle-layer and pl-config.
-   * Please let me know if you know a better way to solve this. */
-  ml: MLConfig;
-  /** Configuration for pl-client. */
-  clientAddr: string;
-  user: string;
-  password: string;
-  /** Version of the local platforma. */
-  plVersion: string;
+
+  /** Configuration content for a local platforma */
+  plConfigContent: string;
+
+  //
+  // Data for pl client configuration
+  //
+
+  /** Address to connect client to */
+  plAddress: string;
+  /** Authorization credentials: user */
+  plUser: string;
+  /** Authorization credentials: password */
+  plPassword: string;
+
+  //
+  // Data for configuration of blob drivers
+  //
+
+  readonly localStorageProjections: LocalStorageProjection[];
 };
 
-export type MLConfig = {
-  logger: MiLogger;
-  localSecret: string;
-  blobDownloadPath: string;
-  frontendDownloadPath: string;
-  platformLocalStorageNameToPath: Record<string, string>;
-  localStorageNameToPath: Record<string, string>;
-};
+export async function generateLocalPlConfigs(
+  opts: PlConfigGeneratorOptions
+): Promise<LocalPlConfigGenerationResult> {
+  const workdir = path.resolve(opts.workingDir);
 
-export async function createDefaultLocalConfigs(opts: PlConfigOptions): Promise<PlLocalConfigs> {
+  // settings that must be persisted between independent generation invocations
+  const kv = await FSKVStorage.init(path.join(workdir, 'gen'));
+
   const user = 'default-user';
-  const password = 'default-password';
+  const password = await kv.getOrCreate('password', () => crypto.randomBytes(16).toString('hex'));
+  const jwt = await kv.getOrCreate('jwt', () => crypto.randomBytes(32).toString('hex'));
+
   const ports = withLocalhost(await getPorts(opts.portsMode));
 
-  const storages = await createDefaultLocalStorages(opts.workingDir);
-
-  // TODO: do we need this in a local deployment?
-  const blobDownloadPath = path.join(opts.workingDir, 'drivers', 'blobs');
-  await fs.mkdir(blobDownloadPath, { recursive: true });
-
-  const frontendDownloadPath = path.join(opts.workingDir, 'drivers', 'frontend');
-  await fs.mkdir(frontendDownloadPath, { recursive: true });
+  const storages = await createDefaultLocalStorages(workdir);
 
   return {
     workingDir: opts.workingDir,
-    plVersion: getPlVersion(),
-    clientAddr: ports.grpc,
-    user,
-    password,
-    plLocal: await createDefaultPlLocalConfig(opts, ports, user, password, storages),
-    ml: {
-      logger: opts.logger,
-      localSecret: 'secret', // @TODO: what to do with this?
-      blobDownloadPath,
-      frontendDownloadPath,
-      platformLocalStorageNameToPath: storagesToMl(storages),
-      localStorageNameToPath: {}
-    }
+
+    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, jwt, storages),
+
+    plAddress: ports.grpc,
+    plUser: user,
+    plPassword: password,
+
+    localStorageProjections: storages.storages
+      .filter((s) => s.main.downloadable && s.localPath !== undefined)
+      .map((s) => ({
+        storageId: s.storage.id,
+        localPath: s.localPath!
+      }))
   };
 }
 
 async function createDefaultPlLocalConfig(
-  opts: PlConfigOptions,
+  opts: PlConfigGeneratorOptions,
   ports: Endpoints,
   user: string,
   password: string,
+  jwtKey: string,
   storages: StoragesSettings
 ): Promise<string> {
   const license = await getLicense(opts.licenseMode);
   const htpasswdAuth = await createHtpasswdFile(opts.workingDir, [{ user, password }]);
-  const jwtKey = 'defaultStr';
 
   const packageLoaderPath = await createDefaultPackageSettings(opts.workingDir);
 
   let config = getPlConfig(opts, ports, license, htpasswdAuth, jwtKey, packageLoaderPath, storages);
 
-  if (opts.extraPlConfig) config = opts.extraPlConfig(config);
+  if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
 
   return yaml.stringify(config);
 }
 
 function getPlConfig(
-  opts: PlConfigOptions,
+  opts: PlConfigGeneratorOptions,
   ports: Endpoints,
   license: License,
   htpasswdAuth: string,

@@ -1,10 +1,7 @@
 import path from 'path';
 import * as fsp from 'node:fs/promises';
 import {
-  BlockModel,
-  BlockState,
-  ImportFileHandleUpload,
-  InferBlockState,
+  InferBlockState, LocalImportFileHandle,
   MiddleLayer,
   Platforma,
   Project
@@ -94,7 +91,7 @@ export interface RawHelpers {
     blockId: string,
     timeoutOrOps?: number | AwaitBlockDoneOps
   ): Promise<InferBlockState<Pl>>;
-  getLocalFileHandle(localPath: string): Promise<ImportFileHandleUpload>;
+  getLocalFileHandle(localPath: string): Promise<LocalImportFileHandle>;
 }
 
 export const blockTest = plTest.extend<{
@@ -108,13 +105,14 @@ export const blockTest = plTest.extend<{
     await fsp.mkdir(frontendFolder, { recursive: true });
     await fsp.mkdir(downloadFolder, { recursive: true });
 
-    const ml = await MiddleLayer.init(pl, {
+    const ml = await MiddleLayer.init(pl, tmpFolder, {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
-      frontendDownloadPath: path.resolve(frontendFolder),
       localSecret: MiddleLayer.generateLocalSecret(),
-      blobDownloadPath: path.resolve(downloadFolder),
-      localStorageNameToPath: { local: '' }
+      localProjections: [], // TODO must be different with local pl
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
     });
 
     await use(ml);

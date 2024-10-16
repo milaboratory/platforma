@@ -407,7 +407,7 @@ export class PlTreeNodeAccessor {
   }
 
   /**
-   * Can be used to passe a higher level accessor that will wrap the resource and throw its
+   * Can be used to pass a higher level accessor that will wrap the resource and throw its
    * errors on node resolution.
    * */
   public toEntryAccessor(): PlTreeEntryAccessor {

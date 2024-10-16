@@ -10,13 +10,19 @@ import {
   LogsDriver,
   LogsStreamDriver,
   LsDriver,
+  OpenFileDialogCallback,
   UploadDriver
 } from '@milaboratories/pl-drivers';
 import * as Sdk from '@milaboratories/pl-model-common';
 import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import * as os from 'node:os';
 import { PFrameDriver } from '../pool';
-import { DefaultDriverKitOps, DriverKitOps, DriverKitOpsConstructor } from './ops';
+import {
+  DefaultDriverKitOpsPaths,
+  DefaultDriverKitOpsSettings,
+  DriverKitOps,
+  DriverKitOpsConstructor
+} from './ops';
 
 /**
  * Drivers offered by the middle-layer for internal consumers,
@@ -50,18 +56,21 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit {
 
 export async function initDriverKit(
   pl: PlClient,
+  workdir: string,
   _ops: DriverKitOpsConstructor
 ): Promise<MiddleLayerDriverKit> {
-  const ops: DriverKitOps = { ...DefaultDriverKitOps, ..._ops };
-  checkStorageNamesDoNotIntersect(ops.logger, ops);
+  const ops: DriverKitOps = {
+    ...DefaultDriverKitOpsSettings,
+    ...DefaultDriverKitOpsPaths(workdir),
+    ..._ops
+  };
 
   const signer = new HmacSha256Signer(ops.localSecret);
 
-  const downloadClient = createDownloadClient(ops.logger, pl, ops.platformLocalStorageNameToPath);
+  const downloadClient = createDownloadClient(ops.logger, pl, ops.localProjections);
   const logsClient = createLogsClient(pl, ops.logger);
   const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
   const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
-  const lsClient = createLsFilesClient(pl, ops.logger);
 
   const blobDriver = new DownloadDriver(
     ops.logger,
@@ -80,7 +89,14 @@ export async function initDriverKit(
   );
   const logsStreamDriver = new LogsStreamDriver(logsClient, ops.logStreamDriverOps);
   const logDriver = new LogsDriver(logsStreamDriver, blobDriver);
-  const lsDriver = new LsDriver(ops.logger, lsClient, pl, signer, ops.localStorageNameToPath);
+  const lsDriver = await LsDriver.init(
+    ops.logger,
+    pl,
+    signer,
+    ops.virtualLocalStorages,
+    ops.localProjections,
+    ops.openFileDialogCallback
+  );
 
   const pFrameDriver = new PFrameDriver(blobDriver);
 
@@ -92,20 +108,4 @@ export async function initDriverKit(
     uploadDriver,
     pFrameDriver
   };
-}
-
-function checkStorageNamesDoNotIntersect(logger: MiLogger, ops: DriverKitOps) {
-  if (ops.localStorageNameToPath.local != os.homedir())
-    logger.info(`'local' storage with homedir was overwrote: ${ops.localStorageNameToPath.local}`);
-
-  const platformStorages = Object.keys(ops.platformLocalStorageNameToPath);
-  const intersected = Object.keys(ops.localStorageNameToPath).find((name) =>
-    platformStorages.includes(name)
-  );
-
-  if (intersected)
-    throw new Error(
-      `Platform local storages include one or more local storages: ` +
-        ` ${intersected}. Note that we automatically included 'local' storage with user's home directory.`
-    );
 }

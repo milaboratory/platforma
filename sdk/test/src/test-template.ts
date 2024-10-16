@@ -121,7 +121,7 @@ export class TplTestHelpers {
       const renderedInputs = await inputs(tx);
       // prettier-ignore
       const futureOutputs = await createRenderTemplate(
-          tx, tpl, ephemeral, renderedInputs, outputs);
+        tx, tpl, ephemeral, renderedInputs, outputs);
       const resultMap = Pl.createPlMap(tx, futureOutputs, ephemeral);
       tx.createField(field(this.resultRootRid, runId), 'Dynamic', resultMap);
       const resultMapRid = await toGlobalResourceId(resultMap);
@@ -194,11 +194,12 @@ export const tplTest = plTest.extend<{
     await use(new TplTestHelpers(pl, resultMap, resultMapTree));
   },
   driverKit: async ({ pl, tmpFolder }, use) => {
-    const downloadFolder = path.join(tmpFolder, 'download');
-    await fsp.mkdir(downloadFolder, { recursive: true });
-    const driverKit = await initDriverKit(pl, {
-      blobDownloadPath: downloadFolder,
-      localSecret: MiddleLayer.generateLocalSecret()
+    const driverKit = await initDriverKit(pl, tmpFolder, {
+      localSecret: MiddleLayer.generateLocalSecret(),
+      localProjections: [], // TODO must be different with local pl
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
     });
 
     await use(driverKit);

@@ -32,7 +32,7 @@ test.skip('should download a blob and read its content', async () => {
 
     const driver = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
@@ -60,7 +60,7 @@ test.skip('should get on demand blob without downloading a blob', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
     const driver = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
@@ -85,7 +85,7 @@ test.skip('should get undefined when releasing a blob from a small cache and the
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-3-'));
     const driver = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
@@ -122,7 +122,7 @@ test.skip('should get the blob when releasing a blob, but a cache is big enough 
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-4-'));
     const driver = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
