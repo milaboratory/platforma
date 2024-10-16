@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.1
+
+### Patch Changes
+
+- 50245bd: fix app.model
+
 ## 1.7.0
 
 ### Patch Changes

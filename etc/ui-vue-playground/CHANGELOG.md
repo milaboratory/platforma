@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.34
+
+### Patch Changes
+
+- 50245bd: fix app.model
+- Updated dependencies [50245bd]
+  - @platforma-sdk/ui-vue@1.7.1
+
 ## 0.0.33
 
 ### Patch Changes
