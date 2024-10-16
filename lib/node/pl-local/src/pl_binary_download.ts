@@ -6,41 +6,56 @@ import { request } from 'undici';
 import { Writable, Readable } from 'stream';
 import { text } from 'stream/consumers';
 import * as tar from 'tar';
-import { fileExists, MiLogger } from '@milaboratories/ts-helpers';
+import { assertNever, fileExists, MiLogger } from '@milaboratories/ts-helpers';
+import decompress from 'decompress';
 
 export async function downloadBinary(
   logger: MiLogger,
   baseDir: string,
   plVersion: string
 ): Promise<string> {
-  const baseName = `pl-${plVersion}-${archiveArch()}`;
+  const { archiveUrl, archivePath, archiveType, targetFolder, binaryPath } = prepareOptions(
+    plVersion, baseDir, archiveArch(), archiveOS(),
+  );
+  await downloadArchive(logger, archiveUrl, archivePath);
+  await extractArchive(logger, archivePath, archiveType, targetFolder);
 
-  const tarFileName = `${baseName}.tgz`;
+  return binaryPath;
+}
 
-  const tarUrl = `https://cdn.platforma.bio/software/pl/${archiveOS()}/${tarFileName}`;
+function prepareOptions(plVersion: string, baseDir: string, arch: ArchType, os: OSType) {
+  const baseName = `pl-${plVersion}-${arch}`;
+  const archiveType = osToArchiveType[os];
 
-  const tarFilePath = path.join(baseDir, tarFileName);
+  const archiveFileName = `${baseName}.${archiveType}`;
+  const archiveUrl = `https://cdn.platforma.bio/software/pl/${os}/${archiveFileName}`;
+  const archivePath = path.join(baseDir, archiveFileName);
 
   // folder where binary distribution of pl will be unpacked
   const targetFolder = path.join(baseDir, baseName);
 
-  await downloadArchive(logger, tarUrl, tarFilePath);
-  await extractArchive(logger, tarFilePath, targetFolder);
-
-  return path.join(targetFolder, 'binaries', 'platforma');
+  const binaryPath = path.join(targetFolder, 'binaries', osToBinaryName[os]);
+  
+  return {
+    archiveUrl,
+    archivePath,
+    archiveType,
+    targetFolder,
+    binaryPath
+  };
 }
 
-export async function downloadArchive(logger: MiLogger, tarUrl: string, dstTarFile: string) {
-  if (await fileExists(dstTarFile)) {
-    logger.info(`Platforma Backend archive download skipped: '${dstTarFile}' already exists`);
-    return dstTarFile;
+export async function downloadArchive(logger: MiLogger, archiveUrl: string, dstArchiveFile: string) {
+  if (await fileExists(dstArchiveFile)) {
+    logger.info(`Platforma Backend archive download skipped: '${dstArchiveFile}' already exists`);
+    return dstArchiveFile;
   }
 
-  await fsp.mkdir(path.dirname(dstTarFile), { recursive: true });
+  await fsp.mkdir(path.dirname(dstArchiveFile), { recursive: true });
 
-  logger.info(`Downloading Platforma Backend archive:\n  URL: ${tarUrl}\n Save to: ${dstTarFile}`);
+  logger.info(`Downloading Platforma Backend archive:\n  URL: ${archiveUrl}\n Save to: ${dstArchiveFile}`);
 
-  const { body, statusCode } = await request(tarUrl);
+  const { body, statusCode } = await request(archiveUrl);
   if (statusCode != 200) {
     // completely draining the stream to prevent leaving open connections
     const textBody = await text(body);
@@ -50,23 +65,28 @@ export async function downloadArchive(logger: MiLogger, tarUrl: string, dstTarFi
   }
 
   // to prevent incomplete downloads we first write in a temp file
-  const tmpPath = dstTarFile + '.tmp';
+  const tmpPath = dstArchiveFile + '.tmp';
   await Readable.toWeb(body).pipeTo(Writable.toWeb(fs.createWriteStream(tmpPath)));
 
   // and then atomically rename it
-  await fsp.rename(tmpPath, dstTarFile);
+  await fsp.rename(tmpPath, dstArchiveFile);
 }
 
 /** Used to prevent mid-way interrupted unarchived folders to be used */
 const MarkerFileName = '.ok';
 
-export async function extractArchive(logger: MiLogger, tarPath: string, dstFolder: string) {
+export async function extractArchive(
+  logger: MiLogger,
+  archivePath: string,
+  archiveType: ArchiveType,
+  dstFolder: string
+) {
   logger.info('extracting archive...');
-  logger.info(`  archive path: '${tarPath}'`);
+  logger.info(`  archive path: '${archivePath}'`);
   logger.info(`  target dir: '${dstFolder}'`);
 
-  if (!(await fileExists(tarPath))) {
-    const msg = `Platforma Backend binary archive not found at '${tarPath}'`;
+  if (!(await fileExists(archivePath))) {
+    const msg = `Platforma Backend binary archive not found at '${archivePath}'`;
     logger.error(msg);
     throw new Error(msg);
   }
@@ -87,14 +107,21 @@ export async function extractArchive(logger: MiLogger, tarPath: string, dstFolde
   await fsp.mkdir(dstFolder, { recursive: true });
 
   logger.info(
-    `Unpacking Platforma Backend archive:\n  Archive:   ${tarPath}\n  Target dir: ${dstFolder}`
+    `Unpacking Platforma Backend archive:\n  Archive:   ${archivePath}\n  Target dir: ${dstFolder}`
   );
 
-  await tar.x({
-    file: tarPath,
-    cwd: dstFolder,
-    gzip: true
-  });
+  switch (archiveType) {
+    case 'tgz':
+      await tar.x({
+        file: archivePath,
+        cwd: dstFolder,
+        gzip: true
+      });
+    case 'zip':
+      await decompress(archivePath, dstFolder);
+    default:
+      assertNever(archiveType);
+  }
 
   // writing marker file, to be able in the future detect that we completely unarchived the tar file
   await fsp.writeFile(markerFilePath, 'ok');
@@ -140,4 +167,18 @@ export function archiveArch(archName?: string): ArchType {
           JSON.stringify(Arches)
       );
   }
+}
+
+export type ArchiveType = 'tgz' | 'zip';
+
+const osToArchiveType: Record<OSType, ArchiveType> = {
+  linux: 'tgz',
+  macos: 'tgz',
+  windows: 'zip'
+}
+
+const osToBinaryName: Record<OSType, string> = {
+  linux: 'platforma',
+  macos: 'platforma',
+  windows: 'platforma.exe'
 }

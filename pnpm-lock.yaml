@@ -896,6 +896,9 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
+      decompress:
+        specifier: 'catalog:'
+        version: 4.2.1
       tar:
         specifier: 'catalog:'
         version: 7.4.3
