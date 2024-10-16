@@ -1,7 +1,7 @@
 <template>
   <div class="grid-overlay-container">
     <div class="grid-icon-sad-cat"></div>
-    <span class="text-subtitle-m">Not calculated</span>
+    <span class="text-subtitle-m">Empty</span>
   </div>
 </template>
 

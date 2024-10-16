@@ -8,10 +8,10 @@ import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
-import { computedAsync } from '@vueuse/core';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
+import { useWatchFetch } from '../../lib';
 import './ag-theme.css';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
@@ -70,8 +70,9 @@ watch(
   }
 );
 
-const sheets = computedAsync<PlDataTableSheet[]>(
-  async () => {
+const sheets = useWatchFetch<any, PlDataTableSheet[]>(
+  () => settings.value.sourceType,
+  async (_) => {
     const sourceType = settings.value.sourceType;
     switch (sourceType) {
       case 'pframe': {
@@ -97,8 +98,7 @@ const sheets = computedAsync<PlDataTableSheet[]>(
       }
       default: throw Error(`unsupported source type: ${sourceType satisfies never}`);
     }
-  },
-  []
+  }
 );
 
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
@@ -152,7 +152,7 @@ const makeSheetId = (axis: AxisId) => canonicalize(axis)!;
 function makeFilters(sheetsState: Record<string, string | number>): PTableRecordFilter[] | undefined {
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
   return (
-    sheets.value.map((sheet) => ({
+    sheets.value?.map((sheet) => ({
       type: 'bySingleColumn',
       column: sheet.column
         ? {
@@ -198,6 +198,9 @@ watch(
   () => [settings.value, sheets.value] as const,
   (state, oldState) => {
     const [settings, sheets] = state;
+    if (!sheets) {
+      return;
+    }
     if (oldState) {
       const [oldSettings, oldSheets] = oldState;
       if ((settings.sourceType === 'ptable' || settings.sourceType === 'pframe') && settings.sourceType === oldSettings?.sourceType && lodash.isEqual(sheets, oldSheets)) return;
@@ -292,7 +295,7 @@ watch(
         if (!pfDriver) throw Error('platforma.pFrameDriver not set');
 
         const pTable = settings.pTable;
-        if (!pTable) {
+        if (!pTable || !sheets) {
           return gridApi.updateGridOptions({
             loading: true,
             loadingOverlayComponentParams: { notReady: true },
@@ -341,8 +344,8 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <Transition name="ap-ag-data-table-sheets-transition">
-      <div v-if="sheets.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine v-for="(sheet, i) in sheets" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
+      <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
+        <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
           :options="sheet.options"
           @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
       </div>
