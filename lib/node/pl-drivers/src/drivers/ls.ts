@@ -19,15 +19,11 @@ import {
   parseIndexHandle,
   parseUploadHandle
 } from './helpers/ls_list_entry';
-import {
-  createLocalStorageHandle,
-  createRemoteStorageHandle,
-  parseStorageHandle
-} from './helpers/ls_storage_entry';
+import { createLocalStorageHandle, createRemoteStorageHandle, parseStorageHandle } from './helpers/ls_storage_entry';
 import { LocalStorageProjection } from './types';
 import * as os from 'node:os';
-import * as fs from 'node:fs';
 import { createLsFilesClient } from '../clients/helpers';
+import { validateAbsolute } from '../helpers/validate';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -57,11 +53,6 @@ export type VirtualLocalStorageSpec = {
   /** Used as hint to UI controls to, set as initial path during browsing */
   readonly initialPath: string;
 };
-
-function validateAbsolute(p: string): string {
-  if (!path.isAbsolute(p)) throw new Error(`Path ${p} is not absolute.`);
-  return p;
-}
 
 export function DefaultVirtualLocalStorages(): VirtualLocalStorageSpec[] {
   const home = os.homedir();
@@ -261,7 +252,7 @@ export class LsDriver implements InternalLsDriver {
 
     // validating inputs
     for (const vp of virtualStorages) validateAbsolute(vp.root);
-    for (const lp of localProjections) validateAbsolute(lp.localPath);
+    for (const lp of localProjections) if (lp.localPath !== '') validateAbsolute(lp.localPath);
 
     // creating indexed maps for quick access
     const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.name, s]));

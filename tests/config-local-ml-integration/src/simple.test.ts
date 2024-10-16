@@ -11,7 +11,7 @@ test(
   { timeout: 15000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
-    const workingDir = path.join(__dirname, '.test');
+    const workingDir = path.resolve(path.join(__dirname, '..', '.test'));
 
     // create configs for everything
     const configOpts: PlConfigGeneratorOptions = {
