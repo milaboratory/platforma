@@ -896,6 +896,9 @@ importers:
       '@milaboratories/ts-helpers':
         specifier: workspace:^
         version: link:../ts-helpers
+      decompress:
+        specifier: 'catalog:'
+        version: 4.2.1
       tar:
         specifier: 'catalog:'
         version: 7.4.3
@@ -912,6 +915,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../util/build-configs
+      '@types/decompress':
+        specifier: 'catalog:'
+        version: 4.2.7
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.13

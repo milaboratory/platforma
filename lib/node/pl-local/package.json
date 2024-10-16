@@ -36,6 +36,7 @@
     "vitest": "catalog:",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
+    "@types/decompress": "catalog:",
     "prettier": "catalog:",
     "ts-jest": "catalog:",
     "jest": "catalog:",
@@ -44,6 +45,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "decompress": "catalog:",
     "undici": "catalog:",
     "@milaboratories/ts-helpers": "workspace:^",
     "tar": "catalog:",
