@@ -103,7 +103,7 @@ export async function generateLocalPlConfigs(
     plPassword: password,
 
     localStorageProjections: storages.storages
-      .filter((s) => s.main.downloadable && s.localPath)
+      .filter((s) => s.main.downloadable && s.localPath !== undefined)
       .map((s) => ({
         storageId: s.storage.id,
         localPath: s.localPath!

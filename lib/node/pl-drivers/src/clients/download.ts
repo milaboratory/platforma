@@ -15,6 +15,7 @@ import {
 import { ResourceInfo } from '@milaboratories/pl-tree';
 import { DownloadHelper, DownloadResponse } from '../helpers/download';
 import { LocalStorageProjection } from '../drivers/types';
+import { validateAbsolute } from '../helpers/validate';
 
 const storageProtocol = 'storage://';
 const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
@@ -37,6 +38,7 @@ export class ClientDownload {
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[]
   ) {
+    for (const lp of localProjections) if (lp.localPath !== '') validateAbsolute(lp.localPath);
     this.grpcClient = new DownloadClient(this.grpcTransport);
     this.downloadHelper = new DownloadHelper(httpClient);
     this.localStorageIdsToRoot = new Map(
@@ -94,7 +96,7 @@ export class ClientDownload {
     if (storageRoot === undefined)
       throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
 
-    const fullPath = path.join(storageRoot, localPath);
+    const fullPath = storageRoot === '' ? localPath : path.join(storageRoot, localPath);
     const stat = await fsp.stat(fullPath);
     const size = stat.size;
 
