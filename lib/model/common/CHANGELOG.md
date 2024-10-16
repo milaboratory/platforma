@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.4.0
+
+### Minor Changes
+
+- 66383b6: New public API in LS driver: showOpenSingleFileDialog, showOpenMultipleFilesDialog, getLocalFileSize, getLocalFileContent
+
 ## 1.3.15
 
 ### Patch Changes
