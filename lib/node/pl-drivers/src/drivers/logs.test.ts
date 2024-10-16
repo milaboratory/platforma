@@ -39,7 +39,7 @@ test('should get all logs', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
     const download = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
@@ -91,7 +91,7 @@ test('should get last line with a prefix', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
     const download = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
@@ -145,7 +145,7 @@ test('should get log smart object and get log lines from that', async () => {
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
     const download = new DownloadDriver(
       logger,
-      createDownloadClient(logger, client),
+      createDownloadClient(logger, client, []),
       createLogsClient(client, logger),
       dir,
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
