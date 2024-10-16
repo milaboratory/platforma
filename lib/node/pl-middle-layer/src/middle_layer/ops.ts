@@ -1,9 +1,15 @@
 import { TemporalSynchronizedTreeOps } from './types';
-import { DownloadDriverOps, OpenFileDialogCallback } from '@milaboratories/pl-drivers';
+import {
+  DefaultVirtualLocalStorages,
+  DownloadDriverOps,
+  OpenFileDialogCallback,
+  VirtualLocalStorageSpec
+} from '@milaboratories/pl-drivers';
 import { UploadDriverOps } from '@milaboratories/pl-drivers';
 import { LogsStreamDriverOps } from '@milaboratories/pl-drivers';
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
-import * as os from 'node:os';
+import { LocalStorageProjection } from '@milaboratories/pl-drivers';
+import path from 'node:path';
 
 /** Paths part of {@link DriverKitOps}. */
 export type DriverKitOpsPaths = {
@@ -11,27 +17,25 @@ export type DriverKitOpsPaths = {
   readonly blobDownloadPath: string;
 
   /**
-   * If Platforma is running in local mode and a download driver
-   * needs to download files from local storage, it will open files
-   * from the specified directory. Otherwise, setting should be empty.
+   * List of pl storages that have projections in local file system.
    *
-   * storage_name -> local_path
+   * This option affect two drivers:
+   *
+   *   (1) LS driver generates "index" handles instead of "upload" for paths inside those locations
+   *
+   *   (2) Download driver directly serves content retrieval requests for blobs from listed storages,
+   *       and don't apply any caching for such blobs (i.e. preventing duplication of files for Downloaded
+   *       type handles, making OnDemand and Downloaded handles equivalent)
+   *
    * */
-  readonly downloadLocalStorageNameToPath: Record<string, string>;
+  readonly localProjections: LocalStorageProjection[];
 
-  /**
-   * If the client wants to upload files from their local machine to Platforma,
-   * this option should be set. Set any unique storage names
-   * to any paths from where the client will upload files,
-   * e.g., {'local': '/'}.
-   *
-   * storage_name -> local_path
-   * */
-  readonly uploadLocalStorageNameToPath: Record<string, string>;
+  /** List of virtual storages that will allow homogeneous access to local FSs through LS API. */
+  readonly virtualLocalStorages: VirtualLocalStorageSpec[];
 };
 
 /** Options required to initialize full set of middle layer driver kit */
-export type DriverKitOps = DriverKitOpsPaths & {
+export type DriverKitOpsSettings = {
   //
   // Common
   //
@@ -90,19 +94,14 @@ export type DriverKitOps = DriverKitOpsPaths & {
   readonly openFileDialogCallback: OpenFileDialogCallback;
 };
 
+export type DriverKitOps = DriverKitOpsPaths & DriverKitOpsSettings;
+
 /** Some defaults fot MiddleLayerOps. */
-export const DefaultDriverKitOps: Pick<
-  DriverKitOps,
-  | 'logger'
-  | 'downloadLocalStorageNameToPath'
-  | 'blobDriverOps'
-  | 'uploadDriverOps'
-  | 'logStreamDriverOps'
-  | 'uploadLocalStorageNameToPath'
+export const DefaultDriverKitOpsSettings: Pick<
+  DriverKitOpsSettings,
+  'logger' | 'blobDriverOps' | 'uploadDriverOps' | 'logStreamDriverOps'
 > = {
   logger: new ConsoleLoggerAdapter(),
-  downloadLocalStorageNameToPath: {},
-  uploadLocalStorageNameToPath: { local: os.homedir() }, // TODO ???
   blobDriverOps: {
     cacheSoftSizeBytes: 100 * 1024 * 1024, // 100MB
     nConcurrentDownloads: 10
@@ -120,17 +119,30 @@ export const DefaultDriverKitOps: Pick<
   }
 };
 
+export function DefaultDriverKitOpsPaths(
+  workDir: string
+): Pick<DriverKitOpsPaths, 'blobDownloadPath' | 'virtualLocalStorages'> {
+  return {
+    blobDownloadPath: path.join(workDir, 'download'),
+    virtualLocalStorages: DefaultVirtualLocalStorages()
+  };
+}
+
 /** Fields with default values are marked as optional here. */
-export type DriverKitOpsConstructor = Omit<DriverKitOps, keyof typeof DefaultDriverKitOps> &
-  Partial<typeof DefaultDriverKitOps>;
+// prettier-ignore
+export type DriverKitOpsConstructor =
+  Omit<DriverKitOpsSettings, keyof typeof DefaultDriverKitOpsSettings>
+  & Partial<typeof DefaultDriverKitOpsSettings>
+  & Omit<DriverKitOpsPaths, keyof ReturnType<typeof DefaultDriverKitOpsPaths>>
+  & Partial<ReturnType<typeof DefaultDriverKitOpsPaths>>;
 
 export type MiddleLayerOpsPaths = DriverKitOpsPaths & {
   /** Common root where to put frontend code. */
   readonly frontendDownloadPath: string;
-}
+};
 
 /** Configuration controlling different aspects of middle layer behaviour. */
-export type MiddleLayerOps = DriverKitOps & {
+export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
   /** Contain temporal options controlling how often should pl trees be
    * synchronized with the pl server. */
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
@@ -147,17 +159,18 @@ export type MiddleLayerOps = DriverKitOps & {
   readonly devBlockUpdateRecheckInterval: number;
 };
 
+export type MiddleLayerOps = MiddleLayerOpsSettings & MiddleLayerOpsPaths;
+
 /** Some defaults fot MiddleLayerOps. */
-export const DefaultMiddleLayerOps: Pick<
+export const DefaultMiddleLayerOpsSettings: Pick<
   MiddleLayerOps,
-  | keyof typeof DefaultDriverKitOps
+  | keyof typeof DefaultDriverKitOpsSettings
   | 'defaultTreeOptions'
   | 'projectRefreshInterval'
   | 'stagingRenderingRate'
-  | 'downloadLocalStorageNameToPath'
   | 'devBlockUpdateRecheckInterval'
 > = {
-  ...DefaultDriverKitOps,
+  ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
     pollingInterval: 350,
     stopPollingDelay: 2500
@@ -167,6 +180,26 @@ export const DefaultMiddleLayerOps: Pick<
   stagingRenderingRate: 5
 };
 
-/** Fields with default values are marked as optional here. */
-export type MiddleLayerOpsConstructor = Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps> &
-  Partial<typeof DefaultMiddleLayerOps>;
+export function DefaultMiddleLayerOpsPaths(
+  workDir: string
+): Pick<
+  MiddleLayerOpsPaths,
+  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
+> {
+  return {
+    ...DefaultDriverKitOpsPaths(workDir),
+    frontendDownloadPath: path.join(workDir, 'frontend')
+  };
+}
+
+export type MiddleLayerOpsConstructor = Omit<
+  MiddleLayerOpsSettings,
+  keyof typeof DefaultMiddleLayerOpsSettings
+> &
+  Partial<typeof DefaultMiddleLayerOpsSettings> &
+  Omit<MiddleLayerOpsPaths, keyof ReturnType<typeof DefaultMiddleLayerOpsPaths>> &
+  Partial<ReturnType<typeof DefaultMiddleLayerOpsPaths>>;
+
+// /** Fields with default values are marked as optional here. */
+// export type MiddleLayerOpsConstructor = Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps> &
+//   Partial<typeof DefaultMiddleLayerOps>;
