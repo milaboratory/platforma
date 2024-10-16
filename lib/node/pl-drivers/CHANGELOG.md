@@ -1,5 +1,21 @@
 # @milaboratories/pl-drivers
 
+## 1.3.0
+
+### Minor Changes
+
+- 352e182: refactoring of ls controller and driver options
+
+### Patch Changes
+
+- Updated dependencies [66383b6]
+- Updated dependencies [66383b6]
+- Updated dependencies [66383b6]
+  - @milaboratories/computable@2.2.0
+  - @milaboratories/pl-client@2.5.3
+  - @milaboratories/pl-model-common@1.4.0
+  - @milaboratories/pl-tree@1.4.4
+
 ## 1.2.35
 
 ### Patch Changes
