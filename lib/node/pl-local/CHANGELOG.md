@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.4.2
+
+### Patch Changes
+
+- a1f7909: fix launching pl-local on Windows
+
 ## 1.4.1
 
 ### Patch Changes
