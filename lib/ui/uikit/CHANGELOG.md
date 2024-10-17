@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.21
+
+### Patch Changes
+
+- 03933b1: fix tooltip z-index
+
 ## 1.2.20
 
 ### Patch Changes
