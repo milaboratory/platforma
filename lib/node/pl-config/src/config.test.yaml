@@ -1,3 +1,5 @@
+# a config for tests, the generated config is more or less the same
+# except all paths will (should?) become absolute.
 license:
   value: 'abc'
   file: ''
@@ -28,7 +30,7 @@ core:
   authEnabled: true
   auth:
     - driver: jwt
-      key: defaultStr
+      key: jwtkey
     - driver: htpasswd
       path: 'users.htpasswd'
   db:
@@ -54,7 +56,7 @@ controllers:
       - id: 'root'
         type: 'FS'
         indexCachePeriod: '1m'
-        rootPath: '/'
+        rootPath: ''
 
       - id: 'work'
         type: 'FS'
@@ -63,7 +65,7 @@ controllers:
 
       - id: 'main'
         type: 'FS'
-        indexCachePeriod: '1m'
+        indexCachePeriod: '0m'
         rootPath: 'storages/main'
 
   runner:

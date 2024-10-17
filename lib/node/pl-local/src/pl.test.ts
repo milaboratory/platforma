@@ -20,9 +20,6 @@ test(
     const pl = await platformaInit(logger, {
       workingDir: dir,
       config,
-      spawnOptions: {
-        stdio: ['ignore', createWriteStream(path.join(dir, 'stdout.log')), 'inherit']
-      },
       closeOld: false
     });
 
@@ -30,6 +27,7 @@ test(
 
     console.log(`Platforma: %o`, pl.debugInfo());
 
+    expect(await pl.isAlive()).toBeTruthy();
     expect(pl.pid).not.toBeUndefined();
     pl.stop();
     await pl.waitStopped();
@@ -53,12 +51,14 @@ test(
     await sleep(5000);
     console.log(`OldPlatforma: %o`, oldPl.debugInfo());
 
+    expect(await oldPl.isAlive()).toBeTruthy();
     const newPl = await platformaInit(logger, options);
     expect(await oldPl.isAlive()).toBeFalsy();
     await sleep(5000);
 
     console.log(`NewPlatforma: %o`, newPl.debugInfo());
 
+    expect(await newPl.isAlive()).toBeTruthy();
     expect(newPl.pid).not.toBeUndefined();
     newPl.stop();
     await newPl.waitStopped();
@@ -81,10 +81,12 @@ test(
     });
     await sleep(1000);
 
+    expect(await pl.isAlive()).toBeTruthy();
     processStop(pl.pid!);
     await sleep(3000);
     console.log(`Platforma after first stop: %o`, pl.debugInfo());
 
+    expect(await pl.isAlive()).toBeTruthy();
     processStop(pl.pid!);
     await sleep(3000);
     console.log(`Platforma after second stop: %o`, pl.debugInfo());
