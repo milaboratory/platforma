@@ -18,7 +18,6 @@ import { LocalStorageProjection } from '../drivers/types';
 import { validateAbsolute } from '../helpers/validate';
 
 const storageProtocol = 'storage://';
-const localPathRegex = /storage:\/\/(?<storageId>.*?)\/(?<localPath>.*)/;
 
 export class UnknownStorageError extends Error {}
 
@@ -74,29 +73,16 @@ export class ClientDownload {
     return this.isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
       : await this.downloadHelper.downloadRemoteFile(
-          downloadUrl,
-          headersFromProto(headers),
-          signal
-        );
+        downloadUrl,
+        headersFromProto(headers),
+        signal
+      );
   }
 
   private isLocal = (url: string) => url.startsWith(storageProtocol);
 
   async readLocalFile(url: string): Promise<DownloadResponse> {
-    const parsed = url.match(localPathRegex);
-    if (parsed === null || parsed.length != 3) {
-      throw new WrongLocalFileUrl(
-        `url for local filepath ${url} does not match regex ${localPathRegex}, parsed: ${parsed}`
-      );
-    }
-
-    const [_, storageId, localPath] = parsed;
-
-    const storageRoot = this.localStorageIdsToRoot.get(storageId);
-    if (storageRoot === undefined)
-      throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
-
-    const fullPath = storageRoot === '' ? localPath : path.join(storageRoot, localPath);
+    const fullPath = parseLocalFileUrl(url, this.localStorageIdsToRoot);
     const stat = await fsp.stat(fullPath);
     const size = stat.size;
 
@@ -105,6 +91,25 @@ export class ClientDownload {
       size
     };
   }
+}
+
+export function parseLocalFileUrl(
+  url: string,
+  localStorageIdsToRoot: Map<string, string>,
+): string {
+  const parsed = new URL(url);
+  if (parsed.pathname == '')
+    throw new WrongLocalFileUrl(`url for local filepath ${url} does not match url scheme`);
+
+  const storageId = parsed.host;
+  const storageRoot = localStorageIdsToRoot.get(storageId);
+  if (storageRoot === undefined)
+    throw new UnknownStorageError(`Unknown storage location: ${storageId}`);
+
+  const localPath = decodeURIComponent(parsed.pathname.slice(1));
+  const fullPath = storageRoot === '' ? localPath : path.join(storageRoot, localPath);
+
+  return fullPath;
 }
 
 export function headersFromProto(
