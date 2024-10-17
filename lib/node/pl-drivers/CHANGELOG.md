@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.3.1
+
+### Patch Changes
+
+- 1e57f5b: decode urls for downloading (it was broken on Windows)
+
 ## 1.3.0
 
 ### Minor Changes
