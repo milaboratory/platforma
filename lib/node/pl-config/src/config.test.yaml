@@ -65,7 +65,7 @@ controllers:
 
       - id: 'main'
         type: 'FS'
-        indexCachePeriod: '1m'
+        indexCachePeriod: '0m'
         rootPath: 'storages/main'
 
   runner:
