@@ -169,7 +169,7 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
       opts: {
         env: { ...process.env },
         cwd: workDir,
-        stdio: ['ignore', 'ignore', 'inherit'],
+        stdio: ['pipe', 'ignore', 'inherit'],
         ...ops.spawnOptions
       }
     };
