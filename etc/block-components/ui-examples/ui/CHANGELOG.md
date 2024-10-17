@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.32
+
+### Patch Changes
+
+- 03933b1: fix tooltip z-index
+  - @platforma-sdk/ui-vue@1.7.3
+
 ## 1.0.31
 
 ### Patch Changes
