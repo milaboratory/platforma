@@ -6,6 +6,7 @@ test('should pick free ports without problems', async ({ expect }) => {
   expect(got.grpc).toBeTypeOf("number");
   expect(got.monitoring).toBeTypeOf("number");
   expect(got.debug).toBeTypeOf("number");
+  console.log("ports: ", got.grpc, got.monitoring, got.debug);
 })
 
 test('should pick all ports when the mode is random and a range is tight', async ({ expect }) => {
