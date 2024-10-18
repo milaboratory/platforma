@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.22
+
+### Patch Changes
+
+- f782eea: add "label or text" options to PlBtnGroup and PlCheckboxGroup components
+
 ## 1.2.21
 
 ### Patch Changes
