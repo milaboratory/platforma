@@ -20,7 +20,7 @@ export function createMockApi<
   Outputs extends BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`
->(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs> {
+>(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState> {
   type MyPatch = BlockStatePatch<Args, Outputs, UiState, Href>;
 
   type OnUpdates = (updates: MyPatch[]) => Promise<void>;
@@ -39,7 +39,7 @@ export function createMockApi<
     sdkInfo: {
       sdkVersion: 'dev'
     },
-    loadBlockState: async function (): Promise<BlockState<Args, Outputs>> {
+    loadBlockState: async function (): Promise<BlockState<Args, Outputs, UiState>> {
       return block.getState();
     },
     onStateUpdates(cb: OnUpdates): () => void {
