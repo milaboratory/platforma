@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.6
+
+### Patch Changes
+
+- f782eea: add "label or text" options to PlBtnGroup and PlCheckboxGroup components
+- Updated dependencies [f782eea]
+  - @milaboratories/uikit@1.2.22
+
 ## 1.7.3
 
 ### Patch Changes
