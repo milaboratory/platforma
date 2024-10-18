@@ -158,13 +158,15 @@ export class LsDriver implements InternalLsDriver {
       name: s.name,
       handle: createLocalStorageHandle(s.name, s.root),
       initialFullPath: s.initialPath
-    })).sort(s => -s.initialFullPath.length);
+    })).sort(s => s.initialFullPath.length);
 
-    const otherStorages = Object.entries(this.storageIdToResourceId!).map(([storageId, resourceId]) => ({
-      name: storageId,
-      handle: createRemoteStorageHandle(storageId, resourceId),
-      initialFullPath: '' // we don't have any additional information from where to start browsing remote storages
-    }));
+    const otherStorages = Object.entries(this.storageIdToResourceId!)
+      .filter(([storageId, _]) => storageId != 'root')
+      .map(([storageId, resourceId]) => ({
+        name: storageId,
+        handle: createRemoteStorageHandle(storageId, resourceId),
+        initialFullPath: '' // we don't have any additional information from where to start browsing remote storages
+      }));
 
     const all = [...virtualStorages, ...otherStorages];
     console.log("HERE: ", all)
