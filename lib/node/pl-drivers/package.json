@@ -40,6 +40,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "node-gyp": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
