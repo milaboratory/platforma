@@ -188,10 +188,12 @@ export class LsDriver implements InternalLsDriver {
     } else {
       if (path.sep === '/' && fullPath === '') fullPath = '/';
 
-      const lsRoot =
-        storageData.rootPath === ''
-          ? validateAbsolute(fullPath)
-          : path.join(storageData.rootPath, fullPath);
+      if (storageData.rootPath === '') {
+        validateAbsolute(fullPath);
+      }
+      const lsRoot = path.isAbsolute(fullPath)
+        ? fullPath
+        : path.join(storageData.rootPath, fullPath);
 
       const entries: LsEntry[] = [];
       for await (const dirent of await fsp.opendir(lsRoot)) {
