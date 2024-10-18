@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.17
+
+### Patch Changes
+
+- f782eea: add "label or text" options to PlBtnGroup and PlCheckboxGroup components
+
 ## 1.0.16
 
 ### Patch Changes
