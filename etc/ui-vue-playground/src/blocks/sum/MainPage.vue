@@ -1,8 +1,13 @@
 <script lang="ts" setup>
+import { watch } from 'vue';
 import { useApp } from './app';
-import { PlNumberField } from '@platforma-sdk/ui-vue';
+import { PlNumberField, PlTextField } from '@platforma-sdk/ui-vue';
 
 const app = useApp();
+
+watch(() => app.model.ui, (newUi) => {
+  app.model.args.y = newUi.label.length;
+}, {immediate: true});
 </script>
 
 <template>
@@ -12,9 +17,13 @@ const app = useApp();
     <PlNumberField label="X" v-model="app.model.args.x" />
     <PlNumberField label="Y" v-model="app.model.args.y" />
 
-    <div>Sum or error: {{ app.outputs.sum }}</div>
+    <div>Sum or error: {{ app.model.outputs.sum }}</div>
 
     <div>Sum or undefined: {{ app.model.outputs.sum }}</div>
+
+    <div>Ui: {{ app.model.ui }}</div>
+
+    <PlTextField v-model="app.model.ui.label" />
 
     <div>Error: {{ app.model.outputErrors.sum }}</div>
   </div>

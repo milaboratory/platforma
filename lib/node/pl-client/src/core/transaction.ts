@@ -152,6 +152,8 @@ export class PlTransaction {
    * pending ops, to throw any pending errors. */
   private pendingVoidOps: Promise<void>[] = [];
 
+  private globalTxIdWasAwaited: boolean = false;
+
   constructor(
     private readonly ll: LLPlTransaction,
     public readonly name: string,
@@ -173,6 +175,13 @@ export class PlTransaction {
       },
       (r) => notEmpty(r.txOpen.tx?.id)
     );
+
+    // To avoid floating promise
+    this.globalTxId.catch((err) => {
+      if (!this.globalTxIdWasAwaited) {
+        console.warn(err);
+      }
+    });
   }
 
   private async drainAndAwaitPendingOps(): Promise<void> {
@@ -192,10 +201,12 @@ export class PlTransaction {
     // pushing operation packet to server
     const rawResponsePromise = this.ll.send(r, false);
 
-    await this.drainAndAwaitPendingOps();
-
-    // awaiting our result, and parsing the response
-    return parser(await rawResponsePromise);
+    try {
+      await this.drainAndAwaitPendingOps();
+    } finally {
+      // awaiting our result, and parsing the response
+      return parser(await rawResponsePromise);
+    }
   }
 
   private async sendMultiAndParse<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
@@ -205,10 +216,12 @@ export class PlTransaction {
     // pushing operation packet to server
     const rawResponsePromise = this.ll.send(r, true);
 
-    await this.drainAndAwaitPendingOps();
-
-    // awaiting our result, and parsing the response
-    return parser(await rawResponsePromise);
+    try {
+      await this.drainAndAwaitPendingOps();
+    } finally {
+      // awaiting our result, and parsing the response
+      return parser(await rawResponsePromise);
+    }
   }
 
   private async sendVoidSync<Kind extends NonUndefined<ClientMessageRequest['oneofKind']>, T>(
@@ -247,6 +260,7 @@ export class PlTransaction {
       await completeResult;
       await this.ll.await();
     } else {
+      // @TODO, also floating promises
       const commitResponse = this.sendSingleAndParse(
         { oneofKind: 'txCommit', txCommit: {} },
         (r) => r.txCommit.success
@@ -773,6 +787,7 @@ export class PlTransaction {
   //
 
   public async getGlobalTxId() {
+    this.globalTxIdWasAwaited = true;
     return await this.globalTxId;
   }
 
