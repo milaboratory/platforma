@@ -1,4 +1,5 @@
 import type { ColDef, GridApi, IDatasource, IGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -8,15 +9,10 @@ import {
   type PTableVector,
   type PValue,
   type ValueType,
-  AxisId,
   getAxesId,
   isValueAbsent,
   isValueNA,
-  JoinEntry,
   mapJoinEntry,
-  PColumnIdAndSpec,
-  PFrameHandle,
-  PObjectId,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -40,6 +36,8 @@ export function parseColId(str: string) {
   return JSON.parse(str) as PTableColumnId;
 }
 
+// do not use `any` please
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const defaultValueFormatter = (value: any) => {
   if (!value) {
     return 'ERROR';

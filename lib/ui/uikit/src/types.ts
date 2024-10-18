@@ -20,8 +20,19 @@ export type ElementPosition = Omit<DOMRect, 'toJSON'> & {
   offsetX: number;
 };
 
-export type SimpleOption<T = unknown> = {
-  text: string;
+export type SimpleOption<T = unknown> =
+  | {
+      text: string;
+      value: T;
+    }
+  | {
+      label: string;
+      value: T;
+    };
+
+export type SimpleOptionNormalized<T = unknown> = {
+  label: string;
+  description?: string;
   value: T;
 };
 
@@ -37,17 +48,17 @@ export type ListOption<T = unknown> =
       value: T;
     };
 
+export type ListOptionNormalized<T = unknown> = {
+  label: string;
+  description?: string;
+  value: T;
+};
+
 export type { ModelRef };
 
 export type RefOption = {
   readonly label: string;
   readonly ref: ModelRef;
-};
-
-export type ListOptionNormalized<T = unknown> = {
-  label: string;
-  description?: string;
-  value: T;
 };
 
 export type ListOptionType<Type> = Type extends ListOption<infer X>[] ? X : never;
