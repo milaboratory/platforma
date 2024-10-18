@@ -166,7 +166,9 @@ export class LsDriver implements InternalLsDriver {
       initialFullPath: '' // we don't have any additional information from where to start browsing remote storages
     }));
 
-    return [...virtualStorages, ...otherStorages];
+    const all = [...virtualStorages, ...otherStorages];
+    console.log("HERE: ", all)
+    return all;
   }
 
   public async listFiles(
