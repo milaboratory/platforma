@@ -142,12 +142,16 @@ catalog:
   'vitepress': '1.4.0'
   'highlight.js': '11.10.0'
 
-  '@ag-grid-community/client-side-row-model': ^32.2.2
   '@ag-grid-community/core': ^32.2.2
+  '@ag-grid-community/client-side-row-model': ^32.2.2
   '@ag-grid-community/infinite-row-model': ^32.2.2
   '@ag-grid-community/styles': ^32.2.2
   '@ag-grid-community/vue3': ^32.2.2
+  '@ag-grid-community/csv-export': ^32.2.2
   '@ag-grid-enterprise/core': ^32.2.2
+  '@ag-grid-enterprise/rich-select': ^32.2.2
+  '@ag-grid-enterprise/menu': ^32.2.2
+  '@ag-grid-enterprise/excel-export': ^32.2.2
   '@ag-grid-enterprise/clipboard': ^32.2.2
   '@ag-grid-enterprise/range-selection': ^32.2.2
 
