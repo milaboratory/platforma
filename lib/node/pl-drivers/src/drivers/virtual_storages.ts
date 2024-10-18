@@ -3,6 +3,7 @@ import os from 'os';
 import util from 'util';
 import {exec} from 'child_process'
 import { VirtualLocalStorageSpec } from './types';
+import drivelist from 'drivelist';
 
 export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorageSpec[]> {
   const home = os.homedir();
@@ -11,16 +12,13 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
 
   const homeRoot = path.parse(home).root; // e.g. C:\
   const homeDrive = homeRoot.replaceAll(':\\', ''); // e.g. C drive.
-  const wmic = await util.promisify(exec)('wmic logicaldisk get name');
-  const drives = parseWindowsDrives(wmic.stdout);
+  const drivePaths = parseWindowsDrives(await drivelist.list())
 
-  return windowsDrivesToStorages(drives, homeDrive, home);
+  return windowsDrivesToStorages(drivePaths, homeDrive, home);
 }
 
-export function parseWindowsDrives(wmicStdout: string): string[] {
-  return wmicStdout.split('\r\n')
-    .filter(line => line.includes(':'))
-    .map(line => line.trim().replaceAll(':', ''));
+export function parseWindowsDrives(drives: drivelist.Drive[]): string[] {
+  return drives.flatMap(d => d.mountpoints.map(m => m.path.replaceAll(':', '')));
 }
 
 export function windowsDrivesToStorages(drives: string[], homeDrive: string, home: string) {
