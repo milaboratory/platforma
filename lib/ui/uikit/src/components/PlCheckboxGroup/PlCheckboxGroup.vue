@@ -28,7 +28,7 @@ const props = defineProps<{
   /**
    * List of available options for the component
    */
-  options: SimpleOption<M>[];
+  options: Readonly<SimpleOption<M>[]>;
   /**
    * If `true`, the component is disabled and cannot be interacted with.
    */
@@ -48,9 +48,9 @@ const updateModel = (value: M) => {
 <template>
   <div class="ui-checkbox-group" :class="{ disabled }">
     <label v-if="label">{{ label }}</label>
-    <div v-for="(opt, i) in options" :key="i">
-      <PlCheckboxBase :disabled="disabled" :label="opt.text" :model-value="hasValue(opt.value)" @update:model-value="() => updateModel(opt.value)" />
-      <label @click.stop="() => updateModel(opt.value)">{{ opt.text }}</label>
+    <div v-for="(opt, i) in options.map((it) => ({ label: 'label' in it ? it.label : it.text, value: it.value }))" :key="i">
+      <PlCheckboxBase :disabled="disabled" :label="opt.label" :model-value="hasValue(opt.value)" @update:model-value="() => updateModel(opt.value)" />
+      <label @click.stop="() => updateModel(opt.value)">{{ opt.label }}</label>
     </div>
   </div>
 </template>

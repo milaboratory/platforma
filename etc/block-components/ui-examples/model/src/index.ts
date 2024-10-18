@@ -22,6 +22,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
       { type: 'link', href: '/inject-env', label: 'Inject env' },
       { type: 'link', href: '/dropdowns', label: 'Dropdowns' },
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
+      { type: 'link', href: '/form-components', label: 'Form Components' },
     ];
   })
 

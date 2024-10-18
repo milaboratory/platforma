@@ -9,7 +9,7 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-btn-group.scss';
-import { useSlots } from 'vue';
+import { computed, useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import InnerBorder from '@/utils/InnerBorder.vue';
 import type { SimpleOption } from '@/types';
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 
 const emitModel = (v: M) => emit('update:modelValue', v);
 
-defineProps<{
+const props = defineProps<{
   /**
    * The current selected value.
    */
@@ -51,6 +51,13 @@ defineProps<{
    */
   error?: string;
 }>();
+
+const normalizedOptions = computed(() =>
+  props.options.map((it) => ({
+    label: 'label' in it ? it.label : it.text,
+    value: it.value,
+  })),
+);
 </script>
 
 <template>
@@ -65,7 +72,7 @@ defineProps<{
     </label>
     <InnerBorder class="ui-btn-group__container">
       <div
-        v-for="(opt, i) in options"
+        v-for="(opt, i) in normalizedOptions"
         :key="i"
         class="ui-btn-group__option"
         :tabindex="modelValue === opt.value || disabled ? undefined : 0"
@@ -73,7 +80,7 @@ defineProps<{
         @keydown.enter="emitModel(opt.value)"
         @click="emitModel(opt.value)"
       >
-        {{ opt.text }}
+        {{ opt.label }}
       </div>
     </InnerBorder>
     <div v-if="helper" class="ui-btn-group__helper">{{ helper }}</div>

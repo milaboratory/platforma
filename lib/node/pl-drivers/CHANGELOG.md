@@ -1,5 +1,19 @@
 # @milaboratories/pl-drivers
 
+## 1.3.2
+
+### Patch Changes
+
+- Updated dependencies [28429fa]
+  - @milaboratories/pl-client@2.5.4
+  - @milaboratories/pl-tree@1.4.5
+
+## 1.3.1
+
+### Patch Changes
+
+- 1e57f5b: decode urls for downloading (it was broken on Windows)
+
 ## 1.3.0
 
 ### Minor Changes

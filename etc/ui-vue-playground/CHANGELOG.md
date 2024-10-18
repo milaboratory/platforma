@@ -1,5 +1,11 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.37
+
+### Patch Changes
+
+- 28429fa: Fix a couple of floating promises issues in pl-client
+
 ## 0.0.36
 
 ### Patch Changes

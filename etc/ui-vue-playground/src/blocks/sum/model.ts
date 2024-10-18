@@ -8,6 +8,10 @@ type Args = {
   y: number;
 };
 
+type UiState = {
+  label: ''
+};
+
 const defaultArgs = () => ({
   x: 0,
   y: 0,
@@ -26,7 +30,7 @@ const defaultOutputs = (): Outputs => {
   }
 };
 
-class BlockSum extends BlockMock<Args, Outputs, unknown, `/${string}`> {
+class BlockSum extends BlockMock<Args, Outputs, UiState, `/${string}`> {
   async process(): Promise<void> {
     const {args} = this;
 
@@ -37,4 +41,6 @@ class BlockSum extends BlockMock<Args, Outputs, unknown, `/${string}`> {
   }
 }
 
-export const platforma = createMockApi<Args, Outputs>(new BlockSum(defaultArgs(), defaultOutputs(), undefined, '/'));
+export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(defaultArgs(), defaultOutputs(), {
+  label: ''
+}, '/'));
