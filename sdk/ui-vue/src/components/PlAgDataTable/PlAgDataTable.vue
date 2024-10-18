@@ -16,12 +16,7 @@ import './ag-theme.css';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import {
-  enrichJoinWithLabelColumns,
-  makeSheets,
-  parseColId,
-  updatePFrameGridOptions
-} from './sources/table-source';
+import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
 ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, InfiniteRowModelModule, RangeSelectionModule]);
@@ -35,18 +30,15 @@ const { settings } = toRefs(props);
 watch(
   () => settings.value,
   async (settings, oldSettings) => {
-    if (
-      settings.sourceType !== 'pframe' ||
-      !settings.pFrame ||
-      !settings.join
-    ) return;
+    if (settings.sourceType !== 'pframe' || !settings.pFrame || !settings.join) return;
 
     if (
       oldSettings &&
       oldSettings.sourceType === 'pframe' &&
       lodash.isEqual(settings.pFrame, oldSettings.pFrame) &&
       lodash.isEqual(settings.join, oldSettings.join)
-    ) return;
+    )
+      return;
 
     const platforma = window.platforma;
     if (!platforma) throw Error('platforma not set');
@@ -67,10 +59,10 @@ watch(
     state.pTableParams.join = enrichedJoin;
 
     tableState.value = state;
-  }
+  },
 );
 
-const sheets = useWatchFetch<any, PlDataTableSheet[]>(
+const sheets = useWatchFetch<PlDataTableSettings['sourceType'], PlDataTableSheet[]>(
   () => settings.value.sourceType,
   async (_) => {
     const sourceType = settings.value.sourceType;
@@ -96,9 +88,10 @@ const sheets = useWatchFetch<any, PlDataTableSheet[]>(
       case 'xsv': {
         return [];
       }
-      default: throw Error(`unsupported source type: ${sourceType satisfies never}`);
+      default:
+        throw Error(`unsupported source type: ${sourceType satisfies never}`);
     }
-  }
+  },
 );
 
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
@@ -124,7 +117,6 @@ const gridState = computed({
     };
   },
   set: (gridState) => {
-
     const state = tableState.value;
 
     // do not apply driver sorting for client side rendering
@@ -156,13 +148,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-          type: 'column',
-          id: sheet.column,
-        }
+            type: 'column',
+            id: sheet.column,
+          }
         : {
-          type: 'axis',
-          id: sheet.axis,
-        },
+            type: 'axis',
+            id: sheet.axis,
+          },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -203,7 +195,12 @@ watch(
     }
     if (oldState) {
       const [oldSettings, oldSheets] = oldState;
-      if ((settings.sourceType === 'ptable' || settings.sourceType === 'pframe') && settings.sourceType === oldSettings?.sourceType && lodash.isEqual(sheets, oldSheets)) return;
+      if (
+        (settings.sourceType === 'ptable' || settings.sourceType === 'pframe') &&
+        settings.sourceType === oldSettings?.sourceType &&
+        lodash.isEqual(sheets, oldSheets)
+      )
+        return;
     }
 
     if (settings.sourceType !== 'ptable' && settings.sourceType !== 'pframe') {
@@ -242,7 +239,7 @@ const gridOptions: GridOptions = {
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
   },
-  // rowModelType: 'infinite', // will be set with the first data set 
+  // rowModelType: 'infinite', // will be set with the first data set
   maxBlocksInCache: 10000,
   cacheBlockSize: 100,
   getRowId: (params) => params.data.id,
@@ -345,9 +342,13 @@ watch(
   <div class="ap-ag-data-table-container">
     <Transition name="ap-ag-data-table-sheets-transition">
       <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
+        <PlDropdownLine
+          v-for="(sheet, i) in sheets.value"
+          :key="i"
+          :model-value="sheetsState[makeSheetId(sheet.axis)]"
           :options="sheet.options"
-          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
+          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+        />
       </div>
     </Transition>
     <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" />

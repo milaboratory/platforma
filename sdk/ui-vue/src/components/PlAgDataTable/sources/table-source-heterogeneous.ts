@@ -1,5 +1,6 @@
-import { ColDef, IDatasource, RowModelType } from '@ag-grid-community/core';
-import { AxisSpec, getAxisId, PColumnSpec, PTableColumnSpec, PTableShape, PTableVector, PVectorDataString } from '@platforma-sdk/model';
+import type { ColDef, IDatasource, RowModelType } from '@ag-grid-community/core';
+import type { AxisSpec, PColumnSpec, PTableColumnSpec, PTableShape, PTableVector, PVectorDataString } from '@platforma-sdk/model';
+import { getAxisId } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { defaultValueFormatter } from './table-source';
@@ -152,20 +153,25 @@ function calculateRowData(
   hAxisValues: string[],
   nRows: number,
 ): unknown[] {
+  // do not use `any` please
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const uniqueRowsMap: Map<string, Record<string, any>> = new Map();
 
   // transposed iRow
   let iRowT = 0;
   for (let iRow = 0; iRow < nRows; iRow++) {
+    // do not use `any` please
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rowPart: Record<string, any> = {};
-    let k = 0;
+
     for (let iCol = 0; iCol < data.length; ++iCol) {
       if (iCol === axisIdx || iCol === columnIdx) continue;
       const field = fields[iCol].toString();
       rowPart[field] = data[iCol].data[iRow];
-      ++k;
     }
 
+    // do not use `any` please
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let row: Record<string, any>;
     const id = canonicalize(Object.values(rowPart)) ?? '';
     if (!uniqueRowsMap.has(id)) {

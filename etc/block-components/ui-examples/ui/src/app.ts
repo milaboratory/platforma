@@ -1,11 +1,12 @@
 import { platforma } from '@milaboratories/milaboratories.test-enter-numbers.model';
 import { defineApp } from '@platforma-sdk/ui-vue';
-import LogViewPage from './LogViewPage.vue';
-import ModalsPage from './ModalsPage.vue';
 import { computed, reactive } from 'vue';
-import InjectEnvPage from './InjectEnvPage.vue';
-import DropdownsPage from './DropdownsPage.vue';
+import LogViewPage from './pages/LogViewPage.vue';
+import ModalsPage from './pages/ModalsPage.vue';
+import InjectEnvPage from './pages/InjectEnvPage.vue';
+import DropdownsPage from './pages/DropdownsPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
+import FormComponentsPage from './pages/FormComponentsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -28,7 +29,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/modals': ModalsPage,
       '/inject-env': InjectEnvPage,
       '/dropdowns': DropdownsPage,
-      '/use-watch-fetch': UseWatchFetchPage
+      '/use-watch-fetch': UseWatchFetchPage,
+      '/form-components': FormComponentsPage
     }
   };
 });
