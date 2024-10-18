@@ -36,15 +36,12 @@
     "denque": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "drivelist": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "node-gyp": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "@types/drivelist": "catalog:",
     "@types/node": "catalog:",
     "@types/jest": "catalog:",
     "@types/tar-fs": "catalog:",
