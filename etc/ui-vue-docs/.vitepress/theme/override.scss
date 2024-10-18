@@ -1,0 +1,64 @@
+:root {
+  --mi-header-color: #e4f5d8;
+  --mi-menu-bg: linear-gradient(180deg, #e4f5d8, #8dcc62);
+  --mi-border: #110529;
+}
+
+aside.VPSidebar {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-top: 8px !important;
+  width: 292px !important;
+  background: var(--mi-menu-bg);
+  top: 64px !important;
+  border-right: 1px solid var(--mi-border);
+
+  @media screen and (min-width: 100px) and (max-width: 959px) {
+    top: 0 !important;
+  }
+
+  .curtain {
+    display: none;
+  }
+}
+
+.VPNavScreenAppearance {
+  display: none !important;
+}
+
+.VPNavScreen {
+  .container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.VPNavBar,
+.VPNav {
+  background-color: var(--mi-header-color) !important;
+}
+
+.VPNav {
+  border-bottom: 1px solid var(--mi-border);
+  border-top: 1px solid var(--mi-border);
+
+  .content-body {
+    background-color: unset !important;
+  }
+
+  .VPNavBarSearch {
+    flex-grow: 0 !important;
+  }
+
+  .title {
+    display: flex;
+    justify-content: flex-start;
+    padding-left: 24px !important;
+    border-bottom: unset;
+  }
+
+  .divider {
+    display: none;
+  }
+}

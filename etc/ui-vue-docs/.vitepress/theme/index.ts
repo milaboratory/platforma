@@ -2,7 +2,8 @@
 import { h } from 'vue'
 import type { Theme } from 'vitepress'
 import DefaultTheme from 'vitepress/theme'
-import './style.css'
+import './override.scss';
+import './style.css';
 import 'highlight.js/styles/a11y-dark.css';
 import '@platforma-sdk/ui-vue/styles';
 
