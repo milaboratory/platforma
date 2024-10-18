@@ -29,7 +29,7 @@ import { BlockUpdateWatcher } from '../block_registry/watcher';
 import { getQuickJS, QuickJSWASMModule } from 'quickjs-emscripten';
 import { initDriverKit, MiddleLayerDriverKit } from './driver_kit';
 import { DriverKit } from '@platforma-sdk/model';
-import { DownloadUrlDriver } from '@milaboratories/pl-drivers';
+import { DefaultVirtualLocalStorages, DownloadUrlDriver } from '@milaboratories/pl-drivers';
 import { V2RegistryProvider } from '../block_registry';
 import { Dispatcher, RetryAgent } from 'undici';
 
@@ -196,7 +196,7 @@ export class MiddleLayer {
   ): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = {
       ...DefaultMiddleLayerOpsSettings,
-      ...DefaultMiddleLayerOpsPaths(workdir),
+      ...(await DefaultMiddleLayerOpsPaths(workdir)),
       ..._ops
     };
 
