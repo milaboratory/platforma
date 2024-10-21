@@ -27,6 +27,7 @@ import {
 import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
 import { createLsFilesClient } from '../clients/helpers';
 import { validateAbsolute } from '../helpers/validate';
+import { DefaultVirtualLocalStorages } from './virtual_storages';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -161,8 +162,7 @@ export class LsDriver implements InternalLsDriver {
     const virtualStorages = [...this.virtualStoragesMap.values()].map((s) => ({
       name: s.name,
       handle: createLocalStorageHandle(s.name, s.root),
-      initialFullPath: s.initialPath,
-      isInitialPathHome: s.isInitialPathHome
+      initialFullPath: s.initialPath
     }));
 
     const otherStorages = Object.entries(this.storageIdToResourceId!).map(
@@ -234,12 +234,14 @@ export class LsDriver implements InternalLsDriver {
     logger: MiLogger,
     client: PlClient,
     signer: Signer,
-    virtualStorages: VirtualLocalStorageSpec[],
     /** Pl storages available locally */
     localProjections: LocalStorageProjection[],
-    openFileDialogCallback: OpenFileDialogCallback
+    openFileDialogCallback: OpenFileDialogCallback,
+    virtualStorages?: VirtualLocalStorageSpec[]
   ): Promise<LsDriver> {
     const lsClient = createLsFilesClient(client, logger);
+
+    if (!virtualStorages) virtualStorages = await DefaultVirtualLocalStorages();
 
     // validating inputs
     for (const vp of virtualStorages) validateAbsolute(vp.root);

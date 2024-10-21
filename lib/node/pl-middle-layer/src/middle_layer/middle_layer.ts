@@ -196,7 +196,7 @@ export class MiddleLayer {
   ): Promise<MiddleLayer> {
     const ops: MiddleLayerOps = {
       ...DefaultMiddleLayerOpsSettings,
-      ...(await DefaultMiddleLayerOpsPaths(workdir)),
+      ...DefaultMiddleLayerOpsPaths(workdir),
       ..._ops
     };
 

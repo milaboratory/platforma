@@ -11,34 +11,31 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
       {
         name: 'local',
         root: '/',
-        initialPath: home,
-        isInitialPathHome: true
+        initialPath: home
       }
     ];
+  else {
+    // determine the drive on which user's home folder is stored
+    const homeRoot = path.parse(home).root; // e.g. C:\
+    const homeDrive = homeRoot.replaceAll(':\\', ''); // e.g. C drive.
 
-  const homeRoot = path.parse(home).root; // e.g. C:\
-  const homeDrive = homeRoot.replaceAll(':\\', ''); // e.g. C drive.
-  const wmic = await util.promisify(exec)('wmic logicaldisk get name');
-  const drives = windowsDrives(wmic.stdout);
+    // code below inspired by
+    // https://stackoverflow.com/a/52411712/769192
 
-  return windowsStorages(drives, homeDrive, home);
-}
+    const wmic = await util.promisify(exec)('wmic logicaldisk get name');
+    // parsing wmic output
+    const drives = wmic.stdout
+      .split('\r\n')
+      .filter((line) => line.includes(':'))
+      .map((line) => line.trim().replaceAll(':', ''));
 
-export function windowsDrives(wmicStdout: string): string[] {
-  return wmicStdout
-    .split('\r\n')
-    .filter((line) => line.includes(':'))
-    .map((line) => line.trim().replaceAll(':', ''));
-}
-
-export function windowsStorages(drives: string[], homeDrive: string, home: string) {
-  return drives.map((d) => {
-    const isInitialPathHome = d == homeDrive;
-    return {
-      name: `local_disk_${d}`,
-      root: `${d}:\\`,
-      initialPath: isInitialPathHome ? home : `${d}:\\`,
-      isInitialPathHome
-    };
-  });
+    return drives.map((drive) => {
+      const isHomeDrive = drive == homeDrive;
+      return {
+        name: `local_disk_${drive}`,
+        root: `${drive}:\\`,
+        initialPath: isHomeDrive ? home : `${drive}:\\`
+      }
+    });
+  }
 }
