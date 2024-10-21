@@ -19,12 +19,34 @@ const props = withDefaults(
      * Determines whether the modal is open
      */
     modelValue: boolean;
+    /**
+     * css width (default value is `448px`)
+     */
     width?: string;
+    /**
+     * css height (default value is `auto`)
+     */
     height?: string;
+    /**
+     * css min-height (default value is `auto`)
+     */
     minHeight?: string;
+    /**
+     * @deprecated (do not use it)
+     */
     type?: 'A' | 'B' | 'C';
+    /**
+     * Enables a button to close the modal (default: `true`)
+     */
     closable?: boolean;
+    /**
+     * If `true` content gutters are removed
+     */
     noContentGutters?: boolean;
+    /**
+     * Actions slot has a top border (default: `true`)
+     */
+    actionsHasTopBorder?: boolean;
   }>(),
   {
     width: '448px',
@@ -33,6 +55,7 @@ const props = withDefaults(
     type: 'A',
     closable: true,
     noContentGutters: false,
+    actionsHasTopBorder: true,
   },
 );
 
@@ -71,7 +94,7 @@ useEventListener(document.body, 'keyup', (ev) => {
           <div class="pl-dialog-modal__content" :class="{ 'no-content-gutters': noContentGutters }">
             <slot />
           </div>
-          <div v-if="slots.actions" class="pl-dialog-modal__actions">
+          <div v-if="slots.actions" class="pl-dialog-modal__actions" :class="{ 'has-top-border': actionsHasTopBorder }">
             <slot name="actions" />
           </div>
         </div>

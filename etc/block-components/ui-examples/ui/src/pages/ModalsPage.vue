@@ -23,8 +23,9 @@ const data = reactive({
   item: '',
   dialogModal: false,
   slideModal: false,
-  title: false,
-  actions: false,
+  title: true,
+  actions: true,
+  actionsHasTopBorder: true,
   shadow: false,
   closeOnOutsideClick: true,
   fileHandle: undefined as ImportFileHandle | undefined,
@@ -48,17 +49,18 @@ const lorem = faker.lorem.paragraph(1000);
       </PlRow>
       <PlCheckbox v-model="data.shadow">Show shadow</PlCheckbox>
       <PlCheckbox v-model="data.closeOnOutsideClick">Close on outside click</PlCheckbox>
-      <template v-if="data.slideModal">
-        <PlCheckbox v-model="data.title">Show title</PlCheckbox>
-        <PlCheckbox v-model="data.actions">Show actions</PlCheckbox>
-      </template>
+      <PlCheckbox v-model="data.actionsHasTopBorder">Actions slot has top border</PlCheckbox>
+      <PlCheckbox v-model="data.title">Show title</PlCheckbox>
+      <PlCheckbox v-model="data.actions">Show actions</PlCheckbox>
     </PlContainer>
 
     <!--Dialog modal-->
-    <PlDialogModal v-model="data.dialogModal" :width="data.dialogWidth">
+    <PlDialogModal
+      v-model="data.dialogModal"
+      :width="data.dialogWidth"
+      :actions-has-top-border="data.actionsHasTopBorder"
+    >
       <template v-if="data.title" #title>My title</template>
-      <PlCheckbox v-model="data.title">Show title</PlCheckbox>
-      <PlCheckbox v-model="data.actions">Show actions</PlCheckbox>
       <PlTextField v-model="data.dialogWidth" label="Dialog width (css format: px, %)" />
       <template v-if="data.actions" #actions>
         <PlBtnPrimary>Save</PlBtnPrimary>
