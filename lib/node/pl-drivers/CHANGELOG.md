@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.3.3
+
+### Patch Changes
+
+- 4598cac: drivers: ls: more storages for Windows
+
 ## 1.3.2
 
 ### Patch Changes

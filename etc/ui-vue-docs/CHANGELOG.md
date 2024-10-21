@@ -1,5 +1,17 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.0
+
+### Minor Changes
+
+- 5d3bd9d: updated styles, added new sidebar, added documentation for components, added tsconfig with path for importing components.
+
+### Patch Changes
+
+- Updated dependencies [0bc5034]
+  - @milaboratories/uikit@1.2.23
+  - @platforma-sdk/ui-vue@1.7.7
+
 ## 0.0.7
 
 ### Patch Changes
