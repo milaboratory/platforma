@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.23
+
+### Patch Changes
+
+- 0bc5034: PlFileDialog: get a default storage by initialPathHome
+
 ## 1.2.22
 
 ### Patch Changes
