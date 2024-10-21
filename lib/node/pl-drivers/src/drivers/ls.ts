@@ -20,8 +20,7 @@ import {
   parseUploadHandle
 } from './helpers/ls_list_entry';
 import { createLocalStorageHandle, createRemoteStorageHandle, parseStorageHandle } from './helpers/ls_storage_entry';
-import { LocalStorageProjection } from './types';
-import * as os from 'node:os';
+import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
 import { createLsFilesClient } from '../clients/helpers';
 import { validateAbsolute } from '../helpers/validate';
 
@@ -41,31 +40,6 @@ export type OpenFileDialogCallback = (
   multipleFiles: boolean,
   ops?: OpenDialogOps
 ) => Promise<undefined | string[]>;
-
-/** Allows to add parts of local FS as virtual storages, presenting homogeneous API to UI */
-export type VirtualLocalStorageSpec = {
-  /** Virtual storage ID, must not intersect with other storage ids */
-  readonly name: string;
-
-  /** Local path to "chroot" the API in */
-  readonly root: string;
-
-  /** Used as hint to UI controls to, set as initial path during browsing */
-  readonly initialPath: string;
-};
-
-export function DefaultVirtualLocalStorages(): VirtualLocalStorageSpec[] {
-  const home = os.homedir();
-  return path.sep === '/'
-    ? [{ name: 'local', root: '/', initialPath: home }]
-    : [
-        {
-          name: 'local',
-          root: path.parse(home).root, // disk where home directory resides
-          initialPath: home
-        }
-      ];
-}
 
 export class LsDriver implements InternalLsDriver {
   private constructor(
@@ -180,18 +154,22 @@ export class LsDriver implements InternalLsDriver {
   }
 
   public async getStorageList(): Promise<sdk.StorageEntry[]> {
-    return [
-      ...[...this.virtualStoragesMap.values()].map((vs) => ({
-        name: vs.name,
-        handle: createLocalStorageHandle(vs.name, vs.root),
-        initialFullPath: vs.initialPath
-      })),
-      ...Object.entries(this.storageIdToResourceId!).map(([storageId, resourceId]) => ({
+    const virtualStorages = [...this.virtualStoragesMap.values()].map((s) => ({
+      name: s.name,
+      handle: createLocalStorageHandle(s.name, s.root),
+      initialFullPath: s.initialPath,
+      isInitialPathHome: s.isInitialPathHome
+    }));
+
+    const otherStorages = Object.entries(this.storageIdToResourceId!)
+      .map(([storageId, resourceId]) => ({
         name: storageId,
         handle: createRemoteStorageHandle(storageId, resourceId),
-        initialFullPath: '' // we don't have any additional information from where to start browsing remote storages
-      }))
-    ] as sdk.StorageEntry[];
+        initialFullPath: '', // we don't have any additional information from where to start browsing remote storages
+        isInitialPathHome: false
+      }));
+
+    return [...virtualStorages, ...otherStorages];
   }
 
   public async listFiles(
@@ -213,10 +191,12 @@ export class LsDriver implements InternalLsDriver {
     } else {
       if (path.sep === '/' && fullPath === '') fullPath = '/';
 
-      const lsRoot =
-        storageData.rootPath === ''
-          ? validateAbsolute(fullPath)
-          : path.join(storageData.rootPath, fullPath);
+      if (storageData.rootPath === '') {
+        validateAbsolute(fullPath);
+      }
+      const lsRoot = path.isAbsolute(fullPath)
+        ? fullPath
+        : path.join(storageData.rootPath, fullPath);
 
       const entries: LsEntry[] = [];
       for await (const dirent of await fsp.opendir(lsRoot)) {

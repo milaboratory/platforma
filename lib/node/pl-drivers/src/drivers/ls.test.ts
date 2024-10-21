@@ -1,11 +1,12 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
-import { DefaultVirtualLocalStorages, LsDriver } from './ls';
+import { LsDriver } from './ls';
 import { createLsFilesClient } from '../clients/helpers';
 import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { test, expect } from '@jest/globals';
 import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
+import { DefaultVirtualLocalStorages } from './virtual_storages';
 
 const assetsPath = path.resolve('../../../assets');
 
@@ -18,7 +19,7 @@ test('should ok when get all storages from ls driver', async () => {
       logger,
       client,
       signer,
-      DefaultVirtualLocalStorages(),
+      await DefaultVirtualLocalStorages(),
       [],
       () => {
         throw Error();
@@ -45,7 +46,7 @@ test('should ok when list files from remote storage in ls driver', async () => {
       logger,
       client,
       signer,
-      DefaultVirtualLocalStorages(),
+      await DefaultVirtualLocalStorages(),
       [],
       () => {
         throw Error();
@@ -87,7 +88,7 @@ test('should ok when list files from local storage in ls driver', async () => {
       logger,
       client,
       signer,
-      DefaultVirtualLocalStorages(),
+      await DefaultVirtualLocalStorages(),
       [],
       () => {
         throw Error();
@@ -111,7 +112,7 @@ test('should ok when list files from local storage in ls driver and correctly ap
       logger,
       client,
       signer,
-      DefaultVirtualLocalStorages(),
+      await DefaultVirtualLocalStorages(),
       [{ storageId: 'test_storage', localPath: path.join(assetsPath, 'ls_dir_structure_test') }],
       async () => [dialogRet]
     );
@@ -153,7 +154,7 @@ test('should ok when get file using local dialog, and read its content', async (
       logger,
       client,
       signer,
-      DefaultVirtualLocalStorages(),
+      await DefaultVirtualLocalStorages(),
       [],
       async () => [path.join(assetsPath, 'answer_to_the_ultimate_question.txt')]
     );
