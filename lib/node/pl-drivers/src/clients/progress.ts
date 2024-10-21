@@ -33,10 +33,7 @@ export class ClientProgress {
   close() {}
 
   /** getStatus gets a progress status by given rId and rType. */
-  async getStatus(
-    { id, type }: ResourceInfo,
-    options?: RpcOptions
-  ): Promise<ProgressStatus> {
+  async getStatus({ id, type }: ResourceInfo, options?: RpcOptions): Promise<ProgressStatus> {
     const status = await this.grpcClient.getStatus(
       { resourceId: id },
       addRTypeToMetadata(type, options)

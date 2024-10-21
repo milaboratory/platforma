@@ -5,6 +5,7 @@ import {
   createLsFilesClient,
   createUploadBlobClient,
   createUploadProgressClient,
+  DefaultVirtualLocalStorages,
   DownloadDriver,
   InternalLsDriver,
   LogsDriver,
@@ -61,7 +62,7 @@ export async function initDriverKit(
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = {
     ...DefaultDriverKitOpsSettings,
-    ...DefaultDriverKitOpsPaths(workdir),
+    ...DefaultDriverKitOpsPaths(workdir, await DefaultVirtualLocalStorages()),
     ..._ops
   };
 

@@ -17,11 +17,7 @@ import * as fsp from 'node:fs/promises';
 import * as fs from 'fs';
 import * as path from 'node:path';
 import { Writable } from 'node:stream';
-import {
-  ClientDownload,
-  UnknownStorageError,
-  WrongLocalFileUrl
-} from '../clients/download';
+import { ClientDownload, UnknownStorageError, WrongLocalFileUrl } from '../clients/download';
 import { ClientLogs } from '../clients/logs';
 import * as helper from './helpers/helpers';
 import * as readline from 'node:readline/promises';
@@ -66,9 +62,7 @@ export const OnDemandBlobResourceSnapshot = rsSchema({
   }
 });
 
-export type OnDemandBlobResourceSnapshot = InferSnapshot<
-  typeof OnDemandBlobResourceSnapshot
->;
+export type OnDemandBlobResourceSnapshot = InferSnapshot<typeof OnDemandBlobResourceSnapshot>;
 
 export type DownloadDriverOps = {
   /**
@@ -113,10 +107,7 @@ export class DownloadDriver implements BlobDriver {
     ops: DownloadDriverOps
   ) {
     this.cache = new FilesCache(ops.cacheSoftSizeBytes);
-    this.downloadQueue = new TaskProcessor(
-      this.logger,
-      ops.nConcurrentDownloads
-    );
+    this.downloadQueue = new TaskProcessor(this.logger, ops.nConcurrentDownloads);
 
     this.saveDir = path.resolve(saveDir);
   }
@@ -132,25 +123,16 @@ export class DownloadDriver implements BlobDriver {
   getDownloadedBlob(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx
-  ):
-    | Computable<LocalBlobHandleAndSize | undefined>
-    | LocalBlobHandleAndSize
-    | undefined {
-    if (ctx === undefined)
-      return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
+  ): Computable<LocalBlobHandleAndSize | undefined> | LocalBlobHandleAndSize | undefined {
+    if (ctx === undefined) return Computable.make((ctx) => this.getDownloadedBlob(res, ctx));
 
     const rInfo = treeEntryToResourceInfo(res, ctx);
 
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(rInfo.id, callerId));
 
-    const result = this.getDownloadedBlobNoCtx(
-      ctx.watcher,
-      rInfo as ResourceSnapshot,
-      callerId
-    );
-    if (result == undefined)
-      ctx.markUnstable('download blob is still undefined');
+    const result = this.getDownloadedBlobNoCtx(ctx.watcher, rInfo as ResourceSnapshot, callerId);
+    if (result == undefined) ctx.markUnstable('download blob is still undefined');
 
     return result;
   }
@@ -165,12 +147,8 @@ export class DownloadDriver implements BlobDriver {
   getOnDemandBlob(
     res: OnDemandBlobResourceSnapshot | PlTreeEntry,
     ctx?: ComputableCtx
-  ):
-    | ComputableStableDefined<RemoteBlobHandleAndSize>
-    | RemoteBlobHandleAndSize
-    | undefined {
-    if (ctx === undefined)
-      return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
+  ): ComputableStableDefined<RemoteBlobHandleAndSize> | RemoteBlobHandleAndSize | undefined {
+    if (ctx === undefined) return Computable.make((ctx) => this.getOnDemandBlob(res, ctx));
 
     const rInfo: OnDemandBlobResourceSnapshot = isPlTreeEntry(res)
       ? makeResourceSnapshot(res, OnDemandBlobResourceSnapshot, ctx)
@@ -188,9 +166,7 @@ export class DownloadDriver implements BlobDriver {
     return localHandleToPath(handle, this.signer);
   }
 
-  public async getContent(
-    handle: LocalBlobHandle | RemoteBlobHandle
-  ): Promise<Uint8Array> {
+  public async getContent(handle: LocalBlobHandle | RemoteBlobHandle): Promise<Uint8Array> {
     if (isLocalBlobHandle(handle)) return await read(this.getLocalPath(handle));
 
     if (!isRemoteBlobHandle(handle)) throw new Error('Malformed remote handle');
@@ -225,11 +201,7 @@ export class DownloadDriver implements BlobDriver {
     throw result.error;
   }
 
-  private setNewDownloadTask(
-    w: Watcher,
-    rInfo: ResourceSnapshot,
-    callerId: string
-  ) {
+  private setNewDownloadTask(w: Watcher, rInfo: ResourceSnapshot, callerId: string) {
     const fPath = this.getFilePath(rInfo.id);
     const result = new Download(
       this.clientDownload,
@@ -269,10 +241,7 @@ export class DownloadDriver implements BlobDriver {
 
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
-  getLastLogs(
-    res: ResourceInfo | PlTreeEntry,
-    lines: number
-  ): Computable<string | undefined>;
+  getLastLogs(res: ResourceInfo | PlTreeEntry, lines: number): Computable<string | undefined>;
   getLastLogs(
     res: ResourceInfo | PlTreeEntry,
     lines: number,
@@ -283,19 +252,13 @@ export class DownloadDriver implements BlobDriver {
     lines: number,
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
-    if (ctx == undefined)
-      return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
+    if (ctx == undefined) return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
     ctx.addOnDestroy(() => this.releaseBlob(r.id, callerId));
 
-    const result = this.getLastLogsNoCtx(
-      ctx.watcher,
-      r as ResourceSnapshot,
-      lines,
-      callerId
-    );
+    const result = this.getLastLogsNoCtx(ctx.watcher, r as ResourceSnapshot, lines, callerId);
     if (result == undefined)
       ctx.markUnstable('either a file was not downloaded or logs was not read');
 
@@ -344,9 +307,7 @@ export class DownloadDriver implements BlobDriver {
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
     if (ctx == undefined)
-      return Computable.make((ctx) =>
-        this.getProgressLog(res, patternToSearch, ctx)
-      );
+      return Computable.make((ctx) => this.getProgressLog(res, patternToSearch, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
@@ -359,9 +320,7 @@ export class DownloadDriver implements BlobDriver {
       callerId
     );
     if (result === undefined)
-      ctx.markUnstable(
-        'either a file was not downloaded or a progress log was not read'
-      );
+      ctx.markUnstable('either a file was not downloaded or a progress log was not read');
 
     return result;
   }
@@ -394,16 +353,12 @@ export class DownloadDriver implements BlobDriver {
   /** Returns an Id of a smart object, that can read logs directly from
    * the platform. */
   getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<AnyLogHandle>;
-  getLogHandle(
-    res: ResourceInfo | PlTreeEntry,
-    ctx: ComputableCtx
-  ): AnyLogHandle;
+  getLogHandle(res: ResourceInfo | PlTreeEntry, ctx: ComputableCtx): AnyLogHandle;
   getLogHandle(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx
   ): Computable<AnyLogHandle> | AnyLogHandle {
-    if (ctx == undefined)
-      return Computable.make((ctx) => this.getLogHandle(res, ctx));
+    if (ctx == undefined) return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
 
@@ -473,15 +428,14 @@ export class DownloadDriver implements BlobDriver {
           this.removeTask(
             task,
             `the task ${task.path} was removed` +
-            `from cache along with ${toDelete.map((d) => d.path)}`
+              `from cache along with ${toDelete.map((d) => d.path)}`
           );
         })
       );
     } else {
       // The task is still in a downloading queue.
       const deleted = task.counter.dec(callerId);
-      if (deleted)
-        this.removeTask(task, `the task ${task.path} was removed from cache`);
+      if (deleted) this.removeTask(task, `the task ${task.path} was removed from cache`);
     }
   }
 
@@ -566,11 +520,7 @@ class LastLinesGetter {
 
   async update(): Promise<void> {
     try {
-      const newLogs = await getLastLines(
-        this.path,
-        this.lines,
-        this.patternToSearch
-      );
+      const newLogs = await getLastLines(this.path, this.lines, this.patternToSearch);
 
       if (this.log != newLogs) this.change.markChanged();
       this.log = newLogs;
@@ -603,11 +553,7 @@ async function read(path: string): Promise<Uint8Array> {
 
 /** Gets last lines from a file by reading the file from the top and keeping
  * last N lines in a window queue. */
-function getLastLines(
-  fPath: PathLike,
-  nLines: number,
-  patternToSearch?: string
-): Promise<string> {
+function getLastLines(fPath: PathLike, nLines: number, patternToSearch?: string): Promise<string> {
   const inStream = fs.createReadStream(fPath);
   const outStream = new Writable();
 
@@ -616,8 +562,7 @@ function getLastLines(
 
     const lines = new Denque();
     rl.on('line', function (line) {
-      if (patternToSearch != undefined && !line.includes(patternToSearch))
-        return;
+      if (patternToSearch != undefined && !line.includes(patternToSearch)) return;
 
       lines.push(line);
       if (lines.length > nLines) {
@@ -657,9 +602,7 @@ export class Download {
   async download() {
     try {
       // TODO: move size bytes inside fileExists check like in download_url.
-      const { content, size } = await this.clientDownload.downloadBlob(
-        this.rInfo
-      );
+      const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
 
       if (!(await fileOrDirExists(path.dirname(this.path))))
         await fsp.mkdir(path.dirname(this.path), { recursive: true });
@@ -733,8 +676,7 @@ type PathLike = string;
 class DownloadAborted extends Error {}
 
 // https://regex101.com/r/kfnBVX/1
-const localHandleRegex =
-  /^blob\+local:\/\/download\/(?<path>.*)#(?<signature>.*)$/;
+const localHandleRegex = /^blob\+local:\/\/download\/(?<path>.*)#(?<signature>.*)$/;
 
 function isLocalBlobHandle(handle: string): handle is LocalBlobHandle {
   return Boolean(handle.match(localHandleRegex));
@@ -743,16 +685,11 @@ function isLocalBlobHandle(handle: string): handle is LocalBlobHandle {
 function localHandleToPath(handle: LocalBlobHandle, signer: Signer): string {
   const parsed = handle.match(localHandleRegex);
 
-  if (parsed === null)
-    throw new Error(`Local handle is malformed: ${handle}, matches: ${parsed}`);
+  if (parsed === null) throw new Error(`Local handle is malformed: ${handle}, matches: ${parsed}`);
 
   const { path, signature } = parsed.groups!;
 
-  signer.verify(
-    path,
-    signature,
-    `Signature verification failed for: ${handle}`
-  );
+  signer.verify(path, signature, `Signature verification failed for: ${handle}`);
 
   return path;
 }
@@ -769,24 +706,13 @@ function isRemoteBlobHandle(handle: string): handle is RemoteBlobHandle {
   return Boolean(handle.match(remoteHandleRegex));
 }
 
-function remoteHandleToData(
-  handle: RemoteBlobHandle,
-  signer: Signer
-): ResourceInfo {
+function remoteHandleToData(handle: RemoteBlobHandle, signer: Signer): ResourceInfo {
   const parsed = handle.match(remoteHandleRegex);
-  if (parsed === null)
-    throw new Error(
-      `Remote handle is malformed: ${handle}, matches: ${parsed}`
-    );
+  if (parsed === null) throw new Error(`Remote handle is malformed: ${handle}, matches: ${parsed}`);
 
-  const { content, resourceType, resourceVersion, resourceId, signature } =
-    parsed.groups!;
+  const { content, resourceType, resourceVersion, resourceId, signature } = parsed.groups!;
 
-  signer.verify(
-    content,
-    signature,
-    `Signature verification failed for ${handle}`
-  );
+  signer.verify(content, signature, `Signature verification failed for ${handle}`);
 
   return {
     id: bigintToResourceId(BigInt(resourceId)),
@@ -794,10 +720,7 @@ function remoteHandleToData(
   };
 }
 
-function dataToRemoteHandle(
-  rInfo: OnDemandBlobResourceSnapshot,
-  signer: Signer
-): RemoteBlobHandle {
+function dataToRemoteHandle(rInfo: OnDemandBlobResourceSnapshot, signer: Signer): RemoteBlobHandle {
   const content = `${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}`;
   return `blob+remote://download/${content}#${signer.sign(content)}` as RemoteBlobHandle;
 }

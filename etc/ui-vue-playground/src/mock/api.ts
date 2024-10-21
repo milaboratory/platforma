@@ -102,7 +102,8 @@ export function createMockApi<
           {
             name: 'local',
             handle: 'local://test',
-            initialFullPath: '/'
+            initialFullPath: '/',
+            isInitialPathHome: false
           }
         ];
       },

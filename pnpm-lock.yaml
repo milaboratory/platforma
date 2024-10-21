@@ -971,7 +971,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 1.6.1(@milaboratories/pl-model-common@lib+model+common)
+        version: 1.6.1(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -4408,6 +4408,9 @@ packages:
 
   enabled@2.0.0:
     resolution: {integrity: sha512-AKrN98kuwOzMIdAizXGI86UFBoo26CL21UM763y1h/GMSJ4/OHU9k2YlsmBpyScFo/wbLzWQJBMCW4+IO3/+OQ==}
+
+  encoding@0.1.13:
+    resolution: {integrity: sha512-ETBauow1T35Y/WZMkio9jiM0Z5xjHHmJ4XmjZOq1l/dXz3lr2sRn87nJy20RupqSh1F2m3HHPSp8ShIPQJrJ3A==}
 
   end-of-stream@1.4.4:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
@@ -8447,12 +8450,12 @@ snapshots:
       globby: 11.1.0
       read-yaml-file: 1.1.0
 
-  '@mapbox/node-pre-gyp@1.0.11':
+  '@mapbox/node-pre-gyp@1.0.11(encoding@0.1.13)':
     dependencies:
       detect-libc: 2.0.3
       https-proxy-agent: 5.0.1
       make-dir: 3.1.0
-      node-fetch: 2.7.0
+      node-fetch: 2.7.0(encoding@0.1.13)
       nopt: 5.0.0
       npmlog: 5.0.1
       rimraf: 3.0.2
@@ -8525,9 +8528,9 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@milaboratories/pframes-node@1.6.1(@milaboratories/pl-model-common@lib+model+common)':
+  '@milaboratories/pframes-node@1.6.1(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
-      '@mapbox/node-pre-gyp': 1.0.11
+      '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': 1.5.0
     transitivePeerDependencies:
@@ -10304,6 +10307,11 @@ snapshots:
 
   enabled@2.0.0: {}
 
+  encoding@0.1.13:
+    dependencies:
+      iconv-lite: 0.6.3
+    optional: true
+
   end-of-stream@1.4.4:
     dependencies:
       once: 1.4.0
@@ -11722,9 +11730,11 @@ snapshots:
       lower-case: 2.0.2
       tslib: 2.7.0
 
-  node-fetch@2.7.0:
+  node-fetch@2.7.0(encoding@0.1.13):
     dependencies:
       whatwg-url: 5.0.0
+    optionalDependencies:
+      encoding: 0.1.13
 
   node-int64@0.4.0: {}
 

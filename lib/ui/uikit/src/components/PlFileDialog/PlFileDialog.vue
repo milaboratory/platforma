@@ -230,7 +230,7 @@ const loadAvailableStorages = () => {
 
       if (props.autoSelectStorage) {
         tapIf(
-          storageEntries.find((e) => e.name === 'local'),
+          storageEntries.find((e) => e.isInitialPathHome),
           (entry) => {
             data.storageEntry = entry;
             data.dirPath = entry.initialFullPath;
