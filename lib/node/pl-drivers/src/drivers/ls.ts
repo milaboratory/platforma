@@ -19,7 +19,11 @@ import {
   parseIndexHandle,
   parseUploadHandle
 } from './helpers/ls_list_entry';
-import { createLocalStorageHandle, createRemoteStorageHandle, parseStorageHandle } from './helpers/ls_storage_entry';
+import {
+  createLocalStorageHandle,
+  createRemoteStorageHandle,
+  parseStorageHandle
+} from './helpers/ls_storage_entry';
 import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
 import { createLsFilesClient } from '../clients/helpers';
 import { validateAbsolute } from '../helpers/validate';
@@ -161,15 +165,22 @@ export class LsDriver implements InternalLsDriver {
       isInitialPathHome: s.isInitialPathHome
     }));
 
-    const otherStorages = Object.entries(this.storageIdToResourceId!)
-      .map(([storageId, resourceId]) => ({
+    const otherStorages = Object.entries(this.storageIdToResourceId!).map(
+      ([storageId, resourceId]) => ({
         name: storageId,
         handle: createRemoteStorageHandle(storageId, resourceId),
         initialFullPath: '', // we don't have any additional information from where to start browsing remote storages
         isInitialPathHome: false
-      }));
+      })
+    );
 
-    return [...virtualStorages, ...otherStorages];
+    // root must be a storage so we can index any file,
+    // but for UI it's enough
+    // to have local virtual storage on *nix,
+    // and local_disk_${drive} on Windows.
+    const noRoot = otherStorages.filter((it) => it.name !== 'root');
+
+    return [...virtualStorages, ...noRoot];
   }
 
   public async listFiles(

@@ -1,10 +1,7 @@
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {
-  ConsoleLoggerAdapter,
-  HmacSha256Signer
-} from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import {
   PlClient,
   PlTransaction,
@@ -18,10 +15,7 @@ import {
 } from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
-import {
-  DownloadDriver,
-  OnDemandBlobResourceSnapshot
-} from './download_and_logs_blob';
+import { DownloadDriver, OnDemandBlobResourceSnapshot } from './download_and_logs_blob';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
@@ -155,58 +149,46 @@ test.skip('should get the blob when releasing a blob, but a cache is big enough 
   });
 });
 
-async function makeDownloadableBlobFromAssets(
-  client: PlClient,
-  fileName: string
-) {
-  await client.withWriteTx(
-    'MakeAssetDownloadable',
-    async (tx: PlTransaction) => {
-      const importSettings = jsonToData({
-        path: fileName,
-        storageId: 'library'
-      });
-      const importer = tx.createStruct(
-        { name: 'BlobImportInternal', version: '1' },
-        importSettings
-      );
-      const importerBlob: FieldRef = {
-        resourceId: importer,
-        fieldName: 'blob'
-      };
+async function makeDownloadableBlobFromAssets(client: PlClient, fileName: string) {
+  await client.withWriteTx('MakeAssetDownloadable', async (tx: PlTransaction) => {
+    const importSettings = jsonToData({
+      path: fileName,
+      storageId: 'library'
+    });
+    const importer = tx.createStruct({ name: 'BlobImportInternal', version: '1' }, importSettings);
+    const importerBlob: FieldRef = {
+      resourceId: importer,
+      fieldName: 'blob'
+    };
 
-      const download = tx.createStruct({
-        name: 'BlobDownload',
-        version: '2'
-      });
-      const downloadBlob: FieldRef = {
-        resourceId: download,
-        fieldName: 'blob'
-      };
-      const downloadDownloadable: FieldRef = {
-        resourceId: download,
-        fieldName: 'downloadable'
-      };
+    const download = tx.createStruct({
+      name: 'BlobDownload',
+      version: '2'
+    });
+    const downloadBlob: FieldRef = {
+      resourceId: download,
+      fieldName: 'blob'
+    };
+    const downloadDownloadable: FieldRef = {
+      resourceId: download,
+      fieldName: 'downloadable'
+    };
 
-      const dynamicId: FieldId = {
-        resourceId: client.clientRoot,
-        fieldName: 'result'
-      };
+    const dynamicId: FieldId = {
+      resourceId: client.clientRoot,
+      fieldName: 'result'
+    };
 
-      tx.setField(downloadBlob, importerBlob);
-      tx.createField(dynamicId, 'Dynamic', downloadDownloadable);
-      await tx.commit();
-    }
-  );
+    tx.setField(downloadBlob, importerBlob);
+    tx.createField(dynamicId, 'Dynamic', downloadDownloadable);
+    await tx.commit();
+  });
 
   const [download, kv] = await poll(client, async (tx: PollTxAccessor) => {
     const root = await tx.get(client.clientRoot);
     const download = await root.get('result');
 
-    return [
-      download.data,
-      await download.getKValueObj<{ sizeBytes: string }>('ctl/file/blobInfo')
-    ];
+    return [download.data, await download.getKValueObj<{ sizeBytes: string }>('ctl/file/blobInfo')];
   });
 
   return {

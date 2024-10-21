@@ -9,11 +9,8 @@ test.skip('integration test, grpc upload blob should throw error on NOT_FOUND', 
     const logger = new ConsoleLoggerAdapter();
     const clientBlob = client.getDriver({
       name: 'UploadBlob',
-      init: (
-        pl: PlClient,
-        grpcTransport: GrpcTransport,
-        httpDispatcher: Dispatcher
-      ) => new ClientUpload(grpcTransport, httpDispatcher, client, logger)
+      init: (pl: PlClient, grpcTransport: GrpcTransport, httpDispatcher: Dispatcher) =>
+        new ClientUpload(grpcTransport, httpDispatcher, client, logger)
     });
 
     try {

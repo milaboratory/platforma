@@ -11,11 +11,7 @@ import {
   stringifyWithResourceId,
   ResourceId
 } from '@milaboratories/pl-client';
-import {
-  ConsoleLoggerAdapter,
-  HmacSha256Signer,
-  notEmpty
-} from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, HmacSha256Signer, notEmpty } from '@milaboratories/ts-helpers';
 import { scheduler } from 'node:timers/promises';
 import { Computable } from '@milaboratories/computable';
 import * as os from 'node:os';
@@ -47,17 +43,10 @@ test('should get all logs', async () => {
     );
     const logs = new LogsDriver(logsStream, download);
 
-    await createRunCommandWithStdoutStream(client, 'bash', [
-      '-c',
-      'echo 1; sleep 1; echo 2'
-    ]);
+    await createRunCommandWithStdoutStream(client, 'bash', ['-c', 'echo 1; sleep 1; echo 2']);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result')
-        ?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
       if (streamManager === undefined) {
         ctx.markUnstable('no stream manager');
         return;
@@ -100,11 +89,7 @@ test('should get last line with a prefix', async () => {
     const logs = new LogsDriver(logsStream, download);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result')
-        ?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
       if (streamManager === undefined) {
         ctx.markUnstable('no stream manager');
         return;
@@ -154,11 +139,7 @@ test('should get log smart object and get log lines from that', async () => {
     const logs = new LogsDriver(logsStream, download);
 
     const c = Computable.make((ctx) => {
-      const streamManager = ctx
-        .accessor(tree.entry())
-        .node()
-        .traverse('result')
-        ?.persist();
+      const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
       if (streamManager === undefined) {
         ctx.markUnstable('no stream manager');
         return;
@@ -167,10 +148,7 @@ test('should get log smart object and get log lines from that', async () => {
       return logs.getLogHandle(streamManager, ctx);
     });
 
-    await createRunCommandWithStdoutStream(client, 'bash', [
-      '-c',
-      'echo 1; sleep 1; echo 2'
-    ]);
+    await createRunCommandWithStdoutStream(client, 'bash', ['-c', 'echo 1; sleep 1; echo 2']);
 
     let handle = await c.getValue();
 
@@ -204,26 +182,23 @@ async function createRunCommandWithStdoutStream(
   cmd: string,
   args: string[]
 ): Promise<ResourceId> {
-  return await client.withWriteTx(
-    'CreateRunCommandWithStreaming',
-    async (tx: PlTransaction) => {
-      const wdFId: FieldRef = createWd(tx);
-      const workdirOut: FieldRef = createRunCommand(tx, wdFId, cmd, args);
-      const blobsOut: FieldRef = createWdSave(tx, workdirOut);
-      const downloadableFId = createDownloadableBlobFromStdout(tx, blobsOut);
-      const streamManagerId = createStreamManager(tx, wdFId, downloadableFId);
+  return await client.withWriteTx('CreateRunCommandWithStreaming', async (tx: PlTransaction) => {
+    const wdFId: FieldRef = createWd(tx);
+    const workdirOut: FieldRef = createRunCommand(tx, wdFId, cmd, args);
+    const blobsOut: FieldRef = createWdSave(tx, workdirOut);
+    const downloadableFId = createDownloadableBlobFromStdout(tx, blobsOut);
+    const streamManagerId = createStreamManager(tx, wdFId, downloadableFId);
 
-      const dynamicId: FieldId = {
-        resourceId: client.clientRoot,
-        fieldName: 'result'
-      };
-      tx.createField(dynamicId, 'Dynamic', streamManagerId);
+    const dynamicId: FieldId = {
+      resourceId: client.clientRoot,
+      fieldName: 'result'
+    };
+    tx.createField(dynamicId, 'Dynamic', streamManagerId);
 
-      await tx.commit();
+    await tx.commit();
 
-      return await streamManagerId.globalId;
-    }
-  );
+    return await streamManagerId.globalId;
+  });
 }
 
 function createWd(tx: PlTransaction): FieldRef {
@@ -268,11 +243,7 @@ function createRunCommand(
   tx.setField({ resourceId: runCmdId, fieldName: 'refs' }, refsId);
   setInputValue('cmd', { name: 'RunCommandCmd', version: '1' }, cmdData);
   setInputValue('args', { name: 'RunCommandArgs', version: '1' }, argsData);
-  setInputValue(
-    'options',
-    { name: 'run-command/options', version: '1' },
-    optsData
-  );
+  setInputValue('options', { name: 'run-command/options', version: '1' }, optsData);
 
   return { resourceId: runCmdId, fieldName: 'workdirOut' };
 }
@@ -295,10 +266,7 @@ function createWdSave(tx: PlTransaction, workdirOut: FieldRef): FieldRef {
   return { resourceId: wdSave, fieldName: 'blobsOut' };
 }
 
-function createDownloadableBlobFromStdout(
-  tx: PlTransaction,
-  blobsOut: FieldRef
-): FieldRef {
+function createDownloadableBlobFromStdout(tx: PlTransaction, blobsOut: FieldRef): FieldRef {
   const blobOut = tx.getFutureFieldValue(blobsOut, 'logs.txt', 'Input');
   const blobDownloadId = tx.createStruct({
     name: 'BlobDownload',
@@ -316,10 +284,7 @@ function createStreamManager(
 ): ResourceRef {
   const streamId = tx.createEphemeral({ name: 'CreateStream', version: '2' });
   tx.setField({ resourceId: streamId, fieldName: 'workdir' }, wdFId);
-  const filePathId = tx.createValue(
-    { name: 'json/string', version: '1' },
-    jsonToData('logs.txt')
-  );
+  const filePathId = tx.createValue({ name: 'json/string', version: '1' }, jsonToData('logs.txt'));
   tx.setField({ resourceId: streamId, fieldName: 'filePath' }, filePathId);
   const streamFId = { resourceId: streamId, fieldName: 'stream' };
 
@@ -327,10 +292,7 @@ function createStreamManager(
     name: 'StreamManager',
     version: '2'
   });
-  tx.setField(
-    { resourceId: streamManagerId, fieldName: 'downloadable' },
-    downloadableFId
-  );
+  tx.setField({ resourceId: streamManagerId, fieldName: 'downloadable' }, downloadableFId);
   tx.setField({ resourceId: streamManagerId, fieldName: 'stream' }, streamFId);
 
   return streamManagerId;

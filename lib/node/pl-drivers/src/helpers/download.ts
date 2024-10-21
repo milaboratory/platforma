@@ -28,7 +28,7 @@ export class DownloadHelper {
     const webBody = Readable.toWeb(body);
 
     if (statusCode != 200) {
-      const textBody = await text(webBody)
+      const textBody = await text(webBody);
       const beginning = textBody.substring(0, Math.min(textBody.length, 1000));
 
       if (400 <= statusCode && statusCode < 500) {
@@ -37,9 +37,7 @@ export class DownloadHelper {
         );
       }
 
-      throw new Error(
-        `Http error: statusCode: ${statusCode} url: ${url.toString()}`
-      );
+      throw new Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}`);
     }
 
     return {

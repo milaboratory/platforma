@@ -10,14 +10,18 @@ import { ClientDownload, parseLocalFileUrl } from '../clients/download';
 import { test, expect } from '@jest/globals';
 
 test('should parse local file url even on Windows', () => {
-  const url = "storage://main/67z%5C2vy%5C65i%5C67z2vy65i0xwhjwsfsef_ex3k3hxe7qdc2cvtdfkdnhdp9kwlt7-7dmcy0kthe6u.json";
-  const expectedFullPath = 'C:\\Users\\test\\67z\\2vy\\65i\\67z2vy65i0xwhjwsfsef_ex3k3hxe7qdc2cvtdfkdnhdp9kwlt7-7dmcy0kthe6u.json';
+  const url =
+    'storage://main/67z%5C2vy%5C65i%5C67z2vy65i0xwhjwsfsef_ex3k3hxe7qdc2cvtdfkdnhdp9kwlt7-7dmcy0kthe6u.json';
+  const expectedFullPath =
+    'C:\\Users\\test\\67z\\2vy\\65i\\67z2vy65i0xwhjwsfsef_ex3k3hxe7qdc2cvtdfkdnhdp9kwlt7-7dmcy0kthe6u.json';
 
-  const got = parseLocalFileUrl(url, new Map([['main', 'C:\\Users\\test']]))
-    .replace(path.sep, '\\'); // for testing on *nix systems
+  const got = parseLocalFileUrl(url, new Map([['main', 'C:\\Users\\test']])).replace(
+    path.sep,
+    '\\'
+  ); // for testing on *nix systems
 
   expect(got).toEqual(expectedFullPath);
-})
+});
 
 test('client download from a local file', async () => {
   await TestHelpers.withTempRoot(async (client) => {
