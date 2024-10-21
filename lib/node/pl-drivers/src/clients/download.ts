@@ -73,10 +73,10 @@ export class ClientDownload {
     return this.isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
       : await this.downloadHelper.downloadRemoteFile(
-        downloadUrl,
-        headersFromProto(headers),
-        signal
-      );
+          downloadUrl,
+          headersFromProto(headers),
+          signal
+        );
   }
 
   private isLocal = (url: string) => url.startsWith(storageProtocol);
@@ -93,10 +93,7 @@ export class ClientDownload {
   }
 }
 
-export function parseLocalFileUrl(
-  url: string,
-  localStorageIdsToRoot: Map<string, string>,
-): string {
+export function parseLocalFileUrl(url: string, localStorageIdsToRoot: Map<string, string>): string {
   const parsed = new URL(url);
   if (parsed.pathname == '')
     throw new WrongLocalFileUrl(`url for local filepath ${url} does not match url scheme`);

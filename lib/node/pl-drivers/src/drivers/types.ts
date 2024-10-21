@@ -39,3 +39,18 @@ export type LocalStorageProjection = {
    * */
   readonly localPath: string;
 };
+
+/** Allows to add parts of local FS as virtual storages, presenting homogeneous API to UI */
+export type VirtualLocalStorageSpec = {
+  /** Virtual storage ID, must not intersect with other storage ids */
+  readonly name: string;
+
+  /** Local path to "chroot" the API in */
+  readonly root: string;
+
+  /** Used as hint to UI controls to, set as initial path during browsing */
+  readonly initialPath: string;
+
+  /** Shows if the initial path is home, so this storage should be chosen by default. */
+  readonly isInitialPathHome: boolean;
+};

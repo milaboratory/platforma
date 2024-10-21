@@ -9,11 +9,7 @@ import { ResourceId } from '@milaboratories/pl-client';
 import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
-import {
-  PlTreeEntry,
-  ResourceInfo,
-  treeEntryToResourceInfo
-} from '@milaboratories/pl-tree';
+import { PlTreeEntry, ResourceInfo, treeEntryToResourceInfo } from '@milaboratories/pl-tree';
 import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
@@ -51,10 +47,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     );
   }
 
-  getLastLogs(
-    res: ResourceInfo | PlTreeEntry,
-    lines: number
-  ): Computable<string | undefined>;
+  getLastLogs(res: ResourceInfo | PlTreeEntry, lines: number): Computable<string | undefined>;
   getLastLogs(
     res: ResourceInfo | PlTreeEntry,
     lines: number,
@@ -65,8 +58,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     lines: number,
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
-    if (ctx == undefined)
-      return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
+    if (ctx == undefined) return Computable.make((ctx) => this.getLastLogs(res, lines, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
@@ -120,21 +112,14 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     ctx?: ComputableCtx
   ): Computable<string | undefined> | string | undefined {
     if (ctx == undefined)
-      return Computable.make((ctx) =>
-        this.getProgressLog(res, patternToSearch, ctx)
-      );
+      return Computable.make((ctx) => this.getProgressLog(res, patternToSearch, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
     const callerId = randomUUID();
     ctx.attacheHooks(this.hooks);
     ctx.addOnDestroy(() => this.releaseProgressLog(r.id, callerId));
 
-    const result = this.getProgressLogNoCtx(
-      ctx.watcher,
-      r,
-      patternToSearch,
-      callerId
-    );
+    const result = this.getProgressLogNoCtx(ctx.watcher, r, patternToSearch, callerId);
 
     ctx.markUnstable(
       'The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.'
@@ -152,12 +137,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     let logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
-      const newLogGetter = new LogGetter(
-        this.clientLogs,
-        rInfo,
-        1,
-        patternToSearch
-      );
+      const newLogGetter = new LogGetter(this.clientLogs, rInfo, 1, patternToSearch);
       this.idToProgressLog.set(rInfo.id, newLogGetter);
 
       logGetter = newLogGetter;
@@ -171,16 +151,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   }
 
   getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle>;
-  getLogHandle(
-    res: ResourceInfo | PlTreeEntry,
-    ctx: ComputableCtx
-  ): sdk.AnyLogHandle;
+  getLogHandle(res: ResourceInfo | PlTreeEntry, ctx: ComputableCtx): sdk.AnyLogHandle;
   getLogHandle(
     res: ResourceInfo | PlTreeEntry,
     ctx?: ComputableCtx
   ): Computable<sdk.AnyLogHandle> | sdk.AnyLogHandle {
-    if (ctx == undefined)
-      return Computable.make((ctx) => this.getLogHandle(res, ctx));
+    if (ctx == undefined) return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
     const r = treeEntryToResourceInfo(res, ctx);
 
@@ -219,12 +195,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     searchStr?: string | undefined
   ) {
     return await this.tryWithNotFound(handle, () =>
-      this.clientLogs.readText(
-        handleToData(handle),
-        lineCount,
-        BigInt(offsetBytes ?? 0),
-        searchStr
-      )
+      this.clientLogs.readText(handleToData(handle), lineCount, BigInt(offsetBytes ?? 0), searchStr)
     );
   }
 
@@ -233,9 +204,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     method: () => Promise<StreamingAPI_Response>
   ): Promise<sdk.StreamingApiResponse> {
     if (!isLiveLogHandle(handle))
-      throw new Error(
-        `Not live log handle was passed to live log driver, handle: ${handle}`
-      );
+      throw new Error(`Not live log handle was passed to live log driver, handle: ${handle}`);
 
     try {
       const resp = await method();
@@ -269,10 +238,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 
   private scheduledOnNextState: ScheduledRefresh[] = [];
 
-  private scheduleOnNextState(
-    resolve: () => void,
-    reject: (err: any) => void
-  ): void {
+  private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
     this.scheduledOnNextState.push({ resolve, reject });
   }
 
@@ -300,9 +266,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
       try {
         await asyncPool(
           this.opts.nConcurrentGetLogs,
-          this.getAllNotDoneLogs().map(
-            (getter) => async () => await getter.update()
-          )
+          this.getAllNotDoneLogs().map((getter) => async () => await getter.update())
         );
 
         toNotify.forEach((n) => n.resolve());
