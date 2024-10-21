@@ -3,17 +3,12 @@ import {
   MiLogger,
   TaskProcessor,
   notEmpty,
-  fileExists,
+  fileExists
 } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
 import { Writable, Transform } from 'node:stream';
-import {
-  ChangeSource,
-  Computable,
-  ComputableCtx,
-  Watcher
-} from '@milaboratories/computable';
+import { ChangeSource, Computable, ComputableCtx, Watcher } from '@milaboratories/computable';
 import { randomUUID, createHash } from 'node:crypto';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
@@ -63,10 +58,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
       nConcurrentDownloads: 50
     }
   ) {
-    this.downloadQueue = new TaskProcessor(
-      this.logger,
-      this.opts.nConcurrentDownloads
-    );
+    this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
     this.downloadHelper = new DownloadHelper(httpClient);
   }
@@ -148,11 +140,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
     } else {
       // The task is still in a downloading queue.
       const deleted = task.counter.dec(callerId);
-      if (deleted)
-        this.removeTask(
-          task,
-          `the task ${JSON.stringify(task)} was removed from cache`
-        );
+      if (deleted) this.removeTask(task, `the task ${JSON.stringify(task)} was removed from cache`);
     }
   }
 
@@ -165,10 +153,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
         await rmRFDir(task.path);
         this.cache.removeCache(task);
 
-        this.removeTask(
-          task,
-          `the task ${task} was released when the driver was closed`
-        );
+        this.removeTask(task, `the task ${task} was released when the driver was closed`);
       })
     );
   }
@@ -240,11 +225,7 @@ class Download {
       return await dirSize(this.path);
     }
 
-    const resp = await clientDownload.downloadRemoteFile(
-      this.url.toString(),
-      {},
-      signal
-    );
+    const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {}, signal);
     let content = resp.content;
 
     if (withGunzip) {

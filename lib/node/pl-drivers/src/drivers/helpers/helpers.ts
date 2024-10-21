@@ -73,9 +73,7 @@ export async function getStream(
   });
 }
 
-export type MixcrProgressResponse =
-  | { found: false }
-  | ({ found: true } & MixcrProgressLine);
+export type MixcrProgressResponse = { found: false } | ({ found: true } & MixcrProgressLine);
 
 export type MixcrProgressLine = {
   stage: string; // Building pre-clones from tag groups
@@ -86,8 +84,7 @@ export type MixcrProgressLine = {
 /** Is set by a template code.
  * Mixcr adds this prefix to every log line that contains a progress. */
 const mixcrProgressPrefix = '8C7#F1328%9E089B3D22';
-const mixcrProgressRegex =
-  /(?<stage>.*):\s*(?<progress>[\d.]+%)\s.*(?<eta>ETA:.*)/g;
+const mixcrProgressRegex = /(?<stage>.*):\s*(?<progress>[\d.]+%)\s.*(?<eta>ETA:.*)/g;
 
 export function lineToProgress(line: string): MixcrProgressLine | undefined {
   const noPrefix = line.replace(mixcrProgressPrefix, '');
@@ -111,13 +108,7 @@ export async function mixcrProgressFromLogs(
   client: ClientLogs,
   options?: RpcOptions
 ): Promise<MixcrProgressResponse> {
-  const lastLines = await client.lastLines(
-    rInfo,
-    1,
-    0n,
-    mixcrProgressPrefix,
-    options
-  );
+  const lastLines = await client.lastLines(rInfo, 1, 0n, mixcrProgressPrefix, options);
   if (lastLines.data == null || lastLines.data.length == 0) {
     return { found: false };
   }
