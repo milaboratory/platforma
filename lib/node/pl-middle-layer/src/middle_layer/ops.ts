@@ -120,11 +120,11 @@ export const DefaultDriverKitOpsSettings: Pick<
 };
 
 export function DefaultDriverKitOpsPaths(
-  workDir: string
+  workDir: string, virtualLocalStorages: VirtualLocalStorageSpec[],
 ): Pick<DriverKitOpsPaths, 'blobDownloadPath' | 'virtualLocalStorages'> {
   return {
     blobDownloadPath: path.join(workDir, 'download'),
-    virtualLocalStorages: DefaultVirtualLocalStorages()
+    virtualLocalStorages
   };
 }
 
@@ -180,14 +180,14 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   stagingRenderingRate: 5
 };
 
-export function DefaultMiddleLayerOpsPaths(
+export async function DefaultMiddleLayerOpsPaths(
   workDir: string
-): Pick<
+): Promise<Pick<
   MiddleLayerOpsPaths,
-  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
-> {
+keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
+>> {
   return {
-    ...DefaultDriverKitOpsPaths(workDir),
+    ...DefaultDriverKitOpsPaths(workDir, await DefaultVirtualLocalStorages()),
     frontendDownloadPath: path.join(workDir, 'frontend')
   };
 }
@@ -197,8 +197,8 @@ export type MiddleLayerOpsConstructor = Omit<
   keyof typeof DefaultMiddleLayerOpsSettings
 > &
   Partial<typeof DefaultMiddleLayerOpsSettings> &
-  Omit<MiddleLayerOpsPaths, keyof ReturnType<typeof DefaultMiddleLayerOpsPaths>> &
-  Partial<ReturnType<typeof DefaultMiddleLayerOpsPaths>>;
+  Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
+  Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;
 
 // /** Fields with default values are marked as optional here. */
 // export type MiddleLayerOpsConstructor = Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps> &
