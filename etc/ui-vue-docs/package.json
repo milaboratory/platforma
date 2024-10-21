@@ -15,11 +15,12 @@
     "vitepress": "catalog:"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.0.3",
     "@milaboratories/helpers": "workspace:^",
     "@milaboratories/uikit": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@platforma-sdk/ui-vue": "workspace:^",
-    "vue": "catalog:",
-    "highlight.js": "catalog:"
+    "highlight.js": "catalog:",
+    "vue": "catalog:"
   }
 }
