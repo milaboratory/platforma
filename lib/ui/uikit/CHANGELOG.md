@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.25
+
+### Patch Changes
+
+- 9dae9aa: migration to new LS SDK model
+
 ## 1.2.24
 
 ### Patch Changes

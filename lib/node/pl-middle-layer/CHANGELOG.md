@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.13.6
+
+### Patch Changes
+
+- 9dae9aa: migration to new LS SDK model
+- Updated dependencies [9dae9aa]
+- Updated dependencies [9dae9aa]
+- Updated dependencies [9dae9aa]
+  - @milaboratories/pl-drivers@1.3.4
+  - @milaboratories/pl-local@1.4.3
+  - @milaboratories/pl-model-common@1.5.0
+  - @milaboratories/pl-model-middle-layer@1.5.3
+  - @platforma-sdk/model@1.7.9
+  - @platforma-sdk/block-tools@2.3.17
+
 ## 1.13.5
 
 ### Patch Changes
