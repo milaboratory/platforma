@@ -34,7 +34,6 @@ export type StorageEntry = {
   name: string;
   handle: StorageHandle;
   initialFullPath: string;
-  isInitialPathHome: boolean;
 
   // TODO
   // pathStartsWithDisk

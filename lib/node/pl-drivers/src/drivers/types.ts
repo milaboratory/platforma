@@ -50,7 +50,4 @@ export type VirtualLocalStorageSpec = {
 
   /** Used as hint to UI controls to, set as initial path during browsing */
   readonly initialPath: string;
-
-  /** Shows if the initial path is home, so this storage should be chosen by default. */
-  readonly isInitialPathHome: boolean;
 };

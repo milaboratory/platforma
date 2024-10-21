@@ -2,16 +2,13 @@ import { PlClient } from '@milaboratories/pl-client';
 import {
   createDownloadClient,
   createLogsClient,
-  createLsFilesClient,
   createUploadBlobClient,
   createUploadProgressClient,
-  DefaultVirtualLocalStorages,
   DownloadDriver,
   InternalLsDriver,
   LogsDriver,
   LogsStreamDriver,
   LsDriver,
-  OpenFileDialogCallback,
   UploadDriver
 } from '@milaboratories/pl-drivers';
 import * as Sdk from '@milaboratories/pl-model-common';
@@ -62,7 +59,7 @@ export async function initDriverKit(
 ): Promise<MiddleLayerDriverKit> {
   const ops: DriverKitOps = {
     ...DefaultDriverKitOpsSettings,
-    ...DefaultDriverKitOpsPaths(workdir, await DefaultVirtualLocalStorages()),
+    ...DefaultDriverKitOpsPaths(workdir),
     ..._ops
   };
 
@@ -94,9 +91,9 @@ export async function initDriverKit(
     ops.logger,
     pl,
     signer,
-    ops.virtualLocalStorages,
     ops.localProjections,
-    ops.openFileDialogCallback
+    ops.openFileDialogCallback,
+    ops.virtualLocalStoragesOverride
   );
 
   const pFrameDriver = new PFrameDriver(blobDriver);

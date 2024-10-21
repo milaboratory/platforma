@@ -30,8 +30,11 @@ export type DriverKitOpsPaths = {
    * */
   readonly localProjections: LocalStorageProjection[];
 
-  /** List of virtual storages that will allow homogeneous access to local FSs through LS API. */
-  readonly virtualLocalStorages: VirtualLocalStorageSpec[];
+  /**
+   * List of virtual storages that will allow homogeneous access to local FSs through LS API.
+   * If undefined, default list will be created.
+   * */
+  readonly virtualLocalStoragesOverride?: VirtualLocalStorageSpec[];
 };
 
 /** Options required to initialize full set of middle layer driver kit */
@@ -120,11 +123,10 @@ export const DefaultDriverKitOpsSettings: Pick<
 };
 
 export function DefaultDriverKitOpsPaths(
-  workDir: string, virtualLocalStorages: VirtualLocalStorageSpec[],
-): Pick<DriverKitOpsPaths, 'blobDownloadPath' | 'virtualLocalStorages'> {
+  workDir: string
+): Pick<DriverKitOpsPaths, 'blobDownloadPath'> {
   return {
-    blobDownloadPath: path.join(workDir, 'download'),
-    virtualLocalStorages
+    blobDownloadPath: path.join(workDir, 'download')
   };
 }
 
@@ -180,14 +182,14 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   stagingRenderingRate: 5
 };
 
-export async function DefaultMiddleLayerOpsPaths(
+export function DefaultMiddleLayerOpsPaths(
   workDir: string
-): Promise<Pick<
+): Pick<
   MiddleLayerOpsPaths,
-keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
->> {
+  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | 'frontendDownloadPath'
+> {
   return {
-    ...DefaultDriverKitOpsPaths(workDir, await DefaultVirtualLocalStorages()),
+    ...DefaultDriverKitOpsPaths(workDir),
     frontendDownloadPath: path.join(workDir, 'frontend')
   };
 }
@@ -199,7 +201,3 @@ export type MiddleLayerOpsConstructor = Omit<
   Partial<typeof DefaultMiddleLayerOpsSettings> &
   Omit<MiddleLayerOpsPaths, keyof Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>> &
   Partial<Awaited<ReturnType<typeof DefaultMiddleLayerOpsPaths>>>;
-
-// /** Fields with default values are marked as optional here. */
-// export type MiddleLayerOpsConstructor = Omit<MiddleLayerOps, keyof typeof DefaultMiddleLayerOps> &
-//   Partial<typeof DefaultMiddleLayerOps>;
