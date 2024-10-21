@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "paths": {
+            "@app-components/*": [
+                "./.vitepress/app-components/*"
+            ]
+        }
+    },
+    "include": [
+        ".vitepress/**/*.ts",
+        ".vitepress/**/*.tsx",
+        ".vitepress/**/*.vue"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}

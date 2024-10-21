@@ -461,6 +461,9 @@ importers:
 
   etc/ui-vue-docs:
     dependencies:
+      '@faker-js/faker':
+        specifier: ^9.0.3
+        version: 9.0.3
       '@milaboratories/helpers':
         specifier: workspace:^
         version: link:../../lib/util/helpers
@@ -2714,6 +2717,10 @@ packages:
   '@faker-js/faker@8.4.1':
     resolution: {integrity: sha512-XQ3cU+Q8Uqmrbf2e0cIC/QN43sTBSC8KF12u29Mb47tWrt2hAgBXSgpZMj4Ao8Uk0iJcU99QsOCaIL8934obCg==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0, npm: '>=6.14.13'}
+
+  '@faker-js/faker@9.0.3':
+    resolution: {integrity: sha512-lWrrK4QNlFSU+13PL9jMbMKLJYXDFu3tQfayBsMXX7KL/GiQeqfB1CzHkqD5UHBUtPAuPo6XwGbMFNdVMZObRA==}
+    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   '@grpc/grpc-js@1.12.0':
     resolution: {integrity: sha512-eWdP97A6xKtZXVP/ze9y8zYRB2t6ugQAuLXFuZXAsyqmyltaAjl4yPkmIfc0wuTFJMOUF1AdvIFQCL7fMtaX6g==}
@@ -8092,6 +8099,8 @@ snapshots:
   '@eslint/js@8.57.1': {}
 
   '@faker-js/faker@8.4.1': {}
+
+  '@faker-js/faker@9.0.3': {}
 
   '@grpc/grpc-js@1.12.0':
     dependencies:
