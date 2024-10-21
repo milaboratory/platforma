@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.13.5
+
+### Patch Changes
+
+- 4598cac: drivers: ls: more storages for Windows
+- Updated dependencies [4598cac]
+  - @milaboratories/pl-drivers@1.3.3
+
 ## 1.13.4
 
 ### Patch Changes
