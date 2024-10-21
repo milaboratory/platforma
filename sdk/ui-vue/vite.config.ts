@@ -15,7 +15,21 @@ export default defineConfig({
       fileName: 'lib',
     },
     rollupOptions: {
-      external: ['vue'],
+      external: [
+        'vue',
+        '@ag-grid-community/core',
+        '@ag-grid-community/client-side-row-model',
+        '@ag-grid-community/infinite-row-model',
+        '@ag-grid-community/styles',
+        '@ag-grid-community/vue3',
+        '@ag-grid-community/csv-export',
+        '@ag-grid-enterprise/core',
+        '@ag-grid-enterprise/clipboard',
+        '@ag-grid-enterprise/range-selection',
+        '@ag-grid-enterprise/rich-select',
+        '@ag-grid-enterprise/menu',
+        '@ag-grid-enterprise/excel-export',
+      ],
       output: {
         globals: {
           vue: 'Vue',
