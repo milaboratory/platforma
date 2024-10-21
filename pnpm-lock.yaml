@@ -12,6 +12,9 @@ catalogs:
     '@ag-grid-community/core':
       specifier: ^32.2.2
       version: 32.2.2
+    '@ag-grid-community/csv-export':
+      specifier: ^32.2.2
+      version: 32.2.2
     '@ag-grid-community/infinite-row-model':
       specifier: ^32.2.2
       version: 32.2.2
@@ -27,7 +30,16 @@ catalogs:
     '@ag-grid-enterprise/core':
       specifier: ^32.2.2
       version: 32.2.2
+    '@ag-grid-enterprise/excel-export':
+      specifier: ^32.2.2
+      version: 32.2.2
+    '@ag-grid-enterprise/menu':
+      specifier: ^32.2.2
+      version: 32.2.2
     '@ag-grid-enterprise/range-selection':
+      specifier: ^32.2.2
+      version: 32.2.2
+    '@ag-grid-enterprise/rich-select':
       specifier: ^32.2.2
       version: 32.2.2
     '@aws-sdk/client-s3':
@@ -1325,26 +1337,13 @@ importers:
 
   sdk/ui-vue:
     dependencies:
-      '@milaboratories/uikit':
-        specifier: workspace:^
-        version: link:../../lib/ui/uikit
-      '@platforma-sdk/model':
-        specifier: workspace:^
-        version: link:../model
-      canonicalize:
-        specifier: 'catalog:'
-        version: 2.0.0
-      lru-cache:
-        specifier: 'catalog:'
-        version: 11.0.1
-      vue:
-        specifier: 'catalog:'
-        version: 3.5.11(typescript@5.5.4)
-    devDependencies:
       '@ag-grid-community/client-side-row-model':
         specifier: 'catalog:'
         version: 32.2.2
       '@ag-grid-community/core':
+        specifier: 'catalog:'
+        version: 32.2.2
+      '@ag-grid-community/csv-export':
         specifier: 'catalog:'
         version: 32.2.2
       '@ag-grid-community/infinite-row-model':
@@ -1362,9 +1361,34 @@ importers:
       '@ag-grid-enterprise/core':
         specifier: 'catalog:'
         version: 32.2.2
+      '@ag-grid-enterprise/excel-export':
+        specifier: 'catalog:'
+        version: 32.2.2
+      '@ag-grid-enterprise/menu':
+        specifier: 'catalog:'
+        version: 32.2.2
       '@ag-grid-enterprise/range-selection':
         specifier: 'catalog:'
         version: 32.2.2
+      '@ag-grid-enterprise/rich-select':
+        specifier: 'catalog:'
+        version: 32.2.2
+      '@milaboratories/uikit':
+        specifier: workspace:^
+        version: link:../../lib/ui/uikit
+      '@platforma-sdk/model':
+        specifier: workspace:^
+        version: link:../model
+      canonicalize:
+        specifier: 'catalog:'
+        version: 2.0.0
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.0.1
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.11(typescript@5.5.4)
+    devDependencies:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 8.4.1
@@ -1868,11 +1892,29 @@ packages:
   '@ag-grid-enterprise/clipboard@32.2.2':
     resolution: {integrity: sha512-uw7kBiy1RvrtzUXEeIjeVQ3UfhO7lpArwyMNJG3QFM9EhJGLd6suRE1HNRBNTc9ugA1l6kIMagooGfu3aAbJvw==}
 
+  '@ag-grid-enterprise/column-tool-panel@32.2.2':
+    resolution: {integrity: sha512-aKAmcrvZ+PZ325O4qCDR4Q7ZNuSJJVlatKm+mXQsbaxBMi8h9DR8pSTV36n9ji6To9ieycEzhg8HhA2M8WcJGg==}
+
   '@ag-grid-enterprise/core@32.2.2':
     resolution: {integrity: sha512-0aUkBDIAGQAlNta13hX4ThgJ020LGN6Xfm5hUiRCSt1GC060H+GJVpfoc/VoFqa3VVr0BBdSZnXVTV5GX2UD2A==}
 
+  '@ag-grid-enterprise/excel-export@32.2.2':
+    resolution: {integrity: sha512-smCT8hmT8OIvHeR+0sKq5S8fEzBkX7v5mJo9l0wBQKC3mr1XcmDrkrdRBVTT6VOVlxs2+JJjdNa6mSbnL+BERg==}
+
+  '@ag-grid-enterprise/menu@32.2.2':
+    resolution: {integrity: sha512-+APS39cPLOc7oAjn28983qGLcrUIitUa5EgA85bhR9sydyniqgpfmw2HARw8qj2tXpuKuZaPAQ3WLF9ij4qHAw==}
+
   '@ag-grid-enterprise/range-selection@32.2.2':
     resolution: {integrity: sha512-No6Xts7WL0NA4cscwZsLZ/mrMlidxj6nGCGslurKj6duaGvSdgoIsUf/I+Cd8Aa2pOosvUHKSFHELjDvZZsKzg==}
+
+  '@ag-grid-enterprise/rich-select@32.2.2':
+    resolution: {integrity: sha512-jqr+tTw3M7kSU7/vbqAU/j4d5for7XGtRWLRxe2Alpg60lbunp+KZ3txbHmokmpl3owvW4qL4dDsjVvxLgPkYg==}
+
+  '@ag-grid-enterprise/row-grouping@32.2.2':
+    resolution: {integrity: sha512-2Ga21ESuVDqbJvruCXrH2hb4Zx5OmooGEWI48povJMSXEFgwYq35zDtMmmSXTTabzZMSWOQJ8/XiSOUnZjrOBA==}
+
+  '@ag-grid-enterprise/side-bar@32.2.2':
+    resolution: {integrity: sha512-bPHVhklzQW9LgGLrgsYBuj8NEcvnMlYbCUD/v18jd3nPFH0n0VkqX7ukKIPdBiNkfaF7xeNdmruw1plf1/p0/Q==}
 
   '@algolia/autocomplete-core@1.9.3':
     resolution: {integrity: sha512-009HdfugtGCdC4JdXUbVJClA0q0zh24yyePn+KUGk3rP7j8FEe/m5Yo/z65gn6nP/cM39PxpzqKrL7A6fP6PPw==}
@@ -2692,7 +2734,6 @@ packages:
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
     engines: {node: '>=10.10.0'}
-    deprecated: Use @eslint/config-array instead
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -2700,7 +2741,6 @@ packages:
 
   '@humanwhocodes/object-schema@2.0.3':
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
-    deprecated: Use @eslint/object-schema instead
 
   '@inquirer/confirm@3.2.0':
     resolution: {integrity: sha512-oOIwPs0Dvq5220Z8lGL/6LHRTEr9TgLHmiI99Rj1PJ1p1czTys+olrgBqZk4E2qC0YTzeHprxSQmoHioVdJ7Lw==}
@@ -3805,7 +3845,6 @@ packages:
   are-we-there-yet@2.0.0:
     resolution: {integrity: sha512-Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer supported.
 
   arg@4.1.3:
     resolution: {integrity: sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA==}
@@ -4447,7 +4486,6 @@ packages:
   eslint@8.57.1:
     resolution: {integrity: sha512-ypowyDxpVSYpkXr9WPv2PAZCtNip1Mv5KTW0SCurXv/9iOpcrH9PaqUElksqEB6pChqHGDRCFTyrZlGhnLNGiA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
-    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   espree@9.6.1:
@@ -4630,7 +4668,6 @@ packages:
   gauge@3.0.2:
     resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer supported.
 
   gensync@1.0.0-beta.2:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
@@ -4682,7 +4719,6 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
 
   globals@11.12.0:
     resolution: {integrity: sha512-WOBp/EEGUiIsJSp7wcv/y6MO+lV9UoncWqxuFfm8eBwzWNgyfBd6Gz+IeKQ9jCmyhoH99g15M3T+QaVHFjizVA==}
@@ -4842,7 +4878,6 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
-    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -5483,7 +5518,6 @@ packages:
 
   npmlog@5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
-    deprecated: This package is no longer supported.
 
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
@@ -5864,7 +5898,6 @@ packages:
 
   rimraf@3.0.2:
     resolution: {integrity: sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==}
-    deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
   rimraf@5.0.10:
@@ -6818,11 +6851,45 @@ snapshots:
       '@ag-grid-community/csv-export': 32.2.2
       '@ag-grid-enterprise/core': 32.2.2
 
+  '@ag-grid-enterprise/column-tool-panel@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+      '@ag-grid-enterprise/row-grouping': 32.2.2
+      '@ag-grid-enterprise/side-bar': 32.2.2
+
   '@ag-grid-enterprise/core@32.2.2':
     dependencies:
       '@ag-grid-community/core': 32.2.2
 
+  '@ag-grid-enterprise/excel-export@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-community/csv-export': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+
+  '@ag-grid-enterprise/menu@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-enterprise/column-tool-panel': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+
   '@ag-grid-enterprise/range-selection@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+
+  '@ag-grid-enterprise/rich-select@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+
+  '@ag-grid-enterprise/row-grouping@32.2.2':
+    dependencies:
+      '@ag-grid-community/core': 32.2.2
+      '@ag-grid-enterprise/core': 32.2.2
+
+  '@ag-grid-enterprise/side-bar@32.2.2':
     dependencies:
       '@ag-grid-community/core': 32.2.2
       '@ag-grid-enterprise/core': 32.2.2
