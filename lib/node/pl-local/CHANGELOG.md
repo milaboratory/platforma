@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.4.3
+
+### Patch Changes
+
+- 9dae9aa: pl upgrade to 1.14.12
+
 ## 1.4.2
 
 ### Patch Changes

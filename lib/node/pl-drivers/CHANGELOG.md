@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.3.4
+
+### Patch Changes
+
+- 9dae9aa: migration to new LS SDK model
+- Updated dependencies [9dae9aa]
+  - @milaboratories/pl-model-common@1.5.0
+
 ## 1.3.3
 
 ### Patch Changes
