@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.24
+
+### Patch Changes
+
+- 485f533: Fix PlDialogModal styles
+
 ## 1.2.23
 
 ### Patch Changes
