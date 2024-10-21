@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.35
+
+### Patch Changes
+
+- 485f533: Fix PlDialogModal styles
+  - @platforma-sdk/ui-vue@1.7.8
+
 ## 1.0.34
 
 ### Patch Changes
