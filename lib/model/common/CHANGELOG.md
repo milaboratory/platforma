@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.5.0
+
+### Minor Changes
+
+- 9dae9aa: removed isInitialPathHome flag
+
 ## 1.4.0
 
 ### Minor Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.36
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.9
+- @milaboratories/milaboratories.ui-examples.ui@1.0.36
+- @milaboratories/milaboratories.ui-examples.model@1.0.18
+
 ## 1.0.35
 
 ### Patch Changes
