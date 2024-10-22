@@ -4,9 +4,6 @@
  * See installation docs at https://www.ag-grid.com/javascript-data-grid/applying-theme-builder-styling-grid/
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400&display=swap');
-
-
 :where(.ag-root-wrapper, .ag-measurement-container, .ag-apply-theme-variables, .ag-popup) {
 	--ag-background-color: var(--ag-inherited-background-color, #FFF);
 	--ag-foreground-color: var(--ag-inherited-foreground-color, #181d1f);
@@ -25,10 +22,10 @@
 	--ag-pinned-column-border: var(--ag-inherited-pinned-column-border, solid 1px var(--ag-border-color));
 	--ag-pinned-row-border: var(--ag-inherited-pinned-row-border, solid 1px var(--ag-border-color));
 	--ag-side-panel-border: var(--ag-inherited-side-panel-border, solid 1px var(--ag-border-color));
-	--ag-font-family: var(--ag-inherited-font-family, Manrope);
+	--ag-font-family: var(--ag-inherited-font-family, var(--font-family-base, Manrope));
 	--ag-chrome-background-color: var(--ag-inherited-chrome-background-color, color-mix(in srgb, transparent, var(--ag-foreground-color) 2%));
 	--ag-header-background-color: var(--ag-inherited-header-background-color, #F7F8FA);
-	--ag-header-font-family: var(--ag-inherited-header-font-family, var(--ag-font-family));
+	--ag-header-font-family:  var(--ag-inherited-header-font-family, var(--ag-font-family));
 	--ag-header-font-weight: var(--ag-inherited-header-font-weight, 600);
 	--ag-header-font-size: var(--ag-inherited-header-font-size, 14px);
 	--ag-header-text-color: var(--ag-inherited-header-text-color, #110529);

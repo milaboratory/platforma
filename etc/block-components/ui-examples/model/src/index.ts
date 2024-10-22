@@ -24,6 +24,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/typography', label: 'Typography' },
+      { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
     ];
   })
 

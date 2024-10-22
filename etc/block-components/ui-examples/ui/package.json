@@ -23,6 +23,9 @@
     "vue-tsc": "catalog:",
     "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:^",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@ag-grid-community/vue3": "catalog:",
+    "@ag-grid-community/client-side-row-model": "catalog:",
+    "@ag-grid-community/core": "catalog:"
   }
 }

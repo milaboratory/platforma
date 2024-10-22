@@ -22,7 +22,7 @@ const href = computed(() => (sdk.loaded ? sdk.useApp().href : undefined));
 const CurrentView = computed(() => {
   if (sdk.loaded) {
     const app = sdk.useApp();
-    const pathname = parsePathname(app.navigationState.href);
+    const pathname = parsePathname(app.snapshot.navigationState.href);
     return pathname ? app.routes[pathname] : undefined;
   }
 
