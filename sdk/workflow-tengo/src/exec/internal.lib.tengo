@@ -1,3 +1,10 @@
+/**
+ * Internal 'exec' module library.
+ *
+ * NOT INTENDEND FOR USE OUTSIDE 'exec' MODULE.
+ * May completely change API from release to release.
+ */
+
 ll := import(":ll")
 json := import("json")
 times := import("times")

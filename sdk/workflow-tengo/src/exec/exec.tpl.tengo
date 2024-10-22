@@ -1,5 +1,3 @@
-// exec.tpl
-
 /**
  * Creates and fill a workdir, runs a command on it
  * and saves a chosen resulted files from this dir.
