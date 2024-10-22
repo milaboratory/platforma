@@ -44,6 +44,33 @@ a {
   color: var(--txt-focus);
 }
 
+p {
+  font-weight: 500;
+}
+
+// @TODO (non-standard tags)
+caps {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.52px;
+  text-transform: uppercase;
+}
+
+des {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+mark {
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: #D7F5C9;
+  line-height: 20px;
+}
+
 code {
   font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
   /* Text/Monospace M */
@@ -51,6 +78,14 @@ code {
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
+  line-height: 20px;
+}
+
+blockquote {
+  border-left: 1px solid var(--border-color-default);
+  margin: 0;
+  padding: 0 16px;
+  font-weight: 500;
   line-height: 20px;
 }
 
