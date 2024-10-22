@@ -82,7 +82,7 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 	}
 
 	venv := venvBuilder.
-		cache(24 * times.hour).
+		cache(7 * 24 * times.hour).
 		build().
 		venv()
 
