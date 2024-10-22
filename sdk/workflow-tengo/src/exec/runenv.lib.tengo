@@ -171,7 +171,7 @@ pythonVenv := func() {
 			ll.assert(
 				is_int(time),
 				"cache time must be an integer. " +
-					"Did you forget to import a standard tengo library 'time'?")
+					"Did you forget to import a standard tengo library 'times'?")
 			cache = time
 			return self
 		},
@@ -192,7 +192,7 @@ pythonVenv := func() {
 
 			validation.assertJsonSchema(pyVenvInputs, pythonVenvInputSchema, "incomplete python runenv configuration")
 
-			tpl := render.create(assets.importTemplate(":exec.create-python-venv"), pyVenvInputs)
+			tpl := render.create(assets.importTemplate(":exec.python.create-venv"), pyVenvInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
