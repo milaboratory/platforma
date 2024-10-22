@@ -8,7 +8,7 @@ file := import("@platforma-sdk/workflow-tengo:file")
 
 self.defineOutputs(["main"])
 
-sw := assets.importSoftware("@milaboratories/software-small-binaries:hello-world")
+sw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:hello-world")
 
 self.body(func(inputs) {
 	run := exec.builder().

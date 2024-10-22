@@ -158,7 +158,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@milaboratories/software-small-binaries': ^1.11.2
+  '@platforma-open/milaboratories.software-small-binaries': ^1.13.2
 
   # Test
 
