@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.26
+
+### Patch Changes
+
+- 2c914cc: add the Typography example page to the ui-examples block
+
 ## 1.2.25
 
 ### Patch Changes
