@@ -230,9 +230,11 @@ const loadAvailableStorages = () => {
 
       if (props.autoSelectStorage) {
         tapIf(
-          storageEntries.find((e) =>
-            e.name === 'local' // the only local storage on unix systems
-            || (e.name.startsWith('local_disk_') && e.initialFullPath.length > 4)), // local drive where home folder is stored, normally C:\
+          storageEntries.find(
+            (e) =>
+              e.name === 'local' || // the only local storage on unix systems
+              (e.name.startsWith('local_disk_') && e.initialFullPath.length > 4),
+          ), // local drive where home folder is stored, normally C:\
           (entry) => {
             data.storageEntry = entry;
             data.dirPath = entry.initialFullPath;
@@ -300,8 +302,15 @@ const vTextOverflown = {
 </script>
 
 <template>
-  <PlDialogModal :no-content-gutters="true" class="split" :model-value="modelValue" width="688px" height="720px"
-    @update:model-value="closeModal" @click.stop="deselectAll">
+  <PlDialogModal
+    :no-content-gutters="true"
+    class="split"
+    :model-value="modelValue"
+    width="688px"
+    height="720px"
+    @update:model-value="closeModal"
+    @click.stop="deselectAll"
+  >
     <template #title>{{ title ?? 'Select files' }}</template>
     <div class="file-dialog">
       <div class="file-dialog__search">
@@ -337,8 +346,7 @@ const vTextOverflown = {
               <i class="icon-16 icon-chevron-right" />
               <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>
-            <div v-else :class="{ canBeSelected: file.canBeSelected, selected: file.selected }"
-              @click.stop="(ev) => selectFile(ev, file)">
+            <div v-else :class="{ canBeSelected: file.canBeSelected, selected: file.selected }" @click.stop="(ev) => selectFile(ev, file)">
               <i class="mask-16 mask-comp isFile" />
               <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>

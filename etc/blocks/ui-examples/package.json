@@ -28,6 +28,8 @@
       "title": "Ui Examples",
       "description": "Basic ui-vue examples",
       "logo": "file:logos/block-logo.png",
+      "longDescription": "file:./docs/description.md",
+      "changelog": "file:CHANGELOG.md",
       "organization": {
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",

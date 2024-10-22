@@ -7,6 +7,7 @@ import InjectEnvPage from './pages/InjectEnvPage.vue';
 import DropdownsPage from './pages/DropdownsPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 import FormComponentsPage from './pages/FormComponentsPage.vue';
+import TypographyPage from './pages/TypographyPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -30,7 +31,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/inject-env': InjectEnvPage,
       '/dropdowns': DropdownsPage,
       '/use-watch-fetch': UseWatchFetchPage,
-      '/form-components': FormComponentsPage
+      '/form-components': FormComponentsPage,
+      '/typography': TypographyPage
     }
   };
 });
