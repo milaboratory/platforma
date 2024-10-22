@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.6.0
+
+### Minor Changes
+
+- e70b473: Add python language support
+
 ## 1.5.0
 
 ### Minor Changes
