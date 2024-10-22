@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@milaboratories/software-pframes-conv": "catalog:",
-    "@milaboratories/software-small-binaries": "catalog:"
+    "@platforma-open/milaboratories.software-small-binaries": "catalog:"
   },
   "devDependencies": {
     "@platforma-sdk/tengo-builder": "workspace:^"

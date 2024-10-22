@@ -12,7 +12,7 @@ util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
 
-transposeXsvSw := assets.importSoftware("@milaboratories/software-small-binaries:table-converter")
+transposeXsvSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:table-converter")
 pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
 
 /**
