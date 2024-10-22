@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.19
+
+### Patch Changes
+
+- 2c914cc: add the Typography example page to the ui-examples block
+
 ## 1.0.18
 
 ### Patch Changes
