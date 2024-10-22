@@ -1,5 +1,13 @@
+/**
+ * Internal 'exec' module library.
+ *
+ * NOT INTENDEND FOR USE OUTSIDE 'exec' MODULE.
+ * May completely change API from release to release.
+ */
+
 ll := import(":ll")
 json := import("json")
+times := import("times")
 text := import("text")
 oop := import(":oop")
 maps := import(":maps")
@@ -80,7 +88,10 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 		venvBuilder.useToolset(descriptor.toolset)
 	}
 
-	venv := venvBuilder.build().venv()
+	venv := venvBuilder.
+		cache(7 * 24 * times.hour).
+		build().
+		venv()
 
 	venvRoot := path.join(_ARG_VAR_PYTHON, "venv")
 	venvRefKey := softName + "/venv"
@@ -104,7 +115,7 @@ _loadRunEnvironment := func(descriptor, softName, softPackage) {
 		return _loadPythonRunEnvironment(descriptor, softName, softPackage)
 	}
 
-	ll.panic("run environment type %q is not currently supported by tengo-sdk",	descriptor.runEnv.type)
+	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
 }
 
 _binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
