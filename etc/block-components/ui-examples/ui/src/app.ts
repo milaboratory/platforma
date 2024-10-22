@@ -8,6 +8,7 @@ import DropdownsPage from './pages/DropdownsPage.vue';
 import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 import FormComponentsPage from './pages/FormComponentsPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
+import AgGridVuePage from './pages/AgGridVuePage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -32,7 +33,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/dropdowns': DropdownsPage,
       '/use-watch-fetch': UseWatchFetchPage,
       '/form-components': FormComponentsPage,
-      '/typography': TypographyPage
+      '/typography': TypographyPage,
+      '/ag-grid-vue': AgGridVuePage
     }
   };
 });

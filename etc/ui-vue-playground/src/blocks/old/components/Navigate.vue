@@ -7,7 +7,7 @@ const app = useApp();
 
 const href = computed({
   get() {
-    return app.navigationState.href;
+    return app.snapshot.navigationState.href;
   },
   set(href) {
     app.updateNavigationState((state) => {

@@ -15,7 +15,7 @@ const goToMain = () => {
 
 <template>
   <div class="block__not-found">
-    <h1>Not found route: {{ app.navigationState.href }}</h1>
+    <h1>Not found route: {{ app.snapshot.navigationState.href }}</h1>
     <PlBtnSecondary @click.stop="goToMain">Return to main page</PlBtnSecondary>
   </div>
 </template>
