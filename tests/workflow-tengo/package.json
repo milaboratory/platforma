@@ -28,7 +28,7 @@
     "@milaboratories/pl-middle-layer": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/software-pframes-conv": "catalog:",
-    "@milaboratories/software-small-binaries": "catalog:",
+    "@platforma-open/milaboratories.software-small-binaries": "catalog:",
     "@types/node": "catalog:",
     "vitest": "catalog:"
   }
