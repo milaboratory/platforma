@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.6.1
+
+### Patch Changes
+
+- f5fc8ab: workdir: fix paths
+
 ## 1.6.0
 
 ### Minor Changes
