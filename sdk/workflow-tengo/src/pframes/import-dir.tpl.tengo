@@ -11,6 +11,7 @@ util := import(":pframes.util")
 smart := import(":smart")
 constants := import(":pframes.constants")
 validation := import(":validation")
+path := import(":path")
 
 // json schema of .datainfo file
 _DATA_INFO_SCHEMA := [`or`,
@@ -68,7 +69,7 @@ self.body(func(inputs) {
 
 		id := util.xsvColumnId(c)
 
-		dInfo := inputs["out/" + id + ".datainfo"].getDataAsJson()
+		dInfo := inputs[path.join("out", id + ".datainfo")].getDataAsJson()
 
 		// validate dataInfo type
 		validation.assertJsonSchema(dInfo, _DATA_INFO_SCHEMA)
@@ -81,14 +82,14 @@ self.body(func(inputs) {
 			if dInfo.type == "BinaryPartitioned" {
 
 				// pf data is always exported in out dir
-				indexFile := self.saveFile("out/" + data.index)
-				valuesFile := self.saveFile("out/" + data.values)
+				indexFile := self.saveFile(path.join("out", data.index))
+				valuesFile := self.saveFile(path.join("out", data.values))
 
 				rBuilder.createInputField(part + ".index").set(indexFile)
 				rBuilder.createInputField(part + ".values").set(valuesFile)
 			} else if dInfo.type == "JsonPartitioned" {
 
-				valuesFile := self.saveFile("out/" + data)
+				valuesFile := self.saveFile(path.join("out", data))
 				rBuilder.createInputField(part).set(valuesFile)
 			}
 		}
