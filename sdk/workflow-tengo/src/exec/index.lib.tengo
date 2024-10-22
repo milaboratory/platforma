@@ -186,7 +186,7 @@ builder := func() {
 			ll.assert(
 				is_int(time),
 				"cache time must be an integer. " +
-					"Did you forget to import a standard tengo library 'time'?")
+					"Did you forget to import a standard tengo library 'times'?")
 			cache = time
 			return self
 		},
