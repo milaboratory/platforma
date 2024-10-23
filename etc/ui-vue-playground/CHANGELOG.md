@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.43
+
+### Patch Changes
+
+- 57c64c8: fix custom Ag Grid theme and add an example page to the ui-examples block
+- Updated dependencies [57c64c8]
+  - @platforma-sdk/ui-vue@1.7.13
+
 ## 0.0.42
 
 ### Patch Changes

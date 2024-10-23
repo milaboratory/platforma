@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.7.13
+
+### Patch Changes
+
+- 1d5f1e2: dep upgrade
+- Updated dependencies [21df064]
+- Updated dependencies [1d5f1e2]
+- Updated dependencies [1d5f1e2]
+  - @milaboratories/pl-middle-layer@1.14.0
+  - @milaboratories/pl-client@2.5.5
+  - @milaboratories/pl-tree@1.4.6
+
 ## 1.7.11
 
 ### Patch Changes
