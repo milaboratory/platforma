@@ -25,6 +25,17 @@ export type SoftwareEntrypoints = z.infer<typeof softwareEntrypointsList>
 const environmentEntrypointsList = z.record(z.string(), entrypoint.environmentOptionsSchema)
 export type EnvironmentEntrypoints = z.infer<typeof softwareEntrypointsList>
 
+export interface AssetPackage extends artifacts.assetPackageConfig, PackageArchiveInfo {
+    type: 'asset'
+    registry: artifacts.registry
+    name: string
+    version: string
+    crossplatform: boolean
+
+    isMultiroot: boolean
+    contentRoot(platform: util.PlatformType): string
+}
+
 export interface RunEnvironmentPackage extends artifacts.environmentConfig, PackageArchiveInfo {
     registry: artifacts.registry,
     name: string
@@ -79,6 +90,7 @@ export interface CondaPackage extends artifacts.condaPackageConfig, PackageArchi
 }
 
 export type BuildablePackage =
+    AssetPackage |
     RunEnvironmentPackage |
     BinaryPackage |
     JavaPackage |
@@ -93,6 +105,12 @@ export type PackageConfig = BuildablePackage & {
     isBuildable: boolean
     isMultiroot: boolean
     contentRoot(platform: util.PlatformType): string
+}
+
+export interface AssetEntrypoint {
+    type: 'asset'
+    name: string
+    package: PackageConfig
 }
 
 export interface SoftwareEntrypoint {
@@ -111,6 +129,7 @@ export interface EnvironmentEntrypoint {
 }
 
 export type Entrypoint =
+    AssetEntrypoint |
     SoftwareEntrypoint |
     EnvironmentEntrypoint
 
@@ -238,6 +257,16 @@ export class PackageInfo {
                 continue
             }
 
+            if (ep.asset) {
+                const packageID = (typeof ep.asset === 'string') ? ep.asset : epName
+                list.set(epName, {
+                    type: 'asset',
+                    name: epName,
+                    package: this.getPackage(packageID),
+                })
+                continue
+            }
+
             throw new Error(`entrypoint '${epName}' type is not supported by current platforma package builder`)
         }
 
@@ -265,9 +294,9 @@ export class PackageInfo {
         const pkgRoot = this.packageRoot
         const artifact = this.getArtifact(id)
 
-        const crossplatform = (artifact.crossplatform !== undefined) ?
-            artifact.crossplatform :
-            artifact.type == 'java' || artifact.type == 'python'
+        const crossplatform = (artifact.roots !== undefined) ?
+            false :
+            artifacts.isCrossPlatform(artifact.type)
 
         return {
             id: id,
@@ -280,11 +309,13 @@ export class PackageInfo {
             crossplatform: crossplatform,
 
             fullName(platform: util.PlatformType): string {
-                return binaryPackageFullName(crossplatform, this.name, this.version, platform)
+                const ext = artifact.type === 'asset' ? 'zip' : 'tgz'
+                return archiveFullName(crossplatform, this.name, this.version, platform, ext)
             },
 
             get namePattern(): string {
-                return binaryPackageAddressPattern(crossplatform, this.name, this.version)
+                const ext = artifact.type === 'asset' ? 'zip' : 'tgz'
+                return archiveAddressPattern(crossplatform, this.name, this.version, ext)
             },
 
             get isBuildable(): boolean {
@@ -328,7 +359,14 @@ export class PackageInfo {
             throw new Error(`artifact with id '${id}' not found neither in 'entrypoints', nor in 'artifacts'`)
         }
 
-        const idOrArtifact = ep.environment?.artifact ?? ep.binary!.artifact
+        if (ep.asset && typeof ep.asset !== 'string') {
+            return {
+                type: 'asset',
+                ...ep.asset,
+            }
+        }
+
+        const idOrArtifact = ep.asset ?? ep.environment?.artifact ?? ep.binary!.artifact
 
         if (typeof idOrArtifact !== 'string') {
             return idOrArtifact
@@ -603,19 +641,19 @@ function parsePackageJson(data: string) {
     return packageJsonSchema.parse(parsedData) as packageJson;
 }
 
-function binaryPackageFullName(crossplatform: boolean, name: string, version: string, platform: util.PlatformType): string {
+function archiveFullName(crossplatform: boolean, name: string, version: string, platform: util.PlatformType, extension: string): string {
     if (crossplatform) {
-        return `${name}/${version}.tgz`
+        return `${name}/${version}.${extension}`
     }
 
     const { os, arch } = util.splitPlatform(platform)
-    return `${name}/${version}-${os}-${arch}.tgz`
+    return `${name}/${version}-${os}-${arch}.${extension}`
 }
 
-function binaryPackageAddressPattern(crossplatform: boolean, name: string, version: string): string {
+function archiveAddressPattern(crossplatform: boolean, name: string, version: string, extension: string): string {
     if (crossplatform) {
-        return `${name}/${version}.tgz`
+        return `${name}/${version}.${extension}`
     }
 
-    return `${name}/${version}-{os}-{arch}.tgz`
+    return `${name}/${version}-{os}-{arch}.${extension}`
 }

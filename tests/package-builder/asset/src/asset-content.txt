@@ -1,0 +1,1 @@
+Some static file to be delivered to Platforma Backend

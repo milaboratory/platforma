@@ -120,7 +120,8 @@ export const ContentRootFlag = {
 
 export const SourceFlag = {
     'source': Flags.string({
-        description: "add only selected sources to software entrypoint descriptor (*.sw.json file)",
+        description: "add only selected sources to software entrypoint descriptor (*.sw.json file).\n"+
+            "  - 'archive': artifacts that are buildable into archive: assets, binary software, run environments.\n",
         options: (util.AllSoftwareSources as unknown) as string[],
         multiple: true,
         required: false,

@@ -32,8 +32,12 @@ export class Core {
         this.fullDirHash = false
     }
 
-    public archivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
-        return archive.getPath(this.archiveOptions(pkg, os, arch))
+    public binArchivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+        return archive.getPath(this.archiveOptions(pkg, os, arch, 'tgz'))
+    }
+
+    public assetArchivePath(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): string {
+        return archive.getPath(this.archiveOptions(pkg, os, arch, 'zip'))
     }
 
     public get entrypoints(): Map<string, Entrypoint> {
@@ -117,7 +121,7 @@ export class Core {
         }
     }
 
-    public buildPackages(options?: {
+    public async buildPackages(options?: {
         ids?: string[],
         forceBuild?: boolean,
 
@@ -136,26 +140,26 @@ export class Core {
             const pkg = this.getPackage(pkgID)
 
             if (pkg.crossplatform) {
-                this.buildPackage(pkg, util.currentPlatform(), options)
+                await this.buildPackage(pkg, util.currentPlatform(), options)
             } else if (this.targetPlatform) {
-                this.buildPackage(pkg, this.targetPlatform, options)
+                await this.buildPackage(pkg, this.targetPlatform, options)
             } else if (this.allPlatforms && !pkg.isMultiroot) {
                 const currentPlatform = util.currentPlatform()
                 this.logger.warn(
                     `packages are requested to be build for all supported platforms, but package '${pkgID}' has single archive root for all platforms and will be built only for '${currentPlatform}'`,
                 )
-                this.buildPackage(pkg, currentPlatform, options)
+                await this.buildPackage(pkg, currentPlatform, options)
             } else if (this.allPlatforms) {
                 for (const platform of pkg.platforms) {
-                    this.buildPackage(pkg, platform, options)
+                    await this.buildPackage(pkg, platform, options)
                 }
             } else {
-                this.buildPackage(pkg, util.currentPlatform(), options)
+                await this.buildPackage(pkg, util.currentPlatform(), options)
             }
         }
     }
 
-    public buildPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
+    public async buildPackage(pkg: PackageConfig, platform: util.PlatformType, options?: {
         archivePath?: string, contentRoot?: string,
         skipIfEmpty?: boolean,
     }) {
@@ -166,8 +170,16 @@ export class Core {
             if (options?.skipIfEmpty) {
                 this.logger.info(`  archive build was skipped: package '${pkg.id}' is not buildable`)
             }
-            this.logger.error(`  no 'binary' settings found: software '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
-            throw new Error("no 'binary' configuration")
+            this.logger.error(`  not buildable: artifact '${pkg.id}' archive build is impossible for configuration inside '${util.softwareConfigName}'`)
+            throw new Error("not a buildable artifact")
+        }
+
+        const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform)
+
+        if (pkg.type === 'asset') {
+            const archivePath = options?.archivePath ?? this.assetArchivePath(pkg, os, arch)
+            await this.createPackageArchive('assets', pkg, archivePath, contentRoot, os, arch)
+            return
         }
 
         if (this.buildMode === 'dev-local') {
@@ -175,16 +187,26 @@ export class Core {
             return
         }
 
-        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
-        const contentRoot = options?.contentRoot ?? pkg.contentRoot(platform)
+        const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch)
 
-        this.logger.debug("  rendering 'package.sw.json' to be embedded into package archive")
+        await this.createPackageArchive('software', pkg, archivePath, contentRoot, os, arch)
+    }
+
+    private async createPackageArchive(
+        packageContentType: string,
+        pkg: PackageConfig,
+        archivePath: string,
+        contentRoot: string,
+        os: string,
+        arch: string
+    ) {
+        this.logger.debug(`  rendering 'package.sw.json' to be embedded into ${packageContentType} archive`)
         const swJson = this.renderer.renderPackageDescriptor(this.buildMode, pkg)
 
         const swJsonPath = path.join(contentRoot, "package.sw.json")
         fs.writeFileSync(swJsonPath, JSON.stringify(swJson))
 
-        this.logger.info("  packing software into a package")
+        this.logger.info(`  packing ${packageContentType} into a package`)
         if (pkg.crossplatform) {
             this.logger.info(`    generating cross-platform package`)
         } else {
@@ -193,9 +215,9 @@ export class Core {
         this.logger.debug(`    package content root: '${contentRoot} '`)
         this.logger.debug(`    package destination archive: '${archivePath}'`)
 
-        archive.create(contentRoot, archivePath)
+        await archive.create(this.logger, contentRoot, archivePath)
 
-        this.logger.info(`  software package was written to '${archivePath}'`)
+        this.logger.info(`  ${packageContentType} package was written to '${archivePath}'`)
     }
 
     public publishDescriptors(options?: {
@@ -279,7 +301,15 @@ export class Core {
 
         const storageURL = options?.storageURL ?? pkg.registry.storageURL
 
-        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
+        var archivePath = options?.archivePath
+        if (!archivePath) {
+            if (pkg.type === 'asset') {
+                archivePath = this.assetArchivePath(pkg, os, arch)
+            } else {
+                archivePath = this.binArchivePath(pkg, os, arch)
+            }
+        }
+
         const dstName = pkg.fullName(platform)
 
         if (!storageURL) {
@@ -380,7 +410,7 @@ export class Core {
 
         const { os, arch } = util.splitPlatform(platform)
 
-        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
+        const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch)
         const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
 
         this.logger.info(`Signing package '${pkg.name}' for platform '${platform}'...`)
@@ -425,7 +455,7 @@ export class Core {
         return this._renderer
     }
 
-    private archiveOptions(pkg: PackageConfig, os: util.OSType, arch: util.ArchType): archive.archiveOptions {
+    private archiveOptions(pkg: PackageConfig, os: util.OSType, arch: util.ArchType, archiveType: archive.archiveType): archive.archiveOptions {
         return {
             packageRoot: this.pkg.packageRoot,
             packageName: pkg.name,
@@ -434,6 +464,7 @@ export class Core {
             crossplatform: pkg.crossplatform,
             os: os,
             arch: arch,
+            ext: archiveType,
         }
     }
 }

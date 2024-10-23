@@ -5,7 +5,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest"
+    "test": "jest && node ../../tests/package-builder/test.js"
   },
   "bin": {
     "pl-pkg": "./bin/run.js"
@@ -27,15 +27,17 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@jest/globals": "catalog:",
     "@milaboratories/oclif-index": "workspace:*",
-    "typescript": "catalog:",
-    "vite": "catalog:",
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/archiver": "^6.0.3",
     "@types/jest": "catalog:",
     "@types/node": "catalog:",
+    "archiver": "^7.0.1",
     "jest": "catalog:",
-    "@jest/globals": "catalog:",
-    "ts-jest": "catalog:"
+    "ts-jest": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
   },
   "oclif": {
     "bin": "pl-pkg",
