@@ -9,9 +9,9 @@ test("PackageInfo loads correctly for multi-package", () => {
         pkgJsonData: artifacts.PackageJson,
     })
 
-    var pkg = i.getPackage("pCross")
+    var pkg = i.getPackage("pAsset")
     expect(pkg.registry.name).toEqual(artifacts.BinaryRegistry)
-    expect(pkg.name).toEqual(artifacts.PackageNameNoAt + "/pCross")
+    expect(pkg.name).toEqual(artifacts.PackageNameNoAt + "/pAsset")
     expect(pkg.version).toEqual(artifacts.PackageVersion)
     expect(pkg.root).toEqual("./src")
 
@@ -36,7 +36,7 @@ test("PackageInfo considers version override", () => {
     const customVersion = "my-custom-version"
     i.version = customVersion
 
-    var pkg = i.getPackage("pCross")
+    var pkg = i.getPackage("pAsset")
     expect(pkg.version).toEqual(customVersion)
 
     var pkg = i.getPackage(artifacts.EPNameCustomName)

@@ -26,13 +26,13 @@ describe("Renderer tests", () => {
         fs.rmSync(tempDir, { recursive: true });
     });
 
-    test("render crossplatform", () => {
-        const epName = artifacts.EPNameCrossplatform
+    test("render asset", () => {
+        const epName = artifacts.EPNameAsset
         const sw = new Renderer(l, i.packageName, i.packageRoot)
         const eps = new Map([[epName, i.getEntrypoint(epName)]])
         const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!
 
-        expect(descriptor.binary!.package).toEqual(`${artifacts.PackageNameNoAt}/pCross/${artifacts.PackageVersion}.tgz`)
+        expect(descriptor.asset!.package).toEqual(`${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`)
     })
 
     test("render os-dependant", () => {
@@ -56,7 +56,7 @@ describe("Renderer tests", () => {
     })
 
     test("read descriptor after render", () => {
-        const epName = artifacts.EPNameCrossplatform
+        const epName = artifacts.EPNameCustomName
         const sw = new Renderer(l, i.packageName, i.packageRoot)
         const eps = new Map([[epName, i.getEntrypoint(epName)]])
         const renderedDescriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!
