@@ -1,8 +1,11 @@
 {
-  "name": "pl-package-builder-integration-1",
+  "name": "example-pl-package-integration-1",
   "version": "1.0.0",
   "description": "The software description example",
   "scripts": {
+    "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
+    "reset": "npm run cleanup && rm -rf ./node_modules/",
+
     "build:descriptor": "pl-pkg build descriptors",
     "build": "rm -rf dist && pl-pkg build --log-level=debug",
     "publish": "pl-pkg publish"
@@ -85,7 +88,7 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@milaboratory/pl-package-builder": "file:../../.",
+    "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
     "pl-package-builder-runenv-1": "file:../runenv"
   }
 }

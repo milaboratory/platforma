@@ -57,6 +57,10 @@ export class S3Storage implements RegistryStorage {
 }
 
 export function initByUrl(address: string, pkgRoot: string): RegistryStorage {
+    if (address === "") {
+        throw new Error(`Empty registry storage address`)
+    }
+
     const url = new URL(address, `file:${pkgRoot.split(path.sep).join(pathPosix.sep)}/`);
     switch (url.protocol) {
         case 's3:':

@@ -49,8 +49,8 @@ export default class Build extends Command {
 
             for (const source of sources) {
                 switch (source) {
-                    case 'binary':
-                        core.buildPackages({
+                    case 'archive':
+                        await core.buildPackages({
                             ids: flags['package-id'],
                             forceBuild: flags.force,
 

@@ -15,6 +15,11 @@ const externalPackageLocationSchema = z.object({
 })
 type packageSwJson = z.infer<typeof externalPackageLocationSchema>
 
+const assetSchema = z.object({
+    ...externalPackageLocationSchema.shape,
+})
+type assetInfo = z.infer<typeof assetSchema>
+
 const runEnvironmentSchema = z.object({
     type: z.enum(artifacts.runEnvironmentTypes),
     ...externalPackageLocationSchema.shape,
@@ -135,6 +140,7 @@ type localInfo = z.infer<typeof localSchema>
 const entrypointSchema = z.object({
     isDev: z.boolean().optional(),
 
+    asset: assetSchema.optional(),
     binary: binarySchema.optional(),
     runEnv: runEnvironmentSchema.optional(),
     local: localSchema.optional(),
@@ -210,10 +216,10 @@ export class Renderer {
             var hasDescriptors = false
             for (const source of sources) {
                 switch (source) {
-                    case 'binary':
+                    case 'archive':
                         const pkg = ep.package
                         if (!pkg.isBuildable) {
-                            this.logger.warn("  skipping 'binary' rendering (not a binary package)")
+                            this.logger.warn("  skipping 'archive' rendering (not a buildable package)")
                         }
 
                         hasDescriptors = true
@@ -221,9 +227,11 @@ export class Renderer {
                             this.logger.debug("  rendering 'local' source...")
                             info.local = this.renderLocalInfo(mode, epName, ep, fullDirHash)
                         } else {
-                            this.logger.debug("  rendering 'binary' source...")
+                            this.logger.debug("  rendering 'archive' source...")
                             if (pkg.type === 'environment') {
                                 info.runEnv = this.renderRunEnvInfo(mode, epName, ep)
+                            } else if (pkg.type === 'asset') {
+                                info.asset = this.renderAssetInfo(mode, epName, ep)
                             } else {
                                 info.binary = this.renderBinaryInfo(mode, epName, ep)
                             }
@@ -290,10 +298,17 @@ export class Renderer {
         switch (epType) {
             case 'environment':
                 throw new Error(`entrypoint ${epName} points to 'environment' artifact, which does not support local build yet`)
+
+            case 'asset':
+                throw new Error(`entrypoint ${epName} points to 'asset' artifact, which does not support local build yet`)
+
             case 'software':
                 const pkgType = pkg.type
                 switch (pkgType) {
                     case 'environment':
+                        throw new Error(`entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`)
+
+                    case 'asset':
                         throw new Error(`entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`)
 
                     case 'binary':
@@ -383,10 +398,17 @@ export class Renderer {
         const epType = ep.type
         switch (epType) {
             case 'environment':
-                throw new Error(`entrypoint ${epName} points to 'environment' artifact, which does not support local build yet`)
+                throw new Error(`internal build script logic error: attempt to build 'environment' entrypoint ${epName} as binary`)
+
+            case 'asset':
+                throw new Error(`internal build script logic error: attempt to build 'asset' entrypoint ${epName} as binary`)
+
             case 'software':
                 const pkgType = pkg.type
                 switch (pkgType) {
+                    case 'asset':
+                        throw new Error(`entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`)
+
                     case 'environment':
                         throw new Error(`entripoint is incompatible with artifact type: ep=${epName} (software), artifact='${pkgType}'`)
 
@@ -486,6 +508,30 @@ export class Renderer {
             registry: env.registry.name,
             package: env.namePattern,
             binDir: env.binDir,
+        }
+    }
+
+    private renderAssetInfo(mode: util.BuildMode, epName: string, ep: Entrypoint): assetInfo {
+        switch (mode) {
+            case 'release':
+                break
+
+            case 'dev-local':
+                throw new Error(`assets do not support 'local' dev build mode yet`)
+
+            default:
+                util.assertNever(mode)
+        }
+
+        const env = ep.package
+
+        if (env.type !== 'asset') {
+            throw new Error(`could not render asset entrypoint ${epName} (not 'asset' artifact)`)
+        }
+
+        return {
+            registry: env.registry.name,
+            package: env.namePattern,
         }
     }
 

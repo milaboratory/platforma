@@ -28,17 +28,19 @@ export const environmentOptionsSchema = z.strictObject({
         describe("list of environment variables to be set for any command inside this run environment")
 })
 
+const boolint = (v: any) => v ? 1 : 0
+
 export const infoSchema = z.strictObject({
+    asset: z.union([
+        z.string(), artifacts.assetPackageSchema,
+    ]).optional(),
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
 }).refine(
-    data => (
-        !(data.environment &&
-            (data.binary))
-    ),
+    data => (( boolint(data.environment) + boolint(data.binary) + boolint(data.asset)) == 1),
     {
-        message: "'environment' entrypoint cannot point to other targets",
-        path: ['environment']
+        message: "entrypoint cannot point to several packages at once: choose 'environment', 'binary' or 'asset'",
+        path: ['environment | binary | asset']
     }
 )
 
