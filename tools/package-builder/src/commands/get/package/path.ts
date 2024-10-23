@@ -31,6 +31,6 @@ export default class Path extends Command {
 
         const pkg = core.getPackage(pkgID)
 
-        console.log(core.archivePath(pkg, os, arch))
+        console.log(core.binArchivePath(pkg, os, arch))
     }
 }

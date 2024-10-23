@@ -1,8 +1,11 @@
 {
-  "name": "pl-package-builder-runenv-1",
+  "name": "example-pl-package-runenv-1",
   "version": "1.0.0",
   "description": "Example of software to be used as runenv",
   "scripts": {
+    "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
+    "reset": "npm run cleanup && rm -rf ./node_modules/",
+
     "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
   },
   "block-software": {
@@ -29,6 +32,6 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@milaboratory/pl-package-builder": "file:../../."
+    "@platforma-sdk/package-builder": "file:../../../tools/package-builder"
   }
 }

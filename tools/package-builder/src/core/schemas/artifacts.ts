@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import * as util from '../util';
 
-export const artifactTypes = ['environment', 'binary', 'java', 'python'] as const;
+export const artifactTypes = ['environment', 'binary', 'java', 'python', 'asset'] as const;
 export type artifactType = (typeof artifactTypes)[number];
 
-export const buildableTypes: artifactType[] = ['environment', 'binary', 'java', 'python'] as const;
+export const buildableTypes: artifactType[] = ['environment', 'binary', 'java', 'python', 'asset'] as const;
+export const crossplatformTypes: artifactType[] = ['asset', 'java', 'python'] as const;
 
 export function isBuildable(aType: artifactType) : boolean {
     return buildableTypes.includes(aType)
+}
+
+export function isCrossPlatform(aType: artifactType) : boolean {
+    return crossplatformTypes.includes(aType)
 }
 
 export const runEnvironmentTypes = ['java', 'python'] as const;
@@ -24,12 +29,11 @@ export type registry = z.infer<typeof registrySchema>
 
 export const registryOrRef = z.union([z.string(), registrySchema])
 
-// common fields both for 'environment' and 'binary'
+// common fields for all buildable artifacts
 const archiveRulesSchema = z.object({
     registry: registryOrRef,
     name: z.string().optional(),
     version: z.string().optional(),
-    crossplatform: z.boolean().optional(),
 
     root: z.string().optional(),
     roots: z.record(
@@ -43,6 +47,11 @@ const artifactIDSchema = z.string().
     regex(/:/, { message: "tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1" }).
     describe("ID of tengo build artifact")
 
+export const assetPackageSchema = archiveRulesSchema
+export const typedAssetPackageSchema = archiveRulesSchema.extend({
+    type: z.literal('asset'),
+})
+export type assetPackageConfig = z.infer<typeof assetPackageSchema>
 
 export const environmentPackageSchema = archiveRulesSchema.extend({
     type: z.literal('environment'),
@@ -58,7 +67,6 @@ export type environmentConfig = z.infer<typeof environmentPackageSchema>
 
 export const binaryPackageSchema = archiveRulesSchema.extend({
     type: z.literal('binary'),
-    environment: z.undefined(),
 })
 export type binaryPackageConfig = z.infer<typeof binaryPackageSchema>
 
@@ -111,6 +119,7 @@ export const condaPackageSchema = archiveRulesSchema.extend({
 export type condaPackageConfig = z.infer<typeof condaPackageSchema>
 
 export const configSchema = z.discriminatedUnion('type', [
+    typedAssetPackageSchema,
     environmentPackageSchema,
     binaryPackageSchema,
     javaPackageSchema,
