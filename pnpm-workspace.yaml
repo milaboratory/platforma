@@ -63,10 +63,10 @@ catalog:
   'typescript': ~5.5.4
   'tsconfig-paths': ^4.2.0
   'tsup': ~8.2.4
-  'vite': ^5.4.8
+  'vite': ^5.4.10
   'rollup-plugin-node-externals': ^7.1.3
   '@rollup/plugin-node-resolve': ^15.3.0
-  'vite-plugin-dts': ^4.2.3
+  'vite-plugin-dts': ^4.3.0
   'tsc-alias': ^1.8.10
   'yarpm': ^1.2.0
   'ts-node': ^10.9.2
@@ -86,9 +86,9 @@ catalog:
   'eslint-plugin-prettier': '^5.2.1'
   'eslint-plugin-vue': '^9.28.0'
 
-  'oclif': ^4.15.5
+  'oclif': ^4.15.12
 
-  'turbo': ^2.1.3
+  'turbo': ^2.2.3
 
   '@vitejs/plugin-vue': ^5.1.4
 
@@ -96,13 +96,13 @@ catalog:
 
   # Net
 
-  'undici': ^6.19.8
-  '@grpc/grpc-js': ^1.12.0
+  'undici': ^6.20.1
+  '@grpc/grpc-js': ^1.12.2
   '@protobuf-ts/grpc-transport': ^2.9.4
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.5
-  '@aws-sdk/client-s3': ^3.666.0
+  '@aws-sdk/client-s3': ^3.677.0
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs
@@ -122,9 +122,9 @@ catalog:
 
   'zod': ^3.23.8
 
-  'yaml': ^2.5.1
+  'yaml': ^2.6.0
 
-  '@oclif/core': ^4.0.27
+  '@oclif/core': ^4.0.30
 
   'winston': ^3.14.2
 
@@ -135,25 +135,25 @@ catalog:
 
   # UI
 
-  'vue': ^3.5.11
+  'vue': ^3.5.12
   '@vueuse/core': ^11.1.0
   'vue-tsc': ^2.1.6
   'sass': ~1.77.8
   'vitepress': '1.4.0'
   'highlight.js': '11.10.0'
 
-  '@ag-grid-community/core': ^32.2.2
-  '@ag-grid-community/client-side-row-model': ^32.2.2
-  '@ag-grid-community/infinite-row-model': ^32.2.2
-  '@ag-grid-community/styles': ^32.2.2
-  '@ag-grid-community/vue3': ^32.2.2
-  '@ag-grid-community/csv-export': ^32.2.2
-  '@ag-grid-enterprise/core': ^32.2.2
-  '@ag-grid-enterprise/rich-select': ^32.2.2
-  '@ag-grid-enterprise/menu': ^32.2.2
-  '@ag-grid-enterprise/excel-export': ^32.2.2
-  '@ag-grid-enterprise/clipboard': ^32.2.2
-  '@ag-grid-enterprise/range-selection': ^32.2.2
+  '@ag-grid-community/core': &ag-grid ^32.3.0
+  '@ag-grid-community/client-side-row-model': *ag-grid
+  '@ag-grid-community/infinite-row-model': *ag-grid
+  '@ag-grid-community/styles': *ag-grid
+  '@ag-grid-community/vue3': *ag-grid
+  '@ag-grid-community/csv-export': *ag-grid
+  '@ag-grid-enterprise/core': *ag-grid
+  '@ag-grid-enterprise/rich-select': *ag-grid
+  '@ag-grid-enterprise/menu': *ag-grid
+  '@ag-grid-enterprise/excel-export': *ag-grid
+  '@ag-grid-enterprise/clipboard': *ag-grid
+  '@ag-grid-enterprise/range-selection': *ag-grid
 
   # SW
 
@@ -165,7 +165,7 @@ catalog:
   'jest': ^29.7.0
   '@jest/globals': ^29.7.0
   'ts-jest': ^29.2.5
-  'vitest': ^2.1.2
+  'vitest': ^2.1.3
   '@faker-js/faker': ^8.4.1
   'happy-dom': ^14.12.3
   'jsdom': ^24.1.3

@@ -207,7 +207,7 @@ export function projectOverview(
             if (b.stale) staleBlocks.add(b.id);
             const stale = b.stale || b.upstreams.findIndex((u) => staleBlocks.has(u)) !== -1;
             const canRun =
-              stale &&
+              (stale || b.outputErrors) &&
               Boolean(b.inputsValid) &&
               !b.missingReference &&
               b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
