@@ -301,7 +301,15 @@ export class Core {
 
         const storageURL = options?.storageURL ?? pkg.registry.storageURL
 
-        const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch)
+        var archivePath = options?.archivePath
+        if (!archivePath) {
+            if (pkg.type === 'asset') {
+                archivePath = this.assetArchivePath(pkg, os, arch)
+            } else {
+                archivePath = this.binArchivePath(pkg, os, arch)
+            }
+        }
+
         const dstName = pkg.fullName(platform)
 
         if (!storageURL) {
