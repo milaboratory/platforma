@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.0
+
+### Minor Changes
+
+- 21df064: Fixes runnable state if block has errors
+
+### Patch Changes
+
+- Updated dependencies [1d5f1e2]
+- Updated dependencies [1d5f1e2]
+  - @milaboratories/pl-client@2.5.5
+  - @milaboratories/pl-drivers@1.3.5
+  - @milaboratories/pl-tree@1.4.6
+
 ## 1.13.8
 
 ### Patch Changes
