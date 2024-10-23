@@ -8,7 +8,7 @@ export const BinaryRegistry: string = "some-binary-registry"
 export const BinaryCustomName1: string = "custom-package-name-1"
 export const BinaryCustomVersion: string = "4.4.4"
 
-export const EPNameCrossplatform: string = "crossplatform"
+export const EPNameAsset: string = "asset"
 export const EPNameCustomName: string = "custom-name"
 export const EPNameJavaEnvironment: string = "java-test-entrypoint"
 export const EPNameJavaDependency: string = "java-dep"
@@ -18,11 +18,9 @@ export const PackageJsonNoSoftware = `{
     "version": "${PackageVersion}"
 }`
 
-export const CrossplatformArtifact = `{
+export const AssetArtifact = `{
+  "type": "asset",
   "registry": "${BinaryRegistry}",
-
-  "type": "binary",
-  "crossplatform": true,
   "root": "./src"
 }`
 
@@ -63,16 +61,13 @@ export const PackageJson = `{
     "version": "${PackageVersion}",
     "block-software": {
       "artifacts": {
-        "pCross": ${CrossplatformArtifact},
+        "pAsset": ${AssetArtifact},
         "pEnv": ${EnvironmentPackage},
         "pEnvDep": ${EnvironmentDependencyPackage}
       },
       "entrypoints": {
-        "${EPNameCrossplatform}": {
-          "binary": {
-            "artifact": "pCross",
-            "cmd": ["aaaa"]
-          }
+        "${EPNameAsset}": {
+          "asset": "pAsset"
         },
         "${EPNameCustomName}": {
           "binary": {
