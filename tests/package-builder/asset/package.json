@@ -1,5 +1,5 @@
 {
-  "name": "example-pl-package-runenv-1",
+  "name": "example-pl-package-asset-1",
   "version": "1.0.0",
   "description": "Example of software to be used as runenv",
   "scripts": {
@@ -11,17 +11,12 @@
   "block-software": {
     "entrypoints": {
       "1.2.3": {
-        "environment": {
-          "artifact": {
-            "registry": "example",
-            "name": "common/example",
-            "version": "1.2.3",
+        "asset": {
+          "registry": "example",
+          "name": "common/example",
+          "version": "1.2.3",
 
-            "type": "environment",
-            "runtime": "python",
-            "root": "./src",
-            "binDir": "."
-          }
+          "root": "./src"
         }
       }
     }

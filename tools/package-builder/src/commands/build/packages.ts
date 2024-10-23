@@ -34,7 +34,7 @@ export default class Packages extends Command {
         core.allPlatforms = flags['all-platforms']
         core.fullDirHash = flags['full-dir-hash']
 
-        core.buildPackages({
+        await core.buildPackages({
             ids: flags['package-id'],
             forceBuild: flags.force,
 
