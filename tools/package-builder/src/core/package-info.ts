@@ -309,11 +309,13 @@ export class PackageInfo {
             crossplatform: crossplatform,
 
             fullName(platform: util.PlatformType): string {
-                return binaryPackageFullName(crossplatform, this.name, this.version, platform)
+                const ext = artifact.type === 'asset' ? 'zip' : 'tgz'
+                return archiveFullName(crossplatform, this.name, this.version, platform, ext)
             },
 
             get namePattern(): string {
-                return binaryPackageAddressPattern(crossplatform, this.name, this.version)
+                const ext = artifact.type === 'asset' ? 'zip' : 'tgz'
+                return archiveAddressPattern(crossplatform, this.name, this.version, ext)
             },
 
             get isBuildable(): boolean {
@@ -639,19 +641,19 @@ function parsePackageJson(data: string) {
     return packageJsonSchema.parse(parsedData) as packageJson;
 }
 
-function binaryPackageFullName(crossplatform: boolean, name: string, version: string, platform: util.PlatformType): string {
+function archiveFullName(crossplatform: boolean, name: string, version: string, platform: util.PlatformType, extension: string): string {
     if (crossplatform) {
-        return `${name}/${version}.tgz`
+        return `${name}/${version}.${extension}`
     }
 
     const { os, arch } = util.splitPlatform(platform)
-    return `${name}/${version}-${os}-${arch}.tgz`
+    return `${name}/${version}-${os}-${arch}.${extension}`
 }
 
-function binaryPackageAddressPattern(crossplatform: boolean, name: string, version: string): string {
+function archiveAddressPattern(crossplatform: boolean, name: string, version: string, extension: string): string {
     if (crossplatform) {
-        return `${name}/${version}.tgz`
+        return `${name}/${version}.${extension}`
     }
 
-    return `${name}/${version}-{os}-{arch}.tgz`
+    return `${name}/${version}-{os}-{arch}.${extension}`
 }
