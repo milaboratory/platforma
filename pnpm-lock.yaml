@@ -392,13 +392,13 @@ importers:
     devDependencies:
       '@ag-grid-community/client-side-row-model':
         specifier: 'catalog:'
-        version: 32.2.2
+        version: 32.3.0
       '@ag-grid-community/core':
         specifier: 'catalog:'
-        version: 32.2.2
+        version: 32.3.0
       '@ag-grid-community/vue3':
         specifier: 'catalog:'
-        version: 32.2.2(typescript@5.5.4)
+        version: 32.3.0(typescript@5.5.4)
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 8.4.1
