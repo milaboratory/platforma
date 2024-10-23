@@ -106,7 +106,7 @@ export class LLPlClient {
 
     const httpOptions: Client.Options = {
       // allowH2: true,
-      headersTimeout: 3e3,
+      headersTimeout: 5e3,
       keepAliveTimeout: 3e3,
       keepAliveMaxTimeout: 60e3,
       maxRedirections: 6,
