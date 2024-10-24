@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.5.1
+
+### Patch Changes
+
+- 8e9424a: isPColumnSpecResult / isPColumnResult / isLiveLog type guards
+
 ## 1.5.0
 
 ### Minor Changes
