@@ -35,6 +35,9 @@ _SPEC_AXES_SCHEMA := {
 	// Should the N/A values (or empty rows) be allowed;
 	// default: false
 	`allowNA,omitempty`: `bool`,
+	// Should the parsing error be interpreted as N/A
+	// default: false
+	`parseErrorToNA,omitempty`: `bool`,
 	// Specification of the axis
 	`spec`: {
 		// Type of the axis value
@@ -66,6 +69,9 @@ _SPEC_COLUMN_SCHEMA := {
 	// Should the N/A values (or empty rows) be allowed;
 	// default: true
 	`allowNA,omitempty`: `bool`,
+	// Should the parsing error be interpreted as N/A
+	// default: false
+	`parseErrorToNA,omitempty`: `bool`,
 	// Specification of the column
 	`spec,omitempty`: {
 		// Type of column values;
