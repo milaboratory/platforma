@@ -37,7 +37,8 @@
     font-size: 28px;
     font-style: normal;
     font-weight: 500;
-    line-height: 32px; /* 114.286% */
+    line-height: 32px;
+    /* 114.286% */
     letter-spacing: -0.56px;
     padding: 24px;
   }
@@ -48,8 +49,9 @@
     flex-direction: column;
     gap: 24px;
     padding: 0 24px 24px;
-    padding-top: 16px;
+    padding-top: 0;
     min-height: 0;
+
     &.no-content-gutters {
       padding: 0 0;
     }
@@ -61,6 +63,7 @@
     gap: 6px;
     min-height: 88px;
     padding: 0 24px;
+
     button {
       min-width: 160px;
     }
@@ -103,6 +106,7 @@
     background-color: #d3d7e0;
     @include mask(url(@/assets/images/24_close.svg), 24px);
     transition: all 0.1s ease-in-out;
+
     &:hover {
       background-color: var(--main-dark-color);
     }
