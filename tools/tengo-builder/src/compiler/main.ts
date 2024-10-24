@@ -67,6 +67,10 @@ function resolveSoftwareDst(mode: CompileMode, root: string) {
   return path.resolve(root, mode, 'tengo', 'software');
 }
 
+function resolveAssetsDst(mode: CompileMode, root: string) {
+  return path.resolve(root, mode, 'tengo', 'asset');
+}
+
 function loadDependencies(
   logger: winston.Logger,
   compiler: TengoTemplateCompiler,
@@ -95,12 +99,14 @@ function loadDependencies(
   const libDistFolder = resolveLibsDst('dist', searchIn);
   const tplDistFolder = resolveTemplatesDst('dist', searchIn);
   const softwareDistFolder = resolveSoftwareDst('dist', searchIn);
+  const assetDistFolder = resolveAssetsDst('dist', searchIn);
 
   const libDistExists = pathType(libDistFolder) === 'dir';
   const tplDistExists = pathType(tplDistFolder) === 'dir';
   const softwareDistExists = pathType(softwareDistFolder) === 'dir';
+  const assetDistExists = pathType(assetDistFolder) === 'dir';
 
-  if (!libDistExists && !tplDistExists && !softwareDistExists)
+  if (!libDistExists && !tplDistExists && !softwareDistExists && !assetDistExists)
     // if neither of tengo-specific folders detected, skipping package
     return;
 
@@ -125,6 +131,10 @@ function loadDependencies(
 
   if (softwareDistExists) {
     loadSoftwareFromDir(logger, packageJson, 'dist', softwareDistFolder, compiler);
+  }
+
+  if (assetDistExists) {
+    loadAssetsFromDir(logger, packageJson, 'dist', assetDistFolder, compiler);
   }
 }
 
@@ -184,7 +194,6 @@ function loadSoftwareFromDir(
   folder: string,
   compiler: TengoTemplateCompiler
 ) {
-  // adding software
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
     if (!f.endsWith(compiledSoftwareSuffix))
@@ -197,8 +206,34 @@ function loadSoftwareFromDir(
     };
 
     const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, []);
-    compiler.addSoftware(software);
+
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+    compiler.addSoftware(software);
+  }
+}
+
+function loadAssetsFromDir(
+  logger: winston.Logger,
+  packageJson: PackageJson,
+  mode: CompileMode,
+  folder: string,
+  compiler: TengoTemplateCompiler
+) {
+  for (const f of fs.readdirSync(folder)) {
+    const file = path.resolve(folder, f);
+    if (!f.endsWith(compiledSoftwareSuffix))
+      throw new Error(`unexpected file in 'asset' folder: ${file}`);
+    const fullName: FullArtifactName = {
+      type: 'asset',
+      pkg: packageJson.name,
+      id: f.slice(0, f.length - compiledSoftwareSuffix.length),
+      version: packageJson.version
+    };
+
+    const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, []);
+
+    logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
+    compiler.addAsset(asset);
   }
 }
 
@@ -353,6 +388,17 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
   // writing software
   if (compiled.software.length > 0) {
     const swOutput = resolveSoftwareDst(mode, '.');
+    fs.mkdirSync(swOutput, { recursive: true });
+    for (const sw of compiled.software) {
+      const file = path.resolve(swOutput, sw.fullName.id + compiledSoftwareSuffix);
+      logger.info(`  - writing ${file}`);
+      fs.writeFileSync(file, sw.src);
+    }
+  }
+
+  // writing assets
+  if (compiled.assets.length > 0) {
+    const swOutput = resolveAssetsDst(mode, '.');
     fs.mkdirSync(swOutput, { recursive: true });
     for (const sw of compiled.software) {
       const file = path.resolve(swOutput, sw.fullName.id + compiledSoftwareSuffix);
