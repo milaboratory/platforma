@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.15.0
+
+### Minor Changes
+
+- fb9ed15: Teach tengo builder to find assets and detect asset imports
+
 ## 1.14.13
 
 ### Patch Changes
