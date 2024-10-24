@@ -90,6 +90,17 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
                 const s3Client = await newS3(s3Options, s3Bucket)
                 return new S3Storage(s3Client, s3Bucket, s3KeyPrefix);
 
+            case 's3e:':
+                const s3eOptions: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
+                const s3eRegion = url.searchParams.get('region');
+                if (s3eRegion) s3eOptions.region = s3eRegion;
+
+                const s3ePath = url.pathname.split('/').slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
+                const s3eBucket = s3ePath[0];
+                const s3eKeyPrefix = s3ePath.length > 1 ? util.trimPrefix(s3ePath[1], "/") : '';
+                const s3eClient = await newS3(s3eOptions, s3eBucket)
+                return new S3Storage(s3eClient, s3eBucket, s3eKeyPrefix)
+
             default:
                 throw new Error(`Protocol ${url.protocol} is not supported for software registries yet. Use your own tooling for package upload`);
         }
