@@ -326,7 +326,7 @@ export class Core {
         if (signatureSuffixes.length > 0) this.logger.debug(`  detected signatures: '${signatureSuffixes}'`)
         this.logger.debug(`  target package name: '${dstName}'`)
 
-        const s = storage.initByUrl(storageURL, this.pkg.packageRoot)
+        const s = await storage.initByUrl(storageURL, this.pkg.packageRoot)
 
         const exists = await s.exists(dstName)
         if (exists) {
