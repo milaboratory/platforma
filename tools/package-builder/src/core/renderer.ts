@@ -144,13 +144,23 @@ const entrypointSchema = z.object({
     binary: binarySchema.optional(),
     runEnv: runEnvironmentSchema.optional(),
     local: localSchema.optional(),
-})
+}).refine(
+    data => (( util.toInt(data.runEnv) + util.toInt(data.binary) + util.toInt(data.asset) + util.toInt(data.local) ) == 1),
+    {
+        message: "entrypoint cannot point to several packages at once: choose 'environment', 'binary', 'asset' or 'local'",
+        path: ['environment | binary | asset | local']
+    }
+)
 export type entrypointSwJson = z.infer<typeof entrypointSchema> & {
     id: util.artifactID,
 }
 
-export function readEntrypointDescriptor(npmPackageName: string, packageRoot: string, entrypointName: string): entrypointSwJson {
-    const filePath = entrypointFilePath(packageRoot, entrypointName)
+export function readSoftwareEntrypoint(npmPackageName: string, packageRoot: string, entrypointName: string): entrypointSwJson {
+    const filePath = entrypointFilePath(packageRoot, 'software', entrypointName)
+    return readEntrypointDescriptor(npmPackageName, entrypointName, filePath)
+}
+
+export function readEntrypointDescriptor(npmPackageName: string, entrypointName: string, filePath: string): entrypointSwJson {
     if (!fs.existsSync(filePath)) {
         throw new Error(`entrypoint '${entrypointName}' not found in '${filePath}'`)
     }
@@ -167,13 +177,39 @@ export function readEntrypointDescriptor(npmPackageName: string, packageRoot: st
     }
 }
 
-export function listSoftwareNames(packageRoot: string): string[] {
-    const swDir = entrypointFilePath(packageRoot)
-    const items = fs.readdirSync(swDir)
-
-    return items.
+export function listPackageEntrypoints(packageRoot: string): {name: string, path: string}[] {
+    const swDir = entrypointFilePath(packageRoot, 'software')
+    const swItems = fs.readdirSync(swDir)
+    const swEntrypoints: {name: string, path: string}[] = swItems.
         filter((fName: string) => fName.endsWith(".sw.json")).
-        map((fName: string) => fName.slice(0, -".sw.json".length))
+        map((fName: string) => (
+            {
+                name: fName.slice(0, -".sw.json".length),
+                path: path.join(swDir, fName),
+            }
+        ))
+
+    const assetDir = entrypointFilePath(packageRoot, 'asset')
+    const assetItems = fs.readdirSync(assetDir)
+    const assetEntrypoints = assetItems.
+        filter((fName: string) => fName.endsWith(".sw.json")).
+        map((fName: string) => (
+            {
+                name: fName.slice(0, -".sw.json".length),
+                path: path.join(swDir, fName),
+            }
+        ))
+
+    const entrypoints = [...swEntrypoints, ...assetEntrypoints]
+    entrypoints.sort()
+
+    for (let i = 0; i < entrypoints.length - 1; i++) {
+        if (entrypoints[i].name === entrypoints[i + 1].name) {
+            throw new Error(`duplicate entrypoint name found between software and assets: '${entrypoints[i].name}'`)
+        }
+    }
+
+    return entrypoints;
 }
 
 export class Renderer {
@@ -264,7 +300,8 @@ export class Renderer {
     }
 
     public writeEntrypointDescriptor(info: entrypointSwJson, dstFile?: string) {
-        const dstSwInfoPath = dstFile ?? entrypointFilePath(this.npmPackageRoot, info.id.name)
+        const epType = (info.asset) ? 'asset' : 'software'
+        const dstSwInfoPath = dstFile ?? entrypointFilePath(this.npmPackageRoot, epType, info.id.name)
 
         this.logger.info(`Writing entrypoint descriptor to '${dstSwInfoPath}'`)
 
@@ -537,14 +574,14 @@ export class Renderer {
 
     private resolveDependency(npmPackageName: string, entrypointName: string): entrypointSwJson {
         const modulePath = util.findInstalledModule(this.logger, npmPackageName, this.npmPackageRoot)
-        return readEntrypointDescriptor(npmPackageName, modulePath, entrypointName)
+        return readSoftwareEntrypoint(npmPackageName, modulePath, entrypointName)
     }
 
     private resolveRunEnvironment(envName: string, requireType: 'java'): runDependencyJava
     private resolveRunEnvironment(envName: string, requireType: 'python'): runDependencyPython
     private resolveRunEnvironment(envName: string, requireType: artifacts.runEnvironmentType): runDepInfo {
         const [pkgName, id] = util.rSplit(envName, ':', 2)
-        const swDescriptor = (pkgName === "") ? readEntrypointDescriptor(this.npmPackageName, this.npmPackageRoot, id) : this.resolveDependency(pkgName, id)
+        const swDescriptor = (pkgName === "") ? readSoftwareEntrypoint(this.npmPackageName, this.npmPackageRoot, id) : this.resolveDependency(pkgName, id)
 
         if (!swDescriptor.runEnv) {
             throw new Error(`software '${envName}' cannot be used as run environment (no 'runEnv' section in entrypoint descriptor)`)
@@ -568,10 +605,10 @@ export class Renderer {
     }
 }
 
-export function entrypointFilePath(packageRoot: string, entrypointName?: string): string {
+export function entrypointFilePath(packageRoot: string, entrypointType: 'software' | 'asset', entrypointName?: string): string {
     if (!entrypointName) {
-        return path.resolve(packageRoot, "dist", "tengo", "software")
+        return path.resolve(packageRoot, "dist", "tengo", entrypointType)
     }
 
-    return path.resolve(packageRoot, "dist", "tengo", "software", `${entrypointName}.sw.json`)
+    return path.resolve(packageRoot, "dist", "tengo", entrypointType, `${entrypointName}.sw.json`)
 }

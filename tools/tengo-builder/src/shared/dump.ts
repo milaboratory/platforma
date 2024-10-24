@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { getPackageInfo, newCompiler, parseSources } from '../compiler/main';
-import { typedArtifactNameToString } from '../compiler/package';
+import { ArtifactType, typedArtifactNameToString } from '../compiler/package';
 
 export function dumpAll(
   logger: winston.Logger,
@@ -15,6 +15,8 @@ export function dumpAll(
   // group output by type:
   //  - all libs
   //  - all templates
+  //  - all software
+  //  - all assets
   //  - all tests
 
   // Libs
@@ -73,6 +75,24 @@ export function dumpAll(
     }
   }
 
+  // Assets
+
+  for (const asset of compiler.allAssets()) {
+    logger.debug(
+      `Dumping to pl-tester: ${typedArtifactNameToString(asset.fullName)}`
+    );
+    stream.write(JSON.stringify(asset) + '\n');
+  }
+
+  for (const src of sources) {
+    if (src.fullName.type === 'asset') {
+      logger.debug(
+        `Dumping to pl-tester: ${typedArtifactNameToString(src.fullName)}`
+      );
+      stream.write(JSON.stringify(src) + '\n');
+    }
+  }
+
   // Tests
 
   for (const src of sources) {
@@ -118,47 +138,46 @@ export function dumpLibs(
   }
 }
 
-export function dumpTemplates(
+function dumpArtifacts(
   logger: winston.Logger,
-  stream: NodeJS.WritableStream
+  stream: NodeJS.WritableStream,
+  aType: ArtifactType,
 ): void {
   const packageInfo = getPackageInfo();
 
   const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
 
   for (const src of sources) {
-    if (src.fullName.type === 'template') {
+    if (src.fullName.type === aType) {
       stream.write(JSON.stringify(src) + '\n');
     }
   }
+}
+
+export function dumpTemplates(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  dumpArtifacts(logger, stream, 'template')
 }
 
 export function dumpSoftware(
   logger: winston.Logger,
   stream: NodeJS.WritableStream
 ): void {
-  const packageInfo = getPackageInfo();
+  dumpArtifacts(logger, stream, 'software')
+}
 
-  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
-
-  for (const src of sources) {
-    if (src.fullName.type === 'software') {
-      stream.write(JSON.stringify(src) + '\n');
-    }
-  }
+export function dumpAssets(
+  logger: winston.Logger,
+  stream: NodeJS.WritableStream
+): void {
+  dumpArtifacts(logger, stream, 'asset')
 }
 
 export function dumpTests(
   logger: winston.Logger,
   stream: NodeJS.WritableStream
 ): void {
-  const packageInfo = getPackageInfo();
-
-  const sources = parseSources(logger, packageInfo, 'dist', 'src', '');
-
-  for (const src of sources) {
-    if (src.fullName.type === 'test') {
-      stream.write(JSON.stringify(src) + '\n');
-    }
-  }
+  dumpArtifacts(logger, stream, 'test')
 }

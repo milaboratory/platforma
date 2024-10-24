@@ -185,6 +185,17 @@ export function wrapErr(e: any, msg: string) : any {
     return wrappedError;
 }
 
+/**
+ * Converts any value to integer number 1 if value is truthful and 0 otherwice.
+ * Provides simple way to count values that are defined in an object:
+ *   toInt(options.a) + toInt(options.b) + toInt(options.c) === 1
+ * @param input: any
+ * @returns number - '1' or '0'
+ */
+export function toInt(input: any) : number {
+    return input ? 1 : 0
+}
+
 export const OSes = ['linux', 'macosx', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
 
