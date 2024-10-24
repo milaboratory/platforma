@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.20
+
+### Patch Changes
+
+- 57c64c8: fix custom Ag Grid theme and add an example page to the ui-examples block
+
 ## 1.0.19
 
 ### Patch Changes

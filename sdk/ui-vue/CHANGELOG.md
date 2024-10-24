@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.13
+
+### Patch Changes
+
+- 57c64c8: fix custom Ag Grid theme and add an example page to the ui-examples block
+
 ## 1.7.12
 
 ### Patch Changes

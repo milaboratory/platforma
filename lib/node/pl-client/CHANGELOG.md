@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 2.5.5
+
+### Patch Changes
+
+- 1d5f1e2: increased default header timeout for http
+- 1d5f1e2: dep upgrade
+
 ## 2.5.4
 
 ### Patch Changes
