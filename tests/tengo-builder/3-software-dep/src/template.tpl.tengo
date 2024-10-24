@@ -1,0 +1,6 @@
+thelib := import(":library")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+localSoft := assets.importSoftware(":my-software")
+extSoft := assets.importSoftware("@mi-tests/tengo-integration-2:software")
+extAsset := assets.importAsset("@mi-tests/tengo-integration-2:asset")

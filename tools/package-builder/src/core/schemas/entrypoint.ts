@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import * as artifacts from './artifacts'
+import { toInt } from '../util';
 
 const artifactOrRef = z.union([
     z.string(), artifacts.configSchema,
@@ -28,8 +29,6 @@ export const environmentOptionsSchema = z.strictObject({
         describe("list of environment variables to be set for any command inside this run environment")
 })
 
-const boolint = (v: any) => v ? 1 : 0
-
 export const infoSchema = z.strictObject({
     asset: z.union([
         z.string(), artifacts.assetPackageSchema,
@@ -37,7 +36,7 @@ export const infoSchema = z.strictObject({
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional(),
 }).refine(
-    data => (( boolint(data.environment) + boolint(data.binary) + boolint(data.asset)) == 1),
+    data => (( toInt(data.environment) + toInt(data.binary) + toInt(data.asset)) == 1),
     {
         message: "entrypoint cannot point to several packages at once: choose 'environment', 'binary' or 'asset'",
         path: ['environment | binary | asset']
