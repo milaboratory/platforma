@@ -3,7 +3,7 @@ import path from 'path';
 import { spawnSync } from "child_process";
 import winston from "winston";
 import { PackageInfo, PackageConfig, Entrypoint } from "./package-info";
-import { Renderer, listSoftwareNames as listSoftwareEntrypoints, readEntrypointDescriptor } from "./renderer";
+import { Renderer, listPackageEntrypoints, readEntrypointDescriptor, readSoftwareEntrypoint } from "./renderer";
 import * as binSchema from './schemas/artifacts';
 import * as util from "./util";
 import * as archive from "./archive";
@@ -223,15 +223,15 @@ export class Core {
     public publishDescriptors(options?: {
         npmPublishArgs?: string[],
     }) {
-        const names = listSoftwareEntrypoints(this.pkg.packageRoot)
+        const names = listPackageEntrypoints(this.pkg.packageRoot)
 
         if (names.length === 0) {
             throw new Error(`No software entrypoints found in package during 'publish descriptors' action. Nothing to publish`)
         }
 
-        for (const swName of names) {
-            const swInfo = readEntrypointDescriptor(this.pkg.packageName, this.pkg.packageRoot, swName)
-            if (swInfo.isDev) {
+        for (const epInfo of names) {
+            const epDescr = readEntrypointDescriptor(this.pkg.packageName, epInfo.name, epInfo.path)
+            if (epDescr.isDev) {
                 this.logger.error("You are trying to publish entrypoint descriptor generated in 'dev' mode. This software would not be accepted for execution by any production environment.")
                 throw new Error("attempt to publish 'dev' entrypoint descriptor")
             }

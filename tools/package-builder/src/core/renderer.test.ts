@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 
 import * as artifacts from './test-artifacts'
 import { PackageInfo } from './package-info'
-import { Renderer, readEntrypointDescriptor } from './renderer'
+import { Renderer, entrypointFilePath, readEntrypointDescriptor } from './renderer'
 import { createLogger } from './util'
 
 describe("Renderer tests", () => {
@@ -63,7 +63,8 @@ describe("Renderer tests", () => {
 
         sw.writeEntrypointDescriptor(renderedDescriptor)
 
-        const parsedDescriptor = readEntrypointDescriptor(i.packageName, i.packageRoot, epName)
+        const epPath = entrypointFilePath(i.packageRoot, renderedDescriptor.asset ? 'asset' : 'software', epName)
+        const parsedDescriptor = readEntrypointDescriptor(i.packageName, epName, epPath)
 
         expect(parsedDescriptor.binary).toEqual(renderedDescriptor.binary)
     })

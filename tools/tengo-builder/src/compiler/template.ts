@@ -26,6 +26,15 @@ export interface TemplateSoftwareData {
   src: string,
 }
 
+export interface TemplateAssetData {
+  /** i.e. @milaboratory/mixcr:main */
+  name: string;
+  /** i.e. 4.2.3 */
+  version: string;
+  /** full contents of asset dependency description */
+  src: string,
+}
+
 export interface TemplateData {
   /** Discriminator for future use */
   type: 'pl.tengo-template.v2';
@@ -41,6 +50,8 @@ export interface TemplateData {
   templates: Record<string, TemplateData>;
   /** i.e. @milaboratory/mixcr:main -> software metadata */
   software: Record<string, TemplateSoftwareData>;
+  /** i.e. @milaboratory/genome:human -> asset metadata */
+  assets: Record<string, TemplateAssetData>;
   /** Template source code */
   src: string;
 }

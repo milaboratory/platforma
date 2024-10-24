@@ -26,6 +26,9 @@ const newImportTemplateRE = (moduleName: string) => {
 const newImportSoftwareRE = (moduleName: string) => {
   return functionCallRE(moduleName, 'importSoftware');
 };
+const newImportAssetRE = (moduleName: string) => {
+  return functionCallRE(moduleName, 'importAsset');
+};
 
 const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/;
 const multilineCommentStartRE = /^\s*\/\*/;
@@ -196,7 +199,8 @@ function parseSingleSourceLine(
       if (!context.tplDepREs.has(iInfo.module)) {
         context.tplDepREs.set(iInfo.module, [
           ['template', newImportTemplateRE(iInfo.alias)],
-          ['software', newImportSoftwareRE(iInfo.alias)]
+          ['software', newImportSoftwareRE(iInfo.alias)],
+          ['asset', newImportAssetRE(iInfo.alias)]
         ]);
       }
     }

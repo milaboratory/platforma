@@ -22,12 +22,13 @@ importTemplate := func(tplName) {
 /**
  * Returns software description suitable for 'exec' operations.
  *
- * @param swName: string - full name of the software description, including namespace (package name).
- * Local software definitions (within the same package) can omit namespace part and start the name with colon:
- *  - "@company/package:some-oftware"
- *  - ":my-local-software"
+ * @param swName: string - full name of the software entrypoint, including namespace (NPM package name).
+ *                         Local software entrypoints (within the same package) can omit namespace part
+ *                         and start the name with colon:
+ *                           - "@company/package:some-oftware"
+ *                           - ":my-local-software"
  *
- * @return softwareInfo: softwareInfo - structure with software info
+ * @return softwareInfo: softwareInfo - structure with software info.
  */
 importSoftware := func(swName) {
 	sw := plapi.getSoftwareInfo(swName)
@@ -39,6 +40,29 @@ importSoftware := func(swName) {
 		version: sw.version,
 		blobRef: sw.blobRef,
 		descriptor: ll.toStrict(json.decode(sw.descriptor)) // raw sw.json data with software entrypoint descriptor
+	})
+}
+
+/**
+ * Returns asset description suitable for 'exec' operations.
+ * Asset is the way to put static files into working directory before execution of the command.
+ *
+ * @param assetName: string - full name of asset entrypoint, including namespace (NPM package name).
+ *                            Local software entrypoints (within the same package) can omit namespace
+ *                            part and start the name with colon:
+ *                              - "@company/package:some-oftware"
+ *                              - ":my-local-software"
+ */
+importAsset := func(swName) {
+	asset := plapi.getSoftwareInfo(swName)
+	return ll.toStrict({
+		_type: "assetDescriptor",
+
+		resource: smart.resource(asset.id),
+		name: asset.name,
+		version: asset.version,
+		blobRef: asset.blobRef,
+		descriptor: ll.toStrict(json.decode(asset.descriptor)) // raw sw.json data with asset entrypoint descriptor
 	})
 }
 

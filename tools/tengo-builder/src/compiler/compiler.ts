@@ -16,6 +16,7 @@ export interface TemplatesAndLibs {
   templates: Template[],
   libs: ArtifactSource[],
   software: ArtifactSource[]
+  assets: ArtifactSource[]
 }
 
 export class TengoTemplateCompiler {
@@ -25,6 +26,7 @@ export class TengoTemplateCompiler {
 
   private readonly libs = new ArtifactStore<ArtifactSource>(src => src.fullName);
   private readonly software = new ArtifactStore<ArtifactSource>(src => src.fullName);
+  private readonly assets = new ArtifactStore<ArtifactSource>(src => src.fullName);
   private readonly templates = new ArtifactStore<Template>(tpl => tpl.fullName);
 
   private populateTemplateDataFromDependencies(fullName: FullArtifactName,
@@ -59,6 +61,16 @@ export class TengoTemplateCompiler {
           }
 
           break;
+        case 'asset':
+          const asset = this.getAssetOrError(dep);
+          // Yes, we temporarily put assets into 'software' section of template, so controller can
+          // handle it the right way without updates
+          data.software[artifactNameToString(dep)] = {
+            ...formatArtefactNameAndVersion(asset.fullName),
+            src: asset.src
+          }
+
+          break;
         case 'template':
           if (typedArtifactNamesEquals(fullName, dep))
             // skipping self reference
@@ -89,6 +101,7 @@ export class TengoTemplateCompiler {
       templates: {},
       libs: {},
       software: {},
+      assets: {},
       src: tplSrc.src
     };
 
@@ -151,6 +164,32 @@ export class TengoTemplateCompiler {
     return software;
   }
 
+  addAsset(asset: ArtifactSource) {
+    const assetFromMap = this.assets.add(asset.compileMode, asset, false)
+    if (assetFromMap)
+      throw new Error(
+        `compiler already contain info for asset: adding = ${fullNameToString(asset.fullName)}, contains = ${fullNameToString(assetFromMap.fullName)}`
+      );
+  }
+
+  allAssets(): ArtifactSource[] {
+    return this.assets.array(this.compileMode)
+  }
+
+  getAsset(name: TypedArtifactName): ArtifactSource | undefined {
+    if (name.type !== 'asset')
+      throw new Error(`illegal artifact type: got ${name.type} instead of 'asset`);
+
+    return this.assets.get(this.compileMode, name);
+  }
+
+  getAssetOrError(name: TypedArtifactName): ArtifactSource {
+    const asset = this.getAsset(name);
+    if (!asset)
+      throw new Error(`asset info not found: ${artifactNameToString(name)}`);
+    return asset;
+  }
+
   addTemplate(tpl: Template) {
     const tplFromMap = this.templates.add(tpl.compileMode, tpl, false);
     if (tplFromMap)
@@ -184,6 +223,8 @@ export class TengoTemplateCompiler {
         return this.getLib(name);
       case 'software':
         return this.getSoftware(name);
+      case 'asset':
+        return this.getAsset(name);
       case 'test':
         // Tests are ignored by the complier. They should never be compiled into templates or libs and
         // should never be a dependency.
@@ -206,7 +247,7 @@ export class TengoTemplateCompiler {
   }
 
   compileAndAdd(sources: ArtifactSource[]): TemplatesAndLibs {
-    const ret: TemplatesAndLibs = { templates: [], libs: [], software: [] };
+    const ret: TemplatesAndLibs = { templates: [], libs: [], software: [], assets: [] };
     let current: ArtifactSource[] = [];
 
     for (const src of sources) {
@@ -218,6 +259,10 @@ export class TengoTemplateCompiler {
         // add software 'as-is' to be able to resolve them as dependencies
         this.addSoftware(src);
         ret.software.push(src);
+      } else if (src.fullName.type === 'asset') {
+        // add assets 'as-is' to be able to resolve them as dependencies
+        this.addAsset(src);
+        ret.assets.push(src);
       } else {
         current.push(src)
       }
@@ -260,6 +305,11 @@ export class TengoTemplateCompiler {
             // software dependencies are added as is
             this.addSoftware(src);
             ret.software.push(src);
+            break;
+          case 'asset':
+            // software dependencies are added as is
+            this.addAsset(src);
+            ret.assets.push(src);
             break;
           case 'template':
             // templates are compiled and then added
