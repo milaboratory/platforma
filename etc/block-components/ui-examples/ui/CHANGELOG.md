@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.38
+
+### Patch Changes
+
+- 57c64c8: fix custom Ag Grid theme and add an example page to the ui-examples block
+- Updated dependencies [57c64c8]
+  - @platforma-sdk/ui-vue@1.7.13
+
 ## 1.0.37
 
 ### Patch Changes

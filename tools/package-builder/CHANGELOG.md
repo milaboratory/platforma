@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.0
+
+### Minor Changes
+
+- 006d5c0: Build and publish assets as .zip archives
+
 ## 2.9.2
 
 ### Patch Changes
