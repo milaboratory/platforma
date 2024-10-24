@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.2
+
+### Patch Changes
+
+- fb9ed15: Teach tengo builder to find assets and detect asset imports
+
 ## 2.10.1
 
 ### Patch Changes
