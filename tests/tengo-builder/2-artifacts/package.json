@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "description": "Simple static artifacts for tests (assets and software)",
     "scripts": {
-      "build": "pl-pkg build descriptors || true"
+        "build": "pl-pkg build descriptors || true"
     },
     "block-software": {
         "entrypoints": {
@@ -15,7 +15,9 @@
                         "type": "binary",
                         "root": "software-root"
                     },
-                    "cmd": [ "fake-binary" ]
+                    "cmd": [
+                        "fake-binary"
+                    ]
                 }
             },
             "asset": {
@@ -29,7 +31,6 @@
     },
     "license": "UNLICENSED",
     "devDependencies": {
-      "@platforma-sdk/package-builder": "workspace:*"
+        "@platforma-sdk/package-builder": "workspace:*"
     }
-  }
-  
+}
