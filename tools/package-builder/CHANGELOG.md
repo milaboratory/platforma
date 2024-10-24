@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.1
+
+### Patch Changes
+
+- f2a5f70: Correct way to handle S3 init exceptions. Print all unhandled error stacktraces to command output
+
 ## 2.10.0
 
 ### Minor Changes
