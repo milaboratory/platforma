@@ -172,6 +172,19 @@ export function rSplit(input: string, delimiter: string, limit?: number): string
     ];
 };
 
+export function wrapErr(e: any, msg: string) : any {
+    if (!(e instanceof Error)) {
+        return e
+    }
+
+    const wrappedError = new Error(`${msg}: ${e.message}`);
+    wrappedError.name = e.name;
+    wrappedError.stack = e.stack;
+    // Copy any additional custom properties
+    Object.assign(wrappedError, e);
+    return wrappedError;
+}
+
 export const OSes = ['linux', 'macosx', 'windows'] as const;
 export type OSType = (typeof OSes)[number];
 
