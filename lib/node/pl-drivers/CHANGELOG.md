@@ -1,5 +1,13 @@
 # @milaboratories/pl-drivers
 
+## 1.3.6
+
+### Patch Changes
+
+- 8e0ef1f: ls: if wmic is not found, fall back to just drive C
+- Updated dependencies [8e9424a]
+  - @milaboratories/pl-model-common@1.5.1
+
 ## 1.3.5
 
 ### Patch Changes
