@@ -82,7 +82,7 @@ getColumnSpec := func(axesSpec, col) {
 importFile := func(xsvFile, xsvType, spec, ...ops) {
 	ll.assert(xsvType == "csv" || xsvType == "tsv", "expected one of [tsv, csv] types")
 
-	validation.assertJsonSchema(spec, util.PFCONV_CFG_SCHEMA)
+	validation.assertJsonSchema(spec, util.PFCONV_IMPORT_CFG_SCHEMA)
 
 	xsvFileName := "file." + xsvType
 
@@ -218,7 +218,7 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	  }, ops...)
 
 	// spec without any metadata (for caching purposes)
-	decomposedSpec := util.decomposePfconvCfg(spec, { additionalAxesSpec: ops.additionalAxesSpec })
+	decomposedSpec := util.decomposePfconvImportCfg(spec, { additionalAxesSpec: ops.additionalAxesSpec })
 	pureSpec := decomposedSpec.purifiedCfg
 	columnsSpec := decomposedSpec.columnsSpec
 
