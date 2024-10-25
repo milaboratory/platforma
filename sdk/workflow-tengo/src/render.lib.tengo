@@ -10,6 +10,7 @@ constants := import(":constants")
 oop := import(":oop")
 validation := import(":validation")
 tx := import("tx")
+times := import("times")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -61,7 +62,7 @@ createUniversal := func(tpl, isEph, inputs) {
 			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
 			if len(cache) > 0 && cache[0] > 0 {
 				cache = cache[0]
-				tx.cacheSetToField(out.id, cache)
+				tx.cacheSetToField(out.id, cache * times.millisecond)
 			}
 
 			return out
