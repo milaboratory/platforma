@@ -1,5 +1,5 @@
 import pathPosix from 'node:path/posix';
-import { S3, GetBucketLocationCommand } from '@aws-sdk/client-s3';
+import { S3 } from '@aws-sdk/client-s3';
 import path from 'path';
 import * as util from './util';
 import { Readable } from 'stream';
@@ -23,12 +23,29 @@ export interface RegistryStorage {
     putFile(file: string, data: Buffer | Readable): Promise<void>;
 }
 
+async function objectExists(client: S3, bucket: string, key: string) : Promise<boolean> {
+    try {
+        await client.headObject({
+            Bucket: bucket,
+            Key: key,
+        });
+
+        return true
+
+    } catch (error) {
+        if (error instanceof Error && error.name === 'NotFound') {
+            return false;
+        }
+
+        throw util.wrapErr(error, `failed to check if object exists in S3 bucket ${bucket}`);
+    }
+}
+
 async function newS3(options: NonNullable<ConstructorParameters<typeof S3>[0]>, bucket: string): Promise<S3> {
     const client = new S3(options)
 
     try {
-        const command = new GetBucketLocationCommand({ Bucket: bucket });
-        await client.send(command);
+        await objectExists(client, bucket, "/")
     } catch (error) {
         throw new Error(`credentials given to package builder do not have access to S3 bucket '${bucket}': ${error}`)
     }
@@ -44,20 +61,7 @@ export class S3Storage implements RegistryStorage {
     ) { }
 
     async exists(file: string): Promise<boolean> {
-        try {
-            await this.client.headObject({
-                Bucket: this.bucket,
-                Key: pathPosix.join(this.root, file),
-            });
-
-            return true
-        } catch (error) {
-            if (error instanceof Error && error.name === 'NotFound') {
-                return false;
-            }
-
-            throw util.wrapErr(error, `failed to check if object exists in S3 bucket ${this.bucket}`);
-        }
+        return objectExists(this.client, this.bucket, pathPosix.join(this.root, file))
     }
 
     async putFile(file: string, data: Buffer | Readable): Promise<void> {
