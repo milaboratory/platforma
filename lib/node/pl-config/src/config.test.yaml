@@ -70,6 +70,7 @@ controllers:
 
   runner:
     type: local
+    workdirCacheOnFailure: '1h'
     storageRoot: 'storages/work'
     secrets:
       - map:
