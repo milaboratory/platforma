@@ -64,6 +64,8 @@ builder := func() {
 	filesToStream := {}
 	// workdir processors
 	wdProcessors := {}
+	// assets to be extracted into workdir vefore execution
+	assets := {}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -260,6 +262,27 @@ builder := func() {
 
 			nErrorLines = lines
 			return self
+		},
+
+		/**
+		 * Adds files from given asset into working directory.
+		 *
+		 * @param asset: assetInfo - asset info loaded from assets.importAsset()
+		 * @param pathInWD: string - path inside working directory for files to be extracted from archive.
+		 * @param pathInArchive: ...string - paths inside the archive to be extracted into pathInWD.
+		 */
+		addAsset: func(asset, pathInWD, ...pathInArchive) {
+			if !assets.isAssetInfo(asset) {
+				
+			}
+			if len(pathInArchive) == 0 || assets[asset._id] {
+				assets[asset._id] = []
+				return self
+			}
+
+			for i := 0; i < len(pathInArchive); i++ {
+				p := pathInArchive[i]
+			}
 		},
 
 		/**
