@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.3
+
+### Patch Changes
+
+- 6299770: Use HeadObject to check we have access to bucket
+
 ## 2.10.2
 
 ### Patch Changes
