@@ -6,7 +6,7 @@ assert := func(got, want, ...msg) {
 }
 
 TestDecomposePfconvCfg := func() {
-	result := util.decomposePfconvCfg({
+	result := util.decomposePfconvImportCfg({
 		"axes": [{
 			"column": "cloneId",
 			"spec": {

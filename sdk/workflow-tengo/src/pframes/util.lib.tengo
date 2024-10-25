@@ -35,7 +35,7 @@ _SPEC_AXES_SCHEMA := {
 	// Should the N/A values (or empty rows) be allowed;
 	// default: false
 	`allowNA,omitempty`: `bool`,
-	// Should the parsing error be interpreted as N/A
+	// Should the parsing error be interpreted as N/A;
 	// default: false
 	`parseErrorToNA,omitempty`: `bool`,
 	// Specification of the axis
@@ -69,7 +69,7 @@ _SPEC_COLUMN_SCHEMA := {
 	// Should the N/A values (or empty rows) be allowed;
 	// default: true
 	`allowNA,omitempty`: `bool`,
-	// Should the parsing error be interpreted as N/A
+	// Should the parsing error be interpreted as N/A;
 	// default: false
 	`parseErrorToNA,omitempty`: `bool`,
 	// Specification of the column
@@ -106,7 +106,7 @@ _SPEC_INDEX_SCHEMA := {
 	`parentAxes,omitempty`: [`number`]
 }
 
-PFCONV_CFG_SCHEMA := {
+PFCONV_IMPORT_CFG_SCHEMA := {
 	// Columns would be stored using specified format;
 	// default: Binary
 	`storageFormat,omitempty` : `string,regex=Binary|Json`,
@@ -121,16 +121,16 @@ PFCONV_CFG_SCHEMA := {
 	// Axis of type Int with XSV row numbers (would be the last one);
 	// default: do not create additional axis with indexes
 	`index,omitempty`: _SPEC_INDEX_SCHEMA,
-	// String representing NA values of types Int, Long, Float, Double
+	// String representing NA values of types Int, Long, Float, Double;
 	// default: NaN
 	`naStr,omitempty`: `string`,
-	// String representing NA values of types String, Bytes
+	// String representing NA values of types String, Bytes;
 	// default: null
 	`nullStr,omitempty`: `string`,
 	// Single ASCII character to be used as separator;
 	// default: ',' for .csv, '\t' for .tsv
 	`separator,omitempty`: `string`,
-	// Interpret empty string as NA value
+	// Interpret empty string as NA value;
 	// default: true
 	`emptyStrAsNA,omitempty`: `bool`,
 	// Prefix all column names with given string;
@@ -145,6 +145,42 @@ PFCONV_CFG_SCHEMA := {
 	`allowArtificialColumns,omitempty`: `bool`
 }
 
+_COLUMN_FILTER_SCHEMA := {
+	// Match any of the types listed here;
+	// default: type is ignored during matching
+	`type,omitempty`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+	// Match any of the names listed here;
+	// default: name is ignored during matching
+	`name,omitempty`: `string`,
+	// Match requires all the listed annotations to have provided values;
+	// default: no annotation equality checks are performed during matching
+	`annotationValue,omitempty`: { any: `string` },
+	// Match requires all the listed annotations to match provided regex patterns;
+	// default: no annotation pattern matching is performed during matching
+	`annotationPattern,omitempty`: { any: `string` }
+}
+
+PFCONV_EXPORT_CFG_SCHEMA := {
+	// String representing NA values of types Int, Long, Float, Double;
+	// default: NaN
+	`naStr,omitempty`: `string`,
+	// String representing NA and missing values of types String, Bytes;
+	// default: null
+	`nullStr,omitempty`: `string`,
+	// Toggle to export or skip axes and columns of type Bytes;
+	// default: false
+	`exportBytes,omitempty`: `bool`,
+	// Single ASCII character to be used as separator;
+	// default: ',' for .csv, '\t' for .tsv
+	`separator,omitempty`: `string`,
+	// Only columns matching the selector are exported;
+	// default: all columns are exported
+	`columnSelector,omitempty`: [_COLUMN_FILTER_SCHEMA],
+	// During export, columns with equal axes specifications would be joined into single table
+	// using the join type specified;
+	// default: Full
+	`joinType,omitempty` : `string,regex=Full|Inner`
+}
 
 /**
  * Get column id from the column spec
@@ -185,7 +221,7 @@ purifySpec := func(spec) {
 	}
 	newSpec.columns = newCols
 
-	validation.assertJsonSchema(newSpec, PFCONV_CFG_SCHEMA)
+	validation.assertJsonSchema(newSpec, PFCONV_IMPORT_CFG_SCHEMA)
 
 	return newSpec
 }
@@ -214,8 +250,8 @@ purifySpec := func(spec) {
  *           columnsSpec   - map of full column specs by ids from the original cfg
  *         }
  */
-decomposePfconvCfg := func(cfg, ...ops) {
-	ll.assert(len(ops) <= 1, "too many options for decomposePfconvCfg: %v", len(ops))
+decomposePfconvImportCfg := func(cfg, ...ops) {
+	ll.assert(len(ops) <= 1, "too many options for decomposePfconvImportCfg: %v", len(ops))
 
 	axesSpec := []
 	if len(ops) == 1 && !is_undefined(ops[0].additionalAxesSpec) {
@@ -244,9 +280,10 @@ decomposePfconvCfg := func(cfg, ...ops) {
 }
 
 export ll.toStrict({
-	PFCONV_CFG_SCHEMA: PFCONV_CFG_SCHEMA,
+	PFCONV_IMPORT_CFG_SCHEMA: PFCONV_IMPORT_CFG_SCHEMA,
+	PFCONV_EXPORT_CFG_SCHEMA: PFCONV_EXPORT_CFG_SCHEMA,
 
 	xsvColumnId: xsvColumnId,
 	purifySpec: purifySpec,
-	decomposePfconvCfg: decomposePfconvCfg
+	decomposePfconvImportCfg: decomposePfconvImportCfg
 })
