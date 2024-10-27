@@ -148,6 +148,7 @@ catalog:
   '@ag-grid-community/core': &ag-grid ^32.3.0
   '@ag-grid-community/client-side-row-model': *ag-grid
   '@ag-grid-community/infinite-row-model': *ag-grid
+  '@ag-grid-enterprise/server-side-row-model': *ag-grid
   '@ag-grid-community/styles': *ag-grid
   '@ag-grid-community/vue3': *ag-grid
   '@ag-grid-community/csv-export': *ag-grid
