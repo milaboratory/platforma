@@ -20,20 +20,20 @@ tplTest("package-loads-and-installs", async ({ helper, expect }) => {
   expect(descriptor).toHaveProperty("binary")
 });
 
-tplTest("asset-is-exported", async ({ helper, expect, driverKit }) => {
+tplTest("pkg-file-is-exported", async ({ helper, expect, driverKit }) => {
   const result = await helper.renderTemplate(
     false,
-    "exec.test.pkg.asset-export",
-    ["assetContent", "assetFile"],
+    "exec.test.pkg.pkg-export",
+    ["pkgFileContent", "pkgFile"],
     (tx) => ({})
   );
 
   // Wait for asset content
-  const assetContentOutput = result.computeOutput("assetContent", (a) => a?.getDataAsJson());
+  const assetContentOutput = result.computeOutput("pkgFileContent", (a) => a?.getDataAsJson());
   const assetContent = await assetContentOutput.awaitStableValue()
 
   // Wait for asset file and download it's data
-  const assetFileOutput = result.computeOutput("assetFile", (a, ctx) => {
+  const assetFileOutput = result.computeOutput("pkgFile", (a, ctx) => {
     if (a === undefined) {
       return a
     }

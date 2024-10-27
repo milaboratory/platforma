@@ -1,0 +1,102 @@
+/**
+ * Internal functions to work with blobs.
+ *
+ * This file contains functions intended for use only within workflow tengo SDK.
+ * Their parameters list, results and other parts of the interface may change from
+ * vertion to version without prior notice.
+ *
+ * DO NOT USE them in workflows or templates directly.
+ *
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+validation := import(":validation")
+
+json := import("json")
+
+//
+// Resource types:
+//
+
+RTYPE_BLOB_IMPORT_EXTERNAL := { Name: "BlobImportExternal", Version: "1" }
+RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }
+RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }
+RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
+
+/**
+ * Create a task for importing blob from external service by URL
+ * Produces 2 fields:
+ *  'file' - reference to blob to appear once import gets finished.
+ *  'handle' - reference to resource with 'progress' API.
+ */
+createBlobImportExternal := func(settings) {
+    validation.assertJsonSchema(settings, {
+        "dataURL": "string",
+        "dataHeaders,omitempty": [["string"]],
+        "dataVersion,omitempty": "string"
+    })
+
+    importer := smart.structBuilder(RTYPE_BLOB_IMPORT_EXTERNAL, json.encode(settings)).lockAndBuild()
+
+    return ll.toStrict({
+        file: importer.getField("blob"),
+        handle: importer.getField("handle")
+    })
+}
+
+
+/**
+ * Create a task for importing blob from one of preconfigured storages.
+ * Produces 2 fields:
+ *  'file' - reference to blob to appear once import gets finished.
+ *  'handle' - reference to resource with 'progress' API.
+ */
+createBlobImportInternal := func(settings) {
+    validation.assertJsonSchema(settings, {
+        "path": "string",
+        "storageId": "string",
+        "maxSpeedBytes,omitempty": "number",
+        "dataVersion,omitempty": "string"
+    })
+
+    importer := smart.structBuilder(RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
+
+    return ll.toStrict({
+        file: importer.getField("blob"),
+        handle: importer.getField("handle")
+    })
+}
+
+/**
+ * Create a task for getting a blob directly from the user via 'upload' procedure.
+ * Produces 2 fields:
+ *  'file' - reference to blob to appear once upload gets finished.
+ *  'handle' - reference to resource with 'progress' and 'upload' APIs.
+ */
+createBlobUpload := func(settings) {
+    validation.assertJsonSchema(settings, {
+        "modificationTime": "string",
+        "localPath": "string",
+        "pathSignature": "string",
+        "sizeBytes": "string"
+    })
+
+    uploader := smart.structBuilder(RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
+
+    return ll.toStrict({
+        file: uploader.getField("blob"),
+        handle: uploader.getField("handle")
+    })
+}
+
+export ll.toStrict({
+    RTYPE_BLOB_IMPORT_EXTERNAL      : RTYPE_BLOB_IMPORT_EXTERNAL,
+    RTYPE_BLOB_IMPORT_INTERNAL      : RTYPE_BLOB_IMPORT_INTERNAL,
+    RTYPE_BLOB_UPLOAD               : RTYPE_BLOB_UPLOAD,
+    RTYPE_BLOB_DOWNLOAD             : RTYPE_BLOB_DOWNLOAD,
+
+    createBlobImportExternal        : createBlobImportExternal,
+    createBlobImportInternal        : createBlobImportInternal,
+    createBlobUpload                : createBlobUpload
+})

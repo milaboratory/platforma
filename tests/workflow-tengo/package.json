@@ -14,11 +14,11 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && pl-tengo build",
+    "build": "rm -rf dist && pl-tengo build --log-level=debug",
     "test": "vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-    "vscode-tags": "./create_tags.sh .tags false",
+    "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
     "emacs-tags": "./create_tags.sh ../TAGS false -e"
   },
   "devDependencies": {

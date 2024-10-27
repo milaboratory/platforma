@@ -40,9 +40,9 @@ ctags -f "${tags_file_name}" ${other_args} \
       --regex-tengo='/^\s*(.*)(:| :=| =) ?func.*/\1/f/' \
       --kinddef-tengo=c,constant,constant \
       --regex-tengo='/^\s*(.*) := (\"|\{).*/\1/c/' \
-      -R \
+      --exclude='./**/node_modules/@platforma-sdk/**' \
+      --exclude='./**/node_modules/@platforma-open/**' \
       ${from_parent_root}/**/src/**/*.tengo \
-      ${from_parent_root}/**/node_modules/@milaboratory/**/*.tengo \
       2>/dev/null
 
 echo Done.
