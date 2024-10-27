@@ -24,6 +24,12 @@ binaryDescriptorScheme := {
 	runEnv: runEnvDescriptorScheme
 }
 
+assetDescriptorScheme := {
+	registry: "string",
+	package: "string",
+	url: "string"
+}
+
 localDescriptorScheme := {
 	hash: "string",
 	path: "string",
@@ -34,6 +40,7 @@ localDescriptorScheme := {
 descriptorScheme := {
 	"isDev,omitempty": "bool",
 	"binary,omitempty": binaryDescriptorScheme,
+	"asset,omitempty": assetDescriptorScheme,
 	"local,omitempty": localDescriptorScheme
 }
 
@@ -135,22 +142,21 @@ use := func(settings) {
 	return self
 }
 
-
 _RTYPE_PACKAGE_PUT_ASSET := { Name: "PackagePutAssetsToWD", Version: "1" }
 _INPUT_PACKAGE := "package"
 _INPUT_WD_IN := "workdirIn"
 _OUTPUT_WD_OUT := "workdirOut"
 
 /**
- * Load assets and provide them as files or raw content.
+ * Load static files from software package into working directory or value resources.
  *
  * @param pkg: package - installed package (usually from package.install(<archive>))
  *
- * @return loader: assetsLoader - builder that provides requested files and content after load() call
+ * @return loader: pkgFileLoader - builder that provides requested files and content after load() call
  */
-assetsLoader := func(pkg) {
+pkgFileLoader := func(pkg) {
 	ll.assert(smart.isReference(pkg),
-		"package.loadAssets: <pkg> must be reference to installed package. It is usually obtained from package.install().package")
+		"package.pkgFileLoader: <pkg> must be reference to installed package. It is usually obtained from package.install().package")
 
 	filePaths := []
 	fileContentPaths := []
@@ -159,14 +165,14 @@ assetsLoader := func(pkg) {
 
 	self = {
 		saveFile: func(path) {
-			validation.assertJsonSchema(path, "string", "package.assetsLoader.saveFile: <path> must be string")
+			validation.assertJsonSchema(path, "string", "package.pkgFileLoader.saveFile: <path> must be string")
 			filePaths = append(filePaths, path)
 
 			return self
 		},
 
 		saveFiles: func(paths) {
-			validation.assertJsonSchema(paths, ["string"], "package.assetsLoader.saveFiles: <paths> must be array of strings")
+			validation.assertJsonSchema(paths, ["string"], "package.pkgFileLoader.saveFiles: <paths> must be array of strings")
 			for p in paths {
 				self.saveFile(p)
 			}
@@ -175,13 +181,13 @@ assetsLoader := func(pkg) {
 		},
 
 		saveFileContent: func(path) {
-			validation.assertJsonSchema(path, "string", "package.assetsLoader.saveFileContent: <path> must be string")
+			validation.assertJsonSchema(path, "string", "package.pkgFileLoader.saveFileContent: <path> must be string")
 			fileContentPaths = append(fileContentPaths, path)
 			return self
 		},
 
 		saveFilesContent: func(paths) {
-			validation.assertJsonSchema(paths, ["string"], "package.assetsLoader.saveFilesContent: <paths> must be array of strings")
+			validation.assertJsonSchema(paths, ["string"], "package.pkgFileLoader.saveFilesContent: <paths> must be array of strings")
 			for p in paths {
 				self.saveFileContent(p)
 			}
@@ -252,8 +258,8 @@ assetsLoader := func(pkg) {
  *
  * @return file: singleAsset - object with reference to the file resource and progress report
  */
-loadAssetFile := func(pkg, assetPath) {
-	assets := assetsLoader(pkg).
+loadPackageFile := func(pkg, assetPath) {
+	assets := pkgFileLoader(pkg).
 		saveFile(assetPath).
 		load()
 
@@ -271,8 +277,8 @@ loadAssetFile := func(pkg, assetPath) {
  *
  * @return content: singleAsset - object with reference to the asset content resource and progress report
  */
-loadAssetContent := func(pkg, assetPath) {
-	assets := assetsLoader(pkg).
+loadPackageFileContent := func(pkg, assetPath) {
+	assets := pkgFileLoader(pkg).
 		saveFileContent(assetPath).
 		load()
 
@@ -285,6 +291,8 @@ loadAssetContent := func(pkg, assetPath) {
 
 export ll.toStrict({
 	softwareInfoScheme                 : softwareInfoScheme,
+	descriptorScheme                   : descriptorScheme,
+	assetDescriptorScheme              : assetDescriptorScheme,
 	binaryDescriptorScheme             : binaryDescriptorScheme,
 	localDescriptorScheme              : localDescriptorScheme,
 	runEnvDescriptorScheme             : runEnvDescriptorScheme,
@@ -294,7 +302,7 @@ export ll.toStrict({
 	get                                : get,
 	install                            : install,
 	use                                : use,
-	assetsLoader                       : assetsLoader,
-	loadAssetFile                      : loadAssetFile,
-	loadAssetContent                   : loadAssetContent
+	pkgFileLoader                      : pkgFileLoader,
+	loadPackageFile                    : loadPackageFile,
+	loadPackageFileContent             : loadPackageFileContent
 })

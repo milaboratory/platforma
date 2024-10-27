@@ -1,0 +1,20 @@
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+asset := assets.importAsset(":exec.test.pkg.asset")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	result := {
+		main: {
+			name: asset.name,
+			version: asset.version,
+			descriptor: ll.fromStrict(asset.descriptor),
+			blobRef: ll.fromStrict(asset.blobRef),
+		}
+	}
+
+	return result
+})
