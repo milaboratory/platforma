@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 import './ag-theme.css';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import type { GridApi, GridOptions, SortState } from '@ag-grid-community/core';
+import type { GridApi, GridOptions, GridReadyEvent, ManagedGridOptionKey, ManagedGridOptions, SortState } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
-import { InfiniteRowModelModule } from '@ag-grid-community/infinite-row-model';
+import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
@@ -19,7 +19,7 @@ import { updateXsvGridOptions } from './sources/file-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, InfiniteRowModelModule, RangeSelectionModule]);
+ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, ServerSideRowModelModule, RangeSelectionModule]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
@@ -120,7 +120,7 @@ const gridState = computed({
     const state = tableState.value;
 
     // do not apply driver sorting for client side rendering
-    const sorting = gridOptions.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
+    const sorting = gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
     state.gridState.columnOrder = gridState.columnOrder;
     state.gridState.sort = gridState.sort;
@@ -221,14 +221,11 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const gridOptions: GridOptions = {
+const gridOptions = ref<GridOptions>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
   initialState: tableState.value.gridState,
-  onGridReady: (event) => {
-    gridApi.value = event.api;
-  },
   onStateUpdated: (event) => {
     gridState.value = {
       columnOrder: event.state.columnOrder,
@@ -239,7 +236,7 @@ const gridOptions: GridOptions = {
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
   },
-  // rowModelType: 'infinite', // will be set with the first data set
+  rowModelType: 'clientSide',
   maxBlocksInCache: 10000,
   cacheBlockSize: 100,
   getRowId: (params) => params.data.id,
@@ -247,6 +244,32 @@ const gridOptions: GridOptions = {
   loadingOverlayComponentParams: { notReady: true },
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
+});
+const onGridReady = (event: GridReadyEvent) => {
+  const api = event.api;
+  gridApi.value = new Proxy(api, {
+    get(target, prop, receiver) {
+      switch (prop) {
+        case 'setGridOption':
+          return (key: ManagedGridOptionKey, value: GridOptions[ManagedGridOptionKey]) => {
+            const options = gridOptions.value;
+            options[key] = value;
+            gridOptions.value = options;
+            api.updateGridOptions(options);
+          };
+        case 'updateGridOptions':
+          return (options: ManagedGridOptions) => {
+            gridOptions.value = {
+              ...gridOptions.value,
+              ...options,
+            };
+            api.updateGridOptions(options);
+          };
+        default:
+          return Reflect.get(target, prop, receiver);
+      }
+    },
+  });
 };
 
 const reloadKey = ref(0);
@@ -261,8 +284,24 @@ watch(
     const selfState = gridApi.getState();
     if (lodash.isEqual(gridState.columnOrder, selfState.columnOrder) && lodash.isEqual(gridState.sort, selfState.sort)) return;
 
-    gridOptions.initialState = gridState;
+    gridOptions.value.initialState = gridState;
     ++reloadKey.value;
+  },
+);
+watch(
+  () => gridOptions.value,
+  (options, oldOptions) => {
+    if (!oldOptions) return;
+    if (options.rowModelType != oldOptions.rowModelType) {
+      console.log('reloading gridOptions');
+      options.loading = false;
+      options.columnDefs = [];
+      options.rowData = undefined;
+      options.serverSideDatasource = undefined;
+      gridOptions.value = options;
+      gridApi.value = undefined;
+      ++reloadKey.value;
+    }
   },
 );
 
@@ -290,20 +329,16 @@ watch(
       case 'ptable': {
         const pfDriver = platforma.pFrameDriver;
         if (!pfDriver) throw Error('platforma.pFrameDriver not set');
-
         const pTable = settings.pTable;
         if (!pTable || !sheets) {
           return gridApi.updateGridOptions({
             loading: true,
             loadingOverlayComponentParams: { notReady: true },
             columnDefs: [],
-            rowData: [],
           });
         }
-
         const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable, sheets);
         return gridApi.updateGridOptions({
-          loading: options.rowModelType === 'infinite',
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
@@ -319,13 +354,11 @@ watch(
             loading: true,
             loadingOverlayComponentParams: { notReady: true },
             columnDefs: [],
-            rowData: [],
           });
         }
 
         const options = await updateXsvGridOptions(gridApi, blobDriver, xsvFile.value);
         return gridApi.updateGridOptions({
-          loading: true,
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
@@ -351,7 +384,7 @@ watch(
         />
       </div>
     </Transition>
-    <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" />
+    <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" @grid-ready="onGridReady" :key="reloadKey" />
   </div>
 </template>
 

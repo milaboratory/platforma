@@ -42,6 +42,9 @@ catalogs:
     '@ag-grid-enterprise/rich-select':
       specifier: ^32.3.0
       version: 32.3.0
+    '@ag-grid-enterprise/server-side-row-model':
+      specifier: ^32.3.0
+      version: 32.3.0
     '@aws-sdk/client-s3':
       specifier: ^3.679.0
       version: 3.679.0
@@ -1382,6 +1385,9 @@ importers:
       '@ag-grid-enterprise/rich-select':
         specifier: 'catalog:'
         version: 32.3.0
+      '@ag-grid-enterprise/server-side-row-model':
+        specifier: 'catalog:'
+        version: 32.3.0
       '@milaboratories/uikit':
         specifier: workspace:^
         version: link:../../lib/ui/uikit
@@ -1951,6 +1957,9 @@ packages:
 
   '@ag-grid-enterprise/row-grouping@32.3.0':
     resolution: {integrity: sha512-CIKjc6DnKa2uXU+gLY0T5sBk3FXidU1DayfkriyGSENQQibMzeyvZY6bLi9JD38tmdDhscVRBQbqaSuLn+fHRQ==}
+
+  '@ag-grid-enterprise/server-side-row-model@32.3.0':
+    resolution: {integrity: sha512-+6mXsxCwjKw3rgK4CwBAw/2VmLjpFhUAHrUfWMv/jCxA+IjQ92myCFebSs52Wcsv/dEIvBFbtnavRurW7TFIbg==}
 
   '@ag-grid-enterprise/side-bar@32.3.0':
     resolution: {integrity: sha512-7q0l8cfPH+xVLPNXDxb+3fG8RQyU7K0jOaNkFyTu6vw8naBoKkkIa/7hkeQBeYvlZRiRZHuY4vubiFTzUNiUWg==}
@@ -7140,6 +7149,11 @@ snapshots:
       '@ag-grid-enterprise/core': 32.3.0
 
   '@ag-grid-enterprise/row-grouping@32.3.0':
+    dependencies:
+      '@ag-grid-community/core': 32.3.0
+      '@ag-grid-enterprise/core': 32.3.0
+
+  '@ag-grid-enterprise/server-side-row-model@32.3.0':
     dependencies:
       '@ag-grid-community/core': 32.3.0
       '@ag-grid-enterprise/core': 32.3.0
