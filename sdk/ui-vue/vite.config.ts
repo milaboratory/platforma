@@ -20,6 +20,7 @@ export default defineConfig({
         '@ag-grid-community/core',
         '@ag-grid-community/client-side-row-model',
         '@ag-grid-community/infinite-row-model',
+        '@ag-grid-enterprise/server-side-row-model',
         '@ag-grid-community/styles',
         '@ag-grid-community/vue3',
         '@ag-grid-community/csv-export',
