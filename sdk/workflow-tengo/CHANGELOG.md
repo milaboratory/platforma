@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.6.3
+
+### Patch Changes
+
+- ddb92ea: exec: rename cache -> cacheMillis, cacheMinutes, cacheSeconds etc; deprecate .cache()
+
 ## 1.6.2
 
 ### Patch Changes

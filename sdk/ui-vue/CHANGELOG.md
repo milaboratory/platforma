@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.17
+
+### Patch Changes
+
+- 8ae398f: PlAgDataTable fix
+
 ## 1.7.16
 
 ### Patch Changes
