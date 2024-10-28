@@ -1,7 +1,15 @@
 <script lang="ts" setup>
 import './ag-theme.css';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import type { GridApi, GridOptions, GridReadyEvent, ManagedGridOptionKey, ManagedGridOptions, SortState } from '@ag-grid-community/core';
+import type {
+  GridApi,
+  GridOptions,
+  GridReadyEvent,
+  ManagedGridOptionKey,
+  ManagedGridOptions,
+  SortState,
+  StateUpdatedEvent,
+} from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { AgGridVue } from '@ag-grid-community/vue3';
@@ -225,13 +233,7 @@ const gridOptions = ref<GridOptions>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
-  initialState: tableState.value.gridState,
-  onStateUpdated: (event) => {
-    gridState.value = {
-      columnOrder: event.state.columnOrder,
-      sort: event.state.sort,
-    };
-  },
+  initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
@@ -239,6 +241,8 @@ const gridOptions = ref<GridOptions>({
   rowModelType: 'clientSide',
   maxBlocksInCache: 10000,
   cacheBlockSize: 100,
+  serverSideSortAllLevels: true,
+  suppressServerSideFullWidthLoadingRow: true,
   getRowId: (params) => params.data.id,
   loading: true,
   loadingOverlayComponentParams: { notReady: true },
@@ -271,6 +275,22 @@ const onGridReady = (event: GridReadyEvent) => {
     },
   });
 };
+const onStateUpdated = (event: StateUpdatedEvent) => {
+  gridState.value = {
+    columnOrder: event.state.columnOrder,
+    sort: event.state.sort,
+  };
+  gridOptions.value.initialState = gridState.value;
+};
+const onGridPreDestroyed = () => {
+  const state = gridApi.value!.getState();
+  gridState.value = {
+    columnOrder: state.columnOrder,
+    sort: state.sort,
+  };
+  gridOptions.value.initialState = gridState.value;
+  gridApi.value = undefined;
+};
 
 const reloadKey = ref(0);
 watch(
@@ -281,9 +301,21 @@ watch(
     const [gridApi, gridState] = state;
     if (!gridApi) return;
 
-    const selfState = gridApi.getState();
-    if (lodash.isEqual(gridState.columnOrder, selfState.columnOrder) && lodash.isEqual(gridState.sort, selfState.sort)) return;
+    const selfFullState = gridApi.getState();
+    const selfState = {
+      columnOrder: selfFullState.columnOrder,
+      sort: selfFullState.sort,
+    };
+    if (lodash.isEqual(gridState, selfState)) return;
 
+    console.log(
+      'reloading; columnOrder changed',
+      !lodash.isEqual(gridState.columnOrder, selfState.columnOrder),
+      'saved',
+      gridState.columnOrder,
+      'current',
+      selfState.columnOrder,
+    );
     gridOptions.value.initialState = gridState;
     ++reloadKey.value;
   },
@@ -292,16 +324,7 @@ watch(
   () => gridOptions.value,
   (options, oldOptions) => {
     if (!oldOptions) return;
-    if (options.rowModelType != oldOptions.rowModelType) {
-      console.log('reloading gridOptions');
-      options.loading = false;
-      options.columnDefs = [];
-      options.rowData = undefined;
-      options.serverSideDatasource = undefined;
-      gridOptions.value = options;
-      gridApi.value = undefined;
-      ++reloadKey.value;
-    }
+    if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
   },
 );
 
@@ -337,8 +360,9 @@ watch(
             columnDefs: [],
           });
         }
-        const options = await updatePFrameGridOptions(gridApi, pfDriver, pTable, sheets);
+        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets);
         return gridApi.updateGridOptions({
+          loading: options.rowModelType !== 'clientSide',
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
@@ -357,8 +381,9 @@ watch(
           });
         }
 
-        const options = await updateXsvGridOptions(gridApi, blobDriver, xsvFile.value);
+        const options = await updateXsvGridOptions(blobDriver, xsvFile.value);
         return gridApi.updateGridOptions({
+          loading: true,
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
@@ -384,7 +409,14 @@ watch(
         />
       </div>
     </Transition>
-    <AgGridVue class="ap-ag-data-table-grid" :grid-options="gridOptions" @grid-ready="onGridReady" :key="reloadKey" />
+    <AgGridVue
+      class="ap-ag-data-table-grid"
+      :grid-options="gridOptions"
+      :key="reloadKey"
+      @grid-ready="onGridReady"
+      @state-updated="onStateUpdated"
+      @grid-pre-destroyed="onGridPreDestroyed"
+    />
   </div>
 </template>
 
