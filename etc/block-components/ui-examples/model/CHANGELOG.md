@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.23
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+
 ## 1.0.22
 
 ### Patch Changes
