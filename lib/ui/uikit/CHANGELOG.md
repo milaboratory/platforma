@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.27
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+
 ## 1.2.26
 
 ### Patch Changes
