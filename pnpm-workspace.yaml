@@ -128,7 +128,7 @@ catalog:
 
   'winston': ^3.15.0
 
-  '@milaboratories/tengo-tester': ^1.4.4
+  '@milaboratories/tengo-tester': ^1.4.5
   '@milaboratories/pframes-node': &pframes-version ^1.6.4
 
   'quickjs-emscripten': ^0.31.0
