@@ -44,6 +44,7 @@ const lorem = faker.lorem.paragraph(1000);
         <PlBtnPrimary @click.stop="data.dialogModal = true">Open PlDialogModal</PlBtnPrimary>
         <PlBtnPrimary @click.stop="data.slideModal = true">Open PlSlideModal</PlBtnPrimary>
         <PlFileInput v-model="data.fileHandle" label="Click me" />
+        <PlFileInput v-model="data.fileHandle" cell-style label="Click me" />
         <PlTextField :model-value="'aaaa'" />
         <PlDropdown :model-value="1" :options="[]" />
       </PlRow>

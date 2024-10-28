@@ -14,8 +14,8 @@
   --icon-color: #000;
 
   width: 100%;
-  min-width: 160px;
-  min-height: var(--control-height);
+  // min-width: 160px;
+  height: 40px;
   position: relative;
   border-radius: var(--border-radius-control);
   display: flex;
@@ -28,6 +28,10 @@
 
   &__envelope {
     font-family: var(--font-family-base);
+    height: var(--control-height);
+    display: flex;
+    align-items: center;
+    min-width: 160px;
   }
 
   .mask-24 {
@@ -52,14 +56,12 @@
   }
 
   &__filename {
-    height: 100%;
     width: 100%;
     border: none;
     font-size: inherit;
     background-color: transparent;
     color: var(--text-color);
     caret-color: var(--border-color-focus);
-    cursor: inherit;
     z-index: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -118,9 +120,11 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
+
     .icon {
       cursor: pointer;
     }
+
     .mask {
       background-color: var(--control-mask-fill);
       cursor: pointer;
@@ -166,6 +170,7 @@
     --label-color: var(--txt-error);
     --text-color: var(--txt-error);
     --icon-color: var(--txt-error);
+
     .pl-file-input__progress {
       display: none;
     }
@@ -174,5 +179,42 @@
   &.disabled {
     --contour-color: var(--color-dis-01);
     cursor: not-allowed;
+  }
+}
+
+.cell-style {
+  $root: &;
+
+  --border-radius-control: 0px;
+  --input-active-color: var(--bg-base-light);
+  --border-color: var(--border-color-div-grey);
+
+  background-color: var(--input-active-color);
+  padding: 4px;
+
+  .pl-file-input {
+    height: 32px;
+
+    &__contour {
+      border-width: 1px;
+      box-shadow: unset !important;
+      border-color: var(--border-color);
+      border-style: dashed;
+    }
+  }
+
+  &:hover {
+    --contour-color: red;
+    --border-color: var(--border-color-focus);
+
+    background-color: var(--btn-active-select);
+  }
+
+  &.has-file {
+    border: 1px solid var(--border-color-div-grey);
+
+    .pl-file-input__contour {
+      border: unset;
+    }
   }
 }
