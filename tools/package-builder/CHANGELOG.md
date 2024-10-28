@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.4
+
+### Patch Changes
+
+- c8a7c81: Make package builder to use .as.json suffix for built assets
+
 ## 2.10.3
 
 ### Patch Changes
