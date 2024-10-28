@@ -4,7 +4,23 @@ import {
   Pl
 } from '@milaboratories/pl-middle-layer';
 
-tplTest('unpack-archive', async ({ helper, expect, driverKit }) => {
+const unarchiveCases: TestInput[] = [
+  {
+    name: 'all files',
+    filesToUnpack: [],
+    expectedValue: "42"
+  },
+  {
+    name: 'single file',
+    filesToUnpack: ['statement.txt'],
+    expectedValue: "statement.txt content\n"
+  }
+];
+
+
+tplTest.for(unarchiveCases)(
+  'archive extract test: $name',
+  async ({filesToUnpack, expectedValue}, { helper, expect, driverKit }) => {
   const importHandle = async (driverKit) => {
     const storages = await driverKit.lsDriver.getStorageList();
     const library = storages.find((s) => s.name == env.libraryStorage);
@@ -24,12 +40,13 @@ tplTest('unpack-archive', async ({ helper, expect, driverKit }) => {
     'exec.test.wd.unarchive',
     ['fileContent'],
     (tx) => ({
-      importHandle: tx.createValue(Pl.JsonObject, JSON.stringify(archiveHandle))
+      importHandle: tx.createValue(Pl.JsonObject, JSON.stringify(archiveHandle)),
+      filesToUnpack: tx.createValue(Pl.JsonObject, JSON.stringify(filesToUnpack))
     })
   );
 
   const fileContentFuture = result.computeOutput('fileContent', (a) => a?.getData().toString());
   const fileContent = await fileContentFuture.awaitStableValue();
 
-  expect(fileContent).toEqual("42")
+  expect(fileContent).toEqual(expectedValue)
 });

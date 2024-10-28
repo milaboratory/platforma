@@ -39,7 +39,7 @@ _getArchiveFillRule := func(dstDir, whatToExtract, archiveBlobKey) {
 	for f in whatToExtract {
 		extractRules = append(extractRules, {
 			srcPath: f,
-			dstPath: ".",
+			dstPath: f,
 			filePerms: 0o600,
 			dirPerms: 0o700
 		})
@@ -48,7 +48,6 @@ _getArchiveFillRule := func(dstDir, whatToExtract, archiveBlobKey) {
 	return {
 		type: "archive",
 		path: dstDir,
-		permissions: 0o600,
 		blobKey: archiveBlobKey,
 		archiveType: "zip",
 		extractRules: extractRules
@@ -136,7 +135,7 @@ _fill := func(workdir) {
 			}
 			validation.assertJsonSchema(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
 
-			blobKey := zipResource.id()
+			blobKey := zipResource.id
 			if is_undefined(blobs[blobKey]) {
 				blobs[blobKey] = zipResource
 			}
