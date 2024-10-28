@@ -1,4 +1,4 @@
-import type { ColDef, GridApi, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
@@ -273,7 +273,6 @@ const isLabelColumn = (col: PTableColumnSpec) => col.type === 'column' && col.sp
  * Calculate GridOptions for p-table data source type
  */
 export async function updatePFrameGridOptions(
-  gridApi: GridApi,
   pfDriver: PFrameDriver,
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
@@ -335,7 +334,8 @@ export async function updatePFrameGridOptions(
       try {
         if (rowCount == 0) {
           params.success({ rowData: [], rowCount });
-          gridApi.showNoRowsOverlay();
+          params.api.showNoRowsOverlay();
+          params.api.setGridOption('loading', false);
           return;
         }
 
@@ -343,6 +343,7 @@ export async function updatePFrameGridOptions(
         if (lastParams && !lodash.isEqual(lastParams.request.sortModel, params.request.sortModel)) {
           lastParams = undefined;
           params.fail();
+          params.api.setGridOption('loading', true);
           return;
         }
         lastParams = params;
@@ -361,9 +362,11 @@ export async function updatePFrameGridOptions(
         }
 
         params.success({ rowData, rowCount });
-        gridApi.autoSizeAllColumns();
+        params.api.autoSizeAllColumns();
+        params.api.setGridOption('loading', false);
       } catch (error: unknown) {
         params.fail();
+        params.api.setGridOption('loading', true);
       }
     },
   } satisfies IServerSideDatasource;
