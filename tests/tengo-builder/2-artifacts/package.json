@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "description": "Simple static artifacts for tests (assets and software)",
     "scripts": {
-        "build": "pl-pkg build descriptors || true"
+        "build": "rm -rf dist && pl-pkg build descriptors || true"
     },
     "block-software": {
         "entrypoints": {
@@ -22,7 +22,10 @@
             },
             "asset": {
                 "asset": {
-                    "registry": "publish-never-happen",
+                    "registry": {
+                        "name": "publish-never-happen",
+                        "downloadURL": "http://example.com/unknown-asset"
+                    },
                     "type": "asset",
                     "root": "asset-root"
                 }
@@ -31,6 +34,6 @@
     },
     "license": "UNLICENSED",
     "devDependencies": {
-        "@platforma-sdk/package-builder": "workspace:*"
+        "@platforma-sdk/package-builder": "file:../../../tools/package-builder"
     }
 }
