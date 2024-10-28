@@ -6,9 +6,16 @@
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
 
-    "build": "npm ci && rm -rf dist && pl-pkg build --entrypoint=1.2.3"
+    "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
   },
   "block-software": {
+    "registries": {
+        "binary": {
+            "example": {
+                "downloadURL": "https://example.com/base-path/"
+            }
+        }
+    },
     "entrypoints": {
       "1.2.3": {
         "asset": {

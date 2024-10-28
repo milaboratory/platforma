@@ -47,9 +47,6 @@ packages:
   # Tests
 
   - tests/workflow-tengo
-  - tests/tengo-builder/1-library
-  - tests/tengo-builder/2-artifacts
-  - tests/tengo-builder/3-software-dep
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
