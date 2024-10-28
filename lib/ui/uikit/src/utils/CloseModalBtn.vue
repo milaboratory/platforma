@@ -14,7 +14,7 @@
   width: 40px;
   height: 40px;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 12px; // slide-modal 6px
   &:hover {
     background-color: var(--btn-sec-hover-grey);
     transition: all 0.1s ease-in-out;
