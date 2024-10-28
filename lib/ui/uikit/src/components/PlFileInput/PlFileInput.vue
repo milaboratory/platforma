@@ -98,9 +98,9 @@ const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const hasErrors = computed(() => props.error || props.progress?.lastError);
+const hasErrors = computed(() => props.error);
 
-const computedError = computed(() => props.error ?? props.progress?.lastError);
+const computedError = computed(() => props.error);
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
