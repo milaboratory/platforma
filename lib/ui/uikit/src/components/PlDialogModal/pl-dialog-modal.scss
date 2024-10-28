@@ -2,7 +2,8 @@
 
 .pl-dialog-modal {
   --padding-top: 24px;
-  --border-radius: 12px;
+  --border-radius: 16px;
+  --title-padding: 24px 24px 0 24px;
 
   min-height: 400px;
   max-height: calc(100vh - 48px);
@@ -10,7 +11,7 @@
   min-width: 448px;
 
   position: absolute;
-  top: 45%;
+  top: 50%;
   left: 50%;
   transform: translateY(-50%) translateX(-50%);
   background-color: #fff;
@@ -25,9 +26,8 @@
     --padding-top: 0;
   }
 
-  &.C {
-    background-color: #e1e3eb;
-    max-height: 80vh;
+  &.has-content {
+    --title-padding: 24px;
   }
 
   &__title {
@@ -39,7 +39,7 @@
     font-weight: 500;
     line-height: 32px; /* 114.286% */
     letter-spacing: -0.56px;
-    padding: 24px;
+    padding: var(--title-padding);
   }
 
   &__content {
@@ -47,12 +47,17 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    padding: 0 24px 24px;
-    padding-top: 16px;
+    padding: 16px 24px 40px;
     min-height: 0;
+    line-height: 20px;
+    // background-color: #33333333; //
     &.no-content-gutters {
       padding: 0 0;
     }
+    &.no-top-content-gutter {
+      padding-top: 0;
+    }
+    @include scrollbar();
   }
 
   &__actions {
@@ -95,16 +100,9 @@
     background-color: rgba(0, 0, 0, 0.64);
   }
 
-  .close-dialog-btn {
+  .close-modal-btn {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    cursor: pointer;
-    background-color: #d3d7e0;
-    @include mask(url(@/assets/images/24_close.svg), 24px);
-    transition: all 0.1s ease-in-out;
-    &:hover {
-      background-color: var(--main-dark-color);
-    }
+    top: 4px;
+    right: 4px;
   }
 }
