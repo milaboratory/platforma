@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { h } from 'vue';
+import { defineComponent, h } from 'vue';
 import { PlBlockPage, PlAgOverlayLoading, PlAgOverlayNoRows } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import type { GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
+import { PlFileInput } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -14,6 +15,12 @@ const LinkComponent: Component = {
       h('a', { href: props.params.value, style: 'text-decoration: underline' }, props.params.value);
   }
 };
+
+const CellFileInput = defineComponent({
+  setup() {
+    return () => h(PlFileInput, { modelValue: undefined, cellStyle: true });
+  }
+});
 
 const columnDefs = [
   {
@@ -32,6 +39,13 @@ const columnDefs = [
     headerName: 'Description'
   },
   {
+    colId: 'file',
+    field: 'file',
+    headerName: 'File input',
+    cellRenderer: 'CellFileInput',
+    cellStyle: { padding: 0 }
+  },
+  {
     colId: 'link',
     field: 'link',
     headerName: 'Link',
@@ -44,13 +58,15 @@ const result = times(100, () => {
     id: faker.number.int(),
     label: faker.company.buzzNoun(),
     description: faker.lorem.paragraph(),
+    file: '',
     link: faker.internet.url()
   };
 });
 
 const gridOptions: GridOptions = {
   components: {
-    LinkComponent
+    LinkComponent,
+    CellFileInput
   }
 };
 

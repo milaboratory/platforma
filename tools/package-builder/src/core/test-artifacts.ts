@@ -5,6 +5,7 @@ export const PackageNameNoAt: string = 'some-company/the-software'
 export const PackageName: string = '@' + PackageNameNoAt
 
 export const BinaryRegistry: string = "some-binary-registry"
+export const BinaryRegistryURL: string = "http://example.com/registry"
 export const BinaryCustomName1: string = "custom-package-name-1"
 export const BinaryCustomVersion: string = "4.4.4"
 
@@ -60,6 +61,11 @@ export const PackageJson = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}",
     "block-software": {
+      "registries": {
+        "binary": {
+          "${BinaryRegistry}": {"downloadURL": "${BinaryRegistryURL}"}
+        }
+      },
       "artifacts": {
         "pAsset": ${AssetArtifact},
         "pEnv": ${EnvironmentPackage},

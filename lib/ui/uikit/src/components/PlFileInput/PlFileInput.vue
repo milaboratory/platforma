@@ -70,7 +70,7 @@ const props = withDefaults(
     showFilenameOnly?: boolean;
 
     /**
-     * Remove rouded border and change styles
+     * Remove rounded border and change styles
      */
     cellStyle?: boolean;
   }>(),

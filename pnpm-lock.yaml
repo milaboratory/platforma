@@ -61,11 +61,11 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: ^1.6.3
-      version: 1.6.3
+      specifier: ^1.6.4
+      version: 1.6.4
     '@milaboratories/software-pframes-conv':
-      specifier: ^1.6.3
-      version: 1.6.3
+      specifier: ^1.6.4
+      version: 1.6.4
     '@milaboratories/tengo-tester':
       specifier: ^1.4.4
       version: 1.4.4
@@ -983,7 +983,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 1.6.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.6.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1469,7 +1469,7 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.6.3
+        version: 1.6.4
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.14.4
@@ -1564,30 +1564,6 @@ importers:
         specifier: 'catalog:'
         version: 5.5.4
 
-  tests/tengo-builder/1-library:
-    devDependencies:
-      '@platforma-sdk/tengo-builder':
-        specifier: workspace:*
-        version: link:../../../tools/tengo-builder
-
-  tests/tengo-builder/2-artifacts:
-    devDependencies:
-      '@platforma-sdk/package-builder':
-        specifier: workspace:*
-        version: link:../../../tools/package-builder
-
-  tests/tengo-builder/3-software-dep:
-    devDependencies:
-      '@mi-tests/tengo-integration-2':
-        specifier: workspace:*
-        version: link:../2-artifacts
-      '@platforma-sdk/tengo-builder':
-        specifier: workspace:*
-        version: link:../../../tools/tengo-builder
-      '@platforma-sdk/workflow-tengo':
-        specifier: workspace:*
-        version: link:../../../sdk/workflow-tengo
-
   tests/workflow-tengo:
     devDependencies:
       '@milaboratories/pl-middle-layer':
@@ -1598,7 +1574,7 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.6.3
+        version: 1.6.4
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.14.4
@@ -3064,8 +3040,8 @@ packages:
   '@microsoft/tsdoc@0.15.0':
     resolution: {integrity: sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==}
 
-  '@milaboratories/pframes-node@1.6.3':
-    resolution: {integrity: sha512-3xpa39f9ebl2CieXvXyxsLycwReKxtWsMrD8psFh/rqDk1B1rHFtuSp9DIr4hBmaGZnVhihhAsFi+fgqDNE6vw==}
+  '@milaboratories/pframes-node@1.6.4':
+    resolution: {integrity: sha512-O6LGb1ypdRm2XfBu1r1P8fsQVjQarBipFT+GcCepMtZwUkZncgDddSDjhAuPKv+3L3JcxmogkvCIRe111rOJMQ==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -3075,8 +3051,8 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.5.0':
     resolution: {integrity: sha512-xml3u/vQT6YYy/bXvkWb8Grk8kKc235oC/isHqjieCE6tjmb2q27nafZPEHAXnP6ox2f3M3Eg4LZBalXachfcw==}
 
-  '@milaboratories/software-pframes-conv@1.6.3':
-    resolution: {integrity: sha512-9wWG/jFtWjdv4nZmGWdR2oly2DCBJ9lWXsUAyFtYmHux4DZ6/BZ5b6FYxNegfIhl76KZvzaHfJ+fE2fLndV4rg==}
+  '@milaboratories/software-pframes-conv@1.6.4':
+    resolution: {integrity: sha512-ec1UC/9fAtmcIqEjFcJRI3AYP1joP29msbYqUcFE6COhVyOnSU38PzepJOnCHzK9Uv5U5iEI5p798R/sNEln9w==}
 
   '@milaboratories/tengo-tester@1.4.4':
     resolution: {integrity: sha512-UWT05MAwizVEbUQC+HDD7VPb26AtZesCAT67CEzWSg4GUbNrOw5c/+TCCLJAS1lq3UQY0i3VV9QOtI1kjVokRQ==}
@@ -9118,7 +9094,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@milaboratories/pframes-node@1.6.3(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@1.6.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -9137,7 +9113,7 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@1.6.3': {}
+  '@milaboratories/software-pframes-conv@1.6.4': {}
 
   '@milaboratories/tengo-tester@1.4.4': {}
 
