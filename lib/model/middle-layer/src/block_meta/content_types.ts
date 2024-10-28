@@ -36,10 +36,15 @@ export const ContentRelative = z
   .strict();
 export type ContentRelative = z.infer<typeof ContentRelative>;
 
+const absPathRegex = new RegExp(`^(/|[A-Z]:\\\\)`);
+
 export const ContentAbsoluteFile = z
   .object({
     type: z.literal('absolute-file'),
-    file: z.string().startsWith('/').describe('Absolute address of the file in local file system')
+    file: z
+      .string()
+      .regex(absPathRegex, 'path to file must be absolute')
+      .describe('Absolute address of the file in local file system')
   })
   .strict();
 export type ContentAbsoluteFile = z.infer<typeof ContentAbsoluteFile>;
@@ -73,7 +78,7 @@ export const ContentAbsoluteFolder = z
     type: z.literal('absolute-folder'),
     folder: z
       .string()
-      .startsWith('/')
+      .regex(absPathRegex, 'path to folder must be absolute')
       .describe('Absolute address of the folder in local file system')
   })
   .strict();
