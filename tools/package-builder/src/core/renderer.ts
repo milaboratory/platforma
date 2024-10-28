@@ -17,6 +17,7 @@ type packageSwJson = z.infer<typeof externalPackageLocationSchema>
 
 const assetSchema = z.object({
     ...externalPackageLocationSchema.shape,
+    url: z.string().describe("asset download URL"),
 })
 type assetInfo = z.infer<typeof assetSchema>
 
@@ -177,14 +178,17 @@ export function readEntrypointDescriptor(npmPackageName: string, entrypointName:
     }
 }
 
+const softwareFileExtension = ".sw.json"
+const assetFileExtension = ".as.json"
+
 export function listPackageEntrypoints(packageRoot: string): {name: string, path: string}[] {
     const swDir = entrypointFilePath(packageRoot, 'software')
     const swItems = fs.readdirSync(swDir)
     const swEntrypoints: {name: string, path: string}[] = swItems.
-        filter((fName: string) => fName.endsWith(".sw.json")).
+        filter((fName: string) => fName.endsWith(softwareFileExtension)).
         map((fName: string) => (
             {
-                name: fName.slice(0, -".sw.json".length),
+                name: fName.slice(0, -softwareFileExtension.length),
                 path: path.join(swDir, fName),
             }
         ))
@@ -192,10 +196,10 @@ export function listPackageEntrypoints(packageRoot: string): {name: string, path
     const assetDir = entrypointFilePath(packageRoot, 'asset')
     const assetItems = fs.readdirSync(assetDir)
     const assetEntrypoints = assetItems.
-        filter((fName: string) => fName.endsWith(".sw.json")).
+        filter((fName: string) => fName.endsWith(assetFileExtension)).
         map((fName: string) => (
             {
-                name: fName.slice(0, -".sw.json".length),
+                name: fName.slice(0, -assetFileExtension.length),
                 path: path.join(swDir, fName),
             }
         ))
@@ -560,15 +564,20 @@ export class Renderer {
                 util.assertNever(mode)
         }
 
-        const env = ep.package
+        const pkg = ep.package
 
-        if (env.type !== 'asset') {
-            throw new Error(`could not render asset entrypoint ${epName} (not 'asset' artifact)`)
+        if (pkg.type !== 'asset') {
+            throw new Error(`could not render asset entrypoint ${epName}: not 'asset' artifact`)
+        }
+
+        if (!pkg.registry.downloadURL) {
+            throw new Error(`could not render asset entrypoint ${epName}: base download URL is not configured for asset's registry`)
         }
 
         return {
-            registry: env.registry.name,
-            package: env.namePattern,
+            registry: pkg.registry.name,
+            package: pkg.namePattern,
+            url: util.urlJoin(pkg.registry.downloadURL, pkg.namePattern),
         }
     }
 
@@ -606,9 +615,11 @@ export class Renderer {
 }
 
 export function entrypointFilePath(packageRoot: string, entrypointType: 'software' | 'asset', entrypointName?: string): string {
+    const typeSuffix = entrypointType === 'software' ? 'sw' : 'as'
+
     if (!entrypointName) {
         return path.resolve(packageRoot, "dist", "tengo", entrypointType)
     }
 
-    return path.resolve(packageRoot, "dist", "tengo", entrypointType, `${entrypointName}.sw.json`)
+    return path.resolve(packageRoot, "dist", "tengo", entrypointType, `${entrypointName}.${typeSuffix}.json`)
 }

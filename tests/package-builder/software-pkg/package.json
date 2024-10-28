@@ -7,7 +7,7 @@
     "reset": "npm run cleanup && rm -rf ./node_modules/",
 
     "build:descriptor": "pl-pkg build descriptors",
-    "build": "npm ci && rm -rf dist && pl-pkg build --log-level=debug"
+    "build": "rm -rf dist && pl-pkg build --log-level=debug"
   },
 
   "block-software": {

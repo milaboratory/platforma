@@ -8,6 +8,7 @@ work/
 .turbo
 log/platforma.log
 tmp/
+.DS_Store
 
 test_config.json
 .test_auth.json

@@ -134,7 +134,8 @@ export type Entrypoint =
     EnvironmentEntrypoint
 
 const storagePresetSchema = z.object({
-    storageURL: z.string()
+    downloadURL: z.string().optional(),
+    storageURL: z.string().optional(),
 })
 
 const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema)
@@ -497,15 +498,18 @@ export class PackageInfo {
 
         var result: artifacts.registry = {
             name: "default",
-            storageURL: registries.default?.storageURL
+            downloadURL: registries.default?.downloadURL,
+            storageURL: registries.default?.storageURL,
         }
 
         if (registry) {
             if (typeof registry === 'string') {
                 result.name = registry
+                result.downloadURL = registries[result.name]?.downloadURL
                 result.storageURL = registries[result.name]?.storageURL
             } else {
                 result.name = registry.name
+                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL
                 result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL
             }
         }
@@ -515,6 +519,18 @@ export class PackageInfo {
         const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
         if (uploadTo) {
             result.storageURL = uploadTo
+        }
+
+        const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`]
+        if (downloadFrom) {
+            result.downloadURL = downloadFrom
+        }
+
+        if (result.downloadURL) {
+            const u = new URL(result.downloadURL, 'file:/nonexistent') // check download URL is valid URL
+            if (!['https:', 'http:'].includes(u.protocol)) {
+                throw new Error(`registry ${result.name} download URL is not valid. Only 'https://' and 'http://' schemes are supported for now`)
+            }
         }
 
         return result
