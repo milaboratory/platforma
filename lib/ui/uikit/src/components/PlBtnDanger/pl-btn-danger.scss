@@ -1,11 +1,11 @@
 @import "@/assets/mixins";
 
-.pl-btn-accent {
+.pl-btn-danger {
   @include base-btn;
 
   & {
-    --color-btn-background: var(--color-accent-default);
-    --color-btn-hover: var(--color-accent-hover);
+    --color-btn-background: var(--txt-error);
+    --color-btn-hover: #FF5C5C;
 
     background-color: var(--color-btn-background);
     border: none;

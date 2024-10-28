@@ -1,14 +1,14 @@
 <script lang="ts">
 /**
- * Accent button
+ * Danger button
  */
 export default {
-  name: 'PlBtnAccent',
+  name: 'PlBtnDanger',
 };
 </script>
 
 <script lang="ts" setup>
-import './pl-btn-accent.scss';
+import './pl-btn-danger.scss';
 import type { MaskIconName16, Size } from '@/types';
 import BtnBase from '@/base/BtnBase.vue';
 
@@ -41,7 +41,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <BtnBase class="pl-btn-accent" v-bind="props">
+  <BtnBase class="pl-btn-danger" v-bind="props">
     <slot />
   </BtnBase>
 </template>
