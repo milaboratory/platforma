@@ -64,7 +64,8 @@ builder := func() {
 	filesToStream := {}
 	// workdir processors
 	wdProcessors := {}
-	// assetRules to be extracted into workdir vefore execution
+
+	// assets to be extracted into workdir before execution
 	assetInfos := {}
 	assetDescriptors := {}
 	assetRules := {}
@@ -251,7 +252,7 @@ builder := func() {
 			cache = days * times.hour * 24
 			return self
 		},
-		
+
 		/**
 		 * Sets the number of error lines to be captured.
 		 *

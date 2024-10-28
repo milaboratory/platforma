@@ -12,7 +12,7 @@ self.body(func(inputs) {
 			name: asset.name,
 			version: asset.version,
 			descriptor: ll.fromStrict(asset.descriptor),
-			blobRef: ll.fromStrict(asset.blobRef),
+			blobRef: ll.fromStrict(asset.blobRef)
 		}
 	}
 
