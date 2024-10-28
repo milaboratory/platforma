@@ -22,20 +22,28 @@ export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorage
     // code below inspired by
     // https://stackoverflow.com/a/52411712/769192
 
-    const wmic = await util.promisify(exec)('wmic logicaldisk get name');
-    // parsing wmic output
-    const drives = wmic.stdout
-      .split('\r\n')
-      .filter((line) => line.includes(':'))
-      .map((line) => line.trim().replaceAll(':', ''));
+    try {
+      const wmic = await util.promisify(exec)('wmic logicaldisk get name');
+      // parsing wmic output
+      const drives = wmic.stdout
+        .split('\r\n')
+        .filter((line) => line.includes(':'))
+        .map((line) => line.trim().replaceAll(':', ''));
 
-    return drives.map((drive) => {
-      const isHomeDrive = drive == homeDrive;
-      return {
-        name: `local_disk_${drive}`,
-        root: `${drive}:\\`,
-        initialPath: isHomeDrive ? home : `${drive}:\\`
-      }
-    });
+      return drives.map((drive) => {
+        const isHomeDrive = drive == homeDrive;
+        return {
+          name: `local_disk_${drive}`,
+          root: `${drive}:\\`,
+          initialPath: isHomeDrive ? home : `${drive}:\\`
+        }
+      });
+    } catch (e: any) {
+      return [{
+        name: `local_disk_${homeDrive}`,
+        root: `${homeDrive}:\\`,
+        initialPath: home
+      }]
+    }
   }
 }

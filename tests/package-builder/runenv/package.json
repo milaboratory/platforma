@@ -6,7 +6,7 @@
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
 
-    "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
+    "build": "npm ci && rm -rf dist && pl-pkg build --entrypoint=1.2.3"
   },
   "block-software": {
     "entrypoints": {

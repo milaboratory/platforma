@@ -22,7 +22,7 @@ import canonicalize from 'canonicalize';
 
 export type CompileMode = 'dist'
 
-export type ArtifactType = 'library' | 'template' | 'test' | 'software'
+export type ArtifactType = 'library' | 'template' | 'test' | 'software' | 'asset'
 
 /** Artifact Name including package version */
 export interface FullArtifactName {

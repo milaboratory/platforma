@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.7.13",
+  "version": "1.7.18",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -37,6 +37,7 @@
     "@ag-grid-community/core": "catalog:",
     "@ag-grid-community/client-side-row-model": "catalog:",
     "@ag-grid-community/infinite-row-model": "catalog:",
+    "@ag-grid-enterprise/server-side-row-model": "catalog:",
     "@ag-grid-community/styles": "catalog:",
     "@ag-grid-community/vue3": "catalog:",
     "@ag-grid-community/csv-export": "catalog:",

@@ -1,4 +1,4 @@
-ll := import("@milaboratory/tengo-sdk:ll")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 mySoft := ll.importSoftware(":my-software")
 
 export {

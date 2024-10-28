@@ -34,10 +34,12 @@ test('template serialization / deserialization', () => {
             },
             templates: {},
             software: {},
+            assets: {},
             src: 'src 1...'
           }
         },
         software: {},
+        assets: {},
         src: 'src 2 ...'
       }
     }

@@ -178,6 +178,7 @@ function getPlConfig(
       runner: {
         type: 'local',
         storageRoot: storages.runner,
+        workdirCacheOnFailure: '1h',
         secrets: [{ map: licenseEnvsForMixcr(license) }]
       },
       data: {

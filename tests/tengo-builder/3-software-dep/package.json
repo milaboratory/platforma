@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "name": "@mi-tests/tengo-integration-3",
+  "version": "1.0.0",
+  "description": "The software dependency test",
+  "scripts": {
+    "build": "true",
+    "test": "pl-tengo build"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@mi-tests/tengo-integration-2": "workspace:*",
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*"
+  }
+}

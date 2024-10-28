@@ -1,0 +1,36 @@
+{
+    "private": true,
+    "name": "@mi-tests/tengo-integration-2",
+    "version": "1.0.0",
+    "description": "Simple static artifacts for tests (assets and software)",
+    "scripts": {
+        "build": "pl-pkg build descriptors || true"
+    },
+    "block-software": {
+        "entrypoints": {
+            "software": {
+                "binary": {
+                    "artifact": {
+                        "registry": "publish-never-happen",
+                        "type": "binary",
+                        "root": "software-root"
+                    },
+                    "cmd": [
+                        "fake-binary"
+                    ]
+                }
+            },
+            "asset": {
+                "asset": {
+                    "registry": "publish-never-happen",
+                    "type": "asset",
+                    "root": "asset-root"
+                }
+            }
+        }
+    },
+    "license": "UNLICENSED",
+    "devDependencies": {
+        "@platforma-sdk/package-builder": "workspace:*"
+    }
+}
