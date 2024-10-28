@@ -23,6 +23,7 @@ export type pythonToolsetName = (typeof pythonToolsets)[number];
 
 export const registrySchema = z.strictObject({
     name: z.string(),
+    downloadURL: z.string().optional(),
     storageURL: z.string().optional(),
 })
 export type registry = z.infer<typeof registrySchema>
@@ -47,7 +48,9 @@ const artifactIDSchema = z.string().
     regex(/:/, { message: "tengo artifact ID must have <npmPackage>:<artifactName> format, e.g @milaboratory/runenv-java-corretto:21.2.0.4.1" }).
     describe("ID of tengo build artifact")
 
-export const assetPackageSchema = archiveRulesSchema
+export const assetPackageSchema = archiveRulesSchema.omit({roots: true}).extend({
+    type: z.literal('asset').optional(),
+}).strict()
 export const typedAssetPackageSchema = archiveRulesSchema.extend({
     type: z.literal('asset'),
 })
