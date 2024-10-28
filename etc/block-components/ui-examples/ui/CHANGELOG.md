@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.43
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+  - @platforma-sdk/ui-vue@1.7.21
+
 ## 1.0.42
 
 ### Patch Changes
