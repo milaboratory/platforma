@@ -1,0 +1,5 @@
+---
+'@milaboratories/helpers': patch
+---
+
+escapeRegExp
