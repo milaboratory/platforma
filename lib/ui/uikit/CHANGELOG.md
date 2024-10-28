@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.28
+
+### Patch Changes
+
+- 0b11a0a: fix close modal btn border radius
+
 ## 1.2.27
 
 ### Patch Changes

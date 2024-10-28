@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.44
+
+### Patch Changes
+
+- 0b11a0a: fix close modal btn border radius
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.44
+
 ## 1.0.43
 
 ### Patch Changes
