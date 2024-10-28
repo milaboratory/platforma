@@ -4,12 +4,11 @@
   "version": "1.0.0",
   "description": "The library and template compilation test",
   "scripts": {
-    "build": "true",
-    "test": "pl-tengo build"
+    "build": "rm -rf dist && pl-tengo build"
   },
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "file:../../../tools/tengo-builder"
   }
 }
