@@ -91,11 +91,6 @@ createBlobMapResource := undefined
 
 ////////////////// helpers ///////////////////////////
 
-// internal helper function
-isFieldId := func(val) {
-	return ll.isStrict(val) && ll.fromStrict(val)["ResourceID"] != undefined
-}
-
 /**
  * Returns true if given object is a smart.Resource
  */
@@ -561,7 +556,7 @@ field = func(f) {
 	self := undefined
 	strictSelf := undefined
 
-	id := isFieldId(f) ? f : f.ID
+	id := ll.isFieldId(f) ? f : f.ID
 
 	if (is_undefined(id)) {
 		ll.panic("undefined id in smart.field. <f>="+f)

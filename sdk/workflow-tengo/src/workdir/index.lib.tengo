@@ -135,8 +135,7 @@ _fill := func(workdir) {
 			}
 			validation.assertJsonSchema(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
 
-			blobKey := zipResource.id
-			ll.assert(!is_undefined(blobKey), "workdir.builder.addFromZip: <zipResource> ID is empty")
+			blobKey := ll.idToString(zipResource.id)
 
 			if is_undefined(blobs[blobKey]) {
 				blobs[blobKey] = zipResource
