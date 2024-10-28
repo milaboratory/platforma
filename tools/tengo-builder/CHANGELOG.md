@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.15.1
+
+### Patch Changes
+
+- 89eaf3e: Support \*.as.json asset files
+
 ## 1.15.0
 
 ### Minor Changes
