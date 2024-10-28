@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.6.4
+
+### Patch Changes
+
+- 612a9be: Option splitDataAndSpec for xsv.importFile
+
 ## 1.6.3
 
 ### Patch Changes
