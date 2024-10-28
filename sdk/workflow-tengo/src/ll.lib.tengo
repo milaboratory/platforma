@@ -112,7 +112,7 @@ toStrict := func(v, ...recursive) {
 		}
 
 		if !isMap(v) {
-			return v // for recursive transformation, accept the top-level object to be of any type (i.e. array of maps)
+			return v // for recursive transformation, accept the top-level value to be of any type (i.e. array of maps)
 		}
 	}
 

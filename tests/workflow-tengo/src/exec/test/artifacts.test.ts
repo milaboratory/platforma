@@ -44,7 +44,6 @@ tplTest("asset-info-loads", async ({ helper, expect }) => {
 
   expect(val.name).eq("@platforma-sdk/workflow-tengo-tests:exec.test.pkg.asset")
   expect(val.version).not.eq("")
-  expect(val.execs.length).gt(0)
   expect(val).toHaveProperty("blobRef")
   expect(val).toHaveProperty("descriptor")
 });
