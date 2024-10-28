@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.6
+
+### Patch Changes
+
+- 612a9be: PFrame driver concurrency changed to 1
+- Updated dependencies [612a9be]
+- Updated dependencies [612a9be]
+  - @platforma-sdk/workflow-tengo@1.6.4
+  - @milaboratories/pl-model-common@1.5.2
+  - @milaboratories/pl-model-middle-layer@1.5.5
+  - @milaboratories/pl-drivers@1.3.7
+  - @platforma-sdk/model@1.7.20
+  - @platforma-sdk/block-tools@2.3.19
+
 ## 1.14.5
 
 ### Patch Changes
