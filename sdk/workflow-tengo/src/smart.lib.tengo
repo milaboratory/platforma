@@ -561,6 +561,12 @@ field = func(f) {
 	self := undefined
 	strictSelf := undefined
 
+	id := isFieldId(f) ? f : f.ID
+
+	if (is_undefined(id)) {
+		ll.panic("undefined id in smart.field. <f>="+f)
+	}
+
 	self = {
 		_type: "field",
 
@@ -571,7 +577,7 @@ field = func(f) {
 		 *	Name:		string
 		 *
 		 */
-		id: isFieldId(f) ? f : f.ID,
+		id: id,
 
 		/**
 		 * Field name
