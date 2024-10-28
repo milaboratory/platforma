@@ -172,6 +172,18 @@ export function rSplit(input: string, delimiter: string, limit?: number): string
     ];
 };
 
+const replaceDuplicateSlashes = new RegExp('//+', 'g')
+export function urlJoin(url: string, appendPath: string) : string {
+    const u = new URL(url, 'file:/nonexistent-9672674c/')
+    if (u.protocol === 'file:' && u.pathname.startsWith('/nonexistent-9672674c/')) {
+        throw new Error(`string '${url}' is not valid URL`)
+    }
+
+    u.pathname = u.pathname + "/" + appendPath
+    u.pathname = u.pathname.replaceAll(replaceDuplicateSlashes, '/')
+    return u.toString()
+}
+
 export function wrapErr(e: any, msg: string) : any {
     if (!(e instanceof Error)) {
         return e
