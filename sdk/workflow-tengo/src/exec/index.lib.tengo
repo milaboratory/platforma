@@ -274,11 +274,11 @@ builder := func() {
 		 * @param pathsInArchive: string[] - paths inside the archive to be extracted into destinationDir.
 		 *                                   Empty array means 'unpack full archive'.
 		 */
-		addAsset: func(asset, pathsInArchive, destinationDir) {
+		addAsset: func(asset, destinationDir, pathsInArchive) {
 			ll.assert(assets.isAssetInfo(asset),
 				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
 
-			validation.assertJsonSchema([destinationDir], ["string"], "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
 			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			if is_undefined(assetRules[asset._id]) {
