@@ -67,9 +67,16 @@ export {
     "template3": plapiCustomName.getTemplateId("package1:template-3")
 }
 `;
+
+export const testLocalLib2Name: FullArtifactName = {
+  type: 'library',
+  pkg: 'current-package',
+  id: 'local-library-2',
+  version: '2.3.4'
+};
 export const testLocalLib2Src = `
 otherLib := import("package1:someid")
-ll := import("@milaboratory/tengo-sdk:ll")
+ll := import("@platforma-sdk/workflow-tengo:assets")
 
 /* multiline comments should be ignored
   a := import(":non-existent-library")
@@ -77,6 +84,7 @@ ll := import("@milaboratory/tengo-sdk:ll")
 
 tplID := ll.importTemplate("package2:template-1")
 softwareID := ll.importSoftware("package2:software-1")
+assetID := ll.importAsset("package2:asset-1")
 
 export {
     "some": "value",

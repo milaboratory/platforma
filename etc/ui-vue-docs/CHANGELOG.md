@@ -1,5 +1,27 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [072c49d]
+  - @platforma-sdk/ui-vue@1.7.18
+
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [8ae398f]
+  - @platforma-sdk/ui-vue@1.7.17
+
+## 0.1.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.16
+- @milaboratories/uikit@1.2.26
+- @platforma-sdk/ui-vue@1.7.16
+
 ## 0.1.4
 
 ### Patch Changes

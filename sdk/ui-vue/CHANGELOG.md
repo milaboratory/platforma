@@ -1,5 +1,24 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.18
+
+### Patch Changes
+
+- 072c49d: PlAgDataTable loading fix
+
+## 1.7.17
+
+### Patch Changes
+
+- 8ae398f: PlAgDataTable fix
+
+## 1.7.16
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.16
+- @milaboratories/uikit@1.2.26
+
 ## 1.7.13
 
 ### Patch Changes

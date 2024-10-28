@@ -10,6 +10,11 @@ export type LiveLogHandle = `log+live://log/${string}`;
 /** Handle of the ready logs of a program. */
 export type ReadyLogHandle = `log+ready://log/${string}`;
 
+/** Type guard to check if log is live, and corresponding porcess is not finished. */
+export function isLiveLog(handle: AnyLogHandle | undefined): handle is LiveLogHandle {
+  return handle !== undefined && handle.startsWith('log+live://log/');
+}
+
 /** Driver to retrieve logs given log handle */
 export interface LogsDriver {
   lastLines(
@@ -53,9 +58,7 @@ export interface LogsDriver {
  * The caller should give a handle to retrieve it.
  * It can be OK or outdated, in which case the handle
  * should be issued again. */
-export type StreamingApiResponse =
-  | StreamingApiResponseOk
-  | StreamingApiResponseHandleOutdated;
+export type StreamingApiResponse = StreamingApiResponseOk | StreamingApiResponseHandleOutdated;
 
 export type StreamingApiResponseOk = {
   /** The handle don't have to be updated,
