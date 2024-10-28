@@ -24,6 +24,7 @@ interface PackageJson {
 const compiledTplSuffix = '.plj.gz';
 const compiledLibSuffix = '.lib.tengo';
 const compiledSoftwareSuffix = '.sw.json';
+const compiledAssetSuffix = '.as.json';
 
 // We need to keep track of dependencies for correct tgo-test CLI utility configuraiton.
 // It is much simpler to do this here, than duplicate all tle logic regarding dependencies
@@ -33,7 +34,8 @@ const srcTestSuffix = '.test.tengo';
 const srcTplSuffix = '.tpl.tengo';
 const srcLibSuffix = '.lib.tengo';
 const srcSoftwareSuffix = '.sw.json';
-const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix];
+const srcAssetSuffix = '.as.json';
+const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix, srcAssetSuffix];
 
 export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
@@ -221,12 +223,12 @@ function loadAssetsFromDir(
 ) {
   for (const f of fs.readdirSync(folder)) {
     const file = path.resolve(folder, f);
-    if (!f.endsWith(compiledSoftwareSuffix))
+    if (!f.endsWith(compiledAssetSuffix))
       throw new Error(`unexpected file in 'asset' folder: ${file}`);
     const fullName: FullArtifactName = {
       type: 'asset',
       pkg: packageJson.name,
-      id: f.slice(0, f.length - compiledSoftwareSuffix.length),
+      id: f.slice(0, f.length - compiledAssetSuffix.length),
       version: packageJson.version
     };
 
@@ -327,6 +329,14 @@ function fullNameFromFileName(
     };
   }
 
+  if (artifactName.endsWith(srcAssetSuffix)) {
+    return {
+      ...pkgAndVersion,
+      id: artifactName.substring(0, artifactName.length - srcAssetSuffix.length),
+      type: 'asset'
+    };
+  }
+
   if (artifactName.endsWith(srcTestSuffix)) {
     return {
       ...pkgAndVersion,
@@ -401,7 +411,7 @@ export function savePacks(logger: winston.Logger, compiled: TemplatesAndLibs, mo
     const swOutput = resolveAssetsDst(mode, '.');
     fs.mkdirSync(swOutput, { recursive: true });
     for (const sw of compiled.software) {
-      const file = path.resolve(swOutput, sw.fullName.id + compiledSoftwareSuffix);
+      const file = path.resolve(swOutput, sw.fullName.id + compiledAssetSuffix);
       logger.info(`  - writing ${file}`);
       fs.writeFileSync(file, sw.src);
     }

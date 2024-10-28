@@ -7,6 +7,9 @@
         "build": "rm -rf dist && pl-pkg build descriptors || true"
     },
     "block-software": {
+        "artifacts": {
+            
+        },
         "entrypoints": {
             "software": {
                 "binary": {
