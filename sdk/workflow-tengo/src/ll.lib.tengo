@@ -93,15 +93,34 @@ ensureNonStrict := func(r) {
  * access to non-existing elements.
  *
  * @param m: map|strictMap
+ * @param recursive: boolean - convert also all child maps
  *
  * @return strict: strictMap
  */
-toStrict := func(v) {
+toStrict := func(v, ...recursive) {
+	if len(recursive) > 0 && recursive[0] {
+		if isMap(v) {
+			for k, vv in v {
+				v[k] = toStrict(vv)
+			}
+		} else if is_array(v) {
+			for i, vv in v {
+				if isMap(vv) {
+					v[i] = toStrict(vv)
+				}
+			}
+		}
+
+		if !isMap(v) {
+			return v // for recursive transformation, accept the top-level object to be of any type (i.e. array of maps)
+		}
+	}
+
 	if isStrict(v) {
 		return v
 	}
 
-	if(!is_map(v)) {
+	if(!isMap(v)) {
 		panic("toStrict(<v>): <v> is not a map", v)
 	}
 	return plapi.mapToStrict(v)

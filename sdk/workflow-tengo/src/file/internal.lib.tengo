@@ -45,7 +45,6 @@ createBlobImportExternal := func(settings) {
     })
 }
 
-
 /**
  * Create a task for importing blob from one of preconfigured storages.
  * Produces 2 fields:

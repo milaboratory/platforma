@@ -117,6 +117,7 @@ _fill := func(workdir) {
 		/**
 		 * Adds files from given zip archive into working directory.
 		 *
+		 * @param zipResource: smart.reference - reference to zip archive to be extracted.
 		 * @param destinationDir: string - path inside working directory for files to be extracted from archive.
 		 *                                 Consider it as 'cd' before extraction. It makes all extracted files to be
 		 *                                 stored inside this directory.
@@ -124,9 +125,8 @@ _fill := func(workdir) {
 		 *                                   Empty array means 'unpack full archive'.
 		 *                                   Full file paths are preserved during extraction: the file 'a/b/file.txt' would
 		 *                                   be extracted into '<destinationDir>/a/b/file.txt', NOT '<destinationDir>/file.txt',
-		 * @param zipResource: smart.reference - reference to zip archive to be extracted.
 		 */
-		addFromZip: func(destinationDir, pathsInArchive, zipResource) {
+		addFromZip: func(zipResource, destinationDir, pathsInArchive) {
 			validation.assertJsonSchema(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
 			validation.assertJsonSchema(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
 

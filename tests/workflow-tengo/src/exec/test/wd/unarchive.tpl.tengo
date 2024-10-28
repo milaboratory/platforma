@@ -9,7 +9,7 @@ self.body(func(inputs) {
 	archive := file.importFile(inputs.importHandle).file
 
     wd := workdir.builder().
-        addFromZip(".", inputs.filesToUnpack, archive).
+        addFromZip(archive, ".", inputs.filesToUnpack).
         build()
 
     fileName := "answer_to_the_ultimate_question.txt"
