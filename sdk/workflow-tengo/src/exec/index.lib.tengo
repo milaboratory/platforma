@@ -282,18 +282,19 @@ builder := func() {
 			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
 			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
-			if is_undefined(assetRules[asset._id]) {
-				assetInfos[asset._id] = asset.resource
-				assetDescriptors[asset._id] = ll.fromStrict(asset.descriptor)
-				assetRules[asset._id] = {}
+			assetIdKey := ll.idToString(asset._id)
+			if is_undefined(assetRules[assetIdKey]) {
+				assetInfos[assetIdKey] = asset.resource
+				assetDescriptors[assetIdKey] = ll.fromStrict(asset.descriptor)
+				assetRules[assetIdKey] = {}
 			}
 
-			if len(pathsInArchive) == 0 || is_undefined(assetRules[asset._id][destinationDir]) {
-				assetRules[asset._id][destinationDir] = []
+			if len(pathsInArchive) == 0 || is_undefined(assetRules[assetIdKey][destinationDir]) {
+				assetRules[assetIdKey][destinationDir] = []
 			}
 
 			if (len(pathsInArchive) > 0) {
-				assetRules[asset._id][destinationDir] = append(assetRules[asset._id][destinationDir], pathsInArchive...)
+				assetRules[assetIdKey][destinationDir] = append(assetRules[assetIdKey][destinationDir], pathsInArchive...)
 			}
 
 			return self
