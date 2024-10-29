@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.46
+
+### Patch Changes
+
+- f4e8fa6: do not consider lastError as error state
+  - @platforma-sdk/ui-vue@1.7.25
+
 ## 1.0.45
 
 ### Patch Changes
