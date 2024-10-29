@@ -192,6 +192,10 @@
   background-color: var(--input-active-color);
   padding: 4px;
 
+  .mask-paper-clip {
+    display: none;
+  }
+
   .pl-file-input {
     height: 32px;
 
@@ -201,20 +205,45 @@
       border-color: var(--border-color);
       border-style: dashed;
     }
+
+    &__filename {
+      text-align: center !important;
+    }
+
+    &__error {
+      margin-top: 0;
+      margin-right: 8px;
+    }
   }
 
   &:hover {
-    --contour-color: red;
     --border-color: var(--border-color-focus);
-
     background-color: var(--btn-active-select);
+  }
+
+  &:hover .pl-file-input__filename::before {
+    color: #110529 !important;
+  }
+
+  &.has-file:hover {
+    background-color: var(--input-active-color);
   }
 
   &.has-file {
     border: 1px solid var(--border-color-div-grey);
+    padding-left: 0;
+    padding-right: 0;
 
     .pl-file-input__contour {
       border: unset;
+    }
+
+    .pl-file-input__filename {
+      text-align: left !important;
+    }
+
+    .mask-paper-clip {
+      display: block;
     }
   }
 }
