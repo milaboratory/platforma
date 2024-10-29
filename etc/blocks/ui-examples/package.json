@@ -3,7 +3,7 @@
   "version": "1.0.50",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",
-    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/pub/dev/?region=eu-central-1'"
+    "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1'"
   },
   "files": [
     "index.d.ts",
