@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.24
+
+### Patch Changes
+
+- 3276b87: PlAgDataTable fix infinite data reloading, show loading on sheet change
+
 ## 1.7.22
 
 ### Patch Changes
