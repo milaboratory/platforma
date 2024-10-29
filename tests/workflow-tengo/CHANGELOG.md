@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.3.0
+
+### Minor Changes
+
+- d49c764: Support static asset packages in execution pipelines
+
 ## 1.2.7
 
 ### Patch Changes
