@@ -13,13 +13,13 @@ export interface ImportState {
    * and the file was got from this computer
    * (i.e. a signature of the resource matched with
    * the client's signature). */
-  readonly isLocalFileUploadStarted: boolean;
+  readonly isLocalFileUploadStarted?: boolean;
 
-  /** Exists when an upload failed and was restarted,
+  /** Exists when an upload or import status failed and was restarted,
    * but the error was recoverable.
    * If the error was non-recoverable,
    * the driver's computable will throw an error instead. */
-  readonly lastUploadMessage?: string;
+  readonly lastRecoverableMessage?: string;
 }
 
 export interface ImportStateProgress {

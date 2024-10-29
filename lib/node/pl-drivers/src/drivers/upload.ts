@@ -17,54 +17,11 @@ import {
 import * as sdk from '@milaboratories/pl-model-common';
 import { ProgressStatus, ClientProgress } from '../clients/progress';
 import { ClientUpload, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
-import {
-  InferSnapshot,
-  isPlTreeEntry,
-  isPlTreeEntryAccessor,
-  makeResourceSnapshot,
-  PlTreeEntry,
-  PlTreeEntryAccessor,
-  PlTreeNodeAccessor,
-  rsSchema
-} from '@milaboratories/pl-tree';
+import { isPlTreeEntry, PlTreeEntry } from '@milaboratories/pl-tree';
 import { scheduler } from 'node:timers/promises';
 import { PollingOps } from './helpers/polling_ops';
 import { ImportFileHandleUploadData } from './types';
-
-/** Options from BlobUpload resource that have to be passed to getProgress. */
-
-/** ResourceSnapshot that can be passed to GetProgressID */
-export const UploadResourceSnapshot = rsSchema({
-  data: ImportFileHandleUploadData,
-  fields: {
-    blob: false
-  }
-});
-
-export const IndexResourceSnapshot = rsSchema({
-  fields: {
-    incarnation: false
-  }
-});
-
-export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot>;
-export type IndexResourceSnapshot = InferSnapshot<typeof IndexResourceSnapshot>;
-
-export type ImportResourceSnapshot = UploadResourceSnapshot | IndexResourceSnapshot;
-
-export function makeBlobImportSnapshot(
-  entryOrAccessor: PlTreeEntry | PlTreeNodeAccessor | PlTreeEntryAccessor,
-  ctx: ComputableCtx
-): ImportResourceSnapshot {
-  const node = isPlTreeEntry(entryOrAccessor)
-    ? ctx.accessor(entryOrAccessor).node()
-    : isPlTreeEntryAccessor(entryOrAccessor)
-      ? entryOrAccessor.node()
-      : entryOrAccessor;
-  if (node.resourceType.name.startsWith('BlobUpload'))
-    return makeResourceSnapshot(node, UploadResourceSnapshot);
-  else return makeResourceSnapshot(node, IndexResourceSnapshot);
-}
+import { ImportResourceSnapshot, makeBlobImportSnapshot } from './upload_snapshots';
 
 export type UploadDriverOps = PollingOps & {
   /** How much parts of a file can be multipart-uploaded to S3 at once. */
@@ -116,17 +73,15 @@ export class UploadDriver {
   }
 
   /** Returns a progress id and schedules an upload task if it's necessary. */
-  getProgressId(
-    handleResource: ImportResourceSnapshot | PlTreeEntry
-  ): Computable<sdk.ImportProgress>;
+  getProgressId(handleResource: ImportResourceSnapshot | PlTreeEntry): Computable<sdk.ImportState>;
   getProgressId(
     handleResource: ImportResourceSnapshot | PlTreeEntry,
     ctx: ComputableCtx
-  ): sdk.ImportProgress;
+  ): sdk.ImportState;
   getProgressId(
     handleResource: ImportResourceSnapshot | PlTreeEntry,
     ctx?: ComputableCtx
-  ): Computable<sdk.ImportProgress> | sdk.ImportProgress {
+  ): Computable<sdk.ImportState> | sdk.ImportState {
     if (ctx == undefined) return Computable.make((ctx) => this.getProgressId(handleResource, ctx));
 
     const rInfo: ImportResourceSnapshot = isPlTreeEntry(handleResource)
@@ -149,7 +104,7 @@ export class UploadDriver {
     w: Watcher,
     res: ImportResourceSnapshot,
     callerId: string
-  ): sdk.ImportProgress {
+  ): sdk.ImportState {
     const blobExists =
       'blob' in res.fields ? res.fields.blob !== undefined : res.fields.incarnation !== undefined;
 
@@ -172,7 +127,7 @@ export class UploadDriver {
     this.idToProgress.set(res.id, newValue);
     newValue.attach(w, callerId);
 
-    if (newValue.progress.isUpload && newValue.progress.isUploadSignMatch)
+    if (newValue.progress.importType == 'Upload' && newValue.progress.isStartLocalFileUpload)
       this.uploadQueue.push({
         fn: () => newValue.uploadBlobTask(),
         recoverableErrorPredicate: (e) => !nonRecoverableError(e)
@@ -248,6 +203,30 @@ export class UploadDriver {
   }
 }
 
+export interface ImportState {
+  readonly importType: 'Index' | 'Upload';
+  done: boolean;
+
+  /** Status of indexing/uploading that was got from platforma gRPC.
+   * A float from 0 to 1 and is equal to bytesProcessed / bytesTotal.
+   * It could be undefined when Platforma Backend
+   * has not sent the status yet or
+   * when the process was deduplicated and is already done. */
+  progress?: sdk.ImportStateProgress;
+
+  /** True if importType is "Upload",
+   * and the file was got from this computer
+   * (i.e. a signature of the resource matched with
+   * the client's signature). */
+  isStartLocalFileUpload?: boolean;
+
+  /** Exists when an upload or import status failed and was restarted,
+   * but the error was recoverable.
+   * If the error was non-recoverable,
+   * the driver's computable will throw an error instead. */
+  lastError?: string;
+}
+
 /** Holds all info needed to upload a file and a status of uploadong
  * and indexing. Also, has a method to update a status of the progress.
  * And holds a change source. */
@@ -255,7 +234,7 @@ class ProgressUpdater {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
 
-  public progress: sdk.ImportProgress;
+  public progress: ImportState;
   /** If this is upload progress this field will be defined */
   private uploadData?: ImportFileHandleUploadData;
   public uploadingTerminallyFailed?: boolean;
@@ -269,10 +248,10 @@ class ProgressUpdater {
     public readonly res: ImportResourceSnapshot
   ) {
     const isUpload = res.type.name.startsWith('BlobUpload');
-    let isUploadSignMatch: boolean | undefined;
+    let isStartLocalFileUpload: boolean | undefined;
     if (isUpload) {
       this.uploadData = ImportFileHandleUploadData.parse(res.data);
-      isUploadSignMatch = isSignMatch(
+      isStartLocalFileUpload = isSignMatch(
         signer,
         this.uploadData.localPath,
         this.uploadData.pathSignature
@@ -281,18 +260,31 @@ class ProgressUpdater {
 
     this.progress = {
       done: false,
-      status: undefined,
-      isUpload: isUpload,
-      isUploadSignMatch: isUploadSignMatch,
+      progress: undefined,
+      importType: isUpload ? 'Upload' : 'Index',
+      isStartLocalFileUpload: isStartLocalFileUpload,
       lastError: undefined
     };
   }
 
-  public mustGetProgress(blobExists: boolean) {
+  public mustGetProgress(blobExists: boolean): sdk.ImportState & sdk.ImportProgress {
+    const result = {
+      done: this.progress.done,
+      importType: this.progress.importType,
+      progress: this.progress.progress,
+      isLocalFileUploadStarted: this.progress.isStartLocalFileUpload,
+      lastRecoverableMessage: this.progress.lastError,
+
+      /** @deprecated, but we keep it for backward (and forward) compat  */
+      status: this.progress.progress,
+      isUpload: this.progress.importType == 'Upload',
+      isUploadSignMatch: this.progress.isStartLocalFileUpload,
+      lastError: this.progress.lastError
+    };
+
     if (blobExists) {
       this.setDone(blobExists);
-
-      return this.progress;
+      return result;
     }
 
     if (this.uploadingTerminallyFailed) {
@@ -300,7 +292,7 @@ class ProgressUpdater {
       throw new Error(this.progress.lastError);
     }
 
-    return this.progress;
+    return result;
   }
 
   public attach(w: Watcher, callerId: string) {
@@ -375,15 +367,17 @@ class ProgressUpdater {
 
   private setDone(done: boolean) {
     this.progress.done = done;
-    if (done) this.progress.lastError = undefined;
+    if (done) {
+      this.progress.lastError = undefined;
+    }
   }
 
   async updateStatus() {
     try {
       const status = await this.clientProgress.getStatus(this.res);
 
-      const oldStatus = this.progress.status;
-      this.progress.status = protoToStatus(status);
+      const oldStatus = this.progress.progress;
+      this.progress.progress = protoToStatus(status);
       this.setDone(status.done);
 
       if (status.done || status.progress != oldStatus?.progress) this.change.markChanged();
@@ -411,11 +405,11 @@ class ProgressUpdater {
   }
 }
 
-function isProgressStable(p: sdk.ImportProgress) {
-  return p.done && p.status !== undefined && p.status !== null && p.status.progress >= 1.0;
+function isProgressStable(p: sdk.ImportState) {
+  return p.done && (p.progress?.progress ?? 0) >= 1.0;
 }
 
-function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
+function protoToStatus(proto: ProgressStatus): sdk.ImportStateProgress {
   return {
     progress: proto.progress ?? 0,
     bytesProcessed: Number(proto.bytesProcessed),

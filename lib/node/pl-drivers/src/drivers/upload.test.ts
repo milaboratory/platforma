@@ -1,21 +1,17 @@
-import {
-  isNotNullResourceId,
-  PlTransaction,
-  PollTxAccessor,
-  ResourceId,
-  TestHelpers
-} from '@milaboratories/pl-client';
+import { PlTransaction, ResourceId, TestHelpers } from '@milaboratories/pl-client';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { PlClient } from '@milaboratories/pl-client';
-import { ImportResourceSnapshot, makeBlobImportSnapshot, UploadDriver } from './upload';
+import { ImportResourceSnapshot, makeBlobImportSnapshot } from './upload_snapshots';
 import { createUploadBlobClient, createUploadProgressClient } from '../clients/helpers';
+import { UploadDriver } from './upload';
 
 import { test, expect } from '@jest/globals';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { Computable } from '@milaboratories/computable';
+import { ImportProgress, ImportState } from '@milaboratories/pl-model-common';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -23,17 +19,26 @@ test('upload a blob', async () => {
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
-    const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes) as Computable<ImportState & ImportProgress>;
 
     while (true) {
       const p = await c.getValue();
 
       expect(p.isUpload).toBeTruthy();
+      expect(p.importType).toBe('Upload');
+
       expect(p.isUploadSignMatch).toBeTruthy();
+      expect(p.isLocalFileUploadStarted).toBeTruthy();
+      expect(p.isLocalFileUploadStarted).toBeTruthy();
+
       if (p.done) {
         expect(p.lastError).toBeUndefined();
+        expect(p.lastRecoverableMessage).toBeUndefined();
+
         expect(p.status?.bytesProcessed).toBe(2);
         expect(p.status?.bytesTotal).toBe(2);
+        expect(p.progress?.bytesProcessed).toBe(2);
+        expect(p.progress?.bytesTotal).toBe(2);
 
         return;
       }
@@ -55,17 +60,24 @@ test('upload a big blob', async () => {
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
-    const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes) as Computable<ImportState & ImportProgress>;
 
     while (true) {
       const p = await c.getValue();
       console.log('got progress of big blob: ', p);
 
       expect(p.isUpload).toBeTruthy();
+      expect(p.importType).toBe('Upload');
+
       if (p.done) {
         expect(p.isUploadSignMatch).toBeTruthy();
+        expect(p.isLocalFileUploadStarted).toBeTruthy();
+
         expect(p.lastError).toBeUndefined();
+        expect(p.lastRecoverableMessage).toBeUndefined();
+
         expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+        expect(p.progress?.bytesProcessed).toStrictEqual(p.progress?.bytesTotal);
 
         return;
       }
@@ -107,16 +119,21 @@ test.skip('upload a very big blob', async () => {
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
-    const c = uploader.getProgressId(handleRes);
+    const c = uploader.getProgressId(handleRes) as Computable<ImportState & ImportProgress>;
 
     while (true) {
       const p = await c.getValue();
       console.log('got progress of a very big blob: ', p);
 
       expect(p.isUpload).toBeTruthy();
+      expect(p.importType).toBe('Upload');
+
       if (p.done) {
         expect(p.isUploadSignMatch).toBeTruthy();
+        expect(p.isLocalFileUploadStarted).toBeTruthy();
+
         expect(p.status?.bytesProcessed).toStrictEqual(p.status?.bytesTotal);
+        expect(p.progress?.bytesProcessed).toStrictEqual(p.progress?.bytesTotal);
 
         return;
       }
@@ -156,20 +173,28 @@ test('upload a duplicate blob', async () => {
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
-    const cOrig = uploader.getProgressId(handleRes);
-    const cDupl = uploader.getProgressId(handleRes);
+    const cOrig = uploader.getProgressId(handleRes) as Computable<ImportState & ImportProgress>;
+    const cDupl = uploader.getProgressId(handleRes) as Computable<ImportState & ImportProgress>;
 
     while (true) {
       const pOrig = await cOrig.getValue();
       const pDupl = await cDupl.getValue();
 
       expect(pDupl).toStrictEqual(pOrig);
+
       expect(pDupl.isUpload).toBeTruthy();
+      expect(pDupl.importType).toBe('Upload');
+
       if (pDupl.done) {
         expect(pDupl.isUploadSignMatch).toBeTruthy();
+        expect(pDupl.isLocalFileUploadStarted).toBeTruthy();
         expect(pDupl.lastError).toBeUndefined();
+        expect(pDupl.lastRecoverableMessage).toBeUndefined();
+
         expect(pDupl.status?.bytesProcessed).toBe(2);
         expect(pDupl.status?.bytesTotal).toBe(2);
+        expect(pDupl.progress?.bytesProcessed).toBe(2);
+        expect(pDupl.progress?.bytesTotal).toBe(2);
 
         return;
       }
@@ -212,13 +237,20 @@ test('upload lots of duplicate blobs concurrently', async () => {
 
     for (const c of computables) {
       while (true) {
-        const p = await c.getValue();
+        const p = (await c.getValue()) as ImportState & ImportProgress;
 
         if (p.done) {
           expect(p.isUploadSignMatch).toBeTruthy();
+          expect(p.isLocalFileUploadStarted).toBeTruthy();
+
           expect(p.lastError).toBeUndefined();
+          expect(p.lastRecoverableMessage).toBeUndefined();
+
           expect(p.status?.bytesProcessed).toBe(25);
           expect(p.status?.bytesTotal).toBe(25);
+          expect(p.progress?.bytesProcessed).toBe(25);
+          expect(p.progress?.bytesTotal).toBe(25);
+
           return;
         }
 
@@ -242,11 +274,15 @@ test('index a blob', async () => {
     const c = uploader.getProgressId(handleRes);
 
     while (true) {
-      const p = await c.getValue();
+      const p = (await c.getValue()) as ImportState & ImportProgress;
       console.log('got index progress: ', p);
 
       expect(p.isUpload).toBeFalsy();
+      expect(p.importType).toBe('Index');
+
       expect(p.isUploadSignMatch).toBeUndefined();
+      expect(p.isLocalFileUploadStarted).toBeUndefined();
+
       if (p.done) {
         return;
       }
