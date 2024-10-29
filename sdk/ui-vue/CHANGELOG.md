@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.26
+
+### Patch Changes
+
+- bc5e60e: Preserve column order after sort
+
 ## 1.7.25
 
 ### Patch Changes
