@@ -113,7 +113,7 @@ loadDependencyFiles := func(packageRef, dependencies) {
 
 	depsMap := {}
 
-	loader := pkg.assetsLoader(packageRef)
+	loader := pkg.pkgFileLoader(packageRef)
 	for depName, fileName in dependencies {
 		loader.saveFile(fileName)
 	}

@@ -1,0 +1,23 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+asset := assets.importAsset("@platforma-open/milaboratories.software-small-binaries:small-asset")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		addAsset(asset, ".", ["file2.txt"]).
+		cmd("/usr/bin/env").
+		arg("cat").
+		arg("file2.txt").
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})
