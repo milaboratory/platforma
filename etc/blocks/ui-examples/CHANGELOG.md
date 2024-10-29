@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.51
+
+### Patch Changes
+
+- 73ea7ee: chore: change s3 bucket upload prefix
+
 ## 1.0.50
 
 ### Patch Changes
