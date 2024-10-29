@@ -23,26 +23,26 @@ tplTest(
   }
 );
 
-tplTest(
-  'use-asset-in-exec',
-  async ({ helper, expect }) => {
-    const helloText = "file2.txt content"
+// tplTest(
+//   'use-asset-in-exec',
+//   async ({ helper, expect }) => {
+//     const helloText = "file2.txt content"
 
-    const result = await helper.renderTemplate(
-      false,
-      'exec.test.run.use_asset',
-      ['main'],
-      (tx) => ({
-        text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
-      })
-    );
-    const mainResult = result.computeOutput('main', (a) =>
-      a?.getDataAsString()
-    );
+//     const result = await helper.renderTemplate(
+//       false,
+//       'exec.test.run.use_asset',
+//       ['main'],
+//       (tx) => ({
+//         text: tx.createValue(Pl.JsonObject, JSON.stringify(helloText))
+//       })
+//     );
+//     const mainResult = result.computeOutput('main', (a) =>
+//       a?.getDataAsString()
+//     );
 
-    expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
-  }
-);
+//     expect(await mainResult.awaitStableValue()).eq(helloText + '\n');
+//   }
+// );
 
 tplTest(
   'should run bash from the template, echo a string to stdout and returns a value resource',

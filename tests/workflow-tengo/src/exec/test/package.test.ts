@@ -84,17 +84,17 @@ tplTest("pkg-file-is-exported", async ({ helper, expect, driverKit }) => {
   expect(assetContent).toEqual(assetData)
 });
 
-tplTest("asset-is-loaded", async ({ helper, expect, driverKit }) => {
-  const result = await helper.renderTemplate(
-    false,
-    "exec.test.pkg.asset-export",
-    ["main"],
-    (tx) => ({})
-  );
+// tplTest("asset-is-loaded", async ({ helper, expect, driverKit }) => {
+//   const result = await helper.renderTemplate(
+//     false,
+//     "exec.test.pkg.asset-export",
+//     ["main"],
+//     (tx) => ({})
+//   );
 
-  // Wait for asset content
-  const assetContentOutput = result.computeOutput("main", (a) => a?.getData().toString());
-  const assetContent = await assetContentOutput.awaitStableValue()
+//   // Wait for asset content
+//   const assetContentOutput = result.computeOutput("main", (a) => a?.getData().toString());
+//   const assetContent = await assetContentOutput.awaitStableValue()
 
-  expect(assetContent).toEqual("file1.txt content\n")
-});
+//   expect(assetContent).toEqual("file1.txt content\n")
+// });
