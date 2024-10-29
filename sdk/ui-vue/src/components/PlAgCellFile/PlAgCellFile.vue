@@ -7,7 +7,25 @@ import { computed } from 'vue';
 const props = defineProps<{
   // this component is intended to be used in ag-grid, params are the main object
   // to communicate with the corresponding cell data
-  params: ICellRendererParams<unknown, ImportFileHandle> & { extensions?: string[]; progress?: ImportProgress };
+  params: ICellRendererParams<unknown, ImportFileHandle> & {
+    extensions?: string[];
+    progress?: ImportProgress;
+    /**
+     * The resolveProgress function is an optional input parameter for the component
+     * that allows tracking the file upload progress in real-time.
+     * By passing resolveProgress, you can ensure that the component
+     * displays accurate progress values for each file as they upload.
+     * How to use it in AgGrid
+     * cellRendererParams: {
+     *  resolveProgress: (fileHandle: ImportFileHandle | undefined) => {
+     *    const progresses = app.progresses;
+     *    if (!fileHandle) return undefined;
+     *    else return progresses[fileHandle];
+     *  }
+     * }
+     */
+    resolveProgress?: (v: ImportFileHandle | undefined) => ImportProgress | undefined;
+  };
 }>();
 
 const extensions = computed(() => props.params.extensions);
@@ -24,7 +42,7 @@ function onHandleUpdate(newHandle: ImportFileHandle | undefined) {
 }
 
 const currentProgress = computed(() => {
-  return props.params.progress;
+  return props.params.resolveProgress ? props.params.resolveProgress(handle.value) : undefined;
 });
 </script>
 
@@ -33,8 +51,9 @@ const currentProgress = computed(() => {
     <PlFileInput
       show-filename-only
       clearable
+      cell-style
       file-dialog-title="Select any file"
-      :placeholder="`file.${extensions ? extensions[0] : ''}`"
+      :placeholder="`Choose file ${extensions ? extensions[0] : ''}`"
       :extensions="extensions"
       :model-value="handle"
       :progress="currentProgress"
