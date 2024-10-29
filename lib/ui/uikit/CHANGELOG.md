@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.29
+
+### Patch Changes
+
+- f4e8fa6: do not consider lastError as error state
+
 ## 1.2.28
 
 ### Patch Changes
