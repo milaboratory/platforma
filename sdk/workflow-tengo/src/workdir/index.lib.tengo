@@ -15,6 +15,7 @@ path := import(":path")
 enum := import("enum")
 validation := import(":validation")
 render := import(":render")
+blobs := import(":file.internal")
 
 create := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()
@@ -23,13 +24,33 @@ create := func() {
 
 _getFileFillRule := func(filePath, extension) {
 	return {
-		path: filePath,
 		type: "file",
+		path: filePath,
 		permissions: 0o600,
 		pathKey: filePath,
 		blobKey: filePath,
 		copyOptional: false,
 		fileExtension: extension
+	}
+}
+
+_getArchiveFillRule := func(dstDir, whatToExtract, archiveBlobKey) {
+	extractRules := []
+	for f in whatToExtract {
+		extractRules = append(extractRules, {
+			srcPath: f,
+			dstPath: f,
+			filePerms: 0o600,
+			dirPerms: 0o700
+		})
+	}
+
+	return {
+		type: "archive",
+		path: dstDir,
+		blobKey: archiveBlobKey,
+		archiveType: "zip",
+		extractRules: extractRules
 	}
 }
 
@@ -41,8 +62,8 @@ _getFileFillRule := func(filePath, extension) {
  */
 _getValueFillRule := func(filePath) {
 	return {
-		path: filePath,
 		type: "value",
+		path: filePath,
 		permissions: 0o600,
 		pathKey: filePath,
 		valueKey: filePath
@@ -57,8 +78,8 @@ _getValueFillRule := func(filePath) {
  */
 _getDirFillRule := func(dir) {
 	return {
-		path: dir,
 		type: "dir",
+		path: dir,
 		permissions: 0o700,
 		pathKey: ""
 	}
@@ -75,7 +96,9 @@ _fill := func(workdir) {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_FILL)
 	wd.getField("workdirIn").set(workdir)
 
+	blobs := {}
 	files := {}
+	zipExtractions := {}
 	values := {}
 	dirs := {}
 
@@ -92,6 +115,49 @@ _fill := func(workdir) {
 		},
 
 		/**
+		 * Adds files from given zip archive into working directory.
+		 *
+		 * @param zipResource: smart.reference - reference to zip archive to be extracted.
+		 * @param destinationDir: string - path inside working directory for files to be extracted from archive.
+		 *                                 Consider it as 'cd' before extraction. It makes all extracted files to be
+		 *                                 stored inside this directory.
+		 * @param pathsInArchive: string[] - paths inside the archive to be extracted into destinationDir.
+		 *                                   Empty array means 'unpack full archive'.
+		 *                                   Full file paths are preserved during extraction: the file 'a/b/file.txt' would
+		 *                                   be extracted into '<destinationDir>/a/b/file.txt', NOT '<destinationDir>/file.txt',
+		 */
+		addFromZip: func(zipResource, destinationDir, pathsInArchive) {
+			validation.assertJsonSchema(zipResource, validation.reference, "workdir.builder.addFromZip: <zipResource> is not smart.reference")
+			validation.assertJsonSchema(destinationDir, "string", "workdir.builder.addFromZip: <destinationDir> is not a string. It must be a path inside working directory")
+
+			if (is_undefined(pathsInArchive)) {
+				pathsInArchive = []
+			}
+			validation.assertJsonSchema(pathsInArchive, ["string"], "workdir.builder.addFromZip: <pathsInArchive> must contain list of strings with paths inside archive")
+
+			blobKey := ll.idToString(zipResource.id)
+
+			if is_undefined(blobs[blobKey]) {
+				blobs[blobKey] = zipResource
+			}
+
+			if is_undefined(zipExtractions[blobKey]) {
+				zipExtractions[blobKey] = {}
+			}
+
+			if is_undefined(zipExtractions[blobKey][destinationDir]) || len(pathsInArchive) == 0 {
+				zipExtractions[blobKey][destinationDir] = pathsInArchive
+				return self
+			}
+
+			if (len(pathsInArchive) > 0) {
+				zipExtractions[blobKey][destinationDir] = append(zipExtractions[blobKey][destinationDir], pathsInArchive...)
+			}
+
+			return self
+		},
+
+		/**
 		 * Adds a file to the workdir.
 		 *
 		 * @param fileName: string - the name of the file.
@@ -102,6 +168,7 @@ _fill := func(workdir) {
 			validation.assertJsonSchema(fileResource, validation.reference)
 
 			files[fileName] = fileResource
+			blobs[fileName] = fileResource
 			self._addDirs(fileName)
 
 			return self
@@ -168,6 +235,12 @@ _fill := func(workdir) {
 				rules = append(rules, _getValueFillRule(fileName))
 			}
 
+			for blobKey, directories in zipExtractions {
+				for dstDir, whatToExtract in directories {
+					rules = append(rules, _getArchiveFillRule(dstDir, whatToExtract, blobKey))
+				}
+			}
+
 			rulesRes := smart.createValueResource(
 				constants.RTYPE_WORKDIR_FILL_RULES,
 				json.encode(rules)
@@ -175,7 +248,7 @@ _fill := func(workdir) {
 			self.getField("rules").set(rulesRes)
 
 			self.getField("dataIn").set(smart.createBinaryMapResource(values))
-			self.getField("blobsIn").set(smart.createBlobMapResource(files))
+			self.getField("blobsIn").set(smart.createBlobMapResource(blobs))
 
 			return self.lockAndBuild().outputs().workdirOut
 		}

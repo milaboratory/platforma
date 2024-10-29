@@ -2,6 +2,9 @@
   "name": "@milaboratories/platforma-monorepo",
   "private": true,
   "scripts": {
+    "reset:node_modules": "find . -type d -name 'node_modules' | grep -v '\\.pnpm' | xargs rm -r",
+    "reset:turbo-cache": "find . -type d -name '.turbo' | grep -v '\\.pnpm' | xargs rm -r",
+    "reset": "pnpm run reset:node_modules && pnpm run reset:turbo-cache",
     "type-check": "turbo run type-check",
     "build": "turbo run build",
     "watch-build": "turbo watch build",
