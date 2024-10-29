@@ -239,6 +239,9 @@ const gridOptions = ref<GridOptions>({
     event.api.autoSizeAllColumns();
   },
   maintainColumnOrder: true,
+  localeText: {
+    loadingError: '...',
+  },
   rowModelType: 'clientSide',
   maxBlocksInCache: 1000,
   cacheBlockSize: 100,
