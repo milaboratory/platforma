@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.50
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+- Updated dependencies [e859df0]
+  - @milaboratories/milaboratories.ui-examples.workflow@1.0.3
+  - @milaboratories/milaboratories.ui-examples.model@1.0.24
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.49
+
 ## 1.0.49
 
 ### Patch Changes

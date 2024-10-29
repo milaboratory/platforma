@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.24
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+
 ## 1.0.23
 
 ### Patch Changes
