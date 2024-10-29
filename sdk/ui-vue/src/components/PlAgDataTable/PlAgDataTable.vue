@@ -238,6 +238,7 @@ const gridOptions = ref<GridOptions>({
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
   },
+  maintainColumnOrder: true,
   rowModelType: 'clientSide',
   maxBlocksInCache: 1000,
   cacheBlockSize: 100,
