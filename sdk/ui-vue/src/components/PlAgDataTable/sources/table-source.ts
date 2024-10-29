@@ -253,7 +253,7 @@ function columns2rows(fields: number[], columns: PTableVector[], index: number):
         row[field] = toDisplayValue(value, valueType);
       }
     }
-    row['id'] = index++;
+    row['id'] = (index++).toString();
     rowData.push(row);
   }
   return rowData;
