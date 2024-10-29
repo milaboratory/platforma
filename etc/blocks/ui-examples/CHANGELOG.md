@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.47
+
+### Patch Changes
+
+- db28f0b: chore: add prepublish action for ui-examples
+
 ## 1.0.46
 
 ### Patch Changes
