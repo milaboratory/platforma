@@ -1,6 +1,5 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.workflow",
-  "private": true,
   "version": "1.0.2",
   "type": "module",
   "description": "Tengo-based template",
