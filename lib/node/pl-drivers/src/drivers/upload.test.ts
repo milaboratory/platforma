@@ -15,6 +15,9 @@ import { ImportProgress, ImportState } from '@milaboratories/pl-model-common';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
+    // TODO: delete
+    1 / 0
+
     const stats = await writeFile('42', signer);
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
