@@ -1,2 +1,1 @@
-import PlAgCellFile from './PlAgCellFile.vue';
-export { PlAgCellFile };
+export { default as PlAgCellFile } from './PlAgCellFile.vue';

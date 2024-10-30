@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { defineComponent, h } from 'vue';
+import { h } from 'vue';
 import { PlBlockPage, PlAgOverlayLoading, PlAgOverlayNoRows } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import type { GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
-import { PlFileInput } from '@platforma-sdk/ui-vue';
+import { PlAgCellFile } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -15,12 +15,6 @@ const LinkComponent: Component = {
       h('a', { href: props.params.value, style: 'text-decoration: underline' }, props.params.value);
   }
 };
-
-const CellFileInput = defineComponent({
-  setup() {
-    return () => h(PlFileInput, { modelValue: undefined, cellStyle: true });
-  }
-});
 
 const columnDefs = [
   {
@@ -42,7 +36,7 @@ const columnDefs = [
     colId: 'file',
     field: 'file',
     headerName: 'File input',
-    cellRenderer: 'CellFileInput',
+    cellRenderer: 'PlAgCellFile',
     cellStyle: { padding: 0 }
   },
   {
@@ -66,7 +60,7 @@ const result = times(100, () => {
 const gridOptions: GridOptions = {
   components: {
     LinkComponent,
-    CellFileInput
+    PlAgCellFile
   }
 };
 

@@ -154,7 +154,7 @@ if (!props.cellStyle) {
 </script>
 
 <template>
-  <div :class="{ 'cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
+  <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
     <div ref="rootRef" class="pl-file-input" tabindex="0" :class="{ dashed, error: hasErrors }" @keyup.enter="openFileDialog">
       <div class="pl-file-input__progress" :style="progressStyle" />
       <label v-if="!cellStyle && label" ref="label">
