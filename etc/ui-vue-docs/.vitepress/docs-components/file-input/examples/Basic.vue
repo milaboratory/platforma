@@ -10,5 +10,4 @@ const data = reactive({
 
 <template>
   <PlFileInput v-model="data.model" label="Import file" />
-  <PlFileInput v-model="data.model" label="Import file" cell-style />
 </template>

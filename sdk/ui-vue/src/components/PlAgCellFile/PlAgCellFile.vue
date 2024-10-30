@@ -47,7 +47,7 @@ const currentProgress = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div style="height: 100%">
     <PlFileInput
       show-filename-only
       clearable
