@@ -411,9 +411,9 @@ watch(
       </div>
     </Transition>
     <AgGridVue
+      :key="reloadKey"
       class="ap-ag-data-table-grid"
       :grid-options="gridOptions"
-      :key="reloadKey"
       @grid-ready="onGridReady"
       @state-updated="onStateUpdated"
       @grid-pre-destroyed="onGridPreDestroyed"

@@ -51,13 +51,13 @@
     min-height: 0;
     line-height: 20px;
     // background-color: #33333333; //
+    @include scrollbar();
     &.no-content-gutters {
       padding: 0 0;
     }
     &.no-top-content-gutter {
       padding-top: 0;
     }
-    @include scrollbar();
   }
 
   &__actions {
