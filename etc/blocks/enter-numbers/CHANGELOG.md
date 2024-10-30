@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.50
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.50
+
 ## 1.0.49
 
 ### Patch Changes
