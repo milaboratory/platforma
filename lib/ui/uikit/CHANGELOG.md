@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 1.2.30
+
+### Patch Changes
+
+- 6737e02: [sdk/ui-vue] `PlLogView` support log handle as :value
+
 ## 1.2.29
 
 ### Patch Changes
