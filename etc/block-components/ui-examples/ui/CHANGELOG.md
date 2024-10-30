@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.50
+
+### Patch Changes
+
+- 6737e02: [sdk/ui-vue] `PlLogView` support log handle as :value
+  - @platforma-sdk/ui-vue@1.7.30
+
 ## 1.0.49
 
 ### Patch Changes
