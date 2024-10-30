@@ -37,14 +37,14 @@ const props = withDefaults(
      */
     reverse?: boolean;
     /**
-     * Justify text at the center (is `true` by default)
+     * Justify text at the center (is `false` by default)
      */
     justifyCenter?: boolean;
   }>(),
   {
     size: undefined,
     icon: undefined,
-    justifyCenter: true,
+    justifyCenter: false,
   },
 );
 

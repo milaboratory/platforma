@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.6
+
+### Patch Changes
+
+- 612a9be: escapeRegExp
+
 ## 1.6.5
 
 ### Patch Changes

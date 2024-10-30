@@ -1,5 +1,56 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.49
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.49
+
+## 1.0.48
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.48
+
+## 1.0.47
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.47
+
+## 1.0.46
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.46
+
+## 1.0.45
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.45
+
+## 1.0.44
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.44
+
+## 1.0.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.43
+
+## 1.0.42
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.42
+- @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.3
+- @platforma-sdk/model@1.7.20
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.15
+
 ## 1.0.41
 
 ### Patch Changes

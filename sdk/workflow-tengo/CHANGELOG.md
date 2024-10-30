@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.7.0
+
+### Minor Changes
+
+- d49c764: Support static asset packages in execution pipelines
+
+## 1.6.4
+
+### Patch Changes
+
+- 612a9be: Option splitDataAndSpec for xsv.importFile
+
 ## 1.6.3
 
 ### Patch Changes

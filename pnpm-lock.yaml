@@ -61,20 +61,20 @@ catalogs:
       specifier: ^29.7.0
       version: 29.7.0
     '@milaboratories/pframes-node':
-      specifier: ^1.6.4
-      version: 1.6.4
+      specifier: ^1.6.5
+      version: 1.6.5
     '@milaboratories/software-pframes-conv':
-      specifier: ^1.6.4
-      version: 1.6.4
+      specifier: ^1.6.5
+      version: 1.6.5
     '@milaboratories/tengo-tester':
-      specifier: ^1.4.4
-      version: 1.4.4
+      specifier: ^1.4.5
+      version: 1.4.5
     '@oclif/core':
       specifier: ^4.0.30
       version: 4.0.30
     '@platforma-open/milaboratories.software-small-binaries':
-      specifier: ^1.14.4
-      version: 1.14.4
+      specifier: ^1.14.5
+      version: 1.14.5
     '@protobuf-ts/grpc-transport':
       specifier: ^2.9.4
       version: 2.9.4
@@ -562,6 +562,9 @@ importers:
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.4.6
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 11.1.0(vue@3.5.12(typescript@5.5.4))
       canonicalize:
         specifier: 'catalog:'
         version: 2.0.0
@@ -983,7 +986,7 @@ importers:
         version: link:../computable
       '@milaboratories/pframes-node':
         specifier: 'catalog:'
-        version: 1.6.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
+        version: 1.6.5(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:^
         version: link:../pl-client
@@ -1202,6 +1205,9 @@ importers:
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.4.6
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 11.1.0(vue@3.5.12(typescript@5.5.4))
       jsdom:
         specifier: 'catalog:'
         version: 24.1.3
@@ -1469,10 +1475,10 @@ importers:
     dependencies:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.6.4
+        version: 1.6.5
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.14.4
+        version: 1.14.5
     devDependencies:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:^
@@ -1574,10 +1580,10 @@ importers:
         version: link:../../lib/util/build-configs
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
-        version: 1.6.4
+        version: 1.6.5
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
-        version: 1.14.4
+        version: 1.14.5
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -1851,7 +1857,7 @@ importers:
     dependencies:
       '@milaboratories/tengo-tester':
         specifier: 'catalog:'
-        version: 1.4.4
+        version: 1.4.5
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.30
@@ -3040,8 +3046,8 @@ packages:
   '@microsoft/tsdoc@0.15.0':
     resolution: {integrity: sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==}
 
-  '@milaboratories/pframes-node@1.6.4':
-    resolution: {integrity: sha512-O6LGb1ypdRm2XfBu1r1P8fsQVjQarBipFT+GcCepMtZwUkZncgDddSDjhAuPKv+3L3JcxmogkvCIRe111rOJMQ==}
+  '@milaboratories/pframes-node@1.6.5':
+    resolution: {integrity: sha512-H7QFfzmoOTa7QEW5oQ6SN7J8srxOiDEbjljcWtuDQWxm63l82DoQUCb2TMaVx2T7meQ6DOILje/ZM0+EBPQSRg==}
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
@@ -3051,11 +3057,11 @@ packages:
   '@milaboratories/pl-model-middle-layer@1.5.0':
     resolution: {integrity: sha512-xml3u/vQT6YYy/bXvkWb8Grk8kKc235oC/isHqjieCE6tjmb2q27nafZPEHAXnP6ox2f3M3Eg4LZBalXachfcw==}
 
-  '@milaboratories/software-pframes-conv@1.6.4':
-    resolution: {integrity: sha512-ec1UC/9fAtmcIqEjFcJRI3AYP1joP29msbYqUcFE6COhVyOnSU38PzepJOnCHzK9Uv5U5iEI5p798R/sNEln9w==}
+  '@milaboratories/software-pframes-conv@1.6.5':
+    resolution: {integrity: sha512-bCbvJKWFNaOw9CjDj554YRJO48rAF0SOJA/koXW4ISxgzxAjkycDTpRbsm4Kj7x5BTgGjq4fblvHc7EBhFidwQ==}
 
-  '@milaboratories/tengo-tester@1.4.4':
-    resolution: {integrity: sha512-UWT05MAwizVEbUQC+HDD7VPb26AtZesCAT67CEzWSg4GUbNrOw5c/+TCCLJAS1lq3UQY0i3VV9QOtI1kjVokRQ==}
+  '@milaboratories/tengo-tester@1.4.5':
+    resolution: {integrity: sha512-zkSlRlQKZRv1TXicCSeOGhGDdinUfJ7BsIww0AVz7bS6q2vOTaVy9DONlvOk+5ntIOClzFhlozYVj0algea3rA==}
     os: [darwin, linux, win32]
     hasBin: true
 
@@ -3098,8 +3104,8 @@ packages:
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.14.4':
-    resolution: {integrity: sha512-hM/iY74xkqCYfCxrcZ3+J+H3FiWF8pcgpVItcrgXpFkz3Sku2nBYMN/TYwQMDn1bU4CSwxyD+O8a5r5s7lj9Ow==}
+  '@platforma-open/milaboratories.software-small-binaries@1.14.5':
+    resolution: {integrity: sha512-zfLLCu6Bv7yDcu8pFOUiP4v1dvSCDRjAGlzYuiNJ0IAxgC85+GUWuD0Pu7+NO/MaKQ2hrUPHhgJjzByAI/vM1w==}
 
   '@pnpm/config.env-replace@1.1.0':
     resolution: {integrity: sha512-htyl8TWnKL7K/ESFa1oW2UB5lVDxuF5DpM7tBi6Hu2LNL3mWkIzNLG6N4zoCUP1lCKNxWy/3iu8mS8MvToGd6w==}
@@ -9094,7 +9100,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@milaboratories/pframes-node@1.6.4(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
+  '@milaboratories/pframes-node@1.6.5(@milaboratories/pl-model-common@lib+model+common)(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -9113,9 +9119,9 @@ snapshots:
       utility-types: 3.11.0
       zod: 3.23.8
 
-  '@milaboratories/software-pframes-conv@1.6.4': {}
+  '@milaboratories/software-pframes-conv@1.6.5': {}
 
-  '@milaboratories/tengo-tester@1.4.4': {}
+  '@milaboratories/tengo-tester@1.4.5': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -9179,7 +9185,7 @@ snapshots:
 
   '@pkgr/core@0.1.1': {}
 
-  '@platforma-open/milaboratories.software-small-binaries@1.14.4': {}
+  '@platforma-open/milaboratories.software-small-binaries@1.14.5': {}
 
   '@pnpm/config.env-replace@1.1.0': {}
 
