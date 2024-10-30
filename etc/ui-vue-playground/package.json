@@ -43,6 +43,7 @@
     "vitest": "catalog:",
     "@vue/test-utils": "catalog:",
     "vue-tsc": "catalog:",
-    "resize-observer-polyfill": "catalog:"
+    "resize-observer-polyfill": "catalog:",
+    "@vueuse/core": "catalog:"
   }
 }

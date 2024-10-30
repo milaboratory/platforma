@@ -41,6 +41,7 @@
     "@milaboratories/helpers": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@vue/test-utils": "catalog:",
+    "@vueuse/core": "catalog:",
     "jsdom": "catalog:",
     "resize-observer-polyfill": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
