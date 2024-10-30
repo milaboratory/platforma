@@ -68,6 +68,11 @@ const props = withDefaults(
      * If `true`, only the file name is displayed, not the full path to it.
      */
     showFilenameOnly?: boolean;
+
+    /**
+     * Remove rounded border and change styles
+     */
+    cellStyle?: boolean;
   }>(),
   {
     label: undefined,
@@ -77,6 +82,7 @@ const props = withDefaults(
     progress: undefined,
     error: undefined,
     helper: undefined,
+    cellStyle: false,
   },
 );
 
@@ -142,14 +148,16 @@ const clear = () => emit('update:modelValue', undefined);
 
 const rootRef = ref();
 
-useLabelNotch(rootRef);
+if (!props.cellStyle) {
+  useLabelNotch(rootRef);
+}
 </script>
 
 <template>
-  <div class="pl-file-input__envelope">
+  <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
     <div ref="rootRef" class="pl-file-input" tabindex="0" :class="{ dashed, error: hasErrors }" @keyup.enter="openFileDialog">
       <div class="pl-file-input__progress" :style="progressStyle" />
-      <label v-if="label" ref="label">
+      <label v-if="!cellStyle && label" ref="label">
         <i v-if="required" class="required-icon" />
         <span>{{ label }}</span>
         <PlTooltip v-if="slots.tooltip" class="info" position="top">
