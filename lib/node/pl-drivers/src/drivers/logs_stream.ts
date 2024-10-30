@@ -5,8 +5,14 @@ import {
   PollingComputableHooks,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId } from '@milaboratories/pl-client';
-import { asyncPool, CallersCounter } from '@milaboratories/ts-helpers';
+import { ResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
+import {
+  asyncPool,
+  CallersCounter,
+  ConsoleLoggerAdapter,
+  MiLogger,
+  ValueOrError
+} from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import { PlTreeEntry, ResourceInfo, treeEntryToResourceInfo } from '@milaboratories/pl-tree';
@@ -15,6 +21,7 @@ import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
+import { RpcError } from '@protobuf-ts/runtime-rpc';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
@@ -32,6 +39,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   private readonly hooks: PollingComputableHooks;
 
   constructor(
+    private readonly logger: MiLogger,
     private readonly clientLogs: ClientLogs,
     private readonly opts: LogsStreamDriverOps = {
       nConcurrentGetLogs: 10,
@@ -82,7 +90,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     let logGetter = this.idToLastLines.get(rInfo.id);
 
     if (logGetter == undefined) {
-      const newLogGetter = new LogGetter(this.clientLogs, rInfo, lines);
+      const newLogGetter = new LogGetter(this.logger, this.clientLogs, rInfo, lines);
       this.idToLastLines.set(rInfo.id, newLogGetter);
 
       logGetter = newLogGetter;
@@ -120,7 +128,6 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     ctx.addOnDestroy(() => this.releaseProgressLog(r.id, callerId));
 
     const result = this.getProgressLogNoCtx(ctx.watcher, r, patternToSearch, callerId);
-
     ctx.markUnstable(
       'The progress log is from the stream, so we consider it unstable. Final value will be got from blobs.'
     );
@@ -137,7 +144,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     let logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
-      const newLogGetter = new LogGetter(this.clientLogs, rInfo, 1, patternToSearch);
+      const newLogGetter = new LogGetter(this.logger, this.clientLogs, rInfo, 1, patternToSearch);
       this.idToProgressLog.set(rInfo.id, newLogGetter);
 
       logGetter = newLogGetter;
@@ -264,9 +271,10 @@ export class LogsStreamDriver implements sdk.LogsDriver {
       this.scheduledOnNextState = [];
 
       try {
+        const logs = this.getAllLogs();
         await asyncPool(
           this.opts.nConcurrentGetLogs,
-          this.getAllNotDoneLogs().map((getter) => async () => await getter.update())
+          logs.map((getter) => async () => await getter.update())
         );
 
         toNotify.forEach((n) => n.resolve());
@@ -282,10 +290,9 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     this.currentLoop = undefined;
   }
 
-  private getAllNotDoneLogs(): Array<LogGetter> {
+  private getAllLogs(): Array<LogGetter> {
     return Array.from(this.idToLastLines.entries())
       .concat(Array.from(this.idToProgressLog.entries()))
-      .filter(([_, getter]) => !getter.getLog().done)
       .map(([_, getter]) => getter);
   }
 }
@@ -294,12 +301,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 class LogGetter {
   private logs: string | undefined;
   private error: any | undefined = undefined;
-  private done = false;
 
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
 
   constructor(
+    private readonly logger: MiLogger,
     private readonly clientLogs: ClientLogs,
     private readonly rInfo: ResourceInfo,
     private readonly lines: number,
@@ -309,12 +316,10 @@ class LogGetter {
   getLog(): {
     log: string | undefined;
     error?: any | undefined;
-    done: boolean;
   } {
     return {
       log: this.logs,
-      error: this.error,
-      done: this.done
+      error: this.error
     };
   }
 
@@ -340,18 +345,22 @@ class LogGetter {
 
       if (this.logs != newLogs) this.change.markChanged();
       this.logs = newLogs;
+      this.error = undefined;
 
       return;
     } catch (e: any) {
+      e as RpcError;
       if (e.name == 'RpcError' && e.code == 'NOT_FOUND') {
         // No resource
         this.logs = '';
         this.error = e;
-        this.done = true;
         this.change.markChanged();
         return;
       }
 
+      this.logger.error(
+        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${e}`
+      );
       throw e;
     }
   }

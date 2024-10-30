@@ -567,11 +567,11 @@ export class Renderer {
         const pkg = ep.package
 
         if (pkg.type !== 'asset') {
-            throw new Error(`could not render asset entrypoint ${epName}: not 'asset' artifact`)
+            throw new Error(`could not render asset entrypoint '${epName}': not 'asset' artifact`)
         }
 
         if (!pkg.registry.downloadURL) {
-            throw new Error(`could not render asset entrypoint ${epName}: base download URL is not configured for asset's registry`)
+            throw new Error(`could not render asset entrypoint '${epName}': base download URL is not configured for asset's registry`)
         }
 
         return {
