@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.3.8
+
+### Patch Changes
+
+- 58fa87c: fix no progress in mixcr clonotyping logs
+
 ## 1.3.7
 
 ### Patch Changes

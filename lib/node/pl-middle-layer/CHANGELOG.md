@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.9
+
+### Patch Changes
+
+- 58fa87c: fix no progress in mixcr clonotyping logs
+- Updated dependencies [58fa87c]
+  - @milaboratories/pl-drivers@1.3.8
+
 ## 1.14.8
 
 ### Patch Changes
