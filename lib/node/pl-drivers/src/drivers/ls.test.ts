@@ -15,15 +15,9 @@ test('should ok when get all storages from ls driver', async () => {
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
     const lsClient = createLsFilesClient(client, logger);
-    const driver = await LsDriver.init(
-      logger,
-      client,
-      signer,
-      [],
-      () => {
-        throw Error();
-      }
-    );
+    const driver = await LsDriver.init(logger, client, signer, [], () => {
+      throw Error();
+    });
 
     const got = await driver.getStorageList();
 
@@ -41,15 +35,9 @@ test('should ok when list files from remote storage in ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(
-      logger,
-      client,
-      signer,
-      [],
-      () => {
-        throw Error();
-      }
-    );
+    const driver = await LsDriver.init(logger, client, signer, [], () => {
+      throw Error();
+    });
 
     const storages = await driver.getStorageList();
     const library = storages.find((se) => se.name == 'library')!.handle;
@@ -82,15 +70,9 @@ test('should ok when list files from local storage in ls driver', async () => {
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(
-      logger,
-      client,
-      signer,
-      [],
-      () => {
-        throw Error();
-      }
-    );
+    const driver = await LsDriver.init(logger, client, signer, [], () => {
+      throw Error();
+    });
 
     const storages = await driver.getStorageList();
     const local = storages.find((se) => se.name == 'local')!;
@@ -146,13 +128,9 @@ test('should ok when get file using local dialog, and read its content', async (
   const signer = new HmacSha256Signer('abc');
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(
-      logger,
-      client,
-      signer,
-      [],
-      async () => [path.join(assetsPath, 'answer_to_the_ultimate_question.txt')]
-    );
+    const driver = await LsDriver.init(logger, client, signer, [], async () => [
+      path.join(assetsPath, 'answer_to_the_ultimate_question.txt')
+    ]);
 
     const result = await driver.showOpenSingleFileDialog();
     expect(result.file).toBeDefined();
