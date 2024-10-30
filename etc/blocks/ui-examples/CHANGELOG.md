@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.53
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+- Updated dependencies [e62ed59]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.51
+
 ## 1.0.52
 
 ### Patch Changes

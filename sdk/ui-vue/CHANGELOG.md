@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.31
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- e62ed59: Added component PlFileInput for AgGrid cell
+- Updated dependencies [a0854a3]
+- Updated dependencies [cf824ad]
+- Updated dependencies [cdb6c31]
+- Updated dependencies [e62ed59]
+  - @milaboratories/uikit@2.0.0
+
 ## 1.7.30
 
 ### Patch Changes

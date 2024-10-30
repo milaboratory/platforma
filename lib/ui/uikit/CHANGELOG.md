@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.0.0
+
+### Major Changes
+
+- cf824ad: fixed styles for modal window
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- cdb6c31: uikit: dynamically generate icon types
+- e62ed59: Added component PlFileInput for AgGrid cell
+
 ## 1.2.30
 
 ### Patch Changes
