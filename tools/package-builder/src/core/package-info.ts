@@ -513,13 +513,13 @@ export class PackageInfo {
             if (typeof registry === 'string') {
                 result.name = registry
                 const regDefault = wellKnownRegistries[result.name]
-                result.downloadURL = registries[result.name]?.downloadURL ?? regDefault.downloadURL
-                result.storageURL = registries[result.name]?.storageURL ?? regDefault.storageURL
+                result.downloadURL = registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registries[result.name]?.storageURL ?? regDefault?.storageURL
             } else {
                 result.name = registry.name
                 const regDefault = wellKnownRegistries[result.name]
-                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault.downloadURL
-                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault.storageURL
+                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL
             }
         }
 
