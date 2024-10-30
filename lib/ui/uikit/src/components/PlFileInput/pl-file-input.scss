@@ -191,13 +191,20 @@
 
   background-color: var(--input-active-color);
   padding: 4px;
+  height: 100%;
+  position: relative;
 
   .mask-paper-clip {
     display: none;
   }
 
   .pl-file-input {
-    height: 32px;
+    height: 100% !important;
+    position: unset;
+
+    .double-contour {
+      inset: 2px;
+    }
 
     &__contour {
       border-width: 1px;
@@ -218,7 +225,7 @@
 
   &:hover {
     --border-color: var(--border-color-focus);
-    background-color: var(--btn-active-select);
+    background-color: #D9F8CA;
   }
 
   &:hover .pl-file-input__filename::before {
@@ -230,7 +237,6 @@
   }
 
   &.has-file {
-    border: 1px solid var(--border-color-div-grey);
     padding-left: 0;
     padding-right: 0;
 
