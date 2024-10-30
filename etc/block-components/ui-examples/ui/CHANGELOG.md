@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.51
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- e62ed59: Added component PlFileInput for AgGrid cell
+- Updated dependencies [a0854a3]
+- Updated dependencies [e62ed59]
+  - @platforma-sdk/ui-vue@1.7.31
+
 ## 1.0.50
 
 ### Patch Changes
