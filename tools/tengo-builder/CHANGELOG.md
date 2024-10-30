@@ -1,5 +1,17 @@
 # @platforma-sdk/tengo-builder
 
+## 1.16.0
+
+### Minor Changes
+
+- d49c764: Support static asset packages in execution pipelines
+
+## 1.15.1
+
+### Patch Changes
+
+- 89eaf3e: Support \*.as.json asset files
+
 ## 1.15.0
 
 ### Minor Changes

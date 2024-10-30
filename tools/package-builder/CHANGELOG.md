@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.5
+
+### Patch Changes
+
+- 2684ebc: Add default settings for well-known registries
+
 ## 2.10.4
 
 ### Patch Changes

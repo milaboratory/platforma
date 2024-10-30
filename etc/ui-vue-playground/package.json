@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/ui-vue-playground",
   "private": true,
-  "version": "0.0.46",
+  "version": "0.0.54",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -43,6 +43,7 @@
     "vitest": "catalog:",
     "@vue/test-utils": "catalog:",
     "vue-tsc": "catalog:",
-    "resize-observer-polyfill": "catalog:"
+    "resize-observer-polyfill": "catalog:",
+    "@vueuse/core": "catalog:"
   }
 }
