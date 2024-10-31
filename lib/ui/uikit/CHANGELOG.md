@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.1
+
+### Patch Changes
+
+- 7c9d23c: Add 24_delete-bin icon
+
 ## 2.0.0
 
 ### Major Changes
