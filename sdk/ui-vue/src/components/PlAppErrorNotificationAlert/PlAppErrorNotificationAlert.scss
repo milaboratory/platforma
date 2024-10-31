@@ -1,0 +1,53 @@
+.pl-app-notification-alert {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    width: 256px;
+    height: auto;
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        code {
+            display: block;
+            width: 100%;
+            overflow: scroll;
+            padding: 12px 4px 24px 12px;
+        }
+    }
+
+    &__error-description {
+        display: flex;
+        border-radius: 6px;
+        border: 1px solid var(--border-color-div-grey);
+        background: var(--bg-base-light);
+    }
+
+    &__copy-icon {
+        top: 12px;
+        right: 12px;
+        position: absolute;
+        background: var(--ic-02);
+    }
+
+    &__copy-container {
+        min-width: 40px;
+        width: 40px;
+        position: relative;
+    }
+
+    &__item {
+        position: relative;
+    }
+
+    &__title {
+        color: #000;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: 20px;
+        margin-bottom: 6px;
+    }
+}

@@ -1,0 +1,43 @@
+.pl-notification-alert {
+    padding: 12px;
+    position: relative;
+    border-radius: 6px;
+    border: 1px solid var(--border-color-default);
+    min-height: 40px;
+    width: 256px;
+    max-height: 100%;
+    overflow: auto;
+
+    .ui-btn-ghost {
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+
+    &__close {
+        width: 28px;
+        min-width: 28px;
+    }
+
+    &__wrapper {
+        flex-grow: 1;
+        overflow: auto;
+    }
+
+    &.neutral {
+        background: var(--notification-neutral);
+    }
+
+    &.error {
+        background: var(--notification-error);
+    }
+
+    &.success {
+        background: var(--notification-success);
+    }
+
+    &.warning {
+        background: var(--notification-warning);
+    }
+
+}
