@@ -1,0 +1,32 @@
+@import "@/assets/mixins";
+
+.pl-btn-danger {
+  @include base-btn;
+
+  & {
+    --color-btn-background: var(--txt-error);
+    --color-btn-hover: #FF5C5C;
+
+    background-color: var(--color-btn-background);
+    border: none;
+  }
+
+  &.large {
+    --drop-shadow: 3px 3px 0px #000000;
+  }
+
+  &.loading {
+    background: rgba(7, 5, 41, 0.8);
+  }
+
+  &:disabled {
+    background-color: var(--btn-disabled-bg);
+    box-shadow: none !important;
+    cursor: auto;
+  }
+
+  &:active {
+    --active-shadow: inset 0px 3px 0px rgba(0, 0, 0, 0.24);
+    --drop-shadow: 0 0 0 0 transparent;
+  }
+}

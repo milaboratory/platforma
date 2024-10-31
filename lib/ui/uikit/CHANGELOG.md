@@ -1,5 +1,47 @@
 # @milaboratories/uikit
 
+## 2.0.1
+
+### Patch Changes
+
+- 7c9d23c: Add 24_delete-bin icon
+
+## 2.0.0
+
+### Major Changes
+
+- cf824ad: fixed styles for modal window
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- cdb6c31: uikit: dynamically generate icon types
+- e62ed59: Added component PlFileInput for AgGrid cell
+
+## 1.2.30
+
+### Patch Changes
+
+- 6737e02: [sdk/ui-vue] `PlLogView` support log handle as :value
+
+## 1.2.29
+
+### Patch Changes
+
+- f4e8fa6: do not consider lastError as error state
+
+## 1.2.28
+
+### Patch Changes
+
+- 0b11a0a: fix close modal btn border radius
+
+## 1.2.27
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+
 ## 1.2.26
 
 ### Patch Changes

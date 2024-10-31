@@ -14,48 +14,9 @@
 ll := import(":ll")
 smart := import(":smart")
 validation := import(":validation")
+blobs := import(":file.internal")
 
 json := import("json")
-
-//
-// Constants:
-//
-
-_RTYPE_BLOB_IMPORT_INTERNAL := { Name: "BlobImportInternal", Version: "1" }
-_RTYPE_BLOB_UPLOAD := { Name: "BlobUpload", Version: "1" }
-_RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
-
-createBlobImportInternal := func(settings) {
-	validation.assertJsonSchema(settings, {
-		"path": "string",
-		"storageId": "string",
-		"maxSpeedBytes,omitempty": "number",
-		"dataVersion,omitempty": "string"
-	})
-
-	importer := smart.structBuilder(_RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
-
-	return ll.toStrict({
-		file: importer.getField("blob"),
-		handle: importer.getField("handle")
-	})
-}
-
-createBlobUpload := func(settings) {
-	validation.assertJsonSchema(settings, {
-		"modificationTime": "string",
-		"localPath": "string",
-		"pathSignature": "string",
-		"sizeBytes": "string"
-	})
-
-	uploader := smart.structBuilder(_RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
-
-	return ll.toStrict({
-		file: uploader.getField("blob"),
-		handle: uploader.getField("handle")
-	})
-}
 
 /**
  * Imports an external file into the workflow, either from pre-configured storage,
@@ -82,11 +43,14 @@ importFile := func(importFileHandle) {
 	settings := json.decode(path)
 
 	if url.Scheme == "upload" {
-		ll.assert(url.Host == "upload", "unexpected host while parsing import file handle, expected upload found ", url.Host)
-		return createBlobUpload(settings)
+		ll.assert(url.Host == "upload", "wrong 'host' in import file handle. Expected: 'upload', found: '", url.Host, "'")
+		return blobs.createBlobUpload(settings)
 	} else if url.Scheme == "index" {
-		ll.assert(url.Host == "index", "unexpected host while parsing import file handle, expected index found ", url.Host)
-		return createBlobImportInternal(settings)
+		ll.assert(url.Host == "index", "wrong 'host' in import file handle. Expected 'index', found: '", url.Host, "'")
+		return blobs.createBlobImportInternal(settings)
+	} else if (url.Scheme == "download") {
+		ll.assert(url.Host == "download", "wrong 'host' in import file handle. Expected: 'download', found: '", url.Host, "'")
+		return blobs.createBlobImportExternal(settings)
 	} else {
 		ll.panic("Unknown file import handle schema: ", url.Scheme)
 	}
@@ -97,7 +61,7 @@ importFile := func(importFileHandle) {
  * downloaded from the UI side.
  */
 exportFile := func(blob) {
-	builder := smart.structBuilder(_RTYPE_BLOB_DOWNLOAD)
+	builder := smart.structBuilder(blobs.RTYPE_BLOB_DOWNLOAD)
 
 	builder.createInputField("blob").set(blob)
 

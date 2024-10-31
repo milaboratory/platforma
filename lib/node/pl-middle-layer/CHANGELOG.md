@@ -1,5 +1,54 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.11
+
+### Patch Changes
+
+- Updated dependencies [681efa7]
+  - @platforma-sdk/workflow-tengo@1.7.1
+
+## 1.14.10
+
+### Patch Changes
+
+- 1f6b3b8: PFrames version bump
+
+## 1.14.9
+
+### Patch Changes
+
+- 58fa87c: fix no progress in mixcr clonotyping logs
+- Updated dependencies [58fa87c]
+  - @milaboratories/pl-drivers@1.3.8
+
+## 1.14.8
+
+### Patch Changes
+
+- Updated dependencies [d49c764]
+  - @platforma-sdk/workflow-tengo@1.7.0
+
+## 1.14.7
+
+### Patch Changes
+
+- Updated dependencies [e4eb816]
+  - @milaboratories/pl-local@1.5.0
+
+## 1.14.6
+
+### Patch Changes
+
+- 612a9be: PFrame driver concurrency changed to 1
+- Updated dependencies [612a9be]
+- Updated dependencies [612a9be]
+  - @platforma-sdk/workflow-tengo@1.6.4
+  - @milaboratories/pl-model-common@1.5.2
+  - @milaboratories/pl-model-middle-layer@1.5.5
+  - @milaboratories/pl-drivers@1.3.7
+  - @platforma-sdk/model@1.7.20
+  - @platforma-sdk/block-tools@2.3.19
+
 ## 1.14.5
 
 ### Patch Changes

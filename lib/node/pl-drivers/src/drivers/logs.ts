@@ -1,12 +1,14 @@
 import { Computable, ComputableCtx } from '@milaboratories/computable';
 import { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
-import { bigintToResourceId } from '@milaboratories/pl-client';
+import { bigintToResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
 import { LogsStreamDriver } from './logs_stream';
 import { DownloadDriver } from './download_and_logs_blob';
 import * as sdk from '@milaboratories/pl-model-common';
+import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(
+    private readonly logger: MiLogger,
     private readonly logsStreamDriver: LogsStreamDriver,
     private readonly downloadDriver: DownloadDriver
   ) {}

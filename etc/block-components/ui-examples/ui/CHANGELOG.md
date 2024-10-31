@@ -1,5 +1,83 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.52
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.32
+
+## 1.0.51
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- e62ed59: Added component PlFileInput for AgGrid cell
+- Updated dependencies [a0854a3]
+- Updated dependencies [e62ed59]
+  - @platforma-sdk/ui-vue@1.7.31
+
+## 1.0.50
+
+### Patch Changes
+
+- 6737e02: [sdk/ui-vue] `PlLogView` support log handle as :value
+  - @platforma-sdk/ui-vue@1.7.30
+
+## 1.0.49
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+
+## 1.0.48
+
+### Patch Changes
+
+- Updated dependencies [812ba42]
+  - @platforma-sdk/ui-vue@1.7.27
+
+## 1.0.47
+
+### Patch Changes
+
+- Updated dependencies [bc5e60e]
+  - @platforma-sdk/ui-vue@1.7.26
+
+## 1.0.46
+
+### Patch Changes
+
+- f4e8fa6: do not consider lastError as error state
+  - @platforma-sdk/ui-vue@1.7.25
+
+## 1.0.45
+
+### Patch Changes
+
+- Updated dependencies [3276b87]
+  - @platforma-sdk/ui-vue@1.7.24
+
+## 1.0.44
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.22
+
+## 1.0.43
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+  - @platforma-sdk/ui-vue@1.7.21
+
+## 1.0.42
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.20
+- @platforma-sdk/model@1.7.20
+- @milaboratories/milaboratories.test-enter-numbers.model@1.0.15
+
 ## 1.0.41
 
 ### Patch Changes

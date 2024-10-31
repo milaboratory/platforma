@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.5.2
+
+### Patch Changes
+
+- 612a9be: fix for isPColumnSpecResult type guard
+
 ## 1.5.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.0.3
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+
 ## 1.0.2
 
 ### Patch Changes

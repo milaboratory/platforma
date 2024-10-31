@@ -1,5 +1,98 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.54
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.52
+
+## 1.0.53
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+- Updated dependencies [e62ed59]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.51
+
+## 1.0.52
+
+### Patch Changes
+
+- Updated dependencies [6737e02]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.50
+
+## 1.0.51
+
+### Patch Changes
+
+- 73ea7ee: chore: change s3 bucket upload prefix
+
+## 1.0.50
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+- Updated dependencies [e859df0]
+  - @milaboratories/milaboratories.ui-examples.workflow@1.0.3
+  - @milaboratories/milaboratories.ui-examples.model@1.0.24
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.49
+
+## 1.0.49
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.48
+
+## 1.0.48
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.47
+
+## 1.0.47
+
+### Patch Changes
+
+- db28f0b: chore: add prepublish action for ui-examples
+
+## 1.0.46
+
+### Patch Changes
+
+- Updated dependencies [f4e8fa6]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.46
+
+## 1.0.45
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.45
+
+## 1.0.44
+
+### Patch Changes
+
+- 0b11a0a: fix close modal btn border radius
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.44
+
+## 1.0.43
+
+### Patch Changes
+
+- Updated dependencies [7f90dda]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.23
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.43
+
+## 1.0.42
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.42
+- @milaboratories/milaboratories.ui-examples.workflow@1.0.2
+- @platforma-sdk/model@1.7.20
+- @milaboratories/milaboratories.ui-examples.model@1.0.22
+
 ## 1.0.41
 
 ### Patch Changes

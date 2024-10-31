@@ -4,7 +4,7 @@ import type { ImportFileHandle } from '@platforma-sdk/model';
 import { reactive } from 'vue';
 
 const data = reactive({
-  model: undefined as ImportFileHandle | undefined,
+  model: undefined as ImportFileHandle | undefined
 });
 </script>
 

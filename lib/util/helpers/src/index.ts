@@ -11,6 +11,7 @@ export * from './objects';
 export * from './collections';
 export * from './functions';
 export * from './types';
+export * from './regexp';
 
 export {
   utils,

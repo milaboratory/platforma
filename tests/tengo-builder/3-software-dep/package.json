@@ -4,13 +4,12 @@
   "version": "1.0.0",
   "description": "The software dependency test",
   "scripts": {
-    "build": "true",
-    "test": "pl-tengo build"
+    "build": "rm -rf dist && pl-tengo build"
   },
   "license": "UNLICENSED",
   "devDependencies": {
-    "@mi-tests/tengo-integration-2": "workspace:*",
-    "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@mi-tests/tengo-integration-2": "file:../2-artifacts",
+    "@platforma-sdk/workflow-tengo": "file:../../../sdk/workflow-tengo",
+    "@platforma-sdk/tengo-builder": "file:../../../tools/tengo-builder"
   }
 }

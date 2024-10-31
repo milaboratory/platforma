@@ -1,5 +1,51 @@
 # @milaboratories/uikit-playground
 
+## 0.0.30
+
+### Patch Changes
+
+- Updated dependencies [7c9d23c]
+  - @milaboratories/uikit@2.0.1
+
+## 0.0.29
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+- Updated dependencies [cf824ad]
+- Updated dependencies [cdb6c31]
+- Updated dependencies [e62ed59]
+  - @milaboratories/uikit@2.0.0
+
+## 0.0.28
+
+### Patch Changes
+
+- Updated dependencies [6737e02]
+  - @milaboratories/uikit@1.2.30
+
+## 0.0.27
+
+### Patch Changes
+
+- Updated dependencies [f4e8fa6]
+  - @milaboratories/uikit@1.2.29
+
+## 0.0.26
+
+### Patch Changes
+
+- Updated dependencies [0b11a0a]
+  - @milaboratories/uikit@1.2.28
+
+## 0.0.25
+
+### Patch Changes
+
+- Updated dependencies [7f90dda]
+  - @milaboratories/uikit@1.2.27
+
 ## 0.0.24
 
 ### Patch Changes

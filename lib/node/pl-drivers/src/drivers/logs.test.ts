@@ -22,6 +22,7 @@ import { DownloadDriver } from './download_and_logs_blob';
 import { createDownloadClient, createLogsClient } from '../clients/helpers';
 import { LogsStreamDriver } from './logs_stream';
 import { LogsDriver } from './logs';
+import { test, expect } from '@jest/globals';
 
 test('should get all logs', async () => {
   await TestHelpers.withTempRoot(async (client) => {
@@ -31,7 +32,7 @@ test('should get all logs', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-1-'));
     const download = new DownloadDriver(
       logger,
@@ -41,7 +42,7 @@ test('should get all logs', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
-    const logs = new LogsDriver(logsStream, download);
+    const logs = new LogsDriver(logger, logsStream, download);
 
     await createRunCommandWithStdoutStream(client, 'bash', ['-c', 'echo 1; sleep 1; echo 2']);
 
@@ -76,7 +77,7 @@ test('should get last line with a prefix', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-2-'));
     const download = new DownloadDriver(
       logger,
@@ -86,7 +87,7 @@ test('should get last line with a prefix', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
-    const logs = new LogsDriver(logsStream, download);
+    const logs = new LogsDriver(logger, logsStream, download);
 
     const c = Computable.make((ctx) => {
       const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
@@ -126,7 +127,7 @@ test('should get log smart object and get log lines from that', async () => {
       stopPollingDelay: 10,
       pollingInterval: 10
     });
-    const logsStream = new LogsStreamDriver(createLogsClient(client, logger));
+    const logsStream = new LogsStreamDriver(logger, createLogsClient(client, logger));
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-logs-3-'));
     const download = new DownloadDriver(
       logger,
@@ -136,7 +137,7 @@ test('should get log smart object and get log lines from that', async () => {
       new HmacSha256Signer(HmacSha256Signer.generateSecret()),
       { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
     );
-    const logs = new LogsDriver(logsStream, download);
+    const logs = new LogsDriver(logger, logsStream, download);
 
     const c = Computable.make((ctx) => {
       const streamManager = ctx.accessor(tree.entry()).node().traverse('result')?.persist();
