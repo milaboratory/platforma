@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.7.1
+
+### Patch Changes
+
+- 681efa7: pfconv version bump
+
 ## 1.7.0
 
 ### Minor Changes
