@@ -44,6 +44,7 @@ export const maskIcons24 = [
   'cpu',
   'cross-bars',
   'dark-mode',
+  'delete-bin',
   'delete',
   'dendrogram-X-1',
   'dendrogram-X',
