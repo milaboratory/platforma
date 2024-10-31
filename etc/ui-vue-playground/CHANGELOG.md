@@ -1,5 +1,89 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.56
+
+### Patch Changes
+
+- Updated dependencies [7c9d23c]
+  - @milaboratories/uikit@2.0.1
+  - @platforma-sdk/ui-vue@1.7.32
+
+## 0.0.55
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+- Updated dependencies [cf824ad]
+- Updated dependencies [cdb6c31]
+- Updated dependencies [e62ed59]
+  - @milaboratories/uikit@2.0.0
+  - @platforma-sdk/ui-vue@1.7.31
+
+## 0.0.54
+
+### Patch Changes
+
+- 6737e02: [sdk/ui-vue] `PlLogView` support log handle as :value
+- Updated dependencies [6737e02]
+  - @milaboratories/uikit@1.2.30
+  - @platforma-sdk/ui-vue@1.7.30
+
+## 0.0.53
+
+### Patch Changes
+
+- Updated dependencies [812ba42]
+  - @platforma-sdk/ui-vue@1.7.27
+
+## 0.0.52
+
+### Patch Changes
+
+- Updated dependencies [bc5e60e]
+  - @platforma-sdk/ui-vue@1.7.26
+
+## 0.0.51
+
+### Patch Changes
+
+- Updated dependencies [f4e8fa6]
+  - @milaboratories/uikit@1.2.29
+  - @platforma-sdk/ui-vue@1.7.25
+
+## 0.0.50
+
+### Patch Changes
+
+- Updated dependencies [3276b87]
+  - @platforma-sdk/ui-vue@1.7.24
+
+## 0.0.49
+
+### Patch Changes
+
+- Updated dependencies [0b11a0a]
+  - @milaboratories/uikit@1.2.28
+  - @platforma-sdk/ui-vue@1.7.22
+
+## 0.0.48
+
+### Patch Changes
+
+- Updated dependencies [7f90dda]
+  - @milaboratories/uikit@1.2.27
+  - @platforma-sdk/ui-vue@1.7.21
+
+## 0.0.47
+
+### Patch Changes
+
+- Updated dependencies [612a9be]
+  - @milaboratories/helpers@1.6.6
+  - @milaboratories/uikit@1.2.26
+  - @platforma-sdk/ui-vue@1.7.20
+  - @platforma-sdk/model@1.7.20
+
 ## 0.0.46
 
 ### Patch Changes

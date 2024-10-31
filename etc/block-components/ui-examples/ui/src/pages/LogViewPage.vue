@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { PlBlockPage, PlCheckbox, PlLogView, PlRow, useInterval } from '@platforma-sdk/ui-vue';
+import {
+  PlBlockPage,
+  PlBtnGroup,
+  PlBtnPrimary,
+  PlCheckbox,
+  PlLogView,
+  PlRow,
+  PlTextField,
+  useInterval
+} from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
-import type { ValueOrErrors } from '@platforma-sdk/model';
+import type { AnyLogHandle, ValueOrErrors } from '@platforma-sdk/model';
+import { listToOptions } from '@milaboratories/helpers';
 
 const data = reactive({
   logContent: '',
   showError: false,
-  text: 'my text'
+  text: 'my text',
+  type: 'value' as 'value' | 'output' | 'handle',
+  handle: 'log+ready://log/Blob/primary/1/1570892' as AnyLogHandle | undefined // log+ready://log/Blob/primary/1/1570892
 });
+
+const options = listToOptions(['value', 'output', 'handle']);
 
 const error = computed(() => (data.showError ? faker.lorem.paragraph() : undefined));
 
@@ -31,6 +45,14 @@ useInterval(() => {
   data.logContent += '\n';
   data.logContent += faker.lorem.paragraph();
 }, 1000);
+
+const dropHandle = () => {
+  const handle = data.handle;
+  data.handle = undefined;
+  setTimeout(() => {
+    data.handle = handle;
+  }, 2000);
+};
 </script>
 
 <template>
@@ -39,9 +61,20 @@ useInterval(() => {
     <PlRow>
       <PlCheckbox v-model="data.showError">Show error</PlCheckbox>
     </PlRow>
-    <h4>Value and Error</h4>
-    <PlLogView :value="data.logContent" :error="error" />
-    <h4>Output (ValueOrErrors)</h4>
-    <PlLogView :output="output" />
+    <PlBtnGroup v-model="data.type" :options="options" />
+    <template v-if="data.type === 'value'">
+      <h4>Value and Error</h4>
+      <PlLogView :value="data.logContent" :error="error" />
+    </template>
+    <template v-if="data.type === 'output'">
+      <h4>Output (ValueOrErrors)</h4>
+      <PlLogView :output="output" />
+    </template>
+    <template v-if="data.type === 'handle'">
+      <h4>LogHandle</h4>
+      <PlTextField v-model="data.handle" label="Test Log Handle" />
+      <PlBtnPrimary @click="dropHandle"> Drop handle </PlBtnPrimary>
+      <PlLogView :log-handle="data.handle" />
+    </template>
   </PlBlockPage>
 </template>

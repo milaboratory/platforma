@@ -23,6 +23,7 @@ export * from './layout/PlGrid';
 export * from './components/PlAlert';
 export * from './components/PlBtnPrimary';
 export * from './components/PlBtnAccent';
+export * from './components/PlBtnDanger';
 export * from './components/PlBtnSecondary';
 export * from './components/PlBtnGhost';
 export * from './components/PlBtnLink';

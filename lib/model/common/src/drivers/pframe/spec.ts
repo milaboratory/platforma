@@ -135,16 +135,17 @@ export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
 }
 
-function matchDomain(query?: Record<string, string>, match?: Record<string, string>) {
-  if (query === undefined) return match === undefined;
-  if (match === undefined) return false;
-  for (const k in match) {
-    if (query[k] !== match[k]) return false;
+/** Reurns true if all domains from query are found in target */
+function matchDomain(query?: Record<string, string>, target?: Record<string, string>) {
+  if (query === undefined) return target === undefined;
+  if (target === undefined) return false;
+  for (const k in target) {
+    if (query[k] !== target[k]) return false;
   }
   return true;
 }
 
 /** Returns whether "match" axis id is compatible with the "query" */
-export function matchAxisId(query: AxisId, match: AxisId): boolean {
-  return query.name === match.name && matchDomain(query.domain, match.domain);
+export function matchAxisId(query: AxisId, target: AxisId): boolean {
+  return query.name === target.name && matchDomain(query.domain, target.domain);
 }

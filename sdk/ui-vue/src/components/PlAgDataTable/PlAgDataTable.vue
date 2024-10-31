@@ -238,9 +238,14 @@ const gridOptions = ref<GridOptions>({
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
   },
+  maintainColumnOrder: true,
+  localeText: {
+    loadingError: '...',
+  },
   rowModelType: 'clientSide',
-  maxBlocksInCache: 10000,
+  maxBlocksInCache: 1000,
   cacheBlockSize: 100,
+  blockLoadDebounceMillis: 500,
   serverSideSortAllLevels: true,
   suppressServerSideFullWidthLoadingRow: true,
   getRowId: (params) => params.data.id,
@@ -308,14 +313,6 @@ watch(
     };
     if (lodash.isEqual(gridState, selfState)) return;
 
-    console.log(
-      'reloading; columnOrder changed',
-      !lodash.isEqual(gridState.columnOrder, selfState.columnOrder),
-      'saved',
-      gridState.columnOrder,
-      'current',
-      selfState.columnOrder,
-    );
     gridOptions.value.initialState = gridState;
     ++reloadKey.value;
   },
@@ -333,6 +330,10 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   if (state[sheetId] === newValue) return;
   state[sheetId] = newValue;
   sheetsState.value = state;
+  gridApi.value?.updateGridOptions({
+    loading: true,
+    loadingOverlayComponentParams: { notReady: false },
+  });
 };
 
 watch(
@@ -410,9 +411,9 @@ watch(
       </div>
     </Transition>
     <AgGridVue
+      :key="reloadKey"
       class="ap-ag-data-table-grid"
       :grid-options="gridOptions"
-      :key="reloadKey"
       @grid-ready="onGridReady"
       @state-updated="onStateUpdated"
       @grid-pre-destroyed="onGridPreDestroyed"

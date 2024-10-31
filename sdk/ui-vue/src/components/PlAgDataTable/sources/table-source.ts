@@ -236,13 +236,11 @@ export async function makeSheets(
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
+function columns2rows(fields: number[], columns: PTableVector[], index: number): unknown[] {
   const nCols = columns.length;
   const rowData = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
     const row: Record<string, unknown> = {};
-
-    const index = [];
     for (let iCol = 0; iCol < nCols; ++iCol) {
       const field = fields[iCol].toString();
       const value = columns[iCol].data[iRow];
@@ -254,16 +252,10 @@ function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
       } else {
         row[field] = toDisplayValue(value, valueType);
       }
-
-      index.push(valueType === 'Long' ? Number(value) : value);
     }
-
-    // generate ID based on the axes information
-    row['id'] = iRow.toString();
-
+    row['id'] = (index++).toString();
     rowData.push(row);
   }
-
   return rowData;
 }
 
@@ -357,7 +349,7 @@ export async function updatePFrameGridOptions(
               offset: params.request.startRow,
               length,
             });
-            rowData = columns2rows(fields, data);
+            rowData = columns2rows(fields, data, params.request.startRow);
           }
         }
 

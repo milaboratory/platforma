@@ -137,6 +137,7 @@ const storagePresetSchema = z.object({
     downloadURL: z.string().optional(),
     storageURL: z.string().optional(),
 })
+type storagePreset = z.infer<typeof storagePresetSchema>
 
 const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema)
 type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>
@@ -155,6 +156,12 @@ const packageJsonSchema = z.object({
     })
 })
 type packageJson = z.infer<typeof packageJsonSchema>
+
+const wellKnownRegistries: Record<string, storagePreset> = {
+    "platforma-open": {
+        downloadURL: 'https://bin.pl-open.science/'
+    }
+}
 
 /*
  * package.json -> block-software structure example:
@@ -505,12 +512,14 @@ export class PackageInfo {
         if (registry) {
             if (typeof registry === 'string') {
                 result.name = registry
-                result.downloadURL = registries[result.name]?.downloadURL
-                result.storageURL = registries[result.name]?.storageURL
+                const regDefault = wellKnownRegistries[result.name]
+                result.downloadURL = registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registries[result.name]?.storageURL ?? regDefault?.storageURL
             } else {
                 result.name = registry.name
-                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL
-                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL
+                const regDefault = wellKnownRegistries[result.name]
+                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL
             }
         }
 

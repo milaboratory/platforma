@@ -1,5 +1,23 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.24
+
+### Patch Changes
+
+- e859df0: chore: make ui-examples public
+
+## 1.0.23
+
+### Patch Changes
+
+- 7f90dda: bring the dialog modal in line with the design
+
+## 1.0.22
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.20
+
 ## 1.0.21
 
 ### Patch Changes

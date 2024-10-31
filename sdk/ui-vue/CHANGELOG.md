@@ -1,5 +1,77 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.32
+
+### Patch Changes
+
+- Updated dependencies [7c9d23c]
+  - @milaboratories/uikit@2.0.1
+
+## 1.7.31
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- e62ed59: Added component PlFileInput for AgGrid cell
+- Updated dependencies [a0854a3]
+- Updated dependencies [cf824ad]
+- Updated dependencies [cdb6c31]
+- Updated dependencies [e62ed59]
+  - @milaboratories/uikit@2.0.0
+
+## 1.7.30
+
+### Patch Changes
+
+- Updated dependencies [6737e02]
+  - @milaboratories/uikit@1.2.30
+
+## 1.7.27
+
+### Patch Changes
+
+- 812ba42: PlAgDataTable loadingError changed
+
+## 1.7.26
+
+### Patch Changes
+
+- bc5e60e: Preserve column order after sort
+
+## 1.7.25
+
+### Patch Changes
+
+- Updated dependencies [f4e8fa6]
+  - @milaboratories/uikit@1.2.29
+
+## 1.7.24
+
+### Patch Changes
+
+- 3276b87: PlAgDataTable fix infinite data reloading, show loading on sheet change
+
+## 1.7.22
+
+### Patch Changes
+
+- Updated dependencies [0b11a0a]
+  - @milaboratories/uikit@1.2.28
+
+## 1.7.21
+
+### Patch Changes
+
+- Updated dependencies [7f90dda]
+  - @milaboratories/uikit@1.2.27
+
+## 1.7.20
+
+### Patch Changes
+
+- @milaboratories/uikit@1.2.26
+- @platforma-sdk/model@1.7.20
+
 ## 1.7.18
 
 ### Patch Changes

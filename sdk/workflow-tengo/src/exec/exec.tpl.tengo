@@ -15,6 +15,7 @@ execInternal := import(":exec.internal")
 pkg := import(":exec.package")
 sets := import(":sets")
 validation := import(":validation")
+blobs := import(":file.internal")
 
 self.defineOutputs(
 	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
@@ -31,6 +32,18 @@ _runBinaryCommand := func(inputs) {
 	// create dirs
 	for dir in inputs.dirsToCreate {
 		wdBuilder.mkDir(dir)
+	}
+	// add assets
+	archives := ll.toStrict({})
+	for k, descriptor in inputs.assetDescriptors {
+		archives[k] = blobs.createBlobImportExternal({
+			dataURL: descriptor.asset.url
+		}).file
+	}
+	for k, archiveRules in inputs.assetRules {
+		for dir, filesToExtract in archiveRules {
+			wdBuilder.addFromZip(archives[k], dir, filesToExtract)
+		}
 	}
 	// pass values as fields for saving the topology in pl-core
 	// and avoiding deduplication issues:
@@ -179,11 +192,23 @@ self.body(func(inputs) {
 		},
 		saveFiles: ["string"],
 		saveFilesContents: ["string"],
-		streams: ["string"]
+		streams: ["string"],
+		"assets,omitempty": { any: validation.resource() },
+		"assetDescriptors,omitempty": { any: pkg.assetDescriptorScheme },
+		"assetRules,omitempty": { any: { any: ["string"] } }
 	})
 
 	ll.toStrict(inputs)
 	inputs.runOptions = ll.toStrict(inputs.runOptions)
+	if !is_undefined(inputs.assets) {
+		inputs.assets = ll.toStrict(inputs.assets)
+	}
+	if (!is_undefined(inputs.assetDescriptors)) {
+		inputs.assetDescriptors = ll.toStrict(inputs.assetDescriptors, true)
+	}
+	if (!is_undefined(inputs.assetRules)) {
+		inputs.assetRules = ll.toStrict(inputs.assetRules, true)
+	}
 
 	return _runBinaryCommand(inputs)
 })

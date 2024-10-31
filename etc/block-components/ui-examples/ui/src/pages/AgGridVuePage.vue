@@ -6,6 +6,7 @@ import { AgGridVue } from '@ag-grid-community/vue3';
 import type { GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
+import { PlAgCellFile } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -32,6 +33,13 @@ const columnDefs = [
     headerName: 'Description'
   },
   {
+    colId: 'file',
+    field: 'file',
+    headerName: 'File input',
+    cellRenderer: 'PlAgCellFile',
+    cellStyle: { padding: 0 }
+  },
+  {
     colId: 'link',
     field: 'link',
     headerName: 'Link',
@@ -44,13 +52,15 @@ const result = times(100, () => {
     id: faker.number.int(),
     label: faker.company.buzzNoun(),
     description: faker.lorem.paragraph(),
+    file: '',
     link: faker.internet.url()
   };
 });
 
 const gridOptions: GridOptions = {
   components: {
-    LinkComponent
+    LinkComponent,
+    PlAgCellFile
   }
 };
 
