@@ -10,6 +10,7 @@ import FormComponentsPage from './pages/FormComponentsPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
+import ErrorsPage from './pages/ErrorsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -36,7 +37,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/form-components': FormComponentsPage,
       '/typography': TypographyPage,
       '/ag-grid-vue': AgGridVuePage,
-      '/select-files': SelectFilesPage
+      '/select-files': SelectFilesPage,
+      '/errors': () => ErrorsPage
     }
   };
 });
