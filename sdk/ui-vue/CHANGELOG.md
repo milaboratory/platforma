@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.34
+
+### Patch Changes
+
+- eddcfed: Add Errors page to ui-examples
+
 ## 1.7.32
 
 ### Patch Changes
