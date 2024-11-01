@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.25
+
+### Patch Changes
+
+- eddcfed: Add Errors page to ui-examples
+
 ## 1.0.24
 
 ### Patch Changes
