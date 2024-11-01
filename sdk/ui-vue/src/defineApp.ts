@@ -19,7 +19,10 @@ export function defineApp<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends LocalState<Href> = LocalState<Href>,
->(platforma: Platforma<Args, Outputs, UiState, Href>, extendApp: (app: BaseApp<Args, Outputs, UiState, Href>) => Local) {
+>(
+  platforma: Platforma<Args, Outputs, UiState, Href>,
+  extendApp: (app: BaseApp<Args, Outputs, UiState, Href>) => Local,
+): SdkPlugin<Args, Outputs, UiState, Href, Local> {
   let app: undefined | App<Args, Outputs, UiState, Href, Local> = undefined;
 
   activateAgGrid();
@@ -33,13 +36,18 @@ export function defineApp<
 
         const localState = extendApp(baseApp);
 
+        const routes = Object.fromEntries(
+          Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
+            const c = typeof component === 'function' ? component() : component;
+            return [href, markRaw(c as Component)];
+          }),
+        );
+
         app = Object.assign(baseApp, {
           ...localState,
-          routes: Object.fromEntries(
-            Object.entries(localState.routes as Routes<Href>).map(([href, component]) => {
-              return [href, markRaw(component as Component)];
-            }),
-          ),
+          getRoute(href: Href): Component | undefined {
+            return routes[href];
+          },
         } as unknown as App<Args, Outputs, UiState, Href, Local>);
       })
       .catch((err) => {
@@ -72,11 +80,17 @@ export type App<
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
   Local extends LocalState<Href> = LocalState<Href>,
-> = BaseApp<Args, Outputs, UiState, Href> & Reactive<Local>;
+> = BaseApp<Args, Outputs, UiState, Href> & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
 
 export type SdkPlugin<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-> = ReturnType<typeof defineApp<Args, Outputs, UiState, Href>>;
+  Local extends LocalState<Href> = LocalState<Href>,
+> = {
+  loaded: boolean;
+  error: unknown;
+  useApp<PageHref extends Href = Href>(): App<Args, Outputs, UiState, PageHref, Local>;
+  install(app: unknown): void;
+};
