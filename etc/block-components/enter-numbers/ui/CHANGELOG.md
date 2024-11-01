@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.52
+
+### Patch Changes
+
+- eddcfed: Add Errors page to ui-examples
+- Updated dependencies [eddcfed]
+  - @platforma-sdk/ui-vue@1.7.34
+
 ## 1.0.51
 
 ### Patch Changes
