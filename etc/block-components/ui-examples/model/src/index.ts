@@ -12,7 +12,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
   .initialArgs({ numbers: [] })
 
   .output('numbers', (ctx) =>
-    ctx.prerun?.resolve({ field: 'numbers', assertFieldType: 'Input' })?.getDataAsJson<number[]>()
+    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
   )
 
   .sections((ctx) => {
@@ -26,6 +26,7 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
+      { type: 'link', href: '/errors', label: 'Errors' },
     ];
   })
 
