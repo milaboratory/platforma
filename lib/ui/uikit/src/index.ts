@@ -47,6 +47,8 @@ export * from './components/PlLogView';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
+export * from './components/PlNotificationAlert';
+export * from './components/PlCopyData';
 
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';

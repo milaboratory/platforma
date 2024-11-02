@@ -31,6 +31,9 @@ import PlBtnGroupBasic from './btn-group/index.vue';
 //file-input
 import PlFileInputBasic from './file-input/index.vue';
 
+//notifications
+import PlNotificationAlertBasic from './notifications/index.vue';
+
 export {
   TextFieldBasic,
   TextAreaBasic,
@@ -43,5 +46,6 @@ export {
   PlCheckboxGroupBasic,
   PlToggleSwitchBasic,
   PlBtnGroupBasic,
-  PlFileInputBasic
+  PlFileInputBasic,
+  PlNotificationAlertBasic
 };

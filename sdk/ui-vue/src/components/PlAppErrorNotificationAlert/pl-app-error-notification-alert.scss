@@ -1,0 +1,51 @@
+@import '@milaboratories/uikit/src/assets/mixins.scss';
+
+.pl-app-notification-alert {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    width: 256px;
+    height: auto;
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 100%;
+    }
+
+    &__error-description {
+        display: flex;
+        border-radius: 6px;
+        border: 1px solid var(--border-color-div-grey);
+        background: var(--bg-base-light);
+        max-height: 600px; // @TODO
+        position: relative;
+        >  code {
+            white-space: pre-wrap;
+            display: block;
+            padding: 12px 4px 24px 12px;
+            @include scrollbar();
+        }
+    }
+
+    &__copy-icon {
+        top: 12px;
+        right: 12px;
+        position: absolute;
+        background: var(--ic-02);
+    }
+
+    &__item {
+        position: relative;
+    }
+
+    &__title {
+        color: var(--txt-01);
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: 20px;
+        margin-bottom: 6px;
+    }
+}
