@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.2
+
+### Patch Changes
+
+- 478dc27: some fixes
+
 ## 2.0.1
 
 ### Patch Changes
