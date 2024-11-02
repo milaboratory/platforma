@@ -3,7 +3,7 @@ import { type BlockOutputsBase, type Platforma } from '@platforma-sdk/model';
 import type { Component, Reactive } from 'vue';
 import { inject, markRaw, reactive } from 'vue';
 import { createApp, type BaseApp } from './internal/createApp';
-import type { LocalState, Routes } from './types';
+import type { BaseSettings, Routes } from './types';
 import { activateAgGrid } from './aggrid';
 
 const pluginKey = Symbol('sdk-vue');
@@ -18,7 +18,7 @@ export function defineApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-  Local extends LocalState<Href> = LocalState<Href>,
+  Local extends BaseSettings<Href> = BaseSettings<Href>,
 >(
   platforma: Platforma<Args, Outputs, UiState, Href>,
   extendApp: (app: BaseApp<Args, Outputs, UiState, Href>) => Local,
@@ -79,7 +79,7 @@ export type App<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-  Local extends LocalState<Href> = LocalState<Href>,
+  Local extends BaseSettings<Href> = BaseSettings<Href>,
 > = BaseApp<Args, Outputs, UiState, Href> & Reactive<Omit<Local, 'routes'>> & { getRoute(href: Href): Component | undefined };
 
 export type SdkPlugin<
@@ -87,7 +87,7 @@ export type SdkPlugin<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
-  Local extends LocalState<Href> = LocalState<Href>,
+  Local extends BaseSettings<Href> = BaseSettings<Href>,
 > = {
   loaded: boolean;
   error: unknown;

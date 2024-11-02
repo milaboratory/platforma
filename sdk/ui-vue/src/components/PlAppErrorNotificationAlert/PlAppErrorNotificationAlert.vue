@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import type { BlockOutputsBase } from '@platforma-sdk/model';
 import type { OutputErrors } from '../../types';
-import './PlAppErrorNotificationAlert.scss';
+// @TODO module
+import './pl-app-error-notification-alert.scss';
 import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlCopyData } from '@milaboratories/uikit';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
-defineProps<{ errors: OutputErrors<BlockOutputsBase> }>();
+const props = defineProps<{ errors: OutputErrors<BlockOutputsBase> }>();
 
-const showErrorsDialog = ref(false);
+const isModalOpen = ref(false);
+
+const isAlertOpen = ref(true);
 
 function showErrors() {
-  showErrorsDialog.value = true;
+  isModalOpen.value = true;
 }
 
 function copyData(data: OutputErrors<BlockOutputsBase>[string]) {
@@ -18,28 +21,34 @@ function copyData(data: OutputErrors<BlockOutputsBase>[string]) {
     navigator.clipboard.writeText(JSON.stringify(data));
   }
 }
+
+// @TODO (temp)
+watch(
+  () => props.errors,
+  (errors) => {
+    isAlertOpen.value = Object.values(errors).some((v) => !!v);
+  },
+  { immediate: true, deep: true },
+);
 </script>
 <template>
   <div class="pl-app-notification-alert">
-    <PlDialogModal v-model="showErrorsDialog" width="50%" tyle="max-height: 100vh">
+    <PlDialogModal v-model="isModalOpen" width="50%" style="max-height: 100vh">
       <template #title> Errors </template>
       <div class="pl-app-notification-alert__content">
-        <div v-for="(err, index) in errors" :key="index" class="pl-app-notification-alert__item">
-          <div class="pl-app-notification-alert__title">{{ err?.name }}</div>
+        <div v-for="(err, name) in errors" :key="name" class="pl-app-notification-alert__item">
+          <div class="pl-app-notification-alert__title">{{ name }}</div>
           <div class="pl-app-notification-alert__error-description">
             <code>
               {{ err?.message }}
-              {{ err?.stack }}
             </code>
-            <div class="pl-app-notification-alert__copy-container">
-              <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(err)" />
-            </div>
+            <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(err)" />
           </div>
         </div>
       </div>
     </PlDialogModal>
 
-    <PlNotificationAlert type="error" closable>
+    <PlNotificationAlert v-model="isAlertOpen" type="error" closable>
       Output failed. Review block logic and retry
       <template #actions>
         <PlSpacer />

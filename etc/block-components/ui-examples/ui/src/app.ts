@@ -28,6 +28,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data,
     incrementCounter,
     argsAsJson,
+    showErrorsNotification: true,
     routes: {
       '/': LogViewPage,
       '/modals': ModalsPage,

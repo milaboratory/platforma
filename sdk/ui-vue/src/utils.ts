@@ -7,12 +7,12 @@ export class UnresolvedError extends Error {}
 
 export class MultiError extends Error {
   constructor(public readonly errors: string[]) {
-    super();
+    super(errors.join('\n'));
   }
 
   // @todo
   toString() {
-    return this.errors.join(',');
+    return this.errors.join('\n');
   }
 }
 
