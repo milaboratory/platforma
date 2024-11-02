@@ -38,18 +38,9 @@ const numbers = computed({
       <legend>Args (app.model.args)</legend>
       {{ app.model.args }}
     </fieldset>
-    <h3>app.model</h3>
-    <code>{{ app.model }}</code>
-    <PlAlert type="info" monospace>
-      outputValues:
-      {{ app.outputValues }}
-    </PlAlert>
     <PlAlert type="info" monospace>
       outputs:
       {{ app.model.outputs }}
-    </PlAlert>
-    <PlAlert v-if="app.hasErrors" type="error">
-      {{ app.outputErrors }}
     </PlAlert>
     <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>
   </PlBlockPage>

@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import { useSdkPlugin } from '../defineApp';
 import NotFound from './NotFound.vue';
 import LoaderPage from './LoaderPage.vue';
+import { PlAppErrorNotificationAlert } from './PlAppErrorNotificationAlert';
 
 const sdk = useSdkPlugin();
 
@@ -28,6 +29,12 @@ const CurrentView = computed(() => {
 
   return undefined;
 });
+
+const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
+
+const errors = computed(() => (app.value ? app.value.model.outputErrors : {}));
+
+const showErrorsNotification = computed(() => app.value?.showErrorsNotification);
 </script>
 
 <template>
@@ -36,5 +43,6 @@ const CurrentView = computed(() => {
     <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
     <component :is="CurrentView" v-else-if="CurrentView" :key="href" />
     <NotFound v-else />
+    <PlAppErrorNotificationAlert v-if="sdk.loaded && showErrorsNotification" :errors="errors" />
   </div>
 </template>
