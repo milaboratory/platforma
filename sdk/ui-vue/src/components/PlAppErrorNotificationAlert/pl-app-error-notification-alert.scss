@@ -1,3 +1,5 @@
+@import '@milaboratories/uikit/src/assets/mixins.scss';
+
 .pl-app-notification-alert {
     position: fixed;
     bottom: 12px;
@@ -9,13 +11,7 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-
-        code {
-            display: block;
-            width: 100%;
-            overflow: scroll;
-            padding: 12px 4px 24px 12px;
-        }
+        max-height: 100%;
     }
 
     &__error-description {
@@ -23,6 +19,14 @@
         border-radius: 6px;
         border: 1px solid var(--border-color-div-grey);
         background: var(--bg-base-light);
+        max-height: 600px; // @TODO
+        position: relative;
+        >  code {
+            white-space: pre-wrap;
+            display: block;
+            padding: 12px 4px 24px 12px;
+            @include scrollbar();
+        }
     }
 
     &__copy-icon {
@@ -32,18 +36,12 @@
         background: var(--ic-02);
     }
 
-    &__copy-container {
-        min-width: 40px;
-        width: 40px;
-        position: relative;
-    }
-
     &__item {
         position: relative;
     }
 
     &__title {
-        color: #000;
+        color: var(--txt-01);
         font-size: 14px;
         font-style: normal;
         font-weight: 600;

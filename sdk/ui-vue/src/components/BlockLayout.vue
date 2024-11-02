@@ -29,6 +29,12 @@ const CurrentView = computed(() => {
 
   return undefined;
 });
+
+const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
+
+const errors = computed(() => (app.value ? app.value.model.outputErrors : {}));
+
+const showErrorsNotification = computed(() => app.value?.showErrorsNotification);
 </script>
 
 <template>
@@ -37,6 +43,6 @@ const CurrentView = computed(() => {
     <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
     <component :is="CurrentView" v-else-if="CurrentView" :key="href" />
     <NotFound v-else />
-    <PlAppErrorNotificationAlert v-if="Object.keys(sdk.useApp().model.outputErrors).length > 0" :errors="sdk.useApp().model.outputErrors" />
+    <PlAppErrorNotificationAlert v-if="sdk.loaded && showErrorsNotification" :errors="errors" />
   </div>
 </template>

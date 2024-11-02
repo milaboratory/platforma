@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PlBtnGhost from '../PlBtnGhost/PlBtnGhost.vue';
-import './PlNotificationAlert.scss';
+import { PlBtnGhost } from '../PlBtnGhost';
+import './pl-notification-alert.scss';
 
 const props = withDefaults(
   defineProps<{
@@ -10,6 +10,7 @@ const props = withDefaults(
   }>(),
   { type: 'neutral', width: '256px' },
 );
+
 const model = defineModel({ type: Boolean, default: true });
 
 function closeAlert() {
