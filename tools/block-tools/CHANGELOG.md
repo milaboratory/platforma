@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.3.20
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.3.19
 
 ### Patch Changes
