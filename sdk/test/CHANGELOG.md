@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.7.36
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/pl-client@2.5.6
+  - @milaboratories/pl-middle-layer@1.14.12
+  - @milaboratories/pl-tree@1.4.7
+
 ## 1.7.33
 
 ### Patch Changes
