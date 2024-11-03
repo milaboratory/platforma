@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.5.8
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.5.7
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.12
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/pl-client@2.5.6
+  - @platforma-sdk/workflow-tengo@1.7.2
+  - @platforma-sdk/block-tools@2.3.20
+  - @milaboratories/pl-drivers@1.3.9
+  - @milaboratories/pl-tree@1.4.7
+
 ## 1.14.11
 
 ### Patch Changes
