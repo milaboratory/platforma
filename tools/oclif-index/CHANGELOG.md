@@ -1,5 +1,11 @@
 # @platforma-sdk/oclif-index
 
+## 1.0.2
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 1.0.1
 
 ### Patch Changes

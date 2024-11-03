@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.3
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.0.2
 
 ### Patch Changes

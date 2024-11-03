@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.36
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/uikit@2.0.3
+
 ## 1.7.35
 
 ### Patch Changes

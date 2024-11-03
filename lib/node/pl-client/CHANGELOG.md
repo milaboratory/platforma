@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.6
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.5.5
 
 ### Patch Changes
