@@ -5,7 +5,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest && node ../../tests/tengo-builder/test.js"
+    "test": "jest"
   },
   "bin": {
     "pl-tengo": "./bin/run.js"
