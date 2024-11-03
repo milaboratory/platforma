@@ -85,8 +85,8 @@ export async function initDriverKit(
     uploadProgressClient,
     ops.uploadDriverOps
   );
-  const logsStreamDriver = new LogsStreamDriver(logsClient, ops.logStreamDriverOps);
-  const logDriver = new LogsDriver(logsStreamDriver, blobDriver);
+  const logsStreamDriver = new LogsStreamDriver(ops.logger, logsClient, ops.logStreamDriverOps);
+  const logDriver = new LogsDriver(ops.logger, logsStreamDriver, blobDriver);
   const lsDriver = await LsDriver.init(
     ops.logger,
     pl,

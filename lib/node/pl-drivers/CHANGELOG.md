@@ -1,5 +1,26 @@
 # @milaboratories/pl-drivers
 
+## 1.3.8
+
+### Patch Changes
+
+- 58fa87c: fix no progress in mixcr clonotyping logs
+
+## 1.3.7
+
+### Patch Changes
+
+- Updated dependencies [612a9be]
+  - @milaboratories/pl-model-common@1.5.2
+
+## 1.3.6
+
+### Patch Changes
+
+- 8e0ef1f: ls: if wmic is not found, fall back to just drive C
+- Updated dependencies [8e9424a]
+  - @milaboratories/pl-model-common@1.5.1
+
 ## 1.3.5
 
 ### Patch Changes

@@ -1,0 +1,32 @@
+assets := import("@platforma-sdk/workflow-tengo:assets")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pkg := import("@platforma-sdk/workflow-tengo:exec.package")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+sw := assets.importSoftware(":exec.test.pkg.sleep")
+
+self.defineOutputs(["pkgFile", "pkgFileContent"])
+
+self.prepare(func(inputs) {
+	binaryDescriptor := sw.descriptor.binary
+
+	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
+	installed := pkg.install(archive)
+
+	assetName := "package.sw.json"
+
+	pkgFile := pkg.loadPackageFile(installed.package(), assetName)
+	pkgFileContent := pkg.loadPackageFileContent(installed.package(), assetName)
+
+	return {
+		pkgFile: pkgFile.file,
+		pkgFileContent: pkgFileContent.content
+	}
+})
+
+self.body(func(inputs) {
+	return {
+		pkgFile: file.exportFile(inputs["pkgFile"]),
+		pkgFileContent: inputs["pkgFileContent"].getDataAsJson()
+	}
+})

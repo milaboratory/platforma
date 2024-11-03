@@ -153,6 +153,7 @@ type PlFsStorageTypeSettings = {
 export type PlControllerRunnerSettings = {
   type: string;
   storageRoot: string;
+  workdirCacheOnFailure: string;
   secrets: PlControllerRunnerSecretsSettings[];
 };
 

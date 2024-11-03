@@ -127,7 +127,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       fetchMethod: async (key) => await fsp.readFile(key),
       sizeCalculation: (v) => v.length
     });
-    const concurrencyLimiter = new ConcurrencyLimitingExecutor(2);
+    const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.blobContentCache = blobContentCache;
     this.concurrencyLimiter = concurrencyLimiter;
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {

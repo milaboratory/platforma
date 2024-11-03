@@ -1,5 +1,6 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
 pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
 
 json := import("json")
@@ -21,8 +22,18 @@ createJsonPColumnData := func(data) {
 	return smart.createValueResource(pConstants.RTYPE_P_COLUMN_DATA_JSON, data)
 }
 
+isNumber := func(val) {
+    return is_int(val) || is_float(val)
+}
+
 wf.body(func(args) {
 	blockId := wf.blockId().getDataAsJson()
+
+	for elem in args.numbers {
+    if !isNumber(elem) {
+        ll.panic("Only numbers are allowed!")
+    }
+}
 
 	numbersMap := {}
 
@@ -30,9 +41,15 @@ wf.body(func(args) {
 		numbersMap[string(i)] = v
 	}
 
+	numbers := []
+
+	for i, v in args.numbers {
+		numbers = append(numbers, v)
+	}
+
 	return {
 		outputs: {
-			numbers: smart.createJsonResource(numbersMap)
+			numbers: smart.createJsonResource(numbers)
 		},
 		exports: {
 			numbers: {
@@ -47,7 +64,7 @@ wf.body(func(args) {
 						"pl7.app/blockId": blockId
 					},
 					axesSpec: [{
-						type: "Int",
+						type: "String",
 						name: "pl7.app/test/numberIndex",
 						annotations: {
 							"pl7.app/label": "Index"

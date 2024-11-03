@@ -23,6 +23,7 @@ export * from './layout/PlGrid';
 export * from './components/PlAlert';
 export * from './components/PlBtnPrimary';
 export * from './components/PlBtnAccent';
+export * from './components/PlBtnDanger';
 export * from './components/PlBtnSecondary';
 export * from './components/PlBtnGhost';
 export * from './components/PlBtnLink';
@@ -46,6 +47,8 @@ export * from './components/PlLogView';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
+export * from './components/PlNotificationAlert';
+export * from './components/PlCopyData';
 
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';

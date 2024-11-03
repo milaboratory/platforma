@@ -65,6 +65,11 @@ builder := func() {
 	// workdir processors
 	wdProcessors := {}
 
+	// assets to be extracted into workdir before execution
+	assetInfos := {}
+	assetDescriptors := {}
+	assetRules := {}
+
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 
@@ -94,7 +99,7 @@ builder := func() {
 		software: func(sw) {
 			assertEntrypointNotSet()
 			ll.assert(assets.isSoftwareInfo(sw),
-				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from ll.importSoftware() here"
+				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from assets.importSoftware() here"
 			)
 
 			soft = sw
@@ -179,6 +184,7 @@ builder := func() {
 		},
 
 		/**
+		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
 		 * Sets the cache time.
 		 *
 		 * @param time: duration - the cache time from 'times' library.
@@ -193,6 +199,61 @@ builder := func() {
 		},
 
 		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "cache time must be a number of milliseconds")
+			cache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "cache time must be a number of seconds")
+			cache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "cache time must be a number of minutes")
+			cache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "cache time must be a number of hours")
+			cache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
+			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
 		 * Sets the number of error lines to be captured.
 		 *
 		 * @param lines: number - the number of error lines.
@@ -203,6 +264,39 @@ builder := func() {
 				"lines must be integer")
 
 			nErrorLines = lines
+			return self
+		},
+
+		/**
+		 * Adds files from given asset into working directory.
+		 *
+		 * @param asset: assetInfo - asset info loaded from assets.importAsset()
+		 * @param destinationDir: string - path inside working directory for files to be extracted from archive.
+		 * @param pathsInArchive: string[] - paths inside the archive to be extracted into destinationDir.
+		 *                                   Empty array means 'unpack full archive'.
+		 */
+		addAsset: func(asset, destinationDir, pathsInArchive) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+
+			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
+			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
+
+			assetIdKey := ll.idToString(asset._id)
+			if is_undefined(assetRules[assetIdKey]) {
+				assetInfos[assetIdKey] = asset.resource
+				assetDescriptors[assetIdKey] = ll.fromStrict(asset.descriptor)
+				assetRules[assetIdKey] = {}
+			}
+
+			if len(pathsInArchive) == 0 || is_undefined(assetRules[assetIdKey][destinationDir]) {
+				assetRules[assetIdKey][destinationDir] = []
+			}
+
+			if (len(pathsInArchive) > 0) {
+				assetRules[assetIdKey][destinationDir] = append(assetRules[assetIdKey][destinationDir], pathsInArchive...)
+			}
+
 			return self
 		},
 
@@ -418,7 +512,10 @@ builder := func() {
 				fileSetsToSave: fileSetsToSave,
 				fileSetsContentToSave: fileSetsContentToSave,
 				filesToStream: slices.fromSet(filesToStream),
-				wdProcessors: wdProcessors
+				wdProcessors: wdProcessors,
+				assets: smart.createMapResource(assetInfos),
+				assetDescriptors: assetDescriptors,
+				assetRules: assetRules
 			}
 
 			if !is_undefined(soft) {

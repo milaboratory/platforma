@@ -1,5 +1,7 @@
 import type { ImportFileHandle, Platforma, StorageHandle, Ref as ModelRef } from '@platforma-sdk/model';
 import type { Ref, ComputedRef } from 'vue';
+import { maskIcons16 } from './generated/icons-16';
+import { maskIcons24 } from './generated/icons-24';
 
 export type Size = 'small' | 'medium' | 'large';
 
@@ -63,27 +65,9 @@ export type RefOption = {
 
 export type ListOptionType<Type> = Type extends ListOption<infer X>[] ? X : never;
 
-export const maskIcons16 = [
-  'checkmark',
-  'import',
-  'clear',
-  'chevron-right',
-  'add',
-  'play',
-  'loading',
-  'arrow-right',
-  'clipboard',
-  'link',
-  'comp',
-  'close',
-  'restart',
-  'stop',
-  'settings-2',
-] as const;
+export { maskIcons16, maskIcons24 };
 
 export type MaskIconName16 = (typeof maskIcons16)[number];
-
-export const maskIcons24 = ['paper-clip', 'cloud-up', 'success', 'restart', 'close', 'clipboard'];
 
 export type MaskIconName24 = (typeof maskIcons24)[number];
 

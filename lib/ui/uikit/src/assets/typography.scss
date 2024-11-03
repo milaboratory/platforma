@@ -74,7 +74,7 @@ mark {
 code {
   font-feature-settings: 'ss11' on, 'ss15' on, 'ss17' on;
   /* Text/Monospace M */
-  font-family: ar(--font-family-monospace);
+  font-family: var(--font-family-monospace);
   font-size: 14px;
   font-style: normal;
   font-weight: 400;

@@ -40,7 +40,7 @@ export function isPColumn<T>(obj: PObject<T>): obj is PColumn<T> {
 
 export function isPColumnSpecResult(
   r: ResultPoolEntry<PObjectSpec>
-): r is ResultPoolEntry<PObjectSpec> {
+): r is ResultPoolEntry<PColumnSpec> {
   return isPColumnSpec(r.obj);
 }
 

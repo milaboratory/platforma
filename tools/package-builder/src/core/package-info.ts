@@ -134,8 +134,10 @@ export type Entrypoint =
     EnvironmentEntrypoint
 
 const storagePresetSchema = z.object({
-    storageURL: z.string()
+    downloadURL: z.string().optional(),
+    storageURL: z.string().optional(),
 })
+type storagePreset = z.infer<typeof storagePresetSchema>
 
 const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema)
 type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>
@@ -154,6 +156,12 @@ const packageJsonSchema = z.object({
     })
 })
 type packageJson = z.infer<typeof packageJsonSchema>
+
+const wellKnownRegistries: Record<string, storagePreset> = {
+    "platforma-open": {
+        downloadURL: 'https://bin.pl-open.science/'
+    }
+}
 
 /*
  * package.json -> block-software structure example:
@@ -497,16 +505,21 @@ export class PackageInfo {
 
         var result: artifacts.registry = {
             name: "default",
-            storageURL: registries.default?.storageURL
+            downloadURL: registries.default?.downloadURL,
+            storageURL: registries.default?.storageURL,
         }
 
         if (registry) {
             if (typeof registry === 'string') {
                 result.name = registry
-                result.storageURL = registries[result.name]?.storageURL
+                const regDefault = wellKnownRegistries[result.name]
+                result.downloadURL = registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registries[result.name]?.storageURL ?? regDefault?.storageURL
             } else {
                 result.name = registry.name
-                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL
+                const regDefault = wellKnownRegistries[result.name]
+                result.downloadURL = registry.downloadURL ?? registries[result.name]?.downloadURL ?? regDefault?.downloadURL
+                result.storageURL = registry.storageURL ?? registries[result.name]?.storageURL ?? regDefault?.storageURL
             }
         }
 
@@ -515,6 +528,18 @@ export class PackageInfo {
         const uploadTo = process.env[`PL_REGISTRY_${regNameUpper}_UPLOAD_URL`]
         if (uploadTo) {
             result.storageURL = uploadTo
+        }
+
+        const downloadFrom = process.env[`PL_REGISTRY_${regNameUpper}_DOWNLOAD_URL`]
+        if (downloadFrom) {
+            result.downloadURL = downloadFrom
+        }
+
+        if (result.downloadURL) {
+            const u = new URL(result.downloadURL, 'file:/nonexistent') // check download URL is valid URL
+            if (!['https:', 'http:'].includes(u.protocol)) {
+                throw new Error(`registry ${result.name} download URL is not valid. Only 'https://' and 'http://' schemes are supported for now`)
+            }
         }
 
         return result
