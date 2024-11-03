@@ -1,5 +1,126 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.19
+
+### Patch Changes
+
+- 478dc27: some fixes
+- Updated dependencies [478dc27]
+  - @milaboratories/uikit@2.0.2
+  - @platforma-sdk/ui-vue@1.7.35
+
+## 0.1.18
+
+### Patch Changes
+
+- Updated dependencies [eddcfed]
+  - @platforma-sdk/ui-vue@1.7.34
+
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies [7c9d23c]
+  - @milaboratories/uikit@2.0.1
+  - @platforma-sdk/ui-vue@1.7.32
+
+## 0.1.16
+
+### Patch Changes
+
+- a0854a3: Small common ui fixes
+- Updated dependencies [a0854a3]
+- Updated dependencies [cf824ad]
+- Updated dependencies [cdb6c31]
+- Updated dependencies [e62ed59]
+  - @milaboratories/uikit@2.0.0
+  - @platforma-sdk/ui-vue@1.7.31
+
+## 0.1.15
+
+### Patch Changes
+
+- Updated dependencies [6737e02]
+  - @milaboratories/uikit@1.2.30
+  - @platforma-sdk/ui-vue@1.7.30
+
+## 0.1.14
+
+### Patch Changes
+
+- Updated dependencies [812ba42]
+  - @platforma-sdk/ui-vue@1.7.27
+
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies [bc5e60e]
+  - @platforma-sdk/ui-vue@1.7.26
+
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [f4e8fa6]
+  - @milaboratories/uikit@1.2.29
+  - @platforma-sdk/ui-vue@1.7.25
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [3276b87]
+  - @platforma-sdk/ui-vue@1.7.24
+
+## 0.1.10
+
+### Patch Changes
+
+- Updated dependencies [0b11a0a]
+  - @milaboratories/uikit@1.2.28
+  - @platforma-sdk/ui-vue@1.7.22
+
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [7f90dda]
+  - @milaboratories/uikit@1.2.27
+  - @platforma-sdk/ui-vue@1.7.21
+
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [612a9be]
+  - @milaboratories/helpers@1.6.6
+  - @milaboratories/uikit@1.2.26
+  - @platforma-sdk/ui-vue@1.7.20
+  - @platforma-sdk/model@1.7.20
+
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [072c49d]
+  - @platforma-sdk/ui-vue@1.7.18
+
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [8ae398f]
+  - @platforma-sdk/ui-vue@1.7.17
+
+## 0.1.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.16
+- @milaboratories/uikit@1.2.26
+- @platforma-sdk/ui-vue@1.7.16
+
 ## 0.1.4
 
 ### Patch Changes

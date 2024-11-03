@@ -26,7 +26,8 @@ directories.forEach((directory) => {
   try {
     process.stdout.write(`  ${formatWidth(directory, width)}: `);
 
-    execSync('npm ci && npm run build', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
+    execSync('npm ci', { cwd: path.join(scriptDir, directory), stdio: 'pipe' })
+    execSync('npm run build', { cwd: path.join(scriptDir, directory), stdio: 'pipe' });
 
     process.stdout.write(`OK\n`);
   } catch (error) {

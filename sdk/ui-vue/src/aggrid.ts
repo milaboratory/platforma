@@ -4,6 +4,7 @@ import { getEnvironmentValue } from '@platforma-sdk/model';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import { InfiniteRowModelModule } from '@ag-grid-community/infinite-row-model';
+import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { CsvExportModule } from '@ag-grid-community/csv-export';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
@@ -15,6 +16,7 @@ export function activateAgGrid() {
   ModuleRegistry.registerModules([
     ClientSideRowModelModule,
     InfiniteRowModelModule,
+    ServerSideRowModelModule,
     CsvExportModule,
     ClipboardModule,
     RangeSelectionModule,

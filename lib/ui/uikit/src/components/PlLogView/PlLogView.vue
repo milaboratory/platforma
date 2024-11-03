@@ -12,7 +12,8 @@ import { computed, onMounted, onUpdated, ref } from 'vue';
 import MaskIcon24 from '../MaskIcon24.vue';
 import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
-import type { ValueOrErrors } from '@platforma-sdk/model';
+import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/model';
+import { useLogHandle } from './useLogHandle';
 
 const getOutputError = <T,>(o?: ValueOrErrors<T>) => {
   if (o && o.ok === false) {
@@ -26,6 +27,14 @@ const props = defineProps<{
    */
   value?: string;
   /**
+   * AnyLogHandle
+   */
+  logHandle?: AnyLogHandle;
+  /**
+   * Custom progress prefix (to filter logHandle results)
+   */
+  progressPrefix?: string;
+  /**
    * String contents
    */
   error?: unknown;
@@ -33,17 +42,23 @@ const props = defineProps<{
    * Block output (Note: error and value take precedence over output property)
    */
   output?: ValueOrErrors<unknown>;
+  /**
+   * @TODO
+   */
+  mockPlatforma?: Platforma;
 }>();
+
+const logState = useLogHandle(props);
 
 const contentRef = ref<HTMLElement>();
 
-const computedError = computed(() => props.error ?? getOutputError(props.output));
+const computedError = computed(() => logState.value?.error ?? props.error ?? getOutputError(props.output));
 
-const computedValue = computed(() => props.value ?? okOptional(props.output));
+const computedValue = computed(() => logState.value?.lines ?? props.value ?? okOptional(props.output));
 
 const onClickCopy = () => {
-  if (props.value) {
-    navigator.clipboard.writeText(props.value);
+  if (computedValue.value && typeof computedValue.value === 'string') {
+    navigator.clipboard.writeText(computedValue.value);
   }
 };
 

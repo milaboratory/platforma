@@ -1,4 +1,4 @@
-import type { ColDef, GridApi, IDatasource, IGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
@@ -16,7 +16,7 @@ import {
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import { type PlDataTableSheet } from '../types';
+import type { PlDataTableSheet } from '../types';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 
 /**
@@ -236,13 +236,11 @@ export async function makeSheets(
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
+function columns2rows(fields: number[], columns: PTableVector[], index: number): unknown[] {
   const nCols = columns.length;
   const rowData = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
     const row: Record<string, unknown> = {};
-
-    const index = [];
     for (let iCol = 0; iCol < nCols; ++iCol) {
       const field = fields[iCol].toString();
       const value = columns[iCol].data[iRow];
@@ -254,16 +252,10 @@ function columns2rows(fields: number[], columns: PTableVector[]): unknown[] {
       } else {
         row[field] = toDisplayValue(value, valueType);
       }
-
-      index.push(valueType === 'Long' ? Number(value) : value);
     }
-
-    // generate ID based on the axes information
-    row['id'] = iRow.toString();
-
+    row['id'] = (index++).toString();
     rowData.push(row);
   }
-
   return rowData;
 }
 
@@ -273,13 +265,12 @@ const isLabelColumn = (col: PTableColumnSpec) => col.type === 'column' && col.sp
  * Calculate GridOptions for p-table data source type
  */
 export async function updatePFrameGridOptions(
-  gridApi: GridApi,
   pfDriver: PFrameDriver,
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
 ): Promise<{
   columnDefs: ColDef[];
-  datasource?: IDatasource;
+  serverSideDatasource?: IServerSideDatasource;
   rowModelType: RowModelType;
   rowData?: unknown[];
 }> {
@@ -329,49 +320,52 @@ export async function updatePFrameGridOptions(
     return updatePFrameGridOptionsHeterogeneousAxes(hColumns, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
   }
 
-  let lastParams: IGetRowsParams | undefined = undefined;
-  const datasource = {
-    rowCount,
-    getRows: async (params) => {
-      gridApi.setGridOption('loading', true);
+  let lastParams: IServerSideGetRowsParams | undefined = undefined;
+  const serverSideDatasource = {
+    getRows: async (params: IServerSideGetRowsParams) => {
       try {
         if (rowCount == 0) {
-          params.successCallback([], rowCount);
-          gridApi.setGridOption('loading', false);
-          gridApi.showNoRowsOverlay();
+          params.success({ rowData: [], rowCount });
+          params.api.showNoRowsOverlay();
+          params.api.setGridOption('loading', false);
           return;
         }
 
         // this is to avoid double flickering when underlying table is changed
-        if (lastParams && !lodash.isEqual(lastParams.sortModel, params.sortModel)) {
+        if (lastParams && !lodash.isEqual(lastParams.request.sortModel, params.request.sortModel)) {
           lastParams = undefined;
-          params.failCallback();
+          params.fail();
+          params.api.setGridOption('loading', true);
           return;
         }
         lastParams = params;
 
-        const length = params.endRow - params.startRow;
+        let length = 0;
         let rowData: unknown[] = [];
-        if (length > 0) {
-          const data = await pfDriver.getData(pt, indices, {
-            offset: params.startRow,
-            length,
-          });
-          rowData = columns2rows(fields, data);
+        if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
+          length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
+          if (length > 0) {
+            const data = await pfDriver.getData(pt, indices, {
+              offset: params.request.startRow,
+              length,
+            });
+            rowData = columns2rows(fields, data, params.request.startRow);
+          }
         }
 
-        params.successCallback(rowData, ptShape.rows);
-        gridApi.setGridOption('loading', false);
-        gridApi.autoSizeAllColumns();
+        params.success({ rowData, rowCount });
+        params.api.autoSizeAllColumns();
+        params.api.setGridOption('loading', false);
       } catch (error: unknown) {
-        params.failCallback();
+        params.fail();
+        params.api.setGridOption('loading', true);
       }
     },
-  } satisfies IDatasource;
+  } satisfies IServerSideDatasource;
 
   return {
-    rowModelType: 'infinite',
+    rowModelType: 'serverSide',
     columnDefs,
-    datasource,
+    serverSideDatasource,
   };
 }

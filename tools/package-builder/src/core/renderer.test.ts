@@ -32,7 +32,9 @@ describe("Renderer tests", () => {
         const eps = new Map([[epName, i.getEntrypoint(epName)]])
         const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!
 
-        expect(descriptor.asset!.package).toEqual(`${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`)
+        const url = descriptor.asset!.url
+        const expectedPath = `${artifacts.BinaryRegistryURL}/${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`
+        expect(url).toEqual(expectedPath)
     })
 
     test("render os-dependant", () => {

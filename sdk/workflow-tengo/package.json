@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/workflow-tengo",
-  "version": "1.6.2",
+  "version": "1.7.1",
   "description": "Tengo SDK library",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
     "test": "pl-tengo test",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-    "vscode-tags": "./create_tags.sh .tags false",
+    "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
     "emacs-tags": "./create_tags.sh ../TAGS false -e",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },

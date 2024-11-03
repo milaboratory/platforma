@@ -12,19 +12,21 @@ export const platforma = BlockModel.create<BlockArgs>('Heavy')
   .initialArgs({ numbers: [] })
 
   .output('numbers', (ctx) =>
-    ctx.prerun?.resolve({ field: 'numbers', assertFieldType: 'Input' })?.getDataAsJson<number[]>()
+    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
   )
 
   .sections((ctx) => {
     return [
       { type: 'link', href: '/', label: 'PlLogView' }, 
       { type: 'link', href: '/modals', label: 'Modals' },
+      { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
       { type: 'link', href: '/dropdowns', label: 'Dropdowns' },
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
       { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
+      { type: 'link', href: '/errors', label: 'Errors' },
     ];
   })
 

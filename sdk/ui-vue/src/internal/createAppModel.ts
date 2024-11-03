@@ -83,7 +83,8 @@ export function createAppModel<
   const valid = computed(() => !error.value);
 
   const isChanged = computed(() => {
-    return !isJsonEqual(options.get(), unref(local));
+    const { args, ui } = unref(local)?.model ?? {};
+    return !isJsonEqual(options.get(), { args, ui });
   });
 
   const errorString = computed(() => (error.value ? error.value.message : ''));

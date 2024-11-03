@@ -1,7 +1,7 @@
 {
   "name": "@platforma-sdk/workflow-tengo-tests",
   "private": true,
-  "version": "1.2.7",
+  "version": "1.3.0",
   "description": "Tengo SDK library tests",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -14,11 +14,11 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && pl-tengo build",
+    "build": "rm -rf dist && pl-tengo build --log-level=debug",
     "test": "vitest",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
-    "vscode-tags": "./create_tags.sh .tags false",
+    "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/create_tags.sh .tags false",
     "emacs-tags": "./create_tags.sh ../TAGS false -e"
   },
   "devDependencies": {

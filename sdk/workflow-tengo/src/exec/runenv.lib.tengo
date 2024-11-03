@@ -10,6 +10,7 @@ validation := import(":validation")
 pkg := import(":exec.package")
 assets := import(":assets")
 render := import(":render")
+times := import("times")
 
 _RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv/executor", Version: "1" }
 _INPUT_SETTINGS       := "settings"
@@ -112,7 +113,7 @@ loadDependencyFiles := func(packageRef, dependencies) {
 
 	depsMap := {}
 
-	loader := pkg.assetsLoader(packageRef)
+	loader := pkg.pkgFileLoader(packageRef)
 	for depName, fileName in dependencies {
 		loader.saveFile(fileName)
 	}
@@ -167,6 +168,62 @@ pythonVenv := func() {
 		},
 
 		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "cache time must be a number of milliseconds")
+			cache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "cache time must be a number of seconds")
+			cache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "cache time must be a number of minutes")
+			cache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "cache time must be a number of hours")
+			cache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
+			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
 		 * Sets the cache time.
 		 *
 		 * @param time: duration - the cache time from 'times' library.

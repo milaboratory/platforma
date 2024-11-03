@@ -1,0 +1,27 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["fileContent"])
+
+self.body(func(inputs) {
+	archive := file.importFile(inputs.importHandle).file
+
+    wd := workdir.builder().
+        addFromZip(archive, ".", inputs.filesToUnpack).
+        build()
+
+    fileName := "answer_to_the_ultimate_question.txt"
+    if len(inputs.filesToUnpack) > 0 {
+        fileName = inputs.filesToUnpack[0]
+    }
+
+    result := workdir.save(wd).
+        saveFileContent(fileName).
+        build()
+
+	return {
+		fileContent: result.filesContent.getFutureInputField(fileName)
+	}
+})

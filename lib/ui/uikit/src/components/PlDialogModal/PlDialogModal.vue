@@ -8,6 +8,7 @@ export default {
 import { useEventListener } from '@/composition/useEventListener';
 import './pl-dialog-modal.scss';
 import { ref, useAttrs, useSlots } from 'vue';
+import CloseModalBtn from '@/utils/CloseModalBtn.vue';
 
 const slots = useSlots();
 
@@ -32,9 +33,9 @@ const props = withDefaults(
      */
     minHeight?: string;
     /**
-     * @deprecated (do not use it)
+     * css min-height (default value is `auto` but recommended is 440px)
      */
-    type?: 'A' | 'B' | 'C';
+    maxHeight?: string;
     /**
      * Enables a button to close the modal (default: `true`)
      */
@@ -44,6 +45,10 @@ const props = withDefaults(
      */
     noContentGutters?: boolean;
     /**
+     * If `true` top content gutter is removed
+     */
+    noTopContentGutter?: boolean;
+    /**
      * Actions slot has a top border (default: `true`)
      */
     actionsHasTopBorder?: boolean;
@@ -51,8 +56,8 @@ const props = withDefaults(
   {
     width: '448px',
     minHeight: 'auto',
+    maxHeight: 'auto',
     height: 'auto',
-    type: 'A',
     closable: true,
     noContentGutters: false,
     actionsHasTopBorder: true,
@@ -84,14 +89,14 @@ useEventListener(document.body, 'keyup', (ev) => {
           v-bind="$attrs"
           ref="modal"
           class="pl-dialog-modal"
-          :class="[type, slots.title ? 'has-title' : '']"
-          :style="{ width, height, minHeight }"
+          :class="{ 'has-title': slots.title, 'has-content': slots.default }"
+          :style="{ width, height, minHeight, maxHeight }"
         >
-          <div v-if="closable" class="close-dialog-btn" @click.stop="emit('update:modelValue', false)" />
+          <CloseModalBtn v-if="closable" class="close-modal-btn" @click.stop="emit('update:modelValue', false)" />
           <div v-if="slots.title" class="pl-dialog-modal__title">
             <slot name="title" />
           </div>
-          <div class="pl-dialog-modal__content" :class="{ 'no-content-gutters': noContentGutters }">
+          <div class="pl-dialog-modal__content" :class="{ 'no-content-gutters': noContentGutters, 'no-top-content-gutter': noTopContentGutter }">
             <slot />
           </div>
           <div v-if="slots.actions" class="pl-dialog-modal__actions" :class="{ 'has-top-border': actionsHasTopBorder }">

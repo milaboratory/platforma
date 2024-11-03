@@ -51,7 +51,8 @@ export type RouteParams<Href extends `/${string}` = `/${string}`> = {
   [P in Href as ParsePathnamePart<P>]: ParseQuery<P>;
 };
 
-export type LocalState<Href extends `/${string}` = `/${string}`> = {
+export type BaseSettings<Href extends `/${string}` = `/${string}`> = {
+  showErrorsNotification?: boolean;
   routes: Routes<Href>;
 };
 

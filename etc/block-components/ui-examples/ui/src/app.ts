@@ -9,6 +9,8 @@ import UseWatchFetchPage from './pages/UseWatchFetchPage.vue';
 import FormComponentsPage from './pages/FormComponentsPage.vue';
 import TypographyPage from './pages/TypographyPage.vue';
 import AgGridVuePage from './pages/AgGridVuePage.vue';
+import SelectFilesPage from './pages/SelectFilesPage.vue';
+import ErrorsPage from './pages/ErrorsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -26,6 +28,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data,
     incrementCounter,
     argsAsJson,
+    showErrorsNotification: true,
     routes: {
       '/': LogViewPage,
       '/modals': ModalsPage,
@@ -34,7 +37,9 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/use-watch-fetch': UseWatchFetchPage,
       '/form-components': FormComponentsPage,
       '/typography': TypographyPage,
-      '/ag-grid-vue': AgGridVuePage
+      '/ag-grid-vue': AgGridVuePage,
+      '/select-files': SelectFilesPage,
+      '/errors': () => ErrorsPage
     }
   };
 });

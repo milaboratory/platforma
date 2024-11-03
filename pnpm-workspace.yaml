@@ -47,9 +47,6 @@ packages:
   # Tests
 
   - tests/workflow-tengo
-  - tests/tengo-builder/1-library
-  - tests/tengo-builder/2-artifacts
-  - tests/tengo-builder/3-software-dep
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
@@ -82,12 +79,12 @@ catalog:
   '@changesets/cli': ^2.27.9
 
   'eslint': ^8.57.1
-  '@eslint/js': ^9.11.1
-  'typescript-eslint': ^8.8.0
+  '@eslint/js': ^9.13.0
+  'typescript-eslint': ^8.11.0
   '@typescript-eslint/eslint-plugin': ^7.18.0
   'eslint-config-prettier': ^9.1.0
   'eslint-plugin-prettier': '^5.2.1'
-  'eslint-plugin-vue': '^9.28.0'
+  'eslint-plugin-vue': '^9.29.1'
 
   'oclif': ^4.15.12
 
@@ -105,7 +102,7 @@ catalog:
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.5
-  '@aws-sdk/client-s3': ^3.677.0
+  '@aws-sdk/client-s3': ^3.679.0
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs
@@ -129,10 +126,10 @@ catalog:
 
   '@oclif/core': ^4.0.30
 
-  'winston': ^3.14.2
+  'winston': ^3.15.0
 
-  '@milaboratories/tengo-tester': ^1.4.4
-  '@milaboratories/pframes-node': &pframes-version ^1.6.3
+  '@milaboratories/tengo-tester': ^1.4.5
+  '@milaboratories/pframes-node': &pframes-version ^1.6.6
 
   'quickjs-emscripten': ^0.31.0
 
@@ -148,6 +145,7 @@ catalog:
   '@ag-grid-community/core': &ag-grid ^32.3.0
   '@ag-grid-community/client-side-row-model': *ag-grid
   '@ag-grid-community/infinite-row-model': *ag-grid
+  '@ag-grid-enterprise/server-side-row-model': *ag-grid
   '@ag-grid-community/styles': *ag-grid
   '@ag-grid-community/vue3': *ag-grid
   '@ag-grid-community/csv-export': *ag-grid
@@ -161,7 +159,7 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@platforma-open/milaboratories.software-small-binaries': ^1.13.2
+  '@platforma-open/milaboratories.software-small-binaries': ^1.14.5
 
   # Test
 
@@ -179,9 +177,9 @@ catalog:
 
   '@types/decompress': ^4.2.7
   '@types/readline-sync': ^1.4.8
-  '@types/jest': ^29.5.13
+  '@types/jest': ^29.5.14
   '@types/http-proxy': ^1.17.15
-  '@types/node': ~20.16.10
+  '@types/node': ~20.16.15
   '@types/eslint__js': ^8.42.3
   '@types/semver': ^7.5.8
   '@types/mime-types': ^2.1.4
@@ -190,4 +188,4 @@ catalog:
   # To remove
 
   'lodash': ^4.17.21
-  '@types/lodash': ^4.17.10
+  '@types/lodash': ^4.17.12

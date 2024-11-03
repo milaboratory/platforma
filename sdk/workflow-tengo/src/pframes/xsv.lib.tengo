@@ -64,8 +64,10 @@ getColumnSpec := func(axesSpec, col) {
  * @param ops: object - additional options
  *               {
  *                 dataOnly: boolean  - set to true to completely skip creation of specs
+ *                 splitDataAndSpec: boolean  - if true, resulting map will have nested structures,
+ *                                              with "spec" + "data" fields in nested maps
  *                 transpose: object - if specified, then the input table will be transposed
- *                            { 
+ *                            {
  *                              separator: string - (optional) use separator instead of inferring from the file extension
  *                              pAxisIdx: index - (optional) the index of the primary axis (column in the input xsv); default 0
  *                              pAxisName: string - (optional) the name of the primary axis (column name in the input xsv); default undefined
@@ -86,7 +88,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 
 	xsvFileName := "file." + xsvType
 
-	ops := renderOps({ dataOnly: false }, ops...)
+	ops := renderOps({ dataOnly: false, splitDataAndSpec: false }, ops...)
 
 	if ops.transpose != undefined {
 
@@ -99,7 +101,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 			software(transposeXsvSw).
 			printErrStreamToStdout().
 			inLightQueue()
-			
+
 		if (tops.separator != undefined) {
 			transposeXsv = transposeXsv.arg("-input-separator").arg(tops.separator)
 		}
@@ -119,15 +121,15 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 			transposeXsv = transposeXsv.arg("-metric-columns-search").arg(tops.sAxisSearch)
 		}
 		if (tops.sAxisName != undefined) {
-			transposeXsv = transposeXsv.arg("-metric-label").arg(tops.sAxisName)	
+			transposeXsv = transposeXsv.arg("-metric-label").arg(tops.sAxisName)
 		}
 		if (tops.valueName != undefined) {
-			transposeXsv = transposeXsv.arg("-value-label").arg(tops.valueName)	
+			transposeXsv = transposeXsv.arg("-value-label").arg(tops.valueName)
 		}
 		if (tops.separatorOverride != undefined) {
-			transposeXsv = transposeXsv.arg("-separator").arg(tops.separatorOverride)	
+			transposeXsv = transposeXsv.arg("-separator").arg(tops.separatorOverride)
 		}
-		
+
 		transposeXsv = transposeXsv.
 			arg(xsvFileName).
 			arg(transposedFileName).
@@ -170,8 +172,15 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	for col in spec.columns {
 		id := util.xsvColumnId(col)
 
-		result[id + ".data"] = pf.getFutureInputField(id)
-		result[id + ".spec"] = getColumnSpec(axesSpec, col)
+		if ops.splitDataAndSpec {
+			result[id] = {
+				data: pf.getFutureInputField(id),
+				spec: getColumnSpec(axesSpec, col)
+			}
+		} else {
+			result[id + ".data"] = pf.getFutureInputField(id)
+			result[id + ".spec"] = getColumnSpec(axesSpec, col)
+		}
 	}
 
 	return result
@@ -192,7 +201,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  *                 additionalAxesSpec: AxisSpec[]  - array of additional axes spec to prepend to
  *                                                   each column spec
  *                 transpose: object - if specified, then the input table will be transposed
- *                            { 
+ *                            {
  *                              separator: string - (optional) use separator instead of inferring from the file extension
  *                              pAxisIdx: index - (optional) the index of the primary axis (column in the input xsv); default 0
  *                              pAxisName: string - (optional) the name of the primary axis (column name in the input xsv); default undefined
@@ -249,7 +258,7 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 			result[id + ".spec"] = columnsSpec[id]
 		}
 	}
-	
+
 	return result
 }
 

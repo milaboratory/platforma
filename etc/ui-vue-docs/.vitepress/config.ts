@@ -21,7 +21,8 @@ export default defineConfig({
     'checkbox-group.md': `${uikitPrefix}checkbox-group.md`,
     'toggle-switch.md': `${uikitPrefix}toggle-switch.md`,
     'btn-group.md': `${uikitPrefix}btn-group.md`,
-    'file-input.md': `${uikitPrefix}file-input.md`
+    'file-input.md': `${uikitPrefix}file-input.md`,
+    'notifications.md': `${uikitPrefix}notifications.md`
   },
 
   srcDir: 'uikit-docs',
@@ -67,7 +68,8 @@ export default defineConfig({
           { text: 'PlCheckboxGroup', link: `${uikitPrefix}checkbox-group` },
           { text: 'PlToggleSwitch', link: `${uikitPrefix}toggle-switch` },
           { text: 'PlBtnGroup', link: `${uikitPrefix}btn-group` },
-          { text: 'PlFileInput', link: `${uikitPrefix}file-input` }
+          { text: 'PlFileInput', link: `${uikitPrefix}file-input` },
+          { text: 'PlNotificationAlert', link: `${uikitPrefix}notifications` }
         ]
       }
     ],

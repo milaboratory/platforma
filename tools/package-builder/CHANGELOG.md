@@ -1,5 +1,23 @@
 # @platforma-sdk/package-builder
 
+## 2.10.5
+
+### Patch Changes
+
+- 2684ebc: Add default settings for well-known registries
+
+## 2.10.4
+
+### Patch Changes
+
+- c8a7c81: Make package builder to use .as.json suffix for built assets
+
+## 2.10.3
+
+### Patch Changes
+
+- 6299770: Use HeadObject to check we have access to bucket
+
 ## 2.10.2
 
 ### Patch Changes

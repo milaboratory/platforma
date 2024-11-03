@@ -2,32 +2,37 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 self := import("@platforma-sdk/workflow-tengo:tpl")
 pkg := import("@platforma-sdk/workflow-tengo:exec.package")
 file := import("@platforma-sdk/workflow-tengo:file")
+blobs := import("@platforma-sdk/workflow-tengo:file.internal")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
 
-sw := assets.importSoftware(":exec.test.pkg.sleep")
+asset := assets.importAsset(":exec.test.pkg.asset")
 
-self.defineOutputs(["assetFile", "assetContent"])
+self.defineOutputs(["main"])
 
 self.prepare(func(inputs) {
-	binaryDescriptor := sw.descriptor.binary
+	assetDescriptor := asset.descriptor.asset
 
-	archive := pkg.get(binaryDescriptor.registry, binaryDescriptor.package).archive()
-	installed := pkg.install(archive)
-
-	assetName := "package.sw.json"
-
-	assetFile := pkg.loadAssetFile(installed.package(), assetName)
-	assetContent := pkg.loadAssetContent(installed.package(), assetName)
+	archive := blobs.createBlobImportExternal({
+		dataURL: assetDescriptor.url
+	}).file
 
 	return {
-		assetFile: assetFile.file,
-		assetContent: assetContent.content
+		archive: archive
 	}
 })
 
 self.body(func(inputs) {
-	return {
-		assetFile: file.exportFile(inputs["assetFile"]),
-		assetContent: inputs["assetContent"].getDataAsJson()
-	}
+	wd := workdir.builder().
+        addFromZip(inputs.archive, ".", []).
+        build()
 
+    fileName := "file1.txt"
+    
+    result := workdir.save(wd).
+        saveFileContent(fileName).
+        build()
+
+	return {
+		main: result.filesContent.getFutureInputField(fileName)
+	}
 })
