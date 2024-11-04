@@ -71,5 +71,6 @@ useRipple(btnRef);
     </span>
     <MaskIcon16 v-if="loading" name="loading" :size="size" />
     <MaskIcon16 v-else-if="icon" :name="icon" :size="size" />
+    <slot name="append" />
   </button>
 </template>
