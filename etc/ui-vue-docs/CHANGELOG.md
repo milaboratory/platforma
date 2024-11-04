@@ -1,5 +1,14 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.21
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+- Updated dependencies [d6909bf]
+  - @milaboratories/uikit@2.0.4
+  - @platforma-sdk/ui-vue@1.7.37
+
 ## 0.1.20
 
 ### Patch Changes
