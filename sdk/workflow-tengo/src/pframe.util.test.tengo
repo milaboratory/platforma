@@ -31,33 +31,33 @@ TestDecomposePfconvCfg := func() {
 	}, {
 		additionalAxesSpec: [
 			{ name: "pl7.app/sampleId", type: "String" }
-		]
+			]
 	})
 	assert(result, {
-			purifiedCfg: {
-				partitionKeyLength: 0,
-				axes: [
-					{
-						column: "cloneId",
-						spec: { type: "Long" }
-					}
-				],
-				columns: [
-					{ column: "readCount", id: "read-count", allowNA: false, spec: { valueType: "Long" } }
-				],
-				storageFormat: "Binary"
-			},
-			columnsSpec: {
-				"read-count": {
-					kind: "PColumn",
-					valueType: "Long",
-					name: "pl7.app/vdj/readCount",
-					annotations: { "pl7.app/label": "Number Of Reads" },
-					axesSpec: [
-						{ name: "pl7.app/sampleId", type: "String" },
-						{ name: "pl7.app/vdj/cloneId", type: "Long" }
-					]
+		purifiedCfg: {
+			partitionKeyLength: 0,
+			axes: [
+				{
+					column: "cloneId",
+					spec: { type: "Long" }
 				}
+				],
+			columns: [
+				{ column: "readCount", id: "read-count", allowNA: false, spec: { valueType: "Long" } }
+				],
+			storageFormat: "Binary"
+		},
+		columnsSpec: {
+			"read-count": {
+				kind: "PColumn",
+				valueType: "Long",
+				name: "pl7.app/vdj/readCount",
+				annotations: { "pl7.app/label": "Number Of Reads" },
+				axesSpec: [
+					{ name: "pl7.app/sampleId", type: "String" },
+					{ name: "pl7.app/vdj/cloneId", type: "Long" }
+					]
 			}
-		}, "wrong result")
+		}
+	}, "wrong result")
 }

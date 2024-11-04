@@ -7,6 +7,7 @@ json := import("json")
 pfc := import("@platforma-sdk/workflow-tengo:pframes.constants")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 smart := import("@platforma-sdk/workflow-tengo:smart")
+pcolumn := import("@platforma-sdk/workflow-tengo:pframes.pcolumn")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 
 wf.body(func(args) {

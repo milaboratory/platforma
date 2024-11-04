@@ -28,7 +28,7 @@ tpl.body(func(inputs) {
 
 	for prefix, mapField in data.inputs() {
 		map := mapField.getValue()
-		
+
 		if !map.checkResourceType(constants.RTYPE_JSON) && !map.checkResourceType(constants.RTYPE_MAP) && !map.checkResourceType(pConstants.RTYPE_P_FRAME) {
 			ll.panic("Unknown input PObject collection container type: " + map.info())
 		}
