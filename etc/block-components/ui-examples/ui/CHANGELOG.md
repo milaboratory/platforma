@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.57
+
+### Patch Changes
+
+- f341244: AgGrid: migrate to the Theming Api
+- Updated dependencies [f341244]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.26
+  - @platforma-sdk/ui-vue@1.7.40
+
 ## 1.0.56
 
 ### Patch Changes
