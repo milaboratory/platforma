@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.41
+
+### Patch Changes
+
+- 1e896c8: Make AgGrid resize handler transparent
+
 ## 1.7.40
 
 ### Patch Changes
