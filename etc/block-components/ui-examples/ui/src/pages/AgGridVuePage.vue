@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
 import { h } from 'vue';
-import { PlBlockPage, PlAgOverlayLoading, PlAgOverlayNoRows, AgGridTheme } from '@platforma-sdk/ui-vue';
+import {
+  PlBlockPage,
+  PlAgOverlayLoading,
+  PlAgOverlayNoRows,
+  AgGridTheme
+} from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import type { GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
