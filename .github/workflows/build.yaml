@@ -1,5 +1,6 @@
 name: Build and Test NPM packages
 on:
+  merge_group:
   pull_request:
     types: [opened, reopened, synchronize]
     branches:
@@ -12,14 +13,14 @@ jobs:
   init:
     runs-on: ubuntu-latest
     steps:
-      - uses: milaboratory/github-ci/actions/context/init@v4-beta
+      - uses: milaboratory/github-ci/actions/context/init@v4
         with:
           version-canonize: false
           branch-versioning: main
   run:
     needs:
       - init
-    uses: milaboratory/github-ci/.github/workflows/node-docker-simple-fast-pnpm.yaml@v4
+    uses: milaboratory/github-ci/.github/workflows/node-simple-pnpm.yaml@v4
     with:
       app-name: Platforma SDK
       app-name-slug: 'platforma-sdk'
@@ -31,6 +32,11 @@ jobs:
       publish-to-public: 'true'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
+      changed-files-list: |
+        !*.log
+        !**/.npmrc
+        !**/.turbo
+        !**/assets
       npmrc-config: |
         {
           "registries": {
@@ -49,10 +55,13 @@ jobs:
         {
           "PL_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
           "MI_LICENSE": ${{ toJSON(secrets.MI_LICENSE) }},
-          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
           "PL_CI_TEST_USER": ${{ toJSON(secrets.PL_CI_TEST_USER) }},
           "PL_CI_TEST_PASSWORD": ${{ toJSON(secrets.PL_CI_TEST_PASSWORD) }},
-          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }}
+          "NPMJS_TOKEN": ${{ toJSON(secrets.NPMJS_TOKEN) }},
+          "AWS_CI_IAM_MONOREPO_SIMPLE_ROLE": ${{ toJSON(secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE) }},
+          "AWS_CI_TURBOREPO_S3_BUCKET": ${{ toJSON(secrets.AWS_CI_TURBOREPO_S3_BUCKET) }}
         }
       TELEGRAM_NOTIFICATION_TARGET: ${{ secrets.TG_CHANNEL_MIBUILDS }}
       TELEGRAM_API_TOKEN: ${{ secrets.TG_CI_BOT_TOKEN }}
+      GH_ZEN_APP_ID: ${{ secrets.GH_ZEN_APP_ID }}
+      GH_ZEN_APP_PRIVATE_KEY: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
