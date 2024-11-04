@@ -35,6 +35,7 @@ export function activateAgGrid() {
 }
 
 export const AgGridTheme: Theme = themeQuartz.withParams({
+  headerColumnResizeHandleColor: 'transparent',
   accentColor: '#110529',
   borderColor: '#E1E3EB',
   cellHorizontalPaddingScale: 1,
