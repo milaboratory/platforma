@@ -1,6 +1,6 @@
 import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
-import { Templates } from '../../..';
+import { Templates } from '../../../dist';
 
 // dummy csv data
 const csvData = `ax1,ax2,ax3,col1,col2
@@ -92,9 +92,9 @@ const expectedPartitionKeys = function (spec: typeof baseSpec) {
     return r;
   }
 
-  for (var i = 0; i < csvNRows; ++i) {
-    const row = [];
-    for (var j = 0; j < spec.partitionKeyLength; ++j) {
+  for (let i = 0; i < csvNRows; ++i) {
+    const row: string[] = [];
+    for (let j = 0; j < spec.partitionKeyLength; ++j) {
       const axis = csvDataMap.get(spec.axes[j].column)!;
       row.push(axis[i]);
     }
@@ -107,9 +107,7 @@ const expectedPartitionKeys = function (spec: typeof baseSpec) {
 // key name as written in the resource without 'index'/'values' suffix
 function partitionKeyJson(str: string): any {
   // double conversion for assertion
-  return JSON.stringify(
-    JSON.parse(str.replace('.index', '').replace('.values', ''))
-  );
+  return JSON.stringify(JSON.parse(str.replace('.index', '').replace('.values', '')));
 }
 
 tplTest.for([
@@ -122,10 +120,7 @@ tplTest.for([
 ])(
   'should read p-frame from csv file for partitionKeyLength = $partitionKeyLength ( $storageFormat )',
   { timeout: 15000 },
-  async (
-    { partitionKeyLength, storageFormat },
-    { helper, expect, driverKit }
-  ) => {
+  async ({ partitionKeyLength, storageFormat }, { helper, expect, driverKit }) => {
     var spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
     spec.storageFormat = storageFormat;
@@ -148,12 +143,7 @@ tplTest.for([
       )
     )?.sort();
 
-    const expected = [
-      'col1.data',
-      'col1.spec',
-      'col2.data',
-      'col2.spec'
-    ].sort();
+    const expected = ['col1.data', 'col1.spec', 'col2.data', 'col2.spec'].sort();
     expect(cols).toStrictEqual(expected);
 
     for (const colName of ['col1', 'col2']) {
@@ -173,9 +163,7 @@ tplTest.for([
 
       const col = colOpt!;
 
-      expect(col.type).toEqual(
-        'PColumnData/' + spec.storageFormat + 'Partitioned'
-      );
+      expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
 
       expect(col.data).toEqual({ partitionKeyLength: spec.partitionKeyLength });
 
@@ -191,16 +179,13 @@ tplTest.for([
               if (r === undefined) {
                 return r;
               }
-              return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx)
-                .handle;
+              return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
             }),
             6000
           );
 
           const data = JSON.parse(
-            Buffer.from(
-              await driverKit.blobDriver.getContent(dataOpt!)
-            ).toString('utf-8')
+            Buffer.from(await driverKit.blobDriver.getContent(dataOpt!)).toString('utf-8')
           );
 
           const values = Object.keys(data)
@@ -220,15 +205,15 @@ tplTest.for([
 
 function superPartitionKeys(keyLen: number): string[] {
   const base = ['X', 'Y', 'Z'];
-  const r = [];
+  const r: string[] = [];
   if (keyLen == 0) {
     r.push(JSON.stringify([]));
     return r;
   }
 
-  for (var i = 0; i < base.length; ++i) {
-    const row = [];
-    for (var j = 0; j < keyLen; ++j) {
+  for (let i = 0; i < base.length; ++i) {
+    const row: string[] = [];
+    for (let j = 0; j < keyLen; ++j) {
       row.push(base[i] + j);
     }
     r.push(JSON.stringify(row));
@@ -290,10 +275,7 @@ tplTest.for([
 ])(
   'should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
   { timeout: 10000 },
-  async (
-    { superPartitionKeyLength, partitionKeyLength, storageFormat },
-    { helper, expect }
-  ) => {
+  async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     var spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
@@ -316,10 +298,7 @@ tplTest.for([
 
         return {
           csvMap: map,
-          keyLength: tx.createValue(
-            Pl.JsonObject,
-            JSON.stringify(superPartitionKeyLength)
-          ),
+          keyLength: tx.createValue(Pl.JsonObject, JSON.stringify(superPartitionKeyLength)),
           spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec))
         };
       }
@@ -345,20 +324,15 @@ tplTest.for([
       var expectedResourceType: string;
       var expectedData: object;
       if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expectedResourceType =
-          'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
+        expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
         expectedData = {
           superPartitionKeyLength: superPartitionKeyLength,
           partitionKeyLength: partitionKeyLength
         };
       } else {
-        expectedResourceType =
-          'PColumnData/' + spec.storageFormat + 'Partitioned';
+        expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
         expectedData = {
-          partitionKeyLength: Math.max(
-            superPartitionKeyLength,
-            partitionKeyLength
-          )
+          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength)
         };
       }
 
@@ -385,9 +359,7 @@ tplTest.for([
 
           const col = colOpt!;
 
-          expect(col.type).toEqual(
-            'PColumnData/' + spec.storageFormat + 'Partitioned'
-          );
+          expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
 
           expect(col.data).toEqual({
             partitionKeyLength: spec.partitionKeyLength
@@ -468,10 +440,7 @@ tplTest.for([
 ])(
   '[in workflow] should read super-partitioned p-frame from csv files map- superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
   { timeout: 10000 },
-  async (
-    { superPartitionKeyLength, partitionKeyLength, storageFormat },
-    { helper, expect }
-  ) => {
+  async ({ superPartitionKeyLength, partitionKeyLength, storageFormat }, { helper, expect }) => {
     const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
     var spec = baseSpec;
     spec.partitionKeyLength = partitionKeyLength;
@@ -479,9 +448,7 @@ tplTest.for([
     // inner keys
     const expectedPKeys = [...expectedPartitionKeys(spec)].sort();
 
-    const csvMap = Object.fromEntries(
-      supKeys.map((supKey) => [supKey, csvData])
-    );
+    const csvMap = Object.fromEntries(supKeys.map((supKey) => [supKey, csvData]));
 
     const result = await helper.renderWorkflow(
       Templates['pframes.test.xsv.import-csv-map-wf'],
@@ -513,20 +480,15 @@ tplTest.for([
       var expectedResourceType: string;
       var expectedData: object;
       if (superPartitionKeyLength > 0 && partitionKeyLength > 0) {
-        expectedResourceType =
-          'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
+        expectedResourceType = 'PColumnData/Partitioned/' + spec.storageFormat + 'Partitioned';
         expectedData = {
           superPartitionKeyLength: superPartitionKeyLength,
           partitionKeyLength: partitionKeyLength
         };
       } else {
-        expectedResourceType =
-          'PColumnData/' + spec.storageFormat + 'Partitioned';
+        expectedResourceType = 'PColumnData/' + spec.storageFormat + 'Partitioned';
         expectedData = {
-          partitionKeyLength: Math.max(
-            superPartitionKeyLength,
-            partitionKeyLength
-          )
+          partitionKeyLength: Math.max(superPartitionKeyLength, partitionKeyLength)
         };
       }
 
@@ -553,9 +515,7 @@ tplTest.for([
 
           const col = colOpt!;
 
-          expect(col.type).toEqual(
-            'PColumnData/' + spec.storageFormat + 'Partitioned'
-          );
+          expect(col.type).toEqual('PColumnData/' + spec.storageFormat + 'Partitioned');
 
           expect(col.data).toEqual({
             partitionKeyLength: spec.partitionKeyLength

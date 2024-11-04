@@ -6,8 +6,10 @@ validation := import(":validation")
 constants := import(":pframes.constants")
 objects := import(":objects")
 render := import(":render")
+smart := import(":smart")
 exec := import(":exec")
 json := import("json")
+text := import("text")
 util := import(":pframes.util")
 ll := import(":ll")
 assets := import(":assets")
@@ -190,7 +192,7 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  * Imports a map with xsv files into a p-frame. The resulting map resource contains all columns specified in the params (column identifiers as
  * provided by the spec used as map keys). Resulting p-columns may be double-partitioned.
  *
- * @param xsvFile: reference - a reference to a file
+ * @param xsvMap: reference - a reference to a p-column resource map with xsv files
  * @param xsvType: string - either csv or tsv
  * @param spec: object - xsv conversion specification
  * @param ops: object - additional options
@@ -217,14 +219,14 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
  */
 importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 
-	importXsvMapTpl := assets.importTemplate(":pframes.import-xsv-map")
+	importXsvMapTpl := assets.importTemplate(":pframes.xsv-import-map")
 
 	ops := renderOps({
-	    dataOnly: false,
+		dataOnly: false,
 		splitDataAndSpec: false,
 		additionalAxesSpec: [],
 		transpose: undefined
-	  }, ops...)
+	}, ops...)
 
 	// spec without any metadata (for caching purposes)
 	decomposedSpec := util.decomposePfconvImportCfg(spec, { additionalAxesSpec: ops.additionalAxesSpec })
@@ -262,7 +264,27 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 	return result
 }
 
+/**
+ * Export p-frame into xsv file
+ *
+ * @param pf: p-frame - a collection of p-columns
+ * @param xsvType: string - "csv" or "tsv"
+ * @param params: map - export params
+ */
+exportFrame := func(pf, xsvType, params) {
+	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
+	
+	r := render.create(exportPfTpl, {
+		pf: pf,
+		xsvType: xsvType,
+		params: params
+	})
+
+	return r.output("result")
+}
+
 export ll.toStrict({
 	importFile: importFile,
-	importFileMap: importFileMap
+	importFileMap: importFileMap,
+	exportFrame: exportFrame
 })

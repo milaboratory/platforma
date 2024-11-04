@@ -421,7 +421,7 @@ tpl := func() {
 					outputsWithValues = sets.add(outputsWithValues, _delegatedOutputs...)
 
 					ll.assert(sets.fromSlice(self.definedOutputs) == outputsWithValues,
-						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s", 
+						"tpl.body() callback must return the same list of outputs as were given to 'defineOutputs()'. Want %s, got %s",
 						self.definedOutputs, sets.toSlice(outputsWithValues))
 
 					// set result to self outputs

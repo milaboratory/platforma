@@ -147,7 +147,7 @@ isFieldId := func(val) {
 /**
  * Converts reference ID (resource ID or field ID) to stable string representation, suitable for use as map keys
  */
- idToString := func(referenceID) {
+idToString := func(referenceID) {
 	if isFieldId(referenceID) {
 		return fmt.sprintf("0x%X/%s", referenceID.ResourceID, referenceID.Name)
 	}
@@ -155,7 +155,7 @@ isFieldId := func(val) {
 		return fmt.sprintf("0x%X", referenceID)
 	}
 	panic("ll.idToString: <referenceID> cannot be used as resource or field ID")
- }
+}
 
 /**
  * Returns current template renderer
