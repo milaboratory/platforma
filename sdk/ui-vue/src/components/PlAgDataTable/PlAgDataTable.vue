@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import './ag-theme.css';
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import type {
   GridApi,
@@ -20,7 +19,7 @@ import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
-import { useWatchFetch } from '../../lib';
+import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
@@ -412,6 +411,7 @@ watch(
     </Transition>
     <AgGridVue
       :key="reloadKey"
+      :theme="AgGridTheme"
       class="ap-ag-data-table-grid"
       :grid-options="gridOptions"
       @grid-ready="onGridReady"
