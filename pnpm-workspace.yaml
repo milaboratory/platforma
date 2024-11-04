@@ -155,6 +155,7 @@ catalog:
   '@ag-grid-enterprise/excel-export': *ag-grid
   '@ag-grid-enterprise/clipboard': *ag-grid
   '@ag-grid-enterprise/range-selection': *ag-grid
+  '@ag-grid-community/theming': *ag-grid
 
   # SW
 

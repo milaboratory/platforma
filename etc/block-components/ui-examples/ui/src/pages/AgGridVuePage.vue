@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
 import { h } from 'vue';
-import { PlBlockPage, PlAgOverlayLoading, PlAgOverlayNoRows } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlAgOverlayLoading, PlAgOverlayNoRows, AgGridTheme } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import type { GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
@@ -71,6 +71,7 @@ const onGridReady = () => {};
   <PlBlockPage style="max-width: 100%">
     <template #title>AgGridVue</template>
     <AgGridVue
+      :theme="AgGridTheme"
       :style="{ height: '100%' }"
       :row-data="result"
       :column-defs="columnDefs"
