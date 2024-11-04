@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [75b1646]
+  - @milaboratories/ts-helpers@1.1.1
+
 ## 1.5.0
 
 ### Minor Changes
