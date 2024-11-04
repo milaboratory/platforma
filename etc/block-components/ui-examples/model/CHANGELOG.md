@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.26
+
+### Patch Changes
+
+- f341244: AgGrid: migrate to the Theming Api
+
 ## 1.0.25
 
 ### Patch Changes

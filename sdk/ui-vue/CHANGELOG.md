@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.40
+
+### Patch Changes
+
+- f341244: AgGrid: migrate to the Theming Api
+
 ## 1.7.37
 
 ### Patch Changes
