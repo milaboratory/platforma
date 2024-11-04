@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.1
+
+### Patch Changes
+
+- 75b1646: Fixed bug in ConcurrencyLimitingExecutor
+
 ## 1.1.0
 
 ### Minor Changes

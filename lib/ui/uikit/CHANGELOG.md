@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.4
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+
 ## 2.0.3
 
 ### Patch Changes
