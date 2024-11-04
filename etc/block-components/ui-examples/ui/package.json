@@ -10,7 +10,7 @@
     "lint": "eslint . --ext js,ts,vue"
   },
   "dependencies": {
-    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
     "@platforma-sdk/model": "workspace:^",
     "@platforma-sdk/ui-vue": "workspace:^"
@@ -25,6 +25,7 @@
     "zod": "catalog:",
     "@ag-grid-community/vue3": "catalog:",
     "@ag-grid-community/client-side-row-model": "catalog:",
-    "@ag-grid-community/core": "catalog:"
+    "@ag-grid-community/core": "catalog:",
+    "@ag-grid-community/theming": "catalog:"
   }
 }
