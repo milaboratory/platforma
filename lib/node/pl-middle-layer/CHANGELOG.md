@@ -1,5 +1,19 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.13
+
+### Patch Changes
+
+- Updated dependencies [75b1646]
+  - @milaboratories/ts-helpers@1.1.1
+  - @milaboratories/computable@2.2.1
+  - @milaboratories/pl-client@2.5.7
+  - @milaboratories/pl-config@1.3.1
+  - @milaboratories/pl-drivers@1.3.10
+  - @milaboratories/pl-local@1.5.1
+  - @milaboratories/pl-tree@1.4.8
+  - @platforma-sdk/block-tools@2.3.21
+
 ## 1.14.12
 
 ### Patch Changes
