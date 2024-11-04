@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.8
+
+### Patch Changes
+
+- 0573960: "binary" resource added to final predicate, and will be cached from now on
+
 ## 2.5.7
 
 ### Patch Changes
