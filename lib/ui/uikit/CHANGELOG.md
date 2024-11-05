@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.6
+
+### Patch Changes
+
+- c16492e: Update icon-set
+
 ## 2.0.5
 
 ### Patch Changes
