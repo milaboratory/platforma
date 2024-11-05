@@ -1,4 +1,4 @@
-import { type Reactive, ref, watch } from 'vue';
+import { reactive, type Reactive, ref, watch } from 'vue';
 import { useTimeoutPoll, whenever } from '@vueuse/core';
 import type { AnyLogHandle, Platforma } from '@platforma-sdk/model';
 
@@ -17,8 +17,14 @@ function escapeRegExp(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function useLogHandle(props: Reactive<{ logHandle: AnyLogHandle | undefined; mockPlatforma?: Platforma; progressPrefix?: string }>) {
+export function useLogHandle(
+  props: Reactive<{ logHandle: AnyLogHandle | undefined; maxRetries?: number; mockPlatforma?: Platforma; progressPrefix?: string }>,
+) {
   const logState = ref<LogState>();
+
+  const data = reactive({
+    errorCount: 0,
+  });
 
   async function fetchLogs() {
     // making a snapshot of the ref
@@ -35,9 +41,11 @@ export function useLogHandle(props: Reactive<{ logHandle: AnyLogHandle | undefin
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      const result = await platforma.logDriver.readText(currentLogState.logHandle, 100, currentLogState.lastOffset);
+
       currentLogState.error = undefined;
 
-      const result = await platforma.logDriver.readText(currentLogState.logHandle, 100, currentLogState.lastOffset);
+      data.errorCount = 0;
 
       if (result.shouldUpdateHandle) return;
 
@@ -63,7 +71,12 @@ export function useLogHandle(props: Reactive<{ logHandle: AnyLogHandle | undefin
   const fetchAndCatch = () =>
     fetchLogs().catch((err) => {
       if (logState.value) {
-        logState.value.error = err;
+        data.errorCount++;
+        if (data.errorCount > (props.maxRetries ?? 3)) {
+          logState.value.error = err;
+        } else {
+          console.warn('skip error:', err, 'retry...');
+        }
       }
     });
 
@@ -83,6 +96,7 @@ export function useLogHandle(props: Reactive<{ logHandle: AnyLogHandle | undefin
         timeoutPoll.pause();
       } else if (lh !== logState.value?.logHandle) {
         logState.value = { logHandle: lh, lastOffset: 0, lines: '', finished: false, error: undefined };
+        data.errorCount = 0;
         timeoutPoll.resume();
       }
     },
