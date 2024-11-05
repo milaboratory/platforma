@@ -9,7 +9,7 @@ export default {
 
 <script lang="ts" setup>
 import { computed, onMounted, onUpdated, ref } from 'vue';
-import MaskIcon24 from '../MaskIcon24.vue';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
 import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/model';
@@ -82,7 +82,7 @@ onUpdated(scrollDown);
 
 <template>
   <div class="pl-log-view" :class="{ 'has-error': computedError }">
-    <MaskIcon24 title="Copy content" class="pl-log-view__copy" name="clipboard" @click="onClickCopy" />
+    <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" name="clipboard" @click="onClickCopy" />
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
     <div v-else ref="contentRef" class="pl-log-view__content">{{ computedValue }}</div>
   </div>

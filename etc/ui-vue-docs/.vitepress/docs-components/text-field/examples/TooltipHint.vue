@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextField, MaskIcon16 } from '@platforma-sdk/ui-vue';
+import { PlTextField, PlMaskIcon16 } from '@platforma-sdk/ui-vue';
 
 const data = reactive({
   model: 'Input text',
@@ -23,7 +23,7 @@ function onClick() {
       <div>Second line</div>
     </template>
     <template #append>
-      <MaskIcon16 name="chevron-right" @click="onClick" />
+      <PlMaskIcon16 name="chevron-right" @click="onClick" />
     </template>
   </PlTextField>
 </template>

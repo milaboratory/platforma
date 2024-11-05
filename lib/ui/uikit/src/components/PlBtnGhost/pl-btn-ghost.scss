@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-btn-ghost {
+.pl-btn-ghost {
   @include base-btn;
 
   & {
@@ -8,6 +8,7 @@
     background: transparent;
     border: none;
     width: fit-content;
+    min-width: 160px;
   
     --color-text: var(--txt-01);
     --color-btn-hover: var(--btn-sec-hover-grey);

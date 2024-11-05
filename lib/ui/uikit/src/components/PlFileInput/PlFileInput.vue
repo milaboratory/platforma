@@ -3,7 +3,7 @@ import './pl-file-input.scss';
 import { PlTooltip } from '@/components/PlTooltip';
 import { PlFileDialog } from '@/components/PlFileDialog';
 import type { ImportedFiles } from '@/types';
-import MaskIcon24 from '@/components/MaskIcon24.vue';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { computed, reactive, ref, useSlots } from 'vue';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFilePathFromHandle } from '@platforma-sdk/model';
@@ -166,15 +166,15 @@ if (!props.cellStyle) {
           </template>
         </PlTooltip>
       </label>
-      <MaskIcon24 v-if="hasErrors" name="restart" />
-      <MaskIcon24 v-else-if="isUploading" name="cloud-up" />
-      <MaskIcon24 v-else-if="isUploaded" name="success" />
-      <MaskIcon24 v-else name="paper-clip" />
+      <PlMaskIcon24 v-if="hasErrors" name="restart" />
+      <PlMaskIcon24 v-else-if="isUploading" name="cloud-up" />
+      <PlMaskIcon24 v-else-if="isUploaded" name="success" />
+      <PlMaskIcon24 v-else name="paper-clip" />
       <div :data-placeholder="placeholder ?? 'Choose file'" class="pl-file-input__filename" @click.stop="openFileDialog">
         {{ fileName }}
       </div>
       <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
-      <MaskIcon24 v-if="modelValue" name="close" @click.stop="clear" />
+      <PlMaskIcon24 v-if="modelValue" name="close" @click.stop="clear" />
       <DoubleContour class="pl-file-input__contour" />
     </div>
     <div v-if="hasErrors" class="pl-file-input__error">
