@@ -1,5 +1,13 @@
 # @milaboratories/uikit-playground
 
+## 0.0.35
+
+### Patch Changes
+
+- c16492e: Update icon-set
+- Updated dependencies [c16492e]
+  - @milaboratories/uikit@2.0.6
+
 ## 0.0.34
 
 ### Patch Changes

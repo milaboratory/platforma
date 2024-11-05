@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.27
+
+### Patch Changes
+
+- c16492e: Update icon-set
+
 ## 1.0.26
 
 ### Patch Changes

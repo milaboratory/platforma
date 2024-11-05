@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.60
+
+### Patch Changes
+
+- c16492e: Update icon-set
+- Updated dependencies [c16492e]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.27
+  - @platforma-sdk/ui-vue@1.7.44
+
 ## 1.0.59
 
 ### Patch Changes
