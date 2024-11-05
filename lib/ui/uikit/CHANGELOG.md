@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.5
+
+### Patch Changes
+
+- 8de9a0b: Add max retries parameter to PlLogView (in case of AnyLogHandle source)
+
 ## 2.0.4
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.59
+
+### Patch Changes
+
+- 8de9a0b: Add max retries parameter to PlLogView (in case of AnyLogHandle source)
+  - @platforma-sdk/ui-vue@1.7.42
+
 ## 1.0.58
 
 ### Patch Changes
