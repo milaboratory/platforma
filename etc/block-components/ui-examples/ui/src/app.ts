@@ -12,6 +12,7 @@ import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
+import IconsPage from './pages/IconsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -33,6 +34,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     routes: {
       '/': LogViewPage,
       '/modals': ModalsPage,
+      '/icons': IconsPage,
       '/inject-env': InjectEnvPage,
       '/dropdowns': DropdownsPage,
       '/use-watch-fetch': UseWatchFetchPage,
