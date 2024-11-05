@@ -43,6 +43,10 @@ const props = defineProps<{
    */
   output?: ValueOrErrors<unknown>;
   /**
+   * Max retries for AnyLogHandle fetch (with the same parameters)
+   */
+  maxRetries?: number;
+  /**
    * @TODO
    */
   mockPlatforma?: Platforma;
