@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextField, MaskIcon16, PlTextArea } from '@milaboratories/uikit';
+import { PlTextField, PlMaskIcon16, PlTextArea } from '@milaboratories/uikit';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 
@@ -43,7 +43,7 @@ const onClick = () => alert('Some action');
           Second line
         </template>
         <template #append>
-          <MaskIcon16 name="chevron-right" @click="onClick" />
+          <PlMaskIcon16 name="chevron-right" @click="onClick" />
         </template>
       </PlTextField>
 

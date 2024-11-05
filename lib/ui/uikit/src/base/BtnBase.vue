@@ -7,7 +7,7 @@ export default {
 <script lang="ts" setup>
 import type { MaskIconName16, Size } from '@/types';
 import { computed, ref } from 'vue';
-import MaskIcon16 from '@/components/MaskIcon16.vue';
+import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
 import { useRipple } from '@/composition/useRipple';
 
 const props = defineProps<{
@@ -39,7 +39,7 @@ useRipple(btn);
     <span v-if="!round">
       <slot />
     </span>
-    <MaskIcon16 v-if="loading" name="loading" :size="size" />
-    <MaskIcon16 v-else-if="icon" :name="icon" :size="size" />
+    <PlMaskIcon16 v-if="loading" name="loading" :size="size" />
+    <PlMaskIcon16 v-else-if="icon" :name="icon" :size="size" />
   </button>
 </template>

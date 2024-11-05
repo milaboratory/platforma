@@ -90,6 +90,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
   .sections((ctx) => {
     return [
       { type: 'link', href: '/', label: 'PlLogView' }, 
+      { type: 'link', href: '/icons', label: 'Icons/Masks' }, 
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
