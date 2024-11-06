@@ -101,6 +101,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/errors', label: 'Errors' },
+      { type: 'link', href: '/text-fields', label: 'PlTextField' },
     ];
   })
 
