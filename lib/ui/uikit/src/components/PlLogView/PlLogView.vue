@@ -8,7 +8,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUpdated, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
 import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
@@ -54,6 +54,8 @@ const props = defineProps<{
 
 const logState = useLogHandle(props);
 
+const isAnchored = ref<boolean>(true);
+
 const contentRef = ref<HTMLElement>();
 
 const computedError = computed(() => logState.value?.error ?? props.error ?? getOutputError(props.output));
@@ -68,22 +70,32 @@ const onClickCopy = () => {
 
 const scrollDown = () => {
   tapIf(contentRef.value, (el) => {
-    // 100px from bottom (temp)
-    if (el.clientHeight + el.scrollTop + 100 > el.scrollHeight) {
+    if (isAnchored.value) {
       el.scrollTo(el.scrollLeft, el.scrollHeight);
     }
   });
 };
 
-onMounted(scrollDown);
+watch(
+  computedValue,
+  () => {
+    requestAnimationFrame(() => {
+      scrollDown();
+    });
+  },
+  { immediate: true },
+);
 
-onUpdated(scrollDown);
+const onContentScroll = (ev: Event) => {
+  const el = ev.target as HTMLElement;
+  isAnchored.value = el.scrollTop + 20 /* ~ 1 line height */ >= el.scrollHeight - el.offsetHeight;
+};
 </script>
 
 <template>
   <div class="pl-log-view" :class="{ 'has-error': computedError }">
     <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" name="clipboard" @click="onClickCopy" />
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
-    <div v-else ref="contentRef" class="pl-log-view__content">{{ computedValue }}</div>
+    <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">{{ computedValue }}</div>
   </div>
 </template>
