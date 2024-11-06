@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.7
+
+### Patch Changes
+
+- 969a083: [uikit] Initial scrolling / auto scrolling on the last line in PlLogView
+
 ## 2.0.6
 
 ### Patch Changes
