@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.8
+
+### Patch Changes
+
+- 4a745bf: Added password type for PlTextField
+
 ## 2.0.7
 
 ### Patch Changes
