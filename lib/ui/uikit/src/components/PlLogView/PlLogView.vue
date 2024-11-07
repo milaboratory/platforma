@@ -14,6 +14,8 @@ import './pl-log-view.scss';
 import { okOptional, tapIf } from '@milaboratories/helpers';
 import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/model';
 import { useLogHandle } from './useLogHandle';
+import { useLabelNotch } from '@/utils/useLabelNotch';
+import DoubleContour from '@/utils/DoubleContour.vue';
 
 const getOutputError = <T,>(o?: ValueOrErrors<T>) => {
   if (o && o.ok === false) {
@@ -50,6 +52,10 @@ const props = defineProps<{
    * @TODO
    */
   mockPlatforma?: Platforma;
+  /**
+   * The label to display above the texarea.
+   */
+  label?: string;
 }>();
 
 const logState = useLogHandle(props);
@@ -58,9 +64,13 @@ const isAnchored = ref<boolean>(true);
 
 const contentRef = ref<HTMLElement>();
 
+const root = ref<HTMLInputElement>();
+
 const computedError = computed(() => logState.value?.error ?? props.error ?? getOutputError(props.output));
 
 const computedValue = computed(() => logState.value?.lines ?? props.value ?? okOptional(props.output));
+
+useLabelNotch(root);
 
 const onClickCopy = () => {
   if (computedValue.value && typeof computedValue.value === 'string') {
@@ -93,7 +103,9 @@ const onContentScroll = (ev: Event) => {
 </script>
 
 <template>
-  <div class="pl-log-view" :class="{ 'has-error': computedError }">
+  <div ref="root" class="pl-log-view" :class="{ 'has-error': computedError }">
+    <label v-if="label"> {{ label }} </label>
+    <DoubleContour class="pl-log-view__contour" />
     <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" name="clipboard" @click="onClickCopy" />
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
     <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">{{ computedValue }}</div>
