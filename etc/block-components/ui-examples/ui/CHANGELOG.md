@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.62
+
+### Patch Changes
+
+- 4a745bf: Added password type for PlTextField
+- Updated dependencies [4a745bf]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.28
+  - @platforma-sdk/ui-vue@1.7.46
+
 ## 1.0.61
 
 ### Patch Changes
