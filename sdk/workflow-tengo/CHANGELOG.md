@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.7.4
+
+### Patch Changes
+
+- 554e5d3: PFrames version bump
+
 ## 1.7.3
 
 ### Patch Changes
