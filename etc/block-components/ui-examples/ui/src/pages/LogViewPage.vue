@@ -65,16 +65,17 @@ const dropHandle = () => {
     <template v-if="data.type === 'value'">
       <h4>Value and Error</h4>
       <PlLogView :value="data.logContent" :error="error" />
+      <PlLogView :value="data.logContent" label="PlLogView label" :error="error" />
     </template>
     <template v-if="data.type === 'output'">
       <h4>Output (ValueOrErrors)</h4>
-      <PlLogView :output="output" />
+      <PlLogView :output="output" label="PlLogView label" />
     </template>
     <template v-if="data.type === 'handle'">
       <h4>LogHandle</h4>
       <PlTextField v-model="data.handle" label="Test Log Handle" />
       <PlBtnPrimary @click="dropHandle"> Drop handle </PlBtnPrimary>
-      <PlLogView :log-handle="data.handle" />
+      <PlLogView :log-handle="data.handle" label="PlLogView label" />
     </template>
   </PlBlockPage>
 </template>
