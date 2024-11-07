@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.3.12
+
+### Patch Changes
+
+- 5a4d01b: drivers, upload: return an immutable object to API, bump pl with fixing getStatus error
+
 ## 1.3.11
 
 ### Patch Changes
