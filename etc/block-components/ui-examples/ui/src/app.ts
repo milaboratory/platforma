@@ -13,6 +13,7 @@ import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
 import IconsPage from './pages/IconsPage.vue';
+import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -43,7 +44,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/ag-grid-vue': AgGridVuePage,
       '/pl-ag-data-table': () => PlAgDataTablePage,
       '/select-files': SelectFilesPage,
-      '/errors': () => ErrorsPage
+      '/errors': () => ErrorsPage,
+      '/text-fields': () => PlTextFieldPage
     }
   };
 });
