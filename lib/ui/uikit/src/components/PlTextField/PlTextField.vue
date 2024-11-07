@@ -70,11 +70,17 @@ const props = defineProps<{
    * An array of validation rules to apply to the input field. Each rule is a function that takes the current value and returns `true` if valid or an error message if invalid.
    */
   rules?: ((v: string) => boolean | string)[];
+  /**
+   * The string specifies whether the field should be a password or not, value could be "password" or undefined.
+   */
+  type?: 'password';
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
 
 const inputRef = ref<HTMLInputElement | undefined>();
+
+const showPassword = ref(false);
 
 const valueRef = computed<string>({
   get() {
@@ -84,6 +90,16 @@ const valueRef = computed<string>({
     emit('update:modelValue', v);
   },
 });
+
+const fieldType = computed(() => {
+  if (props.type && props.type === 'password') {
+    return showPassword.value ? 'text' : props.type;
+  } else {
+    return 'text';
+  }
+});
+
+const passwordIcon = computed(() => (showPassword.value ? 'icon-view-off' : 'icon-view-on'));
 
 const clear = () => {
   if (props.clearable) {
@@ -116,7 +132,13 @@ const displayErrors = computed(() => {
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
+const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password');
+
 useLabelNotch(rootRef);
+
+function togglePassword() {
+  showPassword.value = !showPassword.value;
+}
 </script>
 
 <template>
@@ -143,9 +165,10 @@ useLabelNotch(rootRef);
       <div v-if="prefix" class="ui-text-field__prefix">
         {{ prefix }}
       </div>
-      <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" type="text" spellcheck="false" />
+      <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" :type="fieldType" spellcheck="false" />
       <div class="ui-text-field__append">
-        <div v-if="clearable && nonEmpty" class="icon icon--clear" @click="clear" />
+        <div v-if="canShowClearable" class="icon icon--clear" @click="clear" />
+        <div v-if="type === 'password'" :class="passwordIcon" class="icon-24 uc-pointer" @click="togglePassword" />
         <slot name="append" />
       </div>
       <DoubleContour class="ui-text-field__contour" />
