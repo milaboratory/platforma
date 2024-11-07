@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.63
+
+### Patch Changes
+
+- 5cdfeb3: Added label and changed background gradient for error
+  - @platforma-sdk/ui-vue@1.7.49
+
 ## 1.0.62
 
 ### Patch Changes
