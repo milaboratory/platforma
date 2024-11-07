@@ -1,11 +1,12 @@
 import './assets/ui.scss';
 import BlockLayout from './components/BlockLayout.vue';
 import PlAgDataTable from './components/PlAgDataTable/PlAgDataTable.vue';
+import PlTableFilters from './components/PlAgDataTable/PlTableFilters.vue';
 import PlAgOverlayLoading from './components/PlAgDataTable/PlAgOverlayLoading.vue';
 import PlAgOverlayNoRows from './components/PlAgDataTable/PlAgOverlayNoRows.vue';
 import ValueOrErrorsComponent from './components/ValueOrErrorsComponent.vue';
 
-export { BlockLayout, PlAgDataTable, PlAgOverlayLoading, PlAgOverlayNoRows, ValueOrErrorsComponent };
+export { BlockLayout, PlAgDataTable, PlTableFilters, PlAgOverlayLoading, PlAgOverlayNoRows, ValueOrErrorsComponent };
 
 export * from './components/PlAgCellFile';
 

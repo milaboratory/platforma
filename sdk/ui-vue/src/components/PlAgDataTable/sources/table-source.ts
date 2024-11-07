@@ -3,7 +3,6 @@ import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } fro
 import {
   type PColumnSpec,
   type PFrameDriver,
-  type PTableColumnId,
   type PTableColumnSpec,
   type PTableHandle,
   type PTableVector,
@@ -23,17 +22,14 @@ import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } fro
  * Generate unique colId based on the column spec.
  */
 function makeColId(spec: PTableColumnSpec) {
-  return canonicalize({
-    type: spec.type,
-    id: spec.id,
-  })!;
+  return canonicalize(spec)!;
 }
 
 /**
  * Extract `PTableColumnId` from colId string
  */
 export function parseColId(str: string) {
-  return JSON.parse(str) as PTableColumnId;
+  return JSON.parse(str) as PTableColumnSpec;
 }
 
 // do not use `any` please
@@ -234,7 +230,7 @@ export async function makeSheets(
 export type PlAgDataTableRow = {
   id: string;
   key: unknown[];
-  [field: `${number}`]: unknown;
+  [field: `${number}`]: undefined | null | number | string;
 };
 
 /**
@@ -245,7 +241,7 @@ export type PlAgDataTableRow = {
  * @returns
  */
 function columns2rows(fields: number[], columns: PTableVector[], axes: number[], index: number): PlAgDataTableRow[] {
-  const nCols = columns.length;
+  const nCols = fields.length;
   const rowData: PlAgDataTableRow[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
     const key: unknown[] = [];
@@ -332,6 +328,19 @@ export async function updatePFrameGridOptions(
     fields.splice(i, 1);
   }
 
+  const ptShape = await pfDriver.getShape(pt);
+  const rowCount = ptShape.rows;
+  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
+
+  if (hColumns.length > 1) {
+    console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
+  }
+
+  if (hColumns.length === 1) {
+    // return data
+    return updatePFrameGridOptionsHeterogeneousAxes(hColumns, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
+  }
+
   // mixing in axis indices
 
   const allIndices = [...indices];
@@ -362,19 +371,6 @@ export async function updatePFrameGridOptions(
     axes.push(fieldIdx);
   }
 
-  const ptShape = await pfDriver.getShape(pt);
-  const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
-
-  if (hColumns.length > 1) {
-    console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
-  }
-
-  if (hColumns.length === 1) {
-    // return data
-    return updatePFrameGridOptionsHeterogeneousAxes(hColumns, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
-  }
-
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
   const serverSideDatasource = {
     getRows: async (params: IServerSideGetRowsParams) => {
@@ -389,8 +385,8 @@ export async function updatePFrameGridOptions(
         // this is to avoid double flickering when underlying table is changed
         if (lastParams && !lodash.isEqual(lastParams.request.sortModel, params.request.sortModel)) {
           lastParams = undefined;
-          params.fail();
           params.api.setGridOption('loading', true);
+          params.success({ rowData: [], rowCount: 0 });
           return;
         }
         lastParams = params;
@@ -412,8 +408,9 @@ export async function updatePFrameGridOptions(
         params.api.autoSizeAllColumns();
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
-        params.fail();
         params.api.setGridOption('loading', true);
+        params.fail();
+        console.trace(error);
       }
     },
   } satisfies IServerSideDatasource;

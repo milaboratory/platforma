@@ -28,7 +28,9 @@ export type PlDataTableGridState = {
       sort: 'asc' | 'desc';
     }[];
   };
+  /** Includes column visibility */
   columnVisibility?: {
+    /** All colIds which were hidden */
     hiddenColIds: string[];
   };
 
@@ -52,9 +54,199 @@ export type PTableParams = {
 export type PlDataTableState = {
   // internal ag-grid state
   gridState: PlDataTableGridState;
-
   // mapping of gridState onto the p-table data structures
   pTableParams?: PTableParams;
+};
+
+/** PlTableFilters filter entry */
+export type PlTableFilterIsNotNA = {
+  /** Predicate type */
+  type: 'isNotNA';
+};
+
+/** PlTableFilters filter entry */
+export type PlTableFilterIsNA = {
+  /** Predicate type */
+  type: 'isNA';
+};
+
+/** PlTableFilters filter entries applicable to both string and number values */
+export type PlTableFilterCommon = PlTableFilterIsNotNA | PlTableFilterIsNA;
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberEquals = {
+  /** Predicate type */
+  type: 'number_equals';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberNotEquals = {
+  /** Predicate type */
+  type: 'number_notEquals';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberGreaterThen = {
+  /** Predicate type */
+  type: 'number_greaterThen';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberGreaterThenOrEqualTo = {
+  /** Predicate type */
+  type: 'number_greaterThenOrEqualTo';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberLessThen = {
+  /** Predicate type */
+  type: 'number_lessThen';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberLessThenOrEqualTo = {
+  /** Predicate type */
+  type: 'number_lessThenOrEqualTo';
+  /** Referense value */
+  reference: number;
+};
+
+/** PlTableFilters numeric filter entry */
+export type PlTableFilterNumberBetween = {
+  /** Predicate type */
+  type: 'number_between';
+  /** Referense value for the lower bound */
+  lowerBound: number;
+  /** Defines whether values equal to lower bound reference value should be matched */
+  includeLowerBound: boolean;
+  /** Referense value for the upper bound */
+  upperBound: number;
+  /** Defines whether values equal to upper bound reference value should be matched */
+  includeUpperBound: boolean;
+};
+
+/** All PlTableFilters numeric filter entries */
+export type PlTableFilterNumber =
+  | PlTableFilterCommon
+  | PlTableFilterNumberEquals
+  | PlTableFilterNumberNotEquals
+  | PlTableFilterNumberGreaterThen
+  | PlTableFilterNumberGreaterThenOrEqualTo
+  | PlTableFilterNumberLessThen
+  | PlTableFilterNumberLessThenOrEqualTo
+  | PlTableFilterNumberBetween;
+/** All types of PlTableFilters numeric filter entries */
+export type PlTableFilterNumberType = PlTableFilterNumber['type'];
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringEquals = {
+  /** Predicate type */
+  type: 'string_equals';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringNotEquals = {
+  /** Predicate type */
+  type: 'string_notEquals';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringContains = {
+  /** Predicate type */
+  type: 'string_contains';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringDoesNotContain = {
+  /** Predicate type */
+  type: 'string_doesNotContain';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringMatches = {
+  /** Predicate type */
+  type: 'string_matches';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringDoesNotMatch = {
+  /** Predicate type */
+  type: 'string_doesNotMatch';
+  /** Referense value */
+  reference: string;
+};
+
+/** PlTableFilters string filter entry */
+export type PlTableFilterStringContainsFuzzyMatch = {
+  /** Predicate type */
+  type: 'string_containsFuzzyMatch';
+  /** Referense value */
+  reference: string;
+  /**
+   * Maximum acceptable edit distance between reference value and matched substring
+   * @see https://en.wikipedia.org/wiki/Edit_distance
+   */
+  maxEdits: number;
+  /**
+   * When {@link substitutionsOnly} is set to false
+   * Levenshtein distance is used as edit distance (substitutions and indels)
+   * @see https://en.wikipedia.org/wiki/Levenshtein_distance
+   * When {@link substitutionsOnly} is set to true
+   * Hamming distance is used as edit distance (substitutions only)
+   * @see https://en.wikipedia.org/wiki/Hamming_distance
+   */
+  substitutionsOnly: boolean;
+  /**
+   * Single character in {@link reference} that will match any
+   * single character in searched text.
+   */
+  wildcard?: string;
+};
+
+/** All PlTableFilters string filter entries */
+export type PlTableFilterString =
+  | PlTableFilterCommon
+  | PlTableFilterStringEquals
+  | PlTableFilterStringNotEquals
+  | PlTableFilterStringContains
+  | PlTableFilterStringDoesNotContain
+  | PlTableFilterStringMatches
+  | PlTableFilterStringDoesNotMatch
+  | PlTableFilterStringContainsFuzzyMatch;
+/** All types of PlTableFilters string filter entries */
+export type PlTableFilterStringType = PlTableFilterString['type'];
+
+/** All PlTableFilters filter entries */
+export type PlTableFilter = PlTableFilterNumber | PlTableFilterString;
+/** All types of PlTableFilters filter entries */
+export type PlTableFilterType = PlTableFilter['type'];
+
+/** PlTableFilters model */
+export type PlTableFiltersModel = {
+  /** Internal PlTableFilters component state, do not change! */
+  state?: Record<string, PlTableFilter>;
+  /** Resulting filters which should be used in Join */
+  filters?: PTableRecordFilter[];
 };
 
 /**
