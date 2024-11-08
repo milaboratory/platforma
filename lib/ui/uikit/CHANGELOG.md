@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.10
+
+### Patch Changes
+
+- d81ec02: Bring password visibility icon to Adobe standard
+
 ## 2.0.9
 
 ### Patch Changes
