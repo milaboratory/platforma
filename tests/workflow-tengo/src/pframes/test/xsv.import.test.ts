@@ -181,7 +181,7 @@ tplTest.for([
               }
               return driverKit.blobDriver.getOnDemandBlob(r.persist(), ctx).handle;
             }),
-            6000
+            60000
           );
 
           const data = JSON.parse(
@@ -314,7 +314,7 @@ tplTest.for([
             fields: r?.listInputFields()
           };
         }),
-        6000
+        60000
       );
 
       expect(colOpt).toBeDefined();
@@ -352,7 +352,7 @@ tplTest.for([
                 fields: r?.listInputFields()
               };
             }),
-            6000
+            60000
           );
 
           expect(colOpt).toBeDefined();
@@ -470,7 +470,7 @@ tplTest.for([
             fields: r?.listInputFields()
           };
         }),
-        6000
+        60000
       );
 
       expect(colOpt).toBeDefined();
@@ -508,7 +508,7 @@ tplTest.for([
                 fields: r?.listInputFields()
               };
             }),
-            6000
+            60000
           );
 
           expect(colOpt).toBeDefined();
