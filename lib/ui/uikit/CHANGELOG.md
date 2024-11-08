@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.11
+
+### Patch Changes
+
+- 5fd8ff2: make ghost button width auto
+
 ## 2.0.10
 
 ### Patch Changes
