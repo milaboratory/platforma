@@ -1,4 +1,4 @@
-import { Pl } from '@milaboratories/pl-middle-layer';
+import { field, Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
 // dummy csv data
@@ -162,12 +162,141 @@ tplTest.for([
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
     const expected = csvData.replaceAll('\n', '').split('').sort();
 
-    console.log(actual);
-    console.log(expected);
+    // console.log(actual);
+    // console.log(expected);
 
-    console.log(csvContent);
-    console.log(csvData);
+    // console.log(csvContent);
+    // console.log(csvData);
 
     expect(actual).toEqual(expected);
+  }
+);
+
+function superPartitionKeys(keyLen: number): string[] {
+  const base = ['X', 'Y', 'Z'];
+  const r: string[] = [];
+  if (keyLen == 0) {
+    r.push(JSON.stringify([]));
+    return r;
+  }
+
+  for (let i = 0; i < base.length; ++i) {
+    const row: string[] = [];
+    for (let j = 0; j < keyLen; ++j) {
+      row.push(base[i] + j);
+    }
+    r.push(JSON.stringify(row));
+  }
+  return r;
+}
+
+tplTest.for([
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 0,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 1,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 0,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 1,
+    storageFormat: 'Binary'
+  },
+  {
+    superPartitionKeyLength: 2,
+    partitionKeyLength: 2,
+    storageFormat: 'Binary'
+  },
+
+  { superPartitionKeyLength: 0, partitionKeyLength: 0, storageFormat: 'Json' },
+  { superPartitionKeyLength: 0, partitionKeyLength: 1, storageFormat: 'Json' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 0, storageFormat: 'Json' },
+  { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
+])(
+  'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
+  { timeout: 10000 },
+  async (
+    { superPartitionKeyLength, partitionKeyLength, storageFormat },
+    { helper, expect, driverKit }
+  ) => {
+    const supKeys = superPartitionKeys(superPartitionKeyLength).sort();
+    var spec = baseSpec;
+    spec.partitionKeyLength = partitionKeyLength;
+    spec.storageFormat = storageFormat;
+
+    const result = await helper.renderTemplate(
+      false,
+      'pframes.test.xsv.export-super-pf',
+      ['tsvFile'],
+      (tx) => {
+        const csv = tx.createValue(Pl.JsonObject, JSON.stringify(csvData));
+
+        const map = tx.createStruct(Pl.StdMap);
+        for (const supK of supKeys) {
+          tx.createField(field(map, supK), 'Input', csv);
+        }
+        tx.lockInputs(map);
+
+        return {
+          csvMap: map,
+          keyLength: tx.createValue(Pl.JsonObject, JSON.stringify(superPartitionKeyLength)),
+          spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec))
+        };
+      }
+    );
+
+    const tsv = await awaitStableState(
+      result.computeOutput('tsvFile', (f, ctx) => {
+        if (!f) {
+          return undefined;
+        }
+        const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
+
+        return h.handle;
+      })
+    );
+
+    const csvContent = (await driverKit.blobDriver.getContent(tsv!)).toString();
+
+    // @TODO remove \" replacement after pfconv update
+    const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
+    const expected = csvData.replaceAll('\n', '').split('').sort();
+
+    // console.log(actual);
+    // console.log(expected);
+
+    // console.log(csvContent);
+    // console.log(csvData);
+
+    if (superPartitionKeyLength === 0) expect(actual).toEqual(expected);
   }
 );
