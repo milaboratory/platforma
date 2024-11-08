@@ -83,7 +83,7 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 
     } else if (rType == constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED.Name) {
 
-          // write jdata		
+        // write jdata		
         i := 0
         parts := {}
         for k, v in data.inputs() {
@@ -128,6 +128,109 @@ _addColumnToWd := func(name, data, spec, pfconv) {
         
         // write spec
 		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else if (rType == constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED.Name) {
+		
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength		
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata		
+        i := 0
+        parts := {}
+        
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			
+			supKeyArray := json.decode(supKey)
+			
+			// iterate over inner index
+			for k, v in supData.getValue().inputs() {
+				
+				part := name + i + ".jdata"
+
+				innerKeyArray := json.decode(k)
+				key := json.encode(supKeyArray + innerKeyArray)
+            	
+				parts[key] = part
+            
+            	pfconv.addFile(part, v.getValue())
+            
+            	i = i + 1
+			}
+		}
+
+		// write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "JsonPartitioned",
+			"partitionKeyLength": superPartitionKeyLength + partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else if (rType == constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED.Name) {
+		
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength		
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata		
+        i := 0
+        parts := {}
+        
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			
+			supKeyArray := json.decode(supKey)
+			
+			// iterate over inner index
+			for k, v in supData.getValue().inputs() {
+				
+				if text.has_suffix(k, ".index") {
+					innerKeyArray := json.decode(k[0:(len(k) - 6)])
+					key := json.encode(supKeyArray + innerKeyArray)
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					
+					indexFile := name + i + ".index"
+					
+					pfconv.addFile(indexFile, v.getValue())
+					parts[key].index = indexFile
+				} else if text.has_suffix(k, ".values") {
+
+					innerKeyArray := json.decode(k[0:(len(k) - 7)])
+					key := json.encode(supKeyArray + innerKeyArray)
+					
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					
+					valuesFile := name + i + ".values"
+					
+					pfconv.addFile(valuesFile, v.getValue())
+					parts[key].values = valuesFile
+				} else {
+					ll.panic("unknown suffix: expected .index or .values, got ", k)
+				}
+
+				i = i + 1
+			}
+		}
+
+		// write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "BinaryPartitioned",
+			"partitionKeyLength": superPartitionKeyLength + partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
 	} else {
 		ll.panic("unsupported p-column data type", rType)
 	} 
