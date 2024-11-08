@@ -4,14 +4,14 @@
   @include base-btn;
 
   & {
+    --color-text: var(--txt-01);
+    --color-btn-hover: var(--btn-sec-hover-grey);
+    --btn-min-width: auto;
     gap: 10px;
     background: transparent;
     border: none;
     width: fit-content;
-    min-width: 160px;
-  
-    --color-text: var(--txt-01);
-    --color-btn-hover: var(--btn-sec-hover-grey);
+    min-width: var(--btn-min-width);
   }
 
   [data-theme="dark"] & {
