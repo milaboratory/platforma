@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-text-field {
+.pl-text-field {
   $root: &;
 
   --contour-color: var(--txt-01);
@@ -78,10 +78,10 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
-    .icon {
+    .icon-16 {
       cursor: pointer;
     }
-    .mask {
+    .mask-16 {
       background-color: var(--control-mask-fill);
       cursor: pointer;
     }
