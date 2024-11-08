@@ -1,5 +1,63 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.17
+
+### Patch Changes
+
+- 554e5d3: PFrames version bump
+- Updated dependencies [554e5d3]
+  - @platforma-sdk/workflow-tengo@1.7.4
+
+## 1.14.16
+
+### Patch Changes
+
+- Updated dependencies [5a4d01b]
+  - @milaboratories/pl-drivers@1.3.12
+  - @milaboratories/pl-local@1.5.2
+
+## 1.14.15
+
+### Patch Changes
+
+- Updated dependencies [68de5a5]
+  - @platforma-sdk/workflow-tengo@1.7.3
+
+## 1.14.14
+
+### Patch Changes
+
+- Updated dependencies [0573960]
+  - @milaboratories/pl-client@2.5.8
+  - @milaboratories/pl-drivers@1.3.11
+  - @milaboratories/pl-tree@1.4.9
+
+## 1.14.13
+
+### Patch Changes
+
+- Updated dependencies [75b1646]
+  - @milaboratories/ts-helpers@1.1.1
+  - @milaboratories/computable@2.2.1
+  - @milaboratories/pl-client@2.5.7
+  - @milaboratories/pl-config@1.3.1
+  - @milaboratories/pl-drivers@1.3.10
+  - @milaboratories/pl-local@1.5.1
+  - @milaboratories/pl-tree@1.4.8
+  - @platforma-sdk/block-tools@2.3.21
+
+## 1.14.12
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/pl-client@2.5.6
+  - @platforma-sdk/workflow-tengo@1.7.2
+  - @platforma-sdk/block-tools@2.3.20
+  - @milaboratories/pl-drivers@1.3.9
+  - @milaboratories/pl-tree@1.4.7
+
 ## 1.14.11
 
 ### Patch Changes

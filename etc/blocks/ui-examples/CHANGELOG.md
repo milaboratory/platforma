@@ -1,5 +1,82 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.67
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.65
+
+## 1.0.66
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.64
+
+## 1.0.65
+
+### Patch Changes
+
+- Updated dependencies [5cdfeb3]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.63
+
+## 1.0.64
+
+### Patch Changes
+
+- Updated dependencies [4a745bf]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.28
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.62
+
+## 1.0.63
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.61
+
+## 1.0.62
+
+### Patch Changes
+
+- Updated dependencies [c16492e]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.27
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.60
+
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [8de9a0b]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.59
+
+## 1.0.60
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.58
+
+## 1.0.59
+
+### Patch Changes
+
+- Updated dependencies [f341244]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.26
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.57
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [d6909bf]
+  - @milaboratories/milaboratories.ui-examples.ui@1.0.56
+
+## 1.0.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.0.55
+- @milaboratories/milaboratories.ui-examples.workflow@1.0.4
+- @milaboratories/milaboratories.ui-examples.model@1.0.25
+
 ## 1.0.56
 
 ### Patch Changes

@@ -12,6 +12,8 @@ import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { useValidation } from '@/utils/useValidation';
+import { PlIcon16 } from '../PlIcon16';
+import { PlIcon24 } from '../PlIcon24';
 
 const slots = useSlots();
 
@@ -70,11 +72,17 @@ const props = defineProps<{
    * An array of validation rules to apply to the input field. Each rule is a function that takes the current value and returns `true` if valid or an error message if invalid.
    */
   rules?: ((v: string) => boolean | string)[];
+  /**
+   * The string specifies whether the field should be a password or not, value could be "password" or undefined.
+   */
+  type?: 'password';
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
 
 const inputRef = ref<HTMLInputElement | undefined>();
+
+const showPassword = ref(false);
 
 const valueRef = computed<string>({
   get() {
@@ -84,6 +92,16 @@ const valueRef = computed<string>({
     emit('update:modelValue', v);
   },
 });
+
+const fieldType = computed(() => {
+  if (props.type && props.type === 'password') {
+    return showPassword.value ? 'text' : props.type;
+  } else {
+    return 'text';
+  }
+});
+
+const passwordIcon = computed(() => (showPassword.value ? 'view-on' : 'view-off'));
 
 const clear = () => {
   if (props.clearable) {
@@ -116,14 +134,20 @@ const displayErrors = computed(() => {
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
+const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password');
+
 useLabelNotch(rootRef);
+
+function togglePasswordVisibility() {
+  showPassword.value = !showPassword.value;
+}
 </script>
 
 <template>
-  <div class="ui-text-field__envelope">
+  <div class="pl-text-field__envelope">
     <div
       ref="rootRef"
-      class="ui-text-field"
+      class="pl-text-field"
       :class="{
         error: hasErrors,
         disabled,
@@ -140,19 +164,20 @@ useLabelNotch(rootRef);
           </template>
         </PlTooltip>
       </label>
-      <div v-if="prefix" class="ui-text-field__prefix">
+      <div v-if="prefix" class="pl-text-field__prefix">
         {{ prefix }}
       </div>
-      <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" type="text" spellcheck="false" />
-      <div class="ui-text-field__append">
-        <div v-if="clearable && nonEmpty" class="icon icon--clear" @click="clear" />
+      <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" :type="fieldType" spellcheck="false" />
+      <div class="pl-text-field__append">
+        <PlIcon16 v-if="canShowClearable" name="delete-clear" @click="clear" />
+        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
         <slot name="append" />
       </div>
-      <DoubleContour class="ui-text-field__contour" />
+      <DoubleContour class="pl-text-field__contour" />
     </div>
-    <div v-if="hasErrors" class="ui-text-field__error">
+    <div v-if="hasErrors" class="pl-text-field__error">
       {{ displayErrors.join(' ') }}
     </div>
-    <div v-else-if="helper" class="ui-text-field__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-text-field__helper">{{ helper }}</div>
   </div>
 </template>

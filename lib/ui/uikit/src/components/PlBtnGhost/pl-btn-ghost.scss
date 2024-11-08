@@ -1,16 +1,17 @@
 @import "@/assets/mixins";
 
-.ui-btn-ghost {
+.pl-btn-ghost {
   @include base-btn;
 
   & {
+    --color-text: var(--txt-01);
+    --color-btn-hover: var(--btn-sec-hover-grey);
+    --btn-min-width: auto;
     gap: 10px;
     background: transparent;
     border: none;
     width: fit-content;
-  
-    --color-text: var(--txt-01);
-    --color-btn-hover: var(--btn-sec-hover-grey);
+    min-width: var(--btn-min-width);
   }
 
   [data-theme="dark"] & {

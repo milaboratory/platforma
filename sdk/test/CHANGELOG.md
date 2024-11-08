@@ -1,5 +1,54 @@
 # @platforma-sdk/test
 
+## 1.7.48
+
+### Patch Changes
+
+- Updated dependencies [554e5d3]
+  - @milaboratories/pl-middle-layer@1.14.17
+
+## 1.7.47
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.14.16
+
+## 1.7.43
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.14.15
+
+## 1.7.39
+
+### Patch Changes
+
+- Updated dependencies [0573960]
+  - @milaboratories/pl-client@2.5.8
+  - @milaboratories/pl-middle-layer@1.14.14
+  - @milaboratories/pl-tree@1.4.9
+
+## 1.7.38
+
+### Patch Changes
+
+- Updated dependencies [75b1646]
+  - @milaboratories/ts-helpers@1.1.1
+  - @milaboratories/computable@2.2.1
+  - @milaboratories/pl-client@2.5.7
+  - @milaboratories/pl-middle-layer@1.14.13
+  - @milaboratories/pl-tree@1.4.8
+
+## 1.7.36
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/pl-client@2.5.6
+  - @milaboratories/pl-middle-layer@1.14.12
+  - @milaboratories/pl-tree@1.4.7
+
 ## 1.7.33
 
 ### Patch Changes

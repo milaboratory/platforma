@@ -289,10 +289,28 @@ class ProgressUpdater {
   }
 
   public mustGetProgress(blobExists: boolean) {
+    // We provide a deep copy of progress,
+    // since we do not want to pass a mutable object
+    // to API, it led to bugs before.
+
+    // We do not use '...' cloning syntax
+    // for the compiler to fail here if we change API.
+    const progress: sdk.ImportProgress = {
+      done: this.progress.done,
+      isUpload: this.progress.isUpload,
+      isUploadSignMatch: this.progress.isUploadSignMatch,
+      lastError: this.progress.lastError
+    };
+    if (this.progress.status)
+      progress.status = {
+        progress: this.progress.status.progress,
+        bytesProcessed: this.progress.status.bytesProcessed,
+        bytesTotal: this.progress.status.bytesTotal
+      };
+
     if (blobExists) {
       this.setDone(blobExists);
-
-      return this.progress;
+      return progress;
     }
 
     if (this.uploadingTerminallyFailed) {
@@ -300,7 +318,7 @@ class ProgressUpdater {
       throw new Error(this.progress.lastError);
     }
 
-    return this.progress;
+    return progress;
   }
 
   public attach(w: Watcher, callerId: string) {

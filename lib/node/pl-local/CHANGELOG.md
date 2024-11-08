@@ -1,5 +1,18 @@
 # @milaboratories/pl-local
 
+## 1.5.2
+
+### Patch Changes
+
+- 5a4d01b: drivers, upload: return an immutable object to API, bump pl with fixing getStatus error
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [75b1646]
+  - @milaboratories/ts-helpers@1.1.1
+
 ## 1.5.0
 
 ### Minor Changes

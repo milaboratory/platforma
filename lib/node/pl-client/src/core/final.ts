@@ -76,6 +76,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     case 'Frontend/FromFolder':
     case 'BObjectSpec':
     case 'Blob':
+    case 'binary':
     case 'LSProvider':
       return true;
     case 'UserProject':

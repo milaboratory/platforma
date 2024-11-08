@@ -1,5 +1,87 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.65
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.51
+
+## 1.0.64
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.50
+
+## 1.0.63
+
+### Patch Changes
+
+- 5cdfeb3: Added label and changed background gradient for error
+  - @platforma-sdk/ui-vue@1.7.49
+
+## 1.0.62
+
+### Patch Changes
+
+- 4a745bf: Added password type for PlTextField
+- Updated dependencies [4a745bf]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.28
+  - @platforma-sdk/ui-vue@1.7.46
+
+## 1.0.61
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.7.45
+
+## 1.0.60
+
+### Patch Changes
+
+- c16492e: Update icon-set
+- Updated dependencies [c16492e]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.27
+  - @platforma-sdk/ui-vue@1.7.44
+
+## 1.0.59
+
+### Patch Changes
+
+- 8de9a0b: Add max retries parameter to PlLogView (in case of AnyLogHandle source)
+  - @platforma-sdk/ui-vue@1.7.42
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [1e896c8]
+  - @platforma-sdk/ui-vue@1.7.41
+
+## 1.0.57
+
+### Patch Changes
+
+- f341244: AgGrid: migrate to the Theming Api
+- Updated dependencies [f341244]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.26
+  - @platforma-sdk/ui-vue@1.7.40
+
+## 1.0.56
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+- Updated dependencies [d6909bf]
+  - @platforma-sdk/ui-vue@1.7.37
+
+## 1.0.55
+
+### Patch Changes
+
+- Updated dependencies [50f7459]
+  - @platforma-sdk/ui-vue@1.7.36
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.15
+
 ## 1.0.54
 
 ### Patch Changes

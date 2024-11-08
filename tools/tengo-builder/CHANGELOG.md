@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.16.1
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 1.16.0
 
 ### Minor Changes

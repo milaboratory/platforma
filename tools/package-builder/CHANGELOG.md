@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.6
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.10.5
 
 ### Patch Changes

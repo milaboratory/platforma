@@ -1,5 +1,92 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.30
+
+### Patch Changes
+
+- Updated dependencies [5fd8ff2]
+  - @milaboratories/uikit@2.0.11
+  - @platforma-sdk/ui-vue@1.7.51
+
+## 0.1.29
+
+### Patch Changes
+
+- Updated dependencies [d81ec02]
+  - @milaboratories/uikit@2.0.10
+  - @platforma-sdk/ui-vue@1.7.50
+
+## 0.1.28
+
+### Patch Changes
+
+- Updated dependencies [5cdfeb3]
+  - @milaboratories/uikit@2.0.9
+  - @platforma-sdk/ui-vue@1.7.49
+
+## 0.1.27
+
+### Patch Changes
+
+- Updated dependencies [4a745bf]
+  - @milaboratories/uikit@2.0.8
+  - @platforma-sdk/ui-vue@1.7.46
+
+## 0.1.26
+
+### Patch Changes
+
+- Updated dependencies [969a083]
+  - @milaboratories/uikit@2.0.7
+  - @platforma-sdk/ui-vue@1.7.45
+
+## 0.1.25
+
+### Patch Changes
+
+- Updated dependencies [c16492e]
+  - @milaboratories/uikit@2.0.6
+  - @platforma-sdk/ui-vue@1.7.44
+
+## 0.1.24
+
+### Patch Changes
+
+- Updated dependencies [8de9a0b]
+  - @milaboratories/uikit@2.0.5
+  - @platforma-sdk/ui-vue@1.7.42
+
+## 0.1.23
+
+### Patch Changes
+
+- Updated dependencies [1e896c8]
+  - @platforma-sdk/ui-vue@1.7.41
+
+## 0.1.22
+
+### Patch Changes
+
+- Updated dependencies [f341244]
+  - @platforma-sdk/ui-vue@1.7.40
+
+## 0.1.21
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+- Updated dependencies [d6909bf]
+  - @milaboratories/uikit@2.0.4
+  - @platforma-sdk/ui-vue@1.7.37
+
+## 0.1.20
+
+### Patch Changes
+
+- Updated dependencies [50f7459]
+  - @milaboratories/uikit@2.0.3
+  - @platforma-sdk/ui-vue@1.7.36
+
 ## 0.1.19
 
 ### Patch Changes

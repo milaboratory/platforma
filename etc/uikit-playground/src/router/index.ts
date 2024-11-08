@@ -117,11 +117,6 @@ export const routes = [
     component: () => import('@/Tooltips/index.vue'),
   },
   {
-    name: 'Grid Table',
-    path: '/grid-table',
-    component: () => import('@/grid-table/index.vue'),
-  },
-  {
     name: 'Use Sortable',
     path: '/use-sortable',
     component: () => import('@/useSortable/index.vue'),
