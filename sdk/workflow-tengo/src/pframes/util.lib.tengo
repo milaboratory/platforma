@@ -168,6 +168,8 @@ purifySpec := func(spec) {
 		newAxes = append(newAxes, objects.deleteUndefined({
 			column: ax.column,
 			preProcess: ax.preProcess,
+			allowNA: ax.allowNA,
+			parseErrorToNA: ax.parseErrorToNA,
 			spec: { type: ax.spec.type }
 		}))
 	}
@@ -180,6 +182,7 @@ purifySpec := func(spec) {
 			preProcess: col.preProcess,
 			id: col.id,
 			allowNA: col.allowNA,
+			parseErrorToNA: col.parseErrorToNA,
 			spec: { valueType: col.spec.valueType }
 		}))
 	}
