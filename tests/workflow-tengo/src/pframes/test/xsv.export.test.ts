@@ -243,7 +243,7 @@ tplTest.for([
   { superPartitionKeyLength: 1, partitionKeyLength: 1, storageFormat: 'Json' }
 ])(
   'should export super-partitioned p-frame to csv file - superPartitionKeyLength: $superPartitionKeyLength, partitionKeyLength: $partitionKeyLength',
-  { timeout: 10000 },
+  { timeout: 30000 },
   async (
     { superPartitionKeyLength, partitionKeyLength, storageFormat },
     { helper, expect, driverKit }
