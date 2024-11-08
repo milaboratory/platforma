@@ -12,6 +12,8 @@ import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { useValidation } from '@/utils/useValidation';
+import { PlIcon16 } from '../PlIcon16';
+import { PlIcon24 } from '../PlIcon24';
 
 const slots = useSlots();
 
@@ -99,7 +101,7 @@ const fieldType = computed(() => {
   }
 });
 
-const passwordIcon = computed(() => (showPassword.value ? 'icon-view-off' : 'icon-view-on'));
+const passwordIcon = computed(() => (showPassword.value ? 'view-on' : 'view-off'));
 
 const clear = () => {
   if (props.clearable) {
@@ -136,16 +138,16 @@ const canShowClearable = computed(() => props.clearable && nonEmpty.value && pro
 
 useLabelNotch(rootRef);
 
-function togglePassword() {
+function togglePasswordVisibility() {
   showPassword.value = !showPassword.value;
 }
 </script>
 
 <template>
-  <div class="ui-text-field__envelope">
+  <div class="pl-text-field__envelope">
     <div
       ref="rootRef"
-      class="ui-text-field"
+      class="pl-text-field"
       :class="{
         error: hasErrors,
         disabled,
@@ -162,20 +164,20 @@ function togglePassword() {
           </template>
         </PlTooltip>
       </label>
-      <div v-if="prefix" class="ui-text-field__prefix">
+      <div v-if="prefix" class="pl-text-field__prefix">
         {{ prefix }}
       </div>
       <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" :type="fieldType" spellcheck="false" />
-      <div class="ui-text-field__append">
-        <div v-if="canShowClearable" class="icon icon--clear" @click="clear" />
-        <div v-if="type === 'password'" :class="passwordIcon" class="icon-24 uc-pointer" @click="togglePassword" />
+      <div class="pl-text-field__append">
+        <PlIcon16 v-if="canShowClearable" name="delete-clear" @click="clear" />
+        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
         <slot name="append" />
       </div>
-      <DoubleContour class="ui-text-field__contour" />
+      <DoubleContour class="pl-text-field__contour" />
     </div>
-    <div v-if="hasErrors" class="ui-text-field__error">
+    <div v-if="hasErrors" class="pl-text-field__error">
       {{ displayErrors.join(' ') }}
     </div>
-    <div v-else-if="helper" class="ui-text-field__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-text-field__helper">{{ helper }}</div>
   </div>
 </template>
