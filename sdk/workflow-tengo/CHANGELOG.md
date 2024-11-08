@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.7.5
+
+### Patch Changes
+
+- 83b50e0: Fix for missing allowNA fields in pfconv input file
+
 ## 1.7.4
 
 ### Patch Changes
