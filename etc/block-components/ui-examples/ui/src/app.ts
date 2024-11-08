@@ -1,4 +1,4 @@
-import { platforma } from '@milaboratories/milaboratories.test-enter-numbers.model';
+import { platforma } from '@milaboratories/milaboratories.ui-examples.model';
 import { defineApp } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 import LogViewPage from './pages/LogViewPage.vue';
@@ -11,6 +11,9 @@ import TypographyPage from './pages/TypographyPage.vue';
 import AgGridVuePage from './pages/AgGridVuePage.vue';
 import SelectFilesPage from './pages/SelectFilesPage.vue';
 import ErrorsPage from './pages/ErrorsPage.vue';
+import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
+import IconsPage from './pages/IconsPage.vue';
+import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -32,14 +35,17 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     routes: {
       '/': LogViewPage,
       '/modals': ModalsPage,
+      '/icons': IconsPage,
       '/inject-env': InjectEnvPage,
       '/dropdowns': DropdownsPage,
       '/use-watch-fetch': UseWatchFetchPage,
       '/form-components': FormComponentsPage,
       '/typography': TypographyPage,
       '/ag-grid-vue': AgGridVuePage,
+      '/pl-ag-data-table': () => PlAgDataTablePage,
       '/select-files': SelectFilesPage,
-      '/errors': () => ErrorsPage
+      '/errors': () => ErrorsPage,
+      '/text-fields': () => PlTextFieldPage
     }
   };
 });

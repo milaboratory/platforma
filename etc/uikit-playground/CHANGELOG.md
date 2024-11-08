@@ -1,5 +1,70 @@
 # @milaboratories/uikit-playground
 
+## 0.0.40
+
+### Patch Changes
+
+- Updated dependencies [5fd8ff2]
+  - @milaboratories/uikit@2.0.11
+
+## 0.0.39
+
+### Patch Changes
+
+- d81ec02: Bring password visibility icon to Adobe standard
+- Updated dependencies [d81ec02]
+  - @milaboratories/uikit@2.0.10
+
+## 0.0.38
+
+### Patch Changes
+
+- Updated dependencies [5cdfeb3]
+  - @milaboratories/uikit@2.0.9
+
+## 0.0.37
+
+### Patch Changes
+
+- Updated dependencies [4a745bf]
+  - @milaboratories/uikit@2.0.8
+
+## 0.0.36
+
+### Patch Changes
+
+- Updated dependencies [969a083]
+  - @milaboratories/uikit@2.0.7
+
+## 0.0.35
+
+### Patch Changes
+
+- c16492e: Update icon-set
+- Updated dependencies [c16492e]
+  - @milaboratories/uikit@2.0.6
+
+## 0.0.34
+
+### Patch Changes
+
+- Updated dependencies [8de9a0b]
+  - @milaboratories/uikit@2.0.5
+
+## 0.0.33
+
+### Patch Changes
+
+- Updated dependencies [d6909bf]
+  - @milaboratories/uikit@2.0.4
+
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies [50f7459]
+  - @milaboratories/uikit@2.0.3
+
 ## 0.0.31
 
 ### Patch Changes

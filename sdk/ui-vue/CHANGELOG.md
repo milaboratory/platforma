@@ -1,5 +1,82 @@
 # @platforma-sdk/ui-vue
 
+## 1.7.51
+
+### Patch Changes
+
+- Updated dependencies [5fd8ff2]
+  - @milaboratories/uikit@2.0.11
+
+## 1.7.50
+
+### Patch Changes
+
+- Updated dependencies [d81ec02]
+  - @milaboratories/uikit@2.0.10
+
+## 1.7.49
+
+### Patch Changes
+
+- Updated dependencies [5cdfeb3]
+  - @milaboratories/uikit@2.0.9
+
+## 1.7.46
+
+### Patch Changes
+
+- Updated dependencies [4a745bf]
+  - @milaboratories/uikit@2.0.8
+
+## 1.7.45
+
+### Patch Changes
+
+- Updated dependencies [969a083]
+  - @milaboratories/uikit@2.0.7
+
+## 1.7.44
+
+### Patch Changes
+
+- Updated dependencies [c16492e]
+  - @milaboratories/uikit@2.0.6
+
+## 1.7.42
+
+### Patch Changes
+
+- Updated dependencies [8de9a0b]
+  - @milaboratories/uikit@2.0.5
+
+## 1.7.41
+
+### Patch Changes
+
+- 1e896c8: Make AgGrid resize handler transparent
+
+## 1.7.40
+
+### Patch Changes
+
+- f341244: AgGrid: migrate to the Theming Api
+
+## 1.7.37
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+- Updated dependencies [d6909bf]
+  - @milaboratories/uikit@2.0.4
+
+## 1.7.36
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+- Updated dependencies [50f7459]
+  - @milaboratories/uikit@2.0.3
+
 ## 1.7.35
 
 ### Patch Changes

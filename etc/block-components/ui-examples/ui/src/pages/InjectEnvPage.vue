@@ -13,6 +13,6 @@ const VITE_PLATFORMA_TEST_ENV = getEnvironmentValue('VITE_PLATFORMA_TEST_ENV');
       <code>VITE_PLATFORMA_TEST_ENV=some-content npm run dev</code>
     </p>
     <p>Note that all injected variables should start with prefix `VITE_PLATFORMA_`</p>
-    VITE_PLATFORMA_TEST_ENV: {{ VITE_PLATFORMA_TEST_ENV }}
+    VITE_PLATFORMA_TEST_ENV1: {{ VITE_PLATFORMA_TEST_ENV }}
   </PlBlockPage>
 </template>

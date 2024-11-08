@@ -10,7 +10,7 @@ export default {
 <script lang="ts" setup>
 import './pl-btn-ghost.scss';
 import type { MaskIconName16, Size } from '@/types';
-import MaskIcon16 from '@/components/MaskIcon16.vue';
+import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
 import { computed, ref, useSlots } from 'vue';
 import { useRipple } from '@/composition/useRipple';
 
@@ -62,14 +62,15 @@ useRipple(btnRef);
   <button
     ref="btnRef"
     tabindex="0"
-    class="ui-btn-ghost"
+    class="pl-btn-ghost"
     :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
     <span v-if="slots.default && !round">
       <slot />
     </span>
-    <MaskIcon16 v-if="loading" name="loading" :size="size" />
-    <MaskIcon16 v-else-if="icon" :name="icon" :size="size" />
+    <PlMaskIcon16 v-if="loading" name="loading" :size="size" />
+    <PlMaskIcon16 v-else-if="icon" :name="icon" :size="size" />
+    <slot name="append" />
   </button>
 </template>

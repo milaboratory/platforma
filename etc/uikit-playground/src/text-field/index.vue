@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue';
-import { PlTextField, MaskIcon16, PlTextArea } from '@milaboratories/uikit';
+import { PlTextField, PlMaskIcon16, PlTextArea } from '@milaboratories/uikit';
 import Layout from '@/Layout.vue';
 import Split from '@/Split.vue';
 
@@ -27,6 +27,7 @@ const onClick = () => alert('Some action');
       />
       <PlTextField v-model="data.text" />
       <PlTextField v-model="data.text" label="Data for next label" />
+      <PlTextField v-model="data.text" label="Password" type="password" />
       <PlTextField v-model="data.text" label="Clearable" clearable />
       <PlTextField v-model="data.text" label="Clearable" :clearable="() => 'default'" />
       <PlTextField v-model="data.text" label="Required" required />
@@ -43,7 +44,7 @@ const onClick = () => alert('Some action');
           Second line
         </template>
         <template #append>
-          <MaskIcon16 name="chevron-right" @click="onClick" />
+          <PlMaskIcon16 name="chevron-right" @click="onClick" />
         </template>
       </PlTextField>
 

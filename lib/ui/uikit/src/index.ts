@@ -1,10 +1,7 @@
 import './assets/ui.scss';
 
 // @TODO review
-import GridTable from '@/components/GridTable/index.vue';
 import * as DataTable from '@/components/DataTable';
-import type { Settings as GridTableSettings } from './components/GridTable/types';
-import type * as GridTableTypes from './components/GridTable/types';
 import ThemeSwitcher from './components/ThemeSwitcher.vue';
 
 /**
@@ -50,12 +47,15 @@ export * from './components/PlFileInput';
 export * from './components/PlNotificationAlert';
 export * from './components/PlCopyData';
 
+export * from './components/PlMaskIcon16';
+export * from './components/PlMaskIcon24';
+export * from './components/PlIcon16';
+export * from './components/PlIcon24';
+
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';
 
 // @TODO review
-import MaskIcon16 from './components/MaskIcon16.vue';
-import MaskIcon24 from './components/MaskIcon24.vue';
 import ContextProvider from './components/ContextProvider.vue';
 import Slider from './components/Slider.vue';
 import { showContextMenu } from './components/contextMenu/index.ts';
@@ -107,13 +107,10 @@ export * from './helpers/utils';
 /**
  * @TODO review
  */
-export { ThemeSwitcher, DropdownListItem, MaskIcon16, MaskIcon24, GridTable, DataTable, ContextProvider, Slider };
+export { ThemeSwitcher, DropdownListItem, DataTable, ContextProvider, Slider };
 
 // Helpers
 export { showContextMenu };
-
-// types
-export type { GridTableSettings, GridTableTypes };
 
 //move to new version pl-uikit
 export { LongText, SliderRangeTriple, SliderRange, Scrollable };

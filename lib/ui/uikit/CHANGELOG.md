@@ -1,5 +1,59 @@
 # @milaboratories/uikit
 
+## 2.0.11
+
+### Patch Changes
+
+- 5fd8ff2: make ghost button width auto
+
+## 2.0.10
+
+### Patch Changes
+
+- d81ec02: Bring password visibility icon to Adobe standard
+
+## 2.0.9
+
+### Patch Changes
+
+- 5cdfeb3: Added label and changed background gradient for error
+
+## 2.0.8
+
+### Patch Changes
+
+- 4a745bf: Added password type for PlTextField
+
+## 2.0.7
+
+### Patch Changes
+
+- 969a083: [uikit] Initial scrolling / auto scrolling on the last line in PlLogView
+
+## 2.0.6
+
+### Patch Changes
+
+- c16492e: Update icon-set
+
+## 2.0.5
+
+### Patch Changes
+
+- 8de9a0b: Add max retries parameter to PlLogView (in case of AnyLogHandle source)
+
+## 2.0.4
+
+### Patch Changes
+
+- d6909bf: Add "append" slot to PlBtnGhost button
+
+## 2.0.3
+
+### Patch Changes
+
+- 50f7459: Dep upgrade, vitest in particular
+
 ## 2.0.2
 
 ### Patch Changes
