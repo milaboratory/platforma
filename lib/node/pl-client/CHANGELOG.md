@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.9
+
+### Patch Changes
+
+- 83b50e0: DEFAULT_REQUEST_TIMEOUT changed form 2 seconds to 5 seconds
+
 ## 2.5.8
 
 ### Patch Changes
