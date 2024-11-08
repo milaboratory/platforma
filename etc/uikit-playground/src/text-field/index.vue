@@ -27,6 +27,7 @@ const onClick = () => alert('Some action');
       />
       <PlTextField v-model="data.text" />
       <PlTextField v-model="data.text" label="Data for next label" />
+      <PlTextField v-model="data.text" label="Password" type="password" />
       <PlTextField v-model="data.text" label="Clearable" clearable />
       <PlTextField v-model="data.text" label="Clearable" :clearable="() => 'default'" />
       <PlTextField v-model="data.text" label="Required" required />
