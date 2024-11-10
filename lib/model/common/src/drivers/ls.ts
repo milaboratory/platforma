@@ -1,6 +1,7 @@
 import { assertNever } from '../util';
 import { Branded } from '../branding';
 import { TableRange } from './pframe';
+import { FileLike } from './interfaces';
 
 const uploadPrefix = 'upload://upload/';
 const indexPrefix = 'index://index/';
@@ -112,6 +113,14 @@ export interface LsDriver {
 
   /** Given a handle to a local file, allows to get its content */
   getLocalFileContent(file: LocalImportFileHandle, range?: TableRange): Promise<Uint8Array>;
+
+  /**
+   * Resolves browser's File object into platforma's import file handle.
+   * 
+   * This method is useful among other things for implementation of UI 
+   * components, that handle file Drag&Drop.
+   * */
+  fileToImportHandle(file: FileLike): Promise<ImportFileHandle>;
 }
 
 /** Gets a file path from an import handle. */
