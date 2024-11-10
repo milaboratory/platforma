@@ -7,7 +7,7 @@ xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 validation := import("@platforma-sdk/workflow-tengo:validation")
 
-self.defineOutputs("tsvFile")
+self.defineOutputs("csvFile")
 
 self.body(func(inputs){
 
@@ -25,13 +25,11 @@ self.body(func(inputs){
 	// pfconv params
 	spec := inputs.spec
 
-
 	pf := xsv.importFile(csvFile, "csv", spec)
 
-
-	tsv := xsv.exportFrame(pf, "csv", {})
+	csvExport := xsv.exportFrame(pf, "csv", {})
 
 	return {
-		tsvFile: file.exportFile(tsv)
+		csvFile: file.exportFile(csvExport)
 	}
 })

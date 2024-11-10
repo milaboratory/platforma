@@ -138,25 +138,25 @@ tplTest.for([
     const result = await helper.renderTemplate(
       false,
       'pframes.test.xsv.export-pf',
-      ['tsvFile'],
+      ['csvFile'],
       (tx) => ({
         csv: tx.createValue(Pl.JsonObject, JSON.stringify(csvData)),
         spec: tx.createValue(Pl.JsonObject, JSON.stringify(spec))
       })
     );
 
-    const tsv = await awaitStableState(
-      result.computeOutput('tsvFile', (f, ctx) => {
+    const csv = await awaitStableState(
+      result.computeOutput('csvFile', (f, ctx) => {
         if (!f) {
           return undefined;
         }
         const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
 
         return h.handle;
-      })
+      }), 10000
     );
 
-    const csvContent = (await driverKit.blobDriver.getContent(tsv!)).toString();
+    const csvContent = (await driverKit.blobDriver.getContent(csv!)).toString();
 
     // @TODO remove \" replacement after pfconv update
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
@@ -256,7 +256,7 @@ tplTest.for([
     const result = await helper.renderTemplate(
       false,
       'pframes.test.xsv.export-super-pf',
-      ['tsvFile'],
+      ['csvFile'],
       (tx) => {
         const csv = tx.createValue(Pl.JsonObject, JSON.stringify(csvData));
 
@@ -274,18 +274,18 @@ tplTest.for([
       }
     );
 
-    const tsv = await awaitStableState(
-      result.computeOutput('tsvFile', (f, ctx) => {
+    const csv = await awaitStableState(
+      result.computeOutput('csvFile', (f, ctx) => {
         if (!f) {
           return undefined;
         }
         const h = driverKit.blobDriver.getOnDemandBlob(f.persist(), ctx);
 
         return h.handle;
-      })
+      }), 10000
     );
 
-    const csvContent = (await driverKit.blobDriver.getContent(tsv!)).toString();
+    const csvContent = (await driverKit.blobDriver.getContent(csv!)).toString();
 
     // @TODO remove \" replacement after pfconv update
     const actual = csvContent.replaceAll('"', '').replaceAll('\n', '').split('').sort();
