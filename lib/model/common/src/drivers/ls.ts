@@ -120,7 +120,7 @@ export interface LsDriver {
    * This method is useful among other things for implementation of UI 
    * components, that handle file Drag&Drop.
    * */
-  webFileToImportHandle(file: FileLike): Promise<ImportFileHandle>;
+  fileToImportHandle(file: FileLike): Promise<ImportFileHandle>;
 }
 
 /** Gets a file path from an import handle. */

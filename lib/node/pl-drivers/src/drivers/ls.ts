@@ -230,6 +230,12 @@ export class LsDriver implements InternalLsDriver {
     }
   }
 
+  public async fileToImportHandle(file: sdk.FileLike): Promise<sdk.ImportFileHandle> {
+    throw new Error(
+      'Not implemented. This method must be implemented and intercepted in desktop preload script.'
+    );
+  }
+
   public static async init(
     logger: MiLogger,
     client: PlClient,
