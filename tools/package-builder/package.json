@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/package-builder",
-  "version": "2.10.6",
+  "version": "2.10.7",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
