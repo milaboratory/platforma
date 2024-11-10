@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.70
+
+### Patch Changes
+
+- @platforma-sdk/model@1.7.53
+- @milaboratories/uikit@2.0.11
+- @platforma-sdk/ui-vue@1.7.53
+
 ## 0.0.69
 
 ### Patch Changes
