@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.10.7
+
+### Patch Changes
+
+- 1b9a226: Fixes asset package name during package signing
+
 ## 2.10.6
 
 ### Patch Changes
