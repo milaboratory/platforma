@@ -410,7 +410,7 @@ export class Core {
 
         const { os, arch } = util.splitPlatform(platform)
 
-        const archivePath = options?.archivePath ?? this.binArchivePath(pkg, os, arch)
+        const archivePath = options?.archivePath ?? (pkg.type === 'asset' ? this.assetArchivePath(pkg, os, arch) : this.binArchivePath(pkg, os, arch))
         const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
 
         this.logger.info(`Signing package '${pkg.name}' for platform '${platform}'...`)
