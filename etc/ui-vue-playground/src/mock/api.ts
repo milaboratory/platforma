@@ -3,6 +3,8 @@ import type {
   BlockOutputsBase,
   BlockState,
   BlockStatePatch,
+  FileLike,
+  ImportFileHandle,
   ListFilesResult,
   LocalImportFileHandle,
   NavigationState,
@@ -122,6 +124,9 @@ export function createMockApi<
       },
       async showOpenSingleFileDialog(_ops: OpenDialogOps): Promise<OpenSingleFileResponse> {
         return {};
+      },
+      async fileToImportHandle(_file: FileLike): Promise<ImportFileHandle> {
+        return '' as ImportFileHandle;
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
