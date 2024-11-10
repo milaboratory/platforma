@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.6.0
+
+### Minor Changes
+
+- 05751fa: Method fileToImportHandle added to LS driver API
+
 ## 1.5.2
 
 ### Patch Changes
