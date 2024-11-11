@@ -40,6 +40,14 @@ export class Core {
         return archive.getPath(this.archiveOptions(pkg, os, arch, 'zip'))
     }
 
+    public archivePath(pkg: PackageConfig,  os: util.OSType, arch: util.ArchType) : string {
+        if (pkg.type === 'asset') {
+            return this.assetArchivePath(pkg, os, arch)
+        }
+
+        return this.binArchivePath(pkg, os, arch)
+    }
+
     public get entrypoints(): Map<string, Entrypoint> {
         if (!this._entrypoints) {
             this._entrypoints = this.pkg.entrypoints
@@ -301,14 +309,7 @@ export class Core {
 
         const storageURL = options?.storageURL ?? pkg.registry.storageURL
 
-        var archivePath = options?.archivePath
-        if (!archivePath) {
-            if (pkg.type === 'asset') {
-                archivePath = this.assetArchivePath(pkg, os, arch)
-            } else {
-                archivePath = this.binArchivePath(pkg, os, arch)
-            }
-        }
+        var archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
 
         const dstName = pkg.fullName(platform)
 
@@ -410,7 +411,7 @@ export class Core {
 
         const { os, arch } = util.splitPlatform(platform)
 
-        const archivePath = options?.archivePath ?? (pkg.type === 'asset' ? this.assetArchivePath(pkg, os, arch) : this.binArchivePath(pkg, os, arch))
+        const archivePath = options?.archivePath ?? this.archivePath(pkg, os, arch)
         const toExecute = signCommand.map((v: string) => v.replaceAll("{pkg}", archivePath))
 
         this.logger.info(`Signing package '${pkg.name}' for platform '${platform}'...`)

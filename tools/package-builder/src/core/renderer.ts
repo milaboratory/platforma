@@ -53,8 +53,8 @@ const runDependencyCondaSchema = runEnvironmentSchema.extend({
 type runDependencyConda = z.infer<typeof runDependencyCondaSchema>
 
 type runDepInfo = runDependencyJava |
-    runDependencyPython
-// runDependencyR |
+    runDependencyPython |
+    runDependencyR
 // runDependencyConda
 
 const anyPackageSettingsSchema = z.object({
@@ -370,7 +370,7 @@ export class Renderer {
                             envVars: ep.env,
                             runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
                         }
-                    case "python":
+                    case "python": {
                         const { toolset, ...deps } = pkg.dependencies
 
                         return {
@@ -383,6 +383,21 @@ export class Renderer {
                             toolset: toolset,
                             dependencies: deps,
                         }
+                    }
+                    case "R": {
+                        const { toolset, ...deps } = pkg.dependencies
+
+                        return {
+                            type: "R",
+                            hash: hash.digest().toString('hex'),
+                            path: rootDir,
+                            cmd: ep.cmd,
+                            envVars: ep.env,
+                            toolset: toolset,
+                            dependencies: deps,
+                            runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+                        }
+                    }
                     // case "R":
                     //     if (runEnv!.type !== pkgType) {
                     //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
@@ -473,7 +488,7 @@ export class Renderer {
                             envVars: ep.env,
                             runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
                         }
-                    case "python":
+                    case "python":{
                         const { toolset, ...deps } = pkg.dependencies
 
                         return {
@@ -487,6 +502,22 @@ export class Renderer {
                             toolset: toolset,
                             dependencies: deps,
                         }
+                    }
+                    case "R":{
+                        const { toolset, ...deps } = pkg.dependencies
+
+                        return {
+                            type: "R",
+                            registry: pkg.registry.name!,
+                            package: pkg.namePattern,
+
+                            cmd: ep.cmd,
+                            envVars: ep.env,
+                            runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
+                            toolset: toolset,
+                            dependencies: deps,
+                        }
+                    }
                     // case "R":
                     //     if (runEnv!.type !== pkgType) {
                     //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
@@ -588,6 +619,7 @@ export class Renderer {
 
     private resolveRunEnvironment(envName: string, requireType: 'java'): runDependencyJava
     private resolveRunEnvironment(envName: string, requireType: 'python'): runDependencyPython
+    private resolveRunEnvironment(envName: string, requireType: 'R'): runDependencyR
     private resolveRunEnvironment(envName: string, requireType: artifacts.runEnvironmentType): runDepInfo {
         const [pkgName, id] = util.rSplit(envName, ':', 2)
         const swDescriptor = (pkgName === "") ? readSoftwareEntrypoint(this.npmPackageName, this.npmPackageRoot, id) : this.resolveDependency(pkgName, id)

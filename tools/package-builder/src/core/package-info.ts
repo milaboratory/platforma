@@ -94,8 +94,8 @@ export type BuildablePackage =
     RunEnvironmentPackage |
     BinaryPackage |
     JavaPackage |
-    PythonPackage
-// RPackage
+    PythonPackage |
+    RPackage
 // CondaPackage
 
 export type PackageConfig = BuildablePackage & {
