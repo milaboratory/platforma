@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.2
+
+### Patch Changes
+
+- 5df9d1a: fixed styles and messages by default showErrorsNotification will be true
+- Updated dependencies [5df9d1a]
+  - @milaboratories/uikit@2.0.13
+
 ## 1.8.1
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.69
+
+### Patch Changes
+
+- 5df9d1a: fixed styles and messages by default showErrorsNotification will be true
+- Updated dependencies [5df9d1a]
+  - @platforma-sdk/ui-vue@1.8.2
+
 ## 1.0.68
 
 ### Patch Changes
