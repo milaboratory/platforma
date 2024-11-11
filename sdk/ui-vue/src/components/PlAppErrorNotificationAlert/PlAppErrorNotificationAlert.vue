@@ -49,10 +49,10 @@ watch(
     </PlDialogModal>
 
     <PlNotificationAlert v-model="isAlertOpen" type="error" closable>
-      Output failed. Review block logic and retry
+      Some outputs have errors.
       <template #actions>
+        <PlBtnPrimary icon="arrow-right" @click="showErrors">See errors</PlBtnPrimary>
         <PlSpacer />
-        <PlBtnPrimary @click="showErrors">Show errors</PlBtnPrimary>
       </template>
     </PlNotificationAlert>
   </div>
