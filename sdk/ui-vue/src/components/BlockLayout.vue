@@ -34,7 +34,7 @@ const app = computed(() => (sdk.loaded ? sdk.useApp() : undefined));
 
 const errors = computed(() => (app.value ? app.value.model.outputErrors : {}));
 
-const showErrorsNotification = computed(() => app.value?.showErrorsNotification);
+const showErrorsNotification = computed(() => app.value?.showErrorsNotification ?? true);
 </script>
 
 <template>
