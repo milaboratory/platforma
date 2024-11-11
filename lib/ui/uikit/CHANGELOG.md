@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.13
+
+### Patch Changes
+
+- 5df9d1a: fixed styles and messages by default showErrorsNotification will be true
+
 ## 2.0.12
 
 ### Patch Changes
