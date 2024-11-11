@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.21
+
+### Patch Changes
+
+- 59bf8ea: Re-export of InternalLsDriver from pl-drivers
+
 ## 1.14.20
 
 ### Patch Changes
