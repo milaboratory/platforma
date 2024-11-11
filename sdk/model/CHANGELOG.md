@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.8.0
+
+### Minor Changes
+
+- a5af4f2: Added findDataWithCompatibleSpec method for result pool
+
+### Patch Changes
+
+- Updated dependencies [a5af4f2]
+  - @milaboratories/pl-model-common@1.6.1
+
 ## 1.7.53
 
 ### Patch Changes

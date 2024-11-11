@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.67
+
+### Patch Changes
+
+- Updated dependencies [a5af4f2]
+  - @platforma-sdk/model@1.8.0
+  - @milaboratories/milaboratories.ui-examples.model@1.0.30
+  - @platforma-sdk/ui-vue@1.8.0
+
 ## 1.0.66
 
 ### Patch Changes

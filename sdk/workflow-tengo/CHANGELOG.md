@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.7.6
+
+### Patch Changes
+
+- a5af4f2: Added findDataWithCompatibleSpec method for result pool
+
 ## 1.7.5
 
 ### Patch Changes

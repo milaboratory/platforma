@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.6.1
+
+### Patch Changes
+
+- a5af4f2: Added findDataWithCompatibleSpec method for result pool
+
 ## 1.6.0
 
 ### Minor Changes
