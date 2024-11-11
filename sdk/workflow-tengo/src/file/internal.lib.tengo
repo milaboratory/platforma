@@ -31,18 +31,18 @@ RTYPE_BLOB_DOWNLOAD := { Name: "BlobDownload", Version: "2" }
  *  'handle' - reference to resource with 'progress' API.
  */
 createBlobImportExternal := func(settings) {
-    validation.assertJsonSchema(settings, {
-        "dataURL": "string",
-        "dataHeaders,omitempty": [["string"]],
-        "dataVersion,omitempty": "string"
-    })
+	validation.assertJsonSchema(settings, {
+		"dataURL": "string",
+		"dataHeaders,omitempty": [["string"]],
+		"dataVersion,omitempty": "string"
+	})
 
-    importer := smart.structBuilder(RTYPE_BLOB_IMPORT_EXTERNAL, json.encode(settings)).lockAndBuild()
+	importer := smart.structBuilder(RTYPE_BLOB_IMPORT_EXTERNAL, json.encode(settings)).lockAndBuild()
 
-    return ll.toStrict({
-        file: importer.getField("blob"),
-        handle: importer.getField("handle")
-    })
+	return ll.toStrict({
+		file: importer.getField("blob"),
+		handle: importer.getField("handle")
+	})
 }
 
 /**
@@ -52,19 +52,19 @@ createBlobImportExternal := func(settings) {
  *  'handle' - reference to resource with 'progress' API.
  */
 createBlobImportInternal := func(settings) {
-    validation.assertJsonSchema(settings, {
-        "path": "string",
-        "storageId": "string",
-        "maxSpeedBytes,omitempty": "number",
-        "dataVersion,omitempty": "string"
-    })
+	validation.assertJsonSchema(settings, {
+		"path": "string",
+		"storageId": "string",
+		"maxSpeedBytes,omitempty": "number",
+		"dataVersion,omitempty": "string"
+	})
 
-    importer := smart.structBuilder(RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
+	importer := smart.structBuilder(RTYPE_BLOB_IMPORT_INTERNAL, json.encode(settings)).lockAndBuild()
 
-    return ll.toStrict({
-        file: importer.getField("blob"),
-        handle: importer.getField("handle")
-    })
+	return ll.toStrict({
+		file: importer.getField("blob"),
+		handle: importer.getField("handle")
+	})
 }
 
 /**
@@ -74,28 +74,28 @@ createBlobImportInternal := func(settings) {
  *  'handle' - reference to resource with 'progress' and 'upload' APIs.
  */
 createBlobUpload := func(settings) {
-    validation.assertJsonSchema(settings, {
-        "modificationTime": "string",
-        "localPath": "string",
-        "pathSignature": "string",
-        "sizeBytes": "string"
-    })
+	validation.assertJsonSchema(settings, {
+		"modificationTime": "string",
+		"localPath": "string",
+		"pathSignature": "string",
+		"sizeBytes": "string"
+	})
 
-    uploader := smart.structBuilder(RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
+	uploader := smart.structBuilder(RTYPE_BLOB_UPLOAD, json.encode(settings)).lockAndBuild()
 
-    return ll.toStrict({
-        file: uploader.getField("blob"),
-        handle: uploader.getField("handle")
-    })
+	return ll.toStrict({
+		file: uploader.getField("blob"),
+		handle: uploader.getField("handle")
+	})
 }
 
 export ll.toStrict({
-    RTYPE_BLOB_IMPORT_EXTERNAL      : RTYPE_BLOB_IMPORT_EXTERNAL,
-    RTYPE_BLOB_IMPORT_INTERNAL      : RTYPE_BLOB_IMPORT_INTERNAL,
-    RTYPE_BLOB_UPLOAD               : RTYPE_BLOB_UPLOAD,
-    RTYPE_BLOB_DOWNLOAD             : RTYPE_BLOB_DOWNLOAD,
+	RTYPE_BLOB_IMPORT_EXTERNAL      : RTYPE_BLOB_IMPORT_EXTERNAL,
+	RTYPE_BLOB_IMPORT_INTERNAL      : RTYPE_BLOB_IMPORT_INTERNAL,
+	RTYPE_BLOB_UPLOAD               : RTYPE_BLOB_UPLOAD,
+	RTYPE_BLOB_DOWNLOAD             : RTYPE_BLOB_DOWNLOAD,
 
-    createBlobImportExternal        : createBlobImportExternal,
-    createBlobImportInternal        : createBlobImportInternal,
-    createBlobUpload                : createBlobUpload
+	createBlobImportExternal        : createBlobImportExternal,
+	createBlobImportInternal        : createBlobImportInternal,
+	createBlobUpload                : createBlobUpload
 })

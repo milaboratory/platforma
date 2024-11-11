@@ -1,0 +1,55 @@
+// read_pf_from_csv.tpl
+
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pfc := import("@platforma-sdk/workflow-tengo:pframes.constants")
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+json := import("json")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+validation := import("@platforma-sdk/workflow-tengo:validation")
+
+self.defineOutputs("csvFile")
+
+self.body(func(inputs){
+// map with csv as text
+	csvDataMap := inputs.csvMap
+	keyLength := inputs.keyLength
+	spec := inputs.spec
+
+	csvMap := smart.structBuilder(pfc.RTYPE_P_COLUMN_DATA_RESOURCE_MAP, json.encode({keyLength: keyLength}))
+	// populate with the same data file
+	for k, csv in csvDataMap {
+		e := exec.builder().
+			cmd("env").
+			writeFile("data.csv", csv).
+			saveFile("data.csv").
+			run()
+
+		csvFile := e.getFile("data.csv")
+
+		csvMap.createInputField(k).set(csvFile)
+	}
+	csvMap = csvMap.lockAndBuild()
+
+	additionalAxesSpec := []
+	for i := 0; i < keyLength; i++ {
+		additionalAxesSpec = additionalAxesSpec + [{
+			"name": "S" + i,
+			"type": "String",
+			"annotations": {
+				"pl7.app/label": "S" + i
+			}
+		}]
+	}
+	pf := xsv.importFileMap(csvMap, "csv", spec, {
+		additionalAxesSpec: additionalAxesSpec
+	})
+
+	csv := xsv.exportFrame(pf, "csv", {})
+
+	return {
+		csvFile: file.exportFile(csv)
+	}
+})

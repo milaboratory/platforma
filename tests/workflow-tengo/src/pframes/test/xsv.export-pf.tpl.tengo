@@ -1,0 +1,35 @@
+// read_pf_from_csv.tpl
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+file := import("@platforma-sdk/workflow-tengo:file")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+validation := import("@platforma-sdk/workflow-tengo:validation")
+
+self.defineOutputs("csvFile")
+
+self.body(func(inputs){
+
+	// csv as text
+	csv := inputs.csv
+
+	e := exec.builder().
+		cmd("env").
+		writeFile("data.csv", csv).
+		saveFile("data.csv").
+		run()
+
+	csvFile := e.getFile("data.csv")
+
+	// pfconv params
+	spec := inputs.spec
+
+	pf := xsv.importFile(csvFile, "csv", spec)
+
+	csvExport := xsv.exportFrame(pf, "csv", {})
+
+	return {
+		csvFile: file.exportFile(csvExport)
+	}
+})

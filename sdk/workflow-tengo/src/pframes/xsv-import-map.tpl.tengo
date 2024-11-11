@@ -8,6 +8,7 @@ self := import(":tpl")
 json := import("json")
 util := import(":pframes.util")
 smart := import(":smart")
+pcolumn := import(":pframes.pcolumn")
 constants := import(":pframes.constants")
 validation := import(":validation")
 
@@ -45,8 +46,10 @@ _getPColumnRtype := func(supKeyLen, keyLen, storageFormat) {
 
 self.body(func(inputs) {
 
-	// resource with xsv files in values
+	// p-column resource with xsv files in values
 	xsvMap := inputs.xsvMap
+	ll.assert(pcolumn.isResourceMap(xsvMap), "expected p-column resource map resource, got", xsvMap)
+
 	// csv or tsv
 	xsvType := inputs.xsvType
 	// pfconv spec
@@ -69,7 +72,7 @@ self.body(func(inputs) {
 			// single element; so return immediately
 
 			r := xsv.importFile(xsvFile, xsvType, spec, ops)
-			
+
 			result := {}
 			for c in spec.columns {
 				id := util.xsvColumnId(c)
@@ -82,8 +85,8 @@ self.body(func(inputs) {
 	keyLen := spec.partitionKeyLength
 
 	rType := _getPColumnRtype(supKeyLen, spec.partitionKeyLength, spec.storageFormat)
-	rData := undefined 
-	
+	rData := undefined
+
 	if keyLen == 0 {
 		rData = json.encode({
 			partitionKeyLength: supKeyLen
