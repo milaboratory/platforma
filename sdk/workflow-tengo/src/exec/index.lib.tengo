@@ -271,7 +271,7 @@ builder := func() {
 		 * Adds files from given asset into working directory.
 		 *
 		 * @param asset: assetInfo - asset info loaded from assets.importAsset()
-		 * @param destinationDir: string - path inside working directory for files to be extracted from archive.
+		 * @param destinationDir: string - path inside working directory for files to be extracted from archive. Use "." for root of the workdir.
 		 * @param pathsInArchive: string[] - paths inside the archive to be extracted into destinationDir.
 		 *                                   Empty array means 'unpack full archive'.
 		 */
