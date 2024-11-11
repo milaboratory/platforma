@@ -12,6 +12,8 @@ export { type ProjectListEntry } from './model';
 export * from '@milaboratories/pl-client';
 export type { FieldType, ResourceType } from '@milaboratories/pl-client';
 
+export type { InternalLsDriver } from '@milaboratories/pl-drivers';
+
 // for tests etc..
 export * from './mutator/template/template_loading';
 export * from './mutator/template/render_template';
