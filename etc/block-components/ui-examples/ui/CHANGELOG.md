@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.0.70
+
+### Patch Changes
+
+- eae8196: ui-examples: add lsDriver.fileToImportHandle example
+
 ## 1.0.69
 
 ### Patch Changes
