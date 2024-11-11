@@ -135,10 +135,10 @@ export function getAxesId(spec: AxesSpec): AxesId {
   return spec.map(getAxisId);
 }
 
-/** Reurns true if all domains from query are found in target */
+/** Returns true if all domains from query are found in target */
 function matchDomain(query?: Record<string, string>, target?: Record<string, string>) {
   if (query === undefined) return target === undefined;
-  if (target === undefined) return false;
+  if (target === undefined) return true;
   for (const k in target) {
     if (query[k] !== target[k]) return false;
   }

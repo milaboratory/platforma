@@ -1,6 +1,7 @@
 import {
   Option,
   PColumn,
+  PColumnSpec,
   PFrameDef,
   PFrameHandle,
   PObject,
@@ -13,6 +14,7 @@ import {
   Ref,
   ResultCollection,
   ValueOrError,
+  isPColumnSpec,
   mapPObjectData,
   mapPTableDef,
   mapValueInVOE
@@ -112,7 +114,9 @@ export class ResultPool {
   public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
     // https://github.com/milaboratory/platforma/issues/100
     // @TODO use native pool method when available
-    return this.getData().entries.find((f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name)?.obj;
+    return this.getData().entries.find(
+      (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
+    )?.obj;
   }
 
   /**
@@ -122,8 +126,68 @@ export class ResultPool {
   public getSpecByRef(ref: Ref): PObjectSpec | undefined {
     // https://github.com/milaboratory/platforma/issues/100
     // @TODO use native pool method when available
-    return this.getSpecs().entries.find((f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name)?.obj;
+    return this.getSpecs().entries.find(
+      (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
+    )?.obj;
   }
+
+  /**
+   * @param spec object specification
+   * @returns array of data objects with compatible specs
+   */
+  public findDataWithCompatibleSpec(spec: PColumnSpec): PObject<TreeNodeAccessor>[] {
+    const result: PObject<TreeNodeAccessor>[] = [];
+
+    out: for (const data of this.getData().entries) {
+      if (!isPColumnSpec(data.obj.spec)) {
+        continue;
+      }
+
+      const oth = data.obj.spec;
+
+      if (spec.name !== oth.name) {
+        continue;
+      }
+
+      if (spec.valueType !== oth.valueType) {
+        continue;
+      }
+
+      if (spec.axesSpec.length !== oth.axesSpec.length) {
+        continue;
+      }
+
+      if (!matchDomain(spec.domain, oth.domain)) {
+        continue;
+      }
+
+      for (let i = 0; i < spec.axesSpec.length; ++i) {
+        const qAx = spec.axesSpec[i];
+        const tAx = oth.axesSpec[i];
+        if (qAx.name !== tAx.name) {
+          continue out;
+        }
+        if (qAx.type !== tAx.type) {
+          continue out;
+        }
+        if (!matchDomain(qAx.domain, tAx.domain)) {
+          continue out;
+        }
+      }
+
+      result.push(data.obj);
+    }
+    return result;
+  }
+}
+
+function matchDomain(query?: Record<string, string>, target?: Record<string, string>) {
+  if (query === undefined) return target === undefined;
+  if (target === undefined) return true;
+  for (const k in target) {
+    if (query[k] !== target[k]) return false;
+  }
+  return true;
 }
 
 export class RenderCtx<Args, UiState> {
