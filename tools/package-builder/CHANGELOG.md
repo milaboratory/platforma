@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.11.0
+
+### Minor Changes
+
+- dbabd17: Enable R support
+
 ## 2.10.7
 
 ### Patch Changes
