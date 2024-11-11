@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.0.12
+
+### Patch Changes
+
+- 09f0974: Fixed styles for PlBtnGroup
+
 ## 2.0.11
 
 ### Patch Changes
