@@ -1,0 +1,312 @@
+//
+// export p-frame to csv
+//
+
+validation := import(":validation")
+constants := import(":pframes.constants")
+objects := import(":objects")
+render := import(":render")
+smart := import(":smart")
+exec := import(":exec")
+json := import("json")
+text := import("text")
+util := import(":pframes.util")
+ll := import(":ll")
+assets := import(":assets")
+self := import(":tpl")
+
+pfconvSw := assets.importSoftware("@milaboratories/software-pframes-conv:main")
+
+self.defineOutputs(["result"])
+
+/** */
+_assertValueTypeIsPrimitive := func(spec) {
+	vt := spec.valueType
+	ll.assert(vt == "Float" || vt == "Double" || vt == "Int" || vt == "Long" || vt == "String", "Unsupported value type: ", vt, spec)
+}
+
+/**
+ * @param name: string - column name as to name it in the workdir
+ * @param data: resource - column data resource
+ * @param spec: map - column specification
+ * @param exec: string - exec instance
+ */
+_addColumnToWd := func(name, data, spec, pfconv) {
+    ll.assert(!is_undefined(data), "data must be defined")
+    ll.assert(!is_undefined(spec), "spec must be defined")
+
+	// check that the data type is supported
+	_assertValueTypeIsPrimitive(spec)
+
+	rType := data.info().Type.Name
+
+	if (rType == constants.RTYPE_P_COLUMN_DATA_JSON.Name) {
+
+		// write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "JsonPartitioned",
+			"partitionKeyLength": 0,
+			"parts": { "[]": name + ".jdata" }
+		}))
+		
+		// write jdata
+		pfconv.writeFile(name + ".jdata", data.getDataAsJson())
+
+		// write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else if (rType == constants.RTYPE_P_COLUMN_DATA_JSON_PARTITIONED.Name) {
+
+        // write jdata		
+        i := 0
+        parts := {}
+        for k, v in data.inputs() {
+            part := name + i + ".jdata"
+            parts[k] = part
+            
+            pfconv.addFile(part, v.getValue())
+            
+            i = i + 1
+        }
+
+        // write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "JsonPartitioned",
+			"partitionKeyLength": data.getDataAsJson().partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+    } else if (rType == constants.RTYPE_P_COLUMN_DATA_BINARY_PARTITIONED.Name) {
+
+        // write jdata		
+        i := 0
+        parts := {}
+        for k, v in data.inputs() {
+            part := undefined
+
+            if text.has_suffix(k, ".index") {
+                part = k[0:(len(k) - 6)]
+                
+                if is_undefined(parts[part]) {
+                    parts[part] = {}
+                }
+                
+                indexFile := name + i + ".index"
+                
+                pfconv.addFile(indexFile, v.getValue())
+                parts[part].index = indexFile
+            } else if text.has_suffix(k, ".values") {
+                part = k[0:(len(k) - 7)]
+                
+                if is_undefined(parts[part]) {
+                    parts[part] = {}
+                }
+                
+                valuesFile := name + i + ".values"
+                
+                pfconv.addFile(valuesFile, v.getValue())
+                parts[part].values = valuesFile
+            } else {
+                ll.panic("unknown suffix: expected .index or .values, got ", k)
+            }
+
+			i = i + 1
+        }
+
+        // write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "BinaryPartitioned",
+			"partitionKeyLength": data.getDataAsJson().partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else if (rType == constants.RTYPE_P_COLUMN_DATA_JSON_SUPER_PARTITIONED.Name) {
+		
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength		
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata		
+        i := 0
+        parts := {}
+        
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			
+			supKeyArray := json.decode(supKey)
+			
+			// iterate over inner index
+			for k, v in supData.getValue().inputs() {
+				
+				part := name + i + ".jdata"
+
+				innerKeyArray := json.decode(k)
+				key := json.encode(supKeyArray + innerKeyArray)
+            	
+				parts[key] = part
+            
+            	pfconv.addFile(part, v.getValue())
+            
+            	i = i + 1
+			}
+		}
+
+		// write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "JsonPartitioned",
+			"partitionKeyLength": superPartitionKeyLength + partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else if (rType == constants.RTYPE_P_COLUMN_DATA_BINARY_SUPER_PARTITIONED.Name) {
+		
+		superPartitionKeyLength := data.getDataAsJson().superPartitionKeyLength		
+		partitionKeyLength := data.getDataAsJson().partitionKeyLength
+
+		// write jdata		
+        i := 0
+        parts := {}
+        
+		// iterate over super index
+		for supKey, supData in data.inputs() {
+			
+			supKeyArray := json.decode(supKey)
+			
+			// iterate over inner index
+			for k, v in supData.getValue().inputs() {
+				
+				if text.has_suffix(k, ".index") {
+					innerKeyArray := json.decode(k[0:(len(k) - 6)])
+					key := json.encode(supKeyArray + innerKeyArray)
+
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					
+					indexFile := name + i + ".index"
+					
+					pfconv.addFile(indexFile, v.getValue())
+					parts[key].index = indexFile
+				} else if text.has_suffix(k, ".values") {
+
+					innerKeyArray := json.decode(k[0:(len(k) - 7)])
+					key := json.encode(supKeyArray + innerKeyArray)
+					
+					if is_undefined(parts[key]) {
+						parts[key] = {}
+					}
+					
+					valuesFile := name + i + ".values"
+					
+					pfconv.addFile(valuesFile, v.getValue())
+					parts[key].values = valuesFile
+				} else {
+					ll.panic("unknown suffix: expected .index or .values, got ", k)
+				}
+
+				i = i + 1
+			}
+		}
+
+		// write data info
+		pfconv.writeFile(name + ".datainfo", json.encode(
+		{
+			"type": "BinaryPartitioned",
+			"partitionKeyLength": superPartitionKeyLength + partitionKeyLength,
+			"parts": parts
+		}))
+        
+        // write spec
+		pfconv.writeFile(name + ".spec", json.encode(spec))
+
+	} else {
+		ll.panic("unsupported p-column data type", rType)
+	} 
+}
+
+/** 
+ * Constructs a map "columnName" -> {data: resource , spec: json }
+ */
+_columnsMap := func(pf) {
+	
+	r := {}
+	
+	addToMap :=  func(key, v) {
+		name := key[0:(len(key) - 5)]
+		
+		if is_undefined(r[name]) {
+			r[name] = {}
+		}
+
+		if text.has_suffix(key, ".data") {
+		
+			r[name].data = v
+		} else if text.has_suffix(key, ".spec") {
+		
+			r[name].spec = v
+		} else {
+		
+			ll.panic("unknown suffix: ", key)
+		}
+	}
+
+	if smart.isResource(pf) && pf.info().Type.Name == constants.RTYPE_P_FRAME {
+		for key, field in pf.inputs() {
+			addToMap(key, field.getValue())
+		}
+	} else if (ll.isMap(pf)) {
+		for key, field in pf {
+			addToMap(key, field)
+		}
+	} else { 
+		ll.panic("unknown pf format: ", pf)
+	}
+
+	return r
+}
+
+self.body(func(inputs) {
+    pf := inputs.pf
+    xsvType := inputs.xsvType
+    params := inputs.params
+
+	validation.assertJsonSchema(params, util.PFCONV_EXPORT_CFG_SCHEMA)
+	
+	resultFileArg := "result." + xsvType
+    resultFile := "result.1." + xsvType
+
+	// convert p-frame to csv
+	pfconv := exec.builder().
+		software(pfconvSw).
+		printErrStreamToStdout().
+		inLightQueue().
+		arg("exportCsv").
+		arg("-p").arg("params.json").
+		arg("-o").arg(resultFileArg).
+        arg(".").
+        writeFile("params.json", json.encode(params)).
+		saveFile(resultFile)
+
+
+	for name, ds in _columnsMap(pf) {
+		_addColumnToWd(name, ds.data, ds.spec, pfconv)
+	}
+
+	r := pfconv.run()
+
+	return { 
+        result: r.getFile(resultFile)
+    }
+})

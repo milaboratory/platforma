@@ -53,7 +53,7 @@ _installPipDependencies := func(venv, dependencies) {
 self.prepare(func(inputs) {
 	// assert we have inputs we expect.
 	validation.assertJsonSchema(inputs, {
-        venv: validation.reference,
+		venv: validation.reference,
 		toolset: "string",
 		dependencies: {"string": validation.reference}
 	})

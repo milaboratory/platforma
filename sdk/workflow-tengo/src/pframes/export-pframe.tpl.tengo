@@ -84,13 +84,13 @@ tpl.body(func(inputs) {
 		if is_undefined(col.data) {
 			result.add(colName, col.specRaw, undefined)
 		} else if is_undefined(col.spec) || (
-		    col.spec.kind == "PColumn" && (
+			col.spec.kind == "PColumn" && (
 				is_undefined(col.spec.valueType) ||
-				col.spec.valueType == "file" || col.spec.valueType == "blob" ||
-				col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
-				col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
-				col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
-				col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
+					col.spec.valueType == "file" || col.spec.valueType == "blob" ||
+					col.spec.valueType == "File" || col.spec.valueType == "Blob" ||
+					col.spec.valueType == "Int" || col.spec.valueType == "Long" ||
+					col.spec.valueType == "Float" || col.spec.valueType == "Double" ||
+					col.spec.valueType == "String" || col.spec.valueType == "Bytes")) {
 
 			result.add(colName, col.specRaw, eMulTplRender.output(colName))
 			eMulTplInput.add(colName, col.data)

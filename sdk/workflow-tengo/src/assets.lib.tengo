@@ -66,7 +66,7 @@ isSoftwareInfo := func(toCheck) {
  * @param assetName: string - full name of asset entrypoint, including namespace (NPM package name).
  *                            Local software entrypoints (within the same package) can omit namespace
  *                            part and start the name with colon:
- *                              - "@company/package:some-oftware"
+ *                              - "@company/package:some-software"
  *                              - ":my-local-software"
  */
 importAsset := func(assetName) {

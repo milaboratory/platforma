@@ -59,13 +59,13 @@ self.body(func(inputs) {
 
 	venv := _createVenv(pythonPackage, pythonDescriptor)
 
-    installDeps := render.createEphemeral(installPyDeps, {
-        venv: venv,
-        toolset: inputs.toolset,
-        dependencies: inputs.dependencies
-    })
+	installDeps := render.createEphemeral(installPyDeps, {
+		venv: venv,
+		toolset: inputs.toolset,
+		dependencies: inputs.dependencies
+	})
 
-    return {
-        runEnv: installDeps.output("runEnv")
-    }
+	return {
+		runEnv: installDeps.output("runEnv")
+	}
 })

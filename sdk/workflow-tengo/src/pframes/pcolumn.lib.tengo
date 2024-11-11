@@ -1,0 +1,71 @@
+/**
+ * Working with a single p-column
+ */
+
+ll := import(":ll")
+oop := import(":oop")
+json := import("json")
+smart := import(":smart")
+assets := import(":assets")
+render := import(":render")
+constants := import(":pframes.constants")
+
+/**
+ * Returns true if given resource is a p-column resource map data
+ */
+isResourceMap := func(r) {
+	return smart.isResource(r) && r.info().Type.Name == constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP.Name
+}
+
+/**
+ * Creates a builder for a resource map p-column's data.
+ *
+ * @param keyLength: int - key length
+ */
+resourceMapBuilder := func(keyLength) {
+	r := smart.structBuilder(
+		constants.RTYPE_P_COLUMN_DATA_RESOURCE_MAP,
+		json.encode({ keyLength: keyLength })
+	)
+
+	self := undefined
+	self = ll.toStrict(oop.inherit(r, {
+
+		add: func(key, data) {
+			ll.assert(is_array(key), "key must be an array, got ", key)
+			ll.assert(len(key) == keyLength, "array length does not match specified keyLength", key, keyLength)
+			r.createInputField(json.encode(key)).setRefOrJson(data)
+			return self
+		},
+
+		build: func() {
+			return r.lockAndBuild()
+		}
+	}))
+	return self
+}
+
+/**
+ * Convert map object to a p-column resource map.
+ *
+ * @param map - tengo map
+ * @param keyLength: int - length of the partitioned key
+ * @param keyParser: func - function to parse string map keys and return array of p-column keys
+ */
+fromMap := func(map, keyLength, keyParser) {
+	b := resourceMapBuilder(keyLength)
+
+	for k, v in map {
+		arr := keyParser(k)
+		ll.assert(is_array(arr), "keyParser should return array")
+		b.add(arr, v)
+	}
+
+	return b.build()
+}
+
+export ll.toStrict({
+	fromMap: fromMap,
+	isResourceMap: isResourceMap,
+	resourceMapBuilder: resourceMapBuilder
+})
