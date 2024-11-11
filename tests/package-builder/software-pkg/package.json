@@ -19,15 +19,34 @@
     },
 
     "artifacts": {
-      "with-environment": {
+      "with-java-environment": {
+        "registry": "custom",
+
+        "type": "java",
+        "root": "./src",
+        "environment": "pl-package-builder-runenv-1:java"
+      },
+      "with-py-environment": {
         "registry": "custom",
 
         "type": "python",
         "root": "./src",
-        "environment": "pl-package-builder-runenv-1:1.2.3",
+        "environment": "pl-package-builder-runenv-1:python",
         "dependencies": {
           "toolset": "pip",
           "requirements": "./requirements.txt"
+        }
+      },
+
+      "with-r-environment": {
+        "registry": "custom",
+
+        "type": "R",
+        "root": "./src",
+        "environment": "pl-package-builder-runenv-1:r",
+        "dependencies": {
+          "toolset": "renv",
+          "lockFile": "./renv.lock"
         }
       },
 
@@ -48,16 +67,28 @@
     "entrypoints": {
       "hello": {
         "binary": {
-          "artifact": "with-environment",
+          "artifact": "with-py-environment",
           "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
           "envVars": [ "MYVAR=1" ]
         }
       },
       "goodbye": {
         "binary": {
-          "artifact": "with-environment",
+          "artifact": "with-py-environment",
           "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
           "envVars": [ "MYVAR=2" ]
+        }
+      },
+      "yes-java": {
+        "binary": {
+          "artifact": "with-java-environment",
+          "cmd": [ "java", "--version" ]
+        }
+      },
+      "yes-r": {
+        "binary": {
+          "artifact": "with-r-environment",
+          "cmd": [ "R", "--version" ]
         }
       },
       "hello2": {
