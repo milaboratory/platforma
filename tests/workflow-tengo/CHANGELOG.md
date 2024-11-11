@@ -1,5 +1,12 @@
 # @platforma-sdk/workflow-tengo-tests
 
+## 1.4.0
+
+### Minor Changes
+
+- b846960: - Support p-frames export to XSV
+  - (breaking) Moved `pColumnResourceMapDataBuilder` from pframes index lib to `pframes.pcolumn` lib
+
 ## 1.3.0
 
 ### Minor Changes
