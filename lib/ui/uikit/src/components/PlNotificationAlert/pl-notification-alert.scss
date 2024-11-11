@@ -15,8 +15,16 @@
     }
 
     &__close {
-        width: 28px;
+        width: 32px;
         min-width: 28px;
+
+        .pl-btn-ghost {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40px !important;
+            height: 40px !important;
+        }
     }
 
     &__wrapper {
