@@ -74,7 +74,7 @@ const normalizedOptions = computed(() =>
       <div
         v-for="(opt, i) in normalizedOptions"
         :key="i"
-        class="ui-btn-group__option"
+        class="ui-btn-group__option text-s"
         :tabindex="modelValue === opt.value || disabled ? undefined : 0"
         :class="{ active: modelValue === opt.value }"
         @keydown.enter="emitModel(opt.value)"
