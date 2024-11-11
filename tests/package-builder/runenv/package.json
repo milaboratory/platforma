@@ -6,19 +6,41 @@
     "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
     "reset": "npm run cleanup && rm -rf ./node_modules/",
 
-    "build": "rm -rf dist && pl-pkg build --entrypoint=1.2.3"
+    "build": "rm -rf dist && pl-pkg build"
   },
   "block-software": {
     "entrypoints": {
-      "1.2.3": {
+      "python": {
         "environment": {
           "artifact": {
             "registry": "example",
-            "name": "common/example",
-            "version": "1.2.3",
 
             "type": "environment",
             "runtime": "python",
+            "root": "./src",
+            "binDir": "."
+          }
+        }
+      },
+      "java": {
+        "environment": {
+          "artifact": {
+            "registry": "example",
+
+            "type": "environment",
+            "runtime": "java",
+            "root": "./src",
+            "binDir": "."
+          }
+        }
+      },
+      "r": {
+        "environment": {
+          "artifact": {
+            "registry": "example",
+
+            "type": "environment",
+            "runtime": "R",
             "root": "./src",
             "binDir": "."
           }
