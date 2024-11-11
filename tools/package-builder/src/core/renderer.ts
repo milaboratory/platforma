@@ -398,20 +398,6 @@ export class Renderer {
                             runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
                         }
                     }
-                    // case "R":
-                    //     if (runEnv!.type !== pkgType) {
-                    //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
-                    //         throw new Error(`incompatible environment: env type '${runEnv!.type}' != package type '${binary.type}'`)
-                    //     }
-                    //     return {
-                    //         type: "R",
-                    //         hash: hash.digest().toString('hex'),
-                    //         path: rootDir,
-                    //         cmd: ep.cmd,
-                    //         envVars: ep.envVars,
-                    //         runEnv: runEnv!,
-                    //         renvLock: binary.renvLock,
-                    //     }
                     // case "conda":
                     //     if (runEnv!.type !== pkgType) {
                     //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
@@ -518,21 +504,6 @@ export class Renderer {
                             dependencies: deps,
                         }
                     }
-                    // case "R":
-                    //     if (runEnv!.type !== pkgType) {
-                    //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
-                    //         throw new Error(`incompatible environment: env type '${runEnv!.type}' != package type '${binary.type}'`)
-                    //     }
-                    //     return {
-                    //         type: "R",
-                    //         registry: binary.registry.name!,
-                    //         package: binary.namePattern,
-
-                    //         cmd: ep.cmd,
-                    //         envVars: ep.envVars,
-                    //         runEnv: runEnv!,
-                    //         renvLock: binary.renvLock,
-                    //     }
                     // case "conda":
                     //     if (runEnv!.type !== pkgType) {
                     //         this.logger.error(`run environment '${binary.environment}' type '${runEnv!.type}' differs from declared package type '${binary.type}'`)
