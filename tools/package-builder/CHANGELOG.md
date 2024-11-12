@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.11.1
+
+### Patch Changes
+
+- c005c21: Switch to multipart upload for large packages
+
 ## 2.11.0
 
 ### Minor Changes
