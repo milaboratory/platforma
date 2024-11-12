@@ -9,7 +9,7 @@ type Args = {
 };
 
 type UiState = {
-  label: ''
+  label: string;
 };
 
 const defaultArgs = () => ({

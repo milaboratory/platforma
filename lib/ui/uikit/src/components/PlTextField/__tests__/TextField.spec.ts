@@ -14,8 +14,8 @@ describe('TextField', () => {
     expect(wrapper.text()).toContain('TextField Label');
   });
 
-  it('modelValue', async () => {
-    const wrapper = mount(PlTextField, {
+  it('modelValue:string', async () => {
+    const wrapper = mount(PlTextField<string>, {
       props: {
         modelValue: 'initialText',
         'onUpdate:modelValue': (e: string) => wrapper.setProps({ modelValue: e }),
@@ -23,8 +23,19 @@ describe('TextField', () => {
     });
 
     await wrapper.find('input').setValue('test');
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error @TODO generic component issue
+    expect(wrapper.props('modelValue')).toBe('test');
+  });
+
+  it('modelValue:string?', async () => {
+    const wrapper = mount(PlTextField, {
+      props: {
+        modelValue: 'initialText' as string | undefined,
+        clearable: () => undefined,
+        'onUpdate:modelValue': (e: unknown) => wrapper.setProps({ modelValue: e }),
+      },
+    });
+
+    await wrapper.find('input').setValue('test');
     expect(wrapper.props('modelValue')).toBe('test');
   });
 });

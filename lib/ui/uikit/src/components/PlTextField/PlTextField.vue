@@ -5,32 +5,29 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="M extends string | null | undefined = string, E extends M = M">
+<script lang="ts" setup generic="M, E = string, C = E">
 import './pl-text-field.scss';
-import { computed, ref, useSlots } from 'vue';
+import { computed, reactive, ref, useSlots } from 'vue';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { useValidation } from '@/utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
 import { PlIcon24 } from '../PlIcon24';
+import type { Equal } from '@milaboratories/helpers';
 
 const slots = useSlots();
 
-const emit = defineEmits<{
-  /**
-   * Emitted when the model value is updated.
-   *
-   * @param value - The new value of the input, which can be a string or undefined if cleared.
-   */
-  (e: 'update:modelValue', value: string | E): void;
-}>();
+type Model = Equal<M, E | C> extends true ? M : never; // basically in === out
+
+/**
+ * The current value of the input field.
+ */
+const model = defineModel<Model>({
+  required: true,
+});
 
 const props = defineProps<{
-  /**
-   * The current value of the input field.
-   */
-  modelValue: M;
   /**
    * The label to display above the input field.
    */
@@ -39,7 +36,12 @@ const props = defineProps<{
    * If `true`, a clear icon will appear in the input field to clear the value (set it to empty string).
    * Or you can pass a callback that returns a custom "empty" value (null | undefined | string)
    */
-  clearable?: boolean | (() => E);
+  clearable?: boolean | (() => C);
+  /**
+   * An optional callback to parse and/or cast the value, the return type overrides the model type.
+   * The callback must throw an exception if the value is invalid
+   */
+  parse?: (v: string) => E;
   /**
    * If `true`, the input field is marked as required.
    */
@@ -75,7 +77,7 @@ const props = defineProps<{
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
-  type?: 'password';
+  type?: 'password' | 'number';
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
@@ -84,12 +86,32 @@ const inputRef = ref<HTMLInputElement | undefined>();
 
 const showPassword = ref(false);
 
+const data = reactive({
+  cached: undefined as { error: string; value: string } | undefined,
+});
+
 const valueRef = computed<string>({
   get() {
-    return props.modelValue ?? '';
+    if (data.cached) {
+      return data.cached.value;
+    }
+    return model.value === undefined || model.value === null ? '' : String(model.value);
   },
-  set(v) {
-    emit('update:modelValue', v);
+  set(value) {
+    data.cached = undefined;
+
+    if (props.parse) {
+      try {
+        model.value = props.parse(value) as Model;
+      } catch (err) {
+        data.cached = {
+          error: err instanceof Error ? err.message : String(err),
+          value,
+        };
+      }
+    } else {
+      model.value = value as Model;
+    }
   },
 });
 
@@ -105,7 +127,8 @@ const passwordIcon = computed(() => (showPassword.value ? 'view-on' : 'view-off'
 
 const clear = () => {
   if (props.clearable) {
-    emit('update:modelValue', props.clearable === true ? '' : props.clearable());
+    data.cached = undefined;
+    model.value = props.clearable === true ? ('' as Model) : (props.clearable() as Model);
   }
 };
 
@@ -113,10 +136,10 @@ const validationData = useValidation(valueRef, props.rules || []);
 
 const isEmpty = computed(() => {
   if (props.clearable) {
-    return props.clearable === true ? props.modelValue === '' : props.modelValue === props.clearable();
+    return props.clearable === true ? model.value === '' : model.value === props.clearable();
   }
 
-  return props.modelValue === '';
+  return model.value === '';
 });
 
 const nonEmpty = computed(() => !isEmpty.value);
@@ -125,6 +148,9 @@ const displayErrors = computed(() => {
   const errors: string[] = [];
   if (props.error) {
     errors.push(props.error);
+  }
+  if (data.cached) {
+    errors.push(data.cached.error);
   }
   if (!validationData.value.isValid) {
     errors.push(...validationData.value.errors);
@@ -136,11 +162,13 @@ const hasErrors = computed(() => displayErrors.value.length > 0);
 
 const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password');
 
-useLabelNotch(rootRef);
+const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
 
-function togglePasswordVisibility() {
-  showPassword.value = !showPassword.value;
-}
+const onFocusOut = () => {
+  data.cached = undefined;
+};
+
+useLabelNotch(rootRef);
 </script>
 
 <template>
@@ -167,7 +195,15 @@ function togglePasswordVisibility() {
       <div v-if="prefix" class="pl-text-field__prefix">
         {{ prefix }}
       </div>
-      <input ref="inputRef" v-model="valueRef" :disabled="disabled" :placeholder="placeholder || '...'" :type="fieldType" spellcheck="false" />
+      <input
+        ref="inputRef"
+        v-model="valueRef"
+        :disabled="disabled"
+        :placeholder="placeholder || '...'"
+        :type="fieldType"
+        spellcheck="false"
+        @focusout="onFocusOut"
+      />
       <div class="pl-text-field__append">
         <PlIcon16 v-if="canShowClearable" name="delete-clear" @click="clear" />
         <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
