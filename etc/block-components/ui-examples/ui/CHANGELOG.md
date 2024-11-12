@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.1.0
+
+### Minor Changes
+
+- 2d1f8a8: Create “numeric” mode in PlTextField
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.8.6
+
 ## 1.0.70
 
 ### Patch Changes

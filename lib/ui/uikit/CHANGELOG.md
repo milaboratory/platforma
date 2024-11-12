@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.1.0
+
+### Minor Changes
+
+- 2d1f8a8: Create “numeric” mode in PlTextField
+
 ## 2.0.13
 
 ### Patch Changes
