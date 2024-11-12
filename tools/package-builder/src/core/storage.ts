@@ -1,5 +1,6 @@
 import pathPosix from 'node:path/posix';
 import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import path from 'path';
 import * as util from './util';
 import { Readable } from 'stream';
@@ -66,11 +67,16 @@ export class S3Storage implements RegistryStorage {
 
     async putFile(file: string, data: Buffer | Readable): Promise<void> {
         try {
-            await this.client.putObject({
-                Bucket: this.bucket,
-                Key: pathPosix.join(this.root, file),
-                Body: data
-            });
+            const upload = new Upload({
+                client: this.client,
+                params: {
+                    Bucket: this.bucket,
+                    Key: pathPosix.join(this.root, file),
+                    Body: data,
+                }
+            })
+
+            await upload.done()
         } catch (e) {
             throw util.wrapErr(e, `failed to put object into S3 bucket ${this.bucket}`)
         }
