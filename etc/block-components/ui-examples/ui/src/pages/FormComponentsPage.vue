@@ -4,11 +4,13 @@ import {
   PlContainer,
   PlRow,
   PlBtnGroup,
-  PlCheckboxGroup
+  PlCheckboxGroup,
+  PlTextField
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
+  text: '',
   single: 1,
   multiple: [1, 2],
   importHandles: [] as unknown[]
