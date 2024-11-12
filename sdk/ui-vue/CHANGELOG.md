@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.7
+
+### Patch Changes
+
+- f04b8da: Fixed styles
+- Updated dependencies [f04b8da]
+  - @milaboratories/uikit@2.1.1
+
 ## 1.8.6
 
 ### Patch Changes
