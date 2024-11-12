@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PlAlert, PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
+
 const data = reactive({
   text: '',
   optionalText: '' as string | undefined,
@@ -17,9 +18,6 @@ const $ = {
     }
 
     return parsed;
-  },
-  optionalNumber: (v: string): string | undefined => {
-    return v;
   }
 };
 
@@ -27,6 +25,7 @@ const clearableUndefined = () => undefined;
 
 const clearableZero = () => 0;
 </script>
+
 <template>
   <PlBlockPage style="max-width: 100%">
     <div class="d-flex flex-column gap-16" style="width: 300px">
