@@ -41,7 +41,7 @@ const props = withDefaults(
 );
 
 const defaultData = () => ({
-  dirPath: '',
+  dirPath: '' as string,
   storageEntry: undefined as StorageEntry | undefined,
   items: [] as FileDialogItem[],
   error: '',
@@ -119,12 +119,12 @@ const query = (handle: StorageHandle, dirPath: string) => {
 
 const load = () => {
   const { storageHandle, dirPath, modelValue } = lookup.value;
-  if (storageHandle && modelValue) {
+  if (storageHandle && modelValue && dirPath) {
     query(storageHandle, dirPath);
   }
 };
 
-const updateDirPathDebounced = debounce((v: string | undefined) => {
+const updateDirPathDebounced = debounce((v: string) => {
   if (v) {
     data.dirPath = v;
   }
