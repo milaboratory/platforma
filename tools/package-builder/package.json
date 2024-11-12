@@ -19,6 +19,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/lib-storage": "catalog:",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "tar": "catalog:",
