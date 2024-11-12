@@ -58,6 +58,7 @@ function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
+    hide: spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     cellDataType: ((valueType: ValueType) => {
       switch (valueType) {

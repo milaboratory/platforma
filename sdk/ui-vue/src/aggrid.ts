@@ -12,6 +12,7 @@ import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
 import { MenuModule } from '@ag-grid-enterprise/menu';
 import { ExcelExportModule } from '@ag-grid-enterprise/excel-export';
 import { type Theme, themeQuartz } from '@ag-grid-community/theming';
+import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 
 export function activateAgGrid() {
   ModuleRegistry.registerModules([
@@ -24,6 +25,7 @@ export function activateAgGrid() {
     RichSelectModule,
     MenuModule,
     ExcelExportModule,
+    SideBarModule,
   ]);
   const agGridLicense = getEnvironmentValue('AGGRID_LICENSE');
   if (agGridLicense) {

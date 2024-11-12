@@ -25,8 +25,9 @@ import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
+import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, ServerSideRowModelModule, RangeSelectionModule]);
+ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, ServerSideRowModelModule, RangeSelectionModule, SideBarModule]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
@@ -252,6 +253,27 @@ const gridOptions = ref<GridOptions>({
   loadingOverlayComponentParams: { notReady: true },
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
+  sideBar: {
+    toolPanels: [
+      {
+        id: 'columns',
+        labelDefault: 'Columns',
+        labelKey: 'columns',
+        iconKey: 'columns',
+        toolPanel: 'agColumnsToolPanel',
+        toolPanelParams: {
+          suppressRowGroups: true,
+          suppressValues: true,
+          suppressPivots: true,
+          suppressPivotMode: true,
+          suppressColumnFilter: true,
+          suppressColumnSelectAll: true,
+          suppressColumnExpandAll: true,
+        },
+      },
+    ],
+    defaultToolPanel: 'columns',
+  },
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
