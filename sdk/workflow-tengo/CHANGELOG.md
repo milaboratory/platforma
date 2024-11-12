@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 1.8.1
+
+### Patch Changes
+
+- 2643471: fix cache for render
+
 ## 1.8.0
 
 ### Minor Changes
