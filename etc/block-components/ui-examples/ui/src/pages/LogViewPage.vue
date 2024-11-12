@@ -73,7 +73,7 @@ const dropHandle = () => {
     </template>
     <template v-if="data.type === 'handle'">
       <h4>LogHandle</h4>
-      <PlTextField v-model="data.handle" label="Test Log Handle" />
+      <PlTextField v-model="data.handle as string" label="Test Log Handle" />
       <PlBtnPrimary @click="dropHandle"> Drop handle </PlBtnPrimary>
       <PlLogView :log-handle="data.handle" label="PlLogView label" />
     </template>
