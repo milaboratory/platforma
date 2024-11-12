@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.1.2
+
+### Patch Changes
+
+- e3feefc: ui-examples: mini cleanup
+
 ## 1.1.1
 
 ### Patch Changes
