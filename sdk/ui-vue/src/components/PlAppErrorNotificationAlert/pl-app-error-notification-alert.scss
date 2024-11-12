@@ -6,6 +6,7 @@
     right: 12px;
     width: 256px;
     height: auto;
+    z-index: 17;
 
     &__content {
         display: flex;
@@ -20,8 +21,11 @@
         border: 1px solid var(--border-color-div-grey);
         background: var(--bg-base-light);
         max-height: 600px; // @TODO
+        min-height: 50px;
         position: relative;
-        >  code {
+
+
+        >code {
             white-space: pre-wrap;
             display: block;
             padding: 12px 4px 24px 12px;
