@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.70
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-enter-numbers.ui@1.0.70
+
 ## 1.0.69
 
 ### Patch Changes
