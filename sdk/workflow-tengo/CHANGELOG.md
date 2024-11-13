@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.0.0
+
+### Major Changes
+
+- 10e3c83: pfconv importCsv API changed
+
 ## 1.8.1
 
 ### Patch Changes

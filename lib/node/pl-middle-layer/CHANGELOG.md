@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.25
+
+### Patch Changes
+
+- 10e3c83: pfconv importCsv API changed
+- Updated dependencies [10e3c83]
+  - @platforma-sdk/workflow-tengo@2.0.0
+
 ## 1.14.24
 
 ### Patch Changes
