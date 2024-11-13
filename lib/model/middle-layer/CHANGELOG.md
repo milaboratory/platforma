@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.5.8
+
+### Patch Changes
+
+- be7caff: Add optional marketplaceRanking field to the BlockPackMeta
+
 ## 1.5.7
 
 ### Patch Changes

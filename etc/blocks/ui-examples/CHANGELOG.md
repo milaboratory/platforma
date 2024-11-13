@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.76
+
+### Patch Changes
+
+- be7caff: Add optional marketplaceRanking field to the BlockPackMeta
+  - @milaboratories/milaboratories.ui-examples.model@1.0.30
+
 ## 1.0.75
 
 ### Patch Changes
