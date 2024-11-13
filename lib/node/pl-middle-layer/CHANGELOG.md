@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.24
+
+### Patch Changes
+
+- Updated dependencies [be7caff]
+  - @milaboratories/pl-model-middle-layer@1.5.8
+  - @platforma-sdk/block-tools@2.3.24
+
 ## 1.14.23
 
 ### Patch Changes
