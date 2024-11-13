@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.6.0
+
+### Minor Changes
+
+- 509b34d: add software platforms
+
 ## 2.5.10
 
 ### Patch Changes
