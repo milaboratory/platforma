@@ -5,6 +5,8 @@ export * from './block_registry';
 export * from './middle_layer';
 export * from './model';
 
+export * from './network_check';
+
 // explicitly override ProjectListEntry from SDK
 export { type ProjectListEntry } from './model';
 
