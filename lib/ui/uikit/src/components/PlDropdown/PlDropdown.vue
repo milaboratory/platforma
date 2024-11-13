@@ -41,11 +41,15 @@ const props = withDefaults(
     /**
      * List of available options for the dropdown
      */
-    options: Readonly<ListOption<M>[]>;
+    options?: Readonly<ListOption<M>[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */
     helper?: string;
+    /**
+     * A helper text displayed below the dropdown when there are no options yet or options is undefined (optional).
+     */
+    loadingOptionsHelper?: string;
     /**
      * Error message displayed below the dropdown (optional)
      */
@@ -82,6 +86,7 @@ const props = withDefaults(
   {
     label: '',
     helper: undefined,
+    loadingOptionsHelper: undefined,
     error: undefined,
     placeholder: '...',
     clearable: false,
@@ -90,6 +95,7 @@ const props = withDefaults(
     arrowIcon: undefined,
     arrowIconLarge: undefined,
     optionSize: 'small',
+    options: undefined,
   },
 );
 
@@ -113,11 +119,27 @@ const findActiveIndex = () =>
 
 const updateActive = () => (data.activeIndex = findActiveIndex());
 
+const isLoadingOptions = computed(() => {
+  return props.options === undefined;
+});
+
+const isDisabled = computed(() => {
+  if (isLoadingOptions.value) {
+    return true;
+  }
+
+  return props.disabled;
+});
+
 const selectedIndex = computed(() => {
-  return props.options.findIndex((o) => deepEqual(o.value, props.modelValue));
+  return (props.options ?? []).findIndex((o) => deepEqual(o.value, props.modelValue));
 });
 
 const computedError = computed(() => {
+  if (isLoadingOptions.value) {
+    return undefined;
+  }
+
   if (props.error) {
     return props.error;
   }
@@ -130,7 +152,7 @@ const computedError = computed(() => {
 });
 
 const optionsRef = computed(() =>
-  normalizeListOptions(props.options).map((opt, index) => ({
+  normalizeListOptions(props.options ?? []).map((opt, index) => ({
     ...opt,
     index,
     isSelected: index === selectedIndex.value,
@@ -184,7 +206,7 @@ const filteredRef = computed(() => {
   return options;
 });
 
-const tabindex = computed(() => (props.disabled ? undefined : '0'));
+const tabindex = computed(() => (isDisabled.value ? undefined : '0'));
 
 const selectOption = (v: M | undefined) => {
   emit('update:modelValue', v);
@@ -286,7 +308,7 @@ watchPostEffect(() => {
       ref="root"
       :tabindex="tabindex"
       class="ui-dropdown"
-      :class="{ open: data.open, error, disabled }"
+      :class="{ open: data.open, error, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
@@ -297,7 +319,7 @@ watchPostEffect(() => {
             v-model="data.search"
             type="text"
             tabindex="-1"
-            :disabled="disabled"
+            :disabled="isDisabled"
             :placeholder="computedPlaceholder"
             spellcheck="false"
             autocomplete="chrome-off"
@@ -309,6 +331,7 @@ watchPostEffect(() => {
           </div>
 
           <div class="ui-dropdown__controls">
+            <div v-if="isLoadingOptions" class="mask-24 mask-loading"></div>
             <div v-if="clearable && hasValue" class="icon-16 icon-clear" @click.stop="clear" />
             <slot name="append" />
             <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
@@ -341,6 +364,7 @@ watchPostEffect(() => {
       </div>
     </div>
     <div v-if="computedError" class="ui-dropdown__error">{{ computedError }}</div>
+    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="ui-dropdown__helper">{{ loadingOptionsHelper }}</div>
     <div v-else-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
   </div>
 </template>

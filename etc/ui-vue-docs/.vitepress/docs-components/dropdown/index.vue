@@ -1,5 +1,8 @@
 <script lang="ts" setup>
-import { Basic, BasicRaw, TitleAndDescription, TitleAndDescriptionRaw } from './examples';
+import {
+  Basic, BasicRaw, TitleAndDescription, TitleAndDescriptionRaw, PlDropdownUndefinedOptions,
+  PlDropdownUndefinedOptionsRaw
+} from './examples';
 import CodeExample from '@app-components/CodeExample.vue';
 import ComponentProps from '@app-components/ComponentProps.vue';
 import AppCodeBlock from '@app-components/AppCodeBlock.vue';
@@ -18,6 +21,13 @@ import AppDocCodeContainer from '@app-components/AppDocCodeContainer.vue';
     </AppCodeBlock>
 
     <ComponentProps :data="componentProps" />
+
+    <AppCodeBlock>
+      <CodeExample :code="PlDropdownUndefinedOptionsRaw">
+        <template #name>Loading</template>
+        <PlDropdownUndefinedOptions />
+      </CodeExample>
+    </AppCodeBlock>
 
     <AppCodeBlock>
       <template #description-header>Display option</template>
