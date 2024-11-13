@@ -32,11 +32,15 @@ const props = withDefaults(
     /**
      * List of available ref options for the dropdown
      */
-    options: Readonly<RefOption[]>;
+    options?: Readonly<RefOption[]>;
     /**
      * A helper text displayed below the dropdown when there are no errors (optional).
      */
     helper?: string;
+    /**
+     * A helper text displayed below the dropdown when there are no options yet or options is undefined (optional).
+     */
+    loadingOptionsHelper?: string;
     /**
      * Error message displayed below the dropdown (optional)
      */
@@ -72,11 +76,12 @@ const props = withDefaults(
     disabled: false,
     arrowIcon: undefined,
     optionSize: 'small',
+    options: undefined,
   },
 );
 
 const options = computed(() =>
-  props.options.map((opt) => ({
+  props.options?.map((opt) => ({
     label: opt.label,
     value: opt.ref,
   })),
@@ -86,5 +91,12 @@ const arrowIcon = computed(() => (props.disabled ? 'icon-link-disabled' : 'icon-
 </script>
 
 <template>
-  <PlDropdown v-bind="props" :options="options" :arrow-icon-large="arrowIcon" @update:model-value="$emit('update:modelValue', $event)"> </PlDropdown>
+  <PlDropdown
+    v-bind="props"
+    :options="options"
+    :loading-options-helper="loadingOptionsHelper"
+    :arrow-icon-large="arrowIcon"
+    @update:model-value="$emit('update:modelValue', $event)"
+  >
+  </PlDropdown>
 </template>
