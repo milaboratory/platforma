@@ -24,7 +24,9 @@ export function BlockPackMeta<
       name: z.string(),
       url: z.string().url(),
       logo: binary.optional()
-    })
+    }),
+    // The order of blocks on the "marketplace" (descending from highest to lowest). Not existent means `0`
+    marketplaceRanking: z.number().optional(),
   });
 }
 
