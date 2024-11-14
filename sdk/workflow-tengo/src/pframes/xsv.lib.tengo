@@ -267,12 +267,27 @@ importFileMap := func(xsvMap, xsvType, spec, ...ops) {
 /**
  * Export p-frame into xsv file
  *
- * @param pf: p-frame - a collection of p-columns
+ * @param pf: p-frame - a list of p-columns ({data, spec}) or a frame-like map of col.data col.spec entries
  * @param xsvType: string - "csv" or "tsv"
  * @param params: map - export params
  */
 exportFrame := func(pf, xsvType, params) {
 	exportPfTpl := assets.importTemplate(":pframes.xsv-export-pframe")
+
+	if is_array(pf) {
+		// transform into .data .spec map
+
+		pfm := {}
+		i := 0
+		for col in pf {
+			ll.assert(!is_undefined(col.spec), "expected array of {spec, data} maps as a list of columns, but spec is undefined for: ", col)
+			ll.assert(!is_undefined(col.data), "expected array of {spec, data} maps as a list of columns, but data is undefined for: ", col)
+			pfm["" + i + ".spec"] = col.spec
+			pfm["" + i + ".data"] = col.data
+			i = i + 1
+		}
+		pf = pfm
+	}
 	
 	r := render.create(exportPfTpl, {
 		pf: pf,
