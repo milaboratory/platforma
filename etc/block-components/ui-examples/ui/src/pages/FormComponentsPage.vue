@@ -4,8 +4,7 @@ import {
   PlContainer,
   PlRow,
   PlBtnGroup,
-  PlCheckboxGroup,
-  PlTextField
+  PlCheckboxGroup
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 

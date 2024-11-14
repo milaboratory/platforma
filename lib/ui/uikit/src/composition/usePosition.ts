@@ -33,9 +33,9 @@ export function useElementPosition(el: Ref<HTMLElement | undefined>, cb: (pos: E
 
   onMounted(handle);
 
-  useEventListener(window, 'scroll', handle, true);
+  useEventListener(window, 'scroll', handle, { capture: true, passive: true });
 
-  useEventListener(window, 'resize', handle, true);
+  useEventListener(window, 'resize', handle, { passive: true });
 
   useEventListener(window, 'adjust', handle, true);
 }

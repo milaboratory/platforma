@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.pl-multi-dropdown {
+.pl-dropdown-legacy {
   $root: &;
 
   --contour-color: var(--txt-01);
@@ -20,8 +20,8 @@
   font-size: var(--font-size-base);
   font-weight: var(--font-weigh-base);
 
-  [data-theme="dark"] & {
-    --options-bg: #1B1B1F;
+  [data-theme='dark'] & {
+    --options-bg: #1b1b1f;
   }
 
   &__envelope {
@@ -40,7 +40,6 @@
     right: 0;
     border-radius: 6px;
     min-height: var(--control-height);
-    padding: 1px;
     color: var(--txt-01);
   }
 
@@ -53,14 +52,12 @@
   }
 
   &__options {
-    position: absolute;
-    top: 0;
-    z-index: var(--z-dropdown-options);
-    border: 1px solid var(--border-color-div-grey);
-    background-color: var(--pl-dropdown-options-bg);
-    border-radius: 6px;
+    position: relative;
+    background-color: var(--options-bg);
+    border-radius: 0 0 6px 6px;
     max-height: 244px;
-    box-shadow: 0px 4px 12px -2px rgba(15, 36, 77, 0.08), 0px 6px 24px -2px rgba(15, 36, 77, 0.08);
+    border-top: 1px solid var(--color-div-black);
+
     @include scrollbar;
 
     .nothing-found {
@@ -74,28 +71,17 @@
 
     .option {
       position: relative;
-      padding: 0 10px;
+      padding: 0 30px 0 10px;
       height: var(--control-height);
       line-height: var(--control-height);
       cursor: pointer;
       user-select: none;
-      display: flex;
-      align-items: center;
-      gap: 12px;
 
-      --base-icon: url('@/assets/images/24_checkbox-base.svg');
-      --checked-icon: url('@/assets/images/24_checkbox-checked.svg');
-
-      .pl-multi-dropdown__checkmark {
-        cursor: pointer;
-        outline: none;
-        border-radius: 4px;
-        @include icon(var(--base-icon), 24px);
-
-        [data-theme="dark"] & {
-          --base-icon: url('@/assets/images/24_checkbox-base-dark.svg');
-          --checked-icon: url('@/assets/images/24_checkbox-checked-dark.svg');
-        }
+      .checkmark {
+        position: absolute;
+        display: none;
+        right: 10px;
+        @include abs-center-y();
       }
 
       >span {
@@ -109,8 +95,8 @@
       &.selected {
         background-color: var(--color-active-select);
 
-        .pl-multi-dropdown__checkmark {
-          @include icon(var(--checked-icon), 24px);
+        .checkmark {
+          display: block;
         }
       }
 
@@ -138,19 +124,20 @@
     flex-direction: row;
     align-items: center;
 
-    .chips-container {
+    .input-value {
+      outline: 1px solid red;
       position: absolute;
       top: 0;
       left: 0;
       bottom: 0;
-      right: 30px;
-      overflow: hidden;
-      padding: 0 11px;
+      right: 0;
+      padding: 0 60px 0 11px; // @TODO padding-right based on controls width
+      pointer-events: none;
       line-height: var(--control-height);
       color: var(--contour-color);
-      display: flex;
-      gap: 8px;
-      align-items: center;
+      overflow: hidden;
+      white-space: pre;
+      text-overflow: ellipsis;
     }
 
     input {
@@ -161,7 +148,7 @@
       background-color: transparent;
       border: none;
       padding: 0;
-      width: calc(100% - 20px);
+      width: calc(100% - 40px);
       color: var(--txt-01);
       caret-color: var(--border-color-focus);
 
@@ -177,12 +164,6 @@
         color: var(--color-placeholder);
       }
     }
-
-    &:hover {
-      .clear {
-        display: block;
-      }
-    }
   }
 
   &__helper {
@@ -193,57 +174,43 @@
     @include field-error();
   }
 
-  &__append {
-    padding-right: 24px;
+  &__controls {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+    margin-left: auto;
 
-    .icon {
+    .icon-clear {
       cursor: pointer;
     }
 
-    .mask {
+    .mask-16,
+    .mask-24 {
       background-color: var(--control-mask-fill);
       cursor: pointer;
     }
-  }
 
-  .arrow {
-    position: absolute;
-    @include abs-center-y;
-    right: 12px;
-    background-color: var(--control-mask-fill);
-    @include mask(url("@/assets/images/16_chevron-down.svg"), 16px);
-  }
-
-  &.open {
-    .arrow {
-      background-color: var(--control-mask-fill);
-      @include mask(url(@/assets/images/16_up.svg), 16px);
+    .mask-loading {
+      animation: spin 2.5s linear infinite;
+      background-color: #07AD3E;
     }
   }
 
-  .clear {
-    display: none;
-    position: absolute;
-    @include abs-center-y;
-    right: 36px;
-    z-index: 1;
-    @include icon(url("@/assets/images/16_clear.svg"), 16px); // @todo mask-image
+  .arrow-icon {
     cursor: pointer;
+
+    // Default "arrow" icon (16x16) 
+    &.arrow-icon-default {
+      background-color: var(--control-mask-fill);
+      @include mask(url('@/assets/images/16_chevron-down.svg'), 16px);
+    }
   }
 
   &.open,
   &:focus-within {
     z-index: 1;
-
-    #{$root}__container {
-      .label {
-        color: var(--txt-focus);
-      }
-    }
+    --label-color: var(--txt-focus);
   }
 
   &.open {
@@ -255,7 +222,7 @@
       border-radius: 6px 6px 0 0;
     }
 
-    .arrow {
+    .arrow-icon {
       background-color: var(--control-mask-fill);
       @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
     }
@@ -288,14 +255,6 @@
     --label-color: var(--color-dis-01);
     cursor: not-allowed;
     pointer-events: none;
-  }
-
-  &__open-chips-container {
-    padding: 12px;
-
-    .pl-chip {
-      margin-right: 4px;
-      margin-bottom: 4px;
-    }
+    user-select: none;
   }
 }

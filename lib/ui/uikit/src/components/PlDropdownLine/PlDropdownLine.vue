@@ -12,6 +12,7 @@ import DropdownListItem from '@/components/DropdownListItem.vue';
 import TabItem from '@/components/TabItem.vue';
 import type { ListOption } from '@/types';
 import { normalizeListOptions } from '@/helpers/utils';
+import { useElementPosition } from '@/composition/usePosition';
 
 const emit = defineEmits(['update:modelValue']); // at the top always
 
@@ -38,6 +39,7 @@ const props = withDefaults(
 const data = reactive({
   isOpen: false,
   activeOption: -1,
+  optionsHeight: 0,
 });
 
 const container = ref<HTMLElement>();
@@ -85,7 +87,7 @@ const placeholderVal = computed(() => {
     }
   }
 
-  return modelText.value || '...';
+  return modelText.value ?? '...';
 });
 
 useClickOutside(container, () => {
@@ -169,13 +171,14 @@ function isItemSelected(item: ListOption): boolean {
   return deepEqual(item.value, props.modelValue);
 }
 
-function onBlur(event: Event) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!container?.value?.contains((event as any).relatedTarget)) {
-    data.isOpen = false;
+const onFocusOut = (event: FocusEvent) => {
+  const relatedTarget = event.relatedTarget as Node | null;
+
+  if (!container.value?.contains(relatedTarget) && !list.value?.contains(relatedTarget)) {
     searchPhrase.value = '';
+    data.isOpen = false;
   }
-}
+};
 
 function handleKeydown(e: { code: string; preventDefault(): void }) {
   const { activeOption } = data;
@@ -223,6 +226,33 @@ function scrollIntoActive() {
 function clearModel() {
   emit('update:modelValue', undefined);
 }
+
+const optionsStyle = reactive({
+  top: '0px',
+  left: '0px',
+});
+
+watch(list, (el) => {
+  if (el) {
+    const rect = el.getBoundingClientRect();
+    data.optionsHeight = rect.height;
+    window.dispatchEvent(new CustomEvent('adjust'));
+  }
+});
+
+useElementPosition(container, (pos) => {
+  const gap = 2;
+
+  const downTopOffset = pos.top + pos.height + gap;
+
+  if (downTopOffset + data.optionsHeight > pos.clientHeight) {
+    optionsStyle.top = pos.top - data.optionsHeight - gap + 'px';
+  } else {
+    optionsStyle.top = downTopOffset + 'px';
+  }
+
+  optionsStyle.left = pos.left + 'px';
+});
 </script>
 
 <template>
@@ -231,53 +261,62 @@ function clearModel() {
     ref="container"
     tabindex="0"
     :class="classes"
-    class="ui-line-dropdown uc-pointer"
+    class="pl-line-dropdown uc-pointer"
     @keydown="handleKeydown"
-    @focusout="onBlur"
+    @focusout="onFocusOut"
     @click="toggleList"
   >
-    <div class="ui-line-dropdown__prefix">{{ props?.prefix }}</div>
+    <div class="pl-line-dropdown__prefix">{{ props?.prefix }}</div>
 
-    <ResizableInput v-model="inputModel" :placeholder="placeholderVal" :disabled="props.disabled" class="ui-line-dropdown__input" />
+    <ResizableInput v-model="inputModel" :placeholder="placeholderVal" :disabled="props.disabled" class="pl-line-dropdown__input" />
 
-    <div class="ui-line-dropdown__icon-wrapper">
-      <div v-show="!canShowClearBtn" class="ui-line-dropdown__icon" />
-      <div v-show="canShowClearBtn" class="ui-line-dropdown__icon-clear" @click="clearModel" />
+    <div class="pl-line-dropdown__icon-wrapper">
+      <div v-show="!canShowClearBtn" class="pl-line-dropdown__icon" />
+      <div v-show="canShowClearBtn" class="pl-line-dropdown__icon-clear" @click="clearModel" />
     </div>
-    <div v-if="props.mode === 'list'" v-show="data.isOpen" ref="list" class="ui-line-dropdown__items">
-      <template v-for="(item, index) in options" :key="index">
-        <slot
-          name="item"
-          :item="item"
-          :text-item="'text'"
-          :is-selected="isItemSelected(item)"
-          :is-hovered="data.activeOption == index"
-          @click.stop="selectItem(item)"
-        >
-          <DropdownListItem
-            :option="item"
+    <Teleport v-if="data.isOpen" to="body">
+      <div v-if="props.mode === 'list'" ref="list" :style="optionsStyle" tabindex="-1" class="pl-line-dropdown__items" @focusout="onFocusOut">
+        <template v-for="(item, index) in options" :key="index">
+          <slot
+            name="item"
+            :item="item"
             :text-item="'text'"
             :is-selected="isItemSelected(item)"
             :is-hovered="data.activeOption == index"
-            size="medium"
             @click.stop="selectItem(item)"
-          />
-        </slot>
-      </template>
+          >
+            <DropdownListItem
+              :option="item"
+              :text-item="'text'"
+              :is-selected="isItemSelected(item)"
+              :is-hovered="data.activeOption == index"
+              size="medium"
+              @click.stop="selectItem(item)"
+            />
+          </slot>
+        </template>
 
-      <div v-if="options.length === 0" class="ui-line-dropdown__no-item">
-        <div class="ui-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+        <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
+          <div class="pl-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+        </div>
       </div>
-    </div>
-    <div v-if="props.mode === 'tabs'" v-show="data.isOpen" ref="list" :style="props.tabsContainerStyles" class="ui-line-dropdown__items-tabs">
-      <template v-for="(item, index) in options" :key="index">
-        <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
-          <TabItem :option="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
-        </slot>
-      </template>
-      <div v-if="options.length === 0" class="ui-line-dropdown__no-item">
-        <div class="ui-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+      <div
+        v-else-if="props.mode === 'tabs'"
+        ref="list"
+        :style="optionsStyle"
+        tabindex="-1"
+        class="pl-line-dropdown__items-tabs"
+        @focusout="onFocusOut"
+      >
+        <template v-for="(item, index) in options" :key="index">
+          <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
+            <TabItem :option="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
+          </slot>
+        </template>
+        <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
+          <div class="pl-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>

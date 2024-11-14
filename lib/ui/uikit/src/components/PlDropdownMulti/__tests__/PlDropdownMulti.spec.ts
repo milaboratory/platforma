@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { mount } from '@vue/test-utils';
 import PlDropdown from '../PlDropdownMulti.vue';
+import { delay } from '@milaboratories/helpers';
 
 describe('PlDropdownMulti', () => {
   it('modelValue', async () => {
@@ -18,16 +19,20 @@ describe('PlDropdownMulti', () => {
 
     await wrapper.find('input').trigger('focus');
 
-    expect(await wrapper.findAll('.dropdown-list-item').length).toBe(2);
+    const getOptions = () => [...document.body.querySelectorAll('.dropdown-list-item')] as HTMLElement[];
 
-    await wrapper
-      .findAll('.dropdown-list-item')
-      .filter((node) => node.text().match(/Option 2/))
-      .at(0)
-      ?.trigger('click');
+    const options = getOptions();
+
+    console.log('options', options);
+
+    expect(options.length).toBe(2);
+
+    options[1].click();
+
+    await delay(20);
 
     expect(wrapper.props('modelValue')).toEqual([1, 2]);
 
-    expect(await wrapper.findAll('.dropdown-list-item').length).toBe(2); // options are not closed after click
+    expect(getOptions().length).toBe(2); // options are not closed after click
   });
 });
