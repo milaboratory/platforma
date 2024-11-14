@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-line-dropdown {
+.pl-line-dropdown {
     display: flex;
     align-items: center;
     width: fit-content;
@@ -113,8 +113,8 @@
 
     &__items {
         position: absolute;
-        top: 110%;
-        z-index: 1;
+        top: 0;
+        z-index: var(--z-dropdown-options);
         border-radius: 6px;
         padding: 12px 0;
         border: 1px solid var(--color-div-grey);
@@ -130,8 +130,8 @@
     &__items-tabs {
         display: flex;
         position: absolute;
-        top: 110%;
-        z-index: 1;
+        top: 0;
+        z-index: var(--z-dropdown-options);
         background-color: var(--color-div-bw);
         overflow-x: scroll;
         max-width: 400px;
