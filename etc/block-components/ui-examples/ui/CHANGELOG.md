@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.1.4
+
+### Patch Changes
+
+- 948c9f3: Implement teleported options for the PlDropdownMulti
+- 335c3ba: Implement pl-dropdown (v2)
+- 9315283: Update PlLineDropdown (teleported options)
+  - @platforma-sdk/ui-vue@1.8.14
+
 ## 1.1.3
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @milaboratories/uikit-playground
 
+## 0.0.46
+
+### Patch Changes
+
+- 948c9f3: Implement teleported options for the PlDropdownMulti
+- 9315283: Update PlLineDropdown (teleported options)
+- Updated dependencies [948c9f3]
+- Updated dependencies [335c3ba]
+- Updated dependencies [9315283]
+  - @milaboratories/uikit@2.1.3
+
 ## 0.0.45
 
 ### Patch Changes
