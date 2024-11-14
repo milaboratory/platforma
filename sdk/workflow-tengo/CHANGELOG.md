@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.0.1
+
+### Patch Changes
+
+- 55d1125: Fix for missing naRegex fields in pfconv input file
+
 ## 2.0.0
 
 ### Major Changes
