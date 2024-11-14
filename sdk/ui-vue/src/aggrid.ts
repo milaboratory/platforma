@@ -13,6 +13,7 @@ import { MenuModule } from '@ag-grid-enterprise/menu';
 import { ExcelExportModule } from '@ag-grid-enterprise/excel-export';
 import { type Theme, themeQuartz } from '@ag-grid-community/theming';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
+import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 
 export function activateAgGrid() {
   ModuleRegistry.registerModules([
@@ -26,6 +27,7 @@ export function activateAgGrid() {
     MenuModule,
     ExcelExportModule,
     SideBarModule,
+    ColumnsToolPanelModule,
   ]);
   const agGridLicense = getEnvironmentValue('AGGRID_LICENSE');
   if (agGridLicense) {

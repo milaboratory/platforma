@@ -156,6 +156,8 @@ catalog:
   '@ag-grid-enterprise/clipboard': *ag-grid
   '@ag-grid-enterprise/range-selection': *ag-grid
   '@ag-grid-community/theming': *ag-grid
+  '@ag-grid-enterprise/side-bar': *ag-grid
+  '@ag-grid-enterprise/column-tool-panel': *ag-grid
 
   # SW
 

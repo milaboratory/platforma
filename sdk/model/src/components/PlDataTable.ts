@@ -29,6 +29,10 @@ export type PlDataTableGridState = {
     }[];
   };
 
+  columnVisibility?: {
+    hiddenColIds: string[];
+  }
+
   /** current sheet selections */
   sheets?: Record<string, string | number>;
 };

@@ -26,6 +26,8 @@
     "@ag-grid-community/vue3": "catalog:",
     "@ag-grid-community/client-side-row-model": "catalog:",
     "@ag-grid-community/core": "catalog:",
-    "@ag-grid-community/theming": "catalog:"
+    "@ag-grid-community/theming": "catalog:",
+    "@ag-grid-enterprise/side-bar": "catalog:",
+    "@ag-grid-enterprise/column-tool-panel": "catalog:"
   }
 }

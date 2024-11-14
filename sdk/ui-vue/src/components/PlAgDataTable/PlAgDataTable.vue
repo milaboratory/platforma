@@ -26,8 +26,16 @@ import { updateXsvGridOptions } from './sources/file-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
+import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, ServerSideRowModelModule, RangeSelectionModule, SideBarModule]);
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  ClipboardModule,
+  ServerSideRowModelModule,
+  RangeSelectionModule,
+  SideBarModule,
+  ColumnsToolPanelModule,
+]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
@@ -331,6 +339,7 @@ watch(
     const selfState = {
       columnOrder: selfFullState.columnOrder,
       sort: selfFullState.sort,
+      columnVisibility: selfFullState.columnVisibility,
     };
     if (lodash.isEqual(gridState, selfState)) return;
 
