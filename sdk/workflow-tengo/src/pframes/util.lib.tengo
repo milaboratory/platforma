@@ -225,9 +225,10 @@ purifySpec := func(spec) {
 	for ax in spec.axes {
 		newAxes = append(newAxes, objects.deleteUndefined({
 			column: ax.column,
+			filterOutRegex: ax.filterOutRegex,
 			preProcess: ax.preProcess,
+			naRegex: ax.naRegex,
 			allowNA: ax.allowNA,
-			parseErrorToNA: ax.parseErrorToNA,
 			spec: { type: ax.spec.type }
 		}))
 	}
@@ -237,10 +238,11 @@ purifySpec := func(spec) {
 	for col in spec.columns {
 		newCols = append(newCols, objects.deleteUndefined({
 			column: col.column,
+			filterOutRegex: col.filterOutRegex,
 			preProcess: col.preProcess,
-			id: col.id,
+			naRegex: col.naRegex,
 			allowNA: col.allowNA,
-			parseErrorToNA: col.parseErrorToNA,
+			id: col.id,
 			spec: { valueType: col.spec.valueType }
 		}))
 	}
