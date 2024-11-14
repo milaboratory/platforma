@@ -59,7 +59,6 @@ create := func(spec, ctx, ...options) {
 		setErrorIfMissing: ops.errIfMissing
 	})
 
-
 	builder := undefined
 	if ops.first {
 		builder = smart.ephemeralBuilder(constants.RTYPE_BRESOLVE_FIRST, query)
