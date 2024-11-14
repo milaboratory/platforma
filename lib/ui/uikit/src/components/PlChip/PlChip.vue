@@ -21,16 +21,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <PlTooltip position="top" class="ui-chip-tooltip" :delay="500">
+  <PlTooltip position="top" class="pl-chip-tooltip" :delay="500">
     <template v-if="canShowTooltip" #tooltip>
       <slot />
     </template>
-    <div ref="chip" class="ui-chip" :class="{ small }">
-      <div class="ui-chip__text">
+    <div ref="chip" class="pl-chip" :class="{ small }">
+      <div class="pl-chip__text">
         <slot />
       </div>
-      <div v-if="closeable" tabindex="0" class="ui-chip__close" @keydown.enter="$emit('close')" @click.stop="$emit('close')">
-        <div class="ui-chip__close--icon" />
+      <div v-if="closeable" tabindex="0" class="pl-chip__close" @keydown.enter="$emit('close')" @click.stop="$emit('close')">
+        <div class="pl-chip__close--icon" />
       </div>
     </div>
   </PlTooltip>

@@ -1,10 +1,10 @@
 @import "@/assets/mixins";
 
-.ui-chip-tooltip {
+.pl-chip-tooltip {
   display: inline-flex;
 }
 
-.ui-chip {
+.pl-chip {
   --chip-color: var(--txt-01);
 
   position: relative;

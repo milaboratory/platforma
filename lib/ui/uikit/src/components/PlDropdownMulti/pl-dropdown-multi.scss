@@ -1,6 +1,6 @@
 @import "@/assets/mixins";
 
-.ui-multi-dropdown {
+.pl-multi-dropdown {
   $root: &;
 
   --contour-color: var(--txt-01);
@@ -53,11 +53,14 @@
   }
 
   &__options {
-    position: relative;
-    background-color: var(--options-bg);
-    border-radius: 0 0 6px 6px;
+    position: absolute;
+    top: 0;
+    z-index: var(--z-dropdown-options);
+    border: 1px solid var(--border-color-div-grey);
+    background-color: var(--pl-dropdown-options-bg);
+    border-radius: 6px;
     max-height: 244px;
-    border-top: 1px solid var(--color-div-black);
+    box-shadow: 0px 4px 12px -2px rgba(15, 36, 77, 0.08), 0px 6px 24px -2px rgba(15, 36, 77, 0.08);
     @include scrollbar;
 
     .nothing-found {
@@ -83,7 +86,7 @@
       --base-icon: url('@/assets/images/24_checkbox-base.svg');
       --checked-icon: url('@/assets/images/24_checkbox-checked.svg');
 
-      .ui-multi-dropdown__checkmark {
+      .pl-multi-dropdown__checkmark {
         cursor: pointer;
         outline: none;
         border-radius: 4px;
@@ -106,7 +109,7 @@
       &.selected {
         background-color: var(--color-active-select);
 
-        .ui-multi-dropdown__checkmark {
+        .pl-multi-dropdown__checkmark {
           @include icon(var(--checked-icon), 24px);
         }
       }
@@ -290,7 +293,7 @@
   &__open-chips-container {
     padding: 12px;
 
-    .ui-chip {
+    .pl-chip {
       margin-right: 4px;
       margin-bottom: 4px;
     }
