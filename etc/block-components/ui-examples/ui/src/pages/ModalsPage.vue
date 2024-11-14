@@ -15,7 +15,8 @@ import {
   PlTooltip,
   PlBtnGhost,
   PlNumberField,
-  PlBtnDanger
+  PlBtnDanger,
+  PlBtnGroup
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 
@@ -62,7 +63,7 @@ for (const example of modalVariants) {
   }) as unknown as boolean;
 }
 
-const lorem = faker.lorem.paragraph(1000);
+const lorem = faker.lorem.paragraph(100);
 </script>
 
 <template>
@@ -189,8 +190,23 @@ const lorem = faker.lorem.paragraph(1000);
       <PlTextField v-model="slideData.text" label="Text field" />
       <PlDropdown
         v-model="dialogData.item"
+        label="Select item"
         :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
-      ></PlDropdown>
+      />
+      <PlDropdown
+        v-model="dialogData.item"
+        label="Select item"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
+      />
+      <PlBtnGroup
+        v-model="dialogData.item"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
+      />
+      <PlDropdown
+        v-model="dialogData.item"
+        label="Select item"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3'])"
+      />
       <PlCheckbox v-model="slideData.slideModal">Also closes the modal window</PlCheckbox>
       <PlCheckbox :model-value="true">
         Drop outliers
@@ -203,6 +219,11 @@ const lorem = faker.lorem.paragraph(1000);
       </PlCheckbox>
       <p>{{ lorem }}</p>
       <PlTextField v-model="slideData.sliderWidth" label="Slider width (css format: px, %)" />
+      <PlDropdown
+        v-model="dialogData.item"
+        label="Select item"
+        :options="listToOptions(['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6'])"
+      />
       <template v-if="slideData.actions" #actions>
         <PlBtnPrimary>Save</PlBtnPrimary>
         <PlBtnSecondary>Cancel</PlBtnSecondary>

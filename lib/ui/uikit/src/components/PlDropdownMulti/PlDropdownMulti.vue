@@ -20,6 +20,7 @@ import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
 import { normalizeListOptions } from '@/helpers/utils';
+import { useElementPosition } from '@/composition/usePosition';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -83,6 +84,7 @@ const data = reactive({
   search: '',
   activeOption: -1,
   open: false,
+  optionsHeight: 0,
 });
 
 const selectedValuesRef = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []));
@@ -149,7 +151,9 @@ const setFocusOnInput = () => input.value?.focus();
 const toggleModel = () => (data.open = !data.open);
 
 const onFocusOut = (event: FocusEvent) => {
-  if (!rootRef?.value?.contains(event.relatedTarget as Node | null)) {
+  const relatedTarget = event.relatedTarget as Node | null;
+
+  if (!rootRef.value?.contains(relatedTarget) && !list.value?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;
   }
@@ -220,20 +224,49 @@ watchPostEffect(() => {
     scrollIntoActive();
   }
 });
+
+const optionsStyle = reactive({
+  top: '0px',
+  left: '0px',
+  width: '0px',
+});
+
+watch(list, (el) => {
+  if (el) {
+    const rect = el.getBoundingClientRect();
+    data.optionsHeight = rect.height;
+    window.dispatchEvent(new CustomEvent('adjust'));
+  }
+});
+
+useElementPosition(rootRef, (pos) => {
+  const focusWidth = 5; // see css
+
+  const downTopOffset = pos.top + pos.height + focusWidth;
+
+  if (downTopOffset + data.optionsHeight > pos.clientHeight) {
+    optionsStyle.top = pos.top - data.optionsHeight - focusWidth + 'px';
+  } else {
+    optionsStyle.top = downTopOffset + 'px';
+  }
+
+  optionsStyle.left = pos.left + 'px';
+  optionsStyle.width = pos.width + 'px';
+});
 </script>
 
 <template>
-  <div class="ui-multi-dropdown__envelope">
+  <div class="pl-multi-dropdown__envelope">
     <div
       ref="rootRef"
       :tabindex="tabindex"
-      class="ui-multi-dropdown"
+      class="pl-multi-dropdown"
       :class="{ open: data.open, error, disabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
-      <div class="ui-multi-dropdown__container">
-        <div class="ui-multi-dropdown__field">
+      <div class="pl-multi-dropdown__container">
+        <div class="pl-multi-dropdown__field">
           <input
             ref="input"
             v-model="data.search"
@@ -251,7 +284,7 @@ watchPostEffect(() => {
             </PlChip>
           </div>
           <div class="arrow" @click.stop="toggleModel" />
-          <div class="ui-multi-dropdown__append">
+          <div class="pl-multi-dropdown__append">
             <slot name="append" />
           </div>
         </div>
@@ -264,29 +297,31 @@ watchPostEffect(() => {
             </template>
           </PlTooltip>
         </label>
-        <div v-if="data.open" ref="list" class="ui-multi-dropdown__options">
-          <div class="ui-multi-dropdown__open-chips-container">
-            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
-              {{ opt.label || opt.value }}
-            </PlChip>
+        <Teleport v-if="data.open" to="body">
+          <div ref="list" class="pl-multi-dropdown__options" :style="optionsStyle" tabindex="-1" @focusout="onFocusOut">
+            <div class="pl-multi-dropdown__open-chips-container">
+              <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
+                {{ opt.label || opt.value }}
+              </PlChip>
+            </div>
+            <DropdownListItem
+              v-for="(item, index) in filteredOptionsRef"
+              :key="index"
+              :option="item"
+              :text-item="'text'"
+              :is-selected="item.selected"
+              :is-hovered="data.activeOption == index"
+              size="medium"
+              use-checkbox
+              @click.stop="selectOption(item.value)"
+            />
+            <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
           </div>
-          <DropdownListItem
-            v-for="(item, index) in filteredOptionsRef"
-            :key="index"
-            :option="item"
-            :text-item="'text'"
-            :is-selected="item.selected"
-            :is-hovered="data.activeOption == index"
-            size="medium"
-            use-checkbox
-            @click.stop="selectOption(item.value)"
-          />
-          <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
-        </div>
-        <DoubleContour class="ui-multi-dropdown__contour" />
+        </Teleport>
+        <DoubleContour class="pl-multi-dropdown__contour" />
       </div>
     </div>
-    <div v-if="error" class="ui-multi-dropdown__error">{{ error }}</div>
-    <div v-else-if="helper" class="ui-multi-dropdown__helper">{{ helper }}</div>
+    <div v-if="error" class="pl-multi-dropdown__error">{{ error }}</div>
+    <div v-else-if="helper" class="pl-multi-dropdown__helper">{{ helper }}</div>
   </div>
 </template>

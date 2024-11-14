@@ -69,6 +69,7 @@ const props = withDefaults(
   {
     label: '',
     helper: undefined,
+    loadingOptionsHelper: undefined,
     error: undefined,
     placeholder: '...',
     clearable: false,
