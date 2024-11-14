@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.1.0
+
+### Minor Changes
+
+- 7ccecce: p-frames.xsv: ability to export list of p-columns
+
 ## 2.0.1
 
 ### Patch Changes
