@@ -275,7 +275,7 @@ useElementPosition(container, (pos) => {
       <div v-show="canShowClearBtn" class="pl-line-dropdown__icon-clear" @click="clearModel" />
     </div>
     <Teleport v-if="data.isOpen" to="body">
-      <div v-if="props.mode === 'list'" ref="list" :style="optionsStyle" tabindex="-1" class="pl-line-dropdown__items">
+      <div v-if="props.mode === 'list'" ref="list" :style="optionsStyle" tabindex="-1" class="pl-line-dropdown__items" @focusout="onFocusOut">
         <template v-for="(item, index) in options" :key="index">
           <slot
             name="item"
@@ -300,7 +300,14 @@ useElementPosition(container, (pos) => {
           <div class="pl-line-dropdown__no-item-title text-s">Didn't find anything that matched</div>
         </div>
       </div>
-      <div v-else-if="props.mode === 'tabs'" ref="list" :style="optionsStyle" tabindex="-1" class="pl-line-dropdown__items-tabs">
+      <div
+        v-else-if="props.mode === 'tabs'"
+        ref="list"
+        :style="optionsStyle"
+        tabindex="-1"
+        class="pl-line-dropdown__items-tabs"
+        @focusout="onFocusOut"
+      >
         <template v-for="(item, index) in options" :key="index">
           <slot name="item" :item="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)">
             <TabItem :option="item" :is-selected="isItemSelected(item)" :is-hovered="data.activeOption == index" @click.stop="selectItem(item)" />
