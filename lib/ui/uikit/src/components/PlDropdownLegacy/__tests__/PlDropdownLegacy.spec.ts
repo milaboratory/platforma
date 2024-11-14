@@ -28,6 +28,6 @@ describe('PlDropdown', () => {
 
     expect(wrapper.props('modelValue')).toBe(2);
 
-    expect(await wrapper.findAll('.dropdown-list-item').length).toBe(0); // options are closed after click
+    expect(wrapper.findAll('.dropdown-list-item').length).toBe(0); // options are closed after click
   });
 });

@@ -5,6 +5,7 @@ import Split from '@/Split.vue';
 import { generate } from '@/imports';
 import { ref } from 'vue';
 import PropsDisplay from '@/PropsDisplay.vue';
+import { listToOptions } from '@milaboratories/helpers';
 
 const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ';
 
@@ -64,6 +65,8 @@ const itemsTitleAndDescription = generate(300, (i) => ({
   },
 }));
 
+const model3 = ref(1);
+
 const model0 = ref({ i: 0 });
 const model1 = ref({ i: 35 });
 const model2 = ref({ i: 2 });
@@ -109,6 +112,7 @@ const propsDescription = {
     <Split name="Line Dropdown">
       <div>
         <PlDropdownLine v-model="model0" :options="itemsTitleAndDescription" prefix="Option:" />
+        <PlDropdownLine v-model="model3" :options="listToOptions([0, 1, 2, 3])" prefix="Option:" />
       </div>
       <div style="display: flex">
         <PlDropdownLine v-model="model0" :options="items0" prefix="Option(s):" :input-max-width="'400px'" clearable> </PlDropdownLine>
