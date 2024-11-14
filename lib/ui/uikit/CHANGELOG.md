@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.1.2
+
+### Patch Changes
+
+- 17d8609: Undefined options will trigger the display of a loading status for the component.
+
 ## 2.1.1
 
 ### Patch Changes
