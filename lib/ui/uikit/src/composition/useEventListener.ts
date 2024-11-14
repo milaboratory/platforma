@@ -7,8 +7,8 @@ export function useEventListener<T extends EventTarget, E extends EventMap[K], K
   target: MaybeRef<T | undefined>,
   type: K,
   callback: (this: T, evt: E) => void,
-  capture = false,
+  options?: AddEventListenerOptions | boolean,
 ) {
-  onMounted(() => unref(target)?.addEventListener(type, callback as (this: T, evt: Event) => void, capture));
-  onUnmounted(() => unref(target)?.removeEventListener(type, callback as (this: T, evt: Event) => void, capture));
+  onMounted(() => unref(target)?.addEventListener(type, callback as (this: T, evt: Event) => void, options));
+  onUnmounted(() => unref(target)?.removeEventListener(type, callback as (this: T, evt: Event) => void, options));
 }

@@ -70,6 +70,8 @@
   --title-bar-height: 0px; // @TODO
 
   --divider-color: var(--txt-01); // @TODO
+
+  --pl-dropdown-options-bg: #fff;
 }
 
 [data-theme='dark'] {
@@ -119,6 +121,8 @@
   --chip-close-ic-hover-color: var(--border-color-focus);
 
   --theme-switcher-icon-color: var(--txt-01);
+
+  --pl-dropdown-options-bg: #1b1b1f;
 }
 
 *,

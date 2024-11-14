@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { mount } from '@vue/test-utils';
 import PlDropdownRef from '../PlDropdownRef.vue';
+import { delay } from '@milaboratories/helpers';
 
 describe('PlDropdownRef', () => {
   it('modelValue', async () => {
@@ -9,8 +10,8 @@ describe('PlDropdownRef', () => {
       props: {
         modelValue: {
           __isRef: true as const,
-          blockId: '2',
-          name: 'Ref to block 2',
+          blockId: '1',
+          name: 'Ref to block 1',
         },
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
         options: [
@@ -36,13 +37,15 @@ describe('PlDropdownRef', () => {
 
     await wrapper.find('input').trigger('focus');
 
-    expect(await wrapper.findAll('.dropdown-list-item').length).toBe(2);
+    const options = [...document.body.querySelectorAll('.dropdown-list-item')] as HTMLElement[];
 
-    await wrapper
-      .findAll('.dropdown-list-item')
-      .filter((node) => node.text().match(/Ref 2/))
-      .at(0)
-      ?.trigger('click');
+    expect(options.length).toBe(2);
+
+    expect(options.length).toBe(2);
+
+    options[1].click();
+
+    await delay(20);
 
     expect(wrapper.props('modelValue')).toStrictEqual({
       __isRef: true as const,
