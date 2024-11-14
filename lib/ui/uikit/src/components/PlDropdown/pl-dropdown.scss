@@ -84,7 +84,7 @@
         @include abs-center-y();
       }
 
-      > span {
+      >span {
         display: block;
         overflow: hidden;
         white-space: nowrap;
@@ -94,6 +94,7 @@
 
       &.selected {
         background-color: var(--color-active-select);
+
         .checkmark {
           display: block;
         }
@@ -184,14 +185,21 @@
       cursor: pointer;
     }
 
-    .mask-16,.mask-24 {
+    .mask-16,
+    .mask-24 {
       background-color: var(--control-mask-fill);
       cursor: pointer;
+    }
+
+    .mask-loading {
+      animation: spin 2.5s linear infinite;
+      background-color: #07AD3E;
     }
   }
 
   .arrow-icon {
     cursor: pointer;
+
     // Default "arrow" icon (16x16) 
     &.arrow-icon-default {
       background-color: var(--control-mask-fill);
@@ -214,7 +222,7 @@
       border-radius: 6px 6px 0 0;
     }
 
-    .arrow {
+    .arrow-icon {
       background-color: var(--control-mask-fill);
       @include mask(url(@/assets/images/16_chevron-up.svg), 16px);
     }
@@ -246,5 +254,7 @@
     --control-mask-fill: var(--color-dis-01);
     --label-color: var(--color-dis-01);
     cursor: not-allowed;
+    pointer-events: none;
+    user-select: none;
   }
 }
