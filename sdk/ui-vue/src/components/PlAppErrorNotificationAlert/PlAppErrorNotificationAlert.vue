@@ -4,13 +4,15 @@ import type { OutputErrors } from '../../types';
 // @TODO module
 import './pl-app-error-notification-alert.scss';
 import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlCopyData } from '@milaboratories/uikit';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{ errors: OutputErrors<BlockOutputsBase> }>();
 
 const isModalOpen = ref(false);
 
 const isAlertOpen = ref(true);
+
+const existingErrors = computed(() => Object.entries(props.errors).filter((item) => !!item[1]));
 
 function showErrors() {
   isModalOpen.value = true;
@@ -20,13 +22,6 @@ function copyData(data: OutputErrors<BlockOutputsBase>[string]) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(JSON.stringify(data));
   }
-}
-
-function hasErrors(key: keyof OutputErrors<BlockOutputsBase>) {
-  if (props.errors[key]) {
-    return Object.keys(props.errors[key]).length > 0;
-  }
-  return false;
 }
 
 // @TODO (temp)
@@ -43,14 +38,14 @@ watch(
     <PlDialogModal v-model="isModalOpen" width="50%" style="max-height: 100vh">
       <template #title> Errors </template>
       <div class="pl-app-notification-alert__content">
-        <template v-for="(err, name) in errors" :key="name">
-          <div v-if="hasErrors(name)" class="pl-app-notification-alert__item">
-            <div class="pl-app-notification-alert__title">{{ name }}</div>
+        <template v-for="item in existingErrors" :key="item[0]">
+          <div class="pl-app-notification-alert__item">
+            <div class="pl-app-notification-alert__title">{{ item[0] }}</div>
             <div class="pl-app-notification-alert__error-description">
               <code>
-                {{ err?.message }}
+                {{ item[1]?.message }}
               </code>
-              <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(err)" />
+              <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(item[1])" />
             </div>
           </div>
         </template>
