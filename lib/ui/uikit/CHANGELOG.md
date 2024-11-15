@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.0
+
+### Minor Changes
+
+- 71f6910: Update icon set
+
 ## 2.1.3
 
 ### Patch Changes
