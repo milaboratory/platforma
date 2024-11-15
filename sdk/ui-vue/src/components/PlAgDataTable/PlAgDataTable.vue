@@ -11,6 +11,8 @@ import type {
 } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
+import { SideBarModule } from '@ag-grid-enterprise/side-bar';
+import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
@@ -26,7 +28,14 @@ import { updateXsvGridOptions } from './sources/file-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
-ModuleRegistry.registerModules([ClientSideRowModelModule, ClipboardModule, ServerSideRowModelModule, RangeSelectionModule]);
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  ClipboardModule,
+  ServerSideRowModelModule,
+  RangeSelectionModule,
+  SideBarModule,
+  ColumnsToolPanelModule
+]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
@@ -121,6 +130,7 @@ const gridState = computed({
     return {
       columnOrder: state.gridState.columnOrder,
       sort: state.gridState.sort,
+      columnVisibility: state.gridState.columnVisibility,
     };
   },
   set: (gridState) => {
@@ -131,6 +141,7 @@ const gridState = computed({
 
     state.gridState.columnOrder = gridState.columnOrder;
     state.gridState.sort = gridState.sort;
+    state.gridState.columnVisibility = gridState.columnVisibility;
 
     if (settings.value.sourceType === 'ptable' || settings.value.sourceType === 'pframe') {
       if (!state.pTableParams) {
@@ -252,6 +263,27 @@ const gridOptions = ref<GridOptions>({
   loadingOverlayComponentParams: { notReady: true },
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
+  sideBar: {
+    toolPanels: [
+      {
+        id: 'columns',
+        labelDefault: 'Columns',
+        labelKey: 'columns',
+        iconKey: 'columns',
+        toolPanel: 'agColumnsToolPanel',
+        toolPanelParams: {
+          suppressRowGroups: true,
+          suppressValues: true,
+          suppressPivots: true,
+          suppressPivotMode: true,
+          suppressColumnFilter: true,
+          suppressColumnSelectAll: true,
+          suppressColumnExpandAll: true,
+        },
+      },
+    ],
+    defaultToolPanel: 'columns',
+  },
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
@@ -283,6 +315,8 @@ const onStateUpdated = (event: StateUpdatedEvent) => {
   gridState.value = {
     columnOrder: event.state.columnOrder,
     sort: event.state.sort,
+    columnVisibility: event.state.columnVisibility
+      ?? (event.state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
   gridOptions.value.initialState = gridState.value;
 };
@@ -291,6 +325,8 @@ const onGridPreDestroyed = () => {
   gridState.value = {
     columnOrder: state.columnOrder,
     sort: state.sort,
+    columnVisibility: state.columnVisibility
+      ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
   gridOptions.value.initialState = gridState.value;
   gridApi.value = undefined;
@@ -309,6 +345,8 @@ watch(
     const selfState = {
       columnOrder: selfFullState.columnOrder,
       sort: selfFullState.sort,
+      columnVisibility: selfFullState.columnVisibility
+        ?? (selfFullState.columnOrder ? { hiddenColIds: [] } : undefined),
     };
     if (lodash.isEqual(gridState, selfState)) return;
 
@@ -360,7 +398,8 @@ watch(
             columnDefs: [],
           });
         }
-        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets);
+        const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
+        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets, hiddenColIds);
         return gridApi.updateGridOptions({
           loading: options.rowModelType !== 'clientSide',
           loadingOverlayComponentParams: { notReady: false },

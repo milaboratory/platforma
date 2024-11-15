@@ -30,6 +30,9 @@ catalogs:
     '@ag-grid-enterprise/clipboard':
       specifier: ^32.3.2
       version: 32.3.2
+    '@ag-grid-enterprise/column-tool-panel':
+      specifier: ^32.3.2
+      version: 32.3.2
     '@ag-grid-enterprise/core':
       specifier: ^32.3.2
       version: 32.3.2
@@ -46,6 +49,9 @@ catalogs:
       specifier: ^32.3.2
       version: 32.3.2
     '@ag-grid-enterprise/server-side-row-model':
+      specifier: ^32.3.2
+      version: 32.3.2
+    '@ag-grid-enterprise/side-bar':
       specifier: ^32.3.2
       version: 32.3.2
     '@aws-sdk/client-s3':
@@ -1388,6 +1394,9 @@ importers:
       '@ag-grid-enterprise/clipboard':
         specifier: 'catalog:'
         version: 32.3.2
+      '@ag-grid-enterprise/column-tool-panel':
+        specifier: 'catalog:'
+        version: 32.3.2
       '@ag-grid-enterprise/core':
         specifier: 'catalog:'
         version: 32.3.2
@@ -1404,6 +1413,9 @@ importers:
         specifier: 'catalog:'
         version: 32.3.2
       '@ag-grid-enterprise/server-side-row-model':
+        specifier: 'catalog:'
+        version: 32.3.2
+      '@ag-grid-enterprise/side-bar':
         specifier: 'catalog:'
         version: 32.3.2
       '@milaboratories/uikit':

@@ -11,6 +11,8 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
 import { MenuModule } from '@ag-grid-enterprise/menu';
 import { ExcelExportModule } from '@ag-grid-enterprise/excel-export';
+import { SideBarModule } from '@ag-grid-enterprise/side-bar';
+import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { type Theme, themeQuartz } from '@ag-grid-community/theming';
 
 export function activateAgGrid() {
@@ -24,6 +26,8 @@ export function activateAgGrid() {
     RichSelectModule,
     MenuModule,
     ExcelExportModule,
+    SideBarModule,
+    ColumnsToolPanelModule,
   ]);
   const agGridLicense = getEnvironmentValue('AGGRID_LICENSE');
   if (agGridLicense) {
