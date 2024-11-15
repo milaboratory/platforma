@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.0
+
+### Minor Changes
+
+- 71f6910: Update icon set
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.8.18
+
 ## 1.1.5
 
 ### Patch Changes
