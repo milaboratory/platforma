@@ -1,5 +1,5 @@
 import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } from '@platforma-sdk/model';
+import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableGridState, PObjectId } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -18,6 +18,7 @@ import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import type { PlDataTableSheet } from '../types';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import type { computed } from 'vue';
 
 /**
  * Generate unique colId based on the column spec.
@@ -49,16 +50,32 @@ export const defaultValueFormatter = (value: any) => {
     return value.value.toString();
   }
 };
+
+function isColumnHiden(gridState: PlDataTableGridState, spec: PTableColumnSpec) {
+  console.log(gridState, spec, '---');
+  // console.log('isColumnHiden', gridState.columnVisibility);
+  // if (gridState.columnVisibility) {
+  //   const colId = makeColId(spec);
+  //   return gridState.columnVisibility.hiddenColIds.includes(colId);
+  // } else {
+  //   console.log('isColumnHiden else', gridState.columnVisibility);
+  //   return spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional';
+  // }
+
+  return false;
+}
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec, gridState: PlDataTableGridState): ColDef {
+  // console.log('gridState', gridState, 'spec', spec);
+
   return {
     colId: makeColId(spec),
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
-    hide: spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
+    hide: isColumnHiden(gridState, spec), //spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     cellDataType: ((valueType: ValueType) => {
       switch (valueType) {
@@ -269,6 +286,7 @@ export async function updatePFrameGridOptions(
   pfDriver: PFrameDriver,
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
+  gridState: PlDataTableGridState,
 ): Promise<{
   columnDefs: ColDef[];
   serverSideDatasource?: IServerSideDatasource;
@@ -310,7 +328,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i]));
+  const columnDefs = fields.map((i) => getColDef(i, specs[i], gridState));
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');

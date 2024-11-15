@@ -15,7 +15,7 @@ import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { PlDropdownLine } from '@milaboratories/uikit';
-import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
+import type { AxisId, PlDataTableGridState, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
@@ -124,12 +124,14 @@ function makeSorting(state?: SortState): PTableSorting[] | undefined {
   );
 }
 
-const gridState = computed({
+const gridState = computed<PlDataTableGridState>({
   get: () => {
     const state = tableState.value;
     return {
       columnOrder: state.gridState.columnOrder,
       sort: state.gridState.sort,
+      columnVisibility: state.gridState.columnVisibility,
+      columnState: state.gridState.columnState,
     };
   },
   set: (gridState) => {
@@ -140,6 +142,8 @@ const gridState = computed({
 
     state.gridState.columnOrder = gridState.columnOrder;
     state.gridState.sort = gridState.sort;
+    state.gridState.columnVisibility = gridState.columnVisibility;
+    state.gridState.columnState = gridState.columnState;
 
     if (settings.value.sourceType === 'ptable' || settings.value.sourceType === 'pframe') {
       if (!state.pTableParams) {
@@ -310,17 +314,22 @@ const onGridReady = (event: GridReadyEvent) => {
   });
 };
 const onStateUpdated = (event: StateUpdatedEvent) => {
+  console.log('onStateUpdated', event.state.columnVisibility, 'gridState', gridState.value.columnVisibility);
   gridState.value = {
     columnOrder: event.state.columnOrder,
     sort: event.state.sort,
+    columnVisibility:
+      event.state.columnVisibility === undefined && gridState.value.columnVisibility ? { hiddenColIds: [] } : event.state.columnVisibility,
   };
   gridOptions.value.initialState = gridState.value;
 };
 const onGridPreDestroyed = () => {
   const state = gridApi.value!.getState();
+  console.log('onGridPreDestroyed', state, 'gridState', gridState);
   gridState.value = {
     columnOrder: state.columnOrder,
     sort: state.sort,
+    columnVisibility: state.columnVisibility,
   };
   gridOptions.value.initialState = gridState.value;
   gridApi.value = undefined;
@@ -336,11 +345,16 @@ watch(
     if (!gridApi) return;
 
     const selfFullState = gridApi.getState();
-    const selfState = {
+    const selfState: PlDataTableGridState = {
       columnOrder: selfFullState.columnOrder,
       sort: selfFullState.sort,
       columnVisibility: selfFullState.columnVisibility,
+      //FIXME need fully compatible types
+      columnState: gridApi.getColumnState() as PlDataTableGridState['columnState'],
     };
+
+    console.log('before reload selfState', selfState);
+
     if (lodash.isEqual(gridState, selfState)) return;
 
     gridOptions.value.initialState = gridState;
@@ -381,6 +395,8 @@ watch(
     switch (sourceType) {
       case 'pframe':
       case 'ptable': {
+        gridApi.applyColumnState({ state: gridState.value.columnState });
+
         const pfDriver = platforma.pFrameDriver;
         if (!pfDriver) throw Error('platforma.pFrameDriver not set');
         const pTable = settings.pTable;
@@ -391,7 +407,7 @@ watch(
             columnDefs: [],
           });
         }
-        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets);
+        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets, gridState.value);
         return gridApi.updateGridOptions({
           loading: options.rowModelType !== 'clientSide',
           loadingOverlayComponentParams: { notReady: false },
