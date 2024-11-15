@@ -22,6 +22,13 @@ function copyData(data: OutputErrors<BlockOutputsBase>[string]) {
   }
 }
 
+function hasErrors(key: keyof OutputErrors<BlockOutputsBase>) {
+  if (props.errors[key]) {
+    return Object.keys(props.errors[key]).length > 0;
+  }
+  return false;
+}
+
 // @TODO (temp)
 watch(
   () => props.errors,
@@ -36,15 +43,17 @@ watch(
     <PlDialogModal v-model="isModalOpen" width="50%" style="max-height: 100vh">
       <template #title> Errors </template>
       <div class="pl-app-notification-alert__content">
-        <div v-for="(err, name) in errors" :key="name" class="pl-app-notification-alert__item">
-          <div class="pl-app-notification-alert__title">{{ name }}</div>
-          <div class="pl-app-notification-alert__error-description">
-            <code>
-              {{ err?.message }}
-            </code>
-            <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(err)" />
+        <template v-for="(err, name) in errors" :key="name">
+          <div v-if="hasErrors(name)" class="pl-app-notification-alert__item">
+            <div class="pl-app-notification-alert__title">{{ name }}</div>
+            <div class="pl-app-notification-alert__error-description">
+              <code>
+                {{ err?.message }}
+              </code>
+              <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(err)" />
+            </div>
           </div>
-        </div>
+        </template>
       </div>
     </PlDialogModal>
 
