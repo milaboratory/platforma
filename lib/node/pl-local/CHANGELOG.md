@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.6.0
+
+### Minor Changes
+
+- 82ae8b6: Use 1.14.15 as pl default version
+
 ## 1.5.2
 
 ### Patch Changes

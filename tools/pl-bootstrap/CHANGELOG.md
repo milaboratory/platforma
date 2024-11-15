@@ -1,5 +1,12 @@
 # @platforma-sdk/bootstrap
 
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [82ae8b6]
+  - @milaboratories/pl-local@1.6.0
+
 ## 2.6.0
 
 ### Minor Changes
