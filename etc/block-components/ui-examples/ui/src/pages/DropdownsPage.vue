@@ -113,7 +113,7 @@ const showOptionsLoading = () => {
         label="PlDropdownMulti"
         :options="simpleOptions ?? []"
       />
-      <div style="height: 1200px; background-color: green; width: 50px"></div>
+      <div v-if="false" style="height: 1200px; background-color: green; width: 50px"></div>
     </PlContainer>
     <pre>{{ data }}</pre>
   </PlBlockPage>

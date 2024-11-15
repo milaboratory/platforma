@@ -19,6 +19,8 @@ import { scrollIntoView } from '@/helpers/dom';
 import { deepEqual } from '@/helpers/objects';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import LongText from '@/components/LongText.vue';
+import { PlIcon16 } from '../PlIcon16';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 import { normalizeListOptions } from '@/helpers/utils';
 
 const emit = defineEmits<{
@@ -331,8 +333,8 @@ watchPostEffect(() => {
           </div>
 
           <div class="ui-dropdown__controls">
-            <div v-if="isLoadingOptions" class="mask-24 mask-loading"></div>
-            <div v-if="clearable && hasValue" class="icon-16 icon-clear" @click.stop="clear" />
+            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
             <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
