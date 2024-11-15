@@ -123,7 +123,7 @@ const fieldType = computed(() => {
   }
 });
 
-const passwordIcon = computed(() => (showPassword.value ? 'view-on' : 'view-off'));
+const passwordIcon = computed(() => (showPassword.value ? 'view-show' : 'view-hide'));
 
 const clear = () => {
   if (props.clearable) {
