@@ -21,6 +21,8 @@ import DropdownListItem from '@/components/DropdownListItem.vue';
 import LongText from '@/components/LongText.vue';
 import { normalizeListOptions } from '@/helpers/utils';
 import { useElementPosition } from '@/composition/usePosition';
+import { PlIcon16 } from '../PlIcon16';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 
 const emit = defineEmits<{
   /**
@@ -364,8 +366,8 @@ useElementPosition(root, (pos) => {
           </div>
 
           <div class="pl-dropdown__controls">
-            <div v-if="isLoadingOptions" class="mask-24 mask-loading"></div>
-            <div v-if="clearable && hasValue" class="icon-16 icon-clear" @click.stop="clear" />
+            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlIcon16 v-if="clearable && hasValue" name="delete-clear" @click.stop="clear" />
             <slot name="append" />
             <div v-if="arrowIconLarge" class="arrow-icon" :class="[`icon-24 ${arrowIconLarge}`]" @click.stop="toggleOpen" />
             <div v-else-if="arrowIcon" class="arrow-icon" :class="[`icon-16 ${arrowIcon}`]" @click.stop="toggleOpen" />
