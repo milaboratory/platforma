@@ -320,6 +320,7 @@ const onStateUpdated = (event: StateUpdatedEvent) => {
     sort: event.state.sort,
     columnVisibility:
       event.state.columnVisibility === undefined && gridState.value.columnVisibility ? { hiddenColIds: [] } : event.state.columnVisibility,
+    columnState: event.api.getColumnState() as PlDataTableGridState['columnState'],
   };
   gridOptions.value.initialState = gridState.value;
 };
@@ -330,6 +331,7 @@ const onGridPreDestroyed = () => {
     columnOrder: state.columnOrder,
     sort: state.sort,
     columnVisibility: state.columnVisibility,
+    columnState: gridApi.value!.getColumnState() as PlDataTableGridState['columnState'],
   };
   gridOptions.value.initialState = gridState.value;
   gridApi.value = undefined;

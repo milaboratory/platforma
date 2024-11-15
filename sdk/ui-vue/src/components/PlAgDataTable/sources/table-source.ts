@@ -53,23 +53,17 @@ export const defaultValueFormatter = (value: any) => {
 
 function isColumnHiden(gridState: PlDataTableGridState, spec: PTableColumnSpec) {
   console.log(gridState, spec, '---');
-  // console.log('isColumnHiden', gridState.columnVisibility);
-  // if (gridState.columnVisibility) {
-  //   const colId = makeColId(spec);
-  //   return gridState.columnVisibility.hiddenColIds.includes(colId);
-  // } else {
-  //   console.log('isColumnHiden else', gridState.columnVisibility);
-  //   return spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional';
-  // }
-
-  return false;
+  const colId = makeColId(spec);
+  if (gridState.columnState && gridState.columnState.length > 0) {
+    const col = gridState.columnState.find((i) => i.colId === colId);
+    return !!col?.hide;
+  }
+  return spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional';
 }
 /**
  * Calculates column definition for a given p-table column
  */
 function getColDef(iCol: number, spec: PTableColumnSpec, gridState: PlDataTableGridState): ColDef {
-  // console.log('gridState', gridState, 'spec', spec);
-
   return {
     colId: makeColId(spec),
     field: iCol.toString(),
