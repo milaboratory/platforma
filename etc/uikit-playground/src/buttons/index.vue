@@ -79,7 +79,7 @@ function onClick() {
           <PlBtnGhost icon="arrow-right" v-bind="props">{{ text }}</PlBtnGhost>
           <PlBtnGhost icon="add" v-bind="props">{{ text }}</PlBtnGhost>
           <PlBtnGhost icon="clipboard" v-bind="props" />
-          <PlBtnGhost icon="import" v-bind="props">Settings</PlBtnGhost>
+          <PlBtnGhost icon="settings" v-bind="props">Settings</PlBtnGhost>
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
