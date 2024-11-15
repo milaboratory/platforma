@@ -167,7 +167,7 @@ if (!props.cellStyle) {
         </PlTooltip>
       </label>
       <PlMaskIcon24 v-if="hasErrors" name="restart" />
-      <PlMaskIcon24 v-else-if="isUploading" name="cloud-up" />
+      <PlMaskIcon24 v-else-if="isUploading" name="cloud-upload" />
       <PlMaskIcon24 v-else-if="isUploaded" name="success" />
       <PlMaskIcon24 v-else name="paper-clip" />
       <div :data-placeholder="placeholder ?? 'Choose file'" class="pl-file-input__filename" @click.stop="openFileDialog">
