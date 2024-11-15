@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.19
+
+### Patch Changes
+
+- 8f916f2: Support column show/hide in PlAgDataTable
+- Updated dependencies [8f916f2]
+  - @platforma-sdk/model@1.8.19
+  - @milaboratories/uikit@2.2.0
+
 ## 1.8.18
 
 ### Patch Changes
