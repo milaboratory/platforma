@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.17
+
+### Patch Changes
+
+- 64f98c6: Show sections with errors
+
 ## 1.8.14
 
 ### Patch Changes
