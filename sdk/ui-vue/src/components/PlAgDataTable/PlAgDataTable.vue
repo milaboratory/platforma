@@ -318,8 +318,7 @@ const onStateUpdated = (event: StateUpdatedEvent) => {
   gridState.value = {
     columnOrder: event.state.columnOrder,
     sort: event.state.sort,
-    columnVisibility:
-      event.state.columnVisibility === undefined && gridState.value.columnVisibility ? { hiddenColIds: [] } : event.state.columnVisibility,
+    columnVisibility: event.state.columnVisibility,
     columnState: event.api.getColumnState() as PlDataTableGridState['columnState'],
   };
   gridOptions.value.initialState = gridState.value;
@@ -355,9 +354,11 @@ watch(
       columnState: gridApi.getColumnState() as PlDataTableGridState['columnState'],
     };
 
-    console.log('before reload selfState', selfState);
+    // console.log('before reload selfState', selfState);
 
     if (lodash.isEqual(gridState, selfState)) return;
+
+    console.log('reloadKey------------------', JSON.parse(JSON.stringify(gridState)), JSON.parse(JSON.stringify(selfState)));
 
     gridOptions.value.initialState = gridState;
     ++reloadKey.value;
