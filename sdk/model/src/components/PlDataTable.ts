@@ -28,6 +28,9 @@ export type PlDataTableGridState = {
       sort: 'asc' | 'desc';
     }[];
   };
+  columnVisibility?: {
+    hiddenColIds: string[];
+  };
 
   /** current sheet selections */
   sheets?: Record<string, string | number>;

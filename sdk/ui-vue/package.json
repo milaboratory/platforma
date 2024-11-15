@@ -47,7 +47,9 @@
     "@ag-grid-enterprise/rich-select": "catalog:",
     "@ag-grid-enterprise/menu": "catalog:",
     "@ag-grid-enterprise/excel-export": "catalog:",
-    "@ag-grid-community/theming": "catalog:"
+    "@ag-grid-community/theming": "catalog:",
+    "@ag-grid-enterprise/side-bar": "catalog:",
+    "@ag-grid-enterprise/column-tool-panel": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/helpers": "workspace:^",
