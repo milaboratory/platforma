@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.8.19
+
+### Patch Changes
+
+- 8f916f2: Support column show/hide in PlAgDataTable
+
 ## 1.8.0
 
 ### Minor Changes
