@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/oclif-index",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Small script for building static oclif commands indexes",
   "scripts": {
