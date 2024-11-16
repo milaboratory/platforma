@@ -120,6 +120,25 @@ export const testLocalTpl2SrcNormalized = `
 lib := import("package1:other-lib-1")
 `;
 
+export const testLocalTpl3Name: FullArtifactName = {
+  type: 'template',
+  pkg: 'current-package',
+  id: 'local-template-3',
+  version: '1.2.3'
+}
+
+export const testLocalTpl3Src = `
+//tengo:hash_override CE0F6EDF-D97C-44E7-B16B-D661D4C799C1
+
+a := "some instruction"
+`;
+export const testLocalTpl3SrcNormalized = `
+//tengo:hash_override CE0F6EDF-D97C-44E7-B16B-D661D4C799C1
+
+a := "some instruction"
+`;
+
+
 export const testLocalLib1: TestArtifactSource = {
   fullName: testLocalLib1Name,
   src: testLocalLib1Src,
@@ -133,6 +152,11 @@ export const testLocalTpl1: TestArtifactSource = {
 export const testLocalTpl2: TestArtifactSource = {
   fullName: testLocalTpl2Name,
   src: testLocalTpl2Src,
+};
+
+export const testLocalTpl3: TestArtifactSource = {
+  fullName: testLocalTpl3Name,
+  src: testLocalTpl3Src,
 };
 
 export const testLocalPackage = [testLocalTpl1, testLocalLib1, testLocalTpl2];

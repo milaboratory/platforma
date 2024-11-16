@@ -2,7 +2,6 @@ import { ArtifactSource } from './source';
 import { Template, TemplateData } from './template';
 import {
   TypedArtifactName,
-  artifactKey,
   fullNameToString,
   typedArtifactNameToString,
   artifactNameToString,
@@ -11,6 +10,7 @@ import {
 } from './package';
 import { ArtifactStore } from './artifactset';
 import { assertNever } from './util';
+import { applyLibraryCompilerOptions, applyTemplateCompilerOptions } from './compileroptions';
 
 export interface TemplatesAndLibs {
   templates: Template[],
@@ -35,7 +35,7 @@ export class TengoTemplateCompiler {
                                                trace: string[]) {
     for (const dep of deps) {
       switch (dep.type) {
-        case 'library':
+        case 'library': {
           const lib = this.getLibOrError(dep);
 
           const recursionStart = trace.indexOf(artifactNameToString(dep))
@@ -44,15 +44,19 @@ export class TengoTemplateCompiler {
             throw new Error(errorMessage)
           }
 
-          data.libs[artifactNameToString(dep)] = {
+          const tplLib = {
             ...formatArtefactNameAndVersion(lib.fullName),
             src: lib.src
-          };
+          }
+
+          applyLibraryCompilerOptions(lib.compilerOptions, tplLib)
+          data.libs[artifactNameToString(dep)] = tplLib;
 
           // populate with transient library dependencies
           this.populateTemplateDataFromDependencies(fullName, data, lib.dependencies, [...trace, artifactNameToString(dep)]);
 
           break;
+        }
         case 'software':
           const software = this.getSoftwareOrError(dep);
           data.software[artifactNameToString(dep)] = {
@@ -104,6 +108,8 @@ export class TengoTemplateCompiler {
       assets: {},
       src: tplSrc.src
     };
+
+    applyTemplateCompilerOptions(tplSrc.compilerOptions, tplData);
 
     // collecting dependencies in output format
     this.populateTemplateDataFromDependencies(tplSrc.fullName, tplData, tplSrc.dependencies, []);
