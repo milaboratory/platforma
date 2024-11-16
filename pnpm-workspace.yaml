@@ -63,7 +63,7 @@ catalog:
   'typescript': ~5.5.4
   'tsconfig-paths': ^4.2.0
   'tsup': ~8.2.4
-  'vite': ^5.4.10
+  'vite': ^5.4.11
   'rollup-plugin-node-externals': ^7.1.3
   '@rollup/plugin-node-resolve': ^15.3.0
   'vite-plugin-dts': ^4.3.0
@@ -86,9 +86,9 @@ catalog:
   'eslint-plugin-prettier': '^5.2.1'
   'eslint-plugin-vue': '^9.29.1'
 
-  'oclif': ^4.15.19
+  'oclif': ^4.15.24
 
-  'turbo': ^2.2.3
+  'turbo': ^2.3.0
 
   '@vitejs/plugin-vue': ^5.1.4
 
@@ -96,14 +96,14 @@ catalog:
 
   # Net
 
-  'undici': ^6.20.1
+  'undici': ^6.21.0
   '@grpc/grpc-js': ^1.12.2
   '@protobuf-ts/grpc-transport': ^2.9.4
   '@protobuf-ts/runtime': ^2.9.4
   '@protobuf-ts/runtime-rpc': ^2.9.4
   'https-proxy-agent': ^7.0.5
-  '@aws-sdk/client-s3': ^3.689.0
-  '@aws-sdk/lib-storage': ^3.689.0
+  '@aws-sdk/client-s3': ^3.693.0
+  '@aws-sdk/lib-storage': ^3.693.0
   'cacheable-lookup': ^6.1.0
 
   # Util & other libs
@@ -125,7 +125,7 @@ catalog:
 
   'yaml': ^2.6.0
 
-  '@oclif/core': ^4.0.31
+  '@oclif/core': ^4.0.32
 
   'winston': ^3.15.0
 
@@ -136,14 +136,14 @@ catalog:
 
   # UI
 
-  'vue': ^3.5.12
+  'vue': ^3.5.13
   '@vueuse/core': ^11.2.0
   'vue-tsc': ^2.1.6
   'sass': ~1.77.8
   'vitepress': '1.4.0'
   'highlight.js': '11.10.0'
 
-  '@ag-grid-community/core': &ag-grid ^32.3.2
+  '@ag-grid-community/core': &ag-grid ^32.3.3
   '@ag-grid-community/client-side-row-model': *ag-grid
   '@ag-grid-community/infinite-row-model': *ag-grid
   '@ag-grid-enterprise/server-side-row-model': *ag-grid
@@ -163,14 +163,14 @@ catalog:
   # SW
 
   '@milaboratories/software-pframes-conv': *pframes-version
-  '@platforma-open/milaboratories.software-small-binaries': ^1.14.5
+  '@platforma-open/milaboratories.software-small-binaries': ^1.14.6
 
   # Test
 
   'jest': ^29.7.0
   '@jest/globals': ^29.7.0
   'ts-jest': ^29.2.5
-  'vitest': ^2.1.4
+  'vitest': ^2.1.5
   '@faker-js/faker': ^8.4.1
   'happy-dom': ^14.12.3
   'jsdom': ^24.1.3
