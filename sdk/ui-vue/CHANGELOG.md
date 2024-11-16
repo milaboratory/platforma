@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.21
+
+### Patch Changes
+
+- 6e54327: PlAgDataTable: suppress column menu button by default
+
 ## 1.8.20
 
 ### Patch Changes
