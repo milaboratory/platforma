@@ -69,6 +69,7 @@ builder := func() {
 	assetInfos := {}
 	assetDescriptors := {}
 	assetRules := {}
+	assetCache := {}
 
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
@@ -184,7 +185,7 @@ builder := func() {
 		},
 
 		/**
-		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
+		 * Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays to not make hidden mistakes in cache time ranges.
 		 * Sets the cache time.
 		 *
 		 * @param time: duration - the cache time from 'times' library.
@@ -275,10 +276,18 @@ builder := func() {
 		 * @param pathsInArchive: string[] - paths inside the archive to be extracted into destinationDir.
 		 *                                   Empty array means 'unpack full archive'.
 		 */
-		addAsset: func(asset, destinationDir, pathsInArchive) {
+		addAsset: func(asset, destinationDir, ...pathsInArchive) {
+			if (len(pathsInArchive) == 1 && is_array(pathsInArchive[0])) {
+				// support [<paths>] single argument
+				pathsInArchive = pathsInArchive[0]
+			}
+			if len(pathsInArchive) == 0 {
+				// default for 'no paths' is to extract all
+				pathsInArchive = []
+			}
+
 			ll.assert(assets.isAssetInfo(asset),
 				"exec.builder.addAsset: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
-
 			validation.assertJsonSchema(destinationDir, "string", "exec.builder.addAsset: <destinationDir> is not a string. It must be a path inside working directory")
 			validation.assertJsonSchema(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
@@ -296,6 +305,86 @@ builder := func() {
 			if (len(pathsInArchive) > 0) {
 				assetRules[assetIdKey][destinationDir] = append(assetRules[assetIdKey][destinationDir], pathsInArchive...)
 			}
+
+			return self
+		},
+
+		/**
+		 * Set custom cache time for given asset. By default, cache time of 1 day is applied to all assets.
+		 * This allows to customize cache time on per-asset basis
+		 */
+		cacheAssetMillis: func (asset, millis) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.cacheAssetMillis: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+			ll.assert(is_int(millis),
+				"exec.builder.cacheAssetMillis: asset cache time must be a number of milliseconds.")
+
+			assetIdKey := ll.idToString(asset._id)
+			assetCache[assetIdKey] = millis * times.millisecond
+
+			return self
+		},
+
+		/**
+		 * Set custom cache time for given asset. By default, cache time of 1 day is applied to all assets.
+		 * This allows to customize cache time on per-asset basis
+		 */
+		cacheAssetSeconds: func (asset, seconds) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.cacheAssetSeconds: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+			ll.assert(is_int(seconds),
+				"exec.builder.cacheAssetSeconds: asset cache time must be a number of seconds.")
+
+			assetIdKey := ll.idToString(asset._id)
+			assetCache[assetIdKey] = seconds * times.second
+
+			return self
+		},
+
+		/**
+		 * Set custom cache time for given asset. By default, cache time of 1 day is applied to all assets.
+		 * This allows to customize cache time on per-asset basis
+		 */
+		cacheAssetMinutes: func (asset, minutes) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.cacheAssetMinutes: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+			ll.assert(is_int(minutes),
+				"exec.builder.cacheAssetMinutes: asset cache time must be a number of minutes.")
+
+			assetIdKey := ll.idToString(asset._id)
+			assetCache[assetIdKey] = minutes * times.minute
+
+			return self
+		},
+
+		/**
+		 * Set custom cache time for given asset. By default, cache time of 1 day is applied to all assets.
+		 * This allows to customize cache time on per-asset basis
+		 */
+		cacheAssetHours: func (asset, hours) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.cacheAssetHours: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+			ll.assert(is_int(hours),
+				"exec.builder.cacheAssetHours: asset cache time must be a number of hours.")
+
+			assetIdKey := ll.idToString(asset._id)
+			assetCache[assetIdKey] = hours * times.hour
+
+			return self
+		},
+
+		/**
+		 * Set custom cache time for given asset. By default, cache time of 1 day is applied to all assets.
+		 * This allows to customize cache time on per-asset basis
+		 */
+		cacheAssetDays: func (asset, days) {
+			ll.assert(assets.isAssetInfo(asset),
+				"exec.builder.cacheAssetHours: <asset> parameter is not an asset info. Provide the value obtained from assets.importAsset() here")
+			ll.assert(is_int(days),
+				"exec.builder.cacheAssetHours: asset cache time must be a number of days.")
+
+			assetIdKey := ll.idToString(asset._id)
+			assetCache[assetIdKey] = days * 24 * times.hour
 
 			return self
 		},
@@ -515,7 +604,8 @@ builder := func() {
 				wdProcessors: wdProcessors,
 				assets: smart.createMapResource(assetInfos),
 				assetDescriptors: assetDescriptors,
-				assetRules: assetRules
+				assetRules: assetRules,
+				assetCache: assetCache
 			}
 
 			if !is_undefined(soft) {
