@@ -37,21 +37,6 @@ const srcSoftwareSuffix = '.sw.json';
 const srcAssetSuffix = '.as.json';
 const compilableSuffixes = [srcLibSuffix, srcTplSuffix, srcSoftwareSuffix, srcAssetSuffix];
 
-export function createLogger(level: string = 'debug'): winston.Logger {
-  return winston.createLogger({
-    level: level,
-    format: winston.format.printf(({ level, message }) => {
-      return `${level.padStart(6, ' ')}: ${message}`;
-    }),
-    transports: [
-      new winston.transports.Console({
-        stderrLevels: ['error', 'warn', 'info', 'debug'],
-        handleExceptions: true
-      })
-    ]
-  });
-}
-
 export function getPackageInfo(): PackageJson {
   const packageInfo: PackageJson = JSON.parse(fs.readFileSync('package.json').toString());
   return packageInfo;
@@ -156,7 +141,7 @@ function loadLibsFromDir(
       id: f.slice(0, f.length - compiledLibSuffix.length),
       version: packageJson.version
     };
-    const src = parseSourceFile(mode, file, fullName, true);
+    const src = parseSourceFile(logger, mode, file, fullName, true);
     compiler.addLib(src);
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     if (src.dependencies.length > 0) {
@@ -207,7 +192,7 @@ function loadSoftwareFromDir(
       version: packageJson.version
     };
 
-    const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, []);
+    const software = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
 
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addSoftware(software);
@@ -232,7 +217,7 @@ function loadAssetsFromDir(
       version: packageJson.version
     };
 
-    const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, []);
+    const asset = new ArtifactSource(mode, fullName, fs.readFileSync(file).toString(), file, [], []);
 
     logger.debug(`Adding dependency ${fullNameToString(fullName)} from ${file}`);
     compiler.addAsset(asset);
@@ -275,7 +260,7 @@ export function parseSources(
 
     const file = path.resolve(root, inRootPath);
     logger.debug(`Parsing ${fullNameToString(fullName)} from ${file}`);
-    const newSrc = parseSourceFile(mode, file, fullName, true);
+    const newSrc = parseSourceFile(logger, mode, file, fullName, true);
     if (newSrc.dependencies.length > 0) {
       logger.debug('Detected dependencies:');
       for (const dep of newSrc.dependencies) logger.debug(`  - ${typedArtifactNameToString(dep)}`);
