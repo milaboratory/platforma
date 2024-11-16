@@ -30,6 +30,7 @@ export default defineConfig({
         '@ag-grid-enterprise/rich-select',
         '@ag-grid-enterprise/menu',
         '@ag-grid-enterprise/excel-export',
+        "@ag-grid-community/theming"
       ],
       output: {
         globals: {
