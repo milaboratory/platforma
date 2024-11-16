@@ -10,12 +10,12 @@ import type {
   StateUpdatedEvent,
 } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
-import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
-import { SideBarModule } from '@ag-grid-enterprise/side-bar';
-import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
+import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
+import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
+import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
@@ -247,6 +247,9 @@ const gridOptions = ref<GridOptions>({
   autoSizeStrategy: { type: 'fitCellContents' },
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
+  },
+  defaultColDef: {
+    suppressHeaderMenuButton: true,
   },
   maintainColumnOrder: true,
   localeText: {
