@@ -36,9 +36,16 @@ _runBinaryCommand := func(inputs) {
 	// add assets
 	archives := ll.toStrict({})
 	for k, descriptor in inputs.assetDescriptors {
-		archives[k] = blobs.createBlobImportExternal({
+		assetBlob := blobs.createBlobImportExternal({
 			dataURL: descriptor.asset.url
 		}).file
+
+		archives[k] = assetBlob
+		if is_int(inputs.assetCache[k]) {
+			assetBlob.setCache(inputs.assetCache[k])
+		} else {
+			assetBlob.setCacheDays(1)
+		}
 	}
 	for k, archiveRules in inputs.assetRules {
 		for dir, filesToExtract in archiveRules {
@@ -195,7 +202,8 @@ self.body(func(inputs) {
 		streams: ["string"],
 		"assets,omitempty": { any: validation.resource() },
 		"assetDescriptors,omitempty": { any: pkg.assetDescriptorScheme },
-		"assetRules,omitempty": { any: { any: ["string"] } }
+		"assetRules,omitempty": { any: { any: ["string"] } },
+		"assetCache,omitempty": { any: "number" }
 	})
 
 	ll.toStrict(inputs)
