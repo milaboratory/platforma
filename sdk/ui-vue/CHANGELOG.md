@@ -1,5 +1,12 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.23
+
+### Patch Changes
+
+- 0382abe: @ag-grid-community/theming removed from bundling
+- 0382abe: AGGrid upgrade.
+
 ## 1.8.21
 
 ### Patch Changes

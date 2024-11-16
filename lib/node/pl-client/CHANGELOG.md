@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.5.10
+
+### Patch Changes
+
+- 0382abe: Undici & AWS SDK upgrades.
+
 ## 2.5.9
 
 ### Patch Changes
