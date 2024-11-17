@@ -1,5 +1,5 @@
 import { MiddleLayerEnvironment } from '../middle_layer/middle_layer';
-import { Code, FunctionHandle } from '@platforma-sdk/model';
+import { Code, ConfigRenderLambda } from '@platforma-sdk/model';
 import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
@@ -8,10 +8,12 @@ import { BlockContextAny } from '../middle_layer/block_ctx';
 export function computableFromRF(
   env: MiddleLayerEnvironment,
   ctx: BlockContextAny,
-  fh: FunctionHandle,
+  fh: ConfigRenderLambda,
   code: Code,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
+  ops = { ...ops };
+  if (ops.mode === undefined && fh.retentive) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
     const scope = new Scope();
     cCtx.addOnDestroy(() => scope.dispose());
@@ -23,7 +25,7 @@ export function computableFromRF(
     const rCtx = new JsExecutionContext(scope, vm, ctx, env, cCtx);
 
     rCtx.evaluateBundle(code.content);
-    const result = rCtx.runCallback(fh);
+    const result = rCtx.runCallback(fh.handle);
 
     rCtx.resetComputableCtx();
 

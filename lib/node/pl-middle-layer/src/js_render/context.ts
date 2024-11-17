@@ -13,6 +13,7 @@ import {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
+  Ref,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
   ValueOrError,
@@ -394,6 +395,16 @@ export class JsExecutionContext
     return specs;
   }
 
+  getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined {
+    return this.resultPool.getSpecByRef(blockId, exportName);
+  }
+
+  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+    return mapPObjectData(this.resultPool.getDataByRef(blockId, exportName), (acc) =>
+      this.wrapAccessor(acc)
+    );
+  }
+
   //
   // PFrames / PTables
   //
@@ -740,6 +751,26 @@ export class JsExecutionContext
       exportCtxFunction('calculateOptions', (predicate) => {
         return this.exportObjectUniversal(
           this.calculateOptions(this.importObjectViaJson(predicate) as PSpecPredicate),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getSpecFromResultPoolByRef', (blockId, exportName) => {
+        return this.exportObjectUniversal(
+          this.getSpecFromResultPoolByRef(
+            this.vm.getString(blockId),
+            this.vm.getString(exportName)
+          ),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getDataFromResultPoolByRef', (blockId, exportName) => {
+        return this.exportObjectUniversal(
+          this.getDataFromResultPoolByRef(
+            this.vm.getString(blockId),
+            this.vm.getString(exportName)
+          ),
           undefined
         );
       });

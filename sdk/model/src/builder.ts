@@ -54,15 +54,21 @@ export type Code = {
 declare const __function_handle__: unique symbol;
 
 /** Creates branded Cfg type */
-export type FunctionHandle<Return = unknown> = string & { [__function_handle__]: Return };
+export type ConfigRenderLambda<Return = unknown> = {
+  __renderLambda: true;
+  handle: string;
+  retentive: boolean;
+};
 
-export type ExtractFunctionHandleReturn<Func extends FunctionHandle> =
-  Func[typeof __function_handle__];
+export type ExtractFunctionHandleReturn<Func extends ConfigRenderLambda> =
+  Func extends ConfigRenderLambda<infer Return> ? Return : never;
 
-export type TypedConfigOrFunctionHandle = TypedConfig | FunctionHandle;
+export type TypedConfigOrConfigLambda = TypedConfig | ConfigRenderLambda;
 
-export function isFunctionHandle(cfgOrFh: TypedConfigOrFunctionHandle): cfgOrFh is FunctionHandle {
-  return typeof cfgOrFh === 'string';
+export function isFunctionHandle(
+  cfgOrFh: TypedConfigOrConfigLambda
+): cfgOrFh is ConfigRenderLambda {
+  return (cfgOrFh as any).__renderLambda === true;
 }
 
 type OnlyString<S> = S extends string ? S : '';
@@ -76,11 +82,15 @@ export type DeriveHref<S> = S extends readonly BlockSection[]
  * version of config structure. */
 export type BlockConfigUniversal<
   Args = unknown,
-  Outputs extends Record<string, TypedConfigOrFunctionHandle> = Record<
+  UiState = unknown,
+  Outputs extends Record<string, TypedConfigOrConfigLambda | string> = Record<
     string,
-    TypedConfigOrFunctionHandle
+    TypedConfigOrConfigLambda | string
   >
 > = {
+  /** Config format version */
+  readonly cfgVersion?: number;
+
   /** SDK version used by the block */
   readonly sdkVersion: string;
 
@@ -90,8 +100,11 @@ export type BlockConfigUniversal<
   /** Initial value for the args when block is added to the project */
   readonly initialArgs: Args;
 
+  /** Initial value for the args when block is added to the project */
+  readonly initialUiState: UiState;
+
   /** @deprecated */
-  readonly canRun?: TypedConfigOrFunctionHandle;
+  readonly canRun?: TypedConfigOrConfigLambda | string;
 
   /**
    * Config to determine whether the block can be executed with current
@@ -99,10 +112,13 @@ export type BlockConfigUniversal<
    *
    * Optional to support earlier SDK version configs.
    * */
-  readonly inputsValid?: TypedConfigOrFunctionHandle;
+  readonly inputsValid?: TypedConfigOrConfigLambda | string;
 
   /** Configuration to derive list of section for the left overview panel */
-  readonly sections: TypedConfigOrFunctionHandle;
+  readonly sections: TypedConfigOrConfigLambda | string;
+
+  /** Config code bundle */
+  readonly title?: ConfigRenderLambda;
 
   /** Configuration for the output cells */
   readonly outputs: Outputs;
@@ -111,26 +127,117 @@ export type BlockConfigUniversal<
   readonly code?: Code;
 };
 
-/** This structure is rendered from the configuration */
+// /** This structure is rendered from the configuration */
+// export type BlockConfig<
+//   Args = unknown,
+//   UiState = unknown,
+//   Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
+//     string,
+//     TypedConfigOrConfigLambda
+//   >
+// > =
+//   // Code below:
+//   //   - removes 'canRun' field
+//   //   - make everething except 'code' and 'title' required
+//   //   - narrows cfgVersion to number 3;
+//   Required<Omit<BlockConfigUniversal<Args, UiState, Outputs>, 'canRun' | 'code' | 'title'>> &
+//     Pick<BlockConfigUniversal<Args, UiState, Outputs>, 'code' | 'title'> & {
+//       readonly cfgVersion: 3;
+//     };
+
 export type BlockConfig<
   Args = unknown,
-  Outputs extends Record<string, TypedConfigOrFunctionHandle> = Record<
+  UiState = unknown,
+  Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
     string,
-    TypedConfigOrFunctionHandle
+    TypedConfigOrConfigLambda
   >
-> = Required<Omit<BlockConfigUniversal<Args, Outputs>, 'canRun' | 'code'>> &
-  Pick<BlockConfigUniversal<Args, Outputs>, 'code'>;
+> = {
+  /** Config format version */
+  readonly cfgVersion: 3;
 
-/** Takes universal config, and converts it into latest structure */
-export function normalizeBlockConfig<
-  Args,
-  Outputs extends Record<string, TypedConfigOrFunctionHandle>
->(cfg: BlockConfigUniversal<Args, Outputs>): BlockConfig<Args, Outputs> {
-  if (cfg.inputsValid !== undefined) return cfg as BlockConfig<Args, Outputs>;
-  else {
+  /** SDK version used by the block */
+  readonly sdkVersion: string;
+
+  /** Main rendering mode for the block */
+  readonly renderingMode: BlockRenderingMode;
+
+  /** Initial value for the args when block is added to the project */
+  readonly initialArgs: Args;
+
+  /** Initial value for the args when block is added to the project */
+  readonly initialUiState: UiState;
+
+  /**
+   * Config to determine whether the block can be executed with current
+   * arguments.
+   *
+   * Optional to support earlier SDK version configs.
+   * */
+  readonly inputsValid: TypedConfigOrConfigLambda;
+
+  /** Configuration to derive list of section for the left overview panel */
+  readonly sections: TypedConfigOrConfigLambda;
+
+  /** Config code bundle */
+  readonly title?: ConfigRenderLambda;
+
+  /** Configuration for the output cells */
+  readonly outputs: Outputs;
+
+  /** Config code bundle */
+  readonly code?: Code;
+};
+
+function migrateCfgOrLambda(data: TypedConfigOrConfigLambda | string): TypedConfigOrConfigLambda;
+function migrateCfgOrLambda(
+  data: TypedConfigOrConfigLambda | string | undefined
+): TypedConfigOrConfigLambda | undefined;
+function migrateCfgOrLambda(
+  data: TypedConfigOrConfigLambda | string | undefined
+): TypedConfigOrConfigLambda | undefined {
+  if (data === undefined) return undefined;
+  if (typeof data === 'string') return { __renderLambda: true, handle: data, retentive: false };
+  return data;
+}
+
+/**
+ * Takes universal config, and converts it into latest structure.
+ *
+ * **Important:** This operation is not meant to be executed recusively for the same content.
+ *                This means in no circumstance result of this function should be persisted!
+ * */
+export function normalizeBlockConfig(cfg: BlockConfigUniversal): BlockConfig {
+  if (cfg.cfgVersion === 3) return cfg as BlockConfig;
+  else if (cfg.inputsValid !== undefined) {
+    if (cfg.title !== undefined) throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
+    // version 2
+    const latest = {
+      ...cfg,
+      cfgVersion: 3,
+      outputs: Object.fromEntries(
+        Object.entries(cfg.outputs).map(([key, value]) => [key, migrateCfgOrLambda(value)])
+      ),
+      inputsValid: migrateCfgOrLambda(cfg.inputsValid!),
+      sections: migrateCfgOrLambda(cfg.sections),
+      initialUiState: undefined
+    } satisfies BlockConfig;
+    return latest;
+  } else {
+    // version 1
     if (cfg.canRun === undefined)
       throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
-    const latest = { ...cfg, inputsValid: cfg.canRun };
+    if (cfg.title !== undefined) throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
+    const latest = {
+      ...cfg,
+      cfgVersion: 3,
+      outputs: Object.fromEntries(
+        Object.entries(cfg.outputs).map(([key, value]) => [key, migrateCfgOrLambda(value)])
+      ),
+      inputsValid: migrateCfgOrLambda(cfg.canRun),
+      sections: migrateCfgOrLambda(cfg.sections),
+      initialUiState: undefined
+    } satisfies BlockConfig;
     delete latest['canRun'];
     return latest;
   }
@@ -141,28 +248,43 @@ export function normalizeBlockConfig<
  * exported as constant with name "platforma" from the "config" module. */
 export class BlockModel<
   Args,
-  OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>,
+  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState,
   Href extends `/${string}` = '/'
 > {
   private constructor(
     private readonly _renderingMode: BlockRenderingMode,
     private readonly _initialArgs: Args | undefined,
+    private readonly _initialUiState: UiState,
     private readonly _outputs: OutputsCfg,
-    private readonly _inputsValid: TypedConfigOrFunctionHandle,
-    private readonly _sections: TypedConfigOrFunctionHandle
-  ) { }
+    private readonly _inputsValid: TypedConfigOrConfigLambda,
+    private readonly _sections: TypedConfigOrConfigLambda,
+    private readonly _title: ConfigRenderLambda | undefined
+  ) {}
 
   /** Initiates configuration builder */
-  public static create<Args, UiState = undefined>(
-    renderingMode: BlockRenderingMode = 'Heavy'
-  ): BlockModel<Args, {}, UiState> {
-    return new BlockModel<Args, {}, UiState>(
+  public static create(renderingMode: BlockRenderingMode): BlockModel<{}, {}, {}>;
+  /** Initiates configuration builder */
+  public static create(): BlockModel<{}, {}, {}>;
+  /**
+   * Initiates configuration builder
+   * @deprecated use create method without generic parameter
+   */
+  public static create<Args>(renderingMode: BlockRenderingMode): BlockModel<Args, {}, {}>;
+  /**
+   * Initiates configuration builder
+   * @deprecated use create method without generic parameter
+   */
+  public static create<Args>(): BlockModel<Args, {}, {}>;
+  public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModel<{}, {}, {}> {
+    return new BlockModel<{}, {}, {}>(
       renderingMode,
       undefined,
       {},
+      {},
       getImmediate(true),
-      getImmediate([])
+      getImmediate([]),
+      undefined
     );
   }
 
@@ -182,37 +304,56 @@ export class BlockModel<
     rf: RF
   ): BlockModel<
     Args,
-    OutputsCfg & { [K in Key]: FunctionHandle<InferRenderFunctionReturn<RF>> },
+    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
+    UiState,
+    Href
+  >;
+  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key,
+    rf: RF,
+    retentive: boolean
+  ): BlockModel<
+    Args,
+    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
     UiState,
     Href
   >;
   public output(
     key: string,
-    cfgOrRf: TypedConfig | Function
+    cfgOrRf: TypedConfig | Function,
+    retentive: boolean = false
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
-      const functionHandle = `output#${key}` as FunctionHandle;
-      tryRegisterCallback(functionHandle, () => cfgOrRf(new RenderCtx()));
+      const handle = `output#${key}`;
+      tryRegisterCallback(handle, () => cfgOrRf(new RenderCtx()));
       return new BlockModel(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         {
           ...this._outputs,
-          [key]: functionHandle
+          [key]: {
+            __renderLambda: true,
+            handle,
+            retentive
+          } satisfies ConfigRenderLambda
         },
         this._inputsValid,
-        this._sections
+        this._sections,
+        this._title
       );
     } else
       return new BlockModel(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         {
           ...this._outputs,
           [key]: cfgOrRf
         },
         this._inputsValid,
-        this._sections
+        this._sections,
+        this._title
       );
   }
 
@@ -239,17 +380,25 @@ export class BlockModel<
       return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         this._outputs,
-        'inputsValid' as FunctionHandle,
-        this._sections
+        {
+          __renderLambda: true,
+          handle: 'inputsValid',
+          retentive: false
+        } satisfies ConfigRenderLambda,
+        this._sections,
+        this._title
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         this._outputs,
         cfgOrRf,
-        this._sections
+        this._sections,
+        this._title
       );
   }
 
@@ -268,7 +417,9 @@ export class BlockModel<
   }
 
   /** Sets the config to generate list of section in the left block overviews panel */
-  public sections<const S extends SectionsExpectedType,>(rf: S): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
+  public sections<const S extends SectionsExpectedType>(
+    rf: S
+  ): BlockModel<Args, OutputsCfg, UiState, DeriveHref<S>>;
   public sections<
     const Ret extends SectionsExpectedType,
     const RF extends RenderFunction<Args, UiState, Ret>
@@ -284,36 +435,85 @@ export class BlockModel<
   public sections(
     arrOrCfgOrRf: SectionsExpectedType | TypedConfig | Function
   ): BlockModel<Args, OutputsCfg, UiState, `/${string}`> {
-    if (Array.isArray(arrOrCfgOrRf)){
-      return this.sections(getImmediate(arrOrCfgOrRf))
+    if (Array.isArray(arrOrCfgOrRf)) {
+      return this.sections(getImmediate(arrOrCfgOrRf));
     } else if (typeof arrOrCfgOrRf === 'function') {
       tryRegisterCallback('sections', () => arrOrCfgOrRf(new RenderCtx()));
       return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         this._outputs,
         this._inputsValid,
-        'sections' as FunctionHandle
+        { __renderLambda: true, handle: 'sections', retentive: false } as ConfigRenderLambda,
+        this._title
       );
     } else
       return new BlockModel<Args, OutputsCfg, UiState>(
         this._renderingMode,
         this._initialArgs,
+        this._initialUiState,
         this._outputs,
         this._inputsValid,
-        arrOrCfgOrRf as TypedConfig
+        arrOrCfgOrRf as TypedConfig,
+        this._title
       );
   }
 
+  public title(
+    rf: RenderFunction<Args, UiState, string>
+  ): BlockModel<Args, OutputsCfg, UiState, Href> {
+    tryRegisterCallback('title', () => rf(new RenderCtx()));
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
+      this._renderingMode,
+      this._initialArgs,
+      this._initialUiState,
+      this._outputs,
+      this._inputsValid,
+      this._sections,
+      { __renderLambda: true, handle: 'title', retentive: false } as ConfigRenderLambda
+    );
+  }
 
-  /** Sets initial args for the block, this value must be specified. */
+  /**
+   * Sets initial args for the block, this value must be specified.
+   * @deprecated use {@link withArgs}
+   * */
   public initialArgs(value: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
     return new BlockModel<Args, OutputsCfg, UiState, Href>(
       this._renderingMode,
       value,
+      this._initialUiState,
       this._outputs,
       this._inputsValid,
-      this._sections
+      this._sections,
+      this._title
+    );
+  }
+
+  /** Sets initial args for the block, this value must be specified. */
+  public withArgs<Args>(initialValue: Args): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
+      this._renderingMode,
+      initialValue,
+      this._initialUiState,
+      this._outputs,
+      this._inputsValid,
+      this._sections,
+      this._title
+    );
+  }
+
+  /** Defines type and sets initial value for block UiState. */
+  public withUiState<UiState>(initialValue: UiState): BlockModel<Args, OutputsCfg, UiState, Href> {
+    return new BlockModel<Args, OutputsCfg, UiState, Href>(
+      this._renderingMode,
+      this._initialArgs,
+      initialValue,
+      this._outputs,
+      this._inputsValid,
+      this._sections,
+      this._title
     );
   }
 
@@ -328,12 +528,15 @@ export class BlockModel<
   > {
     if (this._initialArgs === undefined) throw new Error('Initial arguments not set.');
 
-    const config: BlockConfig<Args, OutputsCfg> = {
+    const config: BlockConfig<Args, UiState, OutputsCfg> = {
+      cfgVersion: 3,
       sdkVersion: PlatformaSDKVersion,
       renderingMode: this._renderingMode,
       initialArgs: this._initialArgs,
+      initialUiState: this._initialUiState,
       inputsValid: this._inputsValid,
       sections: this._sections,
+      title: this._title,
       outputs: this._outputs
     };
 
@@ -347,13 +550,13 @@ export class BlockModel<
 
 export type InferOutputType<CfgOrFH, Args, UiState> = CfgOrFH extends TypedConfig
   ? ResolveCfgType<CfgOrFH, Args, UiState>
-  : CfgOrFH extends FunctionHandle
+  : CfgOrFH extends ConfigRenderLambda
     ? ExtractFunctionHandleReturn<CfgOrFH>
     : never;
 
 type InferOutputsFromConfigs<
   Args,
-  OutputsCfg extends Record<string, TypedConfigOrFunctionHandle>,
+  OutputsCfg extends Record<string, TypedConfigOrConfigLambda>,
   UiState
 > = {
   [Key in keyof OutputsCfg]: ValueOrErrors<InferOutputType<OutputsCfg[Key], Args, UiState>>;

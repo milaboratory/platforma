@@ -11,6 +11,7 @@ import {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
+  Ref,
   ResultCollection,
   ValueOrError
 } from '@milaboratories/pl-model-common';
@@ -103,6 +104,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Blocks
   //
 
+  /** @deprecated at some point will stop working and will return dummy values */
   getBlockLabel(blockId: string): string;
 
   //
@@ -116,6 +118,10 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   >;
 
   getSpecsFromResultPool(): ResultCollection<PObjectSpec>;
+
+  getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined;
+
+  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<AHandle> | undefined;
 
   calculateOptions(predicate: PSpecPredicate): Option[];
 

@@ -1,18 +1,18 @@
-import { 
-  BlockModel, 
-  InferHrefType, 
-  InferOutputsType, 
-  mapJoinEntry, 
-  PColumnIdAndSpec, 
-  AxisSpec, 
-  JoinEntry, 
-  AxisId, 
-  PlDataTableState, 
-  ValueType, 
+import {
+  BlockModel,
+  InferHrefType,
+  InferOutputsType,
+  mapJoinEntry,
+  PColumnIdAndSpec,
+  AxisSpec,
+  JoinEntry,
+  AxisId,
+  PlDataTableState,
+  ValueType,
   isPColumn,
-  PlDataTableGridState 
+  PlDataTableGridState
 } from '@platforma-sdk/model';
-import {z} from 'zod';
+import { z } from 'zod';
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number())
@@ -35,16 +35,16 @@ export type TableState = {
 };
 
 export type UiState = {
-  dataTableState: TableState | undefined,
+  dataTableState: TableState | undefined;
 };
 
-export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
+export const platforma = BlockModel.create('Heavy')
 
-  .initialArgs({ numbers: [] })
+  .withArgs<BlockArgs>({ numbers: [] })
 
-  .output('numbers', (ctx) =>
-    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
-  )
+  .withUiState<UiState>({ dataTableState: undefined })
+
+  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
   .output('pFrame', (ctx) => {
     const collection = ctx.resultPool.getData();
@@ -62,6 +62,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
       return undefined;
     }
   })
+
   .output('pTable', (ctx) => {
     const join = ctx.uiState?.dataTableState?.tableState.pTableParams?.join;
     if (!join) return undefined;
@@ -75,7 +76,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
     try {
       return ctx.createPTable({
         src: mapJoinEntry(join, (idAndSpec) => {
-          const column = columns.find(it => it.id === idAndSpec.columnId);
+          const column = columns.find((it) => it.id === idAndSpec.columnId);
           if (!column) throw Error(`column '${column}' not ready`);
           return column;
         }),
@@ -89,8 +90,8 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
 
   .sections((ctx) => {
     return [
-      { type: 'link', href: '/', label: 'PlLogView' }, 
-      { type: 'link', href: '/icons', label: 'Icons/Masks' }, 
+      { type: 'link', href: '/', label: 'PlLogView' },
+      { type: 'link', href: '/icons', label: 'Icons/Masks' },
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
@@ -101,7 +102,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/errors', label: 'Errors' },
-      { type: 'link', href: '/text-fields', label: 'PlTextField' },
+      { type: 'link', href: '/text-fields', label: 'PlTextField' }
     ];
   })
 

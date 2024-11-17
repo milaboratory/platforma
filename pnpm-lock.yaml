@@ -467,6 +467,81 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/block-tools
 
+  etc/blocks/model-test/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-block-model.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-block-model.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-block-model.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/model-test/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(@microsoft/api-extractor@7.47.11(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.77.8)
+
+  etc/blocks/model-test/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-block-model.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.11(@types/node@22.5.5)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.77.8)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/model-test/workflow:
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+
   etc/blocks/ui-examples:
     dependencies:
       '@milaboratories/milaboratories.ui-examples.model':
@@ -6778,37 +6853,6 @@ packages:
       vite:
         optional: true
 
-  vite@5.4.10:
-    resolution: {integrity: sha512-1hvaPshuPUtxeQ0hsVH3Mud0ZanOLwVTneA1EgbAM5LhaZEqyPWGRQ7BtaMvUrTDeEaC8pxtj6a6jku3x4z6SQ==}
-    engines: {node: ^18.0.0 || >=20.0.0}
-    hasBin: true
-    peerDependencies:
-      '@types/node': ^18.0.0 || >=20.0.0
-      less: '*'
-      lightningcss: ^1.21.0
-      sass: '*'
-      sass-embedded: '*'
-      stylus: '*'
-      sugarss: '*'
-      terser: ^5.4.0
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-      less:
-        optional: true
-      lightningcss:
-        optional: true
-      sass:
-        optional: true
-      sass-embedded:
-        optional: true
-      stylus:
-        optional: true
-      sugarss:
-        optional: true
-      terser:
-        optional: true
-
   vite@5.4.11:
     resolution: {integrity: sha512-c7jFQRklXua0mTzneGW9QVyxFjUgwcihC4bXEtujIo2ouWCe1Ajt/amn2PCxYnhYfd5k09JX3SB7OYWFKYqj8Q==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -9824,11 +9868,6 @@ snapshots:
       eslint-visitor-keys: 3.4.3
 
   '@ungap/structured-clone@1.2.0': {}
-
-  '@vitejs/plugin-vue@5.1.4(vite@5.4.10(@types/node@22.5.5)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))':
-    dependencies:
-      vite: 5.4.10(@types/node@22.5.5)(sass@1.77.8)
-      vue: 3.5.13(typescript@5.5.4)
 
   '@vitejs/plugin-vue@5.1.4(vite@5.4.11(@types/node@20.16.15)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))':
     dependencies:
@@ -13205,7 +13244,7 @@ snapshots:
       execa: 5.1.1
       globby: 11.1.0
       joycon: 3.1.1
-      picocolors: 1.1.0
+      picocolors: 1.1.1
       postcss-load-config: 6.0.1(postcss@8.4.49)(tsx@4.19.1)(yaml@2.6.0)
       resolve-from: 5.0.0
       rollup: 4.21.3
@@ -13233,7 +13272,7 @@ snapshots:
       execa: 5.1.1
       globby: 11.1.0
       joycon: 3.1.1
-      picocolors: 1.1.0
+      picocolors: 1.1.1
       postcss-load-config: 6.0.1(postcss@8.4.49)(tsx@4.19.1)(yaml@2.6.0)
       resolve-from: 5.0.0
       rollup: 4.21.3
@@ -13450,16 +13489,6 @@ snapshots:
       - rollup
       - supports-color
 
-  vite@5.4.10(@types/node@22.5.5)(sass@1.77.8):
-    dependencies:
-      esbuild: 0.21.5
-      postcss: 8.4.47
-      rollup: 4.21.3
-    optionalDependencies:
-      '@types/node': 22.5.5
-      fsevents: 2.3.3
-      sass: 1.77.8
-
   vite@5.4.11(@types/node@20.16.15)(sass@1.77.8):
     dependencies:
       esbuild: 0.21.5
@@ -13488,7 +13517,7 @@ snapshots:
       '@shikijs/transformers': 1.22.0
       '@shikijs/types': 1.22.0
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 5.1.4(vite@5.4.10(@types/node@22.5.5)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))
+      '@vitejs/plugin-vue': 5.1.4(vite@5.4.11(@types/node@22.5.5)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))
       '@vue/devtools-api': 7.4.6
       '@vue/shared': 3.5.11
       '@vueuse/core': 11.1.0(vue@3.5.13(typescript@5.5.4))
@@ -13497,7 +13526,7 @@ snapshots:
       mark.js: 8.11.1
       minisearch: 7.1.0
       shiki: 1.22.0
-      vite: 5.4.10(@types/node@22.5.5)(sass@1.77.8)
+      vite: 5.4.11(@types/node@22.5.5)(sass@1.77.8)
       vue: 3.5.13(typescript@5.5.4)
     optionalDependencies:
       postcss: 8.4.49

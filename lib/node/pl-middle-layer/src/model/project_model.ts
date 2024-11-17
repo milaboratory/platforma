@@ -15,7 +15,10 @@ export interface Block {
   /** Unique block id */
   readonly id: string;
 
-  /** Label shown to the user */
+  /** 
+   * Label shown to the user
+   * @deprecated
+   * */
   label: string;
 
   /** How to approach block rendering */
