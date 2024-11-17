@@ -1,5 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { TypedArtifactName, FullArtifactName, ArtifactType, CompileMode } from './package';
+import winston from 'winston';
+import {
+  TypedArtifactName,
+  FullArtifactName,
+  ArtifactType,
+  CompileMode,
+  CompilerOption
+} from './package';
 import { ArtifactMap, createArtifactNameSet } from './artifactset';
 
 // matches any valid name in tengo. Don't forget to use '\b' when needed to limit the boundaries!
@@ -30,6 +37,9 @@ const newImportAssetRE = (moduleName: string) => {
   return functionCallRE(moduleName, 'importAsset');
 };
 
+const emptyLineRE = /^\s*$/;
+const compilerOptionRE = /^\/\/tengo:/;
+const wrongCompilerOptionRE = /^\s*\/\/\s+tengo:/;
 const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/;
 const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
@@ -38,6 +48,30 @@ const importNameRE = new RegExp(
   `\\b(?<importName>${namePattern}(\\.${namePattern})*)${importRE.source}`
 );
 const dependencyRE = /(?<pkgName>[^"]+)?:(?<depID>[^"]+)/; // use it to parse <moduleName> from importPattern or <templateName> акщь getTemplateID
+
+/**
+ * Parse compiler option string representation
+ * Compiler option line is a comment starting with '//tengo:', say
+ *   //tengo:hash_override tralala
+ *
+ * The common compiler option syntax is:
+ *  //tengo:<option name> [<option arg1> [<option arg 2> [...]]]
+ */
+const parseComplierOption = (opt: string): CompilerOption => {
+  const parts = opt.split(' ');
+  const namePart = parts[0].split(':');
+  if (namePart.length != 2) {
+    throw new Error(
+      "compiler option format is wrong: expect to have option name after 'tengo:' prefix, like 'tengo:MyOption'"
+    );
+  }
+  const optName = namePart[1];
+
+  return {
+    name: optName,
+    args: parts.slice(1)
+  };
+};
 
 export class ArtifactSource {
   constructor(
@@ -50,42 +84,49 @@ export class ArtifactSource {
     /** Path to source file where artifact came from */
     public readonly srcName: string,
     /** List of dependencies */
-    public readonly dependencies: TypedArtifactName[]
+    public readonly dependencies: TypedArtifactName[],
+    /** Additional compiler options detected in source code */
+    public readonly compilerOptions: CompilerOption[]
   ) {}
 }
 
 export function parseSourceFile(
+  logger: winston.Logger,
   mode: CompileMode,
   srcFile: string,
   fullSourceName: FullArtifactName,
   normalize: boolean
 ): ArtifactSource {
   const src = readFileSync(srcFile).toString();
-  const { deps, normalized } = parseSourceData(src, fullSourceName, normalize);
+  const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
-  return new ArtifactSource(mode, fullSourceName, normalized, srcFile, deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, srcFile, deps.array, opts);
 }
 
 export function parseSource(
+  logger: winston.Logger,
   mode: CompileMode,
   src: string,
   fullSourceName: FullArtifactName,
   normalize: boolean
 ): ArtifactSource {
-  const { deps, normalized } = parseSourceData(src, fullSourceName, normalize);
+  const { deps, normalized, opts } = parseSourceData(logger, src, fullSourceName, normalize);
 
-  return new ArtifactSource(mode, fullSourceName, normalized, '', deps.array);
+  return new ArtifactSource(mode, fullSourceName, normalized, '', deps.array, opts);
 }
 
 function parseSourceData(
+  logger: winston.Logger,
   src: string,
   fullSourceName: FullArtifactName,
   globalizeImports: boolean
 ): {
   normalized: string;
   deps: ArtifactMap<TypedArtifactName>;
+  opts: CompilerOption[];
 } {
   const dependencySet = createArtifactNameSet();
+  const optionList: CompilerOption[] = [];
 
   // iterating over lines
   const lines = src.split('\n');
@@ -97,15 +138,17 @@ function parseSourceData(
   const processedLines: string[] = [];
   let parserContext: sourceParserContext = {
     isInCommentBlock: false,
-    tplDepREs: new Map<string, [ArtifactType, RegExp][]>()
+    canDetectOptions: true,
+    tplDepREs: new Map<string, [ArtifactType, RegExp][]>(),
+    lineNo: 0
   };
 
-  let lineNo = 0;
   for (const line of lines) {
-    lineNo++;
+    parserContext.lineNo++;
 
     try {
       const result = parseSingleSourceLine(
+        logger,
         line,
         parserContext,
         fullSourceName.pkg,
@@ -117,47 +160,78 @@ function parseSourceData(
       if (result.artifact) {
         dependencySet.add(result.artifact);
       }
+      if (result.option) {
+        optionList.push(result.option);
+      }
     } catch (error: any) {
-      throw new Error(`[line ${lineNo}]: ${error.message}\n\t${line}`);
+      throw new Error(`[line ${parserContext.lineNo}]: ${error.message}\n\t${line}`);
     }
   }
 
   return {
     normalized: processedLines.join('\n'),
-    deps: dependencySet
+    deps: dependencySet,
+    opts: optionList
   };
 }
 
 interface sourceParserContext {
   isInCommentBlock: boolean;
+  canDetectOptions: boolean;
   tplDepREs: Map<string, [ArtifactType, RegExp][]>;
+  lineNo: number;
 }
 
 function parseSingleSourceLine(
+  logger: winston.Logger,
   line: string,
   context: sourceParserContext,
   localPackageName: string,
-  globalizeImports: boolean
+  globalizeImports?: boolean
 ): {
   line: string;
   context: sourceParserContext;
   artifact: TypedArtifactName | undefined;
+  option: CompilerOption | undefined;
 } {
   if (context.isInCommentBlock) {
     if (multilineCommentEndRE.exec(line)) {
       context.isInCommentBlock = false;
     }
-    return { line, context, artifact: undefined };
+    return { line, context, artifact: undefined, option: undefined };
+  }
+
+  if (compilerOptionRE.exec(line)) {
+    if (!context.canDetectOptions) {
+      logger.warn(
+        `[line ${context.lineNo}]: compiler option '//tengo:' was detected, but it cannot be applied as compiler options can be set only at the file header, before any code line'`
+      );
+      return { line, context, artifact: undefined, option: undefined };
+    }
+    return { line, context, artifact: undefined, option: parseComplierOption(line) };
+  }
+
+  if (wrongCompilerOptionRE.exec(line) && context.canDetectOptions) {
+    logger.warn(
+      `[line ${context.lineNo}]: text simillar to compiler option ('//tengo:...') was detected, but it has wrong format. Leave it as is, if you did not mean to use a line as compiler option. Or format it to '//tengo:<option>' otherwise (no spaces between '//' and 'tengo', no spaces between ':' and option name)`
+    );
+    return { line, context, artifact: undefined, option: undefined };
   }
 
   if (singlelineCommentRE.exec(line)) {
-    return { line, context, artifact: undefined };
+    return { line, context, artifact: undefined, option: undefined };
   }
 
   if (multilineCommentStartRE.exec(line)) {
     context.isInCommentBlock = true;
-    return { line, context, artifact: undefined };
+    return { line, context, artifact: undefined, option: undefined };
   }
+
+  if (emptyLineRE.exec(line)) {
+    return { line, context, artifact: undefined, option: undefined };
+  }
+
+  context.canDetectOptions = false;
 
   const importInstruction = importRE.exec(line);
 
@@ -171,7 +245,7 @@ function parseSingleSourceLine(
           ['software', newGetSoftwareInfoRE(iInfo.alias)]
         ]);
       }
-      return { line, context, artifact: undefined };
+      return { line, context, artifact: undefined, option: undefined };
     }
 
     if (
@@ -208,14 +282,14 @@ function parseSingleSourceLine(
     const artifact = parseArtifactName(iInfo.module, 'library', localPackageName);
     if (!artifact) {
       // not a Platforma Tengo library import
-      return { line, context, artifact: undefined };
+      return { line, context, artifact: undefined, option: undefined };
     }
 
     if (globalizeImports) {
       line = line.replace(importInstruction[0], ` := import("${artifact.pkg}:${artifact.id}")`);
     }
 
-    return { line, context, artifact };
+    return { line, context, artifact, option: undefined };
   }
 
   if (context.tplDepREs.size > 0) {
@@ -241,12 +315,12 @@ function parseSingleSourceLine(
           line = line.replace(fnCall, `${fnName}("${artifact.pkg}:${artifact.id}")`);
         }
 
-        return { line, context, artifact };
+        return { line, context, artifact, option: undefined };
       }
     }
   }
 
-  return { line, context, artifact: undefined };
+  return { line, context, artifact: undefined, option: undefined };
 }
 
 interface ImportInfo {

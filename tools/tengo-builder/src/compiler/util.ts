@@ -1,8 +1,24 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as winston from 'winston';
 
 export function assertNever(x: never): never {
   throw new Error('Unexpected object: ' + x);
+}
+
+export function createLogger(level: string = 'debug'): winston.Logger {
+  return winston.createLogger({
+    level: level,
+    format: winston.format.printf(({ level, message }) => {
+      return `${level.padStart(6, ' ')}: ${message}`;
+    }),
+    transports: [
+      new winston.transports.Console({
+        stderrLevels: ['error', 'warn', 'info', 'debug'],
+        handleExceptions: true
+      })
+    ]
+  });
 }
 
 export function findNodeModules(): string {
@@ -35,4 +51,9 @@ export function pathType(path: string): PathType {
     if (err.code == 'ENOENT') return 'absent';
     else throw err;
   }
+}
+
+export function isUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid.toLowerCase());
 }
