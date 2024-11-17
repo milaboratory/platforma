@@ -243,6 +243,8 @@ export function normalizeBlockConfig(cfg: BlockConfigUniversal): BlockConfig {
   }
 }
 
+type NoOb = Record<string, never>;
+
 /** Main entry point that each block should use in it's "config" module. Don't forget
  * to call {@link done()} at the end of configuration. Value returned by this builder must be
  * exported as constant with name "platforma" from the "config" module. */
@@ -263,21 +265,21 @@ export class BlockModel<
   ) {}
 
   /** Initiates configuration builder */
-  public static create(renderingMode: BlockRenderingMode): BlockModel<{}, {}, {}>;
+  public static create(renderingMode: BlockRenderingMode): BlockModel<NoOb, {}, NoOb>;
   /** Initiates configuration builder */
-  public static create(): BlockModel<{}, {}, {}>;
+  public static create(): BlockModel<NoOb, {}, NoOb>;
   /**
    * Initiates configuration builder
    * @deprecated use create method without generic parameter
    */
-  public static create<Args>(renderingMode: BlockRenderingMode): BlockModel<Args, {}, {}>;
+  public static create<Args>(renderingMode: BlockRenderingMode): BlockModel<Args, {}, NoOb>;
   /**
    * Initiates configuration builder
    * @deprecated use create method without generic parameter
    */
-  public static create<Args>(): BlockModel<Args, {}, {}>;
-  public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModel<{}, {}, {}> {
-    return new BlockModel<{}, {}, {}>(
+  public static create<Args>(): BlockModel<Args, {}, NoOb>;
+  public static create(renderingMode: BlockRenderingMode = 'Heavy'): BlockModel<NoOb, {}, NoOb> {
+    return new BlockModel<NoOb, {}, NoOb>(
       renderingMode,
       undefined,
       {},
@@ -291,7 +293,7 @@ export class BlockModel<
   /**
    * Add output cell to the configuration
    *
-   * @param key cell name, that can be used to retrieve the rendered value
+   * @param key output cell name, that can be later used to retrieve the rendered value
    * @param cfg configuration describing how to render cell value from the blocks
    *            workflow outputs
    * */
@@ -299,6 +301,13 @@ export class BlockModel<
     key: Key,
     cfg: Cfg
   ): BlockModel<Args, OutputsCfg & { [K in Key]: Cfg }, UiState, Href>;
+  /**
+   * Add output cell to the configuration
+   *
+   * @param key output cell name, that can be later used to retrieve the rendered value
+   * @param rf  callback calculating output value using context, that allows to access
+   *            workflows outputs and interact with platforma drivers
+   * */
   public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF
@@ -308,6 +317,15 @@ export class BlockModel<
     UiState,
     Href
   >;
+  /**
+   * Add output cell to the configuration
+   *
+   * @param key output cell name, that can be later used to retrieve the rendered value
+   * @param rf  callback calculating output value using context, that allows to access
+   *            workflows outputs and interact with platforma drivers
+   * @param retentive if set to true, this output will retain and present prevois stable
+   *                  state while new stable value is being calculated
+   * */
   public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF,
@@ -355,6 +373,19 @@ export class BlockModel<
         this._sections,
         this._title
       );
+  }
+
+  /** Shortcut for {@link output} with retentive flag set to true. */
+  public retentiveOutput<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
+    key: Key,
+    rf: RF
+  ): BlockModel<
+    Args,
+    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
+    UiState,
+    Href
+  > {
+    return this.output(key, rf, true);
   }
 
   /** @deprecated */

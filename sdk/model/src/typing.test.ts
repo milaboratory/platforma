@@ -99,11 +99,11 @@ test('test config content', () => {
 });
 
 test('test config content', () => {
-  const platforma = BlockModel.create<{ a: string[] }>('Heavy')
-    .initialArgs({ a: [] })
+  const platforma = BlockModel.create('Heavy')
+    .withArgs<{ a: string[] }>({ a: [] })
+    .argsValid(isEmpty(getJsonField(Args, 'a')))
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
-    .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections((r) => {
       return [
         { type: 'link', href: '/', label: 'Main' },
