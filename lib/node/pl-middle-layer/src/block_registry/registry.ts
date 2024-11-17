@@ -154,7 +154,17 @@ export class BlockPackRegistry {
               otherVersions: []
             });
           } else {
-            const v2Description = await tryLoadPackDescription(devPath);
+            let actualDevPath = devPath;
+            let v2Description = await tryLoadPackDescription(actualDevPath);
+            
+            if (v2Description === undefined)
+              // iterating over expected subfolder names where block developer may put root block-pack package
+              for (const bpSubfolder of ['block', 'meta']) {
+                actualDevPath = path.join(devPath, bpSubfolder)
+                v2Description = await tryLoadPackDescription(actualDevPath);
+                if (v2Description !== undefined) break;
+              }
+
             if (v2Description !== undefined) {
               const mtime = await getDevV2PacketMtime(v2Description);
               result.push({
@@ -163,7 +173,7 @@ export class BlockPackRegistry {
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
                 spec: {
                   type: 'dev-v2',
-                  folder: devPath,
+                  folder: actualDevPath,
                   mtime
                 },
                 otherVersions: []

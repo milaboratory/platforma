@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import { field, poll, TestHelpers, toGlobalResourceId } from '@milaboratories/pl-client';
 import { createProject, ProjectMutator, withProject } from './project';
 import { outputRef } from '../model/args';
@@ -28,6 +29,7 @@ test('simple test #1', async () => {
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [1, 2, 3] }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -41,6 +43,7 @@ test('simple test #1', async () => {
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [3, 4, 5] }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -57,6 +60,7 @@ test('simple test #1', async () => {
           args: JSON.stringify({
             sources: [outputRef('block1', 'column'), outputRef('block2', 'column')]
           }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
       );
@@ -191,6 +195,7 @@ test('simple test #2 with bp migration', async () => {
         { id: 'block1', label: 'Block1', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [1, 2, 3] }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -198,6 +203,7 @@ test('simple test #2 with bp migration', async () => {
         { id: 'block2', label: 'Block2', renderingMode: 'Heavy' },
         {
           args: JSON.stringify({ numbers: [3, 4, 5] }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecEnterV041NotPrepared)
         }
       );
@@ -207,6 +213,7 @@ test('simple test #2 with bp migration', async () => {
           args: JSON.stringify({
             sources: [outputRef('block1', 'column'), outputRef('block2', 'column')]
           }),
+          uiState: "{}",
           blockPack: await TestBPPreparer.prepare(BPSpecSumV042NotPrepared)
         }
       );

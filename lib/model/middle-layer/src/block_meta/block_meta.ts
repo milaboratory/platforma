@@ -25,7 +25,10 @@ export function BlockPackMeta<
       url: z.string().url(),
       logo: binary.optional()
     }),
-    // The order of blocks on the "marketplace" (descending from highest to lowest). Not existent means `0`
+    /**
+     * The order of blocks on the "marketplace" (higher values push block higher to the top of the list).
+     * `undefined` value or absent field is treated exactly the same as number `0`.
+     */
     marketplaceRanking: z.number().optional(),
   });
 }

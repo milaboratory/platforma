@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/milaboratories.test-block-model",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-block-model.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-block-model.model": "workspace:*",
+    "@milaboratories/milaboratories.test-block-model.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-block-model.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-block-model.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-block-model.ui/dist"
+    },
+    "meta": {
+      "title": "Model test block",
+      "description": "Test block for block model features",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      },
+      "marketplaceRanking": 10
+    }
+  }
+}

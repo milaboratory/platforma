@@ -56,10 +56,23 @@ export function ensurePColumn<T>(obj: PObject<T>): PColumn<T> {
 }
 
 export function mapPObjectData<D1, D2>(pObj: PColumn<D1>, cb: (d: D1) => D2): PColumn<D2>;
+export function mapPObjectData<D1, D2>(
+  pObj: PColumn<D1> | undefined,
+  cb: (d: D1) => D2
+): PColumn<D2> | undefined;
 export function mapPObjectData<D1, D2>(pObj: PObject<D1>, cb: (d: D1) => D2): PObject<D2>;
-export function mapPObjectData<D1, D2>(pObj: PObject<D1>, cb: (d: D1) => D2): PObject<D2> {
-  return {
-    ...pObj,
-    data: cb(pObj.data)
-  };
+export function mapPObjectData<D1, D2>(
+  pObj: PObject<D1> | undefined,
+  cb: (d: D1) => D2
+): PObject<D2> | undefined;
+export function mapPObjectData<D1, D2>(
+  pObj: PObject<D1> | undefined,
+  cb: (d: D1) => D2
+): PObject<D2> | undefined {
+  return pObj === undefined
+    ? undefined
+    : {
+        ...pObj,
+        data: cb(pObj.data)
+      };
 }

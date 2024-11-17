@@ -112,8 +112,11 @@ export class ResultPool {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
-    // https://github.com/milaboratory/platforma/issues/100
-    // @TODO use native pool method when available
+    // @TODO UNCOMMENT AFTER Nov 23, 2024 (ensure Desktop Apps migrated to new API)
+    // return mapPObjectData(
+    //   this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
+    //   (handle) => new TreeNodeAccessor(handle)
+    // );
     return this.getData().entries.find(
       (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
     )?.obj;
@@ -124,8 +127,8 @@ export class ResultPool {
    * @returns object spec associated with the ref
    */
   public getSpecByRef(ref: Ref): PObjectSpec | undefined {
-    // https://github.com/milaboratory/platforma/issues/100
-    // @TODO use native pool method when available
+    // @TODO UNCOMMENT AFTER Nov 23, 2024 (ensure Desktop Apps migrated to new API)
+    // return this.ctx.getSpecFromResultPoolByRef(ref.blockId, ref.name)
     return this.getSpecs().entries.find(
       (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
     )?.obj;
@@ -275,6 +278,7 @@ export class RenderCtx<Args, UiState> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => d.handle)));
   }
 
+  /** @deprecated scheduled for removal from SDK */
   public getBlockLabel(blockId: string): string {
     return this.ctx.getBlockLabel(blockId);
   }

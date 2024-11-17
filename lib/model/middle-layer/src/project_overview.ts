@@ -35,8 +35,19 @@ export type BlockStateOverview = {
   /** Block id */
   id: string;
 
-  /** Blocks label visible to the user */
-  label: string;
+  /**
+   * Blocks label visible to the user.
+   * Udefined when block-pack for this block is not yet materialized.
+   * 
+   * @deprecated use title
+   * */
+  label: string | undefined;
+
+  /**
+   * Block title
+   * Udefined when block-pack for this block is not yet materialized.
+   */
+  title: string | undefined;
 
   /** Block rendering mode */
   renderingMode: BlockRenderingMode;

@@ -13,10 +13,7 @@ import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
-import {
-  ExtendedResourceData,
-  SynchronizedTreeState
-} from '@milaboratories/pl-tree';
+import { ExtendedResourceData, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
 import { NavigationState } from '@milaboratories/pl-model-common';
@@ -119,6 +116,7 @@ export class Project {
         },
         {
           args: JSON.stringify(blockCfg.initialArgs),
+          uiState: JSON.stringify(blockCfg.initialUiState),
           blockPack: preparedBp
         },
         before
@@ -211,13 +209,13 @@ export class Project {
     await this.projectTree.refreshState();
   }
 
-  /** Update block label. */
-  public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
-      mut.setBlockLabel(blockId, label);
-    });
-    await this.projectTree.refreshState();
-  }
+  // /** Update block label. */
+  // public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
+  //   await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
+  //     mut.setBlockLabel(blockId, label);
+  //   });
+  //   await this.projectTree.refreshState();
+  // }
 
   /**
    * Sets block args, and changes whole project state accordingly.
