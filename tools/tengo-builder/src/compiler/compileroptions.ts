@@ -6,7 +6,7 @@ export function applyTemplateCompilerOptions(opts: CompilerOption[], tpl: Templa
   for (const opt of opts) {
     switch (opt.name) {
       case 'hash_override': {
-        tpl.hash = hashOverride(opt.args);
+        tpl.hashOverride = hashOverride(opt.args);
         break;
       }
     }
