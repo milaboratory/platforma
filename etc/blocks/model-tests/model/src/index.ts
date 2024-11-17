@@ -4,13 +4,15 @@ export type BlockArgs = {
   titleArg: string;
 };
 
-export const platforma = BlockModel.create<BlockArgs>('Heavy')
+export const platforma = BlockModel.create('Heavy')
 
-  .initialArgs({ titleArg: 'The title' })
+  .withArgs<BlockArgs>({ titleArg: 'The title' })
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
   })
+
+  .title((ctx) => ctx.args.titleArg + ' <- the title')
 
   .done();
 
