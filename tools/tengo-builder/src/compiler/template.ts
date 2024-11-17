@@ -48,7 +48,7 @@ export interface TemplateData {
    * Custom hash token of the template for deduplication purposes. Can be set with 'hash_override' compiler option.
    * Dangerous! Remember: great power comes with great responsibility.
    */
-  hash?: string;
+  hashOverride?: string;
 
   /** i.e. @milaboratory/some-package:some-lib -> normalized library source code */
   libs: Record<string, TemplateLibData>;

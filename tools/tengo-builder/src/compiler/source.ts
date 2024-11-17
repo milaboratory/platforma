@@ -211,7 +211,7 @@ function parseSingleSourceLine(
     return { line, context, artifact: undefined, option: parseComplierOption(line) };
   }
 
-  if (wrongCompilerOptionRE && context.canDetectOptions) {
+  if (wrongCompilerOptionRE.exec(line) && context.canDetectOptions) {
     logger.warn(
       `[line ${context.lineNo}]: text simillar to compiler option ('//tengo:...') was detected, but it has wrong format. Leave it as is, if you did not mean to use a line as compiler option. Or format it to '//tengo:<option>' otherwise (no spaces between '//' and 'tengo', no spaces between ':' and option name)`
     );
