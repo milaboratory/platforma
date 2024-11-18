@@ -9,7 +9,8 @@ import {
   ResultCollection,
   ResultPoolEntry,
   ValueOrError,
-  executePSpecPredicate
+  executePSpecPredicate,
+  mapValueInVOE
 } from '@platforma-sdk/model';
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { outputRef } from '../model/args';
@@ -74,8 +75,49 @@ export class ResultPool {
     this.allSpecsAvailable = allSpecsAvailable;
   }
 
-  public getBlockLabel(blockId: string): string {
-    return notEmpty(this.blocks.get(blockId)?.info?.label, `block "${blockId}" not found`);
+  public getSpecByRef(blockId: string, exportName: string): PObjectSpec | undefined {
+    const block = this.blocks.get(blockId);
+    if (block === undefined) return undefined;
+    let result = block.prod?.results?.get(exportName)?.spec;
+    if (result !== undefined) return result;
+    result = block.staging?.results?.get(exportName)?.spec;
+    if (result !== undefined) return result;
+    if (block.staging === undefined) this.ctx.markUnstable(`staging_not_rendered:${blockId}`);
+    else if (!block.staging.locked) this.ctx.markUnstable(`staging_not_locked:${blockId}`);
+    else if (block.prod !== undefined && !block.prod.locked)
+      this.ctx.markUnstable(`prod_not_locked:${blockId}`);
+    // if prod is absent, returned undefined value is considered stable
+    return undefined;
+  }
+
+  public getDataOrErrorByRef(
+    blockId: string,
+    exportName: string
+  ): ValueOrError<PObject<PlTreeNodeAccessor>, string> | undefined {
+    const block = this.blocks.get(blockId);
+    if (block === undefined) return undefined;
+    let result = block.prod?.results?.get(exportName);
+    let data = result?.data?.();
+    if (result !== undefined && result.spec !== undefined && data !== undefined)
+      return mapValueInVOE(data, (value) => ({
+        id: derivePObjectId(result!.spec!, value),
+        spec: result!.spec!,
+        data: value
+      }));
+    if (result !== undefined) this.ctx.markUnstable(`no_data:${blockId}:${exportName}`);
+    if (block.prod !== undefined && !block.prod.locked)
+      this.ctx.markUnstable(`prod_not_locked:${blockId}`);
+    // if prod is absent, returned undefined value is considered stable
+    return undefined;
+  }
+
+  public getDataByRef(
+    blockId: string,
+    exportName: string
+  ): PObject<PlTreeNodeAccessor> | undefined {
+    const res = this.getDataOrErrorByRef(blockId, exportName);
+    if (res === undefined || !res.ok) return undefined;
+    return res.value;
   }
 
   public getData(): ExtendedResultCollection<PObject<PlTreeNodeAccessor>> {

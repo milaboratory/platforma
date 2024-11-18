@@ -6,10 +6,9 @@ import { projectFieldName, ProjectStructure, ProjectStructureKey } from '../mode
 import { allBlocks } from '../model/project_model_util';
 import { Pl } from '@milaboratories/pl-client';
 import { BlockPackInfo } from '../model/block_pack';
-import { hasActiveCfgComponents } from '../cfg_render/util';
-import { Cfg, isFunctionHandle, normalizeBlockConfig } from '@platforma-sdk/model';
+import { extractConfig, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
 import { constructBlockContext } from './block_ctx';
-import { computableFromCfg } from '../cfg_render/executor';
+import { computableFromCfgOrRF, isActive } from './render';
 
 /** Returns derived general project state form the project resource */
 export function activeConfigs(
@@ -35,20 +34,18 @@ export function activeConfigs(
       const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
       if (bpInfo?.config === undefined) continue;
 
-      const blockConf = normalizeBlockConfig(bpInfo.config);
+      const blockConf = extractConfig(bpInfo.config);
       const activeOutputConfigs = Object.entries(blockConf.outputs)
         .map(([, cfg]) => cfg)
-        .filter((cfg) => !isFunctionHandle(cfg) && hasActiveCfgComponents(cfg))
-        .map((cfg) => cfg as Cfg);
+        .filter((cfg) => isActive(cfg))
+        .map((cfg) => cfg as TypedConfigOrConfigLambda);
 
       if (activeOutputConfigs.length === 0) continue;
 
       const blockCtx = constructBlockContext(prj, id);
 
-      // console.log(blockCtx.prod(ctx));
-
       for (const cfg of activeOutputConfigs)
-        ret.push(Computable.wrapError(computableFromCfg(env.driverKit, blockCtx, cfg)));
+        ret.push(Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, blockConf.code)));
     }
 
     return ret;

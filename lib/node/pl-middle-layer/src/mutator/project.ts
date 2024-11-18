@@ -178,6 +178,7 @@ class BlockInfo {
 export interface NewBlockSpec {
   blockPack: BlockPackSpecPrepared;
   args: string;
+  uiState: string;
 }
 
 const NoNewBlocks = (blockId: string) => {
@@ -443,19 +444,19 @@ export class ProjectMutator {
   }
 
   /** Update block label */
-  public setBlockLabel(blockId: string, label: string): void {
-    const newStructure = this.structure;
-    let ok = false;
-    for (const block of allBlocks(newStructure))
-      if (block.id === blockId) {
-        block.label = label;
-        ok = true;
-        break;
-      }
-    if (!ok) throw new Error(`block ${blockId} not found`);
-    this.updateStructure(newStructure);
-    this.updateLastModified();
-  }
+  // public setBlockLabel(blockId: string, label: string): void {
+  //   const newStructure = this.structure;
+  //   let ok = false;
+  //   for (const block of allBlocks(newStructure))
+  //     if (block.id === blockId) {
+  //       block.label = label;
+  //       ok = true;
+  //       break;
+  //     }
+  //   if (!ok) throw new Error(`block ${blockId} not found`);
+  //   this.updateStructure(newStructure);
+  //   this.updateLastModified();
+  // }
 
   private createCtx(upstream: Set<string>, ctxField: 'stagingCtx' | 'prodCtx'): AnyRef {
     const upstreamContexts: AnyRef[] = [];
@@ -585,6 +586,12 @@ export class ProjectMutator {
       const binArgs = Buffer.from(spec.args);
       const argsRes = this.tx.createValue(Pl.JsonObject, binArgs);
       this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
+
+      // uiState
+      if (spec.uiState /* this check is for compatibility with old configs */) {
+        this.blockFrontendStates.set(blockId, spec.uiState);
+        this.changedBlockFrontendStates.add(blockId);
+      }
 
       // checking structure
       info.check();

@@ -394,6 +394,16 @@ export class JsExecutionContext
     return specs;
   }
 
+  getSpecFromResultPoolByRef(blockId: string, exportName: string): PObjectSpec | undefined {
+    return this.resultPool.getSpecByRef(blockId, exportName);
+  }
+
+  getDataFromResultPoolByRef(blockId: string, exportName: string): PObject<string> | undefined {
+    return mapPObjectData(this.resultPool.getDataByRef(blockId, exportName), (acc) =>
+      this.wrapAccessor(acc)
+    );
+  }
+
   //
   // PFrames / PTables
   //
@@ -418,6 +428,14 @@ export class JsExecutionContext
       mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.getAccessor(d))),
       this.computableCtx
     );
+  }
+
+  //
+  // Computable
+  //
+
+  public getCurrentUnstableMarker(): string | undefined {
+    return this.computableCtx?.unstableMarker;
   }
 
   //
@@ -744,6 +762,26 @@ export class JsExecutionContext
         );
       });
 
+      exportCtxFunction('getSpecFromResultPoolByRef', (blockId, exportName) => {
+        return this.exportObjectUniversal(
+          this.getSpecFromResultPoolByRef(
+            this.vm.getString(blockId),
+            this.vm.getString(exportName)
+          ),
+          undefined
+        );
+      });
+
+      exportCtxFunction('getDataFromResultPoolByRef', (blockId, exportName) => {
+        return this.exportObjectUniversal(
+          this.getDataFromResultPoolByRef(
+            this.vm.getString(blockId),
+            this.vm.getString(exportName)
+          ),
+          undefined
+        );
+      });
+
       //
       // PFrames / PTables
       //
@@ -760,6 +798,14 @@ export class JsExecutionContext
           this.createPTable(this.importObjectViaJson(def) as PTableDef<PColumn<string>>),
           undefined
         );
+      });
+
+      //
+      // Computable
+      //
+
+      exportCtxFunction('getCurrentUnstableMarker', () => {
+        return this.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
       });
 
       this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);

@@ -18,12 +18,6 @@ export interface ComputableCtx {
    * */
   markUnstable(marker: string): void;
 
-  /**
-   * If called during construction, this result will be considered as unstable
-   * @deprecated
-   * */
-  markUnstable(): void;
-
   /** Executes and resets current onDestroy helper
    * @deprecated use {@link addOnDestroy} */
   scheduleAndResetOnDestroy(): void;
@@ -31,6 +25,9 @@ export interface ComputableCtx {
   /** True if onDestroy callback is set
    * @deprecated use {@link addOnDestroy} */
   get hasOnDestroy(): boolean;
+
+  /** Allows to check whether current context was marked as unstable. */
+  readonly unstableMarker?: string;
 
   /** Sets a callback to be executed when this computable detaches from current computable tree.
    * If onDestroy callback is already set, context will first schedule execution of that previous callback,
@@ -93,11 +90,14 @@ export interface ComputableRecoverAction<T> {
   recover(error: unknown[]): T;
 }
 
+/** Additional information from upstream computables, that can be used in value post-processing. */
+export type PostprocessInfo = { stable: boolean; unstableMarker?: string };
+
 /** Extended by kernel intermediate returned value, and adds postprocess step
  * additionally to recover method. */
 export interface ComputablePostProcess<IR, T> {
   /** Will be called to create final representation of the cell value. */
-  postprocessValue(value: UnwrapComputables<IR>, stable: boolean): Promise<T> | T;
+  postprocessValue(value: UnwrapComputables<IR>, info: PostprocessInfo): Promise<T> | T;
 }
 
 /** Returned by a successful execution of rendering function */

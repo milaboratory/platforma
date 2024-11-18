@@ -1,6 +1,6 @@
 import { ExplicitTemplate } from './template_spec';
 import { ResourceType } from '@milaboratories/pl-client';
-import { BlockConfig } from '@platforma-sdk/model';
+import { BlockConfigContainer } from '@platforma-sdk/model';
 import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
 
 export type FrontendSpec = FrontendFromUrl | FrontendFromFolder;
@@ -40,7 +40,7 @@ export interface FrontendFromFolder extends FrontendFromFolderData {
 export interface BlockPackExplicit {
   type: 'explicit';
   template: ExplicitTemplate;
-  config: BlockConfig;
+  config: BlockConfigContainer;
   frontend: FrontendSpec;
   source: BlockPackSpec;
 }
