@@ -280,9 +280,25 @@ export async function updatePFrameGridOptions(
   const specs = await pfDriver.getSpec(pt);
 
   // column indices in the specs array that we are going to process
-  const indices = [...specs.keys()].filter(
-    (i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)),
-  );
+  const indices = [...specs.keys()]
+    .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)))
+    .sort((a, b) => {
+      if (specs[a].type === 'axis' && specs[b].type !== 'axis') return -1;
+      if (specs[a].type !== 'axis' && specs[b].type === 'axis') return 1;
+
+      const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
+      const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
+
+      if (aPriority !== undefined && bPriority !== undefined) {
+        return Number(bPriority) - Number(aPriority);
+      }
+
+      if (aPriority === undefined) return 1;
+      if (bPriority === undefined) return -1;
+
+      throw new Error('Unknown sorting case');
+    });
+
   const fields = lodash.cloneDeep(indices);
 
   // get columns with heterogeneous axes
