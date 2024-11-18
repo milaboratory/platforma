@@ -7,11 +7,10 @@ export default {
 };
 </script>
 
-<script lang="ts" setup generic="M = unknown">
+<script lang="ts" setup generic="M extends string">
 import style from './pl-tabs.module.scss';
-import { computed } from 'vue';
-import InnerBorder from '@/utils/InnerBorder.vue';
-import type { SimpleOption } from '@/types';
+import type { TabOption } from './types';
+import Tab from './Tab.vue';
 
 const emit = defineEmits<{
   /**
@@ -22,52 +21,45 @@ const emit = defineEmits<{
 
 const emitModel = (v: M) => emit('update:modelValue', v);
 
-const props = defineProps<{
+defineProps<{
   /**
-   * The current selected value.
+   * The current selected tab value.
    */
   modelValue?: M;
   /**
    * List of available options for the component
    */
-  options: Readonly<SimpleOption<M>[]>;
+  options: Readonly<TabOption<M>[]>;
   /**
    * If `true`, the component is disabled and cannot be interacted with.
    */
   disabled?: boolean;
   /**
-   * A helper text displayed below the component when there are no errors (optional).
+   * If `true`, the `active` line appears on the top of element.
    */
-  helper?: string;
+  topLine?: boolean;
   /**
-   * Error message displayed below the component (optional)
+   * Maximum tab width (css value), can be overridden for each option
    */
-  error?: string;
+  maxTabWidth?: string;
 }>();
-
-const normalizedOptions = computed(() =>
-  props.options.map((it) => ({
-    label: 'label' in it ? it.label : it.text,
-    value: it.value,
-  })),
-);
 </script>
 
 <template>
-  <div :class="[style.component, { [style.disabled]: disabled }]">
-    <InnerBorder :class="style.container">
-      <div
-        v-for="(opt, i) in normalizedOptions"
-        :key="i"
-        :tabindex="modelValue === opt.value || disabled ? undefined : 0"
-        :class="[{ [style.active]: modelValue === opt.value }, style.tab]"
-        @keydown.enter="emitModel(opt.value)"
-        @click="emitModel(opt.value)"
-      >
-        {{ opt.label }}
-      </div>
-    </InnerBorder>
-    <div v-if="helper" :class="style.helper">{{ helper }}</div>
-    <div v-else-if="error" :class="style.error">{{ error }}</div>
+  <div :class="[style.component, { [style.disabled]: disabled, [style.topLine]: topLine }]">
+    <Tab
+      v-for="(opt, i) in options"
+      :key="i"
+      :tabindex="modelValue === opt.value || disabled || opt.disabled ? undefined : 0"
+      :option="opt"
+      :class="[{ [style.active]: modelValue === opt.value, [style.disabled]: opt.disabled }, style.tab]"
+      :style="{ '--pl-tabs-item-max-width': opt.maxWidth ?? maxTabWidth }"
+      @keydown.enter="emitModel(opt.value)"
+      @click="emitModel(opt.value)"
+    >
+      <slot :name="opt.value" :option="opt">
+        <span>{{ opt.label }}</span>
+      </slot>
+    </Tab>
   </div>
 </template>
