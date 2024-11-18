@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.3
+
+### Patch Changes
+
+- dfa2765: fix PlLogView dimensions
+
 ## 2.2.2
 
 ### Patch Changes
