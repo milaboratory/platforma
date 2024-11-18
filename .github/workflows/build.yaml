@@ -3,7 +3,7 @@ on:
   workflow_dispatch: {}
 jobs:
   run:
-    runs-on: ubunut-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Generate Zen Artisan Token
         id: app-token
