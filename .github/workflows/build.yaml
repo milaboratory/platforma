@@ -52,12 +52,11 @@ jobs:
         id: changed-files
         with:
           files: |
-            !*/node_modules
-            !*/.git
-            !*.log
-            !**/.npmrc
-            !.turbo
-            !**/assets
+            etc/**/*
+            lib/**/*
+            sdk/**/*
+            tests/**/*
+            tools/**/*
       - name: List all changed files
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.changed_files }}
