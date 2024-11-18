@@ -25,6 +25,24 @@ function wrapAccessor(handle: AccessorHandle | undefined): TreeNodeAccessor | un
   return handle === undefined ? undefined : new TreeNodeAccessor(handle);
 }
 
+type FieldMapOps = {
+  /**
+   * Type of fields to interate over.
+   * (default 'Input')
+   * */
+  readonly fieldType?: 'Input' | 'Output' | 'Dynamic';
+  /**
+   * If not locked, `undefined` value will be returned. Do nothing if mapping `Dynamic` fields.
+   * (default true)
+   * */
+  readonly requireLocked?: boolean;
+  /**
+   * Will skip unresolved fields.
+   * (default false)
+   * */
+  readonly skipUnresolved?: boolean;
+};
+
 /** Represent resource tree node accessor */
 export class TreeNodeAccessor {
   constructor(public readonly handle: AccessorHandle) {}
@@ -219,5 +237,60 @@ export class TreeNodeAccessor {
 
   public getLogHandle(): FutureRef<AnyLogHandle | undefined> {
     return new FutureRef(getCfgRenderCtx().getLogHandle(this.handle));
+  }
+
+  public allFieldsResolved(fieldType: 'Input' | 'Output' = 'Input'): boolean {
+    switch (fieldType) {
+      case 'Input':
+        return (
+          this.getInputsLocked() &&
+          this.listInputFields().every(
+            (field) => this.resolve({ field, assertFieldType: 'Input' }) !== undefined
+          )
+        );
+      case 'Output':
+        return (
+          this.getOutputsLocked() &&
+          this.listOutputFields().every(
+            (field) => this.resolve({ field, assertFieldType: 'Output' }) !== undefined
+          )
+        );
+    }
+  }
+
+  public mapFields<T>(
+    _mapping: (name: string, value: TreeNodeAccessor) => T,
+    _ops: FieldMapOps & { skipUnresolved: true }
+  ): T[] | undefined;
+  public mapFields<T>(
+    _mapping: (name: string, value: TreeNodeAccessor | undefined) => T,
+    _ops?: FieldMapOps
+  ): T[] | undefined;
+  public mapFields<T>(
+    _mapping: (name: string, value: TreeNodeAccessor) => T,
+    _ops?: FieldMapOps
+  ): T[] | undefined {
+    const { fieldType, requireLocked, skipUnresolved } = {
+      fieldType: 'Input' as const,
+      requireLocked: true,
+      skipUnresolved: false,
+      ..._ops
+    };
+    const mapping = _mapping as (name: string, value: TreeNodeAccessor | undefined) => T;
+    if (requireLocked) {
+      if (fieldType === 'Input' && !this.getInputsLocked()) return undefined;
+      if (fieldType === 'Output' && !this.getOutputsLocked()) return undefined;
+    }
+    const fieldList =
+      fieldType === 'Input'
+        ? this.listInputFields()
+        : fieldType === 'Output'
+          ? this.listOutputFields()
+          : this.listDynamicFields();
+    let fieldEntries = fieldList.map(
+      (field) => [field, this.resolve({ field, assertFieldType: fieldType })] as const
+    );
+    if (skipUnresolved) fieldEntries = fieldEntries.filter((e) => e[1] !== undefined);
+    return fieldEntries.map(([name, value]) => mapping(name, value));
   }
 }

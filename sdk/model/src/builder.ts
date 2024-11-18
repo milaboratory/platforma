@@ -12,7 +12,8 @@ import {
   ResolveCfgType,
   ExtractFunctionHandleReturn,
   BlockConfigContainer,
-  downgradeCfgOrLambda
+  downgradeCfgOrLambda,
+  ConfigRenderLambdaFlags
 } from './bconfig';
 
 type SectionsExpectedType = readonly BlockSection[];
@@ -103,29 +104,12 @@ export class BlockModel<
    * @param key output cell name, that can be later used to retrieve the rendered value
    * @param rf  callback calculating output value using context, that allows to access
    *            workflows outputs and interact with platforma drivers
-   * */
-  public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
-    key: Key,
-    rf: RF
-  ): BlockModel<
-    Args,
-    OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
-    UiState,
-    Href
-  >;
-  /**
-   * Add output cell to the configuration
-   *
-   * @param key output cell name, that can be later used to retrieve the rendered value
-   * @param rf  callback calculating output value using context, that allows to access
-   *            workflows outputs and interact with platforma drivers
-   * @param retentive if set to true, this output will retain and present prevois stable
-   *                  state while new stable value is being calculated
+   * @param flags additional flags that may alter lambda rendering procedure
    * */
   public output<const Key extends string, const RF extends RenderFunction<Args, UiState>>(
     key: Key,
     rf: RF,
-    retentive: boolean
+    flags?: ConfigRenderLambdaFlags
   ): BlockModel<
     Args,
     OutputsCfg & { [K in Key]: ConfigRenderLambda<InferRenderFunctionReturn<RF>> },
@@ -135,7 +119,7 @@ export class BlockModel<
   public output(
     key: string,
     cfgOrRf: TypedConfig | Function,
-    retentive: boolean = false
+    flags: ConfigRenderLambdaFlags = {}
   ): BlockModel<Args, OutputsCfg, UiState, Href> {
     if (typeof cfgOrRf === 'function') {
       const handle = `output#${key}`;
@@ -149,7 +133,7 @@ export class BlockModel<
           [key]: {
             __renderLambda: true,
             handle,
-            retentive
+            ...flags
           } satisfies ConfigRenderLambda
         },
         this._inputsValid,
@@ -181,7 +165,7 @@ export class BlockModel<
     UiState,
     Href
   > {
-    return this.output(key, rf, true);
+    return this.output(key, rf, { retentive: true });
   }
 
   /** @deprecated */
@@ -211,8 +195,7 @@ export class BlockModel<
         this._outputs,
         {
           __renderLambda: true,
-          handle: 'inputsValid',
-          retentive: false
+          handle: 'inputsValid'
         } satisfies ConfigRenderLambda,
         this._sections,
         this._title
@@ -272,7 +255,7 @@ export class BlockModel<
         this._initialUiState,
         this._outputs,
         this._inputsValid,
-        { __renderLambda: true, handle: 'sections', retentive: false } as ConfigRenderLambda,
+        { __renderLambda: true, handle: 'sections' } as ConfigRenderLambda,
         this._title
       );
     } else
@@ -298,7 +281,7 @@ export class BlockModel<
       this._outputs,
       this._inputsValid,
       this._sections,
-      { __renderLambda: true, handle: 'title', retentive: false } as ConfigRenderLambda
+      { __renderLambda: true, handle: 'title' } as ConfigRenderLambda
     );
   }
 

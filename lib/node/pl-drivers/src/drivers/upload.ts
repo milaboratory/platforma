@@ -139,7 +139,9 @@ export class UploadDriver {
 
     const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
     if (!isProgressStable(result)) {
-      ctx.markUnstable(`upload/index progress was got, but it's not stable: ${result}`);
+      ctx.markUnstable(
+        `upload/index progress was got, but it's not stable: ${JSON.stringify(result)}`
+      );
     }
 
     return result;

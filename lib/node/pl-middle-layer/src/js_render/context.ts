@@ -13,7 +13,6 @@ import {
   PSpecPredicate,
   PTableDef,
   PTableHandle,
-  Ref,
   ResourceType as ResourceTypeFromSDK,
   ResultCollection,
   ValueOrError,
@@ -432,6 +431,14 @@ export class JsExecutionContext
   }
 
   //
+  // Computable
+  //
+
+  public getCurrentUnstableMarker(): string | undefined {
+    return this.computableCtx?.unstableMarker;
+  }
+
+  //
   // Helpers
   //
 
@@ -791,6 +798,14 @@ export class JsExecutionContext
           this.createPTable(this.importObjectViaJson(def) as PTableDef<PColumn<string>>),
           undefined
         );
+      });
+
+      //
+      // Computable
+      //
+
+      exportCtxFunction('getCurrentUnstableMarker', () => {
+        return this.exportSingleValue(this.getCurrentUnstableMarker(), undefined);
       });
 
       this.vm.setProp(this.vm.global, 'cfgRenderCtx', configCtx);

@@ -4,6 +4,7 @@ import { Computable, ComputableRenderingOps } from '@milaboratories/computable';
 import { Scope } from 'quickjs-emscripten';
 import { JsExecutionContext } from './context';
 import { BlockContextAny } from '../middle_layer/block_ctx';
+import { LogOutputStatus } from '../middle_layer/util';
 
 export function computableFromRF(
   env: MiddleLayerEnvironment,
@@ -13,7 +14,7 @@ export function computableFromRF(
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
   ops = { ...ops };
-  if (ops.mode === undefined && fh.retentive) ops.mode = 'StableOnlyRetentive';
+  if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
     const scope = new Scope();
     cCtx.addOnDestroy(() => scope.dispose());
@@ -31,7 +32,12 @@ export function computableFromRF(
 
     return {
       ir: rCtx.computablesToResolve,
-      postprocessValue: async (resolved: Record<string, unknown>) => {
+      postprocessValue: async (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
+        if (LogOutputStatus && (LogOutputStatus !== 'unstable-only' || !stable)) {
+          if (stable) console.log(`Stable output ${fh.handle} calculated.`);
+          else console.log(`Unstable output ${fh.handle}; marker = ${unstableMarker}`);
+        }
+
         // resolving futures
         for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
 
