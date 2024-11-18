@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.25
+
+### Patch Changes
+
+- 3c16beb: Columns sort by priority
+
 ## 1.8.24
 
 ### Patch Changes
