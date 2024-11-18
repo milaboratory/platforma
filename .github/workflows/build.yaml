@@ -17,6 +17,12 @@ jobs:
           submodules: ${{ inputs.checkout-submodules }}
           token: ${{ steps.app-token.outputs.token }}
 
+
+      - uses: milaboratory/github-ci/actions/shell@v4-beta
+        with:
+          run: |
+            echo "Let's dance" >> ./test.txt
+
       - uses: milaboratory/github-ci/actions/git/verify-changed-files@v4
         with:
           files: |
