@@ -52,8 +52,8 @@ jobs:
         id: changed-files
         with:
           files: |
-            !node_modules
-            !.git
+            !*/node_modules
+            !*/.git
             !*.log
             !**/.npmrc
             !.turbo
