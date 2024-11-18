@@ -34,7 +34,7 @@ ModuleRegistry.registerModules([
   ServerSideRowModelModule,
   RangeSelectionModule,
   SideBarModule,
-  ColumnsToolPanelModule
+  ColumnsToolPanelModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
@@ -318,8 +318,7 @@ const onStateUpdated = (event: StateUpdatedEvent) => {
   gridState.value = {
     columnOrder: event.state.columnOrder,
     sort: event.state.sort,
-    columnVisibility: event.state.columnVisibility
-      ?? (event.state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: event.state.columnVisibility ?? (event.state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
   gridOptions.value.initialState = gridState.value;
 };
@@ -328,8 +327,7 @@ const onGridPreDestroyed = () => {
   gridState.value = {
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility
-      ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
   gridOptions.value.initialState = gridState.value;
   gridApi.value = undefined;
@@ -348,8 +346,7 @@ watch(
     const selfState = {
       columnOrder: selfFullState.columnOrder,
       sort: selfFullState.sort,
-      columnVisibility: selfFullState.columnVisibility
-        ?? (selfFullState.columnOrder ? { hiddenColIds: [] } : undefined),
+      columnVisibility: selfFullState.columnVisibility ?? (selfFullState.columnOrder ? { hiddenColIds: [] } : undefined),
     };
     if (lodash.isEqual(gridState, selfState)) return;
 

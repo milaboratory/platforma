@@ -14,6 +14,7 @@ import ErrorsPage from './pages/ErrorsPage.vue';
 import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
 import IconsPage from './pages/IconsPage.vue';
 import PlTextFieldPage from './pages/PlTextFieldPage.vue';
+import PlTabsPage from './pages/PlTabsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -32,9 +33,9 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     incrementCounter,
     argsAsJson,
     routes: {
-      '/': LogViewPage,
+      '/': IconsPage,
+      '/log-view': LogViewPage,
       '/modals': ModalsPage,
-      '/icons': IconsPage,
       '/inject-env': InjectEnvPage,
       '/dropdowns': DropdownsPage,
       '/use-watch-fetch': UseWatchFetchPage,
@@ -44,7 +45,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/pl-ag-data-table': () => PlAgDataTablePage,
       '/select-files': SelectFilesPage,
       '/errors': () => ErrorsPage,
-      '/text-fields': () => PlTextFieldPage
+      '/text-fields': () => PlTextFieldPage,
+      '/tabs': () => PlTabsPage
     }
   };
 });
