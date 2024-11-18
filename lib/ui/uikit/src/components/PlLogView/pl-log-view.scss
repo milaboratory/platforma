@@ -9,8 +9,8 @@
   --border-color-log-view: var(--border-color-div-grey);
 
   height: 100%;
-  max-height: 100%;
-  max-width: 100%;
+  max-height: calc(100% - var(--contour-offset));
+  max-width: calc(100% - var(--contour-offset));
   border-radius: 6px;
   background: var(--log-background);
   display: flex;

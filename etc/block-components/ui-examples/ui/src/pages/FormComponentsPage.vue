@@ -4,7 +4,8 @@ import {
   PlContainer,
   PlRow,
   PlBtnGroup,
-  PlCheckboxGroup
+  PlCheckboxGroup,
+  PlTabs
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -12,7 +13,8 @@ const data = reactive({
   text: '',
   single: 1,
   multiple: [1, 2],
-  importHandles: [] as unknown[]
+  importHandles: [] as unknown[],
+  currentTab: 'one'
 });
 
 const options = [
@@ -49,6 +51,17 @@ const onDrop = (ev: DragEvent) => {
 <template>
   <PlBlockPage :class="$style.components" style="max-width: 100%">
     <template #title>Form components</template>
+    <PlRow>
+      <PlTabs
+        v-model="data.currentTab"
+        :options="[
+          { label: 'One', value: 'one' },
+          { label: 'Two', value: 'two' },
+          { label: 'Three', value: 'three' }
+        ]"
+      />
+      currentTab: {{ data.currentTab }}
+    </PlRow>
     <PlRow>
       <PlContainer width="400px">
         <PlRow>

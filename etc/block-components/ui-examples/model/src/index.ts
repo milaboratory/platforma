@@ -90,8 +90,8 @@ export const platforma = BlockModel.create('Heavy')
 
   .sections((ctx) => {
     return [
-      { type: 'link', href: '/', label: 'PlLogView' },
-      { type: 'link', href: '/icons', label: 'Icons/Masks' },
+      { type: 'link', href: '/', label: 'Icons/Masks' }, 
+      { type: 'link', href: '/log-view', label: 'PlLogView' }, 
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
@@ -102,7 +102,8 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/errors', label: 'Errors' },
-      { type: 'link', href: '/text-fields', label: 'PlTextField' }
+      { type: 'link', href: '/text-fields', label: 'PlTextField' },
+      { type: 'link', href: '/tabs', label: 'PlTabs' },
     ];
   })
 

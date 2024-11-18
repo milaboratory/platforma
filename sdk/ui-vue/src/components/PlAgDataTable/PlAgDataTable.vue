@@ -4,6 +4,7 @@ import type {
   GridApi,
   GridOptions,
   GridReadyEvent,
+  GridState,
   ManagedGridOptionKey,
   ManagedGridOptions,
   SortState,
@@ -34,7 +35,7 @@ ModuleRegistry.registerModules([
   ServerSideRowModelModule,
   RangeSelectionModule,
   SideBarModule,
-  ColumnsToolPanelModule
+  ColumnsToolPanelModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
@@ -139,9 +140,7 @@ const gridState = computed({
     // do not apply driver sorting for client side rendering
     const sorting = gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
-    state.gridState.columnOrder = gridState.columnOrder;
-    state.gridState.sort = gridState.sort;
-    state.gridState.columnVisibility = gridState.columnVisibility;
+    state.gridState = { ...state.gridState, ...gridState };
 
     if (settings.value.sourceType === 'ptable' || settings.value.sourceType === 'pframe') {
       if (!state.pTableParams) {
@@ -314,24 +313,19 @@ const onGridReady = (event: GridReadyEvent) => {
     },
   });
 };
-const onStateUpdated = (event: StateUpdatedEvent) => {
-  gridState.value = {
-    columnOrder: event.state.columnOrder,
-    sort: event.state.sort,
-    columnVisibility: event.state.columnVisibility
-      ?? (event.state.columnOrder ? { hiddenColIds: [] } : undefined),
-  };
-  gridOptions.value.initialState = gridState.value;
-};
-const onGridPreDestroyed = () => {
-  const state = gridApi.value!.getState();
-  gridState.value = {
+const makePartialState = (state: GridState) => {
+  return {
     columnOrder: state.columnOrder,
     sort: state.sort,
-    columnVisibility: state.columnVisibility
-      ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
+    columnVisibility: state.columnVisibility ?? (state.columnOrder ? { hiddenColIds: [] } : undefined),
   };
-  gridOptions.value.initialState = gridState.value;
+};
+const onStateUpdated = (event: StateUpdatedEvent) => {
+  gridOptions.value.initialState = gridState.value = makePartialState(event.state);
+  event.api.autoSizeAllColumns();
+};
+const onGridPreDestroyed = () => {
+  gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
   gridApi.value = undefined;
 };
 
@@ -344,13 +338,7 @@ watch(
     const [gridApi, gridState] = state;
     if (!gridApi) return;
 
-    const selfFullState = gridApi.getState();
-    const selfState = {
-      columnOrder: selfFullState.columnOrder,
-      sort: selfFullState.sort,
-      columnVisibility: selfFullState.columnVisibility
-        ?? (selfFullState.columnOrder ? { hiddenColIds: [] } : undefined),
-    };
+    const selfState = makePartialState(gridApi.getState());
     if (lodash.isEqual(gridState, selfState)) return;
 
     gridOptions.value.initialState = gridState;

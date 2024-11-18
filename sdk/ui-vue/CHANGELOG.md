@@ -1,5 +1,26 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.26
+
+### Patch Changes
+
+- Updated dependencies [dfa2765]
+  - @milaboratories/uikit@2.2.3
+
+## 1.8.25
+
+### Patch Changes
+
+- 3c16beb: Columns sort by priority
+
+## 1.8.24
+
+### Patch Changes
+
+- d85c758: Implement PlTabs component
+- Updated dependencies [d85c758]
+  - @milaboratories/uikit@2.2.2
+
 ## 1.8.23
 
 ### Patch Changes

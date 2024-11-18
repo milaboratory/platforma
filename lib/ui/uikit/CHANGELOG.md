@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.2.3
+
+### Patch Changes
+
+- dfa2765: fix PlLogView dimensions
+
+## 2.2.2
+
+### Patch Changes
+
+- d85c758: Implement PlTabs component
+
 ## 2.2.1
 
 ### Patch Changes

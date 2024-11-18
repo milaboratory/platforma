@@ -1,0 +1,90 @@
+@import "@/assets/mixins";
+
+.component {
+  --pl-tabs-height: 40px;
+  --pl-tabs-item-border-color: var(--border-color-div-grey); 
+  --pl-tabs-item-border-width: 0 0 2px 0;
+  --pl-tabs-item-text-color: var(--txt-03);
+  --pl-tabs-item-max-width: 400px;
+  --pl-tabs-cursor: pointer;
+
+  position: relative;
+  min-height: var(--pl-tabs-height);
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+
+  .tab {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: var(--pl-tabs-cursor);
+    outline: none;
+    position: relative;
+
+    &.disabled {
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    > span {
+      color: var(--pl-tabs-item-text-color);
+      font-size: 13px;
+      font-style: normal;
+      font-weight: 600;
+      line-height: 14px; /* 107.692% */
+      letter-spacing: 0.52px;
+      text-transform: uppercase;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: var(--pl-tabs-item-max-width);
+      min-width: 60px;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      border: solid var(--pl-tabs-item-border-color);
+      border-width: var(--pl-tabs-item-border-width);
+    }
+
+    &:hover:not(.active) {
+      --pl-tabs-item-border-color: var(--border-color-focus);
+      --pl-tabs-item-text-color: var(--txt-01);
+    }
+
+    &:focus-visible {
+      --pl-tabs-item-border-color: var(--border-color-focus);
+      --pl-tabs-item-border-width: 2px;
+      --pl-tabs-item-text-color: var(--txt-01);
+    }
+
+    &.active {
+      --pl-tabs-item-border-color: var(--border-color-focus);
+      --pl-tabs-item-text-color: var(--txt-01);
+    }
+  }
+
+  &.topLine {
+    --pl-tabs-item-border-width: 2px 0 0 0;
+  }
+
+  &.disabled {
+    --pl-tabs-cursor: not-allowed;
+    cursor: not-allowed;
+    * {
+      pointer-events: none;
+    }
+  }
+}
