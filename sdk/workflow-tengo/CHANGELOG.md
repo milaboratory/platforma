@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.2.0
+
+### Minor Changes
+
+- 7d52fca: Add cache control to smart.field and assts in commands
+
 ## 2.1.0
 
 ### Minor Changes

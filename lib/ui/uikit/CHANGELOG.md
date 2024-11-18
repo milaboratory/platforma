@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.1
+
+### Patch Changes
+
+- c7f9363: file dialog hotfix
+
 ## 2.2.0
 
 ### Minor Changes

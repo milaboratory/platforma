@@ -1,5 +1,30 @@
 # @milaboratories/pl-middle-layer
 
+## 1.14.33
+
+### Patch Changes
+
+- 0382abe: Undici & AWS SDK upgrades.
+- Updated dependencies [0382abe]
+  - @milaboratories/pl-client@2.5.10
+  - @milaboratories/pl-drivers@1.3.16
+  - @milaboratories/pl-tree@1.4.11
+  - @platforma-sdk/block-tools@2.3.24
+
+## 1.14.32
+
+### Patch Changes
+
+- Updated dependencies [7d52fca]
+  - @platforma-sdk/workflow-tengo@2.2.0
+
+## 1.14.31
+
+### Patch Changes
+
+- Updated dependencies [8f916f2]
+  - @platforma-sdk/model@1.8.19
+
 ## 1.14.30
 
 ### Patch Changes

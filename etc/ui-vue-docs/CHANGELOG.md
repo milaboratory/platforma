@@ -1,5 +1,37 @@
 # @milaboratories/ui-vue-docs
 
+## 0.1.44
+
+### Patch Changes
+
+- Updated dependencies [0382abe]
+- Updated dependencies [0382abe]
+  - @platforma-sdk/ui-vue@1.8.23
+
+## 0.1.43
+
+### Patch Changes
+
+- Updated dependencies [6e54327]
+  - @platforma-sdk/ui-vue@1.8.21
+
+## 0.1.42
+
+### Patch Changes
+
+- Updated dependencies [c7f9363]
+  - @milaboratories/uikit@2.2.1
+  - @platforma-sdk/ui-vue@1.8.20
+
+## 0.1.41
+
+### Patch Changes
+
+- Updated dependencies [8f916f2]
+  - @platforma-sdk/ui-vue@1.8.19
+  - @platforma-sdk/model@1.8.19
+  - @milaboratories/uikit@2.2.0
+
 ## 0.1.40
 
 ### Patch Changes

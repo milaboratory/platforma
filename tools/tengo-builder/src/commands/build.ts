@@ -1,6 +1,7 @@
 import { SpawnSyncReturns, spawnSync } from 'child_process';
 import { Command } from '@oclif/core';
-import { compile, savePacks, createLogger, getPackageInfo } from '../compiler/main';
+import { compile, savePacks, getPackageInfo } from '../compiler/main';
+import { createLogger } from '../compiler/util';
 import { CtagsFlags, GlobalFlags } from '../shared/basecmd';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
