@@ -588,7 +588,7 @@ export class ProjectMutator {
       this.setBlockField(blockId, 'currentArgs', argsRes, 'Ready', binArgs);
 
       // uiState
-      if (spec.uiState) {
+      if (spec.uiState /* this check is for compatibility with old configs */) {
         this.blockFrontendStates.set(blockId, spec.uiState);
         this.changedBlockFrontendStates.add(blockId);
       }

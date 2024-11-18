@@ -5,7 +5,7 @@ import { assertNever, Signer } from '@milaboratories/ts-helpers';
 import fs from 'node:fs';
 import { Dispatcher, request } from 'undici';
 import { createFrontend } from './frontend';
-import { BlockConfig } from '@platforma-sdk/model';
+import { BlockConfig, BlockConfigContainer } from '@platforma-sdk/model';
 import { loadPackDescription, RegistryV1 } from '@platforma-sdk/block-tools';
 import { BlockPackInfo } from '../../model/block_pack';
 import { resolveDevPacket } from '../../dev_env';
@@ -29,7 +29,7 @@ export class BlockPackPreparer {
     private readonly http?: Dispatcher
   ) {}
 
-  public async getBlockConfig(spec: BlockPackSpecAny): Promise<BlockConfig> {
+  public async getBlockConfigContainer(spec: BlockPackSpecAny): Promise<BlockConfigContainer> {
     switch (spec.type) {
       case 'explicit':
         return spec.config;
@@ -37,7 +37,7 @@ export class BlockPackPreparer {
       case 'dev-v1': {
         const devPaths = await resolveDevPacket(spec.folder, false);
         const configContent = await fs.promises.readFile(devPaths.config, { encoding: 'utf-8' });
-        return JSON.parse(configContent) as BlockConfig;
+        return JSON.parse(configContent) as BlockConfigContainer;
       }
 
       case 'dev-v2': {
@@ -45,7 +45,7 @@ export class BlockPackPreparer {
         const configContent = await fs.promises.readFile(description.components.model.file, {
           encoding: 'utf-8'
         });
-        return JSON.parse(configContent) as BlockConfig;
+        return JSON.parse(configContent) as BlockConfigContainer;
       }
 
       case 'from-registry-v1': {
@@ -55,7 +55,7 @@ export class BlockPackPreparer {
 
         const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
 
-        return (await configResponse.body.json()) as BlockConfig;
+        return (await configResponse.body.json()) as BlockConfigContainer;
       }
 
       case 'from-registry-v2': {
@@ -64,7 +64,7 @@ export class BlockPackPreparer {
         const components = await registry.getComponents(spec.id);
         return (await (
           await request(components.model.url, httpOptions)
-        ).body.json()) as BlockConfig;
+        ).body.json()) as BlockConfigContainer;
       }
 
       default:
@@ -86,7 +86,7 @@ export class BlockPackPreparer {
         // config
         const config = JSON.parse(
           await fs.promises.readFile(devPaths.config, 'utf-8')
-        ) as BlockConfig;
+        ) as BlockConfigContainer;
 
         // frontend
         const frontendPath = devPaths.ui;
@@ -113,7 +113,7 @@ export class BlockPackPreparer {
           await fs.promises.readFile(description.components.model.file, {
             encoding: 'utf-8'
           })
-        ) as BlockConfig;
+        ) as BlockConfigContainer;
         const workflowContent = await fs.promises.readFile(
           description.components.workflow.main.file
         );
@@ -155,7 +155,7 @@ export class BlockPackPreparer {
 
         // config
         const configResponse = await request(`${urlPrefix}/config.json`, httpOptions);
-        const config = (await configResponse.body.json()) as BlockConfig;
+        const config = (await configResponse.body.json()) as BlockConfigContainer;
 
         return {
           type: 'explicit',
@@ -177,7 +177,7 @@ export class BlockPackPreparer {
         const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
         const components = await registry.getComponents(spec.id);
         const getModel = async () =>
-          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfig;
+          (await (await request(components.model.url, httpOptions)).body.json()) as BlockConfigContainer;
         const getWorkflow = async () =>
           await (await request(components.workflow.main.url, httpOptions)).body.arrayBuffer();
 

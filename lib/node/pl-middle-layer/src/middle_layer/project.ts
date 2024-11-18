@@ -29,6 +29,7 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
+import { extractConfig } from '@platforma-sdk/model';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -106,7 +107,8 @@ export class Project {
     blockId: string = randomUUID()
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
+    const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
+    const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.addBlock(
         {
@@ -138,7 +140,7 @@ export class Project {
     author?: AuthorMarker
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
+    const blockCfg = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,

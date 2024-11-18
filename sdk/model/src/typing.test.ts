@@ -4,7 +4,7 @@ import {
   RemoteBlobHandleAndSize,
   ValueOrErrors
 } from '@milaboratories/pl-model-common';
-import { BlockModel, DeriveHref, StdCtx } from './builder';
+import { BlockModel } from './builder';
 import {
   Args,
   ConfigResult,
@@ -27,6 +27,7 @@ import {
   mapRecordValues
 } from './config';
 import { InferHrefType, InferOutputsType } from './platforma';
+import { DeriveHref, StdCtx } from './bconfig';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]

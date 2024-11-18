@@ -1,6 +1,7 @@
 export * from './block_state_patch';
 export * from './block_state_util';
 export * from './builder';
+export * from './bconfig';
 export * from './components';
 export * from './config';
 export * from './pframe';
