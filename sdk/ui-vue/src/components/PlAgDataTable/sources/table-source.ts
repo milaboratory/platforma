@@ -283,20 +283,14 @@ export async function updatePFrameGridOptions(
   const indices = [...specs.keys()]
     .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)))
     .sort((a, b) => {
-      if (specs[a].type === 'axis' && specs[b].type !== 'axis') return -1;
-      if (specs[a].type !== 'axis' && specs[b].type === 'axis') return 1;
+      if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
       const aPriority = specs[a].spec.annotations?.['pl7.app/table/orderPriority'];
       const bPriority = specs[b].spec.annotations?.['pl7.app/table/orderPriority'];
 
-      if (aPriority !== undefined && bPriority !== undefined) {
-        return Number(bPriority) - Number(aPriority);
-      }
-
-      if (aPriority === undefined) return 1;
+      if (aPriority === undefined) return bPriority === undefined ? 0 : 1;
       if (bPriority === undefined) return -1;
-
-      throw new Error('Unknown sorting case');
+      return Number(bPriority) - Number(aPriority);
     });
 
   const fields = lodash.cloneDeep(indices);
