@@ -20,3 +20,5 @@ export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string): BlockConf
     (cfg) => extractConfig(cfg)
   );
 }
+
+export const LogOutputStatus = process.env.MI_LOG_OUTPUT_STATUS;

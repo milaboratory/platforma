@@ -4,6 +4,12 @@ import { computableFromCfg } from '../cfg_render/executor';
 import { MiddleLayerEnvironment } from './middle_layer';
 import { computableFromRF } from '../js_render';
 import { BlockContextAny } from './block_ctx';
+import { hasActiveCfgComponents } from '../cfg_render/util';
+
+export function isActive(cfg: TypedConfigOrConfigLambda): boolean {
+  if (isConfigLambda(cfg)) return cfg.isActive === true;
+  else return hasActiveCfgComponents(cfg);
+}
 
 export function computableFromCfgOrRF(
   env: MiddleLayerEnvironment,

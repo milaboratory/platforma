@@ -5,6 +5,7 @@ import {
   ComputablePostProcess,
   ComputableRecoverAction,
   IntermediateRenderingResult,
+  PostprocessInfo,
   UnwrapComputables
 } from './kernel';
 import {
@@ -566,7 +567,7 @@ export class Computable<T, StableT extends T = T> {
         ir,
         postprocessValue: ops?.postprocessValue as (
           value: unknown,
-          stable: boolean
+          info: PostprocessInfo
         ) => Promise<T> | T,
         recover: ops?.recover
       };

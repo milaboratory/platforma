@@ -320,6 +320,7 @@ function calculateNodeValue(node: unknown, childStates: ChildrenStates): any {
 async function runPostprocessing<IR, T>(
   iResult: IntermediateRenderingResult<IR, T>,
   childrenStates: ChildrenStates,
+  unstableMarker: string | undefined,
   stable: boolean,
   ops: CellRenderingOps
 ): Promise<T> {
@@ -327,10 +328,10 @@ async function runPostprocessing<IR, T>(
   if (iResult.postprocessValue === undefined) return iv;
   else if (ops.postprocessTimeout > 0)
     return await withTimeout(
-      Promise.resolve(iResult.postprocessValue(iv, stable)),
+      Promise.resolve(iResult.postprocessValue(iv, { stable, unstableMarker })),
       ops.postprocessTimeout
     );
-  else return await iResult.postprocessValue(iv, stable);
+  else return await iResult.postprocessValue(iv, { stable, unstableMarker });
 }
 
 async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T): Promise<void> {
@@ -346,6 +347,7 @@ async function fillCellValue<T>(state: Writable<CellState<T>>, previousValue?: T
           value = await runPostprocessing(
             state.selfState.iResult,
             state.childrenStates,
+            state.unstableMarker,
             state.stable,
             ops
           );

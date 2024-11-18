@@ -132,6 +132,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   createPFrame(def: PFrameDef<AHandle>): PFrameHandle;
 
   createPTable(def: PTableDef<PColumn<AHandle>>): PTableHandle;
+
+  //
+  // Computable
+  //
+
+  getCurrentUnstableMarker(): string | undefined;
 }
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
