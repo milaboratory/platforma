@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.5
+
+### Patch Changes
+
+- d85c758: Implement PlTabs component
+- Updated dependencies [d85c758]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.32
+  - @platforma-sdk/ui-vue@1.8.24
+
 ## 1.2.4
 
 ### Patch Changes
