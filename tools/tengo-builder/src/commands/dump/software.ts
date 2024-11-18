@@ -1,5 +1,5 @@
 import { Command } from '@oclif/core'
-import { createLogger } from '../../compiler/main'
+import { createLogger } from '../../compiler/util'
 import { dumpSoftware } from '../../shared/dump'
 import { stdout } from 'process'
 

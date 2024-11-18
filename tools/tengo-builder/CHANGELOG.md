@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.0
+
+### Minor Changes
+
+- 3098292: Add compiler options (//tengo:<option>) with hash_override as the first option available
+
 ## 1.16.1
 
 ### Patch Changes

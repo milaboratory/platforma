@@ -1,14 +1,19 @@
 import { parseSource } from './source';
+import { createLogger } from './util';
 import {
   testLocalLib1Name,
   testLocalLib1Src,
   testLocalLib2Name,
   testLocalLib2Src,
-  testLocalLib1SrcNormalized
+  testLocalLib1SrcNormalized,
+  testLocalTpl3Src,
+  testLocalTpl3Name
 } from './test.artifacts';
 
 test('test lib 1 parsing', () => {
-  const libSrc = parseSource('dist', testLocalLib1Src, testLocalLib1Name, true);
+  const logger = createLogger('error');
+
+  const libSrc = parseSource(logger, 'dist', testLocalLib1Src, testLocalLib1Name, true);
   expect(libSrc.src).toEqual(testLocalLib1SrcNormalized);
   expect(libSrc.dependencies).toEqual([
     { type: 'library', pkg: 'package1', id: 'other-lib-2' },
@@ -17,13 +22,15 @@ test('test lib 1 parsing', () => {
     { type: 'template', pkg: 'package1', id: 'template-3' }
   ]);
 
-  expect(parseSource('dist', testLocalLib1Src, testLocalLib1Name, false).src).toEqual(
+  expect(parseSource(logger, 'dist', testLocalLib1Src, testLocalLib1Name, false).src).toEqual(
     testLocalLib1Src
   );
 });
 
 test('test lib 2 parsing', () => {
-  const libSrc = parseSource('dist', testLocalLib2Src, testLocalLib2Name, true);
+  const logger = createLogger('error');
+
+  const libSrc = parseSource(logger, 'dist', testLocalLib2Src, testLocalLib2Name, true);
   expect(libSrc.dependencies).toEqual([
     { type: 'library', pkg: 'package1', id: 'someid' },
     { type: 'library', pkg: '@platforma-sdk/workflow-tengo', id: 'assets' },
@@ -32,4 +39,11 @@ test('test lib 2 parsing', () => {
     { type: 'asset', pkg: 'package2', id: 'asset-1' },
     { type: 'template', pkg: 'current-package', id: 'local-template-2' }
   ]);
+});
+
+test('test tpl 3 parsing', () => {
+  const logger = createLogger('error');
+
+  const tplSrc = parseSource(logger, 'dist', testLocalTpl3Src, testLocalTpl3Name, true);
+  expect(tplSrc.compilerOptions[0].name).toEqual('hash_override');
 });
