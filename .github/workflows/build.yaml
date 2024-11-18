@@ -52,6 +52,7 @@ jobs:
         id: changed-files
         with:
           files: |
+            !node_modules/**/*
             etc/**/*
             lib/**/*
             sdk/**/*
