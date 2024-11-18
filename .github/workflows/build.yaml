@@ -24,6 +24,7 @@ jobs:
             echo "Let's dance" >> ./test.txt
 
       - uses: milaboratory/github-ci/actions/git/verify-changed-files@v4
+        id: changed-files
         with:
           files: |
             !node_modules
