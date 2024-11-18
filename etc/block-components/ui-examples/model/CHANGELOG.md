@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.32
+
+### Patch Changes
+
+- d85c758: Implement PlTabs component
+
 ## 1.0.31
 
 ### Patch Changes

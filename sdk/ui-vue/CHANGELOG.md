@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.24
+
+### Patch Changes
+
+- d85c758: Implement PlTabs component
+- Updated dependencies [d85c758]
+  - @milaboratories/uikit@2.2.2
+
 ## 1.8.23
 
 ### Patch Changes
