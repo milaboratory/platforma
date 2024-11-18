@@ -24,10 +24,9 @@ import {
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection, normalizeBlockConfig } from '@platforma-sdk/model';
+import { BlockSection, extractConfig } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import { NavigationStates } from './navigation_states';
-import { computableFromRF } from '../js_render';
 
 type BlockInfo = {
   currentArguments: any;
@@ -144,8 +143,8 @@ export function projectOverview(
         // sections
         const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
         const { sections, title, inputsValid, sdkVersion } =
-          ifNotUndef(bpInfo?.config, (blockConfU) => {
-            const blockConf = normalizeBlockConfig(blockConfU);
+          ifNotUndef(bpInfo?.config, (blockConfContainer) => {
+            const blockConf = extractConfig(blockConfContainer);
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
             return {
               sections: computableFromCfgOrRF(

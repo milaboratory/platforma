@@ -4,22 +4,16 @@ import { getPlatformaInstance, isInUI, tryRegisterCallback } from './internal';
 import { Platforma } from './platforma';
 import { InferRenderFunctionReturn, RenderCtx, RenderFunction } from './render';
 import { PlatformaSDKVersion } from './version';
-
-type StdCtxArgsOnly<Args, UiState = undefined> = {
-  readonly $blockId: string;
-  readonly $args: Args;
-  readonly $ui: UiState;
-};
-
-export type StdCtx<Args, UiState = undefined> = StdCtxArgsOnly<Args, UiState> & {
-  readonly $prod: PlResourceEntry;
-  readonly $staging: PlResourceEntry;
-};
-
-export type ResolveCfgType<Cfg extends TypedConfig, Args, UiState = undefined> = ConfigResult<
-  Cfg,
-  StdCtx<Args, UiState>
->;
+import {
+  TypedConfigOrConfigLambda,
+  ConfigRenderLambda,
+  StdCtxArgsOnly,
+  DeriveHref,
+  ResolveCfgType,
+  ExtractFunctionHandleReturn,
+  BlockConfigContainer,
+  downgradeCfgOrLambda
+} from './bconfig';
 
 type SectionsExpectedType = readonly BlockSection[];
 
@@ -44,204 +38,6 @@ type InputsValidRFChecked<RF extends Function> = Checked<
   RF,
   InferRenderFunctionReturn<RF> extends InputsValidExpectedType ? true : false
 >;
-
-export type Code = {
-  type: 'plain';
-  content: string;
-};
-
-/** Field key to attach ConfAction information to a config type. */
-declare const __function_handle__: unique symbol;
-
-/** Creates branded Cfg type */
-export type ConfigRenderLambda<Return = unknown> = {
-  __renderLambda: true;
-  handle: string;
-  retentive: boolean;
-};
-
-export type ExtractFunctionHandleReturn<Func extends ConfigRenderLambda> =
-  Func extends ConfigRenderLambda<infer Return> ? Return : never;
-
-export type TypedConfigOrConfigLambda = TypedConfig | ConfigRenderLambda;
-
-export function isFunctionHandle(
-  cfgOrFh: TypedConfigOrConfigLambda
-): cfgOrFh is ConfigRenderLambda {
-  return (cfgOrFh as any).__renderLambda === true;
-}
-
-type OnlyString<S> = S extends string ? S : '';
-
-// prettier-ignore
-export type DeriveHref<S> = S extends readonly BlockSection[]
-  ? OnlyString<Extract<S[number], { type: 'link' }>['href']>
-  : never;
-
-/** This structure is rendered from the configuration, type can accommodate any
- * version of config structure. */
-export type BlockConfigUniversal<
-  Args = unknown,
-  UiState = unknown,
-  Outputs extends Record<string, TypedConfigOrConfigLambda | string> = Record<
-    string,
-    TypedConfigOrConfigLambda | string
-  >
-> = {
-  /** Config format version */
-  readonly cfgVersion?: number;
-
-  /** SDK version used by the block */
-  readonly sdkVersion: string;
-
-  /** Main rendering mode for the block */
-  readonly renderingMode: BlockRenderingMode;
-
-  /** Initial value for the args when block is added to the project */
-  readonly initialArgs: Args;
-
-  /** Initial value for the args when block is added to the project */
-  readonly initialUiState: UiState;
-
-  /** @deprecated */
-  readonly canRun?: TypedConfigOrConfigLambda | string;
-
-  /**
-   * Config to determine whether the block can be executed with current
-   * arguments.
-   *
-   * Optional to support earlier SDK version configs.
-   * */
-  readonly inputsValid?: TypedConfigOrConfigLambda | string;
-
-  /** Configuration to derive list of section for the left overview panel */
-  readonly sections: TypedConfigOrConfigLambda | string;
-
-  /** Config code bundle */
-  readonly title?: ConfigRenderLambda;
-
-  /** Configuration for the output cells */
-  readonly outputs: Outputs;
-
-  /** Config code bundle */
-  readonly code?: Code;
-};
-
-// /** This structure is rendered from the configuration */
-// export type BlockConfig<
-//   Args = unknown,
-//   UiState = unknown,
-//   Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
-//     string,
-//     TypedConfigOrConfigLambda
-//   >
-// > =
-//   // Code below:
-//   //   - removes 'canRun' field
-//   //   - make everething except 'code' and 'title' required
-//   //   - narrows cfgVersion to number 3;
-//   Required<Omit<BlockConfigUniversal<Args, UiState, Outputs>, 'canRun' | 'code' | 'title'>> &
-//     Pick<BlockConfigUniversal<Args, UiState, Outputs>, 'code' | 'title'> & {
-//       readonly cfgVersion: 3;
-//     };
-
-export type BlockConfig<
-  Args = unknown,
-  UiState = unknown,
-  Outputs extends Record<string, TypedConfigOrConfigLambda> = Record<
-    string,
-    TypedConfigOrConfigLambda
-  >
-> = {
-  /** Config format version */
-  readonly cfgVersion: 3;
-
-  /** SDK version used by the block */
-  readonly sdkVersion: string;
-
-  /** Main rendering mode for the block */
-  readonly renderingMode: BlockRenderingMode;
-
-  /** Initial value for the args when block is added to the project */
-  readonly initialArgs: Args;
-
-  /** Initial value for the args when block is added to the project */
-  readonly initialUiState: UiState;
-
-  /**
-   * Config to determine whether the block can be executed with current
-   * arguments.
-   *
-   * Optional to support earlier SDK version configs.
-   * */
-  readonly inputsValid: TypedConfigOrConfigLambda;
-
-  /** Configuration to derive list of section for the left overview panel */
-  readonly sections: TypedConfigOrConfigLambda;
-
-  /** Config code bundle */
-  readonly title?: ConfigRenderLambda;
-
-  /** Configuration for the output cells */
-  readonly outputs: Outputs;
-
-  /** Config code bundle */
-  readonly code?: Code;
-};
-
-function migrateCfgOrLambda(data: TypedConfigOrConfigLambda | string): TypedConfigOrConfigLambda;
-function migrateCfgOrLambda(
-  data: TypedConfigOrConfigLambda | string | undefined
-): TypedConfigOrConfigLambda | undefined;
-function migrateCfgOrLambda(
-  data: TypedConfigOrConfigLambda | string | undefined
-): TypedConfigOrConfigLambda | undefined {
-  if (data === undefined) return undefined;
-  if (typeof data === 'string') return { __renderLambda: true, handle: data, retentive: false };
-  return data;
-}
-
-/**
- * Takes universal config, and converts it into latest structure.
- *
- * **Important:** This operation is not meant to be executed recusively for the same content.
- *                This means in no circumstance result of this function should be persisted!
- * */
-export function normalizeBlockConfig(cfg: BlockConfigUniversal): BlockConfig {
-  if (cfg.cfgVersion === 3) return cfg as BlockConfig;
-  else if (cfg.inputsValid !== undefined) {
-    if (cfg.title !== undefined) throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
-    // version 2
-    const latest = {
-      ...cfg,
-      cfgVersion: 3,
-      outputs: Object.fromEntries(
-        Object.entries(cfg.outputs).map(([key, value]) => [key, migrateCfgOrLambda(value)])
-      ),
-      inputsValid: migrateCfgOrLambda(cfg.inputsValid!),
-      sections: migrateCfgOrLambda(cfg.sections),
-      initialUiState: undefined
-    } satisfies BlockConfig;
-    return latest;
-  } else {
-    // version 1
-    if (cfg.canRun === undefined)
-      throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
-    if (cfg.title !== undefined) throw new Error(`Malformed config, SDK version ${cfg.sdkVersion}`);
-    const latest = {
-      ...cfg,
-      cfgVersion: 3,
-      outputs: Object.fromEntries(
-        Object.entries(cfg.outputs).map(([key, value]) => [key, migrateCfgOrLambda(value)])
-      ),
-      inputsValid: migrateCfgOrLambda(cfg.canRun),
-      sections: migrateCfgOrLambda(cfg.sections),
-      initialUiState: undefined
-    } satisfies BlockConfig;
-    delete latest['canRun'];
-    return latest;
-  }
-}
 
 type NoOb = Record<string, never>;
 
@@ -559,23 +355,34 @@ export class BlockModel<
   > {
     if (this._initialArgs === undefined) throw new Error('Initial arguments not set.');
 
-    const config: BlockConfig<Args, UiState, OutputsCfg> = {
-      cfgVersion: 3,
+    const config: BlockConfigContainer = {
+      v3: {
+        sdkVersion: PlatformaSDKVersion,
+        renderingMode: this._renderingMode,
+        initialArgs: this._initialArgs,
+        initialUiState: this._initialUiState,
+        inputsValid: this._inputsValid,
+        sections: this._sections,
+        title: this._title,
+        outputs: this._outputs
+      },
+
+      // fields below are added to allow previous desktop versions read generated configs
       sdkVersion: PlatformaSDKVersion,
       renderingMode: this._renderingMode,
       initialArgs: this._initialArgs,
-      initialUiState: this._initialUiState,
-      inputsValid: this._inputsValid,
-      sections: this._sections,
-      title: this._title,
-      outputs: this._outputs
+      inputsValid: downgradeCfgOrLambda(this._inputsValid),
+      sections: downgradeCfgOrLambda(this._sections),
+      outputs: Object.fromEntries(
+        Object.entries(this._outputs).map(([key, value]) => [key, downgradeCfgOrLambda(value)])
+      )
     };
 
     if (!isInUI())
       // we are in the configuration rendering routine, not in actual UI
       return { config } as any;
     // normal operation inside the UI
-    else return getPlatformaInstance(config) as any;
+    else return getPlatformaInstance({ sdkVersion: PlatformaSDKVersion }) as any;
   }
 }
 
