@@ -119,15 +119,13 @@ const query = (handle: StorageHandle, dirPath: string) => {
 
 const load = () => {
   const { storageHandle, dirPath, modelValue } = lookup.value;
-  if (storageHandle && modelValue && dirPath) {
+  if (storageHandle && modelValue) {
     query(storageHandle, dirPath);
   }
 };
 
 const updateDirPathDebounced = debounce((v: string) => {
-  if (v) {
-    data.dirPath = v;
-  }
+  data.dirPath = v ?? ''; // ???
 }, 1000);
 
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
@@ -347,7 +345,7 @@ const vTextOverflown = {
               <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>
             <div v-else :class="{ canBeSelected: file.canBeSelected, selected: file.selected }" @click.stop="(ev) => selectFile(ev, file)">
-              <i class="mask-16 mask-comp isFile" />
+              <i class="mask-16 mask-box isFile" />
               <span v-text-overflown :title="file.name">{{ file.name }}</span>
             </div>
           </template>

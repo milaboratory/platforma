@@ -7,6 +7,7 @@ ll := import(":ll")
 oop := import(":oop")
 maps := import(":maps")
 json := import("json")
+times := import("times")
 constants := import(":constants")
 
 //////////////// definitions ////////////////
@@ -619,6 +620,73 @@ field = func(f) {
 		 */
 		isErrorSet: func() {
 			return self.info().Error != 0
+		},
+
+		/**
+		 * Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays to not make hidden mistakes in cache time ranges.
+		 * Sets the cache time.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		setCache: func(time) {
+			ll.assert(is_int(time) && time >= times.millisecond,
+				"smart.field.setCache: cache time must be an integer >= millisecond. Did you forget to import a standard tengo library 'times'?")
+
+			tx.cacheSetToField(self.id, time)
+			return self
+		},
+
+		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		setCacheMillis: func(millis) {
+			ll.assert(is_int(millis),
+				"smart.field.setCacheMillis: cache time must be a number of milliseconds")
+			return self.setCache(millis * times.millisecond)
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		setCacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds),
+				"smart.field.setCacheSeconds: cache time must be a number of seconds")
+			return self.setCache(seconds * times.second)
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		setCacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes),
+				"smart.field.setCacheMinutes: cache time must be a number of minutes")
+			return self.setCache(minutes * times.minute)
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		setCacheHours: func(hours) {
+			ll.assert(is_int(hours), "smart.field.setCacheHours: cache time must be a number of hours")
+			return self.setCache(hours * times.hour)
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		setCacheDays: func(days) {
+			ll.assert(is_int(days), "smart.field.setCacheDays: cache time must be a number of days")
+			return self.setCache(days * 24 * times.hour)
 		},
 
 		/**

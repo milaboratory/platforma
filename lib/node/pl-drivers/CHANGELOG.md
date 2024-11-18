@@ -1,5 +1,14 @@
 # @milaboratories/pl-drivers
 
+## 1.3.16
+
+### Patch Changes
+
+- 0382abe: Undici & AWS SDK upgrades.
+- Updated dependencies [0382abe]
+  - @milaboratories/pl-client@2.5.10
+  - @milaboratories/pl-tree@1.4.11
+
 ## 1.3.15
 
 ### Patch Changes

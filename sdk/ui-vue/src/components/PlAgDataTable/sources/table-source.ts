@@ -52,12 +52,14 @@ export const defaultValueFormatter = (value: any) => {
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]): ColDef {
+  const colId = makeColId(spec);
   return {
-    colId: makeColId(spec),
+    colId,
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
+    hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     cellDataType: ((valueType: ValueType) => {
       switch (valueType) {
@@ -268,6 +270,7 @@ export async function updatePFrameGridOptions(
   pfDriver: PFrameDriver,
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
+  hiddenColIds?: string[],
 ): Promise<{
   columnDefs: ColDef[];
   serverSideDatasource?: IServerSideDatasource;
@@ -309,7 +312,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i]));
+  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');

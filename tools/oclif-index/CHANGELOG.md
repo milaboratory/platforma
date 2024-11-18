@@ -1,5 +1,11 @@
 # @platforma-sdk/oclif-index
 
+## 1.0.3
+
+### Patch Changes
+
+- 0382abe: Undici & AWS SDK upgrades.
+
 ## 1.0.2
 
 ### Patch Changes

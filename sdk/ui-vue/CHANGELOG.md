@@ -1,5 +1,34 @@
 # @platforma-sdk/ui-vue
 
+## 1.8.23
+
+### Patch Changes
+
+- 0382abe: @ag-grid-community/theming removed from bundling
+- 0382abe: AGGrid upgrade.
+
+## 1.8.21
+
+### Patch Changes
+
+- 6e54327: PlAgDataTable: suppress column menu button by default
+
+## 1.8.20
+
+### Patch Changes
+
+- Updated dependencies [c7f9363]
+  - @milaboratories/uikit@2.2.1
+
+## 1.8.19
+
+### Patch Changes
+
+- 8f916f2: Support column show/hide in PlAgDataTable
+- Updated dependencies [8f916f2]
+  - @platforma-sdk/model@1.8.19
+  - @milaboratories/uikit@2.2.0
+
 ## 1.8.18
 
 ### Patch Changes
