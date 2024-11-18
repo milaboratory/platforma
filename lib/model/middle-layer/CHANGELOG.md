@@ -1,5 +1,13 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.5.9
+
+### Patch Changes
+
+- b04a78a: Block overview label -> title
+- Updated dependencies [b04a78a]
+  - @milaboratories/pl-model-common@1.6.2
+
 ## 1.5.8
 
 ### Patch Changes

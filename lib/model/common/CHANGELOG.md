@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.6.2
+
+### Patch Changes
+
+- b04a78a: Minor improvements for mapPObjectData typing
+
 ## 1.6.1
 
 ### Patch Changes

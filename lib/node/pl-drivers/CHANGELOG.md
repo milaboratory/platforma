@@ -1,5 +1,16 @@
 # @milaboratories/pl-drivers
 
+## 1.3.17
+
+### Patch Changes
+
+- b04a78a: Minor stability marker fixes, upload stability problem isolated.
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+  - @milaboratories/computable@2.3.0
+  - @milaboratories/pl-model-common@1.6.2
+  - @milaboratories/pl-tree@1.4.12
+
 ## 1.3.16
 
 ### Patch Changes

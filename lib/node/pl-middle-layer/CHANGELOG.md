@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.0
+
+### Minor Changes
+
+- b04a78a: Upgrades to accomodate new model SDK features
+
+### Patch Changes
+
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+  - @milaboratories/computable@2.3.0
+  - @milaboratories/pl-drivers@1.3.17
+  - @platforma-sdk/model@1.9.0
+  - @milaboratories/pl-model-common@1.6.2
+  - @milaboratories/pl-model-middle-layer@1.5.9
+  - @milaboratories/pl-tree@1.4.12
+  - @platforma-sdk/block-tools@2.3.25
+
 ## 1.14.33
 
 ### Patch Changes
