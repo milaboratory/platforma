@@ -5,14 +5,8 @@ import {
   PollingComputableHooks,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
-import {
-  asyncPool,
-  CallersCounter,
-  ConsoleLoggerAdapter,
-  MiLogger,
-  ValueOrError
-} from '@milaboratories/ts-helpers';
+import { ResourceId, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { asyncPool, CallersCounter, MiLogger } from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import { PlTreeEntry, ResourceInfo, treeEntryToResourceInfo } from '@milaboratories/pl-tree';
@@ -168,9 +162,10 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     const r = treeEntryToResourceInfo(res, ctx);
 
     const result = this.getLogHandleNoCtx(r);
+    
     // All logs from streams should be considered unstable,
     // final value will be got from blobs.
-    ctx.markUnstable();
+    ctx.markUnstable(`live_log:${resourceIdToString(r.id)}`);
 
     return result;
   }

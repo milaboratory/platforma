@@ -3,9 +3,9 @@ import { projectFieldName } from '../model/project_model';
 import { Pl } from '@milaboratories/pl-client';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { normalizeBlockConfig } from '@platforma-sdk/model';
+import { BlockConfig, extractConfig } from '@platforma-sdk/model';
 
-export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string) {
+export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string): BlockConfig | undefined {
   return ifNotUndef(
     prj
       .traverse(
@@ -17,6 +17,8 @@ export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string) {
         { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
       )
       ?.getDataAsJson<BlockPackInfo>()?.config,
-    (cfg) => normalizeBlockConfig(cfg)
+    (cfg) => extractConfig(cfg)
   );
 }
+
+export const LogOutputStatus = process.env.MI_LOG_OUTPUT_STATUS;

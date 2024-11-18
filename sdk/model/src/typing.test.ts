@@ -4,7 +4,7 @@ import {
   RemoteBlobHandleAndSize,
   ValueOrErrors
 } from '@milaboratories/pl-model-common';
-import { BlockModel, DeriveHref, StdCtx } from './builder';
+import { BlockModel } from './builder';
 import {
   Args,
   ConfigResult,
@@ -27,6 +27,7 @@ import {
   mapRecordValues
 } from './config';
 import { InferHrefType, InferOutputsType } from './platforma';
+import { DeriveHref, StdCtx } from './bconfig';
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -99,11 +100,11 @@ test('test config content', () => {
 });
 
 test('test config content', () => {
-  const platforma = BlockModel.create<{ a: string[] }>('Heavy')
-    .initialArgs({ a: [] })
+  const platforma = BlockModel.create('Heavy')
+    .withArgs<{ a: string[] }>({ a: [] })
+    .argsValid(isEmpty(getJsonField(Args, 'a')))
     .output('cell1', makeObject({ b: getJsonField(Args, 'a') }))
     .output('cell2', mapArrayValues(getJsonField(Args, 'a'), getImmediate('v1')))
-    .inputsValid(isEmpty(getJsonField(Args, 'a')))
     .sections((r) => {
       return [
         { type: 'link', href: '/', label: 'Main' },

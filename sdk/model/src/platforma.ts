@@ -1,6 +1,5 @@
 import { BlockApi } from './block_api';
 import { BlockOutputsBase, BlockState, DriverKit, ValueOrErrors } from '@milaboratories/pl-model-common';
-import { BlockConfig } from './builder';
 import { SdkInfo } from './sdk_info';
 import { BlockStatePatch } from './block_state_patch';
 
@@ -29,7 +28,7 @@ export type InferUiState<Pl extends Platforma> =
 export type InferHrefType<Pl extends Platforma> =
   Pl extends Platforma<unknown, BlockOutputsBase, unknown, infer Href> ? Href : never;
 
-export type PlatformaFactory = (config: BlockConfig) => Platforma;
+export type PlatformaFactory = (config: {sdkVersion: string}) => Platforma;
 
 export type InferBlockState<Pl extends Platforma> = BlockState<
   InferArgsType<Pl>,

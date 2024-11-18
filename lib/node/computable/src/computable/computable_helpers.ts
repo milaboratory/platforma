@@ -3,6 +3,7 @@ import {
   CellRenderingOps,
   ComputableCtx,
   IntermediateRenderingResult,
+  PostprocessInfo,
   UnwrapComputables
 } from './kernel';
 import { Computable } from './computable';
@@ -22,7 +23,7 @@ const DefaultRenderingOps: CellRenderingOps = {
 
 function noopPostprocessValue<IR>(): (
   value: UnwrapComputables<IR>,
-  stable: boolean
+  info: PostprocessInfo
 ) => Promise<UnwrapComputables<IR>> {
   return async (v) => v;
 }
@@ -58,7 +59,7 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
   _ap: TrackedAccessorProvider<A> | AccessorProvider<A>,
   ops: Partial<ComputableRenderingOps> = {},
   cb: (a: A, ctx: ComputableCtx) => IR,
-  postprocessValue?: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+  postprocessValue?: (value: UnwrapComputables<IR>, info: PostprocessInfo) => Promise<T>
 ): Computable<T> {
   const ap = toTrackedAccessProvider(_ap);
   const { mode, resetValueOnError } = ops;
@@ -83,7 +84,7 @@ export function computable<A, IR, T = UnwrapComputables<IR>>(
         ir,
         postprocessValue: (postprocessValue ?? noopPostprocessValue<IR>()) as (
           value: unknown,
-          stable: boolean
+          info: PostprocessInfo
         ) => Promise<T> | T
       };
     }
@@ -140,7 +141,7 @@ export function rawComputable<IR>(
         ir: result,
         postprocessValue: noopPostprocessValue<IR>() as (
           value: unknown,
-          stable: boolean
+          info: PostprocessInfo
         ) => Promise<UnwrapComputables<IR>> | UnwrapComputables<IR>
       };
     }
@@ -151,7 +152,7 @@ export function rawComputable<IR>(
 export function rawComputableWithPostprocess<IR, T>(
   cb: (watcher: Watcher, ctx: ComputableCtx) => IR,
   ops: Partial<ComputableRenderingOps> = {},
-  postprocessValue: (value: UnwrapComputables<IR>, stable: boolean) => Promise<T>
+  postprocessValue: (value: UnwrapComputables<IR>, info: PostprocessInfo) => Promise<T>
 ): Computable<T> {
   const { mode, resetValueOnError } = ops;
   const renderingOps: CellRenderingOps = {
@@ -167,7 +168,7 @@ export function rawComputableWithPostprocess<IR, T>(
       const result = cb(ctx.watcher, ctx);
       return {
         ir: result,
-        postprocessValue: postprocessValue as (value: unknown, stable: boolean) => Promise<T> | T
+        postprocessValue: postprocessValue as (value: unknown, info: PostprocessInfo) => Promise<T> | T
       };
     }
   });

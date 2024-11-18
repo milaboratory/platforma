@@ -30,7 +30,7 @@ test.each([
     } as BlockPackSpecAny
   }
 ])('test load template from $spec.type', async ({ spec }) => {
-  const config = await preparation.getBlockConfig(spec);
+  const config = await preparation.getBlockConfigContainer(spec);
   expect(config).toBeDefined();
   expect(config.renderingMode).toEqual('Heavy');
 

@@ -1,6 +1,5 @@
 import {} from './global';
 import { Platforma, PlatformaFactory } from './platforma';
-import { BlockConfig } from './builder';
 import { FutureHandle, GlobalCfgRenderCtx } from './render/internal';
 
 /** Utility code helping to identify whether the code is running in actual UI environment */
@@ -11,7 +10,7 @@ export function isInUI() {
 }
 
 /** Utility code helping to retrieve a platforma instance form the environment */
-export function getPlatformaInstance(config?: BlockConfig): Platforma {
+export function getPlatformaInstance(config?: {sdkVersion: string}): Platforma {
   if (config && typeof globalThis.getPlatforma === 'function')
     return globalThis.getPlatforma(config);
   else if (typeof globalThis.platforma !== 'undefined') return globalThis.platforma;

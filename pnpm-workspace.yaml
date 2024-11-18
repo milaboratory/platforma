@@ -44,6 +44,11 @@ packages:
   - etc/block-components/ui-examples/ui
   - etc/blocks/ui-examples
 
+  - etc/blocks/model-test/workflow
+  - etc/blocks/model-test/model
+  - etc/blocks/model-test/ui
+  - etc/blocks/model-test/block
+
   # Tests
 
   - tests/workflow-tengo

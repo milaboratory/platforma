@@ -1,18 +1,18 @@
-import { 
-  BlockModel, 
-  InferHrefType, 
-  InferOutputsType, 
-  mapJoinEntry, 
-  PColumnIdAndSpec, 
-  AxisSpec, 
-  JoinEntry, 
-  AxisId, 
-  PlDataTableState, 
-  ValueType, 
+import {
+  BlockModel,
+  InferHrefType,
+  InferOutputsType,
+  mapJoinEntry,
+  PColumnIdAndSpec,
+  AxisSpec,
+  JoinEntry,
+  AxisId,
+  PlDataTableState,
+  ValueType,
   isPColumn,
-  PlDataTableGridState 
+  PlDataTableGridState
 } from '@platforma-sdk/model';
-import {z} from 'zod';
+import { z } from 'zod';
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number())
@@ -35,16 +35,16 @@ export type TableState = {
 };
 
 export type UiState = {
-  dataTableState: TableState | undefined,
+  dataTableState: TableState | undefined;
 };
 
-export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
+export const platforma = BlockModel.create('Heavy')
 
-  .initialArgs({ numbers: [] })
+  .withArgs<BlockArgs>({ numbers: [] })
 
-  .output('numbers', (ctx) =>
-    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
-  )
+  .withUiState<UiState>({ dataTableState: undefined })
+
+  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
   .output('pFrame', (ctx) => {
     const collection = ctx.resultPool.getData();
@@ -62,6 +62,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
       return undefined;
     }
   })
+
   .output('pTable', (ctx) => {
     const join = ctx.uiState?.dataTableState?.tableState.pTableParams?.join;
     if (!join) return undefined;
@@ -75,7 +76,7 @@ export const platforma = BlockModel.create<BlockArgs, UiState>('Heavy')
     try {
       return ctx.createPTable({
         src: mapJoinEntry(join, (idAndSpec) => {
-          const column = columns.find(it => it.id === idAndSpec.columnId);
+          const column = columns.find((it) => it.id === idAndSpec.columnId);
           if (!column) throw Error(`column '${column}' not ready`);
           return column;
         }),

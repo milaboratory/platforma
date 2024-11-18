@@ -112,11 +112,15 @@ export class ResultPool {
    * @returns data associated with the ref
    */
   public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
-    // https://github.com/milaboratory/platforma/issues/100
-    // @TODO use native pool method when available
-    return this.getData().entries.find(
-      (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
-    )?.obj;
+    // @TODO remove after 1 Jan 2025; forward compatibility
+    if (typeof this.ctx.getDataFromResultPoolByRef === 'undefined')
+      return this.getData().entries.find(
+        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
+      )?.obj;
+    return mapPObjectData(
+      this.ctx.getDataFromResultPoolByRef(ref.blockId, ref.name),
+      (handle) => new TreeNodeAccessor(handle)
+    );
   }
 
   /**
@@ -124,11 +128,12 @@ export class ResultPool {
    * @returns object spec associated with the ref
    */
   public getSpecByRef(ref: Ref): PObjectSpec | undefined {
-    // https://github.com/milaboratory/platforma/issues/100
-    // @TODO use native pool method when available
-    return this.getSpecs().entries.find(
-      (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
-    )?.obj;
+    // @TODO remove after 1 Jan 2025; forward compatibility
+    if (typeof this.ctx.getSpecFromResultPoolByRef === 'undefined')
+      return this.getSpecs().entries.find(
+        (f) => f.ref.blockId === ref.blockId && f.ref.name === ref.name
+      )?.obj;
+    return this.ctx.getSpecFromResultPoolByRef(ref.blockId, ref.name);
   }
 
   /**
@@ -275,8 +280,15 @@ export class RenderCtx<Args, UiState> {
     return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => d.handle)));
   }
 
+  /** @deprecated scheduled for removal from SDK */
   public getBlockLabel(blockId: string): string {
     return this.ctx.getBlockLabel(blockId);
+  }
+
+  public getCurrentUnstableMarker(): string | undefined {
+    // @TODO remove after 1 Jan 2025; forward compatibility
+    if (typeof this.ctx.getCurrentUnstableMarker === 'undefined') return undefined;
+    return this.ctx.getCurrentUnstableMarker();
   }
 }
 

@@ -24,7 +24,7 @@ import {
 import { constructBlockContextArgsOnly } from './block_ctx';
 import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
-import { BlockSection, normalizeBlockConfig } from '@platforma-sdk/model';
+import { BlockSection, extractConfig } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import { NavigationStates } from './navigation_states';
 
@@ -121,7 +121,7 @@ export function projectOverview(
 
       const limbo = new Set(renderingState.blocksInLimbo);
 
-      const blocks = [...allBlocks(structure)].map(({ id, label, renderingMode }) => {
+      const blocks = [...allBlocks(structure)].map(({ id, label: defaultLabel, renderingMode }) => {
         const info = notEmpty(infos.get(id));
         const gNode = notEmpty(currentGraph.nodes.get(id));
         let calculationStatus: BlockCalculationStatus = 'NotCalculated';
@@ -142,9 +142,9 @@ export function projectOverview(
 
         // sections
         const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
-        const { sections, inputsValid, sdkVersion } =
-          ifNotUndef(bpInfo?.config, (blockConfU) => {
-            const blockConf = normalizeBlockConfig(blockConfU);
+        const { sections, title, inputsValid, sdkVersion } =
+          ifNotUndef(bpInfo?.config, (blockConfContainer) => {
+            const blockConf = extractConfig(blockConfContainer);
             const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
             return {
               sections: computableFromCfgOrRF(
@@ -153,6 +153,16 @@ export function projectOverview(
                 blockConf.sections,
                 blockConf.code
               ) as ComputableStableDefined<BlockSection[]>,
+              title: ifNotUndef(
+                blockConf.title,
+                (title) =>
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    title,
+                    blockConf.code
+                  ) as ComputableStableDefined<string>
+              ),
               inputsValid: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
@@ -169,7 +179,8 @@ export function projectOverview(
 
         return {
           id,
-          label,
+          label: title ?? defaultLabel,
+          title: title ?? defaultLabel,
           renderingMode,
           stale: info.prod?.stale !== false || calculationStatus === 'Limbo',
           missingReference: gNode.missingReferences,

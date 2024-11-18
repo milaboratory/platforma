@@ -13,10 +13,7 @@ import { projectOverview } from './project_overview';
 import { BlockPackSpecAny } from '../model';
 import { randomUUID } from 'node:crypto';
 import { withProject, withProjectAuthored } from '../mutator/project';
-import {
-  ExtendedResourceData,
-  SynchronizedTreeState
-} from '@milaboratories/pl-tree';
+import { ExtendedResourceData, SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { setTimeout } from 'node:timers/promises';
 import { frontendData } from './frontend_path';
 import { NavigationState } from '@milaboratories/pl-model-common';
@@ -32,6 +29,7 @@ import {
 } from '@milaboratories/pl-model-middle-layer';
 import { activeConfigs } from './active_cfg';
 import { NavigationStates } from './navigation_states';
+import { extractConfig } from '@platforma-sdk/model';
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternal>;
@@ -109,7 +107,8 @@ export class Project {
     blockId: string = randomUUID()
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
+    const blockCfgContainer = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
+    const blockCfg = extractConfig(blockCfgContainer); // full content of this var should never be persisted
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.addBlock(
         {
@@ -119,6 +118,7 @@ export class Project {
         },
         {
           args: JSON.stringify(blockCfg.initialArgs),
+          uiState: JSON.stringify(blockCfg.initialUiState),
           blockPack: preparedBp
         },
         before
@@ -140,7 +140,7 @@ export class Project {
     author?: AuthorMarker
   ): Promise<void> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
-    const blockCfg = await this.env.bpPreparer.getBlockConfig(blockPackSpec);
+    const blockCfg = await this.env.bpPreparer.getBlockConfigContainer(blockPackSpec);
     await withProjectAuthored(this.env.pl, this.rid, author, (mut) =>
       mut.migrateBlockPack(
         blockId,
@@ -211,13 +211,13 @@ export class Project {
     await this.projectTree.refreshState();
   }
 
-  /** Update block label. */
-  public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
-    await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
-      mut.setBlockLabel(blockId, label);
-    });
-    await this.projectTree.refreshState();
-  }
+  // /** Update block label. */
+  // public async setBlockLabel(blockId: string, label: string, author?: AuthorMarker) {
+  //   await withProjectAuthored(this.env.pl, this.rid, author, (mut) => {
+  //     mut.setBlockLabel(blockId, label);
+  //   });
+  //   await this.projectTree.refreshState();
+  // }
 
   /**
    * Sets block args, and changes whole project state accordingly.
