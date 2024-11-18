@@ -1,5 +1,23 @@
 # @platforma-sdk/model
 
+## 1.9.0
+
+### Minor Changes
+
+- b04a78a: Major block config structure upgrade, simplifies future structure upgrades.
+  New model features:
+  - retentive outputs
+  - calculated block `title`
+  - initial `uiState`
+  - new config lambda context methods:
+    - `mapFields` and `allFieldsResolved` for tree node accessor
+    - native `getDataByRef` and `getSpecByRef`
+
+### Patch Changes
+
+- Updated dependencies [b04a78a]
+  - @milaboratories/pl-model-common@1.6.2
+
 ## 1.8.19
 
 ### Patch Changes

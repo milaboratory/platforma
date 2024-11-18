@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.9.0
+
+### Patch Changes
+
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+- Updated dependencies [b04a78a]
+  - @milaboratories/computable@2.3.0
+  - @platforma-sdk/model@1.9.0
+  - @milaboratories/pl-middle-layer@1.15.0
+  - @milaboratories/pl-tree@1.4.12
+
 ## 1.8.23
 
 ### Patch Changes

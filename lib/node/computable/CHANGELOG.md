@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.3.0
+
+### Minor Changes
+
+- b04a78a: Unstable marker is now required, when marking context unstable. UnstableMarker is accessible in postprocessing via second info argument of the lambda.
+
 ## 2.2.1
 
 ### Patch Changes
