@@ -1,5 +1,16 @@
 # @platforma-sdk/bootstrap
 
+## 2.7.0
+
+### Minor Changes
+
+- 49d3fc5: Enable log rotation in docker instance started with bootstrap
+
+### Patch Changes
+
+- Updated dependencies [49d3fc5]
+  - @milaboratories/pl-local@1.7.0
+
 ## 2.6.3
 
 ### Patch Changes
