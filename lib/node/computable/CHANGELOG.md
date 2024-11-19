@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.3.1
+
+### Patch Changes
+
+- e70d0db: Fix for wrapped error computable, now key is inherited from input value
+
 ## 2.3.0
 
 ### Minor Changes
