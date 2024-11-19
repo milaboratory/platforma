@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.6.1
+
+### Patch Changes
+
+- 327d3bd: bump platforma: contextresolver add Domain query
+
 ## 1.6.0
 
 ### Minor Changes
