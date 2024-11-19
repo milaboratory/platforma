@@ -48,6 +48,7 @@ services:
       # Logging
       - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
       - "PL_LOG_DESTINATION=${PL_LOG_DIR:+/var/log/platforma/platforma.log}"
+      - "PL_LOG_ROTATION_ENABLED=${PL_LOG_ROTATION_ENABLED:-false}"
       - "PL_LOG_COMMIT_SUMMARY=${PL_LOG_COMMIT_SUMMARY:-false}"
       - "PL_LOG_RESOURCE_DATA=${PL_LOG_RESOURCE_DATA:-false}"
 
