@@ -33,13 +33,6 @@ jobs:
       publish-to-public: 'true'
       pnpm-recursive-build: false
       pnpm-recursive-tests: false
-      changed-files-list: |
-        !node_modules
-        !.git
-        !*.log
-        !**/.npmrc
-        !.turbo
-        !**/assets
       npmrc-config: |
         {
           "registries": {
