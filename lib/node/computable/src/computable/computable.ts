@@ -610,7 +610,9 @@ export class Computable<T, StableT extends T = T> {
           errors: formattedErrors,
           moreErrors: error.length > maxErrors
         } as ComputableValueOrErrors<T>;
-      }
+      },
+      // inherit key from the computable being wrapped
+      key: computable.___wrapped_kernel___.key
     });
   }
 }
