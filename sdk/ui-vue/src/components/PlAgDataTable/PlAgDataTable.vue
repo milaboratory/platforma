@@ -26,7 +26,7 @@ import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
+import { enrichJoinWithLabelColumns, makeSheets, parseColId, PlAgDataTableRow, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
 ModuleRegistry.registerModules([
@@ -37,6 +37,10 @@ ModuleRegistry.registerModules([
   SideBarModule,
   ColumnsToolPanelModule,
 ]);
+
+const emit = defineEmits<{
+  onRowDoubleClicked: [key: unknown[]]
+}>()
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
@@ -165,13 +169,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-            type: 'column',
-            id: sheet.column,
-          }
+          type: 'column',
+          id: sheet.column,
+        }
         : {
-            type: 'axis',
-            id: sheet.axis,
-          },
+          type: 'axis',
+          id: sheet.axis,
+        },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -238,7 +242,7 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const gridOptions = ref<GridOptions>({
+const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
@@ -246,6 +250,10 @@ const gridOptions = ref<GridOptions>({
   autoSizeStrategy: { type: 'fitCellContents' },
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
+  },
+  onRowDoubleClicked: (value) => {
+    if (value.data)
+      emit("onRowDoubleClicked", value.data!.key)
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -430,24 +438,13 @@ watch(
   <div class="ap-ag-data-table-container">
     <Transition name="ap-ag-data-table-sheets-transition">
       <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine
-          v-for="(sheet, i) in sheets.value"
-          :key="i"
-          :model-value="sheetsState[makeSheetId(sheet.axis)]"
+        <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
           :options="sheet.options"
-          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-        />
+          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
       </div>
     </Transition>
-    <AgGridVue
-      :key="reloadKey"
-      :theme="AgGridTheme"
-      class="ap-ag-data-table-grid"
-      :grid-options="gridOptions"
-      @grid-ready="onGridReady"
-      @state-updated="onStateUpdated"
-      @grid-pre-destroyed="onGridPreDestroyed"
-    />
+    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
+      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed" />
   </div>
 </template>
 
