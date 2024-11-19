@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.9.3
+
+### Patch Changes
+
+- 1f12f1a: Added onRowDoubleClicked emit for PlAgDataTable
+
 ## 1.9.0
 
 ### Patch Changes
