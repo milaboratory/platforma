@@ -1,5 +1,15 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.2
+
+### Patch Changes
+
+- e70d0db: Minor fixes for output status logging.
+- Updated dependencies [e70d0db]
+  - @milaboratories/computable@2.3.1
+  - @milaboratories/pl-drivers@1.3.18
+  - @milaboratories/pl-tree@1.4.13
+
 ## 1.15.1
 
 ### Patch Changes

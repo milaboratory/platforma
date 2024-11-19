@@ -1,5 +1,15 @@
 # @platforma-sdk/test
 
+## 1.9.2
+
+### Patch Changes
+
+- Updated dependencies [e70d0db]
+- Updated dependencies [e70d0db]
+  - @milaboratories/pl-middle-layer@1.15.2
+  - @milaboratories/computable@2.3.1
+  - @milaboratories/pl-tree@1.4.13
+
 ## 1.9.1
 
 ### Patch Changes
