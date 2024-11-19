@@ -231,6 +231,12 @@ export async function makeSheets(
   });
 }
 
+export type PlAgDataTableRow = {
+  id: string;
+  key: unknown[];
+  [field: `${number}`]: unknown;
+};
+
 /**
  * Convert columnar data from the driver to rows, used by ag-grid
  * @param specs column specs
@@ -238,13 +244,16 @@ export async function makeSheets(
  * @param nRows number of rows
  * @returns
  */
-function columns2rows(fields: number[], columns: PTableVector[], index: number): unknown[] {
+function columns2rows(fields: number[], columns: PTableVector[], axes: number[], index: number): PlAgDataTableRow[] {
   const nCols = columns.length;
-  const rowData = [];
+  const rowData: PlAgDataTableRow[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const row: Record<string, unknown> = {};
+    const key: unknown[] = [];
+    const id = (index++).toString();
+    for (const axisIdx of axes) key.push(columns[axisIdx].data[iRow]);
+    const row: PlAgDataTableRow = { key, id };
     for (let iCol = 0; iCol < nCols; ++iCol) {
-      const field = fields[iCol].toString();
+      const field = fields[iCol].toString() as `${number}`;
       const value = columns[iCol].data[iRow];
       const valueType = columns[iCol].type;
       if (isValueAbsent(columns[iCol].absent, iRow)) {
@@ -255,7 +264,7 @@ function columns2rows(fields: number[], columns: PTableVector[], index: number):
         row[field] = toDisplayValue(value, valueType);
       }
     }
-    row['id'] = (index++).toString();
+
     rowData.push(row);
   }
   return rowData;
@@ -278,6 +287,9 @@ export async function updatePFrameGridOptions(
   rowData?: unknown[];
 }> {
   const specs = await pfDriver.getSpec(pt);
+
+  let numberOfAxes = specs.findIndex((s) => s.type === 'column');
+  if (numberOfAxes === -1) numberOfAxes = specs.length;
 
   // column indices in the specs array that we are going to process
   const indices = [...specs.keys()]
@@ -320,6 +332,36 @@ export async function updatePFrameGridOptions(
     fields.splice(i, 1);
   }
 
+  // mixing in axis indices
+
+  const allIndices = [...indices];
+
+  // axisIdx (0..<axesCount) -> idx in allIndices array
+  const axisToFieldIdx = new Map<number, number>();
+  for (let i = 0; i < numberOfAxes; ++i) axisToFieldIdx.set(i, -1);
+
+  for (let i = 0; i < allIndices.length; ++i) {
+    const idx = allIndices[i];
+    if (axisToFieldIdx.has(idx)) axisToFieldIdx.set(idx, i);
+  }
+
+  // at this point we have axis indices that are not listed in indices set to -1 in axisToFieldIdx
+
+  // adding those indices at the end of allIndices array, to make sure we have all the axes in our response
+  for (const [key, value] of axisToFieldIdx)
+    if (value === -1) {
+      axisToFieldIdx.set(key, allIndices.length /* at this index value will be inserted in the next line */);
+      allIndices.push(key);
+    }
+
+  // indices of axes in allIndices array
+  const axes: number[] = [];
+  for (let i = 0; i < numberOfAxes; ++i) {
+    const fieldIdx = axisToFieldIdx.get(i);
+    if (fieldIdx === undefined || fieldIdx === -1) throw new Error('assertion exception');
+    axes.push(fieldIdx);
+  }
+
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
   const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
@@ -358,11 +400,11 @@ export async function updatePFrameGridOptions(
         if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
-            const data = await pfDriver.getData(pt, indices, {
+            const data = await pfDriver.getData(pt, allIndices, {
               offset: params.request.startRow,
               length,
             });
-            rowData = columns2rows(fields, data, params.request.startRow);
+            rowData = columns2rows(fields, data, axes, params.request.startRow);
           }
         }
 
