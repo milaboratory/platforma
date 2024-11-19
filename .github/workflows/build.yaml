@@ -49,8 +49,37 @@ jobs:
           run: |
             pnpm run version-packages
             ls -la
+      - name: Glob match
+        uses: tj-actions/glob@v22
+        id: glob
+        with:
+          files: |
+            !node_modules
+            !.git
+            !.npmrc
+          files-separator: "\n"
+          separator: "|"
+          match-directories: false
+          read-gitignore: false
+          match-gitignore-files: false
+          safe-output: true
+      - name: Glob match2
+        uses: tj-actions/glob@v22
+        id: glob2
+        with:
+          files: |
+            !node_modules
+            !.git
+            !.npmrc
+          files-separator: "\n"
+          separator: "|"
+          match-directories: true
+          read-gitignore: false
+          match-gitignore-files: false
+          safe-output: true
       - uses: milaboratory/github-ci/actions/git/verify-changed-files@v4
         id: changed-files
+        if: 1 > 2
         with:
           files: |
             etc/**/*
@@ -59,6 +88,7 @@ jobs:
             tests/**/*
             tools/**/*
       - name: List all changed files
+        if: 1 > 2
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.changed_files }}
         run: |
