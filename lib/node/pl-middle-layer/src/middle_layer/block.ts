@@ -46,15 +46,15 @@ export function blockArgsAndUiState(
 
 export function blockOutputs(
   projectEntry: PlTreeEntry,
-  id: string,
+  blockId: string,
   env: MiddleLayerEnvironment
 ): ComputableStableDefined<Record<string, ComputableValueOrErrors<unknown>>> {
   return Computable.make(
     (c) => {
       const prj = c.accessor(projectEntry).node();
-      const ctx = constructBlockContext(prj, id);
+      const ctx = constructBlockContext(prj, blockId);
 
-      const blockCfg = getBlockCfg(prj, id);
+      const blockCfg = getBlockCfg(prj, blockId);
 
       return ifNotUndef(blockCfg, (cfg) => {
         const outputs: Record<string, Computable<any>> = {};
@@ -65,6 +65,6 @@ export function blockOutputs(
         return outputs;
       });
     },
-    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + id }
+    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + "#" + blockId }
   ).withStableType();
 }
