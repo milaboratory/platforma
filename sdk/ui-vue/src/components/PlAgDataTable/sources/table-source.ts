@@ -332,6 +332,36 @@ export async function updatePFrameGridOptions(
     fields.splice(i, 1);
   }
 
+  // mixing in axis indices
+
+  const allIndices = [...indices];
+
+  // axisIdx (0..<axesCount) -> idx in allIndices array
+  const axisToFieldIdx = new Map<number, number>();
+  for (let i = 0; i < numberOfAxes; ++i) axisToFieldIdx.set(i, -1);
+
+  for (let i = 0; i < allIndices.length; ++i) {
+    const idx = allIndices[i];
+    if (axisToFieldIdx.has(idx)) axisToFieldIdx.set(idx, i);
+  }
+
+  // at this point we have axis indices that are not listed in indices set to -1 in axisToFieldIdx
+
+  // adding those indices at the end of allIndices array, to make sure we have all the axes in our response
+  for (const [key, value] of axisToFieldIdx)
+    if (value === -1) {
+      axisToFieldIdx.set(key, allIndices.length /* at this index value will be inserted in the next line */);
+      allIndices.push(key);
+    }
+
+  // indices of axes in allIndices array
+  const axes: number[] = [];
+  for (let i = 0; i < numberOfAxes; ++i) {
+    const fieldIdx = axisToFieldIdx.get(i);
+    if (fieldIdx === undefined || fieldIdx === -1) throw new Error('assertion exception');
+    axes.push(fieldIdx);
+  }
+
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
   const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
@@ -370,33 +400,6 @@ export async function updatePFrameGridOptions(
         if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
-            const allIndices = [...indices];
-
-            // axisIdx (0..<axesCount) -> idx in allIndices array
-            const axisToFieldIdx = new Map<number, number>();
-            for (let i = 0; i < numberOfAxes; ++i) axisToFieldIdx.set(i, -1);
-
-            for (let i = 0; i < allIndices.length; ++i) {
-              const idx = allIndices[i];
-              if (axisToFieldIdx.has(idx)) axisToFieldIdx.set(idx, i);
-            }
-
-            // at this point we have axis indices that are not listed in indices set to -1 in axisToFieldIdx
-
-            // adding those indices at the end of allIndices array, to make sure we have all the axes in our response
-            for (const [key, value] of axisToFieldIdx)
-              if (value === -1) {
-                axisToFieldIdx.set(key, allIndices.length /* at this index value will be inserted in the next line */);
-                allIndices.push(key);
-              }
-
-            const axes: number[] = [];
-            for (let i = 0; i < numberOfAxes; ++i) {
-              const fieldIdx = axisToFieldIdx.get(i);
-              if (fieldIdx === undefined || fieldIdx === -1) throw new Error('assertion exception');
-              axes.push(fieldIdx);
-            }
-
             const data = await pfDriver.getData(pt, allIndices, {
               offset: params.request.startRow,
               length,
