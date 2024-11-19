@@ -76,7 +76,7 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
 
   const log: types.logSettings = {
     level: options?.log?.level ?? 'info',
-    path: options?.log?.path ?? `${localRoot}/platforma.log`
+    path: options?.log?.path ?? `${localRoot}/logs/platforma.log`
   };
 
   const grpc: types.grpcSettings = {
