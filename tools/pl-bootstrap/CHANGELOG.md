@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.6.3
+
+### Patch Changes
+
+- 73cc2d7: Keep the size of pl backend logs under control
+
 ## 2.6.2
 
 ### Patch Changes
