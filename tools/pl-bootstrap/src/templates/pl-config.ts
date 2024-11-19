@@ -215,6 +215,10 @@ logging:
   level: '${options.log.level}'
   destinations:
     - path: '${options.log.path}'
+      rotation:
+        maxSize: 1GiB
+        maxBackups: 15
+        compress: true
 
 monitoring${disableMon}:
   listen: '${options.monitoring.listen}'
@@ -225,7 +229,7 @@ debug${disableDbg}:
 core:
   logging:
     extendedInfo: true
-    dumpResourceData: true
+    dumpResourceData: false
 
   grpc:
     listen: '${options.grpc.listen}'
