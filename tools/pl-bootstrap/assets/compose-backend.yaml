@@ -47,7 +47,7 @@ services:
 
       # Logging
       - "PL_LOG_LEVEL=${PL_LOG_LEVEL:-warn}"
-      - "PL_LOG_DESTINATION=${PL_LOG_DESTINATION:-/var/log/platforma.log}"
+      - "PL_LOG_DESTINATION=${PL_LOG_DIR:+/var/log/platforma/platforma.log}"
       - "PL_LOG_COMMIT_SUMMARY=${PL_LOG_COMMIT_SUMMARY:-false}"
       - "PL_LOG_RESOURCE_DATA=${PL_LOG_RESOURCE_DATA:-false}"
 
@@ -81,12 +81,12 @@ services:
     volumes:
       - ${PL_AUTH_HTPASSWD_PATH-/dev/null}:/etc/platforma/users.htpasswd
       - ${PL_LICENSE_FILE:-/dev/null}:/storage/mi.license
-      - ${PL_LOG_FILE:-/dev/null}:/var/log/platforma.log
+      - ${PL_LOG_DIR:-/dev/null}:/var/log/platforma/
       - ${PL_DATA_DB_ROOT}:/storage/rocksdb
-      - ${PL_DATA_PRIMARY_ROOT}:/storage/controllers/data/primary
-      - ${PL_DATA_LIBRARY_ROOT}:/storage/controllers/data/library
-      - ${PL_DATA_WORKDIR_ROOT}:/storage/controllers/data/work
-      - ${PL_DATA_PACKAGE_ROOT}:/storage/controllers/packageLoader
+      - ${PL_DATA_PRIMARY_ROOT}:/storage/controllers/data/primary/
+      - ${PL_DATA_LIBRARY_ROOT}:/storage/controllers/data/library/
+      - ${PL_DATA_WORKDIR_ROOT}:/storage/controllers/data/work/
+      - ${PL_DATA_PACKAGE_ROOT}:/storage/controllers/packageLoader/
 
     restart: always
 
