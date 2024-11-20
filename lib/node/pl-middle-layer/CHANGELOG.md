@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.6
+
+### Patch Changes
+
+- 8187ba2: PlAgDataTable filters implementation
+- Updated dependencies [8187ba2]
+  - @platforma-sdk/model@1.10.2
+
 ## 1.15.5
 
 ### Patch Changes

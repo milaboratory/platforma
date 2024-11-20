@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.10.2
+
+### Patch Changes
+
+- 8187ba2: PlAgDataTable filters implementation
+
 ## 1.10.0
 
 ### Minor Changes
