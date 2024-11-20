@@ -13,6 +13,7 @@ oop := import(":oop")
 maps := import(":maps")
 path := import(":path")
 pkg := import(":exec.package")
+runcmd := import(":exec.runcmd")
 python := import(":exec.python")
 R := import(":exec.R")
 
@@ -115,7 +116,7 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 }
 
 _loadRRunEnvironment := func(descriptor, softName, softPkg) {
-	renvBuilder := R.venvBuilder().
+	renvBuilder := R.rVenvBuilder().
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
 		dependencies(descriptor.dependencies)
@@ -270,7 +271,7 @@ binaryRunOptions := func(runOptions) {
 }
 
 prepareCommandRun := func(wd, opts) {
-	runBuilder := runcmd.builder(wdBefore)
+	runBuilder := runcmd.builder(wd)
 
 	// Make installed packages to be available for the command run
 	for varInfo in opts.variables {
@@ -307,7 +308,7 @@ _activateRenv := func(wd, opts) {
 
 prepareWDForRunEnvironment := func(wd, opts) {
 	if (opts.runEnvType == "R") {
-		return _activateRenv(wd, opts).workdir()
+		return _activateRenv(wd, opts).workdir
 	}
 
 	return wd

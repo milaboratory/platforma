@@ -14,13 +14,11 @@ validation := import(":validation")
 self.defineOutputs("runEnv")
 
 _runInVenv := func(wd, venv) {
-	b := runcmd.builder(wd).
+	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		substitutionRule("{python}", "python-venv").
 		addToPath(path.join("{python}", "venv", "bin"), true).
 		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
-
-	return b
 }
 
 _installPipDependencies := func(venv, dependencies) {
