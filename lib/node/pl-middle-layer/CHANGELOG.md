@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.7
+
+### Patch Changes
+
+- 98e8a52: Fix for computable keys and illegal block context reuse.
+
 ## 1.15.6
 
 ### Patch Changes
