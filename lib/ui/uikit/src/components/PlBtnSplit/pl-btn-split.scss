@@ -1,0 +1,73 @@
+@mixin btn-focus {
+    &:focus-visible {
+        position: relative;
+        outline: none;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border: 2px solid var(--border-color-focus);
+            border-radius: 6px;
+            z-index: 2;
+        }
+    }
+}
+
+.pl-btn-split {
+    $root: &;
+
+    --border-color: var(--border-color-default);
+
+    height: 40px;
+    min-width: 160px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+
+
+
+    &.disabled {
+        pointer-events: none;
+        --border-color: var(--border-color-div-grey);
+    }
+
+    &__title {
+        padding: 8px 14px;
+        height: 100%;
+        @include btn-focus;
+        color: var(--border-color);
+        transition: all .1s ease-in-out;
+
+        &:active {
+            border-radius: 6px;
+            background-color: var(--bg-elevated-02);
+        }
+    }
+
+    &__icon {
+        background-color: var(--border-color);
+    }
+
+    &__icon-container {
+        width: 36px;
+        height: 100%;
+        position: relative;
+        @include btn-focus;
+        transition: all .1s ease-in-out;
+
+        &:active {
+            border-radius: 6px;
+            background-color: var(--bg-elevated-02);
+        }
+
+        &::before {
+            content: '';
+            background: var(--border-color);
+            height: 26px;
+            position: absolute;
+            left: 0;
+            width: 1px;
+        }
+    }
+}
