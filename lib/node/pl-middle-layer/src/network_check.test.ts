@@ -8,4 +8,4 @@ test.skip('should return network connectivity report for a platform endpoint set
   const plEndpoint = process.env.PL_ADDRESS!;
   const report = await checkNetwork(plEndpoint);
   console.log(report);
-}, 50000);
+}, 80000);
