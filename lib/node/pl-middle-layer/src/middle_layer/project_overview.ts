@@ -145,7 +145,7 @@ export function projectOverview(
         const { sections, title, inputsValid, sdkVersion } =
           ifNotUndef(bpInfo?.config, (blockConfContainer) => {
             const blockConf = extractConfig(blockConfContainer);
-            const blockCtxArgsOnly = constructBlockContextArgsOnly(prj, id);
+            const blockCtxArgsOnly = constructBlockContextArgsOnly(entry, id);
             return {
               sections: computableFromCfgOrRF(
                 env,
