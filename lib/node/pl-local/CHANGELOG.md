@@ -1,5 +1,17 @@
 # @milaboratories/pl-local
 
+## 1.7.0
+
+### Minor Changes
+
+- 49d3fc5: Use pl=1.15.5 as default backend version
+
+## 1.6.1
+
+### Patch Changes
+
+- 327d3bd: bump platforma: contextresolver add Domain query
+
 ## 1.6.0
 
 ### Minor Changes

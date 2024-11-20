@@ -1,5 +1,62 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.8
+
+### Patch Changes
+
+- 83caf43: PFrames version bump, enabled fixed filters
+
+## 1.15.7
+
+### Patch Changes
+
+- 98e8a52: Fix for computable keys and illegal block context reuse.
+
+## 1.15.6
+
+### Patch Changes
+
+- 8187ba2: PlAgDataTable filters implementation
+- Updated dependencies [8187ba2]
+  - @platforma-sdk/model@1.10.2
+
+## 1.15.5
+
+### Patch Changes
+
+- ebb29e9: network_check: add ga, add ui downloading, add undici logs
+
+## 1.15.4
+
+### Patch Changes
+
+- Updated dependencies [b089273]
+  - @platforma-sdk/model@1.10.0
+
+## 1.15.3
+
+### Patch Changes
+
+- Updated dependencies [49d3fc5]
+  - @milaboratories/pl-local@1.7.0
+
+## 1.15.2
+
+### Patch Changes
+
+- e70d0db: Minor fixes for output status logging.
+- Updated dependencies [e70d0db]
+  - @milaboratories/computable@2.3.1
+  - @milaboratories/pl-drivers@1.3.18
+  - @milaboratories/pl-tree@1.4.13
+
+## 1.15.1
+
+### Patch Changes
+
+- Updated dependencies [327d3bd]
+  - @milaboratories/pl-local@1.6.1
+
 ## 1.15.0
 
 ### Minor Changes
