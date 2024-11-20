@@ -549,13 +549,11 @@ export class JsExecutionContext
 
       // Exporting props
 
-      this.vm.setProp(configCtx, 'args', localScope.manage(this.vm.newString(this.blockCtx.args)));
-      if (this.blockCtx.uiState !== undefined)
-        this.vm.setProp(
-          configCtx,
-          'uiState',
-          localScope.manage(this.vm.newString(this.blockCtx.uiState))
-        );
+      const args = this.blockCtx.args(this.computableCtx!);
+      const uiState = this.blockCtx.uiState(this.computableCtx!);
+      this.vm.setProp(configCtx, 'args', localScope.manage(this.vm.newString(args)));
+      if (uiState !== undefined)
+        this.vm.setProp(configCtx, 'uiState', localScope.manage(this.vm.newString(uiState)));
 
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
 
