@@ -244,7 +244,7 @@ export function parseSources(
     }
 
     const artifactName =
-      f === 'index.lib.tengo' ? `${path.basename(subdir)}.lib.tengo` : inRootPath;
+      f === 'index.lib.tengo' ? `${path.dirname(inRootPath)}.lib.tengo` : inRootPath;
 
     const fullName = fullNameFromFileName(packageInfo, artifactName.replaceAll(path.sep, '.'));
     if (!fullName) {
