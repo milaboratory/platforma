@@ -9,6 +9,8 @@ import type {
   ManagedGridOptions,
   SortState,
   StateUpdatedEvent,
+  ColDef,
+  ColGroupDef,
 } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { AgGridVue } from '@ag-grid-community/vue3';
@@ -18,7 +20,7 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
-import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
+import type { AxisId, PlDataTableState, PTableColumnSpec, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
@@ -26,7 +28,8 @@ import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { enrichJoinWithLabelColumns, makeSheets, parseColId, PlAgDataTableRow, updatePFrameGridOptions } from './sources/table-source';
+import type { PlAgDataTableRow } from './sources/table-source';
+import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
 ModuleRegistry.registerModules([
@@ -38,15 +41,15 @@ ModuleRegistry.registerModules([
   ColumnsToolPanelModule,
 ]);
 
-const emit = defineEmits<{
-  onRowDoubleClicked: [key: unknown[]]
-}>()
-
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
   settings: Readonly<PlDataTableSettings>;
 }>();
 const { settings } = toRefs(props);
+const emit = defineEmits<{
+  onRowDoubleClicked: [key: unknown[]];
+  columnsChanged: [columns: PTableColumnSpec[]];
+}>();
 
 watch(
   () => settings.value,
@@ -118,14 +121,15 @@ const sheets = useWatchFetch<PlDataTableSettings['sourceType'], PlDataTableSheet
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
   return (
-    state?.sortModel.map(
-      (item) =>
-        ({
-          column: parseColId(item.colId),
-          ascending: item.sort === 'asc',
-          naAndAbsentAreLeastValues: true,
-        }) as PTableSorting,
-    ) ?? []
+    state?.sortModel.map((item) => {
+      const { spec, ...column } = parseColId(item.colId);
+      const _ = spec;
+      return {
+        column,
+        ascending: item.sort === 'asc',
+        naAndAbsentAreLeastValues: true,
+      } as PTableSorting;
+    }) ?? []
   );
 }
 
@@ -169,13 +173,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-          type: 'column',
-          id: sheet.column,
-        }
+            type: 'column',
+            id: sheet.column,
+          }
         : {
-          type: 'axis',
-          id: sheet.axis,
-        },
+            type: 'axis',
+            id: sheet.axis,
+          },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -252,8 +256,7 @@ const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
     event.api.autoSizeAllColumns();
   },
   onRowDoubleClicked: (value) => {
-    if (value.data)
-      emit("onRowDoubleClicked", value.data!.key)
+    if (value.data) emit('onRowDoubleClicked', value.data.key);
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -358,6 +361,15 @@ watch(
   (options, oldOptions) => {
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
+    if (!lodash.isEqual(options.columnDefs, oldOptions.columnDefs) && options.columnDefs) {
+      const idColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
+      const colDefs: ColDef[] | undefined = options.columnDefs?.filter(idColDef);
+      const columns = colDefs
+        ?.map((def) => def.colId)
+        .filter((colId) => colId !== undefined)
+        .map((colId) => parseColId(colId));
+      emit('columnsChanged', columns ?? []);
+    }
   },
 );
 
@@ -438,13 +450,24 @@ watch(
   <div class="ap-ag-data-table-container">
     <Transition name="ap-ag-data-table-sheets-transition">
       <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
+        <PlDropdownLine
+          v-for="(sheet, i) in sheets.value"
+          :key="i"
+          :model-value="sheetsState[makeSheetId(sheet.axis)]"
           :options="sheet.options"
-          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
+          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+        />
       </div>
     </Transition>
-    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
-      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed" />
+    <AgGridVue
+      :key="reloadKey"
+      :theme="AgGridTheme"
+      class="ap-ag-data-table-grid"
+      :grid-options="gridOptions"
+      @grid-ready="onGridReady"
+      @state-updated="onStateUpdated"
+      @grid-pre-destroyed="onGridPreDestroyed"
+    />
   </div>
 </template>
 

@@ -4,7 +4,10 @@ import type {
   LocalBlobHandleAndSize,
   PColumnIdAndSpec,
   PFrameHandle,
+  PlTableFilter,
+  PlTableFilterType,
   PObjectId,
+  PTableColumnId,
   PTableHandle,
   RemoteBlobHandleAndSize,
   ValueOrErrors,
@@ -53,3 +56,19 @@ export type PlDataTableSettings =
       sourceType: 'xsv';
       xsvFile: ValueOrErrors<RemoteBlobHandleAndSize | undefined> | ValueOrErrors<LocalBlobHandleAndSize | undefined> | undefined;
     };
+
+/** PlTableFilters restriction entry */
+export type PlTableFiltersRestriction = {
+  /** Spec of the column for which filter types should be restricted */
+  column: PTableColumnId;
+  /** List of filter types applicable to the column */
+  allowedFilterTypes: PlTableFilterType[];
+};
+
+/** PlTableFilters default settings entry */
+export type PlTableFiltersDefault = {
+  /** Spec of the column the default should be applied */
+  column: PTableColumnId;
+  /** Filter entry */
+  default: PlTableFilter;
+};
