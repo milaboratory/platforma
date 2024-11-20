@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.5
+
+### Patch Changes
+
+- 097b3d9: PlTableFilters bugfix
+
 ## 1.10.4
 
 ### Patch Changes
