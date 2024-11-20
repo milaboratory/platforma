@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.10.0
+
+### Minor Changes
+
+- b089273: - `resolve` method in tree accessor now assumes input field type by default
+  - `parseResourceMap` helper method to parse maps of files or other entities returned from the workflow
+
 ## 1.9.0
 
 ### Minor Changes
