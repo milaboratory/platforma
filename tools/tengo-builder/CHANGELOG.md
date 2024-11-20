@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.3
+
+### Patch Changes
+
+- b5ff687: Use fresher version of tengo-tester with recursive search
+
 ## 1.17.2
 
 ### Patch Changes
