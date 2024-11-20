@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.5
+
+### Patch Changes
+
+- ebb29e9: network_check: add ga, add ui downloading, add undici logs
+
 ## 1.15.4
 
 ### Patch Changes
