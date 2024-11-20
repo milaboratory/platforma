@@ -16,9 +16,8 @@ internal := import(":exec.R.internal")
 _createRenv := func(rPackage, rDescriptor) {
 	wdBefore := workdir.builder().build()
 
-	renvBuilder :=
-		internal.runR(wdBefore, rPackage, rDescriptor).
-			envVar("RENV_PATHS_RENV", "renv")
+	renvBuilder := internal.runRBuilder(wdBefore, rPackage, rDescriptor).
+		envVar("RENV_PATHS_RENV", "renv")
 
 	renvBuilder.
 		cmd("R").
@@ -49,7 +48,7 @@ self.defineOutputs("runEnv")
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, runenv.rVenvInputSchema)
+	validation.assertJsonSchema(inputs, internal.rVenvInputSchema)
 
 	rPackage := inputs.R
 	rDescriptor := inputs.rDescriptor

@@ -17,12 +17,13 @@ self.defineOutputs("runEnv")
 _installRenvDependencies := func(renv, dependencies, rPackage, rDescriptor) {
 	lockFileRef := dependencies.lockFile
 
-	wdForDeps := .
-		addFile("renv.lock", lockFileRef).
-		build()
+	wdForDeps :=
+		workdir.builder().
+			addFile("renv.lock", lockFileRef).
+			build()
 
 	activateBuilder :=
-		internal.runRenv(wdForDeps, renv, rPackage, rDescriptor).
+		internal.runRenvBuilder(wdForDeps, renv, rPackage, rDescriptor).
 			cmd("R").
 			arg("-e").
 			arg("renv::activate()").
@@ -36,16 +37,15 @@ _installRenvDependencies := func(renv, dependencies, rPackage, rDescriptor) {
 
 	actieatedWD := activate.workdir()
 
-	depsBuilder :=
-		internal.runRenv(actieatedWD, renv, rPackage, rDescriptor).
-			cmd("R").
-			arg("-e").
-			arg("renv::restore()").
+	depsBuilder := internal.runRenvBuilder(actieatedWD, renv, rPackage, rDescriptor).
+		cmd("R").
+		arg("-e").
+		arg("renv::restore()").
 
-			inQueue("light").
-			stdout("./output").
-			stderr("./output").
-			nErrorLines(20)
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
 
 	return depsBuilder.build()
 }
