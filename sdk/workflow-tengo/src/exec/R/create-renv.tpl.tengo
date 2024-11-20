@@ -1,0 +1,68 @@
+/**
+ * Creates new r virtual environment.
+ */
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+workdir := import(":workdir")
+assets := import(":assets")
+path := import(":path")
+validation := import(":validation")
+runenv := import(":exec.runenv")
+internal := import(":exec.R.internal")
+
+_createRenv := func(rPackage, rDescriptor) {
+	wdBefore := workdir.builder().build()
+
+	renvBuilder :=
+		internal.runR(wdBefore, rPackage, rDescriptor).
+			envVar("RENV_PATHS_RENV", "renv")
+
+	renvBuilder.
+		cmd("R").
+		arg("-e").
+		arg("renv::init()")
+
+	renvBuilder.
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	renv := renvBuilder.build()
+
+	wdWithRenv := renv.workdir
+
+	runEnvSaver := runenv.saveBuilder(wdWithRenv).
+		envType("R").
+		addPath("renv").
+		addPackage("R", rPackage)
+
+	return runEnvSaver.build().runEnv()
+}
+
+installRDeps := assets.importTemplate(":exec.R.install-deps")
+
+self.defineOutputs("runEnv")
+
+self.body(func(inputs) {
+	// assert we have inputs we expect.
+	validation.assertJsonSchema(inputs, runenv.rVenvInputSchema)
+
+	rPackage := inputs.R
+	rDescriptor := inputs.rDescriptor
+
+	venv := _createRenv(rPackage, rDescriptor)
+
+	installDeps := render.createEphemeral(installRDeps, {
+		venv: venv,
+		toolset: inputs.toolset,
+		dependencies: inputs.dependencies
+	})
+
+	return {
+		runEnv: installDeps.output("runEnv")
+	}
+})

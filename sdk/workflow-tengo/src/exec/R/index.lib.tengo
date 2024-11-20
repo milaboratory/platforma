@@ -1,0 +1,166 @@
+ll := import(":ll")
+validation := import(":validation")
+pkg := import(":exec.package")
+internal := import(":exec.R.internal")
+
+rVenvBuilder := func() {
+	self := undefined
+
+	toolset := "renv"
+	rDescriptor := undefined
+	softwareRef := undefined
+	dependencies := undefined
+	cache := 0
+
+	self = {
+		useToolset: func(name) {
+			validation.assertJsonSchema(name, "string",
+				"runenv.R.useToolset: <name> must be valid name of R packaging toolset (i.e. 'renv')")
+			ll.assert(name != "", "runenv.R.useToolset: toolset name must not be empty")
+
+			toolset = name
+			return self
+		},
+
+		runEnvDescriptor: func(descriptor) {
+			validation.assertJsonSchema(descriptor, pkg.runEnvDescriptorScheme, "runenv.R.runEnvDescriptor: <descriptor> must be run environment specification")
+			ll.assert(descriptor.type == "R", "runenv.R.runEnvDescriptor: not a 'R' run environment: %q", descriptor.type)
+
+			rDescriptor = ll.fromStrict(descriptor)
+			return self
+		},
+
+		software: func(pkgRef) {
+			validation.assertJsonSchema(pkgRef, validation.reference, "runenv.R.software: <pkgRef> must be a reference to software package")
+
+			softwareRef = pkgRef
+			return self
+		},
+
+		dependencies: func(deps) {
+			validation.assertJsonSchema(deps, { "any": "string" }, "runenv.R.dependencies: <deps> must be map of reference file paths")
+
+			dependencies = deps
+			return self
+		},
+
+		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "runenv.R: cache time must be a number of milliseconds")
+			cache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "runenv.R: cache time must be a number of seconds")
+			cache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "runenv.R: cache time must be a number of minutes")
+			cache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "runenv.R: cache time must be a number of hours")
+			cache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "runenv.R: cache time must be a number of days")
+			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
+		 * Sets the cache time.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cache: func(time) {
+			ll.assert(
+				is_int(time) && time > times.millisecond,
+				"runenv.R: cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'times'?")
+			cache = time
+			return self
+		},
+
+		build: func() {
+			depsMap := loadDependencyFiles(softwareRef, dependencies)
+
+			archive := pkg.get(rDescriptor.registry, rDescriptor.package).archive()
+			rPkg := pkg.install(archive).package()
+
+			rVenvInputs := {
+				toolset: toolset,
+				dependencies: smart.createMapResource(depsMap),
+				software: softwareRef,
+				rDescriptor: rDescriptor,
+				R: rPkg
+			}
+
+			validation.assertJsonSchema(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
+
+			tpl := render.create(assets.importTemplate(":exec.R.create-renv"), rVenvInputs)
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * R virtual environment with all dependencies installed.
+				 *
+				 * @return renv: smart.field - a reference to the R portable run environment.
+				 */
+				venv: func() {
+					return tpl.output(_OUTPUT_RUN_ENV, cache)
+				}
+
+				/**
+				 * R runtime used for R virtual environment creation.
+				 *
+				 * @return R: smart.Field - a reference to the R runtime.
+				 */
+				R: func() {
+					return rPkg
+				}
+			}))
+
+			return self
+		}
+	}
+
+	return self
+}
+
+
+export ll.toStrict({
+	venvBuilder                         : rVenvBuilder
+})
