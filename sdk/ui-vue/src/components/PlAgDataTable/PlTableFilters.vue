@@ -84,6 +84,8 @@ watch(
 watch(
   () => columnsWithIds.value,
   (columnsWithIds) => {
+    if (reactiveModel.state !== undefined && columnsWithIds.length === 0) return;
+
     const currentState = reactiveModel.state ?? {};
     const newState: Record<string, PlTableFilter> = {};
     for (const { id } of columnsWithIds) {
@@ -171,6 +173,9 @@ const filterOptions = computed(() => {
     }));
   }
   return map;
+});
+const filterOptionsPresent = computed(() => {
+  return lodash.some(Object.values(filterOptions.value), (options) => options.length > 0);
 });
 
 const getFilterReference = (filter: PlTableFilter): undefined | number | string => {
@@ -455,6 +460,7 @@ watch(
       </div>
     </form>
   </div>
+  <div v-if="!filterOptionsPresent">No filters applicable</div>
 </template>
 
 <style lang="css" scoped>
