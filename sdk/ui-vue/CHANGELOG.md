@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.4
+
+### Patch Changes
+
+- 83caf43: PFrames version bump, enabled fixed filters
+
 ## 1.10.2
 
 ### Patch Changes
