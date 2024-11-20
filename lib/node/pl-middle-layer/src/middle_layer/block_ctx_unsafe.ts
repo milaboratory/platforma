@@ -21,8 +21,11 @@ export const NonKeyCtxFields = ['$prod', '$staging'];
 export function toCfgContext(ctx: BlockContextAny): MatStdCtx {
   return {
     $blockId: ctx.blockId,
-    $args: JSON.parse(ctx.args),
-    $ui: ctx.uiState !== undefined ? JSON.parse(ctx.uiState) : undefined,
+    $args: (cCtx: ComputableCtx) => JSON.parse(ctx.args(cCtx)),
+    $ui: (cCtx: ComputableCtx) => {
+      const uiState = ctx.uiState(cCtx);
+      return uiState !== undefined ? JSON.parse(uiState) : undefined;
+    },
     $prod: ctx.prod,
     $staging: ctx.staging
   };

@@ -18,53 +18,55 @@ export type BlockArgsAndUiState = Omit<BlockStateInternal, 'outputs' | 'navigati
 
 export function blockArgsAndUiState(
   projectEntry: PlTreeEntry,
-  id: string
+  blockId: string
 ): Computable<BlockArgsAndUiState>;
 export function blockArgsAndUiState(
   projectEntry: PlTreeEntry,
-  id: string,
+  blockId: string,
   cCtx: ComputableCtx
 ): BlockArgsAndUiState;
 export function blockArgsAndUiState(
   projectEntry: PlTreeEntry,
-  id: string,
+  blockId: string,
   cCtx?: ComputableCtx
 ): BlockArgsAndUiState | Computable<BlockArgsAndUiState> {
-  return Computable.make(
-    (c) => {
-      const prj = c.accessor(projectEntry).node();
-      const ctx = constructBlockContextArgsOnly(prj, id);
-      return {
-        author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(id)),
-        args: JSON.parse(ctx.args),
-        ui: ctx.uiState !== undefined ? JSON.parse(ctx.uiState) : undefined
-      };
-    },
-    { key: 'inputs#' + resourceIdToString(projectEntry.rid) + id }
-  );
+  if (cCtx === undefined)
+    return Computable.make((c) => blockArgsAndUiState(projectEntry, blockId, c), {
+      key: `inputs#${resourceIdToString(projectEntry.rid)}#${blockId}`
+    });
+
+  const prj = cCtx.accessor(projectEntry).node();
+  const ctx = constructBlockContextArgsOnly(projectEntry, blockId);
+  const uiState = ctx.uiState(cCtx);
+  return {
+    author: prj.getKeyValueAsJson<AuthorMarker>(blockArgsAuthorKey(blockId)),
+    args: JSON.parse(ctx.args(cCtx)),
+    ui: uiState !== undefined ? JSON.parse(uiState) : undefined
+  };
 }
 
 export function blockOutputs(
   projectEntry: PlTreeEntry,
-  id: string,
+  blockId: string,
   env: MiddleLayerEnvironment
 ): ComputableStableDefined<Record<string, ComputableValueOrErrors<unknown>>> {
   return Computable.make(
     (c) => {
       const prj = c.accessor(projectEntry).node();
-      const ctx = constructBlockContext(prj, id);
+      const ctx = constructBlockContext(projectEntry, blockId);
 
-      const blockCfg = getBlockCfg(prj, id);
+      const blockCfg = getBlockCfg(prj, blockId);
 
       return ifNotUndef(blockCfg, (cfg) => {
         const outputs: Record<string, Computable<any>> = {};
-        for (const [cellId, cellCfg] of Object.entries(cfg.outputs))
-          outputs[cellId] = Computable.wrapError(
-            computableFromCfgOrRF(env, ctx, cellCfg, cfg.code)
-          );
+        for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
+          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code);
+          outputs[cellId] = Computable.wrapError(computableOutput);
+          console.log(`${cellId}: ${(computableOutput as any).___wrapped_kernel___.key}`);
+        }
         return outputs;
       });
     },
-    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + id }
+    { key: 'outputs#' + resourceIdToString(projectEntry.rid) + '#' + blockId }
   ).withStableType();
 }

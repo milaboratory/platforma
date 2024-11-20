@@ -13,7 +13,8 @@ export function computableFromRF(
   code: Code,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
-  ops = { ...ops };
+  const key = `${ctx.blockId}#lambda#${fh.handle}`;
+  ops = { ...ops, key };
   if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
     const scope = new Scope();
@@ -30,19 +31,34 @@ export function computableFromRF(
 
     rCtx.resetComputableCtx();
 
+    let recalculationCounter = 0;
+
+    if (LogOutputStatus && LogOutputStatus !== 'unstable-only')
+      console.log(`Output ${fh.handle} scaffold calculated.`);
+
     return {
       ir: rCtx.computablesToResolve,
       postprocessValue: async (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
-        if (LogOutputStatus && (LogOutputStatus !== 'unstable-only' || !stable)) {
-          if (stable) console.log(`Stable output ${fh.handle} calculated.`);
-          else console.log(`Unstable output ${fh.handle}; marker = ${unstableMarker}`);
-        }
-
         // resolving futures
         for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
 
         // rendering result
-        return rCtx.importObjectUniversal(result);
+        const renderedResult = rCtx.importObjectUniversal(result);
+
+        // logging
+        recalculationCounter++;
+        if (LogOutputStatus && (LogOutputStatus !== 'unstable-only' || !stable)) {
+          if (stable)
+            console.log(
+              `Stable output ${fh.handle} calculated ${renderedResult !== undefined ? 'defined' : 'undefined'}; (#${recalculationCounter})`
+            );
+          else
+            console.log(
+              `Unstable output ${fh.handle}; marker = ${unstableMarker}; ${renderedResult !== undefined ? 'defined' : 'undefined'} (#${recalculationCounter})`
+            );
+        }
+
+        return renderedResult;
       }
     };
   }, ops);

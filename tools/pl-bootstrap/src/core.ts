@@ -231,14 +231,14 @@ export default class Core {
 
     this.checkLicense(options?.license, options?.licenseFile);
 
-    const storagePath = (s: string) => path.join(localRoot, s);
+    const storagePath = (...s: string[]) => path.join(localRoot, ...s);
     const storageDir = (s: string) => {
       const p = storagePath(s)
       util.ensureDir(p, { mode: "0775" })
       return p
     }
 
-    const logFilePath = storagePath('platforma.log');
+    const logFilePath = storagePath('logs', 'platforma.log');
     if (!fs.existsSync(logFilePath)) {
       fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
       fs.writeFileSync(logFilePath, '');
@@ -276,7 +276,8 @@ export default class Core {
       PL_LICENSE_FILE: options?.licenseFile,
 
       PL_LOG_LEVEL: options?.logLevel ?? 'info',
-      PL_LOG_FILE: logFilePath,
+      PL_LOG_DIR: path.dirname(logFilePath),
+      PL_LOG_ROTATION_ENABLED: 'true',
 
       PL_DATA_DB_ROOT: dbFSPath,
       PL_DATA_PRIMARY_ROOT: storageDir('primary'),
@@ -378,14 +379,14 @@ export default class Core {
 
     this.checkLicense(options?.license, options?.licenseFile);
 
-    const storagePath = (s: string) => path.join(localRoot, s);
+    const storagePath = (...s: string[]) => path.join(localRoot, ...s);
     const storageDir = (s: string) => {
       const p = storagePath(s)
       util.ensureDir(p, { mode: "0775" })
       return p
     }
 
-    const logFilePath = storagePath('platforma.log');
+    const logFilePath = storagePath('logs', 'platforma.log');
     if (!fs.existsSync(logFilePath)) {
       fs.mkdirSync(path.dirname(logFilePath), { recursive: true });
       fs.writeFileSync(logFilePath, '');
@@ -413,7 +414,8 @@ export default class Core {
       PL_LICENSE_FILE: options?.licenseFile,
 
       PL_LOG_LEVEL: 'info',
-      PL_LOG_FILE: logFilePath,
+      PL_LOG_DIR: path.dirname(logFilePath),
+      PL_LOG_ROTATION_ENABLED: 'true',
 
       PL_DATA_DB_ROOT: dbFSPath,
       PL_DATA_PRIMARY_ROOT: primaryFSPath,

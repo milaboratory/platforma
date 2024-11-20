@@ -46,8 +46,11 @@ export type GetFieldStep = CommonFieldTraverseOps & {
   errorIfFieldNotSet?: true;
 
   /**
-   * Assert field type. Call will fail with exception if this assertion is not
-   * fulfilled
+   * Assert field type.
+   * Call will fail with exception if this assertion is not fulfilled.
+   * The information about expectedFieldType is also used for stability
+   * calculation and field absence error generation, so it is always a good
+   * ide to specify it.
    * */
   assertFieldType?: FieldType;
 };

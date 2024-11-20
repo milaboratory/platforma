@@ -14,8 +14,8 @@ import { ResultPool } from '../pool/result_pool';
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
-  readonly args: string;
-  readonly uiState: string | undefined;
+  readonly args: (cCtx: ComputableCtx) => string;
+  readonly uiState: (cCtx: ComputableCtx) => string | undefined;
   readonly blockMeta: (cCtx: ComputableCtx) => Map<string, Block>;
 };
 
@@ -28,19 +28,22 @@ export type BlockContextFull = BlockContextArgsOnly & {
 export type BlockContextAny = Optional<BlockContextFull, 'prod' | 'staging' | 'getResultsPool'>;
 
 export function constructBlockContextArgsOnly(
-  projectNode: PlTreeNodeAccessor,
+  projectEntry: PlTreeEntry,
   blockId: string
 ): BlockContextArgsOnly {
-  const projectEntry = projectNode.persist();
-  const args = notEmpty(
-    projectNode
-      .traverse({
-        field: projectFieldName(blockId, 'currentArgs'),
-        errorIfFieldNotSet: true
-      })
-      .getDataAsString()
-  );
-  const uiState = projectNode.getKeyValueAsString(blockFrontendStateKey(blockId));
+  const args = (cCtx: ComputableCtx) =>
+    notEmpty(
+      cCtx
+        .accessor(projectEntry)
+        .node()
+        .traverse({
+          field: projectFieldName(blockId, 'currentArgs'),
+          errorIfFieldNotSet: true
+        })
+        .getDataAsString()
+    );
+  const uiState = (cCtx: ComputableCtx) =>
+    cCtx.accessor(projectEntry).node().getKeyValueAsString(blockFrontendStateKey(blockId));
   return {
     blockId,
     args,
@@ -56,12 +59,11 @@ export function constructBlockContextArgsOnly(
 }
 
 export function constructBlockContext(
-  projectNode: PlTreeNodeAccessor,
+  projectEntry: PlTreeEntry,
   blockId: string
 ): BlockContextFull {
-  const projectEntry = projectNode.persist();
   return {
-    ...constructBlockContextArgsOnly(projectNode, blockId),
+    ...constructBlockContextArgsOnly(projectEntry, blockId),
     prod: (cCtx: ComputableCtx) => {
       return cCtx
         .accessor(projectEntry)

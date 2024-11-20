@@ -201,10 +201,14 @@ export function computableFromCfgUnsafe(
   cfg: Cfg,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
-  const key = canonicalize({
-    ctx: Object.fromEntries(Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1)),
-    cfg: cfg
-  })!;
+  const key =
+    `${ctx.blockId}#` +
+    canonicalize({
+      ctx: Object.fromEntries(
+        Object.entries(ctx).filter(([k]) => NonKeyCtxFields.indexOf(k) === -1)
+      ),
+      cfg: cfg
+    })!;
   return Computable.makeRaw(
     (c) => {
       const env: ExecutionEnvironment = { drivers, cCtx: c };

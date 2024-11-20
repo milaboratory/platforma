@@ -322,10 +322,7 @@ export function renderCfg(ctx: Record<string, unknown>, cfg: Cfg): Operation {
     case 'GetFromCtx':
       const ctxValue = ctx[cfg.variable];
       if (typeof ctxValue === 'function') return (e) => res(ctxValue(e.cCtx));
-      else {
-        if (ctxValue === undefined) console.log('asdasd');
-        return resOp(ctxValue);
-      }
+      else return resOp(ctxValue);
 
     case 'Isolate':
       return ({ drivers }) => ({

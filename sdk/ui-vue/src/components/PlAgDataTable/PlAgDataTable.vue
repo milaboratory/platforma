@@ -9,6 +9,8 @@ import type {
   ManagedGridOptions,
   SortState,
   StateUpdatedEvent,
+  ColDef,
+  ColGroupDef,
 } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { AgGridVue } from '@ag-grid-community/vue3';
@@ -18,7 +20,7 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
-import type { AxisId, PlDataTableState, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
+import type { AxisId, PlDataTableState, PTableColumnSpec, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
@@ -26,6 +28,7 @@ import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
+import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlDataTableSettings, PlDataTableSheet } from './types';
 
@@ -43,6 +46,10 @@ const props = defineProps<{
   settings: Readonly<PlDataTableSettings>;
 }>();
 const { settings } = toRefs(props);
+const emit = defineEmits<{
+  onRowDoubleClicked: [key: unknown[]];
+  columnsChanged: [columns: PTableColumnSpec[]];
+}>();
 
 watch(
   () => settings.value,
@@ -114,14 +121,15 @@ const sheets = useWatchFetch<PlDataTableSettings['sourceType'], PlDataTableSheet
 function makeSorting(state?: SortState): PTableSorting[] | undefined {
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
   return (
-    state?.sortModel.map(
-      (item) =>
-        ({
-          column: parseColId(item.colId),
-          ascending: item.sort === 'asc',
-          naAndAbsentAreLeastValues: true,
-        }) as PTableSorting,
-    ) ?? []
+    state?.sortModel.map((item) => {
+      const { spec, ...column } = parseColId(item.colId);
+      const _ = spec;
+      return {
+        column,
+        ascending: item.sort === 'asc',
+        naAndAbsentAreLeastValues: true,
+      } as PTableSorting;
+    }) ?? []
   );
 }
 
@@ -238,7 +246,7 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const gridOptions = ref<GridOptions>({
+const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
@@ -246,6 +254,9 @@ const gridOptions = ref<GridOptions>({
   autoSizeStrategy: { type: 'fitCellContents' },
   onRowDataUpdated: (event) => {
     event.api.autoSizeAllColumns();
+  },
+  onRowDoubleClicked: (value) => {
+    if (value.data) emit('onRowDoubleClicked', value.data.key);
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -350,6 +361,15 @@ watch(
   (options, oldOptions) => {
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
+    if (!lodash.isEqual(options.columnDefs, oldOptions.columnDefs) && options.columnDefs) {
+      const idColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
+      const colDefs: ColDef[] | undefined = options.columnDefs?.filter(idColDef);
+      const columns = colDefs
+        ?.map((def) => def.colId)
+        .filter((colId) => colId !== undefined)
+        .map((colId) => parseColId(colId));
+      emit('columnsChanged', columns ?? []);
+    }
   },
 );
 
