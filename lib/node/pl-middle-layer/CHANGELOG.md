@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.8
+
+### Patch Changes
+
+- 83caf43: PFrames version bump, enabled fixed filters
+
 ## 1.15.7
 
 ### Patch Changes
