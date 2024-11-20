@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.2
+
+### Patch Changes
+
+- 7034bdb: Produce correct library import names when facing deep index.lib.tengo file (depth > 1)
+
 ## 1.17.1
 
 ### Patch Changes
