@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.2
+
+### Patch Changes
+
+- 8187ba2: PlAgDataTable filters implementation
+- Updated dependencies [8187ba2]
+  - @platforma-sdk/model@1.10.2
+  - @milaboratories/uikit@2.2.3
+
 ## 1.10.0
 
 ### Patch Changes
