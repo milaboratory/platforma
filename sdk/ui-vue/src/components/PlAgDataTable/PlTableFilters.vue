@@ -146,11 +146,11 @@ const filterTypesString: PlTableFilterStringType[] = [
   'isNotNA',
   'isNA',
   'string_equals',
-  // 'string_notEquals',
+  'string_notEquals',
   'string_contains',
-  // 'string_doesNotContain',
+  'string_doesNotContain',
   'string_matches',
-  // 'string_doesNotMatch',
+  'string_doesNotMatch',
   'string_containsFuzzyMatch',
 ] as const;
 const filterOptions = computed(() => {
