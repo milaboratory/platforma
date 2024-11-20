@@ -40,7 +40,7 @@ export type UiState = {
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs<BlockArgs>({ numbers: [] })
+  .withArgs<BlockArgs>({ numbers: [1, 2, 3] })
 
   .withUiState<UiState>({ dataTableState: undefined })
 
@@ -73,25 +73,26 @@ export const platforma = BlockModel.create('Heavy')
     const columns = collection.entries.map(({ obj }) => obj).filter(isPColumn);
     if (columns.length === 0) return undefined;
 
-    try {
-      return ctx.createPTable({
-        src: mapJoinEntry(join, (idAndSpec) => {
-          const column = columns.find((it) => it.id === idAndSpec.columnId);
-          if (!column) throw Error(`column '${column}' not ready`);
-          return column;
-        }),
-        filters: ctx.uiState.dataTableState?.tableState.pTableParams?.filters ?? [],
-        sorting: ctx.uiState.dataTableState?.tableState.pTableParams?.sorting ?? []
-      });
-    } catch (err) {
-      return undefined;
-    }
+    let columnMissing = false;
+    const src = mapJoinEntry(join, (idAndSpec) => {
+      const column = columns.find((it) => it.id === idAndSpec.columnId);
+      if (!column) columnMissing = true;
+      return column!;
+    });
+
+    if (columnMissing) return undefined;
+
+    return ctx.createPTable({
+      src,
+      filters: ctx.uiState.dataTableState?.tableState.pTableParams?.filters ?? [],
+      sorting: ctx.uiState.dataTableState?.tableState.pTableParams?.sorting ?? []
+    });
   })
 
   .sections((ctx) => {
     return [
-      { type: 'link', href: '/', label: 'Icons/Masks' }, 
-      { type: 'link', href: '/log-view', label: 'PlLogView' }, 
+      { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/log-view', label: 'PlLogView' },
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
@@ -103,7 +104,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
-      { type: 'link', href: '/tabs', label: 'PlTabs' },
+      { type: 'link', href: '/tabs', label: 'PlTabs' }
     ];
   })
 

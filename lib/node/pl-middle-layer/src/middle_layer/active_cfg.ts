@@ -42,7 +42,7 @@ export function activeConfigs(
 
       if (activeOutputConfigs.length === 0) continue;
 
-      const blockCtx = constructBlockContext(prj, id);
+      const blockCtx = constructBlockContext(prj.persist(), id);
 
       for (const cfg of activeOutputConfigs)
         ret.push(Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, blockConf.code)));
