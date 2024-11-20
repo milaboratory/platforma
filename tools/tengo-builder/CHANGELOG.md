@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.1
+
+### Patch Changes
+
+- a974567: Strict tengo compiler options control
+
 ## 1.17.0
 
 ### Minor Changes
