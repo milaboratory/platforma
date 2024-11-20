@@ -1,0 +1,37 @@
+ll := import(":ll")
+runcmd := import(":exec.runcmd")
+
+rVenvInputSchema := {
+	toolset: "string",
+	dependencies: {"string": validation.reference},
+	software: validation.reference,
+
+	rDescriptor: pkg.runEnvDescriptorScheme,
+	R: validation.reference
+}
+
+runR := func(wd, rPackage, rDescriptor) {
+	b := runcmd.builder(wd).
+		ref("r-run-environment", rPackage).
+		substitutionRule("{R}", "r-run-environment").
+		addToPath(path.join("{R}", rDescriptor.binDir), true).
+		envVar("R_HOME_DIR", "{R}").
+		envVar("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
+
+	return b
+}
+
+runRenv := func(wd, rEnv, rPackage, rDescriptor) {
+	return runR(wd, rPackage, rDescriptor).
+		ref("r-virtual-environment", rEnv).
+		substitutionRule("{renv}", "r-virtual-environment").
+		envVar("RENV_PATHS_RENV", "{renv}")
+
+	return b
+}
+
+export ll.toStrict({
+	rVenvInputSchema                   : rVenvInputSchema,
+	runR                               : runR,
+	runRenv                            : runRenv
+})
