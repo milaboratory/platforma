@@ -47,6 +47,7 @@ type FieldMapOps = {
 export class TreeNodeAccessor {
   constructor(public readonly handle: AccessorHandle) {}
 
+  /** Shortcut for {@link resolveInput} */
   public resolve(
     ...steps: [
       Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
@@ -54,8 +55,70 @@ export class TreeNodeAccessor {
       }
     ]
   ): TreeNodeAccessor;
+  /** Shortcut for {@link resolveInput} */
   public resolve(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
   public resolve(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
+    const transformedSteps = steps.map(
+      (s) =>
+        ({
+          assertFieldType: 'Input',
+          ...(typeof s === 'string' ? { field: s } : s)
+        }) satisfies FieldTraversalStep
+    );
+    return this.resolveWithCommon({}, ...transformedSteps);
+  }
+
+  /** If field type assertion is not specified for the step, default is Output. */
+  public resolveOutput(
+    ...steps: [
+      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+        errorIfFieldNotAssigned: true;
+      }
+    ]
+  ): TreeNodeAccessor;
+  /** If field type assertion is not specified for the step, default is Output. */
+  public resolveOutput(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
+  public resolveOutput(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
+    const transformedSteps = steps.map(
+      (s) =>
+        ({
+          assertFieldType: 'Output',
+          ...(typeof s === 'string' ? { field: s } : s)
+        }) satisfies FieldTraversalStep
+    );
+    return this.resolveWithCommon({}, ...transformedSteps);
+  }
+
+  /** If field type assertion is not specified for the step, default is Input. */
+  public resolveInput(
+    ...steps: [
+      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+        errorIfFieldNotAssigned: true;
+      }
+    ]
+  ): TreeNodeAccessor;
+  /** If field type assertion is not specified for the step, default is Input. */
+  public resolveInput(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
+  public resolveInput(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
+    const transformedSteps = steps.map(
+      (s) =>
+        ({
+          assertFieldType: 'Input',
+          ...(typeof s === 'string' ? { field: s } : s)
+        }) satisfies FieldTraversalStep
+    );
+    return this.resolveWithCommon({}, ...transformedSteps);
+  }
+
+  public resolveAny(
+    ...steps: [
+      Omit<FieldTraversalStep, 'errorIfFieldNotSet'> & {
+        errorIfFieldNotAssigned: true;
+      }
+    ]
+  ): TreeNodeAccessor;
+  public resolveAny(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined;
+  public resolveAny(...steps: (FieldTraversalStep | string)[]): TreeNodeAccessor | undefined {
     return this.resolveWithCommon({}, ...steps);
   }
 
