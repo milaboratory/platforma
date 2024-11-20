@@ -38,8 +38,8 @@ const newImportAssetRE = (moduleName: string) => {
 };
 
 const emptyLineRE = /^\s*$/;
-const compilerOptionRE = /^\/\/tengo:/;
-const wrongCompilerOptionRE = /^\s*\/\/\s+tengo:/;
+const compilerOptionRE = /^\/\/tengo:[\w]/;
+const wrongCompilerOptionRE = /^\s*\/\/\s*tengo:\s*./;
 const singlelineCommentRE = /^\s*(\/\/)|(\/\*.*\*\/)/;
 const multilineCommentStartRE = /^\s*\/\*/;
 const multilineCommentEndRE = /\*\//;
@@ -203,10 +203,10 @@ function parseSingleSourceLine(
 
   if (compilerOptionRE.exec(line)) {
     if (!context.canDetectOptions) {
-      logger.warn(
+      logger.error(
         `[line ${context.lineNo}]: compiler option '//tengo:' was detected, but it cannot be applied as compiler options can be set only at the file header, before any code line'`
       );
-      return { line, context, artifact: undefined, option: undefined };
+      throw new Error("tengo compiler options ('//tengo:' comments) can be set only in file header");
     }
     return { line, context, artifact: undefined, option: parseComplierOption(line) };
   }
