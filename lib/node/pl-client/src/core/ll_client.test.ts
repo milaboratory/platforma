@@ -8,7 +8,7 @@ import { UnauthenticatedError } from './errors';
 
 test('authenticated instance test', async () => {
   const client = await getTestLLClient();
-  const tx = client.createTx();
+  const tx = client.createTx(true);
   const response = await tx.send(
     {
       oneofKind: 'txOpen',
@@ -31,7 +31,7 @@ test('unauthenticated status change', async () => {
   const client = new LLPlClient(cfg.address);
   expect(client.status).toBe('OK');
 
-  const tx = client.createTx();
+  const tx = client.createTx(true);
 
   await expect(async () => {
     await tx.send(
@@ -67,7 +67,7 @@ test('automatic token update', async () => {
   });
 
   for (let i = 0; i < 6; i++) {
-    const tx = client.createTx();
+    const tx = client.createTx(true);
     const response = await tx.send(
       {
         oneofKind: 'txOpen',

@@ -225,10 +225,18 @@ export class SynchronizedTreeState {
 
     let stat = ops.logStat ? initialTreeLoadingStat() : undefined;
 
-    await tree.refresh(stat);
+    let ok = false;
 
-    // logging stats if we were asked to (even if error occured)
-    if (stat && logger) logger.info(`Tree stat (initial load): ${JSON.stringify(stat)}`);
+    try {
+      await tree.refresh(stat);
+      ok = true;
+    } finally {
+      // logging stats if we were asked to (even if error occured)
+      if (stat && logger)
+        logger.info(
+          `Tree stat (initial load, ${ok ? 'success' : 'failure'}): ${JSON.stringify(stat)}`
+        );
+    }
 
     return tree;
   }

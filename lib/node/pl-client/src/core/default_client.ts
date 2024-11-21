@@ -29,7 +29,8 @@ type FileConfigOverrideFields =
   | 'user'
   | 'password'
   | 'alternativeRoot'
-  | 'defaultTransactionTimeout'
+  | 'defaultROTransactionTimeout'
+  | 'defaultRWTransactionTimeout'
   | 'defaultRequestTimeout'
   | 'authTTLSeconds'
   | 'authMaxRefreshSeconds';
@@ -39,7 +40,8 @@ const FILE_CONFIG_OVERRIDE_FIELDS: FileConfigOverrideFields[] = [
   'user',
   'password',
   'alternativeRoot',
-  'defaultTransactionTimeout',
+  'defaultROTransactionTimeout',
+  'defaultRWTransactionTimeout',
   'defaultRequestTimeout',
   'authTTLSeconds',
   'authMaxRefreshSeconds'
