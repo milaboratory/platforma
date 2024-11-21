@@ -107,4 +107,73 @@ describe('PlBtnSplit.vue', () => {
     await root.trigger('keydown', { code: 'Enter' });
     expect(wrapper.emitted('update:modelValue')![0]).toEqual(['opt2']);
   });
+
+  it('Loading status by empty options and display dots "..."', async () => {
+    const wrapper = mount(PlBtnSplit, {
+      props: {
+        modelValue: 'opt1',
+        options: undefined,
+      },
+    });
+
+    expect(wrapper.classes().includes('loading')).toBe(true);
+    const button = wrapper.find('.pl-btn-split__title');
+    expect(button.text()).toBe('...');
+  });
+
+  it('Loading status by empty options and empty model display dots "..."', async () => {
+    const wrapper = mount(PlBtnSplit, {
+      props: {
+        modelValue: undefined,
+        options: undefined,
+      },
+    });
+
+    expect(wrapper.classes().includes('loading')).toBe(true);
+    expect(wrapper.classes().includes('disabled')).toBe(true);
+    const button = wrapper.find('.pl-btn-split__title');
+    expect(button.text()).toBe('...');
+  });
+
+  it('No dots with undefined model', async () => {
+    const wrapper = mount(PlBtnSplit, {
+      props: {
+        modelValue: undefined,
+        options: [
+          { label: 'Option 1', value: 'opt1' },
+          { label: 'Option 2', value: 'opt2' },
+        ],
+      },
+    });
+
+    expect(wrapper.classes().includes('loading')).toBe(false);
+    expect(wrapper.classes().includes('disabled')).toBe(false);
+    const button = wrapper.find('.pl-btn-split__title');
+    expect(button.text()).toBe('');
+  });
+
+  it('Loading props', async () => {
+    const wrapper = mount(PlBtnSplit, {
+      props: {
+        modelValue: 'opt1',
+        loading: true,
+        options: [
+          { label: 'Option 1', value: 'opt1' },
+          { label: 'Option 2', value: 'opt2' },
+        ],
+      },
+    });
+
+    expect(wrapper.classes().includes('loading')).toBe(true);
+    expect(wrapper.classes().includes('disabled')).toBe(true);
+    const button = wrapper.find('.pl-btn-split__title');
+    expect(button.text()).toBe('Option 1');
+
+    wrapper.setProps({ loading: false });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.classes().includes('loading')).toBe(false);
+    expect(wrapper.classes().includes('disabled')).toBe(false);
+    expect(button.text()).toBe('Option 1');
+  });
 });
