@@ -39,9 +39,14 @@
         color: var(--border-color);
         transition: all .1s ease-in-out;
 
+        &:hover {
+            border-radius: 6px;
+            background-color: var(--btn-sec-hover-grey);
+        }
+
         &:active {
             border-radius: 6px;
-            background-color: var(--bg-elevated-02);
+            background-color: var(--btn-sec-press-grey);
         }
     }
 
@@ -56,9 +61,16 @@
         @include btn-focus;
         transition: all .1s ease-in-out;
 
+
+
+        &:hover {
+            border-radius: 6px;
+            background-color: var(--btn-sec-hover-grey);
+        }
+
         &:active {
             border-radius: 6px;
-            background-color: var(--bg-elevated-02);
+            background-color: var(--btn-sec-press-grey);
         }
 
         &::before {
