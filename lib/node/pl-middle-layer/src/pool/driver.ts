@@ -25,7 +25,8 @@ import {
   PFrameDef,
   JoinEntry,
   PTableDef,
-  mapPTableDef
+  mapPTableDef,
+  ValueType,
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
@@ -42,6 +43,8 @@ function blobKey(res: ResourceInfo): string {
 }
 
 type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
+
+const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   public readonly pFrame = new PFrame();
@@ -173,7 +176,8 @@ export class PFrameDriver implements SdkPFrameDriver {
   //
 
   public createPFrame(def: PFrameDef<PlTreeNodeAccessor>, ctx: ComputableCtx): PFrameHandle {
-    const internalData = def.map((c) => mapPObjectData(c, (d) => parseDataInfoResource(d)));
+    const internalData = def.filter((c) => valueTypes.find((t) => t === c.spec.valueType))
+      .map((c) => mapPObjectData(c, (d) => parseDataInfoResource(d)));
     const res = this.pFrames.acquire(internalData);
     ctx.addOnDestroy(res.unref);
     return res.key as PFrameHandle;
