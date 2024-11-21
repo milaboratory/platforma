@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.4.14
+
+### Patch Changes
+
+- 5113fe4: Now reports tree statistics even if initial loading failed.
+- Updated dependencies [5113fe4]
+  - @milaboratories/pl-client@2.6.0
+
 ## 1.4.13
 
 ### Patch Changes
