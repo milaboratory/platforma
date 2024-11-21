@@ -141,6 +141,12 @@ PFCONV_IMPORT_CFG_SCHEMA := {
 	// Single ASCII character to be used as separator;
 	// default: ',' for .csv, '\t' for .tsv
 	`separator,omitempty`: `string`,
+	// Single ASCII character, if XSV row begins with this character - the row would be skipped;
+	// default: error is thrown if comment lines are found in document
+	`commentLinePrefix,omitempty`: `string`,
+	// Should empty lines be skipped;
+	// default: false
+	`skipEmptyLines,omitempty`: `bool`,
 	// Resolve duplicates by adding sequential suffixes to column labels;
 	// default: true
 	`allowColumnLabelDuplicates,omitempty`: `bool`,
