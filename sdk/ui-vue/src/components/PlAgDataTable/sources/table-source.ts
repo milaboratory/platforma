@@ -377,8 +377,8 @@ export async function updatePFrameGridOptions(
       try {
         if (rowCount == 0) {
           params.success({ rowData: [], rowCount });
-          params.api.showNoRowsOverlay();
           params.api.setGridOption('loading', false);
+          params.api.showNoRowsOverlay();
           return;
         }
 
