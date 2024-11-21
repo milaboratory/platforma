@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { ListOption } from '@milaboratories/uikit';
-import { PlCheckbox, PlDropdown, PlNumberField, PlTextField, PlToggleSwitch, Slider } from '@milaboratories/uikit';
+import { PlCheckbox, PlDropdown, PlTextField, PlToggleSwitch, Slider } from '@milaboratories/uikit';
 import { computed, reactive, toRefs, watch } from 'vue';
 import canonicalize from 'canonicalize';
 import type {
@@ -108,14 +108,14 @@ const getFilterLabel = (type: PlTableFilterType): string => {
     case 'number_notEquals':
     case 'string_notEquals':
       return 'Not equals';
-    case 'number_greaterThen':
-      return 'Greater then';
-    case 'number_greaterThenOrEqualTo':
-      return 'Greater then or equal to';
-    case 'number_lessThen':
-      return 'Less then';
-    case 'number_lessThenOrEqualTo':
-      return 'Less then or equal to';
+    case 'number_greaterThan':
+      return 'Greater than';
+    case 'number_greaterThanOrEqualTo':
+      return 'Greater than or equal to';
+    case 'number_lessThan':
+      return 'Less than';
+    case 'number_lessThanOrEqualTo':
+      return 'Less than or equal to';
     case 'number_between':
       return 'Between';
     case 'string_contains':
@@ -138,10 +138,10 @@ const filterTypesNumber: PlTableFilterNumberType[] = [
   'isNA',
   'number_equals',
   'number_notEquals',
-  'number_greaterThen',
-  'number_greaterThenOrEqualTo',
-  'number_lessThen',
-  'number_lessThenOrEqualTo',
+  'number_greaterThan',
+  'number_greaterThanOrEqualTo',
+  'number_lessThan',
+  'number_lessThanOrEqualTo',
   'number_between',
 ] as const;
 const filterTypesString: PlTableFilterStringType[] = [
@@ -186,10 +186,10 @@ const getFilterReference = (filter: PlTableFilter): undefined | number | string 
       return undefined;
     case 'number_equals':
     case 'number_notEquals':
-    case 'number_greaterThen':
-    case 'number_greaterThenOrEqualTo':
-    case 'number_lessThen':
-    case 'number_lessThenOrEqualTo':
+    case 'number_greaterThan':
+    case 'number_greaterThanOrEqualTo':
+    case 'number_lessThan':
+    case 'number_lessThanOrEqualTo':
       return filter.reference;
     case 'number_between':
       return filter.lowerBound;
@@ -212,10 +212,10 @@ const getFilterDefault = (type: PlTableFilterType, reference?: undefined | numbe
       return { type };
     case 'number_equals':
     case 'number_notEquals':
-    case 'number_greaterThen':
-    case 'number_greaterThenOrEqualTo':
-    case 'number_lessThen':
-    case 'number_lessThenOrEqualTo':
+    case 'number_greaterThan':
+    case 'number_greaterThanOrEqualTo':
+    case 'number_lessThan':
+    case 'number_lessThanOrEqualTo':
       return { type, reference: typeof reference === 'number' ? reference : 0 };
     case 'number_between':
       return {
@@ -265,6 +265,12 @@ const makeWildcardOptions = (reference: string) => {
   }));
 };
 
+const parseNumber = (value: string) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw Error('Model value is not a number.');
+  return parsed;
+};
+
 const makePredicate = (filter: PlTableFilter): SingleValuePredicate => {
   const type = filter.type;
   switch (type) {
@@ -294,22 +300,22 @@ const makePredicate = (filter: PlTableFilter): SingleValuePredicate => {
           reference: filter.reference,
         },
       };
-    case 'number_greaterThen':
+    case 'number_greaterThan':
       return {
         operator: 'Greater',
         reference: filter.reference,
       };
-    case 'number_greaterThenOrEqualTo':
+    case 'number_greaterThanOrEqualTo':
       return {
         operator: 'GreaterOrEqual',
         reference: filter.reference,
       };
-    case 'number_lessThen':
+    case 'number_lessThan':
       return {
         operator: 'Less',
         reference: filter.reference,
       };
-    case 'number_lessThenOrEqualTo':
+    case 'number_lessThanOrEqualTo':
       return {
         operator: 'LessOrEqual',
         reference: filter.reference,
@@ -420,18 +426,18 @@ watch(
           v-if="
             reactiveModel.state[id]?.type === 'number_equals' ||
             reactiveModel.state[id]?.type === 'number_notEquals' ||
-            reactiveModel.state[id]?.type === 'number_lessThen' ||
-            reactiveModel.state[id]?.type === 'number_lessThenOrEqualTo' ||
-            reactiveModel.state[id]?.type === 'number_greaterThen' ||
-            reactiveModel.state[id]?.type === 'number_greaterThenOrEqualTo'
+            reactiveModel.state[id]?.type === 'number_lessThan' ||
+            reactiveModel.state[id]?.type === 'number_lessThanOrEqualTo' ||
+            reactiveModel.state[id]?.type === 'number_greaterThan' ||
+            reactiveModel.state[id]?.type === 'number_greaterThanOrEqualTo'
           "
         >
-          <PlNumberField v-model="reactiveModel.state[id].reference" label="Reference value" />
+          <PlTextField v-model="reactiveModel.state[id].reference" :parse="parseNumber" label="Reference value" />
         </template>
         <template v-if="reactiveModel.state[id]?.type === 'number_between'">
-          <PlNumberField v-model="reactiveModel.state[id].lowerBound" label="Lower bound" />
+          <PlTextField v-model="reactiveModel.state[id].lowerBound" :parse="parseNumber" label="Lower bound" />
           <PlToggleSwitch v-model="reactiveModel.state[id].includeLowerBound" label="Include lower bound" />
-          <PlNumberField v-model="reactiveModel.state[id].upperBound" label="Upper bound" />
+          <PlTextField v-model="reactiveModel.state[id].upperBound" :parse="parseNumber" label="Upper bound" />
           <PlToggleSwitch v-model="reactiveModel.state[id].includeUpperBound" label="Include upper bound" />
         </template>
         <template

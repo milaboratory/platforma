@@ -90,33 +90,33 @@ export type PlTableFilterNumberNotEquals = {
 };
 
 /** PlTableFilters numeric filter entry */
-export type PlTableFilterNumberGreaterThen = {
+export type PlTableFilterNumberGreaterThan = {
   /** Predicate type */
-  type: 'number_greaterThen';
+  type: 'number_greaterThan';
   /** Referense value */
   reference: number;
 };
 
 /** PlTableFilters numeric filter entry */
-export type PlTableFilterNumberGreaterThenOrEqualTo = {
+export type PlTableFilterNumberGreaterThanOrEqualTo = {
   /** Predicate type */
-  type: 'number_greaterThenOrEqualTo';
+  type: 'number_greaterThanOrEqualTo';
   /** Referense value */
   reference: number;
 };
 
 /** PlTableFilters numeric filter entry */
-export type PlTableFilterNumberLessThen = {
+export type PlTableFilterNumberLessThan = {
   /** Predicate type */
-  type: 'number_lessThen';
+  type: 'number_lessThan';
   /** Referense value */
   reference: number;
 };
 
 /** PlTableFilters numeric filter entry */
-export type PlTableFilterNumberLessThenOrEqualTo = {
+export type PlTableFilterNumberLessThanOrEqualTo = {
   /** Predicate type */
-  type: 'number_lessThenOrEqualTo';
+  type: 'number_lessThanOrEqualTo';
   /** Referense value */
   reference: number;
 };
@@ -140,10 +140,10 @@ export type PlTableFilterNumber =
   | PlTableFilterCommon
   | PlTableFilterNumberEquals
   | PlTableFilterNumberNotEquals
-  | PlTableFilterNumberGreaterThen
-  | PlTableFilterNumberGreaterThenOrEqualTo
-  | PlTableFilterNumberLessThen
-  | PlTableFilterNumberLessThenOrEqualTo
+  | PlTableFilterNumberGreaterThan
+  | PlTableFilterNumberGreaterThanOrEqualTo
+  | PlTableFilterNumberLessThan
+  | PlTableFilterNumberLessThanOrEqualTo
   | PlTableFilterNumberBetween;
 /** All types of PlTableFilters numeric filter entries */
 export type PlTableFilterNumberType = PlTableFilterNumber['type'];
