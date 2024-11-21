@@ -24,6 +24,7 @@
   background-size: cover !important;
   width: var(--icon-size);
   height: var(--icon-size);
+
   @each $name, $path in $icons24 {
     &.icon-#{$name} {
       background: url(@icons/icon-assets-min/24_#{$path});
