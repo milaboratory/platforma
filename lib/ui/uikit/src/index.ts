@@ -18,6 +18,7 @@ export * from './layout/PlGrid';
  * Components
  */
 export * from './components/PlAlert';
+export * from './components/PlBtnSplit';
 export * from './components/PlBtnPrimary';
 export * from './components/PlBtnAccent';
 export * from './components/PlBtnDanger';
