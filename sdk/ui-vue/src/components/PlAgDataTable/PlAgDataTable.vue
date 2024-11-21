@@ -471,16 +471,7 @@ watch(
   </div>
 </template>
 
-<style lang="css">
-/*Delete after implementing the custom column button*/
-.ag-column-select-list {
-  border-left: 1px solid var(--border-color-div-grey);
-}
-/*Delete after implementing the custom column button*/
-.ag-side-buttons {
-  border-left: 1px solid var(--border-color-div-grey);
-}
-
+<style lang="css" scoped>
 .ap-ag-data-table-container {
   display: flex;
   flex-direction: column;
