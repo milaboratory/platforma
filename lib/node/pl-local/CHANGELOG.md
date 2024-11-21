@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.7.1
+
+### Patch Changes
+
+- 9470bfb: hide a terminal window on Windows
+
 ## 1.7.0
 
 ### Minor Changes
