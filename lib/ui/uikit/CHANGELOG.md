@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.5
+
+### Patch Changes
+
+- 26a5c2e: Add 'closeOnOutsideClick' option to the PlDialogModal(s)
+
 ## 2.2.4
 
 ### Patch Changes
