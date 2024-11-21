@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.11
+
+### Patch Changes
+
+- 75b734d: PFrames - filter out unsupported columns
+
 ## 1.15.10
 
 ### Patch Changes
