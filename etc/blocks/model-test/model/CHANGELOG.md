@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-block-model.model
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [ade3acf]
+  - @platforma-sdk/model@1.10.12
+
 ## 1.0.3
 
 ### Patch Changes

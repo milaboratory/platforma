@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.12
+
+### Patch Changes
+
+- ade3acf: PlTableFilters fixes
+- Updated dependencies [ade3acf]
+  - @platforma-sdk/model@1.10.12
+  - @milaboratories/uikit@2.2.6
+
 ## 1.10.11
 
 ### Patch Changes

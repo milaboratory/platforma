@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.10.12
+
+### Patch Changes
+
+- ade3acf: PlTableFilters fixes
+
 ## 1.10.2
 
 ### Patch Changes
