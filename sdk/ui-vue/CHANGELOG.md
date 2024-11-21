@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.8
+
+### Patch Changes
+
+- 54b4409: Implemented Split Button and added borders for ag-grid-sidebar
+- Updated dependencies [54b4409]
+  - @milaboratories/uikit@2.2.4
+
 ## 1.10.5
 
 ### Patch Changes
