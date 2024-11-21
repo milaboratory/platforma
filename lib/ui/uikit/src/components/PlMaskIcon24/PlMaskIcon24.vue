@@ -11,5 +11,11 @@ const className = computed(() => `mask-24 mask-${props.name}`);
 </script>
 
 <template>
-  <i :class="className" />
+  <i :class="[className, $style.icon]" />
 </template>
+
+<style module>
+.icon {
+  display: inline-block;
+}
+</style>

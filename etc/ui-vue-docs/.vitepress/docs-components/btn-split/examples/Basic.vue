@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlBtnSplit, PlCheckbox } from '@milaboratories/uikit';
+import { PlBtnPrimary, PlBtnSplit, PlCheckbox, PlIcon24, PlMaskIcon24 } from '@milaboratories/uikit';
 import { ref } from 'vue';
 
 let options = Array(5).fill(0).map((v,i)=> ({label:`Item${i}`, value:`value-${i}`}));
@@ -14,6 +14,22 @@ function clickHandler(){
 </script>
 <template>
     <div>
+        <div style="background-color: red;">
+            <div>
+                <PlMaskIcon24 name="dna-import" style="background-color: green;"/>
+            </div>
+
+            <div>
+                <PlIcon24 name="dna-import" />
+                <PlIcon24 name="dna-import" />
+                <PlIcon24 name="dna-import" />
+                <PlIcon24 name="dna-import" />
+
+            </div>
+           
+        </div>
+        
+
         <div class="text-m-btn mb-2">Basic</div>
         <div class="text-s">Selected value  {{model}}</div>
         <PlBtnSplit v-model="model" :options="options" @click="clickHandler"/>
