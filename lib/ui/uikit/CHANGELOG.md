@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.4
+
+### Patch Changes
+
+- 54b4409: Implemented Split Button and added borders for ag-grid-sidebar
+
 ## 2.2.3
 
 ### Patch Changes
