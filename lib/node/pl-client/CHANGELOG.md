@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.6.0
+
+### Minor Changes
+
+- 5113fe4: Separate timeouts for RO and RW transactions. Default timeouts RO = 300s; RW = 20s.
+
 ## 2.5.10
 
 ### Patch Changes
