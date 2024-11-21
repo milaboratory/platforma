@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.15
+
+### Patch Changes
+
+- 26a5c2e: Add 'closeOnOutsideClick' option to the PlDialogModal(s)
+  - @platforma-sdk/ui-vue@1.10.9
+
 ## 1.2.14
 
 ### Patch Changes

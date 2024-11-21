@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.8
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes
