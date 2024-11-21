@@ -27,9 +27,16 @@
 
 
 
-    &.disabled {
+    &.disabled,
+    &.loading {
         pointer-events: none;
         --border-color: var(--border-color-div-grey);
+    }
+
+    &.loading {
+        .mask-loading {
+            animation: spin 2.5s linear infinite;
+        }
     }
 
     &__title {
@@ -50,7 +57,8 @@
         }
     }
 
-    &__icon {
+    &__icon,
+    .mask-loading {
         background-color: var(--border-color);
     }
 

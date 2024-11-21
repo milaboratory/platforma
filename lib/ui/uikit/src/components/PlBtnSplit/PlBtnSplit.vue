@@ -6,17 +6,23 @@ import type { ListOption } from '@/types';
 import { useElementPosition } from '@/composition/usePosition';
 import { normalizeListOptions } from '@/helpers/utils';
 import { deepEqual } from '@milaboratories/helpers';
+import PlMaskIcon16 from '../PlMaskIcon16/PlMaskIcon16.vue';
 
 const props = defineProps<{
   /**
    * List of available options for the dropdown menu
    */
-  options: Readonly<ListOption<M>[]>;
+  options?: Readonly<ListOption<M>[]>;
 
   /**
    * If `true`, the dropdown component is disabled and cannot be interacted with.
    */
   disabled?: boolean;
+
+  /**
+   * If `true,` the button is disabled, cannot be interacted with, and shows a special 'loading' icon.
+   */
+  loading?: boolean;
 }>();
 const emits = defineEmits(['click']);
 
@@ -70,7 +76,9 @@ const items = computed(() =>
   })),
 );
 
-const actionName = computed(() => items.value.find((o) => deepEqual(o.value, model.value))?.label || '');
+const isLoadingOptions = computed(() => props.loading || props.options === undefined);
+
+const actionName = computed(() => items.value.find((o) => deepEqual(o.value, model.value))?.label ?? (props.options === undefined ? '...' : ''));
 
 useElementPosition(root, (pos) => {
   const focusWidth = 3;
@@ -155,7 +163,13 @@ const onFocusOut = (event: FocusEvent) => {
 };
 </script>
 <template>
-  <div ref="root" :class="{ disabled }" class="pl-btn-split d-flex" @focusout="onFocusOut" @keydown="handleKeydown">
+  <div
+    ref="root"
+    :class="{ disabled: disabled || isLoadingOptions, loading: isLoadingOptions }"
+    class="pl-btn-split d-flex"
+    @focusout="onFocusOut"
+    @keydown="handleKeydown"
+  >
     <div
       ref="buttonAction"
       class="pl-btn-split__title flex-grow-1 d-flex align-center text-s-btn"
@@ -166,7 +180,8 @@ const onFocusOut = (event: FocusEvent) => {
       {{ actionName }}
     </div>
     <div ref="menuActivator" class="pl-btn-split__icon-container d-flex align-center justify-center" tabindex="0" @click="data.open = !data.open">
-      <div :class="iconState" class="pl-btn-split__icon" />
+      <PlMaskIcon16 v-if="isLoadingOptions" name="loading" />
+      <div v-else :class="iconState" class="pl-btn-split__icon" />
     </div>
 
     <Teleport v-if="data.open" to="body">
