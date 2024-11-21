@@ -138,10 +138,10 @@ type LocalPlOptionsFull = Required<LocalPlOptions, 'plBinary' | 'spawnOptions' |
 export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Promise<Pl> {
   // filling-in default values
   const ops = {
-    ..._ops,
     plBinary: getDefaultPlBinarySource(),
     spawnOptions: {},
-    closeOld: true
+    closeOld: true,
+    ..._ops
   } satisfies LocalPlOptionsFull;
 
   return await withTrace(logger, async (trace, t) => {
@@ -170,6 +170,7 @@ export async function platformaInit(logger: MiLogger, _ops: LocalPlOptions): Pro
         env: { ...process.env },
         cwd: workDir,
         stdio: ['pipe', 'ignore', 'inherit'],
+        windowsHide: true, // hide a terminal on Windows
         ...ops.spawnOptions
       }
     };
