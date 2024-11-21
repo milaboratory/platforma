@@ -321,8 +321,12 @@ watch(list, (el) => {
   }
 });
 
+const top = ref(0);
+
 useElementPosition(root, (pos) => {
   const focusWidth = 3; // see css
+
+  top.value = pos.top;
 
   const downTopOffset = pos.top + pos.height + focusWidth;
 
@@ -376,7 +380,7 @@ useElementPosition(root, (pos) => {
         </div>
         <label v-if="label">
           <i v-if="required" class="required-icon" />
-          <span>{{ label }}</span>
+          <span>{{ label }}: {{ top }}</span>
           <PlTooltip v-if="slots.tooltip" class="info" position="top">
             <template #tooltip>
               <slot name="tooltip" />
