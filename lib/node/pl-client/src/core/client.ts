@@ -216,7 +216,7 @@ export class PlClient {
 
     while (true) {
       // opening low-level tx
-      const llTx = this.ll.createTx(ops);
+      const llTx = this.ll.createTx(writable, ops);
       // wrapping it into high-level tx (this also asynchronously sends initialization message)
       const tx = new PlTransaction(
         llTx,

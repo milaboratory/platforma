@@ -16,9 +16,13 @@ export interface PlClientConfig {
 
   /** Default timeout in milliseconds for unary calls, like ping and login. */
   defaultRequestTimeout: number;
-  /** Default timeout in milliseconds for transaction, should be adjusted for
-   * long round-trip connections. */
-  defaultTransactionTimeout: number;
+
+  /** Default timeout in milliseconds for read-write transaction, should be
+   * adjusted for long round-trip  or low bandwidth connections. */
+  defaultRWTransactionTimeout: number;
+  /** Default timeout in milliseconds for read-only transaction, should be
+   * adjusted for long round-trip or low bandwidth connections. */
+  defaultROTransactionTimeout: number;
 
   /** Controls what TTL will be requested from the server, when new JWT token
    * is requested. */
@@ -75,7 +79,8 @@ export interface PlClientConfig {
 }
 
 export const DEFAULT_REQUEST_TIMEOUT = 5_000;
-export const DEFAULT_TX_TIMEOUT = 30_000;
+export const DEFAULT_RO_TX_TIMEOUT = 300_000;
+export const DEFAULT_RW_TX_TIMEOUT = 20_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
@@ -91,7 +96,12 @@ export const DEFAULT_RETRY_JITTER = 0.3; // 30%
 type PlConfigOverrides = Partial<
   Pick<
     PlClientConfig,
-    'ssl' | 'defaultRequestTimeout' | 'defaultTransactionTimeout' | 'httpProxy' | 'grpcProxy'
+    | 'ssl'
+    | 'defaultRequestTimeout'
+    | 'defaultROTransactionTimeout'
+    | 'defaultRWTransactionTimeout'
+    | 'httpProxy'
+    | 'grpcProxy'
   >
 >;
 
@@ -114,7 +124,8 @@ export function plAddressToConfig(
       hostAndPort: address,
       ssl: false,
       defaultRequestTimeout: DEFAULT_REQUEST_TIMEOUT,
-      defaultTransactionTimeout: DEFAULT_TX_TIMEOUT,
+      defaultROTransactionTimeout: DEFAULT_RO_TX_TIMEOUT,
+      defaultRWTransactionTimeout: DEFAULT_RW_TX_TIMEOUT,
       authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
       authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
       txDelay: 0,
@@ -151,7 +162,14 @@ export function plAddressToConfig(
     ssl: url.protocol === 'https:' || url.protocol === 'tls:',
     defaultRequestTimeout:
       parseInt(url.searchParams.get('request-timeout')) ?? DEFAULT_REQUEST_TIMEOUT,
-    defaultTransactionTimeout: parseInt(url.searchParams.get('tx-timeout')) ?? DEFAULT_TX_TIMEOUT,
+    defaultROTransactionTimeout:
+      parseInt(url.searchParams.get('ro-tx-timeout')) ??
+      parseInt(url.searchParams.get('tx-timeout')) ??
+      DEFAULT_RO_TX_TIMEOUT,
+    defaultRWTransactionTimeout:
+      parseInt(url.searchParams.get('rw-tx-timeout')) ??
+      parseInt(url.searchParams.get('tx-timeout')) ??
+      DEFAULT_RW_TX_TIMEOUT,
     authTTLSeconds: DEFAULT_TOKEN_TTL_SECONDS,
     authMaxRefreshSeconds: DEFAULT_AUTH_MAX_REFRESH,
     grpcProxy: url.searchParams.get('grpc-proxy') ?? undefined,

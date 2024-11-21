@@ -229,17 +229,16 @@ export class LLPlClient {
     };
   }
 
-  createTx(ops: PlCallOps = {}): LLPlTransaction {
+  createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
       if (ops.abortSignal)
-        // this will be fixed in typescript 5.5.0
-        // see this https://github.com/microsoft/TypeScript/issues/58026
-        // and this https://github.com/microsoft/TypeScript/pull/58211
-        totalAbortSignal = (AbortSignal as any).any([totalAbortSignal, ops.abortSignal]);
+        totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
       return this.grpcPl.tx({
         abort: totalAbortSignal,
-        timeout: ops.timeout ?? this.conf.defaultTransactionTimeout
+        timeout:
+          ops.timeout ??
+          (rw ? this.conf.defaultRWTransactionTimeout : this.conf.defaultROTransactionTimeout)
       });
     });
   }
