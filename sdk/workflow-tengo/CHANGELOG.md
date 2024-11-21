@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.2.1
+
+### Patch Changes
+
+- 1c6e7aa: pfconv support skipping comments and empty lines
+
 ## 2.2.0
 
 ### Minor Changes
