@@ -32,7 +32,7 @@ const props = withDefaults(
      */
     shadow?: boolean;
     /**
-     * If `true`, the modal window closes when clicking outside the modal area.
+     * If `true`, the modal window closes when clicking outside the modal area (default: `true`)
      */
     closeOnOutsideClick?: boolean;
   }>(),
