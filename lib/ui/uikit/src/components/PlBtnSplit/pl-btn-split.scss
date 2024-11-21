@@ -42,9 +42,9 @@
     &__title {
         padding: 8px 14px;
         height: 100%;
-        @include btn-focus;
         color: var(--border-color);
         transition: all .1s ease-in-out;
+        @include btn-focus;
 
         &:hover {
             border-radius: 6px;
@@ -66,9 +66,8 @@
         width: 36px;
         height: 100%;
         position: relative;
-        @include btn-focus;
         transition: all .1s ease-in-out;
-
+        @include btn-focus;
 
 
         &:hover {
