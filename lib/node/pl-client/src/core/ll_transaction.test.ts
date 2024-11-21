@@ -7,7 +7,7 @@ import { Aborted } from '@milaboratories/ts-helpers';
 
 test('transaction timeout test', async () => {
   const client = await getTestLLClient();
-  const tx = client.createTx({ timeout: 500 });
+  const tx = client.createTx(true, { timeout: 500 });
 
   await expect(async () => {
     const response = await tx.send(
@@ -24,7 +24,7 @@ test('transaction timeout test', async () => {
 
 test('check timeout error type (passive)', async () => {
   const client = await getTestLLClient();
-  const tx = client.createTx({ timeout: 500 });
+  const tx = client.createTx(true, { timeout: 500 });
 
   try {
     const response = await tx.send(
@@ -43,7 +43,7 @@ test('check timeout error type (passive)', async () => {
 
 test('check timeout error type (active)', async () => {
   const client = await getTestLLClient();
-  const tx = client.createTx({ timeout: 500 });
+  const tx = client.createTx(true, { timeout: 500 });
 
   try {
     const openResponse = await tx.send(
@@ -98,7 +98,7 @@ test('check timeout error type (active)', async () => {
 
 test('check is abort error (active)', async () => {
   const client = await getTestLLClient();
-  const tx = client.createTx({ abortSignal: AbortSignal.timeout(100) });
+  const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
   try {
     const openResponse = await tx.send(
