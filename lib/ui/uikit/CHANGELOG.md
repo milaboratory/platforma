@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.2.6
+
+### Patch Changes
+
+- a53abfe: updated icons
+- f908594: Fix dropdown label
+
 ## 2.2.5
 
 ### Patch Changes
