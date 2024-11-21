@@ -32,11 +32,13 @@ const props = withDefaults(
     multi?: boolean;
     title?: string;
     autoSelectStorage?: boolean;
+    closeOnOutsideClick?: boolean;
   }>(),
   {
     extensions: undefined,
     title: undefined,
     autoSelectStorage: true,
+    closeOnOutsideClick: true,
   },
 );
 
@@ -302,6 +304,7 @@ const vTextOverflown = {
 <template>
   <PlDialogModal
     :no-content-gutters="true"
+    :close-on-outside-click="closeOnOutsideClick"
     class="split"
     :model-value="modelValue"
     width="688px"

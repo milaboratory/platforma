@@ -2,7 +2,7 @@
 html,
 body,
 #app {
-  overflow: unset !important;
+  overflow: auto !important;
 }
 
 /**
