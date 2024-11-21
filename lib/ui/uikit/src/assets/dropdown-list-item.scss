@@ -4,7 +4,6 @@
     padding: 8px 12px;
     display: flex;
     align-items: center;
-    // flex-direction: column;
     min-height: 40px;
 
     &__small {
@@ -13,9 +12,7 @@
     }
 
     &__title-container {
-        // height: 24px;
         display: flex;
-        // align-items: center;
         margin-right: 8px;
         flex-grow: 1;
         flex-direction: column;
@@ -39,8 +36,12 @@
     }
 
     &:hover {
-        background-color: var(--bg-elevated-02);
+        background-color: var(--btn-sec-hover-grey);
         cursor: pointer;
+    }
+
+    &:active {
+        background-color: var(--btn-sec-press-grey);
     }
 
     &__selected {

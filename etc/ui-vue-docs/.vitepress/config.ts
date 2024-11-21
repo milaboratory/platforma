@@ -22,7 +22,8 @@ export default defineConfig({
     'toggle-switch.md': `${uikitPrefix}toggle-switch.md`,
     'btn-group.md': `${uikitPrefix}btn-group.md`,
     'file-input.md': `${uikitPrefix}file-input.md`,
-    'notifications.md': `${uikitPrefix}notifications.md`
+    'notifications.md': `${uikitPrefix}notifications.md`,
+    'btn-split.md': `${uikitPrefix}btn-split.md`,
   },
 
   srcDir: 'uikit-docs',
@@ -58,6 +59,7 @@ export default defineConfig({
       {
         text: 'Examples',
         items: [
+          { text: 'PlBtnSplit', link: `${uikitPrefix}btn-split` },
           { text: 'PlTextField', link: `${uikitPrefix}text-fields` },
           { text: 'PlTextArea', link: `${uikitPrefix}text-area` },
           { text: 'PlNumberField', link: `${uikitPrefix}number-field` },

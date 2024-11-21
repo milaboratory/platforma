@@ -34,6 +34,9 @@ import PlFileInputBasic from './file-input/index.vue';
 //notifications
 import PlNotificationAlertBasic from './notifications/index.vue';
 
+
+import PlBtnSPlitBasic from './btn-split/index.vue';
+
 export {
   TextFieldBasic,
   TextAreaBasic,
@@ -47,5 +50,6 @@ export {
   PlToggleSwitchBasic,
   PlBtnGroupBasic,
   PlFileInputBasic,
-  PlNotificationAlertBasic
+  PlNotificationAlertBasic,
+  PlBtnSPlitBasic
 };
