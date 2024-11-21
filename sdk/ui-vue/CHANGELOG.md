@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.13
+
+### Patch Changes
+
+- 449209f: fix: no rows overlay
+
 ## 1.10.12
 
 ### Patch Changes
