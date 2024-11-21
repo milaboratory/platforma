@@ -29,7 +29,8 @@ const dialogData = reactive({
   actionsHasTopBorder: true,
   dialogWidth: '448px', // default,
   maxHeight: 440,
-  contentHeight: 216
+  contentHeight: 216,
+  closeOnOutsideClick: true
 });
 
 const slideData = reactive({
@@ -89,6 +90,7 @@ const lorem = faker.lorem.paragraph(100);
         >
         <PlCheckbox v-model="dialogData.title">Show title</PlCheckbox>
         <PlCheckbox v-model="dialogData.actions">Show actions</PlCheckbox>
+        <PlCheckbox v-model="dialogData.closeOnOutsideClick">Close on outside click</PlCheckbox>
         <h4>Examples</h4>
         <PlBtnPrimary @click="examples.modal = 'newProject'">Example with one control</PlBtnPrimary>
         <PlBtnPrimary @click="examples.modal = 'newProject2'">
@@ -117,6 +119,7 @@ const lorem = faker.lorem.paragraph(100);
     <PlDialogModal
       v-model="dialogData.dialogModal"
       :width="dialogData.dialogWidth"
+      :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
       :max-height="`${dialogData.maxHeight}px`"
     >
@@ -137,6 +140,7 @@ const lorem = faker.lorem.paragraph(100);
     <PlDialogModal
       v-model="append.newProject"
       :width="dialogData.dialogWidth"
+      :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
     >
       <template #title>New Project</template>
@@ -150,6 +154,7 @@ const lorem = faker.lorem.paragraph(100);
     <PlDialogModal
       v-model="append.newProject2"
       :width="dialogData.dialogWidth"
+      :close-on-outside-click="dialogData.closeOnOutsideClick"
       :actions-has-top-border="dialogData.actionsHasTopBorder"
     >
       <template #title>New Project</template>
@@ -162,7 +167,11 @@ const lorem = faker.lorem.paragraph(100);
       </template>
     </PlDialogModal>
 
-    <PlDialogModal v-model="append.deleteDataset" no-top-content-gutter>
+    <PlDialogModal
+      v-model="append.deleteDataset"
+      :close-on-outside-click="dialogData.closeOnOutsideClick"
+      no-top-content-gutter
+    >
       <template #title>Are you sure you want to<br />delete this dataset? 🧐</template>
       This action cannot be undone
       <template #actions>
@@ -171,7 +180,11 @@ const lorem = faker.lorem.paragraph(100);
       </template>
     </PlDialogModal>
 
-    <PlDialogModal v-model="append.deleteDataset2" no-top-content-gutter>
+    <PlDialogModal
+      v-model="append.deleteDataset2"
+      :close-on-outside-click="dialogData.closeOnOutsideClick"
+      no-top-content-gutter
+    >
       <template #title>Are you sure you want to<br />delete this dataset? 🧐</template>
       <template #actions>
         <PlBtnDanger>Delete</PlBtnDanger>

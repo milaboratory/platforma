@@ -52,6 +52,10 @@ const props = withDefaults(
      * Actions slot has a top border (default: `true`)
      */
     actionsHasTopBorder?: boolean;
+    /**
+     * If `true`, the modal window closes when clicking outside the modal area (default: `true`)
+     */
+    closeOnOutsideClick?: boolean;
   }>(),
   {
     width: '448px',
@@ -69,7 +73,7 @@ const modal = ref<HTMLElement>();
 const $attrs = useAttrs();
 
 function onClickShadow(ev: Event) {
-  if (modal.value && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
+  if (modal.value && props.closeOnOutsideClick && document.contains(ev.target as Node) && !modal.value.contains(ev.target as Node)) {
     emit('update:modelValue', false);
   }
 }

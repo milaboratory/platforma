@@ -45,10 +45,6 @@ const props = withDefaults(
      */
     extensions?: string[];
     /**
-     * File dialog title
-     */
-    fileDialogTitle?: string;
-    /**
      * Placeholder text
      */
     placeholder?: string;
@@ -68,11 +64,18 @@ const props = withDefaults(
      * If `true`, only the file name is displayed, not the full path to it.
      */
     showFilenameOnly?: boolean;
-
     /**
      * Remove rounded border and change styles
      */
     cellStyle?: boolean;
+    /**
+     * File dialog title
+     */
+    fileDialogTitle?: string;
+    /**
+     * If `true`, the file dialog window closes when clicking outside the modal area (default: `true`)
+     */
+    fileDialogCloseOnOutsideClick?: boolean;
   }>(),
   {
     label: undefined,
@@ -83,6 +86,7 @@ const props = withDefaults(
     error: undefined,
     helper: undefined,
     cellStyle: false,
+    fileDialogCloseOnOutsideClick: true,
   },
 );
 
@@ -182,5 +186,11 @@ if (!props.cellStyle) {
     </div>
     <div v-else-if="helper" class="upl-file-input__helper">{{ helper }}</div>
   </div>
-  <PlFileDialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle" @import:files="onImport" />
+  <PlFileDialog
+    v-model="data.fileDialogOpen"
+    :extensions="extensions"
+    :title="fileDialogTitle"
+    :close-on-outside-click="fileDialogCloseOnOutsideClick"
+    @import:files="onImport"
+  />
 </template>

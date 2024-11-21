@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { ImportFileHandle } from '@platforma-sdk/model';
-import { PlBlockPage, PlContainer, PlRow, PlFileInput } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlContainer, PlRow, PlFileInput, PlCheckbox } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
-const dialogData = reactive({
-  fileHandle: undefined as ImportFileHandle | undefined
+const data = reactive({
+  fileHandle: undefined as ImportFileHandle | undefined,
+  closeOnOutsideClick: true
 });
 </script>
 
@@ -13,8 +14,15 @@ const dialogData = reactive({
     <template #title>Modals</template>
     <PlRow>
       <PlContainer width="50%" @click.stop>
-        <PlFileInput v-model="dialogData.fileHandle" label="Select file" />
+        <PlFileInput
+          v-model="data.fileHandle"
+          label="Select file"
+          :file-dialog-close-on-outside-click="data.closeOnOutsideClick"
+        />
       </PlContainer>
+    </PlRow>
+    <PlRow>
+      <PlCheckbox v-model="data.closeOnOutsideClick">Close File dialog on outside click</PlCheckbox>
     </PlRow>
   </PlBlockPage>
 </template>
