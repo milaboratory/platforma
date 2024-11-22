@@ -16,6 +16,7 @@ import type { AnyLogHandle, Platforma, ValueOrErrors } from '@platforma-sdk/mode
 import { useLogHandle } from './useLogHandle';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import DoubleContour from '@/utils/DoubleContour.vue';
+import { PlTooltip } from '../PlTooltip';
 
 const getOutputError = <T,>(o?: ValueOrErrors<T>) => {
   if (o && o.ok === false) {
@@ -115,7 +116,12 @@ const onContentScroll = (ev: Event) => {
   <div ref="root" class="pl-log-view" :class="{ 'has-error': computedError }">
     <label v-if="label"> {{ label }} </label>
     <DoubleContour class="pl-log-view__contour" />
-    <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" :name="iconName" @click="onClickCopy" />
+    <div class="pl-log-view__copy">
+      <PlTooltip :close-delay="800" position="top">
+        <PlMaskIcon24 title="Copy content" :name="iconName" @click="onClickCopy" />
+        <template #tooltip>{{ copyActive ? 'copied' : 'copy' }}</template>
+      </PlTooltip>
+    </div>
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
     <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">{{ computedValue }}</div>
   </div>
