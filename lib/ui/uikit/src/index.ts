@@ -48,7 +48,6 @@ export * from './components/PlTabs';
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
 export * from './components/PlNotificationAlert';
-export * from './components/PlCopyData';
 
 export * from './components/PlMaskIcon16';
 export * from './components/PlMaskIcon24';
