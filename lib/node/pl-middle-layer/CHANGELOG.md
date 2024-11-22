@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.15.14
+
+### Patch Changes
+
+- b29bc1c: PFrame driver - log errors in resolveBlobContent
+
 ## 1.15.13
 
 ### Patch Changes
