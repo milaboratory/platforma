@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.8
+
+### Patch Changes
+
+- f120c91: added tooltip for copy button
+
 ## 2.2.7
 
 ### Patch Changes
