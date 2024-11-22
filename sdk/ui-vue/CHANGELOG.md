@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.15
+
+### Patch Changes
+
+- 40fe1d4: Used PlLogView to display errors and fixed a bug with the copy button
+- Updated dependencies [40fe1d4]
+  - @milaboratories/uikit@2.2.7
+
 ## 1.10.13
 
 ### Patch Changes
