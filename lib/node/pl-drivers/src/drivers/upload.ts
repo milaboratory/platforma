@@ -1,56 +1,27 @@
 import { randomUUID } from 'node:crypto';
-import { ResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
+import { ResourceId } from '@milaboratories/pl-client';
 import {
   Watcher,
-  ChangeSource,
   ComputableCtx,
   Computable,
   PollingComputableHooks
 } from '@milaboratories/computable';
-import {
-  MiLogger,
-  asyncPool,
-  TaskProcessor,
-  CallersCounter,
-  Signer
-} from '@milaboratories/ts-helpers';
+import { MiLogger, asyncPool, TaskProcessor, Signer } from '@milaboratories/ts-helpers';
 import * as sdk from '@milaboratories/pl-model-common';
-import { ProgressStatus, ClientProgress } from '../clients/progress';
-import { ClientUpload, MTimeError, NoFileForUploading, UnexpectedEOF } from '../clients/upload';
+import { ClientProgress } from '../clients/progress';
+import { ClientUpload } from '../clients/upload';
 import {
-  InferSnapshot,
   isPlTreeEntry,
   isPlTreeEntryAccessor,
   makeResourceSnapshot,
   PlTreeEntry,
   PlTreeEntryAccessor,
-  PlTreeNodeAccessor,
-  rsSchema
+  PlTreeNodeAccessor
 } from '@milaboratories/pl-tree';
 import { scheduler } from 'node:timers/promises';
 import { PollingOps } from './helpers/polling_ops';
-import { ImportFileHandleUploadData } from './types';
-
-/** Options from BlobUpload resource that have to be passed to getProgress. */
-
-/** ResourceSnapshot that can be passed to GetProgressID */
-export const UploadResourceSnapshot = rsSchema({
-  data: ImportFileHandleUploadData,
-  fields: {
-    blob: false
-  }
-});
-
-export const IndexResourceSnapshot = rsSchema({
-  fields: {
-    incarnation: false
-  }
-});
-
-export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot>;
-export type IndexResourceSnapshot = InferSnapshot<typeof IndexResourceSnapshot>;
-
-export type ImportResourceSnapshot = UploadResourceSnapshot | IndexResourceSnapshot;
+import { ImportResourceSnapshot, IndexResourceSnapshot, UploadResourceSnapshot } from './types';
+import { nonRecoverableError, UploadTask } from './upload_task';
 
 export function makeBlobImportSnapshot(
   entryOrAccessor: PlTreeEntry | PlTreeNodeAccessor | PlTreeEntryAccessor,
@@ -61,9 +32,10 @@ export function makeBlobImportSnapshot(
     : isPlTreeEntryAccessor(entryOrAccessor)
       ? entryOrAccessor.node()
       : entryOrAccessor;
+
   if (node.resourceType.name.startsWith('BlobUpload'))
     return makeResourceSnapshot(node, UploadResourceSnapshot);
-  else return makeResourceSnapshot(node, IndexResourceSnapshot);
+  return makeResourceSnapshot(node, IndexResourceSnapshot);
 }
 
 export type UploadDriverOps = PollingOps & {
@@ -81,7 +53,7 @@ export type UploadDriverOps = PollingOps & {
  * Handles both Index and Upload blobs,
  * the client needs to pass concrete blobs from `handle` field. */
 export class UploadDriver {
-  private readonly idToProgress: Map<ResourceId, ProgressUpdater> = new Map();
+  private readonly idToProgress: Map<ResourceId, UploadTask> = new Map();
 
   /** Holds a queue that upload blobs. */
   private readonly uploadQueue: TaskProcessor;
@@ -152,17 +124,14 @@ export class UploadDriver {
     res: ImportResourceSnapshot,
     callerId: string
   ): sdk.ImportProgress {
-    const blobExists =
-      'blob' in res.fields ? res.fields.blob !== undefined : res.fields.incarnation !== undefined;
+    const task = this.idToProgress.get(res.id);
 
-    const value = this.idToProgress.get(res.id);
-
-    if (value != undefined) {
-      value.attach(w, callerId);
-      return value.mustGetProgress(blobExists);
+    if (task != undefined) {
+      task.setDoneIfOutputSet(res);
+      return task.getProgress(w, callerId);
     }
 
-    const newValue = new ProgressUpdater(
+    const newTask = new UploadTask(
       this.logger,
       this.clientBlob,
       this.clientProgress,
@@ -171,24 +140,24 @@ export class UploadDriver {
       res
     );
 
-    this.idToProgress.set(res.id, newValue);
-    newValue.attach(w, callerId);
+    this.idToProgress.set(res.id, newTask);
 
-    if (newValue.progress.isUpload && newValue.progress.isUploadSignMatch)
+    if (newTask.shouldScheduleUpload())
       this.uploadQueue.push({
-        fn: () => newValue.uploadBlobTask(),
+        fn: () => newTask.uploadBlobTask(),
         recoverableErrorPredicate: (e) => !nonRecoverableError(e)
       });
 
-    return newValue.mustGetProgress(blobExists);
+    newTask.setDoneIfOutputSet(res);
+    return newTask.getProgress(w, callerId);
   }
 
   /** Decrement counters for the file and remove an uploading if counter == 0. */
   private async release(id: ResourceId, callerId: string) {
-    const value = this.idToProgress.get(id);
-    if (value === undefined) return;
+    const task = this.idToProgress.get(id);
+    if (task === undefined) return;
 
-    const deleted = value.decCounter(callerId);
+    const deleted = task.decCounter(callerId);
     if (deleted) this.idToProgress.delete(id);
   }
 
@@ -243,224 +212,15 @@ export class UploadDriver {
     this.currentLoop = undefined;
   }
 
-  private getAllNotDoneProgresses(): Array<ProgressUpdater> {
+  private getAllNotDoneProgresses(): Array<UploadTask> {
     return Array.from(this.idToProgress.entries())
       .filter(([_, p]) => !isProgressStable(p.progress))
       .map(([_, p]) => p);
   }
 }
 
-/** Holds all info needed to upload a file and a status of uploadong
- * and indexing. Also, has a method to update a status of the progress.
- * And holds a change source. */
-class ProgressUpdater {
-  private readonly change: ChangeSource = new ChangeSource();
-  private readonly counter: CallersCounter = new CallersCounter();
-
-  public progress: sdk.ImportProgress;
-  /** If this is upload progress this field will be defined */
-  private uploadData?: ImportFileHandleUploadData;
-  public uploadingTerminallyFailed?: boolean;
-
-  constructor(
-    private readonly logger: MiLogger,
-    private readonly clientBlob: ClientUpload,
-    private readonly clientProgress: ClientProgress,
-    private readonly nConcurrentPartsUpload: number,
-    signer: Signer,
-    public readonly res: ImportResourceSnapshot
-  ) {
-    const isUpload = res.type.name.startsWith('BlobUpload');
-    let isUploadSignMatch: boolean | undefined;
-    if (isUpload) {
-      this.uploadData = ImportFileHandleUploadData.parse(res.data);
-      isUploadSignMatch = isSignMatch(
-        signer,
-        this.uploadData.localPath,
-        this.uploadData.pathSignature
-      );
-    }
-
-    this.progress = {
-      done: false,
-      status: undefined,
-      isUpload: isUpload,
-      isUploadSignMatch: isUploadSignMatch,
-      lastError: undefined
-    };
-  }
-
-  public mustGetProgress(blobExists: boolean) {
-    // We provide a deep copy of progress,
-    // since we do not want to pass a mutable object
-    // to API, it led to bugs before.
-
-    // We do not use '...' cloning syntax
-    // for the compiler to fail here if we change API.
-    const progress: sdk.ImportProgress = {
-      done: this.progress.done,
-      isUpload: this.progress.isUpload,
-      isUploadSignMatch: this.progress.isUploadSignMatch,
-      lastError: this.progress.lastError
-    };
-    if (this.progress.status)
-      progress.status = {
-        progress: this.progress.status.progress,
-        bytesProcessed: this.progress.status.bytesProcessed,
-        bytesTotal: this.progress.status.bytesTotal
-      };
-
-    if (blobExists) {
-      this.setDone(blobExists);
-      return progress;
-    }
-
-    if (this.uploadingTerminallyFailed) {
-      this.logger.error(`Uploading terminally failed: ${this.progress.lastError}`);
-      throw new Error(this.progress.lastError);
-    }
-
-    return progress;
-  }
-
-  public attach(w: Watcher, callerId: string) {
-    this.change.attachWatcher(w);
-    this.counter.inc(callerId);
-  }
-
-  public decCounter(callerId: string) {
-    return this.counter.dec(callerId);
-  }
-
-  /** Uploads a blob if it's not BlobIndex. */
-  async uploadBlobTask() {
-    try {
-      await this.uploadBlob();
-    } catch (e: any) {
-      this.setLastError(e);
-
-      if (isResourceWasDeletedError(e)) {
-        this.logger.warn(`resource was deleted while uploading a blob: ${e}`);
-        this.change.markChanged();
-        this.setDone(true);
-
-        return;
-      }
-
-      this.logger.error(`error while uploading a blob: ${e}`);
-      this.change.markChanged();
-
-      if (nonRecoverableError(e)) this.terminateWithError(e);
-
-      throw e;
-    }
-  }
-
-  /** Uploads a blob using client. */
-  private async uploadBlob() {
-    if (this.counter.isZero()) return;
-    const parts = await this.clientBlob.initUpload(this.res);
-
-    this.logger.info(`start to upload blob ${this.res.id}, parts count: ${parts.length}`);
-
-    const partUploadFn = (part: bigint) => async () => {
-      if (this.counter.isZero()) return;
-      await this.clientBlob.partUpload(
-        this.res,
-        this.uploadData!.localPath,
-        part,
-        parts.length,
-        BigInt(this.uploadData!.modificationTime)
-      );
-    };
-
-    await asyncPool(this.nConcurrentPartsUpload, parts.map(partUploadFn));
-
-    if (this.counter.isZero()) return;
-    await this.clientBlob.finalizeUpload(this.res);
-
-    this.logger.info(`uploading of resource ${this.res.id} finished.`);
-    this.change.markChanged();
-  }
-
-  private terminateWithError(e: unknown) {
-    this.progress.lastError = String(e);
-    this.progress.done = false;
-    this.uploadingTerminallyFailed = true;
-  }
-
-  private setLastError(e: unknown) {
-    this.progress.lastError = String(e);
-  }
-
-  private setDone(done: boolean) {
-    this.progress.done = done;
-    if (done) this.progress.lastError = undefined;
-  }
-
-  async updateStatus() {
-    try {
-      const status = await this.clientProgress.getStatus(this.res);
-
-      const oldStatus = this.progress.status;
-      this.progress.status = protoToStatus(status);
-      this.setDone(status.done);
-
-      if (status.done || status.progress != oldStatus?.progress) this.change.markChanged();
-    } catch (e: any) {
-      this.setLastError(e);
-
-      if (e.name == 'RpcError' && e.code == 'DEADLINE_EXCEEDED') {
-        this.logger.warn(`deadline exceeded while getting a status of BlobImport`);
-        return;
-      }
-
-      if (isResourceWasDeletedError(e)) {
-        this.logger.warn(
-          `resource was not found while updating a status of BlobImport: ${e}, ${stringifyWithResourceId(this.res)}`
-        );
-        this.change.markChanged();
-        this.setDone(true);
-        return;
-      }
-
-      this.logger.error(`error while updating a status of BlobImport: ${e}`);
-      this.change.markChanged();
-      this.terminateWithError(e);
-    }
-  }
-}
-
 function isProgressStable(p: sdk.ImportProgress) {
-  return p.done && p.status !== undefined && p.status !== null && p.status.progress >= 1.0;
-}
-
-function protoToStatus(proto: ProgressStatus): sdk.ImportStatus {
-  return {
-    progress: proto.progress ?? 0,
-    bytesProcessed: Number(proto.bytesProcessed),
-    bytesTotal: Number(proto.bytesTotal)
-  };
-}
-
-function isSignMatch(signer: Signer, path: string, signature: string): boolean {
-  try {
-    signer.verify(path, signature);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-function nonRecoverableError(e: any) {
-  return e instanceof MTimeError || e instanceof UnexpectedEOF || e instanceof NoFileForUploading;
-}
-
-function isResourceWasDeletedError(e: any) {
-  return (
-    e.name == 'RpcError' &&
-    (e.code == 'NOT_FOUND' || e.code == 'ABORTED' || e.code == 'ALREADY_EXISTS')
-  );
+  return p.done && (p.status?.progress ?? 0.0) >= 1.0;
 }
 
 type ScheduledRefresh = {

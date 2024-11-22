@@ -162,7 +162,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     const r = treeEntryToResourceInfo(res, ctx);
 
     const result = this.getLogHandleNoCtx(r);
-    
+
     // All logs from streams should be considered unstable,
     // final value will be got from blobs.
     ctx.markUnstable(`live_log:${resourceIdToString(r.id)}`);

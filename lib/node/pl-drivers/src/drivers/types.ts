@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { InferSnapshot, rsSchema } from '@milaboratories/pl-tree';
 
 export const ImportFileHandleUploadData = z.object({
   /** Local file path, to take data for upload */
@@ -25,6 +26,27 @@ export const ImportFileHandleData = z.union([
   ImportFileHandleIndexData
 ]);
 export type ImportFileHandleData = z.infer<typeof ImportFileHandleData>;
+
+/** Options from BlobUpload resource that have to be passed to getProgress. */
+
+/** ResourceSnapshot that can be passed to GetProgressID */
+export const UploadResourceSnapshot = rsSchema({
+  data: ImportFileHandleUploadData,
+  fields: {
+    blob: false
+  }
+});
+
+export const IndexResourceSnapshot = rsSchema({
+  fields: {
+    incarnation: false
+  }
+});
+
+export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot>;
+export type IndexResourceSnapshot = InferSnapshot<typeof IndexResourceSnapshot>;
+
+export type ImportResourceSnapshot = UploadResourceSnapshot | IndexResourceSnapshot;
 
 /** Defines which storages from pl are available via local paths */
 export type LocalStorageProjection = {
