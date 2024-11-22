@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.7
+
+### Patch Changes
+
+- 40fe1d4: Used PlLogView to display errors and fixed a bug with the copy button
+
 ## 2.2.6
 
 ### Patch Changes
