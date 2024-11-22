@@ -70,9 +70,18 @@ const computedError = computed(() => logState.value?.error ?? props.error ?? get
 
 const computedValue = computed(() => logState.value?.lines ?? props.value ?? okOptional(props.output));
 
+const copyActive = ref(false);
+
 useLabelNotch(root);
 
+const iconName = computed(() => (copyActive.value ? 'clipboard-copied' : 'clipboard'));
+
 const onClickCopy = () => {
+  copyActive.value = true;
+  setTimeout(() => {
+    copyActive.value = false;
+  }, 1200);
+
   if (computedValue.value && typeof computedValue.value === 'string') {
     navigator.clipboard.writeText(computedValue.value);
   }
@@ -106,7 +115,7 @@ const onContentScroll = (ev: Event) => {
   <div ref="root" class="pl-log-view" :class="{ 'has-error': computedError }">
     <label v-if="label"> {{ label }} </label>
     <DoubleContour class="pl-log-view__contour" />
-    <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" name="clipboard" @click="onClickCopy" />
+    <PlMaskIcon24 title="Copy content" class="pl-log-view__copy" :name="iconName" @click="onClickCopy" />
     <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
     <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">{{ computedValue }}</div>
   </div>

@@ -3,7 +3,7 @@ import type { BlockOutputsBase } from '@platforma-sdk/model';
 import type { OutputErrors } from '../../types';
 // @TODO module
 import './pl-app-error-notification-alert.scss';
-import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlCopyData } from '@milaboratories/uikit';
+import { PlBtnPrimary, PlDialogModal, PlNotificationAlert, PlSpacer, PlLogView } from '@milaboratories/uikit';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{ errors: OutputErrors<BlockOutputsBase> }>();
@@ -16,12 +16,6 @@ const existingErrors = computed(() => Object.entries(props.errors).filter((item)
 
 function showErrors() {
   isModalOpen.value = true;
-}
-
-function copyData(data: OutputErrors<BlockOutputsBase>[string]) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(JSON.stringify(data));
-  }
 }
 
 // @TODO (temp)
@@ -41,12 +35,7 @@ watch(
         <template v-for="item in existingErrors" :key="item[0]">
           <div class="pl-app-notification-alert__item">
             <div class="pl-app-notification-alert__title">{{ item[0] }}</div>
-            <div class="pl-app-notification-alert__error-description">
-              <code>
-                {{ item[1]?.message }}
-              </code>
-              <PlCopyData class="pl-app-notification-alert__copy-icon" @copy-data="copyData(item[1])" />
-            </div>
+            <PlLogView :value="item[1]?.message" />
           </div>
         </template>
       </div>
