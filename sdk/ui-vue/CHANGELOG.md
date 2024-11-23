@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.10.18
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+- Updated dependencies [166c161]
+  - @milaboratories/uikit@2.2.9
+
 ## 1.10.17
 
 ### Patch Changes
