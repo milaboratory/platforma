@@ -70,28 +70,6 @@
   }
 }
 
-@mixin scrollbarInvisible($y: true, $x: false) {
-  @if $y {
-    overflow-y: auto;
-  }
-  @if $x {
-    overflow-x: auto;
-  }
-  &::-webkit-scrollbar-track {
-    background-color: transparent;
-  }
-  &::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
-    background-color: transparent;
-    display: block;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: transparent;
-    border-radius: 5px;
-  }
-}
-
 @mixin flexCenter() {
   display: flex;
   align-items: center;
