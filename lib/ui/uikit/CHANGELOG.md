@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.9
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+
 ## 2.2.8
 
 ### Patch Changes

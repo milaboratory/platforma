@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.21
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+- Updated dependencies [166c161]
+  - @platforma-sdk/ui-vue@1.10.18
+
 ## 1.2.20
 
 ### Patch Changes
