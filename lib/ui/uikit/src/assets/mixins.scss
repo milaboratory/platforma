@@ -98,10 +98,9 @@
   &::-webkit-scrollbar-thumb {
     background: var(--thumb-color);
     border-radius: 5px;
-  }
-
-  &:hover {
-    --thumb-color: var(--border-color-focus);
+    &:hover {
+      --thumb-color: var(--border-color-focus);
+    }
   }
 }
 
