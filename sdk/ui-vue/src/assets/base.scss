@@ -4,6 +4,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar {
+.invisible-scrollbar::-webkit-scrollbar {
   display: none;
 }
