@@ -66,6 +66,12 @@ const onDrop = (ev: DragEvent) => {
       <PlContainer width="400px">
         <PlRow>
           <PlBtnGroup v-model="data.single" label="PlBtnGroup" :options="options" />
+          <PlBtnGroup
+            v-model="data.single"
+            label="PlBtnGroup (height: 32px)"
+            :options="options"
+            style="--pl-btn-group-height: 32px"
+          />
         </PlRow>
         <PlRow>
           <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options" />
