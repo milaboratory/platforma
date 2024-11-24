@@ -2,7 +2,7 @@ import { deepClone, throttle } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors } from '../types';
+import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
@@ -13,10 +13,16 @@ export function createApp<
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
   Href extends `/${string}` = `/${string}`,
->(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>) {
+>(state: BlockState<Args, Outputs, UiState, Href>, platforma: Platforma<Args, Outputs, UiState, Href>, settings: AppSettings) {
   type AppModel = {
     args: Args;
     ui: UiState;
+  };
+
+  const log = (msg: string, ...rest: unknown[]) => {
+    if (settings.debug) {
+      console.log(`%c>>> %c${msg}`, 'color: orange; font-weight: bold', 'color: orange', ...rest);
+    }
   };
 
   const throttleSpan = 100; // @todo settings and more flexible
@@ -43,18 +49,22 @@ export function createApp<
     updates.forEach((patch) => {
       if (patch.key === 'args') {
         snapshot.args = Object.freeze(patch.value);
+        log('args patch', snapshot.args);
       }
 
       if (patch.key === 'ui') {
         snapshot.ui = Object.freeze(patch.value);
+        log('ui patch', snapshot.ui);
       }
 
       if (patch.key === 'outputs') {
         snapshot.outputs = Object.freeze(patch.value);
+        log('outputs patch', snapshot.outputs);
       }
 
       if (patch.key === 'navigationState') {
         snapshot.navigationState = Object.freeze(patch.value);
+        log('navigationState patch', snapshot.navigationState);
       }
     });
 
@@ -101,23 +111,6 @@ export function createApp<
         },
       });
     },
-    // @TODO currently disabled but will be used
-    // createAppModel<T extends AppModel = AppModel>(options: StateModelOptions<AppModel, T> = {}) {
-    //   return createAppModel<T, AppModel>({
-    //     get() {
-    //       if (options.transform) {
-    //         return options.transform(snapshot);
-    //       }
-
-    //       return { args: snapshot.args, ui: snapshot.ui } as T;
-    //     },
-    //     validate: options.validate,
-    //     autoSave: true,
-    //     onSave(newData) {
-    //       setBlockArgsAndUiState(newData.args, newData.ui);
-    //     },
-    //   });
-    // },
     /**
      * Note: Don't forget to list the output names, like: useOutputs('output1', 'output2', ...etc)
      * @param keys - List of output names
@@ -277,6 +270,7 @@ export function createApp<
       outputs,
       outputErrors,
     },
+    settings,
   );
 
   return reactive(Object.assign(appModel, methods, getters));
