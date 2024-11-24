@@ -1,5 +1,15 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.101
+
+### Patch Changes
+
+- 680e8b8: Add "deep patch" mode to app.model (configurable)
+- Updated dependencies [680e8b8]
+  - @platforma-sdk/ui-vue@1.11.0
+  - @milaboratories/helpers@1.6.7
+  - @milaboratories/uikit@2.2.9
+
 ## 0.0.100
 
 ### Patch Changes

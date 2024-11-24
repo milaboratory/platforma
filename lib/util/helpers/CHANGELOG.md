@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.7
+
+### Patch Changes
+
+- 680e8b8: Add "deep patch" mode to app.model (configurable)
+
 ## 1.6.6
 
 ### Patch Changes
