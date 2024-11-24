@@ -1,3 +1,5 @@
+//tengo:hash_override 6FB763E3-AB0C-4676-8F74-C7E23069DCCF
+
 /**
  * Creates and fill a workdir, runs a command on it
  * and saves a chosen resulted files from this dir.
