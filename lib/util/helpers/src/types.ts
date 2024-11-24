@@ -2,6 +2,8 @@ export type AnyFunction = (...args: any[]) => any;
 
 export type AnyAsyncFunction = (...args: any[]) => Promise<any>;
 
+export type PlainObject = Record<string | symbol, unknown>;
+
 export type Optional<T> = T | undefined;
 
 export type OneOrMany<T> = T | T[];

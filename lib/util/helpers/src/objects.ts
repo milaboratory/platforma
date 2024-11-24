@@ -1,10 +1,22 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import { PartialBy } from "./types";
+import type { PartialBy, PlainObject } from "./types";
+
+export const isArray = Array.isArray;
 
 export function isObject<V, T extends Record<string, V>>(obj: T | unknown): obj is T {
   return obj !== null && typeof obj === 'object';
 }
+
+export function isPlainObject(value: unknown): value is PlainObject {
+  if (typeof value !== 'object' || value === null) {
+      return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+
+  return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null);
+} 
 
 export function map<U, T extends Record<string, unknown>>(obj: T, callback: (curr: T[keyof T], key: keyof T) => U) {
   const keys = Object.keys(obj) as Array<keyof T>;
@@ -66,12 +78,6 @@ export function shallowDiff<T>(to: T, from: T): Partial<T> {
   return diff;
 }
 
-export function iSet<T extends Record<string, any>, K extends keyof T>(obj: T, key: K, value: T[K]): T {
-  return Object.assign({}, obj, {
-    [key]: value
-  });
-}
-
 export function bindMethods<O extends Record<string, unknown>>(obj: O) {
   Object.entries(obj).forEach(([key, m]) => {
     if (m instanceof Function) {
@@ -112,4 +118,22 @@ export function omit<T, K extends keyof T>(obj: T, ...keys: K[]): Omit<T, K> {
   const o = Object.assign({}, obj) as PartialBy<T, K>;
   keys.forEach(k => delete o[k]);
   return o;
+}
+
+export function deepPatch<T extends PlainObject | unknown[]>(target: T, source: T) {
+  const sk = new Set<keyof T>([...Object.keys(target) as (keyof T)[], ...Object.keys(source) as (keyof T)[]]);
+
+  sk.forEach((key) => {
+    const t = target[key]; 
+    const s = source[key];
+    if (isPlainObject(t) && isPlainObject(s)) {
+      deepPatch(t, s);
+    } else if (isArray(t) && isArray(s) && t.length === s.length) {
+      deepPatch(t, s);
+    } else {
+      target[key] = s;
+    }
+  });
+
+  return target;
 }
