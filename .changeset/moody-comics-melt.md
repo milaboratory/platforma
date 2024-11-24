@@ -3,4 +3,4 @@
 ---
 
 - fixes exec template hash
-- adds maps.merge utility method
+- adds maps.merge and maps.deepMerge utility methods

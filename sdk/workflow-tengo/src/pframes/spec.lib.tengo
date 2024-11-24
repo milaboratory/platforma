@@ -1,0 +1,50 @@
+/**
+ * PFrames spec library:
+ *  - well known domains, annotations and column names.
+ *  - utility methods to manipulate column and axis spec
+ */
+
+ll := import(":ll")
+assets := import(":assets")
+smart := import(":smart")
+render := import(":render")
+pConstants := import(":pframes.constants")
+
+KIND_P_COLUMN = "PColumn"
+
+//
+// Column / axis names
+//
+
+/** Column containing labels for axis keys */
+N_LABEL = "pl7.app/label"
+
+//
+// Column / axis domains
+//
+
+/** Domain marking column or axis as block-specific, value must contain block id */
+D_BLOCK = "pl7.app/block"
+
+//
+// Column / axis annotations
+//
+
+/** Annotation with axis or column label */
+A_LABEL = "pl7.app/label"
+/**
+ * Annotation containing trace of operations resulting in a corresponding column.
+ *
+ * Value must containe JSON encoded array of structures:
+ *   {
+ *      type: string   - type of the step, often equals to block package name (i.e. milaboratories.mixcr-clonotyping)
+ *      id: string     - unique identifier of operation, often a block id
+ *      label: string  - string representation of the operation often a block title
+ *    }
+ */
+A_TRACE = "pl7.app/trace"
+
+export ll.toStrict({
+	KIND_P_COLUMN: KIND_P_COLUMN,
+
+})
