@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.16.0
+
+### Minor Changes
+
+- 7686cde: Fixes non-reloading of outputs and other block computables on block-pack update
+
 ## 1.15.14
 
 ### Patch Changes
