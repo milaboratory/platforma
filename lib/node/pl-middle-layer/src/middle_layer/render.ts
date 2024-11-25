@@ -16,10 +16,11 @@ export function computableFromCfgOrRF(
   ctx: BlockContextAny,
   cfgOrFh: TypedConfigOrConfigLambda,
   code: Code | undefined,
+  configKey: string,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
   if (isConfigLambda(cfgOrFh)) {
     if (code === undefined) throw new Error('No code bundle.');
-    return computableFromRF(env, ctx, cfgOrFh, code, ops);
+    return computableFromRF(env, ctx, cfgOrFh, code, configKey, ops);
   } else return computableFromCfg(env.driverKit, ctx, cfgOrFh, ops);
 }
