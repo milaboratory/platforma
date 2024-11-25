@@ -14,7 +14,7 @@ import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
 import { FilesCache } from './helpers/files_cache';
 import { Dispatcher } from 'undici';
-import { DownloadHelper, NetworkError400 } from '../helpers/download';
+import { RemoteFileDownloader, NetworkError400 } from '../helpers/download';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -39,7 +39,7 @@ export type DownloadUrlDriverOps = {
 /** Downloads .tar or .tar.gz archives by given URLs
  * and extracts them into saveDir. */
 export class DownloadUrlDriver implements DownloadUrlSyncReader {
-  private readonly downloadHelper: DownloadHelper;
+  private readonly downloadHelper: RemoteFileDownloader;
 
   private urlToDownload: Map<string, Download> = new Map();
   private downloadQueue: TaskProcessor;
@@ -60,7 +60,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   ) {
     this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
-    this.downloadHelper = new DownloadHelper(httpClient);
+    this.downloadHelper = new RemoteFileDownloader(httpClient);
   }
 
   /** Use to get a path result inside a computable context */
@@ -184,7 +184,7 @@ class Download {
   readonly signalCtl = new AbortController();
   error: string | undefined;
   done = false;
-  sizeBytes = 0;
+  size = 0;
 
   constructor(
     readonly path: string,
@@ -196,7 +196,7 @@ class Download {
     if (!this.done) this.change.attachWatcher(w);
   }
 
-  async download(clientDownload: DownloadHelper, withGunzip: boolean) {
+  async download(clientDownload: RemoteFileDownloader, withGunzip: boolean) {
     try {
       const sizeBytes = await this.downloadAndUntar(
         clientDownload,
@@ -217,7 +217,7 @@ class Download {
   }
 
   private async downloadAndUntar(
-    clientDownload: DownloadHelper,
+    clientDownload: RemoteFileDownloader,
     withGunzip: boolean,
     signal: AbortSignal
   ): Promise<number> {
@@ -225,7 +225,7 @@ class Download {
       return await dirSize(this.path);
     }
 
-    const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {}, signal);
+    const resp = await clientDownload.download(this.url.toString(), {}, signal);
     let content = resp.content;
 
     if (withGunzip) {
@@ -248,7 +248,7 @@ class Download {
 
   private setDone(sizeBytes: number) {
     this.done = true;
-    this.sizeBytes = sizeBytes;
+    this.size = sizeBytes;
     this.change.markChanged();
   }
 

@@ -10,12 +10,12 @@ import { asyncPool, CallersCounter, MiLogger } from '@milaboratories/ts-helpers'
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import { PlTreeEntry, ResourceInfo, treeEntryToResourceInfo } from '@milaboratories/pl-tree';
-import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
 import { RpcError } from '@protobuf-ts/runtime-rpc';
+import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './logs_handle';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
@@ -171,7 +171,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceInfo): sdk.AnyLogHandle {
-    return dataToHandle(true, rInfo);
+    return newLogHandle(true, rInfo);
   }
 
   async lastLines(
@@ -182,7 +182,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   ) {
     return await this.tryWithNotFound(handle, () =>
       this.clientLogs.lastLines(
-        handleToData(handle),
+        getResourceInfoFromLogHandle(handle),
         lineCount,
         BigInt(offsetBytes ?? 0),
         searchStr
@@ -197,7 +197,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     searchStr?: string | undefined
   ) {
     return await this.tryWithNotFound(handle, () =>
-      this.clientLogs.readText(handleToData(handle), lineCount, BigInt(offsetBytes ?? 0), searchStr)
+      this.clientLogs.readText(
+        getResourceInfoFromLogHandle(handle),
+        lineCount,
+        BigInt(offsetBytes ?? 0),
+        searchStr
+      )
     );
   }
 
