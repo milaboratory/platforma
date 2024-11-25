@@ -9,6 +9,7 @@ import { BlockPackInfo } from '../model/block_pack';
 import { extractConfig, TypedConfigOrConfigLambda } from '@platforma-sdk/model';
 import { constructBlockContext } from './block_ctx';
 import { computableFromCfgOrRF, isActive } from './render';
+import { getBlockPackInfo } from './util';
 
 /** Returns derived general project state form the project resource */
 export function activeConfigs(
@@ -21,21 +22,10 @@ export function activeConfigs(
     const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
     const ret: Computable<unknown>[] = [];
     for (const { id, renderingMode } of allBlocks(structure)) {
-      // block-pack
-      const blockPack = prj.traverse(
-        {
-          field: projectFieldName(id, 'blockPack'),
-          assertFieldType: 'Dynamic',
-          errorIfFieldNotSet: true
-        },
-        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-      );
+      const bp = getBlockPackInfo(prj, id);
+      if (bp === undefined) continue;
 
-      const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
-      if (bpInfo?.config === undefined) continue;
-
-      const blockConf = extractConfig(bpInfo.config);
-      const activeOutputConfigs = Object.entries(blockConf.outputs)
+      const activeOutputConfigs = Object.entries(bp.cfg.outputs)
         .map(([, cfg]) => cfg)
         .filter((cfg) => isActive(cfg))
         .map((cfg) => cfg as TypedConfigOrConfigLambda);
@@ -45,7 +35,9 @@ export function activeConfigs(
       const blockCtx = constructBlockContext(prj.persist(), id);
 
       for (const cfg of activeOutputConfigs)
-        ret.push(Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, blockConf.code)));
+        ret.push(
+          Computable.wrapError(computableFromCfgOrRF(env, blockCtx, cfg, bp.cfg.code, bp.bpId))
+        );
     }
 
     return ret;

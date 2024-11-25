@@ -14,7 +14,6 @@ import {
 import { notEmpty } from '@milaboratories/ts-helpers';
 import { allBlocks, productionGraph } from '../model/project_model_util';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { Pl } from '@milaboratories/pl-client';
 import {
   AuthorMarker,
   BlockCalculationStatus,
@@ -27,6 +26,7 @@ import { BlockPackInfo } from '../model/block_pack';
 import { BlockSection, extractConfig } from '@platforma-sdk/model';
 import { computableFromCfgOrRF } from './render';
 import { NavigationStates } from './navigation_states';
+import { getBlockPackInfo } from './util';
 
 type BlockInfo = {
   currentArguments: any;
@@ -52,13 +52,13 @@ type ProdState = {
 
 /** Returns derived general project state form the project resource */
 export function projectOverview(
-  entry: PlTreeEntry,
+  prjEntry: PlTreeEntry,
   navigationStates: NavigationStates,
   env: MiddleLayerEnvironment
 ): ComputableStableDefined<ProjectOverview> {
   return Computable.make(
     (ctx) => {
-      const prj = ctx.accessor(entry).node();
+      const prj = ctx.accessor(prjEntry).node();
 
       const created = notEmpty(prj.getKeyValueAsJson<number>(ProjectCreatedTimestamp));
       const lastModified = notEmpty(prj.getKeyValueAsJson<number>(ProjectLastModifiedTimestamp));
@@ -130,50 +130,42 @@ export function projectOverview(
           else calculationStatus = info.prod.finished ? 'Done' : 'Running';
         }
 
-        // block-pack
-        const blockPack = prj.traverse(
-          {
-            field: projectFieldName(id, 'blockPack'),
-            assertFieldType: 'Dynamic',
-            errorIfFieldNotSet: true
-          },
-          { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-        );
+        const bp = getBlockPackInfo(prj, id);
 
-        // sections
-        const bpInfo = blockPack?.getDataAsJson<BlockPackInfo>();
         const { sections, title, inputsValid, sdkVersion } =
-          ifNotUndef(bpInfo?.config, (blockConfContainer) => {
-            const blockConf = extractConfig(blockConfContainer);
-            const blockCtxArgsOnly = constructBlockContextArgsOnly(entry, id);
+          ifNotUndef(bp, ({ bpId, cfg, info }) => {
+            const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
             return {
               sections: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
-                blockConf.sections,
-                blockConf.code
+                cfg.sections,
+                cfg.code,
+                bpId
               ) as ComputableStableDefined<BlockSection[]>,
               title: ifNotUndef(
-                blockConf.title,
+                cfg.title,
                 (title) =>
                   computableFromCfgOrRF(
                     env,
                     blockCtxArgsOnly,
                     title,
-                    blockConf.code
+                    cfg.code,
+                    bpId
                   ) as ComputableStableDefined<string>
               ),
               inputsValid: computableFromCfgOrRF(
                 env,
                 blockCtxArgsOnly,
-                blockConf.inputsValid,
-                blockConf.code
+                cfg.inputsValid,
+                cfg.code,
+                bpId
               ) as ComputableStableDefined<boolean>,
-              sdkVersion: blockConf.sdkVersion
+              sdkVersion: cfg.sdkVersion
             };
           }) || {};
 
-        const updatedBlockPack = ifNotUndef(bpInfo, (info) =>
+        const updatedBlockPack = ifNotUndef(bp, ({ info }) =>
           env.blockUpdateWatcher.get(info.source)
         );
 
@@ -192,7 +184,7 @@ export function projectOverview(
           exportsError: info.prod?.exportsError,
           sections,
           inputsValid,
-          currentBlockPack: bpInfo?.source,
+          currentBlockPack: bp?.info?.source,
           updatedBlockPack,
           sdkVersion,
           navigationState: navigationStates.getState(id)
