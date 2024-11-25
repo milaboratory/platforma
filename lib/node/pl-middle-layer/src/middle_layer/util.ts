@@ -5,19 +5,34 @@ import { ifNotUndef } from '../cfg_render/util';
 import { BlockPackInfo } from '../model/block_pack';
 import { BlockConfig, extractConfig } from '@platforma-sdk/model';
 
-export function getBlockCfg(prj: PlTreeNodeAccessor, blockId: string): BlockConfig | undefined {
+export type BlockPackInfoAndId = {
+  /** To be added to computable keys, to force reload on config change */
+  readonly bpId: string;
+  /** Full block-pack info */
+  readonly info: BlockPackInfo;
+  /** Config extracted from the info */
+  readonly cfg: BlockConfig;
+};
+
+/** Returns block pack info along with string representation of block-pack resource id */
+export function getBlockPackInfo(
+  prj: PlTreeNodeAccessor,
+  blockId: string
+): BlockPackInfoAndId | undefined {
   return ifNotUndef(
-    prj
-      .traverse(
-        {
-          field: projectFieldName(blockId, 'blockPack'),
-          assertFieldType: 'Dynamic',
-          errorIfFieldNotSet: true
-        },
-        { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
-      )
-      ?.getDataAsJson<BlockPackInfo>()?.config,
-    (cfg) => extractConfig(cfg)
+    prj.traverse(
+      {
+        field: projectFieldName(blockId, 'blockPack'),
+        assertFieldType: 'Dynamic',
+        errorIfFieldNotSet: true
+      },
+      { field: Pl.HolderRefField, assertFieldType: 'Input', errorIfFieldNotFound: true }
+    ),
+    (bpAcc) => {
+      const info = bpAcc.getDataAsJson<BlockPackInfo>()!;
+      const cfg = extractConfig(info.config);
+      return { bpId: bpAcc.resourceInfo.id.toString(), info, cfg };
+    }
   );
 }
 

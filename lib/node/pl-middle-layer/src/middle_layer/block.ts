@@ -9,7 +9,7 @@ import { constructBlockContext, constructBlockContextArgsOnly } from './block_ct
 import { blockArgsAuthorKey } from '../model/project_model';
 import { ifNotUndef } from '../cfg_render/util';
 import { MiddleLayerEnvironment } from './middle_layer';
-import { getBlockCfg } from './util';
+import { getBlockPackInfo } from './util';
 import { AuthorMarker, BlockStateInternal } from '@milaboratories/pl-model-middle-layer';
 import { computableFromCfgOrRF } from './render';
 import { resourceIdToString } from '@milaboratories/pl-client';
@@ -55,14 +55,11 @@ export function blockOutputs(
       const prj = c.accessor(projectEntry).node();
       const ctx = constructBlockContext(projectEntry, blockId);
 
-      const blockCfg = getBlockCfg(prj, blockId);
-
-      return ifNotUndef(blockCfg, (cfg) => {
+      return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId }) => {
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
-          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code);
+          const computableOutput = computableFromCfgOrRF(env, ctx, cellCfg, cfg.code, bpId);
           outputs[cellId] = Computable.wrapError(computableOutput);
-          console.log(`${cellId}: ${(computableOutput as any).___wrapped_kernel___.key}`);
         }
         return outputs;
       });

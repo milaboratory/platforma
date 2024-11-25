@@ -51,7 +51,18 @@ export type RouteParams<Href extends `/${string}` = `/${string}`> = {
   [P in Href as ParsePathnamePart<P>]: ParseQuery<P>;
 };
 
-export type BaseSettings<Href extends `/${string}` = `/${string}`> = {
+export type AppSettings = {
+  /**
+   * Deep patch `model.` This parameter affects how you listen to model changes; a deep watcher is required if you use the `source` function.
+   */
+  deepPatchModel?: boolean;
+  /**
+   * Enables some debug logs
+   */
+  debug?: boolean;
+};
+
+export type ExtendSettings<Href extends `/${string}` = `/${string}`> = {
   showErrorsNotification?: boolean;
   routes: Routes<Href>;
 };
