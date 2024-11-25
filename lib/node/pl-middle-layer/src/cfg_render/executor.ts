@@ -14,7 +14,6 @@ import canonicalize from 'canonicalize';
 import { BlockContextAny } from '../middle_layer/block_ctx';
 import { MiddleLayerDriverKit } from '../middle_layer/driver_kit';
 import { NonKeyCtxFields, toCfgContext } from '../middle_layer/block_ctx_unsafe';
-import { LogOutputStatus } from '../middle_layer/util';
 
 /** Addresses pending subroutines inside the stack */
 type SubroutineKey = symbol;
