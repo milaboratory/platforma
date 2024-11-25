@@ -93,7 +93,7 @@ catalog:
 
   'oclif': ^4.15.24
 
-  'turbo': ^2.3.0
+  'turbo': ^2.3.2
 
   '@vitejs/plugin-vue': ^5.1.4
 
