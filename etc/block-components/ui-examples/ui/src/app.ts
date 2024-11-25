@@ -15,6 +15,7 @@ import PlAgDataTablePage from './pages/PlAgDataTablePage.vue';
 import IconsPage from './pages/IconsPage.vue';
 import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 import PlTabsPage from './pages/PlTabsPage.vue';
+import DraftsPage from './pages/DraftsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -46,7 +47,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/select-files': SelectFilesPage,
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
-      '/tabs': () => PlTabsPage
+      '/tabs': () => PlTabsPage,
+      '/drafts': () => DraftsPage
     }
   };
 });

@@ -43,6 +43,10 @@ const props = defineProps<{
    */
   disabled?: boolean;
   /**
+   * If `true`, the height of the component is 32px
+   */
+  compact?: boolean;
+  /**
    * A helper text displayed below the component when there are no errors (optional).
    */
   helper?: string;
@@ -61,7 +65,7 @@ const normalizedOptions = computed(() =>
 </script>
 
 <template>
-  <div class="pl-btn-group" :class="{ disabled }">
+  <div class="pl-btn-group" :class="{ disabled, compact }">
     <label v-if="label">
       <span>{{ label }}</span>
       <PlTooltip v-if="slots.tooltip" class="info" position="top">
