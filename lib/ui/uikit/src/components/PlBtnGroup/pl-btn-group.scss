@@ -107,6 +107,10 @@
     }
   }
 
+  &.compact {
+    --pl-btn-group-height: 32px; 
+  }
+
   &.disabled {
     --color-border-default: var(--color-dis-01);
     --btn-switcher-bg: var(--color-dis-01);
