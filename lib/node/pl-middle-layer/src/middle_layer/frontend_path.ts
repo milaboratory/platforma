@@ -11,7 +11,7 @@ import {
 import { PathResult } from '@milaboratories/pl-drivers';
 import { projectFieldName } from '../model/project_model';
 import { BlockPackFrontendField } from '../mutator/block-pack/block_pack';
-import { getBlockCfg } from './util';
+import { getBlockPackInfo } from './util';
 import { FrontendData } from '../model/frontend';
 
 function kernel(
@@ -65,7 +65,7 @@ export function frontendData(
   return Computable.make(
     (ctx) => {
       const prj = ctx.accessor(projectEntry).node();
-      const blockCfg = getBlockCfg(prj, id);
+      const bp = getBlockPackInfo(prj, id);
       const frontendEntry = prj
         .traverse(
           {
@@ -76,7 +76,10 @@ export function frontendData(
           { field: BlockPackFrontendField, assertFieldType: 'Input' }
         )
         ?.persist();
-      return { path: frontendPathComputable(frontendEntry, env), sdkVersion: blockCfg?.sdkVersion };
+      return {
+        path: frontendPathComputable(frontendEntry, env),
+        sdkVersion: bp?.cfg.sdkVersion
+      };
     },
     { mode: 'StableOnlyLive' }
   ) as ComputableStableDefined<FrontendData>;

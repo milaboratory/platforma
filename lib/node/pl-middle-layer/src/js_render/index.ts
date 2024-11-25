@@ -11,9 +11,11 @@ export function computableFromRF(
   ctx: BlockContextAny,
   fh: ConfigRenderLambda,
   code: Code,
+  configKey: string,
   ops: Partial<ComputableRenderingOps> = {}
 ): Computable<unknown> {
-  const key = `${ctx.blockId}#lambda#${fh.handle}`;
+  // adding configKey to reload all outputs on block-pack update
+  const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
   ops = { ...ops, key };
   if (ops.mode === undefined && fh.retentive === true) ops.mode = 'StableOnlyRetentive';
   return Computable.makeRaw((cCtx) => {
