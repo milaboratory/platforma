@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.37
+
+### Patch Changes
+
+- ec5be92: Accordion + simple section separator
+
 ## 1.0.36
 
 ### Patch Changes

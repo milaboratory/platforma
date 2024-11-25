@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.25
+
+### Patch Changes
+
+- ec5be92: Accordion + simple section separator
+- Updated dependencies [ec5be92]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.37
+  - @platforma-sdk/ui-vue@1.11.3
+
 ## 1.2.24
 
 ### Patch Changes
