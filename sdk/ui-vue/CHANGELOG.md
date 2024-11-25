@@ -1,5 +1,21 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.1
+
+### Patch Changes
+
+- 961b8b1: updated ag grid header styles
+
+## 1.11.0
+
+### Minor Changes
+
+- 680e8b8: Add "deep patch" mode to app.model (configurable)
+
+### Patch Changes
+
+- @milaboratories/uikit@2.2.9
+
 ## 1.10.18
 
 ### Patch Changes
