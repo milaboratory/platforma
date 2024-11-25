@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.10
+
+### Patch Changes
+
+- ec5be92: Accordion + simple section separator
+
 ## 2.2.9
 
 ### Patch Changes
