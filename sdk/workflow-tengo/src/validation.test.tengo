@@ -9,18 +9,18 @@ assert := func(got, want, ...msg) {
 TestValidateJSONGeneral := func() {
 	schema := {
 		"__options__,closed": "",
-		"settings,omitempty": {
+		"settings,?": {
 			"__options__,closed": "",
 			"splitBy": {
 				"__options__,closed": "",
-				"chain,omitempty": "bool",
-				"isotype,omitempty": "bool",
-				"vGene,omitempty": "bool",
-				"jGene,omitempty": "bool",
-				"cGene,omitempty": "bool"
+				"chain,?": "bool",
+				"isotype,?": "bool",
+				"vGene,?": "bool",
+				"jGene,?": "bool",
+				"cGene,?": "bool"
 			}
 		},
-		"metrics,omitempty": [{
+		"metrics,?": [{
 			"__options__,closed": "",
 			"label": "string",
 			"weight": `string,regex=Read|UMI|Cell`,

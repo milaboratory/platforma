@@ -246,6 +246,11 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 
 	// tags that should be applied to all elements
 	any := schemaTags["any"]
+	if !is_undefined(any) {
+		if is_undefined(jsFull["any"]) { // in case actual object has field named "any"
+			delete(jsFull, "any")
+		}
+	}
 
 	options := schemaTags["__options__"]
 	if is_undefined(options) {
@@ -253,7 +258,9 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	} else {
 		delete(schemaTags, "__options__")
 		delete(schemaRules, "__options__")
-		delete(jsFull, "__options__")
+		if is_undefined(jsFull["__options__"]) { // in case actual object has field named "__options__"
+			delete(jsFull, "__options__")
+		}
 	}
 
 	// transferring fields from input map into padded map
@@ -297,7 +304,7 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 		}
 
 		if is_undefined(elem) {
-			if key.tags["omitempty"] {
+			if key.tags["omitempty"] || key.tags["optional"] || key.tags["?"] {
 				continue
 			}
 			return fail(keyPath, "value %q does not contain key %q", js, _key)
@@ -371,7 +378,7 @@ resource := func(...args) {
 	}
 
 	assertJsonSchema(ops, {
-		`type,omitempty`: {
+		`type,?`: {
 			Name: `string`,
 			Version: `string`
 		}

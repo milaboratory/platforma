@@ -54,33 +54,33 @@ _SPEC_AXES_SCHEMA := {
 	// Regular expression, if matched - whole row would be skipped;
 	// Performed just after reading XSV before any other operations;
 	// default: no filter
-	`filterOutRegex,omitempty`: `string`,
+	`filterOutRegex,?`: `string`,
 	// Pre-processing operations to be performed just after filtering out rows
-	`preProcess,omitempty`: [_PRE_PROCESS_STEP_SCHEMA],
+	`preProcess,?`: [_PRE_PROCESS_STEP_SCHEMA],
 	// Regular expression, if matched - value is considered to be N/A;
 	// default: Int, Long - check that the value is a valid integer number;
 	//          Float, Double - check that the value is a valid float number, not a NaN;
 	//          String - accept anything;
-	`naRegex,omitempty`: `string`,
+	`naRegex,?`: `string`,
 	// Should the N/A values (or empty rows) be allowed;
 	// default: false
-	`allowNA,omitempty`: `bool`,
+	`allowNA,?`: `bool`,
 	// Specification of the axis
 	`spec`: {
 		// Type of axis values
 		`type`: `string,regex=Int|Long|Float|Double|String`,
 		// Name of the axis to be used in spec;
 		// default: column label
-		`name,omitempty`: `string`,
+		`name,?`: `string`,
 		// Auxiliary information to the axis name, type and parents to form a unique identifier;
 		// default: empty
-		`domain,omitempty`: { any: `string` },
+		`domain,?`: { any: `string` },
 		// Any additional information attached to the axis that does not affect its identifier;
 		// default: "pl7.app/label": Column label from XSV
-		`annotations,omitempty`: { any: `string` },
+		`annotations,?`: { any: `string` },
 		// A list of zero-based indices of parent axes in the overall axes specification;
 		// default: empty
-		`parentAxes,omitempty`: [`number`]
+		`parentAxes,?`: [`number`]
 	}
 }
 
@@ -90,36 +90,36 @@ _SPEC_COLUMN_SCHEMA := {
 	// Regular expression, if matched - whole row would be skipped;
 	// Performed just after reading XSV before any other operations;
 	// default: no filter
-	`filterOutRegex,omitempty`: `string`,
+	`filterOutRegex,?`: `string`,
 	// Pre-processing operations to be performed just after filtering out rows
-	`preProcess,omitempty`: [_PRE_PROCESS_STEP_SCHEMA],
+	`preProcess,?`: [_PRE_PROCESS_STEP_SCHEMA],
 	// Regular expression, if matched - value is considered to be N/A;
 	// default: Int, Long - check that the value is a valid integer number;
 	//          Float, Double - check that the value is a valid float number, not a NaN;
 	//          String - accept anything;
-	`naRegex,omitempty`: `string`,
+	`naRegex,?`: `string`,
 	// Should the N/A values (or empty rows) be allowed;
 	// default: true
-	`allowNA,omitempty`: `bool`,
+	`allowNA,?`: `bool`,
 	// ID of the column to be used in spec and as a saved filename;
 	// default: column label with all special characters replaced with '_'
-	`id,omitempty`: `string`,
+	`id,?`: `string`,
 	// Specification of the column
 	`spec`: {
 		// Type of column values
 		`valueType`: `string,regex=Int|Long|Float|Double|String`,
 		// Name of the column to be used in spec;
 		// default: column label
-		`name,omitempty`: `string`,
+		`name,?`: `string`,
 		// Auxiliary information to the column name, type and parents to form a unique identifier;
 		// default: empty
-		`domain,omitempty`: { any: `string` },
+		`domain,?`: { any: `string` },
 		// Any additional information attached to the axis that does not affect its identifier;
 		// default: "pl7.app/label": Column label from XSV
-		`annotations,omitempty`: { any: `string` },
+		`annotations,?`: { any: `string` },
 		// A list of zero-based indices of parent axes in the overall axes specification;
 		// default: empty
-		`parentAxes,omitempty`: [ `number` ]
+		`parentAxes,?`: [ `number` ]
 	}
 }
 
@@ -128,86 +128,86 @@ _SPEC_INDEX_SCHEMA := {
 	`name`: `string`,
 	// Auxiliary information to the column name, type and parents to form a unique identifier;
 	// default: empty
-	`domain,omitempty`: { any: `string` },
+	`domain,?`: { any: `string` },
 	// Any additional information attached to the axis that does not affect its identifier;
 	// default: "pl7.app/label": name
-	`annotations,omitempty`: { any: `string` },
+	`annotations,?`: { any: `string` },
 	// A list of zero-based indices of parent axes in the overall axes specification;
 	// default: empty
-	`parentAxes,omitempty`: [`number`]
+	`parentAxes,?`: [`number`]
 }
 
 PFCONV_IMPORT_CFG_SCHEMA := {
 	// Single ASCII character to be used as separator;
 	// default: ',' for .csv, '\t' for .tsv
-	`separator,omitempty`: `string`,
+	`separator,?`: `string`,
 	// Single ASCII character, if XSV row begins with this character - the row would be skipped;
 	// default: error is thrown if comment lines are found in document
-	`commentLinePrefix,omitempty`: `string`,
+	`commentLinePrefix,?`: `string`,
 	// Should empty lines be skipped;
 	// default: false
-	`skipEmptyLines,omitempty`: `bool`,
+	`skipEmptyLines,?`: `bool`,
 	// Resolve duplicates by adding sequential suffixes to column labels;
 	// default: true
-	`allowColumnLabelDuplicates,omitempty`: `bool`,
+	`allowColumnLabelDuplicates,?`: `bool`,
 	// XSV columns to use as PColumn axes, order of axes in resulting columns
 	// would match the order of spec entries provided here
 	`axes`: [_SPEC_AXES_SCHEMA],
 	// Axis of type Long with XSV row numbers (would be the last one);
 	// default: do not create additional axis with indexes
-	`index,omitempty`: _SPEC_INDEX_SCHEMA,
+	`index,?`: _SPEC_INDEX_SCHEMA,
 	// XSV columns to use as PColumn values, each exported individually
 	`columns`: [_SPEC_COLUMN_SCHEMA],
 	// When columns spec is provided but no such column was found in XSV - create such column
 	// filled with NA values instead of failing;
 	// default: false
-	`allowArtificialColumns,omitempty`: `bool`,
+	`allowArtificialColumns,?`: `bool`,
 	// Prefix all column names with given string;
 	// default: names would be preserved
-	`columnNamePrefix,omitempty`: `string`,
+	`columnNamePrefix,?`: `string`,
 	// Columns would be stored using specified format;
 	// default: Binary
-	`storageFormat,omitempty` : `string,regex=Binary|Json`,
+	`storageFormat,?` : `string,regex=Binary|Json`,
 	// Partitioning key length;
 	// default: 0
-	`partitionKeyLength,omitempty` : `number`
+	`partitionKeyLength,?` : `number`
 }
 
 _COLUMN_FILTER_SCHEMA := {
 	// Match any of the types listed here;
 	// default: type is ignored during matching
-	`type,omitempty`: `string,regex=Int|Long|Float|Double|String|Bytes`,
+	`type,?`: `string,regex=Int|Long|Float|Double|String|Bytes`,
 	// Match any of the names listed here;
 	// default: name is ignored during matching
-	`name,omitempty`: `string`,
+	`name,?`: `string`,
 	// Match requires all the listed annotations to have provided values;
 	// default: no annotation equality checks are performed during matching
-	`annotationValue,omitempty`: { any: `string` },
+	`annotationValue,?`: { any: `string` },
 	// Match requires all the listed annotations to match provided regex patterns;
 	// default: no annotation pattern matching is performed during matching
-	`annotationPattern,omitempty`: { any: `string` }
+	`annotationPattern,?`: { any: `string` }
 }
 
 PFCONV_EXPORT_CFG_SCHEMA := {
 	// String representing NA values of types Int, Long, Float, Double;
 	// default: NaN
-	`naStr,omitempty`: `string`,
+	`naStr,?`: `string`,
 	// String representing NA and missing values of types String, Bytes;
 	// default: null
-	`nullStr,omitempty`: `string`,
+	`nullStr,?`: `string`,
 	// Toggle to export or skip axes and columns of type Bytes;
 	// default: false
-	`exportBytes,omitempty`: `bool`,
+	`exportBytes,?`: `bool`,
 	// Single ASCII character to be used as separator;
 	// default: ',' for .csv, '\t' for .tsv
-	`separator,omitempty`: `string`,
+	`separator,?`: `string`,
 	// Only columns matching the selector are exported;
 	// default: all columns are exported
-	`columnSelector,omitempty`: [_COLUMN_FILTER_SCHEMA],
+	`columnSelector,?`: [_COLUMN_FILTER_SCHEMA],
 	// During export, columns with equal axes specifications would be joined into single table
 	// using the join type specified;
 	// default: Full
-	`joinType,omitempty`: `string,regex=Full|Inner`
+	`joinType,?`: `string,regex=Full|Inner`
 }
 
 /**
