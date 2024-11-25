@@ -38,10 +38,10 @@ localDescriptorScheme := {
 }
 
 descriptorScheme := {
-	"isDev,omitempty": "bool",
-	"binary,omitempty": binaryDescriptorScheme,
-	"asset,omitempty": assetDescriptorScheme,
-	"local,omitempty": localDescriptorScheme
+	"isDev,?": "bool",
+	"binary,?": binaryDescriptorScheme,
+	"asset,?": assetDescriptorScheme,
+	"local,?": localDescriptorScheme
 }
 
 softwareInfoScheme := {

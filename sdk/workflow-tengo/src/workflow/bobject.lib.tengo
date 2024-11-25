@@ -15,20 +15,20 @@ _pObjectSpecSchema := {
 
 	"kind": "string",
 
-	"valueType,omitempty": `string,regex=json|File|DynamicFile|String|Double|Long|Int`,
+	"valueType,?": `string,regex=json|File|DynamicFile|String|Double|Long|Int`,
 
-	"name,omitempty": {",any": "string"},
+	"name,?": {",any": "string"},
 
-	"domain,omitempty": {",any": "string"},
+	"domain,?": {",any": "string"},
 
-	"axesSpec,omitempty": [{
+	"axesSpec,?": [{
 		"type": "string,regex=String",
 		"name": "string",
-		"domain,omitempty": {",any": "string"},
-		"annotations,omitempty": {",any": "string"}
+		"domain,?": {",any": "string"},
+		"annotations,?": {",any": "string"}
 	}],
 
-	"annotations,omitempty": {",any": "string"}
+	"annotations,?": {",any": "string"}
 }
 
 

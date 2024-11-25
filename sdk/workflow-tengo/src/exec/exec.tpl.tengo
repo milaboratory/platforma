@@ -183,30 +183,31 @@ _runBinaryCommand := func(inputs) {
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, {
-		"softwareInfo,omitempty": validation.resource(),
-		files: { any: validation.resource() },
-		values: { any: "any" },
-		dirs: ["string"],
-		runOptions: {
-			"software,omitempty": pkg.softwareInfoScheme,
-			"cmd,omitempty": "string",
-			args: ["string"],
-			envs: { any: "string" },
-			secrets: { any: "string" },
-			queue: "string",
-			stdout: "string",
-			stderr: "string",
-			nErrorLines: "number"
-		},
-		saveFiles: ["string"],
-		saveFilesContents: ["string"],
-		streams: ["string"],
-		"assets,omitempty": { any: validation.resource() },
-		"assetDescriptors,omitempty": { any: pkg.assetDescriptorScheme },
-		"assetRules,omitempty": { any: { any: ["string"] } },
-		"assetCache,omitempty": { any: "number" }
-	})
+	// validation.assertJsonSchema(inputs, {
+	// 	"softwareInfo,?": validation.resource(),
+	// 	filesToAdd: { any: validation.resource() },
+	// 	filesToWrite: { any: validation.resource() },
+	// 	values: { any: "any" },
+	// 	"dirs,?": ["string"],
+	// 	runOptions: {
+	// 		"software,?": pkg.softwareInfoScheme,
+	// 		"cmd,?": "string",
+	// 		args: ["string"],
+	// 		envs: { any: "string" },
+	// 		secrets: { any: "string" },
+	// 		queue: "string",
+	// 		stdout: "string",
+	// 		stderr: "string",
+	// 		nErrorLines: "number"
+	// 	},
+	// 	"saveFiles,?": ["string"],
+	// 	"saveFilesContents,?": ["string"],
+	// 	"streams,?": ["string"],
+	// 	"assets,?": { any: validation.resource() },
+	// 	"assetDescriptors,?": { any: pkg.assetDescriptorScheme },
+	// 	"assetRules,?": { any: { any: ["string"] } },
+	// 	"assetCache,?": { any: "number" }
+	// })
 
 	ll.toStrict(inputs)
 	inputs.runOptions = ll.toStrict(inputs.runOptions)
