@@ -1,0 +1,10 @@
+ll := import(":ll")
+pSpec := import(":pframes.spec")
+
+assert := func(got, want) {
+	ll.assert(got == want, "got: %#v, want: %#v", got, want)
+}
+
+TestMakeTrace := func() {
+	pSpec.makeTrace(undefined, {type: "type", id: "theid", label: "the label"})
+}
