@@ -1,22 +1,23 @@
-import { CachedFile, FilesCache } from './files_cache';
+import { expect, test } from '@jest/globals';
 import { CallersCounter } from '@milaboratories/ts-helpers';
+import { CachedFile, FilesCache } from './files_cache';
 
 test('should delete blob3 when add 3 blobs, exceed a soft limit and nothing holds blob3', () => {
   const cache = new FilesCache(20);
   const callerId1 = 'callerId1';
   const blob1: CachedFile = {
     path: 'path1',
-    sizeBytes: 5,
+    size: 5,
     counter: new CallersCounter()
   };
   const blob2: CachedFile = {
     path: 'path2',
-    sizeBytes: 10,
+    size: 10,
     counter: new CallersCounter()
   };
   const blob3: CachedFile = {
     path: 'path3',
-    sizeBytes: 10,
+    size: 10,
     counter: new CallersCounter()
   };
 
@@ -51,12 +52,12 @@ test('regression should allow to add empty files', () => {
   const callerId1 = 'callerId1';
   const blob1: CachedFile = {
     path: 'path1',
-    sizeBytes: 0,
+    size: 0,
     counter: new CallersCounter()
   };
   const blob2: CachedFile = {
     path: 'path2',
-    sizeBytes: 2,
+    size: 2,
     counter: new CallersCounter()
   };
 

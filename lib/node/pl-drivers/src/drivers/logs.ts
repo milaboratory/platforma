@@ -1,10 +1,10 @@
 import { Computable, ComputableCtx } from '@milaboratories/computable';
 import { PlTreeEntry, ResourceInfo } from '@milaboratories/pl-tree';
-import { bigintToResourceId, stringifyWithResourceId } from '@milaboratories/pl-client';
 import { LogsStreamDriver } from './logs_stream';
-import { DownloadDriver } from './download_and_logs_blob';
 import * as sdk from '@milaboratories/pl-model-common';
-import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
+import { MiLogger } from '@milaboratories/ts-helpers';
+import { DownloadDriver } from './download_blob';
+import { isLiveLogHandle } from './logs_handle';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(
@@ -124,44 +124,4 @@ function isBlob(rInfo: ResourceInfo) {
 
 function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {
   return ctx.accessor(manager).node().traverse('stream')?.resourceInfo;
-}
-
-export function handleToData(handle: sdk.AnyLogHandle): ResourceInfo {
-  let parsed: RegExpMatchArray | null;
-
-  if (isLiveLogHandle(handle)) {
-    parsed = handle.match(liveHandleRegex);
-  } else if (isReadyLogHandle(handle)) {
-    parsed = handle.match(readyHandleRegex);
-  } else throw new Error(`Log handle is malformed: ${handle}`);
-  if (parsed == null) throw new Error(`Log handle wasn't parsed: ${handle}`);
-
-  const { resourceType, resourceVersion, resourceId } = parsed.groups!;
-
-  return {
-    id: bigintToResourceId(BigInt(resourceId)),
-    type: { name: resourceType, version: resourceVersion }
-  };
-}
-
-export function dataToHandle(live: boolean, rInfo: ResourceInfo): sdk.AnyLogHandle {
-  if (live) {
-    return `log+live://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as sdk.LiveLogHandle;
-  }
-
-  return `log+ready://log/${rInfo.type.name}/${rInfo.type.version}/${BigInt(rInfo.id)}` as sdk.ReadyLogHandle;
-}
-
-const liveHandleRegex =
-  /^log\+live:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
-
-export function isLiveLogHandle(handle: string): handle is sdk.LiveLogHandle {
-  return liveHandleRegex.test(handle);
-}
-
-const readyHandleRegex =
-  /^log\+ready:\/\/log\/(?<resourceType>.*)\/(?<resourceVersion>.*)\/(?<resourceId>.*)$/;
-
-export function isReadyLogHandle(handle: string): handle is sdk.ReadyLogHandle {
-  return readyHandleRegex.test(handle);
 }

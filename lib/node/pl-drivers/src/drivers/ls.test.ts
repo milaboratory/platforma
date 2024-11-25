@@ -1,12 +1,11 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { LsDriver } from './ls';
-import { createLsFilesClient } from '../clients/helpers';
+import { createLsFilesClient } from '../clients/constructors';
 import { TestHelpers } from '@milaboratories/pl-client';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { test, expect } from '@jest/globals';
 import { isImportFileHandleIndex, isImportFileHandleUpload } from '@milaboratories/pl-model-common';
-import { DefaultVirtualLocalStorages } from './virtual_storages';
 
 const assetsPath = path.resolve('../../../assets');
 

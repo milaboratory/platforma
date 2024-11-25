@@ -66,8 +66,8 @@ export class UploadTask {
         await this.clientBlob.partUpload(
           this.res,
           this.uploadData!.localPath,
-          part,
-          BigInt(this.uploadData!.modificationTime)
+          BigInt(this.uploadData!.modificationTime),
+          part
         );
         this.logger.info(`uploaded chunk ${part}/${parts.overall} of resource: ${this.res.id}`);
       };

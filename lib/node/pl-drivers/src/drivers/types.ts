@@ -1,6 +1,28 @@
 import { z } from 'zod';
 import { InferSnapshot, rsSchema } from '@milaboratories/pl-tree';
 
+//
+// download
+//
+/** ResourceSnapshot that can be passed to OnDemandBlob */
+export const OnDemandBlobResourceSnapshot = rsSchema({
+  kv: {
+    'ctl/file/blobInfo': z.object({
+      sizeBytes: z.coerce.number()
+    })
+  }
+});
+
+export type OnDemandBlobResourceSnapshot = InferSnapshot<typeof OnDemandBlobResourceSnapshot>;
+
+export function getSize(bs: OnDemandBlobResourceSnapshot): number {
+  return bs.kv['ctl/file/blobInfo'].sizeBytes;
+}
+
+//
+// upload
+//
+
 export const ImportFileHandleUploadData = z.object({
   /** Local file path, to take data for upload */
   localPath: z.string(),
@@ -47,6 +69,10 @@ export type UploadResourceSnapshot = InferSnapshot<typeof UploadResourceSnapshot
 export type IndexResourceSnapshot = InferSnapshot<typeof IndexResourceSnapshot>;
 
 export type ImportResourceSnapshot = UploadResourceSnapshot | IndexResourceSnapshot;
+
+//
+// ls
+//
 
 /** Defines which storages from pl are available via local paths */
 export type LocalStorageProjection = {

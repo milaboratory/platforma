@@ -11,10 +11,10 @@ export interface DownloadResponse {
 /** Throws when a status code of the downloading URL was in range [400, 500). */
 export class NetworkError400 extends Error {}
 
-export class DownloadHelper {
+export class RemoteFileDownloader {
   constructor(public readonly httpClient: Dispatcher) {}
 
-  async downloadRemoteFile(
+  async download(
     url: string,
     reqHeaders: Record<string, string>,
     signal?: AbortSignal
@@ -26,19 +26,7 @@ export class DownloadHelper {
     });
 
     const webBody = Readable.toWeb(body);
-
-    if (statusCode != 200) {
-      const textBody = await text(webBody);
-      const beginning = textBody.substring(0, Math.min(textBody.length, 1000));
-
-      if (400 <= statusCode && statusCode < 500) {
-        throw new NetworkError400(
-          `Http error: statusCode: ${statusCode} url: ${url.toString()}, beginning of body: ${beginning}`
-        );
-      }
-
-      throw new Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}`);
-    }
+    await checkStatusCodeOk(statusCode, webBody, url);
 
     return {
       content: webBody,
@@ -46,3 +34,18 @@ export class DownloadHelper {
     };
   }
 }
+
+async function checkStatusCodeOk(statusCode: number, webBody: ReadableStream<any>, url: string) {
+  if (statusCode != 200) {
+    const beginning = (await text(webBody)).substring(0, 1000);
+
+    if (400 <= statusCode && statusCode < 500) {
+      throw new NetworkError400(
+        `Http error: statusCode: ${statusCode} ` +
+        `url: ${url.toString()}, beginning of body: ${beginning}`);
+    }
+
+    throw new Error(`Http error: statusCode: ${statusCode} url: ${url.toString()}`);
+  }
+}
+

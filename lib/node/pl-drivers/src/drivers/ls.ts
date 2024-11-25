@@ -25,9 +25,9 @@ import {
   parseStorageHandle
 } from './helpers/ls_storage_entry';
 import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
-import { createLsFilesClient } from '../clients/helpers';
 import { validateAbsolute } from '../helpers/validate';
 import { DefaultVirtualLocalStorages } from './virtual_storages';
+import { createLsFilesClient } from '../clients/constructors';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
