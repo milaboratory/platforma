@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.2
+
+### Patch Changes
+
+- 4783725: PlAgDataTable less refreshes
+
 ## 1.11.1
 
 ### Patch Changes
