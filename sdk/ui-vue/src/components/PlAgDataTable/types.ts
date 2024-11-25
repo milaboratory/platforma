@@ -4,30 +4,14 @@ import type {
   LocalBlobHandleAndSize,
   PColumnIdAndSpec,
   PFrameHandle,
+  PlDataTableSheet,
   PlTableFilter,
   PlTableFilterType,
-  PObjectId,
   PTableColumnId,
   PTableHandle,
   RemoteBlobHandleAndSize,
   ValueOrErrors,
 } from '@platforma-sdk/model';
-
-export type PlDataTableSheet = {
-  /** id of the axis to use */
-  axis: AxisId;
-  /** id of label column to use in filter instead of axis */
-  column?: PObjectId;
-  /** options to show in the filter tan */
-  options: {
-    /** value of the option (should be one of the values in the axis or column) */
-    value: string | number;
-    /** corresponding label */
-    text: string;
-  }[];
-  /** default (selected) value */
-  defaultValue?: string | number;
-};
 
 /** Data table settings */
 export type PlDataTableSettings =

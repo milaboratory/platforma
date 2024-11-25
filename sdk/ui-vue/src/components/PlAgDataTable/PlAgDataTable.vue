@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
 import type {
+  ColDef,
+  ColGroupDef,
   GridApi,
   GridOptions,
   GridReadyEvent,
@@ -9,8 +11,6 @@ import type {
   ManagedGridOptions,
   SortState,
   StateUpdatedEvent,
-  ColDef,
-  ColGroupDef,
 } from '@ag-grid-community/core';
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { AgGridVue } from '@ag-grid-community/vue3';
@@ -20,7 +20,7 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
-import type { AxisId, PlDataTableState, PTableColumnSpec, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
+import type { AxisId, PlDataTableSheet, PlDataTableState, PTableColumnSpec, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { computed, ref, shallowRef, toRefs, watch } from 'vue';
@@ -30,7 +30,7 @@ import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlDataTableSettings, PlDataTableSheet } from './types';
+import type { PlDataTableSettings } from './types';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -448,17 +448,15 @@ watch(
 
 <template>
   <div class="ap-ag-data-table-container">
-    <Transition name="ap-ag-data-table-sheets-transition">
-      <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-        <PlDropdownLine
-          v-for="(sheet, i) in sheets.value"
-          :key="i"
-          :model-value="sheetsState[makeSheetId(sheet.axis)]"
-          :options="sheet.options"
-          @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-        />
-      </div>
-    </Transition>
+    <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
+      <PlDropdownLine
+        v-for="(sheet, i) in sheets.value"
+        :key="i"
+        :model-value="sheetsState[makeSheetId(sheet.axis)]"
+        :options="sheet.options"
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+      />
+    </div>
     <AgGridVue
       :key="reloadKey"
       :theme="AgGridTheme"
@@ -477,16 +475,6 @@ watch(
   flex-direction: column;
   height: 100%;
   gap: 12px;
-}
-
-.ap-ag-data-table-sheets-transition-enter-active,
-.ap-ag-data-table-sheets-transition-leave-active {
-  transition: all 0.2s ease-in-out;
-}
-
-.ap-ag-data-table-sheets-transition-enter-from,
-.ap-ag-data-table-sheets-transition-leave-to {
-  margin-top: -52px;
 }
 
 .ap-ag-data-table-sheets {
