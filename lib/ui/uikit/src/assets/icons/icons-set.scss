@@ -34,7 +34,7 @@
 
 .mask-16 {
   --mask-size: 16px;
-  background-color: black;
+  background-color: var(--mask-icon-bg-color);
 
   @each $name, $path in $icons16 {
     &.mask-#{$name} {
@@ -45,7 +45,7 @@
 
 .mask-24 {
   --mask-size: 24px;
-  background-color: black;
+  background-color: var(--mask-icon-bg-color);
 
   @each $name, $path in $icons24 {
     &.mask-#{$name} {
