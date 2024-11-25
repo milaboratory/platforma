@@ -384,23 +384,27 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   });
 };
 
+const platforma = window.platforma;
+if (!platforma) throw Error('platforma not set');
+const pfDriver = platforma.pFrameDriver;
+if (!pfDriver) throw Error('platforma.pFrameDriver not set');
+const blobDriver = platforma.blobDriver;
+if (!blobDriver) throw Error('platforma.blobDriver not set');
+
+let oldSettings: PlDataTableSettings | undefined = undefined;
 watch(
   () => [gridApi.value, settings.value, sheets.value] as const,
-  async (state, oldState) => {
-    if (lodash.isEqual(state, oldState)) return;
-
+  async (state) => {
     const [gridApi, settings, sheets] = state;
     if (!gridApi) return;
 
-    const platforma = window.platforma;
-    if (!platforma) throw Error('platforma not set');
+    if (lodash.isEqual(settings, oldSettings)) return;
+    oldSettings = settings;
 
     const sourceType = settings.sourceType;
     switch (sourceType) {
       case 'pframe':
       case 'ptable': {
-        const pfDriver = platforma.pFrameDriver;
-        if (!pfDriver) throw Error('platforma.pFrameDriver not set');
         const pTable = settings.pTable;
         if (!pTable || !sheets) {
           return gridApi.updateGridOptions({
@@ -409,8 +413,10 @@ watch(
             columnDefs: [],
           });
         }
+
         const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
         const options = await updatePFrameGridOptions(pfDriver, pTable, sheets, hiddenColIds);
+
         return gridApi.updateGridOptions({
           loading: options.rowModelType !== 'clientSide',
           loadingOverlayComponentParams: { notReady: false },
@@ -419,9 +425,6 @@ watch(
       }
 
       case 'xsv': {
-        const blobDriver = platforma.blobDriver;
-        if (!blobDriver) throw Error('platforma.blobDriver not set');
-
         const xsvFile = settings.xsvFile;
         if (!xsvFile?.ok || !xsvFile.value) {
           return gridApi.updateGridOptions({
