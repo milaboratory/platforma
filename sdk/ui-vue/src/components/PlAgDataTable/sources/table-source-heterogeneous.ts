@@ -127,7 +127,7 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
   // add additional column definitions
   for (let i = 0; i < hAxisValues.length; ++i) {
     const header = hAxisValues[i];
-    const id = header + '@' + i; // at least add i to avoid name clash with other columns
+    const id = canonicalize(header + '@' + i); // at least add i to avoid name clash with other columns
 
     columnDefs.push({
       colId: id,

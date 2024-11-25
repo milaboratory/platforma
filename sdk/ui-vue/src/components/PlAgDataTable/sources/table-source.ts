@@ -1,5 +1,5 @@
 import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PObjectId } from '@platforma-sdk/model';
+import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -9,13 +9,13 @@ import {
   type PValue,
   type ValueType,
   getAxesId,
+  getAxisId,
   isValueAbsent,
   isValueNA,
   mapJoinEntry,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import type { PlDataTableSheet } from '../types';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 
 /**
@@ -215,7 +215,7 @@ export async function makeSheets(
   return axes.map((axis, i) => {
     const options = [...possibleValues[i]].map((value) => ({
       value: value,
-      text: value.toString(),
+      label: value.toString(),
     }));
     const defaultValue = options[0].value;
     return {
@@ -311,9 +311,17 @@ export async function updatePFrameGridOptions(
     const idx = indices[i];
     if (!isLabelColumn(specs[idx])) continue;
 
-    const axisId = getAxesId((specs[idx].spec as PColumnSpec).axesSpec)[0];
+    // axis of labels
+    const axisId = getAxisId((specs[idx].spec as PColumnSpec).axesSpec[0]);
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
-    if (axisIdx === -1) continue;
+    if (axisIdx === -1) {
+      // no axis, probably we are in the sheet
+      const sheetIdx = lodash.findIndex(sheets, (sheet) => lodash.isEqual(sheet.axis, axisId));
+      if (sheetIdx === -1) {
+        console.warn(`added label column, but the axis is not in the data; axisId: ${axisId}`);
+        continue;
+      }
+    }
 
     // replace in h-columns
     indices[axisIdx] = idx;

@@ -1,4 +1,5 @@
 import {
+  AxisId,
   Option,
   PColumn,
   PColumnSpec,
@@ -14,6 +15,8 @@ import {
   Ref,
   ResultCollection,
   ValueOrError,
+  ensurePColumn,
+  isPColumn,
   isPColumnSpec,
   mapPObjectData,
   mapPTableDef,
@@ -124,6 +127,17 @@ export class ResultPool {
   }
 
   /**
+   * Returns data associated with the ref ensuring that it is a p-column.
+   * @param ref a Ref
+   * @returns p-column associated with the ref
+   */
+  public getPColumnByRef(ref: Ref): PColumn<TreeNodeAccessor> | undefined {
+    const data = this.getDataByRef(ref);
+    if (!data) return undefined;
+    return ensurePColumn(data);
+  }
+
+  /**
    * @param ref a Ref
    * @returns object spec associated with the ref
    */
@@ -139,6 +153,7 @@ export class ResultPool {
   /**
    * @param spec object specification
    * @returns array of data objects with compatible specs
+   * @deprecated delete this method after Jan 1, 2025
    */
   public findDataWithCompatibleSpec(spec: PColumnSpec): PObject<TreeNodeAccessor>[] {
     const result: PObject<TreeNodeAccessor>[] = [];
@@ -243,6 +258,40 @@ export class RenderCtx<Args, UiState> {
 
   public readonly resultPool = new ResultPool();
 
+  /**
+   * Find labels data for a given axis id. It will search for a label column and return its data as a map.
+   * @returns a map of axis value => label
+   */
+  public findLabels(axis: AxisId): Map<string | number, string> | undefined {
+    const dataPool = this.resultPool.getData();
+    for (const column of dataPool.entries) {
+      if (!isPColumn(column.obj)) continue;
+
+      const spec = column.obj.spec;
+      if (
+        spec.name === 'pl7.app/label' &&
+        spec.axesSpec.length === 1 &&
+        spec.axesSpec[0].name === axis.name &&
+        spec.axesSpec[0].type === axis.type &&
+        matchDomain(axis.domain, spec.axesSpec[0].domain)
+      ) {
+        if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
+          throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
+        }
+        const labels = new Map<string | number, string>(
+          Object.entries(
+            column.obj.data.getDataAsJson<{
+              data: Record<string | number, string>;
+            }>().data
+          ).map((e) => [JSON.parse(e[0])[0], e[1]])
+        );
+
+        return labels;
+      }
+    }
+    return undefined;
+  }
+
   public createPFrame(def: PFrameDef<TreeNodeAccessor>): PFrameHandle {
     return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
   }
@@ -268,7 +317,7 @@ export class RenderCtx<Args, UiState> {
     if ('columns' in def) {
       rawDef = {
         src: {
-          type: 'inner',
+          type: 'full',
           entries: def.columns.map((c) => ({ type: 'column', column: c }))
         },
         filters: def.filters ?? [],
