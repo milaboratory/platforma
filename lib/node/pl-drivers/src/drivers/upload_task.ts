@@ -58,7 +58,7 @@ export class UploadTask {
       const parts = await this.clientBlob.initUpload(this.res);
       this.logger.info(
         `started to upload blob ${this.res.id},` +
-          ` remained parts to upload: ${parts.toUpload.length}`
+          ` parts overall: ${parts.overall}, parts remained: ${parts.toUpload.length}`
       );
 
       const partUploadFn = (part: bigint) => async () => {
