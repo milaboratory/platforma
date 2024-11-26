@@ -2,4 +2,4 @@
 '@milaboratories/pl-client': patch
 ---
 
-Client cache increased to 128 Mb
+- client cache size increased to 128 Mb
