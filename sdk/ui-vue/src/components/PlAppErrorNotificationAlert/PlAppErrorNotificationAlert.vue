@@ -29,7 +29,7 @@ watch(
 </script>
 <template>
   <div class="pl-app-notification-alert">
-    <PlDialogModal v-model="isModalOpen" width="50%" style="max-height: 100vh">
+    <PlDialogModal v-model="isModalOpen" width="720px" style="max-height: 100vh">
       <template #title> Errors </template>
       <div class="pl-app-notification-alert__content">
         <template v-for="item in existingErrors" :key="item[0]">
