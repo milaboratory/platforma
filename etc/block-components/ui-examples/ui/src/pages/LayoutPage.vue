@@ -31,7 +31,7 @@ const data = reactive({
   place-items: center;
   place-content: center;
   height: 100%;
-  background-color: lightgreen;
+  background-color: #eee;
   color: #fff;
   font-size: 34px;
   font-weight: bold;

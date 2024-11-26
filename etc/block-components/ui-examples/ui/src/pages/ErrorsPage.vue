@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary } from '@platforma-sdk/ui-vue';
+import { PlAlert, PlBlockPage, PlTextField, PlBtnPrimary, PlRow } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 
 const app = useApp();
+
+const data = reactive({
+  progressDurationMs: 10000
+});
 
 const numbers = computed({
   get() {
@@ -19,6 +23,22 @@ const numbers = computed({
       });
   }
 });
+
+const $ = {
+  positiveNumber: (v: string) => {
+    const parsed = Number(v);
+
+    if (!Number.isFinite(parsed)) {
+      throw Error('Not a number');
+    }
+
+    if (parsed <= 0) {
+      throw Error('Enter positive value');
+    }
+
+    return parsed;
+  }
+};
 </script>
 
 <template>
@@ -42,6 +62,18 @@ const numbers = computed({
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
-    <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>
+    <PlRow>
+      <PlBtnPrimary @click="() => app.showInfiniteProgress(data.progressDurationMs)">
+        Show loader
+      </PlBtnPrimary>
+      <PlBtnPrimary @click="() => app.showProgress(data.progressDurationMs)">
+        Show progress
+      </PlBtnPrimary>
+      <PlTextField
+        v-model="data.progressDurationMs"
+        label="Progress duration (ms)"
+        :parse="$.positiveNumber"
+      />
+    </PlRow>
   </PlBlockPage>
 </template>

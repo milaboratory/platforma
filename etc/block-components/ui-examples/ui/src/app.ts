@@ -1,6 +1,6 @@
 import { platforma } from '@milaboratories/milaboratories.ui-examples.model';
-import { defineApp } from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
+import { animate, defineApp, makeEaseInOut, makeEaseOut } from '@platforma-sdk/ui-vue';
+import { computed, reactive, ref } from 'vue';
 import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
 import InjectEnvPage from './pages/InjectEnvPage.vue';
@@ -30,10 +30,33 @@ export const sdkPlugin = defineApp(platforma, (base) => {
 
   const argsAsJson = computed(() => JSON.stringify(base.args));
 
+  const progressRef = ref<boolean | number>();
+
+  function showLoader(duration: number) {
+    progressRef.value = true;
+    setTimeout(() => (progressRef.value = false), duration);
+  }
+
+  function showProgress(duration: number) {
+    progressRef.value = 0;
+    animate({
+      duration,
+      timing: makeEaseOut((t) => t),
+      draw: (progress) => {
+        progressRef.value = progress;
+      }
+    });
+  }
+
   return {
     data,
     incrementCounter,
     argsAsJson,
+    showInfiniteProgress: showLoader,
+    showProgress,
+    progress: () => {
+      return progressRef.value;
+    },
     routes: {
       '/': IconsPage,
       '/layout': () => LayoutPage,
@@ -47,7 +70,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/ag-grid-vue': () => AgGridVuePage,
       '/pl-ag-data-table': () => PlAgDataTablePage,
       '/select-files': () => SelectFilesPage,
-      '/errors': () => () => ErrorsPage,
+      '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage
