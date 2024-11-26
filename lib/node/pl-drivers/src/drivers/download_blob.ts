@@ -36,7 +36,7 @@ import { Readable, Writable } from 'node:stream';
 import { buffer } from 'node:stream/consumers';
 import { ClientDownload } from '../clients/download';
 import { ClientLogs } from '../clients/logs';
-import { DownloadTask, nonRecoverableError } from './download_task';
+import { DownloadBlobTask, nonRecoverableError } from './download_blob_task';
 import { FilesCache } from './helpers/files_cache';
 import {
   isLocalBlobHandle,
@@ -70,11 +70,11 @@ export type DownloadDriverOps = {
  * and notifies every watcher when a file were downloaded. */
 export class DownloadDriver implements BlobDriver {
   /** Represents a Resource Id to the path of a blob as a map. */
-  private idToDownload: Map<ResourceId, DownloadTask> = new Map();
+  private idToDownload: Map<ResourceId, DownloadBlobTask> = new Map();
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
-  private cache: FilesCache<DownloadTask>;
+  private cache: FilesCache<DownloadBlobTask>;
 
   /** Downloads files and writes them to the local dir. */
   private downloadQueue: TaskProcessor;
@@ -153,7 +153,8 @@ export class DownloadDriver implements BlobDriver {
 
   private setNewDownloadTask(rInfo: ResourceSnapshot) {
     const fPath = this.getFilePath(rInfo.id);
-    const result = new DownloadTask(
+    const result = new DownloadBlobTask(
+      this.logger,
       this.clientDownload,
       rInfo,
       fPath,
@@ -164,7 +165,7 @@ export class DownloadDriver implements BlobDriver {
     return result;
   }
 
-  private async downloadBlob(task: DownloadTask, callerId: string) {
+  private async downloadBlob(task: DownloadBlobTask, callerId: string) {
     await task.download();
     const blob = task.getBlob();
     if (blob.done && blob.result.ok) {
@@ -448,7 +449,7 @@ export class DownloadDriver implements BlobDriver {
     }
   }
 
-  private removeTask(task: DownloadTask, reason: string) {
+  private removeTask(task: DownloadBlobTask, reason: string) {
     task.abort(reason);
     task.change.markChanged();
     this.idToDownload.delete(task.rInfo.id);
