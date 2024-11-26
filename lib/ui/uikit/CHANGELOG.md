@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.11
+
+### Patch Changes
+
+- 9a1140c: Add no-body-gutters property to the PlBlockPage components
+
 ## 2.2.10
 
 ### Patch Changes
