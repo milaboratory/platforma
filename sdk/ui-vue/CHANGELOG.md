@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.6
+
+### Patch Changes
+
+- 9cd0c99: PlAgDataTable export CSV
+
 ## 1.11.5
 
 ### Patch Changes
