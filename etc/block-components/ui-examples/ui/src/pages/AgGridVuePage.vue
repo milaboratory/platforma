@@ -31,7 +31,11 @@ const columnDefs: ColDef[] = [
     colId: 'label',
     field: 'label',
     headerName: 'Sample label',
-    cellRenderer: 'PlAgTextAndButtonCell'
+    cellRenderer: 'PlAgTextAndButtonCell',
+    cellRendererParams: {
+      onClick: onClickHandler,
+      invokeRowsOnDoubleClick: true
+    }
   },
   {
     colId: 'description',
@@ -62,6 +66,11 @@ const result = times(100, () => {
     link: faker.internet.url()
   };
 });
+
+function onClickHandler() {
+  //will be invoked when invokeRowsOnDoubleClick: false
+  console.log('onClickHandler');
+}
 
 const gridOptions: GridOptions = {
   onRowDoubleClicked: (e) => {
