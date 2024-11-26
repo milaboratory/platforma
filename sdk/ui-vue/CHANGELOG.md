@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.7
+
+### Patch Changes
+
+- 12c72ef: fixed styles for aggrid updated props for PlAgTextAndButtonCell
+
 ## 1.11.6
 
 ### Patch Changes
