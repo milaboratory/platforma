@@ -8,10 +8,10 @@ import {
   AgGridTheme
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
-import type { GridOptions } from '@ag-grid-community/core';
+import type { ColDef, GridOptions } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
-import { PlAgCellFile } from '@platforma-sdk/ui-vue';
+import { PlAgCellFile, PlAgTextAndButtonCell } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -21,7 +21,7 @@ const LinkComponent: Component = {
   }
 };
 
-const columnDefs = [
+const columnDefs: ColDef[] = [
   {
     colId: 'id',
     field: 'id',
@@ -30,7 +30,8 @@ const columnDefs = [
   {
     colId: 'label',
     field: 'label',
-    headerName: 'Sample label'
+    headerName: 'Sample label',
+    cellRenderer: 'PlAgTextAndButtonCell'
   },
   {
     colId: 'description',
@@ -63,9 +64,13 @@ const result = times(100, () => {
 });
 
 const gridOptions: GridOptions = {
+  onRowDoubleClicked: (e) => {
+    console.log('Example "Open" button was clicked', e);
+  },
   components: {
     LinkComponent,
-    PlAgCellFile
+    PlAgCellFile,
+    PlAgTextAndButtonCell
   }
 };
 
