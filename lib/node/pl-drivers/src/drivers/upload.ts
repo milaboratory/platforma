@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { ResourceId } from '@milaboratories/pl-client';
+import { ResourceId, ResourceType } from '@milaboratories/pl-client';
 import {
   Watcher,
   ComputableCtx,
@@ -22,6 +22,7 @@ import { scheduler } from 'node:timers/promises';
 import { PollingOps } from './helpers/polling_ops';
 import { ImportResourceSnapshot, IndexResourceSnapshot, UploadResourceSnapshot } from './types';
 import { nonRecoverableError, UploadTask } from './upload_task';
+import { WrongResourceTypeError } from './helpers/helpers';
 
 export function makeBlobImportSnapshot(
   entryOrAccessor: PlTreeEntry | PlTreeNodeAccessor | PlTreeEntryAccessor,
@@ -124,6 +125,8 @@ export class UploadDriver {
     res: ImportResourceSnapshot,
     callerId: string
   ): sdk.ImportProgress {
+    validateResourceType('getProgressId', res.type);
+
     const task = this.idToProgress.get(res.id);
 
     if (task != undefined) {
@@ -227,3 +230,12 @@ type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
 };
+
+function validateResourceType(methodName: string, rType: ResourceType) {
+  if (!rType.name.startsWith('BlobUpload') && !rType.name.startsWith('BlobIndex')) {
+    throw new WrongResourceTypeError(
+      `${methodName}: wrong resource type: ${rType.name}, ` +
+        `expected: a resource of either type 'BlobUpload' or 'BlobIndex'.`
+    );
+  }
+}
