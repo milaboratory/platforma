@@ -1,0 +1,136 @@
+/**
+ * PFrames spec library:
+ *  - well known domains, annotations and column names.
+ *  - utility methods to manipulate column and axis spec
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+validation := import(":validation")
+json := import("json")
+
+//
+// Common schemas
+//
+
+P_AXIS_SPEC_SCHEMA := {
+	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
+	`type`: `string,regex=Int|Long|Float|Double|String`,
+	`name`: `string`,
+	`domain,?`: { any: `string` },
+	`annotations,?`: { any: `string` },
+	`parentAxes,?`: `any` // [ `number` ]
+}
+
+P_COLUMN_SPEC_SCHEMA := {
+	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
+	`kind`: `string,regex=PColumn`,
+	`valueType`: `string`,
+	`name`: `string`,
+	`domain,?`: { any: `string` },
+	`annotations,?`: { any: `string` },
+	`parentAxes,?`: `any`, // [ `number` ]
+	`axesSpec,?`: [ P_AXIS_SPEC_SCHEMA ]
+}
+
+KIND_P_COLUMN := "PColumn"
+
+//
+// Column / axis names
+//
+
+/** Column containing labels for axis keys */
+N_LABEL := "pl7.app/label"
+
+//
+// Column / axis domains
+//
+
+/** Domain marking column or axis as block-specific, value must contain block id */
+D_BLOCK := "pl7.app/block"
+
+//
+// Column / axis annotations
+//
+
+/** Annotation with axis or column label */
+A_LABEL := "pl7.app/label"
+/**
+ * Annotation containing trace of operations resulting in a corresponding column.
+ *
+ * Value must containe JSON encoded array of structures:
+ *   {
+ *      type: string       - type of the step, often equals to block package name (i.e. milaboratories.mixcr-clonotyping)
+ *      label: string      - string representation of the operation often a block title
+ *      importance: number - higher the number higher the change label from trace step will be used to derive column label
+ *      id: string         - unique identifier of operation, often a block id
+ *   }
+ */
+A_TRACE := "pl7.app/trace"
+
+//
+// Utility methods
+//
+
+_TRACE_STEP_SCHEMA := {
+	`type`: `string`,
+	`label`: `string`,
+	`importance,?`: `number`,
+	`id,?`: `string`,
+	`__options__,closed`: ``
+}
+
+_TRACE_SCHEMA := [_TRACE_STEP_SCHEMA]
+
+/**
+ * Calculates content of pl7.app/trace annotation, given input column spec, or annotations section
+ * of specs, or directly content of pl7.app/trace from the input column spec.
+ *
+ * Basically validates and adds provided steps.
+ */
+makeTrace := func(input, ...steps) {
+	// validating input step structure
+	validation.assertJsonSchema(steps, _TRACE_SCHEMA)
+
+	currentTraceContent := undefined
+	if is_string(input) {
+		currentTraceContent = input
+	} else if is_string(input[A_TRACE]) {
+		currentTraceContent = input[A_TRACE]
+	} else if is_string(input["annotations"][A_TRACE]) {
+		currentTraceContent = input["annotations"][A_TRACE]
+	}
+
+	currentTrace := []
+	if !is_undefined(currentTraceContent) {
+		currentTrace = json.decode(currentTraceContent)
+		// validating trace we just parsed
+		validation.assertJsonSchema(currentTrace, _TRACE_SCHEMA)
+	}
+
+	currentTrace = append(currentTrace, steps...)
+	currentTraceStr := string(json.encode(currentTrace))
+
+	return ll.toStrict({
+		value: currentTrace,
+		valueStr: currentTraceStr,
+		/** Injects trace information into column spec */
+		inject: func(spec) {
+			validation.assertJsonSchema(spec, P_COLUMN_SPEC_SCHEMA)
+			return maps.deepMerge(spec, {annotations: {"pl7.app/trace": currentTraceStr}})
+		}
+	})
+}
+
+export ll.toStrict({
+	KIND_P_COLUMN: KIND_P_COLUMN,
+
+	N_LABEL: N_LABEL,
+
+	D_BLOCK: D_BLOCK,
+
+	A_LABEL: A_LABEL,
+	A_TRACE: A_TRACE,
+
+	makeTrace: makeTrace
+})

@@ -9,11 +9,11 @@ _CONTEXT_FIELD_NAME := "ctx"
 
 // options scheme for query
 _OPTIONS_SCHEME := {
-	"spec,omitempty": `bool`,
-	"data,omitempty": `bool`,
-	"single,omitempty": `bool`,
-	"first,omitempty": `bool`,
-	"errIfMissing,omitempty": `bool`
+	"spec,?": `bool`,
+	"data,?": `bool`,
+	"single,?": `bool`,
+	"first,?": `bool`,
+	"errIfMissing,?": `bool`
 }
 
 // default query options

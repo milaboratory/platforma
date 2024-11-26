@@ -234,22 +234,41 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 	schemaTags := {}
 	// schema.key -> rule
 	schemaRules := {}
+	// js padded with all keys from schema
+	jsFull := {}
 
 	for k, v in schema {
 		p := _parseTags(k)
 		schemaTags[p.key] = p
 		schemaRules[p.key] = v
+		jsFull[p.key] = undefined
 	}
 
 	// tags that should be applied to all elements
 	any := schemaTags["any"]
+	if !is_undefined(any) {
+		if is_undefined(jsFull["any"]) { // in case actual object has field named "any"
+			delete(jsFull, "any")
+		}
+	}
 
 	options := schemaTags["__options__"]
 	if is_undefined(options) {
 		options = {}
+	} else {
+		delete(schemaTags, "__options__")
+		delete(schemaRules, "__options__")
+		if is_undefined(jsFull["__options__"]) { // in case actual object has field named "__options__"
+			delete(jsFull, "__options__")
+		}
 	}
 
-	for _key, elem in js {
+	// transferring fields from input map into padded map
+	for k, v in js {
+		jsFull[k] = v
+	}
+
+	for _key, elem in jsFull {
 		if any {
 			r := _validateJson(elem, schemaRules["any"], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
 			if isFail(r) {
@@ -284,8 +303,11 @@ _validateJson := func(js, schema, keyPath, ...stack) {
 			}
 		}
 
-		if key.tags["omitempty"] && is_undefined(elem) {
-			continue
+		if is_undefined(elem) {
+			if key.tags["omitempty"] || key.tags["optional"] || key.tags["?"] {
+				continue
+			}
+			return fail(keyPath, "value %q does not contain key %q", js, _key)
 		}
 
 		r := _validateJson(elem, schemaRules[_key], _formatKeyPath(keyPath, "%s.%s", _key), js, stack...)
@@ -356,7 +378,7 @@ resource := func(...args) {
 	}
 
 	assertJsonSchema(ops, {
-		`type,omitempty`: {
+		`type,?`: {
 			Name: `string`,
 			Version: `string`
 		}
