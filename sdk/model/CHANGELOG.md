@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.12.0
+
+### Minor Changes
+
+- b207f86: - automatic `Option` label derivation logic based on traces (`pl7.app/trace` annotation)
+
 ## 1.10.12
 
 ### Patch Changes
