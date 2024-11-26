@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.4
+
+### Patch Changes
+
+- 5086e90: added component PlAgTextAndButtonCell
+
 ## 1.11.3
 
 ### Patch Changes
