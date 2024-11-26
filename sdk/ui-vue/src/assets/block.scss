@@ -43,6 +43,45 @@
     padding: 0;
   }
 
+  &__loader {
+    height: 4px;
+    background-color: transparent;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    overflow: hidden;
+    &:before {
+      content: "";
+      position: absolute;
+      left: -50%;
+      height: 4px;
+      width: 33%;
+      background-color: var(--border-color-focus);
+      animation: loader-animation 1.3s linear infinite;
+    }
+  }
+
+  &__progress {
+    --progress-width: 0%;
+    height: 4px;
+    background-color: transparent;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    overflow: hidden;
+    &:before {
+      content: "";
+      position: absolute;
+      left: 0;
+      height: 4px;
+      width: var(--progress-width);
+      background-color: var(--border-color-focus);
+      will-change: width;
+    }
+  }
+
   &__error {
     background: var(--txt-error);
     color: #fff;
@@ -67,6 +106,20 @@
     > div:last-child {
       flex: 1;
       overflow: auto;
+    }
+  }
+
+  @keyframes loader-animation {
+    0% {
+      left: -40%;
+    }
+    50% {
+      left: 20%;
+      width: 38%;
+    }
+    100% {
+      left: 100%;
+      width: 50%;
     }
   }
 }
