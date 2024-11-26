@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { ICellRendererParams } from '@ag-grid-community/core';
-import type { MaskIconName16 } from '@platforma-sdk/ui-vue';
-import { PlMaskIcon16 } from '@platforma-sdk/ui-vue';
+import type { MaskIconName16 } from '@milaboratories/uikit';
+import { PlMaskIcon16 } from '@milaboratories/uikit';
 import './pl-ag-text-and-button-cell.scss';
 
 const props = defineProps<{
