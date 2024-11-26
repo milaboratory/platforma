@@ -56,3 +56,9 @@ export type PlTableFiltersDefault = {
   /** Filter entry */
   default: PlTableFilter;
 };
+
+/** PlAgDataTable controller contains all exported methods */
+export type PlAgDataTableController = {
+  /** Export table data as Csv file */
+  exportCsv: () => void;
+};

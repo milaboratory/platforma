@@ -1,5 +1,81 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.109
+
+### Patch Changes
+
+- Updated dependencies [d60c614]
+  - @platforma-sdk/ui-vue@1.11.8
+
+## 0.0.108
+
+### Patch Changes
+
+- Updated dependencies [12c72ef]
+  - @platforma-sdk/ui-vue@1.11.7
+
+## 0.0.107
+
+### Patch Changes
+
+- Updated dependencies [9cd0c99]
+  - @platforma-sdk/ui-vue@1.11.6
+
+## 0.0.106
+
+### Patch Changes
+
+- Updated dependencies [9a1140c]
+  - @milaboratories/uikit@2.2.11
+  - @platforma-sdk/ui-vue@1.11.5
+
+## 0.0.105
+
+### Patch Changes
+
+- Updated dependencies [5086e90]
+  - @platforma-sdk/ui-vue@1.11.4
+
+## 0.0.104
+
+### Patch Changes
+
+- Updated dependencies [ec5be92]
+  - @milaboratories/uikit@2.2.10
+  - @platforma-sdk/ui-vue@1.11.3
+
+## 0.0.103
+
+### Patch Changes
+
+- Updated dependencies [4783725]
+  - @platforma-sdk/ui-vue@1.11.2
+
+## 0.0.102
+
+### Patch Changes
+
+- Updated dependencies [961b8b1]
+  - @platforma-sdk/ui-vue@1.11.1
+
+## 0.0.101
+
+### Patch Changes
+
+- 680e8b8: Add "deep patch" mode to app.model (configurable)
+- Updated dependencies [680e8b8]
+  - @platforma-sdk/ui-vue@1.11.0
+  - @milaboratories/helpers@1.6.7
+  - @milaboratories/uikit@2.2.9
+
+## 0.0.100
+
+### Patch Changes
+
+- Updated dependencies [166c161]
+  - @milaboratories/uikit@2.2.9
+  - @platforma-sdk/ui-vue@1.10.18
+
 ## 0.0.99
 
 ### Patch Changes

@@ -1,0 +1,36 @@
+.pl-ag-grid-open-cell {
+    align-items: center;
+
+    &__activator {
+        position: absolute;
+        right: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color-div-grey);
+        padding: 4px 6px 4px 4px;
+        gap: 3px;
+        cursor: pointer;
+        display: none;
+        background-color: var(--ic-00);
+        opacity: 1;
+
+        &:hover {
+            background-color: #EFF2F7;
+
+        }
+
+        &:active {
+            background-color: #E7EBF3;
+        }
+    }
+
+    &__value {
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+}
+
+.ag-row-hover {
+    .pl-ag-grid-open-cell__activator {
+        display: flex;
+    }
+}

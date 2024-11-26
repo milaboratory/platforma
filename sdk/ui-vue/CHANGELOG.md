@@ -1,5 +1,73 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.8
+
+### Patch Changes
+
+- d60c614: [sdk/ui-vue] PlBlockPage: add “progress” indicator global to page when there are ongoing calculations
+
+## 1.11.7
+
+### Patch Changes
+
+- 12c72ef: fixed styles for aggrid updated props for PlAgTextAndButtonCell
+
+## 1.11.6
+
+### Patch Changes
+
+- 9cd0c99: PlAgDataTable export CSV
+
+## 1.11.5
+
+### Patch Changes
+
+- Updated dependencies [9a1140c]
+  - @milaboratories/uikit@2.2.11
+
+## 1.11.4
+
+### Patch Changes
+
+- 5086e90: added component PlAgTextAndButtonCell
+
+## 1.11.3
+
+### Patch Changes
+
+- Updated dependencies [ec5be92]
+  - @milaboratories/uikit@2.2.10
+
+## 1.11.2
+
+### Patch Changes
+
+- 4783725: PlAgDataTable less refreshes
+
+## 1.11.1
+
+### Patch Changes
+
+- 961b8b1: updated ag grid header styles
+
+## 1.11.0
+
+### Minor Changes
+
+- 680e8b8: Add "deep patch" mode to app.model (configurable)
+
+### Patch Changes
+
+- @milaboratories/uikit@2.2.9
+
+## 1.10.18
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+- Updated dependencies [166c161]
+  - @milaboratories/uikit@2.2.9
+
 ## 1.10.17
 
 ### Patch Changes

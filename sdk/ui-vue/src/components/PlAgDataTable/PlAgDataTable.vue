@@ -30,7 +30,7 @@ import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlDataTableSettings } from './types';
+import type { PlAgDataTableController, PlDataTableSettings } from './types';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -173,13 +173,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-            type: 'column',
-            id: sheet.column,
-          }
+          type: 'column',
+          id: sheet.column,
+        }
         : {
-            type: 'axis',
-            id: sheet.axis,
-          },
+          type: 'axis',
+          id: sheet.axis,
+        },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -246,7 +246,7 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
+const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
@@ -297,6 +297,11 @@ const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
     ],
     defaultToolPanel: 'columns',
   },
+  defaultCsvExportParams: {
+    allColumns: true,
+    suppressQuotes: true,
+    fileName: 'table.csv',
+  },
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
@@ -308,7 +313,7 @@ const onGridReady = (event: GridReadyEvent) => {
             const options = gridOptions.value;
             options[key] = value;
             gridOptions.value = options;
-            api.updateGridOptions(options);
+            api.setGridOption(key, value);
           };
         case 'updateGridOptions':
           return (options: ManagedGridOptions) => {
@@ -339,6 +344,54 @@ const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
   gridApi.value = undefined;
 };
+
+let flag = false;
+const onStoreRefreshed = () => {
+  if (!flag) return;
+
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  gridApiValue.exportDataAsCsv();
+
+  flag = false;
+  gridApiValue.setGridOption('cacheBlockSize', 100);
+};
+const onModelUpdated = () => {
+  if (!flag) return;
+
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  const state = gridApiValue.getServerSideGroupLevelState()[0];
+  if (state.cacheBlockSize! !== state.rowCount) return;
+
+  gridApiValue.refreshServerSide({ route: state.route, purge: false });
+};
+const exportCsv = async () => {
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  if (gridOptions.value.rowModelType === 'clientSide') {
+    gridApiValue.exportDataAsCsv();
+    return;
+  }
+
+  if (gridOptions.value.rowModelType === 'serverSide') {
+    const state = gridApiValue.getServerSideGroupLevelState()[0];
+
+    if (state.rowCount <= state.cacheBlockSize!) {
+      gridApiValue.exportDataAsCsv();
+      return;
+    }
+
+    if (!flag) {
+      flag = true;
+      gridApiValue.setGridOption('cacheBlockSize', state.rowCount);
+    }
+  }
+};
+defineExpose<PlAgDataTableController>({ exportCsv });
 
 const reloadKey = ref(0);
 watch(
@@ -384,23 +437,27 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   });
 };
 
+const platforma = window.platforma;
+if (!platforma) throw Error('platforma not set');
+const pfDriver = platforma.pFrameDriver;
+if (!pfDriver) throw Error('platforma.pFrameDriver not set');
+const blobDriver = platforma.blobDriver;
+if (!blobDriver) throw Error('platforma.blobDriver not set');
+
+let oldSettings: PlDataTableSettings | undefined = undefined;
 watch(
   () => [gridApi.value, settings.value, sheets.value] as const,
-  async (state, oldState) => {
-    if (lodash.isEqual(state, oldState)) return;
-
+  async (state) => {
     const [gridApi, settings, sheets] = state;
     if (!gridApi) return;
 
-    const platforma = window.platforma;
-    if (!platforma) throw Error('platforma not set');
+    if (lodash.isEqual(settings, oldSettings)) return;
+    oldSettings = settings;
 
     const sourceType = settings.sourceType;
     switch (sourceType) {
       case 'pframe':
       case 'ptable': {
-        const pfDriver = platforma.pFrameDriver;
-        if (!pfDriver) throw Error('platforma.pFrameDriver not set');
         const pTable = settings.pTable;
         if (!pTable || !sheets) {
           return gridApi.updateGridOptions({
@@ -409,8 +466,10 @@ watch(
             columnDefs: [],
           });
         }
+
         const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
         const options = await updatePFrameGridOptions(pfDriver, pTable, sheets, hiddenColIds);
+
         return gridApi.updateGridOptions({
           loading: options.rowModelType !== 'clientSide',
           loadingOverlayComponentParams: { notReady: false },
@@ -419,9 +478,6 @@ watch(
       }
 
       case 'xsv': {
-        const blobDriver = platforma.blobDriver;
-        if (!blobDriver) throw Error('platforma.blobDriver not set');
-
         const xsvFile = settings.xsvFile;
         if (!xsvFile?.ok || !xsvFile.value) {
           return gridApi.updateGridOptions({
@@ -449,23 +505,13 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-      <PlDropdownLine
-        v-for="(sheet, i) in sheets.value"
-        :key="i"
-        :model-value="sheetsState[makeSheetId(sheet.axis)]"
+      <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
-        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
-      />
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
     </div>
-    <AgGridVue
-      :key="reloadKey"
-      :theme="AgGridTheme"
-      class="ap-ag-data-table-grid"
-      :grid-options="gridOptions"
-      @grid-ready="onGridReady"
-      @state-updated="onStateUpdated"
-      @grid-pre-destroyed="onGridPreDestroyed"
-    />
+    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
+      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed"
+      @store-refreshed="onStoreRefreshed" @model-updated="onModelUpdated" />
   </div>
 </template>
 
