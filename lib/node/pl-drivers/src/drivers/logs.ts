@@ -4,7 +4,7 @@ import { LogsStreamDriver } from './logs_stream';
 import * as sdk from '@milaboratories/pl-model-common';
 import { MiLogger } from '@milaboratories/ts-helpers';
 import { DownloadDriver } from './download_blob';
-import { isLiveLogHandle } from './logs_handle';
+import { isLiveLogHandle } from './helpers/logs_handle';
 
 export class LogsDriver implements sdk.LogsDriver {
   constructor(

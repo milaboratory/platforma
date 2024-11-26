@@ -39,10 +39,18 @@ import { ClientLogs } from '../clients/logs';
 import { DownloadTask, nonRecoverableError } from './download_task';
 import { FilesCache } from './helpers/files_cache';
 import * as helper from './helpers/helpers';
-import { isLocalBlobHandle, newLocalHandle, parseLocalHandle } from './download_local_handle';
+import {
+  isLocalBlobHandle,
+  newLocalHandle,
+  parseLocalHandle
+} from './helpers/download_local_handle';
 import { getSize, OnDemandBlobResourceSnapshot } from './types';
-import { isRemoteBlobHandle, newRemoteHandle, parseRemoteHandle } from './download_remote_handle';
-import { getResourceInfoFromLogHandle, newLogHandle } from './logs_handle';
+import {
+  isRemoteBlobHandle,
+  newRemoteHandle,
+  parseRemoteHandle
+} from './helpers/download_remote_handle';
+import { getResourceInfoFromLogHandle, newLogHandle } from './helpers/logs_handle';
 
 export type DownloadDriverOps = {
   /**
