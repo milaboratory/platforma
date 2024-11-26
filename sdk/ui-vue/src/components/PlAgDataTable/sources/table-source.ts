@@ -1,5 +1,6 @@
-import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType, ValueGetterParams } from '@ag-grid-community/core';
 import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
+
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -45,6 +46,34 @@ export const defaultValueFormatter = (value: any) => {
     return value.value.toString();
   }
 };
+
+function makeRowNumberColDef(): ColDef {
+  return {
+    colId: '"#"',
+    headerName: '#',
+    valueGetter: (params: ValueGetterParams<PlAgDataTableRow, number>) => {
+      if (params.node === null) return null;
+      if (params.node.rowIndex === null) return null;
+      return params.node.rowIndex + 1;
+    },
+    suppressNavigable: true,
+    // lockVisible: true,
+    lockPosition: 'left',
+    suppressMovable: true,
+    mainMenuItems: [],
+    contextMenuItems: [],
+    pinned: 'left',
+    lockPinned: true,
+    suppressAutoSize: true,
+    cellStyle: {
+      color: 'var(--txt-03)',
+      'background-color': 'var(--bg-base-light)',
+    },
+    sortable: false,
+    resizable: false,
+  };
+}
+
 /**
  * Calculates column definition for a given p-table column
  */
@@ -338,7 +367,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds))];
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
