@@ -84,7 +84,7 @@ export const DEFAULT_RW_TX_TIMEOUT = 20_000;
 export const DEFAULT_TOKEN_TTL_SECONDS = 31 * 24 * 60 * 60;
 export const DEFAULT_AUTH_MAX_REFRESH = 12 * 24 * 60 * 60;
 
-export const DEFAULT_MAX_CACHE_BYTES = 35_000_000; // 35 Mb
+export const DEFAULT_MAX_CACHE_BYTES = 128_000_000; // 128 Mb
 
 export const DEFAULT_RETRY_BACKOFF_ALGORITHM = 'exponential';
 export const DEFAULT_RETRY_MAX_ATTEMPTS = 10;

@@ -6,5 +6,19 @@ assert := func(got, want) {
 }
 
 TestMakeTrace := func() {
-	pSpec.makeTrace(undefined, {type: "type", id: "theid", label: "the label"})
+	trace1 := pSpec.makeTrace(undefined, {type: "type", label: "the label"})
+	assert(
+		trace1.value,
+		[{type: "type", label: "the label"}]
+	)
+	spec1 := trace1.inject({
+		kind: "PColumn",
+		valueType: "Int",
+		name: "col1"
+	})
+	trace2 := pSpec.makeTrace(spec1, {type: "type2", id: "theid1", importance: 3, label: "the label 3"})
+	assert(
+		trace2.value,
+		[{type: "type", label: "the label"}, {type: "type2", id: "theid1", importance: 3, label: "the label 3"}]
+	)
 }

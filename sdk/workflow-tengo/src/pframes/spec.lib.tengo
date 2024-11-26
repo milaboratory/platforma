@@ -5,8 +5,33 @@
  */
 
 ll := import(":ll")
+maps := import(":maps")
 validation := import(":validation")
 json := import("json")
+
+//
+// Common schemas
+//
+
+P_AXIS_SPEC_SCHEMA := {
+	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
+	`type`: `string,regex=Int|Long|Float|Double|String`,
+	`name`: `string`,
+	`domain,?`: { any: `string` },
+	`annotations,?`: { any: `string` },
+	`parentAxes,?`: `any` // [ `number` ]
+}
+
+P_COLUMN_SPEC_SCHEMA := {
+	// `__options__,closed`: ``, // commented out to keep the room for future schema modifications
+	`kind`: `string,regex=PColumn`,
+	`valueType`: `string`,
+	`name`: `string`,
+	`domain,?`: { any: `string` },
+	`annotations,?`: { any: `string` },
+	`parentAxes,?`: `any`, // [ `number` ]
+	`axesSpec,?`: [ P_AXIS_SPEC_SCHEMA ]
+}
 
 KIND_P_COLUMN := "PColumn"
 
@@ -48,7 +73,8 @@ A_TRACE := "pl7.app/trace"
 
 _TRACE_STEP_SCHEMA := {
 	`type`: `string`,
-	`id`: `string`,
+	`importance,?`: `number`,
+	`id,?`: `string`,
 	`label`: `string`,
 	`__options__,closed`: ``
 }
@@ -60,7 +86,6 @@ _TRACE_SCHEMA := [_TRACE_STEP_SCHEMA]
  * of specs, or directly content of pl7.app/trace from the input column spec.
  *
  * Basically validates and adds provided steps.
- *
  */
 makeTrace := func(input, ...steps) {
 	// validating input step structure
@@ -74,6 +99,7 @@ makeTrace := func(input, ...steps) {
 	} else if is_string(input["annotations"][A_TRACE]) {
 		currentTraceContent = input["annotations"][A_TRACE]
 	}
+
 	currentTrace := []
 	if !is_undefined(currentTraceContent) {
 		currentTrace = json.decode(currentTraceContent)
@@ -82,8 +108,17 @@ makeTrace := func(input, ...steps) {
 	}
 
 	currentTrace = append(currentTrace, steps...)
+	currentTraceStr := string(json.encode(currentTrace))
 
-	return currentTrace
+	return ll.toStrict({
+		value: currentTrace,
+		valueStr: currentTraceStr,
+		/** Injects trace information into column spec */
+		inject: func(spec) {
+			validation.assertJsonSchema(spec, P_COLUMN_SPEC_SCHEMA)
+			return maps.deepMerge(spec, {annotations: {"pl7.app/trace": currentTraceStr}})
+		}
+	})
 }
 
 export ll.toStrict({
