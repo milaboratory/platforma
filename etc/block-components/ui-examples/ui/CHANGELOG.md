@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.29
+
+### Patch Changes
+
+- 12c72ef: fixed styles for aggrid updated props for PlAgTextAndButtonCell
+- Updated dependencies [12c72ef]
+  - @platforma-sdk/ui-vue@1.11.7
+
 ## 1.2.28
 
 ### Patch Changes
