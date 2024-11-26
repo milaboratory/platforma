@@ -87,7 +87,7 @@ test.each<{ name: string; traces: Trace[]; labels: string[] }>([
   expect(deriveLabels(tracesToSpecs(traces), (s) => s).map((r) => r.label)).toEqual(labels);
   expect(
     deriveLabels(tracesToSpecs(traces), (s) => s, { includeNativeLabel: true }).map((r) => r.label)
-  ).toEqual(labels.map((l) => l + ' / Label'));
+  ).toEqual(labels.map((l) => 'Label / ' + l));
 });
 
 test('test fallback to native labels in label derivation', () => {

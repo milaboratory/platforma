@@ -60,10 +60,11 @@ A_LABEL := "pl7.app/label"
  *
  * Value must containe JSON encoded array of structures:
  *   {
- *      type: string   - type of the step, often equals to block package name (i.e. milaboratories.mixcr-clonotyping)
- *      id: string     - unique identifier of operation, often a block id
- *      label: string  - string representation of the operation often a block title
- *    }
+ *      type: string       - type of the step, often equals to block package name (i.e. milaboratories.mixcr-clonotyping)
+ *      label: string      - string representation of the operation often a block title
+ *      importance: number - higher the number higher the change label from trace step will be used to derive column label
+ *      id: string         - unique identifier of operation, often a block id
+ *   }
  */
 A_TRACE := "pl7.app/trace"
 
@@ -73,9 +74,9 @@ A_TRACE := "pl7.app/trace"
 
 _TRACE_STEP_SCHEMA := {
 	`type`: `string`,
+	`label`: `string`,
 	`importance,?`: `number`,
 	`id,?`: `string`,
-	`label`: `string`,
 	`__options__,closed`: ``
 }
 
