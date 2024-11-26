@@ -24,6 +24,7 @@ import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor } from './accessor';
 import { FutureRef } from './future';
 import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
+import { deriveLabels, LabelDerivationOps } from './util/label';
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -40,13 +41,20 @@ export class ResultPool {
 
   public getOptions(
     predicate: (spec: PObjectSpec) => boolean,
-    labelFn: (spec: PObjectSpec, ref: Ref) => string = this.defaultLabelFn
+    label?: ((spec: PObjectSpec, ref: Ref) => string) | LabelDerivationOps
   ): Option[] {
-    return this.getSpecs()
-      .entries.filter((s) => predicate(s.obj))
-      .map((s) => ({
+    const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
+    if (typeof label === 'object' || typeof label === 'undefined') {
+      return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(
+        ({ value: { ref }, label }) => ({
+          ref,
+          label
+        })
+      );
+    } else
+      return filtered.map((s) => ({
         ref: s.ref,
-        label: labelFn(s.obj, s.ref)
+        label: label(s.obj, s.ref)
       }));
   }
 
