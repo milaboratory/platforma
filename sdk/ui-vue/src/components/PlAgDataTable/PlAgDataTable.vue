@@ -30,7 +30,7 @@ import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlDataTableSettings, PlDataTableSheet } from './types';
+import type { PlDataTableSettings, PlDataTableSheet, PlAgDataTableController } from './types';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -246,7 +246,7 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
+const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
@@ -297,6 +297,11 @@ const gridOptions = ref<GridOptions<PlAgDataTableRow>>({
     ],
     defaultToolPanel: 'columns',
   },
+  defaultCsvExportParams: {
+    allColumns: true,
+    suppressQuotes: true,
+    fileName: 'table.csv',
+  },
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
@@ -308,7 +313,7 @@ const onGridReady = (event: GridReadyEvent) => {
             const options = gridOptions.value;
             options[key] = value;
             gridOptions.value = options;
-            api.updateGridOptions(options);
+            api.setGridOption(key, value);
           };
         case 'updateGridOptions':
           return (options: ManagedGridOptions) => {
@@ -339,6 +344,54 @@ const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
   gridApi.value = undefined;
 };
+
+let flag = false;
+const onStoreRefreshed = () => {
+  if (!flag) return;
+
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  gridApiValue.exportDataAsCsv();
+
+  flag = false;
+  gridApiValue.setGridOption('cacheBlockSize', 100);
+};
+const onModelUpdated = () => {
+  if (!flag) return;
+
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  const state = gridApiValue.getServerSideGroupLevelState()[0];
+  if (state.cacheBlockSize! !== state.rowCount) return;
+
+  gridApiValue.refreshServerSide({ route: state.route, purge: false });
+};
+const exportCsv = async () => {
+  const gridApiValue = gridApi.value;
+  if (gridApiValue === undefined) return;
+
+  if (gridOptions.value.rowModelType === 'clientSide') {
+    gridApiValue.exportDataAsCsv();
+    return;
+  }
+
+  if (gridOptions.value.rowModelType === 'serverSide') {
+    const state = gridApiValue.getServerSideGroupLevelState()[0];
+
+    if (state.rowCount <= state.cacheBlockSize!) {
+      gridApiValue.exportDataAsCsv();
+      return;
+    }
+
+    if (!flag) {
+      flag = true;
+      gridApiValue.setGridOption('cacheBlockSize', state.rowCount);
+    }
+  }
+};
+defineExpose<PlAgDataTableController>({ exportCsv });
 
 const reloadKey = ref(0);
 watch(
@@ -470,6 +523,8 @@ watch(
       @grid-ready="onGridReady"
       @state-updated="onStateUpdated"
       @grid-pre-destroyed="onGridPreDestroyed"
+      @store-refreshed="onStoreRefreshed"
+      @model-updated="onModelUpdated"
     />
   </div>
 </template>
