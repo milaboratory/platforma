@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.26
+
+### Patch Changes
+
+- 5086e90: added component PlAgTextAndButtonCell
+- Updated dependencies [5086e90]
+  - @platforma-sdk/ui-vue@1.11.4
+
 ## 1.2.25
 
 ### Patch Changes
