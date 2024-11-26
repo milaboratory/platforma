@@ -15,7 +15,7 @@ import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/contr
 import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
 import { RpcError } from '@protobuf-ts/runtime-rpc';
-import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './logs_handle';
+import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './helpers/logs_handle';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
