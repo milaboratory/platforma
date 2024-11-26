@@ -44,7 +44,7 @@ const agGridOverrideStyles = createPart('headerBottomBorder').withCSS(OverrideCs
 export const AgGridTheme: Theme = themeQuartz
   .withParams({
     headerColumnResizeHandleColor: 'transparent',
-    accentColor: '#110529',
+    accentColor: '#49cc49',
     borderColor: '#E1E3EB',
     cellHorizontalPaddingScale: 1,
     checkboxBorderRadius: '3px',
