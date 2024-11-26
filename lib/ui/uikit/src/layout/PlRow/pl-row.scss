@@ -3,6 +3,10 @@
   flex-direction: row;
   gap: var(--gap-h);
 
+  &.noGap {
+    gap: 0;
+  }
+
   &.wrap {
     flex-wrap: wrap;
   }

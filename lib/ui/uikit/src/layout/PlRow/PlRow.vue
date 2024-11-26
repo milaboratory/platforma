@@ -11,6 +11,7 @@ import './pl-row.scss';
 defineProps<{
   wrap?: boolean;
   alignCenter?: boolean;
+  noGap?: boolean;
 }>();
 </script>
 
