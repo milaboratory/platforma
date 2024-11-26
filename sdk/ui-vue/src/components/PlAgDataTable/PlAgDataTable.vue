@@ -266,6 +266,12 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   onRowDoubleClicked: (value) => {
     if (value.data) emit('onRowDoubleClicked', value.data.key);
   },
+  onSortChanged: (event) => {
+    event.api.refreshCells();
+  },
+  onFilterChanged: (event) => {
+    event.api.refreshCells();
+  },
   defaultColDef: {
     suppressHeaderMenuButton: true,
   },
@@ -428,6 +434,7 @@ watch(
       const columns = colDefs
         ?.map((def) => def.colId)
         .filter((colId) => colId !== undefined)
+        .filter((colId) => colId !== '"#"')
         .map((colId) => parseColId(colId));
       emit('columnsChanged', columns ?? []);
     }
