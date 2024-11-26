@@ -1,10 +1,12 @@
 import {
+  AxisId,
   getAxisId,
   isPColumn,
   JoinEntry,
   matchAxisId,
   PColumn,
   PColumnIdAndSpec,
+  PObjectId,
   PTableHandle,
   PTableRecordFilter,
   PTableSorting
@@ -36,6 +38,22 @@ export type PlDataTableGridState = {
 
   /** current sheet selections */
   sheets?: Record<string, string | number>;
+};
+
+export type PlDataTableSheet = {
+  /** id of the axis to use */
+  axis: AxisId;
+  /** id of label column to use in filter instead of axis */
+  column?: PObjectId;
+  /** options to show in the filter tan */
+  options: {
+    /** value of the option (should be one of the values in the axis or column) */
+    value: string | number;
+    /** corresponding label */
+    label: string;
+  }[];
+  /** default (selected) value */
+  defaultValue?: string | number;
 };
 
 /**
@@ -260,7 +278,8 @@ export type PlTableFiltersModel = {
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
   columns: PColumn<TreeNodeAccessor>[],
-  tableState?: PlDataTableState
+  tableState?: PlDataTableState,
+  filters?: PTableRecordFilter[]
 ): PTableHandle {
   const allLabelCols = ctx.resultPool
     .getData()
@@ -268,20 +287,44 @@ export function createPlDataTable<A, U>(
     .filter(isPColumn)
     .filter((p) => p.spec.name === 'pl7.app/label' && p.spec.axesSpec.length === 1);
 
-  const moreColumns = [];
+  const labelColumns = new Map<PObjectId, PColumn<TreeNodeAccessor>>;
   for (const col of columns) {
     for (const axis of col.spec.axesSpec) {
       const axisId = getAxisId(axis);
       for (const match of allLabelCols) {
         if (matchAxisId(axisId, getAxisId(match.spec.axesSpec[0]))) {
-          moreColumns.push(match);
+          labelColumns.set(match.id, match);
         }
       }
     }
   }
+
   return ctx.createPTable({
-    columns: [...columns, ...moreColumns],
-    filters: tableState?.pTableParams?.filters,
-    sorting: tableState?.pTableParams?.sorting
+    src: {
+      type: 'outer',
+      primary: {
+        type: 'full',
+        entries: columns.map((c) => ({ type: 'column', column: c }))
+      },
+      secondary: Array.from(labelColumns.values()).map((c) => ({ type: 'column', column: c }))
+    },
+    filters: [...(tableState?.pTableParams?.filters ?? []), ...(filters ?? [])],
+    sorting: tableState?.pTableParams?.sorting ?? []
   });
+}
+
+export function createPlDataTableSheet<A, U>(
+  ctx: RenderCtx<A, U>,
+  axis: AxisId,
+  values: (string | number)[]
+): PlDataTableSheet {
+  const labels = ctx.findLabels(axis);
+  return {
+    axis: getAxisId(axis),
+    options: values.map((v) => ({
+      value: v,
+      label: labels?.get(v) ?? v.toString()
+    })),
+    defaultValue: values[0]
+  };
 }
