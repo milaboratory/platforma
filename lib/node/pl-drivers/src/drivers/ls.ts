@@ -26,7 +26,7 @@ import {
 } from './helpers/ls_storage_entry';
 import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
 import { validateAbsolute } from '../helpers/validate';
-import { DefaultVirtualLocalStorages } from './helpers/virtual_storages';
+import { DefaultVirtualLocalStorages } from './virtual_storages';
 import { createLsFilesClient } from '../clients/constructors';
 
 /**

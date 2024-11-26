@@ -2,7 +2,7 @@ import path from 'path';
 import os from 'os';
 import util from 'util';
 import { exec } from 'child_process';
-import { VirtualLocalStorageSpec } from '../types';
+import { VirtualLocalStorageSpec } from './types';
 
 export async function DefaultVirtualLocalStorages(): Promise<VirtualLocalStorageSpec[]> {
   const home = os.homedir();

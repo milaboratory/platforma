@@ -1,29 +1,37 @@
-import { Writable } from 'node:stream';
-import * as fs from 'fs';
+import { ChangeSource, Watcher } from '@milaboratories/computable';
+import { LocalBlobHandle, LocalBlobHandleAndSize } from '@milaboratories/pl-model-common';
+import { ResourceSnapshot } from '@milaboratories/pl-tree';
+import {
+  CallersCounter,
+  ValueOrError,
+  ensureDirExists,
+  fileExists,
+  createPathAtomically,
+  MiLogger
+} from '@milaboratories/ts-helpers';
+import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { ChangeSource, Watcher } from "@milaboratories/computable";
-import { CallersCounter, ValueOrError } from "@milaboratories/ts-helpers";
-import { ClientDownload, UnknownStorageError, WrongLocalFileUrl } from "../clients/download";
-import { ResourceSnapshot } from "@milaboratories/pl-tree";
-import { LocalBlobHandle, LocalBlobHandleAndSize } from "@milaboratories/pl-model-common";
+import { Writable } from 'node:stream';
+import { ClientDownload, UnknownStorageError, WrongLocalFileUrl } from '../clients/download';
 import { NetworkError400 } from '../helpers/download';
 
 /** Downloads a blob. */
-export class DownloadTask {
+export class DownloadBlobTask {
   readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
-  readonly signalCtl = new AbortController();
-  error: any | undefined;
-  done = false;
+  private readonly signalCtl = new AbortController();
+  private error: any | undefined;
+  private done = false;
   /** Represents a size in bytes of the downloaded blob. */
   size = 0;
 
   constructor(
-    readonly clientDownload: ClientDownload,
+    private readonly logger: MiLogger,
+    private readonly clientDownload: ClientDownload,
     readonly rInfo: ResourceSnapshot,
     readonly path: string,
-    readonly handle: LocalBlobHandle
+    private readonly handle: LocalBlobHandle
   ) {}
 
   public attach(w: Watcher, callerId: string) {
@@ -33,21 +41,16 @@ export class DownloadTask {
 
   public async download() {
     try {
-      // TODO: move size bytes inside fileExists check like in download_url.
+      await ensureDirExists(path.dirname(this.path));
       const { content, size } = await this.clientDownload.downloadBlob(this.rInfo);
 
-      const dir = path.dirname(this.path);
-      if (!(await pathExists(dir)))
-        await fsp.mkdir(dir, { recursive: true });
-
-      // check in case we already have a file by this resource id
-      // in the directory. It can happen when we forgot to call removeAll
-      // in the previous launch.
-      if (await pathExists(this.path)) {
-        await content.cancel(`the file already existed`); // finalize body
+      if (await fileExists(this.path)) {
+        await content.cancel(`the file already exists.`); // finalize body
       } else {
-        const fileToWrite = Writable.toWeb(fs.createWriteStream(this.path));
-        await content.pipeTo(fileToWrite);
+        await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+          const f = Writable.toWeb(fs.createWriteStream(fPath, { flags: 'wx' }));
+          await content.pipeTo(f);
+        });
       }
 
       this.setDone(size);
@@ -71,11 +74,10 @@ export class DownloadTask {
   public getBlob():
     | { done: false }
     | {
-      done: true;
-      result: ValueOrError<LocalBlobHandleAndSize>;
-    } {
-    if (!this.done)
-      return { done: false };
+        done: true;
+        result: ValueOrError<LocalBlobHandleAndSize>;
+      } {
+    if (!this.done) return { done: false };
 
     if (this.error)
       return {
@@ -105,25 +107,14 @@ export class DownloadTask {
   }
 }
 
-async function pathExists(path: string): Promise<boolean> {
-  try {
-    await fsp.access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function nonRecoverableError(e: any) {
   return (
     e instanceof DownloadAborted ||
     e instanceof NetworkError400 ||
     e instanceof UnknownStorageError ||
     e instanceof WrongLocalFileUrl ||
-
     // file that we downloads from was moved or deleted.
     e?.code == 'ENOENT' ||
-
     // A resource was deleted.
     (e.name == 'RpcError' && (e.code == 'NOT_FOUND' || e.code == 'ABORTED'))
   );
