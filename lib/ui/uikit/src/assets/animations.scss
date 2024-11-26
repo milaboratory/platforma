@@ -58,3 +58,24 @@
     transform: translateX(200%);
   }
 }
+
+.expand-panel {
+  &-enter-active {
+    transition: all 3s ease-out;
+    transition-property: height, opacity, padding, margin;
+    overflow: hidden;
+  }
+
+  &-leave-active {
+    transition: all 3s ease-in-out;
+    transition-property: height, opacity, padding, margin;
+    overflow: hidden;
+  }
+
+  &-enter-from, &-leave-to {
+    height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+  }
+}

@@ -205,7 +205,7 @@ useLabelNotch(rootRef);
         @focusout="onFocusOut"
       />
       <div class="pl-text-field__append">
-        <PlIcon16 v-if="canShowClearable" name="delete-clear" @click="clear" />
+        <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click="clear" />
         <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
         <slot name="append" />
       </div>

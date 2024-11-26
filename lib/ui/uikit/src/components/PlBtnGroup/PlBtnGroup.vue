@@ -43,6 +43,10 @@ const props = defineProps<{
    */
   disabled?: boolean;
   /**
+   * If `true`, the height of the component is 32px
+   */
+  compact?: boolean;
+  /**
    * A helper text displayed below the component when there are no errors (optional).
    */
   helper?: string;
@@ -61,7 +65,7 @@ const normalizedOptions = computed(() =>
 </script>
 
 <template>
-  <div class="ui-btn-group" :class="{ disabled }">
+  <div class="pl-btn-group" :class="{ disabled, compact }">
     <label v-if="label">
       <span>{{ label }}</span>
       <PlTooltip v-if="slots.tooltip" class="info" position="top">
@@ -70,11 +74,11 @@ const normalizedOptions = computed(() =>
         </template>
       </PlTooltip>
     </label>
-    <InnerBorder class="ui-btn-group__container">
+    <InnerBorder class="pl-btn-group__container">
       <div
         v-for="(opt, i) in normalizedOptions"
         :key="i"
-        class="ui-btn-group__option text-s"
+        class="pl-btn-group__option text-s"
         :tabindex="modelValue === opt.value || disabled ? undefined : 0"
         :class="{ active: modelValue === opt.value }"
         @keydown.enter="emitModel(opt.value)"
@@ -83,7 +87,7 @@ const normalizedOptions = computed(() =>
         {{ opt.label }}
       </div>
     </InnerBorder>
-    <div v-if="helper" class="ui-btn-group__helper">{{ helper }}</div>
-    <div v-else-if="error" class="ui-btn-group__error">{{ error }}</div>
+    <div v-if="helper" class="pl-btn-group__helper">{{ helper }}</div>
+    <div v-else-if="error" class="pl-btn-group__error">{{ error }}</div>
   </div>
 </template>

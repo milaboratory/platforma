@@ -10,6 +10,7 @@
   --label-offset-left-x: 8px;
   --label-offset-right-x: 8px;
   --prefix-color: var(--color-placeholder);
+  --show-clearable: none;
 
   width: 100%;
   min-width: 160px;
@@ -87,6 +88,10 @@
     }
   }
 
+  &__clearable {
+    display: var(--show-clearable) !important;
+  }
+
   &__helper {
     @include field-helper();
   }
@@ -97,6 +102,11 @@
 
   &:hover {
     --contour-color: var(--control-hover-color);
+    --show-clearable: inline-block;
+  }
+
+  &:focus-within {
+    --show-clearable: inline-block;
   }
 
   &:focus-within:not(.error) {

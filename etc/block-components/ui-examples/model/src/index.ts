@@ -92,19 +92,21 @@ export const platforma = BlockModel.create('Heavy')
   .sections((ctx) => {
     return [
       { type: 'link', href: '/', label: 'Icons/Masks' },
+      { type: 'link', href: '/layout', label: 'Layout' },
+      { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/log-view', label: 'PlLogView' },
       { type: 'link', href: '/modals', label: 'Modals' },
       { type: 'link', href: '/select-files', label: 'Select Files' },
       { type: 'link', href: '/inject-env', label: 'Inject env' },
       { type: 'link', href: '/dropdowns', label: 'Dropdowns' },
       { type: 'link', href: '/use-watch-fetch', label: 'useWatchFetch' },
-      { type: 'link', href: '/form-components', label: 'Form Components' },
       { type: 'link', href: '/typography', label: 'Typography' },
       { type: 'link', href: '/ag-grid-vue', label: 'AgGridVue' },
       { type: 'link', href: '/pl-ag-data-table', label: 'PlAgDataTable' },
       { type: 'link', href: '/errors', label: 'Errors' },
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
-      { type: 'link', href: '/tabs', label: 'PlTabs' }
+      { type: 'link', href: '/tabs', label: 'PlTabs' },
+      { type: 'link', href: '/drafts', label: 'Drafts' },
     ];
   })
 

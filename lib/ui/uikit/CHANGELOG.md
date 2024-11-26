@@ -1,5 +1,23 @@
 # @milaboratories/uikit
 
+## 2.2.11
+
+### Patch Changes
+
+- 9a1140c: Add no-body-gutters property to the PlBlockPage components
+
+## 2.2.10
+
+### Patch Changes
+
+- ec5be92: Accordion + simple section separator
+
+## 2.2.9
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+
 ## 2.2.8
 
 ### Patch Changes

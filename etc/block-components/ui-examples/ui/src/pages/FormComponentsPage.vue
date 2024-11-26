@@ -1,98 +1,98 @@
 <script setup lang="ts">
 import {
   PlBlockPage,
-  PlContainer,
   PlRow,
+  PlContainer,
   PlBtnGroup,
   PlCheckboxGroup,
-  PlTabs
+  PlCheckbox,
+  PlTextField,
+  PlSectionSeparator,
+  PlDropdown,
+  listToOptions,
+  PlMaskIcon16,
+  PlAccordion,
+  PlAccordionSection
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
-  text: '',
-  single: 1,
-  multiple: [1, 2],
+  text: 'some text',
+  single: 'A',
+  multiple: ['A', 'B'],
   importHandles: [] as unknown[],
-  currentTab: 'one'
+  currentTab: 'one',
+  compactBtnGroup: false,
+  multipleAccordion: false
 });
 
-const options = [
-  {
-    label: 'A',
-    value: 1
-  },
-  {
-    label: 'B',
-    value: 2
-  },
-  {
-    label: 'C',
-    value: 3
-  },
-  {
-    label: 'D',
-    value: 4
-  }
-];
-
-const onDrop = (ev: DragEvent) => {
-  [...(ev.dataTransfer?.files ?? [])].forEach((file, i) => {
-    if (file) {
-      console.log(`… file[${i}].name = ${file?.name}`);
-      window.platforma?.lsDriver?.fileToImportHandle(file).then((handle) => {
-        data.importHandles.push(handle);
-      });
-    }
-  });
-};
+const options = listToOptions(['A', 'B', 'C', 'D']);
 </script>
 
 <template>
-  <PlBlockPage :class="$style.components" style="max-width: 100%">
+  <PlBlockPage :class="$style.components" no-body-gutters>
     <template #title>Form components</template>
-    <PlRow>
-      <PlTabs
-        v-model="data.currentTab"
-        :options="[
-          { label: 'One', value: 'one' },
-          { label: 'Two', value: 'two' },
-          { label: 'Three', value: 'three' }
-        ]"
-      />
-      currentTab: {{ data.currentTab }}
-    </PlRow>
-    <PlRow>
-      <PlContainer width="400px">
-        <PlRow>
-          <PlBtnGroup v-model="data.single" label="PlBtnGroup" :options="options" />
-        </PlRow>
-        <PlRow>
-          <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options" />
-        </PlRow>
+    <PlRow no-gap>
+      <PlContainer width="400px" style="margin: 0 24px 0 24px">
+        <PlBtnGroup
+          v-model="data.single"
+          label="PlBtnGroup"
+          :options="options"
+          :compact="data.compactBtnGroup"
+        />
+        <PlCheckbox v-model="data.compactBtnGroup">Compact btn group component</PlCheckbox>
+        <PlTextField v-model="data.text" label="PlTextField" clearable />
+        <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
+        <PlSectionSeparator>Group name</PlSectionSeparator>
+        <PlTextField v-model="data.text" label="PlTextField" />
+        <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
+        <PlCheckboxGroup v-model="data.multiple" label="PlCheckboxGroup" :options="options" />
+        <PlSectionSeparator>
+          <PlMaskIcon16 name="chevron-right" />Slot usage<PlMaskIcon16 name="chevron-left" />
+        </PlSectionSeparator>
       </PlContainer>
-      <PlContainer width="400px">
-        <pre>{{ data }}</pre>
-      </PlContainer>
-    </PlRow>
-    <PlRow>
-      <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>
-    </PlRow>
-    <PlRow>
-      <PlContainer>
-        <h4>Import Handles</h4>
-        <pre>{{ data.importHandles }}</pre>
+      <div style="width: 1px; background-color: var(--border-color-div-grey)" />
+      <PlContainer width="400px" style="margin: 0 24px 0 24px">
+        <PlAccordionSection label="Section 1">
+          <PlTextField v-model="data.text" label="Additional text field" clearable />
+          <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
+        </PlAccordionSection>
+        <PlAccordionSection label="Section 2">
+          <PlTextField v-model="data.text" label="Additional text field" clearable />
+          <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
+        </PlAccordionSection>
+        <PlAccordionSection label="Section 3">
+          <PlTextField v-model="data.text" label="Additional text field" clearable />
+          <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
+        </PlAccordionSection>
+
+        <PlCheckbox v-model="data.multipleAccordion"
+          >Allow multiple accordion sections to be opened at the same time</PlCheckbox
+        >
+        <PlSectionSeparator>Accordion group</PlSectionSeparator>
+        <PlAccordion :multiple="data.multipleAccordion">
+          <PlAccordionSection label="Section 1">
+            <PlTextField v-model="data.text" label="Additional text field" clearable />
+            <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
+          </PlAccordionSection>
+          <PlAccordionSection label="Section 2">
+            <PlTextField v-model="data.text" label="Additional text field" clearable />
+            <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
+          </PlAccordionSection>
+        </PlAccordion>
       </PlContainer>
     </PlRow>
   </PlBlockPage>
 </template>
 
 <style module>
-.drag-and-drop {
-  border: 1px solid var(--txt-01);
-  padding: 24px;
-  width: 600px;
+/* :global(.pl-container) {
+  outline: 1px dotted #eee;
 }
+
+:global(.pl-section-separator) {
+  outline: 1px dashed #eee;
+} */
 
 .components pre {
   border: 1px solid var(--txt-01);

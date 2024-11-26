@@ -44,6 +44,8 @@ export * from './components/PlSlideModal';
 export * from './components/PlToggleSwitch';
 export * from './components/PlLogView';
 export * from './components/PlTabs';
+export * from './components/PlSectionSeparator';
+export * from './components/PlAccordion';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';

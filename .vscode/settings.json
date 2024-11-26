@@ -9,7 +9,7 @@
         "editor.defaultFormatter": "dbaeumer.vscode-eslint"
     },
     "[vue]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+        "editor.defaultFormatter": "Vue.volar"
     },
     "[javascript]": {
         "editor.defaultFormatter": "dbaeumer.vscode-eslint"

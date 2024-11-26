@@ -72,6 +72,8 @@
   --divider-color: var(--txt-01); // @TODO
 
   --pl-dropdown-options-bg: #fff;
+
+  --mask-icon-bg-color: #000;
 }
 
 [data-theme='dark'] {
@@ -153,15 +155,6 @@ body {
   height: 100%;
   max-width: 100%;
   font-family: var(--font-family-base);
-}
-
-/// @TODO
-.space-keeper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 }
 
 .base-form {

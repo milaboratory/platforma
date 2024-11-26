@@ -1,5 +1,83 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.30
+
+### Patch Changes
+
+- d60c614: [sdk/ui-vue] PlBlockPage: add “progress” indicator global to page when there are ongoing calculations
+- Updated dependencies [d60c614]
+  - @platforma-sdk/ui-vue@1.11.8
+
+## 1.2.29
+
+### Patch Changes
+
+- 12c72ef: fixed styles for aggrid updated props for PlAgTextAndButtonCell
+- Updated dependencies [12c72ef]
+  - @platforma-sdk/ui-vue@1.11.7
+
+## 1.2.28
+
+### Patch Changes
+
+- Updated dependencies [9cd0c99]
+  - @platforma-sdk/ui-vue@1.11.6
+
+## 1.2.27
+
+### Patch Changes
+
+- 9a1140c: Add no-body-gutters property to the PlBlockPage components
+- Updated dependencies [9a1140c]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.38
+  - @platforma-sdk/ui-vue@1.11.5
+
+## 1.2.26
+
+### Patch Changes
+
+- 5086e90: added component PlAgTextAndButtonCell
+- Updated dependencies [5086e90]
+  - @platforma-sdk/ui-vue@1.11.4
+
+## 1.2.25
+
+### Patch Changes
+
+- ec5be92: Accordion + simple section separator
+- Updated dependencies [ec5be92]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.37
+  - @platforma-sdk/ui-vue@1.11.3
+
+## 1.2.24
+
+### Patch Changes
+
+- Updated dependencies [4783725]
+  - @platforma-sdk/ui-vue@1.11.2
+
+## 1.2.23
+
+### Patch Changes
+
+- Updated dependencies [961b8b1]
+  - @platforma-sdk/ui-vue@1.11.1
+
+## 1.2.22
+
+### Patch Changes
+
+- Updated dependencies [680e8b8]
+  - @platforma-sdk/ui-vue@1.11.0
+
+## 1.2.21
+
+### Patch Changes
+
+- 166c161: remove global hidden webkit-srollbar
+- Updated dependencies [166c161]
+  - @platforma-sdk/ui-vue@1.10.18
+
 ## 1.2.20
 
 ### Patch Changes
