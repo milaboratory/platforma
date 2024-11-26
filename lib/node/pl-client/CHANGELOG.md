@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.6.1
+
+### Patch Changes
+
+- b207f86: - client cache size increased to 128 Mb
+
 ## 2.6.0
 
 ### Minor Changes

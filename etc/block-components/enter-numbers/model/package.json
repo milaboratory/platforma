@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers.model",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "private": true,
   "description": "Block model",
   "type": "module",

@@ -1,5 +1,17 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.3.0
+
+### Minor Changes
+
+- c05f946: - fixes exec template hash
+  - adds maps.merge and maps.deepMerge utility methods
+
+### Patch Changes
+
+- ebad1d5: - major bug fix in validation library
+  - PFrame trace annotation helper
+
 ## 2.2.1
 
 ### Patch Changes

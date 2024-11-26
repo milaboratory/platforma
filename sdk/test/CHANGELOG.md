@@ -1,5 +1,16 @@
 # @platforma-sdk/test
 
+## 1.12.0
+
+### Patch Changes
+
+- Updated dependencies [b207f86]
+- Updated dependencies [b207f86]
+  - @milaboratories/pl-client@2.6.1
+  - @platforma-sdk/model@1.12.0
+  - @milaboratories/pl-middle-layer@1.16.1
+  - @milaboratories/pl-tree@1.4.15
+
 ## 1.11.1
 
 ### Patch Changes
