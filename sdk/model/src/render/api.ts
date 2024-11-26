@@ -46,7 +46,7 @@ export class ResultPool {
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
     if (typeof label === 'object' || typeof label === 'undefined') {
       return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(
-        ({ record: { ref }, label }) => ({
+        ({ value: { ref }, label }) => ({
           ref,
           label
         })

@@ -5,7 +5,7 @@ export const PAnnotationLabel = 'pl7.app/label';
 export const PAnnotationTrace = 'pl7.app/trace';
 
 export type RecordsWithLabel<T> = {
-  record: T;
+  value: T;
   label: string;
 };
 
@@ -33,7 +33,7 @@ const LabelType = '__LABEL__';
 const LabelTypeFull = '__LABEL__@1';
 
 export function deriveLabels<T>(
-  records: T[],
+  values: T[],
   specExtractor: (obj: T) => PObjectSpec,
   ops: LabelDerivationOps = {}
 ): RecordsWithLabel<T>[] {
@@ -42,13 +42,13 @@ export function deriveLabels<T>(
   // number of times certain type occured among all of the
   const numberOfRecordsWithType = new Map<string, number>();
 
-  const enrichedRecords = records.map((record) => {
-    const spec = specExtractor(record);
+  const enrichedRecords = values.map((value) => {
+    const spec = specExtractor(value);
     const label = spec.annotations?.[PAnnotationLabel];
     const traceStr = spec.annotations?.[PAnnotationTrace];
     const trace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
 
-    if (label) trace.push({ label, type: LabelType, importance: -2 });
+    if (label) trace.splice(0, 0, { label, type: LabelType, importance: -2 });
 
     const fullTrace: FullTrace = [];
 
@@ -71,7 +71,7 @@ export function deriveLabels<T>(
     }
     fullTrace.reverse();
     return {
-      record,
+      value,
       spec,
       label,
       fullTrace
@@ -88,7 +88,7 @@ export function deriveLabels<T>(
   allTypeRecords.sort(([, i1], [, i2]) => i2 - i1);
 
   for (const [typeName] of allTypeRecords) {
-    if (typeName.endsWith('@1') || numberOfRecordsWithType.get(typeName) === records.length)
+    if (typeName.endsWith('@1') || numberOfRecordsWithType.get(typeName) === values.length)
       mainTypes.push(typeName);
     else secondaryTypes.push(typeName);
   }
@@ -101,7 +101,7 @@ export function deriveLabels<T>(
       const sep = ops.separator ?? ' / ';
       return {
         label: labelSet.join(sep),
-        record: r.record
+        value: r.value
       } satisfies RecordsWithLabel<T>;
     });
 
@@ -129,7 +129,7 @@ export function deriveLabels<T>(
     const candidateResult = calculate(currentSet);
 
     // checking if labels uniquely separate our records
-    if (new Set(candidateResult.map((c) => c.label)).size === records.length) {
+    if (new Set(candidateResult.map((c) => c.label)).size === values.length) {
       if (ops.includeNativeLabel) {
         currentSet.add(LabelTypeFull);
         return calculate(currentSet);
