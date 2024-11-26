@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.11.8
+
+### Patch Changes
+
+- d60c614: [sdk/ui-vue] PlBlockPage: add “progress” indicator global to page when there are ongoing calculations
+
 ## 1.11.7
 
 ### Patch Changes

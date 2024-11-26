@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.30
+
+### Patch Changes
+
+- d60c614: [sdk/ui-vue] PlBlockPage: add “progress” indicator global to page when there are ongoing calculations
+- Updated dependencies [d60c614]
+  - @platforma-sdk/ui-vue@1.11.8
+
 ## 1.2.29
 
 ### Patch Changes
