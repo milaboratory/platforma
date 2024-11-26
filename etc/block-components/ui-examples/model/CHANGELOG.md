@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.38
+
+### Patch Changes
+
+- 9a1140c: Add no-body-gutters property to the PlBlockPage components
+
 ## 1.0.37
 
 ### Patch Changes

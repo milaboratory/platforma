@@ -1,5 +1,14 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.27
+
+### Patch Changes
+
+- 9a1140c: Add no-body-gutters property to the PlBlockPage components
+- Updated dependencies [9a1140c]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.38
+  - @platforma-sdk/ui-vue@1.11.5
+
 ## 1.2.26
 
 ### Patch Changes
