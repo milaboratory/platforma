@@ -400,7 +400,7 @@ async function getSnapshot(
     }).withStableType();
     while (true) {
       const value = await computable.getValue();
-      if (value !== undefined) return value;
+      if (value !== undefined) return value as ImportResourceSnapshot;
       await computable.awaitChange();
     }
   } finally {
