@@ -5,7 +5,12 @@ import {
   PollingComputableHooks,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import {
+  ResourceId,
+  resourceIdToString,
+  ResourceType,
+  stringifyWithResourceId
+} from '@milaboratories/pl-client';
 import { asyncPool, CallersCounter, MiLogger } from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +21,7 @@ import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
 import { RpcError } from '@protobuf-ts/runtime-rpc';
 import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './helpers/logs_handle';
+import { WrongResourceTypeError } from './helpers/helpers';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
@@ -81,6 +87,8 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     lines: number,
     callerId: string
   ): string | undefined {
+    validateResourceType('getLastLogs', rInfo.type);
+
     let logGetter = this.idToLastLines.get(rInfo.id);
 
     if (logGetter == undefined) {
@@ -135,6 +143,8 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     patternToSearch: string,
     callerId: string
   ): string | undefined {
+    validateResourceType('getProgressLog', rInfo.type);
+
     let logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
@@ -171,6 +181,8 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceInfo): sdk.AnyLogHandle {
+    validateResourceType('getLogHandle', rInfo.type);
+
     return newLogHandle(true, rInfo);
   }
 
@@ -370,3 +382,12 @@ type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
 };
+
+function validateResourceType(methodName: string, rType: ResourceType) {
+  if (!rType.name.startsWith('StreamWorkdir')) {
+    throw new WrongResourceTypeError(
+      `${methodName}: wrong resource type: ${rType.name}, ` +
+        `expected: a resource of type 'StreamWorkdir'.`
+    );
+  }
+}

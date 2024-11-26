@@ -2,7 +2,7 @@
  * available on the remote server. */
 
 import { Signer } from '@milaboratories/ts-helpers';
-import { OnDemandBlobResourceSnapshot } from './types';
+import { OnDemandBlobResourceSnapshot } from '../types';
 import { RemoteBlobHandle } from '@milaboratories/pl-model-common';
 import { ResourceInfo } from '@milaboratories/pl-tree';
 import { bigintToResourceId } from '@milaboratories/pl-client';

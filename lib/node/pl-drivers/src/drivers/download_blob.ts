@@ -5,7 +5,7 @@ import {
   ComputableStableDefined,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId } from '@milaboratories/pl-client';
+import { ResourceId, ResourceType } from '@milaboratories/pl-client';
 import {
   AnyLogHandle,
   BlobDriver,
@@ -38,7 +38,6 @@ import { ClientDownload } from '../clients/download';
 import { ClientLogs } from '../clients/logs';
 import { DownloadTask, nonRecoverableError } from './download_task';
 import { FilesCache } from './helpers/files_cache';
-import * as helper from './helpers/helpers';
 import {
   isLocalBlobHandle,
   newLocalHandle,
@@ -51,6 +50,7 @@ import {
   parseRemoteHandle
 } from './helpers/download_remote_handle';
 import { getResourceInfoFromLogHandle, newLogHandle } from './helpers/logs_handle';
+import { Updater, WrongResourceTypeError } from './helpers/helpers';
 
 export type DownloadDriverOps = {
   /**
@@ -130,6 +130,8 @@ export class DownloadDriver implements BlobDriver {
     rInfo: ResourceSnapshot,
     callerId: string
   ): LocalBlobHandleAndSize | undefined {
+    validateDownloadableResourceType('getDownloadedBlob', rInfo.type);
+
     let task = this.idToDownload.get(rInfo.id);
 
     if (task === undefined) {
@@ -202,6 +204,8 @@ export class DownloadDriver implements BlobDriver {
     info: OnDemandBlobResourceSnapshot,
     callerId: string
   ): RemoteBlobHandleAndSize {
+    validateDownloadableResourceType('getOnDemandBlob', info.type);
+
     let blob = this.idToOnDemand.get(info.id);
 
     if (blob === undefined) {
@@ -270,6 +274,7 @@ export class DownloadDriver implements BlobDriver {
     lines: number,
     callerId: string
   ): string | undefined {
+    validateDownloadableResourceType('getLastLogs', rInfo.type);
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return undefined;
 
@@ -330,6 +335,8 @@ export class DownloadDriver implements BlobDriver {
     patternToSearch: string,
     callerId: string
   ): string | undefined {
+    validateDownloadableResourceType('getProgressLog', rInfo.type);
+
     const blob = this.getDownloadedBlobNoCtx(w, rInfo, callerId);
     if (blob == undefined) return undefined;
     const { path } = parseLocalHandle(blob.handle, this.signer);
@@ -365,6 +372,7 @@ export class DownloadDriver implements BlobDriver {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceSnapshot): AnyLogHandle {
+    validateDownloadableResourceType('getLogHandle', rInfo.type);
     return newLogHandle(false, rInfo);
   }
 
@@ -491,7 +499,7 @@ class OnDemandBlobHolder {
 }
 
 class LastLinesGetter {
-  private updater: helper.Updater;
+  private updater: Updater;
   private log: string | undefined;
   private readonly change: ChangeSource = new ChangeSource();
   private error: any | undefined = undefined;
@@ -501,7 +509,7 @@ class LastLinesGetter {
     private readonly lines: number,
     private readonly patternToSearch?: string
   ) {
-    this.updater = new helper.Updater(async () => this.update());
+    this.updater = new Updater(async () => this.update());
   }
 
   getOrSchedule(w: Watcher): {
@@ -568,4 +576,14 @@ function getLastLines(fPath: string, nLines: number, patternToSearch?: string): 
 
 async function read(path: string): Promise<Uint8Array> {
   return await buffer(Readable.toWeb(fs.createReadStream(path)));
+}
+
+function validateDownloadableResourceType(methodName: string, rType: ResourceType) {
+  if (!rType.name.startsWith('Blob/')) {
+    let message = `${methodName}: wrong resource type: ${rType.name}, expected: a resource of type that starts with 'Blob/'.`;
+    if (rType.name == 'Blob')
+      message += ` If it's called from workflow, should a file be exported with 'file.exportFile' function?`;
+
+    throw new WrongResourceTypeError(message);
+  }
 }
