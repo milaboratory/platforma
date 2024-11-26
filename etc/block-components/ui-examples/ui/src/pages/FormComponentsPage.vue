@@ -30,10 +30,10 @@ const options = listToOptions(['A', 'B', 'C', 'D']);
 </script>
 
 <template>
-  <PlBlockPage :class="$style.components" style="max-width: 100%">
+  <PlBlockPage :class="$style.components" no-body-gutters>
     <template #title>Form components</template>
-    <PlRow>
-      <PlContainer width="400px">
+    <PlRow no-gap>
+      <PlContainer width="400px" style="margin: 0 24px 0 24px">
         <PlBtnGroup
           v-model="data.single"
           label="PlBtnGroup"
@@ -51,7 +51,8 @@ const options = listToOptions(['A', 'B', 'C', 'D']);
           <PlMaskIcon16 name="chevron-right" />Slot usage<PlMaskIcon16 name="chevron-left" />
         </PlSectionSeparator>
       </PlContainer>
-      <PlContainer width="400px">
+      <div style="width: 1px; background-color: var(--border-color-div-grey)" />
+      <PlContainer width="400px" style="margin: 0 24px 0 24px">
         <PlAccordionSection label="Section 1">
           <PlTextField v-model="data.text" label="Additional text field" clearable />
           <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />

@@ -10,10 +10,14 @@ import { useSlots } from 'vue';
 import './pl-block-page.scss';
 
 const slots = useSlots();
+
+defineProps<{
+  noBodyGutters?: boolean;
+}>();
 </script>
 
 <template>
-  <div class="pl-layout-component pl-block-page">
+  <div class="pl-layout-component pl-block-page" :class="{ noBodyGutters }">
     <div v-if="slots.title" class="pl-block-page__title">
       <h1><slot name="title" /></h1>
       <div class="pl-block-page__title__append">
