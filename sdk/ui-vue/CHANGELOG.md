@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.13.3
+
+### Patch Changes
+
+- 0552637: PlTableFilters restrict reference values
+
 ## 1.13.2
 
 ### Patch Changes
