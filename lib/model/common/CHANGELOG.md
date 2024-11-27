@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.6.3
+
+### Patch Changes
+
+- 6f56890: getFileNameFromHandle method added
+
 ## 1.6.2
 
 ### Patch Changes

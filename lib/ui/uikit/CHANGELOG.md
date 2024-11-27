@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.12
+
+### Patch Changes
+
+- 6f56890: Never show full path in PlFileInput body, show full path in tooltip
+
 ## 2.2.11
 
 ### Patch Changes
