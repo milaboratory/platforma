@@ -39,6 +39,11 @@ packages:
   - etc/block-components/enter-numbers/ui
   - etc/blocks/enter-numbers
 
+  - etc/blocks/sum-numbers/workflow
+  - etc/blocks/sum-numbers/model
+  - etc/blocks/sum-numbers/ui
+  - etc/blocks/sum-numbers/block
+
   - etc/block-components/ui-examples/workflow
   - etc/block-components/ui-examples/model
   - etc/block-components/ui-examples/ui
