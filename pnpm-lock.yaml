@@ -542,6 +542,90 @@ importers:
         specifier: workspace:*
         version: link:../../../../sdk/workflow-tengo
 
+  etc/blocks/sum-numbers/block:
+    dependencies:
+      '@milaboratories/milaboratories.test-sum-numbers.model':
+        specifier: workspace:*
+        version: link:../model
+      '@milaboratories/milaboratories.test-sum-numbers.ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@milaboratories/milaboratories.test-sum-numbers.workflow':
+        specifier: workspace:*
+        version: link:../workflow
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+
+  etc/blocks/sum-numbers/model:
+    dependencies:
+      '@platforma-sdk/model':
+        specifier: workspace:*
+        version: link:../../../../sdk/model
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../../tools/block-tools
+      tsup:
+        specifier: 'catalog:'
+        version: 8.2.4(@microsoft/api-extractor@7.47.11(@types/node@22.5.5))(postcss@8.4.49)(tsx@4.19.1)(typescript@5.5.4)(yaml@2.6.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.77.8)
+
+  etc/blocks/sum-numbers/ui:
+    dependencies:
+      '@milaboratories/milaboratories.test-sum-numbers.model':
+        specifier: workspace:*
+        version: link:../model
+      '@platforma-sdk/ui-vue':
+        specifier: workspace:^
+        version: link:../../../../sdk/ui-vue
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.13(typescript@5.5.4)
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 8.4.1
+      '@milaboratories/helpers':
+        specifier: workspace:^
+        version: link:../../../../lib/util/helpers
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 5.1.4(vite@5.4.11(@types/node@22.5.5)(sass@1.77.8))(vue@3.5.13(typescript@5.5.4))
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@22.5.5)(sass@1.77.8)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 2.1.6(typescript@5.5.4)
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+
+  etc/blocks/sum-numbers/workflow:
+    devDependencies:
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:*
+        version: link:../../../../tools/tengo-builder
+      '@platforma-sdk/workflow-tengo':
+        specifier: workspace:*
+        version: link:../../../../sdk/workflow-tengo
+
   etc/blocks/ui-examples:
     dependencies:
       '@milaboratories/milaboratories.ui-examples.model':

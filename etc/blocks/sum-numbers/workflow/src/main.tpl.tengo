@@ -1,0 +1,31 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+
+wf.prepare(func(args) {
+	numbers := {}
+	for i, ref in args.sources {
+		numbers["number"+string(i)] = wf.resolve(ref, { errIfMissing: true })
+	}
+
+	return numbers
+})
+
+wf.body(func(args) {
+	sum := 0
+	for k, numbers in args {
+		if text.has_prefix(k, "number") {
+			numsMap := numbers.data.getDataAsJson().data
+			for _, n in numsMap {
+				sum += n
+			}
+		}
+	}
+
+	return {
+		outputs: {
+			sum: sum
+		},
+		exports: {}
+	}
+})
