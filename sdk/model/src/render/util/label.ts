@@ -10,8 +10,12 @@ export type RecordsWithLabel<T> = {
 };
 
 export type LabelDerivationOps = {
+  /** Force inclusion of native column label */
   includeNativeLabel?: boolean;
+  /** Separator to use between label parts (" / " by default) */
   separator?: string;
+  /** If true, label will be added as suffix (at the end of the generated label). By default label added as a prefix. */
+  addLabelAsSuffix?: boolean;
 };
 
 export const TraceEntry = z.object({
@@ -48,7 +52,11 @@ export function deriveLabels<T>(
     const traceStr = spec.annotations?.[PAnnotationTrace];
     const trace = (traceStr ? Trace.safeParse(JSON.parse(traceStr)).data : undefined) ?? [];
 
-    if (label) trace.splice(0, 0, { label, type: LabelType, importance: -2 });
+    if (label) {
+      const labelEntry = { label, type: LabelType, importance: -2 };
+      if (ops.addLabelAsSuffix) trace.push(labelEntry);
+      else trace.splice(0, 0, labelEntry);
+    }
 
     const fullTrace: FullTrace = [];
 
