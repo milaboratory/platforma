@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import './pl-file-dialog.scss';
 import { watch, reactive, computed, toRef, onUpdated } from 'vue';
-import { debounce } from '@milaboratories/helpers';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
 import type { Option } from '@milaboratories/helpers';
 import type { StorageEntry, StorageHandle } from '@platforma-sdk/model';
@@ -13,12 +12,6 @@ import { PlDropdown } from '../PlDropdown';
 import { PlBtnPrimary } from '../PlBtnPrimary';
 import { PlBtnGhost } from '../PlBtnGhost';
 import { useEventListener } from '@/composition/useEventListener';
-
-// const vFocus = {
-//   mounted: (el: HTMLElement) => {
-//     (el.querySelector('button.pl-btn-primary') as HTMLButtonElement | null)?.focus();
-//   },
-// };
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -44,6 +37,7 @@ const props = withDefaults(
 
 const defaultData = () => ({
   dirPath: '' as string,
+  search: '',
   storageEntry: undefined as StorageEntry | undefined,
   items: [] as FileDialogItem[],
   error: '',
@@ -56,12 +50,25 @@ const defaultData = () => ({
 
 const data = reactive(defaultData());
 
+const resetData = () => {
+  data.search = '';
+  data.error = '';
+  data.lastSelected = undefined;
+};
+
 const visibleItems = computed(() => {
+  let items = data.items;
+
   if (!data.showHiddenItems) {
-    return data.items.filter((it) => !it.name.startsWith('.'));
+    items = items.filter((it) => !it.name.startsWith('.'));
   }
 
-  return data.items;
+  if (data.search) {
+    const search = data.search.toLocaleLowerCase();
+    items = items.filter((it) => it.name.toLocaleLowerCase().includes(search));
+  }
+
+  return items;
 });
 
 const lookup = computed(() => {
@@ -80,10 +87,6 @@ const query = (handle: StorageHandle, dirPath: string) => {
   if (data.currentLoadingPath === dirPath) {
     return;
   }
-
-  data.error = '';
-  data.items = [];
-  data.lastSelected = undefined;
 
   data.currentLoadingPath = dirPath;
 
@@ -126,10 +129,6 @@ const load = () => {
   }
 };
 
-const updateDirPathDebounced = debounce((v: string) => {
-  data.dirPath = v ?? ''; // ???
-}, 1000);
-
 const breadcrumbs = computed(() => getFilePathBreadcrumbs(data.dirPath));
 
 const selectedFiles = computed(() => data.items.filter((f) => f.canBeSelected && f.selected && !f.isDir));
@@ -152,9 +151,6 @@ const submit = () => {
 
 const setDirPath = (dirPath: string) => {
   data.dirPath = dirPath;
-  if (data.storageEntry) {
-    load();
-  }
 };
 
 const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
@@ -213,8 +209,7 @@ const selectAll = () => changeAll(true);
 const deselectAll = () => changeAll(false);
 
 const loadAvailableStorages = () => {
-  data.error = '';
-  data.lastSelected = undefined;
+  resetData();
   deselectAll();
   if (!window.platforma) {
     console.warn('platforma API is not found');
@@ -237,7 +232,6 @@ const loadAvailableStorages = () => {
           ), // local drive where home folder is stored, normally C:\
           (entry) => {
             data.storageEntry = entry;
-            data.dirPath = entry.initialFullPath;
           },
         );
       }
@@ -245,9 +239,14 @@ const loadAvailableStorages = () => {
     .catch((err) => (data.error = String(err)));
 };
 
-watch(toRef(data, 'storageEntry'), (entry) => {
-  data.dirPath = entry?.initialFullPath ?? '';
-});
+watch(
+  toRef(data, 'storageEntry'),
+  (entry) => {
+    resetData();
+    data.dirPath = entry?.initialFullPath ?? '';
+  },
+  { immediate: true },
+);
 
 watch([() => data.dirPath, () => data.storageEntry], () => {
   load();
@@ -316,7 +315,7 @@ const vTextOverflown = {
     <div class="file-dialog">
       <div class="file-dialog__search">
         <PlDropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
-        <PlTextField :model-value="data.dirPath" label="Enter path" @update:model-value="updateDirPathDebounced" />
+        <PlTextField v-model="data.search" label="Search in folder" :clearable="() => ''" />
       </div>
       <div class="ls-container">
         <div class="ls-head">
