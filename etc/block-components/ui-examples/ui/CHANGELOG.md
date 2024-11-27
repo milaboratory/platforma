@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.37
+
+### Patch Changes
+
+- 1631d74: [sdk/ui-vue] Create editable title component
+  - @platforma-sdk/ui-vue@1.13.6
+
 ## 1.2.36
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.14
+
+### Patch Changes
+
+- 1631d74: [sdk/ui-vue] Create editable title component
+
 ## 2.2.13
 
 ### Patch Changes
