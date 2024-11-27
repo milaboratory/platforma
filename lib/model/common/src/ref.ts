@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const Ref = z
+export const PlRef = z
   .object({
     __isRef: z
       .literal(true)
@@ -19,7 +19,9 @@ export const Ref = z
   )
   .strict()
   .readonly();
-export type Ref = z.infer<typeof Ref>;
+export type PlRef = z.infer<typeof PlRef>;
+/** @deprecated use {@link PlRef} */
+export type Ref = PlRef;
 
 /** Standard way how to communicate possible connections given specific
  * requirements for incoming data. */
