@@ -248,27 +248,83 @@ const updateColumnFilter = (columnId: string, type: PlTableFilterType): void => 
   const prevFilter = reactiveModel.state![columnId];
   reactiveModel.state![columnId] = getFilterDefault(type, getFilterReference(prevFilter));
 };
+const resetColumnFilter = (columnId: string) => {
+  reactiveModel.state![columnId] = defaultsMap.value[columnId] ?? getFilterDefault(filterOptions.value[columnId][0].value);
+};
 const onFilterActiveChanged = (columnId: string, checked: boolean) => {
   if (checked) {
-    reactiveModel.state![columnId] = defaultsMap.value[columnId] ?? getFilterDefault(filterOptions.value[columnId][0].value);
+    resetColumnFilter(columnId);
   } else {
     delete reactiveModel.state![columnId];
   }
 };
 
-const makeWildcardOptions = (reference: string) => {
+const parseNumber = (column: PTableColumnSpec, value: string): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) throw Error('Model value is not a number.');
+
+  const type = column.type === 'column' ? column.spec.valueType : column.spec.type;
+  if ((type === 'Int' || type === 'Long') && !Number.isInteger(parsed)) throw Error('Model value is not an integer.');
+
+  const min = column.spec.annotations?.['pl7.app/min'];
+  if (min !== undefined) {
+    const minValue = Number(min);
+    if (Number.isFinite(minValue) && parsed < Number(min)) {
+      throw Error('Model value is too low.');
+    }
+  }
+
+  const max = column.spec.annotations?.['pl7.app/max'];
+  if (max !== undefined) {
+    const maxValue = Number(max);
+    if (Number.isFinite(maxValue) && parsed > Number(max)) {
+      throw Error('Model value is too high.');
+    }
+  }
+
+  return parsed;
+};
+const parseString = (column: PTableColumnSpec, value: string): string => {
+  const alphabet = column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet'];
+  if (alphabet === 'nucleotide' && !/^[AaTtGgCcNn]+$/.test(value)) throw Error('Model value is not a nucleotide.');
+  if (alphabet === 'aminoacid' && !/^[AaCcDdEeFfGgHhIiKkLlMmNnPpQqRrSsTtVvWwYyXx]+$/.test(value)) throw Error('Model value is not an aminoacid.');
+
+  return value;
+};
+const parseRegex = (value: string): string => {
+  try {
+    new RegExp(value);
+    return value;
+  } catch (err: unknown) {
+    if (err instanceof SyntaxError) throw Error('Model value is not a regexp.');
+    throw err;
+  }
+};
+const makeWildcardOptions = (column: PTableColumnSpec, reference: string) => {
+  const alphabet = column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet'];
+  if (alphabet === 'nucleotide') {
+    return [
+      {
+        value: 'N',
+        text: 'N',
+      },
+    ];
+  }
+  if (alphabet === 'aminoacid') {
+    return [
+      {
+        value: 'X',
+        text: 'X',
+      },
+    ];
+  }
+
   const chars = lodash.uniq(reference);
   chars.sort();
   return chars.map((char) => ({
     value: char,
     text: char,
   }));
-};
-
-const parseNumber = (value: string) => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) throw Error('Model value is not a number.');
-  return parsed;
 };
 
 const makePredicate = (filter: PlTableFilter): SingleValuePredicate => {
@@ -390,7 +446,6 @@ const makeFilters = (state: Record<string, PlTableFilter>): PTableRecordFilter[]
     .filter((entry) => entry !== undefined);
 };
 
-// Should this happen on Apply button click instead?
 watch(
   () => reactiveModel,
   (reactiveModel) => {
@@ -432,12 +487,24 @@ watch(
             reactiveModel.state[id]?.type === 'number_greaterThanOrEqualTo'
           "
         >
-          <PlTextField v-model="reactiveModel.state[id].reference" :parse="parseNumber" label="Reference value" />
+          <PlTextField
+            v-model="reactiveModel.state[id].reference"
+            :parse="(value: string): number => parseNumber(column, value)"
+            label="Reference value"
+          />
         </template>
         <template v-if="reactiveModel.state[id]?.type === 'number_between'">
-          <PlTextField v-model="reactiveModel.state[id].lowerBound" :parse="parseNumber" label="Lower bound" />
+          <PlTextField
+            v-model="reactiveModel.state[id].lowerBound"
+            :parse="(value: string): number => parseNumber(column, value)"
+            label="Lower bound"
+          />
           <PlToggleSwitch v-model="reactiveModel.state[id].includeLowerBound" label="Include lower bound" />
-          <PlTextField v-model="reactiveModel.state[id].upperBound" :parse="parseNumber" label="Upper bound" />
+          <PlTextField
+            v-model="reactiveModel.state[id].upperBound"
+            :parse="(value: string): number => parseNumber(column, value)"
+            label="Upper bound"
+          />
           <PlToggleSwitch v-model="reactiveModel.state[id].includeUpperBound" label="Include upper bound" />
         </template>
         <template
@@ -445,20 +512,29 @@ watch(
             reactiveModel.state[id]?.type === 'string_equals' ||
             reactiveModel.state[id]?.type === 'string_notEquals' ||
             reactiveModel.state[id]?.type === 'string_contains' ||
-            reactiveModel.state[id]?.type === 'string_doesNotContain' ||
-            reactiveModel.state[id]?.type === 'string_matches' ||
-            reactiveModel.state[id]?.type === 'string_doesNotMatch'
+            reactiveModel.state[id]?.type === 'string_doesNotContain'
           "
         >
-          <PlTextField v-model="reactiveModel.state[id].reference" label="Reference value" />
+          <PlTextField
+            v-model="reactiveModel.state[id].reference"
+            :parse="(value: string): string => parseString(column, value)"
+            label="Reference value"
+          />
+        </template>
+        <template v-if="reactiveModel.state[id]?.type === 'string_matches' || reactiveModel.state[id]?.type === 'string_doesNotMatch'">
+          <PlTextField v-model="reactiveModel.state[id].reference" :parse="parseRegex" label="Reference value" />
         </template>
         <template v-if="reactiveModel.state[id]?.type === 'string_containsFuzzyMatch'">
-          <PlTextField v-model="reactiveModel.state[id].reference" label="Reference value" />
+          <PlTextField
+            v-model="reactiveModel.state[id].reference"
+            :parse="(value: string): string => parseString(column, value)"
+            label="Reference value"
+          />
           <Slider v-model="reactiveModel.state[id].maxEdits" :max="5" breakpoints label="Maximum nuber of substitutions and indels" />
           <PlToggleSwitch v-model="reactiveModel.state[id].substitutionsOnly" label="Substitutions only" />
           <PlDropdown
             v-model="reactiveModel.state[id].wildcard"
-            :options="makeWildcardOptions(reactiveModel.state[id].reference)"
+            :options="makeWildcardOptions(column, reactiveModel.state[id].reference)"
             clearable
             label="Wildcard symbol"
           />
