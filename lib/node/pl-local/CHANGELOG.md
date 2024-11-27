@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.8.0
+
+### Minor Changes
+
+- 3a6f0d4: Release pl=1.15.8
+
 ## 1.7.1
 
 ### Patch Changes
