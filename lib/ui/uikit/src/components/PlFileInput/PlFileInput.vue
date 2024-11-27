@@ -4,16 +4,16 @@ import { PlTooltip } from '@/components/PlTooltip';
 import { PlFileDialog } from '@/components/PlFileDialog';
 import type { ImportedFiles } from '@/types';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
-import { computed, reactive, ref, useSlots } from 'vue';
+import { computed, reactive, ref, useSlots, watch } from 'vue';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { getFileNameFromHandle, getFilePathFromHandle } from '@platforma-sdk/model';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { prettyBytes } from '@milaboratories/helpers';
-import { extractFileName } from './utils';
 
 const data = reactive({
   fileDialogOpen: false,
+  error: '',
 });
 
 const slots = useSlots();
@@ -86,16 +86,30 @@ const props = withDefaults(
   },
 );
 
-const fileName = computed(() => props.modelValue ? getFileNameFromHandle(props.modelValue) : '');
-const filePath = computed(() => props.modelValue ? getFilePathFromHandle(props.modelValue) : '');
+const tryValue = <T extends ImportFileHandle>(v: T | undefined, cb: (v: T) => string | undefined) => {
+  if (!v) {
+    return undefined;
+  }
+
+  try {
+    return cb(v);
+  } catch (err) {
+    data.error = err instanceof Error ? err.message : String(err);
+    return v;
+  }
+};
+
+const fileName = computed(() => tryValue(props.modelValue, getFileNameFromHandle));
+
+const filePath = computed(() => tryValue(props.modelValue, getFilePathFromHandle));
 
 const isUploading = computed(() => props.progress && !props.progress.done);
 
 const isUploaded = computed(() => props.progress && props.progress.done);
 
-const hasErrors = computed(() => props.error);
+const computedError = computed(() => data.error ?? props.error);
 
-const computedError = computed(() => props.error);
+const hasErrors = computed(() => !!computedError.value);
 
 const uploadStats = computed(() => {
   const { status, done } = props.progress ?? {};
@@ -135,6 +149,14 @@ const onImport = (v: ImportedFiles) => {
 
 const clear = () => emit('update:modelValue', undefined);
 
+watch(
+  () => props.modelValue,
+  () => {
+    data.error = '';
+  },
+  { immediate: true },
+);
+
 const rootRef = ref();
 
 if (!props.cellStyle) {
@@ -144,8 +166,14 @@ if (!props.cellStyle) {
 
 <template>
   <div :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }" class="pl-file-input__envelope">
-    <div ref="rootRef" class="pl-file-input" tabindex="0" :class="{ dashed, error: hasErrors }"
-      @keyup.enter="openFileDialog">
+    <div
+      ref="rootRef"
+      class="pl-file-input"
+      tabindex="0"
+      :class="{ dashed, error: hasErrors }"
+      @keyup.enter="openFileDialog"
+      @click.stop="openFileDialog"
+    >
       <div class="pl-file-input__progress" :style="progressStyle" />
       <label v-if="!cellStyle && label" ref="label">
         <i v-if="required" class="required-icon" />
@@ -161,8 +189,7 @@ if (!props.cellStyle) {
       <PlMaskIcon24 v-else-if="isUploading" name="cloud-upload" />
       <PlMaskIcon24 v-else-if="isUploaded" name="success" />
       <PlMaskIcon24 v-else name="paper-clip" />
-      <div :data-placeholder="placeholder ?? 'Choose file'" class="pl-file-input__filename"
-        @click.stop="openFileDialog">
+      <div :data-placeholder="placeholder ?? 'Choose file'" class="pl-file-input__filename">
         {{ fileName }}
       </div>
       <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
@@ -172,8 +199,13 @@ if (!props.cellStyle) {
     <div v-if="hasErrors" class="pl-file-input__error">
       {{ computedError }}
     </div>
-    <div v-else-if="helper" class="upl-file-input__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-file-input__helper">{{ helper }}</div>
   </div>
-  <PlFileDialog v-model="data.fileDialogOpen" :extensions="extensions" :title="fileDialogTitle"
-    :close-on-outside-click="fileDialogCloseOnOutsideClick" @import:files="onImport" />
+  <PlFileDialog
+    v-model="data.fileDialogOpen"
+    :extensions="extensions"
+    :title="fileDialogTitle"
+    :close-on-outside-click="fileDialogCloseOnOutsideClick"
+    @import:files="onImport"
+  />
 </template>

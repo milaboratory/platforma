@@ -173,13 +173,13 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
       type: 'bySingleColumn',
       column: sheet.column
         ? {
-          type: 'column',
-          id: sheet.column,
-        }
+            type: 'column',
+            id: sheet.column,
+          }
         : {
-          type: 'axis',
-          id: sheet.axis,
-        },
+            type: 'axis',
+            id: sheet.axis,
+          },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -505,13 +505,25 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
-      <PlDropdownLine v-for="(sheet, i) in sheets.value" :key="i" :model-value="sheetsState[makeSheetId(sheet.axis)]"
+      <PlDropdownLine
+        v-for="(sheet, i) in sheets.value"
+        :key="i"
+        :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
-        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)" />
+        @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
+      />
     </div>
-    <AgGridVue :key="reloadKey" :theme="AgGridTheme" class="ap-ag-data-table-grid" :grid-options="gridOptions"
-      @grid-ready="onGridReady" @state-updated="onStateUpdated" @grid-pre-destroyed="onGridPreDestroyed"
-      @store-refreshed="onStoreRefreshed" @model-updated="onModelUpdated" />
+    <AgGridVue
+      :key="reloadKey"
+      :theme="AgGridTheme"
+      class="ap-ag-data-table-grid"
+      :grid-options="gridOptions"
+      @grid-ready="onGridReady"
+      @state-updated="onStateUpdated"
+      @grid-pre-destroyed="onGridPreDestroyed"
+      @store-refreshed="onStoreRefreshed"
+      @model-updated="onModelUpdated"
+    />
   </div>
 </template>
 
