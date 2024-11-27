@@ -19,7 +19,7 @@ defineProps<{
 <template>
   <div class="pl-layout-component pl-block-page" :class="{ noBodyGutters }">
     <div v-if="slots.title" class="pl-block-page__title">
-      <h1><slot name="title" /></h1>
+      <div class="pl-block-page__title__default"><slot name="title" /></div>
       <div class="pl-block-page__title__append">
         <slot name="append" />
       </div>
