@@ -1,5 +1,12 @@
 # @platforma-sdk/bootstrap
 
+## 2.7.2
+
+### Patch Changes
+
+- Updated dependencies [3a6f0d4]
+  - @milaboratories/pl-local@1.8.0
+
 ## 2.7.1
 
 ### Patch Changes
