@@ -5,7 +5,7 @@ import {
   PObject,
   PObjectSpec,
   PSpecPredicate,
-  Ref,
+  PlRef,
   ResultCollection,
   ResultPoolEntry,
   ValueOrError,
@@ -30,7 +30,7 @@ import {
 } from './p_object_collection';
 
 /** All exported results are addressed  */
-export type ResultKey = Pick<Ref, 'blockId' | 'name'>;
+export type ResultKey = Pick<PlRef, 'blockId' | 'name'>;
 
 /** Represents current information about particular block */
 interface PoolBlock {

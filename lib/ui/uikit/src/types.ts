@@ -1,4 +1,4 @@
-import type { ImportFileHandle, Platforma, StorageHandle, Ref as ModelRef } from '@platforma-sdk/model';
+import type { ImportFileHandle, Platforma, StorageHandle, PlRef as ModelRef } from '@platforma-sdk/model';
 import type { Ref, ComputedRef } from 'vue';
 import { maskIcons16 } from './generated/icons-16';
 import { maskIcons24 } from './generated/icons-24';

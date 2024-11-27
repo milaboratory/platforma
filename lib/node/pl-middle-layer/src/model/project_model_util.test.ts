@@ -1,9 +1,9 @@
 import { ProjectStructure } from './project_model';
 import { graphDiff, productionGraph, stagingGraph } from './project_model_util';
 import { outputRef } from './args';
-import { Ref } from '@platforma-sdk/model';
+import { PlRef } from '@platforma-sdk/model';
 
-function toRefs(...ids: string[]): Ref[] {
+function toRefs(...ids: string[]): PlRef[] {
   return ids.map((id) => outputRef(id, ''));
 }
 
@@ -21,7 +21,7 @@ function simpleStructure(...ids: string[]): ProjectStructure {
 
 describe('simple traverse', () => {
   const struct1: ProjectStructure = simpleStructure('b1', 'b2', 'b3', 'b4', 'b5', 'b6');
-  const inputs = new Map<string, Ref[]>();
+  const inputs = new Map<string, PlRef[]>();
   inputs.set('b2', toRefs('b1'));
   inputs.set('b4', toRefs('b3'));
   inputs.set('b5', toRefs('b4'));
@@ -43,7 +43,7 @@ describe('simple traverse', () => {
 
 describe('simple diff', () => {
   const struct1: ProjectStructure = simpleStructure('b1', 'b2', 'b3', 'b4');
-  const inputs = new Map<string, Ref[]>();
+  const inputs = new Map<string, PlRef[]>();
   inputs.set('b2', toRefs('b1'));
   inputs.set('b4', toRefs('b3'));
   const sGraph1 = stagingGraph(struct1);

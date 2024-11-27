@@ -1,11 +1,11 @@
 import { assertNever } from '@milaboratories/ts-helpers';
-import { Ref } from '@platforma-sdk/model';
+import { PlRef } from '@platforma-sdk/model';
 
-export function outputRef(blockId: string, name: string): Ref {
+export function outputRef(blockId: string, name: string): PlRef {
   return { __isRef: true, blockId, name };
 }
 
-export function isBlockOutputReference(obj: any): obj is Ref {
+export function isBlockOutputReference(obj: any): obj is PlRef {
   return (
     typeof obj === 'object' &&
     obj !== null &&
