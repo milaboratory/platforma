@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.38
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.13.8
+
 ## 1.2.37
 
 ### Patch Changes
