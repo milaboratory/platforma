@@ -114,6 +114,9 @@ builder := func() {
 		 * @param arg: string - the argument to add.
 		 */
 		arg: func(arg) {
+			if is_undefined(arg) {
+				ll.panic("exec: arg can't be undefined")
+			}
 			args = append(args, arg)
 			return self
 		},
