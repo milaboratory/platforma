@@ -12,7 +12,7 @@ import {
   PTableHandle,
   PTableRecordFilter,
   PTableSorting,
-  Ref,
+  PlRef,
   ResultCollection,
   ValueOrError,
   ensurePColumn,
@@ -39,12 +39,12 @@ export class ResultPool {
     return this.ctx.calculateOptions(predicate);
   }
 
-  private defaultLabelFn = (spec: PObjectSpec, ref: Ref) =>
+  private defaultLabelFn = (spec: PObjectSpec, ref: PlRef) =>
     spec.annotations?.['pl7.app/label'] ?? `Unlabelled`;
 
   public getOptions(
     predicate: (spec: PObjectSpec) => boolean,
-    label?: ((spec: PObjectSpec, ref: Ref) => string) | LabelDerivationOps
+    label?: ((spec: PObjectSpec, ref: PlRef) => string) | LabelDerivationOps
   ): Option[] {
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
     if (typeof label === 'object' || typeof label === 'undefined') {
@@ -122,7 +122,7 @@ export class ResultPool {
    * @param ref a Ref
    * @returns data associated with the ref
    */
-  public getDataByRef(ref: Ref): PObject<TreeNodeAccessor> | undefined {
+  public getDataByRef(ref: PlRef): PObject<TreeNodeAccessor> | undefined {
     // @TODO remove after 1 Jan 2025; forward compatibility
     if (typeof this.ctx.getDataFromResultPoolByRef === 'undefined')
       return this.getData().entries.find(
@@ -139,7 +139,7 @@ export class ResultPool {
    * @param ref a Ref
    * @returns p-column associated with the ref
    */
-  public getPColumnByRef(ref: Ref): PColumn<TreeNodeAccessor> | undefined {
+  public getPColumnByRef(ref: PlRef): PColumn<TreeNodeAccessor> | undefined {
     const data = this.getDataByRef(ref);
     if (!data) return undefined;
     return ensurePColumn(data);
@@ -149,7 +149,7 @@ export class ResultPool {
    * @param ref a Ref
    * @returns object spec associated with the ref
    */
-  public getSpecByRef(ref: Ref): PObjectSpec | undefined {
+  public getSpecByRef(ref: PlRef): PObjectSpec | undefined {
     // @TODO remove after 1 Jan 2025; forward compatibility
     if (typeof this.ctx.getSpecFromResultPoolByRef === 'undefined')
       return this.getSpecs().entries.find(

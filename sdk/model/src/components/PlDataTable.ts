@@ -280,14 +280,14 @@ export function createPlDataTable<A, U>(
   columns: PColumn<TreeNodeAccessor>[],
   tableState?: PlDataTableState,
   filters?: PTableRecordFilter[]
-): PTableHandle {
+): PTableHandle | undefined {
   const allLabelCols = ctx.resultPool
     .getData()
     .entries.map((d) => d.obj)
     .filter(isPColumn)
     .filter((p) => p.spec.name === 'pl7.app/label' && p.spec.axesSpec.length === 1);
 
-  const labelColumns = new Map<PObjectId, PColumn<TreeNodeAccessor>>;
+  const labelColumns = new Map<PObjectId, PColumn<TreeNodeAccessor>>();
   for (const col of columns) {
     for (const axis of col.spec.axesSpec) {
       const axisId = getAxisId(axis);
@@ -298,6 +298,10 @@ export function createPlDataTable<A, U>(
       }
     }
   }
+
+  // if at least one column is not yet ready, we can't show the table
+  if ([...columns, ...labelColumns.values()].find((a) => !a.data.getIsReadyOrError()))
+    return undefined;
 
   return ctx.createPTable({
     src: {

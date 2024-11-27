@@ -1,10 +1,9 @@
-import { Ref } from '../ref';
-import { PObject } from './spec';
+import { PlRef } from '../ref';
 
 /** Result pool entry */
 export type ResultPoolEntry<O> = {
   /** Reference that can be passed to args to import the object in workflow */
-  readonly ref: Ref;
+  readonly ref: PlRef;
 
   /** Object. Normally spec or PObject. */
   readonly obj: O;
