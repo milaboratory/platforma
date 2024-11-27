@@ -14,6 +14,8 @@ export * from './components/PlAgDataTable/types';
 
 export * from './components/PlAgTextAndButtonCell';
 
+export * from './components/PlAgGridColumnManager';
+
 export * from './defineApp';
 
 export * from './createModel';

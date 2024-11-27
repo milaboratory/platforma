@@ -32,8 +32,6 @@ const props = defineProps<{
   };
 }>();
 
-console.log(props);
-
 function triggerRowDoubleClick() {
   if (props.params.invokeRowsOnDoubleClick) {
     const gridApi = props.params.api;
