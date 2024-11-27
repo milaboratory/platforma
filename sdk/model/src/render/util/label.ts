@@ -123,18 +123,14 @@ export function deriveLabels<T>(
   let additinalType = 0;
   while (includedTypes < mainTypes.length) {
     const currentSet = new Set<string>();
+    if (ops.includeNativeLabel) currentSet.add(LabelTypeFull);
     for (let i = 0; i < includedTypes; ++i) currentSet.add(mainTypes[i]);
     currentSet.add(mainTypes[additinalType]);
 
     const candidateResult = calculate(currentSet);
 
     // checking if labels uniquely separate our records
-    if (new Set(candidateResult.map((c) => c.label)).size === values.length) {
-      if (ops.includeNativeLabel) {
-        currentSet.add(LabelTypeFull);
-        return calculate(currentSet);
-      } else return candidateResult;
-    }
+    if (new Set(candidateResult.map((c) => c.label)).size === values.length) return candidateResult;
 
     additinalType++;
     if (additinalType == mainTypes.length) {
