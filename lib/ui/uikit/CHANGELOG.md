@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.15
+
+### Patch Changes
+
+- d1b4cd1: css fix: add flex: 1 to the main BlockPage title slot
+
 ## 2.2.14
 
 ### Patch Changes
