@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.35
+
+### Patch Changes
+
+- 158e990: [sdk/ui-vue] PlFileDialog: add substring filter in remote file selection dialog
+  - @platforma-sdk/ui-vue@1.13.4
+
 ## 1.2.34
 
 ### Patch Changes
