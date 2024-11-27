@@ -21,13 +21,17 @@
     gap: 12px;
     padding: 20px 24px;
 
-    h1 {
+    &__default {
       margin: 0;
       color: var(--txt-01);
       font-size: 28px;
       font-weight: 500;
       line-height: 32px;
       letter-spacing: -0.56px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
     }
 
     &__append {

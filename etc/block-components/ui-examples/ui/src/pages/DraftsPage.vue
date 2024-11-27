@@ -1,8 +1,15 @@
 <script setup lang="ts">
-import { PlBlockPage, PlContainer, PlRow } from '@platforma-sdk/ui-vue';
+import {
+  PlBlockPage,
+  PlContainer,
+  PlEditableTitle,
+  PlRow,
+  PlBtnPrimary
+} from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
+  title: 'Title example',
   importHandles: [] as unknown[]
 });
 
@@ -20,7 +27,18 @@ const onDrop = (ev: DragEvent) => {
 
 <template>
   <PlBlockPage :class="$style.components" style="max-width: 100%">
-    <template #title>Drafts</template>
+    <template #title>
+      <PlEditableTitle
+        v-model="data.title"
+        placeholder="Title"
+        max-width="400px"
+        :max-length="15"
+        :min-length="4"
+      />
+    </template>
+    <template #append>
+      <PlBtnPrimary> Just a button </PlBtnPrimary>
+    </template>
     <PlRow>
       <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>
     </PlRow>
