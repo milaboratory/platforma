@@ -44,6 +44,11 @@ packages:
   - etc/blocks/sum-numbers/ui
   - etc/blocks/sum-numbers/block
 
+  - etc/blocks/upload-file/workflow
+  - etc/blocks/upload-file/model
+  - etc/blocks/upload-file/ui
+  - etc/blocks/upload-file/block
+
   - etc/block-components/ui-examples/workflow
   - etc/block-components/ui-examples/model
   - etc/block-components/ui-examples/ui
@@ -60,7 +65,8 @@ packages:
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
-
+  # - tests/drivers-ml-blocks-integration
+  
   # Etc
 
   - etc/ui-vue-playground
