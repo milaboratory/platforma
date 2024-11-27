@@ -116,8 +116,8 @@ export interface LsDriver {
 
   /**
    * Resolves browser's File object into platforma's import file handle.
-   * 
-   * This method is useful among other things for implementation of UI 
+   *
+   * This method is useful among other things for implementation of UI
    * components, that handle file Drag&Drop.
    * */
   fileToImportHandle(file: FileLike): Promise<ImportFileHandle>;
@@ -136,4 +136,13 @@ export function getFilePathFromHandle(handle: ImportFileHandle): string {
   }
 
   assertNever(handle);
+}
+
+function extractFileName(filePath: string) {
+  return filePath.replace(/^.*[\\/]/, '');
+}
+
+/** Gets a file name from an import handle. */
+export function getFileNameFromHandle(handle: ImportFileHandle): string {
+  return extractFileName(getFilePathFromHandle(handle));
 }
