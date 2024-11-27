@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-drivers",
-  "version": "1.3.20",
+  "version": "1.3.21",
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

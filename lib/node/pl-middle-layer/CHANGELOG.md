@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 1.16.4
+
+### Patch Changes
+
+- Updated dependencies [6f56890]
+  - @milaboratories/pl-model-common@1.6.3
+  - @milaboratories/pl-model-middle-layer@1.5.10
+  - @milaboratories/pl-drivers@1.3.21
+  - @platforma-sdk/model@1.13.2
+  - @platforma-sdk/block-tools@2.3.26
+
 ## 1.16.3
 
 ### Patch Changes
