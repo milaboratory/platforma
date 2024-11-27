@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.3.1
+
+### Patch Changes
+
+- 3adf776: Bugfixes with csv export
+
 ## 2.3.0
 
 ### Minor Changes
