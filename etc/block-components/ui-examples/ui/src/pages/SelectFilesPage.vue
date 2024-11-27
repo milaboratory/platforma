@@ -11,7 +11,7 @@ const data = reactive({
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <template #title>Modals</template>
+    <template #title>Select file</template>
     <PlRow>
       <PlContainer width="50%" @click.stop>
         <PlFileInput
