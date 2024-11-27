@@ -1,0 +1,77 @@
+@import "@/assets/mixins.scss";
+
+.component {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  --mask-icon-bg-color: transparent;
+  --mask-size: 24px;
+
+  &:hover {
+    --mask-icon-bg-color: var(--ic-02);  
+  }
+
+  &:focus-within:not(&:hover) {
+    --mask-icon-bg-color: transparent;  
+  }
+
+  .container {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    align-items: center;
+    margin-right: calc(var(--mask-size));
+
+    span {
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 32px;
+      letter-spacing: -0.56px;
+      white-space: nowrap;
+    }
+
+    input {
+      outline: none;
+      border: none;
+      text-overflow: ellipsis;
+      cursor: text;
+      field-sizing: content;
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 32px;
+      letter-spacing: -0.56px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+      padding-right: 4px;
+      margin: 0;
+      font-family: var(--font-family-base);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      &::placeholder {
+        color: var(--txt-mask);
+      }
+    }
+
+    &::before {
+      content: '';
+      @include mask-var(url(@icons/icon-assets-min/24_edit.svg));
+      position: absolute;
+      right: calc((var(--mask-size)) * -1);
+      bottom: 6px;
+      background-color: var(--mask-icon-bg-color);
+      cursor: pointer;
+    }
+  }
+
+  .error {
+    position: absolute;
+    bottom: -4px;
+    transform: translateY(100%);
+    white-space: nowrap;
+    @include field-error();
+  }
+}

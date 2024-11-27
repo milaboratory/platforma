@@ -26,6 +26,7 @@ export * from './components/PlBtnSecondary';
 export * from './components/PlBtnGhost';
 export * from './components/PlBtnLink';
 export * from './components/PlBtnGroup';
+export * from './components/PlEditableTitle';
 export * from './components/PlTextField';
 export * from './components/PlTextArea';
 export * from './components/PlDropdown';
