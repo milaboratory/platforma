@@ -1,5 +1,5 @@
 import { platforma } from '@milaboratories/milaboratories.ui-examples.model';
-import { animate, defineApp, makeEaseInOut, makeEaseOut } from '@platforma-sdk/ui-vue';
+import { animate, defineApp, makeEaseOut } from '@platforma-sdk/ui-vue';
 import { computed, reactive, ref } from 'vue';
 import LogViewPage from './pages/LogViewPage.vue';
 import ModalsPage from './pages/ModalsPage.vue';
