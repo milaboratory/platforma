@@ -51,7 +51,7 @@ _addColumnToWd := func(name, data, spec, pfconv) {
 		}))
 		
 		// write jdata
-		pfconv.writeFile(name + ".jdata", data.getDataAsJson())
+		pfconv.writeFile(name + ".jdata", json.encode(data.getDataAsJson().data))
 
 		// write spec
 		pfconv.writeFile(name + ".spec", json.encode(spec))

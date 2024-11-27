@@ -292,7 +292,6 @@ tpl := func() {
 				ll.assert(is_map(r), "expected map, got ", r)
 
 				for name, ref in r {
-					ll.assert(smart.isReference(ref), "expected reference, got %v", ref)
 					ll.assert(is_undefined(newInputs[name]), "prepare name is already in use: %s", name)
 
 					builder.add(name, ref)
