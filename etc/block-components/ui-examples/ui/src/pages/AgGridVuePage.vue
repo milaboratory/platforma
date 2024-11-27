@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
-import { h } from 'vue';
+import { h, ref } from 'vue';
 import {
   PlBlockPage,
   PlAgOverlayLoading,
   PlAgOverlayNoRows,
-  AgGridTheme
+  AgGridTheme,
+  PlAgDataTableToolsPanel
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
-import type { ColDef, GridOptions } from '@ag-grid-community/core';
+import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
+import { PlAgGridColumnManager } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { PlAgCellFile, PlAgTextAndButtonCell } from '@platforma-sdk/ui-vue';
 
@@ -82,13 +84,20 @@ const gridOptions: GridOptions = {
     PlAgTextAndButtonCell
   }
 };
-
-const onGridReady = () => {};
+let gridApi = ref<GridApi | null>(null);
+const onGridReady = (e: GridReadyEvent) => {
+  gridApi.value = e.api;
+};
 </script>
 
 <template>
   <PlBlockPage style="max-width: 100%">
     <template #title>AgGridVue</template>
+    <template #append>
+      <PlAgDataTableToolsPanel />
+      <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
+    </template>
+
     <AgGridVue
       :theme="AgGridTheme"
       :style="{ height: '100%' }"
