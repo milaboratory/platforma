@@ -1,5 +1,14 @@
 # @platforma-sdk/model
 
+## 1.13.5
+
+### Patch Changes
+
+- a071779: Improvement to deriveLabels (now exported) algorithm
+- 6208826: Fix for createPlDataTable behaviour if some data is not yet ready.
+- Updated dependencies [e0f0eed]
+  - @milaboratories/pl-model-common@1.6.4
+
 ## 1.13.2
 
 ### Patch Changes
