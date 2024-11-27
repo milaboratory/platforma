@@ -6,11 +6,7 @@ export const PlRef = z
       .literal(true)
       .describe('Crucial marker for the block dependency tree reconstruction'),
     blockId: z.string().describe('Upstream block id'),
-    name: z
-      .string()
-      .describe(
-        "Name of the output provided to the upstream block's output context"
-      )
+    name: z.string().describe("Name of the output provided to the upstream block's output context")
   })
   .describe(
     'Universal reference type, allowing to set block connections. It is crucial that ' +
@@ -28,8 +24,13 @@ export type Ref = PlRef;
 export type Option = {
   /** Fully rendered reference to be assigned for the intended field in block's
    * args */
-  readonly ref: Ref;
+  readonly ref: PlRef;
 
   /** Label to be present for the user in i.e. drop-down list */
   readonly label: string;
 };
+
+/** Compare two PlRefs and returns true if they are qual */
+export function plRefsEqual(ref1: PlRef, ref2: PlRef) {
+  return ref1.blockId === ref2.blockId && ref1.name === ref2.name;
+}
