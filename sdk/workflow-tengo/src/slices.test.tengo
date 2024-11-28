@@ -1,20 +1,16 @@
+test := import(":test")
 slices := import(":slices")
-ll := import(":ll")
-
-assert := func(got, want, ...msg) {
-	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
-}
 
 TestMiLength := func() {
-	assert(slices.length([]), 0, "slices.length must behave liken len() for slices")
-	assert(slices.length([1, 2, 3]), 3, "slices.length must behave liken len() for slices")
-	assert(slices.length({}), 0, "slices.length must behave liken len() for maps")
-	assert(slices.length({ a: 1, b: 2 }), 2, "slices.length must behave liken len() for maps")
-	assert(slices.length(undefined), 0, "slices.length must return 0 for undefined")
+	test.equal(slices.length([]), 0, "slices.length must behave liken len() for slices")
+	test.equal(slices.length([1, 2, 3]), 3, "slices.length must behave liken len() for slices")
+	test.equal(slices.length({}), 0, "slices.length must behave liken len() for maps")
+	test.equal(slices.length({ a: 1, b: 2 }), 2, "slices.length must behave liken len() for maps")
+	test.equal(slices.length(undefined), 0, "slices.length must return 0 for undefined")
 }
 
 TestMiSliceAppend := func() {
-	assert(slices.safeAppend([1], 2, 3), [1, 2, 3], "slices.safeAppend([1], 2, 3) is wrong")
-	assert(slices.safeAppend([], 1, 2, 3), [1, 2, 3], "slices.safeAppend([], 1, 2, 3) is wrong")
-	assert(slices.safeAppend(undefined, 1, 2, 3), [1, 2, 3], "slices.safeAppend(undefined, 1, 2, 3) is wrong")
+	test.equal(slices.safeAppend([1], 2, 3), [1, 2, 3], "slices.safeAppend([1], 2, 3) is wrong")
+	test.equal(slices.safeAppend([], 1, 2, 3), [1, 2, 3], "slices.safeAppend([], 1, 2, 3) is wrong")
+	test.equal(slices.safeAppend(undefined, 1, 2, 3), [1, 2, 3], "slices.safeAppend(undefined, 1, 2, 3) is wrong")
 }

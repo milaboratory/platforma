@@ -18,7 +18,7 @@ test := import("test")
  * @param args: []any - message to be written. 
  *                      Each argument is converted to string with its default formatter.
  */
-Skip := func(...args) {
+skip := func(...args) {
 	test.skip(args...)
 }
 
@@ -28,8 +28,8 @@ Skip := func(...args) {
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
  */
-Skipf := func(msg, ...args) {
-	Skip(format(msg, args...))
+skipf := func(msg, ...args) {
+	skip(format(msg, args...))
 }
 
 /**
@@ -39,7 +39,7 @@ Skipf := func(msg, ...args) {
  * @param args: []any - message to be written. 
  *                      Each argument is converted to string with its default formatter.
  */
-Fail := func(...args) {
+fail := func(...args) {
 	test.fail(args...)
 }
 
@@ -49,8 +49,8 @@ Fail := func(...args) {
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
  */
-Failf := func(msg, ...args) {
-	Fail(format(msg, args...))
+failf := func(msg, ...args) {
+	fail(format(msg, args...))
 }
 
 /**
@@ -59,7 +59,7 @@ Failf := func(msg, ...args) {
  * @param args: []any - message to be written. 
  *                      Each argument is converted to string with its default formatter.
  */
-Log := func(...args) {
+log := func(...args) {
 	test.log(args...)
 }
 
@@ -69,12 +69,12 @@ Log := func(...args) {
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
  */
-Logf := func(msg, ...args) {
+logf := func(msg, ...args) {
 	test.log(format(msg, args...))
 }
 
 /**
- * Done marks test as executed for tengo testing engine.
+ * Mark test as executed for tengo testing engine.
  * 
  * Regular tengo file with tests contains bunch of fuctions starting with 'Test' prefix, like `TestMyFunction := func() { ... }`.
  * You DO NOT need to call this Done() method if you have file with Test* functions.
@@ -88,7 +88,7 @@ Logf := func(msg, ...args) {
  * This method does not interrupt test execution and is intended for use in custom test scripts
  * without declared test functions.
  */
-Done := func() {
+done := func() {
 	test.done()
 }
 
@@ -97,49 +97,49 @@ Done := func() {
 //
 
 /**
- * True requires <condition> to be true, failing test when not.
+ * Require <condition> to be true, failing test when not.
  *
  * @param condition: bool
  * @param msg: []any - message to be printed on check failure
  */
-True := func(condition, ...msg) {
+true_ := func(condition, ...msg) {
 	if !condition {
 		test.fail("<condition> != 'true': ", msg...)
 	}
 }
 
 /**
- * Truef is formatted version of True. Truef(condition, msg, ...args) == True(condition, format(msg, args...))
+ * Formatted version of 'true'. truef(condition, msg, ...args) == true(condition, format(msg, args...))
  *
  * @param condition: bool
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-Truef := func(condition, msg, ...args) {
-    True(condition, format(msg, args...))
+truef := func(condition, msg, ...args) {
+    true_(condition, format(msg, args...))
 }
 
 /**
- * False requires <condition> to be false, failing test when not.
+ * Require <condition> to be false, failing test when not.
  *
  * @param condition: bool
  * @param args: []any - message to be printed on check failure
  */
-False := func(condition, ...args) {
+false_ := func(condition, ...args) {
 	if condition {
 		test.fail("<condition> != 'false'", args...)
 	}
 }
 
 /**
- * Falsef is formatted version of False. Falsef(condition, msg, ..args) == False(condition, format(msg, args...))
+ * Formatted version of 'false'. falsef(condition, msg, ..args) == false(condition, format(msg, args...))
  *
  * @param condition: bool
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-Falsef := func(condition, msg, ...args) {
-    False(condition, format(msg, args...))
+falsef := func(condition, msg, ...args) {
+    false_(condition, format(msg, args...))
 }
 
 //
@@ -147,57 +147,57 @@ Falsef := func(condition, msg, ...args) {
 //
 
 /**
- * Equal fails test when <expect> != <value>
+ * Fails test when <expect> != <value>
  *
  * @param expect: any - expected value for the equality check
  * @param value:  any - the value to be checked
  * @param args: []any - the message to be printed on check failure
  */
-Equal := func(expect, value, ...args) {
+equal := func(expect, value, ...args) {
 	if expect == value {
 		return
 	}
 
-	msg := format("%q != %q (expsct: %#v, got %#v)", expect, value, expect, value)
+	msg := format("%q != %q (expect: %#v, got %#v)", expect, value, expect, value)
 
-	Fail(msg, args...)
+	fail(msg, args...)
 }
 
 /**
- * Equalf if formatted version of Equal. Equalf(expect, value, msg, ..args) == Equal(expect, value, format(msg, args...))
+ * Formatted version of Equal. equalf(expect, value, msg, ..args) == equal(expect, value, format(msg, args...))
  *
  * @param expect: any - expected value for the equality check
  * @param value:  any - the value to be checked
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-Equalf := func(expect, value, msg, ...args) {
-	Equal(expect, value, format(msg, args...))
+equalf := func(expect, value, msg, ...args) {
+	equal(expect, value, format(msg, args...))
 }
 
 export {
 	//
 	// 'test' wrappers
 	//
-	"Done": Done,
-	"Skip": Skip,
-	"Skipf": Skipf,
-	"Fail": Fail,
-	"Failf": Failf,
-	"Log": Log,
-	"Logf": Logf,
+	"done": done,
+	"skip": skip,
+	"skipf": skipf,
+	"fail": fail,
+	"failf": failf,
+	"log": log,
+	"logf": logf,
 
 	//
 	// Bool assertions
 	//
-	"True": True,
-	"Truef": Truef,
-	"False": False,
-	"Falsef": Falsef,
+	"true": true_,
+	"truef": truef,
+	"false": false_,
+	"falsef": falsef,
 
 	//
 	// Equality assertions
 	//
-	"Equal": Equal,
-	"Equalf": Equalf
+	"equal": equal,
+	"equalf": equalf
 }

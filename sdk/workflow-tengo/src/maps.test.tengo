@@ -1,16 +1,13 @@
-ll := import(":ll")
 maps := import(":maps")
-
-assert := func(got, want) {
-	ll.assert(got == want, "got: %#v, want: %#v", got, want)
-}
+test := import(":test")
 
 TestDeepMerge := func() {
-	assert(
+	test.equal(
 		maps.deepMerge(
 			{a: {a: 1, b: 2}, c: 1, d: {a: {b: {c: 12}, d: 1}}},
 			{a: {b: 3}, d: {a: {b: {c: undefined, d: 23}, d: 1}}}
 		),
-		{a: {a: 1, b: 3}, c: 1, d: {a: {b: {d: 23}, d: 1}}}
+		{a: {a: 1, b: 3}, c: 1, d: {a: {b: {d: 23}, d: 1}}},
+		"unexpected result from maps.deepMerge"
 	)
 }
