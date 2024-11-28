@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.13.11
+
+### Patch Changes
+
+- 925afdd: added docs
+
 ## 1.13.10
 
 ### Patch Changes
