@@ -94,6 +94,14 @@ export interface SingleValueEqualPredicate {
   readonly reference: string | number;
 }
 
+export interface SingleValueIEqualPredicate {
+  /** Comparison operator (case insensitive) */
+  readonly operator: 'IEqual';
+
+  /** Reference value, NA values will not match */
+  readonly reference: string;
+}
+
 export interface SingleValueLessPredicate {
   /** Comparison operator */
   readonly operator: 'Less';
@@ -134,6 +142,14 @@ export interface SingleValueStringContainsPredicate {
   readonly substring: string;
 }
 
+export interface SingleValueStringIContainsPredicate {
+  /** Comparison operator (case insensitive) */
+  readonly operator: 'StringIContains';
+
+  /** Reference substring, NA values are skipped */
+  readonly substring: string;
+}
+
 export interface SingleValueMatchesPredicate {
   /** Comparison operator */
   readonly operator: 'Matches';
@@ -145,6 +161,35 @@ export interface SingleValueMatchesPredicate {
 export interface SingleValueStringContainsFuzzyPredicate {
   /** Comparison operator */
   readonly operator: 'StringContainsFuzzy';
+
+  /** Reference value, NA values are skipped */
+  readonly reference: string;
+
+  /**
+   * Integer specifying the upper bound of edit distance between
+   * reference and actual value.
+   * When {@link substitutionsOnly} is not defined or set to false
+   * Levenshtein distance is used (substitutions and indels)
+   * @see https://en.wikipedia.org/wiki/Levenshtein_distance
+   * When {@link substitutionsOnly} is set to true
+   * Hamming distance is used (substitutions only)
+   * @see https://en.wikipedia.org/wiki/Hamming_distance
+   */
+  readonly maxEdits: number;
+
+  /** Changes the type of edit distance in {@link maxEdits} */
+  readonly substitutionsOnly?: boolean;
+
+  /**
+   * Some character in {@link reference} that will match any
+   * single character in searched text.
+   */
+  readonly wildcard?: string;
+}
+
+export interface SingleValueStringIContainsFuzzyPredicate {
+  /** Comparison operator (case insensitive) */
+  readonly operator: 'StringIContainsFuzzy';
 
   /** Reference value, NA values are skipped */
   readonly reference: string;
@@ -195,6 +240,30 @@ export interface SingleValueOrPredicate {
   readonly operands: SingleValuePredicate[];
 }
 
+export interface SingleValueNotPredicateV2 {
+  /** Comparison operator */
+  readonly operator: 'Not';
+
+  /** Operand to negate */
+  readonly operand: SingleValuePredicateV2;
+}
+
+export interface SingleValueAndPredicateV2 {
+  /** Comparison operator */
+  readonly operator: 'And';
+
+  /** Operands to combine */
+  readonly operands: SingleValuePredicateV2[];
+}
+
+export interface SingleValueOrPredicateV2 {
+  /** Comparison operator */
+  readonly operator: 'Or';
+
+  /** Operands to combine */
+  readonly operands: SingleValuePredicateV2[];
+}
+
 /** Filtering predicate for a single axis or column value */
 export type SingleValuePredicate =
   | SingleValueIsNAPredicate
@@ -209,6 +278,23 @@ export type SingleValuePredicate =
   | SingleValueNotPredicate
   | SingleValueAndPredicate
   | SingleValueOrPredicate;
+
+export type SingleValuePredicateV2 =
+  | SingleValueIsNAPredicate
+  | SingleValueEqualPredicate
+  | SingleValueLessPredicate
+  | SingleValueLessOrEqualPredicate
+  | SingleValueGreaterPredicate
+  | SingleValueGreaterOrEqualPredicate
+  | SingleValueStringContainsPredicate
+  | SingleValueMatchesPredicate
+  | SingleValueStringContainsFuzzyPredicate
+  | SingleValueNotPredicateV2
+  | SingleValueAndPredicateV2
+  | SingleValueOrPredicateV2
+  | SingleValueIEqualPredicate
+  | SingleValueStringIContainsPredicate
+  | SingleValueStringIContainsFuzzyPredicate;
 
 /**
  * Filter PTable records based on specific axis or column value. If this is an
@@ -227,8 +313,25 @@ export interface PTableRecordSingleValueFilter {
   readonly predicate: SingleValuePredicate;
 }
 
+/**
+ * Filter PTable records based on specific axis or column value. If this is an
+ * axis value filter and the axis is part of a partitioning key in some of the
+ * source PColumns, the filter will be pushed down to those columns, so only
+ * specific partitions will be retrieved from the remote storage.
+ * */
+export interface PTableRecordSingleValueFilterV2 {
+  /** Filter type discriminator */
+  readonly type: 'bySingleColumnV2';
+
+  /** Target axis selector to examine values from */
+  readonly column: PTableColumnId;
+
+  /** Value predicate */
+  readonly predicate: SingleValuePredicateV2;
+}
+
 /** Generic PTable records filter */
-export type PTableRecordFilter = PTableRecordSingleValueFilter;
+export type PTableRecordFilter = PTableRecordSingleValueFilter | PTableRecordSingleValueFilterV2;
 
 /** Sorting parameters for a PTable.  */
 export type PTableSorting = {
