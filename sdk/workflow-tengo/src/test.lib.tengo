@@ -1,15 +1,16 @@
 /*
- * This is library for teng unit tests and is designed to be imported only in *.test.tengo files.
- * As it works ONLY in tengo tests context, it will break any workflow if imported in .lib.tengo or .tpl.tengo
- * file.
+ * Library for tengo unit tests.
+ * Contains collection of helpers, that make tengo unit tests more compact, easier for reading and writing.
  *
- * This library contains collection of helpers, that make tengo unit tests more compact, easier for reading and writing.
+ * WARNING: It is designed to be imported ONLY in *.test.tengo files.
+ *          As it works ONLY in tengo unit tests context, it will break any workflow if imported
+ *          in .lib.tengo or .tpl.tengo file.
  */
 
 test := import("test")
 
 //
-// Basic re-export from "test" with some conveniences
+// Basic re-export from "test" builtin library with some conveniences
 //
 
 /**
@@ -23,7 +24,7 @@ skip := func(...args) {
 }
 
 /**
- * Formatted version of Skip(). Skipf(msg, ...args) == Skip(format(msg, args...))
+ * Formatted version of skip(). skipf(msg, ...args) == skip(format(msg, args...))
  *
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
@@ -44,7 +45,7 @@ fail := func(...args) {
 }
 
 /**
- * Formatted version of Fail(). Failf(msg, ...args) == Fail(format(msg, args...))
+ * Formatted version of fail(). failf(msg, ...args) == fail(format(msg, args...))
  *
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
@@ -64,7 +65,7 @@ log := func(...args) {
 }
 
 /**
- * Formatted version of Log(). Logf(msg, ...args) == Log(format(msg, args...))
+ * Formatted version of log(). logf(msg, ...args) == log(format(msg, args...))
  *
  * @param msg: string - message with formatting directives.
  * @param args: []any - arguments for directives in <msg>.
@@ -177,7 +178,7 @@ equalf := func(expect, value, msg, ...args) {
 
 export {
 	//
-	// 'test' wrappers
+	// Builtin 'test' module method wrappers
 	//
 	"done": done,
 	"skip": skip,
@@ -188,7 +189,7 @@ export {
 	"logf": logf,
 
 	//
-	// Bool assertions
+	// Boolean assertions
 	//
 	"true": true_,
 	"truef": truef,
