@@ -1,9 +1,5 @@
+test := import(":test")
 util := import(":pframes.util")
-ll := import(":ll")
-
-assert := func(got, want, ...msg) {
-	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
-}
 
 TestDecomposePfconvCfg := func() {
 	result := util.decomposePfconvImportCfg({
@@ -33,7 +29,7 @@ TestDecomposePfconvCfg := func() {
 			{ name: "pl7.app/sampleId", type: "String" }
 			]
 	})
-	assert(result, {
+	test.isEqual(result, {
 		purifiedCfg: {
 			partitionKeyLength: 0,
 			axes: [

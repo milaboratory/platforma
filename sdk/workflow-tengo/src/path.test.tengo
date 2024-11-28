@@ -1,55 +1,51 @@
-ll := import(":ll")
 path := import(":path")
-
-assert := func(got, want) {
-	ll.assert(got == want, "got: %#v, want: %#v", got, want)
-}
+test := import(":test")
 
 TestSplit := func() {
-	assert(
+	test.isEqual(
 		path.split("dir1/dir2/dir3/abc.txt", '/'),
 		["dir1", "dir2", "dir3", "abc.txt"]
 	)
-	assert(
+	test.isEqual(
 		path.split("justFile.txt"),
 		["justFile.txt"]
 	)
-	assert(
+	test.isEqual(
 		path.split(""),
 		[""]
 	)
-	assert(
+	test.isEqual(
 		path.split("dir1/", '/'),
 		["dir1", ""]
 	)
 }
 
 TestGetBasenameDirs := func() {
-	assert(
+	test.isEqual(
 		path.getBasenameDirs("dir1/dir2/dir3/abc.txt", '/'),
 		["dir1", "dir1/dir2", "dir1/dir2/dir3", "dir1/dir2/dir3/abc.txt"]
 	)
-	assert(
+	test.isEqual(
 		path.getBasenameDirs("justFile.txt"),
 		["justFile.txt"]
 	)
-	assert(
+	test.isEqual(
 		path.getBasenameDirs(""),
 		[""]
 	)
-	assert(
+	test.isEqual(
 		path.getBasenameDirs("dir1/dir2/", '/'),
 		["dir1", "dir1/dir2", "dir1/dir2/"]
 	)
 }
 
 TestGetExtension := func() {
-	assert(path.getExtension("justFile.exe", undefined), "exe")
-	assert(path.getExtension("justFile.tar.gz", undefined), "tar.gz")
-	assert(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
-	assert(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
-	assert(path.getExtension("justDir/bin", '/'), "")
-	assert(path.getExtension("justDir/.bin", '/'), "bin")
-	assert(path.getExtension("justDir.bin/gz", '/'), "")
-	assert(path.getExtension("justDir.bin/.gz", '/'), "gz")
+	test.isEqual(path.getExtension("justFile.exe", undefined), "exe")
+	test.isEqual(path.getExtension("justFile.tar.gz", undefined), "tar.gz")
+	test.isEqual(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
+	test.isEqual(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
+	test.isEqual(path.getExtension("justDir/bin", '/'), "")
+	test.isEqual(path.getExtension("justDir/.bin", '/'), "bin")
+	test.isEqual(path.getExtension("justDir.bin/gz", '/'), "")
+	test.isEqual(path.getExtension("justDir.bin/.gz", '/'), "gz")
 }
