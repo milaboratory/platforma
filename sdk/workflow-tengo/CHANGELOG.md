@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.4.0
+
+### Minor Changes
+
+- e56a9be: Library for tengo unit tests
+
 ## 2.3.1
 
 ### Patch Changes
