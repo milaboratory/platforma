@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.40
+
+### Patch Changes
+
+- e3d4cd0: Added PlAgGridColumnManager component and fixed a bug in useSortable that caused the drag element to move without the handle class.
+- Updated dependencies [e3d4cd0]
+  - @platforma-sdk/ui-vue@1.13.10
+
 ## 1.2.39
 
 ### Patch Changes
