@@ -1,5 +1,11 @@
 # @milaboratories/resolve-helper
 
+## 1.0.2
+
+### Patch Changes
+
+- cd9ca74: Prevent module resolution caching
+
 ## 1.0.1
 
 ### Patch Changes
