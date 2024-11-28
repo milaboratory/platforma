@@ -5,7 +5,15 @@ import { onMounted, ref, toRefs } from 'vue';
 import './pl-ag-grid-column-manager.scss';
 import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
 
-const props = defineProps<{ api: GridApi }>();
+const props = defineProps<{
+  /**
+   * The GridApi is an API interface provided by the table/grid component
+   * for interacting programmatically with the grid's features and functionality.
+   * It allows you to control and manipulate grid behavior, access data, and
+   * trigger specific actions.
+   */
+  api: GridApi;
+}>();
 const { api: gridApi } = toRefs(props);
 
 const columns = ref<Column[]>([]);
