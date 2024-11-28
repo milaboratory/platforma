@@ -4,12 +4,26 @@ import { useApp } from './app';
 import { computed } from 'vue';
 
 const app = useApp();
+
+const progress = computed(() => {
+    if (!app.outputs.handle)
+        return undefined;
+
+    if (!app.outputs.handle.ok)
+        return undefined;
+
+    return app.outputs.handle.value;
+})
 </script>
 
 <template>
     <PlBlockPage style="max-width: 100%">
-        inputHandle: {{ app.model.args.inputHandle }}
-        <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" />
+        <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
+
+        <PlAlert type="success">
+            Blob content:
+            {{ app.model.outputs.blob }}
+        </PlAlert>
 
         <PlAlert type="success">
             Blob content:

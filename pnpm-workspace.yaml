@@ -49,6 +49,11 @@ packages:
   - etc/blocks/upload-file/ui
   - etc/blocks/upload-file/block
 
+  - etc/blocks/download-file/workflow
+  - etc/blocks/download-file/model
+  - etc/blocks/download-file/ui
+  - etc/blocks/download-file/block
+
   - etc/block-components/ui-examples/workflow
   - etc/block-components/ui-examples/model
   - etc/block-components/ui-examples/ui

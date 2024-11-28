@@ -8,6 +8,7 @@ import {
   InferOutputsType,
   isPColumnSpec,
   MainOutputs,
+  mapValueInVOE,
   Ref
 } from '@platforma-sdk/model';
 import { z } from 'zod';
@@ -33,7 +34,7 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('blob', getResourceValueAsJson()(getResourceField(MainOutputs, 'blob')))
 
-  .output('handle', getImportProgress(getResourceField(MainOutputs, 'handle')))
+  .output('handle', (ctx) => ctx.outputs?.resolve('handle')?.getImportProgress())
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
