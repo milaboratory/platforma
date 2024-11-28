@@ -20,19 +20,21 @@ export function createLogger(level: string = 'debug'): winston.Logger {
   return winston.createLogger({
     level: level,
 
-    format: winston.format.combine(
-      winston.format.printf(({ level, message }) => {
-        const indent = ' '.repeat(level.length + 2); // For ': ' after the level
-        const indentedMessage = message
-          .split('\n')
-          .map((line: string, index: number) => (index === 0 ? line : indent + line))
-          .join('\n');
+    format: winston.format.printf(({ level, message }) => {
+      const indent = ' '.repeat(level.length + 2); // For ': ' after the level
+      if (typeof message !== 'string') {
+        const messageJson = JSON.stringify(message);
+        throw Error(`logger message ${messageJson} is not a string`);
+      }
+      const indentedMessage = message
+        .split('\n')
+        .map((line: string, index: number) => (index === 0 ? line : indent + line))
+        .join('\n');
 
-        const colorize = (l: string) => winston.format.colorize().colorize(l, l);
+      const colorize = (l: string) => winston.format.colorize().colorize(l, l);
 
-        return `${colorize(level)}: ${indentedMessage}`;
-      })
-    ),
+      return `${colorize(level)}: ${indentedMessage}`;
+    }),
 
     transports: [
       new winston.transports.Console({

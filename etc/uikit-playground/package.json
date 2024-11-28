@@ -20,6 +20,6 @@
     "@vitejs/plugin-vue": "catalog:",
     "@milaboratories/helpers": "workspace:^",
     "@faker-js/faker": "catalog:",
-    "vue-router": "~4.2.5"
+    "vue-router": "4"
   }
 }
