@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.16.8
+
+### Patch Changes
+
+- Updated dependencies [e56a9be]
+  - @platforma-sdk/workflow-tengo@2.4.0
+
+## 1.16.7
+
+### Patch Changes
+
+- Updated dependencies [cd9ca74]
+  - @milaboratories/resolve-helper@1.0.2
+  - @platforma-sdk/block-tools@2.3.28
+
 ## 1.16.6
 
 ### Patch Changes

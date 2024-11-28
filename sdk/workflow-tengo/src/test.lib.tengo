@@ -1,0 +1,204 @@
+/*
+ * Library for tengo unit tests.
+ * Contains collection of helpers, that make tengo unit tests more compact, easier for reading and writing.
+ *
+ * WARNING: It is designed to be imported ONLY in *.test.tengo files.
+ *          As it works ONLY in tengo unit tests context, it will break any workflow if imported
+ *          in .lib.tengo or .tpl.tengo file.
+ */
+
+test := import("test")
+
+//
+// Basic re-export from "test" builtin library with some conveniences
+//
+
+/**
+ * Skip the test writing given message to the console log.
+ *
+ * @param args: []any - message to be written. 
+ *                      Each argument is converted to string with its default formatter.
+ */
+skip := func(...args) {
+	test.skip(args...)
+}
+
+/**
+ * Formatted version of skip(). skipf(msg, ...args) == skip(format(msg, args...))
+ *
+ * @param msg: string - message with formatting directives.
+ * @param args: []any - arguments for directives in <msg>.
+ */
+skipf := func(msg, ...args) {
+	skip(format(msg, args...))
+}
+
+/**
+ * Fail the test in place. Interrupts execution of single test and prints a
+ * failure message to the console log.
+ *
+ * @param args: []any - message to be written. 
+ *                      Each argument is converted to string with its default formatter.
+ */
+fail := func(...args) {
+	test.fail(args...)
+}
+
+/**
+ * Formatted version of fail(). failf(msg, ...args) == fail(format(msg, args...))
+ *
+ * @param msg: string - message with formatting directives.
+ * @param args: []any - arguments for directives in <msg>.
+ */
+failf := func(msg, ...args) {
+	fail(format(msg, args...))
+}
+
+/**
+ * Write message to console log.
+ *
+ * @param args: []any - message to be written. 
+ *                      Each argument is converted to string with its default formatter.
+ */
+log := func(...args) {
+	test.log(args...)
+}
+
+/**
+ * Formatted version of log(). logf(msg, ...args) == log(format(msg, args...))
+ *
+ * @param msg: string - message with formatting directives.
+ * @param args: []any - arguments for directives in <msg>.
+ */
+logf := func(msg, ...args) {
+	test.log(format(msg, args...))
+}
+
+/**
+ * Mark test as executed for tengo testing engine.
+ * 
+ * Regular tengo file with tests contains bunch of fuctions starting with 'Test' prefix, like `TestMyFunction := func() { ... }`.
+ * You DO NOT need to call this Done() method if you have file with Test* functions.
+ * 
+ * For some rare cases, you may want to define your own custom testing script, that will call functions on its own instead 
+ * of using the standard test functions naming. In this case, testing engine needs to know the difference between "nothing was called at all"
+ * and "everything was done well". This is what this method for.
+ *
+ * You don't need it in 99.9% of cases.
+ * 
+ * This method does not interrupt test execution and is intended for use in custom test scripts
+ * without declared test functions.
+ */
+done := func() {
+	test.done()
+}
+
+//
+// Boolean assertions
+//
+
+/**
+ * Require <condition> to be true, failing test when not.
+ *
+ * @param condition: bool
+ * @param msg: []any - message to be printed on check failure
+ */
+isTrue := func(condition, ...msg) {
+	if !condition {
+		test.fail("<condition> != 'true': ", msg...)
+	}
+}
+
+/**
+ * Formatted version of isTrue(). isTruef(condition, msg, ...args) == isTrue(condition, format(msg, args...))
+ *
+ * @param condition: bool
+ * @param msg: string - message with formatting directives to be printed on check failure
+ * @param args: []any - arguments for formatting directives in <msg>
+ */
+isTruef := func(condition, msg, ...args) {
+    isTrue(condition, format(msg, args...))
+}
+
+/**
+ * Require <condition> to be false, failing test when not.
+ *
+ * @param condition: bool
+ * @param args: []any - message to be printed on check failure
+ */
+isFalse := func(condition, ...args) {
+	if condition {
+		test.fail("<condition> != 'false'", args...)
+	}
+}
+
+/**
+ * Formatted version of isFalse(). isFalsef(condition, msg, ..args) == isFalse(condition, format(msg, args...))
+ *
+ * @param condition: bool
+ * @param msg: string - message with formatting directives to be printed on check failure
+ * @param args: []any - arguments for formatting directives in <msg>
+ */
+isFalsef := func(condition, msg, ...args) {
+    isFalse(condition, format(msg, args...))
+}
+
+//
+// Equality assertions
+//
+
+/**
+ * Fails test when <expect> != <value>
+ *
+ * @param expect: any - expected value for the equality check
+ * @param value:  any - the value to be checked
+ * @param args: []any - the message to be printed on check failure
+ */
+isEqual := func(expect, value, ...args) {
+	if expect == value {
+		return
+	}
+
+	msg := format("%q != %q (expect: %#v, got %#v)", expect, value, expect, value)
+
+	fail(msg, args...)
+}
+
+/**
+ * Formatted version of isEqual(). isEqualf(expect, value, msg, ..args) == isEqual(expect, value, format(msg, args...))
+ *
+ * @param expect: any - expected value for the equality check
+ * @param value:  any - the value to be checked
+ * @param msg: string - message with formatting directives to be printed on check failure
+ * @param args: []any - arguments for formatting directives in <msg>
+ */
+isEqualf := func(expect, value, msg, ...args) {
+	isEqual(expect, value, format(msg, args...))
+}
+
+export {
+	//
+	// Builtin 'test' module method wrappers
+	//
+	done				: done,
+	skip				: skip,
+	skipf				: skipf,
+	fail				: fail,
+	failf				: failf,
+	log					: log,
+	logf				: logf,
+
+	//
+	// Boolean assertions
+	//
+	isTrue				: isTrue,
+	isTruef				: isTruef,
+	isFalse				: isFalse,
+	isFalsef			: isFalsef,
+
+	//
+	// Equality assertions
+	//
+	isEqual				: isEqual,
+	isEqualf			: isEqualf
+}

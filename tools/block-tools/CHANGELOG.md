@@ -1,5 +1,12 @@
 # @platforma-sdk/block-tools
 
+## 2.3.28
+
+### Patch Changes
+
+- Updated dependencies [cd9ca74]
+  - @milaboratories/resolve-helper@1.0.2
+
 ## 2.3.27
 
 ### Patch Changes
