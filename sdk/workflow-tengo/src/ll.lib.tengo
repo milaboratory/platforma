@@ -75,6 +75,35 @@ fromStrict := func(r) {
 }
 
 /**
+ * Safe way to check if method exists in a builtin module or a library
+ *
+ * @param module: module - builtin module or tengo library
+ * @param methodName: string - name of a method to be checked
+ *
+ * @return bool - true when method exists, false otherwise
+ */
+methodExists := func(module, methodName) {
+	if isStrict(module) {
+		if !is_callable(plapi.mapHasKey) {
+			module = fromStrict(module)
+
+		} else {
+			if !plapi.mapHasKey(module, methodName) {
+				return false
+			}
+		}
+	}
+
+	method := module[methodName]
+
+	if is_undefined(method) {
+        return false
+    }
+
+    return is_callable(method)
+}
+
+/**
  * If input is a strict map, converts it to a normal one, otherwise returns the object as is
  *
  * @param r: any object (possible strict map)
@@ -258,6 +287,7 @@ export toStrict({
 	print: print,
 	panic: panic,
 	assert: assert,
+	methodExists: methodExists,
 	isStrict: isStrict,
 	isMap: isMap,
 	fromStrict: fromStrict,
