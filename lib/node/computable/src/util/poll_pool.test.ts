@@ -2,6 +2,8 @@ import { test, expect } from '@jest/globals';
 import * as tp from 'node:timers/promises';
 import { PollActor, PollComputablePool, PollPool } from './poll_pool';
 import { ChangeSource } from '../change_source';
+import { WatchableValue } from '../watchable_value';
+import { Computable } from '../computable/computable';
 
 class TestPollActor implements PollActor {
   public polls: number = 0;
@@ -58,6 +60,7 @@ test('simple poll pool test', async () => {
 
 class TestComputablePool extends PollComputablePool<string, string | undefined> {
   public map = new Map<string, string>();
+  public polls = new Map<string, number>();
 
   constructor() {
     super({ minDelay: 10 });
@@ -68,6 +71,7 @@ class TestComputablePool extends PollComputablePool<string, string | undefined> 
   }
 
   protected readValue(req: string): string | undefined {
+    this.polls.set(req, (this.polls.get(req) ?? 0) + 1);
     return this.map.get(req);
   }
 
@@ -94,5 +98,46 @@ test('simple poll pool computable test', async () => {
   await cb.refreshState();
   expect(await cb.getValue()).toStrictEqual('b1');
 
+  pool.map.set('a', 'a2');
+  await ca.refreshState();
+  pool.map.set('a', 'a3');
+  await ca.refreshState();
+  expect(await ca.getValue()).toStrictEqual('a3');
+  await cb.refreshState();
+  expect(await cb.getValue()).toStrictEqual('b1');
+
   await pool.terminate();
+});
+
+test('nested poll pool computable test', async () => {
+  const pool = new TestComputablePool();
+
+  const selector = new WatchableValue('a');
+  const c = Computable.make((c) => {
+    const s = selector.getValue(c);
+    return pool.get(s);
+  });
+
+  await c.refreshState();
+  expect(await c.getValue()).toBeUndefined();
+
+  pool.map.set('a', 'a1');
+  pool.map.set('b', 'b1');
+  selector.setValue('b');
+  await c.getValue();
+  await c.refreshState();
+  expect(await c.getValue()).toStrictEqual('b1');
+
+  pool.map.set('a', 'a2');
+  pool.map.set('b', 'b2');
+  selector.setValue('a');
+  await c.getValue();
+  await tp.setTimeout(30);
+  expect(await c.getValue()).toStrictEqual('a2');
+
+  const awaiter = c.awaitChange();
+  await tp.setTimeout(20);
+  pool.map.set('a', 'a3');
+  await awaiter;
+  expect(await c.getValue()).toStrictEqual('a3');
 });

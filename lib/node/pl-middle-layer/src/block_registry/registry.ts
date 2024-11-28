@@ -55,7 +55,6 @@ export async function getDevV1PacketMtime(devPath: string): Promise<string> {
 export async function getDevV2PacketMtime(
   description: BlockPackDescriptionAbsolute
 ): Promise<string> {
-  let mtime = 0n;
   const wfStats = await fs.promises.stat(description.components.workflow.main.file, {
     bigint: true
   });
