@@ -123,6 +123,7 @@ const query = (handle: StorageHandle, dirPath: string) => {
 };
 
 const load = () => {
+  resetData();
   const { storageHandle, dirPath, modelValue } = lookup.value;
   if (storageHandle && modelValue) {
     query(storageHandle, dirPath);
