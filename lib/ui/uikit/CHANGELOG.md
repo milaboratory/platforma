@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.16
+
+### Patch Changes
+
+- 18841ab: File dialog: clear search string when dir changes
+
 ## 2.2.15
 
 ### Patch Changes
