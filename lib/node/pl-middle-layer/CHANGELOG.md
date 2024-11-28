@@ -1,5 +1,14 @@
 # @milaboratories/pl-middle-layer
 
+## 1.16.9
+
+### Patch Changes
+
+- Updated dependencies [c1ea333]
+  - @milaboratories/computable@2.3.2
+  - @milaboratories/pl-drivers@1.3.23
+  - @milaboratories/pl-tree@1.4.16
+
 ## 1.16.8
 
 ### Patch Changes

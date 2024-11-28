@@ -1,5 +1,11 @@
 # @milaboratories/computable
 
+## 2.3.2
+
+### Patch Changes
+
+- c1ea333: Minor fixes to PollPool
+
 ## 2.3.1
 
 ### Patch Changes
