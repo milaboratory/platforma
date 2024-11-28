@@ -45,6 +45,12 @@ ModuleRegistry.registerModules([
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
   settings: Readonly<PlDataTableSettings>;
+  /**
+   * The showColumnsPanel prop controls the display of a button that activates
+   * the columns management panel in the table. To make the button functional
+   * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
+   * This component serves as the target for teleporting the button.
+   */
   showColumnsPanel?: boolean;
 }>();
 const { settings } = toRefs(props);

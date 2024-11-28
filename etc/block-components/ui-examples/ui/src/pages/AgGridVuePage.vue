@@ -94,8 +94,9 @@ const onGridReady = (e: GridReadyEvent) => {
   <PlBlockPage style="max-width: 100%">
     <template #title>AgGridVue</template>
     <template #append>
-      <PlAgDataTableToolsPanel />
-      <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
+      <PlAgDataTableToolsPanel>
+        <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
+      </PlAgDataTableToolsPanel>
     </template>
 
     <AgGridVue
