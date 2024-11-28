@@ -1,10 +1,5 @@
-slices := import(":slices")
-ll := import(":ll")
+test := import(":test")
 validation := import(":validation")
-
-assert := func(got, want, ...msg) {
-	ll.assert(got == want, "got: %#v, want: %#v, msg: ", got, want, msg...)
-}
 
 TestValidateJSONGeneral := func() {
 	schema := {
@@ -53,13 +48,13 @@ TestValidateJSONGeneral := func() {
 
 	got := validation.checkJson(js, schema)
 
-	assert(got, validation.success)
+	test.isEqual(got, validation.success)
 }
 
 TestValidateJSONOrArrays := func() {
 	schema := ["or", "bytes", "string", validation.reference]
 
-	assert(validation.checkJson("aString", schema), validation.success)
-	assert(validation.checkJson(bytes("bytes"), schema), validation.success)
-	assert(validation.isValid(42, schema), false)
+	test.isEqual(validation.checkJson("aString", schema), validation.success)
+	test.isEqual(validation.checkJson(bytes("bytes"), schema), validation.success)
+	test.isEqual(validation.isValid(42, schema), false)
 }
