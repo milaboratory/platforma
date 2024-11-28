@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.114
+
+### Patch Changes
+
+- Updated dependencies [e3d4cd0]
+  - @platforma-sdk/ui-vue@1.13.10
+
 ## 1.0.113
 
 ### Patch Changes

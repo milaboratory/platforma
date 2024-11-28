@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.17
+
+### Patch Changes
+
+- e3d4cd0: Added PlAgGridColumnManager component and fixed a bug in useSortable that caused the drag element to move without the handle class.
+
 ## 2.2.16
 
 ### Patch Changes
