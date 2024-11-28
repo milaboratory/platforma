@@ -18,16 +18,42 @@ const progress = computed(() => {
 
 <template>
     <PlBlockPage style="max-width: 100%">
+        inputHandle: {{ app.model.args.inputHandle }}
         <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
 
         <PlAlert type="success">
-            Blob content:
-            {{ app.model.outputs.blob }}
+            File content:
+            {{ app.model.outputs.content }}
         </PlAlert>
 
         <PlAlert type="success">
-            Blob content:
-            {{ app.model.outputs.blob }}
+            File content as string:
+            {{ app.model.outputs.contentAsString }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            File content as string via QuickJS callback:
+            {{ app.model.outputs.contentAsString1 }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            File content as json:
+            {{ app.model.outputs.contentAsJson }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            File content as downloaded blob content:
+            {{ app.model.outputs.downloadedBlobContent }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            File content as on demand blob content:
+            {{ app.model.outputs.onDemandBlobContent }}
+        </PlAlert>
+
+        <PlAlert type="success">
+            File content as on demand blob content via QuickJS callback:
+            {{ app.model.outputs.onDemandBlobContent1 }}
         </PlAlert>
 
         <PlAlert v-if="app.error" type="error">

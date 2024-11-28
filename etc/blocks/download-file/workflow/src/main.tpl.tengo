@@ -1,0 +1,18 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+file := import("@platforma-sdk/workflow-tengo:file")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+wf.body(func(args) {
+	imported := file.importFile(args.inputHandle)
+	result := file.exportFile(imported.file)
+	return {
+		outputs: {
+			handle: imported.handle,
+			blob: imported.file,
+			downloadable: result
+		},
+		exports: {}
+	}
+})

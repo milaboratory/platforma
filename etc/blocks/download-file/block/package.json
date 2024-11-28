@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/milaboratories.test-download-file",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-download-file.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
+    "@milaboratories/milaboratories.test-download-file.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-download-file.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-download-file.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-download-file.ui/dist"
+    },
+    "meta": {
+      "title": "Download File",
+      "description": "Download File",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}
