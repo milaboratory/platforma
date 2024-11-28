@@ -55,6 +55,10 @@ export function useSortable(listRef: Ref<HTMLElement | undefined>, settings: Sor
   function mouseDown(this: HTMLElement, e: { y: number; target: EventTarget | null }) {
     const handle = settings.handle ? this.querySelector(settings.handle) : null;
 
+    if (!handle) {
+      return;
+    }
+
     if (handle && !handle.contains(e.target as HTMLElement)) {
       return;
     }
