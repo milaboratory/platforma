@@ -1,8 +1,8 @@
 maps := import(":maps")
 test := import(":test")
 
-TestDeepMerge := func() {
-	test.equal(
+Test_map_DeepMerge := func() {
+	test.isEqual(
 		maps.deepMerge(
 			{a: {a: 1, b: 2}, c: 1, d: {a: {b: {c: 12}, d: 1}}},
 			{a: {b: 3}, d: {a: {b: {c: undefined, d: 23}, d: 1}}}
@@ -10,4 +10,11 @@ TestDeepMerge := func() {
 		{a: {a: 1, b: 3}, c: 1, d: {a: {b: {d: 23}, d: 1}}},
 		"unexpected result from maps.deepMerge"
 	)
+}
+
+Test_map_ContainsKey := func() {
+	test.isTrue(maps.containsKey({a: undefined}, "a"), "map.containsKey() wrong result for existing key with undefined value")
+	test.isTrue(maps.containsKey({b: 1}, "b"), "map.containsKey() wrong result for existing key with truthful value")
+	test.isTrue(maps.containsKey({c: 0}, "c"), "map.containsKey() wrong result for existing key with falsey value")
+	test.isFalse(maps.containsKey({d: 1}, "a"), "map.containsKey() wrong result for absent key")
 }

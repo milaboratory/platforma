@@ -103,21 +103,21 @@ done := func() {
  * @param condition: bool
  * @param msg: []any - message to be printed on check failure
  */
-true_ := func(condition, ...msg) {
+isTrue := func(condition, ...msg) {
 	if !condition {
 		test.fail("<condition> != 'true': ", msg...)
 	}
 }
 
 /**
- * Formatted version of 'true'. truef(condition, msg, ...args) == true(condition, format(msg, args...))
+ * Formatted version of isTrue(). isTruef(condition, msg, ...args) == isTrue(condition, format(msg, args...))
  *
  * @param condition: bool
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-truef := func(condition, msg, ...args) {
-    true_(condition, format(msg, args...))
+isTruef := func(condition, msg, ...args) {
+    isTrue(condition, format(msg, args...))
 }
 
 /**
@@ -126,21 +126,21 @@ truef := func(condition, msg, ...args) {
  * @param condition: bool
  * @param args: []any - message to be printed on check failure
  */
-false_ := func(condition, ...args) {
+isFalse := func(condition, ...args) {
 	if condition {
 		test.fail("<condition> != 'false'", args...)
 	}
 }
 
 /**
- * Formatted version of 'false'. falsef(condition, msg, ..args) == false(condition, format(msg, args...))
+ * Formatted version of isFalse(). isFalsef(condition, msg, ..args) == isFalse(condition, format(msg, args...))
  *
  * @param condition: bool
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-falsef := func(condition, msg, ...args) {
-    false_(condition, format(msg, args...))
+isFalsef := func(condition, msg, ...args) {
+    isFalse(condition, format(msg, args...))
 }
 
 //
@@ -154,7 +154,7 @@ falsef := func(condition, msg, ...args) {
  * @param value:  any - the value to be checked
  * @param args: []any - the message to be printed on check failure
  */
-equal := func(expect, value, ...args) {
+isEqual := func(expect, value, ...args) {
 	if expect == value {
 		return
 	}
@@ -165,40 +165,40 @@ equal := func(expect, value, ...args) {
 }
 
 /**
- * Formatted version of Equal. equalf(expect, value, msg, ..args) == equal(expect, value, format(msg, args...))
+ * Formatted version of isEqual(). isEqualf(expect, value, msg, ..args) == isEqual(expect, value, format(msg, args...))
  *
  * @param expect: any - expected value for the equality check
  * @param value:  any - the value to be checked
  * @param msg: string - message with formatting directives to be printed on check failure
  * @param args: []any - arguments for formatting directives in <msg>
  */
-equalf := func(expect, value, msg, ...args) {
-	equal(expect, value, format(msg, args...))
+isEqualf := func(expect, value, msg, ...args) {
+	isEqual(expect, value, format(msg, args...))
 }
 
 export {
 	//
 	// Builtin 'test' module method wrappers
 	//
-	"done": done,
-	"skip": skip,
-	"skipf": skipf,
-	"fail": fail,
-	"failf": failf,
-	"log": log,
-	"logf": logf,
+	done				: done,
+	skip				: skip,
+	skipf				: skipf,
+	fail				: fail,
+	failf				: failf,
+	log					: log,
+	logf				: logf,
 
 	//
 	// Boolean assertions
 	//
-	"true": true_,
-	"truef": truef,
-	"false": false_,
-	"falsef": falsef,
+	isTrue				: isTrue,
+	isTruef				: isTruef,
+	isFalse				: isFalse,
+	isFalsef			: isFalsef,
 
 	//
 	// Equality assertions
 	//
-	"equal": equal,
-	"equalf": equalf
+	isEqual				: isEqual,
+	isEqualf			: isEqualf
 }

@@ -2,50 +2,50 @@ path := import(":path")
 test := import(":test")
 
 TestSplit := func() {
-	test.equal(
+	test.isEqual(
 		path.split("dir1/dir2/dir3/abc.txt", '/'),
 		["dir1", "dir2", "dir3", "abc.txt"]
 	)
-	test.equal(
+	test.isEqual(
 		path.split("justFile.txt"),
 		["justFile.txt"]
 	)
-	test.equal(
+	test.isEqual(
 		path.split(""),
 		[""]
 	)
-	test.equal(
+	test.isEqual(
 		path.split("dir1/", '/'),
 		["dir1", ""]
 	)
 }
 
 TestGetBasenameDirs := func() {
-	test.equal(
+	test.isEqual(
 		path.getBasenameDirs("dir1/dir2/dir3/abc.txt", '/'),
 		["dir1", "dir1/dir2", "dir1/dir2/dir3", "dir1/dir2/dir3/abc.txt"]
 	)
-	test.equal(
+	test.isEqual(
 		path.getBasenameDirs("justFile.txt"),
 		["justFile.txt"]
 	)
-	test.equal(
+	test.isEqual(
 		path.getBasenameDirs(""),
 		[""]
 	)
-	test.equal(
+	test.isEqual(
 		path.getBasenameDirs("dir1/dir2/", '/'),
 		["dir1", "dir1/dir2", "dir1/dir2/"]
 	)
 }
 
 TestGetExtension := func() {
-	test.equal(path.getExtension("justFile.exe", undefined), "exe")
-	test.equal(path.getExtension("justFile.tar.gz", undefined), "tar.gz")
-	test.equal(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
-	test.equal(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
-	test.equal(path.getExtension("justDir/bin", '/'), "")
-	test.equal(path.getExtension("justDir/.bin", '/'), "bin")
-	test.equal(path.getExtension("justDir.bin/gz", '/'), "")
-	test.equal(path.getExtension("justDir.bin/.gz", '/'), "gz")
+	test.isEqual(path.getExtension("justFile.exe", undefined), "exe")
+	test.isEqual(path.getExtension("justFile.tar.gz", undefined), "tar.gz")
+	test.isEqual(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
+	test.isEqual(path.getExtension("justFile.bin.gz", undefined), "bin.gz")
+	test.isEqual(path.getExtension("justDir/bin", '/'), "")
+	test.isEqual(path.getExtension("justDir/.bin", '/'), "bin")
+	test.isEqual(path.getExtension("justDir.bin/gz", '/'), "")
+	test.isEqual(path.getExtension("justDir.bin/.gz", '/'), "gz")
 }
