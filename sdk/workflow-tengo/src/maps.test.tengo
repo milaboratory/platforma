@@ -1,3 +1,4 @@
+ll := import(":ll")
 maps := import(":maps")
 test := import(":test")
 
@@ -13,8 +14,13 @@ Test_map_DeepMerge := func() {
 }
 
 Test_map_ContainsKey := func() {
-	test.isTrue(maps.containsKey({a: undefined}, "a"), "map.containsKey() wrong result for existing key with undefined value")
-	test.isTrue(maps.containsKey({b: 1}, "b"), "map.containsKey() wrong result for existing key with truthful value")
-	test.isTrue(maps.containsKey({c: 0}, "c"), "map.containsKey() wrong result for existing key with falsey value")
+	test.isTrue(maps.containsKey({a: undefined}, "a"), "map.containsKey() wrong result for regular map with existing key and undefined value")
+	test.isTrue(maps.containsKey({b: 1}, "b"), "map.containsKey() wrong result for regular map with existing key and truthful value")
+	test.isTrue(maps.containsKey({c: 0}, "c"), "map.containsKey() wrong result for regular map with existing key and falsey value")
 	test.isFalse(maps.containsKey({d: 1}, "a"), "map.containsKey() wrong result for absent key")
+
+	test.isTrue(maps.containsKey(ll.toStrict({a: undefined}), "a"), "map.containsKey() wrong result for regular map with existing key and undefined value")
+	test.isTrue(maps.containsKey(ll.toStrict({b: 1}), "b"), "map.containsKey() wrong result for regular map with existing key and truthful value")
+	test.isTrue(maps.containsKey(ll.toStrict({c: 0}), "c"), "map.containsKey() wrong result for regular map with existing key and falsey value")
+	test.isFalse(maps.containsKey(ll.toStrict({d: 1}), "a"), "map.containsKey() wrong result for absent key")
 }
