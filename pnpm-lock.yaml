@@ -1433,6 +1433,9 @@ importers:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
+      '@platforma-sdk/tengo-builder':
+        specifier: workspace:^
+        version: link:../../tools/tengo-builder
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
