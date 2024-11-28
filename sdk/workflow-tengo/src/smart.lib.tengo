@@ -264,6 +264,7 @@ resource = func(r) {
 		 *	ID:			   int64
 		 *	Data:		   byte[],
 		 *	Type:		   { Name: string, Version: string }
+		 *	Features:	   { ephemeral: bool }
 		 *	Inputs:		   strict map
 		 *	Outputs:	   strict map
 		 *	Dynamic:	   strict map
@@ -295,6 +296,19 @@ resource = func(r) {
 		 */
 		isReady: func() {
 			return self.info().ResourceReady
+		},
+
+		isEphemeral: func() {
+			resourceInfo := self.info()
+
+			if !maps.containsKey(resourceInfo, "Features") {
+				// by default we consider all resources to be ephemeral for backward compatiblity to keep stable logic
+				// in platforma backend before v1.16.0.
+				// TODO: once we consider this version old enough, we can panic here instead of 'return true'
+				return true
+			}
+
+			return resourceInfo.Features.ephemeral
 		},
 
 		/**
@@ -433,7 +447,7 @@ resource = func(r) {
 		 * @return field: smart.field
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
-			isEph := true
+			isEph := strictSelf.isEphemeral()
 			if len(eph) > 0 {
 				isEph = eph[0]
 			}
@@ -450,14 +464,19 @@ resource = func(r) {
 		 * @return field: smart.field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+
 			if is_array(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
-					current = current.getFutureField(name, "input", eph...)
+					current = current.getFutureField(name, "input", isEph)
 				}
 				return current
 			} else {
-				return self.getFutureField(nameOrPath, "input", eph...)
+				return self.getFutureField(nameOrPath, "input", isEph)
 			}
 		},
 
@@ -471,7 +490,12 @@ resource = func(r) {
 		 * @return field: smart.field
 		 */
 		getFutureOutputField: func(name, ...eph) {
-			return self.getFutureField(name, "output", eph...)
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+
+			return self.getFutureField(name, "output", isEph)
 		},
 
 		/**
@@ -592,10 +616,12 @@ field = func(f) {
 		/**
 		 * Field info:
 		 *
-		 *	ID:	   { ResourceId: int64, Name: string }
-		 *	Value: int64 - value resource id
-		 *	Error: int64 - error resource id
-		 *	IsSet: bool	 - whether field is set
+		 *	ID:			{ ResourceId: int64, Name: string }
+		 *	Type:		string - see constants.FTYPE_* for possible values
+		 *	Features:	{ ephemeral: bool }
+		 *	Value:		int64 - value resource id
+		 *	Error:		int64 - error resource id
+		 *	IsSet:		bool  - whether field is set
 		 */
 		info: func() {
 			return tx.getField(self.id)
@@ -620,6 +646,31 @@ field = func(f) {
 		 */
 		isErrorSet: func() {
 			return self.info().Error != 0
+		},
+
+		/**
+		 * Some fields cannot point to ephemeral resources.
+		 * This method checks, if current field can.
+		 *
+		 * @return bool - "true' when field can point to ephemeral resource, 'false' when not
+		 */
+		isEphemeral: func() {
+			fieldInfo := self.info()
+
+			if !maps.containsKey(fieldInfo, "Features") {
+				// by default we consider all fields can point to ephemeral resources for backward compatiblity to keep stable logic
+				// in platforma backend before v1.16.0.
+				// TODO: once we consider this version old enough, we can panic here instead of 'return true'
+				return true
+			}
+
+			isParentResourceEphemeral := fieldInfo.Features.ephemeral
+			if isParentResourceEphemeral {
+				return true
+			}
+
+			return fieldInfo.Type != constants.FTYPE_INPUT &&
+				fieldInfo != constants.FTYPE_OUTPUT
 		},
 
 		/**
@@ -779,7 +830,7 @@ field = func(f) {
 		 * @return field: smart.field
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
-			isEph := true
+			isEph := strictSelf.isEphemeral()
 			if len(eph) > 0 {
 				isEph = eph[0]
 			}
@@ -796,6 +847,11 @@ field = func(f) {
 		 * @return field: smart field
 		 */
 		getFutureInputField: func(nameOrPath, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+
 			if is_array(nameOrPath) {
 				current := strictSelf
 				for name in nameOrPath {
@@ -817,6 +873,11 @@ field = func(f) {
 		 * @return field: smart field
 		 */
 		getFutureOutputField: func(name, ...eph) {
+			isEph := strictSelf.isEphemeral()
+			if len(eph) > 0 {
+				isEph = eph[0]
+			}
+
 			return self.getFutureField(name, "output", eph...)
 		}
 	}
@@ -848,7 +909,7 @@ resourceBuilder = func(r) {
 		 * Create new field with given name and field type.
 		 *
 		 * @param name field name
-		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use F_TYPE_* constants.
+		 * @param fieldType: field type - input, output, dynamic, service, OTW. Use FfTYPE_* constants.
 		 */
 		createField: func(name, fieldType) {
 			assertNotBuilt()
