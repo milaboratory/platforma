@@ -31,6 +31,7 @@ import { updateXsvGridOptions } from './sources/file-source';
 import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlAgDataTableController, PlDataTableSettings } from './types';
+import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -44,6 +45,7 @@ ModuleRegistry.registerModules([
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
   settings: Readonly<PlDataTableSettings>;
+  showColumnsPanel?: boolean;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -277,25 +279,25 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
   sideBar: {
-    toolPanels: [
-      {
-        id: 'columns',
-        labelDefault: 'Columns',
-        labelKey: 'columns',
-        iconKey: 'columns',
-        toolPanel: 'agColumnsToolPanel',
-        toolPanelParams: {
-          suppressRowGroups: true,
-          suppressValues: true,
-          suppressPivots: true,
-          suppressPivotMode: true,
-          suppressColumnFilter: true,
-          suppressColumnSelectAll: true,
-          suppressColumnExpandAll: true,
-        },
-      },
-    ],
-    defaultToolPanel: 'columns',
+    // toolPanels: [
+    //   {
+    //     id: 'columns',
+    //     labelDefault: 'Columns',
+    //     labelKey: 'columns',
+    //     iconKey: 'columns',
+    //     toolPanel: 'agColumnsToolPanel',
+    //     toolPanelParams: {
+    //       suppressRowGroups: true,
+    //       suppressValues: true,
+    //       suppressPivots: true,
+    //       suppressPivotMode: true,
+    //       suppressColumnFilter: true,
+    //       suppressColumnSelectAll: true,
+    //       suppressColumnExpandAll: true,
+    //     },
+    //   },
+    // ],
+    // defaultToolPanel: '',
   },
   defaultCsvExportParams: {
     allColumns: true,
@@ -504,6 +506,7 @@ watch(
 
 <template>
   <div class="ap-ag-data-table-container">
+    <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
     <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
         v-for="(sheet, i) in sheets.value"
