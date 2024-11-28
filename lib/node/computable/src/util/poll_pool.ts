@@ -92,6 +92,7 @@ export class PollPool<A extends PollActor = PollActor> {
           try {
             await actor.poll();
           } catch (e: unknown) {
+            this.logger.error('Polling actor error');
             this.logger.error(e);
           }
         }
@@ -287,10 +288,11 @@ export abstract class PollComputablePool<Req, Res> {
         try {
           const newValue = await parent.readValue(req);
           if (
-            (newValue !== undefined || this.value !== undefined) &&
-            (newValue === undefined ||
-              this.value === undefined ||
-              !parent.resultsEqual(this.value, newValue))
+            this.error !== undefined ||
+            ((newValue !== undefined || this.value !== undefined) &&
+              (newValue === undefined ||
+                this.value === undefined ||
+                !parent.resultsEqual(this.value, newValue)))
           ) {
             this.value = newValue;
             this.error = undefined;
@@ -317,15 +319,18 @@ export abstract class PollComputablePool<Req, Res> {
 
   public get(req: Req): Computable<UnwrapComputables<Res> | undefined> {
     const key = this.getKey(req);
-    const entry = this.pool.createIfAbsent(key, () => this.createEntry(req));
+    const actor = this.pool.createIfAbsent(key, () => this.createEntry(req));
     // the returned computable will catch and hold reference to the entry (thus preventing it from being GC-ed)
-    return Computable.make((ctx) => {
-      ctx.attacheHooks(entry.hooks);
-      entry.change.attachWatcher(ctx.watcher);
+    return Computable.make(
+      (ctx) => {
+        ctx.attacheHooks(actor.hooks);
+        actor.change.attachWatcher(ctx.watcher);
 
-      if (entry.error) throw entry.error;
-      else return entry.value;
-    });
+        if (actor.error) throw actor.error;
+        else return actor.value;
+      },
+      { key }
+    );
   }
 
   public async terminate() {
