@@ -48,13 +48,13 @@ TestValidateJSONGeneral := func() {
 
 	got := validation.checkJson(js, schema)
 
-	test.equal(got, validation.success)
+	test.isEqual(got, validation.success)
 }
 
 TestValidateJSONOrArrays := func() {
 	schema := ["or", "bytes", "string", validation.reference]
 
-	test.equal(validation.checkJson("aString", schema), validation.success)
-	test.equal(validation.checkJson(bytes("bytes"), schema), validation.success)
-	test.equal(validation.isValid(42, schema), false)
+	test.isEqual(validation.checkJson("aString", schema), validation.success)
+	test.isEqual(validation.checkJson(bytes("bytes"), schema), validation.success)
+	test.isEqual(validation.isValid(42, schema), false)
 }

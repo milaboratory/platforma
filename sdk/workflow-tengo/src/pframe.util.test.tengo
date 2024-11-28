@@ -29,7 +29,7 @@ TestDecomposePfconvCfg := func() {
 			{ name: "pl7.app/sampleId", type: "String" }
 			]
 	})
-	test.equal(result, {
+	test.isEqual(result, {
 		purifiedCfg: {
 			partitionKeyLength: 0,
 			axes: [

@@ -3,7 +3,7 @@ pSpec := import(":pframes.spec")
 
 TestMakeTrace := func() {
 	trace1 := pSpec.makeTrace(undefined, {type: "type", label: "the label"})
-	test.equal(
+	test.isEqual(
 		trace1.value,
 		[{type: "type", label: "the label"}]
 	)
@@ -13,7 +13,7 @@ TestMakeTrace := func() {
 		name: "col1"
 	})
 	trace2 := pSpec.makeTrace(spec1, {type: "type2", id: "theid1", importance: 3, label: "the label 3"})
-	test.equal(
+	test.isEqual(
 		trace2.value,
 		[{type: "type", label: "the label"}, {type: "type2", id: "theid1", importance: 3, label: "the label 3"}]
 	)
