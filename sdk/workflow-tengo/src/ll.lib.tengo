@@ -7,6 +7,13 @@ log := import("log")
 text := import("text")
 
 /**
+ * Provides current API version available at runtime
+ */
+apiVersion := func() {
+	return 0 // stub code. Real API checker will appear here.
+}
+
+/**
  * Prints message to the pl log
  */
 print := func(txt, ...args) {
