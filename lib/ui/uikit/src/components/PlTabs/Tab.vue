@@ -30,7 +30,6 @@ onMounted(() => {
     if (el.offsetWidth < el.scrollWidth) {
       data.isOverflown = true;
     }
-    console.log('el.offsetWidth, el.scrollWidth', el.offsetWidth, el.scrollWidth);
   });
 });
 </script>

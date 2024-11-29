@@ -16,6 +16,12 @@ export function trimChars(str: string, chars: string[] = []) {
   return str;
 }
 
+export function trimCharsLeft(str: string, chars: string[] = []) {
+  str = str ? String(str) : '';
+  while (chars.includes(str.charAt(0))) str = str.substring(1);
+  return str;
+}
+
 export function extractFileName(filePath: string) {
   return filePath.replace(/^.*[\\/]/, '');
 }

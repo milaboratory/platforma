@@ -24,6 +24,7 @@ const props = defineProps<{
    */
   loading?: boolean;
 }>();
+
 const emits = defineEmits(['click']);
 
 const model = defineModel<M>({ required: true });
@@ -93,8 +94,6 @@ useElementPosition(root, (pos) => {
 
   optionsStyle.left = pos.left + 'px';
   optionsStyle.width = pos.width + 'px';
-
-  console.log(pos.top, optionsStyle);
 });
 
 const selectOption = (v: M | undefined) => {

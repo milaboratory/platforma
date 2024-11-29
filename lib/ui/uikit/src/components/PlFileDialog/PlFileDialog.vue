@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import style from './pl-file-dialog.module.scss';
-import { ref, useTemplateRef } from 'vue';
-import { listToOptions, notEmpty } from '@milaboratories/helpers';
-import type { ImportedFiles } from '@/types';
+import { computed, ref, useTemplateRef } from 'vue';
+import { notEmpty } from '@milaboratories/helpers';
+import type { ImportedFiles, SimpleOption } from '@/types';
 import { PlDialogModal } from '../PlDialogModal';
 import { PlBtnPrimary } from '../PlBtnPrimary';
 import { PlBtnGhost } from '../PlBtnGhost';
@@ -15,13 +15,40 @@ const emit = defineEmits<{
   (e: 'import:files', value: ImportedFiles): void;
 }>();
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
+    /**
+     * Controls the visibility of the modal.
+     *
+     * When `true`, the modal is open. When `false`, the modal is closed.
+     */
     modelValue: boolean;
-    extensions?: string[]; // with dot, like ['.fastq.gz', '.fastq']
+    /**
+     * Specifies the file extensions that are allowed for selection.
+     *
+     * Provide an array of strings representing file extensions (leading dot can be omitted)
+     * If not specified, all file types are allowed.
+     */
+    extensions?: string[];
+    /**
+     * Enables the selection of multiple files.
+     *
+     * When `true`, the user can select multiple files.
+     * When `false` or not specified, only a single file can be selected.
+     */
     multi?: boolean;
+    /**
+     * The custom title of the dialog.
+     */
     title?: string;
+    /**
+     * Automatically selects the initial storage option.
+     * When `true`, the default storage is pre-selected for the user (default: `true`)
+     */
     autoSelectStorage?: boolean;
+    /**
+     * If `true`, the modal window closes when clicking outside the modal area (default: `true`)
+     */
     closeOnOutsideClick?: boolean;
   }>(),
   {
@@ -33,6 +60,19 @@ withDefaults(
 );
 
 const mode = ref<'local' | 'remote'>('local');
+
+const defaultTitle = computed(() => (props.multi ? 'Select Files to Import' : 'Select File to Import'));
+
+const modeOptions = [
+  {
+    label: 'My Computer',
+    value: 'local',
+  },
+  {
+    label: 'Remote',
+    value: 'remote',
+  },
+] satisfies SimpleOption[];
 
 const closeModal = () => emit('update:modelValue', false);
 
@@ -46,7 +86,6 @@ const submit = () => {
 };
 
 const importFiles = (importedFiles: ImportedFiles) => {
-  console.log('emitted value', importedFiles);
   emit('import:files', importedFiles);
   closeModal();
 };
@@ -63,9 +102,9 @@ const importFiles = (importedFiles: ImportedFiles) => {
     height="720px"
     @update:model-value="closeModal"
   >
-    <template #title>{{ title ?? 'Select files' }}</template>
+    <template #title>{{ title ?? defaultTitle }}</template>
     <div style="margin: 0 24px">
-      <PlBtnGroup v-model="mode" :options="listToOptions(['local', 'remote'])" />
+      <PlBtnGroup v-model="mode" :options="modeOptions" />
     </div>
     <Remote v-if="mode === 'remote'" ref="remote" v-bind="$props" :submit="submit" />
     <Local v-if="mode === 'local'" :import-files="importFiles" v-bind="$props" />

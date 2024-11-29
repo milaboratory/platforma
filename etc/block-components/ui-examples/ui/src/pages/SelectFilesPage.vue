@@ -23,6 +23,8 @@ const onImport = (imported: ImportedFiles) => {
   data.fileList = imported.files;
 };
 
+const extensions = ['.png', '.jpg', '.fastq.gz', '.fastq.gz'];
+
 const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   if (v) {
     data.fileList[i] = v;
@@ -41,6 +43,7 @@ const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
           v-model="data.fileHandle"
           label="Select file"
           :file-dialog-close-on-outside-click="data.closeOnOutsideClick"
+          :extensions="extensions"
         />
       </PlContainer>
     </PlRow>
@@ -50,7 +53,7 @@ const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
     <PlRow>
       <PlContainer width="400px">
         <PlBtnPrimary @click="data.isMultiDialogOpen = true">
-          Open multiple files dialog
+          Open multiple files {{ extensions }}
         </PlBtnPrimary>
         <template v-for="(handle, i) of data.fileList" :key="i">
           <PlFileInput :model-value="handle" @update:model-value="(v) => updateHandle(v, i)" />
@@ -61,7 +64,7 @@ const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   <PlFileDialog
     v-model="data.isMultiDialogOpen"
     multi
-    :extensions="['png']"
+    :extensions="extensions"
     @import:files="onImport"
   />
 </template>

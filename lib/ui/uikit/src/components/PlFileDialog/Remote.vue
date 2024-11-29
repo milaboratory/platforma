@@ -4,11 +4,12 @@ import { watch, reactive, computed, toRef, onMounted } from 'vue';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
 import type { StorageHandle } from '@platforma-sdk/model';
 import type { ImportedFiles } from '@/types';
-import { getFilePathBreadcrumbs, type FileDialogItem } from './utils';
-import { PlTextField } from '../PlTextField';
+import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
 import { PlDropdown } from '../PlDropdown';
 import { useEventListener } from '@/composition/useEventListener';
 import { defaultData, useVisibleItems, vTextOverflown } from './remote';
+import { PlSearchField } from '../PlSearchField';
+import { PlIcon16 } from '../PlIcon16';
 
 defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -39,6 +40,8 @@ const resetData = () => {
   data.lastSelected = undefined;
 };
 
+const extensions = computed(() => normalizeExtensions(props.extensions));
+
 const visibleItems = useVisibleItems(data);
 
 const lookup = computed(() => {
@@ -58,8 +61,6 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
     return;
   }
 
-  console.log('handle', storageHandle, 'dirPath', dirPath);
-
   data.currentLoadingPath = dirPath;
 
   window.platforma.lsDriver
@@ -74,7 +75,7 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
           path: item.fullPath,
           name: item.name,
           isDir: item.type === 'dir',
-          canBeSelected: item.type === 'file' && (!props.extensions || props.extensions.some((ext) => item.fullPath.endsWith(ext))),
+          canBeSelected: item.type === 'file' && (!extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext))),
           handle: item.type === 'file' ? item.handle : undefined,
           selected: false,
         }))
@@ -212,9 +213,7 @@ watch(
   { immediate: true },
 );
 
-watch([() => data.dirPath, () => data.storageEntry], (n, o) => {
-  console.log('n', JSON.stringify(n));
-  console.log('o', JSON.stringify(o));
+watch([() => data.dirPath, () => data.storageEntry], () => {
   load();
 });
 
@@ -269,7 +268,7 @@ onMounted(loadAvailableStorages);
         <PlDropdown v-model="data.storageEntry" label="Select storage" :options="data.storageOptions" />
       </div>
       <div>
-        <PlTextField v-model="data.search" label="Search in folder" :clearable="() => ''" />
+        <PlSearchField v-model="data.search" label="Search in folder" clearable />
       </div>
     </div>
     <div :class="style['ls-container']">
@@ -277,12 +276,10 @@ onMounted(loadAvailableStorages);
         <div :class="style['breadcrumbs']">
           <template v-for="(s, i) in breadcrumbs" :key="i">
             <div :title="s.path" @click="setDirPath(s.path)">{{ s.name }}</div>
-            <i v-if="s.index !== breadcrumbs.length - 1" class="icon-16 icon-chevron-right" />
+            <PlIcon16 v-if="s.index !== breadcrumbs.length - 1" name="chevron-right" />
           </template>
         </div>
-        <div class="d-flex ml-auto align-center gap-12">
-          <span :class="style.selected">Selected: {{ selectedFiles.length }}</span>
-        </div>
+        <div :class="style.selected">Selected: {{ selectedFiles.length }}</div>
       </div>
       <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">
         <i class="mask-24 mask-loading loader-icon" />
