@@ -27,6 +27,9 @@ import {
   PTableDef,
   mapPTableDef,
   ValueType,
+  PTableRecordSingleValueFilter,
+  PTableRecordSingleValueFilterV2,
+  PTableRecordFilter,
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
 import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
@@ -45,6 +48,15 @@ function blobKey(res: ResourceInfo): string {
 type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
+
+function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueFilter[] {
+  const unsupportedFilters = filters.filter((f) => f.type !== 'bySingleColumn');
+  if (unsupportedFilters.length > 0) {
+    const unsupportedFiltersJson = JSON.stringify(unsupportedFilters);
+    throw new Error(`unsupported filters: ${unsupportedFiltersJson}`);
+  }
+  return filters as PTableRecordSingleValueFilter[];
+}
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
   public readonly pFrame = new PFrame();
@@ -166,7 +178,7 @@ export class PFrameDriver implements SdkPFrameDriver {
           async () =>
             await pFrame.pFrame.createTable({
               src: joinEntryToInternal(params.def.src),
-              filters: params.def.filters
+              filters: migrateFilters(params.def.filters),
             })
         );
         return params.def.sorting.length !== 0 ? rawPTable.sort(params.def.sorting) : rawPTable;
@@ -244,7 +256,7 @@ export class PFrameDriver implements SdkPFrameDriver {
       async () =>
         await this.pFrames.getByKey(handle).pFrame.createTable({
           src: joinEntryToInternal(request.src),
-          filters: request.filters
+          filters: migrateFilters(request.filters),
         })
     );
 
@@ -273,7 +285,10 @@ export class PFrameDriver implements SdkPFrameDriver {
     request: UniqueValuesRequest
   ): Promise<UniqueValuesResponse> {
     return await this.concurrencyLimiter.run(
-      async () => await this.pFrames.getByKey(handle).pFrame.getUniqueValues(request)
+      async () => await this.pFrames.getByKey(handle).pFrame.getUniqueValues({
+        ...request,
+        filters: migrateFilters(request.filters),
+      })
     );
   }
 
