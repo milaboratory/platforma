@@ -18,7 +18,7 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs({
+  .withArgs<BlockArgs>({
     sources: undefined
   })
 
