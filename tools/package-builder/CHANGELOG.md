@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.12.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
 ## 2.11.1
 
 ### Patch Changes

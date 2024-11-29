@@ -1,5 +1,11 @@
 # @platforma-sdk/oclif-index
 
+## 1.1.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
 ## 1.0.3
 
 ### Patch Changes

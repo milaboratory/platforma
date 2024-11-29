@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.13.15
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-model-common@1.7.0
+
 ## 1.13.5
 
 ### Patch Changes

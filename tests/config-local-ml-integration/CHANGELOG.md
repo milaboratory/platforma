@@ -1,5 +1,12 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.1.86
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-middle-layer@1.17.0
+
 ## 1.1.85
 
 ### Patch Changes

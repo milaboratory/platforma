@@ -1,5 +1,13 @@
 # @platforma-sdk/test
 
+## 1.13.15
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-middle-layer@1.17.0
+  - @platforma-sdk/model@1.13.15
+
 ## 1.13.14
 
 ### Patch Changes
