@@ -259,10 +259,18 @@ export type PlTableFilter = PlTableFilterNumber | PlTableFilterString;
 /** All types of PlTableFilters filter entries */
 export type PlTableFilterType = PlTableFilter['type'];
 
+export type PlTableFilterEntry = {
+  columnId: string
+  filter: PlTableFilter;
+  disabled: boolean;
+}
+
+export type PlTableFiltersState = PlTableFilterEntry[];
+
 /** PlTableFilters model */
 export type PlTableFiltersModel = {
   /** Internal PlTableFilters component state, do not change! */
-  state?: Record<string, PlTableFilter>;
+  state?: PlTableFiltersState;
   /** Resulting filters which should be used in Join */
   filters?: PTableRecordFilter[];
 };
