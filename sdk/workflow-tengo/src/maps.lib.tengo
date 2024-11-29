@@ -29,6 +29,14 @@ containsKey := func(map, key) {
 	return false
 }
 
+// Load effective version of map key checker if it exists in controller's API
+plapi := import("plapi")
+if ll.methodExists(plapi, "mapHasKey") {
+	containsKey = func(map, key) {
+		return plapi.mapHasKey(map, key)
+	}
+}
+
 /**
  * Transforms all keys of the map with a function and returns a new map with these keys.
  *

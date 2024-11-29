@@ -59,7 +59,7 @@ createUniversal := func(tpl, isEph, inputs) {
 		 */
 		output: func(name, ...cache) {
 			ll.assert(len(cache) == 0 || is_int(cache[0]), "cache should be a number (use 'times' tengo library), got: %v", cache)
-			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name)
+			out := renderer.getFutureOutputField(tplutil.TEMPLATE_OUTPUT_PREFIX + name, isEph)
 			if len(cache) > 0 && cache[0] > 0 {
 				cache = cache[0]
 				tx.cacheSetToField(out.id, cache)
