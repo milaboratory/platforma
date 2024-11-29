@@ -75,7 +75,7 @@ packages:
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
-  # - tests/drivers-ml-blocks-integration
+  - tests/drivers-ml-blocks-integration
 
   # Etc
 
