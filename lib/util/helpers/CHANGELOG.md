@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.8
+
+### Patch Changes
+
+- 401f5f4: Add new component PlSearchField + some PlFileDialog css fixes
+
 ## 1.6.7
 
 ### Patch Changes
