@@ -291,6 +291,7 @@ getCtx := func() {
 }
 
 export toStrict({
+	apiVersion: apiVersion,
 	print: print,
 	panic: panic,
 	assert: assert,
