@@ -1,12 +1,35 @@
 <script setup lang="ts">
 import type { ImportFileHandle } from '@platforma-sdk/model';
-import { PlBlockPage, PlContainer, PlRow, PlFileInput, PlCheckbox } from '@platforma-sdk/ui-vue';
+import type { ImportedFiles } from '@platforma-sdk/ui-vue';
+import {
+  PlBlockPage,
+  PlContainer,
+  PlRow,
+  PlFileInput,
+  PlCheckbox,
+  PlBtnPrimary,
+  PlFileDialog
+} from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
   fileHandle: undefined as ImportFileHandle | undefined,
-  closeOnOutsideClick: true
+  fileList: [] as ImportFileHandle[],
+  closeOnOutsideClick: true,
+  isMultiDialogOpen: false
 });
+
+const onImport = (imported: ImportedFiles) => {
+  data.fileList = imported.files;
+};
+
+const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
+  if (v) {
+    data.fileList[i] = v;
+  } else {
+    data.fileList.splice(i, 1);
+  }
+};
 </script>
 
 <template>
@@ -24,5 +47,21 @@ const data = reactive({
     <PlRow>
       <PlCheckbox v-model="data.closeOnOutsideClick">Close File dialog on outside click</PlCheckbox>
     </PlRow>
+    <PlRow>
+      <PlContainer width="400px">
+        <PlBtnPrimary @click="data.isMultiDialogOpen = true">
+          Open multiple files dialog
+        </PlBtnPrimary>
+        <template v-for="(handle, i) of data.fileList" :key="i">
+          <PlFileInput :model-value="handle" @update:model-value="(v) => updateHandle(v, i)" />
+        </template>
+      </PlContainer>
+    </PlRow>
   </PlBlockPage>
+  <PlFileDialog
+    v-model="data.isMultiDialogOpen"
+    multi
+    :extensions="['png']"
+    @import:files="onImport"
+  />
 </template>
