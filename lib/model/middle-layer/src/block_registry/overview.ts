@@ -4,13 +4,20 @@ import { BlockPackSpec } from './block_pack_spec';
 import { RegistryEntry } from './registry_spec';
 
 /**
- * Latest information about specific block pack. Contain information about latest version of the package.
+ * Information about specific block pack version.
  * */
-export const BlockPackOverview = z.object({
+export const SingleBlockPackOverview = z.object({
   registryId: z.string(),
   id: BlockPackId,
   meta: BlockPackMetaEmbeddedBytes,
-  spec: BlockPackSpec,
+  spec: BlockPackSpec
+});
+export type SingleBlockPackOverview = z.infer<typeof SingleBlockPackOverview>;
+
+/**
+ * Latest information about specific block pack. Contain information about latest version of the package.
+ * */
+export const BlockPackOverview = SingleBlockPackOverview.extend({
   otherVersions: z.array(SemVer)
 });
 export type BlockPackOverview = z.infer<typeof BlockPackOverview>;

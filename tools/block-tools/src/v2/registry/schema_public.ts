@@ -45,8 +45,12 @@ export const PackageOverview = z.object({
 });
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
+export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
+  return `${bp.organization}/${bp.name}/${PackageOverviewFileName}`;
+}
+
 export function packageOverviewPath(bp: BlockPackIdNoVersion): string {
-  return `${MainPrefix}${bp.organization}/${bp.name}/${PackageOverviewFileName}`;
+  return `${MainPrefix}${packageOverviewPathInsideV2(bp)}`;
 }
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;

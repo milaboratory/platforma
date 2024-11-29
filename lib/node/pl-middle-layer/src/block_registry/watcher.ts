@@ -72,7 +72,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
         case 'from-registry-v2': {
           try {
             const registry = this.registryProvider.getRegistry(req.registryUrl);
-            const spec = (await registry.getOverviewForSpec(req.id))?.spec;
+            const spec = (await registry.getLatestOverviewForSpec(req.id))?.spec;
             if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
             if (blockPackIdEquals(spec.id, req.id)) return undefined;
 
