@@ -670,7 +670,7 @@ field = func(f) {
 			}
 
 			return fieldInfo.Type != constants.FTYPE_INPUT &&
-				fieldInfo != constants.FTYPE_OUTPUT
+				fieldInfo.Type != constants.FTYPE_OUTPUT
 		},
 
 		/**
