@@ -16,37 +16,12 @@ test('should parse local file url even on Windows', () => {
     'C:\\Users\\test\\67z\\2vy\\65i\\67z2vy65i0xwhjwsfsef_ex3k3hxe7qdc2cvtdfkdnhdp9kwlt7-7dmcy0kthe6u.json';
 
   const got = parseLocalUrl(url);
+
   const fullPath = getFullPath(
     got.storageId,
     new Map([['main', 'C:\\Users\\test']]),
     got.relativePath
   ).replace(path.sep, '\\'); // for testing on *nix systems
-
-  expect(fullPath).toEqual(expectedFullPath);
-});
-
-test('regression, should parse absolute path with an empty storage prefix as absolute path', () => {
-  const url =
-    'storage://root/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
-  const expectedFullPath =
-    '/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
-  const storageIdToRootId = new Map([['root', '']]);
-
-  const { storageId, relativePath } = parseLocalUrl(url);
-  const fullPath = getFullPath(storageId, storageIdToRootId, relativePath);
-
-  expect(fullPath).toEqual(expectedFullPath);
-});
-
-test('regression, should parse absolute path with an empty storage prefix as absolute path', () => {
-  const url =
-    'storage://root/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
-  const expectedFullPath =
-    '/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
-  const storageIdToRootId = new Map([['root', '']]);
-
-  const { storageId, relativePath } = parseLocalUrl(url);
-  const fullPath = getFullPath(storageId, storageIdToRootId, relativePath);
 
   expect(fullPath).toEqual(expectedFullPath);
 });

@@ -1978,6 +1978,67 @@ importers:
         specifier: 'catalog:'
         version: 2.1.5(@types/node@20.16.15)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.8)
 
+  tests/drivers-ml-blocks-integration:
+    dependencies:
+      '@milaboratories/milaboratories.test-download-file':
+        specifier: workspace:*
+        version: link:../../etc/blocks/download-file/block
+      '@milaboratories/milaboratories.test-download-file.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/download-file/model
+      '@milaboratories/milaboratories.test-enter-numbers':
+        specifier: workspace:*
+        version: link:../../etc/blocks/enter-numbers
+      '@milaboratories/milaboratories.test-enter-numbers.model':
+        specifier: workspace:*
+        version: link:../../etc/block-components/enter-numbers/model
+      '@milaboratories/milaboratories.test-read-logs':
+        specifier: workspace:*
+        version: link:../../etc/blocks/read-logs/block
+      '@milaboratories/milaboratories.test-read-logs.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/read-logs/model
+      '@milaboratories/milaboratories.test-sum-numbers':
+        specifier: workspace:*
+        version: link:../../etc/blocks/sum-numbers/block
+      '@milaboratories/milaboratories.test-sum-numbers.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/sum-numbers/model
+      '@milaboratories/milaboratories.test-upload-file':
+        specifier: workspace:*
+        version: link:../../etc/blocks/upload-file/block
+      '@milaboratories/milaboratories.test-upload-file.model':
+        specifier: workspace:*
+        version: link:../../etc/blocks/upload-file/model
+      '@milaboratories/pl-client':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-client
+      '@milaboratories/pl-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/node/pl-middle-layer
+      '@milaboratories/ts-helpers':
+        specifier: workspace:*
+        version: link:../../lib/node/ts-helpers
+      '@platforma-sdk/test':
+        specifier: workspace:*
+        version: link:../../sdk/test
+    devDependencies:
+      '@milaboratories/platforma-build-configs':
+        specifier: workspace:*
+        version: link:../../lib/util/build-configs
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.16.15
+      typescript:
+        specifier: 'catalog:'
+        version: 5.5.4
+      vite:
+        specifier: 'catalog:'
+        version: 5.4.11(@types/node@20.16.15)(sass@1.77.8)
+      vitest:
+        specifier: 'catalog:'
+        version: 2.1.5(@types/node@20.16.15)(happy-dom@14.12.3)(jsdom@24.1.3)(sass@1.77.8)
+
   tests/helper:
     dependencies:
       '@milaboratories/helpers':
