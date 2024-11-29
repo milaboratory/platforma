@@ -673,6 +673,12 @@ field = func(f) {
 				fieldInfo.Type != constants.FTYPE_OUTPUT
 		},
 
+		expectNonEphemeral: func() {
+			rr := field(self.id)
+			rr.isEphemeral = func() { return false }
+			return rr
+		},
+
 		/**
 		 * Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays to not make hidden mistakes in cache time ranges.
 		 * Sets the cache time.
