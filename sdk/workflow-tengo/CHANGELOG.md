@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.4.1
+
+### Patch Changes
+
+- ea8761e: Make smart fields and resources to automatically choose the best possible type of future field getter (ephemeral or not)
+
 ## 2.4.0
 
 ### Minor Changes
