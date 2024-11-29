@@ -47,6 +47,7 @@ export class ClientDownload {
 
     this.logger.info(`download blob from url ${downloadUrl}...`);
 
+    console.log('HERE download.ts:50:', downloadUrl);
     return isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
       : await this.remoteFileDownloader.download(downloadUrl, toHeadersMap(headers), signal);
@@ -54,8 +55,9 @@ export class ClientDownload {
 
   async readLocalFile(url: string): Promise<DownloadResponse> {
     const { storageId, relativePath } = parseLocalUrl(url);
+    console.log('HERE download.ts:58:', storageId, relativePath);
     const fullPath = getFullPath(storageId, this.localStorageIdsToRoot, relativePath);
-
+    console.log('HERE download.ts:59:', fullPath, storageId, relativePath);
     return {
       content: Readable.toWeb(fs.createReadStream(fullPath)),
       size: (await fsp.stat(fullPath)).size

@@ -25,6 +25,32 @@ test('should parse local file url even on Windows', () => {
   expect(fullPath).toEqual(expectedFullPath);
 });
 
+test('regression, should parse absolute path with an empty storage prefix as absolute path', () => {
+  const url =
+    'storage://root/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
+  const expectedFullPath =
+    '/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
+  const storageIdToRootId = new Map([['root', '']]);
+
+  const { storageId, relativePath } = parseLocalUrl(url);
+  const fullPath = getFullPath(storageId, storageIdToRootId, relativePath);
+
+  expect(fullPath).toEqual(expectedFullPath);
+});
+
+test('regression, should parse absolute path with an empty storage prefix as absolute path', () => {
+  const url =
+    'storage://root/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
+  const expectedFullPath =
+    '/home/snyssfx/prog/mi/platforma/assets/another_answer_to_the_ultimate_question.txt';
+  const storageIdToRootId = new Map([['root', '']]);
+
+  const { storageId, relativePath } = parseLocalUrl(url);
+  const fullPath = getFullPath(storageId, storageIdToRootId, relativePath);
+
+  expect(fullPath).toEqual(expectedFullPath);
+});
+
 test('client download from a local file', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const storageRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'test'));
