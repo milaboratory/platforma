@@ -1,8 +1,17 @@
-import { BlockModel, InferHrefType, InferOutputsType, PlRef } from '@platforma-sdk/model';
+import {
+  Args,
+  BlockModel,
+  getJsonField,
+  InferHrefType,
+  InferOutputsType,
+  isEmpty,
+  not,
+  PlRef
+} from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const BlockArgs = z.object({
-  sources: z.array(PlRef)
+  sources: z.array(PlRef).optional()
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;
@@ -10,7 +19,7 @@ export type BlockArgs = z.infer<typeof BlockArgs>;
 export const platforma = BlockModel.create('Heavy')
 
   .withArgs({
-    sources: []
+    sources: undefined
   })
 
   .output('opts', (ctx) =>
@@ -27,6 +36,8 @@ export const platforma = BlockModel.create('Heavy')
   )
 
   .output('sum', (ctx) => ctx.outputs?.resolve('sum')?.getDataAsJson<number>())
+
+  .argsValid(not(isEmpty(getJsonField(Args, 'sources'))))
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];

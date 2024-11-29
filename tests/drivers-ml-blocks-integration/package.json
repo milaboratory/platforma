@@ -9,6 +9,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "undici": "catalog:",
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@milaboratories/pl-client": "workspace:*",

@@ -1,9 +1,0 @@
-organization: milaboratory
-package: sum-numbers
-files:
-  template.plj.gz: backend/dist/tengo/tpl/main.plj.gz
-  config.json: config/dist/config.json
-  frontend.tgz: frontend/frontend.tgz
-meta:
-  title: Sum Numbers
-  description: Block description

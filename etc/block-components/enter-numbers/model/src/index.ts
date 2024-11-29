@@ -1,5 +1,13 @@
-import { BlockModel, InferHrefType, InferOutputsType } from '@platforma-sdk/model';
-import {z} from 'zod';
+import {
+  Args,
+  BlockModel,
+  getJsonField,
+  InferHrefType,
+  InferOutputsType,
+  isEmpty,
+  not
+} from '@platforma-sdk/model';
+import { z } from 'zod';
 
 export const $BlockArgs = z.object({
   numbers: z.array(z.coerce.number())
@@ -7,13 +15,13 @@ export const $BlockArgs = z.object({
 
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
-export const platforma = BlockModel.create<BlockArgs>('Heavy')
+export const platforma = BlockModel.create('Heavy')
 
-  .initialArgs({ numbers: [1, 2, 3] })
+  .withArgs({ numbers: [] })
 
-  .output('numbers', (ctx) =>
-    ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>()
-  )
+  .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
+
+  .argsValid((ctx) => ctx.args.numbers.length > 0)
 
   .sections((ctx) => {
     return [{ type: 'link', href: '/', label: 'Main' }];
