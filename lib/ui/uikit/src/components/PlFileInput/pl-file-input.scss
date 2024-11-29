@@ -24,6 +24,7 @@
 
   padding: 0 8px;
   gap: 8px;
+  cursor: pointer;
 
   &__envelope {
     font-family: var(--font-family-base);
@@ -64,11 +65,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    cursor: pointer;
-
-    &:focus {
-      outline: none;
-    }
+    line-height: 18px;
 
     &:empty::before {
       color: var(--color-placeholder);

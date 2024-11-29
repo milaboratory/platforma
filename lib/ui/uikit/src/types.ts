@@ -74,7 +74,7 @@ export type MaskIconName24 = (typeof maskIcons24)[number];
 export type SliderMode = 'input' | 'text';
 
 export type ImportedFiles = {
-  storageHandle: StorageHandle;
+  storageHandle?: StorageHandle;
   files: ImportFileHandle[];
 };
 
