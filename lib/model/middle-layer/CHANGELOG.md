@@ -1,5 +1,12 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.5.12
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-model-common@1.7.0
+
 ## 1.5.11
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.8.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
 ## 2.7.2
 
 ### Patch Changes

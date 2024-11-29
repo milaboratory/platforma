@@ -1,5 +1,15 @@
 # @milaboratories/uikit-playground
 
+## 0.1.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
+### Patch Changes
+
+- @milaboratories/uikit@2.2.17
+
 ## 0.0.64
 
 ### Patch Changes

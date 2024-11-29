@@ -1,5 +1,12 @@
 # @milaboratories/pl-drivers
 
+## 1.3.24
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-model-common@1.7.0
+
 ## 1.3.23
 
 ### Patch Changes

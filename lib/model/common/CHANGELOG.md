@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.7.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
 ## 1.6.4
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @milaboratories/ui-vue-docs
 
+## 0.2.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
+### Patch Changes
+
+- @platforma-sdk/model@1.13.15
+- @milaboratories/uikit@2.2.17
+- @platforma-sdk/ui-vue@1.13.15
+
 ## 0.1.81
 
 ### Patch Changes

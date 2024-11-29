@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.17.0
+
+### Minor Changes
+
+- a5100ac: PFrames case insensitive filters
+
+### Patch Changes
+
+- Updated dependencies [a5100ac]
+  - @milaboratories/pl-model-common@1.7.0
+  - @platforma-sdk/block-tools@2.3.29
+  - @milaboratories/pl-model-middle-layer@1.5.12
+  - @milaboratories/pl-drivers@1.3.24
+  - @platforma-sdk/model@1.13.15
+
 ## 1.16.9
 
 ### Patch Changes
