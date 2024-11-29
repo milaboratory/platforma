@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.13.18
+
+### Patch Changes
+
+- a85e3f7: Add a "shine wave" animation to the block's progress bar
+
 ## 1.13.17
 
 ### Patch Changes
