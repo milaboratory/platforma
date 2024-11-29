@@ -1,0 +1,33 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+text := import("text")
+file := import("@platforma-sdk/workflow-tengo:file")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+wf.body(func(args) {
+	inputFile := file.importFile(args.inputHandle)
+
+	readLogsSW := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:read-file-to-stdout-with-sleep")
+
+	run := exec.builder().
+		software(readLogsSW).
+		addFile("file.txt", inputFile.file).
+		arg("file.txt")
+
+	for _, a in text.split(args.readFileWithSleepArgs, ",") {
+		run = run.arg(a)
+	}
+
+	result := run.run()
+
+	return {
+		outputs: {
+			handle: inputFile.handle,
+			blob: inputFile.file,
+			log: result.getStdoutStream()
+		},
+		exports: {}
+	}
+})

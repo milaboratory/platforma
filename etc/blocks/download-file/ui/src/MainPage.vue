@@ -18,7 +18,6 @@ const progress = computed(() => {
 
 <template>
     <PlBlockPage style="max-width: 100%">
-        inputHandle: {{ app.model.args.inputHandle }}
         <PlFileInput v-model="app.model.args.inputHandle" label="Select file to import" :progress="progress" />
 
         <PlAlert type="success">

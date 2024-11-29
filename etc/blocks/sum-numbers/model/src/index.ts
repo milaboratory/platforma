@@ -1,14 +1,8 @@
-import {
-  BlockModel,
-  InferHrefType,
-  InferOutputsType,
-  isPColumnSpec,
-  Ref
-} from '@platforma-sdk/model';
+import { BlockModel, InferHrefType, InferOutputsType, PlRef } from '@platforma-sdk/model';
 import { z } from 'zod';
 
 export const BlockArgs = z.object({
-  sources: z.array(Ref)
+  sources: z.array(PlRef)
 });
 
 export type BlockArgs = z.infer<typeof BlockArgs>;

@@ -103,6 +103,7 @@ export class DownloadBlobTask {
   }
 
   private setError(e: any) {
+    this.done = true;
     this.error = e;
   }
 }
