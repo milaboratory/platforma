@@ -651,7 +651,7 @@ builder := func() {
 				 * @return field - a reference to the file stream resource.
 				 */
 				getFileStream: func(fileName) {
-					return tpl.output("fileStreams", cache).getFutureInputField(fileName)
+					return tpl.output("fileStreams", cache).getFutureInputField(fileName, true)
 				},
 
 				/**

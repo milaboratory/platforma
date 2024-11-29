@@ -1,0 +1,17 @@
+test := import(":test")
+ll := import(":ll")
+plapi := import("plapi")
+
+Test_ll_MethodExists := func() {
+    //
+    // Library module checks
+    //
+	test.isTrue(ll.methodExists(ll, "assert"), "wrong result from 'methodExists' check for ll.assert")
+	test.isFalse(ll.methodExists(ll, "nonexistent"), "wrong result from 'methodExists' check for ll.nonexistent")
+
+    //
+    // Builtin module checks
+    //
+	test.isTrue(ll.methodExists(plapi, "newFieldID"), "wrong result from 'methodExists' check for plapi.newFieldID")
+	test.isFalse(ll.methodExists(plapi, "nonexistent"), "wrong result from 'methodExists' check for plapi.nonexistent")
+}
