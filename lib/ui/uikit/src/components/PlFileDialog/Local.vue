@@ -2,8 +2,9 @@
 import style from './pl-file-dialog.module.scss';
 import type { ImportedFiles } from '@/types';
 import { PlIcon24 } from '../PlIcon24';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import type { OpenDialogFilter } from '@platforma-sdk/model';
+import { normalizeExtensions } from './utils';
 
 const props = defineProps<{
   importFiles: (value: ImportedFiles) => void;
@@ -15,6 +16,8 @@ const data = reactive({
   error: undefined as unknown,
 });
 
+const label = computed(() => (props.multi ? 'Drag & Drop files here or click to add' : 'Drag & Drop file here or click to add'));
+
 const onDrop = async (ev: DragEvent) => {
   const fileToImportHandle = window.platforma?.lsDriver?.fileToImportHandle;
 
@@ -22,9 +25,12 @@ const onDrop = async (ev: DragEvent) => {
     return console.error('API platforma.lsDriver.fileToImportHandle is not available');
   }
 
+  const extensions = normalizeExtensions(props.extensions);
+
   const files = await Promise.all(
     [...(ev.dataTransfer?.files ?? [])]
       .filter((f) => !!f)
+      .filter((f) => (extensions ? extensions.some((ext) => f.name.endsWith(ext)) : true))
       .map((file) => {
         return fileToImportHandle(file);
       }),
@@ -50,7 +56,7 @@ const openNativeDialog = async () => {
   if (props.multi) {
     window.platforma?.lsDriver
       .showOpenMultipleFilesDialog({
-        title: 'Select file',
+        title: 'Select files to import',
         filters,
       })
       .then(({ files }) => {
@@ -64,7 +70,7 @@ const openNativeDialog = async () => {
   } else {
     window.platforma?.lsDriver
       .showOpenSingleFileDialog({
-        title: 'Select file',
+        title: 'Select file to import',
         filters,
       })
       .then(({ file }) => {
@@ -82,8 +88,8 @@ const openNativeDialog = async () => {
 <template>
   <div :class="style.local" @drop="onDrop" @dragover.prevent @click="openNativeDialog">
     <PlIcon24 name="cloud-upload" />
-    <span>Drag & Drop file(s) here or click to add</span>
-    <span v-if="extensions">Supported formats: {{ extensions.join(', ') }}</span>
+    <span>{{ label }}</span>
+    <span v-if="extensions" :class="style.supported">Supported formats: {{ extensions.join(', ') }}</span>
     <span v-if="data.error" class="alert-error">{{ data.error }}</span>
   </div>
 </template>
