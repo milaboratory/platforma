@@ -1,9 +1,17 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 text := import("text")
+slices := import("@platforma-sdk/workflow-tengo:slices")
 
 wf.prepare(func(args) {
+	if is_undefined(args.sources) {
+		return {}
+	}
+
 	numbers := {}
+
+	ll.assert(slices.length(args.sources) > 0, "At least 1 data source must be set. It's needed in 'block error test'")
+
 	for i, ref in args.sources {
 		numbers["number"+string(i)] = wf.resolve(ref, { errIfMissing: true })
 	}

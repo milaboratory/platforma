@@ -1,9 +1,0 @@
-organization: milaboratory
-package: enter-numbers
-meta:
-  title: Enter Numbers
-  description: Block description
-files:
-  template.plj.gz: backend/dist/tengo/tpl/main.plj.gz
-  config.json: config/dist/config.json
-  frontend.tgz: frontend/frontend.tgz

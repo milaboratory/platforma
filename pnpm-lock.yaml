@@ -2022,6 +2022,9 @@ importers:
       '@platforma-sdk/test':
         specifier: workspace:*
         version: link:../../sdk/test
+      undici:
+        specifier: 'catalog:'
+        version: 6.21.0
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
