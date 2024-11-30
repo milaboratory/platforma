@@ -1,5 +1,21 @@
 # @milaboratories/pl-middle-layer
 
+## 1.18.0
+
+### Minor Changes
+
+- dfad2d0: PFrames case insensitive filters
+
+### Patch Changes
+
+- Updated dependencies [dfad2d0]
+  - @platforma-sdk/workflow-tengo@2.5.0
+  - @milaboratories/pl-model-common@1.8.0
+  - @milaboratories/pl-model-middle-layer@1.5.13
+  - @milaboratories/pl-drivers@1.3.25
+  - @platforma-sdk/model@1.14.0
+  - @platforma-sdk/block-tools@2.3.30
+
 ## 1.17.1
 
 ### Patch Changes
