@@ -6,7 +6,7 @@ import canonicalize from 'canonicalize';
 import type {
   PlTableFiltersModel,
   PTableRecordFilter,
-  SingleValuePredicate,
+  SingleValuePredicateV2,
   PlTableFilterType,
   PlTableFilterNumberType,
   PlTableFilterStringType,
@@ -327,7 +327,7 @@ const makeWildcardOptions = (column: PTableColumnSpec, reference: string) => {
   }));
 };
 
-const makePredicate = (filter: PlTableFilter): SingleValuePredicate => {
+const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
   const type = filter.type;
   switch (type) {
     case 'isNotNA':
@@ -438,7 +438,7 @@ const makeFilters = (state: Record<string, PlTableFilter>): PTableRecordFilter[]
       const _ = spec;
 
       return {
-        type: 'bySingleColumn',
+        type: 'bySingleColumnV2',
         column: columnId,
         predicate,
       } satisfies PTableRecordFilter;
