@@ -259,13 +259,21 @@ export type PlTableFilter = PlTableFilterNumber | PlTableFilterString;
 /** All types of PlTableFilters filter entries */
 export type PlTableFilterType = PlTableFilter['type'];
 
-export type PlTableFilterEntry = {
-  columnId: string
+/** Internal grid column identifier */
+export type PlTableFilterColumnId = string;
+
+/** PlTableFiltersState entry */
+export type PlTableFiltersStateEntry = {
+  /** Column identifier */
+  columnId: PlTableFilterColumnId;
+  /** Active filter */
   filter: PlTableFilter;
+  /** Flag to temporarily disable filter */
   disabled: boolean;
 }
 
-export type PlTableFiltersState = PlTableFilterEntry[];
+/** PlTableFiltersModel state */
+export type PlTableFiltersState = PlTableFiltersStateEntry[];
 
 /** PlTableFilters model */
 export type PlTableFiltersModel = {
