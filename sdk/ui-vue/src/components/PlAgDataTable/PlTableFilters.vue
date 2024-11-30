@@ -14,10 +14,13 @@ import type {
   PTableColumnSpec,
   PTableColumnId,
   PlTableFiltersState,
-  PlTableFilterEntry,
+  PlTableFiltersStateEntry,
+  PlTableFilterColumnId,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
 import type { PlTableFiltersDefault, PlTableFiltersRestriction } from './types';
+import PlAgDataTableFilterManager from './PlAgDataTableFilterManager.vue';
+import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
 import './pl-table-filters.scss';
 
 const model = defineModel<PlTableFiltersModel>({ required: true });
@@ -28,21 +31,12 @@ const props = defineProps<{
 }>();
 const { columns, restrictions, defaults } = toRefs(props);
 
-import PlAgDataTableFilterManager from './PlAgDataTableFilterManager.vue';
-import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
-const showManager = ref(false);
-const showManagerAddFilters = ref(false);
-const selectedColumnIdForAdd = ref<string>();
-const mounted = ref(false);
-
-const makeColumnId = (column: PTableColumnId | PTableColumnSpec): string => canonicalize(column.id)!;
+const makeColumnId = (column: PTableColumnId | PTableColumnSpec): PlTableFilterColumnId => canonicalize(column.id)!;
 
 (() => {
   let state = model.value.state;
-  if (state === undefined) {
-    model.value.state = [];
-  } else if (typeof state === 'object' && !Array.isArray(state)) {
-    model.value.state = Object.entries(state as unknown as Record<string, PlTableFilter>).map(([id, filter]) => ({
+  if (!!state && typeof state === 'object' && !Array.isArray(state)) {
+    model.value.state = Object.entries(state as unknown as Record<PlTableFilterColumnId, PlTableFilter>).map(([id, filter]) => ({
       columnId: id,
       filter,
       disabled: false,
@@ -50,50 +44,45 @@ const makeColumnId = (column: PTableColumnId | PTableColumnSpec): string => cano
   }
 })();
 
-const columnsWithIds = computed(() => {
-  return columns.value
-    .filter((column) => {
-      const type = column.type;
-      switch (type) {
-        case 'axis':
-          return column.spec.type !== 'Bytes';
-        case 'column':
-          return column.spec.valueType !== 'Bytes';
-        default:
-          throw Error(`unsupported data type: ${type satisfies never}`);
-      }
-    })
-    .map((column) => ({
-      column,
-      id: makeColumnId(column),
-    }));
-});
-const restrictionsMap = computed(() => {
-  const restrictionsValue = restrictions.value ?? [];
-  const map: Record<string, PlTableFilterType[]> = {};
-  for (const { column, id } of columnsWithIds.value) {
-    const entry = lodash.find(restrictionsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
-    if (entry !== undefined) {
-      map[id] = entry.allowedFilterTypes;
+const columnsById = computed<Record<PlTableFilterColumnId, PTableColumnSpec>>(() => {
+  const filterableColumn = columns.value.filter((column) => {
+    const type = column.type;
+    switch (type) {
+      case 'axis':
+        return column.spec.type !== 'Bytes';
+      case 'column':
+        return column.spec.valueType !== 'Bytes';
+      default:
+        throw Error(`unsupported data type: ${type satisfies never}`);
     }
+  });
+  const result: Record<PlTableFilterColumnId, PTableColumnSpec> = {};
+  for (const column of filterableColumn) {
+    result[makeColumnId(column)] = column;
+  }
+  return result;
+});
+const restrictionsMap = computed<Record<PlTableFilterColumnId, PlTableFilterType[]>>(() => {
+  const restrictionsValue = restrictions.value ?? [];
+  const map: Record<PlTableFilterColumnId, PlTableFilterType[]> = {};
+  for (const [id, column] of Object.entries(columnsById.value)) {
+    const entry = lodash.find(restrictionsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
+    if (entry) map[id] = entry.allowedFilterTypes;
   }
   return map;
 });
-const defaultsMap = computed(() => {
+const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEntry>>(() => {
   const defaultsValue = defaults.value ?? [];
-  const map: PlTableFiltersState = [];
-  for (const { column, id } of columnsWithIds.value) {
+  const map: Record<PlTableFilterColumnId, PlTableFiltersStateEntry> = {};
+  for (const [id, column] of Object.entries(columnsById.value)) {
     const entry = lodash.find(defaultsValue, (entry) => lodash.isEqual(entry.column.id, column.id));
-    if (entry !== undefined) {
-      map.push({ columnId: id, filter: entry.default, disabled: false });
-    }
+    if (entry) map[id] = { columnId: id, filter: entry.default, disabled: false };
   }
   return map;
 });
 
 const makeState = (state?: PlTableFiltersState): PlTableFiltersState => {
-  if (state !== undefined) return state;
-  return defaultsMap.value;
+  return state ?? Object.values(defaultsMap.value);
 };
 const reactiveModel = reactive({ state: makeState(model.value.state) });
 watch(
@@ -106,16 +95,9 @@ watch(
 );
 
 watch(
-  () => columnsWithIds.value,
-  (columnsWithIds) => {
-    if (reactiveModel.state !== undefined && columnsWithIds.length === 0) return;
-    const currentState = reactiveModel.state ?? [];
-    const newState: PlTableFiltersState = [];
-    for (const { id } of columnsWithIds) {
-      const item = currentState.find((i) => i.columnId === id);
-      if (item) newState.push(item);
-    }
-    reactiveModel.state = newState;
+  () => columnsById.value,
+  (columnsById) => {
+    reactiveModel.state = reactiveModel.state.filter((entry) => !!columnsById[entry.columnId]);
   },
   { immediate: true },
 );
@@ -180,27 +162,22 @@ const filterTypesString: PlTableFilterStringType[] = [
   'string_containsFuzzyMatch',
 ] as const;
 
-const filterOptions = computed(() => {
+const filterOptions = computed<Record<PlTableFilterColumnId, ListOption<PlTableFilterType>[]>>(() => {
   const restrictionsMapValue = restrictionsMap.value;
-  const map: Record<string, ListOption<PlTableFilterType>[]> = {};
-  for (const { column, id } of columnsWithIds.value) {
+  const map: Record<PlTableFilterColumnId, ListOption<PlTableFilterType>[]> = {};
+  for (const [id, column] of Object.entries(columnsById.value)) {
     const valueType = column.type === 'column' ? column.spec.valueType : column.spec.type;
     let types: PlTableFilterType[] = valueType === 'String' ? filterTypesString : filterTypesNumber;
 
     const restrictionsEntry = restrictionsMapValue[id];
-    if (restrictionsEntry !== undefined) {
-      types = types.filter((type) => restrictionsEntry.includes(type));
-    }
+    if (restrictionsEntry) types = types.filter((type) => restrictionsEntry.includes(type));
 
-    map[id] = types.map((type) => ({
-      value: type,
-      text: getFilterLabel(type),
-    }));
+    map[id] = types.map((type) => ({ value: type, text: getFilterLabel(type) }));
   }
   return map;
 });
 
-const filterOptionsPresent = computed(() => {
+const filterOptionsPresent = computed<boolean>(() => {
   return lodash.some(Object.values(filterOptions.value), (options) => options.length > 0);
 });
 
@@ -270,27 +247,24 @@ const getFilterDefault = (type: PlTableFilterType, reference?: undefined | numbe
       throw Error(`unsupported filter type: ${type satisfies never}`);
   }
 };
-const updateColumnFilter = (columnId: string, type: PlTableFilterType): void => {
-  const index = reactiveModel.state.findIndex((f) => f.columnId === columnId);
-  if (index !== -1) {
-    const prevFilter = reactiveModel.state[index];
-    reactiveModel.state[index] = {
-      columnId: prevFilter.columnId,
-      filter: getFilterDefault(type, getFilterReference(prevFilter.filter)),
-      disabled: false,
-    };
-  }
-};
-const resetColumnFilter = (columnId: string) => {
-  const indexInMap = defaultsMap.value.findIndex((i) => i.columnId === columnId);
-  const indexInReactiveModel = reactiveModel.state.findIndex((i) => i.columnId === columnId);
-
-  reactiveModel.state![indexInReactiveModel] = defaultsMap.value[indexInMap] ?? {
+const makeFilter = (columnId: string): PlTableFiltersStateEntry =>
+  defaultsMap.value[columnId] ?? {
     columnId,
     filter: getFilterDefault(filterOptions.value[columnId][0].value),
     disabled: false,
   };
+const resetFilter = (index: number) => {
+  reactiveModel.state[index] = makeFilter(reactiveModel.state[index].columnId);
 };
+const changeFilterType = (filter: PlTableFiltersStateEntry, type: PlTableFilterType): PlTableFiltersStateEntry => ({
+  columnId: filter.columnId,
+  filter: getFilterDefault(type, getFilterReference(filter.filter)),
+  disabled: filter.disabled,
+});
+const changeFilter = (index: number, type: PlTableFilterType): void => {
+  reactiveModel.state[index] = changeFilterType(reactiveModel.state[index], type);
+};
+const deleteFilter = (index: number) => reactiveModel.state.splice(index, 1);
 
 const parseNumber = (column: PTableColumnSpec, value: string): number => {
   const parsed = Number(value);
@@ -360,7 +334,10 @@ const makeWildcardOptions = (column: PTableColumnSpec, reference: string) => {
   }));
 };
 
-const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
+const makePredicate = (column: PTableColumnSpec, filter: PlTableFilter): SingleValuePredicateV2 => {
+  const alphabetic =
+    (column.type === 'column' ? column.spec.valueType : column.spec.type) === 'String' &&
+    (column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet']) !== undefined;
   const type = filter.type;
   switch (type) {
     case 'isNotNA':
@@ -375,17 +352,28 @@ const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
         operator: 'IsNA',
       };
     case 'number_equals':
-    case 'string_equals':
       return {
         operator: 'Equal',
         reference: filter.reference,
       };
+    case 'string_equals':
+      return {
+        operator: alphabetic ? 'IEqual' : 'Equal',
+        reference: filter.reference as string,
+      };
     case 'number_notEquals':
-    case 'string_notEquals':
       return {
         operator: 'Not',
         operand: {
           operator: 'Equal',
+          reference: filter.reference,
+        },
+      };
+    case 'string_notEquals':
+      return {
+        operator: 'Not',
+        operand: {
+          operator: alphabetic ? 'IEqual' : 'Equal',
           reference: filter.reference,
         },
       };
@@ -425,14 +413,14 @@ const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
       };
     case 'string_contains':
       return {
-        operator: 'StringContains',
+        operator: alphabetic ? 'StringIContains' : 'StringContains',
         substring: filter.reference,
       };
     case 'string_doesNotContain':
       return {
         operator: 'Not',
         operand: {
-          operator: 'StringContains',
+          operator: alphabetic ? 'StringIContains' : 'StringContains',
           substring: filter.reference,
         },
       };
@@ -451,7 +439,7 @@ const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
       };
     case 'string_containsFuzzyMatch':
       return {
-        operator: 'StringContainsFuzzy',
+        operator: alphabetic ? 'StringIContainsFuzzy' : 'StringContainsFuzzy',
         reference: filter.reference,
         maxEdits: filter.maxEdits,
         substitutionsOnly: filter.substitutionsOnly,
@@ -461,26 +449,19 @@ const makePredicate = (filter: PlTableFilter): SingleValuePredicateV2 => {
       throw Error(`unsupported filter type: ${type satisfies never}`);
   }
 };
-const makeFilters = (state: PlTableFiltersState): PTableRecordFilter[] => {
-  return columnsWithIds.value
-    .map(({ column, id }) => {
-      const entry = state.find((i) => i.columnId === id);
-      if (!entry || entry.disabled) return undefined;
-      //FIXME
-      // const predicate = makePredicate(state[id].filter);
-      const predicate = makePredicate(entry.filter);
-      console.log('predicate', predicate);
+const makeFilters = (state: PlTableFiltersState): PTableRecordFilter[] =>
+  state
+    .filter((entry) => !entry.disabled)
+    .map((entry) => {
+      const column = columnsById.value[entry.columnId];
       const { spec, ...columnId } = column;
       const _ = spec;
-
       return {
         type: 'bySingleColumnV2',
         column: columnId,
-        predicate,
-      } satisfies PTableRecordFilter;
-    })
-    .filter((entry) => entry !== undefined);
-};
+        predicate: makePredicate(column, entry.filter),
+      };
+    });
 
 watch(
   () => reactiveModel,
@@ -498,91 +479,43 @@ watch(
   },
 );
 
-const availableOption = computed(() =>
-  columnsWithIds.value
-    .map((colData, i) => ({
-      label: colData.column.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + colData.column.type + ' ' + i.toString(),
-      value: colData.id,
-      colData,
-    }))
-    .filter((opt) => !reactiveModel.state.find((it) => it.columnId === opt.value)),
+const showManager = ref(false);
+const showManagerAddFilters = ref(false);
+
+const newFilterColumnOptions = computed<ListOption<PlTableFilterColumnId>[]>(() =>
+  Object.entries(Object.entries(columnsById.value))
+    .filter(([_i, [id, _column]]) => filterOptions.value[id].length > 0)
+    .filter(([_i, [id, _column]]) => !reactiveModel.state.some((entry) => entry.columnId === id))
+    .map(([i, [id, column]]) => ({
+      label: column.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + column.type + ' ' + i.toString(),
+      value: id,
+    })),
 );
 
-const reactiveModelTmpForAdd = reactive({ state: makeState(model.value.state) });
-
-const updateColumnFilterTmp = (columnId: string, type: PlTableFilterType): void => {
-  const index = reactiveModelTmpForAdd.state.findIndex((f) => f.columnId === columnId);
-  if (index !== -1) {
-    const prevFilter = reactiveModelTmpForAdd.state[index];
-    reactiveModelTmpForAdd.state[index] = {
-      columnId: prevFilter.columnId,
-      filter: getFilterDefault(type, getFilterReference(prevFilter.filter)),
-      disabled: false,
-    };
-  }
+const newFilter = ref<PlTableFiltersStateEntry>();
+const changeNewFilter = (type: PlTableFilterType): void => {
+  newFilter.value = changeFilterType(newFilter.value!, type);
 };
 
-const resetColumnFilterTmp = (columnId: string) => {
-  const indexInMap = defaultsMap.value.findIndex((i) => i.columnId === columnId);
-  //This is TMP model here is only one item!!!
-  reactiveModelTmpForAdd.state = [
-    defaultsMap.value[indexInMap] ?? {
-      columnId,
-      filter: getFilterDefault(filterOptions.value[columnId][0].value),
-      disabled: false,
-    },
-  ];
-};
-
-const columnsWithIdsTmp = computed(() => {
-  return columns.value
-    .filter((column) => {
-      const type = column.type;
-      switch (type) {
-        case 'axis':
-          return column.spec.type !== 'Bytes';
-        case 'column':
-          return column.spec.valueType !== 'Bytes';
-        default:
-          throw Error(`unsupported data type: ${type satisfies never}`);
-      }
-    })
-    .map((column) => ({
-      column,
-      id: makeColumnId(column),
-    }))
-    .filter((item) => item.id === selectedColumnIdForAdd.value);
-});
-
-const hasFilters = computed(() => reactiveModel.state.length > 0);
-
+const newFilterColumnId = ref<string>();
 watch(
-  () => selectedColumnIdForAdd.value,
+  () => newFilterColumnId.value,
   (columnId) => {
-    if (columnId) {
-      resetColumnFilterTmp(columnId);
-    }
+    if (columnId) newFilter.value = makeFilter(columnId);
+    else newFilter.value = undefined;
   },
-  { deep: true, immediate: true },
+  { immediate: true },
 );
 
-function getNameForColId(columnId: PlTableFilterEntry['columnId']) {
-  const colData = columnsWithIds.value.find((colData) => colData.id === columnId);
-  return colData?.column.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + colData?.column.type;
-}
-
-function applyFilter() {
-  if (selectedColumnIdForAdd.value) {
-    const item = reactiveModelTmpForAdd.state.find((i) => i.columnId === selectedColumnIdForAdd.value);
-    if (item) {
-      reactiveModel.state.push(item);
-    }
+const applyFilter = () => {
+  if (newFilter.value) {
+    reactiveModel.state.push(newFilter.value);
+    newFilterColumnId.value = undefined;
+    showManagerAddFilters.value = false;
   }
-  selectedColumnIdForAdd.value = undefined;
-  reactiveModelTmpForAdd.state = [];
-  showManagerAddFilters.value = false;
-}
+};
 
+const mounted = ref(false);
 onMounted(() => {
   mounted.value = true;
 });
@@ -593,7 +526,7 @@ onMounted(() => {
     <PlBtnGhost @click.stop="showManager = true">
       Filters
       <template #append>
-        <PlIcon24 :name="hasFilters ? 'filter-on' : 'filter'" />
+        <PlIcon24 :name="reactiveModel.state.length > 0 ? 'filter-on' : 'filter'" />
       </template>
     </PlBtnGhost>
   </Teleport>
@@ -602,15 +535,15 @@ onMounted(() => {
     <template #title>Manage Filters</template>
     <PlAgDataTableFilterManager
       v-model="reactiveModel.state"
-      :get-name-for-col-id="getNameForColId"
-      :columns-with-ids="columnsWithIds"
+      :columns-by-id="columnsById"
       :filter-options="filterOptions"
       :make-wildcard-options="makeWildcardOptions"
       :parse-number="parseNumber"
       :parse-regex="parseRegex"
       :parse-string="parseString"
-      :update-column-filter="updateColumnFilter"
-      :reset-column-filter="resetColumnFilter"
+      :change-filter="changeFilter"
+      :reset-filter="resetFilter"
+      :delete-filter="deleteFilter"
       @add-filter="showManagerAddFilters = true"
     />
     <div v-if="!filterOptionsPresent">No filters applicable</div>
@@ -619,110 +552,84 @@ onMounted(() => {
   <PlSlideModal v-model="showManagerAddFilters" :close-on-outside-click="false">
     <template #title>Add Filter</template>
     <div class="d-flex gap-24 flex-column">
-      <PlDropdown v-model="selectedColumnIdForAdd" :options="availableOption" label="Column" placeholder="Choose..." />
+      <PlDropdown v-model="newFilterColumnId" :options="newFilterColumnOptions" label="Column" placeholder="Choose..." />
 
-      <div v-if="!selectedColumnIdForAdd" class="text-subtitle-m" style="color: var(--txt-mask)">Choose a column to view and adjust its options</div>
+      <div v-if="!newFilterColumnId" class="text-subtitle-m" style="color: var(--txt-mask)">Choose a column to view and adjust its options</div>
 
-      <div v-for="{ column, id } in columnsWithIdsTmp" :key="id">
-        <div class="controls d-flex gap-24 flex-column" :class="{ open: !!reactiveModelTmpForAdd.state[0] }">
-          <PlDropdown
-            v-if="reactiveModelTmpForAdd.state[0]"
-            :model-value="reactiveModelTmpForAdd.state[0]!.filter.type"
-            :options="filterOptions[id]"
-            label="Predicate"
-            @update:model-value="(type) => updateColumnFilterTmp(id, type!)"
+      <div v-if="!!newFilter" class="d-flex gap-24 flex-column">
+        <PlDropdown
+          :model-value="newFilter.filter.type"
+          :options="filterOptions[newFilter.columnId]"
+          label="Predicate"
+          @update:model-value="(type) => changeNewFilter(type!)"
+        />
+        <template
+          v-if="
+            newFilter?.filter.type === 'number_equals' ||
+            newFilter?.filter.type === 'number_notEquals' ||
+            newFilter?.filter.type === 'number_lessThan' ||
+            newFilter?.filter.type === 'number_lessThanOrEqualTo' ||
+            newFilter?.filter.type === 'number_greaterThan' ||
+            newFilter?.filter.type === 'number_greaterThanOrEqualTo'
+          "
+        >
+          <PlTextField
+            v-model="newFilter.filter.reference"
+            :parse="(value: string): number => parseNumber(columnsById[newFilter!.columnId], value)"
+            label="Reference value"
           />
-          <template
-            v-if="
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_equals' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_notEquals' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_lessThan' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_lessThanOrEqualTo' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_greaterThan' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'number_greaterThanOrEqualTo'
-            "
-          >
-            <PlTextField
-              v-model="reactiveModelTmpForAdd.state[0].filter.reference"
-              :parse="(value: string): number => parseNumber(column, value)"
-              label="Reference value"
-            />
-          </template>
-          <template v-if="reactiveModelTmpForAdd.state[0]?.filter.type === 'number_between'">
-            <PlTextField
-              v-model="reactiveModelTmpForAdd.state[0].filter.lowerBound"
-              :parse="(value: string): number => parseNumber(column, value)"
-              label="Lower bound"
-            />
-            <PlToggleSwitch v-model="reactiveModelTmpForAdd.state[0].filter.includeLowerBound" label="Include lower bound" />
-            <PlTextField
-              v-model="reactiveModelTmpForAdd.state[0].filter.upperBound"
-              :parse="(value: string): number => parseNumber(column, value)"
-              label="Upper bound"
-            />
-            <PlToggleSwitch v-model="reactiveModelTmpForAdd.state[0].filter.includeUpperBound" label="Include upper bound" />
-          </template>
-          <template
-            v-if="
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_equals' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_notEquals' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_contains' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_doesNotContain'
-            "
-          >
-            <PlTextField
-              v-model="reactiveModelTmpForAdd.state[0].filter.reference"
-              :parse="(value: string): string => parseString(column, value)"
-              label="Reference value"
-            />
-          </template>
-          <template
-            v-if="
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_matches' ||
-              reactiveModelTmpForAdd.state[0]?.filter.type === 'string_doesNotMatch'
-            "
-          >
-            <PlTextField v-model="reactiveModelTmpForAdd.state[0].filter.reference" :parse="parseRegex" label="Reference value" />
-          </template>
-          <template v-if="reactiveModelTmpForAdd.state[0]?.filter.type === 'string_containsFuzzyMatch'">
-            <PlTextField
-              v-model="reactiveModelTmpForAdd.state[0].filter.reference"
-              :parse="(value: string): string => parseString(column, value)"
-              label="Reference value"
-            />
-            <Slider
-              v-model="reactiveModelTmpForAdd.state[0].filter.maxEdits"
-              :max="5"
-              breakpoints
-              label="Maximum nuber of substitutions and indels"
-            />
-            <PlToggleSwitch v-model="reactiveModelTmpForAdd.state[0].filter.substitutionsOnly" label="Substitutions only" />
-            <PlDropdown
-              v-model="reactiveModelTmpForAdd.state[0].filter.wildcard"
-              :options="makeWildcardOptions(column, reactiveModelTmpForAdd.state[0].filter.reference)"
-              clearable
-              label="Wildcard symbol"
-            />
-          </template>
-        </div>
+        </template>
+        <template v-if="newFilter?.filter.type === 'number_between'">
+          <PlTextField
+            v-model="newFilter.filter.lowerBound"
+            :parse="(value: string): number => parseNumber(columnsById[newFilter!.columnId], value)"
+            label="Lower bound"
+          />
+          <PlToggleSwitch v-model="newFilter.filter.includeLowerBound" label="Include lower bound" />
+          <PlTextField
+            v-model="newFilter.filter.upperBound"
+            :parse="(value: string): number => parseNumber(columnsById[newFilter!.columnId], value)"
+            label="Upper bound"
+          />
+          <PlToggleSwitch v-model="newFilter.filter.includeUpperBound" label="Include upper bound" />
+        </template>
+        <template
+          v-if="
+            newFilter?.filter.type === 'string_equals' ||
+            newFilter?.filter.type === 'string_notEquals' ||
+            newFilter?.filter.type === 'string_contains' ||
+            newFilter?.filter.type === 'string_doesNotContain'
+          "
+        >
+          <PlTextField
+            v-model="newFilter.filter.reference"
+            :parse="(value: string): string => parseString(columnsById[newFilter!.columnId], value)"
+            label="Reference value"
+          />
+        </template>
+        <template v-if="newFilter?.filter.type === 'string_matches' || newFilter?.filter.type === 'string_doesNotMatch'">
+          <PlTextField v-model="newFilter.filter.reference" :parse="parseRegex" label="Reference value" />
+        </template>
+        <template v-if="newFilter?.filter.type === 'string_containsFuzzyMatch'">
+          <PlTextField
+            v-model="newFilter.filter.reference"
+            :parse="(value: string): string => parseString(columnsById[newFilter!.columnId], value)"
+            label="Reference value"
+          />
+          <Slider v-model="newFilter.filter.maxEdits" :max="5" breakpoints label="Maximum nuber of substitutions and indels" />
+          <PlToggleSwitch v-model="newFilter.filter.substitutionsOnly" label="Substitutions only" />
+          <PlDropdown
+            v-model="newFilter.filter.wildcard"
+            :options="makeWildcardOptions(columnsById[newFilter!.columnId], newFilter.filter.reference)"
+            clearable
+            label="Wildcard symbol"
+          />
+        </template>
       </div>
     </div>
     <template #actions>
-      <PlBtnPrimary :disabled="!selectedColumnIdForAdd" @click="applyFilter">Add Filter</PlBtnPrimary>
+      <PlBtnPrimary :disabled="!newFilterColumnId" @click="applyFilter">Add Filter</PlBtnPrimary>
       <PlBtnGhost :justify-center="false" @click="showManagerAddFilters = false">Cancel</PlBtnGhost>
     </template>
   </PlSlideModal>
 </template>
-
-<style lang="css" scoped>
-.controls {
-  max-height: 0;
-  transition: max-height 0.15s ease-out;
-  overflow: hidden;
-}
-.controls.open {
-  max-height: 500px;
-  transition: max-height 0.25s ease-in;
-  overflow: visible;
-}
-</style>
