@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.8.0
+
+### Minor Changes
+
+- dfad2d0: PFrames case insensitive filters
+
 ## 1.7.0
 
 ### Minor Changes

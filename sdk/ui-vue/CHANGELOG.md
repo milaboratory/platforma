@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.0
+
+### Minor Changes
+
+- dfad2d0: PFrames case insensitive filters
+
+### Patch Changes
+
+- @platforma-sdk/model@1.14.0
+- @milaboratories/uikit@2.2.18
+
 ## 1.13.18
 
 ### Patch Changes
