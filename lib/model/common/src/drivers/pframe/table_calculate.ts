@@ -216,30 +216,6 @@ export interface SingleValueStringIContainsFuzzyPredicate {
   readonly wildcard?: string;
 }
 
-export interface SingleValueNotPredicate {
-  /** Comparison operator */
-  readonly operator: 'Not';
-
-  /** Operand to negate */
-  readonly operand: SingleValuePredicate;
-}
-
-export interface SingleValueAndPredicate {
-  /** Comparison operator */
-  readonly operator: 'And';
-
-  /** Operands to combine */
-  readonly operands: SingleValuePredicate[];
-}
-
-export interface SingleValueOrPredicate {
-  /** Comparison operator */
-  readonly operator: 'Or';
-
-  /** Operands to combine */
-  readonly operands: SingleValuePredicate[];
-}
-
 export interface SingleValueNotPredicateV2 {
   /** Comparison operator */
   readonly operator: 'Not';
@@ -265,20 +241,6 @@ export interface SingleValueOrPredicateV2 {
 }
 
 /** Filtering predicate for a single axis or column value */
-export type SingleValuePredicate =
-  | SingleValueIsNAPredicate
-  | SingleValueEqualPredicate
-  | SingleValueLessPredicate
-  | SingleValueLessOrEqualPredicate
-  | SingleValueGreaterPredicate
-  | SingleValueGreaterOrEqualPredicate
-  | SingleValueStringContainsPredicate
-  | SingleValueMatchesPredicate
-  | SingleValueStringContainsFuzzyPredicate
-  | SingleValueNotPredicate
-  | SingleValueAndPredicate
-  | SingleValueOrPredicate;
-
 export type SingleValuePredicateV2 =
   | SingleValueIsNAPredicate
   | SingleValueEqualPredicate
@@ -302,23 +264,6 @@ export type SingleValuePredicateV2 =
  * source PColumns, the filter will be pushed down to those columns, so only
  * specific partitions will be retrieved from the remote storage.
  * */
-export interface PTableRecordSingleValueFilter {
-  /** Filter type discriminator */
-  readonly type: 'bySingleColumn';
-
-  /** Target axis selector to examine values from */
-  readonly column: PTableColumnId;
-
-  /** Value predicate */
-  readonly predicate: SingleValuePredicate;
-}
-
-/**
- * Filter PTable records based on specific axis or column value. If this is an
- * axis value filter and the axis is part of a partitioning key in some of the
- * source PColumns, the filter will be pushed down to those columns, so only
- * specific partitions will be retrieved from the remote storage.
- * */
 export interface PTableRecordSingleValueFilterV2 {
   /** Filter type discriminator */
   readonly type: 'bySingleColumnV2';
@@ -331,7 +276,7 @@ export interface PTableRecordSingleValueFilterV2 {
 }
 
 /** Generic PTable records filter */
-export type PTableRecordFilter = PTableRecordSingleValueFilter | PTableRecordSingleValueFilterV2;
+export type PTableRecordFilter = PTableRecordSingleValueFilterV2;
 
 /** Sorting parameters for a PTable.  */
 export type PTableSorting = {

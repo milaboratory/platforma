@@ -10,6 +10,9 @@ export interface ColumnFilter {
    * matching. */
   readonly name?: string[];
 
+    /** Match requires all the domains listed here to have corresponding values. */
+  readonly domainValue?: Record<string, string>;
+
   /** Match requires all the annotations listed here to have corresponding values. */
   readonly annotationValue?: Record<string, string>;
 

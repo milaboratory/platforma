@@ -178,7 +178,7 @@ function makeFilters(sheetsState: Record<string, string | number>): PTableRecord
   if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
   return (
     sheets.value?.map((sheet) => ({
-      type: 'bySingleColumn',
+      type: 'bySingleColumnV2',
       column: sheet.column
         ? {
             type: 'column',

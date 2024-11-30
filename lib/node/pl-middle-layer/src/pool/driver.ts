@@ -27,7 +27,6 @@ import {
   PTableDef,
   mapPTableDef,
   ValueType,
-  PTableRecordSingleValueFilter,
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
 } from '@platforma-sdk/model';
@@ -49,13 +48,25 @@ type InternalPFrameData = PFrameDef<PFrameInternal.DataInfo<ResourceInfo>>;
 
 const valueTypes: ValueType[] = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as const;
 
-function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueFilter[] {
-  const unsupportedFilters = filters.filter((f) => f.type !== 'bySingleColumn');
-  if (unsupportedFilters.length > 0) {
-    const unsupportedFiltersJson = JSON.stringify(unsupportedFilters);
-    throw new Error(`unsupported filters: ${unsupportedFiltersJson}`);
+function migrateFilters(filters: PTableRecordFilter[]): PTableRecordSingleValueFilterV2[] {
+  const filtersV1 = [];
+  const filtersV2: PTableRecordSingleValueFilterV2[] = [];
+  for (const filter of filters) {
+    if (filter.type as unknown === 'bySingleColumn') {
+      filtersV1.push(filter);
+      filtersV2.push({
+        ...filter,
+        type: 'bySingleColumnV2',
+      });
+    } else {
+      filtersV2.push(filter);
+    }
   }
-  return filters as PTableRecordSingleValueFilter[];
+  if (filtersV1.length > 0) {
+    const filtersV1Json = JSON.stringify(filtersV1);
+    console.warn(`type overriten from 'bySingleColumn' to 'bySingleColumnV2' for filters: ${filtersV1Json}`);
+  }
+  return filters as PTableRecordSingleValueFilterV2[];
 }
 
 class PFrameHolder implements PFrameInternal.PFrameDataSource, Disposable {
