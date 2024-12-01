@@ -56,7 +56,7 @@ onMounted(() => {
       </PlBtnGhost>
     </Teleport>
 
-    <PlSlideModal v-model="slideModal" :shadow="true" :width="'368px'" close-on-outside-click>
+    <PlSlideModal v-model="slideModal" :width="'368px'" close-on-outside-click>
       <template #title>Columns</template>
 
       <div ref="listRef" :key="listKey" class="pl-ag-columns">
