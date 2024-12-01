@@ -1,7 +1,19 @@
 import { z } from 'zod';
-import { BlockPackId, BlockPackMetaEmbeddedBytes, SemVer } from '../block_meta';
+import {
+  BlockPackId,
+  BlockPackIdNoVersion,
+  BlockPackMetaEmbeddedBytes,
+  SemVer
+} from '../block_meta';
 import { BlockPackSpec } from './block_pack_spec';
 import { RegistryEntry } from './registry_spec';
+
+export const AnyChannel = 'any';
+
+export const VersionWithChannels = z.object({
+  version: SemVer,
+  channels: z.array(z.string())
+});
 
 /**
  * Information about specific block pack version.
@@ -17,8 +29,10 @@ export type SingleBlockPackOverview = z.infer<typeof SingleBlockPackOverview>;
 /**
  * Latest information about specific block pack. Contain information about latest version of the package.
  * */
-export const BlockPackOverview = SingleBlockPackOverview.extend({
-  otherVersions: z.array(SemVer)
+export const BlockPackOverview = z.object({
+  id: BlockPackIdNoVersion,
+  latestByChannel: z.record(z.string(), SingleBlockPackOverview),
+  allVersions: z.array(VersionWithChannels)
 });
 export type BlockPackOverview = z.infer<typeof BlockPackOverview>;
 

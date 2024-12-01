@@ -1,7 +1,13 @@
 import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
 import { RegistryStorage } from '../../io/storage';
-import { BlockPackIdNoVersion, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
+import {
+  BlockPackId,
+  blockPackIdEquals,
+  BlockPackIdNoVersion,
+  blockPackIdToString,
+  BlockPackManifest
+} from '@milaboratories/pl-model-middle-layer';
 import {
   GlobalUpdateSeedInFile,
   GlobalUpdateSeedOutFile,
@@ -16,11 +22,16 @@ import {
   packageContentPrefix,
   PackageOverview,
   packageOverviewPath,
-  ManifestFileName
+  ManifestFileName,
+  ChannelsFolder,
+  packageChannelPrefix,
+  ChannelNameRegexp
 } from './schema_public';
 import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReader } from '../model';
 import { randomUUID } from 'node:crypto';
 import { calculateSha256 } from '../../util';
+import { z } from 'zod';
+import { version } from 'node:os';
 
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
@@ -92,19 +103,30 @@ export class BlockRegistryV2 {
       // reading new entries
       for (const [v] of packageInfo.versions.entries()) {
         const version = v.toString();
+        const id: BlockPackId = {
+          ...packageInfo.package,
+          version
+        };
         const manifestContent = await this.storage.getFile(
-          packageContentPrefix({
-            ...packageInfo.package,
-            version
-          }) + ManifestSuffix
+          packageContentPrefix(id) + ManifestSuffix
         );
         if (!manifestContent) continue; // absent package
         const sha256 = await calculateSha256(manifestContent);
+        // listing channels
+        const channels = (await this.storage.listFiles(packageChannelPrefix(id))).filter((f) => {
+          if (f.match(ChannelNameRegexp)) return true;
+          else {
+            this.logger.warn(`Unexpected channel in ${blockPackIdToString(id)}: ${f}`);
+            return false;
+          }
+        });
+        // pushing the overview
         newVersions.push({
           description: BlockPackDescriptionManifestAddRelativePathPrefix(version).parse(
             BlockPackManifest.parse(JSON.parse(manifestContent.toString('utf8'))).description
           ),
-          manifestSha256: sha256
+          manifestSha256: sha256,
+          channels
         });
       }
 
@@ -122,6 +144,10 @@ export class BlockRegistryV2 {
       );
       this.logger?.info(`Done (${newVersions.length} records)`);
 
+      // calculating all channels
+      const allChannels = new Set<string>();
+      for (const v of newVersions) for (const c of v.channels) allChannels.add(c);
+
       // patching corresponding entry in overview
       overviewPackages = overviewPackages.filter(
         (e) =>
@@ -133,11 +159,21 @@ export class BlockRegistryV2 {
           organization: packageInfo.package.organization,
           name: packageInfo.package.name
         },
-        allVersions: newVersions.map((e) => e.description.id.version).reverse(),
+        allVersions: newVersions
+          .map((e) => ({ version: e.description.id.version, channels: e.channels }))
+          .reverse(),
         latest: BlockPackDescriptionManifestAddRelativePathPrefix(
           `${packageInfo.package.organization}/${packageInfo.package.name}`
         ).parse(newVersions[0].description),
-        latestManifestSha256: newVersions[0].manifestSha256
+        latestManifestSha256: newVersions[0].manifestSha256,
+        latestByChannel: Object.fromEntries(
+          [...allChannels, 'all'].map((c) => {
+            // if c === 'all' the first element will be taken
+            const v = newVersions.find((v) => c === 'all' || v.channels.indexOf(c) !== -1);
+            if (!v) throw new Error('Assertion error');
+            return [c, { description: v.description, manifestSha256: v?.manifestSha256 }];
+          })
+        )
       });
     }
 
@@ -192,11 +228,41 @@ export class BlockRegistryV2 {
     return GlobalOverviewReg.parse(JSON.parse(content.toString()));
   }
 
-  // public async getGlobalOverviewExplicitBytes(): Promise<undefined | GlobalOverviewReg> {
-  //   const content = await this.storage.getFile(GlobalOverviewPath);
-  //   if (content === undefined) return undefined;
-  //   return GlobalOverviewReg.parse(JSON.parse(content.toString()));
-  // }
+  private async marchChanged(id: BlockPackId) {
+    // adding update seed
+    const seed = randomUUID();
+    const seedPath = packageUpdateSeedPath(id, seed);
+    this.logger?.info(`Creating update seed at ${seedPath} ...`);
+    await this.storage.putFile(seedPath, Buffer.from(seed));
+    this.logger?.info(`Touching global update seed ${GlobalUpdateSeedInFile} ...`);
+    await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(seed));
+  }
+
+  public async addPackageToChannel(id: BlockPackId, channel: string) {
+    if (!channel.match(ChannelNameRegexp))
+      throw new Error(`Illegal characters in channel name: ${channel}`);
+    const prefix = packageContentPrefix(id);
+    // checking package exists
+    if ((await this.storage.getFile(`${prefix}/${ManifestFileName}`)) === undefined)
+      throw new Error(`Package ${blockPackIdToString(id)} not found in the registry.`);
+    // adding to channel
+    await this.storage.putFile(`${prefix}/${ChannelsFolder}/${channel}`, Buffer.from(channel));
+    // marking as changed
+    await this.marchChanged(id);
+  }
+
+  public async removePackageFromChannel(id: BlockPackId, channel: string) {
+    if (!channel.match(ChannelNameRegexp))
+      throw new Error(`Illegal characters in channel name: ${channel}`);
+    const prefix = packageContentPrefix(id);
+    // checking package exists
+    if ((await this.storage.getFile(`${prefix}/${ManifestFileName}`)) === undefined)
+      throw new Error(`Package ${blockPackIdToString(id)} not found in the registry.`);
+    // adding to channel
+    await this.storage.deleteFiles(`${prefix}/${ChannelsFolder}/${channel}`);
+    // marking as changed
+    await this.marchChanged(id);
+  }
 
   public async publishPackage(
     manifest: BlockPackManifest,
@@ -226,12 +292,6 @@ export class BlockRegistryV2 {
     this.logger?.info(`Uploading manifest to ${manifestDst} ...`);
     await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(manifest)));
 
-    // adding update seed
-    const seed = randomUUID();
-    const seedPath = packageUpdateSeedPath(manifest.description.id, seed);
-    this.logger?.info(`Creating update seed at ${seedPath} ...`);
-    await this.storage.putFile(seedPath, Buffer.from(seed));
-    this.logger?.info(`Touching global update seed ${GlobalUpdateSeedInFile} ...`);
-    await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(seed));
+    await this.marchChanged(manifest.description.id);
   }
 }

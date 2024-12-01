@@ -1,4 +1,5 @@
 import {
+  AnyChannel,
   BlockComponentsManifest,
   BlockPackDescriptionManifest,
   BlockPackId,
@@ -8,7 +9,8 @@ import {
   ContentRelativeText,
   CreateBlockPackDescriptionSchema,
   SemVer,
-  Sha256Schema
+  Sha256Schema,
+  VersionWithChannels
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
 import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitString } from '../model';
@@ -18,6 +20,10 @@ export const MainPrefix = 'v2/';
 export const GlobalOverviewFileName = 'overview.json';
 export const PackageOverviewFileName = 'overview.json';
 export const ManifestFileName = 'manifest.json';
+
+export const ChannelsFolder = 'channels';
+
+export const ChannelNameRegexp = /^[-a-z0-9]+$/;
 
 export function packageContentPrefixInsideV2(bp: BlockPackId): string {
   return `${bp.organization}/${bp.name}/${bp.version}`;
@@ -35,6 +41,7 @@ export const ManifestSuffix = '/' + ManifestFileName;
 
 export const PackageOverviewVersionEntry = z.object({
   description: BlockPackDescriptionManifest,
+  channels: z.array(z.string()).default(() => []),
   manifestSha256: Sha256Schema
 });
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
@@ -53,17 +60,62 @@ export function packageOverviewPath(bp: BlockPackIdNoVersion): string {
   return `${MainPrefix}${packageOverviewPathInsideV2(bp)}`;
 }
 
+export function packageChannelPrefixInsideV2(bp: BlockPackId): string {
+  return `${packageContentPrefixInsideV2(bp)}/${ChannelsFolder}/`;
+}
+
+export function packageChannelPrefix(bp: BlockPackId): string {
+  return `${MainPrefix}${packageChannelPrefixInsideV2(bp)}`;
+}
+
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description
 ) {
-  return z.object({
+  const universalSchema = z.object({
     id: BlockPackIdNoVersion,
-    allVersions: z.array(z.string()),
+    allVersions: z.array(z.string()).or(z.array(VersionWithChannels)),
     latest: descriptionType,
-    latestManifestSha256: Sha256Schema
+    latestManifestSha256: Sha256Schema,
+    latestByChannel: z
+      .record(
+        z.string(),
+        z.object({
+          description: descriptionType,
+          manifestSha256: Sha256Schema
+        })
+      )
+      .default({})
   });
+  return (
+    universalSchema
+      .transform((o) => {
+        if (o.allVersions.length === 0 || typeof o.allVersions[0] === 'object') return o;
+        else
+          return {
+            ...o,
+            allVersions: (o.allVersions as string[]).map((v) => ({ version: v, channels: [] }))
+          };
+      })
+      // make sure "any" channel set from main body
+      .transform((o) =>
+        o.latestByChannel[AnyChannel]
+          ? o
+          : {
+              ...o,
+              latestByChannel: {
+                ...o.latestByChannel,
+                [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! }
+              }
+            }
+      )
+      .pipe(
+        universalSchema
+          .omit({ allVersions: true })
+          .extend({ allVersions: z.array(VersionWithChannels) })
+      )
+  );
 }
 export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);
 export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
