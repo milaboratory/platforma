@@ -13,10 +13,13 @@ import { LegacyDevBlockPackFiles } from '../dev_env';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import { V2RegistryProvider } from './registry-v2-provider';
 import {
+  AnyChannel,
   BlockPackListing,
   BlockPackOverview,
   RegistryEntry,
-  RegistryStatus
+  RegistryStatus,
+  SingleBlockPackOverview,
+  StableChannel
 } from '@milaboratories/pl-model-middle-layer';
 import { version } from 'node:process';
 
@@ -89,8 +92,7 @@ export class BlockPackRegistry {
             name: pkg,
             version: latestVersion
           };
-          result.push({
-            registryId: regEntry.id,
+          const latestOverview: SingleBlockPackOverview = {
             id,
             meta: {
               title: latestMeta['title'] ?? 'No title',
@@ -104,17 +106,36 @@ export class BlockPackRegistry {
               type: 'from-registry-v1',
               id,
               registryUrl: regSpec.url
+            }
+          };
+          result.push({
+            registryId: regEntry.id,
+            id,
+            latestByChannel: {
+              [AnyChannel]: latestOverview,
+              [StableChannel]: latestOverview
             },
-            otherVersions: overviewEntry.allVersions.map((v) => ({ version: v, channels: [] }))
+            allVersions: overviewEntry.allVersions.map((v) => ({ version: v, channels: [] }))
           });
         }
         return result;
 
       case 'remote-v2':
-        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) => ({
-          ...e,
-          registryId: regEntry.id
-        }));
+        return (await this.v2Provider.getRegistry(regSpec.url).listBlockPacks()).map((e) =>
+          e.latestByChannel[StableChannel]
+            ? {
+                ...e,
+                registryId: regEntry.id
+              }
+            : {
+                ...e,
+                latestByChannel: {
+                  ...e.latestByChannel,
+                  [StableChannel]: e.latestByChannel[AnyChannel]
+                },
+                registryId: regEntry.id
+              }
+        );
 
       case 'local-dev':
         for (const entry of await fs.promises.readdir(regSpec.path, { withFileTypes: true })) {
@@ -135,8 +156,7 @@ export class BlockPackRegistry {
               version: 'DEV'
             };
 
-            result.push({
-              registryId: regEntry.id,
+            const latestOverview: SingleBlockPackOverview = {
               id,
               meta: {
                 title: (config.meta['title'] as string) ?? 'No title',
@@ -150,8 +170,17 @@ export class BlockPackRegistry {
                 type: 'dev-v2',
                 folder: devPath,
                 mtime
+              }
+            };
+
+            result.push({
+              registryId: regEntry.id,
+              id,
+              latestByChannel: {
+                [AnyChannel]: latestOverview,
+                [StableChannel]: latestOverview
               },
-              otherVersions: []
+              allVersions: []
             });
           } else {
             let actualDevPath = devPath;
@@ -167,16 +196,25 @@ export class BlockPackRegistry {
 
             if (v2Description !== undefined) {
               const mtime = await getDevV2PacketMtime(v2Description);
-              result.push({
-                registryId: regEntry.id,
+
+              const latestOverview: SingleBlockPackOverview = {
                 id: v2Description.id,
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
                 spec: {
                   type: 'dev-v2',
-                  folder: actualDevPath,
+                  folder: devPath,
                   mtime
+                }
+              };
+
+              result.push({
+                registryId: regEntry.id,
+                id: v2Description.id,
+                latestByChannel: {
+                  [AnyChannel]: latestOverview,
+                  [StableChannel]: latestOverview
                 },
-                otherVersions: []
+                allVersions: []
               });
             }
           }
