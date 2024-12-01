@@ -1521,6 +1521,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
+      '@types/semver':
+        specifier: 'catalog:'
+        version: 7.5.8
       '@typescript-eslint/eslint-plugin':
         specifier: 'catalog:'
         version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.5.4))(eslint@8.57.1)(typescript@5.5.4)
@@ -1551,6 +1554,9 @@ importers:
       sass:
         specifier: 'catalog:'
         version: 1.81.0
+      semver:
+        specifier: 'catalog:'
+        version: 7.6.3
       typescript:
         specifier: 'catalog:'
         version: 5.5.4
