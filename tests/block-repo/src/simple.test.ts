@@ -4,7 +4,7 @@ import {
   folderReaderByUrl,
   storageByUrl
 } from '@platforma-sdk/block-tools';
-import { BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
+import { AnyChannel, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
 import fsp from 'fs/promises';
 import { regTest } from './test_utils';
 import path from 'path';
@@ -60,16 +60,32 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
 
   await registry.updateIfNeeded();
 
+  await registry.addPackageToChannel(manifest2.description.id, 'stable');
+
+  await registry.updateIfNeeded();
+
   // Reading
 
   const registryReader = new RegistryV2Reader(folderReaderByUrl(registryUrl));
   const overview = await registryReader.listBlockPacks();
   expect(overview).length.greaterThanOrEqual(1);
   const ten = overview.find((o) => o.id.name === 'test-enter-numbers');
-  expect(ten?.meta.logo?.mimeType).toStrictEqual('image/png');
-  expect(ten?.meta.organization.logo?.mimeType).toStrictEqual('image/png');
-  const components = await registryReader.getComponents(ten!.id);
+  expect(ten).toBeDefined();
+  const dAny = ten!.latestByChannel[AnyChannel]!;
+  expect(dAny.meta.logo?.mimeType).toStrictEqual('image/png');
+  expect(dAny.meta.organization.logo?.mimeType).toStrictEqual('image/png');
+  const components = await registryReader.getComponents(dAny.id);
   expect(await fsp.stat(new URL(components.workflow.main.url).pathname)).toBeDefined();
   expect(await fsp.stat(new URL(components.model.url).pathname)).toBeDefined();
   expect(await fsp.stat(new URL(components.ui.url).pathname)).toBeDefined();
+
+  const vc1 = ten!.allVersions.find((v) => v.version === version1);
+  const vc2 = ten!.allVersions.find((v) => v.version === version2);
+
+  expect(vc1?.channels).toStrictEqual([]);
+  expect(vc2?.channels).toStrictEqual(['stable']);
+
+  const dStable = ten!.latestByChannel['stable']!;
+
+  expect(dStable.id.version).toStrictEqual(version2);
 });

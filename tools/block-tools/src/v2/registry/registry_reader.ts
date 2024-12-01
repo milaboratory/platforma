@@ -101,24 +101,32 @@ export class RegistryV2Reader {
       );
 
       const result = await Promise.all(
-        globalOverview.packages.map(
-          async (p) =>
-            ({
-              id: p.latest.id,
-              meta: await this.embedMetaContent(
-                p.latest.id,
-                p.latestManifestSha256,
-                true,
-                p.latest.meta
-              ),
-              spec: {
-                type: 'from-registry-v2',
-                id: p.latest.id,
-                registryUrl: this.registryReader.rootUrl.toString()
-              },
-              otherVersions: p.allVersions
-            }) satisfies BlockPackOverviewNoRegLabel
-        )
+        globalOverview.packages.map(async (p) => {
+          const byChannelEntries = await Promise.all(
+            Object.entries(p.latestByChannel).map(async ([channel, data]) => [
+              channel,
+              {
+                id: data.description.id,
+                meta: await this.embedMetaContent(
+                  p.latest.id,
+                  p.latestManifestSha256,
+                  true,
+                  p.latest.meta
+                ),
+                spec: {
+                  type: 'from-registry-v2',
+                  id: p.latest.id,
+                  registryUrl: this.registryReader.rootUrl.toString()
+                }
+              }
+            ])
+          );
+          return {
+            id: p.id,
+            latestByChannel: Object.fromEntries(byChannelEntries),
+            allVersions: p.allVersions
+          } satisfies BlockPackOverviewNoRegLabel;
+        })
       );
 
       this.listCache = result;
@@ -136,9 +144,14 @@ export class RegistryV2Reader {
   }
 
   public async getLatestOverview(
-    id: BlockPackIdNoVersion
-  ): Promise<BlockPackOverviewNoRegLabel | undefined> {
-    return (await this.listBlockPacks()).find((e) => blockPackIdNoVersionEquals(id, e.id));
+    id: BlockPackIdNoVersion,
+    channel: string
+  ): Promise<SingleBlockPackOverviewNoRegLabel | undefined> {
+    const overview = (await this.listBlockPacks()).find((e) =>
+      blockPackIdNoVersionEquals(id, e.id)
+    );
+    if (overview === undefined) return undefined;
+    return overview.latestByChannel[channel];
   }
 
   public async getSpecificOverview(id: BlockPackId): Promise<SingleBlockPackOverviewNoRegLabel> {

@@ -18,6 +18,7 @@ import {
   RegistryEntry,
   RegistryStatus
 } from '@milaboratories/pl-model-middle-layer';
+import { version } from 'node:process';
 
 async function getFileContent(path: string) {
   try {
@@ -104,7 +105,7 @@ export class BlockPackRegistry {
               id,
               registryUrl: regSpec.url
             },
-            otherVersions: overviewEntry.allVersions
+            otherVersions: overviewEntry.allVersions.map((v) => ({ version: v, channels: [] }))
           });
         }
         return result;
@@ -155,11 +156,11 @@ export class BlockPackRegistry {
           } else {
             let actualDevPath = devPath;
             let v2Description = await tryLoadPackDescription(actualDevPath);
-            
+
             if (v2Description === undefined)
               // iterating over expected subfolder names where block developer may put root block-pack package
               for (const bpSubfolder of ['block', 'meta']) {
-                actualDevPath = path.join(devPath, bpSubfolder)
+                actualDevPath = path.join(devPath, bpSubfolder);
                 v2Description = await tryLoadPackDescription(actualDevPath);
                 if (v2Description !== undefined) break;
               }
