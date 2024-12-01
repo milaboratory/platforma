@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.2
+
+### Patch Changes
+
+- 5884403: PlTableFilters support old desktop
+
 ## 1.14.1
 
 ### Patch Changes
