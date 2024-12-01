@@ -1,5 +1,14 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.1
+
+### Patch Changes
+
+- a886400: PlTableFilters redesign
+- Updated dependencies [a886400]
+  - @platforma-sdk/model@1.14.1
+  - @milaboratories/uikit@2.2.18
+
 ## 1.14.0
 
 ### Minor Changes
