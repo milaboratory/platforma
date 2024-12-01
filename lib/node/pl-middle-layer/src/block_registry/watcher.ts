@@ -1,8 +1,11 @@
 import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
 import {
   AnyChannel,
+  BlockPackFromRegistryV2,
   blockPackIdEquals,
-  BlockPackSpec
+  blockPackIdToString,
+  BlockPackSpec,
+  StableChannel
 } from '@milaboratories/pl-model-middle-layer';
 import { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
@@ -76,8 +79,35 @@ export class BlockUpdateWatcher extends PollComputablePool<
         case 'from-registry-v2': {
           try {
             const registry = this.registryProvider.getRegistry(req.registryUrl);
-            const spec = (await registry.getLatestOverview(req.id, req.channel ?? AnyChannel))
-              ?.spec;
+            let spec: BlockPackSpec | undefined;
+
+            if (req.channel === undefined) {
+              const a1 = await registry.getLatestOverview(req.id, StableChannel);
+              if (a1) spec = a1.spec;
+              else {
+                // forcing update from non-existent channel to stable
+                const a2 = await registry.getLatestOverview(req.id, AnyChannel);
+                if (a2 === undefined) {
+                  this.logger.error(`No any channel record for ${blockPackIdToString(req.id)}`);
+                  return undefined;
+                }
+                spec = { ...(a2.spec as BlockPackFromRegistryV2), channel: StableChannel };
+              }
+            } else {
+              const a1 = await registry.getLatestOverview(req.id, req.channel);
+              if (a1) spec = a1.spec;
+              else if(req.channel === StableChannel) {
+                // we were not able to find a stable package because there are none for the block pack yet
+                const a2 = await registry.getLatestOverview(req.id, AnyChannel);
+                if (a2 === undefined) {
+                  this.logger.error(`No any channel record for ${blockPackIdToString(req.id)}`);
+                  return undefined;
+                }
+                // providing "any" channel package as a substitute and marking it as stable
+                spec = { ...(a2.spec as BlockPackFromRegistryV2), channel: StableChannel };
+              }
+            }
+
             if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
             if (blockPackIdEquals(spec.id, req.id)) return undefined;
 
