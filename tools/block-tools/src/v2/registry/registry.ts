@@ -1,4 +1,4 @@
-import { MiLogger } from '@milaboratories/ts-helpers';
+import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
 import { RegistryStorage } from '../../io/storage';
 import { BlockPackIdNoVersion, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
@@ -30,7 +30,7 @@ type PackageUpdateInfo = {
 export class BlockRegistryV2 {
   constructor(
     private readonly storage: RegistryStorage,
-    private readonly logger?: MiLogger
+    private readonly logger: MiLogger = new ConsoleLoggerAdapter()
   ) {}
 
   private async updateRegistry() {

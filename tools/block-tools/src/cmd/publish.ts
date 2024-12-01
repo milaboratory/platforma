@@ -38,17 +38,6 @@ export default class Publish extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Publish);
 
-    // if (flags.meta) {
-    //   if (flags.meta.endsWith('.json'))
-    //     configFromFlags.meta = JSON.parse(
-    //       await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
-    //     );
-    //   else if (flags.meta.endsWith('.yaml'))
-    //     configFromFlags.meta = YAML.parse(
-    //       await fs.promises.readFile(flags.meta, { encoding: 'utf-8' })
-    //     );
-    // }
-
     const manifestPath = path.resolve(flags.manifest);
     const manifest = BlockPackManifest.parse(
       JSON.parse(await fs.promises.readFile(manifestPath, { encoding: 'utf-8' }))
