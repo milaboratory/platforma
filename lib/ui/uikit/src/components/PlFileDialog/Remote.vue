@@ -1,15 +1,15 @@
 <script lang="ts" setup>
-import style from './pl-file-dialog.module.scss';
-import { watch, reactive, computed, toRef, onMounted } from 'vue';
+import { useEventListener } from '@/composition/useEventListener';
+import type { ImportedFiles } from '@/types';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
 import type { StorageHandle } from '@platforma-sdk/model';
-import type { ImportedFiles } from '@/types';
-import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
+import { computed, onMounted, reactive, toRef, watch } from 'vue';
 import { PlDropdown } from '../PlDropdown';
-import { useEventListener } from '@/composition/useEventListener';
-import { defaultData, useVisibleItems, vTextOverflown } from './remote';
-import { PlSearchField } from '../PlSearchField';
 import { PlIcon16 } from '../PlIcon16';
+import { PlSearchField } from '../PlSearchField';
+import style from './pl-file-dialog.module.scss';
+import { defaultData, useVisibleItems, vTextOverflown } from './remote';
+import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
 
 defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -183,18 +183,19 @@ const loadAvailableStorages = () => {
   window.platforma.lsDriver
     .getStorageList()
     .then((storageEntries) => {
-      data.storageOptions = storageEntries.map((it) => ({
-        text: it.name,
-        value: it,
-      }));
+      data.storageOptions = storageEntries
+        // local storage is always returned by the ML, so we need to remove it from remote dialog manually
+        .filter((it) => it.name !== 'local')
+        .map((it) => ({
+          text: it.name,
+          value: it,
+        }));
 
       if (props.autoSelectStorage) {
         tapIf(
           storageEntries.find(
-            (e) =>
-              e.name === 'local' || // the only local storage on unix systems
-              (e.name.startsWith('local_disk_') && e.initialFullPath.length > 4),
-          ), // local drive where home folder is stored, normally C:\
+            (e) => e.name !== 'local'
+          ),
           (entry) => {
             data.storageEntry = entry;
           },
