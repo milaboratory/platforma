@@ -1,3 +1,4 @@
+import { test, expect } from '@jest/globals';
 import { loadPackDescription, parsePackageName } from './source_package';
 
 test('test parsing of convention package names', () => {

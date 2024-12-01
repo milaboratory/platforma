@@ -137,6 +137,8 @@ catalog:
   '@milaboratories/tengo-tester': ^1.4.6
   '@milaboratories/pframes-node': &pframes-version 2.0.4
 
+  'remeda': ^2.17.4
+
   'quickjs-emscripten': ^0.31.0
 
   # UI

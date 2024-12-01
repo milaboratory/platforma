@@ -33,6 +33,7 @@ export type ManifestFileInfo = z.infer<typeof ManifestFileInfo>;
 export const BlockPackManifest = z.object({
   schema: z.literal('v2'),
   description: BlockPackDescriptionManifest,
+  timestamp: z.number().optional(),
   files: z.array(ManifestFileInfo)
 });
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;
