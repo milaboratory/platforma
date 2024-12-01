@@ -116,7 +116,8 @@ export class RegistryV2Reader {
                 spec: {
                   type: 'from-registry-v2',
                   id: p.latest.id,
-                  registryUrl: this.registryReader.rootUrl.toString()
+                  registryUrl: this.registryReader.rootUrl.toString(),
+                  channel
                 }
               }
             ])

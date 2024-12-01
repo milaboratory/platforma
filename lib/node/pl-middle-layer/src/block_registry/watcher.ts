@@ -1,5 +1,9 @@
 import { PollComputablePool, PollPoolOps } from '@milaboratories/computable';
-import { blockPackIdEquals, BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
+import {
+  AnyChannel,
+  blockPackIdEquals,
+  BlockPackSpec
+} from '@milaboratories/pl-model-middle-layer';
 import { Dispatcher } from 'undici';
 import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
@@ -72,7 +76,8 @@ export class BlockUpdateWatcher extends PollComputablePool<
         case 'from-registry-v2': {
           try {
             const registry = this.registryProvider.getRegistry(req.registryUrl);
-            const spec = (await registry.getLatestOverview(req.id))?.spec;
+            const spec = (await registry.getLatestOverview(req.id, req.channel ?? AnyChannel))
+              ?.spec;
             if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
             if (blockPackIdEquals(spec.id, req.id)) return undefined;
 
