@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.14.1
+
+### Patch Changes
+
+- a886400: PlTableFilters redesign
+
 ## 1.14.0
 
 ### Patch Changes
