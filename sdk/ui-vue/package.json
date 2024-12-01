@@ -72,6 +72,8 @@
     "vitest": "catalog:",
     "vue-tsc": "catalog:",
     "zod": "catalog:",
-    "yarpm": "catalog:"
+    "yarpm": "catalog:",
+    "semver": "catalog:",
+    "@types/semver": "catalog:"
   }
 }
