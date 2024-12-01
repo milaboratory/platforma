@@ -1,16 +1,18 @@
 import canonicalize from 'canonicalize';
-import type {
-  SingleValuePredicateV2,
-  PlTableFilterType,
-  PlTableFilterNumberType,
-  PlTableFilterStringType,
-  PlTableFilter,
-  PTableColumnSpec,
-  PTableColumnId,
-  PlTableFiltersStateEntry,
-  PlTableFilterColumnId,
+import {
+  type SingleValuePredicateV2,
+  type PlTableFilterType,
+  type PlTableFilterNumberType,
+  type PlTableFilterStringType,
+  type PlTableFilter,
+  type PTableColumnSpec,
+  type PTableColumnId,
+  type PlTableFiltersStateEntry,
+  type PlTableFilterColumnId,
+  getRawPlatformaInstance,
 } from '@platforma-sdk/model';
 import * as lodash from 'lodash';
+import semver from 'semver';
 
 export function makeColumnId(column: PTableColumnId | PTableColumnSpec): PlTableFilterColumnId {
   return canonicalize(column.id)!;
@@ -229,6 +231,7 @@ export function makeWildcardOptions(column: PTableColumnSpec, reference: string)
 
 export function makePredicate(column: PTableColumnSpec, filter: PlTableFilter): SingleValuePredicateV2 {
   const alphabetic =
+    semver.gt(getRawPlatformaInstance().sdkInfo.sdkVersion, '1.14.0') &&
     (column.type === 'column' ? column.spec.valueType : column.spec.type) === 'String' &&
     (column.spec.domain?.['pl7.app/alphabet'] ?? column.spec.annotations?.['pl7.app/alphabet']) !== undefined;
   const type = filter.type;
