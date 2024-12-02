@@ -24,18 +24,6 @@ import path from 'path';
 import { setTimeout } from 'timers/promises';
 import { test } from 'vitest';
 
-// const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
-//   { id: 'central', spec: CentralBlockRegistry },
-//   {
-//     id: 'dev',
-//     title: 'Local dev registry',
-//     spec: {
-//       type: 'local-dev',
-//       path: path.resolve('..', '..', '..', 'etc', 'blocks')
-//     }
-//   }
-// ]);
-
 export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
 ): Promise<void> {
@@ -201,7 +189,6 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     await prj.getBlockState(block1Id).awaitStableValue();
     await prj.getBlockState(block2Id).awaitStableValue();
     await prj.getBlockState(block3Id).awaitStableValue();
-
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
@@ -211,7 +198,6 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
-
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
     overviewSnapshot1.blocks.forEach((block) => {
@@ -223,7 +209,6 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
       else expect(block.navigationState).toStrictEqual({ href: '/' });
     });
     console.dir(overviewSnapshot1, { depth: 5 });
-
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend.path).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
@@ -238,7 +223,6 @@ test('simple project manipulations test', { timeout: 20000 }, async ({ expect })
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
     const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
-
     expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
     expect(block2StableState1.navigationState).toStrictEqual({ href: '/' });
     expect(block3StableState1.navigationState).toStrictEqual({ href: '/' });

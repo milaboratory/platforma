@@ -111,11 +111,6 @@ export class UploadDriver {
     ctx.addOnDestroy(() => this.release(rInfo.id, callerId));
 
     const result = this.getProgressIdNoCtx(ctx.watcher, rInfo, callerId);
-    if (!isProgressStable(result)) {
-      ctx.markUnstable(
-        `upload/index progress was got, but it's not stable: ${JSON.stringify(result)}`
-      );
-    }
 
     return result;
   }
@@ -217,12 +212,12 @@ export class UploadDriver {
 
   private getAllNotDoneProgresses(): Array<UploadTask> {
     return Array.from(this.idToProgress.entries())
-      .filter(([_, p]) => !isProgressStable(p.progress))
+      .filter(([_, p]) => !isProgressDone(p.progress))
       .map(([_, p]) => p);
   }
 }
 
-function isProgressStable(p: sdk.ImportProgress) {
+function isProgressDone(p: sdk.ImportProgress) {
   return p.done && (p.status?.progress ?? 0.0) >= 1.0;
 }
 
