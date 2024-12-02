@@ -3,7 +3,8 @@ import { CallersCounter, mapEntries, mapGet } from '@milaboratories/ts-helpers';
 type PathLike = string;
 
 export interface CachedFile {
-  sizeBytes: number;
+  /** Size in bytes. */
+  size: number;
   path: PathLike;
   counter: CallersCounter;
 }
@@ -50,7 +51,7 @@ export class FilesCache<T extends CachedFile> {
       .forEach(([path, _]) => {
         if (this.totalSizeBytes - freedBytes <= this.softSizeBytes) return;
         const file = mapGet(this.cache, path);
-        freedBytes += file.sizeBytes;
+        freedBytes += file.size;
         result.push(file);
       });
 
@@ -62,13 +63,13 @@ export class FilesCache<T extends CachedFile> {
     this.cache.set(file.path, file);
     file.counter.inc(callerId);
 
-    if (file.sizeBytes < 0) throw new Error(`empty sizeBytes: ${file}`);
+    if (file.size < 0) throw new Error(`empty sizeBytes: ${file}`);
 
-    if (created) this.totalSizeBytes += file.sizeBytes;
+    if (created) this.totalSizeBytes += file.size;
   }
 
   removeCache(file: T) {
     this.cache.delete(file.path);
-    this.totalSizeBytes -= file.sizeBytes;
+    this.totalSizeBytes -= file.size;
   }
 }

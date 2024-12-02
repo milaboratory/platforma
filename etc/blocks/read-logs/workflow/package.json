@@ -1,0 +1,17 @@
+{
+  "name": "@milaboratories/milaboratories.test-read-logs.workflow",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Tengo-based template",
+  "scripts": {
+    "build": "rm -rf dist && pl-tengo check && pl-tengo build"
+  },
+  "dependencies": {
+    "@platforma-open/milaboratories.software-small-binaries": "catalog:"
+  },
+  "devDependencies": {
+    "@platforma-sdk/workflow-tengo": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*"
+  }
+}
