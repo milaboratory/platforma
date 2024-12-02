@@ -14,5 +14,7 @@ test_config.json
 .test_auth.json
 /.tags
 
+/test-registry/
+
 vite.config.*.timestamp-*
 .DS_Store

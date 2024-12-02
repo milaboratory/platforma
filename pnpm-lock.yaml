@@ -753,6 +753,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:^
         version: link:../common
+      remeda:
+        specifier: 'catalog:'
+        version: 2.17.4
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -1737,6 +1740,9 @@ importers:
       mime-types:
         specifier: 'catalog:'
         version: 2.1.35
+      remeda:
+        specifier: 'catalog:'
+        version: 2.17.4
       tar:
         specifier: 'catalog:'
         version: 7.4.3

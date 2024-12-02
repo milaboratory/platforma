@@ -75,8 +75,12 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
 ) {
   const universalSchema = z.object({
     id: BlockPackIdNoVersion,
-    allVersions: z.array(z.string()).or(z.array(VersionWithChannels)),
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+    allVersions: z.array(z.string()).optional(),
+    allVersionsWithChannels: z.array(VersionWithChannels).optional(),
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
     latest: descriptionType,
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
     latestManifestSha256: Sha256Schema,
     latestByChannel: z
       .record(
@@ -91,11 +95,11 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   return (
     universalSchema
       .transform((o) => {
-        if (o.allVersions.length === 0 || typeof o.allVersions[0] === 'object') return o;
+        if (o.allVersionsWithChannels) return o;
         else
           return {
             ...o,
-            allVersions: (o.allVersions as string[]).map((v) => ({ version: v, channels: [] }))
+            allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] }))
           };
       })
       // make sure "any" channel set from main body
@@ -110,11 +114,7 @@ export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
               }
             }
       )
-      .pipe(
-        universalSchema
-          .omit({ allVersions: true })
-          .extend({ allVersions: z.array(VersionWithChannels) })
-      )
+      .pipe(universalSchema.required({ allVersionsWithChannels: true }))
   );
 }
 export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);

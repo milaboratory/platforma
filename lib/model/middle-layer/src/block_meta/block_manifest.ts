@@ -3,6 +3,8 @@ import { BlockComponents } from './block_components';
 import { ContentRelative, ContentRelativeBinary, ContentRelativeText } from './content_types';
 import { CreateBlockPackDescriptionSchema } from './block_description';
 import { BlockPackMeta } from './block_meta';
+import * as R from 'remeda';
+import { BlockPackId } from './block_id';
 
 export const BlockComponentsManifest = BlockComponents(ContentRelative, ContentRelative);
 export type BlockComponentsManifest = z.infer<typeof BlockComponentsManifest>;
@@ -39,3 +41,10 @@ export const BlockPackManifest = z.object({
 export type BlockPackManifest = z.infer<typeof BlockPackManifest>;
 
 export const BlockPackManifestFile = 'manifest.json';
+
+export function overrideManifestVersion<T extends { description: { id: BlockPackId } }>(
+  manifest: T,
+  newVersion: string
+): T {
+  return R.mergeDeep(manifest, { description: { id: { version: newVersion } } }) as T;
+}

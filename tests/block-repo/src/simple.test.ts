@@ -4,7 +4,11 @@ import {
   folderReaderByUrl,
   storageByUrl
 } from '@platforma-sdk/block-tools';
-import { AnyChannel, BlockPackManifest } from '@milaboratories/pl-model-middle-layer';
+import {
+  AnyChannel,
+  BlockPackManifest,
+  overrideManifestVersion
+} from '@milaboratories/pl-model-middle-layer';
 import fsp from 'fs/promises';
 import { regTest } from './test_utils';
 import path from 'path';
@@ -53,7 +57,7 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
   // bumping version, and adding another one
   const version2 = bumpVersion(version1);
   // patching manifest
-  const manifest2 = R.mergeDeep(manifest1, { description: { id: { version: version2 } } });
+  const manifest2 = overrideManifestVersion(manifest1, version2);
   await registry.publishPackage(manifest2, async (file) =>
     Buffer.from(await fsp.readFile(path.resolve(manifestRoot, file)))
   );

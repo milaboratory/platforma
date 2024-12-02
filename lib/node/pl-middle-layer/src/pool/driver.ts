@@ -139,6 +139,7 @@ export class PFrameDriver implements SdkPFrameDriver {
     const concurrencyLimiter = new ConcurrencyLimitingExecutor(1);
     this.blobContentCache = blobContentCache;
     this.concurrencyLimiter = concurrencyLimiter;
+    
     this.pFrames = new (class extends RefCountResourcePool<InternalPFrameData, PFrameHolder> {
       constructor(private readonly blobDriver: DownloadDriver) {
         super();

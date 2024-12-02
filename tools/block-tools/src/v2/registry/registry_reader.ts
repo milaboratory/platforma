@@ -125,7 +125,7 @@ export class RegistryV2Reader {
           return {
             id: p.id,
             latestByChannel: Object.fromEntries(byChannelEntries),
-            allVersions: p.allVersions
+            allVersions: p.allVersionsWithChannels
           } satisfies BlockPackOverviewNoRegLabel;
         })
       );
