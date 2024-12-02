@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { FSStorage, S3Storage, storageByUrl } from './storage';
+import { test, expect } from '@jest/globals';
+import { S3Storage, storageByUrl } from './storage';
 import path from 'node:path';
 import * as fs from 'node:fs';
 

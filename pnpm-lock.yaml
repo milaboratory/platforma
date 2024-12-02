@@ -204,6 +204,9 @@ catalogs:
     readline-sync:
       specifier: ^1.4.10
       version: 1.4.10
+    remeda:
+      specifier: ^2.17.4
+      version: 2.17.4
     resize-observer-polyfill:
       specifier: ^1.5.1
       version: 1.5.1
@@ -750,6 +753,9 @@ importers:
       '@milaboratories/pl-model-common':
         specifier: workspace:^
         version: link:../common
+      remeda:
+        specifier: 'catalog:'
+        version: 2.17.4
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -1594,6 +1600,9 @@ importers:
       '@milaboratories/milaboratories.test-enter-numbers':
         specifier: workspace:*
         version: link:../../etc/blocks/enter-numbers
+      '@milaboratories/pl-model-middle-layer':
+        specifier: workspace:*
+        version: link:../../lib/model/middle-layer
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
         version: link:../../lib/util/build-configs
@@ -1603,6 +1612,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.16.15
+      remeda:
+        specifier: 'catalog:'
+        version: 2.17.4
       vitest:
         specifier: 'catalog:'
         version: 2.1.6(@types/node@20.16.15)(happy-dom@15.11.7)(jsdom@25.0.1)(sass@1.81.0)(tsx@4.19.1)(yaml@2.6.1)
@@ -1734,6 +1746,9 @@ importers:
       mime-types:
         specifier: 'catalog:'
         version: 2.1.35
+      remeda:
+        specifier: 'catalog:'
+        version: 2.17.4
       tar:
         specifier: 'catalog:'
         version: 7.4.3
@@ -6562,6 +6577,9 @@ packages:
     resolution: {integrity: sha512-o/3ikDxtXaA59BmZuZrJZDJv8NMDGSj+6j6XaeBmHw8eY1i1qd9+6H+LjVvQXx3HN6aRCGa1cUdJ9RaJZUugnQ==}
     engines: {node: '>=14'}
 
+  remeda@2.17.4:
+    resolution: {integrity: sha512-pviU2Ag7Qx9mOCAKO4voxDx/scfLzdhp3v85qDO4xxntQsU76uE9sgrAAdK1ATn4zzaOJqCXYMMNRP+O9F4Wiw==}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -7142,6 +7160,10 @@ packages:
   type-fest@0.21.3:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
+
+  type-fest@4.29.0:
+    resolution: {integrity: sha512-RPYt6dKyemXJe7I6oNstcH24myUGSReicxcHTvCLgzm4e0n8y05dGvcGB15/SoPRBmhlMthWQ9pvKyL81ko8nQ==}
+    engines: {node: '>=16'}
 
   typescript@3.9.10:
     resolution: {integrity: sha512-w6fIxVE/H1PkLKcCPsFqKE7Kv7QUwhU8qQY2MueZXWx5cPZdwFupLgKK3vntcK98BtNHZtAF4LA/yl2a7k8R6Q==}
@@ -13683,6 +13705,10 @@ snapshots:
     dependencies:
       '@pnpm/npm-conf': 2.3.1
 
+  remeda@2.17.4:
+    dependencies:
+      type-fest: 4.29.0
+
   require-directory@2.1.1: {}
 
   require-from-string@2.0.2: {}
@@ -14342,6 +14368,8 @@ snapshots:
   type-fest@0.20.2: {}
 
   type-fest@0.21.3: {}
+
+  type-fest@4.29.0: {}
 
   typescript@3.9.10: {}
 
