@@ -315,6 +315,10 @@ _activateRenv := func(wd, opts) {
 }
 
 prepareWDForRunEnvironment := func(wd, opts) {
+	if (!maps.containsKey(opts, "runEnvType")) {
+		return wd
+	}
+
 	if (opts.runEnvType == "R") {
 		return _activateRenv(wd, opts).workdir
 	}
