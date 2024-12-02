@@ -1,0 +1,36 @@
+{
+  "name": "@milaboratories/drivers-ml-blocks-integration",
+  "private": true,
+  "description": "Tests for block registry reader",
+  "version": "1.0.0",
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "undici": "catalog:",
+    "@platforma-sdk/test": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers": "workspace:*",
+    "@milaboratories/milaboratories.test-upload-file": "workspace:*",
+    "@milaboratories/milaboratories.test-download-file": "workspace:*",
+    "@milaboratories/milaboratories.test-read-logs": "workspace:*",
+
+    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",
+    "@milaboratories/milaboratories.test-download-file.model": "workspace:*",
+    "@milaboratories/milaboratories.test-read-logs.model": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  }
+}

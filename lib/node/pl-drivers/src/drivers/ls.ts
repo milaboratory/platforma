@@ -18,16 +18,16 @@ import {
   createUploadImportHandle,
   parseIndexHandle,
   parseUploadHandle
-} from './helpers/ls_list_entry';
+} from './helpers/ls_remote_import_handle';
 import {
   createLocalStorageHandle,
   createRemoteStorageHandle,
   parseStorageHandle
 } from './helpers/ls_storage_entry';
 import { LocalStorageProjection, VirtualLocalStorageSpec } from './types';
-import { createLsFilesClient } from '../clients/helpers';
 import { validateAbsolute } from '../helpers/validate';
 import { DefaultVirtualLocalStorages } from './virtual_storages';
+import { createLsFilesClient } from '../clients/constructors';
 
 /**
  * Extends public and safe SDK's driver API with methods used internally in the middle
@@ -199,35 +199,33 @@ export class LsDriver implements InternalLsDriver {
           handle: createIndexImportHandle(storageData.name, e.fullName)
         }))
       };
-    } else {
-      if (path.sep === '/' && fullPath === '') fullPath = '/';
-
-      if (storageData.rootPath === '') {
-        validateAbsolute(fullPath);
-      }
-      const lsRoot = path.isAbsolute(fullPath)
-        ? fullPath
-        : path.join(storageData.rootPath, fullPath);
-
-      const entries: LsEntry[] = [];
-      for await (const dirent of await fsp.opendir(lsRoot)) {
-        if (!dirent.isFile() && !dirent.isDirectory()) continue;
-
-        // We cannot use no dirent.fullPath no dirent.parentPath,
-        // since the former is deprecated
-        // and the later works differently on different versions.
-        const absolutePath = path.join(lsRoot, dirent.name);
-
-        entries.push({
-          type: dirent.isFile() ? 'file' : 'dir',
-          name: dirent.name,
-          fullPath: absolutePath,
-          handle: await this.getLocalFileHandle(absolutePath)
-        });
-      }
-
-      return { entries };
     }
+
+    if (path.sep === '/' && fullPath === '') fullPath = '/';
+
+    if (storageData.rootPath === '') {
+      validateAbsolute(fullPath);
+    }
+    const lsRoot = path.isAbsolute(fullPath) ? fullPath : path.join(storageData.rootPath, fullPath);
+
+    const entries: LsEntry[] = [];
+    for await (const dirent of await fsp.opendir(lsRoot)) {
+      if (!dirent.isFile() && !dirent.isDirectory()) continue;
+
+      // We cannot use no dirent.fullPath no dirent.parentPath,
+      // since the former is deprecated
+      // and the later works differently on different versions.
+      const absolutePath = path.join(lsRoot, dirent.name);
+
+      entries.push({
+        type: dirent.isFile() ? 'file' : 'dir',
+        name: dirent.name,
+        fullPath: absolutePath,
+        handle: await this.getLocalFileHandle(absolutePath)
+      });
+    }
+
+    return { entries };
   }
 
   public async fileToImportHandle(file: sdk.FileLike): Promise<sdk.ImportFileHandle> {

@@ -1,76 +1,35 @@
-import { test, expect } from '@jest/globals';
-import { TestHelpers } from '@milaboratories/pl-client';
-import { MiddleLayer } from './middle_layer';
-import { outputRef } from '../model/args';
+import { blockSpec as downloadFileSpec } from '@milaboratories/milaboratories.test-download-file';
+import { platforma as downloadFileModel } from '@milaboratories/milaboratories.test-download-file.model';
+import { blockSpec as enterNumberSpec } from '@milaboratories/milaboratories.test-enter-numbers';
+import { blockSpec as readLogsSpec } from '@milaboratories/milaboratories.test-read-logs';
+import { platforma as readLogsModel } from '@milaboratories/milaboratories.test-read-logs.model';
+import { blockSpec as sumNumbersSpec } from '@milaboratories/milaboratories.test-sum-numbers';
+import { blockSpec as uploadFileSpec } from '@milaboratories/milaboratories.test-upload-file';
+import { platforma as uploadFileModel } from '@milaboratories/milaboratories.test-upload-file.model';
+import { PlClient } from '@milaboratories/pl-client';
+import {
+  ImportFileHandle,
+  InferBlockState,
+  LocalBlobHandleAndSize,
+  MiddleLayer,
+  PlRef,
+  Project,
+  RemoteBlobHandleAndSize,
+  TestHelpers
+} from '@milaboratories/pl-middle-layer';
+import { awaitStableState, blockTest } from '@platforma-sdk/test';
+import fs from 'fs';
 import { randomUUID } from 'node:crypto';
-import path from 'node:path';
-import fs from 'node:fs';
-import { BlockPackRegistry, CentralBlockRegistry, getDevV1PacketMtime } from '../block_registry';
-import { LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@milaboratories/pl-model-common';
-import { Project } from './project';
-import { LegacyDevBlockPackConfig } from '../dev_env';
-import { V2RegistryProvider } from '../block_registry/registry-v2-provider';
-import { Agent } from 'undici';
-import { BlockPackSpec } from '@milaboratories/pl-model-middle-layer';
-
-const registry = new BlockPackRegistry(new V2RegistryProvider(new Agent()), [
-  { id: 'central', spec: CentralBlockRegistry },
-  {
-    id: 'dev',
-    title: 'Local dev registry',
-    spec: {
-      type: 'local-dev',
-      path: path.resolve('./integration')
-    }
-  }
-]);
-
-async function getStandardBlockSpecs() {
-  return {
-    enterNumbersSpecFromRemote: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
-    } satisfies BlockPackSpec,
-    enterNumbersSpecFromDev: {
-      type: 'dev-v1',
-      folder: path.resolve('./integration/block-beta-enter-numbers'),
-      mtime: '1727099575979300176'
-    } satisfies BlockPackSpec,
-    sumNumbersSpecFromRemote: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'sum-numbers', version: '1.0.1' }
-    } satisfies BlockPackSpec,
-    sumNumbersSpecFromDev: {
-      type: 'dev-v1',
-      folder: path.resolve('./integration/block-beta-sum-numbers'),
-      mtime: '1727099575981045820'
-    } satisfies BlockPackSpec,
-    downloadFileSpecFromRemote: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'download-file', version: '1.2.0' }
-    } satisfies BlockPackSpec,
-    uploadFileSpecFromRemote: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'upload-file', version: '1.0.7' }
-    } satisfies BlockPackSpec,
-    readLogsSpecFromRemote: {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'read-logs', version: '1.0.7' }
-    } satisfies BlockPackSpec
-  };
-}
+import path from 'path';
+import { setTimeout } from 'timers/promises';
+import { test } from 'vitest';
 
 export async function withMl(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
 ): Promise<void> {
   const workFolder = path.resolve(`work/${randomUUID()}`);
 
-  await TestHelpers.withTempRoot(async (pl) => {
+  await TestHelpers.withTempRoot(async (pl: PlClient) => {
     const ml = await MiddleLayer.init(pl, workFolder, {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
@@ -112,7 +71,7 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
   }
 }
 
-test('project list manipulations test', async () => {
+test('project list manipulations test', async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
 
@@ -172,7 +131,7 @@ test('project list manipulations test', async () => {
   });
 });
 
-test('simple project manipulations test', async () => {
+test('simple project manipulations test', { timeout: 20000 }, async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -197,7 +156,6 @@ test('simple project manipulations test', async () => {
       authorMarker: undefined,
       blocks: []
     });
-
     await ml.setProjectMeta(
       pRid1,
       { label: 'New Project Label' },
@@ -210,15 +168,9 @@ test('simple project manipulations test', async () => {
       blocks: []
     });
 
-    const {
-      enterNumbersSpecFromRemote,
-      sumNumbersSpecFromRemote,
-      enterNumbersSpecFromDev,
-      sumNumbersSpecFromDev
-    } = await getStandardBlockSpecs();
-    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
-    const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
 
     expect(await prj.overview.awaitStableValue()).toMatchObject({
       meta: { label: 'New Project Label' },
@@ -234,21 +186,18 @@ test('simple project manipulations test', async () => {
       expect(block.navigationState).toStrictEqual({ href: '/' });
     });
 
-    const block1StableState0 = await prj.getBlockState(block1Id).awaitStableValue();
-    const block2StableState0 = await prj.getBlockState(block2Id).awaitStableValue();
-    const block3StableState0 = await prj.getBlockState(block3Id).awaitStableValue();
-
+    await prj.getBlockState(block1Id).awaitStableValue();
+    await prj.getBlockState(block2Id).awaitStableValue();
+    await prj.getBlockState(block3Id).awaitStableValue();
     await prj.setNavigationState(block1Id, { href: '/section1' });
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'column'), outputRef(block2Id, 'column')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
-
     const overviewSnapshot1 = await prj.overview.awaitStableValue();
-
     expect(overviewSnapshot1.lastModified.valueOf()).toBeGreaterThan(lastModInitial);
 
     overviewSnapshot1.blocks.forEach((block) => {
@@ -259,31 +208,27 @@ test('simple project manipulations test', async () => {
       if (block.id === block1Id) expect(block.navigationState).toStrictEqual({ href: '/section1' });
       else expect(block.navigationState).toStrictEqual({ href: '/' });
     });
-    // console.dir(overviewSnapshot1, { depth: 5 });
-
+    console.dir(overviewSnapshot1, { depth: 5 });
     const block1StableFrontend = await prj.getBlockFrontend(block1Id).awaitStableValue();
     expect(block1StableFrontend.path).toBeDefined();
     expect(block1StableFrontend.sdkVersion).toBeDefined();
     const block2StableFrontend = await prj.getBlockFrontend(block2Id).awaitStableValue();
-    expect(block2StableFrontend.path).toMatch(/block-beta-enter-numbers/);
+    expect(block2StableFrontend.path).toMatch(/enter-numbers/);
     expect(block2StableFrontend.sdkVersion).toBeDefined();
     const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
     expect(block3StableFrontend.path).toBeDefined();
     expect(block3StableFrontend.sdkVersion).toBeDefined();
-    // console.dir(
-    //   { block1StableFrontend, block2StableFrontend, block3StableFrontend },
-    //   { depth: 5 });
+    console.dir({ block1StableFrontend, block2StableFrontend, block3StableFrontend }, { depth: 5 });
 
     const block1StableState1 = await prj.getBlockState(block1Id).awaitStableValue();
     const block2StableState1 = await prj.getBlockState(block2Id).awaitStableValue();
     const block3StableState1 = await prj.getBlockState(block3Id).awaitStableValue();
-
     expect(block1StableState1.navigationState).toStrictEqual({ href: '/section1' });
     expect(block2StableState1.navigationState).toStrictEqual({ href: '/' });
     expect(block3StableState1.navigationState).toStrictEqual({ href: '/' });
-    // console.dir(block1StableState1, { depth: 5 });
-    // console.dir(block2StableState1, { depth: 5 });
-    // console.dir(block3StableState1, { depth: 5 });
+    console.dir(block1StableState1, { depth: 5 });
+    console.dir(block2StableState1, { depth: 5 });
+    console.dir(block3StableState1, { depth: 5 });
 
     expect(block3StableState1.outputs!['sum']).toStrictEqual({
       ok: true,
@@ -300,9 +245,9 @@ test('simple project manipulations test', async () => {
     expect(overviewSnapshot2.blocks.find((b) => b.id === block3Id)?.stale).toEqual(true);
     expect(overviewSnapshot2.blocks.find((b) => b.id === block2Id)?.stale).toEqual(true);
   });
-}, 20000);
+});
 
-test('reorder & rename blocks', async () => {
+test('reorder & rename blocks', async ({ expect }) => {
   await withMl(async (ml) => {
     const projectList = ml.projectList;
     expect(await projectList.awaitStableValue()).toEqual([]);
@@ -311,15 +256,9 @@ test('reorder & rename blocks', async () => {
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const {
-      enterNumbersSpecFromRemote,
-      sumNumbersSpecFromRemote,
-      enterNumbersSpecFromDev,
-      sumNumbersSpecFromDev
-    } = await getStandardBlockSpecs();
-    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
-    const block2Id = await prj.addBlock('Block 2', enterNumbersSpecFromDev);
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromRemote);
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block2Id = await prj.addBlock('Block 2', enterNumberSpec);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
 
     const overviewSnapshot0 = await prj.overview.awaitStableValue();
 
@@ -334,7 +273,7 @@ test('reorder & rename blocks', async () => {
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, { numbers: [3, 4, 5] });
     await prj.setBlockArgs(block3Id, {
-      sources: [outputRef(block1Id, 'column'), outputRef(block2Id, 'column')]
+      sources: [outputRef(block1Id, 'numbers'), outputRef(block2Id, 'numbers')]
     });
     await prj.runBlock(block3Id);
     await awaitBlockDone(prj, block3Id);
@@ -371,15 +310,14 @@ test('reorder & rename blocks', async () => {
   });
 });
 
-test('limbo test', async () => {
+test('limbo test', async ({ expect }) => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     const prj = ml.getOpenedProject(pRid1);
 
-    const { enterNumbersSpecFromRemote, sumNumbersSpecFromRemote } = await getStandardBlockSpecs();
-    const block1Id = await prj.addBlock('Block 1', enterNumbersSpecFromRemote);
-    const block2Id = await prj.addBlock('Block 2', sumNumbersSpecFromRemote);
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
+    const block2Id = await prj.addBlock('Block 2', sumNumbersSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     overview0.blocks.forEach((block) => {
@@ -390,7 +328,7 @@ test('limbo test', async () => {
 
     await prj.setBlockArgs(block1Id, { numbers: [1, 2, 3] });
     await prj.setBlockArgs(block2Id, {
-      sources: [outputRef(block1Id, 'column')]
+      sources: [outputRef(block1Id, 'numbers')]
     });
 
     const overview1 = await prj.overview.awaitStableValue();
@@ -442,7 +380,7 @@ test('limbo test', async () => {
   });
 });
 
-test('block update test', async () => {
+test('block update test', async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -451,22 +389,25 @@ test('block update test', async () => {
     const tmpDevBlockFolder = path.resolve(workFolder, 'dev');
     await fs.promises.mkdir(tmpDevBlockFolder, { recursive: true });
 
-    const devBlockPath = path.resolve(tmpDevBlockFolder, 'block-beta-enter-numbers');
-    await fs.promises.cp(path.resolve('integration', 'block-beta-enter-numbers'), devBlockPath, {
-      recursive: true
-    });
-    const mtime = await getDevV1PacketMtime(devBlockPath);
-    const block1Id = await prj.addBlock('Block 1', {
-      type: 'dev-v1',
-      folder: devBlockPath,
-      mtime
-    });
+    const block1Id = await prj.addBlock('Block 1', enterNumberSpec);
 
     const overview0 = await prj.overview.awaitStableValue();
     expect(overview0.blocks[0].updatedBlockPack).toBeUndefined();
 
     // touch
-    await fs.promises.appendFile(path.resolve(devBlockPath, ...LegacyDevBlockPackConfig), ' ');
+    await fs.promises.appendFile(
+      path.resolve(
+        '..',
+        '..',
+        'etc',
+        'block-components',
+        'enter-numbers',
+        'model',
+        'dist',
+        'model.json'
+      ),
+      ' '
+    );
 
     // await update watcher
     await prj.overview.refreshState();
@@ -483,17 +424,13 @@ test('block update test', async () => {
   });
 });
 
-test('project open and close test', async () => {
-  await withMl(async (ml, workFolder) => {
+test('project open and close test', async ({ expect }) => {
+  await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
     let prj = ml.getOpenedProject(pRid1);
 
-    const blockId = await prj.addBlock('Test Block', {
-      type: 'from-registry-v1',
-      registryUrl: 'https://block.registry.platforma.bio/releases',
-      id: { organization: 'milaboratory', name: 'enter-numbers', version: '1.1.1' }
-    });
+    const blockId = await prj.addBlock('Test Block', enterNumberSpec);
     await prj.setBlockArgs(blockId, { numbers: [1, 2, 3] });
     const overview1 = await prj.overview.awaitStableValue();
     expect(overview1.blocks[0].canRun).toEqual(true);
@@ -507,7 +444,7 @@ test('project open and close test', async () => {
   });
 });
 
-test('block error test', async () => {
+test('block error test', async ({ expect }) => {
   await withMl(async (ml) => {
     const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
     await ml.openProject(pRid1);
@@ -518,14 +455,7 @@ test('block error test', async () => {
       blocks: []
     });
 
-    const {
-      enterNumbersSpecFromRemote,
-      sumNumbersSpecFromRemote,
-      enterNumbersSpecFromDev,
-      sumNumbersSpecFromDev
-    } = await getStandardBlockSpecs();
-
-    const block3Id = await prj.addBlock('Block 3', sumNumbersSpecFromDev);
+    const block3Id = await prj.addBlock('Block 3', sumNumbersSpec);
 
     await prj.setBlockArgs(block3Id, {
       sources: [] // empty reference list should produce an error
@@ -545,182 +475,155 @@ test('block error test', async () => {
 
     const sum = block3StableState.outputs!['sum'];
     expect(sum.ok).toStrictEqual(false);
-    if (!sum.ok) expect(sum.errors[0]).toContain('tengo-mistd');
+    if (!sum.ok)
+      expect(sum.errors[0]).toContain(
+        "At least 1 data source must be set. It's needed in 'block error test'"
+      );
   });
 });
 
-test('should create download-file block, render it and gets outputs from its config', async () => {
-  await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+blockTest(
+  'should create download-file block, render it and gets outputs from its config',
+  async ({ rawPrj: project, ml, expect }) => {
+    const blockId = await project.addBlock('DownloadFile', downloadFileSpec);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
-      blocks: []
-    });
-
-    const { downloadFileSpecFromRemote } = await getStandardBlockSpecs();
-
-    const block3Id = await prj.addBlock('Block 3', downloadFileSpecFromRemote);
-
-    await prj.setBlockArgs(block3Id, {
-      storageId: 'library',
-      filePath: 'answer_to_the_ultimate_question.txt'
-    });
-
-    await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id);
-
-    const overviewSnapshot1 = await prj.overview.awaitStableValue();
-
-    overviewSnapshot1.blocks.forEach((block) => {
-      expect(block.sections).toBeDefined();
-    });
-    console.dir(overviewSnapshot1, { depth: 5 });
-
-    const block3StableFrontend = await prj.getBlockFrontend(block3Id).awaitStableValue();
-    expect(block3StableFrontend).toBeDefined();
-    console.dir({ block3StableFrontend }, { depth: 5 });
-
-    const block3StateComputable = prj.getBlockState(block3Id);
-
-    const block3StableState = await block3StateComputable.awaitStableFullValue();
-
-    console.dir(block3StableState, { depth: 5 });
-
-    expect((block3StableState.value.outputs!['contentAsJson'] as any).value).toStrictEqual(42);
-    const localBlob = (block3StableState.value.outputs!['downloadedBlobContent'] as any)
-      .value as LocalBlobHandleAndSize;
-    const remoteBlob = (block3StableState.value.outputs!['onDemandBlobContent'] as any)
-      .value as RemoteBlobHandleAndSize;
-
-    expect(
-      Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
-    ).toEqual('42\n');
-
-    expect(
-      Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
-    ).toEqual('42\n');
-  });
-});
-
-test('should create upload-file block, render it and upload a file to pl server', async () => {
-  await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
-
-    expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
-      blocks: []
-    });
-
-    const { uploadFileSpecFromRemote } = await getStandardBlockSpecs();
-    // const uploadFileSpecFromDev: BlockPackSpec = {
-    //   type: 'dev',
-    //   folder: '/home/snyssfx/prog/mi/tpls/block-beta-upload-file',
-    // }
-
-    const block3Id = await prj.addBlock('Block 3', uploadFileSpecFromRemote);
-
-    const storages = await ml.driverKit.lsDriver.getStorageList();
-    const local = storages.find((s) => s.name == 'local');
-    expect(local).not.toBeUndefined();
-    const fileDir = path.resolve(__dirname, '..', '..', '..', '..', '..', 'assets');
-    const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
-    const ourFile = files.entries.find(
-      (f) => f.name == 'another_answer_to_the_ultimate_question.txt'
+    const inputHandle = await lsDriverGetFileHandleFromAssets(
+      ml,
+      expect,
+      'answer_to_the_ultimate_question.txt'
     );
-    expect(ourFile).not.toBeUndefined();
-    expect(ourFile?.type).toBe('file');
 
-    await prj.setBlockArgs(block3Id, {
-      importHandle: (ourFile as any).handle
-    });
+    await project.setBlockArgs(blockId, { inputHandle });
 
-    await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id, 5000);
-
-    const block3StateComputable = prj.getBlockState(block3Id);
+    await project.runBlock(blockId);
 
     while (true) {
-      const state = await block3StateComputable.getFullValue();
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        25000
+      )) as InferBlockState<typeof downloadFileModel>;
+      // console.dir(state, { depth: 5 });
+
+      const blockFrontend = await project.getBlockFrontend(blockId).awaitStableValue();
+      expect(blockFrontend).toBeDefined();
+      console.dir(blockFrontend, { depth: 5 });
+
+      const outputs = state.outputs;
+
+      if (outputs.contentAsString.ok) {
+        expect(outputs.contentAsString.value).toStrictEqual('42\n');
+        expect((outputs.contentAsJson as any).value).toStrictEqual(42);
+        const localBlob = (outputs.downloadedBlobContent as any).value as LocalBlobHandleAndSize;
+        const remoteBlob = (outputs.onDemandBlobContent as any).value as RemoteBlobHandleAndSize;
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(localBlob.handle)).toString('utf-8')
+        ).toEqual('42\n');
+
+        expect(
+          Buffer.from(await ml.driverKit.blobDriver.getContent(remoteBlob.handle)).toString('utf-8')
+        ).toEqual('42\n');
+
+        return;
+      }
+    }
+  }
+);
+
+blockTest(
+  'should create upload-file block, render it and upload a file to pl server',
+  async ({ rawPrj: project, ml, expect }) => {
+    const blockId = await project.addBlock('UpdateFile', uploadFileSpec);
+
+    const inputHandle = await lsDriverGetFileHandleFromAssets(
+      ml,
+      expect,
+      'another_answer_to_the_ultimate_question.txt'
+    );
+
+    await project.setBlockArgs(blockId, { inputHandle });
+
+    await project.runBlock(blockId);
+
+    while (true) {
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        25000
+      )) as InferBlockState<typeof uploadFileModel>;
 
       // console.dir(state, { depth: 5 });
 
-      if (state.stable && (state.value.outputs!['handle'] as any).value != undefined) {
-        expect(state.type).toEqual('ok');
-        expect((state.value.outputs!['handle'] as any).value.isUpload).toBeTruthy();
-        expect((state.value.outputs!['handle'] as any).value.done).toBeTruthy();
+      const outputs = state.outputs;
+      if (outputs.handle.ok && outputs.handle.value != undefined) {
+        expect(outputs.handle.value.isUpload).toBeTruthy();
+        expect(outputs.handle.value.done).toBeTruthy();
         return;
       }
-
-      await block3StateComputable.awaitChange();
     }
-  });
-});
+  }
+);
 
-// TODO: fix. It was skipped because of RunCommand breaking change in pl-core.
-// The block should be rewrote from milib to tengo-sdk
-test.skip('should create read-logs block, render it and read logs from a file', async () => {
-  await withMl(async (ml) => {
-    const pRid1 = await ml.createProject({ label: 'Project 1' }, 'id1');
-    await ml.openProject(pRid1);
-    const prj = ml.getOpenedProject(pRid1);
+blockTest(
+  'should create read-logs block, render it and read logs from a file',
+  async ({ rawPrj: project, ml, helpers, expect }) => {
+    const blockId = await project.addBlock('ReadLogs', readLogsSpec);
 
-    expect(await prj.overview.awaitStableValue()).toMatchObject({
-      meta: { label: 'Project 1' },
-      blocks: []
-    });
-
-    const { readLogsSpecFromRemote } = await getStandardBlockSpecs();
-    // const readLogsSpecFromDev: BlockPackSpec = {
-    //   type: 'dev',
-    //   folder: '/home/snyssfx/prog/mi/tpls/block-beta-read-logs',
-    // }
-    const block3Id = await prj.addBlock('Block 3', readLogsSpecFromRemote);
-
-    const storages = await ml.driverKit.lsDriver.getStorageList();
-    const library = storages.find((s) => s.name == 'library');
-    expect(library).toBeDefined();
-    const files = await ml.driverKit.lsDriver.listFiles(library!.handle, '');
-    const ourFile = files.entries.find(
-      (f) => f.name == 'maybe_the_number_of_lines_is_the_answer.txt'
+    const inputHandle = await lsDriverGetFileHandleFromAssets(
+      ml,
+      expect,
+      'maybe_the_number_of_lines_is_the_answer.txt'
     );
-    expect(ourFile).toBeDefined();
-    expect(ourFile?.type).toBe('file');
 
-    await prj.setBlockArgs(block3Id, {
-      fileHandle: (ourFile as any).handle,
+    await project.setBlockArgs(blockId, {
+      inputHandle,
       // args are from here:
       // https://github.com/milaboratory/sleep/blob/3c046cdcc504b63f1a6e592a4aa87ee773a94d72/read-file-to-stdout-with-sleep.go#L24
-      readFileWithSleepArgs: ['file.txt', 'PREFIX', '100', '1000']
+      readFileWithSleepArgs: 'PREFIX,100,1000'
     });
 
-    await prj.runBlock(block3Id);
-    await awaitBlockDone(prj, block3Id, 15000);
-
-    const computable = prj.getBlockState(block3Id);
-    // await computable.refreshState();
+    await project.runBlock(blockId);
 
     while (true) {
-      const state = await computable.getFullValue();
-      console.dir(state, { depth: 5 });
+      const state = (await awaitStableState(
+        project.getBlockState(blockId),
+        25000
+      )) as InferBlockState<typeof readLogsModel>;
 
-      if (
-        state.stable &&
-        state.value.outputs!['lastLogs'].ok &&
-        state.value.outputs!['lastLogs'].value != undefined
-      ) {
-        expect((state.value.outputs!['progressLog'] as any).value).toContain('PREFIX');
-        expect((state.value.outputs!['progressLog'] as any).value).toContain('bytes read');
-        expect((state.value.outputs!['lastLogs'] as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty
+      // console.dir(state, { depth: 5 });
+      const outputs = state.outputs;
+
+      if (outputs.lastLogs.ok && outputs.lastLogs.value != undefined) {
+        expect((outputs.progressLog as any).value).toContain('PREFIX');
+        expect((outputs.progressLog as any).value).toContain('bytes read');
+        expect((outputs.lastLogs as any).value.split('\n').length).toEqual(10 + 1); // 11 because the last element is empty
         return;
       }
-
-      await computable.awaitChange();
     }
-  });
-  // The timeout is higher here because pl-core must download a software for this test.
-}, 20000);
+  },
+  // The timeout is higher here because pl - core must download a software for this test.
+  { timeout: 20000 }
+);
+
+async function lsDriverGetFileHandleFromAssets(
+  ml: MiddleLayer,
+  expect: any,
+  fName: string
+): Promise<ImportFileHandle> {
+  const storages = await ml.driverKit.lsDriver.getStorageList();
+
+  const local = storages.find((s) => s.name == 'local');
+  expect(local).not.toBeUndefined();
+
+  const fileDir = path.resolve(__dirname, '..', '..', '..', 'assets');
+  const files = await ml.driverKit.lsDriver.listFiles(local!.handle, fileDir);
+
+  const ourFile = files.entries.find((f) => f.name == fName);
+  expect(ourFile).not.toBeUndefined();
+  expect(ourFile?.type).toBe('file');
+
+  return (ourFile as any).handle;
+}
+
+function outputRef(blockId: string, name: string): PlRef {
+  return { __isRef: true, blockId, name };
+}

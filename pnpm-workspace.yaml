@@ -39,6 +39,26 @@ packages:
   - etc/block-components/enter-numbers/ui
   - etc/blocks/enter-numbers
 
+  - etc/blocks/sum-numbers/workflow
+  - etc/blocks/sum-numbers/model
+  - etc/blocks/sum-numbers/ui
+  - etc/blocks/sum-numbers/block
+
+  - etc/blocks/upload-file/workflow
+  - etc/blocks/upload-file/model
+  - etc/blocks/upload-file/ui
+  - etc/blocks/upload-file/block
+
+  - etc/blocks/download-file/workflow
+  - etc/blocks/download-file/model
+  - etc/blocks/download-file/ui
+  - etc/blocks/download-file/block
+
+  - etc/blocks/read-logs/workflow
+  - etc/blocks/read-logs/model
+  - etc/blocks/read-logs/ui
+  - etc/blocks/read-logs/block
+
   - etc/block-components/ui-examples/workflow
   - etc/block-components/ui-examples/model
   - etc/block-components/ui-examples/ui
@@ -55,6 +75,7 @@ packages:
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
+  - tests/drivers-ml-blocks-integration
 
   # Etc
 

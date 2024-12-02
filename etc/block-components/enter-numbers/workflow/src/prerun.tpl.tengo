@@ -1,0 +1,6 @@
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+numbers := import(":numbers")
+
+wf.body(func(args) {
+	return numbers.getNumbers(args, wf.blockId().getDataAsJson())
+})
