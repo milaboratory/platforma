@@ -7,14 +7,15 @@ import {
 import {
   AnyChannel,
   BlockPackManifest,
-  overrideManifestVersion
+  overrideManifestVersion,
+  StableChannel
 } from '@milaboratories/pl-model-middle-layer';
 import fsp from 'fs/promises';
 import { regTest } from './test_utils';
 import path from 'path';
 import { createRequire } from 'node:module';
 import { test } from 'vitest';
-import * as R from 'remeda';
+import * as tp from 'timers/promises';
 
 // To overcome broken native ESM resolution mechanism:
 //     TypeError: __vite_ssr_import_meta__.resolve is not a function
@@ -64,32 +65,57 @@ regTest('simple repo test', async ({ expect, tmpFolder }) => {
 
   await registry.updateIfNeeded();
 
-  await registry.addPackageToChannel(manifest2.description.id, 'stable');
+  await registry.addPackageToChannel(manifest2.description.id, StableChannel);
 
   await registry.updateIfNeeded();
 
   // Reading
 
-  const registryReader = new RegistryV2Reader(folderReaderByUrl(registryUrl));
-  const overview = await registryReader.listBlockPacks();
-  expect(overview).length.greaterThanOrEqual(1);
-  const ten = overview.find((o) => o.id.name === 'test-enter-numbers');
-  expect(ten).toBeDefined();
-  const dAny = ten!.latestByChannel[AnyChannel]!;
-  expect(dAny.meta.logo?.mimeType).toStrictEqual('image/png');
-  expect(dAny.meta.organization.logo?.mimeType).toStrictEqual('image/png');
-  const components = await registryReader.getComponents(dAny.id);
+  const registryReader = new RegistryV2Reader(folderReaderByUrl(registryUrl), {
+    cacheBlockListFor: 1,
+    keepStaleBlockListFor: 1
+  });
+  const overview1 = await registryReader.listBlockPacks();
+  expect(overview1).length.greaterThanOrEqual(1);
+  const ten1 = overview1.find((o) => o.id.name === 'test-enter-numbers');
+  expect(ten1).toBeDefined();
+  const dAny1 = ten1!.latestByChannel[AnyChannel]!;
+  expect(dAny1.meta.logo?.mimeType).toStrictEqual('image/png');
+  expect(dAny1.meta.organization.logo?.mimeType).toStrictEqual('image/png');
+  const components = await registryReader.getComponents(dAny1.id);
   expect(await fsp.stat(new URL(components.workflow.main.url).pathname)).toBeDefined();
   expect(await fsp.stat(new URL(components.model.url).pathname)).toBeDefined();
   expect(await fsp.stat(new URL(components.ui.url).pathname)).toBeDefined();
 
-  const vc1 = ten!.allVersions.find((v) => v.version === version1);
-  const vc2 = ten!.allVersions.find((v) => v.version === version2);
+  const vc11 = ten1!.allVersions.find((v) => v.version === version1);
+  const vc12 = ten1!.allVersions.find((v) => v.version === version2);
 
-  expect(vc1?.channels).toStrictEqual([]);
-  expect(vc2?.channels).toStrictEqual(['stable']);
+  expect(vc11?.channels).toStrictEqual([]);
+  expect(vc12?.channels).toStrictEqual([StableChannel]);
 
-  const dStable = ten!.latestByChannel['stable']!;
+  const dStable1 = ten1!.latestByChannel[StableChannel]!;
 
-  expect(dStable.id.version).toStrictEqual(version2);
+  expect(dStable1.id.version).toStrictEqual(version2);
+
+  // Deleta stable marker
+
+  await registry.removePackageFromChannel(manifest2.description.id, StableChannel);
+  await registry.updateIfNeeded();
+
+  await tp.setTimeout(10);
+
+  const overview2 = await registryReader.listBlockPacks();
+  expect(overview2).length.greaterThanOrEqual(1);
+  const ten2 = overview2.find((o) => o.id.name === 'test-enter-numbers');
+  expect(ten2).toBeDefined();
+
+  const vc21 = ten2!.allVersions.find((v) => v.version === version1);
+  const vc22 = ten2!.allVersions.find((v) => v.version === version2);
+
+  expect(vc21?.channels).toStrictEqual([]);
+  expect(vc22?.channels).toStrictEqual([]);
+
+  const dStable2 = ten2!.latestByChannel[StableChannel]!;
+
+  expect(dStable2).toBeUndefined();
 });
