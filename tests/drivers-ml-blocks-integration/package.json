@@ -2,7 +2,7 @@
   "name": "@milaboratories/drivers-ml-blocks-integration",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
@@ -19,7 +19,6 @@
     "@milaboratories/milaboratories.test-upload-file": "workspace:*",
     "@milaboratories/milaboratories.test-download-file": "workspace:*",
     "@milaboratories/milaboratories.test-read-logs": "workspace:*",
-
     "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
     "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",

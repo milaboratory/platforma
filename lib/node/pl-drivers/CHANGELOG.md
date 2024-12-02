@@ -1,5 +1,20 @@
 # @milaboratories/pl-drivers
 
+## 1.4.0
+
+### Minor Changes
+
+- f5b996c: huge refactoring, several bugs fixed, see https://www.notion.so/mixcr/drivers-Upload-stability-issue-multiple-issues-in-this-ticket-1423a83ff4af8099a6c1e3b46f2c269e?pvs=4
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/ts-helpers@1.1.2
+  - @milaboratories/computable@2.3.3
+  - @milaboratories/pl-client@2.6.3
+  - @milaboratories/pl-tree@1.4.18
+
 ## 1.3.26
 
 ### Patch Changes

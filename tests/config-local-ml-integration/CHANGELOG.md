@@ -1,5 +1,17 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.1.91
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/ts-helpers@1.1.2
+  - @milaboratories/pl-middle-layer@1.19.1
+  - @milaboratories/pl-client@2.6.3
+  - @milaboratories/pl-config@1.3.2
+  - @milaboratories/pl-local@1.8.1
+
 ## 1.1.90
 
 ### Patch Changes

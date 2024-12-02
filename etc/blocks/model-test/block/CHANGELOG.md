@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/milaboratories.test-block-model.ui@1.0.41
+  - @milaboratories/milaboratories.test-block-model.model@1.0.11
+
 ## 1.0.40
 
 ### Patch Changes
