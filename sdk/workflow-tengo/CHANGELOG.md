@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.6.0
+
+### Minor Changes
+
+- 885c08b: R language support!
+
 ## 2.5.0
 
 ### Minor Changes
