@@ -1,10 +1,19 @@
 .pl-filter-manager {
     $this: &;
 
-    &__add-btn {
-        height: 40px;
+    .text-s {
+        font-weight: 600;
+    }
+
+    &__add-action-wrapper {
         position: sticky;
         bottom: -16px;
+        background-color: var(--bg-elevated-01);
+        transition: all .15s ease-in-out;
+    }
+
+    &__add-btn {
+        height: 40px;
         background-color: var(--bg-elevated-01);
         display: flex;
         align-items: center;
@@ -15,6 +24,12 @@
         border: 1px dashed var(--border-color-div-grey);
         line-height: 0;
         cursor: pointer;
+    }
+
+    &__add-btn:hover {
+        border-radius: 6px;
+        border: 1px dashed var(--border-color-focus, #49CC49);
+        background: rgba(99, 224, 36, 0.12);
     }
 
     &__add-btn-title {
@@ -51,11 +66,29 @@
 
     &__toggle,
     &__delete {
+        display: none;
+
         .mask-24 {
             background-color: var(--ic-02);
         }
     }
 
+    &__toggle:hover {
+        .mask-24 {
+            background-color: var(--ic-01);
+        }
+    }
+
+    &__delete:hover {
+        .mask-24 {
+            background-color: var(--ic-01);
+        }
+    }
+
+    &__filter:hover &__toggle,
+    &__filter:hover &__delete {
+        display: block;
+    }
 
     &__filter {
         border-radius: 6px;
@@ -63,6 +96,18 @@
         background-color: var(--bg-base-light);
         transition: background-color .15s ease-in-out;
         overflow: auto;
+    }
+
+    &__filter.disabled {
+
+        #{$this}__expand-icon,
+        #{$this}__title {
+            opacity: 0.3;
+        }
+    }
+
+    &__filter:hover {
+        background-color: var(--bg-elevated-01);
     }
 
     &__filter.open {
@@ -94,5 +139,10 @@
 
     &__revert-btn:hover {
         background-color: var(--btn-sec-hover-grey);
+    }
+
+    &__revert-btn.disabled {
+        opacity: 0.3;
+        pointer-events: none;
     }
 }

@@ -12,6 +12,7 @@
   --label-offset-right-x: 8px;
   --prefix-color: var(--color-placeholder);
   --icon-color: #000;
+  --contour-offset: 2px;
 
   width: 100%;
   height: var(--control-height, 40px);
@@ -70,6 +71,10 @@
     &:empty::before {
       color: var(--color-placeholder);
       content: attr(data-placeholder);
+      color: var(--txt-03);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 20px;
     }
   }
 
