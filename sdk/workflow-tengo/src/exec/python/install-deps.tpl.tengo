@@ -53,7 +53,7 @@ self.prepare(func(inputs) {
 	validation.assertJsonSchema(inputs, {
 		venv: validation.reference,
 		toolset: "string",
-		dependencies: {"string": validation.reference}
+		dependencies: {"any": validation.reference}
 	})
 
 	toolset := inputs.toolset

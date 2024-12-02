@@ -131,7 +131,7 @@ pythonVenvBuilder := func() {
 
 			pyVenvInputs := {
 				toolset: toolset,
-				dependencies: smart.createMapResource(depsMap),
+				dependencies: depsMap,
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
 				python: pythonPkg
