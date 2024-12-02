@@ -4,7 +4,7 @@ pkg := import(":exec.package")
 
 pythonVenvInputSchema := {
 	toolset: "string",
-	dependencies: {"string": validation.reference},
+	dependencies: {"any": validation.reference},
 	// software: validation.reference,
 
 	pythonDescriptor: pkg.runEnvDescriptorScheme,
