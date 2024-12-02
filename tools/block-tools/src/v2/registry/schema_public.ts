@@ -1,4 +1,5 @@
 import {
+  AnyChannel,
   BlockComponentsManifest,
   BlockPackDescriptionManifest,
   BlockPackId,
@@ -8,7 +9,8 @@ import {
   ContentRelativeText,
   CreateBlockPackDescriptionSchema,
   SemVer,
-  Sha256Schema
+  Sha256Schema,
+  VersionWithChannels
 } from '@milaboratories/pl-model-middle-layer';
 import { z } from 'zod';
 import { RelativeContentReader, relativeToExplicitBytes, relativeToExplicitString } from '../model';
@@ -18,6 +20,10 @@ export const MainPrefix = 'v2/';
 export const GlobalOverviewFileName = 'overview.json';
 export const PackageOverviewFileName = 'overview.json';
 export const ManifestFileName = 'manifest.json';
+
+export const ChannelsFolder = 'channels';
+
+export const ChannelNameRegexp = /^[-a-z0-9]+$/;
 
 export function packageContentPrefixInsideV2(bp: BlockPackId): string {
   return `${bp.organization}/${bp.name}/${bp.version}`;
@@ -35,6 +41,7 @@ export const ManifestSuffix = '/' + ManifestFileName;
 
 export const PackageOverviewVersionEntry = z.object({
   description: BlockPackDescriptionManifest,
+  channels: z.array(z.string()).default(() => []),
   manifestSha256: Sha256Schema
 });
 export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
@@ -45,8 +52,20 @@ export const PackageOverview = z.object({
 });
 export type PackageOverview = z.infer<typeof PackageOverview>;
 
+export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
+  return `${bp.organization}/${bp.name}/${PackageOverviewFileName}`;
+}
+
 export function packageOverviewPath(bp: BlockPackIdNoVersion): string {
-  return `${MainPrefix}${bp.organization}/${bp.name}/${PackageOverviewFileName}`;
+  return `${MainPrefix}${packageOverviewPathInsideV2(bp)}`;
+}
+
+export function packageChannelPrefixInsideV2(bp: BlockPackId): string {
+  return `${packageContentPrefixInsideV2(bp)}/${ChannelsFolder}/`;
+}
+
+export function packageChannelPrefix(bp: BlockPackId): string {
+  return `${MainPrefix}${packageChannelPrefixInsideV2(bp)}`;
 }
 
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
@@ -54,12 +73,49 @@ export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(
   descriptionType: Description
 ) {
-  return z.object({
+  const universalSchema = z.object({
     id: BlockPackIdNoVersion,
-    allVersions: z.array(z.string()),
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+    allVersions: z.array(z.string()).optional(),
+    allVersionsWithChannels: z.array(VersionWithChannels).optional(),
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
     latest: descriptionType,
-    latestManifestSha256: Sha256Schema
+    /** @deprecated to be removed at some point, not used, left for compatibility with older versions */
+    latestManifestSha256: Sha256Schema,
+    latestByChannel: z
+      .record(
+        z.string(),
+        z.object({
+          description: descriptionType,
+          manifestSha256: Sha256Schema
+        })
+      )
+      .default({})
   });
+  return (
+    universalSchema
+      .transform((o) => {
+        if (o.allVersionsWithChannels) return o;
+        else
+          return {
+            ...o,
+            allVersionsWithChannels: o.allVersions!.map((v) => ({ version: v, channels: [] }))
+          };
+      })
+      // make sure "any" channel set from main body
+      .transform((o) =>
+        o.latestByChannel[AnyChannel]
+          ? o
+          : {
+              ...o,
+              latestByChannel: {
+                ...o.latestByChannel,
+                [AnyChannel]: { description: o.latest!, manifestSha256: o.latestManifestSha256! }
+              }
+            }
+      )
+      .pipe(universalSchema.required({ allVersionsWithChannels: true }))
+  );
 }
 export const GlobalOverviewEntryReg = GlobalOverviewEntry(BlockPackDescriptionManifest);
 export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryReg>;
