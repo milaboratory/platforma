@@ -1,5 +1,45 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.2
+
+### Patch Changes
+
+- 5884403: PlTableFilters support old desktop
+
+## 1.14.1
+
+### Patch Changes
+
+- a886400: PlTableFilters redesign
+- Updated dependencies [a886400]
+  - @platforma-sdk/model@1.14.1
+  - @milaboratories/uikit@2.2.18
+
+## 1.14.0
+
+### Minor Changes
+
+- dfad2d0: PFrames case insensitive filters
+
+### Patch Changes
+
+- @platforma-sdk/model@1.14.0
+- @milaboratories/uikit@2.2.18
+
+## 1.13.18
+
+### Patch Changes
+
+- a85e3f7: Add a "shine wave" animation to the block's progress bar
+
+## 1.13.17
+
+### Patch Changes
+
+- Updated dependencies [401f5f4]
+- Updated dependencies [b078d28]
+  - @milaboratories/uikit@2.2.18
+
 ## 1.13.15
 
 ### Patch Changes

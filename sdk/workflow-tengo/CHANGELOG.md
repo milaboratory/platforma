@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.5.0
+
+### Minor Changes
+
+- dfad2d0: PFrames case insensitive filters
+
 ## 2.4.1
 
 ### Patch Changes

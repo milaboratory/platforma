@@ -79,6 +79,20 @@
       width: var(--progress-width);
       background-color: var(--border-color-focus);
       will-change: width;
+      background-image: linear-gradient(90deg, #0000 0%, rgba(255, 255, 255, 0.80) 50%, #0000 100%);
+      background-position: 0 0;
+      background-size: 80px 100%;
+      background-repeat: repeat-y;
+      animation: shine-animation 1.2s linear infinite;
+    }
+  }
+
+  @keyframes shine-animation {
+    from {
+      background-position: -160px 0;
+    }
+    to {
+      background-position: calc(100% + 80px) 0;
     }
   }
 
