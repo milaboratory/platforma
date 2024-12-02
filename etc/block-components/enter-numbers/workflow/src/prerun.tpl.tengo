@@ -1,8 +1,5 @@
 wf := import("@platforma-sdk/workflow-tengo:workflow")
 numbers := import(":numbers")
-assets := import("@platforma-sdk/workflow-tengo:assets")
-
-wf.setPreRun(assets.importTemplate(":prerun"))
 
 wf.body(func(args) {
 	return numbers.getNumbers(args, wf.blockId().getDataAsJson())

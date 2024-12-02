@@ -93,10 +93,7 @@ test.skip('upload a very big blob', async () => {
     //       await fileToWrite.close();
 
     // const stats = await getFileStats(signer, fPath)
-    const stats = await getFileStats(
-      signer,
-      '/home/snyssfx/Downloads/Kung Fu Hustle (2004) Open Matte 1080p.mkv'
-    );
+    const stats = await getFileStats(signer, '/home/snyssfx/Downloads/a_very_big_file.txt');
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 

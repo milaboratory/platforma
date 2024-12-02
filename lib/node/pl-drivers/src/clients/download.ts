@@ -45,7 +45,7 @@ export class ClientDownload {
   ): Promise<DownloadResponse> {
     const { downloadUrl, headers } = await this.grpcGetDownloadUrl(info, options, signal);
 
-    this.logger.info(`download blob from url ${downloadUrl}...`);
+    this.logger.info(`download blob from url ${downloadUrl}`);
 
     return isLocal(downloadUrl)
       ? await this.readLocalFile(downloadUrl)
