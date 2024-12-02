@@ -304,7 +304,7 @@ export class RenderCtx<Args, UiState> {
     return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
   }
 
-  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle;
+  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>, ): PTableHandle;
   public createPTable(def: {
     columns: PColumn<TreeNodeAccessor>[];
     filters?: PTableRecordFilter[];

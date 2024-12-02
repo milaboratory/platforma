@@ -1,7 +1,11 @@
 import { Command, Flags } from '@oclif/core';
 import { BlockRegistryV2, loadPackDescriptionRaw } from '../v2';
 import path from 'path';
-import { StableChannel } from '@milaboratories/pl-model-middle-layer';
+import {
+  overrideDescriptionVersion,
+  overrideManifestVersion,
+  StableChannel
+} from '@milaboratories/pl-model-middle-layer';
 import { storageByUrl } from '../io';
 import { OclifLoggerAdapter } from '@milaboratories/ts-helpers-oclif';
 
@@ -22,6 +26,11 @@ export default class MarkStable extends Command {
       summary: 'custom channel',
       helpValue: '<channel name>',
       default: StableChannel
+    }),
+
+    'version-override': Flags.file({
+      char: 'v',
+      summary: 'override package version'
     }),
 
     registry: Flags.string({
@@ -48,7 +57,9 @@ export default class MarkStable extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(MarkStable);
-    const description = await loadPackDescriptionRaw(path.resolve(flags.modulePath));
+    let description = await loadPackDescriptionRaw(path.resolve(flags.modulePath));
+    if (flags['version-override'])
+      description = overrideDescriptionVersion(description, flags['version-override']);
     const storage = storageByUrl(flags.registry);
     const registry = new BlockRegistryV2(storage, new OclifLoggerAdapter(this));
 

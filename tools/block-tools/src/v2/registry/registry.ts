@@ -2,6 +2,7 @@ import { ConsoleLoggerAdapter, MiLogger } from '@milaboratories/ts-helpers';
 import { compare as compareSemver, satisfies } from 'semver';
 import { RegistryStorage } from '../../io/storage';
 import {
+  AnyChannel,
   BlockPackId,
   blockPackIdEquals,
   BlockPackIdNoVersion,
@@ -159,17 +160,21 @@ export class BlockRegistryV2 {
           organization: packageInfo.package.organization,
           name: packageInfo.package.name
         },
-        allVersions: newVersions
+        // left for backward compatibility
+        allVersions: newVersions.map((e) => e.description.id.version).reverse(),
+        allVersionsWithChannels: newVersions
           .map((e) => ({ version: e.description.id.version, channels: e.channels }))
           .reverse(),
+        // left for backward compatibility
         latest: BlockPackDescriptionManifestAddRelativePathPrefix(
           `${packageInfo.package.organization}/${packageInfo.package.name}`
         ).parse(newVersions[0].description),
+        // left for backward compatibility
         latestManifestSha256: newVersions[0].manifestSha256,
         latestByChannel: Object.fromEntries(
-          [...allChannels, 'all'].map((c) => {
-            // if c === 'all' the first element will be taken
-            const v = newVersions.find((v) => c === 'all' || v.channels.indexOf(c) !== -1);
+          [...allChannels, AnyChannel].map((c) => {
+            // if c === 'any' the first element will be "found"
+            const v = newVersions.find((v) => c === AnyChannel || v.channels.indexOf(c) !== -1);
             if (!v) throw new Error('Assertion error');
             return [c, { description: v.description, manifestSha256: v?.manifestSha256 }];
           })

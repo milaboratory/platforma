@@ -35,6 +35,7 @@
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",
+    "remeda": "catalog:",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "lru-cache": "catalog:",
