@@ -57,26 +57,26 @@ _runBinaryCommand := func(inputs) {
 	// pass values as fields for saving the topology in pl-core
 	// and avoiding deduplication issues:
 	wdBuilder.writeFiles(self.rawInputs().filesToWrite.getValue().inputs())
+
 	// working directory with input files added; before run
 	wdBefore := wdBuilder.build()
+
+	opts := execInternal.binaryRunOptions(inputs.runOptions)
+
+	// Working directory after run environment preparation steps.
+	// The same as wdBefore, but might get additional files if they are required for run environment,
+	// like .Rprofile for R with activated renv.
+	wdForCmd := execInternal.prepareWDForRunEnvironment(wdBefore, opts)
 
 	//
 	// Build runcmd resource
 	//
 
-	runBuilder := runcmd.builder(wdBefore)
+	runBuilder := execInternal.prepareCommandRun(wdForCmd, opts)
 
-	opts := execInternal.binaryRunOptions(inputs.runOptions)
-
-	// Attach installed software to the command
-	for varInfo in opts.variables {
-		runBuilder.ref(varInfo.refName, varInfo.reference)
-		runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
-	}
-
-	// Patch command's PATH env variable
-	for p in opts.customPaths {
-		runBuilder.addToPath(p.value, p.hasVars)
+	// Load secrets
+	for envName, secretVar in inputs.runOptions.secrets {
+		runBuilder.envVar(envName, secretVar)
 	}
 
 	// exec command
@@ -94,20 +94,6 @@ _runBinaryCommand := func(inputs) {
 		} else {
 			runBuilder.arg(arg.value)
 		}
-	}
-
-	// env vars
-	for name, value in opts.envs {
-		if value.hasVars {
-			runBuilder.envVar(name, value.value)
-		} else {
-			runBuilder.env(name, value.value)
-		}
-	}
-
-	// secrets
-	for envName, secretVar in inputs.runOptions.secrets {
-		runBuilder.envVar(envName, secretVar)
 	}
 
 	// other options
