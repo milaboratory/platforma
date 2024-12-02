@@ -327,8 +327,8 @@ prepareWDForRunEnvironment := func(wd, opts) {
 }
 
 export {
-	binaryRunOptions              : binaryRunOptions,
+	binaryRunOptions			: binaryRunOptions,
 
-	prepareWDForRunEnvironment    : prepareWDForRunEnvironment,
-	prepareCommandRun			  : prepareCommandRun
+	prepareWDForRunEnvironment	: prepareWDForRunEnvironment,
+	prepareCommandRun			: prepareCommandRun
 }
