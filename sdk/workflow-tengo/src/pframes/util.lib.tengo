@@ -180,6 +180,9 @@ _COLUMN_FILTER_SCHEMA := {
 	// Match any of the names listed here;
 	// default: name is ignored during matching
 	`name,?`: `string`,
+	// Match requires all the listed domains to have provided values;
+	// default: no domain equality checks are performed during matching
+	`domainValue,?`: { any: `string` },
 	// Match requires all the listed annotations to have provided values;
 	// default: no annotation equality checks are performed during matching
 	`annotationValue,?`: { any: `string` },

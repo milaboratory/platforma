@@ -1,5 +1,43 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.127
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.2.47
+
+## 1.0.126
+
+### Patch Changes
+
+- Updated dependencies [a886400]
+  - @platforma-sdk/model@1.14.1
+  - @milaboratories/milaboratories.ui-examples.ui@1.2.46
+  - @milaboratories/milaboratories.ui-examples.model@1.0.45
+
+## 1.0.125
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.workflow@1.0.4
+- @platforma-sdk/model@1.14.0
+- @milaboratories/milaboratories.ui-examples.ui@1.2.45
+- @milaboratories/milaboratories.ui-examples.model@1.0.44
+
+## 1.0.124
+
+### Patch Changes
+
+- @milaboratories/milaboratories.ui-examples.ui@1.2.44
+
+## 1.0.123
+
+### Patch Changes
+
+- Updated dependencies [401f5f4]
+- Updated dependencies [b078d28]
+  - @milaboratories/milaboratories.ui-examples.ui@1.2.43
+
 ## 1.0.122
 
 ### Patch Changes

@@ -28,6 +28,7 @@ export * from './components/PlBtnLink';
 export * from './components/PlBtnGroup';
 export * from './components/PlEditableTitle';
 export * from './components/PlTextField';
+export * from './components/PlSearchField';
 export * from './components/PlTextArea';
 export * from './components/PlDropdown';
 export * from './components/PlDropdownRef';

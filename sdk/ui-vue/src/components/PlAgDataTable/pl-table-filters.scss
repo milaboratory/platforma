@@ -1,0 +1,98 @@
+.pl-filter-manager {
+    $this: &;
+
+    &__add-btn {
+        height: 40px;
+        position: sticky;
+        bottom: -16px;
+        background-color: var(--bg-elevated-01);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-left: 12px;
+        padding-right: 12px;
+        border-radius: 6px;
+        border: 1px dashed var(--border-color-div-grey);
+        line-height: 0;
+        cursor: pointer;
+    }
+
+    &__add-btn-title {
+        flex-grow: 1;
+    }
+
+    &__header {
+        height: 40px;
+        padding-left: 12px;
+        padding-right: 12px;
+        cursor: pointer;
+    }
+
+    &__content {
+        max-height: 0;
+        overflow: hidden;
+        transition: all .2s ease-in-out;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    &__expand-icon {
+        .mask-16 {
+            transition: all .15s ease-in-out;
+        }
+    }
+
+    &__toggle,
+    &__expand-icon,
+    &__delete {
+        line-height: 0;
+        cursor: pointer;
+    }
+
+    &__toggle,
+    &__delete {
+        .mask-24 {
+            background-color: var(--ic-02);
+        }
+    }
+
+
+    &__filter {
+        border-radius: 6px;
+        border: 1px solid var(--border-color-div-grey);
+        background-color: var(--bg-base-light);
+        transition: background-color .15s ease-in-out;
+        overflow: auto;
+    }
+
+    &__filter.open {
+        background-color: var(--bg-elevated-01);
+
+        #{$this}__content {
+            max-height: 1600px;
+            // overflow: auto;
+            padding: 24px;
+            transition: all .2s ease-in-out;
+        }
+
+        #{$this}__header {
+            background: linear-gradient(180deg, #EBFFEB 0%, #FFF 100%);
+        }
+
+        #{$this}__expand-icon {
+            .mask-16 {
+                transform: rotate(90deg);
+            }
+        }
+    }
+
+    &__revert-btn {
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    &__revert-btn:hover {
+        background-color: var(--btn-sec-hover-grey);
+    }
+}

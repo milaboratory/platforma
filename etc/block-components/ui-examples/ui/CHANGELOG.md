@@ -1,5 +1,45 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.47
+
+### Patch Changes
+
+- Updated dependencies [5884403]
+  - @platforma-sdk/ui-vue@1.14.2
+
+## 1.2.46
+
+### Patch Changes
+
+- Updated dependencies [a886400]
+  - @platforma-sdk/ui-vue@1.14.1
+  - @platforma-sdk/model@1.14.1
+  - @milaboratories/milaboratories.ui-examples.model@1.0.45
+
+## 1.2.45
+
+### Patch Changes
+
+- Updated dependencies [dfad2d0]
+  - @platforma-sdk/ui-vue@1.14.0
+  - @platforma-sdk/model@1.14.0
+  - @milaboratories/milaboratories.ui-examples.model@1.0.44
+
+## 1.2.44
+
+### Patch Changes
+
+- Updated dependencies [a85e3f7]
+  - @platforma-sdk/ui-vue@1.13.18
+
+## 1.2.43
+
+### Patch Changes
+
+- 401f5f4: Add new component PlSearchField + some PlFileDialog css fixes
+- b078d28: [sdk/ui-vue] New open file control, using native OS open dialog and clear UX for selecting local or remote file
+  - @platforma-sdk/ui-vue@1.13.17
+
 ## 1.2.42
 
 ### Patch Changes

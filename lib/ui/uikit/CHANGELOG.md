@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.2.18
+
+### Patch Changes
+
+- 401f5f4: Add new component PlSearchField + some PlFileDialog css fixes
+- b078d28: [sdk/ui-vue] New open file control, using native OS open dialog and clear UX for selecting local or remote file
+
 ## 2.2.17
 
 ### Patch Changes

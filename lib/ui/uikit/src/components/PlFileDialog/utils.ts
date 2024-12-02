@@ -1,4 +1,9 @@
+import { trimCharsLeft } from '@milaboratories/helpers';
 import type { ImportFileHandle } from '@platforma-sdk/model';
+
+export function normalizeExtensions(extensions: string[] | undefined) {
+  return extensions ? extensions.map((it) => '.' + trimCharsLeft(it, ['.'])) : undefined;
+}
 
 export function getFilePathBreadcrumbs(filePath: string) {
   const chunks = filePath.split('/');
