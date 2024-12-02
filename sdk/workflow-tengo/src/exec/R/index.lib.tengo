@@ -15,6 +15,7 @@ _OUTPUT_RUN_ENV       := "runEnv"
 rVenvBuilder := func() {
 	self := undefined
 
+	opMode := "remote"
 	toolset := "renv"
 	rDescriptor := undefined
 	softwareRef := undefined
@@ -22,6 +23,17 @@ rVenvBuilder := func() {
 	cache := 0
 
 	self = {
+		operationMode: func(mode) {
+			validation.assertJsonSchema(mode, "string",
+				"exec.R.operationMode: <mode> must be string")
+
+			ll.assert(mode == "remote" || mode == "dev-local",
+				"exec.R.operationMode: unsupported operation mode: 'remote', 'dev-local' are valid in this version of workflow-tengo SDK")
+
+			opMode = mode
+			return self
+		},
+
 		useToolset: func(name) {
 			validation.assertJsonSchema(name, "string",
 				"exec.R.useToolset: <name> must be valid name of R packaging toolset (i.e. 'renv')")
@@ -124,14 +136,13 @@ rVenvBuilder := func() {
 		},
 
 		build: func() {
-			depsMap := runenv.loadDependencyFiles(softwareRef, dependencies)
-
 			archive := pkg.get(rDescriptor.registry, rDescriptor.package).archive()
 			rPkg := pkg.install(archive).package()
 
 			rVenvInputs := {
+				operationMode: opMode,
 				toolset: toolset,
-				dependencies: smart.createMapResource(depsMap),
+				dependencies: dependencies,
 				software: softwareRef,
 				rDescriptor: rDescriptor,
 				R: rPkg
