@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.19
+
+### Patch Changes
+
+- 0cfb225: fixed styles
+
 ## 2.2.18
 
 ### Patch Changes
