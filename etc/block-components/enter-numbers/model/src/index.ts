@@ -17,7 +17,7 @@ export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export const platforma = BlockModel.create('Heavy')
 
-  .withArgs({ numbers: [] })
+  .withArgs<BlockArgs>({ numbers: [] })
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
