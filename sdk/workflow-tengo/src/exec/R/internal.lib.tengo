@@ -5,8 +5,9 @@ pkg := import(":exec.package")
 path := import(":path")
 
 rVenvInputSchema := {
+	operationMode: "string",
 	toolset: "string",
-	dependencies: {"string": validation.reference},
+	dependencies: {"any": "string"},
 	software: validation.reference,
 
 	rDescriptor: pkg.runEnvDescriptorScheme,
@@ -22,15 +23,7 @@ runRBuilder := func(wd, rPackage, rDescriptor) {
 		envVar("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
 }
 
-runRenvBuilder := func(wd, rEnv, rPackage, rDescriptor) {
-	return runRBuilder(wd, rPackage, rDescriptor).
-		ref("r-virtual-environment", rEnv).
-		substitutionRule("{renv}", "r-virtual-environment").
-		envVar("RENV_PATHS_RENV", "{renv}")
-}
-
 export ll.toStrict({
 	rVenvInputSchema                   : rVenvInputSchema,
-	runRBuilder                        : runRBuilder,
-	runRenvBuilder                     : runRenvBuilder
+	runRBuilder                        : runRBuilder
 })

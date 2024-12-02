@@ -71,7 +71,7 @@ _directCallOptions := func(runOptions) {
 	})
 }
 
-_loadJavaRunEnvironment := func(descriptor) {
+_loadJavaRunEnvironment := func(operationMode, descriptor) {
 	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
 	javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
 
@@ -84,7 +84,7 @@ _loadJavaRunEnvironment := func(descriptor) {
 	})
 }
 
-_loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
+_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	venvBuilder := python.venvBuilder().
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
@@ -115,8 +115,9 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 	})
 }
 
-_loadRRunEnvironment := func(descriptor, softName, softPkg) {
+_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	renvBuilder := R.rVenvBuilder().
+		operationMode(operationMode).
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
 		dependencies(descriptor.dependencies)
@@ -148,27 +149,33 @@ _loadRRunEnvironment := func(descriptor, softName, softPkg) {
 		envs: {
 			"R_HOME_DIR": _newArg(true, _ARG_VAR_R),
 			"RENV_PATHS_ROOT": _newArg(true, path.join(_ARG_VAR_R, "renv-root")),
-			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv"))
+			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv")),
+			"RENV_PATHS_LOCKFILE": _newArg(true, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
+			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(false, "FALSE"),
+			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(false, "FALSE")
 		}
 	})
 }
 
 
-_loadRunEnvironment := func(descriptor, softName, softPackage) {
+_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 	if descriptor.runEnv.type == "java" {
-		return _loadJavaRunEnvironment(descriptor)
+		return _loadJavaRunEnvironment(operationMode, descriptor)
 	}
 	if descriptor.runEnv.type == "python" {
-		return _loadPythonRunEnvironment(descriptor, softName, softPackage)
+		return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
 	}
 	if descriptor.runEnv.type == "R" {
-		return _loadRRunEnvironment(descriptor, softName, softPackage)
+		return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
 	}
 
 	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
 }
 
-_binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
+/**
+ * @param operationMode: 'remote' | 'dev-local'
+ */
+_binPackageCallOptions := func(operationMode, runOptions, variables, descriptor, softPackage) {
 	customPaths := []
 	envs := ll.toStrict({})
 	args := []
@@ -177,7 +184,7 @@ _binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
-		runEnvInfo := _loadRunEnvironment(descriptor, runOptions.software.name, softPackage)
+		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, runOptions.software.name, softPackage)
 
 		runEnvType = runEnvInfo.runEnvType
 		if len(runEnvInfo.variables) > 0 {
@@ -235,7 +242,7 @@ _devLocalPackageCallOptions := func(runOptions) {
 
 	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
-	return _binPackageCallOptions(runOptions, variables, localDescriptor, softPackage)
+	return _binPackageCallOptions("dev-local", runOptions, variables, localDescriptor, softPackage)
 }
 
 _remotePackageCallOptions := func(runOptions) {
@@ -245,7 +252,7 @@ _remotePackageCallOptions := func(runOptions) {
 
 	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
-	return _binPackageCallOptions(runOptions, variables, binaryDescriptor, softPackage)
+	return _binPackageCallOptions("remote", runOptions, variables, binaryDescriptor, softPackage)
 }
 
 binaryRunOptions := func(runOptions) {
@@ -297,13 +304,14 @@ prepareCommandRun := func(wd, opts) {
 }
 
 _activateRenv := func(wd, opts) {
-	runBuilder := prepareCommandRun(wd, opts)
-	runBuilder.
+	activateRenv := prepareCommandRun(wd, opts)
+	activateRenv.
 		cmd("R").
-		arg("-e").
-		arg("renv::activate()")
+		arg("-e").arg("renv::activate()")
 
-	return runBuilder.build()
+	activateRenvRun := activateRenv.build()
+
+	return activateRenvRun
 }
 
 prepareWDForRunEnvironment := func(wd, opts) {
