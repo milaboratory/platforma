@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.1
+
+### Patch Changes
+
+- Updated dependencies [f5b996c]
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/pl-drivers@1.4.0
+  - @milaboratories/ts-helpers@1.1.2
+  - @milaboratories/computable@2.3.3
+  - @milaboratories/pl-client@2.6.3
+  - @milaboratories/pl-config@1.3.2
+  - @milaboratories/pl-local@1.8.1
+  - @milaboratories/pl-tree@1.4.18
+  - @platforma-sdk/block-tools@2.4.1
+
 ## 1.19.0
 
 ### Minor Changes

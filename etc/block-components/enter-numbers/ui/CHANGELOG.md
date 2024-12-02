@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.122
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.30
+
 ## 1.0.121
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-block-model.ui
 
+## 1.0.41
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+  - @milaboratories/milaboratories.test-block-model.model@1.0.11
+
 ## 1.0.40
 
 ### Patch Changes

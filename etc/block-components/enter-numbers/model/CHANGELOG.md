@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.30
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+
 ## 1.0.29
 
 ### Patch Changes
