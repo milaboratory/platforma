@@ -132,7 +132,7 @@
       padding: 0 60px 0 11px; // @TODO padding-right based on controls width
       pointer-events: none;
       line-height: var(--control-height);
-      color: var(--contour-color);
+      color: var(--txt-01);
       overflow: hidden;
       white-space: pre;
       text-overflow: ellipsis;
@@ -254,5 +254,9 @@
     cursor: not-allowed;
     pointer-events: none;
     user-select: none;
+
+    .input-value {
+      color: var(--dis-01);
+    }
   }
 }

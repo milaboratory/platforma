@@ -23,7 +23,9 @@
 
   @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -34,7 +36,9 @@
 
   @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -46,7 +50,9 @@
 
   @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -64,7 +70,9 @@
 
   @if $h ==null {
     height: $w;
-  } @else {
+  }
+
+  @else {
     height: $h;
   }
 }
@@ -98,6 +106,7 @@
   &::-webkit-scrollbar-thumb {
     background: var(--thumb-color);
     border-radius: 5px;
+
     &:hover {
       --thumb-color: var(--border-color-focus);
     }
@@ -143,7 +152,11 @@
   font-size: 12px;
   font-weight: 500;
 
-  > span {
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+  background: var(--bg-elevated-01);
+
+  >span {
     overflow: hidden;
     white-space: pre;
     text-overflow: ellipsis;
