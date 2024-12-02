@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.0
+
+### Minor Changes
+
+- 3b138a4: Block registry now supports channels
+
 ## 1.5.13
 
 ### Patch Changes

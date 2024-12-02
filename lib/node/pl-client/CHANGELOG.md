@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 2.6.2
+
+### Patch Changes
+
+- 80d74a1: Default write tx timeout increased form 20 to 30 seconds
+
 ## 2.6.1
 
 ### Patch Changes
