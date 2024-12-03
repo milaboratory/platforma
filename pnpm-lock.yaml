@@ -3812,11 +3812,11 @@ packages:
     peerDependencies:
       '@milaboratories/pl-model-common': '*'
 
-  '@milaboratories/pl-model-common@1.7.0':
-    resolution: {integrity: sha512-madL7gUbILo+DZzOELgopozCVLV3FRG6HRIAeZDxKEJbmFTma1Z4WbfXh1DukiFCcGWypCWs3BArhHCWU2BnHg==}
+  '@milaboratories/pl-model-common@1.8.0':
+    resolution: {integrity: sha512-g2sPNcqcOQowf1dRDOswF7o1i4r8knahTF9ZL+nsgjdE8dW3uUyw+78kPYAXndV8LU6daw4psiADO4RdRSJq5g==}
 
-  '@milaboratories/pl-model-middle-layer@1.5.12':
-    resolution: {integrity: sha512-3Et/tolLK/yZ6K6jaAQgiC7Q1f7XmX5zTA7+f5lzK61Ca8AUZwJ4iBvWjhnlvUioomDRs3JSXE9I70sCFBy/8g==}
+  '@milaboratories/pl-model-middle-layer@1.6.1':
+    resolution: {integrity: sha512-J6pi/fQt87ahKn99KdebYa9C6cQsbamAaJr3AcgP0iiAzXtxPG2InQ3HwA+Q9JIw1F/TZL1Z7oiTDDiL4/BYRg==}
 
   '@milaboratories/software-pframes-conv@2.1.0':
     resolution: {integrity: sha512-rubGWv1e5h5CVKxKVhJd7foGsoee0v7hFlMDwCpt4Nxlitw3u8KT6dImfEPfOC/yqAEdSssPAXMvfyWwGTA4PA==}
@@ -10209,18 +10209,19 @@ snapshots:
     dependencies:
       '@mapbox/node-pre-gyp': 1.0.11(encoding@0.1.13)
       '@milaboratories/pl-model-common': link:lib/model/common
-      '@milaboratories/pl-model-middle-layer': 1.5.12
+      '@milaboratories/pl-model-middle-layer': 1.6.1
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pl-model-common@1.7.0':
+  '@milaboratories/pl-model-common@1.8.0':
     dependencies:
       zod: 3.23.8
 
-  '@milaboratories/pl-model-middle-layer@1.5.12':
+  '@milaboratories/pl-model-middle-layer@1.6.1':
     dependencies:
-      '@milaboratories/pl-model-common': 1.7.0
+      '@milaboratories/pl-model-common': 1.8.0
+      remeda: 2.17.4
       utility-types: 3.11.0
       zod: 3.23.8
 
