@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.0.5
+
+### Patch Changes
+
+- 8644e62: move from block-components -> blocks for nicer structure
+
 ## 1.0.4
 
 ### Patch Changes
