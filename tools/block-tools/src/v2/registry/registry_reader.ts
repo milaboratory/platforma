@@ -23,7 +23,6 @@ import { LRUCache } from 'lru-cache';
 import { calculateSha256 } from '../../util';
 
 export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryId'>;
-export type SingleBlockPackOverviewNoRegLabel = Omit<SingleBlockPackOverview, 'registryId'>;
 
 export type RegistryV2ReaderOps = {
   /** Number of milliseconds to cache retrieved block list for */
@@ -147,7 +146,7 @@ export class RegistryV2Reader {
   public async getLatestOverview(
     id: BlockPackIdNoVersion,
     channel: string
-  ): Promise<SingleBlockPackOverviewNoRegLabel | undefined> {
+  ): Promise<SingleBlockPackOverview | undefined> {
     const overview = (await this.listBlockPacks()).find((e) =>
       blockPackIdNoVersionEquals(id, e.id)
     );
@@ -155,7 +154,10 @@ export class RegistryV2Reader {
     return overview.latestByChannel[channel];
   }
 
-  public async getSpecificOverview(id: BlockPackId): Promise<SingleBlockPackOverviewNoRegLabel> {
+  public async getSpecificOverview(
+    id: BlockPackId,
+    channel: string
+  ): Promise<SingleBlockPackOverview> {
     const overviewContent = await this.v2RootFolderReader.readFile(packageOverviewPathInsideV2(id));
     const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(overviewContent).toString()));
     return {
@@ -169,7 +171,8 @@ export class RegistryV2Reader {
       spec: {
         type: 'from-registry-v2',
         id,
-        registryUrl: this.registryReader.rootUrl.toString()
+        registryUrl: this.registryReader.rootUrl.toString(),
+        channel
       }
     };
   }
