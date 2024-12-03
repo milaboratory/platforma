@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-enter-numbers.model
 
+## 1.0.31
+
+### Patch Changes
+
+- 8644e62: move from block-components -> blocks for nicer structure
+
 ## 1.0.30
 
 ### Patch Changes

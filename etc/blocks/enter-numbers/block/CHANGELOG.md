@@ -1,5 +1,15 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.124
+
+### Patch Changes
+
+- 8644e62: move from block-components -> blocks for nicer structure
+- Updated dependencies [8644e62]
+  - @milaboratories/milaboratories.test-enter-numbers.workflow@1.0.4
+  - @milaboratories/milaboratories.test-enter-numbers.model@1.0.31
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.124
+
 ## 1.0.123
 
 ### Patch Changes
