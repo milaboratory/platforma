@@ -90,6 +90,7 @@ export { useDraggable } from './composition/useDraggable';
  */
 
 export { default as PlCloseModalBtn } from './utils/PlCloseModalBtn.vue';
+export * from './utils/DropdownOverlay';
 
 /**
  * Technical
