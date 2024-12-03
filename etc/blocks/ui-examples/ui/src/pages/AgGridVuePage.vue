@@ -13,7 +13,7 @@ import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-comm
 import { times } from '@milaboratories/helpers';
 import { PlAgGridColumnManager } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
-import { PlAgCellFile, PlAgTextAndButtonCell } from '@platforma-sdk/ui-vue';
+import { PlAgCellFile, PlAgTextAndButtonCell, PlAgColumnHeader } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -27,35 +27,53 @@ const columnDefs: ColDef[] = [
   {
     colId: 'id',
     field: 'id',
-    headerName: 'ID'
+    headerName: 'ID',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Int' }
   },
   {
     colId: 'label',
     field: 'label',
-    headerName: 'Sample label',
+    headerName: 'Sample label long text for overflow',
     cellRenderer: 'PlAgTextAndButtonCell',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'String' },
     cellRendererParams: {
       onClick: onClickHandler,
       invokeRowsOnDoubleClick: true
     }
   },
   {
-    colId: 'description',
-    field: 'description',
-    headerName: 'Description'
+    colId: 'date',
+    field: 'date',
+    headerName: 'Date',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Date' }
   },
   {
     colId: 'file',
     field: 'file',
     headerName: 'File input',
     cellRenderer: 'PlAgCellFile',
+
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'File' },
     cellStyle: { padding: 0 }
   },
   {
     colId: 'link',
     field: 'link',
     headerName: 'Link',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'String' },
     cellRenderer: 'LinkComponent'
+  },
+  {
+    colId: 'time',
+    field: 'time',
+    headerName: 'Duration',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Duration' }
   }
 ];
 
@@ -63,9 +81,10 @@ const result = times(100, () => {
   return {
     id: faker.number.int(),
     label: faker.company.buzzNoun(),
-    description: faker.lorem.paragraph(),
+    date: faker.date.birthdate(),
     file: '',
-    link: faker.internet.url()
+    link: faker.internet.url(),
+    time: `${faker.number.int()} h`
   };
 });
 
