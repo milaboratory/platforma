@@ -27,6 +27,8 @@ packages:
   - tools/package-builder
   - tools/pl-bootstrap
 
+  - lib/software/paggragate
+
   - sdk/model
   - sdk/workflow-tengo
   - sdk/test
@@ -192,6 +194,7 @@ catalog:
 
   '@milaboratories/software-pframes-conv': *pframes-version
   '@platforma-open/milaboratories.software-small-binaries': ^1.14.6
+  '@platforma-open/milaboratories.runenv-python-3': ^1.0.0
 
   # Test
 

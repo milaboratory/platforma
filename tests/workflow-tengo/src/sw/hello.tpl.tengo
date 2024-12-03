@@ -1,0 +1,25 @@
+// Runs a cat on the file and returns it's content as a value resource.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+self.defineOutputs(["main"])
+
+sw := assets.importSoftware("@milaboratories/milaboratories.software-paggregate:main")
+
+self.body(func(inputs) {
+	run := exec.builder().
+        software(sw).
+		arg(inputs.text).
+		saveStdoutContent().
+		run()
+
+	result := {
+		main: run.getStdoutFileContent()
+	}
+
+	return result
+})

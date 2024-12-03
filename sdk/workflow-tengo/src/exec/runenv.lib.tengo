@@ -99,7 +99,7 @@ saveBuilder := func(wd) {
 
 pythonVenvInputSchema := {
 	toolset: "string",
-	dependencies: {"string": validation.reference},
+	dependencies: {"any": validation.reference},
 	// software: validation.reference,
 
 	pythonDescriptor: pkg.runEnvDescriptorScheme,
@@ -245,7 +245,7 @@ pythonVenv := func() {
 
 			pyVenvInputs := {
 				toolset: toolset,
-				dependencies: smart.createMapResource(depsMap),
+				dependencies: depsMap, //  smart.createMapResource(depsMap),
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
 				python: pythonPkg

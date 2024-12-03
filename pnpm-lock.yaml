@@ -84,6 +84,9 @@ catalogs:
     '@oclif/core':
       specifier: ^4.0.33
       version: 4.0.33
+    '@platforma-open/milaboratories.runenv-python-3':
+      specifier: ^1.0.0
+      version: 1.0.0
     '@platforma-open/milaboratories.software-small-binaries':
       specifier: ^1.14.6
       version: 1.14.6
@@ -1626,6 +1629,15 @@ importers:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
 
+  lib/software/paggragate:
+    devDependencies:
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.0.0
+      '@platforma-sdk/package-builder':
+        specifier: workspace:^
+        version: link:../../../tools/package-builder
+
   lib/ui/uikit:
     dependencies:
       vue:
@@ -2096,6 +2108,9 @@ importers:
 
   tests/workflow-tengo:
     devDependencies:
+      '@milaboratories/milaboratories.software-paggregate':
+        specifier: workspace:*
+        version: link:../../lib/software/paggragate
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
@@ -3946,6 +3961,9 @@ packages:
   '@pkgr/core@0.1.1':
     resolution: {integrity: sha512-cq8o4cWH0ibXh9VGi5P20Tu9XF/0fFXl9EUinr9QfTM7a7p0oTA4iJRCQWppXR1Pg8dSM0UCItCkPwsk9qWWYA==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
+
+  '@platforma-open/milaboratories.runenv-python-3@1.0.0':
+    resolution: {integrity: sha512-9qmHiN+xtkbE4S5L0+tmIu5WuKIZViR3X+fZDlc1VbZcxoGEY0M52XMOfVb3gQ9ZLNiIYA6JzxcmdlF1Qurh+g==}
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6':
     resolution: {integrity: sha512-d7cbFNHb6/1O4wWNlvjTVlTTsIelafnt/niAe8AZNjxoM0ivbE8bR4jnTUXaXwURjUzwV/LI5sk39kJelZxsMA==}
@@ -10388,6 +10406,8 @@ snapshots:
     optional: true
 
   '@pkgr/core@0.1.1': {}
+
+  '@platforma-open/milaboratories.runenv-python-3@1.0.0': {}
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6': {}
 
