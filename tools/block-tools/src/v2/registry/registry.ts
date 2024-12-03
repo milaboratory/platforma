@@ -4,7 +4,6 @@ import { RegistryStorage } from '../../io/storage';
 import {
   AnyChannel,
   BlockPackId,
-  blockPackIdEquals,
   BlockPackIdNoVersion,
   blockPackIdToString,
   BlockPackManifest

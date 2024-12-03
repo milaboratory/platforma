@@ -5,7 +5,7 @@ import {
   BlockPackMetaEmbeddedBytes,
   SemVer
 } from '../block_meta';
-import { BlockPackSpec } from './block_pack_spec';
+import { BlockPackFromRegistryV2, BlockPackSpec } from './block_pack_spec';
 import { RegistryEntry } from './registry_spec';
 
 /**
@@ -66,7 +66,8 @@ export function blockPackOverviewToLegacy(bpo: BlockPackOverview): BlockPackOver
   return {
     id: latestOverview.id,
     meta: latestOverview.meta,
-    spec: latestOverview.spec,
+    // so we only add stable channel specs to projects, to smooth the transition
+    spec: { ...(latestOverview.spec as BlockPackFromRegistryV2), channel: StableChannel },
     otherVersions: bpo.allVersions
       .filter((v) => v.channels.indexOf(mainChannel) >= 0)
       .map((v) => v.version),
