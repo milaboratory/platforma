@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.22
+
+### Patch Changes
+
+- 6dfa829: uikit: Add technical DropdownOverlayComponent
+
 ## 2.2.21
 
 ### Patch Changes
