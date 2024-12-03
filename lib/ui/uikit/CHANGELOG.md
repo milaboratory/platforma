@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.21
+
+### Patch Changes
+
+- 2b98d93: Fix PlTextField inner input font
+
 ## 2.2.20
 
 ### Patch Changes

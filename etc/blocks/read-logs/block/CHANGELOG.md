@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-read-logs
 
+## 1.0.4
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-read-logs.ui@1.0.4
+
 ## 1.0.3
 
 ### Patch Changes
