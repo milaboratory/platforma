@@ -1,44 +1,27 @@
 import type {
-  AxisId,
-  JoinEntry,
   LocalBlobHandleAndSize,
-  PColumnIdAndSpec,
-  PFrameHandle,
   PlDataTableSheet,
   PlTableFilter,
   PlTableFilterType,
   PTableColumnId,
   PTableHandle,
   RemoteBlobHandleAndSize,
-  ValueOrErrors,
 } from '@platforma-sdk/model';
 
 /** Data table settings */
 export type PlDataTableSettings =
   | {
       /** The type of the source to feed the data into the table */
-      sourceType: 'pframe';
-      /** PFrame handle output */
-      pFrame: PFrameHandle | undefined;
-      /** Join used to construct pTable, will be enriched with label-columns */
-      join: JoinEntry<PColumnIdAndSpec> | undefined;
-      /** Partitioning axes to make sheets */
-      sheetAxes: AxisId[];
-      /** PTable handle output */
-      pTable: PTableHandle | undefined;
-    }
-  | {
-      /** The type of the source to feed the data into the table */
       sourceType: 'ptable';
       /** PTable handle output */
-      pTable: PTableHandle | undefined;
+      pTable?: PTableHandle;
       /** Sheets that we want to show in our table */
       sheets?: PlDataTableSheet[];
     }
   | {
       /** The type of the source to feed the data into the table */
       sourceType: 'xsv';
-      xsvFile: ValueOrErrors<RemoteBlobHandleAndSize | undefined> | ValueOrErrors<LocalBlobHandleAndSize | undefined> | undefined;
+      xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
     };
 
 /** PlTableFilters restriction entry */
