@@ -34,10 +34,10 @@ packages:
 
   # Test blocks
 
-  - etc/block-components/enter-numbers/workflow
-  - etc/block-components/enter-numbers/model
-  - etc/block-components/enter-numbers/ui
-  - etc/blocks/enter-numbers
+  - etc/blocks/enter-numbers/workflow
+  - etc/blocks/enter-numbers/model
+  - etc/blocks/enter-numbers/ui
+  - etc/blocks/enter-numbers/block
 
   - etc/blocks/sum-numbers/workflow
   - etc/blocks/sum-numbers/model
@@ -59,10 +59,10 @@ packages:
   - etc/blocks/read-logs/ui
   - etc/blocks/read-logs/block
 
-  - etc/block-components/ui-examples/workflow
-  - etc/block-components/ui-examples/model
-  - etc/block-components/ui-examples/ui
-  - etc/blocks/ui-examples
+  - etc/blocks/ui-examples/workflow
+  - etc/blocks/ui-examples/model
+  - etc/blocks/ui-examples/ui
+  - etc/blocks/ui-examples/block
 
   - etc/blocks/model-test/workflow
   - etc/blocks/model-test/model
