@@ -396,16 +396,7 @@ test('block update test', async ({ expect }) => {
 
     // touch
     await fs.promises.appendFile(
-      path.resolve(
-        '..',
-        '..',
-        'etc',
-        'block-components',
-        'enter-numbers',
-        'model',
-        'dist',
-        'model.json'
-      ),
+      path.resolve('..', '..', 'etc', 'blocks', 'enter-numbers', 'model', 'dist', 'model.json'),
       ' '
     );
 
