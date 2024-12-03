@@ -2,15 +2,15 @@ import {
   BlockModel,
   InferHrefType,
   InferOutputsType,
-  mapJoinEntry,
-  PColumnIdAndSpec,
-  AxisSpec,
-  JoinEntry,
-  AxisId,
   PlDataTableState,
   ValueType,
   isPColumn,
-  PlDataTableGridState
+  isPColumnSpec,
+  PlRef,
+  getUniquePartitionKeys,
+  createPlDataTableSheet,
+  createPlDataTable,
+  PlTableFiltersModel
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -21,17 +21,9 @@ export const $BlockArgs = z.object({
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export type TableState = {
-  settingsOpened: boolean;
-  gridState: PlDataTableGridState;
-  group: {
-    mainColumn?: PColumnIdAndSpec;
-    additionalColumns: PColumnIdAndSpec[];
-    enrichmentColumns: PColumnIdAndSpec[];
-    possiblePartitioningAxes: AxisSpec[];
-    join?: JoinEntry<PColumnIdAndSpec>;
-  };
-  partitioningAxes: AxisId[];
   tableState: PlDataTableState;
+  anchorColumn?: PlRef;
+  filterModel: PlTableFiltersModel;
 };
 
 export type UiState = {
@@ -46,47 +38,37 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
-  .output('pFrame', (ctx) => {
-    const collection = ctx.resultPool.getData();
-    if (collection === undefined || !collection.isComplete) return undefined;
-
-    const valueTypes = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as ValueType[];
-    const columns = collection.entries
-      .map(({ obj }) => obj)
-      .filter(isPColumn)
-      .filter((column) => valueTypes.find((valueType) => valueType === column.spec.valueType));
-
-    try {
-      return ctx.createPFrame(columns);
-    } catch (err) {
-      return undefined;
-    }
+  .retentiveOutput('inputOptions', (ctx) => {
+    return ctx.resultPool.getOptions((spec) => isPColumnSpec(spec));
   })
 
-  .output('pTable', (ctx) => {
-    const join = ctx.uiState?.dataTableState?.tableState.pTableParams?.join;
-    if (!join) return undefined;
+  .output('sheets', (ctx) => {
+    if (!ctx.uiState?.dataTableState?.anchorColumn) return undefined;
 
-    const collection = ctx.resultPool.getData();
-    if (!collection || !collection.isComplete) return undefined;
+    const anchor = ctx.resultPool.getPColumnByRef(ctx.uiState.dataTableState.anchorColumn);
+    if (!anchor) return undefined;
 
-    const columns = collection.entries.map(({ obj }) => obj).filter(isPColumn);
-    if (columns.length === 0) return undefined;
+    const r = getUniquePartitionKeys(anchor.data);
+    if (!r) return undefined;
+    return r.map((values, i) => createPlDataTableSheet(ctx, anchor.spec.axesSpec[i], values));
+  })
 
-    let columnMissing = false;
-    const src = mapJoinEntry(join, (idAndSpec) => {
-      const column = columns.find((it) => it.id === idAndSpec.columnId);
-      if (!column) columnMissing = true;
-      return column!;
-    });
+  .output('pt', (ctx) => {
+    if (ctx.uiState?.dataTableState?.anchorColumn === undefined) return undefined;
 
-    if (columnMissing) return undefined;
+    const anchorColumn = ctx.resultPool.getDataByRef(ctx.uiState.dataTableState.anchorColumn);
+    if (!anchorColumn || !isPColumn(anchorColumn)) {
+      console.error('Anchor column is undefined or is not PColumn', anchorColumn);
+      return undefined;
+    }
 
-    return ctx.createPTable({
-      src,
-      filters: ctx.uiState.dataTableState?.tableState.pTableParams?.filters ?? [],
-      sorting: ctx.uiState.dataTableState?.tableState.pTableParams?.sorting ?? []
-    });
+    // wait until sheet filters are set
+    if (ctx.uiState.dataTableState.tableState.pTableParams?.filters === undefined) return undefined;
+
+    return createPlDataTable(ctx, [anchorColumn], ctx.uiState.dataTableState.tableState, [
+      ...ctx.uiState.dataTableState.tableState.pTableParams?.filters,
+      ...(ctx.uiState.dataTableState.filterModel?.filters ?? [])
+    ]);
   })
 
   .sections((ctx) => {

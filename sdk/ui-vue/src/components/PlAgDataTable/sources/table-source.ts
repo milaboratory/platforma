@@ -1,6 +1,5 @@
 import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
-
+import type { PlDataTableSheet } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -9,17 +8,15 @@ import {
   type PTableVector,
   type PValue,
   type ValueType,
-  getAxesId,
   getAxisId,
   isValueAbsent,
   isValueNA,
-  mapJoinEntry,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 import type { PlAgDataTableRow } from '../types';
-import { makeRowNumberColDef } from './row-number';
+import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { PlAgColumnHeader, type PlAgHeaderComponentType, type PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
 
 /**
@@ -119,137 +116,6 @@ function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): str
   }
 }
 
-function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec[] {
-  const columns: PColumnIdAndSpec[] = [];
-  mapJoinEntry(join, (idAndSpec) => {
-    columns.push(idAndSpec);
-    return idAndSpec;
-  });
-  return columns;
-}
-
-async function getLabelColumns(pfDriver: PFrameDriver, pFrame: PFrameHandle, idsAndSpecs: PColumnIdAndSpec[]): Promise<PColumnIdAndSpec[]> {
-  if (!idsAndSpecs.length) return [];
-
-  const response = await pfDriver.findColumns(pFrame, {
-    columnFilter: {
-      name: ['pl7.app/label'],
-    },
-    compatibleWith: lodash.uniqWith(idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(), lodash.isEqual),
-    strictlyCompatible: true,
-  });
-  return response.hits.filter((idAndSpec) => idAndSpec.spec.axesSpec.length === 1);
-}
-
-export async function enrichJoinWithLabelColumns(
-  pfDriver: PFrameDriver,
-  pFrame: PFrameHandle,
-  join: JoinEntry<PColumnIdAndSpec>,
-): Promise<JoinEntry<PColumnIdAndSpec>> {
-  const columns = getColumnsFromJoin(join);
-  const labelColumns = await getLabelColumns(pfDriver, pFrame, columns);
-  const missingLabelColumns = labelColumns.filter((column) => !lodash.find(columns, (c) => column.columnId === c.columnId));
-  if (missingLabelColumns.length === 0) return join;
-  return {
-    type: 'outer',
-    primary: join,
-    secondary: missingLabelColumns.map((column) => ({
-      type: 'column',
-      column,
-    })),
-  };
-}
-
-export async function makeSheets(
-  pfDriver: PFrameDriver,
-  pFrameHandle: PFrameHandle,
-  sheetAxes: AxisId[],
-  join: JoinEntry<PColumnIdAndSpec>,
-): Promise<PlDataTableSheet[]> {
-  const axes = sheetAxes.filter((spec) => spec.type !== 'Bytes');
-
-  const columns = getColumnsFromJoin(join);
-
-  const mapping: [number, number][][] = axes.map((_) => []);
-  const labelCol: (PObjectId | null)[] = axes.map((_) => null);
-  for (let i = 0; i < columns.length; ++i) {
-    const axesId = getAxesId(columns[i].spec.axesSpec);
-    for (let j = 0; j < axesId.length; ++j) {
-      const k = lodash.findIndex(axes, (axis) => lodash.isEqual(axis, axesId[j]));
-      if (k === -1 || labelCol[k]) continue;
-
-      if (axesId.length === 1 && columns[i].spec.name === 'pl7.app/label') {
-        mapping[k] = [[i, j]];
-        labelCol[k] = columns[i].columnId;
-      } else {
-        mapping[k].push([i, j]);
-      }
-    }
-  }
-
-  for (let i = axes.length - 1; i >= 0; --i) {
-    if (!mapping[i].length) {
-      labelCol.splice(i, 1);
-      mapping.splice(i, 1);
-      axes.splice(i, 1);
-    }
-  }
-
-  const limit = 100;
-  const possibleValues: Set<string | number>[] = axes.map((_) => new Set());
-
-  loop1: for (let i = axes.length - 1; i >= 0; --i) {
-    for (const [column, _] of mapping[i]) {
-      const response = await pfDriver.getUniqueValues(pFrameHandle, {
-        columnId: columns[column].columnId,
-        ...(!labelCol[i] && { axis: lodash.cloneDeep(axes[i]) }),
-        filters: [],
-        limit,
-      });
-      if (response.overflow) {
-        labelCol.splice(i, 1);
-        mapping.splice(i, 1);
-        axes.splice(i, 1);
-        continue loop1;
-      }
-
-      const valueType = response.values.type;
-      for (const value of response.values.data) {
-        if (isValueNA(value, valueType) || value === null) continue;
-        possibleValues[i].add(toDisplayValue(value, valueType));
-
-        if (possibleValues[i].size === limit) {
-          labelCol.splice(i, 1);
-          mapping.splice(i, 1);
-          axes.splice(i, 1);
-          continue loop1;
-        }
-      }
-    }
-
-    if (!possibleValues[i].size) {
-      labelCol.splice(i, 1);
-      mapping.splice(i, 1);
-      axes.splice(i, 1);
-      continue loop1;
-    }
-  }
-
-  return axes.map((axis, i) => {
-    const options = [...possibleValues[i]].map((value) => ({
-      value: value,
-      label: value.toString(),
-    }));
-    const defaultValue = options[0].value;
-    return {
-      axis: lodash.cloneDeep(axis),
-      ...(labelCol[i] && { column: labelCol[i] }),
-      options,
-      defaultValue,
-    } as PlDataTableSheet;
-  });
-}
-
 /**
  * Convert columnar data from the driver to rows, used by ag-grid
  * @param specs column specs
@@ -306,7 +172,18 @@ export async function updatePFrameGridOptions(
 
   // column indices in the specs array that we are going to process
   const indices = [...specs.keys()]
-    .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)))
+    .filter(
+      (i) =>
+        !lodash.some(
+          sheets,
+          (sheet) =>
+            lodash.isEqual(getAxisId(sheet.axis), specs[i].id) ||
+            (specs[i].type === 'column' &&
+              specs[i].spec.name === 'pl7.app/label' &&
+              specs[i].spec.axesSpec.length === 1 &&
+              lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
+        ),
+    )
     .sort((a, b) => {
       if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
@@ -333,7 +210,7 @@ export async function updatePFrameGridOptions(
     const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) {
       // no axis, probably we are in the sheet
-      const sheetIdx = lodash.findIndex(sheets, (sheet) => lodash.isEqual(sheet.axis, axisId));
+      const sheetIdx = lodash.findIndex(sheets, (sheet) => lodash.isEqual(getAxisId(sheet.axis), axisId));
       if (sheetIdx === -1) {
         console.warn(`added label column, but the axis is not in the data; axisId: ${axisId}`);
         continue;
@@ -430,6 +307,7 @@ export async function updatePFrameGridOptions(
         }
 
         params.success({ rowData, rowCount });
+        params.api.autoSizeColumns(params.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
         params.api.setGridOption('loading', true);

@@ -13,6 +13,8 @@ export * from './components/PlAgCellFile';
 
 export * from './components/PlAgDataTable/types';
 
+export * from './components/PlAgDataTable/sources/row-number';
+
 export * from './components/PlAgTextAndButtonCell';
 
 export * from './components/PlAgGridColumnManager';
