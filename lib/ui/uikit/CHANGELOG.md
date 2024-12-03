@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.20
+
+### Patch Changes
+
+- 556765e: uikit: export PlCloseModalBtn
+
 ## 2.2.19
 
 ### Patch Changes

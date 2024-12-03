@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.50
+
+### Patch Changes
+
+- 556765e: uikit: export PlCloseModalBtn
+  - @platforma-sdk/ui-vue@1.14.8
+
 ## 1.2.49
 
 ### Patch Changes
