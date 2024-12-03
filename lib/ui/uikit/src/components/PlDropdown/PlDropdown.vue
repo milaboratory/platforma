@@ -9,20 +9,19 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown.scss';
-import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
-import { tap, tapIf } from '@/helpers/functions';
+import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { tap } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import type { ListOption, ListOptionNormalized } from '@/types';
-import { scrollIntoView } from '@/helpers/dom';
 import { deepEqual } from '@/helpers/objects';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import LongText from '@/components/LongText.vue';
 import { normalizeListOptions } from '@/helpers/utils';
-import { useElementPosition } from '@/composition/usePosition';
 import { PlIcon16 } from '../PlIcon16';
 import { PlMaskIcon24 } from '../PlMaskIcon24';
+import { DropdownOverlay } from '@/utils/DropdownOverlay';
 
 const emit = defineEmits<{
   /**
@@ -104,9 +103,10 @@ const props = withDefaults(
 
 const slots = useSlots();
 
-const root = ref<HTMLElement | undefined>();
-const list = ref<HTMLElement | undefined>();
+const rootRef = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
+
+const overlay = useTemplateRef('overlay');
 
 const data = reactive({
   search: '',
@@ -216,7 +216,7 @@ const selectOption = (v: M | undefined) => {
   emit('update:modelValue', v);
   data.search = '';
   data.open = false;
-  root?.value?.focus();
+  rootRef?.value?.focus();
 };
 
 const clear = () => emit('update:modelValue', undefined);
@@ -230,22 +230,10 @@ const onInputFocus = () => (data.open = true);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!root.value?.contains(relatedTarget) && !list.value?.contains(relatedTarget)) {
+  if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;
   }
-};
-
-const scrollIntoActive = () => {
-  const $list = list.value;
-
-  if (!$list) {
-    return;
-  }
-
-  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
-    scrollIntoView($list, opt);
-  });
 };
 
 const handleKeydown = (e: { code: string; preventDefault(): void }) => {
@@ -266,7 +254,7 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
 
   if (e.code === 'Escape') {
     data.open = false;
-    root.value?.focus();
+    rootRef.value?.focus();
   }
 
   const filtered = unref(filteredRef);
@@ -290,7 +278,7 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
   data.activeIndex = filteredRef.value[newIndex].index ?? -1;
 };
 
-useLabelNotch(root);
+useLabelNotch(rootRef);
 
 watch(() => props.modelValue, updateActive, { immediate: true });
 
@@ -303,44 +291,15 @@ watchPostEffect(() => {
   data.search; // to watch
 
   if (data.activeIndex >= 0 && data.open) {
-    scrollIntoActive();
+    overlay.value?.scrollIntoActive();
   }
-});
-
-const optionsStyle = reactive({
-  top: '0px',
-  left: '0px',
-  width: '0px',
-});
-
-watch(list, (el) => {
-  if (el) {
-    const rect = el.getBoundingClientRect();
-    data.optionsHeight = rect.height;
-    window.dispatchEvent(new CustomEvent('adjust'));
-  }
-});
-
-useElementPosition(root, (pos) => {
-  const focusWidth = 3; // see css
-
-  const downTopOffset = pos.top + pos.height + focusWidth;
-
-  if (downTopOffset + data.optionsHeight > pos.clientHeight) {
-    optionsStyle.top = pos.top - data.optionsHeight - focusWidth + 'px';
-  } else {
-    optionsStyle.top = downTopOffset + 'px';
-  }
-
-  optionsStyle.left = pos.left + 'px';
-  optionsStyle.width = pos.width + 'px';
 });
 </script>
 
 <template>
   <div class="pl-dropdown__envelope">
     <div
-      ref="root"
+      ref="rootRef"
       :tabindex="tabindex"
       class="pl-dropdown"
       :class="{ open: data.open, error, disabled: isDisabled }"
@@ -383,20 +342,18 @@ useElementPosition(root, (pos) => {
             </template>
           </PlTooltip>
         </label>
-        <Teleport v-if="data.open" to="body">
-          <div ref="list" class="pl-dropdown__options" :style="optionsStyle" tabindex="-1">
-            <DropdownListItem
-              v-for="(item, index) in filteredRef"
-              :key="index"
-              :option="item"
-              :is-selected="item.isSelected"
-              :is-hovered="item.isActive"
-              :size="optionSize"
-              @click.stop="selectOption(item.value)"
-            />
-            <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
-          </div>
-        </Teleport>
+        <DropdownOverlay v-if="data.open" ref="overlay" :root="rootRef" class="pl-dropdown__options" tabindex="-1" :gap="3">
+          <DropdownListItem
+            v-for="(item, index) in filteredRef"
+            :key="index"
+            :option="item"
+            :is-selected="item.isSelected"
+            :is-hovered="item.isActive"
+            :size="optionSize"
+            @click.stop="selectOption(item.value)"
+          />
+          <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
+        </DropdownOverlay>
         <DoubleContour class="pl-dropdown__contour" />
       </div>
     </div>
