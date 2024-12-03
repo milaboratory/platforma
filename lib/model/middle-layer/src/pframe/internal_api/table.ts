@@ -1,6 +1,7 @@
 import {
   PTableColumnId,
   PTableColumnSpec,
+  PTableRecordFilter,
   PTableShape,
   PTableSorting,
   PTableVector,
@@ -46,4 +47,9 @@ export interface PTable {
 
   /** Deallocates all underlying resources */
   dispose(): void;
+}
+
+export interface PTableV2 extends PTable {
+  /** Filters the table and returns new PTable instance */
+  filter(request: PTableRecordFilter[]): Promise<PTable>;
 }
