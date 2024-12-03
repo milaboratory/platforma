@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.3
+
+### Patch Changes
+
+- 5692733: force stable channel in block listings even for any channel when converting to legacy
+
 ## 1.6.2
 
 ### Patch Changes
