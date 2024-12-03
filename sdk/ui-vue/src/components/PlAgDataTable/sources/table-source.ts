@@ -17,6 +17,7 @@ import {
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import { PlAgColumnHeader } from '../../PlAgColumnHeader';
 
 /**
  * Generate unique colId based on the column spec.
@@ -57,6 +58,8 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: spec.type === 'axis' ? spec.spec.type : spec.spec.valueType },
     cellDataType: ((valueType: ValueType) => {
       switch (valueType) {
         case 'Int':
