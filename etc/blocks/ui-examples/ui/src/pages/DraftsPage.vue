@@ -4,7 +4,8 @@ import {
   PlContainer,
   PlEditableTitle,
   PlRow,
-  PlBtnPrimary
+  PlBtnPrimary,
+  PlCloseModalBtn
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -48,6 +49,7 @@ const onDrop = (ev: DragEvent) => {
         <pre>{{ data.importHandles }}</pre>
       </PlContainer>
     </PlRow>
+    <PlRow> <PlCloseModalBtn /> </PlRow>
   </PlBlockPage>
 </template>
 

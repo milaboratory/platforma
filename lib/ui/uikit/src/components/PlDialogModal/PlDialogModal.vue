@@ -8,7 +8,7 @@ export default {
 import { useEventListener } from '@/composition/useEventListener';
 import './pl-dialog-modal.scss';
 import { ref, useAttrs, useSlots } from 'vue';
-import CloseModalBtn from '@/utils/CloseModalBtn.vue';
+import PlCloseModalBtn from '@/utils/PlCloseModalBtn.vue';
 
 const slots = useSlots();
 
@@ -96,7 +96,7 @@ useEventListener(document.body, 'keyup', (ev) => {
           :class="{ 'has-title': slots.title, 'has-content': slots.default }"
           :style="{ width, height, minHeight, maxHeight }"
         >
-          <CloseModalBtn v-if="closable" class="close-modal-btn" @click.stop="emit('update:modelValue', false)" />
+          <PlCloseModalBtn v-if="closable" class="close-modal-btn" @click.stop="emit('update:modelValue', false)" />
           <div v-if="slots.title" class="pl-dialog-modal__title">
             <slot name="title" />
           </div>
