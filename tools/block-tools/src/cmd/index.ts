@@ -5,7 +5,8 @@ import Cmd1 from './build-model';
 import Cmd3 from './mark-stable';
 import Cmd4 from './pack';
 import Cmd5 from './publish';
-import Cmd6 from './upload-package-v1';
+import Cmd6 from './refresh-registry';
+import Cmd7 from './upload-package-v1';
 
 // prettier-ignore
 export const COMMANDS = {
@@ -14,5 +15,6 @@ export const COMMANDS = {
   'mark-stable': Cmd3,
   'pack': Cmd4,
   'publish': Cmd5,
-  'upload-package-v1': Cmd6
+  'refresh-registry': Cmd6,
+  'upload-package-v1': Cmd7
 };

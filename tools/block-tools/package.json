@@ -15,8 +15,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
-    "build": "pnpm run oclif:index && vite build",
-    "readme": "exec oclif readme",
+    "build": "vite build",
+    "readme": "oclif readme",
     "test": "jest"
   },
   "bin": {
