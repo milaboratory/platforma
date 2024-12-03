@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.5
+
+### Patch Changes
+
+- c0f2421: Fixes bug leading to wrong block spec in dev block registry
+
 ## 1.19.4
 
 ### Patch Changes
