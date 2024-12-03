@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.2
+
+### Patch Changes
+
+- 7be05ec: PTable filter method implemented
+
 ## 1.6.1
 
 ### Patch Changes
