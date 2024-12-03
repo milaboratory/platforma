@@ -47,7 +47,7 @@ export class S3Storage implements RegistryStorage {
     );
     const result: string[] = [];
     for await (const page of paginator)
-      result.push(...page.Contents!.map((e) => pathPosix.relative(listRoot, e.Key!)));
+      result.push(...(page.Contents ?? []).map((e) => pathPosix.relative(listRoot, e.Key!)));
     return result;
   }
 
