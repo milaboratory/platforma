@@ -1,5 +1,12 @@
 # @platforma-sdk/block-tools
 
+## 2.4.3
+
+### Patch Changes
+
+- 32c3157: - fix: S3 storage empty folder listing
+  - new `refresh-registry` action in `block-tools` with dry-run support
+
 ## 2.4.2
 
 ### Patch Changes
