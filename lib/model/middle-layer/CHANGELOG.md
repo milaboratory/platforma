@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.4
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+
 ## 1.6.3
 
 ### Patch Changes
