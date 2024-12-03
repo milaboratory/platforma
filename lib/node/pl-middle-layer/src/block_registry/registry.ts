@@ -202,7 +202,7 @@ export class BlockPackRegistry {
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
                 spec: {
                   type: 'dev-v2',
-                  folder: devPath,
+                  folder: actualDevPath,
                   mtime
                 }
               };
