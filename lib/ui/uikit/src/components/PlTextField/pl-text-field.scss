@@ -27,6 +27,8 @@
   }
 
   input {
+    font-family: var(--font-family-base);
+    font-weight: 500;
     min-height: calc(var(--control-height) - 2px);
     line-height: calc(var(--control-height) - 2px);
     width: 100%;
