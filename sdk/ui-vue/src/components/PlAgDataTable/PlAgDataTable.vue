@@ -28,10 +28,10 @@ import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
+import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -253,25 +253,6 @@ watch(
   { immediate: true },
 );
 
-const tmpElement = ref<HTMLElement | null>(null);
-const textLength = ref(0);
-
-watch(textLength, () => {
-  if (tmpElement.value) {
-    const newWidth = Math.ceil((tmpElement.value as HTMLElement).getBoundingClientRect().width) + 2;
-    document.documentElement.style.setProperty('--cell-width', `${newWidth}px`);
-  }
-});
-
-function adjustColumnWidth() {
-  let api = gridApi.value;
-  if (!api) return;
-
-  const value = api.getCellValue({ rowNode: api.getDisplayedRowAtIndex(api.getLastDisplayedRowIndex())!, colKey: '"#"' });
-  (tmpElement.value as HTMLElement).innerHTML = '5'.repeat(value.toString().length);
-  textLength.value = value.toString().length;
-}
-
 const gridApi = shallowRef<GridApi>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
@@ -279,11 +260,8 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   cellSelection: true,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  onRowDataUpdated: (event) => {
-    event.api.autoSizeAllColumns();
-  },
-  onRowDoubleClicked: (value) => {
-    if (value.data) emit('onRowDoubleClicked', value.data.key);
+  onRowDoubleClicked: (event) => {
+    if (event.data) emit('onRowDoubleClicked', event.data.key);
   },
   onSortChanged: (event) => {
     event.api.refreshCells();
@@ -338,6 +316,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
+  autoSizeRowNumberColumn(api);
   gridApi.value = new Proxy(api, {
     get(target, prop, receiver) {
       switch (prop) {
@@ -371,8 +350,7 @@ const makePartialState = (state: GridState) => {
 };
 const onStateUpdated = (event: StateUpdatedEvent) => {
   gridOptions.value.initialState = gridState.value = makePartialState(event.state);
-  event.api.autoSizeAllColumns();
-  adjustColumnWidth();
+  event.api.autoSizeColumns(event.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
 };
 const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
@@ -454,7 +432,7 @@ watch(
       const columns = colDefs
         ?.map((def) => def.colId)
         .filter((colId) => colId !== undefined)
-        .filter((colId) => colId !== '"#"')
+        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
         .map((colId) => parseColId(colId));
       emit('columnsChanged', columns ?? []);
     }
@@ -539,7 +517,6 @@ watch(
 
 <template>
   <div class="ap-ag-data-table-container">
-    <div ref="tmpElement" style="visibility: hidden; position: absolute; padding-left: 15px; padding-right: 15px"></div>
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
     <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
@@ -563,14 +540,6 @@ watch(
     />
   </div>
 </template>
-
-<style>
-[col-id='"#"'] {
-  max-width: var(--cell-width) !important;
-  min-width: var(--cell-width) !important;
-  transition: all 0.2s ease-in-out;
-}
-</style>
 
 <style lang="css" scoped>
 .ap-ag-data-table-container {
