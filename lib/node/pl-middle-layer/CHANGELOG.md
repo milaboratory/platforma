@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.9
+
+### Patch Changes
+
+- ed6b79c: BlockPackRegistry.getOverview method to retrieve block overview for specific version
+- Updated dependencies [ed6b79c]
+  - @platforma-sdk/block-tools@2.4.7
+
 ## 1.19.8
 
 ### Patch Changes

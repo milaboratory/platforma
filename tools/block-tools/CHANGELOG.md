@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.4.7
+
+### Patch Changes
+
+- ed6b79c: Channel argument added to getSpecificOverview in RegistryReaderV2
+
 ## 2.4.6
 
 ### Patch Changes
