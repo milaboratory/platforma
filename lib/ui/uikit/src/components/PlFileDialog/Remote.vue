@@ -6,6 +6,8 @@ import type { StorageHandle } from '@platforma-sdk/model';
 import { computed, onMounted, reactive, toRef, watch } from 'vue';
 import { PlDropdown } from '../PlDropdown';
 import { PlIcon16 } from '../PlIcon16';
+import Shortcuts from './Shortcuts.vue';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
 import { PlSearchField } from '../PlSearchField';
 import style from './pl-file-dialog.module.scss';
 import { defaultData, useVisibleItems, vTextOverflown } from './remote';
@@ -135,7 +137,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
       data.items.forEach((f) => (f.selected = false));
     }
 
-    file.selected = true;
+    file.selected = !file.selected;
 
     if (!props.multi) {
       return;
@@ -283,7 +285,10 @@ onMounted(loadAvailableStorages);
             <PlIcon16 v-if="s.index !== breadcrumbs.length - 1" name="chevron-right" />
           </template>
         </div>
-        <div :class="style.selected">Selected: {{ selectedFiles.length }}</div>
+        <div :class="style.selected">
+          <span>Selected: {{ selectedFiles.length }}</span>
+          <Shortcuts />
+        </div>
       </div>
       <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">
         <i class="mask-24 mask-loading loader-icon" />
@@ -299,7 +304,7 @@ onMounted(loadAvailableStorages);
       <div v-else :class="style['ls-body']">
         <template v-for="file in visibleItems" :key="file.id">
           <div v-if="file.isDir" :class="style.isDir" @click="setDirPath(file.path)">
-            <i class="icon-16 icon-chevron-right" />
+            <PlIcon16 name="chevron-right" />
             <span v-text-overflown :title="file.name">{{ file.name }}</span>
           </div>
           <div
@@ -307,7 +312,7 @@ onMounted(loadAvailableStorages);
             :class="{ [style.canBeSelected]: file.canBeSelected, [style.selected]: file.selected }"
             @click.stop="(ev) => selectFile(ev, file)"
           >
-            <i class="mask-16 mask-box" :class="style.isFile" />
+            <PlMaskIcon16 name="box" :class="style.isFile" />
             <span v-text-overflown :title="file.name">{{ file.name }}</span>
           </div>
         </template>
