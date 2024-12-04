@@ -1,14 +1,16 @@
 .pl-tooltip {
+  --pl-tooltip-max-width: 300px;
+
   z-index: var(--z-tooltip);
   position: absolute;
   display: inline-block;
-  padding: 7px 12px 9px 12px;
+  padding: 8px 12px 9px 12px;
   background: var(--tooltip-bg);
   border-radius: 6px;
   width: max-content;
   word-break: normal;
   transform-origin: 0 50%;
-  max-width: 300px;
+  max-width: var(--pl-tooltip-max-width);
   color: #fff;
 
   &__container {
@@ -80,6 +82,18 @@
       top: calc(100% - 2px);
       transform: translateX(-50%) rotate(-90deg);
       left: 50%;
+    }
+  }
+
+  &.southwest {
+    transform: translateY(100%);
+    bottom: 0;
+    right: -6px;
+    .beak {
+      position: absolute;
+      top: -2px;
+      transform: translateY(-50%) rotate(90deg);
+      right: 12px;
     }
   }
 }
