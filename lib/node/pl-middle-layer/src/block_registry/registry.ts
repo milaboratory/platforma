@@ -14,6 +14,7 @@ import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import { V2RegistryProvider } from './registry-v2-provider';
 import {
   AnyChannel,
+  BlockPackId,
   BlockPackListing,
   BlockPackOverview,
   RegistryEntry,
@@ -235,5 +236,20 @@ export class BlockPackRegistry {
       blockPacks.push(...(await this.getPackagesForRoot(regSpecs)));
     }
     return { registries, blockPacks };
+  }
+
+  public async getOverview(
+    registryId: string,
+    blockId: BlockPackId,
+    channel: string
+  ): Promise<SingleBlockPackOverview> {
+    const regSpec = this.registries.find((reg) => reg.id === registryId)?.spec;
+    if (!regSpec) throw new Error(`Registry with id "${registryId}" not found`);
+    if (regSpec.type !== 'remote-v2')
+      throw new Error(
+        `Only "remote-v2" registries support specific package version overview retrieval.`
+      );
+    const reg = this.v2Provider.getRegistry(regSpec.url);
+    return await reg.getSpecificOverview(blockId, channel);
   }
 }

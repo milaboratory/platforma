@@ -30,4 +30,4 @@ test('test getting components from global registry', async () => {
   expect(
     (await (await request(components.workflow.main.url)).body.arrayBuffer()).byteLength
   ).toBeGreaterThan(100);
-});
+}, 10000);
