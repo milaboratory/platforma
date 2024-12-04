@@ -185,7 +185,7 @@ const loadAvailableStorages = () => {
     .then((storageEntries) => {
       data.storageOptions = storageEntries
         // local storage is always returned by the ML, so we need to remove it from remote dialog manually
-        .filter((it) => it.name !== 'local')
+        .filter((it) => it.name !== 'local' && !it.name.startsWith("local_disk_"))
         .map((it) => ({
           text: it.name,
           value: it,
@@ -194,7 +194,7 @@ const loadAvailableStorages = () => {
       if (props.autoSelectStorage) {
         tapIf(
           storageEntries.find(
-            (e) => e.name !== 'local'
+            (e) => e.name !== 'local' && !e.name.startsWith("local_disk_")
           ),
           (entry) => {
             data.storageEntry = entry;
