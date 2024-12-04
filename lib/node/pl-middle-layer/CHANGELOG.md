@@ -1,5 +1,22 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.8
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-model-middle-layer@1.6.4
+  - @platforma-sdk/block-tools@2.4.6
+
+## 1.19.7
+
+### Patch Changes
+
+- Updated dependencies [5692733]
+  - @milaboratories/pl-model-middle-layer@1.6.3
+  - @platforma-sdk/block-tools@2.4.5
+
 ## 1.19.6
 
 ### Patch Changes

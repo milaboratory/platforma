@@ -148,7 +148,7 @@ type FullPTableDef = {
 
 export class PFrameDriver implements SdkPFrameDriver {
   private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>;
-  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTable>>;
+  private readonly pTables: RefCountResourcePool<FullPTableDef, Promise<PFrameInternal.PTableV2>>;
   private readonly blobContentCache: LRUCache<string, Uint8Array>;
   /** Limits concurrent requests to PFrame API to prevent deadlock with Node's IO threads */
   private readonly concurrencyLimiter: ConcurrencyLimitingExecutor;
@@ -177,14 +177,14 @@ export class PFrameDriver implements SdkPFrameDriver {
 
     this.pTables = new (class extends RefCountResourcePool<
       FullPTableDef,
-      Promise<PFrameInternal.PTable>
+      Promise<PFrameInternal.PTableV2>
     > {
       constructor(
         private readonly pFrames: RefCountResourcePool<InternalPFrameData, PFrameHolder>
       ) {
         super();
       }
-      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTable> {
+      protected async createNewResource(params: FullPTableDef): Promise<PFrameInternal.PTableV2> {
         const pFrame = this.pFrames.getByKey(params.pFrameHandle);
         const rawPTable = await concurrencyLimiter.run(
           async () =>
