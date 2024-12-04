@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.53
+
+### Patch Changes
+
+- dec84ba: Fix PlTextField disabled state and support ctrl in the multiple file selection
+  - @platforma-sdk/ui-vue@1.14.18
+
 ## 1.2.52
 
 ### Patch Changes
