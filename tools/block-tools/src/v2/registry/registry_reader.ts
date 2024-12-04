@@ -15,6 +15,7 @@ import {
   GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
+  ManifestSuffix,
   packageContentPrefixInsideV2,
   packageOverviewPathInsideV2
 } from './schema_public';
@@ -158,13 +159,15 @@ export class RegistryV2Reader {
     id: BlockPackId,
     channel: string
   ): Promise<SingleBlockPackOverview> {
-    const overviewContent = await this.v2RootFolderReader.readFile(packageOverviewPathInsideV2(id));
-    const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(overviewContent).toString()));
+    const manifestContent = await this.v2RootFolderReader.readFile(
+      packageContentPrefixInsideV2(id) + ManifestSuffix
+    );
+    const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
     return {
       id: id,
       meta: await this.embedMetaContent(
         id,
-        await calculateSha256(overviewContent),
+        await calculateSha256(manifestContent),
         false,
         overview.description.meta
       ),
