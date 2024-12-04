@@ -1,4 +1,4 @@
-import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType, ValueGetterParams } from '@ag-grid-community/core';
+import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
 
 import {
@@ -18,6 +18,8 @@ import {
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import type { PlAgDataTableRow } from '../types';
+import { makeRowNumberColDef } from './row-number';
 
 /**
  * Generate unique colId based on the column spec.
@@ -46,38 +48,6 @@ export const defaultValueFormatter = (value: any) => {
     return value.value.toString();
   }
 };
-
-function makeRowNumberColDef(): ColDef {
-  return {
-    colId: '"#"',
-    headerName: '#',
-    valueGetter: (params: ValueGetterParams<PlAgDataTableRow, number>) => {
-      if (params.node === null) return null;
-      if (params.node.rowIndex === null) return null;
-      return params.node.rowIndex + 1;
-    },
-    suppressNavigable: true,
-    // lockVisible: true,
-    lockPosition: 'left',
-    suppressMovable: true,
-    mainMenuItems: [],
-    contextMenuItems: [],
-    pinned: 'left',
-    lockPinned: true,
-    suppressSizeToFit: true,
-    suppressAutoSize: true,
-    cellStyle: {
-      color: 'var(--txt-03)',
-      'background-color': 'var(--bg-base-light)',
-      maxWidth: 'var(--cell-width) !important',
-      minWidth: 'var(--cell-width) !important',
-      transition: 'all .2s ease-in-out',
-      overflow: 'visible !important',
-    },
-    sortable: false,
-    resizable: false,
-  };
-}
 
 /**
  * Calculates column definition for a given p-table column
@@ -261,12 +231,6 @@ export async function makeSheets(
   });
 }
 
-export type PlAgDataTableRow = {
-  id: string;
-  key: unknown[];
-  [field: `${number}`]: undefined | null | number | string;
-};
-
 /**
  * Convert columnar data from the driver to rows, used by ag-grid
  * @param specs column specs
@@ -447,7 +411,6 @@ export async function updatePFrameGridOptions(
         }
 
         params.success({ rowData, rowCount });
-        params.api.autoSizeAllColumns();
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
         params.api.setGridOption('loading', true);
