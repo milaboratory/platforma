@@ -3,7 +3,7 @@ import { useElementPosition } from '@/composition/usePosition';
 import type { ElementPosition } from '@/types';
 
 type Options = {
-  position: 'top-left' | 'right' | 'left' | 'top';
+  position: 'top-left' | 'right' | 'left' | 'top' | 'southwest';
   gap: number;
 };
 
@@ -33,6 +33,7 @@ export function useTooltipPosition(el: Ref<HTMLElement | undefined>, optionsRef:
 
     const offsetMiddleY = pos.offsetY + Math.floor(pos.height / 2);
     const offsetMiddleX = pos.offsetX + Math.floor(pos.width / 2);
+
     if (position === 'top-left') {
       return `left: ${pos.offsetX}px; top: ${pos.offsetY - gap}px;`;
     }
@@ -47,6 +48,10 @@ export function useTooltipPosition(el: Ref<HTMLElement | undefined>, optionsRef:
 
     if (position === 'left') {
       return `right: ${pos.scrollWidth - pos.x + gap}px; top: ${offsetMiddleY}px;`;
+    }
+
+    if (position === 'southwest') {
+      return `left: ${pos.offsetX + pos.width}px; top: ${pos.offsetY + pos.height + gap}px;`;
     }
 
     return '';
