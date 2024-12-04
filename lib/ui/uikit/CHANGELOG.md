@@ -1,5 +1,12 @@
 # @milaboratories/uikit
 
+## 2.2.24
+
+### Patch Changes
+
+- 56421e3: Remove local storage from the list of remote storages
+- 6dcee2e: [MILAB-682] Remove local storage from list of remote storages (small format fix)
+
 ## 2.2.23
 
 ### Patch Changes
