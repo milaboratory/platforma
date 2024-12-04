@@ -3,9 +3,8 @@ import type { IHeaderParams, SortDirection } from '@ag-grid-community/core';
 import type { MaskIconName16 } from '@milaboratories/uikit';
 import { PlMaskIcon16 } from '@milaboratories/uikit';
 import type { ValueType } from '@platforma-sdk/model';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import './pl-ag-column-header.scss';
-import { nextTick } from 'vue';
 
 type PlAgHeaderComponentParams = { type?: ValueType | 'File' | 'Date' | 'Duration' };
 type AllowedIcons = Extract<MaskIconName16, 'cell-type-txt' | 'cell-type-num' | 'paper-clip' | 'calendar' | 'time'>;
@@ -51,9 +50,7 @@ function onSortRequested() {
 
   props.params.progressSort();
 
-  nextTick(() => {
-    sortDirection.value = props.params.column.getSort() ?? null;
-  });
+  sortDirection.value = props.params.column.getSort() ?? null;
 }
 
 function shwoMenu() {
@@ -63,7 +60,9 @@ function shwoMenu() {
   }
 }
 
-console.log(props.params);
+onMounted(() => {
+  sortDirection.value = props.params.column.getSort() ?? null;
+});
 </script>
 
 <template>
