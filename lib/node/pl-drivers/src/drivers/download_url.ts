@@ -1,20 +1,22 @@
+import { ChangeSource, Computable, ComputableCtx, Watcher } from '@milaboratories/computable';
 import {
   CallersCounter,
   MiLogger,
   TaskProcessor,
-  notEmpty,
-  fileExists
+  createPathAtomically,
+  ensureDirExists,
+  fileExists,
+  notEmpty
 } from '@milaboratories/ts-helpers';
+import { createHash, randomUUID } from 'node:crypto';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
-import { Writable, Transform } from 'node:stream';
-import { ChangeSource, Computable, ComputableCtx, Watcher } from '@milaboratories/computable';
-import { randomUUID, createHash } from 'node:crypto';
+import { Transform, Writable } from 'node:stream';
 import * as zlib from 'node:zlib';
 import * as tar from 'tar-fs';
-import { FilesCache } from './helpers/files_cache';
 import { Dispatcher } from 'undici';
-import { DownloadHelper, NetworkError400 } from '../helpers/download';
+import { NetworkError400, RemoteFileDownloader } from '../helpers/download';
+import { FilesCache } from './helpers/files_cache';
 
 export interface DownloadUrlSyncReader {
   /** Returns a Computable that (when the time will come)
@@ -39,14 +41,14 @@ export type DownloadUrlDriverOps = {
 /** Downloads .tar or .tar.gz archives by given URLs
  * and extracts them into saveDir. */
 export class DownloadUrlDriver implements DownloadUrlSyncReader {
-  private readonly downloadHelper: DownloadHelper;
+  private readonly downloadHelper: RemoteFileDownloader;
 
-  private urlToDownload: Map<string, Download> = new Map();
+  private urlToDownload: Map<string, DownloadByUrlTask> = new Map();
   private downloadQueue: TaskProcessor;
 
   /** Writes and removes files to a hard drive and holds a counter for every
    * file that should be kept. */
-  private cache: FilesCache<Download>;
+  private cache: FilesCache<DownloadByUrlTask>;
 
   constructor(
     private readonly logger: MiLogger,
@@ -60,7 +62,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   ) {
     this.downloadQueue = new TaskProcessor(this.logger, this.opts.nConcurrentDownloads);
     this.cache = new FilesCache(this.opts.cacheSoftSizeBytes);
-    this.downloadHelper = new DownloadHelper(httpClient);
+    this.downloadHelper = new RemoteFileDownloader(httpClient);
   }
 
   /** Use to get a path result inside a computable context */
@@ -109,7 +111,7 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   }
 
   /** Downloads and extracts a tar archive if it wasn't downloaded yet. */
-  async downloadUrl(task: Download, callerId: string) {
+  async downloadUrl(task: DownloadByUrlTask, callerId: string) {
     await task.download(this.downloadHelper, this.opts.withGunzip);
     // Might be undefined if a error happened
     if (task.getPath()?.path != undefined) this.cache.addCache(task, callerId);
@@ -159,14 +161,14 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   }
 
   private setNewTask(w: Watcher, url: URL, callerId: string) {
-    const result = new Download(this.getFilePath(url), url);
+    const result = new DownloadByUrlTask(this.logger, this.getFilePath(url), url);
     result.attach(w, callerId);
     this.urlToDownload.set(url.toString(), result);
 
     return result;
   }
 
-  private removeTask(task: Download, reason: string) {
+  private removeTask(task: DownloadByUrlTask, reason: string) {
     task.abort(reason);
     task.change.markChanged();
     this.urlToDownload.delete(task.url.toString());
@@ -178,15 +180,17 @@ export class DownloadUrlDriver implements DownloadUrlSyncReader {
   }
 }
 
-class Download {
+/** Downloads and extracts an archive to a directory. */
+class DownloadByUrlTask {
   readonly counter = new CallersCounter();
   readonly change = new ChangeSource();
-  readonly signalCtl = new AbortController();
+  private readonly signalCtl = new AbortController();
   error: string | undefined;
   done = false;
-  sizeBytes = 0;
+  size = 0;
 
   constructor(
+    private readonly logger: MiLogger,
     readonly path: string,
     readonly url: URL
   ) {}
@@ -196,17 +200,15 @@ class Download {
     if (!this.done) this.change.attachWatcher(w);
   }
 
-  async download(clientDownload: DownloadHelper, withGunzip: boolean) {
+  async download(clientDownload: RemoteFileDownloader, withGunzip: boolean) {
     try {
-      const sizeBytes = await this.downloadAndUntar(
-        clientDownload,
-        withGunzip,
-        this.signalCtl.signal
-      );
-      this.setDone(sizeBytes);
+      const size = await this.downloadAndUntar(clientDownload, withGunzip, this.signalCtl.signal);
+      this.setDone(size);
+      this.change.markChanged();
     } catch (e: any) {
       if (e instanceof URLAborted || e instanceof NetworkError400) {
         this.setError(e);
+        this.change.markChanged();
         // Just in case we were half-way extracting an archive.
         await rmRFDir(this.path);
         return;
@@ -217,23 +219,29 @@ class Download {
   }
 
   private async downloadAndUntar(
-    clientDownload: DownloadHelper,
+    clientDownload: RemoteFileDownloader,
     withGunzip: boolean,
     signal: AbortSignal
   ): Promise<number> {
+    await ensureDirExists(path.dirname(this.path));
+
     if (await fileExists(this.path)) {
       return await dirSize(this.path);
     }
 
-    const resp = await clientDownload.downloadRemoteFile(this.url.toString(), {}, signal);
-    let content = resp.content;
+    const resp = await clientDownload.download(this.url.toString(), {}, signal);
 
+    let content = resp.content;
     if (withGunzip) {
       const gunzip = Transform.toWeb(zlib.createGunzip());
       content = content.pipeThrough(gunzip, { signal });
     }
-    const untar = Writable.toWeb(tar.extract(this.path));
-    await content.pipeTo(untar, { signal });
+
+    await createPathAtomically(this.logger, this.path, async (fPath: string) => {
+      await fsp.mkdir(fPath); // throws if a directory already exists.
+      const untar = Writable.toWeb(tar.extract(fPath));
+      await content.pipeTo(untar, { signal });
+    });
 
     return resp.size;
   }
@@ -246,22 +254,21 @@ class Download {
     return undefined;
   }
 
-  private setDone(sizeBytes: number) {
+  private setDone(size: number) {
     this.done = true;
-    this.sizeBytes = sizeBytes;
-    this.change.markChanged();
+    this.size = size;
+  }
+
+  private setError(e: any) {
+    this.error = String(e);
   }
 
   abort(reason: string) {
     this.signalCtl.abort(new URLAborted(reason));
   }
-
-  private setError(e: any) {
-    this.error = String(e);
-    this.change.markChanged();
-  }
 }
 
+/** Throws when a downloading aborts. */
 class URLAborted extends Error {}
 
 /** Gets a directory size by calculating sizes recursively. */

@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { test, expect } from '@jest/globals';
 import { loadPackDescription } from './source_package';
 import path from 'path';
 import fsp from 'node:fs/promises';

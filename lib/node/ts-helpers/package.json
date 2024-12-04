@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-helpers",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Useful helpers for our TS projects",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

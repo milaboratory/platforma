@@ -7,18 +7,8 @@
     },
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": ["./dist/**"],
+      "outputs": ["./dist/**", "./block-pack/**"],
       "dependsOn": ["type-check", "^build"]
-    },
-    "@milaboratories/milaboratories.test-enter-numbers#build": {
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": ["./block-pack/**"],
-      "dependsOn": ["^build"]
-    },
-    "@milaboratories/block-repo-tests#build": {
-      "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": ["./the-reg/**"],
-      "dependsOn": ["^build"]
     },
     "test": {
       "dependsOn": ["build"],
@@ -27,6 +17,10 @@
     "do-pack": {
       "dependsOn": ["build"],
       "outputs": ["package.tgz"]
+    },
+    "publish-to-local-registry": {
+      "dependsOn": ["build"],
+      "cache": false
     }
   }
 }

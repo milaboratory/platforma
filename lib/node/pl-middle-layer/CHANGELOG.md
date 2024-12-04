@@ -1,5 +1,104 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.10
+
+### Patch Changes
+
+- Updated dependencies [7eb5aa3]
+  - @milaboratories/pl-local@1.8.2
+
+## 1.19.9
+
+### Patch Changes
+
+- ed6b79c: BlockPackRegistry.getOverview method to retrieve block overview for specific version
+- Updated dependencies [ed6b79c]
+  - @platforma-sdk/block-tools@2.4.7
+
+## 1.19.8
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-model-middle-layer@1.6.4
+  - @platforma-sdk/block-tools@2.4.6
+
+## 1.19.7
+
+### Patch Changes
+
+- Updated dependencies [5692733]
+  - @milaboratories/pl-model-middle-layer@1.6.3
+  - @platforma-sdk/block-tools@2.4.5
+
+## 1.19.6
+
+### Patch Changes
+
+- Updated dependencies [7be05ec]
+  - @milaboratories/pl-model-middle-layer@1.6.2
+  - @platforma-sdk/block-tools@2.4.4
+
+## 1.19.5
+
+### Patch Changes
+
+- c0f2421: Fixes bug leading to wrong block spec in dev block registry
+
+## 1.19.4
+
+### Patch Changes
+
+- Updated dependencies [32c3157]
+  - @platforma-sdk/block-tools@2.4.3
+
+## 1.19.3
+
+### Patch Changes
+
+- Updated dependencies [6240ac0]
+  - @milaboratories/pl-model-middle-layer@1.6.1
+  - @platforma-sdk/block-tools@2.4.2
+
+## 1.19.2
+
+### Patch Changes
+
+- Updated dependencies [885c08b]
+  - @platforma-sdk/workflow-tengo@2.6.0
+
+## 1.19.1
+
+### Patch Changes
+
+- Updated dependencies [f5b996c]
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/pl-drivers@1.4.0
+  - @milaboratories/ts-helpers@1.1.2
+  - @milaboratories/computable@2.3.3
+  - @milaboratories/pl-client@2.6.3
+  - @milaboratories/pl-config@1.3.2
+  - @milaboratories/pl-local@1.8.1
+  - @milaboratories/pl-tree@1.4.18
+  - @platforma-sdk/block-tools@2.4.1
+
+## 1.19.0
+
+### Minor Changes
+
+- 3b138a4: Block registry now supports channels
+
+### Patch Changes
+
+- Updated dependencies [3b138a4]
+- Updated dependencies [80d74a1]
+  - @milaboratories/pl-model-middle-layer@1.6.0
+  - @platforma-sdk/block-tools@2.4.0
+  - @milaboratories/pl-client@2.6.2
+  - @milaboratories/pl-drivers@1.3.26
+  - @milaboratories/pl-tree@1.4.17
+
 ## 1.18.1
 
 ### Patch Changes

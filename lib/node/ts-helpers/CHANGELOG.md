@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.2
+
+### Patch Changes
+
+- 3dd3a5c: add test blocks
+
 ## 1.1.1
 
 ### Patch Changes

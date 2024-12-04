@@ -37,7 +37,8 @@ export type BlockPackFromRegistryV1 = z.infer<typeof BlockPackFromRegistryV1>;
 export const BlockPackFromRegistryV2 = z.object({
   type: z.literal('from-registry-v2'),
   registryUrl: z.string(),
-  id: BlockPackId
+  id: BlockPackId,
+  channel: z.string().optional()
 });
 export type BlockPackFromRegistryV2 = z.infer<typeof BlockPackFromRegistryV2>;
 

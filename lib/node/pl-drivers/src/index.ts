@@ -3,9 +3,9 @@ export * from './clients/progress';
 export * from './clients/download';
 export * from './clients/ls_api';
 export * from './clients/logs';
-export * from './clients/helpers';
+export * from './clients/constructors';
 
-export * from './drivers/download_and_logs_blob';
+export * from './drivers/download_blob';
 export * from './drivers/upload';
 export * from './drivers/logs_stream';
 export * from './drivers/logs';

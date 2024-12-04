@@ -2,15 +2,19 @@
 
 import Cmd0 from './build-meta';
 import Cmd1 from './build-model';
-import Cmd3 from './pack';
-import Cmd4 from './publish';
-import Cmd5 from './upload-package-v1';
+import Cmd3 from './mark-stable';
+import Cmd4 from './pack';
+import Cmd5 from './publish';
+import Cmd6 from './refresh-registry';
+import Cmd7 from './upload-package-v1';
 
 // prettier-ignore
 export const COMMANDS = {
   'build-meta': Cmd0,
   'build-model': Cmd1,
-  'pack': Cmd3,
-  'publish': Cmd4,
-  'upload-package-v1': Cmd5
+  'mark-stable': Cmd3,
+  'pack': Cmd4,
+  'publish': Cmd5,
+  'refresh-registry': Cmd6,
+  'upload-package-v1': Cmd7
 };

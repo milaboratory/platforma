@@ -48,12 +48,10 @@ export class ResultPool {
   ): Option[] {
     const filtered = this.getSpecs().entries.filter((s) => predicate(s.obj));
     if (typeof label === 'object' || typeof label === 'undefined') {
-      return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(
-        ({ value: { ref }, label }) => ({
-          ref,
-          label
-        })
-      );
+      return deriveLabels(filtered, (o) => o.obj, label ?? {}).map(({ value: { ref }, label }) => ({
+        ref,
+        label
+      }));
     } else
       return filtered.map((s) => ({
         ref: s.ref,

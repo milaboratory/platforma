@@ -1,21 +1,22 @@
+import { expect, test } from '@jest/globals';
+import {
+  FieldId,
+  FieldRef,
+  jsonToData,
+  PlClient,
+  PlTransaction,
+  poll,
+  PollTxAccessor,
+  TestHelpers
+} from '@milaboratories/pl-client';
+import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { ConsoleLoggerAdapter, HmacSha256Signer } from '@milaboratories/ts-helpers';
-import {
-  PlClient,
-  PlTransaction,
-  TestHelpers,
-  jsonToData,
-  FieldRef,
-  poll,
-  PollTxAccessor,
-  BasicResourceData,
-  FieldId
-} from '@milaboratories/pl-client';
 import { scheduler } from 'node:timers/promises';
-import { createDownloadClient, createLogsClient } from '../clients/helpers';
-import { DownloadDriver, OnDemandBlobResourceSnapshot } from './download_and_logs_blob';
+import { createDownloadClient, createLogsClient } from '../clients/constructors';
+import { DownloadDriver } from './download_blob';
+import { OnDemandBlobResourceSnapshot } from './types';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 

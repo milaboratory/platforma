@@ -34,15 +34,35 @@ packages:
 
   # Test blocks
 
-  - etc/block-components/enter-numbers/workflow
-  - etc/block-components/enter-numbers/model
-  - etc/block-components/enter-numbers/ui
-  - etc/blocks/enter-numbers
+  - etc/blocks/enter-numbers/workflow
+  - etc/blocks/enter-numbers/model
+  - etc/blocks/enter-numbers/ui
+  - etc/blocks/enter-numbers/block
 
-  - etc/block-components/ui-examples/workflow
-  - etc/block-components/ui-examples/model
-  - etc/block-components/ui-examples/ui
-  - etc/blocks/ui-examples
+  - etc/blocks/sum-numbers/workflow
+  - etc/blocks/sum-numbers/model
+  - etc/blocks/sum-numbers/ui
+  - etc/blocks/sum-numbers/block
+
+  - etc/blocks/upload-file/workflow
+  - etc/blocks/upload-file/model
+  - etc/blocks/upload-file/ui
+  - etc/blocks/upload-file/block
+
+  - etc/blocks/download-file/workflow
+  - etc/blocks/download-file/model
+  - etc/blocks/download-file/ui
+  - etc/blocks/download-file/block
+
+  - etc/blocks/read-logs/workflow
+  - etc/blocks/read-logs/model
+  - etc/blocks/read-logs/ui
+  - etc/blocks/read-logs/block
+
+  - etc/blocks/ui-examples/workflow
+  - etc/blocks/ui-examples/model
+  - etc/blocks/ui-examples/ui
+  - etc/blocks/ui-examples/block
 
   - etc/blocks/model-test/workflow
   - etc/blocks/model-test/model
@@ -55,6 +75,7 @@ packages:
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
+  - tests/drivers-ml-blocks-integration
 
   # Etc
 
@@ -135,7 +156,9 @@ catalog:
   'winston': ^3.17.0
 
   '@milaboratories/tengo-tester': ^1.5.0
-  '@milaboratories/pframes-node': &pframes-version 2.1.0
+  '@milaboratories/pframes-node': &pframes-version 2.1.2
+
+  'remeda': ^2.17.4
 
   'quickjs-emscripten': ^0.31.0
 

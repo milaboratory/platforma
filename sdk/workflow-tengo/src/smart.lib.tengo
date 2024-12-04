@@ -705,8 +705,8 @@ field = func(f) {
 		 * @param millis: number
 		 */
 		setCacheMillis: func(millis) {
-			ll.assert(is_int(millis),
-				"smart.field.setCacheMillis: cache time must be a number of milliseconds")
+			ll.assert(is_int(millis) && millis > 0,
+				"smart.field.setCacheMillis: cache time must be a number of milliseconds (> 0)")
 			return self.setCache(millis * times.millisecond)
 		},
 
@@ -716,8 +716,8 @@ field = func(f) {
 		 * @param seconds: number
 		 */
 		setCacheSeconds: func(seconds) {
-			ll.assert(is_int(seconds),
-				"smart.field.setCacheSeconds: cache time must be a number of seconds")
+			ll.assert(is_int(seconds) && seconds > 0,
+				"smart.field.setCacheSeconds: cache time must be a number of seconds (> 0)")
 			return self.setCache(seconds * times.second)
 		},
 
@@ -727,8 +727,8 @@ field = func(f) {
 		 * @param minutes: number
 		 */
 		setCacheMinutes: func(minutes) {
-			ll.assert(is_int(minutes),
-				"smart.field.setCacheMinutes: cache time must be a number of minutes")
+			ll.assert(is_int(minutes) && minutes > 0,
+				"smart.field.setCacheMinutes: cache time must be a number of minutes (> 0)")
 			return self.setCache(minutes * times.minute)
 		},
 
@@ -738,7 +738,7 @@ field = func(f) {
 		 * @param hours: number
 		 */
 		setCacheHours: func(hours) {
-			ll.assert(is_int(hours), "smart.field.setCacheHours: cache time must be a number of hours")
+			ll.assert(is_int(hours) && hours > 0, "smart.field.setCacheHours: cache time must be a number of hours (> 0)")
 			return self.setCache(hours * times.hour)
 		},
 
@@ -748,7 +748,7 @@ field = func(f) {
 		 * @param days: number
 		 */
 		setCacheDays: func(days) {
-			ll.assert(is_int(days), "smart.field.setCacheDays: cache time must be a number of days")
+			ll.assert(is_int(days) && days > 0, "smart.field.setCacheDays: cache time must be a number of days (> 0)")
 			return self.setCache(days * 24 * times.hour)
 		},
 

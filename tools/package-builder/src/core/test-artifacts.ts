@@ -1,29 +1,27 @@
+export const PackageVersion: string = '1.2.3';
+export const PackageNameNoAt: string = 'some-company/the-software';
+export const PackageName: string = '@' + PackageNameNoAt;
 
+export const BinaryRegistry: string = 'some-binary-registry';
+export const BinaryRegistryURL: string = 'http://example.com/registry';
+export const BinaryCustomName1: string = 'custom-package-name-1';
+export const BinaryCustomVersion: string = '4.4.4';
 
-export const PackageVersion: string = '1.2.3'
-export const PackageNameNoAt: string = 'some-company/the-software'
-export const PackageName: string = '@' + PackageNameNoAt
-
-export const BinaryRegistry: string = "some-binary-registry"
-export const BinaryRegistryURL: string = "http://example.com/registry"
-export const BinaryCustomName1: string = "custom-package-name-1"
-export const BinaryCustomVersion: string = "4.4.4"
-
-export const EPNameAsset: string = "asset"
-export const EPNameCustomName: string = "custom-name"
-export const EPNameJavaEnvironment: string = "java-test-entrypoint"
-export const EPNameJavaDependency: string = "java-dep"
+export const EPNameAsset: string = 'asset';
+export const EPNameCustomName: string = 'custom-name';
+export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
+export const EPNameJavaDependency: string = 'java-dep';
 
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
     "version": "${PackageVersion}"
-}`
+}`;
 
 export const AssetArtifact = `{
   "type": "asset",
   "registry": "${BinaryRegistry}",
   "root": "./src"
-}`
+}`;
 
 export const CustomVersionArtifact = `{
   "registry": {
@@ -34,7 +32,7 @@ export const CustomVersionArtifact = `{
 
   "type": "binary",
   "root": "./src"
-}`
+}`;
 
 export const EnvironmentDependencyPackage = `{
   "registry": {
@@ -44,7 +42,7 @@ export const EnvironmentDependencyPackage = `{
   "root": "./src",
   "type": "java",
   "environment": ":${EPNameJavaEnvironment}"
-}`
+}`;
 
 export const EnvironmentPackage = `{
   "registry": {
@@ -55,7 +53,7 @@ export const EnvironmentPackage = `{
   "runtime": "java",
   "root": "./src",
   "binDir": "."
-}`
+}`;
 
 export const PackageJson = `{
     "name": "${PackageName}",
@@ -92,7 +90,7 @@ export const PackageJson = `{
         }
       }
     }
-}`
+}`;
 
 // export const PlPackageYamlCustomSettings: string = `
 // docker:

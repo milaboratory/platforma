@@ -1,5 +1,11 @@
 # @milaboratories/block-repo-tests
 
+## 1.1.0
+
+### Minor Changes
+
+- 3b138a4: Block registry now supports channels
+
 ## 1.0.2
 
 ### Patch Changes

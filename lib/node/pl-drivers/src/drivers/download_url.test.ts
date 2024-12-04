@@ -38,7 +38,7 @@ test('should download a tar archive and extracts its content and then deleted', 
 
     c.resetState();
   });
-});
+}, 15000);
 
 test('should show a error when 404 status code', async () => {
   try {

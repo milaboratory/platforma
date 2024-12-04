@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/milaboratories.test-read-logs",
+  "version": "1.0.6",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-read-logs.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-read-logs.model": "workspace:*",
+    "@milaboratories/milaboratories.test-read-logs.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-read-logs.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-read-logs.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-read-logs.ui/dist"
+    },
+    "meta": {
+      "title": "Read Logs",
+      "description": "Read Logs",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}

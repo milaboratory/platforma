@@ -1,5 +1,18 @@
 # @milaboratories/pl-local
 
+## 1.8.2
+
+### Patch Changes
+
+- 7eb5aa3: bump pl: escape path for download url
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/ts-helpers@1.1.2
+
 ## 1.8.0
 
 ### Minor Changes

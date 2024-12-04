@@ -1,0 +1,186 @@
+times := import("times")
+
+ll := import(":ll")
+oop := import(":oop")
+validation := import(":validation")
+assets := import(":assets")
+smart := import(":smart")
+render := import(":render")
+pkg := import(":exec.package")
+internal := import(":exec.R.internal")
+runenv := import(":exec.runenv")
+
+_OUTPUT_RUN_ENV       := "runEnv"
+
+rVenvBuilder := func() {
+	self := undefined
+
+	opMode := "remote"
+	toolset := "renv"
+	rDescriptor := undefined
+	softwareRef := undefined
+	dependencies := undefined
+	cache := 0
+
+	self = {
+		operationMode: func(mode) {
+			validation.assertJsonSchema(mode, "string",
+				"exec.R.operationMode: <mode> must be string")
+
+			ll.assert(mode == "remote" || mode == "dev-local",
+				"exec.R.operationMode: unsupported operation mode: 'remote', 'dev-local' are valid in this version of workflow-tengo SDK")
+
+			opMode = mode
+			return self
+		},
+
+		useToolset: func(name) {
+			validation.assertJsonSchema(name, "string",
+				"exec.R.useToolset: <name> must be valid name of R packaging toolset (i.e. 'renv')")
+			ll.assert(name != "", "exec.R.useToolset: toolset name must not be empty")
+
+			toolset = name
+			return self
+		},
+
+		runEnvDescriptor: func(descriptor) {
+			validation.assertJsonSchema(descriptor, pkg.runEnvDescriptorScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
+			ll.assert(descriptor.type == "R", "exec.R.runEnvDescriptor: not a 'R' run environment: %q", descriptor.type)
+
+			rDescriptor = ll.fromStrict(descriptor)
+			return self
+		},
+
+		software: func(pkgRef) {
+			validation.assertJsonSchema(pkgRef, validation.reference, "exec.R.software: <pkgRef> must be a reference to software package")
+
+			softwareRef = pkgRef
+			return self
+		},
+
+		dependencies: func(deps) {
+			validation.assertJsonSchema(deps, { "any": "string" }, "exec.R.dependencies: <deps> must be map of reference file paths")
+
+			dependencies = deps
+			return self
+		},
+
+		/**
+		 * Sets the cache time in milliseconds.
+		 *
+		 * @param millis: number
+		 */
+		cacheMillis: func(millis) {
+			ll.assert(is_int(millis) && millis > 0, "exec.R.cacheMillis: cache time must be a number of milliseconds")
+			cache = millis * times.millisecond
+			return self
+		},
+
+		/**
+		 * Sets the cache time in seconds.
+		 *
+		 * @param seconds: number
+		 */
+		cacheSeconds: func(seconds) {
+			ll.assert(is_int(seconds) && seconds > 0, "exec.R.cacheSeconds: cache time must be a number of seconds")
+			cache = seconds * times.second
+			return self
+		},
+
+		/**
+		 * Sets the cache time in minutes.
+		 *
+		 * @param minutes: number
+		 */
+		cacheMinutes: func(minutes) {
+			ll.assert(is_int(minutes) && minutes > 0, "exec.R.cacheMinutes: cache time must be a number of minutes")
+			cache = minutes * times.minute
+			return self
+		},
+
+		/**
+		 * Sets the cache time in hours.
+		 *
+		 * @param hours: number
+		 */
+		cacheHours: func(hours) {
+			ll.assert(is_int(hours) && hours > 0, "exec.R.cacheHours: cache time must be a number of hours")
+			cache = hours * times.hour
+			return self
+		},
+
+		/**
+		 * Sets the cache time in days
+		 *
+		 * @param days: number
+		 */
+		cacheDays: func(days) {
+			ll.assert(is_int(days) && days > 0, "exec.R.cacheDays: cache time must be a number of days")
+			cache = days * times.hour * 24
+			return self
+		},
+
+		/**
+		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
+		 * Sets the cache time.
+		 *
+		 * @param time: duration - the cache time from 'times' library.
+		 */
+		cache: func(time) {
+			ll.assert(
+				is_int(time) && time > times.millisecond,
+				"exec.R.cache: cache time must be an integer. " +
+					"Did you forget to import a standard tengo library 'times'?")
+			cache = time
+			return self
+		},
+
+		build: func() {
+			archive := pkg.get(rDescriptor.registry, rDescriptor.package).archive()
+			rPkg := pkg.install(archive).package()
+
+			rVenvInputs := {
+				operationMode: opMode,
+				toolset: toolset,
+				dependencies: dependencies,
+				software: softwareRef,
+				rDescriptor: rDescriptor,
+				R: rPkg
+			}
+
+			validation.assertJsonSchema(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
+
+			tpl := render.create(assets.importTemplate(":exec.R.create-renv"), rVenvInputs)
+
+			self := undefined
+			self = ll.toStrict(oop.inherit(tpl, {
+				/**
+				 * R virtual environment with all dependencies installed.
+				 *
+				 * @return renv: smart.field - a reference to the R portable run environment.
+				 */
+				venv: func() {
+					return tpl.output(_OUTPUT_RUN_ENV, cache)
+				},
+
+				/**
+				 * R runtime used for R virtual environment creation.
+				 *
+				 * @return R: smart.Field - a reference to the R runtime.
+				 */
+				R: func() {
+					return rPkg
+				}
+			}))
+
+			return self
+		}
+	}
+
+	return self
+}
+
+
+export ll.toStrict({
+	rVenvBuilder                        : rVenvBuilder
+})

@@ -1,0 +1,38 @@
+{
+  "name": "@milaboratories/milaboratories.test-upload-file",
+  "version": "1.0.6",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ./block-pack && block-tools pack"
+  },
+  "files": [
+    "index.d.ts",
+    "index.js"
+  ],
+  "dependencies": {
+    "@platforma-sdk/model": "workspace:*",
+    "@milaboratories/milaboratories.test-upload-file.workflow": "workspace:*",
+    "@milaboratories/milaboratories.test-upload-file.model": "workspace:*",
+    "@milaboratories/milaboratories.test-upload-file.ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-upload-file.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-upload-file.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-upload-file.ui/dist"
+    },
+    "meta": {
+      "title": "Upload File",
+      "description": "Upload File",
+      "logo": "file:logos/block-logo.png",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/",
+        "logo": "file:logos/organization-logo.png"
+      }
+    }
+  }
+}
