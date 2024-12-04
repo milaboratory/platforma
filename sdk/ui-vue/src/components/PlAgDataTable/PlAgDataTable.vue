@@ -253,6 +253,25 @@ watch(
   { immediate: true },
 );
 
+const tmpElement = ref<HTMLElement | null>(null);
+const textLength = ref(0);
+
+watch(textLength, () => {
+  if (tmpElement.value) {
+    const newWidth = Math.ceil((tmpElement.value as HTMLElement).getBoundingClientRect().width) + 2;
+    document.documentElement.style.setProperty('--cell-width', `${newWidth}px`);
+  }
+});
+
+function adjustColumnWidth() {
+  let api = gridApi.value;
+  if (!api) return;
+
+  const value = api.getCellValue({ rowNode: api.getDisplayedRowAtIndex(api.getLastDisplayedRowIndex())!, colKey: '"#"' });
+  (tmpElement.value as HTMLElement).innerHTML = '5'.repeat(value.toString().length);
+  textLength.value = value.toString().length;
+}
+
 const gridApi = shallowRef<GridApi>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
@@ -353,6 +372,7 @@ const makePartialState = (state: GridState) => {
 const onStateUpdated = (event: StateUpdatedEvent) => {
   gridOptions.value.initialState = gridState.value = makePartialState(event.state);
   event.api.autoSizeAllColumns();
+  adjustColumnWidth();
 };
 const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
@@ -519,6 +539,7 @@ watch(
 
 <template>
   <div class="ap-ag-data-table-container">
+    <div ref="tmpElement" style="visibility: hidden; position: absolute; padding-left: 15px; padding-right: 15px"></div>
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
     <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
@@ -542,6 +563,14 @@ watch(
     />
   </div>
 </template>
+
+<style>
+[col-id='"#"'] {
+  max-width: var(--cell-width) !important;
+  min-width: var(--cell-width) !important;
+  transition: all 0.2s ease-in-out;
+}
+</style>
 
 <style lang="css" scoped>
 .ap-ag-data-table-container {
