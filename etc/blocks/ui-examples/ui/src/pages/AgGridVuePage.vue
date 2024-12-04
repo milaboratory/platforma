@@ -13,7 +13,12 @@ import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-comm
 import { times } from '@milaboratories/helpers';
 import { PlAgGridColumnManager } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
-import { PlAgCellFile, PlAgTextAndButtonCell, PlAgColumnHeader } from '@platforma-sdk/ui-vue';
+import {
+  PlAgCellFile,
+  PlAgTextAndButtonCell,
+  PlAgColumnHeader,
+  type PlAgHeaderComponentParams
+} from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -29,7 +34,7 @@ const columnDefs: ColDef[] = [
     field: 'id',
     headerName: 'ID',
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'Int' }
+    headerComponentParams: { type: 'Number' } satisfies PlAgHeaderComponentParams
   },
   {
     colId: 'label',
@@ -37,7 +42,7 @@ const columnDefs: ColDef[] = [
     headerName: 'Sample label long text for overflow',
     cellRenderer: 'PlAgTextAndButtonCell',
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'String' },
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
     cellRendererParams: {
       onClick: onClickHandler,
       invokeRowsOnDoubleClick: true
@@ -48,7 +53,7 @@ const columnDefs: ColDef[] = [
     field: 'date',
     headerName: 'Date',
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'Date' }
+    headerComponentParams: { type: 'Date' } satisfies PlAgHeaderComponentParams
   },
   {
     colId: 'file',
@@ -57,7 +62,7 @@ const columnDefs: ColDef[] = [
     cellRenderer: 'PlAgCellFile',
 
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'File' },
+    headerComponentParams: { type: 'File' } satisfies PlAgHeaderComponentParams,
     cellStyle: { padding: 0 }
   },
   {
@@ -65,7 +70,7 @@ const columnDefs: ColDef[] = [
     field: 'link',
     headerName: 'Link',
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'String' },
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
     cellRenderer: 'LinkComponent'
   },
   {
@@ -73,7 +78,7 @@ const columnDefs: ColDef[] = [
     field: 'time',
     headerName: 'Duration',
     headerComponent: PlAgColumnHeader,
-    headerComponentParams: { type: 'Duration' }
+    headerComponentParams: { type: 'Duration' } satisfies PlAgHeaderComponentParams
   }
 ];
 
