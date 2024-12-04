@@ -1,5 +1,35 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.6.4
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+
+## 1.6.3
+
+### Patch Changes
+
+- 5692733: force stable channel in block listings even for any channel when converting to legacy
+
+## 1.6.2
+
+### Patch Changes
+
+- 7be05ec: PTable filter method implemented
+
+## 1.6.1
+
+### Patch Changes
+
+- 6240ac0: PTable filter
+
+## 1.6.0
+
+### Minor Changes
+
+- 3b138a4: Block registry now supports channels
+
 ## 1.5.13
 
 ### Patch Changes

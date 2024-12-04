@@ -4,20 +4,24 @@ import {
   blockPackIdNoVersionEquals,
   BlockPackManifest,
   BlockPackMetaEmbeddedBytes,
-  BlockPackOverview
+  BlockPackMetaManifest,
+  BlockPackOverview,
+  SingleBlockPackOverview
 } from '@milaboratories/pl-model-middle-layer';
 import { FolderReader } from '../../io';
 import canonicalize from 'canonicalize';
 import {
-  GlobalOverviewEntryReg,
   GlobalOverviewFileName,
   GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
-  packageContentPrefixInsideV2
+  ManifestSuffix,
+  packageContentPrefixInsideV2,
+  packageOverviewPathInsideV2
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
 import { LRUCache } from 'lru-cache';
+import { calculateSha256 } from '../../util';
 
 export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryId'>;
 
@@ -45,26 +49,37 @@ export class RegistryV2Reader {
     this.ops = { ...DefaultRegistryV2ReaderOps, ...(ops ?? {}) };
   }
 
-  private readonly embeddedMetaCache = new LRUCache<
+  /**
+   * Embeds meta infromation relative to registry root.
+   * Meta information that looks like:
+   *
+   * */
+  private readonly embeddedGlobalMetaCache = new LRUCache<
     string,
     BlockPackMetaEmbeddedBytes,
-    GlobalOverviewEntryReg
+    { meta: BlockPackMetaManifest; relativeTo?: BlockPackId }
   >({
     max: 500,
     fetchMethod: async (_key, _staleValue, options) => {
-      const rootContentReader = this.v2RootFolderReader.getContentReader();
-      return await BlockPackMetaEmbedBytes(rootContentReader).parseAsync(
-        options.context.latest.meta
-      );
+      const contentReader =
+        options.context.relativeTo !== undefined
+          ? this.v2RootFolderReader
+              .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
+              .getContentReader()
+          : this.v2RootFolderReader.getContentReader();
+      return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
     }
   });
 
   private async embedMetaContent(
-    entry: GlobalOverviewEntryReg
+    id: BlockPackId,
+    sha256: string,
+    absolutePath: boolean,
+    meta: BlockPackMetaManifest
   ): Promise<BlockPackMetaEmbeddedBytes> {
-    return await this.embeddedMetaCache.forceFetch(
-      canonicalize({ id: entry.id, sha256: entry.latestManifestSha256 })!,
-      { context: entry }
+    return await this.embeddedGlobalMetaCache.forceFetch(
+      canonicalize({ id, sha256, absolutePath })!,
+      { context: { meta, relativeTo: absolutePath ? undefined : id } }
     );
   }
 
@@ -86,19 +101,33 @@ export class RegistryV2Reader {
       );
 
       const result = await Promise.all(
-        globalOverview.packages.map(
-          async (p) =>
-            ({
-              id: p.latest.id,
-              meta: await this.embedMetaContent(p),
-              spec: {
-                type: 'from-registry-v2',
-                id: p.latest.id,
-                registryUrl: this.registryReader.rootUrl.toString()
-              },
-              otherVersions: p.allVersions
-            }) satisfies BlockPackOverviewNoRegLabel
-        )
+        globalOverview.packages.map(async (p) => {
+          const byChannelEntries = await Promise.all(
+            Object.entries(p.latestByChannel).map(async ([channel, data]) => [
+              channel,
+              {
+                id: data.description.id,
+                meta: await this.embedMetaContent(
+                  p.latest.id,
+                  p.latestManifestSha256,
+                  true,
+                  p.latest.meta
+                ),
+                spec: {
+                  type: 'from-registry-v2',
+                  id: p.latest.id,
+                  registryUrl: this.registryReader.rootUrl.toString(),
+                  channel
+                }
+              }
+            ])
+          );
+          return {
+            id: p.id,
+            latestByChannel: Object.fromEntries(byChannelEntries),
+            allVersions: p.allVersionsWithChannels
+          } satisfies BlockPackOverviewNoRegLabel;
+        })
       );
 
       this.listCache = result;
@@ -115,10 +144,40 @@ export class RegistryV2Reader {
     }
   }
 
-  public async getOverviewForSpec(
-    id: BlockPackIdNoVersion
-  ): Promise<BlockPackOverviewNoRegLabel | undefined> {
-    return (await this.listBlockPacks()).find((e) => blockPackIdNoVersionEquals(id, e.id));
+  public async getLatestOverview(
+    id: BlockPackIdNoVersion,
+    channel: string
+  ): Promise<SingleBlockPackOverview | undefined> {
+    const overview = (await this.listBlockPacks()).find((e) =>
+      blockPackIdNoVersionEquals(id, e.id)
+    );
+    if (overview === undefined) return undefined;
+    return overview.latestByChannel[channel];
+  }
+
+  public async getSpecificOverview(
+    id: BlockPackId,
+    channel: string
+  ): Promise<SingleBlockPackOverview> {
+    const manifestContent = await this.v2RootFolderReader.readFile(
+      packageContentPrefixInsideV2(id) + ManifestSuffix
+    );
+    const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
+    return {
+      id: id,
+      meta: await this.embedMetaContent(
+        id,
+        await calculateSha256(manifestContent),
+        false,
+        overview.description.meta
+      ),
+      spec: {
+        type: 'from-registry-v2',
+        id,
+        registryUrl: this.registryReader.rootUrl.toString(),
+        channel
+      }
+    };
   }
 
   private readonly componentsCache = new LRUCache<string, BlockComponentsAbsoluteUrl, BlockPackId>({

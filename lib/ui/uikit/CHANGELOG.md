@@ -1,5 +1,35 @@
 # @milaboratories/uikit
 
+## 2.2.23
+
+### Patch Changes
+
+- dec84ba: Fix PlTextField disabled state and support ctrl in the multiple file selection
+
+## 2.2.22
+
+### Patch Changes
+
+- 6dfa829: uikit: Add technical DropdownOverlayComponent
+
+## 2.2.21
+
+### Patch Changes
+
+- 2b98d93: Fix PlTextField inner input font
+
+## 2.2.20
+
+### Patch Changes
+
+- 556765e: uikit: export PlCloseModalBtn
+
+## 2.2.19
+
+### Patch Changes
+
+- 0cfb225: fixed styles
+
 ## 2.2.18
 
 ### Patch Changes

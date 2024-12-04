@@ -13,12 +13,16 @@ oop := import(":oop")
 maps := import(":maps")
 path := import(":path")
 pkg := import(":exec.package")
-runenv := import(":exec.runenv")
+runcmd := import(":exec.runcmd")
+python := import(":exec.python")
+R := import(":exec.R")
 
 // Variables, substituted in command arguments and environment variable values
 _ARG_VAR_PKG            := "{pkg}"  // abs path to software package
 _ARG_VAR_JAVA           := "{java}" // abs path to 'java' run environment
 _ARG_VAR_PYTHON         := "{python}" // abs path to 'python' run environment
+_ARG_VAR_R              := "{R}" // abs path to 'R' run environment runtime
+_ARG_VAR_R_VENV         := "{rVenv}" // abs path to 'R' portable virtual environment
 
 /**
  * Create new argument marking it as 'with' or 'without' variables inside.
@@ -67,19 +71,21 @@ _directCallOptions := func(runOptions) {
 	})
 }
 
-_loadJavaRunEnvironment := func(descriptor) {
+_loadJavaRunEnvironment := func(operationMode, descriptor) {
 	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
 	javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
 
 	return ll.toStrict({
+		runEnvType: "java",
+
 		variables: [ javaRefVar ],
 		customPaths: [ _newArg(true, path.join(_ARG_VAR_JAVA, descriptor.runEnv.binDir)) ],
 		envs: {}
 	})
 }
 
-_loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
-	venvBuilder := runenv.pythonVenv().
+_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	venvBuilder := python.venvBuilder().
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
 		dependencies(descriptor.dependencies)
@@ -99,6 +105,8 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
 
 	return ll.toStrict({
+		runEnvType: "python",
+
 		variables: [ pythonRefVar ],
 		customPaths: [ _newArg(true, path.join(venvRoot, "bin")) ],
 		envs: {
@@ -107,27 +115,78 @@ _loadPythonRunEnvironment := func(descriptor, softName, softPkg) {
 	})
 }
 
-_loadRunEnvironment := func(descriptor, softName, softPackage) {
+_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
+	renvBuilder := R.rVenvBuilder().
+		operationMode(operationMode).
+		software(softPkg).
+		runEnvDescriptor(descriptor.runEnv).
+		dependencies(descriptor.dependencies)
+
+	if !is_undefined(descriptor.toolset) && descriptor.toolset != "" {
+		renvBuilder.useToolset(descriptor.toolset)
+	}
+
+	rRuntime := renvBuilder.
+		cacheDays(7).
+		build()
+
+	rEnv := rRuntime.venv()
+	rPackage := rRuntime.R()
+
+	rBinDir := path.join(_ARG_VAR_R, descriptor.runEnv.binDir)
+
+	rRefKey := softName + "/R-runtime"
+	rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
+
+	rEnvRefKey := softName + "/R-virtual-env"
+	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
+
+	return ll.toStrict({
+		runEnvType: "R",
+
+		variables: [ rRefVar, rEnvRefVar ],
+		customPaths: [ _newArg(true, rBinDir) ],
+		envs: {
+			"R_HOME_DIR": _newArg(true, _ARG_VAR_R),
+			"RENV_PATHS_ROOT": _newArg(true, path.join(_ARG_VAR_R, "renv-root")),
+			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv")),
+			"RENV_PATHS_LOCKFILE": _newArg(true, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
+			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(false, "FALSE"),
+			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(false, "FALSE")
+		}
+	})
+}
+
+
+_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 	if descriptor.runEnv.type == "java" {
-		return _loadJavaRunEnvironment(descriptor)
+		return _loadJavaRunEnvironment(operationMode, descriptor)
 	}
 	if descriptor.runEnv.type == "python" {
-		return _loadPythonRunEnvironment(descriptor, softName, softPackage)
+		return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
+	}
+	if descriptor.runEnv.type == "R" {
+		return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
 	}
 
 	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
 }
 
-_binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
+/**
+ * @param operationMode: 'remote' | 'dev-local'
+ */
+_binPackageCallOptions := func(operationMode, runOptions, variables, descriptor, softPackage) {
 	customPaths := []
 	envs := ll.toStrict({})
 	args := []
+	runEnvType := "binary"
 
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
-		runEnvInfo := _loadRunEnvironment(descriptor, runOptions.software.name, softPackage)
+		runEnvInfo := _loadRunEnvironment(operationMode, descriptor, runOptions.software.name, softPackage)
 
+		runEnvType = runEnvInfo.runEnvType
 		if len(runEnvInfo.variables) > 0 {
 			variables = append(variables, runEnvInfo.variables...)
 		}
@@ -157,6 +216,7 @@ _binPackageCallOptions := func(runOptions, variables, descriptor, softPackage) {
 	}
 
 	return oop.inherit(runOptions, {
+		runEnvType: runEnvType,
 		variables: variables,
 		customPaths: customPaths,
 		cmd: cmd,
@@ -182,7 +242,7 @@ _devLocalPackageCallOptions := func(runOptions) {
 
 	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
-	return _binPackageCallOptions(runOptions, variables, localDescriptor, softPackage)
+	return _binPackageCallOptions("dev-local", runOptions, variables, localDescriptor, softPackage)
 }
 
 _remotePackageCallOptions := func(runOptions) {
@@ -192,7 +252,7 @@ _remotePackageCallOptions := func(runOptions) {
 
 	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
-	return _binPackageCallOptions(runOptions, variables, binaryDescriptor, softPackage)
+	return _binPackageCallOptions("remote", runOptions, variables, binaryDescriptor, softPackage)
 }
 
 binaryRunOptions := func(runOptions) {
@@ -217,6 +277,58 @@ binaryRunOptions := func(runOptions) {
 	ll.panic("Unable to run software %s v%s: 'binary' execution mode is not enabled in software descriptor", software.name, software.version)
 }
 
+prepareCommandRun := func(wd, opts) {
+	runBuilder := runcmd.builder(wd)
+
+	// Make installed packages to be available for the command run
+	for varInfo in opts.variables {
+		runBuilder.ref(varInfo.refName, varInfo.reference)
+		runBuilder.substitutionRule(varInfo.varName, varInfo.refName)
+	}
+
+	// Patch command's PATH env variable
+	for p in opts.customPaths {
+		runBuilder.addToPath(p.value, p.hasVars)
+	}
+
+	// Configure environment variables required for correct command run environment setup
+	for name, value in opts.envs {
+		if value.hasVars {
+			runBuilder.envVar(name, value.value)
+		} else {
+			runBuilder.env(name, value.value)
+		}
+	}
+
+	return runBuilder
+}
+
+_activateRenv := func(wd, opts) {
+	activateRenv := prepareCommandRun(wd, opts)
+	activateRenv.
+		cmd("R").
+		arg("-e").arg("renv::activate()")
+
+	activateRenvRun := activateRenv.build()
+
+	return activateRenvRun
+}
+
+prepareWDForRunEnvironment := func(wd, opts) {
+	if (!maps.containsKey(opts, "runEnvType")) {
+		return wd
+	}
+
+	if (opts.runEnvType == "R") {
+		return _activateRenv(wd, opts).workdir
+	}
+
+	return wd
+}
+
 export {
-	binaryRunOptions              : binaryRunOptions
+	binaryRunOptions			: binaryRunOptions,
+
+	prepareWDForRunEnvironment	: prepareWDForRunEnvironment,
+	prepareCommandRun			: prepareCommandRun
 }

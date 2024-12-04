@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { FSStorage, S3Storage, storageByUrl } from './storage';
+import { test, expect } from '@jest/globals';
+import { S3Storage, storageByUrl } from './storage';
 import path from 'node:path';
 import * as fs from 'node:fs';
 
@@ -64,6 +65,10 @@ if (testS3Address) {
     const testS3AddressURL = new URL(testS3Address);
     testS3AddressURL.pathname = `${testS3AddressURL.pathname.replace(/\/$/, '')}/${uuid}`;
     const storage = storageByUrl(testS3AddressURL.toString()) as S3Storage;
+
+    const nonExistingFolderListing = await storage.listFiles('not_existing_folder');
+    expect(nonExistingFolderListing).toEqual([]);
+
     await storage.putFile('some/deep1/file_1.txt', Buffer.from('test1'));
     await storage.putFile('some/deep1/file_2.txt', Buffer.from('test1'));
     await storage.putFile('some/deep2/file_1.txt', Buffer.from('test1'));

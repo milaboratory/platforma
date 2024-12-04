@@ -11,6 +11,9 @@ import style from './pl-file-dialog.module.scss';
 import { defaultData, useVisibleItems, vTextOverflown } from './remote';
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
 
+// note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
+const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
+
 defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
   (e: 'import:files', value: ImportedFiles): void;
@@ -119,7 +122,10 @@ const setDirPath = (dirPath: string) => {
 };
 
 const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
-  const { shiftKey, metaKey } = ev;
+  const { shiftKey } = ev;
+
+  const ctrlOrMetaKey = isCtrlOrMeta(ev);
+
   const { lastSelected } = data;
 
   ev.preventDefault();
@@ -135,7 +141,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
       return;
     }
 
-    if (!metaKey && !shiftKey) {
+    if (!ctrlOrMetaKey && !shiftKey) {
       data.items.forEach((f) => {
         if (f.id !== file.id) {
           f.selected = false;
@@ -239,12 +245,14 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
     return;
   }
 
-  if (ev.metaKey && ev.code === 'KeyA') {
+  const ctrlOrMetaKey = isCtrlOrMeta(ev);
+
+  if (ctrlOrMetaKey && ev.code === 'KeyA') {
     ev.preventDefault();
     selectAll();
   }
 
-  if (ev.metaKey && ev.shiftKey && ev.code === 'Period') {
+  if (ctrlOrMetaKey && ev.shiftKey && ev.code === 'Period') {
     ev.preventDefault();
     data.showHiddenItems = !data.showHiddenItems;
   }

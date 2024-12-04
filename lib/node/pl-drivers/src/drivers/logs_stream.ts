@@ -5,17 +5,23 @@ import {
   PollingComputableHooks,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId, resourceIdToString, stringifyWithResourceId } from '@milaboratories/pl-client';
+import {
+  ResourceId,
+  resourceIdToString,
+  ResourceType,
+  stringifyWithResourceId
+} from '@milaboratories/pl-client';
 import { asyncPool, CallersCounter, MiLogger } from '@milaboratories/ts-helpers';
 import { ClientLogs } from '../clients/logs';
 import { randomUUID } from 'node:crypto';
 import { PlTreeEntry, ResourceInfo, treeEntryToResourceInfo } from '@milaboratories/pl-tree';
-import { dataToHandle, handleToData, isLiveLogHandle } from './logs';
 import { scheduler } from 'node:timers/promises';
 import { StreamingAPI_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol';
 import * as sdk from '@milaboratories/pl-model-common';
 import { PollingOps } from './helpers/polling_ops';
 import { RpcError } from '@protobuf-ts/runtime-rpc';
+import { getResourceInfoFromLogHandle, isLiveLogHandle, newLogHandle } from './helpers/logs_handle';
+import { WrongResourceTypeError } from './helpers/helpers';
 
 export type LogsStreamDriverOps = PollingOps & {
   /** Max number of concurrent requests to log streaming backend while calculating computable states */
@@ -81,6 +87,8 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     lines: number,
     callerId: string
   ): string | undefined {
+    validateResourceType('getLastLogs', rInfo.type);
+
     let logGetter = this.idToLastLines.get(rInfo.id);
 
     if (logGetter == undefined) {
@@ -135,6 +143,8 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     patternToSearch: string,
     callerId: string
   ): string | undefined {
+    validateResourceType('getProgressLog', rInfo.type);
+
     let logGetter = this.idToProgressLog.get(rInfo.id);
 
     if (logGetter == undefined) {
@@ -162,7 +172,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     const r = treeEntryToResourceInfo(res, ctx);
 
     const result = this.getLogHandleNoCtx(r);
-    
+
     // All logs from streams should be considered unstable,
     // final value will be got from blobs.
     ctx.markUnstable(`live_log:${resourceIdToString(r.id)}`);
@@ -171,7 +181,9 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   }
 
   private getLogHandleNoCtx(rInfo: ResourceInfo): sdk.AnyLogHandle {
-    return dataToHandle(true, rInfo);
+    validateResourceType('getLogHandle', rInfo.type);
+
+    return newLogHandle(true, rInfo);
   }
 
   async lastLines(
@@ -182,7 +194,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   ) {
     return await this.tryWithNotFound(handle, () =>
       this.clientLogs.lastLines(
-        handleToData(handle),
+        getResourceInfoFromLogHandle(handle),
         lineCount,
         BigInt(offsetBytes ?? 0),
         searchStr
@@ -197,7 +209,12 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     searchStr?: string | undefined
   ) {
     return await this.tryWithNotFound(handle, () =>
-      this.clientLogs.readText(handleToData(handle), lineCount, BigInt(offsetBytes ?? 0), searchStr)
+      this.clientLogs.readText(
+        getResourceInfoFromLogHandle(handle),
+        lineCount,
+        BigInt(offsetBytes ?? 0),
+        searchStr
+      )
     );
   }
 
@@ -365,3 +382,12 @@ type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
 };
+
+function validateResourceType(methodName: string, rType: ResourceType) {
+  if (!rType.name.startsWith('StreamWorkdir')) {
+    throw new WrongResourceTypeError(
+      `${methodName}: wrong resource type: ${rType.name}, ` +
+        `expected: a resource of type 'StreamWorkdir'.`
+    );
+  }
+}

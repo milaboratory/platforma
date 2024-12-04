@@ -1,21 +1,14 @@
-import {
-  isNotNullResourceId,
-  PlTransaction,
-  PollTxAccessor,
-  ResourceId,
-  TestHelpers
-} from '@milaboratories/pl-client';
+import { PlClient, PlTransaction, ResourceId, TestHelpers } from '@milaboratories/pl-client';
 import { ConsoleLoggerAdapter, HmacSha256Signer, Signer } from '@milaboratories/ts-helpers';
 import * as fsp from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { PlClient } from '@milaboratories/pl-client';
-import { ImportResourceSnapshot, makeBlobImportSnapshot, UploadDriver } from './upload';
-import { createUploadBlobClient, createUploadProgressClient } from '../clients/helpers';
-
-import { test, expect } from '@jest/globals';
-import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { makeBlobImportSnapshot, UploadDriver } from './upload';
+import { createUploadBlobClient, createUploadProgressClient } from '../clients/constructors';
+import { expect, test } from '@jest/globals';
 import { Computable } from '@milaboratories/computable';
+import { SynchronizedTreeState } from '@milaboratories/pl-tree';
+import { ImportResourceSnapshot } from './types';
 
 test('upload a blob', async () => {
   await withTest(async ({ client, uploader, signer }: TestArg) => {
@@ -100,10 +93,7 @@ test.skip('upload a very big blob', async () => {
     //       await fileToWrite.close();
 
     // const stats = await getFileStats(signer, fPath)
-    const stats = await getFileStats(
-      signer,
-      '/home/snyssfx/Downloads/Kung Fu Hustle (2004) Open Matte 1080p.mkv'
-    );
+    const stats = await getFileStats(signer, '/home/snyssfx/Downloads/a_very_big_file.txt');
     const uploadId = await createBlobUpload(client, stats);
     const handleRes = await getSnapshot(client, uploadId);
 
@@ -407,7 +397,7 @@ async function getSnapshot(
     }).withStableType();
     while (true) {
       const value = await computable.getValue();
-      if (value !== undefined) return value;
+      if (value !== undefined) return value as ImportResourceSnapshot;
       await computable.awaitChange();
     }
   } finally {

@@ -1,7 +1,58 @@
-import { test, expect } from '@jest/globals';
-import { awaitBlockDone, withMl } from './middle_layer.test';
-import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
+import { expect, test } from '@jest/globals';
 import * as tp from 'node:timers/promises';
+import path from 'path';
+import { getQuickJS, Scope, shouldInterruptAfterDeadline } from 'quickjs-emscripten';
+import { randomUUID } from 'node:crypto';
+import { MiddleLayer } from './middle_layer';
+import { PlClient, TestHelpers } from '@milaboratories/pl-client';
+import { Project } from './project';
+
+export async function withMl(
+  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>
+): Promise<void> {
+  const workFolder = path.resolve(`work/${randomUUID()}`);
+
+  await TestHelpers.withTempRoot(async (pl: PlClient) => {
+    const ml = await MiddleLayer.init(pl, workFolder, {
+      defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
+      devBlockUpdateRecheckInterval: 300,
+      localSecret: MiddleLayer.generateLocalSecret(),
+      localProjections: [], // TODO must be different with local pl
+      openFileDialogCallback: () => {
+        throw new Error('Not implemented.');
+      }
+    });
+    try {
+      await cb(ml, workFolder);
+    } finally {
+      await ml.close();
+    }
+  });
+}
+
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+  const abortSignal = AbortSignal.timeout(timeout);
+  const overview = prj.overview;
+  const state = prj.getBlockState(blockId);
+  // const stateAndOverview = Computable.make(() => ({ overview, state: undefined }));
+  while (true) {
+    // const {
+    //   overview: overviewSnapshot,
+    //   state: stateSnapshot
+    // } = await stateAndOverview.getValue();
+    const overviewSnapshot = (await overview.getValue())!;
+    const blockOverview = overviewSnapshot.blocks.find((b) => b.id == blockId);
+    if (blockOverview === undefined) throw new Error(`Blocks not found: ${blockId}`);
+    if (blockOverview.outputErrors) return;
+    if (blockOverview.calculationStatus === 'Done') return;
+    try {
+      await overview.awaitChange(abortSignal);
+    } catch (e: any) {
+      console.dir(await state.getValue(), { depth: 5 });
+      throw new Error('Aborted.', { cause: e });
+    }
+  }
+}
 
 test('test JS render enter numbers', async () => {
   await withMl(async (ml) => {

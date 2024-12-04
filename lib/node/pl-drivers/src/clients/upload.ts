@@ -1,12 +1,14 @@
-import * as fs from 'node:fs/promises';
+import { PlClient, ResourceId, ResourceType, addRTypeToMetadata } from '@milaboratories/pl-client';
+import { ResourceInfo } from '@milaboratories/pl-tree';
+import { MiLogger } from '@milaboratories/ts-helpers';
 import { GrpcTransport } from '@protobuf-ts/grpc-transport';
 import type { RpcOptions } from '@protobuf-ts/runtime-rpc';
-import { PlClient, addRTypeToMetadata } from '@milaboratories/pl-client';
-import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
-import { MiLogger } from '@milaboratories/ts-helpers';
+import * as fs from 'node:fs/promises';
 import { Dispatcher, request } from 'undici';
 import { uploadapi_GetPartURL_Response } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol';
-import { ResourceInfo } from '@milaboratories/pl-tree';
+import { UploadClient } from '../proto/github.com/milaboratory/pl/controllers/shared/grpc/uploadapi/protocol.client';
+import { toHeadersMap } from './helpers';
+import { IncomingHttpHeaders } from 'undici/types/header';
 
 export class MTimeError extends Error {}
 
@@ -14,6 +16,7 @@ export class UnexpectedEOF extends Error {}
 
 export class NetworkError extends Error {}
 
+/** Happens when the file doesn't exist */
 export class NoFileForUploading extends Error {}
 
 /** Low-level client for grpc uploadapi.
@@ -33,133 +36,164 @@ export class ClientUpload {
 
   close() {}
 
-  public async initUpload({ id, type }: ResourceInfo, options?: RpcOptions): Promise<bigint[]> {
-    const init = await this.grpcClient.init({ resourceId: id }, addRTypeToMetadata(type, options));
-    return this.partsToUpload(init.response);
+  public async initUpload(
+    { id, type }: ResourceInfo,
+    options?: RpcOptions
+  ): Promise<{
+    overall: bigint;
+    toUpload: bigint[];
+  }> {
+    const init = await this.grpcInit(id, type, options);
+    return {
+      overall: init.partsCount,
+      toUpload: this.partsToUpload(init.partsCount, init.uploadedParts)
+    };
   }
 
   public async partUpload(
     { id, type }: ResourceInfo,
     path: string,
-    partNumber: bigint,
-    partsOverall: number,
     expectedMTimeUnix: bigint,
+    partNumber: bigint,
     options?: RpcOptions
   ) {
-    const info = await this.grpcClient.getPartURL(
-      {
-        resourceId: id,
-        partNumber: partNumber,
-        uploadedPartSize: 0n // we update progress as a separate call later.
-      },
-      addRTypeToMetadata(type, options)
-    ).response;
-
-    const { chunk, mTime } = await this.readChunk(path, info.chunkStart, info.chunkEnd);
-    if (mTime > expectedMTimeUnix) {
-      throw new MTimeError(
-        'file was modified, expected mtime: ' + expectedMTimeUnix + ', got: ' + mTime + '.'
-      );
-    }
-
-    const resp = await request(info.uploadUrl, this.prepareUploadOpts(info, chunk));
-
-    const body = await resp.body.text();
-    this.logger.info(
-      `uploaded chunk ${partNumber} from ${partsOverall} of resource: ${id},` +
-        ` response: '${body.toString()}', ` +
-        `status code: ${resp.statusCode}`
+    const info = await this.grpcGetPartUrl(
+      { id, type },
+      partNumber,
+      0n, // we update progress as a separate call later.
+      options
     );
 
-    if (resp.statusCode != 200) {
-      throw new NetworkError(
-        `response is not ok, status code: ${resp.statusCode},` +
-          ` body: ${body}, headers: ${resp.headers}, url: ${info.uploadUrl}`
-      );
-    }
+    const chunk = await readFileChunk(path, info.chunkStart, info.chunkEnd);
+    await checkExpectedMTime(path, expectedMTimeUnix);
 
-    await this.grpcClient.updateProgress(
-      {
-        resourceId: id,
-        bytesProcessed: info.chunkEnd - info.chunkStart
-      },
-      addRTypeToMetadata(type, options)
-    );
+    const {
+      body: rawBody,
+      statusCode,
+      headers
+    } = await request(info.uploadUrl, {
+      dispatcher: this.httpClient,
+      body: chunk,
+      headers: toHeadersMap(info.headers),
+      method: info.method.toUpperCase() as Dispatcher.HttpMethod
+    });
+
+    // always read the body for resources to be garbage collected.
+    const body = await rawBody.text();
+    checkStatusCodeOk(statusCode, body, headers, info);
+
+    await this.grpcUpdateProgress({ id, type }, info.chunkEnd - info.chunkStart, options);
   }
 
-  public async finalizeUpload({ id, type }: ResourceInfo, options?: RpcOptions) {
-    return await this.grpcClient.finalize({ resourceId: id }, addRTypeToMetadata(type, options));
-  }
-
-  private async readChunk(
-    path: string,
-    chunkStart: bigint,
-    chunkEnd: bigint
-  ): Promise<{ chunk: Buffer; mTime: bigint }> {
-    let f: fs.FileHandle | undefined;
-    try {
-      f = await fs.open(path);
-      const len = Number(chunkEnd - chunkStart);
-      const pos = Number(chunkStart);
-      const b = Buffer.alloc(len);
-      const bytesRead = await this.readBytesFromPosition(f, b, len, pos);
-
-      const stat = await fs.stat(path);
-
-      return {
-        chunk: b.subarray(0, bytesRead),
-        mTime: BigInt(Math.floor(stat.mtimeMs / 1000))
-      };
-    } catch (e: any) {
-      if (e.code == 'ENOENT')
-        throw new NoFileForUploading(`there is no file ${path} for uploading`);
-      throw e;
-    } finally {
-      f?.close();
-    }
-  }
-
-  /** Read len bytes from a given position. The reason the method exists
-      is that FileHandle.read can read less bytes than it's needed. */
-  async readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, position: number) {
-    let bytesReadTotal = 0;
-    while (bytesReadTotal < len) {
-      const { bytesRead } = await f.read(
-        b,
-        bytesReadTotal,
-        len - bytesReadTotal,
-        position + bytesReadTotal
-      );
-      if (bytesRead === 0) {
-        throw new UnexpectedEOF('file ended earlier than expected.');
-      }
-      bytesReadTotal += bytesRead;
-    }
-
-    return bytesReadTotal;
+  public async finalize(info: ResourceInfo, options?: RpcOptions) {
+    return await this.grpcFinalize(info, options);
   }
 
   /** Calculates parts that need to be uploaded from the parts that were
    * already uploaded. */
-  private partsToUpload(info: { partsCount: bigint; uploadedParts: bigint[] }): bigint[] {
+  private partsToUpload(partsCount: bigint, uploadedParts: bigint[]): bigint[] {
     const toUpload: bigint[] = [];
-    const uploaded = new Set(info.uploadedParts);
+    const uploaded = new Set(uploadedParts);
 
-    for (let i = 1n; i <= info.partsCount; i++) {
+    for (let i = 1n; i <= partsCount; i++) {
       if (!uploaded.has(i)) toUpload.push(i);
     }
 
     return toUpload;
   }
 
-  private prepareUploadOpts(info: uploadapi_GetPartURL_Response, chunk: Buffer): any {
-    const headers = info.headers.map(({ name, value }) => [name, value]);
+  private async grpcInit(id: ResourceId, type: ResourceType, options?: RpcOptions) {
+    return await this.grpcClient.init({ resourceId: id }, addRTypeToMetadata(type, options))
+      .response;
+  }
 
-    return {
-      dispatcher: this.httpClient,
-      body: chunk,
-      headers: Object.fromEntries(headers),
-      method: info.method.toUpperCase() as Dispatcher.HttpMethod
-    };
+  private async grpcGetPartUrl(
+    { id, type }: ResourceInfo,
+    partNumber: bigint,
+    uploadedPartSize: bigint,
+    options?: RpcOptions
+  ) {
+    return await this.grpcClient.getPartURL(
+      { resourceId: id, partNumber, uploadedPartSize },
+      addRTypeToMetadata(type, options)
+    ).response;
+  }
+
+  private async grpcUpdateProgress(
+    { id, type }: ResourceInfo,
+    bytesProcessed: bigint,
+    options?: RpcOptions
+  ) {
+    await this.grpcClient.updateProgress(
+      {
+        resourceId: id,
+        bytesProcessed
+      },
+      addRTypeToMetadata(type, options)
+    ).response;
+  }
+
+  private async grpcFinalize({ id, type }: ResourceInfo, options?: RpcOptions) {
+    return await this.grpcClient.finalize({ resourceId: id }, addRTypeToMetadata(type, options))
+      .response;
+  }
+}
+
+async function readFileChunk(path: string, chunkStart: bigint, chunkEnd: bigint): Promise<Buffer> {
+  let f: fs.FileHandle | undefined;
+  try {
+    f = await fs.open(path);
+    const len = Number(chunkEnd - chunkStart);
+    const pos = Number(chunkStart);
+    const b = Buffer.alloc(len);
+    const bytesRead = await readBytesFromPosition(f, b, len, pos);
+
+    return b.subarray(0, bytesRead);
+  } catch (e: any) {
+    if (e.code == 'ENOENT') throw new NoFileForUploading(`there is no file ${path} for uploading`);
+    throw e;
+  } finally {
+    f?.close();
+  }
+}
+
+/** Read len bytes from a given position.
+ * Without this, `FileHandle.read` can read less bytes than needed. */
+async function readBytesFromPosition(f: fs.FileHandle, b: Buffer, len: number, position: number) {
+  let bytesReadTotal = 0;
+  while (bytesReadTotal < len) {
+    const { bytesRead } = await f.read(
+      b,
+      bytesReadTotal,
+      len - bytesReadTotal,
+      position + bytesReadTotal
+    );
+    if (bytesRead === 0) {
+      throw new UnexpectedEOF('file ended earlier than expected.');
+    }
+    bytesReadTotal += bytesRead;
+  }
+
+  return bytesReadTotal;
+}
+
+async function checkExpectedMTime(path: string, expectedMTimeUnix: bigint) {
+  const mTime = BigInt(Math.floor((await fs.stat(path)).mtimeMs / 1000));
+  if (mTime > expectedMTimeUnix) {
+    throw new MTimeError(`file was modified, expected mtime: ${expectedMTimeUnix}, got: ${mTime}.`);
+  }
+}
+
+function checkStatusCodeOk(
+  statusCode: number,
+  body: string,
+  headers: IncomingHttpHeaders,
+  info: uploadapi_GetPartURL_Response
+) {
+  if (statusCode != 200) {
+    throw new NetworkError(
+      `response is not ok, status code: ${statusCode},` +
+        ` body: ${body}, headers: ${headers}, url: ${info.uploadUrl}`
+    );
   }
 }

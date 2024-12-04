@@ -12,6 +12,7 @@ assets := import(":assets")
 path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
+internal := import(":exec.python.internal")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
 	wdBefore := workdir.builder().build()
@@ -52,7 +53,7 @@ self.defineOutputs("runEnv")
 
 self.body(func(inputs) {
 	// assert we have inputs we expect.
-	validation.assertJsonSchema(inputs, runenv.pythonVenvInputSchema)
+	validation.assertJsonSchema(inputs, internal.pythonVenvInputSchema)
 
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor

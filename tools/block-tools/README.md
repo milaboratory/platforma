@@ -6,11 +6,11 @@
 ## Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g @milaboratory/pl-block-tools
+$ npm install -g @platforma-sdk/block-tools
 $ block-tools COMMAND
 running command...
 $ block-tools (--version)
-@milaboratory/pl-block-tools/2.1.2 darwin-arm64 node-v20.15.0
+@platforma-sdk/block-tools/2.4.1 darwin-arm64 node-v20.15.0
 $ block-tools --help [COMMAND]
 USAGE
   $ block-tools COMMAND
@@ -20,9 +20,30 @@ USAGE
 
 ## Commands
 <!-- commands -->
+* [`block-tools build-meta`](#block-tools-build-meta)
 * [`block-tools build-model`](#block-tools-build-model)
+* [`block-tools mark-stable`](#block-tools-mark-stable)
 * [`block-tools pack`](#block-tools-pack)
+* [`block-tools publish`](#block-tools-publish)
+* [`block-tools refresh-registry`](#block-tools-refresh-registry)
 * [`block-tools upload-package-v1`](#block-tools-upload-package-v1)
+
+## `block-tools build-meta`
+
+Extracts meta information from blocks package.json and outputs meta.json with embedded binary and textual information linked from the meta section.
+
+```
+USAGE
+  $ block-tools build-meta -o <path> [-i <path>]
+
+FLAGS
+  -i, --modulePath=<path>   [default: .] input module path
+  -o, --destination=<path>  (required) output meta.json file
+
+DESCRIPTION
+  Extracts meta information from blocks package.json and outputs meta.json with embedded binary and textual information
+  linked from the meta section.
+```
 
 ## `block-tools build-model`
 
@@ -42,6 +63,26 @@ DESCRIPTION
   Extracts and outputs block model JSON from pre-built block model module
 ```
 
+## `block-tools mark-stable`
+
+Mark target block stable
+
+```
+USAGE
+  $ block-tools mark-stable -r <address> [-i <path>] [-v <value>] [--refresh] [--unmark]
+
+FLAGS
+  -i, --modulePath=<path>         [default: .] input module path
+  -r, --registry=<address>        (required) full address of the registry
+  -v, --version-override=<value>  override package version
+      --[no-]refresh              refresh repository after adding the package
+      --unmark                    reverses meaning of this command, flag can be used to remove "stable" flag from the
+                                  package
+
+DESCRIPTION
+  Mark target block stable
+```
+
 ## `block-tools pack`
 
 Builds block pack and outputs a block pack manifest consolidating all references assets into a single folder
@@ -56,6 +97,40 @@ FLAGS
 
 DESCRIPTION
   Builds block pack and outputs a block pack manifest consolidating all references assets into a single folder
+```
+
+## `block-tools publish`
+
+Publishes the block package and refreshes the registry (for v2 block-pack schema)
+
+```
+USAGE
+  $ block-tools publish -r <address> [-m <value>] [-v <value>] [--refresh]
+
+FLAGS
+  -m, --manifest=<value>          [default: ./block-pack/manifest.json] manifest file path
+  -r, --registry=<address>        (required) full address of the registry
+  -v, --version-override=<value>  override package version
+      --[no-]refresh              refresh repository after adding the package
+
+DESCRIPTION
+  Publishes the block package and refreshes the registry (for v2 block-pack schema)
+```
+
+## `block-tools refresh-registry`
+
+Refresh overview files based on published but not proecessed artefacts
+
+```
+USAGE
+  $ block-tools refresh-registry -r <address> [-m <mode>]
+
+FLAGS
+  -m, --mode=<mode>         [default: normal] refresh mode (allowed valiues: "force", "normal", "dry-run")
+  -r, --registry=<address>  (required) full address of the registry
+
+DESCRIPTION
+  Refresh overview files based on published but not proecessed artefacts
 ```
 
 ## `block-tools upload-package-v1`

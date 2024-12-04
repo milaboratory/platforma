@@ -1,5 +1,65 @@
 # @platforma-sdk/block-tools
 
+## 2.4.7
+
+### Patch Changes
+
+- ed6b79c: Channel argument added to getSpecificOverview in RegistryReaderV2
+
+## 2.4.6
+
+### Patch Changes
+
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-model-middle-layer@1.6.4
+
+## 2.4.5
+
+### Patch Changes
+
+- Updated dependencies [5692733]
+  - @milaboratories/pl-model-middle-layer@1.6.3
+
+## 2.4.4
+
+### Patch Changes
+
+- Updated dependencies [7be05ec]
+  - @milaboratories/pl-model-middle-layer@1.6.2
+
+## 2.4.3
+
+### Patch Changes
+
+- 32c3157: - fix: S3 storage empty folder listing
+  - new `refresh-registry` action in `block-tools` with dry-run support
+
+## 2.4.2
+
+### Patch Changes
+
+- Updated dependencies [6240ac0]
+  - @milaboratories/pl-model-middle-layer@1.6.1
+
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [3dd3a5c]
+  - @milaboratories/ts-helpers@1.1.2
+  - @milaboratories/ts-helpers-oclif@1.1.11
+
+## 2.4.0
+
+### Minor Changes
+
+- 3b138a4: Block registry now supports channels
+
+### Patch Changes
+
+- Updated dependencies [3b138a4]
+  - @milaboratories/pl-model-middle-layer@1.6.0
+
 ## 2.3.30
 
 ### Patch Changes
