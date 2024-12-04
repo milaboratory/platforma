@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.25
+
+### Patch Changes
+
+- 63722de: Bug: Ctrl+Click selection does not work in Samples&Data on Windows
+
 ## 2.2.24
 
 ### Patch Changes
