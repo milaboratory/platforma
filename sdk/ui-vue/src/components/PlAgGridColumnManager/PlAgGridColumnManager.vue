@@ -64,7 +64,7 @@ onMounted(() => {
           <div :class="{ handle: !col.getColDef().lockPosition }" class="pl-ag-columns__drag">
             <PlMaskIcon16 name="drag-dots" />
           </div>
-          <div :class="{ visible: col.isVisible() }" class="pl-ag-columns__title">{{ col.getColDef().headerName }}</div>
+          <div :class="{ visible: col.isVisible() }" class="pl-ag-columns__title text-s-btn">{{ col.getColDef().headerName }}</div>
           <div class="pl-ag-columns__visibility" @click="toggleColumnVisibility(col)">
             <PlTooltip :close-delay="500" position="top">
               <PlMaskIcon24 :name="col.isVisible() ? 'view-show' : 'view-hide'" />

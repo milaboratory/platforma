@@ -17,6 +17,7 @@ import {
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import { PlAgColumnHeader, type PlAgHeaderComponentType, type PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
 
 /**
  * Generate unique colId based on the column spec.
@@ -50,6 +51,7 @@ export const defaultValueFormatter = (value: any) => {
  */
 function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]): ColDef {
   const colId = makeColId(spec);
+  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
     field: iCol.toString(),
@@ -57,7 +59,24 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
-    cellDataType: ((valueType: ValueType) => {
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: {
+      type: ((): PlAgHeaderComponentType => {
+        switch (valueType) {
+          case 'Int':
+          case 'Long':
+          case 'Float':
+          case 'Double':
+            return 'Number';
+          case 'String':
+          case 'Bytes':
+            return 'Text';
+          default:
+            throw Error(`unsupported data type: ${valueType satisfies never}`);
+        }
+      })(),
+    } satisfies PlAgHeaderComponentParams,
+    cellDataType: (() => {
       switch (valueType) {
         case 'Int':
         case 'Long':
@@ -70,7 +89,7 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
         default:
           throw Error(`unsupported data type: ${valueType satisfies never}`);
       }
-    })(spec.type === 'axis' ? spec.spec.type : spec.spec.valueType),
+    })(),
   };
 }
 
