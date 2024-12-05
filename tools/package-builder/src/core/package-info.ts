@@ -117,7 +117,9 @@ export interface SoftwareEntrypoint {
   type: 'software';
   name: string;
   package: PackageConfig;
-  cmd: string[];
+  // TODO: remove after a month of keeping this forward compatible
+  oldCmd: string[];
+  command: string[];
   env: string[];
 }
 
@@ -187,7 +189,7 @@ const wellKnownRegistries: Record<string, storagePreset> = {
  *       "script1": {
  *         "software": {
  *           "artifact": "pkg-1",
- *           "cmd": [ "{pkg}/script1" ]
+ *           "command": [ "{{pkg}}/script1" ]
  *         }
  *       }
  *     }
@@ -247,7 +249,8 @@ export class PackageInfo {
           type: 'software',
           name: epName,
           package: this.getPackage(packageID),
-          cmd: ep.binary.cmd,
+          oldCmd: ep.binary.oldCmd,
+          command: ep.binary.command,
           env: ep.binary.envVars ?? []
         });
         continue;

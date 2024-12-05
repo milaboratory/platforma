@@ -16,24 +16,57 @@ pkg := import(":exec.package")
 runcmd := import(":exec.runcmd")
 python := import(":exec.python")
 R := import(":exec.R")
+assets := import(":assets")
+constants := import(":exec.constants")
 
-// Variables, substituted in command arguments and environment variable values
+// TODO: deprecated, use arg expressions.
+// Variables, substituted in command arguments and environment variable values.
 _ARG_VAR_PKG            := "{pkg}"  // abs path to software package
 _ARG_VAR_JAVA           := "{java}" // abs path to 'java' run environment
 _ARG_VAR_PYTHON         := "{python}" // abs path to 'python' run environment
 _ARG_VAR_R              := "{R}" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "{rVenv}" // abs path to 'R' portable virtual environment
 
+/** True if Platforma Backend supports expression refs. */
+_hasBackendExpressions := func() {
+	return ll.apiVersion >= 2
+}
+
 /**
- * Create new argument marking it as 'with' or 'without' variables inside.
- * The outcome of 'hasVariables' flag value is wether the value will be treated
- * by Platforma Backend on server side before being given to the actual command.
+ * Shows if Platforma Backend is new enough
+ * and sw descriptor is new enough to support expression refs.
+ *
+ * @param descriptor: any - sw descriptor to see if it's new enough.
  */
-_newArg := func(hasVariables, value) {
+_shouldPassExpressions := func(descriptor) {
+	return _hasBackendExpressions() && assets.hasSwExpressions(descriptor)
+}
+
+/**
+ * Create new argument with a type. The type can be either simple, expression or variable.
+ * The types advice Platforma Backend to interpret the argument.
+ */
+_newArg := func(type, value) {
 	return ll.toStrict({
-		hasVars: hasVariables,
+		type: type,
 		value: value
 	})
+}
+
+/**
+ * Decides whether we need a simple argument or an expression one.
+ * For a month, we keep deprecated variable arguments.
+ *
+ * @param isString: boolean - whether it is a string or a difficult (expression) argument.
+ */
+_typedArg := func(isString, descriptor, value) {
+	if isString {
+		return _newArg(constants.ARG_TYPE_STRING, value)
+	}
+	if _shouldPassExpressions(descriptor) {
+		return _newArg(constants.ARG_TYPE_EXPRESSION, value)
+	}
+	return _newArg(constants.ARG_TYPE_VAR, value)
 }
 
 _newRefVar := func(varName, refName, reference) {
@@ -50,16 +83,16 @@ _installSoftware := func(registry, pkgName) {
 }
 
 _directCallOptions := func(runOptions) {
-	cmd := _newArg(false, runOptions.cmd)
+	cmd := _typedArg(true, undefined, runOptions.cmd)
 	args := []
 	envs := {}
 
 	for name, arg in runOptions.args {
-		args = append(args, _newArg(false, arg))
+		args = append(args, _typedArg(true, undefined, arg))
 	}
 
 	for name, val in runOptions.envs {
-		envs[name] = _newArg(false, val)
+		envs[name] = _typedArg(true, undefined, val)
 	}
 
 	return oop.inherit(runOptions, {
@@ -79,7 +112,7 @@ _loadJavaRunEnvironment := func(operationMode, descriptor) {
 		runEnvType: "java",
 
 		variables: [ javaRefVar ],
-		customPaths: [ _newArg(true, path.join(_ARG_VAR_JAVA, descriptor.runEnv.binDir)) ],
+		customPaths: [ _typedArg(false, descriptor, path.join(_ARG_VAR_JAVA, descriptor.runEnv.binDir)) ],
 		envs: {}
 	})
 }
@@ -108,9 +141,9 @@ _loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) 
 		runEnvType: "python",
 
 		variables: [ pythonRefVar ],
-		customPaths: [ _newArg(true, path.join(venvRoot, "bin")) ],
+		customPaths: [ _typedArg(false, descriptor, path.join(venvRoot, "bin")) ],
 		envs: {
-			"VIRTUAL_ENV": _newArg(true, venvRoot)
+			"VIRTUAL_ENV": _typedArg(false, descriptor, venvRoot)
 		}
 	})
 }
@@ -145,14 +178,14 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ _newArg(true, rBinDir) ],
+		customPaths: [ _typedArg(false, descriptor, rBinDir) ],
 		envs: {
-			"R_HOME_DIR": _newArg(true, _ARG_VAR_R),
-			"RENV_PATHS_ROOT": _newArg(true, path.join(_ARG_VAR_R, "renv-root")),
-			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv")),
-			"RENV_PATHS_LOCKFILE": _newArg(true, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(false, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(false, "FALSE")
+			"R_HOME_DIR": _typedArg(false, descriptor, _ARG_VAR_R),
+			"RENV_PATHS_ROOT": _typedArg(false, descriptor, path.join(_ARG_VAR_R, "renv-root")),
+			"RENV_PATHS_RENV": _typedArg(false, descriptor, path.join(_ARG_VAR_R_VENV, "renv")),
+			"RENV_PATHS_LOCKFILE": _typedArg(false, descriptor, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
+			"RENV_CONFIG_AUTO_SNAPSHOT": _typedArg(true, descriptor, "FALSE"),
+			"RENV_CONFIG_SYNCHRONIZED_CHECK": _typedArg(true, descriptor, "FALSE")
 		}
 	})
 }
@@ -200,19 +233,21 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 		}
 	}
 
-	ll.assert(len(descriptor.cmd) != 0, "cannot render final command for software: empty 'cmd' in software descritor")
+	ll.assert(
+		len(descriptor.cmd) != 0 || len(descriptor.command) != 0,
+		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	cmd := _newArg(true, descriptor.cmd[0])
+	cmd := _typedArg(false, descriptor, descriptor.cmd[0])
 
 	for arg in splice(descriptor.cmd, 1) {
-		args = append(args, _newArg(true, arg))
+		args = append(args, _typedArg(false, descriptor, arg))
 	}
 	for arg in runOptions.args {
-		args = append(args, _newArg(false, arg))
+		args = append(args, _typedArg(true, descriptor, arg))
 	}
 
 	for name, val in runOptions.envs {
-		envs[name] = _newArg(false, val)
+		envs[name] = _typedArg(true, descriptor, val)
 	}
 
 	return oop.inherit(runOptions, {

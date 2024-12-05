@@ -76,6 +76,7 @@ _runBinaryCommand := func(inputs) {
 
 	// Load secrets
 	for envName, secretVar in inputs.runOptions.secrets {
+		runBuilder.envTyped
 		runBuilder.envVar(envName, secretVar)
 	}
 
