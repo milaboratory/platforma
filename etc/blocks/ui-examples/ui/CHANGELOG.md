@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.56
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+- Updated dependencies [bc6141f]
+  - @platforma-sdk/ui-vue@1.14.21
+
 ## 1.2.55
 
 ### Patch Changes
