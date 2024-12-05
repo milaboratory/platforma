@@ -62,3 +62,10 @@ export type PlAgDataTableController = {
   /** Export table data as Csv file */
   exportCsv: () => void;
 };
+
+/** PlAgDataTable row */
+export type PlAgDataTableRow = {
+  id: string;
+  key: unknown[];
+  [field: `${number}`]: undefined | null | number | string;
+};

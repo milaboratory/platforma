@@ -9,8 +9,12 @@
         border-width: 2px;
     }
 
-    &__drag {
+    &__drag.handle {
         cursor: grab;
+    }
+
+    &__drag {
+
         line-height: 0;
 
         .mask-16 {
