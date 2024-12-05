@@ -12,6 +12,7 @@ export function makeRowNumberColDef(): ColDef {
       if (params.node.rowIndex === null) return null;
       return params.node.rowIndex + 1;
     },
+    headerClass: 'pl-ag-header-align-center',
     suppressNavigable: true,
     lockPosition: 'left',
     suppressMovable: true,

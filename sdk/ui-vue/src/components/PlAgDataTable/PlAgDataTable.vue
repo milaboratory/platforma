@@ -541,6 +541,12 @@ watch(
   </div>
 </template>
 
+<style>
+.pl-ag-header-align-center .ag-header-cell-label {
+  justify-content: center;
+}
+</style>
+
 <style lang="css" scoped>
 .ap-ag-data-table-container {
   display: flex;
