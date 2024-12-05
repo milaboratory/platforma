@@ -3,6 +3,10 @@
     width: 100%;
     overflow: hidden;
 
+    .mask-16 {
+        min-width: 16px;
+    }
+
     span {
         word-break: break-word;
         overflow: hidden;
