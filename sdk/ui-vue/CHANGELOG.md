@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.15.0
+
+### Minor Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+
 ## 1.14.22
 
 ### Patch Changes

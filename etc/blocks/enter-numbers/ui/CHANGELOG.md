@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-enter-numbers.ui
 
+## 1.0.133
+
+### Patch Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+- Updated dependencies [b4081fc]
+  - @platforma-sdk/ui-vue@1.15.0
+
 ## 1.0.132
 
 ### Patch Changes

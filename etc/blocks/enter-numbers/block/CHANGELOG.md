@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-enter-numbers
 
+## 1.0.133
+
+### Patch Changes
+
+- Updated dependencies [b4081fc]
+  - @milaboratories/milaboratories.test-enter-numbers.ui@1.0.133
+
 ## 1.0.132
 
 ### Patch Changes
