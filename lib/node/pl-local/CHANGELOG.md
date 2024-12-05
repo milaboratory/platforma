@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.8.2
+
+### Patch Changes
+
+- 7eb5aa3: bump pl: escape path for download url
+
 ## 1.8.1
 
 ### Patch Changes

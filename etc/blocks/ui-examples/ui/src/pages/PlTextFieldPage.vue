@@ -3,8 +3,8 @@ import { PlAlert, PlBlockPage, PlTextField } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
-  text: '',
-  optionalText: '' as string | undefined,
+  text: 'lorem ipsum',
+  optionalText: 'optional' as string | undefined,
   num: 0,
   optionalNum: 0 as number | undefined
 });
@@ -28,15 +28,27 @@ const clearableZero = () => 0;
 
 <template>
   <PlBlockPage style="max-width: 100%">
-    <div class="d-flex flex-column gap-16" style="width: 300px">
-      <div>Text</div>
-      <PlTextField v-model="data.text" placeholder="Text" />
+    <div class="d-flex flex-column gap-16" style="width: 400px">
+      <PlTextField v-model="data.text" label="Text" placeholder="Text" />
 
-      <div>Optional text (string | undefined)</div>
-      <PlTextField v-model="data.optionalText" placeholder="Text" :clearable="clearableUndefined" />
+      <PlTextField
+        v-model="data.optionalText"
+        label="Optional text (string | undefined)"
+        placeholder="Now value is undefined"
+        :clearable="clearableUndefined"
+      />
 
-      <div>Password</div>
-      <PlTextField v-model="data.text" placeholder="Password" type="password" />
+      <PlTextField v-model="data.text" label="Password" placeholder="Password" type="password" />
+
+      <PlTextField v-model="data.text" label="Disabled" disabled placeholder="Text" />
+
+      <PlTextField
+        v-model="data.text"
+        label="Disabled Password"
+        disabled
+        placeholder="Password"
+        type="password"
+      />
 
       <div>Number (see focusout effect) + clearable to zero</div>
       <!-- Note: you cannot pass text -->

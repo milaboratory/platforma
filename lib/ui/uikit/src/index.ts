@@ -86,6 +86,13 @@ export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 
 /**
+ * Utils/Partials
+ */
+
+export { default as PlCloseModalBtn } from './utils/PlCloseModalBtn.vue';
+export * from './utils/DropdownOverlay';
+
+/**
  * Technical
  * @TODO move it from here maybe
  */

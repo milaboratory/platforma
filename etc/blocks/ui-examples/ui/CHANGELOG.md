@@ -1,5 +1,51 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.56
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+- Updated dependencies [bc6141f]
+  - @platforma-sdk/ui-vue@1.14.21
+
+## 1.2.55
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.20
+
+## 1.2.54
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.19
+
+## 1.2.53
+
+### Patch Changes
+
+- dec84ba: Fix PlTextField disabled state and support ctrl in the multiple file selection
+  - @platforma-sdk/ui-vue@1.14.18
+
+## 1.2.52
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.15
+
+## 1.2.51
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.11
+
+## 1.2.50
+
+### Patch Changes
+
+- 556765e: uikit: export PlCloseModalBtn
+  - @platforma-sdk/ui-vue@1.14.8
+
 ## 1.2.49
 
 ### Patch Changes

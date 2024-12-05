@@ -10,7 +10,7 @@ $ npm install -g @platforma-sdk/block-tools
 $ block-tools COMMAND
 running command...
 $ block-tools (--version)
-@platforma-sdk/block-tools/2.3.28 darwin-arm64 node-v20.15.0
+@platforma-sdk/block-tools/2.4.1 darwin-arm64 node-v20.15.0
 $ block-tools --help [COMMAND]
 USAGE
   $ block-tools COMMAND
@@ -25,6 +25,7 @@ USAGE
 * [`block-tools mark-stable`](#block-tools-mark-stable)
 * [`block-tools pack`](#block-tools-pack)
 * [`block-tools publish`](#block-tools-publish)
+* [`block-tools refresh-registry`](#block-tools-refresh-registry)
 * [`block-tools upload-package-v1`](#block-tools-upload-package-v1)
 
 ## `block-tools build-meta`
@@ -114,6 +115,22 @@ FLAGS
 
 DESCRIPTION
   Publishes the block package and refreshes the registry (for v2 block-pack schema)
+```
+
+## `block-tools refresh-registry`
+
+Refresh overview files based on published but not proecessed artefacts
+
+```
+USAGE
+  $ block-tools refresh-registry -r <address> [-m <mode>]
+
+FLAGS
+  -m, --mode=<mode>         [default: normal] refresh mode (allowed valiues: "force", "normal", "dry-run")
+  -r, --registry=<address>  (required) full address of the registry
+
+DESCRIPTION
+  Refresh overview files based on published but not proecessed artefacts
 ```
 
 ## `block-tools upload-package-v1`

@@ -1,5 +1,54 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.21
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+
+## 1.14.20
+
+### Patch Changes
+
+- Updated dependencies [63722de]
+  - @milaboratories/uikit@2.2.25
+
+## 1.14.19
+
+### Patch Changes
+
+- Updated dependencies [56421e3]
+- Updated dependencies [6dcee2e]
+  - @milaboratories/uikit@2.2.24
+
+## 1.14.18
+
+### Patch Changes
+
+- Updated dependencies [dec84ba]
+  - @milaboratories/uikit@2.2.23
+
+## 1.14.15
+
+### Patch Changes
+
+- Updated dependencies [6dfa829]
+  - @milaboratories/uikit@2.2.22
+
+## 1.14.11
+
+### Patch Changes
+
+- Updated dependencies [2b98d93]
+  - @milaboratories/uikit@2.2.21
+
+## 1.14.8
+
+### Patch Changes
+
+- Updated dependencies [556765e]
+  - @milaboratories/uikit@2.2.20
+
 ## 1.14.5
 
 ### Patch Changes
