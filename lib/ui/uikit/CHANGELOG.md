@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.26
+
+### Patch Changes
+
+- f38f686: fixed styles
+
 ## 2.2.25
 
 ### Patch Changes

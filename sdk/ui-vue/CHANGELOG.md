@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.15.1
+
+### Patch Changes
+
+- f38f686: fixed styles
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+
 ## 1.15.0
 
 ### Minor Changes
