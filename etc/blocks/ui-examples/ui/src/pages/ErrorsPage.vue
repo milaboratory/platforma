@@ -51,16 +51,18 @@ const $ = {
       {{ app.error }}
     </PlAlert>
     <fieldset>
-      <legend>Args (app.snapshot.args)</legend>
+      <legend>Args snapshot (app.snapshot.args)</legend>
       {{ app.snapshot.args }}
     </fieldset>
     <fieldset>
-      <legend>Args (app.model.args)</legend>
+      <legend>Args (model) (app.model.args)</legend>
       {{ app.model.args }}
     </fieldset>
-    <PlAlert type="info" monospace>
-      outputs:
+    <PlAlert label="Outputs" type="info" monospace pre>
       {{ app.model.outputs }}
+    </PlAlert>
+    <PlAlert label="Output Errors 1" type="error" monospace pre>
+      {{ app.model.outputErrors }}
     </PlAlert>
     <PlRow>
       <PlBtnPrimary @click="() => app.showInfiniteProgress(data.progressDurationMs)">

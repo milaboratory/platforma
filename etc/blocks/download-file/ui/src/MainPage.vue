@@ -6,13 +6,15 @@ import { computed } from 'vue';
 const app = useApp();
 
 const progress = computed(() => {
-    if (!app.outputs.handle)
+    const handle = app.snapshot.outputs.handle;
+
+    if (!handle)
         return undefined;
 
-    if (!app.outputs.handle.ok)
+    if (!handle.ok)
         return undefined;
 
-    return app.outputs.handle.value;
+    return handle.value;
 })
 </script>
 
@@ -70,14 +72,14 @@ const progress = computed(() => {
         <code>{{ app.model }}</code>
         <PlAlert type="info" monospace>
             outputValues:
-            {{ app.outputValues }}
+            {{ app.model.outputs }}
         </PlAlert>
         <PlAlert type="info" monospace>
             outputs:
             {{ app.model.outputs }}
         </PlAlert>
         <PlAlert type="error" v-if="app.hasErrors">
-            {{ app.outputErrors }}
+            {{ app.model.outputErrors }}
         </PlAlert>
     </PlBlockPage>
 </template>

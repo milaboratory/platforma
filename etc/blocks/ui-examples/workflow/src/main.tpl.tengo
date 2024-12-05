@@ -33,7 +33,7 @@ wf.body(func(args) {
     if !isNumber(elem) {
         ll.panic("Only numbers are allowed!")
     }
-}
+	}
 
 	numbersMap := {}
 

@@ -43,14 +43,14 @@ const sources = computed({
     <code>{{ app.model }}</code>
     <PlAlert type="info" monospace>
       outputValues:
-      {{ app.outputValues }}
+      {{ app.model.outputs }}
     </PlAlert>
     <PlAlert type="info" monospace>
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
     <PlAlert type="error" v-if="app.hasErrors">
-      {{ app.outputErrors }}
+      {{ app.model.outputErrors }}
     </PlAlert>
   </PlBlockPage>
 </template>

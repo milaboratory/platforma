@@ -10,8 +10,8 @@ const app = useApp();
   <div class="test-container">
     <Navigate />
 
-    <ValueOrErrorsComponent v-slot="{ value }" :value-or-error="app.outputs.x"> X Value: {{ value }} </ValueOrErrorsComponent>
-    <ValueOrErrorsComponent v-slot="{ value }" :value-or-error="app.outputs.y"> Y Value: {{ value }} </ValueOrErrorsComponent>
+    <ValueOrErrorsComponent v-slot="{ value }" :value-or-error="app.snapshot.outputs.x"> X Value: {{ value }} </ValueOrErrorsComponent>
+    <ValueOrErrorsComponent v-slot="{ value }" :value-or-error="app.snapshot.outputs.y"> Y Value: {{ value }} </ValueOrErrorsComponent>
   </div>
 </template>
 
