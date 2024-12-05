@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.136
+
+### Patch Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+- Updated dependencies [b4081fc]
+  - @platforma-sdk/ui-vue@1.15.0
+
 ## 0.0.135
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.138
+
+### Patch Changes
+
+- Updated dependencies [b4081fc]
+  - @milaboratories/milaboratories.ui-examples.workflow@1.0.6
+  - @milaboratories/milaboratories.ui-examples.ui@1.2.58
+
 ## 1.0.137
 
 ### Patch Changes

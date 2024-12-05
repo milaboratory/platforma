@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-read-logs
 
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [b4081fc]
+  - @milaboratories/milaboratories.test-read-logs.ui@1.0.11
+
 ## 1.0.10
 
 ### Patch Changes
