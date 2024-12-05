@@ -1,0 +1,92 @@
+/** Everything about software descriptors
+ * The scheme is here:
+ * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/renderer.ts#L161 */
+
+ll := import(":ll")
+smart := import(":smart")
+workdir := import(":workdir")
+oop := import(":oop")
+sets := import(":sets")
+validation := import(":validation")
+json := import("json")
+
+runEnvScheme := {
+	registry: "string",
+	package: "string",
+	type: "string",
+	binDir: "string"
+}
+
+binaryScheme := {
+	registry: "string",
+	package: "string",
+	cmd: ["string"], // deprecated, remove after 15 Jan 2025
+	command: ["string"],
+	runEnv: runEnvScheme
+}
+
+assetScheme := {
+	registry: "string",
+	package: "string",
+	url: "string"
+}
+
+localScheme := {
+	hash: "string",
+	path: "string",
+	cmd: ["string"], // deprecated, remove after 15 Jan 2025
+	command: ["string"],
+	runEnv: runEnvScheme
+}
+
+scheme := {
+	"isDev,?": "bool",
+	"schemaVersion,?": "number",
+	"binary,?": binaryScheme,
+	"asset,?": assetScheme,
+	"local,?": localScheme
+}
+
+_schemaVersion := func(descriptor) {
+	version := ll.fromStrict(descriptor)["schemaVersion"]
+	if is_undefined(version) {
+		return 1
+	}
+
+	return version
+}
+
+/** True if Platforma Backend supports expression refs. */
+hasBackendExpressions := func() {
+	return ll.apiVersion() >= 2
+}
+
+/**
+ * Shows if sw descriptor is new enough to support expression refs
+ * that will be interpreted by the exec controller.
+ *
+ * @param descriptor: any - sw descriptor to see if it's new enough.
+ */
+_hasSwExpressions := func(descriptor) {
+	return _schemaVersion(descriptor) >= 2
+}
+
+/**
+ * Shows if Platforma Backend is new enough
+ * and sw descriptor is new enough to support expression refs.
+ *
+ * @param descriptor: any - sw descriptor to see if it's new enough.
+ */
+supportExpressions := func(descriptor) {
+	return hasBackendExpressions() && _hasSwExpressions(descriptor)
+}
+
+export {
+	runEnvScheme: runEnvScheme,
+	binaryScheme: binaryScheme,
+	assetScheme: assetScheme,
+	localScheme: localScheme,
+	scheme: scheme,
+	hasBackendExpressions: hasBackendExpressions,
+	supportExpressions: supportExpressions
+}

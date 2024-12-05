@@ -9,45 +9,12 @@ oop := import(":oop")
 sets := import(":sets")
 validation := import(":validation")
 json := import("json")
-
-runEnvDescriptorScheme := {
-	registry: "string",
-	package: "string",
-	type: "string",
-	binDir: "string"
-}
-
-binaryDescriptorScheme := {
-	registry: "string",
-	package: "string",
-	cmd: ["string"],
-	runEnv: runEnvDescriptorScheme
-}
-
-assetDescriptorScheme := {
-	registry: "string",
-	package: "string",
-	url: "string"
-}
-
-localDescriptorScheme := {
-	hash: "string",
-	path: "string",
-	cmd: ["string"],
-	runEnv: runEnvDescriptorScheme
-}
-
-descriptorScheme := {
-	"isDev,?": "bool",
-	"binary,?": binaryDescriptorScheme,
-	"asset,?": assetDescriptorScheme,
-	"local,?": localDescriptorScheme
-}
+desc := import(":exec.descriptor")
 
 softwareInfoScheme := {
 	"name": "string",
 	"version": "string",
-	"descriptor": descriptorScheme
+	"descriptor": desc.scheme
 }
 
 META_KEY_DESCRIPTOR := "ctl/runner/package/descriptor"
@@ -291,11 +258,6 @@ loadPackageFileContent := func(pkg, assetPath) {
 
 export ll.toStrict({
 	softwareInfoScheme                 : softwareInfoScheme,
-	descriptorScheme                   : descriptorScheme,
-	assetDescriptorScheme              : assetDescriptorScheme,
-	binaryDescriptorScheme             : binaryDescriptorScheme,
-	localDescriptorScheme              : localDescriptorScheme,
-	runEnvDescriptorScheme             : runEnvDescriptorScheme,
 
 	META_KEY_DESCRIPTOR                : META_KEY_DESCRIPTOR,
 

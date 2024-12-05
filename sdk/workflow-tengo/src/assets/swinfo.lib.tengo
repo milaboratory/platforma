@@ -1,0 +1,60 @@
+/**
+ * A file that contains software info constructors and related functions.
+ */
+
+plapi := import("plapi")
+ll := import(":ll")
+smart := import(":smart")
+json := import("json")
+
+/**
+ * Creates a software info by sw that is got from backend.
+ */
+newSoftwareInfo := func(sw) {
+	return ll.toStrict({
+		_type: "softwareDescriptor",
+		_id: sw.id,
+
+		resource: smart.resource(sw.id),
+		name: sw.name,
+		version: sw.version,
+		blobRef: sw.blobRef,
+		descriptor: ll.toStrict(json.decode(sw.descriptor)) // raw sw.json data with software entrypoint descriptor
+	})
+}
+
+/**
+ * Returns software description suitable for 'exec' operations.
+ *
+ * @param swName: string - full name of the software entrypoint, including namespace (NPM package name).
+ *                         Local software entrypoints (within the same package) can omit namespace part
+ *                         and start the name with colon:
+ *                           - "@company/package:some-oftware"
+ *                           - ":my-local-software"
+ *
+ * @return softwareInfo: softwareInfo - structure with software info.
+ */
+importSoftware := func(swName) {
+	return newSoftwareInfo(plapi.getSoftwareInfo(swName))
+}
+
+/**
+ * Checks if given item is a software info
+ *
+ * @param toCheck: any - item to check
+ *
+ * @return isSoftware: boolean - true for software info, loaded with importSoftware()
+ */
+isSoftwareInfo := func(toCheck) {
+	if !ll.isMap(toCheck) {
+		return false
+	}
+
+	return (ll.fromStrict(toCheck)._type) == "softwareDescriptor"
+}
+
+export ll.toStrict({
+	newSoftwareInfo: newSoftwareInfo,
+	importSoftware: importSoftware,
+	isSoftwareInfo: isSoftwareInfo
+})
