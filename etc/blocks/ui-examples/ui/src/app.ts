@@ -28,7 +28,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
     data.counter++;
   }
 
-  const argsAsJson = computed(() => JSON.stringify(base.args));
+  const argsAsJson = computed(() => JSON.stringify(base.snapshot.args));
 
   const progressRef = ref<boolean | number>();
 
@@ -58,7 +58,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       return progressRef.value;
     },
     routes: {
-      '/': IconsPage,
+      '/': () => IconsPage,
       '/layout': () => LayoutPage,
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,

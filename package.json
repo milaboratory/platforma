@@ -5,6 +5,7 @@
     "reset:node_modules": "find . -type d -name 'node_modules' | grep -v '\\.pnpm' | xargs rm -r",
     "reset:turbo-cache": "find . -type d -name '.turbo' | grep -v '\\.pnpm' | xargs rm -r",
     "reset": "pnpm run reset:node_modules && pnpm run reset:turbo-cache",
+    "reset:etc-blocks": "rimraf etc/blocks/**/.turbo !**/.pnpm/** etc/blocks/**/ui/dist etc/blocks/**/model/dist --glob",
     "type-check": "turbo run type-check",
     "build": "turbo run build",
     "watch-build": "turbo watch build",
@@ -22,6 +23,7 @@
     "@changesets/cli": "catalog:",
     "husky": "^9.1.7",
     "prettier": "catalog:",
+    "rimraf": "catalog:",
     "turbo": "catalog:"
   },
   "packageManager": "pnpm@9.10.0",

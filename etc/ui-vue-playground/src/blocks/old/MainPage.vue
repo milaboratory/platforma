@@ -80,11 +80,11 @@ const sumOptional = computed(() => {
 
     <div>sum optional: {{ sumOptional }}</div>
 
-    <div>{{ app.outputs.x }}</div>
+    <div>{{ app.model.outputs.x }}</div>
 
     <fieldset>
       <legend>Outputs</legend>
-      <div>{{ app.outputs }}</div>
+      <div>{{ app.model.outputs }}</div>
     </fieldset>
   </div>
 </template>
