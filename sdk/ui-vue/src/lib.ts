@@ -7,6 +7,8 @@ import ValueOrErrorsComponent from './components/ValueOrErrorsComponent.vue';
 
 export { BlockLayout, PlAgDataTable, PlAgOverlayLoading, PlAgOverlayNoRows, ValueOrErrorsComponent };
 
+export * from './components/PlAgColumnHeader';
+
 export * from './components/PlAgCellFile';
 
 export * from './components/PlAgDataTable/types';
