@@ -3,8 +3,8 @@ import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineApp } from '@platforma-sdk/ui-vue';
 import { platforma } from '../blocks/sum/model';
-import { createApp, defineComponent, isReactive } from 'vue';
-import { delay } from '@milaboratories/helpers';
+import { createApp, defineComponent, isReactive, watch } from 'vue';
+import { Deferred, delay } from '@milaboratories/helpers';
 
 const Page = defineComponent({
   // type inference enabled
@@ -31,6 +31,12 @@ describe('BlockSum', () => {
 
     expect(isReactive(app)).toBeTruthy();
 
+    let settled = new Deferred<void>();
+
+    watch(() => app.snapshot.outputs, () => {
+      settled.resolve();
+    });
+
     app.model.args.x = 3;
 
     app.model.args.y = 3;
@@ -43,8 +49,20 @@ describe('BlockSum', () => {
 
     app.model.args.y = 6;
 
-    await delay(110); // @TODO settle down promise
+    settled = new Deferred<void>();
+
+    await settled.promise;
 
     expect(app.model.outputs.sum).toEqual(12);
+
+    app.model.args.x = 1;
+
+    app.model.args.y = 1;
+
+    settled = new Deferred<void>();
+
+    await settled.promise;
+
+    expect(app.model.outputs.sum).toEqual(2);
   });
 });
