@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.14.22
+
+### Patch Changes
+
+- 7eadcd3: PlAgDataTable row numbers
+
 ## 1.14.21
 
 ### Patch Changes
