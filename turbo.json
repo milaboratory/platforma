@@ -8,6 +8,11 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$"],
       "outputs": ["./dist/**", "./block-pack/**"],
+      "passThroughEnv": [
+        "GENERATE_TAGS",
+        "TAGS_ADDITIONAL_ARGS",
+        "TAGS_FILE"
+      ],
       "dependsOn": ["type-check", "^build"]
     },
     "test": {

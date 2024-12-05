@@ -13,6 +13,7 @@ path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
+constants := import(":exec.constants")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
 	wdBefore := workdir.builder().build()
@@ -21,7 +22,7 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 	venvBuilder.
 		ref("python-run-environment", pythonPackage).
 		substitutionRule("{python}", "python-run-environment").
-		addToPath(path.join("{python}", pythonDescriptor.binDir), true)
+		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", pythonDescriptor.binDir))
 
 	venvBuilder.
 		cmd("python").

@@ -5,6 +5,7 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
     "test": "jest --passWithNoTests"
   },
   "bin": {

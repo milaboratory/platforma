@@ -9,6 +9,7 @@ render := import(":render")
 pkg := import(":exec.package")
 internal := import(":exec.R.internal")
 runenv := import(":exec.runenv")
+desc := import(":exec.descriptor")
 
 _OUTPUT_RUN_ENV       := "runEnv"
 
@@ -44,7 +45,7 @@ rVenvBuilder := func() {
 		},
 
 		runEnvDescriptor: func(descriptor) {
-			validation.assertJsonSchema(descriptor, pkg.runEnvDescriptorScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
+			validation.assertJsonSchema(descriptor, desc.runEnvScheme, "exec.R.runEnvDescriptor: <descriptor> must be run environment specification")
 			ll.assert(descriptor.type == "R", "exec.R.runEnvDescriptor: not a 'R' run environment: %q", descriptor.type)
 
 			rDescriptor = ll.fromStrict(descriptor)

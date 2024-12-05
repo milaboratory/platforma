@@ -18,6 +18,8 @@ pkg := import(":exec.package")
 sets := import(":sets")
 validation := import(":validation")
 blobs := import(":file.internal")
+desc := import(":exec.descriptor")
+constants := import(":exec.constants")
 
 self.defineOutputs(
 	"files", "filesContent", "fileSets", "fileSetsContent", "progress", "fileStreams", "wdProcessors"
@@ -76,24 +78,20 @@ _runBinaryCommand := func(inputs) {
 
 	// Load secrets
 	for envName, secretVar in inputs.runOptions.secrets {
-		runBuilder.envVar(envName, secretVar)
+		if desc.hasBackendExpressions() {
+			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, "{"+secretVar+"}")
+		} else {
+			runBuilder.envTyped(envName, constants.ARG_TYPE_VAR, secretVar)
+		}
 	}
 
 	// exec command
-	if opts.cmd.hasVars {
-		runBuilder.cmdVar(opts.cmd.value)
-	} else {
-		runBuilder.cmd(opts.cmd.value)
-	}
+	runBuilder.cmdTyped(opts.cmd.type, opts.cmd.value)
 
 	// cmd args
 
 	for name, arg in opts.args {
-		if arg.hasVars {
-			runBuilder.argVar(arg.value)
-		} else {
-			runBuilder.arg(arg.value)
-		}
+		runBuilder.argTyped(arg.type, arg.value)
 	}
 
 	// other options
@@ -190,7 +188,7 @@ self.body(func(inputs) {
 	// 	"saveFilesContents,?": ["string"],
 	// 	"streams,?": ["string"],
 	// 	"assets,?": { any: validation.resource() },
-	// 	"assetDescriptors,?": { any: pkg.assetDescriptorScheme },
+	// 	"assetDescriptors,?": { any: desc.assetScheme },
 	// 	"assetRules,?": { any: { any: ["string"] } },
 	// 	"assetCache,?": { any: "number" }
 	// })

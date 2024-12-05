@@ -91,6 +91,10 @@ export class Core {
     return pkg;
   }
 
+  /** Parses entrypoints from a package.json
+   * (if entrypoints don't passed directly),
+   * transforms them to local or release (depending on `buildMode`) descriptors,
+   * writes descriptors to ./dist/tengo/sw.json or as.json next to the given package.json. */
   public buildDescriptors(options?: {
     ids?: string[];
     entrypoints?: string[];
