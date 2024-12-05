@@ -48,23 +48,22 @@ const resultRef = useWatchFetch(() => app.model.outputs.numbers, (numbers) => {
       {{ app.model.args }}
     </fieldset>
     <fieldset>
-      <legend>Args (app.args deprecated)</legend>
-      {{ app.args }}
+      <legend>Args (app.snapshot.args deprecated)</legend>
+----
     </fieldset>    
     <h3>app.model</h3>
     <code>{{ app.model }}</code>
     <h4>Result ref</h4>
     <code>{{ resultRef }}</code>
-    <PlAlert type="info" monospace>
-      outputValues:
-      {{ app.outputValues }}
+    <PlAlert label="app.model.outputs" type="info" monospace>
+      {{ app.model.outputs }}
     </PlAlert>
     <PlAlert type="info" monospace>
       outputs:
       {{ app.model.outputs }}
     </PlAlert>
     <PlAlert type="error" v-if="app.hasErrors">
-      {{ app.outputErrors }}
+      {{ app.model.outputErrors }}
     </PlAlert>
     <PlBtnPrimary v-if="app.error" @click="app.revert">Revert changes</PlBtnPrimary>
   </PlBlockPage>
