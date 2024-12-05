@@ -13,7 +13,7 @@ import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import { useValidation } from '@/utils/useValidation';
 import { PlIcon16 } from '../PlIcon16';
-import { PlIcon24 } from '../PlIcon24';
+import { PlMaskIcon24 } from '../PlMaskIcon24';
 import type { Equal } from '@milaboratories/helpers';
 
 const slots = useSlots();
@@ -160,7 +160,7 @@ const displayErrors = computed(() => {
 
 const hasErrors = computed(() => displayErrors.value.length > 0);
 
-const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password');
+const canShowClearable = computed(() => props.clearable && nonEmpty.value && props.type !== 'password' && !props.disabled);
 
 const togglePasswordVisibility = () => (showPassword.value = !showPassword.value);
 
@@ -206,7 +206,7 @@ useLabelNotch(rootRef);
       />
       <div class="pl-text-field__append">
         <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click="clear" />
-        <PlIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
+        <PlMaskIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" />

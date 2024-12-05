@@ -1,5 +1,58 @@
 # @milaboratories/pl-middle-layer
 
+## 1.19.10
+
+### Patch Changes
+
+- Updated dependencies [7eb5aa3]
+  - @milaboratories/pl-local@1.8.2
+
+## 1.19.9
+
+### Patch Changes
+
+- ed6b79c: BlockPackRegistry.getOverview method to retrieve block overview for specific version
+- Updated dependencies [ed6b79c]
+  - @platforma-sdk/block-tools@2.4.7
+
+## 1.19.8
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-model-middle-layer@1.6.4
+  - @platforma-sdk/block-tools@2.4.6
+
+## 1.19.7
+
+### Patch Changes
+
+- Updated dependencies [5692733]
+  - @milaboratories/pl-model-middle-layer@1.6.3
+  - @platforma-sdk/block-tools@2.4.5
+
+## 1.19.6
+
+### Patch Changes
+
+- Updated dependencies [7be05ec]
+  - @milaboratories/pl-model-middle-layer@1.6.2
+  - @platforma-sdk/block-tools@2.4.4
+
+## 1.19.5
+
+### Patch Changes
+
+- c0f2421: Fixes bug leading to wrong block spec in dev block registry
+
+## 1.19.4
+
+### Patch Changes
+
+- Updated dependencies [32c3157]
+  - @platforma-sdk/block-tools@2.4.3
+
 ## 1.19.3
 
 ### Patch Changes

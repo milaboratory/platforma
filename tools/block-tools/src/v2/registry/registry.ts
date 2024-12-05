@@ -4,7 +4,6 @@ import { RegistryStorage } from '../../io/storage';
 import {
   AnyChannel,
   BlockPackId,
-  blockPackIdEquals,
   BlockPackIdNoVersion,
   blockPackIdToString,
   BlockPackManifest
@@ -45,14 +44,14 @@ export class BlockRegistryV2 {
     private readonly logger: MiLogger = new ConsoleLoggerAdapter()
   ) {}
 
-  private async updateRegistry() {
-    this.logger?.info('Initiating registry refresh...');
+  private async updateRegistry(dryRun: boolean = false) {
+    this.logger.info('Initiating registry refresh...');
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
     const seedPaths: string[] = [];
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
-    this.logger?.info('Packages to be updated:');
+    this.logger.info('Packages to be updated:');
     for (const seedPath of rawSeedPaths) {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match) continue;
@@ -71,7 +70,7 @@ export class BlockRegistryV2 {
         update.versions.add(version);
         added = true;
       }
-      this.logger?.info(`  - ${organization}:${name}:${version} added:${added}`);
+      this.logger.info(`  - ${organization}:${name}:${version} added:${added}`);
     }
 
     // loading global overview
@@ -81,7 +80,7 @@ export class BlockRegistryV2 {
         ? { schema: 'v2', packages: [] }
         : GlobalOverviewReg.parse(JSON.parse(overviewContent.toString()));
     let overviewPackages = overview.packages;
-    this.logger?.info(`Global overview loaded, ${overviewPackages.length} records`);
+    this.logger.info(`Global overview loaded, ${overviewPackages.length} records`);
 
     // updating packages
     for (const [, packageInfo] of packagesToUpdate.entries()) {
@@ -92,7 +91,7 @@ export class BlockRegistryV2 {
         pOverviewContent === undefined
           ? { schema: 'v2', versions: [] }
           : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
-      this.logger?.info(
+      this.logger.info(
         `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview, ${packageOverview.versions.length} records`
       );
 
@@ -137,13 +136,14 @@ export class BlockRegistryV2 {
       );
 
       // write package overview back
-      await this.storage.putFile(
-        overviewFile,
-        Buffer.from(
-          JSON.stringify({ schema: 'v2', versions: newVersions } satisfies PackageOverview)
-        )
-      );
-      this.logger?.info(`Done (${newVersions.length} records)`);
+      if (!dryRun)
+        await this.storage.putFile(
+          overviewFile,
+          Buffer.from(
+            JSON.stringify({ schema: 'v2', versions: newVersions } satisfies PackageOverview)
+          )
+        );
+      this.logger.info(`Done (${newVersions.length} records)`);
 
       // calculating all channels
       const allChannels = new Set<string>();
@@ -183,39 +183,47 @@ export class BlockRegistryV2 {
     }
 
     // writing global overview
-    await this.storage.putFile(
-      GlobalOverviewPath,
-      Buffer.from(
-        JSON.stringify({ schema: 'v2', packages: overviewPackages } satisfies GlobalOverviewReg)
-      )
-    );
-    this.logger?.info(`Global overview updated (${overviewPackages.length} records)`);
+    if (!dryRun)
+      await this.storage.putFile(
+        GlobalOverviewPath,
+        Buffer.from(
+          JSON.stringify({ schema: 'v2', packages: overviewPackages } satisfies GlobalOverviewReg)
+        )
+      );
+    this.logger.info(`Global overview updated (${overviewPackages.length} records)`);
 
     // deleting seeds
-    await this.storage.deleteFiles(...seedPaths.map((sp) => `${VersionUpdatesPrefix}${sp}`));
-    this.logger?.info(`Version update requests cleared`);
+    if (!dryRun)
+      await this.storage.deleteFiles(...seedPaths.map((sp) => `${VersionUpdatesPrefix}${sp}`));
+    this.logger.info(`Version update requests cleared`);
   }
 
-  public async updateIfNeeded(force: boolean = false): Promise<void> {
+  public async updateIfNeeded(mode: 'force' | 'normal' | 'dry-run' = 'normal'): Promise<void> {
     // implementation of main convergence algorithm
 
-    this.logger?.info(`Checking if registry requires refresh...`);
+    this.logger.info(`Checking if registry requires refresh...`);
     const updateRequestSeed = await this.storage.getFile(GlobalUpdateSeedInFile);
     const currentUpdatedSeed = await this.storage.getFile(GlobalUpdateSeedOutFile);
-    if (!force && updateRequestSeed === undefined && currentUpdatedSeed === undefined) return;
+    if (mode !== 'force' && updateRequestSeed === undefined && currentUpdatedSeed === undefined) {
+      this.logger.info(`No global seed files found, update not needed.`);
+      return;
+    }
     if (
-      !force &&
+      mode !== 'force' &&
       updateRequestSeed !== undefined &&
       currentUpdatedSeed !== undefined &&
       updateRequestSeed.equals(currentUpdatedSeed)
-    )
+    ) {
+      this.logger.info(`Registry is up to date.`);
       return;
+    }
 
-    await this.updateRegistry();
+    await this.updateRegistry(mode === 'dry-run');
 
     if (updateRequestSeed) {
-      await this.storage.putFile(GlobalUpdateSeedOutFile, updateRequestSeed);
-      this.logger?.info(`Refresh finished`);
+      if (mode !== 'dry-run')
+        await this.storage.putFile(GlobalUpdateSeedOutFile, updateRequestSeed);
+      this.logger.info(`Refresh finished.`);
     }
   }
 
@@ -237,9 +245,9 @@ export class BlockRegistryV2 {
     // adding update seed
     const seed = randomUUID();
     const seedPath = packageUpdateSeedPath(id, seed);
-    this.logger?.info(`Creating update seed at ${seedPath} ...`);
+    this.logger.info(`Creating update seed at ${seedPath} ...`);
     await this.storage.putFile(seedPath, Buffer.from(seed));
-    this.logger?.info(`Touching global update seed ${GlobalUpdateSeedInFile} ...`);
+    this.logger.info(`Touching global update seed ${GlobalUpdateSeedInFile} ...`);
     await this.storage.putFile(GlobalUpdateSeedInFile, Buffer.from(seed));
   }
 
@@ -288,13 +296,13 @@ export class BlockRegistryV2 {
         );
 
       const dst = prefix + '/' + f.name;
-      this.logger?.info(`Uploading ${f.name} -> ${dst} ...`);
+      this.logger.info(`Uploading ${f.name} -> ${dst} ...`);
       await this.storage.putFile(dst, bytes);
     }
 
     // uploading manifest as the last upload action
     const manifestDst = prefix + '/' + ManifestFileName;
-    this.logger?.info(`Uploading manifest to ${manifestDst} ...`);
+    this.logger.info(`Uploading manifest to ${manifestDst} ...`);
     await this.storage.putFile(manifestDst, Buffer.from(JSON.stringify(manifest)));
 
     await this.marchChanged(manifest.description.id);

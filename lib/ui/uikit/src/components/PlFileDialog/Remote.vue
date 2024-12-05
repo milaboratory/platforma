@@ -1,15 +1,20 @@
 <script lang="ts" setup>
-import style from './pl-file-dialog.module.scss';
-import { watch, reactive, computed, toRef, onMounted } from 'vue';
+import { useEventListener } from '@/composition/useEventListener';
+import type { ImportedFiles } from '@/types';
 import { between, notEmpty, tapIf } from '@milaboratories/helpers';
 import type { StorageHandle } from '@platforma-sdk/model';
-import type { ImportedFiles } from '@/types';
-import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
+import { computed, onMounted, reactive, toRef, watch } from 'vue';
 import { PlDropdown } from '../PlDropdown';
-import { useEventListener } from '@/composition/useEventListener';
-import { defaultData, useVisibleItems, vTextOverflown } from './remote';
-import { PlSearchField } from '../PlSearchField';
 import { PlIcon16 } from '../PlIcon16';
+import Shortcuts from './Shortcuts.vue';
+import { PlMaskIcon16 } from '../PlMaskIcon16';
+import { PlSearchField } from '../PlSearchField';
+import style from './pl-file-dialog.module.scss';
+import { defaultData, useVisibleItems, vTextOverflown } from './remote';
+import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from './utils';
+
+// note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
+const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
 
 defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
@@ -119,7 +124,10 @@ const setDirPath = (dirPath: string) => {
 };
 
 const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
-  const { shiftKey, metaKey } = ev;
+  const { shiftKey } = ev;
+
+  const ctrlOrMetaKey = isCtrlOrMeta(ev);
+
   const { lastSelected } = data;
 
   ev.preventDefault();
@@ -129,13 +137,13 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
       data.items.forEach((f) => (f.selected = false));
     }
 
-    file.selected = true;
+    file.selected = !file.selected;
 
     if (!props.multi) {
       return;
     }
 
-    if (!metaKey && !shiftKey) {
+    if (!ctrlOrMetaKey && !shiftKey) {
       data.items.forEach((f) => {
         if (f.id !== file.id) {
           f.selected = false;
@@ -183,22 +191,18 @@ const loadAvailableStorages = () => {
   window.platforma.lsDriver
     .getStorageList()
     .then((storageEntries) => {
+      // local storage is always returned by the ML, so we need to remove it from remote dialog manually
+      storageEntries = storageEntries.filter((it) => it.name !== 'local' && !it.name.startsWith('local_disk_'));
+
       data.storageOptions = storageEntries.map((it) => ({
         text: it.name,
         value: it,
       }));
 
       if (props.autoSelectStorage) {
-        tapIf(
-          storageEntries.find(
-            (e) =>
-              e.name === 'local' || // the only local storage on unix systems
-              (e.name.startsWith('local_disk_') && e.initialFullPath.length > 4),
-          ), // local drive where home folder is stored, normally C:\
-          (entry) => {
-            data.storageEntry = entry;
-          },
-        );
+        tapIf(storageEntries[0], (entry) => {
+          data.storageEntry = entry;
+        });
       }
     })
     .catch((err) => (data.error = String(err)));
@@ -238,12 +242,14 @@ useEventListener(document, 'keydown', (ev: KeyboardEvent) => {
     return;
   }
 
-  if (ev.metaKey && ev.code === 'KeyA') {
+  const ctrlOrMetaKey = isCtrlOrMeta(ev);
+
+  if (ctrlOrMetaKey && ev.code === 'KeyA') {
     ev.preventDefault();
     selectAll();
   }
 
-  if (ev.metaKey && ev.shiftKey && ev.code === 'Period') {
+  if (ctrlOrMetaKey && ev.shiftKey && ev.code === 'Period') {
     ev.preventDefault();
     data.showHiddenItems = !data.showHiddenItems;
   }
@@ -279,7 +285,10 @@ onMounted(loadAvailableStorages);
             <PlIcon16 v-if="s.index !== breadcrumbs.length - 1" name="chevron-right" />
           </template>
         </div>
-        <div :class="style.selected">Selected: {{ selectedFiles.length }}</div>
+        <div :class="style.selected">
+          <span>Selected: {{ selectedFiles.length }}</span>
+          <Shortcuts />
+        </div>
       </div>
       <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">
         <i class="mask-24 mask-loading loader-icon" />
@@ -295,7 +304,7 @@ onMounted(loadAvailableStorages);
       <div v-else :class="style['ls-body']">
         <template v-for="file in visibleItems" :key="file.id">
           <div v-if="file.isDir" :class="style.isDir" @click="setDirPath(file.path)">
-            <i class="icon-16 icon-chevron-right" />
+            <PlIcon16 name="chevron-right" />
             <span v-text-overflown :title="file.name">{{ file.name }}</span>
           </div>
           <div
@@ -303,7 +312,7 @@ onMounted(loadAvailableStorages);
             :class="{ [style.canBeSelected]: file.canBeSelected, [style.selected]: file.selected }"
             @click.stop="(ev) => selectFile(ev, file)"
           >
-            <i class="mask-16 mask-box" :class="style.isFile" />
+            <PlMaskIcon16 name="box" :class="style.isFile" />
             <span v-text-overflown :title="file.name">{{ file.name }}</span>
           </div>
         </template>

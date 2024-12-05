@@ -61,7 +61,7 @@
   --chip-close-ic-hover-color: #110529;
 
   --tooltip-link-color: hsla(160, 100%, 37%, 1);
-  --tooltip-bg: #24223d;
+  --tooltip-bg: var(--bg-base-dark, #110529);
 
   --theme-switcher-icon-color: var(--txt-01);
 
