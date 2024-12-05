@@ -1,5 +1,6 @@
 import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
+
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -17,6 +18,8 @@ import {
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+import type { PlAgDataTableRow } from '../types';
+import { makeRowNumberColDef } from './row-number';
 import { PlAgColumnHeader, type PlAgHeaderComponentType, type PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
 
 /**
@@ -46,6 +49,7 @@ export const defaultValueFormatter = (value: any) => {
     return value.value.toString();
   }
 };
+
 /**
  * Calculates column definition for a given p-table column
  */
@@ -246,12 +250,6 @@ export async function makeSheets(
   });
 }
 
-export type PlAgDataTableRow = {
-  id: string;
-  key: unknown[];
-  [field: `${number}`]: undefined | null | number | string;
-};
-
 /**
  * Convert columnar data from the driver to rows, used by ag-grid
  * @param specs column specs
@@ -357,7 +355,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds))];
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
@@ -432,7 +430,6 @@ export async function updatePFrameGridOptions(
         }
 
         params.success({ rowData, rowCount });
-        params.api.autoSizeAllColumns();
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
         params.api.setGridOption('loading', true);

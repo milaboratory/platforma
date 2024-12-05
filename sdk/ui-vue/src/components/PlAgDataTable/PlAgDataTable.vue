@@ -28,10 +28,10 @@ import { AgGridTheme, useWatchFetch } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import type { PlAgDataTableRow } from './sources/table-source';
 import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
+import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -260,11 +260,14 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   cellSelection: true,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  onRowDataUpdated: (event) => {
-    event.api.autoSizeAllColumns();
+  onRowDoubleClicked: (event) => {
+    if (event.data) emit('onRowDoubleClicked', event.data.key);
   },
-  onRowDoubleClicked: (value) => {
-    if (value.data) emit('onRowDoubleClicked', value.data.key);
+  onSortChanged: (event) => {
+    event.api.refreshCells();
+  },
+  onFilterChanged: (event) => {
+    event.api.refreshCells();
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -313,6 +316,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
+  autoSizeRowNumberColumn(api);
   gridApi.value = new Proxy(api, {
     get(target, prop, receiver) {
       switch (prop) {
@@ -346,7 +350,7 @@ const makePartialState = (state: GridState) => {
 };
 const onStateUpdated = (event: StateUpdatedEvent) => {
   gridOptions.value.initialState = gridState.value = makePartialState(event.state);
-  event.api.autoSizeAllColumns();
+  event.api.autoSizeColumns(event.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
 };
 const onGridPreDestroyed = () => {
   gridOptions.value.initialState = gridState.value = makePartialState(gridApi.value!.getState());
@@ -428,6 +432,7 @@ watch(
       const columns = colDefs
         ?.map((def) => def.colId)
         .filter((colId) => colId !== undefined)
+        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
         .map((colId) => parseColId(colId));
       emit('columnsChanged', columns ?? []);
     }
