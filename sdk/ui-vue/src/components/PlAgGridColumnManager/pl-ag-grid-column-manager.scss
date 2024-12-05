@@ -8,8 +8,12 @@
         box-shadow: 0px 0px 0px 4px rgba(73, 204, 73, 0.24);
     }
 
-    &__drag {
+    &__drag.handle {
         cursor: grab;
+    }
+
+    &__drag {
+
         line-height: 0;
 
         .mask-16 {

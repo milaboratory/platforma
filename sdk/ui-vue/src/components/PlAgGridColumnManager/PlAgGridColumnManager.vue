@@ -4,6 +4,7 @@ import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSor
 import { onMounted, ref, toRefs } from 'vue';
 import './pl-ag-grid-column-manager.scss';
 import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
+import { PlAgDataTableRowNumberColId } from '../PlAgDataTable';
 
 const props = defineProps<{
   /**
@@ -24,10 +25,7 @@ const listKey = ref(0);
 useSortable(listRef, {
   handle: '.handle',
   onChange(indices) {
-    gridApi.value.moveColumns(
-      indices.map((i) => columns.value[i]),
-      0,
-    );
+    gridApi.value.moveColumns(getReorderedColumns(indices.map((i) => columns.value[i])), 0);
   },
 });
 
@@ -35,7 +33,20 @@ function toggleColumnVisibility(col: Column) {
   gridApi.value.setColumnsVisible([col], !col.isVisible());
 }
 
+function getReorderedColumns(columns: Column[]) {
+  const numRowsIndex = columns.findIndex((v) => v.getId() === PlAgDataTableRowNumberColId);
+  if (numRowsIndex !== 0) {
+    const [numRowsCol] = columns.splice(numRowsIndex, 1);
+    return columns.splice(0, 0, numRowsCol);
+  }
+  return columns;
+}
+
 onMounted(() => {
+  if (gridApi.value.getAllGridColumns().length > 0) {
+    gridApi.value.moveColumns(getReorderedColumns(gridApi.value.getAllGridColumns()), 0);
+  }
+
   gridApi.value.addEventListener('displayedColumnsChanged', () => {
     columns.value = [...(gridApi.value.getAllGridColumns() ?? [])];
     listKey.value++;
@@ -64,7 +75,7 @@ onMounted(() => {
           <div :class="{ handle: !col.getColDef().lockPosition }" class="pl-ag-columns__drag">
             <PlMaskIcon16 name="drag-dots" />
           </div>
-          <div :class="{ visible: col.isVisible() }" class="pl-ag-columns__title">{{ col.getColDef().headerName }}</div>
+          <div :class="{ visible: col.isVisible() }" class="pl-ag-columns__title text-s-btn">{{ col.getColDef().headerName }}</div>
           <div class="pl-ag-columns__visibility" @click="toggleColumnVisibility(col)">
             <PlTooltip :close-delay="500" position="top">
               <PlMaskIcon24 :name="col.isVisible() ? 'view-show' : 'view-hide'" />

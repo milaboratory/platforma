@@ -26,6 +26,7 @@ export function makeRowNumberColDef(): ColDef {
       color: 'var(--txt-03)',
       'background-color': 'var(--bg-base-light)',
       overflow: 'visible !important',
+      'text-align': 'center',
     },
     sortable: false,
     resizable: false,
