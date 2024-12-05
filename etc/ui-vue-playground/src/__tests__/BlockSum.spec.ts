@@ -37,20 +37,14 @@ describe('BlockSum', () => {
 
     await delay(1);
 
-    expect(app.outputs.sum).toEqual({
-      ok: true,
-      value: 6
-    });
+    expect(app.model.outputs.sum).toEqual(6);
 
     app.model.args.x = 6;
 
     app.model.args.y = 6;
 
-    await delay(1);
+    await delay(110); // @TODO settle down promise
 
-    expect(app.outputs.sum).toEqual({
-      ok: true,
-      value: 6
-    });
+    expect(app.model.outputs.sum).toEqual(12);
   });
 });

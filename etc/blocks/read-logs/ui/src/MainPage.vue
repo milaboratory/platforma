@@ -6,11 +6,13 @@ import { computed, reactive } from 'vue';
 const app = useApp();
 
 const progress = computed(() => {
-  if (!app.outputs.handle) return undefined;
+  const handle = app.snapshot.outputs.handle;
 
-  if (!app.outputs.handle.ok) return undefined;
+  if (!handle) return undefined;
 
-  return app.outputs.handle.value;
+  if (!handle.ok) return undefined;
+
+  return handle.value;
 });
 </script>
 
@@ -30,26 +32,27 @@ const progress = computed(() => {
         <PlAlert v-if="app.error" type="error">
             {{ app.error }}
         </PlAlert>
+
         <fieldset>
             <legend>Args (app.snapshot.args)</legend>
             {{ app.snapshot.args }}
         </fieldset>
+
         <fieldset>
             <legend>Args (app.model.args)</legend>
             {{ app.model.args }}
         </fieldset>
-        <h3>app.model</h3>
-        <code>{{ app.model }}</code>
-        <PlAlert type="info" monospace>
-            outputValues:
-            {{ app.outputValues }}
+
+        <PlAlert label="app.model" type="info" monospace max-height="400px">
+            {{ app.model }}
         </PlAlert>
-        <PlAlert type="info" monospace>
-            outputs:
+
+        <PlAlert label="Outputs" type="info" monospace max-height="400px">
             {{ app.model.outputs }}
         </PlAlert>
-        <PlAlert type="error" v-if="app.hasErrors">
-            {{ app.outputErrors }}
+        
+        <PlAlert label="Output Errors" type="error" v-if="app.hasErrors" max-height="400px">
+            {{ app.model.outputErrors }}
         </PlAlert>
     </PlBlockPage>
 </template>

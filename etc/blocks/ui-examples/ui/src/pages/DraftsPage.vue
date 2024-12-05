@@ -38,7 +38,7 @@ const onDrop = (ev: DragEvent) => {
       />
     </template>
     <template #append>
-      <PlBtnPrimary> Just a button </PlBtnPrimary>
+      <PlBtnPrimary> Just a button 111 </PlBtnPrimary>
     </template>
     <PlRow>
       <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>

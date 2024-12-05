@@ -12,10 +12,10 @@
   "dependencies": {
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/model": "workspace:^",
-    "@platforma-sdk/ui-vue": "workspace:^"
+    "@platforma-sdk/model": "workspace:^"
   },
   "devDependencies": {
+    "@platforma-sdk/ui-vue": "workspace:^",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
