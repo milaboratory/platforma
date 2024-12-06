@@ -1,5 +1,16 @@
 # @platforma-sdk/block-tools
 
+## 2.4.8
+
+### Patch Changes
+
+- dac7e27: Additional retry logic in registry v2 reader
+- Updated dependencies [93a363a]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-http@1.0.1
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/ts-helpers-oclif@1.1.12
+
 ## 2.4.7
 
 ### Patch Changes

@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.20.0
+
+### Minor Changes
+
+- dac7e27: undici and grpc libraries upgrade
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [93a363a]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/pl-http@1.0.1
+  - @milaboratories/pl-drivers@1.5.0
+  - @platforma-sdk/block-tools@2.4.8
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+  - @milaboratories/pl-config@1.3.3
+  - @milaboratories/pl-local@1.9.1
+
 ## 1.19.11
 
 ### Patch Changes
