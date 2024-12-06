@@ -1,5 +1,4 @@
 import { Dispatcher, request } from 'undici';
-import { BlockPackSpecAny } from '../model';
 import {
   BlockPackDescriptionAbsolute,
   BlockPackMetaEmbedAbsoluteBytes,
@@ -22,7 +21,6 @@ import {
   SingleBlockPackOverview,
   StableChannel
 } from '@milaboratories/pl-model-middle-layer';
-import { version } from 'node:process';
 
 async function getFileContent(path: string) {
   try {

@@ -25,6 +25,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
+    "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pframes-node": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
