@@ -105,7 +105,7 @@ export class LLPlClient {
     const cacheableLookup = new CacheableLookup({ resolver: new Resolver({ tries: 10 }) });
 
     const httpOptions: Client.Options = {
-      // allowH2: true,
+      allowH2: true,
       headersTimeout: 5e3,
       keepAliveTimeout: 3e3,
       keepAliveMaxTimeout: 60e3,
@@ -232,8 +232,7 @@ export class LLPlClient {
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
-      if (ops.abortSignal)
-        totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
+      if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
       return this.grpcPl.tx({
         abort: totalAbortSignal,
         timeout:
