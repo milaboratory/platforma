@@ -1,5 +1,11 @@
 # @milaboratories/pl-local
 
+## 1.9.0
+
+### Minor Changes
+
+- 606f494: Use Platforma Backend 1.17.0 in desktop local mode
+
 ## 1.8.2
 
 ### Patch Changes
