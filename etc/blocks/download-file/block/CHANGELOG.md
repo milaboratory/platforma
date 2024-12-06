@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-download-file
 
+## 1.0.13
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/milaboratories.test-download-file.model@1.0.2
+- @milaboratories/milaboratories.test-download-file.ui@1.0.13
+
 ## 1.0.12
 
 ### Patch Changes

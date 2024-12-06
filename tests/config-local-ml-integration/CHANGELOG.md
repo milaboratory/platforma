@@ -1,5 +1,11 @@
 # @milaboratories/config-local-ml-integration
 
+## 1.1.103
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.1
+
 ## 1.1.102
 
 ### Patch Changes
