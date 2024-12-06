@@ -102,7 +102,9 @@ export class LLPlClient {
     this.grpcTransport = new GrpcTransport(grpcOptions);
     this.grpcPl = new PlatformClient(this.grpcTransport);
 
-    const cacheableLookup = new CacheableLookup({ resolver: new Resolver({ tries: 10 }) });
+    const cacheableLookup = new CacheableLookup({
+      resolver: new Resolver({ timeout: 1500, tries: 4 })
+    });
 
     const httpOptions: Client.Options = {
       allowH2: true,
