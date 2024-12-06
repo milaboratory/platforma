@@ -145,6 +145,55 @@ export type ExponentialWithMaxBackoffDelayRetryOptions = {
   jitter: number;
 };
 
+export const Retry2Times: RetryOptions = {
+  type: 'exponentialBackoff',
+  maxAttempts: 2,
+  initialDelay: 1,
+  backoffMultiplier: 2,
+  jitter: 0.2
+};
+
+export const Retry2TimesWithDelay: RetryOptions = {
+  type: 'exponentialBackoff',
+  maxAttempts: 2,
+  initialDelay: 300,
+  backoffMultiplier: 2,
+  jitter: 0.2
+};
+
+export const Retry3Times: RetryOptions = {
+  type: 'exponentialBackoff',
+  maxAttempts: 3,
+  initialDelay: 1,
+  backoffMultiplier: 2,
+  jitter: 0.2
+};
+
+export const Retry3TimesWithDelay: RetryOptions = {
+  type: 'exponentialBackoff',
+  maxAttempts: 3,
+  initialDelay: 200,
+  backoffMultiplier: 2,
+  jitter: 0.2
+};
+
+export async function retry<T>(
+  cb: () => Promise<T>,
+  ops: RetryOptions,
+  recoverablePredicate: (e: any) => boolean = () => true
+): Promise<T> {
+  let retryState = createRetryState(ops);
+  while (true) {
+    try {
+      return await cb();
+    } catch (e: any) {
+      const nextRetryState = tryNextRetryState(retryState);
+      if (!recoverablePredicate(e) || !nextRetryState) throw e;
+      retryState = nextRetryState;
+    }
+  }
+}
+
 export type InfiniteRetryOptions = ExponentialWithMaxBackoffDelayRetryOptions;
 
 export type InfiniteRetryState = {

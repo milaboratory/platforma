@@ -23,6 +23,7 @@
     "./src/**/*"
   ],
   "dependencies": {
+    "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@grpc/grpc-js": "catalog:",
     "@protobuf-ts/grpc-transport": "catalog:",
