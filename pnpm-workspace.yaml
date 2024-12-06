@@ -9,6 +9,7 @@ packages:
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif
   - lib/node/ts-helpers-winston
+  - lib/node/pl-http
   - lib/node/resolve-helper
   - lib/node/node-streams
   - lib/node/computable
@@ -120,7 +121,7 @@ catalog:
   '@vitejs/plugin-vue': ^5.2.1
 
   'svgo': ^3.3.2
-  
+
   'rimraf': ^6.0.1
 
   # Net
