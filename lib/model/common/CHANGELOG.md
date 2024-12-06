@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.8.1
+
+### Patch Changes
+
+- 02feb1a: Many utility functions for convertion, serialization and deserialization of PValues
+
 ## 1.8.0
 
 ### Minor Changes
