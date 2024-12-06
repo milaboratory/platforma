@@ -1,5 +1,12 @@
 # @milaboratories/pl-local
 
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [dac7e27]
+  - @milaboratories/ts-helpers@1.1.3
+
 ## 1.9.0
 
 ### Minor Changes

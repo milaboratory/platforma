@@ -1,5 +1,21 @@
 # @milaboratories/pl-drivers
 
+## 1.5.0
+
+### Minor Changes
+
+- dac7e27: undici and grpc libraries upgrade
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+
 ## 1.4.0
 
 ### Minor Changes

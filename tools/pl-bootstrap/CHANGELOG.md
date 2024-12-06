@@ -1,5 +1,11 @@
 # @platforma-sdk/bootstrap
 
+## 2.8.4
+
+### Patch Changes
+
+- @milaboratories/pl-local@1.9.1
+
 ## 2.8.3
 
 ### Patch Changes
