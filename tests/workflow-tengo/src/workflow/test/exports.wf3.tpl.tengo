@@ -1,0 +1,23 @@
+// workflow with query
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+text := import("text")
+
+nested := assets.importTemplate(":workflow.test.exports.nested")
+
+wf.body(func(args) {
+
+	run := render.create(nested, {
+		resolve: wf.resolve({blockId: "dont_exist", name: "dummy"})
+	})
+
+	return {
+		outputs: {
+			str: run.output("str")
+		},
+		exports: {}
+	}
+})
