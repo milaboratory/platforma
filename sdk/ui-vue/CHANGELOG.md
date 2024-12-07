@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.16.0
+
+### Minor Changes
+
+- ca9bf5b: PlAgDataTable: removed 'pframe' source type, added setting to configure loading screens
+
 ## 1.15.4
 
 ### Patch Changes
