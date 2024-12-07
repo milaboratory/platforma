@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.17.0
+
+### Minor Changes
+
+- b1a3abc: PlAgDataTable sheet change
+
 ## 1.15.4
 
 ### Patch Changes
