@@ -11,6 +11,8 @@ constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 
+bquery := import(":workflow.bquery")
+
 /**
  * Unmarshal resource according by:
  *  - converting all json resources (potentially nested) into a tengo objects (maps)
@@ -106,7 +108,7 @@ tpl := func() {
 			return smart.resource(_templateId)
 		},
 
-		_unmarshallers: [],
+		_unmarshallers: [bquery.resultUnmarshaller()],
 
 		/**
 		 * Register a preprocessor of input resource. The preprocessor must have two

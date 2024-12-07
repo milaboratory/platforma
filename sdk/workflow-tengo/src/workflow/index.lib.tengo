@@ -49,8 +49,8 @@ _isStaging := func() {
 	return !_isProduction()
 }
 
-// register standard inputs preprocessors
-self.registerUnmarshaller(bquery.resultUnmarshaller())
+// register standard inputs preprocessors [now added by default for all templates]
+// self.registerUnmarshaller(bquery.resultUnmarshaller())
 
 _args := undefined
 
