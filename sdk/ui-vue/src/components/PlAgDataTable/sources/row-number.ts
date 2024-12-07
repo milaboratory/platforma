@@ -3,6 +3,8 @@ import { nextTick } from 'vue';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';
 
+const HeaderSize = 45;
+
 export function makeRowNumberColDef(): ColDef {
   return {
     colId: PlAgDataTableRowNumberColId,
@@ -14,13 +16,13 @@ export function makeRowNumberColDef(): ColDef {
     },
     headerClass: 'pl-ag-header-align-center',
     suppressNavigable: true,
-    lockPosition: 'left',
     suppressMovable: true,
     mainMenuItems: [],
     contextMenuItems: [],
+    lockPosition: 'left',
     pinned: 'left',
     lockPinned: true,
-    minWidth: 45, // header size
+    width: HeaderSize,
     suppressSizeToFit: true,
     suppressAutoSize: true,
     cellStyle: {
@@ -49,7 +51,7 @@ function createCellFake(): HTMLDivElement {
   return div;
 }
 
-function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement) {
+function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, force?: boolean) {
   const lastDisplayedRowNumber = gridApi.getCellValue({
     rowNode: gridApi.getDisplayedRowAtIndex(gridApi.getLastDisplayedRowIndex())!,
     colKey: PlAgDataTableRowNumberColId,
@@ -57,18 +59,21 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement) 
   if (typeof lastDisplayedRowNumber !== 'number') return;
 
   const lastDisplayedRowNumberDigitCount = lastDisplayedRowNumber.toString().length;
-  if (cellFake.innerHTML.length === lastDisplayedRowNumberDigitCount) return;
+  if (!force && cellFake.innerHTML.length === lastDisplayedRowNumberDigitCount) return;
 
   const WidestDigit = '5';
   cellFake.innerHTML = WidestDigit.repeat(lastDisplayedRowNumberDigitCount);
 
   nextTick(() => {
-    gridApi.setColumnWidths([
-      {
-        key: PlAgDataTableRowNumberColId,
-        newWidth: cellFake.offsetWidth,
-      },
-    ]);
+    gridApi.applyColumnState({
+      state: [
+        {
+          colId: PlAgDataTableRowNumberColId,
+          pinned: 'left', // sometimes pinnig is strangely not applied
+          width: Math.max(HeaderSize, cellFake.offsetWidth),
+        },
+      ],
+    });
   });
 }
 
@@ -86,7 +91,17 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
       adjustRowNumberColumnWidth(gridApi, cellFake);
     }
   });
+  gridApi.addEventListener('columnResized', (event) => {
+    if (
+      event.finished &&
+      event.source === 'autosizeColumns' &&
+      event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
+    ) {
+      adjustRowNumberColumnWidth(gridApi, cellFake, true);
+    }
+  });
   gridApi.addEventListener('gridPreDestroyed', () => {
     destroyCellFake(cellFake);
   });
+  adjustRowNumberColumnWidth(gridApi, cellFake);
 }

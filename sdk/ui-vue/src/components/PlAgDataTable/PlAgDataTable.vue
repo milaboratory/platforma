@@ -20,15 +20,23 @@ import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
-import type { AxisId, PlDataTableSheet, PlDataTableState, PTableColumnSpec, PTableRecordFilter, PTableSorting } from '@platforma-sdk/model';
+import {
+  getAxisId,
+  getRawPlatformaInstance,
+  type AxisId,
+  type PlDataTableState,
+  type PTableColumnSpec,
+  type PTableRecordFilter,
+  type PTableSorting,
+} from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
-import { computed, ref, shallowRef, toRefs, watch } from 'vue';
-import { AgGridTheme, useWatchFetch } from '../../lib';
+import { computed, nextTick, ref, shallowRef, toRefs, watch } from 'vue';
+import { AgGridTheme } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { enrichJoinWithLabelColumns, makeSheets, parseColId, updatePFrameGridOptions } from './sources/table-source';
+import { parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
@@ -44,7 +52,7 @@ ModuleRegistry.registerModules([
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
 const props = defineProps<{
-  settings: Readonly<PlDataTableSettings>;
+  settings?: Readonly<PlDataTableSettings>;
   /**
    * The showColumnsPanel prop controls the display of a button that activates
    * the columns management panel in the table. To make the button functional
@@ -59,75 +67,11 @@ const emit = defineEmits<{
   columnsChanged: [columns: PTableColumnSpec[]];
 }>();
 
-watch(
-  () => settings.value,
-  async (settings, oldSettings) => {
-    if (settings.sourceType !== 'pframe' || !settings.pFrame || !settings.join) return;
+/** State upgrader */ (() => {
+  if (!tableState.value.pTableParams) tableState.value.pTableParams = {};
+})();
 
-    if (
-      oldSettings &&
-      oldSettings.sourceType === 'pframe' &&
-      lodash.isEqual(settings.pFrame, oldSettings.pFrame) &&
-      lodash.isEqual(settings.join, oldSettings.join)
-    )
-      return;
-
-    const platforma = window.platforma;
-    if (!platforma) throw Error('platforma not set');
-
-    const pfDriver = platforma.pFrameDriver;
-    if (!pfDriver) throw Error('platforma.pFrameDriver not set');
-
-    const enrichedJoin = await enrichJoinWithLabelColumns(pfDriver, settings.pFrame, settings.join);
-
-    const state = tableState.value;
-
-    if (!state.pTableParams) {
-      state.pTableParams = {
-        sorting: [],
-        filters: [],
-      };
-    }
-    state.pTableParams.join = enrichedJoin;
-
-    tableState.value = state;
-  },
-);
-
-const sheets = useWatchFetch<PlDataTableSettings['sourceType'], PlDataTableSheet[]>(
-  () => settings.value.sourceType,
-  async (_) => {
-    const sourceType = settings.value.sourceType;
-    switch (sourceType) {
-      case 'pframe': {
-        const platforma = window.platforma;
-        if (!platforma) throw Error('platforma not set');
-
-        const pfDriver = platforma.pFrameDriver;
-        if (!pfDriver) throw Error('platforma.pFrameDriver not set');
-
-        if (!settings.value.pFrame) return [];
-        const pFrame = settings.value.pFrame;
-
-        const join = tableState.value.pTableParams?.join;
-        if (!join) return [];
-
-        return await makeSheets(pfDriver, pFrame, settings.value.sheetAxes, join);
-      }
-      case 'ptable': {
-        return settings.value.sheets ?? [];
-      }
-      case 'xsv': {
-        return [];
-      }
-      default:
-        throw Error(`unsupported source type: ${sourceType satisfies never}`);
-    }
-  },
-);
-
-function makeSorting(state?: SortState): PTableSorting[] | undefined {
-  if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
+function makeSorting(state?: SortState): PTableSorting[] {
   return (
     state?.sortModel.map((item) => {
       const { spec, ...column } = parseColId(item.colId);
@@ -136,7 +80,7 @@ function makeSorting(state?: SortState): PTableSorting[] | undefined {
         column,
         ascending: item.sort === 'asc',
         naAndAbsentAreLeastValues: true,
-      } as PTableSorting;
+      };
     }) ?? []
   );
 }
@@ -151,43 +95,30 @@ const gridState = computed({
     };
   },
   set: (gridState) => {
-    const state = tableState.value;
-
     // do not apply driver sorting for client side rendering
-    const sorting = gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
+    const sorting =
+      settings.value?.sourceType !== 'ptable' || gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
-    state.gridState = { ...state.gridState, ...gridState };
-
-    if (settings.value.sourceType === 'ptable' || settings.value.sourceType === 'pframe') {
-      if (!state.pTableParams) {
-        state.pTableParams = {
-          sorting: [],
-          filters: [],
-        };
-      }
-      state.pTableParams.sorting = sorting;
-    }
-
-    tableState.value = state;
+    const oldState = tableState.value;
+    tableState.value = {
+      ...oldState,
+      gridState: { ...oldState.gridState, ...gridState },
+      pTableParams: { ...oldState.pTableParams, sorting },
+    };
   },
 });
 
-const makeSheetId = (axis: AxisId) => canonicalize(axis)!;
+const makeSheetId = (axis: AxisId) => canonicalize(getAxisId(axis))!;
 
 function makeFilters(sheetsState: Record<string, string | number>): PTableRecordFilter[] | undefined {
-  if (settings.value.sourceType !== 'ptable' && settings.value.sourceType !== 'pframe') return undefined;
+  if (settings.value?.sourceType !== 'ptable') return undefined;
   return (
-    sheets.value?.map((sheet) => ({
+    settings.value.sheets?.map((sheet) => ({
       type: 'bySingleColumnV2',
-      column: sheet.column
-        ? {
-            type: 'column',
-            id: sheet.column,
-          }
-        : {
-            type: 'axis',
-            id: sheet.axis,
-          },
+      column: {
+        type: 'axis',
+        id: sheet.axis,
+      },
       predicate: {
         operator: 'Equal',
         reference: sheetsState[makeSheetId(sheet.axis)],
@@ -201,52 +132,30 @@ const sheetsState = computed({
   set: (sheetsState) => {
     const filters = makeFilters(sheetsState);
 
-    const state = tableState.value;
-
-    state.gridState.sheets = sheetsState;
-
-    if (settings.value.sourceType === 'ptable' || settings.value.sourceType === 'pframe') {
-      if (!state.pTableParams) {
-        state.pTableParams = {
-          sorting: [],
-          filters: [],
-        };
-      }
-      state.pTableParams.filters = filters;
-    }
-
-    tableState.value = state;
+    const oldState = tableState.value;
+    tableState.value = {
+      ...oldState,
+      gridState: { ...oldState.gridState, sheets: sheetsState },
+      pTableParams: { ...oldState.pTableParams, filters },
+    };
   },
 });
 
 watch(
-  () => [settings.value, sheets.value] as const,
-  (state, oldState) => {
-    const [settings, sheets] = state;
-    if (!sheets) {
-      return;
-    }
-    if (oldState) {
-      const [oldSettings, oldSheets] = oldState;
-      if (
-        (settings.sourceType === 'ptable' || settings.sourceType === 'pframe') &&
-        settings.sourceType === oldSettings?.sourceType &&
-        lodash.isEqual(sheets, oldSheets)
-      )
-        return;
-    }
-
-    if (settings.sourceType !== 'ptable' && settings.sourceType !== 'pframe') {
+  () => settings.value,
+  (settings, oldSettings) => {
+    if (settings?.sourceType !== 'ptable' || !settings.sheets) {
       sheetsState.value = {};
       return;
     }
 
-    const newSheetsState = sheetsState.value;
-    for (const sheet of sheets) {
+    if (oldSettings && oldSettings.sourceType === 'ptable' && lodash.isEqual(settings.sheets, oldSettings.sheets)) return;
+
+    const oldSheetsState = sheetsState.value;
+    const newSheetsState: Record<string, string | number> = {};
+    for (const sheet of settings.sheets) {
       const sheetId = makeSheetId(sheet.axis);
-      if (!newSheetsState[sheetId]) {
-        newSheetsState[sheetId] = sheet.defaultValue ?? sheet.options[0].value;
-      }
+      newSheetsState[sheetId] = oldSheetsState[sheetId] ?? sheet.defaultValue ?? sheet.options[0].value;
     }
     sheetsState.value = newSheetsState;
   },
@@ -278,7 +187,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   rowModelType: 'clientSide',
   maxBlocksInCache: 1000,
-  cacheBlockSize: 100,
+  // cacheBlockSize: 100,
   blockLoadDebounceMillis: 500,
   serverSideSortAllLevels: true,
   suppressServerSideFullWidthLoadingRow: true,
@@ -287,27 +196,6 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   loadingOverlayComponentParams: { notReady: true },
   loadingOverlayComponent: PlOverlayLoading,
   noRowsOverlayComponent: PlOverlayNoRows,
-  sideBar: {
-    // toolPanels: [
-    //   {
-    //     id: 'columns',
-    //     labelDefault: 'Columns',
-    //     labelKey: 'columns',
-    //     iconKey: 'columns',
-    //     toolPanel: 'agColumnsToolPanel',
-    //     toolPanelParams: {
-    //       suppressRowGroups: true,
-    //       suppressValues: true,
-    //       suppressPivots: true,
-    //       suppressPivotMode: true,
-    //       suppressColumnFilter: true,
-    //       suppressColumnSelectAll: true,
-    //       suppressColumnExpandAll: true,
-    //     },
-    //   },
-    // ],
-    // defaultToolPanel: '',
-  },
   defaultCsvExportParams: {
     allColumns: true,
     suppressQuotes: true,
@@ -427,16 +315,22 @@ watch(
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
     if (!lodash.isEqual(options.columnDefs, oldOptions.columnDefs) && options.columnDefs) {
-      const idColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
-      const colDefs: ColDef[] | undefined = options.columnDefs?.filter(idColDef);
-      const columns = colDefs
-        ?.map((def) => def.colId)
-        .filter((colId) => colId !== undefined)
-        .filter((colId) => colId !== PlAgDataTableRowNumberColId)
-        .map((colId) => parseColId(colId));
-      emit('columnsChanged', columns ?? []);
+      const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
+      const colDefs = options.columnDefs?.filter(isColDef) ?? [];
+      const columns =
+        colDefs
+          .map((def) => def.colId)
+          .filter((colId) => colId !== undefined)
+          .filter((colId) => colId !== PlAgDataTableRowNumberColId)
+          .map((colId) => parseColId(colId)) ?? [];
+      emit('columnsChanged', columns);
+    }
+    if (!lodash.isEqual(options.loadingOverlayComponentParams, oldOptions.loadingOverlayComponentParams) && options.loading) {
+      gridApi.value?.setGridOption('loading', false);
+      nextTick(() => gridApi.value?.setGridOption('loading', true));
     }
   },
+  { immediate: true },
 );
 
 const onSheetChanged = (sheetId: string, newValue: string | number) => {
@@ -444,63 +338,69 @@ const onSheetChanged = (sheetId: string, newValue: string | number) => {
   if (state[sheetId] === newValue) return;
   state[sheetId] = newValue;
   sheetsState.value = state;
-  gridApi.value?.updateGridOptions({
+  return gridApi.value?.updateGridOptions({
     loading: true,
     loadingOverlayComponentParams: { notReady: false },
   });
 };
 
-const platforma = window.platforma;
-if (!platforma) throw Error('platforma not set');
-const pfDriver = platforma.pFrameDriver;
-if (!pfDriver) throw Error('platforma.pFrameDriver not set');
-const blobDriver = platforma.blobDriver;
-if (!blobDriver) throw Error('platforma.blobDriver not set');
-
 let oldSettings: PlDataTableSettings | undefined = undefined;
 watch(
-  () => [gridApi.value, settings.value, sheets.value] as const,
+  () => [gridApi.value, settings.value] as const,
   async (state) => {
-    const [gridApi, settings, sheets] = state;
+    const [gridApi, settings] = state;
     if (!gridApi) return;
 
     if (lodash.isEqual(settings, oldSettings)) return;
     oldSettings = settings;
 
-    const sourceType = settings.sourceType;
+    const sourceType = settings?.sourceType;
     switch (sourceType) {
-      case 'pframe':
+      case undefined:
+        return gridApi.updateGridOptions({
+          loading: true,
+          loadingOverlayComponentParams: { notReady: true },
+          columnDefs: [],
+          rowData: undefined,
+          datasource: undefined,
+        });
+
       case 'ptable': {
-        const pTable = settings.pTable;
-        if (!pTable || !sheets) {
+        if (!settings?.pTable) {
           return gridApi.updateGridOptions({
             loading: true,
-            loadingOverlayComponentParams: { notReady: true },
+            loadingOverlayComponentParams: { notReady: false },
             columnDefs: [],
+            rowData: undefined,
+            datasource: undefined,
           });
         }
 
+        const driver = getRawPlatformaInstance().pFrameDriver;
         const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
-        const options = await updatePFrameGridOptions(pfDriver, pTable, sheets, hiddenColIds);
+        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds);
 
         return gridApi.updateGridOptions({
-          loading: options.rowModelType !== 'clientSide',
+          loading: false,
           loadingOverlayComponentParams: { notReady: false },
           ...options,
         });
       }
 
       case 'xsv': {
-        const xsvFile = settings.xsvFile;
-        if (!xsvFile?.ok || !xsvFile.value) {
+        const xsvFile = settings?.xsvFile;
+        if (!xsvFile) {
           return gridApi.updateGridOptions({
             loading: true,
-            loadingOverlayComponentParams: { notReady: true },
+            loadingOverlayComponentParams: { notReady: false },
             columnDefs: [],
+            rowData: undefined,
+            datasource: undefined,
           });
         }
 
-        const options = await updateXsvGridOptions(blobDriver, xsvFile.value);
+        const driver = getRawPlatformaInstance().blobDriver;
+        const options = await updateXsvGridOptions(driver, xsvFile);
         return gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: { notReady: false },
@@ -518,12 +418,13 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
-    <div v-if="sheets.value && sheets.value.length > 0" class="ap-ag-data-table-sheets">
+    <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
-        v-for="(sheet, i) in sheets.value"
+        v-for="(sheet, i) in settings.sheets"
         :key="i"
         :model-value="sheetsState[makeSheetId(sheet.axis)]"
         :options="sheet.options"
+        :prefix="(sheet.axis.annotations?.['pl7.app/label']?.trim() ?? `Unlabeled axis ${i}`) + ':'"
         @update:model-value="(newValue) => onSheetChanged(makeSheetId(sheet.axis), newValue)"
       />
     </div>
@@ -540,12 +441,6 @@ watch(
     />
   </div>
 </template>
-
-<style>
-.pl-ag-header-align-center .ag-header-cell-label {
-  justify-content: center;
-}
-</style>
 
 <style lang="css" scoped>
 .ap-ag-data-table-container {

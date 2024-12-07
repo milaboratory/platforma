@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Column, GridApi } from '@ag-grid-community/core';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable } from '@milaboratories/uikit';
-import { onMounted, ref, toRefs } from 'vue';
+import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
 import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
 import { PlAgDataTableRowNumberColId } from '../PlAgDataTable';
@@ -22,6 +22,15 @@ const listRef = ref<HTMLElement>();
 const slideModal = ref(false);
 const listKey = ref(0);
 
+function getReorderedColumns(columns: Column[]) {
+  const numRowsIndex = columns.findIndex((v) => v.getId() === PlAgDataTableRowNumberColId);
+  if (numRowsIndex !== 0) {
+    const [numRowsCol] = columns.splice(numRowsIndex, 1);
+    return columns.splice(0, 0, numRowsCol);
+  }
+  return columns;
+}
+
 useSortable(listRef, {
   handle: '.handle',
   onChange(indices) {
@@ -33,27 +42,21 @@ function toggleColumnVisibility(col: Column) {
   gridApi.value.setColumnsVisible([col], !col.isVisible());
 }
 
-function getReorderedColumns(columns: Column[]) {
-  const numRowsIndex = columns.findIndex((v) => v.getId() === PlAgDataTableRowNumberColId);
-  if (numRowsIndex !== 0) {
-    const [numRowsCol] = columns.splice(numRowsIndex, 1);
-    return columns.splice(0, 0, numRowsCol);
-  }
-  return columns;
-}
+watch(
+  () => gridApi.value,
+  (gridApi) => {
+    columns.value = getReorderedColumns(gridApi.getAllGridColumns());
+    if (columns.value.length > 0) {
+      gridApi.moveColumns(columns.value, 0);
+    }
 
-onMounted(() => {
-  if (gridApi.value.getAllGridColumns().length > 0) {
-    gridApi.value.moveColumns(getReorderedColumns(gridApi.value.getAllGridColumns()), 0);
-  }
-
-  gridApi.value.addEventListener('displayedColumnsChanged', () => {
-    columns.value = [...(gridApi.value.getAllGridColumns() ?? [])];
-    listKey.value++;
-  });
-
-  columns.value = gridApi.value.getAllGridColumns() ?? [];
-});
+    gridApi.addEventListener('displayedColumnsChanged', (event) => {
+      columns.value = event.api.getAllGridColumns();
+      listKey.value++;
+    });
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
