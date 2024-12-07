@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.7.0
+
+### Minor Changes
+
+- 2f3f37f: BQuery result unmarshaller enabled for all templates, not only workflows
+
 ## 2.6.0
 
 ### Minor Changes
