@@ -6,19 +6,19 @@ import {
   PlAgOverlayLoading,
   PlAgOverlayNoRows,
   AgGridTheme,
-  PlAgDataTableToolsPanel
-} from '@platforma-sdk/ui-vue';
-import { AgGridVue } from '@ag-grid-community/vue3';
-import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-community/core';
-import { times } from '@milaboratories/helpers';
-import { PlAgGridColumnManager } from '@platforma-sdk/ui-vue';
-import { faker } from '@faker-js/faker';
-import {
+  PlAgDataTableToolsPanel,
+  PlAgGridColumnManager,
+  makeRowNumberColDef,
+  autoSizeRowNumberColumn,
   PlAgCellFile,
   PlAgTextAndButtonCell,
   PlAgColumnHeader,
   type PlAgHeaderComponentParams
 } from '@platforma-sdk/ui-vue';
+import { AgGridVue } from '@ag-grid-community/vue3';
+import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-community/core';
+import { times } from '@milaboratories/helpers';
+import { faker } from '@faker-js/faker';
 
 const LinkComponent: Component = {
   props: ['params'],
@@ -29,6 +29,7 @@ const LinkComponent: Component = {
 };
 
 const columnDefs: ColDef[] = [
+  makeRowNumberColDef(),
   {
     colId: 'id',
     field: 'id',
@@ -111,6 +112,7 @@ const gridOptions: GridOptions = {
 let gridApi = ref<GridApi | null>(null);
 const onGridReady = (e: GridReadyEvent) => {
   gridApi.value = e.api;
+  autoSizeRowNumberColumn(e.api);
 };
 </script>
 
