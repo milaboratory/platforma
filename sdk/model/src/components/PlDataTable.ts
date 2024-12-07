@@ -331,6 +331,7 @@ export function createPlDataTable<A, U>(
   });
 }
 
+/** Create sheet entries for PlDataTable */
 export function createPlDataTableSheet<A, U>(
   ctx: RenderCtx<A, U>,
   axis: AxisSpec,
