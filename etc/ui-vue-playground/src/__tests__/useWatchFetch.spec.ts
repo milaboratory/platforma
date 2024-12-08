@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { useWatchFetch } from '@platforma-sdk/ui-vue'
+import { useWatchFetch } from '@platforma-sdk/ui-vue';
 import { isReactive, reactive } from 'vue';
 import { Deferred, delay } from '@milaboratories/helpers';
 

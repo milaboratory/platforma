@@ -7,7 +7,7 @@ window.platforma = platforma;
 
 export const appSettings = reactive({
   deepPatchModel: true,
-  debug: true
+  debug: true,
 });
 
 export const sdkPlugin = defineApp(platforma, () => {

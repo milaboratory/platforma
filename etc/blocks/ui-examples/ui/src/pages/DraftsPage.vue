@@ -5,13 +5,13 @@ import {
   PlEditableTitle,
   PlRow,
   PlBtnPrimary,
-  PlCloseModalBtn
+  PlCloseModalBtn,
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
   title: 'Title example',
-  importHandles: [] as unknown[]
+  importHandles: [] as unknown[],
 });
 
 const onDrop = (ev: DragEvent) => {

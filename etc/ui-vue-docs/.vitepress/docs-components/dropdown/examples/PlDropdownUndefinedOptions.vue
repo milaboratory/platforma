@@ -58,21 +58,25 @@ function loadItems() {
     setTimeout(() => {
       data.options = undefined;
       data.optionsForRef = undefined;
-    }, 10000)
-  }, 1000)
+    }, 10000);
+  }, 1000);
 }
 </script>
 
 <template>
-  <PlDropdown v-model="data.model" :options="data.options" label="Dropdown Label" placeholder="Select an option"
+  <PlDropdown
+    v-model="data.model" :options="data.options" label="Dropdown Label" placeholder="Select an option"
     :clearable="data.clearable" :required="data.required" :disabled="data.disabled"
     :error="data.showError ? 'An error example' : undefined"
-    :helper="data.showHelper ? 'A helper example' : undefined" />
+    :helper="data.showHelper ? 'A helper example' : undefined"
+  />
 
-  <PlDropdownRef v-model="data.refModel" :options="data.optionsForRef" label="Dropdown Label"
+  <PlDropdownRef
+    v-model="data.refModel" :options="data.optionsForRef" label="Dropdown Label"
     placeholder="Select an option" :clearable="data.clearable" :required="data.required" :disabled="data.disabled"
     :error="data.showError ? 'An error example' : undefined"
-    :helper="data.showHelper ? 'A helper example' : undefined" />
+    :helper="data.showHelper ? 'A helper example' : undefined"
+  />
 
   <div class="d-flex gap-12">
     <PlBtnPrimary :loading="loadingBtn" @click="loadItems">Load items</PlBtnPrimary>

@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress';
 import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'path';
 
-let uikitPrefix = '';
+const uikitPrefix = '';
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -34,17 +34,17 @@ export default defineConfig({
         {
           find: '@app-components',
           replacement: fileURLToPath(
-            new URL(resolve(resolve(__dirname), 'app-components'), import.meta.url)
-          )
+            new URL(resolve(resolve(__dirname), 'app-components'), import.meta.url),
+          ),
         },
         {
           find: /^.*\/VPSidebarGroup\.vue$/,
           replacement: fileURLToPath(
-            new URL('./app-components/PlDocSidebar/PlSidebar.vue', import.meta.url)
-          )
-        }
-      ]
-    }
+            new URL('./app-components/PlDocSidebar/PlSidebar.vue', import.meta.url),
+          ),
+        },
+      ],
+    },
   },
   appearance: true,
   themeConfig: {
@@ -71,11 +71,11 @@ export default defineConfig({
           { text: 'PlToggleSwitch', link: `${uikitPrefix}toggle-switch` },
           { text: 'PlBtnGroup', link: `${uikitPrefix}btn-group` },
           { text: 'PlFileInput', link: `${uikitPrefix}file-input` },
-          { text: 'PlNotificationAlert', link: `${uikitPrefix}notifications` }
-        ]
-      }
+          { text: 'PlNotificationAlert', link: `${uikitPrefix}notifications` },
+        ],
+      },
     ],
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/milaboratory/platforma' }]
-  }
+    socialLinks: [{ icon: 'github', link: 'https://github.com/milaboratory/platforma' }],
+  },
 });

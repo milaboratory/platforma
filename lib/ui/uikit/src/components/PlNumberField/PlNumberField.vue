@@ -53,7 +53,7 @@ const computedValue = computed({
     val = val.replace(/,/g, '');
     if (isNumeric(val)) {
       emit('update:modelValue', +val);
-      //try press 123.12345678912345 and than 6
+      // try press 123.12345678912345 and than 6
       if (val.toString() !== props.modelValue?.toString() && +val === props.modelValue && val[val.length - 1] !== '.') {
         canRenderValue.value = false;
         nextTick(() => {
@@ -152,6 +152,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
     e.preventDefault();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   e.code === 'ArrowUp' ? increment() : e.code === 'ArrowDown' ? decrement() : undefined;
 }
 

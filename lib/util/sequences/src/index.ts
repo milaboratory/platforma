@@ -1,6 +1,6 @@
-import {SyncSequence} from './sync';
-import {AsyncSequence} from './async';
-export {Emitter} from './tools';
+import { SyncSequence } from './sync';
+import { AsyncSequence } from './async';
+export { Emitter } from './tools';
 
 export function sequence<T>(it: Iterable<T>): SyncSequence<T>;
 export function sequence<T>(it: AsyncIterable<T>): AsyncSequence<T>;

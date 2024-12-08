@@ -8,7 +8,7 @@ import { PlTooltip } from '../PlTooltip';
       <span :class="$style.title">Shortcuts</span>
 
       <div :class="[$style.row, $style.head]">
-        <div></div>
+        <div/>
         <div>MacOS</div>
         <div>Windows/Linux</div>
       </div>

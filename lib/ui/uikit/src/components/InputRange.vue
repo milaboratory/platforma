@@ -56,7 +56,7 @@ function updateModel() {
 function validateInput(isLeft: boolean, event: Event) {
   const value: string = (event.target as HTMLInputElement).value;
   const result = /^[0-9]{0,2}$/.test(value);
-  //if there is more than 3 digits we cut last one
+  // if there is more than 3 digits we cut last one
   if (!result) {
     if (isLeft) {
       data.left = +value.slice(0, value.length - 1);

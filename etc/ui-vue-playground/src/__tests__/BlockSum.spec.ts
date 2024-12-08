@@ -8,8 +8,8 @@ import { Deferred, delay } from '@milaboratories/helpers';
 
 const Page = defineComponent({
   // type inference enabled
-  template: `<div id="app"></div>`
-})
+  template: `<div id="app"></div>`,
+});
 
 export const sdkPlugin = defineApp(platforma, () => {
   return {

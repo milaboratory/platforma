@@ -18,5 +18,5 @@ export {
   PlDropdownBasicIcon,
   PlDropdownBasicIconRaw,
   PlDropdownUndefinedOptions,
-  PlDropdownUndefinedOptionsRaw
+  PlDropdownUndefinedOptionsRaw,
 };

@@ -49,7 +49,7 @@ function triggerRowDoubleClick() {
 
     gridApi.dispatchEvent(event);
   } else {
-    props.params.onClick && props.params.onClick(props.params);
+    props.params.onClick?.(props.params);
   }
 }
 </script>

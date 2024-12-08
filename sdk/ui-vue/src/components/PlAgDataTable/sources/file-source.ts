@@ -2,15 +2,15 @@ import type { ColDef, IDatasource } from '@ag-grid-community/core';
 import type { BlobDriver, LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@platforma-sdk/model';
 
 export async function updateXsvGridOptions(
-  blobDriver: BlobDriver,
-  file: LocalBlobHandleAndSize | RemoteBlobHandleAndSize,
+  _blobDriver: BlobDriver,
+  _file: LocalBlobHandleAndSize | RemoteBlobHandleAndSize,
 ): Promise<{
-  columnDefs: ColDef[];
-  datasource: IDatasource;
-}> {
-  blobDriver;
-  file;
-  //blobDriver.getContent(file.handle!)
+    columnDefs: ColDef[];
+    datasource: IDatasource;
+  }> {
+  // blobDriver;
+  // file;
+  // blobDriver.getContent(file.handle!)
   // return {
   //   datasource,
   //   columnDefs,

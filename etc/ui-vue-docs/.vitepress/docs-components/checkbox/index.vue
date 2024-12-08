@@ -10,21 +10,21 @@ const propsData = reactive({
   props: {
     modelValue: {
       type: 'boolean',
-      description: 'The current boolean value of the checkbox.'
+      description: 'The current boolean value of the checkbox.',
     },
     disabled: {
       type: 'boolean',
-      description: 'If `true`, the checkbox is disabled and cannot be interacted with.'
-    }
+      description: 'If `true`, the checkbox is disabled and cannot be interacted with.',
+    },
   },
 
   events: {
-    'update:modelValue': 'A boolean is emitted when the model value is updated'
+    'update:modelValue': 'A boolean is emitted when the model value is updated',
   },
 
   slots: {
-    default: 'The default slot is intended for label text.'
-  }
+    default: 'The default slot is intended for label text.',
+  },
 });
 </script>
 

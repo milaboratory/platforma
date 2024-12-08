@@ -21,7 +21,7 @@ import LayoutPage from './pages/LayoutPage.vue';
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
   const data = reactive({
-    counter: 0
+    counter: 0,
   });
 
   function incrementCounter() {
@@ -44,7 +44,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       timing: makeEaseOut((t) => t),
       draw: (progress) => {
         progressRef.value = progress;
-      }
+      },
     });
   }
 
@@ -73,8 +73,8 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
-      '/drafts': () => DraftsPage
-    }
+      '/drafts': () => DraftsPage,
+    },
   };
 });
 

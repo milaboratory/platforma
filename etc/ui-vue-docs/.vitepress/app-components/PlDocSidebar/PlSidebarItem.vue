@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DefaultTheme } from 'vitepress';
+import type { DefaultTheme } from 'vitepress';
 import { computed } from 'vue';
 import { useActiveLink } from './useActiveLink';
 

@@ -3,7 +3,7 @@ import { PlBlockPage, PlCheckbox } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
 const data = reactive({
-  noBodyGutters: false
+  noBodyGutters: false,
 });
 </script>
 

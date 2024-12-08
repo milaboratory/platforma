@@ -25,11 +25,11 @@ const { column, options } = toRefs(props);
     <template
       v-if="
         entry.filter.type === 'number_equals' ||
-        entry.filter.type === 'number_notEquals' ||
-        entry.filter.type === 'number_lessThan' ||
-        entry.filter.type === 'number_lessThanOrEqualTo' ||
-        entry.filter.type === 'number_greaterThan' ||
-        entry.filter.type === 'number_greaterThanOrEqualTo'
+          entry.filter.type === 'number_notEquals' ||
+          entry.filter.type === 'number_lessThan' ||
+          entry.filter.type === 'number_lessThanOrEqualTo' ||
+          entry.filter.type === 'number_greaterThan' ||
+          entry.filter.type === 'number_greaterThanOrEqualTo'
       "
     >
       <PlTextField
@@ -58,9 +58,9 @@ const { column, options } = toRefs(props);
     <template
       v-if="
         entry.filter.type === 'string_equals' ||
-        entry.filter.type === 'string_notEquals' ||
-        entry.filter.type === 'string_contains' ||
-        entry.filter.type === 'string_doesNotContain'
+          entry.filter.type === 'string_notEquals' ||
+          entry.filter.type === 'string_contains' ||
+          entry.filter.type === 'string_doesNotContain'
       "
     >
       <PlTextField

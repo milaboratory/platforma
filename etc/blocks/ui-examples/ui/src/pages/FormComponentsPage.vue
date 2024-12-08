@@ -12,7 +12,7 @@ import {
   listToOptions,
   PlMaskIcon16,
   PlAccordion,
-  PlAccordionSection
+  PlAccordionSection,
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -23,7 +23,7 @@ const data = reactive({
   importHandles: [] as unknown[],
   currentTab: 'one',
   compactBtnGroup: false,
-  multipleAccordion: false
+  multipleAccordion: false,
 });
 
 const options = listToOptions(['A', 'B', 'C', 'D']);
@@ -66,9 +66,9 @@ const options = listToOptions(['A', 'B', 'C', 'D']);
           <PlDropdown v-model="data.single" label="Additional PlDropdown" :options="options" />
         </PlAccordionSection>
 
-        <PlCheckbox v-model="data.multipleAccordion"
-          >Allow multiple accordion sections to be opened at the same time</PlCheckbox
-        >
+        <PlCheckbox v-model="data.multipleAccordion">
+          Allow multiple accordion sections to be opened at the same time
+        </PlCheckbox>
         <PlSectionSeparator>Accordion group</PlSectionSeparator>
         <PlAccordion :multiple="data.multipleAccordion">
           <PlAccordionSection label="Section 1">
