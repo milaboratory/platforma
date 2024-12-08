@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.17.2
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
 ## 1.17.0
 
 ### Patch Changes

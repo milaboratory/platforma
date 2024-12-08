@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.27
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+
 ## 2.2.26
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.3
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+
 ## 1.1.2
 
 ### Patch Changes
