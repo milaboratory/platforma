@@ -13,7 +13,7 @@ const externalError = computed(() =>
 );
 
 const rules = [
-  //check if there is some value
+  // check if there is some value
   (v?: string) => {
     if (v) {
       return (
@@ -22,10 +22,10 @@ const rules = [
     }
     return true;
   },
-  //value must be
+  // value must be
   (v?: string) =>
     (v && v.length > 4) || '(rule) Length must be more than 4 chars.',
-  //value must be
+  // value must be
   (v?: string) =>
     (v && /^\d+$/.test(v)) || '(rule) Only numbers allowed.',
 ];

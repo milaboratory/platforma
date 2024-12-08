@@ -8,13 +8,13 @@ describe('PlDropdownRef', () => {
   it('modelValue', async () => {
     const wrapper = mount(PlDropdownRef, {
       props: {
-        modelValue: {
+        'modelValue': {
           __isRef: true as const,
           blockId: '1',
           name: 'Ref to block 1',
         },
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
-        options: [
+        'options': [
           {
             label: 'Ref 1',
             ref: {

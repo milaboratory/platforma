@@ -6,7 +6,7 @@ function getRandomInt(min: number, max: number) {
 
 export function camelToKebab(str: string) {
   str = str.replace(' ', '-');
-  return (str[0] || '').toLowerCase() + str.slice(1).replace(/[A-Z]/g, l => `-${l.toLowerCase()}`);
+  return (str[0] || '').toLowerCase() + str.slice(1).replace(/[A-Z]/g, (l) => `-${l.toLowerCase()}`);
 }
 
 export function trimChars(str: string, chars: string[] = []) {
@@ -59,7 +59,7 @@ export function isRegexpValid(exp: string) {
   try {
     new RegExp(exp);
     return true;
-  } catch(e) {
+  } catch (_e) {
     return false;
   }
 }

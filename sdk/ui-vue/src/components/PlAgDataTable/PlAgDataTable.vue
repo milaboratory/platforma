@@ -96,8 +96,8 @@ const gridState = computed({
   },
   set: (gridState) => {
     // do not apply driver sorting for client side rendering
-    const sorting =
-      settings.value?.sourceType !== 'ptable' || gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
+    const sorting
+      = settings.value?.sourceType !== 'ptable' || gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
     const oldState = tableState.value;
     tableState.value = {
@@ -317,8 +317,8 @@ watch(
     if (!lodash.isEqual(options.columnDefs, oldOptions.columnDefs) && options.columnDefs) {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
       const colDefs = options.columnDefs?.filter(isColDef) ?? [];
-      const columns =
-        colDefs
+      const columns
+        = colDefs
           .map((def) => def.colId)
           .filter((colId) => colId !== undefined)
           .filter((colId) => colId !== PlAgDataTableRowNumberColId)

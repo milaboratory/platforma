@@ -10,7 +10,7 @@ import {
   PlBlockPage,
   PlAgDataTable,
   PlDropdownRef,
-  PlSlideModal
+  PlSlideModal,
 } from '@platforma-sdk/ui-vue';
 import { useApp } from '../app';
 import type { PTableColumnSpec } from '@platforma-sdk/model';
@@ -21,10 +21,10 @@ if (!app.model.ui?.dataTableState) {
   app.model.ui = {
     dataTableState: {
       tableState: {
-        gridState: {}
+        gridState: {},
       },
-      filterModel: {}
-    }
+      filterModel: {},
+    },
   };
 }
 
@@ -35,9 +35,9 @@ const tableSettings = computed<PlDataTableSettings | undefined>(() =>
     ? {
         sourceType: 'ptable',
         pTable: app.model.outputs.pt,
-        sheets: app.model.outputs.sheets
+        sheets: app.model.outputs.sheets,
       }
-    : undefined
+    : undefined,
 );
 const columns = ref<PTableColumnSpec[]>([]);
 const tableInstance = ref<PlAgDataTableController>();

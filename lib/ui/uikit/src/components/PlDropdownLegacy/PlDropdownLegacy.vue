@@ -296,6 +296,7 @@ watch(
 );
 
 watchPostEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   data.search; // to watch
 
   if (data.activeIndex >= 0 && data.open) {

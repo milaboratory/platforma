@@ -8,7 +8,7 @@ import {
   PlDropdown,
   PlDropdownMulti,
   PlDropdownRef,
-  PlRow
+  PlRow,
 } from '@platforma-sdk/ui-vue';
 import type { Ref } from 'vue';
 import { reactive, ref } from 'vue';
@@ -18,28 +18,28 @@ const data = reactive({
   clearable: true,
   model: 1,
   multi: [],
-  ref: undefined
+  ref: undefined,
 });
 
 const simpleOptions = ref(
   undef([
     {
       label: 'One',
-      value: 1
+      value: 1,
     },
     {
       label: 'Two',
-      value: 2
+      value: 2,
     },
     {
       text: 'Three',
-      value: 3
+      value: 3,
     },
     {
       text: 'NaN',
-      value: NaN
-    }
-  ])
+      value: NaN,
+    },
+  ]),
 );
 
 const refOptions = ref(
@@ -49,18 +49,18 @@ const refOptions = ref(
       ref: {
         __isRef: true as const,
         blockId: '1',
-        name: 'Block 1'
-      }
+        name: 'Block 1',
+      },
     },
     {
       label: 'Block 2 label',
       ref: {
         __isRef: true as const,
         blockId: '2',
-        name: 'Block 2'
-      }
-    }
-  ])
+        name: 'Block 2',
+      },
+    },
+  ]),
 );
 
 const toggleRefValue = (r: Ref<unknown>) => {
@@ -113,7 +113,7 @@ const showOptionsLoading = () => {
         label="PlDropdownMulti"
         :options="simpleOptions ?? []"
       />
-      <div v-if="false" style="height: 1200px; background-color: green; width: 50px"></div>
+      <div v-if="false" style="height: 1200px; background-color: green; width: 50px"/>
     </PlContainer>
     <pre>{{ data }}</pre>
   </PlBlockPage>

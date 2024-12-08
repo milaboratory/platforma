@@ -9,11 +9,11 @@ defineProps<{
 <template>
   <div class="grid-overlay-container">
     <template v-if="params.notReady">
-      <div class="grid-icon-cat-in-bag"></div>
+      <div class="grid-icon-cat-in-bag"/>
       <span class="text-subtitle-m">No datasource</span>
     </template>
     <template v-else>
-      <div class="mask-24 mask-loading grid-mask-loading"></div>
+      <div class="mask-24 mask-loading grid-mask-loading"/>
       <span class="text-subtitle-m">Loading</span>
     </template>
   </div>

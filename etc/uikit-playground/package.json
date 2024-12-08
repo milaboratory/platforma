@@ -12,6 +12,7 @@
     "@milaboratories/uikit": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

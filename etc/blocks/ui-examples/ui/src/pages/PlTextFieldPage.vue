@@ -6,7 +6,7 @@ const data = reactive({
   text: 'lorem ipsum',
   optionalText: 'optional' as string | undefined,
   num: 0,
-  optionalNum: 0 as number | undefined
+  optionalNum: 0 as number | undefined,
 });
 
 const $ = {
@@ -18,7 +18,7 @@ const $ = {
     }
 
     return parsed;
-  }
+  },
 };
 
 const clearableUndefined = () => undefined;

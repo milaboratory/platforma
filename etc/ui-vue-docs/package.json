@@ -8,11 +8,13 @@
     "build": "vitepress build docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:test": "echo 'Hola!'"
+    "docs:test": "echo 'Hola!'",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "sass": "catalog:",
-    "vitepress": "catalog:"
+    "vitepress": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^"
   },
   "dependencies": {
     "@faker-js/faker": "catalog:",

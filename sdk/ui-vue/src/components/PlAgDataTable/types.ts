@@ -11,18 +11,18 @@ import type {
 /** Data table settings */
 export type PlDataTableSettings =
   | {
-      /** The type of the source to feed the data into the table */
-      sourceType: 'ptable';
-      /** PTable handle output */
-      pTable?: PTableHandle;
-      /** Sheets that we want to show in our table */
-      sheets?: PlDataTableSheet[];
-    }
+    /** The type of the source to feed the data into the table */
+    sourceType: 'ptable';
+    /** PTable handle output */
+    pTable?: PTableHandle;
+    /** Sheets that we want to show in our table */
+    sheets?: PlDataTableSheet[];
+  }
   | {
-      /** The type of the source to feed the data into the table */
-      sourceType: 'xsv';
-      xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
-    };
+    /** The type of the source to feed the data into the table */
+    sourceType: 'xsv';
+    xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
+  };
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {

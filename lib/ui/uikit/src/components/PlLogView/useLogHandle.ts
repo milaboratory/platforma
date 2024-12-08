@@ -39,7 +39,6 @@ export function useLogHandle(
       return;
     }
 
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const result = await platforma.logDriver.readText(currentLogState.logHandle, 100, currentLogState.lastOffset);
 

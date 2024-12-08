@@ -3,7 +3,7 @@ import type { ParseQuery } from './types';
 export const parsePathname = (href: `/${string}`) => {
   try {
     return new URL(href, 'http://dummy').pathname as `/${string}`;
-  } catch (err) {
+  } catch (_err) {
     console.error('Invalid href', href);
     return undefined;
   }
