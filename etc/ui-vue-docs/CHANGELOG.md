@@ -1,5 +1,15 @@
 # @milaboratories/ui-vue-docs
 
+## 0.2.20
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/helpers@1.6.9
+  - @milaboratories/uikit@2.2.27
+  - @platforma-sdk/ui-vue@1.17.2
+
 ## 0.2.19
 
 ### Patch Changes

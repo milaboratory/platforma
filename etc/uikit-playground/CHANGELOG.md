@@ -1,5 +1,13 @@
 # @milaboratories/uikit-playground
 
+## 0.1.10
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
 ## 0.1.9
 
 ### Patch Changes
