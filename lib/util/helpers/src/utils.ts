@@ -1,4 +1,4 @@
-import type { Option, AwaitedStruct, Unionize, Result } from "./types";
+import type { Option, AwaitedStruct, Unionize, Result } from './types';
 
 export function notEmpty<T>(v: T | null | undefined, message?: string): T {
   if (v === null || v === undefined) {
@@ -60,9 +60,9 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
         return Promise.resolve(result.value);
       }
 
-      return Promise.resolve(result.value).then(res => {
+      return Promise.resolve(result.value).then((res) => {
         return handle(generator.next(res));
-      }).catch(err => {
+      }).catch((err) => {
         return handle(generator.throw(err));
       });
     }
@@ -70,9 +70,9 @@ export function async<A extends unknown[]>(gf: (...args: A) => Generator) {
     try {
       return handle(generator.next());
     } catch (ex) {
-      return Promise.reject(ex);
+      return Promise.reject(ex instanceof Error ? ex : Error(String(ex)));
     }
-  }
+  };
 }
 
 export class Deferred<T> {
@@ -88,11 +88,11 @@ export class Deferred<T> {
 }
 
 export function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function tear() {
-  return new Promise<void>(r => queueMicrotask(r));
+  return new Promise<void>((r) => queueMicrotask(r));
 }
 
 export function timer() {
@@ -157,6 +157,7 @@ export function times<R>(n: number, cb: (i: number) => R): R[] {
 export class Interval {
   constructor(private _delay: number) {
   }
+
   async *generate(): AsyncGenerator<number> {
     let i = 0;
     while (true) {
@@ -164,6 +165,7 @@ export class Interval {
       yield i++;
     }
   }
+
   async *[Symbol.asyncIterator]() {
     let i = 0;
     while (true) {
@@ -174,7 +176,7 @@ export class Interval {
 }
 
 export function arrayFrom<T>(length: number, cb: (i: number) => T) {
-  return Array.from({length}, (_, i) => cb(i));
+  return Array.from({ length }, (_, i) => cb(i));
 }
 
 export function exhaustive(v: never, message: string): never {
@@ -189,7 +191,7 @@ export function match<T extends string, R = unknown>(matcher: Matcher<T, R>) {
   return (key: T) => matcher[key]();
 }
 
-export function okOptional<V>(v: {ok: true, value: V} | {ok: false} | undefined) {
+export function okOptional<V>(v: { ok: true; value: V } | { ok: false } | undefined) {
   if (!v) {
     return undefined;
   }
@@ -222,11 +224,11 @@ export function flatValue<T>(v: T | T[]): T[] {
 }
 
 export async function resolveAwaited<O extends Record<string, unknown>>(obj: O): Promise<AwaitedStruct<O>> {
-  return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v])));
+  return Object.fromEntries(await Promise.all(Object.entries(obj).map(async ([k, v]) => [k, await v]))) as Promise<AwaitedStruct<O>>;
 }
 
 export function alike(obj: Record<string, unknown>, to: Record<string, unknown>) {
-  return Object.keys(to).every(bKey => obj[bKey] === to[bKey]);
+  return Object.keys(to).every((bKey) => obj[bKey] === to[bKey]);
 }
 
 export const identity = <T>(v: T): T => v;
@@ -238,6 +240,6 @@ export function asConst<const T>(v: T) {
 export function unionize<K extends keyof O, V, O extends Record<K, V>>(obj: O): Unionize<O>[] {
   return Object.entries(obj).map(([key, value]) => ({
     key,
-    value
+    value,
   })) as Unionize<O>[];
 }

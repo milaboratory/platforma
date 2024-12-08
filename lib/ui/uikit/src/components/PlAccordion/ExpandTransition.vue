@@ -12,7 +12,7 @@ const onAfter = (el: Element) => {
 
 <template>
   <Transition name="expand-collapse" @enter="onStart" @leave="onStart" @after-enter="onAfter" @after-leave="onAfter">
-    <slot></slot>
+    <slot/>
   </Transition>
 </template>
 

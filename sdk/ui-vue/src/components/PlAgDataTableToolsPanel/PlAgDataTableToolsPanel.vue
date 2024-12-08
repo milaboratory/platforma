@@ -10,6 +10,6 @@ import { PlAgDataTableToolsPanelId } from './PlAgDataTableToolsPanelId';
 
 <template>
   <div :id="PlAgDataTableToolsPanelId" class="d-flex gap-6">
-    <slot></slot>
+    <slot/>
   </div>
 </template>

@@ -63,7 +63,7 @@ type _UiState = {
 type _App1 = BaseApp<_Args, _Outputs, _UiState, '/'>;
 type _App2 = TestApp<Platforma<_Args, _Outputs, _UiState, '/'>>;
 
-const local = () => {
+const _local = () => {
   const counter = computed(() => 1);
   const label = computed(() => 'aaaa');
 
@@ -79,7 +79,7 @@ const local = () => {
   };
 };
 
-type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof local>>;
+type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof _local>>;
 
 type _UpdateArgsParams = Parameters<Parameters<_App1['updateArgs']>[0]>[0];
 

@@ -6,7 +6,7 @@ import { computed, reactive } from 'vue';
 const app = useApp();
 
 const data = reactive({
-  progressDurationMs: 10000
+  progressDurationMs: 10000,
 });
 
 const numbers = computed({
@@ -21,7 +21,7 @@ const numbers = computed({
         const n = Number(s);
         return Number.isFinite(n) ? n : (s as unknown as number); // trigger error
       });
-  }
+  },
 });
 
 const $ = {
@@ -37,7 +37,7 @@ const $ = {
     }
 
     return parsed;
-  }
+  },
 };
 </script>
 

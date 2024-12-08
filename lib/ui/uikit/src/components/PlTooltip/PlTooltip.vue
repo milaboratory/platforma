@@ -85,7 +85,7 @@ const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent
 const showTooltip = () => {
   data.open = true;
 
-  for (let [k, f] of tMap.entries()) {
+  for (const [k, f] of tMap.entries()) {
     if (k !== tKey) {
       f();
     }

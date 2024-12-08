@@ -20,4 +20,4 @@ export {
   collections,
   functions,
   prettyBytes,
-}
+};

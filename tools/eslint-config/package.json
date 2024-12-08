@@ -1,0 +1,24 @@
+{
+  "name": "@milaboratories/eslint-config",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A shareable ESLint config",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "@stylistic/eslint-plugin": "catalog:",
+    "eslint-plugin-n": "catalog:",
+    "globals": "catalog:"
+  }
+}

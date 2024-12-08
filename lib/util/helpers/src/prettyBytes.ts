@@ -60,7 +60,7 @@ Formats the given number using `Number#toLocaleString`.
 - If no value for locale is specified, the number is returned unmodified.
 */
 const toLocaleString = (number: number, locale: string | undefined) => {
-  let result= String(number);
+  let result = String(number);
   if (typeof locale === 'string' || Array.isArray(locale)) {
     result = number.toLocaleString(locale);
   } else if (locale === true) {

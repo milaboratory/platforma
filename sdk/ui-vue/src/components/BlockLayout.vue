@@ -13,7 +13,7 @@ const sdk = useSdkPlugin();
 const parsePathname = (href: `/${string}`) => {
   try {
     return new URL(href, 'http://dummy').pathname as `/${string}`;
-  } catch (err) {
+  } catch (_cause) {
     console.error('Invalid href', href);
     return undefined;
   }

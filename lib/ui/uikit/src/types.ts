@@ -24,13 +24,13 @@ export type ElementPosition = Omit<DOMRect, 'toJSON'> & {
 
 export type SimpleOption<T = unknown> =
   | {
-      text: string;
-      value: T;
-    }
+    text: string;
+    value: T;
+  }
   | {
-      label: string;
-      value: T;
-    };
+    label: string;
+    value: T;
+  };
 
 export type SimpleOptionNormalized<T = unknown> = {
   label: string;
@@ -40,15 +40,15 @@ export type SimpleOptionNormalized<T = unknown> = {
 
 export type ListOption<T = unknown> =
   | {
-      text: string;
-      description?: string;
-      value: T;
-    }
+    text: string;
+    description?: string;
+    value: T;
+  }
   | {
-      label: string;
-      description?: string;
-      value: T;
-    };
+    label: string;
+    description?: string;
+    value: T;
+  };
 
 export type ListOptionNormalized<T = unknown> = {
   label: string;

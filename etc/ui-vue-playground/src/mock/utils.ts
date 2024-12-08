@@ -37,8 +37,8 @@ export const getLsFilesResult = (path: string): ListFilesResult => {
           };
         }
 
-        const name =
-          times(randomInt(1, 40), () => {
+        const name
+          = times(randomInt(1, 40), () => {
             if (Math.random() < 0.2) {
               return capitalizeFirstLetter(faker.word.noun());
             }

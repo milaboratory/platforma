@@ -75,7 +75,7 @@ function deleteFile(file: File) {
   if (file && props.modelValue && props.modelValue.length > 0) {
     const i = props.modelValue.findIndex((f) => f === file);
     if (i !== -1) {
-      let arr = [...props.modelValue];
+      const arr = [...props.modelValue];
       arr.splice(i, 1);
       emit('update:modelValue', arr);
     }

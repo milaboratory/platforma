@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {
   Basic, BasicRaw, TitleAndDescription, TitleAndDescriptionRaw, PlDropdownUndefinedOptions,
-  PlDropdownUndefinedOptionsRaw
+  PlDropdownUndefinedOptionsRaw,
 } from './examples';
 import CodeExample from '@app-components/CodeExample.vue';
 import ComponentProps from '@app-components/ComponentProps.vue';
@@ -13,7 +13,7 @@ import AppDocCodeContainer from '@app-components/AppDocCodeContainer.vue';
 <template>
   <AppDocCodeContainer>
     <AppCodeBlock>
-      <template #description> </template>
+      <template #description/>
       <CodeExample :code="BasicRaw">
         <template #name>Basic usage</template>
         <Basic />

@@ -81,7 +81,7 @@ const progressStyle = computed(() => ({
 }));
 
 const thumbStyle = computed(() => {
-  let value = Math.ceil((1 - position.value) * 100);
+  const value = Math.ceil((1 - position.value) * 100);
   return {
     right: `calc(${value}%) `,
   };
@@ -131,8 +131,8 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
     e.preventDefault();
   }
 
-  const nextStep =
-    e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+  const nextStep
+    = e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
 
   setModelValue(props.modelValue + nextStep);
 }
@@ -161,7 +161,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
             <template v-if="props.breakpoints">
-              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"></div>
+              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"/>
             </template>
             <div ref="thumbRef" tabindex="0" class="ui-slider__thumb ui-slider__thumb-active" :style="thumbStyle" @keydown="handleKeyPress">
               <div class="ui-slider__thumb-focused-contour" />

@@ -217,8 +217,8 @@ function handleKeyPress(e: { code: string; preventDefault(): void }, index: numb
     e.preventDefault();
   }
 
-  const nextStep =
-    e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
+  const nextStep
+    = e.code === 'ArrowUp' || e.code === 'ArrowRight' ? props.step * 1 : e.code === 'ArrowDown' || e.code === 'ArrowLeft' ? props.step * -1 : 0;
 
   const arr: ModelType = [...props.modelValue];
   arr[index] = clamp(arr[index] + nextStep, props.min, props.max);
@@ -253,7 +253,7 @@ onMounted(() => {
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
             <template v-if="props.breakpoints">
-              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"></div>
+              <div v-for="(item, index) in breakpointsRef" :key="index" :style="{ right: `${item}%` }" class="ui-slider__thumb-step"/>
             </template>
             <div
               ref="thumbRef1"

@@ -8,5 +8,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <div id="block-app"></div>
+  <div id="block-app"/>
 </template>

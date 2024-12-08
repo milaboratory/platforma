@@ -10,7 +10,7 @@ describe('PlCheckbox', () => {
         default: 'Slot text',
       },
       props: {
-        modelValue: false,
+        'modelValue': false,
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
       },
     });
