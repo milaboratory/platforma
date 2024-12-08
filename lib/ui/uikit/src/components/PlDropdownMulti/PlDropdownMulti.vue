@@ -109,18 +109,18 @@ const filteredOptionsRef = computed(() => {
   return (
     data.search
       ? options.filter((opt) => {
-          const search = data.search.toLowerCase();
+        const search = data.search.toLowerCase();
 
-          if (opt.label.toLowerCase().includes(search)) {
-            return true;
-          }
+        if (opt.label.toLowerCase().includes(search)) {
+          return true;
+        }
 
-          if (typeof opt.value === 'string') {
-            return opt.value.toLowerCase().includes(search);
-          }
+        if (typeof opt.value === 'string') {
+          return opt.value.toLowerCase().includes(search);
+        }
 
-          return opt.value === data.search;
-        })
+        return opt.value === data.search;
+      })
       : [...options]
   ).map((opt) => ({
     ...opt,
@@ -208,6 +208,7 @@ watch(
 );
 
 watchPostEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   data.search;
 
   if (data.open) {

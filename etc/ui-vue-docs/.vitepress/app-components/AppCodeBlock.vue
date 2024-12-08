@@ -10,7 +10,7 @@ import ComponentDescription from './ComponentDescription.vue';
       <template #header>
         <slot name="description-header" />
       </template>
-      <slot name="description"></slot>
+      <slot name="description"/>
     </ComponentDescription>
 
     <slot />

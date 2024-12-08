@@ -1,39 +1,38 @@
 import TextFieldBasic from './text-field/TextFieldBasic.vue';
 
-//text-area
+// text-area
 import TextAreaBasic from './text-area/TextAreaBasic.vue';
 import TextAreaValidation from './text-area/TextAreaValidation.vue';
 
-//number-field
+// number-field
 import NumberFieldBasic from './number-field/index.vue';
 
-//dropdown
+// dropdown
 import PlDropdownBasic from './dropdown/index.vue';
 
-//dropdown-multi
+// dropdown-multi
 import PlDropdownMultiBasic from './dropdown-multi/index.vue';
 
-//dropdown-line
+// dropdown-line
 import PlDropdownLineBasic from './dropdown-line/index.vue';
 
-//checkbox
+// checkbox
 import PlCheckboxBasic from './checkbox/index.vue';
 
-//checkbox-group
+// checkbox-group
 import PlCheckboxGroupBasic from './checkbox-group/index.vue';
 
-//toggle-switch
+// toggle-switch
 import PlToggleSwitchBasic from './toggle-switch/index.vue';
 
-//btn-group
+// btn-group
 import PlBtnGroupBasic from './btn-group/index.vue';
 
-//file-input
+// file-input
 import PlFileInputBasic from './file-input/index.vue';
 
-//notifications
+// notifications
 import PlNotificationAlertBasic from './notifications/index.vue';
-
 
 import PlBtnSPlitBasic from './btn-split/index.vue';
 
@@ -51,5 +50,5 @@ export {
   PlBtnGroupBasic,
   PlFileInputBasic,
   PlNotificationAlertBasic,
-  PlBtnSPlitBasic
+  PlBtnSPlitBasic,
 };

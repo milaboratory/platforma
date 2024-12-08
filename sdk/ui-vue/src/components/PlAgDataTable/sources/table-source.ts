@@ -160,11 +160,11 @@ export async function updatePFrameGridOptions(
   sheets: PlDataTableSheet[],
   hiddenColIds?: string[],
 ): Promise<{
-  columnDefs: ColDef[];
-  serverSideDatasource?: IServerSideDatasource;
-  rowModelType: RowModelType;
-  rowData?: unknown[];
-}> {
+    columnDefs: ColDef[];
+    serverSideDatasource?: IServerSideDatasource;
+    rowModelType: RowModelType;
+    rowData?: unknown[];
+  }> {
   const specs = await pfDriver.getSpec(pt);
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
@@ -177,11 +177,11 @@ export async function updatePFrameGridOptions(
         !lodash.some(
           sheets,
           (sheet) =>
-            lodash.isEqual(getAxisId(sheet.axis), specs[i].id) ||
-            (specs[i].type === 'column' &&
-              specs[i].spec.name === 'pl7.app/label' &&
-              specs[i].spec.axesSpec.length === 1 &&
-              lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
+            lodash.isEqual(getAxisId(sheet.axis), specs[i].id)
+            || (specs[i].type === 'column'
+              && specs[i].spec.name === 'pl7.app/label'
+              && specs[i].spec.axesSpec.length === 1
+              && lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
         ),
     )
     .sort((a, b) => {

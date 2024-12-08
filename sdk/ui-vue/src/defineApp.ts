@@ -8,7 +8,6 @@ import { activateAgGrid } from './aggrid';
 
 const pluginKey = Symbol('sdk-vue');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
 }

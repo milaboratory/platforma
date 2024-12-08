@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DefaultTheme } from 'vitepress';
+import type { DefaultTheme } from 'vitepress';
 import PlSidebarItem from './PlSidebarItem.vue';
 
 defineProps<{

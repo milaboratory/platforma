@@ -5,8 +5,8 @@ import { ref } from 'vue';
 const model = ref('Lorem ipsum dolor sit amet consectetur ad.');
 const rules = [
   (v?: string) =>
-    (!!v && v.length < 40) ||
-    '(rule) Length must be less than 44 chars.',
+    (!!v && v.length < 40)
+    || '(rule) Length must be less than 44 chars.',
 ];
 </script>
 
