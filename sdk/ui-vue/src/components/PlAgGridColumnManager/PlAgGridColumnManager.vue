@@ -71,7 +71,7 @@ watch(
     </Teleport>
 
     <PlSlideModal v-model="slideModal" :width="'368px'" close-on-outside-click>
-      <template #title>Columns</template>
+      <template #title>Manage Columns</template>
 
       <div ref="listRef" :key="listKey" class="pl-ag-columns">
         <div v-for="col in columns" :key="col.getId()" class="pl-ag-columns__item">
