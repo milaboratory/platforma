@@ -68,11 +68,9 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
           if (spec.type !== 'axis') return;
 
           const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
-          if (axisId?.type === showCellButtonForAxisId.type && axisId?.name === showCellButtonForAxisId.name) {
+          if (lodash.isEqual(axisId, showCellButtonForAxisId)) {
             return { component: PlAgTextAndButtonCell };
           }
-
-          return;
         }
       : undefined,
     cellRendererParams: showCellButtonForAxisId
