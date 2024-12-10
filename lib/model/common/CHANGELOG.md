@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.9.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
 ## 1.8.1
 
 ### Patch Changes
