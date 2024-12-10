@@ -851,7 +851,9 @@ field = func(f) {
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
 			fldInfo := self.info()
-			if fldInfo.Value != 0 && fldInfo.Error == 0 {
+			if fldInfo.Value != 0 && fldInfo.Error == 0 && fldInfo.Type != constants.FTYPE_OUTPUT {
+				// We can't do this optimisation for outputs, as we affect deduplication and
+				// recovery logic in that case, artificially throwing one element from the topology.
 				return resource(fldInfo.Value).getFutureField(name, fieldType, eph...)
 			}
 
