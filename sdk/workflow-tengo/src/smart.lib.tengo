@@ -447,10 +447,17 @@ resource = func(r) {
 		 * @return field: smart.field
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
+			if self.hasField(name) {
+				// We already have a field with given name.
+				// We can refer it directly to not produce complicated resource trees on backend side.
+				return self.getField(name)
+			}
+
 			isEph := strictSelf.isEphemeral()
 			if len(eph) > 0 {
 				isEph = eph[0]
 			}
+
 			return _getFutureField(strictSelf, name, fieldType, isEph)
 		},
 
@@ -470,14 +477,15 @@ resource = func(r) {
 			}
 
 			if is_array(nameOrPath) {
+				// Traverse fields
 				current := strictSelf
 				for name in nameOrPath {
 					current = current.getFutureField(name, "input", isEph)
 				}
 				return current
-			} else {
-				return self.getFutureField(nameOrPath, "input", isEph)
 			}
+
+			return self.getFutureField(nameOrPath, "input", isEph)
 		},
 
 		/**
@@ -842,6 +850,11 @@ field = func(f) {
 		 * @return field: smart.field
 		 */
 		getFutureField: func(name, fieldType, ...eph) {
+			fldInfo := self.info()
+			if fldInfo.Value != 0 && fldInfo.Error == 0 {
+				return resource(fldInfo.Value).getFutureField(name, fieldType, eph...)
+			}
+
 			isEph := strictSelf.isEphemeral()
 			if len(eph) > 0 {
 				isEph = eph[0]
