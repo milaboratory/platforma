@@ -11,6 +11,7 @@
   --active-shadow: 0 0 0 0 transparent;
   --main-padding: 0 12px;
 
+  text-transform: capitalize;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -65,6 +66,7 @@
     --border-radius: 8px;
     --font-size: 16px;
     --main-padding: 0 18px;
+
     .mask {
       --mask-size: 24px;
     }
@@ -72,6 +74,7 @@
 
   &:disabled {
     --color-text: var(--color-dis-00);
+
     * {
       color: var(--color-text);
     }
@@ -120,7 +123,7 @@
     flex-direction: row-reverse;
   }
 
-  > span {
+  >span {
     display: inline-flex;
   }
 }

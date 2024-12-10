@@ -26,6 +26,12 @@
         display: block;
     }
 
+    &__pin {
+        .mask-24 {
+            background-color: var(--ic-02);
+        }
+    }
+
     &__visibility {
         cursor: pointer;
         display: none;
