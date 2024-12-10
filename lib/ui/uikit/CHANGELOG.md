@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.28
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+
 ## 2.2.27
 
 ### Patch Changes

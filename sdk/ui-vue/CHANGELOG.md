@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.17.3
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
 ## 1.17.2
 
 ### Patch Changes
