@@ -67,13 +67,8 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
       ? (params: ICellRendererParams) => {
           if (spec.type !== 'axis') return;
 
-          const entry = params.api.getAllDisplayedColumns()
-            .find((c) => {
-              const spc = c.getColDef().context as PTableColumnSpec;
-              return showCellButtonForAxisId.type === (spc?.id as AxisId)?.type
-                && showCellButtonForAxisId.name === (spc?.id as AxisId)?.name;
-            });
-          if (entry?.getColId() === colId) {
+          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
+          if (axisId?.type === showCellButtonForAxisId.type && axisId?.name === showCellButtonForAxisId.name) {
             return { component: PlAgTextAndButtonCell };
           }
 
