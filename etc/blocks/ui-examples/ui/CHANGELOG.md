@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.62
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.49
+
 ## 1.2.61
 
 ### Patch Changes
