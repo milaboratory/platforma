@@ -1,5 +1,11 @@
 # @platforma-sdk/test
 
+## 1.17.4
+
+### Patch Changes
+
+- 016c560: Increase default timeout for awaitStableState
+
 ## 1.17.1
 
 ### Patch Changes
