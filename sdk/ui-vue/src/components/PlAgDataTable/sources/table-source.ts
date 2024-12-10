@@ -1,5 +1,5 @@
-import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { PlDataTableSheet } from '@platforma-sdk/model';
+import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { AxisId, PlDataTableSheet } from '@platforma-sdk/model';
 import {
   type PColumnSpec,
   type PFrameDriver,
@@ -18,6 +18,7 @@ import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } fro
 import type { PlAgDataTableRow } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { PlAgColumnHeader, type PlAgHeaderComponentType, type PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
+import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
 
 /**
  * Generate unique colId based on the column spec.
@@ -50,17 +51,33 @@ export const defaultValueFormatter = (value: any) => {
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
   const colId = makeColId(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
+    context: spec,
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     headerComponent: PlAgColumnHeader,
+    cellRendererSelector: showCellButtonForAxisId
+      ? (params: ICellRendererParams) => {
+          if (spec.type !== 'axis') return;
+
+          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
+          if (lodash.isEqual(axisId, showCellButtonForAxisId)) {
+            return { component: PlAgTextAndButtonCell };
+          }
+        }
+      : undefined,
+    cellRendererParams: showCellButtonForAxisId
+      ? {
+          invokeRowsOnDoubleClick: true,
+        }
+      : undefined,
     headerComponentParams: {
       type: ((): PlAgHeaderComponentType => {
         switch (valueType) {
@@ -159,6 +176,7 @@ export async function updatePFrameGridOptions(
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
   hiddenColIds?: string[],
+  showCellButtonForAxisId?: AxisId,
 ): Promise<{
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
@@ -232,7 +250,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds))];
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId))];
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
