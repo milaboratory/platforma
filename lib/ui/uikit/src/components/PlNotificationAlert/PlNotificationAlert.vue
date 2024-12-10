@@ -22,7 +22,7 @@ function closeAlert() {
 
 <template>
   <div v-if="model" :class="type" :style="{ width: `${width}` }" class="pl-notification-alert d-flex flex-column gap-16">
-    <div class="pl-notification-alert__wrapper d-flex">
+    <div class="pl-notification-alert__wrapper d-flex text-s">
       <div class="pl-notification-alert__content flex-grow-1">
         <slot />
       </div>

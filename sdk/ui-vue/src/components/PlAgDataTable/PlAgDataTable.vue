@@ -60,6 +60,7 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
+  showCellButtonForAxisId?: AxisId;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -378,7 +379,7 @@ watch(
 
         const driver = getRawPlatformaInstance().pFrameDriver;
         const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
-        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds);
+        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds, props.showCellButtonForAxisId);
 
         return gridApi.updateGridOptions({
           loading: false,
