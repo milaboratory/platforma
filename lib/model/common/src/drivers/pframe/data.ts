@@ -1,3 +1,4 @@
+import { number } from 'zod';
 import { ValueType } from './spec';
 
 export const PValueIntNA = -2147483648;
@@ -238,6 +239,41 @@ export function isValueAbsent(absent: Uint8Array, index: number): boolean {
   const chunkIndex = Math.floor(index / 8);
   const mask = 1 << (7 - (index % 8));
   return (absent[chunkIndex] & mask) > 0;
+}
+
+export const PTableNull = { type: 'absent' };
+export const PTableNA = null;
+
+/** Decoded PTable value */
+export type PTableValue =
+  | typeof PTableNull
+  | typeof PTableNA
+  | number | string;
+
+/** Read PTableValue from PTable column at specified row */
+export function pTableValue(column: PTableVector, row: number): PTableValue {
+  if (isValueAbsent(column.absent, row)) return PTableNull;
+
+  const value = column.data[row];
+  const valueType = column.type;
+  if (isValueNA(value, valueType)) return PTableNA;
+
+  switch (valueType) {
+    case 'Int':
+      return value as PVectorDataInt[number];
+    case 'Long':
+      return Number(value as PVectorDataLong[number]);
+    case 'Float':
+      return value as PVectorDataFloat[number];
+    case 'Double':
+      return value as PVectorDataDouble[number];
+    case 'String':
+      return value as PVectorDataString[number];
+    case 'Bytes':
+      throw Error(`Bytes not yet supported`);
+    default:
+      throw Error(`unsupported data type: ${valueType satisfies never}`);
+  }
 }
 
 /** Used in requests to partially retrieve table's data */
