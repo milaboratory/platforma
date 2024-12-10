@@ -85,6 +85,9 @@ watch(
               <template #tooltip>Show/Hide</template>
             </PlTooltip>
           </div>
+          <div v-if="col.getColDef().lockPosition" class="pl-ag-columns__pin">
+            <PlMaskIcon24 name="pin" />
+          </div>
         </div>
       </div>
     </PlSlideModal>

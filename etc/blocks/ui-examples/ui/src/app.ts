@@ -17,6 +17,7 @@ import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 import PlTabsPage from './pages/PlTabsPage.vue';
 import DraftsPage from './pages/DraftsPage.vue';
 import LayoutPage from './pages/LayoutPage.vue';
+import ButtonsPage from './pages/ButtonsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
@@ -74,6 +75,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
       '/drafts': () => DraftsPage,
+      '/buttons': () => ButtonsPage,
     },
   };
 });
