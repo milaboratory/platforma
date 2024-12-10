@@ -1,5 +1,16 @@
 # @platforma-sdk/ui-vue
 
+## 1.18.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/uikit@2.2.28
+
 ## 1.17.5
 
 ### Patch Changes
