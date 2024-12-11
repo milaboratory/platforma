@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.18.1
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
 ## 1.18.0
 
 ### Minor Changes
