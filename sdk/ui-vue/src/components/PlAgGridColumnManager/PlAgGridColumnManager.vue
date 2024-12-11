@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Column, GridApi } from '@ag-grid-community/core';
+import { type Column, type GridApi } from '@ag-grid-community/core';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
