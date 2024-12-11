@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { GridApi } from '@ag-grid-community/core';
+import type { GridApi } from 'ag-grid-enterprise';
 import { PlBtnGhost, PlMaskIcon24 } from '@milaboratories/uikit';
 import { shallowRef, toRefs } from 'vue';
 import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';

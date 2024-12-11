@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type Column, type GridApi } from '@ag-grid-community/core';
+import { type Column, type GridApi } from 'ag-grid-enterprise';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
@@ -22,19 +22,10 @@ const listRef = ref<HTMLElement>();
 const slideModal = ref(false);
 const listKey = ref(0);
 
-function getReorderedColumns(columns: Column[]) {
-  const numRowsIndex = columns.findIndex((v) => v.getId() === PlAgDataTableRowNumberColId);
-  if (numRowsIndex !== 0) {
-    const [numRowsCol] = columns.splice(numRowsIndex, 1);
-    return columns.splice(0, 0, numRowsCol);
-  }
-  return columns;
-}
-
 useSortable(listRef, {
   handle: '.handle',
   onChange(indices) {
-    gridApi.value.moveColumns(getReorderedColumns(indices.map((i) => columns.value[i])), 0);
+    gridApi.value.moveColumns(indices.map((i) => columns.value[i]), 0);
   },
 });
 
@@ -45,7 +36,7 @@ function toggleColumnVisibility(col: Column) {
 watch(
   () => gridApi.value,
   (gridApi) => {
-    columns.value = getReorderedColumns(gridApi.getAllGridColumns());
+    columns.value = gridApi.getAllGridColumns();
     if (columns.value.length > 0) {
       gridApi.moveColumns(columns.value, 0);
     }
