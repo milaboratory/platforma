@@ -1,4 +1,4 @@
-import type { GridApi, IRowNode } from '@ag-grid-community/core';
+import type { GridApi, IRowNode } from 'ag-grid-enterprise';
 import { nextTick, shallowRef, watchEffect } from 'vue';
 
 export function makeOnceTracker<TContext = undefined>() {

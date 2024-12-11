@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import type {
-  ColDef,
-  ColGroupDef,
-  GridApi,
-  GridOptions,
-  GridReadyEvent,
-  GridState,
-  ManagedGridOptionKey,
-  ManagedGridOptions,
-  SortState,
-  StateUpdatedEvent,
-} from '@ag-grid-community/core';
-import { ModuleRegistry } from '@ag-grid-community/core';
-import { AgGridVue } from '@ag-grid-community/vue3';
-import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
-import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
-import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
+import {
+  type ColDef,
+  type ColGroupDef,
+  type GridApi,
+  type GridOptions,
+  type GridReadyEvent,
+  type GridState,
+  type ManagedGridOptionKey,
+  type ManagedGridOptions,
+  type SortState,
+  type StateUpdatedEvent,
+  ModuleRegistry,
+  ClientSideRowModelModule,
+  ClipboardModule,
+  CellSelectionModule,
+  ServerSideRowModelModule,
+} from 'ag-grid-enterprise';
+import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import {
   getAxisId,
@@ -45,7 +45,7 @@ ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ClipboardModule,
   ServerSideRowModelModule,
-  RangeSelectionModule,
+  CellSelectionModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });

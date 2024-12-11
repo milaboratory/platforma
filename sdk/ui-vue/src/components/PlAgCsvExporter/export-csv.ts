@@ -1,6 +1,11 @@
-import type { ColDef, ColGroupDef } from '@ag-grid-community/core';
-import { createGrid, type GridApi, type GridOptions } from '@ag-grid-community/core';
-import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
+import {
+  type ColDef,
+  type ColGroupDef,
+  createGrid,
+  type GridApi,
+  type GridOptions,
+  ServerSideRowModelModule,
+} from 'ag-grid-enterprise';
 
 function createGridDiv(): HTMLDivElement {
   const div = document.createElement('div');

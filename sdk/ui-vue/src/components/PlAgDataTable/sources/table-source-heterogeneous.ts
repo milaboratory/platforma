@@ -1,4 +1,4 @@
-import type { ColDef, IServerSideDatasource, RowModelType } from '@ag-grid-community/core';
+import type { ColDef, IServerSideDatasource, RowModelType } from 'ag-grid-enterprise';
 import type { AxisSpec, PColumnSpec, PTableColumnSpec, PTableShape, PTableVector, PVectorDataString } from '@platforma-sdk/model';
 import { getAxisId } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';

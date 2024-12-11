@@ -1,4 +1,4 @@
-import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from 'ag-grid-enterprise';
 import {
   type AxisId,
   type PColumnSpec,
