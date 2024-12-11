@@ -46,8 +46,6 @@ export type PTableRowKey = PTableValue[];
 
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
-  /** Export table data as Csv file */
-  exportCsv: () => void;
   /** Scroll table to make row with provided key visible */
   focusRow: (rowKey: PTableRowKey) => void;
 };
