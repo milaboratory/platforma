@@ -39,8 +39,8 @@ import { makeRowId, parseColId, updatePFrameGridOptions } from './sources/table-
 import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
-import { exportCsv } from './sources/export-csv';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
+import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -60,6 +60,13 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
+  /**
+   * The showExportButton prop controls the display of a button that allows
+   * to export table data in CSV format. To make the button functional
+   * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
+   * This component serves as the target for teleporting the button.
+   */
+  showExportButton?: boolean;
   showCellButtonForAxisId?: AxisId;
 }>();
 const { settings } = toRefs(props);
@@ -247,7 +254,6 @@ const onGridPreDestroyed = () => {
 };
 
 defineExpose<PlAgDataTableController>({
-  exportCsv: () => exportCsv(gridApi.value),
   focusRow: (rowKey) => focusRow(makeRowId(rowKey), firstDataRenderedTracker),
 });
 
@@ -376,6 +382,7 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
+    <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
         v-for="(sheet, i) in settings.sheets"
