@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.18.2
+
+### Patch Changes
+
+- e1d8a3b: PlAgDataTable export selected rows
+
 ## 1.18.1
 
 ### Patch Changes
