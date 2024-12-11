@@ -1,4 +1,4 @@
-import type { ColDef, GridApi, ValueGetterParams } from '@ag-grid-community/core';
+import type { ColDef, GridApi, ValueGetterParams } from 'ag-grid-enterprise';
 import { nextTick } from 'vue';
 
 export const PlAgDataTableRowNumberColId = '"##RowNumberColumnId##"';

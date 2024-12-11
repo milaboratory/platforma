@@ -1,4 +1,4 @@
-import type { ColDef, IDatasource } from '@ag-grid-community/core';
+import type { ColDef, IDatasource } from 'ag-grid-enterprise';
 import type { BlobDriver, LocalBlobHandleAndSize, RemoteBlobHandleAndSize } from '@platforma-sdk/model';
 
 export async function updateXsvGridOptions(

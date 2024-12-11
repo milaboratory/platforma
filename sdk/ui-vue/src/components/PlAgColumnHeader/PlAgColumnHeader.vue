@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { IHeaderParams, SortDirection } from '@ag-grid-community/core';
+import type { IHeaderParams, SortDirection } from 'ag-grid-enterprise';
 import type { MaskIconName16 } from '@milaboratories/uikit';
 import { PlMaskIcon16 } from '@milaboratories/uikit';
 import { computed, onMounted, ref } from 'vue';
