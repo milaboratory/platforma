@@ -17,7 +17,6 @@ import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
-import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import {
   getAxisId,
@@ -47,10 +46,10 @@ ModuleRegistry.registerModules([
   ClipboardModule,
   ServerSideRowModelModule,
   RangeSelectionModule,
-  SideBarModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
+const selectedRows = defineModel<string[]>('selectedRows');
 const props = defineProps<{
   settings?: Readonly<PlDataTableSettings>;
   /**
@@ -178,10 +177,12 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   cellSelection: true,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
-  // rowSelection: {
-  //   mode: 'multiRow',
-  //   headerCheckbox: false,
-  // },
+  rowSelection: selectedRows.value
+    ? {
+        mode: 'multiRow',
+        headerCheckbox: false,
+      }
+    : undefined,
   onRowDoubleClicked: (event) => {
     if (event.data) emit('onRowDoubleClicked', event.data.key);
   },
