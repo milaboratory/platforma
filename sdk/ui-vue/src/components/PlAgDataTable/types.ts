@@ -55,9 +55,10 @@ export type PlAgDataTableController = {
 
 /** PlAgDataTable row */
 export type PlAgDataTableRow = {
-  key: PTableRowKey;
-  /** Unique row identifier, created as canonicalize(key)! */
+  /** Axis key is not present for heterogeneous axes */
+  key?: PTableRowKey;
+  /** Unique row identifier, created as canonicalize(key)! when key is present */
   id: string;
   /** Row values by column; sheet axes and labeled axes are excluded */
-  [field: `${number}`]: PTableValue;
+  [field: `${number}` | `hC${number}`]: PTableValue;
 };

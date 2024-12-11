@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { ICellRendererParams } from '@ag-grid-community/core';
+import type { ICellRendererParams } from 'ag-grid-enterprise';
 import { PlStatusTag } from '@milaboratories/uikit';
 import type { PlStatusTagType } from '@milaboratories/uikit';
 

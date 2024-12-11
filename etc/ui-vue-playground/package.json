@@ -19,13 +19,8 @@
     "vue-router": "4"
   },
   "devDependencies": {
-    "@ag-grid-community/client-side-row-model": "catalog:",
-    "@ag-grid-community/core": "catalog:",
-    "@ag-grid-community/infinite-row-model": "catalog:",
-    "@ag-grid-community/styles": "catalog:",
-    "@ag-grid-community/vue3": "catalog:",
-    "@ag-grid-enterprise/clipboard": "catalog:",
-    "@ag-grid-enterprise/range-selection": "catalog:",
+    "ag-grid-enterprise": "catalog:",
+    "ag-grid-vue3": "catalog:",
     "@faker-js/faker": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
