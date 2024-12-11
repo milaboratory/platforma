@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.29
+
+### Patch Changes
+
+- 07afde6: Fix PlBlockPage title overflow bug (set overflow ellipsis and title attribute if needed)
+
 ## 2.2.28
 
 ### Patch Changes

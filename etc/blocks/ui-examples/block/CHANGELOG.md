@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.ui-examples
 
+## 1.0.145
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/milaboratories.ui-examples.ui@1.2.65
+
 ## 1.0.144
 
 ### Patch Changes
