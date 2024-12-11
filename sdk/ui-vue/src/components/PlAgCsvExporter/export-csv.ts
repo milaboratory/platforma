@@ -1,6 +1,5 @@
 import type { ColDef, ColGroupDef } from '@ag-grid-community/core';
 import { createGrid, type GridApi, type GridOptions } from '@ag-grid-community/core';
-import type { PlAgDataTableRow } from '../types';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
 
 function createGridDiv(): HTMLDivElement {
@@ -17,22 +16,19 @@ function destroyGridDiv(cellFake: HTMLDivElement) {
   document.body.removeChild(cellFake);
 }
 
-export async function exportCsv(gridApi?: GridApi<PlAgDataTableRow>) {
-  if (!gridApi) return;
-
+export async function exportCsv(gridApi: GridApi, completed: () => void) {
   const rowModel = gridApi.getGridOption('rowModelType');
   switch (rowModel) {
     case 'clientSide': {
-      return gridApi.exportDataAsCsv();
+      gridApi.exportDataAsCsv();
+      return completed();
     }
 
     case 'serverSide': {
-      const groupState = gridApi.getServerSideGroupLevelState();
-      if (groupState.length === 0) return;
-
-      const state = groupState[0];
-      if (state.rowCount <= state.cacheBlockSize!) {
-        return gridApi.exportDataAsCsv();
+      const state = gridApi.getServerSideGroupLevelState();
+      if (state.length === 0 || state[0].rowCount <= state[0].cacheBlockSize!) {
+        gridApi.exportDataAsCsv();
+        return completed();
       }
 
       const gridDiv = createGridDiv();
@@ -47,23 +43,23 @@ export async function exportCsv(gridApi?: GridApi<PlAgDataTableRow>) {
             valueGetter: def.valueGetter,
           })) ?? [],
         serverSideDatasource: gridApi.getGridOption('serverSideDatasource'),
-        cacheBlockSize: state.rowCount,
+        cacheBlockSize: state[0].rowCount,
         onModelUpdated: (event) => {
-          const groupState = event.api.getServerSideGroupLevelState();
-          if (groupState.length === 0) return;
-
-          const state = groupState[0];
-          if (state.rowCount !== state.cacheBlockSize) return;
-
-          event.api.exportDataAsCsv();
-          destroyGridDiv(gridDiv);
+          const state = event.api.getServerSideGroupLevelState();
+          if (state.length > 0 && state[0].rowCount === state[0].cacheBlockSize) {
+            event.api.exportDataAsCsv();
+            destroyGridDiv(gridDiv);
+            return completed();
+          }
         },
         defaultCsvExportParams: gridApi.getGridOption('defaultCsvExportParams'),
       };
       return createGrid(gridDiv, gridOptions, { modules: [ServerSideRowModelModule] });
     }
 
-    default:
+    default: {
+      completed();
       throw Error(`exportCsv unsupported for rowModelType = ${rowModel}`);
+    }
   }
 };

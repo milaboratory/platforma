@@ -12,8 +12,10 @@ export * from './components/PlAgColumnHeader';
 export * from './components/PlAgCellFile';
 
 export * from './components/PlAgDataTable/types';
-
 export * from './components/PlAgDataTable/sources/row-number';
+export * from './components/PlAgDataTable/sources/focus-row';
+
+export * from './components/PlAgCsvExporter';
 
 export * from './components/PlAgTextAndButtonCell';
 
