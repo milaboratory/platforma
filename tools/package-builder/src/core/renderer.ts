@@ -1,10 +1,15 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import winston from 'winston';
 import { z } from 'zod';
-import { Entrypoint, PackageConfig, SoftwareEntrypoint } from './package-info';
+import { Entrypoint, PackageConfig } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
+
+/** Current version of descriptor's schema.
+ * Increment a number whenever a breaking change will come,
+ * then it will be possible to check this in workflow-tengo/exec. */
+export const descriptorSchemaVersion = 2;
 
 const externalPackageLocationSchema = z.object({
   registry: z.string().describe('name of the registry to use for package download'),
@@ -63,7 +68,19 @@ type runDepInfo = runDependencyJava | runDependencyPython | runDependencyR;
 // runDependencyConda
 
 const anyPackageSettingsSchema = z.object({
-  cmd: z.array(z.string()).min(1).describe('run given command, appended by args from workflow'),
+  cmd: z
+    .array(z.string())
+    .min(1)
+    .describe('run given command, appended by args from workflow, old version'),
+
+  command: z
+    .array(z.string())
+    .min(1)
+    .describe(
+      'run given command, appended by args from workflow. ' +
+        'Use "{{expression}}" syntax to calculate arguments depending on runtime info ' +
+        'such as environment variables (via an object "env"), secrets (via an object "secrets") etc.'
+    ),
 
   envVars: z
     .array(
@@ -161,6 +178,9 @@ type localInfo = z.infer<typeof localSchema>;
 const entrypointSchema = z
   .object({
     isDev: z.boolean().optional(),
+
+    // just a number, semver is not needed: only breaking changes matter here.
+    schemaVersion: z.number().optional(),
 
     asset: assetSchema.optional(),
     binary: binarySchema.optional(),
@@ -281,6 +301,7 @@ export class Renderer {
       this.logger.debug('  sources: ' + JSON.stringify(sources));
 
       const info: entrypointSwJson = {
+        schemaVersion: descriptorSchemaVersion,
         id: {
           package: this.npmPackageName,
           name: epName
@@ -409,7 +430,8 @@ export class Renderer {
               type: 'binary',
               hash: hash.digest().toString('hex'),
               path: rootDir,
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env
             };
           case 'java':
@@ -417,7 +439,8 @@ export class Renderer {
               type: 'java',
               hash: hash.digest().toString('hex'),
               path: rootDir,
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type)
             };
@@ -428,7 +451,8 @@ export class Renderer {
               type: 'python',
               hash: hash.digest().toString('hex'),
               path: rootDir,
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
@@ -442,7 +466,8 @@ export class Renderer {
               type: 'R',
               hash: hash.digest().toString('hex'),
               path: rootDir,
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               toolset: toolset,
               dependencies: deps,
@@ -458,7 +483,8 @@ export class Renderer {
           //         type: "conda",
           //         hash: hash.digest().toString('hex'),
           //         path: rootDir,
-          //         cmd: ep.cmd,
+          //         cmd: ep.oldCmd,
+          //         command: ep.command,
           //         envVars: ep.envVars,
           //         runEnv: runEnv!,
           //     }
@@ -524,7 +550,8 @@ export class Renderer {
               registry: pkg.registry.name,
               package: pkg.namePattern,
 
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env
             };
           case 'java':
@@ -533,7 +560,8 @@ export class Renderer {
               registry: pkg.registry.name,
               package: pkg.namePattern,
 
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type)
             };
@@ -545,7 +573,8 @@ export class Renderer {
               registry: pkg.registry.name!,
               package: pkg.namePattern,
 
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
@@ -560,7 +589,8 @@ export class Renderer {
               registry: pkg.registry.name!,
               package: pkg.namePattern,
 
-              cmd: ep.cmd,
+              cmd: ep.oldCmd,
+              command: ep.command,
               envVars: ep.env,
               runEnv: this.resolveRunEnvironment(pkg.environment, pkg.type),
               toolset: toolset,
@@ -577,7 +607,8 @@ export class Renderer {
           //         registry: binary.registry.name!,
           //         package: binary.namePattern,
 
-          //         cmd: ep.cmd,
+          //         cmd: ep.oldCmd,
+          //         command: ep.command,
           //         envVars: ep.envVars,
           //         runEnv: runEnv!,
           //     }
@@ -611,7 +642,7 @@ export class Renderer {
 
     if (env.type !== 'environment') {
       throw new Error(
-        `could not render run environemnt entrypoint ${epName} (not 'environment' artifact)`
+        `could not render run environment entrypoint ${epName} (not 'environment' artifact)`
       );
     }
 

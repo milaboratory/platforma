@@ -10,6 +10,7 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 path := import(":path")
 validation := import(":validation")
+constants := import(":exec.constants")
 
 self.defineOutputs("runEnv")
 
@@ -17,7 +18,7 @@ _runInVenv := func(wd, venv) {
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		substitutionRule("{python}", "python-venv").
-		addToPath(path.join("{python}", "venv", "bin"), true).
+		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", "venv", "bin")).
 		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
 }
 

@@ -1,12 +1,15 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import { randomBytes } from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 
-import * as artifacts from './test-artifacts';
-import { PackageInfo } from './package-info';
+import * as util from './util';
+import { Entrypoint, PackageInfo, SoftwareEntrypoint } from './package-info';
 import { Renderer, entrypointFilePath, readEntrypointDescriptor } from './renderer';
+import * as testartifacts from './test-artifacts';
 import { createLogger } from './util';
+import { Logger } from 'winston';
 
 describe('Renderer tests', () => {
   let tempDir: string;
@@ -19,7 +22,10 @@ describe('Renderer tests', () => {
 
   beforeEach(() => {
     const fakePackageRoot = path.join(tempDir, randomBytes(16).toString('hex'));
-    i = new PackageInfo(l, { pkgJsonData: artifacts.PackageJson, packageRoot: fakePackageRoot });
+    i = new PackageInfo(l, {
+      pkgJsonData: testartifacts.PackageJson,
+      packageRoot: fakePackageRoot
+    });
   });
 
   afterAll(() => {
@@ -27,42 +33,42 @@ describe('Renderer tests', () => {
   });
 
   test('render asset', () => {
-    const epName = artifacts.EPNameAsset;
+    const epName = testartifacts.EPNameAsset;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
     const eps = new Map([[epName, i.getEntrypoint(epName)]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     const url = descriptor.asset!.url;
-    const expectedPath = `${artifacts.BinaryRegistryURL}/${artifacts.PackageNameNoAt}/pAsset/${artifacts.PackageVersion}.zip`;
+    const expectedPath = `${testartifacts.BinaryRegistryURL}/${testartifacts.PackageNameNoAt}/pAsset/${testartifacts.PackageVersion}.zip`;
     expect(url).toEqual(expectedPath);
   });
 
   test('render os-dependant', () => {
-    const epName = artifacts.EPNameCustomName;
+    const epName = testartifacts.EPNameCustomName;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
     const eps = new Map([[epName, i.getEntrypoint(epName)]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.BinaryCustomName1}/${artifacts.BinaryCustomVersion}-{os}-{arch}.tgz`
+      `${testartifacts.BinaryCustomName1}/${testartifacts.BinaryCustomVersion}-{os}-{arch}.tgz`
     );
   });
 
   test('render environment', () => {
-    const epName = artifacts.EPNameJavaEnvironment;
+    const epName = testartifacts.EPNameJavaEnvironment;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
     const eps = new Map([[epName, i.getEntrypoint(epName)]]);
     const descriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
 
     expect(descriptor.runEnv!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/pEnv/${artifacts.PackageVersion}-{os}-{arch}.tgz`
+      `${testartifacts.PackageNameNoAt}/pEnv/${testartifacts.PackageVersion}-{os}-{arch}.tgz`
     );
     expect(descriptor.runEnv!.type).toEqual('java');
     expect(descriptor.runEnv!.binDir).toEqual('.');
   });
 
   test('read descriptor after render', () => {
-    const epName = artifacts.EPNameCustomName;
+    const epName = testartifacts.EPNameCustomName;
     const sw = new Renderer(l, i.packageName, i.packageRoot);
     const eps = new Map([[epName, i.getEntrypoint(epName)]]);
     const renderedDescriptor = sw.renderSoftwareEntrypoints('release', eps).get(epName)!;
@@ -80,8 +86,8 @@ describe('Renderer tests', () => {
   });
 
   test('render with environment dependency', () => {
-    const envEpName = artifacts.EPNameJavaEnvironment;
-    const epName = artifacts.EPNameJavaDependency;
+    const envEpName = testartifacts.EPNameJavaEnvironment;
+    const epName = testartifacts.EPNameJavaDependency;
 
     const renderer = new Renderer(l, i.packageName, i.packageRoot);
     const envEps = new Map([[envEpName, i.getEntrypoint(envEpName)]]);
@@ -93,7 +99,69 @@ describe('Renderer tests', () => {
 
     const descriptor = renderer.renderSoftwareEntrypoints('release', eps).get(epName)!;
     expect(descriptor.binary!.package).toEqual(
-      `${artifacts.PackageNameNoAt}/pEnvDep/${artifacts.PackageVersion}.tgz`
+      `${testartifacts.PackageNameNoAt}/pEnvDep/${testartifacts.PackageVersion}.tgz`
     );
   });
+});
+
+test.skip('should render descriptor from an entrypoint', () => {
+  const logger = new Logger();
+  const renderer = new Renderer(
+    logger,
+    '@milaboratories/test.software',
+    '/test/path/to/this/package'
+  );
+
+  const envEpName = testartifacts.EPNamePythonEnvironment;
+
+  const envDescriptor = renderer
+    .renderSoftwareEntrypoints(
+      'release',
+      new Map([
+        [
+          envEpName,
+          {
+            type: 'software',
+            name: envEpName,
+            package: {
+              platforms: ['linux-x64'],
+              fullName(platform: util.PlatformType) {
+                return 'fullName';
+              },
+              namePattern: 'namePattern',
+              name: 'python-test',
+              crossplatform: true,
+              contentRoot(platform: util.PlatformType) {
+                return './src';
+              },
+
+              registry: {
+                name: '${BinaryRegistry}'
+              },
+
+              id: 'python-test',
+              isBuildable: true,
+              isMultiroot: true,
+
+              type: 'python',
+              version: '1.0.0',
+              environment: '@platforma-open/milaboratories.runenv-python-3:3.12.6',
+              dependencies: {
+                toolset: 'pip',
+                requirements: 'requirements.txt'
+              },
+              root: './src_python'
+            },
+            oldCmd: ['python', '{pkg}/hello.py'],
+            command: ['python', '{{pkg}}/hello.py'],
+            env: ['PATH=abc']
+          } satisfies Entrypoint
+        ]
+      ])
+    )
+    .get(envEpName)!;
+
+  expect(envDescriptor.binary!.package).toEqual(
+    `${testartifacts.PackageNameNoAt}/pEnvDep/${testartifacts.PackageVersion}.tgz`
+  );
 });

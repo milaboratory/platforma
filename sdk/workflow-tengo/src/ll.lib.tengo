@@ -7,13 +7,6 @@ log := import("log")
 text := import("text")
 
 /**
- * Provides current API version available at runtime
- */
-apiVersion := func() {
-	return 0 // stub code. Real API checker will appear here.
-}
-
-/**
  * Prints message to the pl log
  */
 print := func(txt, ...args) {
@@ -82,35 +75,6 @@ fromStrict := func(r) {
 }
 
 /**
- * Safe way to check if method exists in a builtin module or a library
- *
- * @param module: module - builtin module or tengo library
- * @param methodName: string - name of a method to be checked
- *
- * @return bool - true when method exists, false otherwise
- */
-methodExists := func(module, methodName) {
-	if isStrict(module) {
-		if !is_callable(plapi.mapHasKey) {
-			module = fromStrict(module)
-
-		} else {
-			if !plapi.mapHasKey(module, methodName) {
-				return false
-			}
-		}
-	}
-
-	method := module[methodName]
-
-	if is_undefined(method) {
-        return false
-    }
-
-    return is_callable(method)
-}
-
-/**
  * If input is a strict map, converts it to a normal one, otherwise returns the object as is
  *
  * @param r: any object (possible strict map)
@@ -160,6 +124,46 @@ toStrict := func(v, ...recursive) {
 		panic("toStrict(<v>): <v> is not a map", v)
 	}
 	return plapi.mapToStrict(v)
+}
+
+/**
+ * Safe way to check if method exists in a builtin module or a library
+ *
+ * @param module: module - builtin module or tengo library
+ * @param methodName: string - name of a method to be checked
+ *
+ * @return bool - true when method exists, false otherwise
+ */
+methodExists := func(module, methodName) {
+	if isStrict(module) {
+		if !is_callable(plapi.mapHasKey) {
+			module = fromStrict(module)
+
+		} else {
+			if !plapi.mapHasKey(module, methodName) {
+				return false
+			}
+		}
+	}
+
+	method := module[methodName]
+
+	if is_undefined(method) {
+		return false
+	}
+
+	return true
+}
+
+/**
+ * Provides current API version available at runtime
+ */
+apiVersion := func() {
+	if !methodExists(plapi, "apiVersion") {
+		return 0 // before we introduced apiVersion
+	}
+
+	return plapi.apiVersion
 }
 
 /**
