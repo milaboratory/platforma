@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
 ## 1.9.0
 
 ### Minor Changes
