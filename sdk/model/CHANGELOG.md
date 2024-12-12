@@ -1,5 +1,16 @@
 # @platforma-sdk/model
 
+## 1.19.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @milaboratories/pl-model-common@1.10.0
+
 ## 1.18.0
 
 ### Patch Changes
