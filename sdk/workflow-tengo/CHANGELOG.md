@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.0
+
+### Minor Changes
+
+- 9405947: Allow local python packages install using index embedded into python run environment
+
 ## 2.7.0
 
 ### Minor Changes
