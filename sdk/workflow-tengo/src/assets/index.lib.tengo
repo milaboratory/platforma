@@ -7,7 +7,7 @@ smart := import(":smart")
 swinfo := import(":assets.swinfo")
 
 /**
- * Returns internal template identifier for loaded templates
+ * Returns resource of template available in current execution context.
  *
  * @param tplName: string - full name of a template, including namespace (package name).
  * Local templates (within the same package) can omit namespace part and start the name with colon:
@@ -56,7 +56,11 @@ isAssetInfo := func(toCheck) {
 		return false
 	}
 
-	return (ll.fromStrict(toCheck)._type) == "assetDescriptor"
+	if !maps.containsKey(toCheck, "_type") {
+		return false
+	}
+
+	return toCheck._type == "assetDescriptor"
 }
 
 export ll.toStrict({
