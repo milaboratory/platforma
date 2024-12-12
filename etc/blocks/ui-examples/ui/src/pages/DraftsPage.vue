@@ -6,12 +6,22 @@ import {
   PlRow,
   PlBtnPrimary,
   PlCloseModalBtn,
+  PlDropdownLine,
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 
 const data = reactive({
   title: 'Title example',
   importHandles: [] as unknown[],
+  value: 1,
+  options: [{
+    label: 'Test Label',
+    value: 1,
+  }, {
+    label: 'Test label 2',
+    value: 2,
+  }],
 });
 
 const onDrop = (ev: DragEvent) => {
@@ -24,6 +34,19 @@ const onDrop = (ev: DragEvent) => {
     }
   });
 };
+
+const currentLabel = computed({
+  get() {
+    return data.options.find((o) => o.value === data.value)?.label;
+  },
+  set(v) {
+    const opt = data.options.find((o) => o.value === data.value);
+    if (opt) {
+      opt.label = v ?? '';
+    }
+  },
+});
+
 </script>
 
 <template>
@@ -50,6 +73,10 @@ const onDrop = (ev: DragEvent) => {
       </PlContainer>
     </PlRow>
     <PlRow> <PlCloseModalBtn /> </PlRow>
+    <PlRow> <PlTextField v-model="currentLabel" label="Change title" :clearable="() => undefined" /> </PlRow>
+    <PlRow>
+      <PlDropdownLine v-model="data.value" :label="data.title" :options="data.options" />
+    </PlRow>
   </PlBlockPage>
 </template>
 
