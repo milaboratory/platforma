@@ -1,0 +1,135 @@
+/**
+ * Creates new r virtual environment.
+ * DEPRECATED: Remove after 15 Jan 2025
+ */
+
+times := import("times")
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+workdir := import(":workdir")
+assets := import(":assets")
+path := import(":path")
+validation := import(":validation")
+runenv := import(":exec.runenv")
+internal := import(":exec.R.internal-obsolete")
+
+//
+// Function declarations (see definitions below)
+//
+_toolsetRenvRefreshSwPackage := undefined
+
+_createRvenv := undefined
+_toolsetRenvCreate := undefined
+
+tplBody := func(inputs) {
+	// assert we have inputs we expect.
+	validation.assertJsonSchema(inputs, internal.rVenvInputSchema)
+
+	venv := _createRvenv(
+		inputs.operationMode,
+		inputs.software,
+		inputs.R, inputs.rDescriptor,
+		inputs.toolset, inputs.dependencies
+	)
+
+	return {
+		runEnv: venv
+	}
+}
+
+// Create R virtual environment using selected toolset.
+_createRvenv = func(operationMode, swPackage, rPackage, rDescriptor, toolset, dependencies) {
+	if toolset == "renv" {
+		return _toolsetRenvCreate(operationMode, swPackage, rPackage, rDescriptor, dependencies)
+	}
+
+	ll.panic("R toolset %q is not supported by current version of workflow-sdk", toolset)
+}
+
+_toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, dependencies) {
+	wdBefore := workdir.builder().build()
+
+	if operationMode == "dev-local" {
+		wdBefore = _toolsetRenvRefreshSwPackage(wdBefore, swPackage, rPackage, rDescriptor, dependencies).workdir
+	}
+
+	//
+	// Activate run environment in current working directory
+	//
+	renvBuilder := internal.runRBuilder(wdBefore, rPackage, rDescriptor).
+		env("RENV_PATHS_RENV", "./renv")
+
+	renvBuilder.
+		cmd("R").
+		arg("--no-echo").
+		arg("--no-restore").
+		arg("-e").arg("renv::activate()")
+
+	renvBuilder.
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	activateRenvRun := renvBuilder.build()
+
+	//
+	// Install dependencies into activated run environment
+	//
+	depsInstaller := internal.runRBuilder(activateRenvRun.workdir, rPackage, rDescriptor).
+		env("RENV_PATHS_RENV", "./renv").
+		ref("r-software-pkg", swPackage).
+		substitutionRule("{pkg}", "r-software-pkg").
+		envVar("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile)
+
+	depsInstaller.
+		cmd("R").
+		arg("--no-echo").
+		arg("--no-restore").
+		arg("-e").arg("renv::restore( clean = TRUE )")
+
+	depsInstaller.
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	installDepsRun := depsInstaller.build()
+
+	runEnvSaver := runenv.saveBuilder(installDepsRun.workdir).
+		envType("R").
+		addPath("renv").
+		addPackage("R", rPackage)
+
+	return runEnvSaver.build().runEnv()
+}
+
+_toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, dependencies) {
+	swRefreshener := internal.runRBuilder(wd, rPackage, rDescriptor).
+		ref("r-software-pkg", swPackage).
+		substitutionRule("{pkg}", "r-software-pkg").
+		envVar("R_PROJECT_DIR", "{pkg}").
+		envVar("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile).
+		env("TRICK_DEDUPLICATION", "" + times.time_unix(times.now()))
+
+	swRefreshener.
+		cmd("R").
+		arg("--no-echo").
+		arg("--no-restore").
+		arg("-e").
+		arg("setwd(Sys.getenv('R_PROJECT_DIR')); renv::init(); renv::install(); renv::snapshot()")
+
+	swRefreshener.
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	return swRefreshener.build()
+}
+
+self.defineOutputs("runEnv")
+self.body(tplBody)

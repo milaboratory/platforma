@@ -18,10 +18,10 @@ _runInVenv := func(python, venv, wd) {
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
-		substitutionRule("{python}", "python-venv").
-		substitutionRule("{python-runenv}", "python-run-environment").
-		addToPath(path.join("{python}", "venv", "bin"), true).
-		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
+		substitutionRule("python", "python-venv").
+		substitutionRule("python-runenv", "python-run-environment").
+		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{python}}", "venv", "bin")).
+		envVar("VIRTUAL_ENV", path.join("{{python}}", "venv"))
 }
 
 _installPipDependencies := func(python, venv, dependencies) {
