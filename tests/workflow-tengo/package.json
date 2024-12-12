@@ -29,7 +29,7 @@
     "@platforma-sdk/test": "workspace:*",
     "@milaboratories/software-pframes-conv": "catalog:",
     "@platforma-open/milaboratories.software-small-binaries": "catalog:",
-    "@milaboratories/milaboratories.software-paggregate": "workspace:*",
+    "@platforma-open/milaboratories.software-paggregate": "catalog:",
     "@types/node": "catalog:",
     "vitest": "catalog:"
   }

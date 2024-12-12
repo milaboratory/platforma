@@ -87,9 +87,9 @@ catalogs:
     '@oclif/core':
       specifier: ^4.0.34
       version: 4.0.34
-    '@platforma-open/milaboratories.runenv-python-3':
-      specifier: ^1.0.0
-      version: 1.1.4
+    '@platforma-open/milaboratories.software-paggregate':
+      specifier: ^0.0.1
+      version: 0.0.1
     '@platforma-open/milaboratories.software-small-binaries':
       specifier: ^1.14.6
       version: 1.14.6
@@ -1672,15 +1672,6 @@ importers:
         specifier: 'catalog:'
         version: 5.4.11(@types/node@22.5.5)(sass@1.81.0)
 
-  lib/software/paggragate:
-    devDependencies:
-      '@platforma-open/milaboratories.runenv-python-3':
-        specifier: 'catalog:'
-        version: 1.1.4
-      '@platforma-sdk/package-builder':
-        specifier: workspace:^
-        version: link:../../../tools/package-builder
-
   lib/ui/uikit:
     dependencies:
       vue:
@@ -2145,9 +2136,6 @@ importers:
 
   tests/workflow-tengo:
     devDependencies:
-      '@milaboratories/milaboratories.software-paggregate':
-        specifier: workspace:*
-        version: link:../../lib/software/paggragate
       '@milaboratories/pl-middle-layer':
         specifier: workspace:*
         version: link:../../lib/node/pl-middle-layer
@@ -2157,6 +2145,9 @@ importers:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.1.2
+      '@platforma-open/milaboratories.software-paggregate':
+        specifier: 'catalog:'
+        version: 0.0.1
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.14.6
@@ -4054,8 +4045,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.1.4':
-    resolution: {integrity: sha512-tz8zCoWMuVP0WwoSxYov7caqFxSZF7qCPRBqe62rYZjXsRZ4LEiSf3BZJzue1s+rEOsO+zPJJXtfCQcmUYa3zQ==}
+  '@platforma-open/milaboratories.software-paggregate@0.0.1':
+    resolution: {integrity: sha512-8QB4g0T4qfVSckOqIMyhshS9I/3z1szWi0AuipJQBz+mOeKrRfAQG4JulMjrcZ1oS8eF7vCd3C74Pl9bs2SIWA==}
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6':
     resolution: {integrity: sha512-d7cbFNHb6/1O4wWNlvjTVlTTsIelafnt/niAe8AZNjxoM0ivbE8bR4jnTUXaXwURjUzwV/LI5sk39kJelZxsMA==}
@@ -10493,7 +10484,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@platforma-open/milaboratories.runenv-python-3@1.1.4': {}
+  '@platforma-open/milaboratories.software-paggregate@0.0.1': {}
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6': {}
 
