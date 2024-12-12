@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "Platforma.bio SDK / Block Model",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",

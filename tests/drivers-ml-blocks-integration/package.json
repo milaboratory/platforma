@@ -2,7 +2,7 @@
   "name": "@milaboratories/drivers-ml-blocks-integration",
   "private": true,
   "description": "Tests for block registry reader",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "vite build",
