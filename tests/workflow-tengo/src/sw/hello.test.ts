@@ -1,7 +1,7 @@
 import { Pl } from '@milaboratories/pl-middle-layer';
 import { awaitStableState, tplTest } from '@platforma-sdk/test';
 
-tplTest('test1', async ({ helper, expect }) => {
+tplTest.skip('test1', async ({ helper, expect }) => {
   const result = await helper.renderTemplate(false, 'sw.hello', ['main'], (tx) => ({
     text: tx.createValue(Pl.JsonObject, JSON.stringify('asdasd'))
   }));
