@@ -4,10 +4,10 @@ import { BlockPackSpecAny } from '../../model';
 import path from 'node:path';
 import { HmacSha256Signer } from '@milaboratories/ts-helpers';
 import { V2RegistryProvider } from '../../block_registry/registry-v2-provider';
-import { Agent } from 'undici';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
 const preparation = new BlockPackPreparer(
-  new V2RegistryProvider(new Agent()),
+  new V2RegistryProvider(defaultHttpDispatcher()),
   new HmacSha256Signer(HmacSha256Signer.generateSecret())
 );
 

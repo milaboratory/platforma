@@ -7,7 +7,7 @@ import {
   PlLogView,
   PlRow,
   PlTextField,
-  useInterval
+  useInterval,
 } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
 import { computed, reactive } from 'vue';
@@ -19,7 +19,7 @@ const data = reactive({
   showError: false,
   text: 'my text',
   type: 'value' as 'value' | 'output' | 'handle',
-  handle: 'log+ready://log/Blob/primary/1/1570892' as AnyLogHandle | undefined // log+ready://log/Blob/primary/1/1570892
+  handle: 'log+ready://log/Blob/primary/1/1570892' as AnyLogHandle | undefined, // log+ready://log/Blob/primary/1/1570892
 });
 
 const options = listToOptions(['value', 'output', 'handle']);
@@ -31,13 +31,13 @@ const output = computed<ValueOrErrors<string> | undefined>(() => {
     return {
       ok: false as const,
       errors: ['Error1', 'Error2'],
-      moreErrors: false
+      moreErrors: false,
     };
   }
 
   return {
     ok: true as const,
-    value: data.logContent
+    value: data.logContent,
   };
 });
 

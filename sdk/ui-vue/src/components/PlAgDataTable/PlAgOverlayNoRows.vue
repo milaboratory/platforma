@@ -1,6 +1,6 @@
 <template>
   <div class="grid-overlay-container">
-    <div class="grid-icon-sad-cat"></div>
+    <div class="grid-icon-sad-cat" />
     <span class="text-subtitle-m">Empty</span>
   </div>
 </template>

@@ -1,5 +1,13 @@
 # @milaboratories/helper-tests
 
+## 1.1.10
+
+### Patch Changes
+
+- Updated dependencies [ec3bffe]
+  - @milaboratories/sequences@1.1.3
+  - @milaboratories/helpers@1.6.9
+
 ## 1.1.9
 
 ### Patch Changes

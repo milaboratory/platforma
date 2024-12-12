@@ -9,12 +9,12 @@ export class Emitter<T> {
 
   stop() {
     this.#stop = true;
-    this.#defers.forEach(d => d.reject('i stopped'));
+    this.#defers.forEach((d) => d.reject('i stopped'));
     this.#defers = [];
   }
 
   emit(v: T) {
-    this.#defers.forEach(d => d.resolve(v));
+    this.#defers.forEach((d) => d.resolve(v));
     this.#defers = [];
     return this;
   }
@@ -22,7 +22,7 @@ export class Emitter<T> {
   nextValue() {
     return new Promise<T>((resolve, reject) => this.#defers.push({
       resolve,
-      reject
+      reject,
     }));
   }
 

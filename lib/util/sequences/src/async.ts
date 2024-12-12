@@ -4,7 +4,7 @@ import {
   filterIterable,
   sliceIterable,
   mergeIterable,
-  throttleIterable
+  throttleIterable,
 } from './iterators/async';
 
 export class AsyncSequence<T> {
@@ -12,7 +12,7 @@ export class AsyncSequence<T> {
   }
 
   merge<B>(b: AsyncSequence<B>) {
-    return new AsyncSequence(mergeIterable(this.it(), b.it()))
+    return new AsyncSequence(mergeIterable(this.it(), b.it()));
   }
 
   map<R>(cb: (v: T) => R) {
@@ -49,7 +49,6 @@ export class AsyncSequence<T> {
     }
     return this.slice(0, n);
   }
-
 
   async reduce<R>(cb: (acc: R, v: T) => R, acc: R) {
     for await (const v of this.iterable) {

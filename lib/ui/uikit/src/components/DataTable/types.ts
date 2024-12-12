@@ -151,7 +151,7 @@ export type ResizeTh = {
   right: number;
 };
 
-/*** Adapters ***/
+/** * Adapters ***/
 
 export type RawTableSettings<D extends DataRow = DataRow> = Readonly<{
   columns: ColumnSpec<D>[];
@@ -167,7 +167,7 @@ export type RawTableSettings<D extends DataRow = DataRow> = Readonly<{
   onUpdatedRow?: (row: Row<D>) => void;
 }>;
 
-/*** Static tests  ***/
+/** * Static tests  ***/
 
 type _cell = TableCell<{ age: number; name: string; payload: unknown }>;
 

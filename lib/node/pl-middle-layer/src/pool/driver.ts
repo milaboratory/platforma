@@ -1,6 +1,6 @@
 import { DownloadDriver } from '@milaboratories/pl-drivers';
 import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
-import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
+import { isPlTreeNodeAccessor, PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { ComputableCtx, ComputableStableDefined } from '@milaboratories/computable';
 import {
   CalculateTableDataRequest,
@@ -29,9 +29,11 @@ import {
   ValueType,
   PTableRecordSingleValueFilterV2,
   PTableRecordFilter,
+  PColumnValues,
+  extractAllColumns,
 } from '@platforma-sdk/model';
 import { RefCountResourcePool } from './ref_count_pool';
-import { allBlobs, mapBlobs, parseDataInfoResource } from './data';
+import { allBlobs, makeDataInfoResource, mapBlobs, parseDataInfoResource } from './data';
 import { createHash } from 'crypto';
 import { assertNever } from '@milaboratories/ts-helpers';
 import canonicalize from 'canonicalize';
@@ -205,16 +207,21 @@ export class PFrameDriver implements SdkPFrameDriver {
   // Internal / Config API Methods
   //
 
-  public createPFrame(def: PFrameDef<PlTreeNodeAccessor>, ctx: ComputableCtx): PFrameHandle {
+  public createPFrame(
+    def: PFrameDef<PlTreeNodeAccessor | PColumnValues>,
+    ctx: ComputableCtx
+  ): PFrameHandle {
     const internalData = def.filter((c) => valueTypes.find((t) => t === c.spec.valueType))
-      .map((c) => mapPObjectData(c, (d) => parseDataInfoResource(d)));
+      .map((c) => mapPObjectData(c, (d) =>
+        isPlTreeNodeAccessor(d) ? parseDataInfoResource(d) : makeDataInfoResource(c.spec, d)
+      ));
     const res = this.pFrames.acquire(internalData);
     ctx.addOnDestroy(res.unref);
     return res.key as PFrameHandle;
   }
 
   public createPTable(
-    def: PTableDef<PColumn<PlTreeNodeAccessor>>,
+    def: PTableDef<PColumn<PlTreeNodeAccessor | PColumnValues>>,
     ctx: ComputableCtx
   ): PTableHandle {
     const pFrameHandle = this.createPFrame(extractAllColumns(def.src), ctx);
@@ -373,28 +380,4 @@ function stableKeyFromPFrameData(data: PColumn<unknown>[]): string {
     previous = id;
   }
   return hash.digest().toString('hex');
-}
-
-export function extractAllColumns<D>(entry: JoinEntry<PColumn<D>>): PFrameDef<D> {
-  const columns = new Map<PObjectId, PColumn<D>>();
-  addAllColumns(entry, columns);
-  return [...columns.values()];
-}
-
-function addAllColumns<D>(entry: JoinEntry<PColumn<D>>, map: Map<PObjectId, PColumn<D>>): void {
-  switch (entry.type) {
-    case 'column':
-      map.set(entry.column.id, entry.column);
-      return;
-    case 'full':
-    case 'inner':
-      for (const e of entry.entries) addAllColumns(e, map);
-      return;
-    case 'outer':
-      addAllColumns(entry.primary, map);
-      for (const e of entry.secondary) addAllColumns(e, map);
-      return;
-    default:
-      assertNever(entry);
-  }
 }

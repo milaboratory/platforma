@@ -1,5 +1,11 @@
 # @milaboratories/ts-helpers
 
+## 1.1.3
+
+### Patch Changes
+
+- dac7e27: retry(...) helper method
+
 ## 1.1.2
 
 ### Patch Changes

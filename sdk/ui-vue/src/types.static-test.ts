@@ -63,7 +63,7 @@ type _UiState = {
 type _App1 = BaseApp<_Args, _Outputs, _UiState, '/'>;
 type _App2 = TestApp<Platforma<_Args, _Outputs, _UiState, '/'>>;
 
-const local = () => {
+const _local = () => {
   const counter = computed(() => 1);
   const label = computed(() => 'aaaa');
 
@@ -79,13 +79,9 @@ const local = () => {
   };
 };
 
-type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof local>>;
-
-declare const _app: ExtApp;
+type ExtApp = App<1, BlockOutputsBase, unknown, '/', ReturnType<typeof _local>>;
 
 type _UpdateArgsParams = Parameters<Parameters<_App1['updateArgs']>[0]>[0];
-
-type _ccc = _App1['model']['args'];
 
 type __cases = [
   Expect<Equal<Model<string>, typeof __model1>>,
@@ -96,10 +92,10 @@ type __cases = [
   Expect<Equal<ExtApp['counter'], number>>,
   Expect<Equal<ExtApp['label'], string>>,
   Expect<Equal<ExtApp['method'], () => number>>,
-  Expect<Equal<_App1['args'], Readonly<_Args>>>,
+  Expect<Equal<_App1['snapshot']['args'], Readonly<_Args>>>,
   Expect<Equal<_App1['model']['outputs']['sum'], number | undefined>>,
   Expect<Equal<_App1['model']['outputErrors']['sum'], Error | undefined>>,
-  Expect<Equal<_App1['ui'], Readonly<_UiState>>>,
+  Expect<Equal<_App1['snapshot']['ui'], Readonly<_UiState>>>,
   Expect<Equal<_App1['model']['args'], _Args>>,
   Expect<Equal<_App1['model']['ui'], _UiState>>,
   Expect<Equal<_UpdateArgsParams, _Args>>,

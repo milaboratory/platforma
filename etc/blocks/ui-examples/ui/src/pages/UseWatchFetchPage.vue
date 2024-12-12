@@ -5,27 +5,29 @@ import { fetchTestResult } from './fetchTestResult';
 
 const data = reactive({
   number: 0,
-  text: ''
+  text: '',
 });
 
 const numberRef = useWatchFetch(
   () => data.number,
   (n) => {
     return fetchTestResult(n);
-  }
+  },
 );
 
 // number | undefined
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 numberRef.value;
 
 const stringRef = useWatchFetch(
   () => data,
   (n) => {
     return fetchTestResult(n.number, n.text);
-  }
+  },
 );
 
 // string | undefined
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 stringRef.value;
 </script>
 

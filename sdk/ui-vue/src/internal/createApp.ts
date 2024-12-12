@@ -2,12 +2,26 @@ import { deepClone, throttle } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
-import type { UnwrapValueOrErrors, StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
+import type { StateModelOptions, UnwrapOutputs, OptionalResult, OutputValues, OutputErrors, AppSettings } from '../types';
 import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
 
+/**
+ * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
+ *
+ * @template Args - The type of arguments used in the application.
+ * @template Outputs - The type of block outputs extending `BlockOutputsBase`.
+ * @template UiState - The type of the UI state.
+ * @template Href - The type of navigation href, defaulting to a string starting with `/`.
+ *
+ * @param state - Initial state of the application, including args, outputs, UI state, and navigation state.
+ * @param platforma - A platform interface for interacting with block states.
+ * @param settings - Application settings, such as debug flags.
+ *
+ * @returns A reactive application object with methods, getters, and state.
+ */
 export function createApp<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
@@ -33,6 +47,9 @@ export function createApp<
 
   const setBlockArgsAndUiState = throttle(platforma.setBlockArgsAndUiState, throttleSpan);
 
+  /**
+   * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
+   */
   const snapshot = reactive({
     args: Object.freeze(state.args),
     outputs: Object.freeze(state.outputs),
@@ -68,7 +85,7 @@ export function createApp<
       }
     });
 
-    await nextTick(); // @todo remove
+    await nextTick();
   });
 
   const cloneArgs = () => deepClone(snapshot.args) as Args;
@@ -143,9 +160,12 @@ export function createApp<
       return data as OptionalResult<UnwrapOutputs<Outputs, K>>;
     },
     /**
-     * @throws Error
-     * @param keys
-     * @returns
+     * Retrieves the unwrapped values of outputs for the given keys.
+     *
+     * @template K - Keys of the outputs to unwrap.
+     * @param keys - List of output names.
+     * @throws Error if the outputs contain errors.
+     * @returns An object with unwrapped output values.
      */
     unwrapOutputs<K extends keyof Outputs>(...keys: K[]): UnwrapOutputs<Outputs, K> {
       const outputs = snapshot.outputs;
@@ -153,52 +173,44 @@ export function createApp<
       return Object.fromEntries(entries);
     },
     /**
-     * @deprecated use app.outputs.[fieldName] instead
-     * @see outputs
+     * Updates the arguments state by applying a callback.
+     *
+     * @param cb - Callback to modify the current arguments.
+     * @returns A promise resolving after the update is applied.
      */
-    getOutputField(key: keyof Outputs) {
-      return snapshot.outputs[key];
-    },
-    /**
-     * @deprecated use outputValues instead
-     * @see outputValues
-     */
-    getOutputFieldOkOptional<K extends keyof Outputs>(key: K): UnwrapValueOrErrors<Outputs[K]> | undefined {
-      console.warn('use reactive app.outputValues.fieldName instead instead of getOutputFieldOkOptional(fieldName)');
-
-      const result = this.getOutputField(key);
-
-      if (result && result.ok) {
-        return result.value;
-      }
-
-      return undefined;
-    },
-    getOutputFieldErrorsOptional<K extends keyof Outputs>(key: K): string[] | undefined {
-      console.warn('use reactive app.outputErrors.fieldName instead instead of getOutputFieldErrorsOptional(fieldName)');
-
-      const result = this.getOutputField(key);
-
-      if (result && !result.ok) {
-        return result.errors;
-      }
-
-      return undefined;
-    },
     updateArgs(cb: (args: Args) => void) {
       const newArgs = cloneArgs();
       cb(newArgs);
       return platforma.setBlockArgs(newArgs);
     },
-    updateUiState(cb: (args: UiState) => UiState) {
+    /**
+     * Updates the UI state by applying a callback.
+     *
+     * @param cb - Callback to modify the current UI state.
+     * @returns A promise resolving after the update is applied.
+     * @todo Make it mutable since there is already an initial one
+     */
+    updateUiState(cb: (args: UiState) => UiState): Promise<void> {
       const newUiState = cloneUiState();
       return platforma.setBlockUiState(cb(newUiState));
     },
+    /**
+     * Updates the navigation state by applying a callback.
+     *
+     * @param cb - Callback to modify the current navigation state.
+     * @returns A promise resolving after the update is applied.
+     */
     updateNavigationState(cb: (args: Mutable<NavigationState<Href>>) => void) {
       const newState = cloneNavigationState();
       cb(newState);
       return platforma.setNavigationState(newState);
     },
+    /**
+     * Navigates to a specific href by updating the navigation state.
+     *
+     * @param href - The target href to navigate to.
+     * @returns A promise resolving after the navigation state is updated.
+     */
     navigateTo(href: Href) {
       const newState = cloneNavigationState();
       newState.href = href;
@@ -220,43 +232,10 @@ export function createApp<
     snapshot,
     queryParams: computed(() => parseQuery<Href>(snapshot.navigationState.href)),
     href: computed(() => snapshot.navigationState.href),
-    hasErrors: computed(() => Object.values(snapshot.outputs).some((v) => !v?.ok)), // @TODO: there is middle-layer error, v sometimes is undefined
-
-    /** @deprecated */
-    outputValues: computed(() => {
-      console.warn('Change app.outputValues to app.model.outputs');
-      return outputs.value;
-    }),
-
-    /** @deprecated */
-    outputErrors: computed(() => {
-      console.warn('Change app.outputErrors to app.model.outputErrors');
-      return outputErrors.value;
-    }),
-
-    /** @deprecated */
-    args: computed(() => {
-      console.warn('Change app.args to app.snapshot.args');
-      return snapshot.args;
-    }),
-    /** @deprecated */
-    outputs: computed(() => {
-      console.warn('Change app.outputs to app.snapshot.outputs');
-      return snapshot.outputs;
-    }),
-    /** @deprecated */
-    ui: computed(() => {
-      console.warn('Change app.ui to app.snapshot.ui');
-      return snapshot.ui;
-    }),
-    /** @deprecated */
-    navigationState: computed(() => {
-      console.warn('Change app.navigationState to app.snapshot.navigationState');
-      return snapshot.navigationState;
-    }),
+    hasErrors: computed(() => Object.values(snapshot.outputs).some((v) => !v?.ok)),
   };
 
-  const appModel = createAppModel(
+  const model = createAppModel(
     {
       get() {
         return { args: snapshot.args, ui: snapshot.ui } as AppModel;
@@ -273,7 +252,7 @@ export function createApp<
     settings,
   );
 
-  return reactive(Object.assign(appModel, methods, getters));
+  return reactive(Object.assign(model, methods, getters));
 }
 
 export type BaseApp<

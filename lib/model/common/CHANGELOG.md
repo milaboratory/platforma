@@ -1,5 +1,23 @@
 # @milaboratories/pl-model-common
 
+## 1.10.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
+## 1.9.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
+## 1.8.1
+
+### Patch Changes
+
+- 02feb1a: Many utility functions for convertion, serialization and deserialization of PValues
+
 ## 1.8.0
 
 ### Minor Changes

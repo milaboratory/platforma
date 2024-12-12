@@ -1,45 +1,29 @@
 import type {
-  AxisId,
-  JoinEntry,
   LocalBlobHandleAndSize,
-  PColumnIdAndSpec,
-  PFrameHandle,
   PlDataTableSheet,
   PlTableFilter,
   PlTableFilterType,
   PTableColumnId,
   PTableHandle,
+  PTableValue,
   RemoteBlobHandleAndSize,
-  ValueOrErrors,
 } from '@platforma-sdk/model';
 
 /** Data table settings */
 export type PlDataTableSettings =
   | {
-      /** The type of the source to feed the data into the table */
-      sourceType: 'pframe';
-      /** PFrame handle output */
-      pFrame: PFrameHandle | undefined;
-      /** Join used to construct pTable, will be enriched with label-columns */
-      join: JoinEntry<PColumnIdAndSpec> | undefined;
-      /** Partitioning axes to make sheets */
-      sheetAxes: AxisId[];
-      /** PTable handle output */
-      pTable: PTableHandle | undefined;
-    }
+    /** The type of the source to feed the data into the table */
+    sourceType: 'ptable';
+    /** PTable handle output */
+    pTable?: PTableHandle;
+    /** Sheets that we want to show in our table */
+    sheets?: PlDataTableSheet[];
+  }
   | {
-      /** The type of the source to feed the data into the table */
-      sourceType: 'ptable';
-      /** PTable handle output */
-      pTable: PTableHandle | undefined;
-      /** Sheets that we want to show in our table */
-      sheets?: PlDataTableSheet[];
-    }
-  | {
-      /** The type of the source to feed the data into the table */
-      sourceType: 'xsv';
-      xsvFile: ValueOrErrors<RemoteBlobHandleAndSize | undefined> | ValueOrErrors<LocalBlobHandleAndSize | undefined> | undefined;
-    };
+    /** The type of the source to feed the data into the table */
+    sourceType: 'xsv';
+    xsvFile?: LocalBlobHandleAndSize | RemoteBlobHandleAndSize;
+  };
 
 /** PlTableFilters restriction entry */
 export type PlTableFiltersRestriction = {
@@ -57,8 +41,20 @@ export type PlTableFiltersDefault = {
   default: PlTableFilter;
 };
 
+/** Key is a set of all axes values, which means it is unique across rows */
+export type PTableRowKey = PTableValue[];
+
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
-  /** Export table data as Csv file */
-  exportCsv: () => void;
+  /** Scroll table to make row with provided key visible */
+  focusRow: (rowKey: PTableRowKey) => void;
+};
+
+/** PlAgDataTable row */
+export type PlAgDataTableRow = {
+  key: PTableRowKey;
+  /** Unique row identifier, created as canonicalize(key)! */
+  id: string;
+  /** Row values by column; sheet axes and labeled axes are excluded */
+  [field: `${number}`]: PTableValue;
 };

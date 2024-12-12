@@ -1,5 +1,56 @@
 # @milaboratories/uikit-playground
 
+## 0.1.15
+
+### Patch Changes
+
+- 8cb8082: [sdk-ui/vue] Migrate icon in PlBtnGhost to 24px
+- Updated dependencies [8cb8082]
+  - @milaboratories/uikit@2.2.32
+
+## 0.1.14
+
+### Patch Changes
+
+- Updated dependencies [ddff372]
+  - @milaboratories/uikit@2.2.31
+
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies [ca01bd7]
+  - @milaboratories/uikit@2.2.30
+
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
+## 0.1.10
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+
 ## 0.1.8
 
 ### Patch Changes

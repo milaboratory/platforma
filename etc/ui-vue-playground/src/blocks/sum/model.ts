@@ -25,22 +25,22 @@ const defaultOutputs = (): Outputs => {
   return {
     sum: {
       ok: true,
-      value: 0
-    }
-  }
+      value: 0,
+    },
+  };
 };
 
 class BlockSum extends BlockMock<Args, Outputs, UiState, `/${string}`> {
   async process(): Promise<void> {
-    const {args} = this;
+    const { args } = this;
 
     this.outputs.sum = {
       ok: true,
-      value: args.x + args.y
+      value: args.x + args.y,
     };
   }
 }
 
 export const platforma = createMockApi<Args, Outputs, UiState>(new BlockSum(defaultArgs(), defaultOutputs(), {
-  label: ''
+  label: '',
 }, '/'));

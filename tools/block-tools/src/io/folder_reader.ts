@@ -1,8 +1,9 @@
-import { Agent, Dispatcher, request } from 'undici';
+import { Dispatcher, request } from 'undici';
 import { RelativeContentReader } from '../v2';
 import path from 'node:path';
 import pathPosix from 'node:path/posix';
 import fsp from 'node:fs/promises';
+import { defaultHttpDispatcher } from '@milaboratories/pl-http';
 
 export interface FolderReader {
   readonly rootUrl: URL;
@@ -80,7 +81,7 @@ export function folderReaderByUrl(address: string, httpDispatcher?: Dispatcher):
       return new FSFolderReader(url, rootPath);
     case 'https:':
     case 'http:':
-      return new HttpFolderReader(url, httpDispatcher ?? new Agent());
+      return new HttpFolderReader(url, httpDispatcher ?? defaultHttpDispatcher());
     default:
       throw new Error(`Unknown protocol: ${url.protocol}`);
   }

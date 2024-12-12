@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.workflow
 
+## 1.0.6
+
+### Patch Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+
 ## 1.0.5
 
 ### Patch Changes

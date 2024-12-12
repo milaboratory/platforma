@@ -6,71 +6,97 @@ import {
   PlAgOverlayLoading,
   PlAgOverlayNoRows,
   AgGridTheme,
-  PlAgDataTableToolsPanel
+  PlAgDataTableToolsPanel,
+  PlAgGridColumnManager,
+  makeRowNumberColDef,
+  autoSizeRowNumberColumn,
+  PlAgCellFile,
+  PlAgTextAndButtonCell,
+  PlAgColumnHeader,
+  type PlAgHeaderComponentParams,
+  PlAgCsvExporter,
 } from '@platforma-sdk/ui-vue';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-community/core';
 import { times } from '@milaboratories/helpers';
-import { PlAgGridColumnManager } from '@platforma-sdk/ui-vue';
 import { faker } from '@faker-js/faker';
-import { PlAgCellFile, PlAgTextAndButtonCell } from '@platforma-sdk/ui-vue';
 
 const LinkComponent: Component = {
   props: ['params'],
   setup(props) {
     return () =>
       h('a', { href: props.params.value, style: 'text-decoration: underline' }, props.params.value);
-  }
+  },
 };
 
 const columnDefs: ColDef[] = [
+  makeRowNumberColDef(),
   {
     colId: 'id',
     field: 'id',
-    headerName: 'ID'
+    headerName: 'ID',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Number' } satisfies PlAgHeaderComponentParams,
   },
   {
     colId: 'label',
     field: 'label',
-    headerName: 'Sample label',
+    headerName: 'Sample label long text for overflow',
     cellRenderer: 'PlAgTextAndButtonCell',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
     cellRendererParams: {
       onClick: onClickHandler,
-      invokeRowsOnDoubleClick: true
-    }
+      invokeRowsOnDoubleClick: true,
+    },
   },
   {
-    colId: 'description',
-    field: 'description',
-    headerName: 'Description'
+    colId: 'date',
+    field: 'date',
+    headerName: 'Date',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Date' } satisfies PlAgHeaderComponentParams,
   },
   {
     colId: 'file',
     field: 'file',
     headerName: 'File input',
     cellRenderer: 'PlAgCellFile',
-    cellStyle: { padding: 0 }
+
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'File' } satisfies PlAgHeaderComponentParams,
+    cellStyle: { padding: 0 },
   },
   {
     colId: 'link',
     field: 'link',
     headerName: 'Link',
-    cellRenderer: 'LinkComponent'
-  }
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Text' } satisfies PlAgHeaderComponentParams,
+    cellRenderer: 'LinkComponent',
+  },
+  {
+    colId: 'time',
+    field: 'time',
+    headerName: 'Duration',
+    headerComponent: PlAgColumnHeader,
+    headerComponentParams: { type: 'Duration' } satisfies PlAgHeaderComponentParams,
+  },
 ];
 
 const result = times(100, () => {
   return {
     id: faker.number.int(),
     label: faker.company.buzzNoun(),
-    description: faker.lorem.paragraph(),
+    date: faker.date.birthdate(),
     file: '',
-    link: faker.internet.url()
+    link: faker.internet.url(),
+    time: `${faker.number.int()} h`,
   };
 });
 
 function onClickHandler() {
-  //will be invoked when invokeRowsOnDoubleClick: false
+  // will be invoked when invokeRowsOnDoubleClick: false
   console.log('onClickHandler');
 }
 
@@ -81,12 +107,13 @@ const gridOptions: GridOptions = {
   components: {
     LinkComponent,
     PlAgCellFile,
-    PlAgTextAndButtonCell
-  }
+    PlAgTextAndButtonCell,
+  },
 };
-let gridApi = ref<GridApi | null>(null);
+const gridApi = ref<GridApi | null>(null);
 const onGridReady = (e: GridReadyEvent) => {
   gridApi.value = e.api;
+  autoSizeRowNumberColumn(e.api);
 };
 </script>
 
@@ -96,6 +123,7 @@ const onGridReady = (e: GridReadyEvent) => {
     <template #append>
       <PlAgDataTableToolsPanel>
         <PlAgGridColumnManager v-if="gridApi" :api="gridApi" />
+        <PlAgCsvExporter v-if="gridApi" :api="gridApi" />
       </PlAgDataTableToolsPanel>
     </template>
 

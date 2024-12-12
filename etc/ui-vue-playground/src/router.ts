@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
 import SumView from './blocks/sum/App.vue';
 import OtherView from './blocks/old/App.vue';

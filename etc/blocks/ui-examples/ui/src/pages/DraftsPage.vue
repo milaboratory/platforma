@@ -5,13 +5,27 @@ import {
   PlEditableTitle,
   PlRow,
   PlBtnPrimary,
-  PlCloseModalBtn
+  PlCloseModalBtn,
+  PlDropdownLine,
+  PlTextField,
+  PlBtnGhost,
 } from '@platforma-sdk/ui-vue';
-import { reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const data = reactive({
   title: 'Title example',
-  importHandles: [] as unknown[]
+  importHandles: [] as unknown[],
+  value: 1,
+  options: [{
+    label: 'Test Label',
+    value: 1,
+  }, {
+    label: 'Test label 2',
+    value: 2,
+  }, {
+    label: 'Test label 3',
+    value: 3,
+  }],
 });
 
 const onDrop = (ev: DragEvent) => {
@@ -23,6 +37,25 @@ const onDrop = (ev: DragEvent) => {
       });
     }
   });
+};
+
+const currentLabel = computed({
+  get() {
+    return data.options.find((o) => o.value === data.value)?.label;
+  },
+  set(v) {
+    const opt = data.options.find((o) => o.value === data.value);
+    if (opt) {
+      opt.label = v ?? '';
+    }
+  },
+});
+
+const loading = ref(false);
+
+const onClickSettings = () => {
+  loading.value = true;
+  setTimeout(() => loading.value = false, 2000);
 };
 </script>
 
@@ -38,7 +71,8 @@ const onDrop = (ev: DragEvent) => {
       />
     </template>
     <template #append>
-      <PlBtnPrimary> Just a button </PlBtnPrimary>
+      <PlBtnGhost icon="settings" :loading="loading" @click="onClickSettings">Settings</PlBtnGhost>
+      <PlBtnPrimary> Just a button</PlBtnPrimary>
     </template>
     <PlRow>
       <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>
@@ -50,6 +84,11 @@ const onDrop = (ev: DragEvent) => {
       </PlContainer>
     </PlRow>
     <PlRow> <PlCloseModalBtn /> </PlRow>
+    <PlRow> <PlTextField v-model="currentLabel" label="Change title" :clearable="() => undefined" /> </PlRow>
+    <PlRow>
+      <PlDropdownLine v-model="data.value" clearable :label="data.title" :options="data.options" />
+      <PlDropdownLine v-model="data.value" prefix="Option:" clearable :label="data.title" :options="data.options" />
+    </PlRow>
   </PlBlockPage>
 </template>
 

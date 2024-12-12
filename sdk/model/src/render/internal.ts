@@ -4,6 +4,7 @@ import { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from './trav
 import {
   Option,
   PColumn,
+  PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
@@ -129,9 +130,9 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // PFrame / PTable
   //
 
-  createPFrame(def: PFrameDef<AHandle>): PFrameHandle;
+  createPFrame(def: PFrameDef<AHandle | PColumnValues>): PFrameHandle;
 
-  createPTable(def: PTableDef<PColumn<AHandle>>): PTableHandle;
+  createPTable(def: PTableDef<PColumn<AHandle | PColumnValues>>): PTableHandle;
 
   //
   // Computable
@@ -140,10 +141,15 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getCurrentUnstableMarker(): string | undefined;
 }
 
+export const GlobalCfgRenderCtxFeatureFlags = {
+  inlineColumnsSupport: true as const,
+}
+
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods {
   readonly args: string;
   readonly uiState?: string;
   readonly callbackRegistry: Record<string, Function>;
+  readonly featureFlags?: typeof GlobalCfgRenderCtxFeatureFlags;
 }
 
 export type FutureAwait = {

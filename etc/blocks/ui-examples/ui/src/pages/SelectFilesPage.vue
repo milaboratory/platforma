@@ -8,7 +8,7 @@ import {
   PlFileInput,
   PlCheckbox,
   PlBtnPrimary,
-  PlFileDialog
+  PlFileDialog,
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -16,7 +16,7 @@ const data = reactive({
   fileHandle: undefined as ImportFileHandle | undefined,
   fileList: [] as ImportFileHandle[],
   closeOnOutsideClick: true,
-  isMultiDialogOpen: false
+  isMultiDialogOpen: false,
 });
 
 const onImport = (imported: ImportedFiles) => {

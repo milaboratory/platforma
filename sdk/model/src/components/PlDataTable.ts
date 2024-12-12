@@ -1,11 +1,12 @@
 import {
-  AxisId,
+  AxisSpec,
   getAxisId,
   isPColumn,
   JoinEntry,
   matchAxisId,
   PColumn,
   PColumnIdAndSpec,
+  PColumnValues,
   PObjectId,
   PTableHandle,
   PTableRecordFilter,
@@ -41,10 +42,8 @@ export type PlDataTableGridState = {
 };
 
 export type PlDataTableSheet = {
-  /** id of the axis to use */
-  axis: AxisId;
-  /** id of label column to use in filter instead of axis */
-  column?: PObjectId;
+  /** spec of the axis to use */
+  axis: AxisSpec;
   /** options to show in the filter tan */
   options: {
     /** value of the option (should be one of the values in the axis or column) */
@@ -293,7 +292,7 @@ export type PlTableFiltersModel = {
  */
 export function createPlDataTable<A, U>(
   ctx: RenderCtx<A, U>,
-  columns: PColumn<TreeNodeAccessor>[],
+  columns: PColumn<TreeNodeAccessor | PColumnValues>[],
   tableState?: PlDataTableState,
   filters?: PTableRecordFilter[]
 ): PTableHandle | undefined {
@@ -316,7 +315,9 @@ export function createPlDataTable<A, U>(
   }
 
   // if at least one column is not yet ready, we can't show the table
-  if ([...columns, ...labelColumns.values()].find((a) => !a.data.getIsReadyOrError()))
+  if ([...columns, ...labelColumns.values()].some((a) =>
+      a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError()
+    ))
     return undefined;
 
   return ctx.createPTable({
@@ -326,21 +327,22 @@ export function createPlDataTable<A, U>(
         type: 'full',
         entries: columns.map((c) => ({ type: 'column', column: c }))
       },
-      secondary: Array.from(labelColumns.values()).map((c) => ({ type: 'column', column: c }))
+      secondary: [...labelColumns.values()].map((c) => ({ type: 'column', column: c }))
     },
     filters: [...(tableState?.pTableParams?.filters ?? []), ...(filters ?? [])],
     sorting: tableState?.pTableParams?.sorting ?? []
   });
 }
 
+/** Create sheet entries for PlDataTable */
 export function createPlDataTableSheet<A, U>(
   ctx: RenderCtx<A, U>,
-  axis: AxisId,
+  axis: AxisSpec,
   values: (string | number)[]
 ): PlDataTableSheet {
   const labels = ctx.findLabels(axis);
   return {
-    axis: getAxisId(axis),
+    axis,
     options: values.map((v) => ({
       value: v,
       label: labels?.[v] ?? v.toString()

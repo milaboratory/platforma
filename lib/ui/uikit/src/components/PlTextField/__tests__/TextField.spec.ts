@@ -17,7 +17,7 @@ describe('TextField', () => {
   it('modelValue:string', async () => {
     const wrapper = mount(PlTextField<string>, {
       props: {
-        modelValue: 'initialText',
+        'modelValue': 'initialText',
         'onUpdate:modelValue': (e: string) => wrapper.setProps({ modelValue: e }),
       },
     });
@@ -29,8 +29,8 @@ describe('TextField', () => {
   it('modelValue:string?', async () => {
     const wrapper = mount(PlTextField, {
       props: {
-        modelValue: 'initialText' as string | undefined,
-        clearable: () => undefined,
+        'modelValue': 'initialText' as string | undefined,
+        'clearable': () => undefined,
         'onUpdate:modelValue': (e: unknown) => wrapper.setProps({ modelValue: e }),
       },
     });

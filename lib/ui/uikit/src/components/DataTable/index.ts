@@ -22,7 +22,7 @@ export { Component };
 
 export { Types };
 
-/*** Adapters ***/
+/** * Adapters ***/
 
 export function rawDataSettings<D extends Types.DataRow>(rows: D[], rawSettings: Types.RawTableSettings<D>): TableSettings {
   const dataSource = new RawData<D>(rows, rawSettings.resolveRowHeight, rawSettings.resolvePrimaryKey);

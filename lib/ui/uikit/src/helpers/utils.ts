@@ -108,7 +108,6 @@ export function animateInfinite(options: { getFraction: (dt: number) => number; 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type AnyFunction = (...args: any[]) => any;
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export function debounce<F extends AnyFunction>(func: F, delay: number) {
   let timerId = -1;
   return (...args: Parameters<F>) => {
@@ -128,10 +127,11 @@ export function throttle<F extends AnyFunction>(callback: F, ms: number, trailin
       callback.apply(this, args);
       t = new Date().getTime() + ms;
       call = null;
-      trailing &&
+      if (trailing) {
         setTimeout(() => {
-          call && call();
+          call?.();
         }, ms);
+      }
     };
     if (new Date().getTime() > t) call();
   };

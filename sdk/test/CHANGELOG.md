@@ -1,5 +1,72 @@
 # @platforma-sdk/test
 
+## 1.19.0
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @milaboratories/pl-middle-layer@1.21.0
+  - @platforma-sdk/model@1.19.0
+
+## 1.18.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.5
+
+## 1.18.0
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.4
+- @platforma-sdk/model@1.18.0
+
+## 1.17.4
+
+### Patch Changes
+
+- 016c560: Increase default timeout for awaitStableState
+
+## 1.17.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.3
+
+## 1.17.0
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/pl-middle-layer@1.20.2
+
+## 1.15.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.1
+- @platforma-sdk/model@1.15.4
+
+## 1.15.3
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/pl-middle-layer@1.20.0
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+
+## 1.15.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.11
+
 ## 1.14.17
 
 ### Patch Changes

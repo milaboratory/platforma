@@ -17,18 +17,19 @@ import PlTextFieldPage from './pages/PlTextFieldPage.vue';
 import PlTabsPage from './pages/PlTabsPage.vue';
 import DraftsPage from './pages/DraftsPage.vue';
 import LayoutPage from './pages/LayoutPage.vue';
+import ButtonsPage from './pages/ButtonsPage.vue';
 
 export const sdkPlugin = defineApp(platforma, (base) => {
   // Additional data
   const data = reactive({
-    counter: 0
+    counter: 0,
   });
 
   function incrementCounter() {
     data.counter++;
   }
 
-  const argsAsJson = computed(() => JSON.stringify(base.args));
+  const argsAsJson = computed(() => JSON.stringify(base.snapshot.args));
 
   const progressRef = ref<boolean | number>();
 
@@ -44,7 +45,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       timing: makeEaseOut((t) => t),
       draw: (progress) => {
         progressRef.value = progress;
-      }
+      },
     });
   }
 
@@ -58,7 +59,7 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       return progressRef.value;
     },
     routes: {
-      '/': IconsPage,
+      '/': () => IconsPage,
       '/layout': () => LayoutPage,
       '/log-view': () => LogViewPage,
       '/modals': () => ModalsPage,
@@ -73,8 +74,9 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/errors': () => ErrorsPage,
       '/text-fields': () => PlTextFieldPage,
       '/tabs': () => PlTabsPage,
-      '/drafts': () => DraftsPage
-    }
+      '/drafts': () => DraftsPage,
+      '/buttons': () => ButtonsPage,
+    },
   };
 });
 

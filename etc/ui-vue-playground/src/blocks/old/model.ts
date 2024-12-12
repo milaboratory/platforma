@@ -27,32 +27,32 @@ const defaultOutputs = (): Outputs => {
     },
     y: {
       ok: true,
-      value: 0
+      value: 0,
     },
     sum: {
       ok: true,
-      value: 0
-    }
-  }
+      value: 0,
+    },
+  };
 };
 
 class BlockOld extends BlockMock<Args, Outputs, unknown, `/${string}`> {
   async process(): Promise<void> {
-    const {args} = this;
+    const { args } = this;
 
     this.outputs.x = {
       ok: true,
-      value: args.x
-    }
+      value: args.x,
+    };
 
     this.outputs.y = {
       ok: true,
-      value: args.y
-    }
+      value: args.y,
+    };
 
     this.outputs.sum = {
       ok: true,
-      value: args.x + args.y
+      value: args.x + args.y,
     };
   }
 }

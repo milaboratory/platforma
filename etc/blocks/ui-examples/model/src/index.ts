@@ -2,15 +2,12 @@ import {
   BlockModel,
   InferHrefType,
   InferOutputsType,
-  mapJoinEntry,
-  PColumnIdAndSpec,
-  AxisSpec,
-  JoinEntry,
-  AxisId,
   PlDataTableState,
-  ValueType,
-  isPColumn,
-  PlDataTableGridState
+  createPlDataTable,
+  PlTableFiltersModel,
+  PColumn,
+  PColumnValues,
+  PObjectId,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -21,17 +18,8 @@ export const $BlockArgs = z.object({
 export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export type TableState = {
-  settingsOpened: boolean;
-  gridState: PlDataTableGridState;
-  group: {
-    mainColumn?: PColumnIdAndSpec;
-    additionalColumns: PColumnIdAndSpec[];
-    enrichmentColumns: PColumnIdAndSpec[];
-    possiblePartitioningAxes: AxisSpec[];
-    join?: JoinEntry<PColumnIdAndSpec>;
-  };
-  partitioningAxes: AxisId[];
   tableState: PlDataTableState;
+  filterModel: PlTableFiltersModel;
 };
 
 export type UiState = {
@@ -46,47 +34,37 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
-  .output('pFrame', (ctx) => {
-    const collection = ctx.resultPool.getData();
-    if (collection === undefined || !collection.isComplete) return undefined;
-
-    const valueTypes = ['Int', 'Long', 'Float', 'Double', 'String', 'Bytes'] as ValueType[];
-    const columns = collection.entries
-      .map(({ obj }) => obj)
-      .filter(isPColumn)
-      .filter((column) => valueTypes.find((valueType) => valueType === column.spec.valueType));
-
-    try {
-      return ctx.createPFrame(columns);
-    } catch (err) {
-      return undefined;
-    }
-  })
-
-  .output('pTable', (ctx) => {
-    const join = ctx.uiState?.dataTableState?.tableState.pTableParams?.join;
-    if (!join) return undefined;
-
-    const collection = ctx.resultPool.getData();
-    if (!collection || !collection.isComplete) return undefined;
-
-    const columns = collection.entries.map(({ obj }) => obj).filter(isPColumn);
-    if (columns.length === 0) return undefined;
-
-    let columnMissing = false;
-    const src = mapJoinEntry(join, (idAndSpec) => {
-      const column = columns.find((it) => it.id === idAndSpec.columnId);
-      if (!column) columnMissing = true;
-      return column!;
-    });
-
-    if (columnMissing) return undefined;
-
-    return ctx.createPTable({
-      src,
-      filters: ctx.uiState.dataTableState?.tableState.pTableParams?.filters ?? [],
-      sorting: ctx.uiState.dataTableState?.tableState.pTableParams?.sorting ?? []
-    });
+  .output('pt', (ctx) => {
+    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
+    return createPlDataTable(ctx, [
+      {
+        id: "example" as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'example',
+          annotations: {
+            'pl7.app/label': 'String column',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            }
+          ]
+        },
+        data: [
+          { key: [1], val: '1' },
+          { key: [2], val: '2' }
+        ]
+      } satisfies PColumn<PColumnValues>
+    ], ctx.uiState.dataTableState.tableState, [
+      ...ctx.uiState.dataTableState.tableState.pTableParams?.filters,
+      ...(ctx.uiState.dataTableState.filterModel?.filters ?? [])
+    ]);
   })
 
   .sections((ctx) => {
@@ -107,6 +85,7 @@ export const platforma = BlockModel.create('Heavy')
       { type: 'link', href: '/text-fields', label: 'PlTextField' },
       { type: 'link', href: '/tabs', label: 'PlTabs' },
       { type: 'link', href: '/drafts', label: 'Drafts' },
+      { type: 'link', href: '/buttons', label: 'ButtonsPage' },
     ];
   })
 
