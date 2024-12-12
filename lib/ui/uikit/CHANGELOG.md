@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.31
+
+### Patch Changes
+
+- ddff372: [sdk/ui-vue] PlDropdownLine glitch
+
 ## 2.2.30
 
 ### Patch Changes
