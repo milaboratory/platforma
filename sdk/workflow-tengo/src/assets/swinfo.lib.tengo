@@ -4,6 +4,7 @@
 
 plapi := import("plapi")
 ll := import(":ll")
+maps := import(":maps")
 smart := import(":smart")
 json := import("json")
 
@@ -50,7 +51,11 @@ isSoftwareInfo := func(toCheck) {
 		return false
 	}
 
-	return (ll.fromStrict(toCheck)._type) == "softwareDescriptor"
+	if !maps.containsKey(toCheck, "_type") {
+		return false
+	}
+
+	return toCheck._type == "softwareDescriptor"
 }
 
 export ll.toStrict({
