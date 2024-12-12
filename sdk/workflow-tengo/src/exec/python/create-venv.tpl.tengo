@@ -62,6 +62,7 @@ self.body(func(inputs) {
 	venv := _createVenv(pythonPackage, pythonDescriptor)
 
 	installDeps := render.createEphemeral(installPyDeps, {
+		python: pythonPackage,
 		venv: venv,
 		toolset: inputs.toolset,
 		dependencies: inputs.dependencies

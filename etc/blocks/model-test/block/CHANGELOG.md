@@ -1,5 +1,61 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.65
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.65
+
+## 1.0.64
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.64
+
+## 1.0.63
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.63
+
+## 1.0.62
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.62
+
+## 1.0.61
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.61
+
+## 1.0.60
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.60
+
+## 1.0.59
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/milaboratories.test-block-model.ui@1.0.59
+- @milaboratories/milaboratories.test-block-model.model@1.0.14
+
+## 1.0.58
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.58
+
+## 1.0.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.57
+
 ## 1.0.56
 
 ### Patch Changes

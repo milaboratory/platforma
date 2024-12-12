@@ -9,7 +9,7 @@ import {
   PlBtnLink,
   PlBtnGhost,
   type Size,
-  maskIcons16
+  maskIcons24
 } from '@milaboratories/uikit';
 import Split from '@/Split.vue';
 
@@ -83,8 +83,8 @@ function onClick() {
         </fieldset>
         <fieldset>
           <legend>PlBtnGhost with all the icons</legend>
-          <PlBtnGhost v-for="icon in maskIcons16" :size="props.size" :key="icon" :icon="icon"
-            >Icon: {{ icon }}</PlBtnGhost
+          <PlBtnGhost v-for="icon in maskIcons24" :size="props.size" :key="icon" :icon="icon"
+            >(24x24): {{ icon }}</PlBtnGhost
           >
         </fieldset>
       </div>

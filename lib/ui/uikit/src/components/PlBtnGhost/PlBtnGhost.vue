@@ -9,8 +9,8 @@ export default {
 
 <script lang="ts" setup>
 import './pl-btn-ghost.scss';
-import type { MaskIconName16, Size } from '@/types';
-import { PlMaskIcon16 } from '@/components/PlMaskIcon16';
+import type { MaskIconName24, Size } from '@/types';
+import { PlMaskIcon24 } from '@/components/PlMaskIcon24';
 import { computed, ref, useSlots } from 'vue';
 import { useRipple } from '@/composition/useRipple';
 
@@ -31,7 +31,7 @@ const props = withDefaults(
     /**
      * Icon to display
      */
-    icon?: MaskIconName16;
+    icon?: MaskIconName24;
     /**
      * If `true`, an icon is displayed before the text.
      */
@@ -69,8 +69,8 @@ useRipple(btnRef);
     <span v-if="slots.default && !round">
       <slot />
     </span>
-    <PlMaskIcon16 v-if="loading" name="loading" :size="size" />
-    <PlMaskIcon16 v-else-if="icon" :name="icon" :size="size" />
+    <PlMaskIcon24 v-if="loading" name="loading" :size="size" />
+    <PlMaskIcon24 v-else-if="icon" :name="icon" :size="size" />
     <slot name="append" />
   </button>
 </template>
