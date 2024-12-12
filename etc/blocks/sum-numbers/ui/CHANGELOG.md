@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.test-sum-numbers.ui
 
+## 1.0.24
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.18.6
+
 ## 1.0.23
 
 ### Patch Changes

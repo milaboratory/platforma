@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.67
+
+### Patch Changes
+
+- ddff372: [sdk/ui-vue] PlDropdownLine glitch
+
 ## 1.2.66
 
 ### Patch Changes
