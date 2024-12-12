@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-download-file.ui
 
+## 1.0.27
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/ui-vue@1.20.0
+  - @milaboratories/milaboratories.test-download-file.model@1.0.6
+
 ## 1.0.26
 
 ### Patch Changes

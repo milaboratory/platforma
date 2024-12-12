@@ -1,5 +1,12 @@
 # @platforma-sdk/model
 
+## 1.20.0
+
+### Minor Changes
+
+- 1c8631b: - PlAgDataTable: allow multiple columns sharing same heterogeneous axis
+  - model: bugfix related to findLabels
+
 ## 1.19.0
 
 ### Minor Changes

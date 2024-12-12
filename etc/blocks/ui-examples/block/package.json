@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples",
-  "version": "1.0.149",
+  "version": "1.0.150",
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",
     "prepublishOnly": "block-tools pack && block-tools publish -r 's3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1'"

@@ -1,5 +1,18 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.0
+
+### Minor Changes
+
+- 1c8631b: - PlAgDataTable: allow multiple columns sharing same heterogeneous axis
+  - model: bugfix related to findLabels
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/model@1.20.0
+  - @milaboratories/uikit@2.2.32
+
 ## 1.19.0
 
 ### Patch Changes
