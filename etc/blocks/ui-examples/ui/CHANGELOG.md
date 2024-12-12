@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.66
+
+### Patch Changes
+
+- ca01bd7: [sdk/ui-vue] PlDropdownLine changing options labels is not watched properly
+
 ## 1.2.65
 
 ### Patch Changes
