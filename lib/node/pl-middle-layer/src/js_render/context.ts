@@ -6,6 +6,7 @@ import {
   JsRenderInternal,
   Option,
   PColumn,
+  PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
@@ -408,24 +409,28 @@ export class JsExecutionContext
   // PFrames / PTables
   //
 
-  public createPFrame(def: PFrameDef<string>): PFrameHandle {
+  public createPFrame(def: PFrameDef<string | PColumnValues>): PFrameHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         "can't instantiate PFrames from this context (most porbably called from the future mapper)"
       );
     return this.env.driverKit.pFrameDriver.createPFrame(
-      def.map((c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      def.map((c) => mapPObjectData(c, (d) => 
+        typeof d === 'string' ? this.getAccessor(d) : d
+      )),
       this.computableCtx
     );
   }
 
-  public createPTable(def: PTableDef<PColumn<string>>): PTableHandle {
+  public createPTable(def: PTableDef<PColumn<string | PColumnValues>>): PTableHandle {
     if (this.computableCtx === undefined)
       throw new Error(
         "can't instantiate PTable from this context (most porbably called from the future mapper)"
       );
     return this.env.driverKit.pFrameDriver.createPTable(
-      mapPTableDef(def, (c) => mapPObjectData(c, (d) => this.getAccessor(d))),
+      mapPTableDef(def, (c) => mapPObjectData(c, (d) => 
+        typeof d === 'string' ? this.getAccessor(d) : d
+      )),
       this.computableCtx
     );
   }
@@ -556,6 +561,11 @@ export class JsExecutionContext
         this.vm.setProp(configCtx, 'uiState', localScope.manage(this.vm.newString(uiState)));
 
       this.vm.setProp(configCtx, 'callbackRegistry', this.callbackRegistry);
+      this.vm.setProp(
+        configCtx,
+        'featureFlags',
+        this.exportObjectUniversal(JsRenderInternal.GlobalCfgRenderCtxFeatureFlags, localScope)
+      );
 
       // Exporting methods
 
@@ -786,14 +796,17 @@ export class JsExecutionContext
 
       exportCtxFunction('createPFrame', (def) => {
         return this.exportSingleValue(
-          this.createPFrame(this.importObjectViaJson(def) as PFrameDef<string>),
+          this.createPFrame(
+            this.importObjectViaJson(def) as PFrameDef<string | PColumnValues>),
           undefined
         );
       });
 
       exportCtxFunction('createPTable', (def) => {
         return this.exportSingleValue(
-          this.createPTable(this.importObjectViaJson(def) as PTableDef<PColumn<string>>),
+          this.createPTable(
+            this.importObjectViaJson(def) as PTableDef<PColumn<string | PColumnValues>>
+          ),
           undefined
         );
       });

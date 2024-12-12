@@ -1,4 +1,4 @@
-import { PObjectId, PObjectSpec } from '@platforma-sdk/model';
+import { PColumnSpec, PColumnValues, PObjectId, PObjectSpec } from '@platforma-sdk/model';
 import { PFrameInternal } from '@milaboratories/pl-model-middle-layer';
 import { PlTreeNodeAccessor, ResourceInfo } from '@milaboratories/pl-tree';
 import { assertNever } from '@milaboratories/ts-helpers';
@@ -229,6 +229,25 @@ export function parseDataInfoResource(
   }
 
   throw new Error(`unsupported resource type: ${resourceTypeToString(data.resourceType)}`);
+}
+
+export function makeDataInfoResource(
+  spec: PColumnSpec,
+  data: PColumnValues
+): PFrameInternal.DataInfo<ResourceInfo> {
+  const keyLength = spec.axesSpec.length;
+  const jsonData: Record<string, PFrameInternal.JsonDataValue> = {};
+  for (const { key, val } of data) {
+    if (key.length !== keyLength)
+      throw new Error(`inline column key length ${key.length} differs from axes count ${keyLength}`);
+    jsonData[JSON.stringify(key)] = val;
+  }
+  
+  return {
+    type: 'Json',
+    keyLength,
+    data: jsonData
+  };
 }
 
 export function derivePObjectId(spec: PObjectSpec, data: PlTreeNodeAccessor): PObjectId {
