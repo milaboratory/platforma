@@ -1,5 +1,6 @@
 import { Branded } from '../branding';
-import { PColumn, PColumnSpec } from '../drivers';
+import { JoinEntry, PColumn, PColumnSpec } from '../drivers';
+import { assertNever } from '../util';
 import { ResultPoolEntry } from './entry';
 
 /** Any object exported into the result pool by the block always have spec attached to it */
@@ -75,4 +76,27 @@ export function mapPObjectData<D1, D2>(
         ...pObj,
         data: cb(pObj.data)
       };
+}
+
+export function extractAllColumns<D>(entry: JoinEntry<PColumn<D>>): PColumn<D>[] {
+  const columns = new Map<PObjectId, PColumn<D>>();
+  const addAllColumns = (entry: JoinEntry<PColumn<D>>) => {
+    switch (entry.type) {
+      case 'column':
+        columns.set(entry.column.id, entry.column);
+        return;
+      case 'full':
+      case 'inner':
+        for (const e of entry.entries) addAllColumns(e);
+        return;
+      case 'outer':
+        addAllColumns(entry.primary);
+        for (const e of entry.secondary) addAllColumns(e);
+        return;
+      default:
+        assertNever(entry);
+    }
+  };
+  addAllColumns(entry);
+  return [...columns.values()];
 }
