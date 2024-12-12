@@ -8,8 +8,9 @@ import {
   PlCloseModalBtn,
   PlDropdownLine,
   PlTextField,
+  PlBtnGhost,
 } from '@platforma-sdk/ui-vue';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const data = reactive({
   title: 'Title example',
@@ -50,6 +51,12 @@ const currentLabel = computed({
   },
 });
 
+const loading = ref(false);
+
+const onClickSettings = () => {
+  loading.value = true;
+  setTimeout(() => loading.value = false, 2000);
+};
 </script>
 
 <template>
@@ -64,6 +71,7 @@ const currentLabel = computed({
       />
     </template>
     <template #append>
+      <PlBtnGhost icon="settings" :loading="loading" @click="onClickSettings">Settings</PlBtnGhost>
       <PlBtnPrimary> Just a button</PlBtnPrimary>
     </template>
     <PlRow>
