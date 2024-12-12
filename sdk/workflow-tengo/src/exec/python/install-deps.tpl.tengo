@@ -17,9 +17,9 @@ self.defineOutputs("runEnv")
 _runInVenv := func(wd, venv) {
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
-		substitutionRule("{python}", "python-venv").
-		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", "venv", "bin")).
-		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
+		substitutionRule("python", "python-venv").
+		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{python}}", "venv", "bin")).
+		envVar("VIRTUAL_ENV", path.join("{{python}}", "venv"))
 }
 
 _installPipDependencies := func(venv, dependencies) {
