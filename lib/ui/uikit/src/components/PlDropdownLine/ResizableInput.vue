@@ -5,19 +5,18 @@ import { computed } from 'vue';
 const props = defineProps<{
   modelValue?: string;
   placeholder?: string;
-  value?: string;
   disabled?: boolean;
   maxWidth?: string;
   width?: string;
 }>();
 
-const emit = defineEmits(['input', 'update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
 
 const text = computed(() => {
   if (props.placeholder) {
     return props.placeholder;
   }
-  return (props.modelValue || props.value)?.replace('"', '');
+  return (props.modelValue)?.replace('"', '');
 });
 
 const styles = computed(() => {
@@ -32,8 +31,7 @@ const styles = computed(() => {
 });
 
 function handleInput(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
-  emit('update:modelValue', value);
+  emit('update:modelValue', (event.target as HTMLInputElement).value);
 }
 </script>
 

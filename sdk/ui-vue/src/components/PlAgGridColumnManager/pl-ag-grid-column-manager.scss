@@ -26,6 +26,12 @@
         display: block;
     }
 
+    &__pin {
+        .mask-24 {
+            background-color: var(--ic-02);
+        }
+    }
+
     &__visibility {
         cursor: pointer;
         display: none;
@@ -58,6 +64,7 @@
     &__title {
         flex-grow: 1;
         color: var(--txt-03);
+        text-transform: none;
 
         &.visible {
             color: var(--txt-01);

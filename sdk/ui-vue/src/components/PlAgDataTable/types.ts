@@ -5,6 +5,7 @@ import type {
   PlTableFilterType,
   PTableColumnId,
   PTableHandle,
+  PTableValue,
   RemoteBlobHandleAndSize,
 } from '@platforma-sdk/model';
 
@@ -40,15 +41,20 @@ export type PlTableFiltersDefault = {
   default: PlTableFilter;
 };
 
+/** Key is a set of all axes values, which means it is unique across rows */
+export type PTableRowKey = PTableValue[];
+
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
-  /** Export table data as Csv file */
-  exportCsv: () => void;
+  /** Scroll table to make row with provided key visible */
+  focusRow: (rowKey: PTableRowKey) => void;
 };
 
 /** PlAgDataTable row */
 export type PlAgDataTableRow = {
+  key: PTableRowKey;
+  /** Unique row identifier, created as canonicalize(key)! */
   id: string;
-  key: unknown[];
-  [field: `${number}`]: undefined | null | number | string;
+  /** Row values by column; sheet axes and labeled axes are excluded */
+  [field: `${number}`]: PTableValue;
 };
