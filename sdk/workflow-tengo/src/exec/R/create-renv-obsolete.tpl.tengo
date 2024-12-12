@@ -1,6 +1,6 @@
 /**
  * Creates new r virtual environment.
- * DEPRECATED: Remove after 15 Jan 2025
+ * DEPRECATED: Remove after 15 Mar 2025
  */
 
 times := import("times")

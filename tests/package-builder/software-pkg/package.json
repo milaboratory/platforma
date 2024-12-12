@@ -68,14 +68,14 @@
       "hello": {
         "binary": {
           "artifact": "with-py-environment",
-          "command": [ "python", "{pkg}/script1.py", "Hello from python!" ],
+          "command": [ "python", "{{pkg}}/script1.py", "Hello from python!" ],
           "envVars": [ "MYVAR=1" ]
         }
       },
       "goodbye": {
         "binary": {
           "artifact": "with-py-environment",
-          "command": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
+          "command": [ "python", "{{pkg}}/script1.py", "Have a nice day!" ],
           "envVars": [ "MYVAR=2" ]
         }
       },
