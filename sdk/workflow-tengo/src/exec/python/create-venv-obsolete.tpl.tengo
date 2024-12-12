@@ -1,0 +1,74 @@
+/**
+ * Creates new python virtual environment.
+ */
+
+self := import(":tpl")
+
+ll := import(":ll")
+render := import(":render")
+workdir := import(":workdir")
+runcmd := import(":exec.runcmd")
+assets := import(":assets")
+path := import(":path")
+validation := import(":validation")
+runenv := import(":exec.runenv")
+internal := import(":exec.python.internal")
+constants := import(":exec.constants")
+
+_createVenv := func(pythonPackage, pythonDescriptor) {
+	wdBefore := workdir.builder().build()
+
+	venvBuilder := runcmd.builder(wdBefore)
+	venvBuilder.
+		ref("python-run-environment", pythonPackage).
+		substitutionRule("{python}", "python-run-environment").
+		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", pythonDescriptor.binDir))
+
+	venvBuilder.
+		cmd("python").
+		arg("-m").
+		arg("venv").
+		arg("./venv")
+
+	venvBuilder.
+		inQueue("light").
+		stdout("./output").
+		stderr("./output").
+		nErrorLines(20)
+
+	venv := venvBuilder.build()
+
+	wdWithVenv := venv.workdir
+
+	runEnvSaver := runenv.saveBuilder(wdWithVenv).
+		envType("python").
+		addPath("venv").
+		addPackage("python", pythonPackage)
+
+	return runEnvSaver.build().runEnv()
+}
+
+installPyDeps := assets.importTemplate(":exec.python.install-deps-obsolete")
+
+self.defineOutputs("runEnv")
+
+self.body(func(inputs) {
+	// assert we have inputs we expect.
+	validation.assertJsonSchema(inputs, internal.pythonVenvInputSchema)
+
+	pythonPackage := inputs.python
+	pythonDescriptor := inputs.pythonDescriptor
+
+	venv := _createVenv(pythonPackage, pythonDescriptor)
+
+	installDeps := render.createEphemeral(installPyDeps, {
+		python: pythonPackage,
+		venv: venv,
+		toolset: inputs.toolset,
+		dependencies: inputs.dependencies
+	})
+
+	return {
+		runEnv: installDeps.output("runEnv")
+	}
+})

@@ -14,14 +14,14 @@ constants := import(":exec.constants")
 
 self.defineOutputs("runEnv")
 
-_runInVenv := func(python, venv, wd) {
+_runInVenv := func(python, wd, venv) {
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
-		substitutionRule("python", "python-venv").
-		substitutionRule("python-runenv", "python-run-environment").
-		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{python}}", "venv", "bin")).
-		envVar("VIRTUAL_ENV", path.join("{{python}}", "venv"))
+		substitutionRule("{python}", "python-venv").
+		substitutionRule("{python-runenv}", "python-run-environment").
+		addToPath(path.join("{python}", "venv", "bin"), true).
+		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
 }
 
 _installPipDependencies := func(python, venv, dependencies) {
@@ -31,13 +31,15 @@ _installPipDependencies := func(python, venv, dependencies) {
 		addFile("requirements.txt", requirementsRef).
 		build()
 
-	depsBuilder := _runInVenv(python, venv, wdForDeps)
+	depsBuilder := _runInVenv(python, wdForDeps, venv)
 
 	depsBuilder.
-		cmd("python").arg("-m").
-		arg("pip").arg("install").
-		arg("--requirement").arg("requirements.txt").
-		arg("--find-links").argVar("{python-runenv}/packages/")
+		cmd("python").
+		arg("-m").
+		arg("pip").
+		arg("install").
+		arg("--requirement").
+		arg("requirements.txt")
 
 	depsBuilder.
 		inQueue("light").
@@ -52,7 +54,6 @@ _installPipDependencies := func(python, venv, dependencies) {
 self.prepare(func(inputs) {
 	// assert we have inputs we expect.
 	validation.assertJsonSchema(inputs, {
-		python: validation.reference,
 		venv: validation.reference,
 		toolset: "string",
 		dependencies: {"any": validation.reference}
