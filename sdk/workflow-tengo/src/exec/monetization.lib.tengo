@@ -1,0 +1,69 @@
+/** The library provides all things to work with a monetization. */
+
+ll := import(":ll")
+validation := import(":validation")
+
+/** Just creates a new monetization as a map of params. */
+init := func() {
+	return ll.toStrict({
+		enabled: false,
+
+		// product name of monetization, e.g. "mixcr_analyze"
+		productName: "",
+
+		// file name to the param, e.g. {fileName: { arg: "dataset", collect: ["size", "linesNum"] }}
+		fileParams: {}
+	})
+}
+
+fileParamsSchema := {
+	"arg": "string",
+	"collect": [`string,regex=size|linesNum|hash`]
+}
+
+schema := {
+	"enabled": "bool",
+	"productName": "string",
+	"fileParams": {",any": fileParamsSchema}
+}
+
+/** Enables the monetization for a product. */
+enable := func(mnz, productName) {
+	ll.assert(is_string(productName),
+		"monetization.enable(): product name must be a string, got %v", productName)
+
+	validation.assertJsonSchema(mnz, schema,
+		"monetization.enable(): mnz object does not fit schema")
+
+	mnz.enabled = true
+}
+
+/** Is this monetization enabled? */
+isEnabled := func(mnz) {
+	return mnz.enabled
+}
+
+/** Adds monetization parameters by a file. */
+addFileParams := func(mnz, fileName, params) {
+	validation.assertJsonSchema(mnz, schema,
+		"monetization.addFileParams(): monetization object does not fit json schema")
+
+	validation.assertJsonSchema(params, fileParamsSchema,
+		"monetization.addFileParams(): file params does not fit json schema")
+
+	ll.assert(mnz.enabled,
+		"monetization.addFileParams(): monetization must be explicitly enabled by enableMnz(productName) function")
+
+	ll.assert(is_string(fileName),
+		"monetization.addFileParams(): file name must be a string.")
+
+	mnz.fileParams[fileName] = params
+}
+
+export ll.toStrict({
+	init: init,
+	schema: schema,
+	enable: enable,
+	isEnabled: isEnabled,
+	addFileParams: addFileParams
+})
