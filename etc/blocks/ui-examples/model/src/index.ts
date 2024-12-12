@@ -3,14 +3,11 @@ import {
   InferHrefType,
   InferOutputsType,
   PlDataTableState,
-  ValueType,
-  isPColumn,
-  isPColumnSpec,
-  PlRef,
-  getUniquePartitionKeys,
-  createPlDataTableSheet,
   createPlDataTable,
-  PlTableFiltersModel
+  PlTableFiltersModel,
+  PColumn,
+  PColumnValues,
+  PObjectId,
 } from '@platforma-sdk/model';
 import { z } from 'zod';
 
@@ -22,7 +19,6 @@ export type BlockArgs = z.infer<typeof $BlockArgs>;
 
 export type TableState = {
   tableState: PlDataTableState;
-  anchorColumn?: PlRef;
   filterModel: PlTableFiltersModel;
 };
 
@@ -38,34 +34,34 @@ export const platforma = BlockModel.create('Heavy')
 
   .output('numbers', (ctx) => ctx.outputs?.resolve('numbers')?.getDataAsJson<number[]>())
 
-  .retentiveOutput('inputOptions', (ctx) => {
-    return ctx.resultPool.getOptions((spec) => isPColumnSpec(spec));
-  })
-
-  .output('sheets', (ctx) => {
-    if (!ctx.uiState?.dataTableState?.anchorColumn) return undefined;
-
-    const anchor = ctx.resultPool.getPColumnByRef(ctx.uiState.dataTableState.anchorColumn);
-    if (!anchor) return undefined;
-
-    const r = getUniquePartitionKeys(anchor.data);
-    if (!r) return undefined;
-    return r.map((values, i) => createPlDataTableSheet(ctx, anchor.spec.axesSpec[i], values));
-  })
-
   .output('pt', (ctx) => {
-    if (ctx.uiState?.dataTableState?.anchorColumn === undefined) return undefined;
-
-    const anchorColumn = ctx.resultPool.getDataByRef(ctx.uiState.dataTableState.anchorColumn);
-    if (!anchorColumn || !isPColumn(anchorColumn)) {
-      console.error('Anchor column is undefined or is not PColumn', anchorColumn);
-      return undefined;
-    }
-
-    // wait until sheet filters are set
-    if (ctx.uiState.dataTableState.tableState.pTableParams?.filters === undefined) return undefined;
-
-    return createPlDataTable(ctx, [anchorColumn], ctx.uiState.dataTableState.tableState, [
+    if (!ctx.uiState?.dataTableState?.tableState.pTableParams?.filters) return undefined;
+    return createPlDataTable(ctx, [
+      {
+        id: "example" as PObjectId,
+        spec: {
+          kind: 'PColumn',
+          valueType: 'String',
+          name: 'example',
+          annotations: {
+            'pl7.app/label': 'String column',
+          },
+          axesSpec: [
+            {
+              type: 'Int',
+              name: 'index',
+              annotations: {
+                'pl7.app/label': 'Int axis',
+              },
+            }
+          ]
+        },
+        data: [
+          { key: [1], val: '1' },
+          { key: [2], val: '2' }
+        ]
+      } satisfies PColumn<PColumnValues>
+    ], ctx.uiState.dataTableState.tableState, [
       ...ctx.uiState.dataTableState.tableState.pTableParams?.filters,
       ...(ctx.uiState.dataTableState.filterModel?.filters ?? [])
     ]);
