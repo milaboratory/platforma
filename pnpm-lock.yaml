@@ -1791,15 +1791,9 @@ importers:
       '@types/jest':
         specifier: 'catalog:'
         version: 29.5.14
-      '@types/semver':
-        specifier: 'catalog:'
-        version: 7.5.8
       jest:
         specifier: 'catalog:'
         version: 29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4))
-      semver:
-        specifier: 'catalog:'
-        version: 7.6.3
       ts-jest:
         specifier: 'catalog:'
         version: 29.2.5(@babel/core@7.25.2)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.25.2))(jest@29.7.0(@types/node@22.5.5)(ts-node@10.9.2(@types/node@22.5.5)(typescript@5.5.4)))(typescript@5.5.4)
