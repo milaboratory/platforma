@@ -1,16 +1,15 @@
-import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { PlDataTableSheet } from '@platforma-sdk/model';
+import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import {
+  type AxisId,
   type PColumnSpec,
   type PFrameDriver,
   type PTableColumnSpec,
   type PTableHandle,
   type PTableVector,
-  type PValue,
-  type ValueType,
+  type PlDataTableSheet,
+  type PTableValue,
   getAxisId,
-  isValueAbsent,
-  isValueNA,
+  pTableValue,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -18,6 +17,7 @@ import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } fro
 import type { PlAgDataTableRow } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { PlAgColumnHeader, type PlAgHeaderComponentType, type PlAgHeaderComponentParams } from '../../PlAgColumnHeader';
+import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
 
 /**
  * Generate unique colId based on the column spec.
@@ -50,17 +50,33 @@ export const defaultValueFormatter = (value: any) => {
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
   const colId = makeColId(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
+    context: spec,
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     headerComponent: PlAgColumnHeader,
+    cellRendererSelector: showCellButtonForAxisId
+      ? (params: ICellRendererParams) => {
+          if (spec.type !== 'axis') return;
+
+          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
+          if (lodash.isEqual(axisId, showCellButtonForAxisId)) {
+            return { component: PlAgTextAndButtonCell };
+          }
+        }
+      : undefined,
+    cellRendererParams: showCellButtonForAxisId
+      ? {
+          invokeRowsOnDoubleClick: true,
+        }
+      : undefined,
     headerComponentParams: {
       type: ((): PlAgHeaderComponentType => {
         switch (valueType) {
@@ -94,56 +110,19 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
   };
 }
 
-/**
- * Convert value to displayable form
- */
-function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): string | number {
-  switch (valueType) {
-    case 'Int':
-      return value as number;
-    case 'Long':
-      return typeof value === 'bigint' ? Number(value as bigint) : (value as number);
-    case 'Float':
-      return value as number;
-    case 'Double':
-      return value as number;
-    case 'String':
-      return value as string;
-    case 'Bytes':
-      return Buffer.from(value as Uint8Array).toString('hex');
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
+export function makeRowId(rowKey: PTableValue[]) {
+  return canonicalize(rowKey)!;
 }
 
-/**
- * Convert columnar data from the driver to rows, used by ag-grid
- * @param specs column specs
- * @param columns columnar data
- * @param nRows number of rows
- * @returns
- */
-function columns2rows(fields: number[], columns: PTableVector[], axes: number[], index: number): PlAgDataTableRow[] {
-  const nCols = fields.length;
+/** Convert columnar data from the driver to rows, used by ag-grid */
+function columns2rows(fields: number[], columns: PTableVector[], axes: number[]): PlAgDataTableRow[] {
   const rowData: PlAgDataTableRow[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const key: unknown[] = [];
-    const id = (index++).toString();
-    for (const axisIdx of axes) key.push(columns[axisIdx].data[iRow]);
-    const row: PlAgDataTableRow = { key, id };
-    for (let iCol = 0; iCol < nCols; ++iCol) {
-      const field = fields[iCol].toString() as `${number}`;
-      const value = columns[iCol].data[iRow];
-      const valueType = columns[iCol].type;
-      if (isValueAbsent(columns[iCol].absent, iRow)) {
-        row[field] = undefined; // NULL
-      } else if (isValueNA(value, valueType) || value === null) {
-        row[field] = null; // NA
-      } else {
-        row[field] = toDisplayValue(value, valueType);
-      }
-    }
-
+    const key = axes.map((iAxis) => pTableValue(columns[iAxis], iRow));
+    const row: PlAgDataTableRow = { id: makeRowId(key), key };
+    fields.forEach((field, iCol) => {
+      row[field.toString() as `${number}`] = pTableValue(columns[iCol], iRow);
+    });
     rowData.push(row);
   }
   return rowData;
@@ -159,6 +138,7 @@ export async function updatePFrameGridOptions(
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
   hiddenColIds?: string[],
+  showCellButtonForAxisId?: AxisId,
 ): Promise<{
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
@@ -232,7 +212,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds))];
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId))];
 
   if (hColumns.length > 1) {
     console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
@@ -302,7 +282,7 @@ export async function updatePFrameGridOptions(
               offset: params.request.startRow,
               length,
             });
-            rowData = columns2rows(fields, data, axes, params.request.startRow);
+            rowData = columns2rows(fields, data, axes);
           }
         }
 

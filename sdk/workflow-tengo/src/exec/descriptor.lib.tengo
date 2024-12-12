@@ -20,7 +20,7 @@ runEnvScheme := {
 binaryScheme := {
 	registry: "string",
 	package: "string",
-	cmd: ["string"], // deprecated, remove after 15 Jan 2025
+	cmd: ["string"], // deprecated, remove after 15 Mar 2025
 	command: ["string"],
 	runEnv: runEnvScheme
 }
@@ -34,7 +34,7 @@ assetScheme := {
 localScheme := {
 	hash: "string",
 	path: "string",
-	cmd: ["string"], // deprecated, remove after 15 Jan 2025
+	cmd: ["string"], // deprecated, remove after 15 Mar 2025
 	command: ["string"],
 	runEnv: runEnvScheme
 }
@@ -57,7 +57,7 @@ _schemaVersion := func(descriptor) {
 }
 
 /** True if Platforma Backend supports expression refs. */
-hasBackendExpressions := func() {
+canBackendUseExpressions := func() {
 	return ll.apiVersion() >= 2
 }
 
@@ -75,10 +75,10 @@ _hasSwExpressions := func(descriptor) {
  * Shows if Platforma Backend is new enough
  * and sw descriptor is new enough to support expression refs.
  *
- * @param descriptor: any - sw descriptor to see if it's new enough.
+ * @param descriptor: any - entrypoint descriptor to see if it's new enough.
  */
-supportExpressions := func(descriptor) {
-	return hasBackendExpressions() && _hasSwExpressions(descriptor)
+shouldUseExpressions := func(descriptor) {
+	return canBackendUseExpressions() && _hasSwExpressions(descriptor)
 }
 
 export {
@@ -87,6 +87,6 @@ export {
 	assetScheme: assetScheme,
 	localScheme: localScheme,
 	scheme: scheme,
-	hasBackendExpressions: hasBackendExpressions,
-	supportExpressions: supportExpressions
+	canBackendUseExpressions: canBackendUseExpressions,
+	shouldUseExpressions: shouldUseExpressions
 }

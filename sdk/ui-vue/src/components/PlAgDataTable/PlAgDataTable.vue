@@ -15,10 +15,8 @@ import type {
 import { ModuleRegistry } from '@ag-grid-community/core';
 import { AgGridVue } from '@ag-grid-community/vue3';
 import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
-import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
 import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
 import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
-import { SideBarModule } from '@ag-grid-enterprise/side-bar';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import {
   getAxisId,
@@ -36,21 +34,22 @@ import { AgGridTheme } from '../../lib';
 import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
-import { parseColId, updatePFrameGridOptions } from './sources/table-source';
+import { makeRowId, parseColId, updatePFrameGridOptions } from './sources/table-source';
 import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
+import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
+import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ClipboardModule,
   ServerSideRowModelModule,
   RangeSelectionModule,
-  SideBarModule,
-  ColumnsToolPanelModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
+const selectedRows = defineModel<string[]>('selectedRows');
 const props = defineProps<{
   settings?: Readonly<PlDataTableSettings>;
   /**
@@ -60,6 +59,14 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showColumnsPanel?: boolean;
+  /**
+   * The showExportButton prop controls the display of a button that allows
+   * to export table data in CSV format. To make the button functional
+   * and visible, you must also include the PlAgDataTableToolsPanel component in your layout.
+   * This component serves as the target for teleporting the button.
+   */
+  showExportButton?: boolean;
+  showCellButtonForAxisId?: AxisId;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
@@ -163,20 +170,21 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
+const firstDataRenderedTracker = makeOnceTracker<GridApi>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
   cellSelection: true,
   initialState: gridState.value,
   autoSizeStrategy: { type: 'fitCellContents' },
+  rowSelection: selectedRows.value
+    ? {
+        mode: 'multiRow',
+        headerCheckbox: false,
+      }
+    : undefined,
   onRowDoubleClicked: (event) => {
     if (event.data) emit('onRowDoubleClicked', event.data.key);
-  },
-  onSortChanged: (event) => {
-    event.api.refreshCells();
-  },
-  onFilterChanged: (event) => {
-    event.api.refreshCells();
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -204,6 +212,7 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
 });
 const onGridReady = (event: GridReadyEvent) => {
   const api = event.api;
+  trackFirstDataRendered(api, firstDataRenderedTracker);
   autoSizeRowNumberColumn(api);
   gridApi.value = new Proxy(api, {
     get(target, prop, receiver) {
@@ -245,53 +254,9 @@ const onGridPreDestroyed = () => {
   gridApi.value = undefined;
 };
 
-let flag = false;
-const onStoreRefreshed = () => {
-  if (!flag) return;
-
-  const gridApiValue = gridApi.value;
-  if (gridApiValue === undefined) return;
-
-  gridApiValue.exportDataAsCsv();
-
-  flag = false;
-  gridApiValue.setGridOption('cacheBlockSize', 100);
-};
-const onModelUpdated = () => {
-  if (!flag) return;
-
-  const gridApiValue = gridApi.value;
-  if (gridApiValue === undefined) return;
-
-  const state = gridApiValue.getServerSideGroupLevelState()[0];
-  if (state.cacheBlockSize! !== state.rowCount) return;
-
-  gridApiValue.refreshServerSide({ route: state.route, purge: false });
-};
-const exportCsv = async () => {
-  const gridApiValue = gridApi.value;
-  if (gridApiValue === undefined) return;
-
-  if (gridOptions.value.rowModelType === 'clientSide') {
-    gridApiValue.exportDataAsCsv();
-    return;
-  }
-
-  if (gridOptions.value.rowModelType === 'serverSide') {
-    const state = gridApiValue.getServerSideGroupLevelState()[0];
-
-    if (state.rowCount <= state.cacheBlockSize!) {
-      gridApiValue.exportDataAsCsv();
-      return;
-    }
-
-    if (!flag) {
-      flag = true;
-      gridApiValue.setGridOption('cacheBlockSize', state.rowCount);
-    }
-  }
-};
-defineExpose<PlAgDataTableController>({ exportCsv });
+defineExpose<PlAgDataTableController>({
+  focusRow: (rowKey) => focusRow(makeRowId(rowKey), firstDataRenderedTracker),
+});
 
 const reloadKey = ref(0);
 watch(
@@ -314,7 +279,7 @@ watch(
   (options, oldOptions) => {
     if (!oldOptions) return;
     if (options.rowModelType != oldOptions.rowModelType) ++reloadKey.value;
-    if (!lodash.isEqual(options.columnDefs, oldOptions.columnDefs) && options.columnDefs) {
+    if (options.columnDefs && !lodash.isEqual(options.columnDefs, oldOptions.columnDefs)) {
       const isColDef = (def: ColDef | ColGroupDef): def is ColDef => !('children' in def);
       const colDefs = options.columnDefs?.filter(isColDef) ?? [];
       const columns
@@ -378,7 +343,7 @@ watch(
 
         const driver = getRawPlatformaInstance().pFrameDriver;
         const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
-        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds);
+        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds, props.showCellButtonForAxisId);
 
         return gridApi.updateGridOptions({
           loading: false,
@@ -418,6 +383,7 @@ watch(
 <template>
   <div class="ap-ag-data-table-container">
     <PlAgGridColumnManager v-if="gridApi && showColumnsPanel" :api="gridApi" />
+    <PlAgCsvExporter v-if="gridApi && showExportButton" :api="gridApi" />
     <div v-if="settings?.sourceType === 'ptable' && !!settings.sheets && settings.sheets.length > 0" class="ap-ag-data-table-sheets">
       <PlDropdownLine
         v-for="(sheet, i) in settings.sheets"
@@ -436,8 +402,6 @@ watch(
       @grid-ready="onGridReady"
       @state-updated="onStateUpdated"
       @grid-pre-destroyed="onGridPreDestroyed"
-      @store-refreshed="onStoreRefreshed"
-      @model-updated="onModelUpdated"
     />
   </div>
 </template>

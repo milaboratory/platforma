@@ -77,18 +77,21 @@ function adjustRowNumberColumnWidth(gridApi: GridApi, cellFake: HTMLDivElement, 
   });
 }
 
-function destroyCellFake(cellFake: HTMLElement) {
+function destroyCellFake(cellFake: HTMLDivElement) {
   document.body.removeChild(cellFake);
 }
 
 export function autoSizeRowNumberColumn(gridApi: GridApi) {
   const cellFake = createCellFake();
-  gridApi.addEventListener('viewportChanged', () => {
-    adjustRowNumberColumnWidth(gridApi, cellFake);
+  gridApi.addEventListener('firstDataRendered', (event) => {
+    adjustRowNumberColumnWidth(event.api, cellFake);
+  });
+  gridApi.addEventListener('viewportChanged', (event) => {
+    adjustRowNumberColumnWidth(event.api, cellFake);
   });
   gridApi.addEventListener('columnVisible', (event) => {
     if (event.columns && event.columns.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)) {
-      adjustRowNumberColumnWidth(gridApi, cellFake);
+      adjustRowNumberColumnWidth(event.api, cellFake);
     }
   });
   gridApi.addEventListener('columnResized', (event) => {
@@ -97,8 +100,14 @@ export function autoSizeRowNumberColumn(gridApi: GridApi) {
       && event.source === 'autosizeColumns'
       && event.columns?.some((column) => column.isVisible() && column.getColId() === PlAgDataTableRowNumberColId)
     ) {
-      adjustRowNumberColumnWidth(gridApi, cellFake, true);
+      adjustRowNumberColumnWidth(event.api, cellFake, true);
     }
+  });
+  gridApi.addEventListener('sortChanged', (event) => {
+    event.api.refreshCells();
+  });
+  gridApi.addEventListener('filterChanged', (event) => {
+    event.api.refreshCells();
   });
   gridApi.addEventListener('gridPreDestroyed', () => {
     destroyCellFake(cellFake);

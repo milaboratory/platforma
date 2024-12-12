@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Column, GridApi } from '@ag-grid-community/core';
+import { type Column, type GridApi } from '@ag-grid-community/core';
 import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
@@ -71,7 +71,7 @@ watch(
     </Teleport>
 
     <PlSlideModal v-model="slideModal" :width="'368px'" close-on-outside-click>
-      <template #title>Columns</template>
+      <template #title>Manage Columns</template>
 
       <div ref="listRef" :key="listKey" class="pl-ag-columns">
         <div v-for="col in columns" :key="col.getId()" class="pl-ag-columns__item">
@@ -84,6 +84,9 @@ watch(
               <PlMaskIcon24 :name="col.isVisible() ? 'view-show' : 'view-hide'" />
               <template #tooltip>Show/Hide</template>
             </PlTooltip>
+          </div>
+          <div v-if="col.getColDef().lockPosition" class="pl-ag-columns__pin">
+            <PlMaskIcon24 name="pin" />
           </div>
         </div>
       </div>

@@ -14,30 +14,30 @@ constants := import(":exec.constants")
 
 self.defineOutputs("runEnv")
 
-_runInVenv := func(wd, venv) {
+_runInVenv := func(python, venv, wd) {
 	return runcmd.builder(wd).
 		ref("python-venv", venv).
-		substitutionRule("{python}", "python-venv").
-		addToPath(constants.ARG_TYPE_VAR, path.join("{python}", "venv", "bin")).
-		envVar("VIRTUAL_ENV", path.join("{python}", "venv"))
+		ref("python-run-environment", python).
+		substitutionRule("python", "python-venv").
+		substitutionRule("python-runenv", "python-run-environment").
+		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{python}}", "venv", "bin")).
+		envVar("VIRTUAL_ENV", path.join("{{python}}", "venv"))
 }
 
-_installPipDependencies := func(venv, dependencies) {
+_installPipDependencies := func(python, venv, dependencies) {
 	requirementsRef := dependencies.requirements
 
 	wdForDeps := workdir.builder().
 		addFile("requirements.txt", requirementsRef).
 		build()
 
-	depsBuilder := _runInVenv(wdForDeps, venv)
+	depsBuilder := _runInVenv(python, venv, wdForDeps)
 
 	depsBuilder.
-		cmd("python").
-		arg("-m").
-		arg("pip").
-		arg("install").
-		arg("--requirement").
-		arg("requirements.txt")
+		cmd("python").arg("-m").
+		arg("pip").arg("install").
+		arg("--requirement").arg("requirements.txt").
+		arg("--find-links").argVar("{python-runenv}/packages/")
 
 	depsBuilder.
 		inQueue("light").
@@ -52,6 +52,7 @@ _installPipDependencies := func(venv, dependencies) {
 self.prepare(func(inputs) {
 	// assert we have inputs we expect.
 	validation.assertJsonSchema(inputs, {
+		python: validation.reference,
 		venv: validation.reference,
 		toolset: "string",
 		dependencies: {"any": validation.reference}
@@ -59,7 +60,7 @@ self.prepare(func(inputs) {
 
 	toolset := inputs.toolset
 	if toolset == "pip" {
-		depsInstall := _installPipDependencies(inputs.venv, inputs.dependencies)
+		depsInstall := _installPipDependencies(inputs.python, inputs.venv, inputs.dependencies)
 		return {
 			runEnv: inputs.venv,
 			sync: depsInstall.workdir // we need it to make 'body' wait for dependencies installation into venv

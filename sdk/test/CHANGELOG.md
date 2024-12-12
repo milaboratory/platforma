@@ -1,5 +1,24 @@
 # @platforma-sdk/test
 
+## 1.18.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.5
+
+## 1.18.0
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.4
+- @platforma-sdk/model@1.18.0
+
+## 1.17.4
+
+### Patch Changes
+
+- 016c560: Increase default timeout for awaitStableState
+
 ## 1.17.1
 
 ### Patch Changes

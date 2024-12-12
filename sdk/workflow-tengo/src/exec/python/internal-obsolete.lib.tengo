@@ -1,0 +1,17 @@
+ll := import(":ll")
+validation := import(":validation")
+pkg := import(":exec.package")
+desc := import(":exec.descriptor")
+
+pythonVenvInputSchema := {
+	toolset: "string",
+	dependencies: {"any": validation.reference},
+	// software: validation.reference,
+
+	pythonDescriptor: desc.runEnvScheme,
+	python: validation.reference
+}
+
+export ll.toStrict({
+	pythonVenvInputSchema                       : pythonVenvInputSchema
+})

@@ -33,7 +33,7 @@ command to run for this entrypoint. This command will be appended by <args> set 
     The syntax has changed: all curly braces should be doubled, for example:
         {pkg} -> {{pkg}}
 
-    The new "command" field supports rendering of such arguments, for example:
+    The new "command" field supports math expressions and env variables resolution, for example:
         –Xms{{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}}m
 
     If you need to keep both old and new commands, add a new field "command" and rename "cmd" -> "oldCmd".
