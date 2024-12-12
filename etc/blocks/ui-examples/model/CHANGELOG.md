@@ -1,5 +1,16 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @platforma-sdk/model@1.19.0
+
 ## 1.0.50
 
 ### Patch Changes
