@@ -80,7 +80,7 @@ _runBinaryCommand := func(inputs) {
 	for envName, secretVar in inputs.runOptions.secrets {
 		if desc.canBackendUseExpressions() {
 			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, "{"+secretVar+"}")
-		} else {
+		} else { // deprecated, remove after 15 Mar 2025
 			runBuilder.envTyped(envName, constants.ARG_TYPE_VAR, secretVar)
 		}
 	}
