@@ -80,6 +80,10 @@ const modelText = computed<string>(() => {
 
 const inputModel = ref(modelText.value);
 
+watch(modelText, (v) => {
+  inputModel.value = v;
+});
+
 const placeholderVal = computed(() => {
   if (data.isOpen) {
     if (searchPhrase.value && searchPhrase.value.length >= modelText.value.length - 1) {
@@ -136,7 +140,6 @@ function updateSelected() {
     }),
     (v) => (v < 0 ? 0 : v),
   );
-  inputModel.value = modelText.value;
 }
 
 function resetSearchPhrase() {
@@ -256,7 +259,6 @@ useElementPosition(container, (pos) => {
 </script>
 
 <template>
-  <!-- {{ inputModel }} -->
   <div
     ref="container"
     tabindex="0"
