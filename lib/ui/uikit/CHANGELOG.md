@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.32
+
+### Patch Changes
+
+- 8cb8082: [sdk-ui/vue] Migrate icon in PlBtnGhost to 24px
+
 ## 2.2.31
 
 ### Patch Changes
