@@ -28,8 +28,8 @@ _ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environme
 
 /** Converts the args above to the expressions. */
 _expr := func(descriptor, varName) {
-	// deprecated, remove on 15 Jan 2025
-	if !desc.supportExpressions(descriptor) {
+	// deprecated, remove on 15 Mar 2025
+	if !desc.shouldUseExpressions(descriptor) {
 		return "{" + varName + "}"
 	}
 
@@ -57,15 +57,15 @@ _typedArg := func(isString, entrypointDescriptor, value) {
 	if isString {
 		return _newArg(constants.ARG_TYPE_STRING, value)
 	}
-	if desc.supportExpressions(entrypointDescriptor) {
+	if desc.shouldUseExpressions(entrypointDescriptor) {
 		return _newArg(constants.ARG_TYPE_EXPRESSION, value)
 	}
 	return _newArg(constants.ARG_TYPE_VAR, value)
 }
 
 _newRefVar := func(entrypointDescriptor, varName, refName, reference) {
-	// deprecated, remove on 15 Jan 2025
-	if !desc.supportExpressions(entrypointDescriptor) {
+	// deprecated, remove on 15 Mar 2025
+	if !desc.shouldUseExpressions(entrypointDescriptor) {
 		return ll.toStrict({
 			varName: "{" + varName + "}",
 			refName: refName,
@@ -248,7 +248,7 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
 	command := descriptor.command
-	if !desc.supportExpressions(entrypointDescriptor) {
+	if !desc.shouldUseExpressions(entrypointDescriptor) {
 		command = descriptor.cmd
 	}
 	cmd := _typedArg(false, entrypointDescriptor, command[0])
