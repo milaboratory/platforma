@@ -9,18 +9,17 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import './pl-dropdown-multi.scss';
-import { computed, reactive, ref, unref, useSlots, watch, watchPostEffect } from 'vue';
-import { tap, tapIf } from '@/helpers/functions';
+import { computed, reactive, ref, unref, useSlots, useTemplateRef, watch, watchPostEffect } from 'vue';
+import { tap } from '@/helpers/functions';
 import { PlTooltip } from '@/components/PlTooltip';
 import { PlChip } from '@/components/PlChip';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { useLabelNotch } from '@/utils/useLabelNotch';
 import type { ListOption } from '@/types';
-import { scrollIntoView } from '@/helpers/dom';
 import DropdownListItem from '@/components/DropdownListItem.vue';
 import { deepEqual, deepIncludes } from '@/helpers/objects';
 import { normalizeListOptions } from '@/helpers/utils';
-import { useElementPosition } from '@/composition/usePosition';
+import DropdownOverlay from '@/utils/DropdownOverlay/DropdownOverlay.vue';
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: M[]): void;
@@ -77,8 +76,9 @@ const props = withDefaults(
 );
 
 const rootRef = ref<HTMLElement | undefined>();
-const list = ref<HTMLElement | undefined>();
 const input = ref<HTMLInputElement | undefined>();
+
+const overlay = useTemplateRef('overlay');
 
 const data = reactive({
   search: '',
@@ -109,18 +109,18 @@ const filteredOptionsRef = computed(() => {
   return (
     data.search
       ? options.filter((opt) => {
-          const search = data.search.toLowerCase();
+        const search = data.search.toLowerCase();
 
-          if (opt.label.toLowerCase().includes(search)) {
-            return true;
-          }
+        if (opt.label.toLowerCase().includes(search)) {
+          return true;
+        }
 
-          if (typeof opt.value === 'string') {
-            return opt.value.toLowerCase().includes(search);
-          }
+        if (typeof opt.value === 'string') {
+          return opt.value.toLowerCase().includes(search);
+        }
 
-          return opt.value === data.search;
-        })
+        return opt.value === data.search;
+      })
       : [...options]
   ).map((opt) => ({
     ...opt,
@@ -153,22 +153,12 @@ const toggleModel = () => (data.open = !data.open);
 const onFocusOut = (event: FocusEvent) => {
   const relatedTarget = event.relatedTarget as Node | null;
 
-  if (!rootRef.value?.contains(relatedTarget) && !list.value?.contains(relatedTarget)) {
+  console.log('>>>> overlay.value?.$el', overlay.value?.$el);
+
+  if (!rootRef.value?.contains(relatedTarget) && !overlay.value?.listRef?.contains(relatedTarget)) {
     data.search = '';
     data.open = false;
   }
-};
-
-const scrollIntoActive = () => {
-  const $list = list.value;
-
-  if (!$list) {
-    return;
-  }
-
-  tapIf($list.querySelector('.hovered-item') as HTMLElement, (opt) => {
-    scrollIntoView($list, opt);
-  });
 };
 
 const handleKeydown = (e: { code: string; preventDefault(): void }) => {
@@ -206,7 +196,7 @@ const handleKeydown = (e: { code: string; preventDefault(): void }) => {
 
   data.activeOption = Math.abs(activeOption + d + length) % length;
 
-  requestAnimationFrame(scrollIntoActive);
+  requestAnimationFrame(() => overlay.value?.scrollIntoActive());
 };
 
 useLabelNotch(rootRef);
@@ -218,40 +208,12 @@ watch(
 );
 
 watchPostEffect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   data.search;
 
   if (data.open) {
-    scrollIntoActive();
+    overlay.value?.scrollIntoActive();
   }
-});
-
-const optionsStyle = reactive({
-  top: '0px',
-  left: '0px',
-  width: '0px',
-});
-
-watch(list, (el) => {
-  if (el) {
-    const rect = el.getBoundingClientRect();
-    data.optionsHeight = rect.height;
-    window.dispatchEvent(new CustomEvent('adjust'));
-  }
-});
-
-useElementPosition(rootRef, (pos) => {
-  const focusWidth = 5; // see css
-
-  const downTopOffset = pos.top + pos.height + focusWidth;
-
-  if (downTopOffset + data.optionsHeight > pos.clientHeight) {
-    optionsStyle.top = pos.top - data.optionsHeight - focusWidth + 'px';
-  } else {
-    optionsStyle.top = downTopOffset + 'px';
-  }
-
-  optionsStyle.left = pos.left + 'px';
-  optionsStyle.width = pos.width + 'px';
 });
 </script>
 
@@ -297,27 +259,33 @@ useElementPosition(rootRef, (pos) => {
             </template>
           </PlTooltip>
         </label>
-        <Teleport v-if="data.open" to="body">
-          <div ref="list" class="pl-multi-dropdown__options" :style="optionsStyle" tabindex="-1" @focusout="onFocusOut">
-            <div class="pl-multi-dropdown__open-chips-container">
-              <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
-                {{ opt.label || opt.value }}
-              </PlChip>
-            </div>
-            <DropdownListItem
-              v-for="(item, index) in filteredOptionsRef"
-              :key="index"
-              :option="item"
-              :text-item="'text'"
-              :is-selected="item.selected"
-              :is-hovered="data.activeOption == index"
-              size="medium"
-              use-checkbox
-              @click.stop="selectOption(item.value)"
-            />
-            <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
+        <DropdownOverlay
+          v-if="data.open"
+          ref="overlay"
+          :root="rootRef"
+          class="pl-multi-dropdown__options"
+          :gap="3"
+          tabindex="-1"
+          @focusout="onFocusOut"
+        >
+          <div class="pl-multi-dropdown__open-chips-container">
+            <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
+              {{ opt.label || opt.value }}
+            </PlChip>
           </div>
-        </Teleport>
+          <DropdownListItem
+            v-for="(item, index) in filteredOptionsRef"
+            :key="index"
+            :option="item"
+            :text-item="'text'"
+            :is-selected="item.selected"
+            :is-hovered="data.activeOption == index"
+            size="medium"
+            use-checkbox
+            @click.stop="selectOption(item.value)"
+          />
+          <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
+        </DropdownOverlay>
         <DoubleContour class="pl-multi-dropdown__contour" />
       </div>
     </div>

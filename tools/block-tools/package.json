@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.4.1",
+  "version": "2.4.10",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "types": "./dist/lib.d.ts",
   "main": "./dist/index.js",
@@ -15,8 +15,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "oclif:index": "oclif-index --commands-root=./src/cmd/ --index-file=./src/cmd/index.ts",
-    "build": "pnpm run oclif:index && vite build",
-    "readme": "exec oclif readme",
+    "build": "vite build",
+    "readme": "oclif readme",
     "test": "jest"
   },
   "bin": {
@@ -32,6 +32,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",
+    "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@milaboratories/ts-helpers-oclif": "workspace:^",

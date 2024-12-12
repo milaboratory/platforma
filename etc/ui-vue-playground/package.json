@@ -1,13 +1,14 @@
 {
   "name": "@milaboratories/ui-vue-playground",
   "private": true,
-  "version": "0.0.126",
+  "version": "0.0.147",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:^",
@@ -28,13 +29,9 @@
     "@faker-js/faker": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
-    "@typescript-eslint/eslint-plugin": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "canonicalize": "catalog:",
-    "eslint": "catalog:",
-    "eslint-config-prettier": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
-    "eslint-plugin-vue": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^",
     "happy-dom": "catalog:",
     "lodash": "catalog:",
     "sass": "catalog:",

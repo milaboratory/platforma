@@ -1,5 +1,72 @@
 # @milaboratories/uikit
 
+## 2.2.29
+
+### Patch Changes
+
+- 07afde6: Fix PlBlockPage title overflow bug (set overflow ellipsis and title attribute if needed)
+
+## 2.2.28
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+
+## 2.2.27
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+
+## 2.2.26
+
+### Patch Changes
+
+- f38f686: fixed styles
+
+## 2.2.25
+
+### Patch Changes
+
+- 63722de: Bug: Ctrl+Click selection does not work in Samples&Data on Windows
+
+## 2.2.24
+
+### Patch Changes
+
+- 56421e3: Remove local storage from the list of remote storages
+- 6dcee2e: [MILAB-682] Remove local storage from list of remote storages (small format fix)
+
+## 2.2.23
+
+### Patch Changes
+
+- dec84ba: Fix PlTextField disabled state and support ctrl in the multiple file selection
+
+## 2.2.22
+
+### Patch Changes
+
+- 6dfa829: uikit: Add technical DropdownOverlayComponent
+
+## 2.2.21
+
+### Patch Changes
+
+- 2b98d93: Fix PlTextField inner input font
+
+## 2.2.20
+
+### Patch Changes
+
+- 556765e: uikit: export PlCloseModalBtn
+
+## 2.2.19
+
+### Patch Changes
+
+- 0cfb225: fixed styles
+
 ## 2.2.18
 
 ### Patch Changes

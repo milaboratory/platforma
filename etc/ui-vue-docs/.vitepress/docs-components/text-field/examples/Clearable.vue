@@ -9,9 +9,9 @@ const data = reactive({
 </script>
 
 <template>
-  <!-- 
-    You can pass a callback that returns null | undefined | string 
-    to the `clearable` property 
+  <!--
+    You can pass a callback that returns null | undefined | string
+    to the `clearable` property
   -->
   <PlTextField
     v-model="data.stringOrNull"

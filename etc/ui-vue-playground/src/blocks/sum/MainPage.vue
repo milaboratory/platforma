@@ -12,7 +12,7 @@ const data = reactive({
 watch(() => app.model.ui, (newUi) => {
   data.uiChanged++;
   app.model.args.y = newUi.label.length;
-}, {immediate: true, deep: true});
+}, { immediate: true, deep: true });
 </script>
 
 <template>
@@ -21,8 +21,8 @@ watch(() => app.model.ui, (newUi) => {
 
     <PlCheckbox v-model="appSettings.debug"> Debug </PlCheckbox>
 
-    <PlNumberField label="X" v-model="app.model.args.x" />
-    <PlNumberField label="Y" v-model="app.model.args.y" />
+    <PlNumberField v-model="app.model.args.x" label="X" />
+    <PlNumberField v-model="app.model.args.y" label="Y" />
 
     <div>app.model.outputs.sum: {{ app.model.outputs.sum }}</div>
 
@@ -43,4 +43,3 @@ watch(() => app.model.ui, (newUi) => {
   padding: 24px;
 }
 </style>
-

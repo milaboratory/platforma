@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-client",
-  "version": "2.6.3",
+  "version": "2.7.0",
   "description": "New TS/JS client for Platform API",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -23,6 +23,7 @@
     "./src/**/*"
   ],
   "dependencies": {
+    "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
     "@grpc/grpc-js": "catalog:",
     "@protobuf-ts/grpc-transport": "catalog:",

@@ -9,7 +9,7 @@ export abstract class BlockMock<
   Args = unknown,
   Outputs extends BlockOutputsBase = BlockOutputsBase,
   UiState = unknown,
-  Href extends `/${string}` = `/${string}`
+  Href extends `/${string}` = `/${string}`,
 > {
   #afterUpdate: ((updates: BlockStatePatch<Args, Outputs, UiState, Href>[]) => Promise<void>) | undefined;
 
@@ -39,8 +39,8 @@ export abstract class BlockMock<
       ui: this.ui,
       outputs: this.outputs,
       navigationState: {
-        href: this.href
-      }
+        href: this.href,
+      },
     });
   }
 

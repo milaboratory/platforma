@@ -16,7 +16,7 @@ export async function tryStat(path: string): Promise<BigIntStats | undefined> {
 
 export async function awaitStableState<S>(
   computable: Computable<unknown, S>,
-  timeout: number | AbortSignal = 2000
+  timeout: number | AbortSignal = 5000
 ): Promise<S> {
   try {
     return await computable.awaitStableValue(

@@ -1,5 +1,172 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.147
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+  - @platforma-sdk/ui-vue@1.18.3
+
+## 0.0.146
+
+### Patch Changes
+
+- Updated dependencies [e1d8a3b]
+  - @platforma-sdk/ui-vue@1.18.2
+
+## 0.0.145
+
+### Patch Changes
+
+- Updated dependencies [8022606]
+  - @platforma-sdk/ui-vue@1.18.1
+
+## 0.0.144
+
+### Patch Changes
+
+- Updated dependencies [6efea3d]
+  - @platforma-sdk/ui-vue@1.18.0
+  - @platforma-sdk/model@1.18.0
+  - @milaboratories/uikit@2.2.28
+
+## 0.0.143
+
+### Patch Changes
+
+- Updated dependencies [994ea52]
+  - @platforma-sdk/ui-vue@1.17.5
+
+## 0.0.142
+
+### Patch Changes
+
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+  - @platforma-sdk/ui-vue@1.17.3
+
+## 0.0.141
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/helpers@1.6.9
+  - @milaboratories/uikit@2.2.27
+  - @platforma-sdk/ui-vue@1.17.2
+
+## 0.0.140
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/uikit@2.2.26
+  - @platforma-sdk/ui-vue@1.17.0
+
+## 0.0.139
+
+### Patch Changes
+
+- Updated dependencies [ca9bf5b]
+  - @platforma-sdk/ui-vue@1.16.0
+
+## 0.0.138
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/uikit@2.2.26
+- @platforma-sdk/ui-vue@1.15.4
+
+## 0.0.137
+
+### Patch Changes
+
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+  - @platforma-sdk/ui-vue@1.15.1
+
+## 0.0.136
+
+### Patch Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+- Updated dependencies [b4081fc]
+  - @platforma-sdk/ui-vue@1.15.0
+
+## 0.0.135
+
+### Patch Changes
+
+- Updated dependencies [7eadcd3]
+  - @platforma-sdk/ui-vue@1.14.22
+
+## 0.0.134
+
+### Patch Changes
+
+- Updated dependencies [bc6141f]
+  - @platforma-sdk/ui-vue@1.14.21
+
+## 0.0.133
+
+### Patch Changes
+
+- Updated dependencies [63722de]
+  - @milaboratories/uikit@2.2.25
+  - @platforma-sdk/ui-vue@1.14.20
+
+## 0.0.132
+
+### Patch Changes
+
+- Updated dependencies [56421e3]
+- Updated dependencies [6dcee2e]
+  - @milaboratories/uikit@2.2.24
+  - @platforma-sdk/ui-vue@1.14.19
+
+## 0.0.131
+
+### Patch Changes
+
+- Updated dependencies [dec84ba]
+  - @milaboratories/uikit@2.2.23
+  - @platforma-sdk/ui-vue@1.14.18
+
+## 0.0.130
+
+### Patch Changes
+
+- Updated dependencies [6dfa829]
+  - @milaboratories/uikit@2.2.22
+  - @platforma-sdk/ui-vue@1.14.15
+
+## 0.0.129
+
+### Patch Changes
+
+- Updated dependencies [2b98d93]
+  - @milaboratories/uikit@2.2.21
+  - @platforma-sdk/ui-vue@1.14.11
+
+## 0.0.128
+
+### Patch Changes
+
+- Updated dependencies [556765e]
+  - @milaboratories/uikit@2.2.20
+  - @platforma-sdk/ui-vue@1.14.8
+
+## 0.0.127
+
+### Patch Changes
+
+- Updated dependencies [0cfb225]
+  - @milaboratories/uikit@2.2.19
+  - @platforma-sdk/ui-vue@1.14.5
+
 ## 0.0.126
 
 ### Patch Changes

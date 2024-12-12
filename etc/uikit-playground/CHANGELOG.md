@@ -1,5 +1,84 @@
 # @milaboratories/uikit-playground
 
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
+## 0.1.10
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
+## 0.1.9
+
+### Patch Changes
+
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [63722de]
+  - @milaboratories/uikit@2.2.25
+
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [56421e3]
+- Updated dependencies [6dcee2e]
+  - @milaboratories/uikit@2.2.24
+
+## 0.1.6
+
+### Patch Changes
+
+- Updated dependencies [dec84ba]
+  - @milaboratories/uikit@2.2.23
+
+## 0.1.5
+
+### Patch Changes
+
+- Updated dependencies [6dfa829]
+  - @milaboratories/uikit@2.2.22
+
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [2b98d93]
+  - @milaboratories/uikit@2.2.21
+
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [556765e]
+  - @milaboratories/uikit@2.2.20
+
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [0cfb225]
+  - @milaboratories/uikit@2.2.19
+
 ## 0.1.1
 
 ### Patch Changes

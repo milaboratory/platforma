@@ -1,6 +1,6 @@
 <template>
   <div class="app-header">
-    <div class="app-header__divider-left"></div>
+    <div class="app-header__divider-left"/>
     <!-- eslint-disable -->
     <RouterLink :to="'/'" class="app-header__logo">
       <svg

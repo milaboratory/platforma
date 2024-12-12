@@ -1,5 +1,12 @@
 # @milaboratories/pl-config
 
+## 1.3.3
+
+### Patch Changes
+
+- Updated dependencies [dac7e27]
+  - @milaboratories/ts-helpers@1.1.3
+
 ## 1.3.2
 
 ### Patch Changes

@@ -1,5 +1,5 @@
 import {
-  AxisId,
+  AxisSpec,
   getAxisId,
   isPColumn,
   JoinEntry,
@@ -41,10 +41,8 @@ export type PlDataTableGridState = {
 };
 
 export type PlDataTableSheet = {
-  /** id of the axis to use */
-  axis: AxisId;
-  /** id of label column to use in filter instead of axis */
-  column?: PObjectId;
+  /** spec of the axis to use */
+  axis: AxisSpec;
   /** options to show in the filter tan */
   options: {
     /** value of the option (should be one of the values in the axis or column) */
@@ -333,14 +331,15 @@ export function createPlDataTable<A, U>(
   });
 }
 
+/** Create sheet entries for PlDataTable */
 export function createPlDataTableSheet<A, U>(
   ctx: RenderCtx<A, U>,
-  axis: AxisId,
+  axis: AxisSpec,
   values: (string | number)[]
 ): PlDataTableSheet {
   const labels = ctx.findLabels(axis);
   return {
-    axis: getAxisId(axis),
+    axis,
     options: values.map((v) => ({
       value: v,
       label: labels?.get(v) ?? v.toString()

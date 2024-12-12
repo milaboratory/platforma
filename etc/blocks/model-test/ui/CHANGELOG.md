@@ -1,5 +1,146 @@
 # @milaboratories/milaboratories.test-block-model.ui
 
+## 1.0.62
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.18.3
+
+## 1.0.61
+
+### Patch Changes
+
+- Updated dependencies [e1d8a3b]
+  - @platforma-sdk/ui-vue@1.18.2
+
+## 1.0.60
+
+### Patch Changes
+
+- Updated dependencies [8022606]
+  - @platforma-sdk/ui-vue@1.18.1
+
+## 1.0.59
+
+### Patch Changes
+
+- Updated dependencies [6efea3d]
+  - @platforma-sdk/ui-vue@1.18.0
+  - @milaboratories/milaboratories.test-block-model.model@1.0.14
+
+## 1.0.58
+
+### Patch Changes
+
+- Updated dependencies [994ea52]
+  - @platforma-sdk/ui-vue@1.17.5
+
+## 1.0.57
+
+### Patch Changes
+
+- Updated dependencies [ec69dca]
+  - @platforma-sdk/ui-vue@1.17.3
+
+## 1.0.56
+
+### Patch Changes
+
+- Updated dependencies [ec3bffe]
+  - @platforma-sdk/ui-vue@1.17.2
+
+## 1.0.55
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.13
+- @platforma-sdk/ui-vue@1.17.0
+
+## 1.0.54
+
+### Patch Changes
+
+- Updated dependencies [ca9bf5b]
+  - @platforma-sdk/ui-vue@1.16.0
+
+## 1.0.53
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.model@1.0.12
+- @platforma-sdk/ui-vue@1.15.4
+
+## 1.0.52
+
+### Patch Changes
+
+- Updated dependencies [f38f686]
+  - @platforma-sdk/ui-vue@1.15.1
+
+## 1.0.51
+
+### Patch Changes
+
+- Updated dependencies [b4081fc]
+  - @platforma-sdk/ui-vue@1.15.0
+
+## 1.0.50
+
+### Patch Changes
+
+- Updated dependencies [7eadcd3]
+  - @platforma-sdk/ui-vue@1.14.22
+
+## 1.0.49
+
+### Patch Changes
+
+- Updated dependencies [bc6141f]
+  - @platforma-sdk/ui-vue@1.14.21
+
+## 1.0.48
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.20
+
+## 1.0.47
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.19
+
+## 1.0.46
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.18
+
+## 1.0.45
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.15
+
+## 1.0.44
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.11
+
+## 1.0.43
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.14.8
+
+## 1.0.42
+
+### Patch Changes
+
+- Updated dependencies [0cfb225]
+  - @platforma-sdk/ui-vue@1.14.5
+
 ## 1.0.41
 
 ### Patch Changes

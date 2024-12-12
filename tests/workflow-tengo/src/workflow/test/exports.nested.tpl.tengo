@@ -1,0 +1,17 @@
+// pure template with resolve
+
+ll := import("@platforma-sdk/workflow-tengo:ll")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+render := import("@platforma-sdk/workflow-tengo:render")
+fmt := import("fmt")
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["str"])
+
+self.body(func(inputs) {
+	return {
+		str: "" + string(inputs.resolve)
+	}
+})

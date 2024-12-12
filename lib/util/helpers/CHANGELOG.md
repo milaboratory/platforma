@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.9
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+
 ## 1.6.8
 
 ### Patch Changes

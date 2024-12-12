@@ -1,5 +1,4 @@
 import { Dispatcher, request } from 'undici';
-import { BlockPackSpecAny } from '../model';
 import {
   BlockPackDescriptionAbsolute,
   BlockPackMetaEmbedAbsoluteBytes,
@@ -14,6 +13,7 @@ import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import { V2RegistryProvider } from './registry-v2-provider';
 import {
   AnyChannel,
+  BlockPackId,
   BlockPackListing,
   BlockPackOverview,
   RegistryEntry,
@@ -21,7 +21,6 @@ import {
   SingleBlockPackOverview,
   StableChannel
 } from '@milaboratories/pl-model-middle-layer';
-import { version } from 'node:process';
 
 async function getFileContent(path: string) {
   try {
@@ -202,7 +201,7 @@ export class BlockPackRegistry {
                 meta: await BlockPackMetaEmbedAbsoluteBytes.parseAsync(v2Description.meta),
                 spec: {
                   type: 'dev-v2',
-                  folder: devPath,
+                  folder: actualDevPath,
                   mtime
                 }
               };
@@ -235,5 +234,20 @@ export class BlockPackRegistry {
       blockPacks.push(...(await this.getPackagesForRoot(regSpecs)));
     }
     return { registries, blockPacks };
+  }
+
+  public async getOverview(
+    registryId: string,
+    blockId: BlockPackId,
+    channel: string
+  ): Promise<SingleBlockPackOverview> {
+    const regSpec = this.registries.find((reg) => reg.id === registryId)?.spec;
+    if (!regSpec) throw new Error(`Registry with id "${registryId}" not found`);
+    if (regSpec.type !== 'remote-v2')
+      throw new Error(
+        `Only "remote-v2" registries support specific package version overview retrieval.`
+      );
+    const reg = this.v2Provider.getRegistry(regSpec.url);
+    return await reg.getSpecificOverview(blockId, channel);
   }
 }

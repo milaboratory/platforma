@@ -43,8 +43,8 @@ const sumOptional = computed(() => {
 
     {{ args.model }}
 
-    <PlNumberField label="X" v-model:model-value.number="args.model.x" />
-    <PlNumberField label="Y" v-model:model-value.number="args.model.y" />
+    <PlNumberField v-model:model-value.number="args.model.x" label="X" />
+    <PlNumberField v-model:model-value.number="args.model.y" label="Y" />
 
     <div>Sum or error: {{ sumOrError }}</div>
 
@@ -80,11 +80,11 @@ const sumOptional = computed(() => {
 
     <div>sum optional: {{ sumOptional }}</div>
 
-    <div>{{ app.outputs.x }}</div>
+    <div>{{ app.model.outputs.x }}</div>
 
     <fieldset>
       <legend>Outputs</legend>
-      <div>{{ app.outputs }}</div>
+      <div>{{ app.model.outputs }}</div>
     </fieldset>
   </div>
 </template>
@@ -97,4 +97,3 @@ const sumOptional = computed(() => {
   gap: 24px;
 }
 </style>
-

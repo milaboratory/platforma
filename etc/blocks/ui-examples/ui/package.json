@@ -1,0 +1,31 @@
+{
+  "name": "@milaboratories/milaboratories.ui-examples.ui",
+  "version": "1.2.65",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "watch": "vue-tsc && vite build --watch",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
+    "vue": "catalog:",
+    "@platforma-sdk/model": "workspace:^"
+  },
+  "devDependencies": {
+    "@platforma-sdk/ui-vue": "workspace:^",
+    "@vitejs/plugin-vue": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:",
+    "@faker-js/faker": "catalog:",
+    "@milaboratories/helpers": "workspace:^",
+    "zod": "catalog:",
+    "@ag-grid-community/vue3": "catalog:",
+    "@ag-grid-community/client-side-row-model": "catalog:",
+    "@ag-grid-community/core": "catalog:",
+    "@ag-grid-community/theming": "catalog:"
+  }
+}

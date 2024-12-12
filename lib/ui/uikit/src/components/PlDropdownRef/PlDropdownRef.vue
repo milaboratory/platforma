@@ -98,6 +98,5 @@ const arrowIcon = computed(() => (props.disabled ? 'icon-link-disabled' : 'icon-
     :loading-options-helper="loadingOptionsHelper"
     :arrow-icon-large="arrowIcon"
     @update:model-value="$emit('update:modelValue', $event)"
-  >
-  </PlDropdown>
+  />
 </template>

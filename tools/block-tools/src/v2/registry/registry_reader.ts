@@ -15,15 +15,15 @@ import {
   GlobalOverviewReg,
   MainPrefix,
   ManifestFileName,
-  packageContentPrefixInsideV2,
-  packageOverviewPathInsideV2
+  ManifestSuffix,
+  packageContentPrefixInsideV2
 } from './schema_public';
 import { BlockComponentsAbsoluteUrl, BlockPackMetaEmbedBytes } from '../model';
 import { LRUCache } from 'lru-cache';
 import { calculateSha256 } from '../../util';
+import { retry, Retry2TimesWithDelay } from '@milaboratories/ts-helpers';
 
 export type BlockPackOverviewNoRegLabel = Omit<BlockPackOverview, 'registryId'>;
-export type SingleBlockPackOverviewNoRegLabel = Omit<SingleBlockPackOverview, 'registryId'>;
 
 export type RegistryV2ReaderOps = {
   /** Number of milliseconds to cache retrieved block list for */
@@ -60,15 +60,16 @@ export class RegistryV2Reader {
     { meta: BlockPackMetaManifest; relativeTo?: BlockPackId }
   >({
     max: 500,
-    fetchMethod: async (_key, _staleValue, options) => {
-      const contentReader =
-        options.context.relativeTo !== undefined
-          ? this.v2RootFolderReader
-              .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
-              .getContentReader()
-          : this.v2RootFolderReader.getContentReader();
-      return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
-    }
+    fetchMethod: async (_key, _staleValue, options) =>
+      await retry(async () => {
+        const contentReader =
+          options.context.relativeTo !== undefined
+            ? this.v2RootFolderReader
+                .relativeReader(packageContentPrefixInsideV2(options.context.relativeTo))
+                .getContentReader()
+            : this.v2RootFolderReader.getContentReader();
+        return await BlockPackMetaEmbedBytes(contentReader).parseAsync(options.context.meta);
+      }, Retry2TimesWithDelay)
   });
 
   private async embedMetaContent(
@@ -93,47 +94,49 @@ export class RegistryV2Reader {
     )
       return this.listCache;
     try {
-      // const rootContentReader = this.v2RootFolderReader.getContentReader();
-      const globalOverview = GlobalOverviewReg.parse(
-        JSON.parse(
-          Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString()
-        )
-      );
+      return await retry(async () => {
+        // const rootContentReader = this.v2RootFolderReader.getContentReader();
+        const globalOverview = GlobalOverviewReg.parse(
+          JSON.parse(
+            Buffer.from(await this.v2RootFolderReader.readFile(GlobalOverviewFileName)).toString()
+          )
+        );
 
-      const result = await Promise.all(
-        globalOverview.packages.map(async (p) => {
-          const byChannelEntries = await Promise.all(
-            Object.entries(p.latestByChannel).map(async ([channel, data]) => [
-              channel,
-              {
-                id: data.description.id,
-                meta: await this.embedMetaContent(
-                  p.latest.id,
-                  p.latestManifestSha256,
-                  true,
-                  p.latest.meta
-                ),
-                spec: {
-                  type: 'from-registry-v2',
-                  id: p.latest.id,
-                  registryUrl: this.registryReader.rootUrl.toString(),
-                  channel
+        const result = await Promise.all(
+          globalOverview.packages.map(async (p) => {
+            const byChannelEntries = await Promise.all(
+              Object.entries(p.latestByChannel).map(async ([channel, data]) => [
+                channel,
+                {
+                  id: data.description.id,
+                  meta: await this.embedMetaContent(
+                    p.latest.id,
+                    p.latestManifestSha256,
+                    true,
+                    p.latest.meta
+                  ),
+                  spec: {
+                    type: 'from-registry-v2',
+                    id: p.latest.id,
+                    registryUrl: this.registryReader.rootUrl.toString(),
+                    channel
+                  }
                 }
-              }
-            ])
-          );
-          return {
-            id: p.id,
-            latestByChannel: Object.fromEntries(byChannelEntries),
-            allVersions: p.allVersionsWithChannels
-          } satisfies BlockPackOverviewNoRegLabel;
-        })
-      );
+              ])
+            );
+            return {
+              id: p.id,
+              latestByChannel: Object.fromEntries(byChannelEntries),
+              allVersions: p.allVersionsWithChannels
+            } satisfies BlockPackOverviewNoRegLabel;
+          })
+        );
 
-      this.listCache = result;
-      this.listCacheTimestamp = Date.now();
+        this.listCache = result;
+        this.listCacheTimestamp = Date.now();
 
-      return result;
+        return result;
+      }, Retry2TimesWithDelay);
     } catch (e: unknown) {
       if (
         this.listCache !== undefined &&
@@ -147,46 +150,57 @@ export class RegistryV2Reader {
   public async getLatestOverview(
     id: BlockPackIdNoVersion,
     channel: string
-  ): Promise<SingleBlockPackOverviewNoRegLabel | undefined> {
-    const overview = (await this.listBlockPacks()).find((e) =>
-      blockPackIdNoVersionEquals(id, e.id)
-    );
-    if (overview === undefined) return undefined;
-    return overview.latestByChannel[channel];
+  ): Promise<SingleBlockPackOverview | undefined> {
+    return await retry(async () => {
+      const overview = (await this.listBlockPacks()).find((e) =>
+        blockPackIdNoVersionEquals(id, e.id)
+      );
+      if (overview === undefined) return undefined;
+      return overview.latestByChannel[channel];
+    }, Retry2TimesWithDelay);
   }
 
-  public async getSpecificOverview(id: BlockPackId): Promise<SingleBlockPackOverviewNoRegLabel> {
-    const overviewContent = await this.v2RootFolderReader.readFile(packageOverviewPathInsideV2(id));
-    const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(overviewContent).toString()));
-    return {
-      id: id,
-      meta: await this.embedMetaContent(
-        id,
-        await calculateSha256(overviewContent),
-        false,
-        overview.description.meta
-      ),
-      spec: {
-        type: 'from-registry-v2',
-        id,
-        registryUrl: this.registryReader.rootUrl.toString()
-      }
-    };
+  public async getSpecificOverview(
+    id: BlockPackId,
+    channel: string
+  ): Promise<SingleBlockPackOverview> {
+    return await retry(async () => {
+      const manifestContent = await this.v2RootFolderReader.readFile(
+        packageContentPrefixInsideV2(id) + ManifestSuffix
+      );
+      const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
+      return {
+        id: id,
+        meta: await this.embedMetaContent(
+          id,
+          await calculateSha256(manifestContent),
+          false,
+          overview.description.meta
+        ),
+        spec: {
+          type: 'from-registry-v2',
+          id,
+          registryUrl: this.registryReader.rootUrl.toString(),
+          channel
+        }
+      };
+    }, Retry2TimesWithDelay);
   }
 
   private readonly componentsCache = new LRUCache<string, BlockComponentsAbsoluteUrl, BlockPackId>({
     max: 500,
-    fetchMethod: async (key, staleValue, { context: id }) => {
-      const packageFolderReader = this.v2RootFolderReader.relativeReader(
-        packageContentPrefixInsideV2(id)
-      );
-      const manifest = BlockPackManifest.parse(
-        JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString())
-      );
-      return BlockComponentsAbsoluteUrl(packageFolderReader.rootUrl.toString()).parse(
-        manifest.description.components
-      );
-    }
+    fetchMethod: async (key, staleValue, { context: id }) =>
+      await retry(async () => {
+        const packageFolderReader = this.v2RootFolderReader.relativeReader(
+          packageContentPrefixInsideV2(id)
+        );
+        const manifest = BlockPackManifest.parse(
+          JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString())
+        );
+        return BlockComponentsAbsoluteUrl(packageFolderReader.rootUrl.toString()).parse(
+          manifest.description.components
+        );
+      }, Retry2TimesWithDelay)
   });
 
   public async getComponents(id: BlockPackId): Promise<BlockComponentsAbsoluteUrl> {

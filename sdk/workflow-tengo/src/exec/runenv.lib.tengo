@@ -8,9 +8,6 @@ oop := import(":oop")
 maps := import(":maps")
 validation := import(":validation")
 pkg := import(":exec.package")
-assets := import(":assets")
-render := import(":render")
-times := import("times")
 
 _RTYPE_SAVE_RUN_ENV   := { Name: "SaveRunEnv/executor", Version: "1" }
 _INPUT_SETTINGS       := "settings"
@@ -97,15 +94,6 @@ saveBuilder := func(wd) {
 	return self
 }
 
-pythonVenvInputSchema := {
-	toolset: "string",
-	dependencies: {"any": validation.reference},
-	// software: validation.reference,
-
-	pythonDescriptor: pkg.runEnvDescriptorScheme,
-	python: validation.reference
-}
-
 loadDependencyFiles := func(packageRef, dependencies) {
 	if len(dependencies) == 0 {
 		return {}
@@ -126,157 +114,7 @@ loadDependencyFiles := func(packageRef, dependencies) {
 	return depsMap
 }
 
-pythonVenv := func() {
-	self := undefined
-
-	toolset := "pip"
-	pythonDescriptor := undefined
-	softwareRef := undefined
-	dependencies := undefined
-	cache := 0
-
-	self = {
-		useToolset: func(name) {
-			validation.assertJsonSchema(name, "string",
-				"runenv.python.useToolset: <name> must be valid name of python packaging toolset (pip, pipenv and so on)")
-			ll.assert(name != "", "runenv.python.useToolset: toolset name must not be empty")
-
-			toolset = name
-			return self
-		},
-
-		runEnvDescriptor: func(descriptor) {
-			validation.assertJsonSchema(descriptor, pkg.runEnvDescriptorScheme, "runenv.python.runEnvDescriptor: <descriptor> must be run environment specification")
-			ll.assert(descriptor.type == "python", "runenv.python.runEnvDescriptor: not a 'python' run environment: %q", descriptor.type)
-
-			pythonDescriptor = ll.fromStrict(descriptor)
-			return self
-		},
-
-		software: func(pkgRef) {
-			validation.assertJsonSchema(pkgRef, validation.reference, "runenv.python.software: <pkgRef> must be a reference to software package")
-
-			softwareRef = pkgRef
-			return self
-		},
-
-		dependencies: func(deps) {
-			validation.assertJsonSchema(deps, { "any": "string" }, "runenv.python.dependencies: <deps> must be map of reference file paths")
-
-			dependencies = deps
-			return self
-		},
-
-		/**
-		 * Sets the cache time in milliseconds.
-		 *
-		 * @param millis: number
-		 */
-		cacheMillis: func(millis) {
-			ll.assert(is_int(millis) && millis > 0, "cache time must be a number of milliseconds")
-			cache = millis * times.millisecond
-			return self
-		},
-
-		/**
-		 * Sets the cache time in seconds.
-		 *
-		 * @param seconds: number
-		 */
-		cacheSeconds: func(seconds) {
-			ll.assert(is_int(seconds) && seconds > 0, "cache time must be a number of seconds")
-			cache = seconds * times.second
-			return self
-		},
-
-		/**
-		 * Sets the cache time in minutes.
-		 *
-		 * @param minutes: number
-		 */
-		cacheMinutes: func(minutes) {
-			ll.assert(is_int(minutes) && minutes > 0, "cache time must be a number of minutes")
-			cache = minutes * times.minute
-			return self
-		},
-
-		/**
-		 * Sets the cache time in hours.
-		 *
-		 * @param hours: number
-		 */
-		cacheHours: func(hours) {
-			ll.assert(is_int(hours) && hours > 0, "cache time must be a number of hours")
-			cache = hours * times.hour
-			return self
-		},
-
-		/**
-		 * Sets the cache time in days
-		 *
-		 * @param days: number
-		 */
-		cacheDays: func(days) {
-			ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
-			cache = days * times.hour * 24
-			return self
-		},
-
-		/**
-		 * @deprecated, use cacheMillis, cacheSeconds, cacheMinutes, cacheHours and cacheDays instead.
-		 * Sets the cache time.
-		 *
-		 * @param time: duration - the cache time from 'times' library.
-		 */
-		cache: func(time) {
-			ll.assert(
-				is_int(time),
-				"cache time must be an integer. " +
-					"Did you forget to import a standard tengo library 'times'?")
-			cache = time
-			return self
-		},
-
-		build: func() {
-			depsMap := loadDependencyFiles(softwareRef, dependencies)
-
-			archive := pkg.get(pythonDescriptor.registry, pythonDescriptor.package).archive()
-			pythonPkg := pkg.install(archive).package()
-
-			pyVenvInputs := {
-				toolset: toolset,
-				dependencies: depsMap, //  smart.createMapResource(depsMap),
-				// software: softwareRef,
-				pythonDescriptor: pythonDescriptor,
-				python: pythonPkg
-			}
-
-			validation.assertJsonSchema(pyVenvInputs, pythonVenvInputSchema, "incomplete python runenv configuration")
-
-			tpl := render.create(assets.importTemplate(":exec.python.create-venv"), pyVenvInputs)
-
-			self := undefined
-			self = ll.toStrict(oop.inherit(tpl, {
-				/**
-				 * Python virtual environment with all dependencies installed.
-				 *
-				 * @return venv: smart.field - a reference to the runenv with python venv inside.
-				 */
-				venv: func() {
-					return tpl.output(_OUTPUT_RUN_ENV, cache)
-				}
-			}))
-
-			return self
-		}
-	}
-
-	return self
-}
-
 export ll.toStrict({
 	saveBuilder                        : saveBuilder,
-
-	pythonVenv                         : pythonVenv,
-	pythonVenvInputSchema              : pythonVenvInputSchema
+	loadDependencyFiles                : loadDependencyFiles
 })

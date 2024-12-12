@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { ListOption } from '@milaboratories/uikit';
 import { PlBtnGhost, PlIcon24, PlSlideModal, PlMaskIcon16, PlMaskIcon24 } from '@milaboratories/uikit';
-import { computed, onMounted, reactive, ref, toRefs, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, toRefs, watch } from 'vue';
 import type {
   PlTableFiltersModel,
   PlTableFilterType,
@@ -65,7 +65,7 @@ const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEn
 });
 
 /* State upgrader */ (() => {
-  let state = model.value.state;
+  const state = model.value.state;
   if (typeof state === 'object' && !Array.isArray(state)) {
     model.value.state = Object.entries(state as unknown as Record<PlTableFilterColumnId, PlTableFilter>).map(([id, filter]) => ({
       columnId: id,
@@ -176,6 +176,35 @@ const toggleExpandFilter = (columnId: PlTableFilterColumnId) => {
   if (!openState[columnId]) openState[columnId] = true;
   else delete openState[columnId];
 };
+
+const scrollIsActive = ref(false);
+const filterManager = ref<HTMLElement>();
+let observer: ResizeObserver;
+onMounted(() => {
+  observer = new ResizeObserver(() => {
+    const parent = filterManager.value?.parentElement;
+    if (!parent) return;
+    scrollIsActive.value = parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth;
+  });
+  if (filterManager.value && filterManager.value.parentElement) {
+    observer.observe(filterManager.value!.parentElement);
+  }
+});
+
+watch(filterManager, (newElement, oldElement) => {
+  if (oldElement?.parentElement) {
+    observer.unobserve(oldElement.parentElement);
+  }
+  if (newElement?.parentElement) {
+    observer.observe(newElement.parentElement);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (observer !== undefined) {
+    observer.disconnect();
+  }
+});
 </script>
 
 <template>
@@ -190,11 +219,11 @@ const toggleExpandFilter = (columnId: PlTableFilterColumnId) => {
 
   <PlSlideModal v-model="showManager" :close-on-outside-click="false">
     <template #title>Manage Filters</template>
-    <div class="pl-filter-manager d-flex flex-column gap-6">
+    <div ref="filterManager" class="pl-filter-manager d-flex flex-column gap-6">
       <div
         v-for="(entry, index) in reactiveModel.state"
         :key="entry.columnId"
-        :class="{ open: openState[entry.columnId] }"
+        :class="{ open: openState[entry.columnId], disabled: entry.disabled }"
         class="pl-filter-manager__filter"
       >
         <div class="pl-filter-manager__header d-flex align-center gap-8" @click="toggleExpandFilter(entry.columnId)">
@@ -202,7 +231,7 @@ const toggleExpandFilter = (columnId: PlTableFilterColumnId) => {
             <PlMaskIcon16 name="chevron-right" />
           </div>
 
-          <div class="pl-filter-manager__title flex-grow-1 text-s">{{ getColumnName(columnsById[entry.columnId], index) }}</div>
+          <div class="pl-filter-manager__title flex-grow-1 text-s-btn">{{ getColumnName(columnsById[entry.columnId], index) }}</div>
 
           <div class="pl-filter-manager__actions d-flex gap-12">
             <div class="pl-filter-manager__toggle" @click.stop="entry.disabled = !entry.disabled">
@@ -216,10 +245,19 @@ const toggleExpandFilter = (columnId: PlTableFilterColumnId) => {
         </div>
 
         <div class="pl-filter-manager__content d-flex gap-24 p-24 flex-column">
-          <PlTableFilterEntry v-model="reactiveModel.state[index]" :column="columnsById[entry.columnId]" :options="filterOptions[entry.columnId]" />
+          <PlTableFilterEntry
+            v-model="reactiveModel.state[index]"
+            :disabled="entry.disabled"
+            :column="columnsById[entry.columnId]"
+            :options="filterOptions[entry.columnId]"
+          />
 
           <div class="d-flex justify-center">
-            <div class="pl-filter-manager__revert-btn text-s d-flex align-center gap-8" @click="resetFilter(index)">
+            <div
+              :class="{ disabled: entry.disabled }"
+              class="pl-filter-manager__revert-btn text-s-btn d-flex align-center gap-8"
+              @click="resetFilter(index)"
+            >
               Revert Settings to Default
               <PlMaskIcon24 name="reverse" />
             </div>
@@ -227,11 +265,13 @@ const toggleExpandFilter = (columnId: PlTableFilterColumnId) => {
         </div>
       </div>
 
-      <div v-if="columnOptions.length > 0" class="pl-filter-manager__add-btn" @click="showAddFilter = true">
-        <div class="pl-filter-manager__add-btn-icon">
-          <PlMaskIcon16 name="add" />
+      <div :class="{ 'pt-24': scrollIsActive }" class="pl-filter-manager__add-action-wrapper">
+        <div v-if="columnOptions.length > 0" class="pl-filter-manager__add-btn" @click="showAddFilter = true">
+          <div class="pl-filter-manager__add-btn-icon">
+            <PlMaskIcon16 name="add" />
+          </div>
+          <div class="pl-filter-manager__add-btn-title text-s-btn">Add Filter</div>
         </div>
-        <div class="pl-filter-manager__add-btn-title">Add Filter</div>
       </div>
 
       <div v-if="!filterOptionsPresent">No filters applicable</div>

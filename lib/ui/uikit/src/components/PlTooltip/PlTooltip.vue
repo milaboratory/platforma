@@ -7,7 +7,7 @@ export default {
 
 <script lang="ts" setup>
 import './pl-tooltip.scss';
-import { onUnmounted, reactive, ref, toRef, watch } from 'vue';
+import { computed, onUnmounted, reactive, ref, toRef, watch } from 'vue';
 import { useTooltipPosition } from './useTooltipPosition';
 import * as utils from '@/helpers/utils';
 import { useClickOutside } from '@/composition/useClickOutside';
@@ -31,7 +31,7 @@ const props = withDefaults(
     /**
      * Tooltip position
      */
-    position?: 'top-left' | 'left' | 'right' | 'top';
+    position?: 'top-left' | 'left' | 'right' | 'top' | 'southwest';
     /**
      * external prop to hide tooltips
      */
@@ -44,6 +44,10 @@ const props = withDefaults(
      * base html element for tooltip
      */
     element?: 'div' | 'span' | 'a' | 'p' | 'h1' | 'h2' | 'h3';
+    /**
+     * Max width (css value) of the tooltip container (default is 300px)
+     */
+    maxWidth?: string;
   }>(),
   {
     openDelay: 100,
@@ -51,6 +55,7 @@ const props = withDefaults(
     gap: 8,
     position: 'top',
     element: 'div',
+    maxWidth: '300px',
   },
 );
 
@@ -80,7 +85,7 @@ const dispatchAdjust = utils.throttle(() => window.dispatchEvent(new CustomEvent
 const showTooltip = () => {
   data.open = true;
 
-  for (let [k, f] of tMap.entries()) {
+  for (const [k, f] of tMap.entries()) {
     if (k !== tKey) {
       f();
     }
@@ -135,6 +140,10 @@ const style = useTooltipPosition(rootRef, toRef(props));
 
 useClickOutside([rootRef, tooltip], () => closeTooltip());
 
+const tooltipStyle = computed(() => ({
+  '--pl-tooltip-max-width': props.maxWidth,
+}));
+
 onUnmounted(() => {
   tMap.delete(tKey);
 });
@@ -146,7 +155,7 @@ onUnmounted(() => {
     <Teleport v-if="$slots['tooltip'] && data.open" to="body">
       <Transition name="tooltip-transition">
         <div v-if="data.tooltipOpen" class="pl-tooltip__container" :style="style">
-          <div ref="tooltip" class="pl-tooltip" :class="position" @mouseover="onOver" @mouseleave="onLeave">
+          <div ref="tooltip" class="pl-tooltip" :style="tooltipStyle" :class="position" @mouseover="onOver" @mouseleave="onLeave">
             <!-- should be one line -->
             <div><slot name="tooltip" /></div>
             <Beak />

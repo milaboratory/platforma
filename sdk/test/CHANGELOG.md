@@ -1,5 +1,121 @@
 # @platforma-sdk/test
 
+## 1.18.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.5
+
+## 1.18.0
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.4
+- @platforma-sdk/model@1.18.0
+
+## 1.17.4
+
+### Patch Changes
+
+- 016c560: Increase default timeout for awaitStableState
+
+## 1.17.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.3
+
+## 1.17.0
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/pl-middle-layer@1.20.2
+
+## 1.15.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.20.1
+- @platforma-sdk/model@1.15.4
+
+## 1.15.3
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/pl-middle-layer@1.20.0
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+
+## 1.15.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.11
+
+## 1.14.17
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.10
+
+## 1.14.16
+
+### Patch Changes
+
+- Updated dependencies [ed6b79c]
+  - @milaboratories/pl-middle-layer@1.19.9
+
+## 1.14.14
+
+### Patch Changes
+
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-middle-layer@1.19.8
+
+## 1.14.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.7
+
+## 1.14.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.6
+
+## 1.14.10
+
+### Patch Changes
+
+- Updated dependencies [c0f2421]
+  - @milaboratories/pl-middle-layer@1.19.5
+
+## 1.14.9
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.4
+
+## 1.14.7
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.3
+
+## 1.14.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.19.2
+
 ## 1.14.4
 
 ### Patch Changes

@@ -1,4 +1,4 @@
-import {Emitter} from '../tools';
+import { Emitter } from '../tools';
 
 function getTime() {
   return new Date().getTime();
@@ -9,13 +9,13 @@ function timerPassed() {
   return function (dt: number) {
     const d = getTime() - t;
     return d > dt ? !!(t = getTime()) : false;
-  }
+  };
 }
 
 export async function* mergeIterable<T, B>(it1: AsyncIterable<T>, it2: AsyncIterable<B>): AsyncIterable<T | B> {
   const em = new Emitter<T | B>();
 
-  const race = [it1, it2].map(it => {
+  const race = [it1, it2].map((it) => {
     return (async () => {
       for await (const v of it) {
         em.emit(v);
@@ -27,7 +27,7 @@ export async function* mergeIterable<T, B>(it1: AsyncIterable<T>, it2: AsyncIter
     em.stop();
   }).catch(console.error);
 
-  yield* em.it();
+  yield * em.it();
 }
 
 export async function* mapIterable<T, R>(it: AsyncIterable<T>, cb: (v: T) => R) {
@@ -45,7 +45,7 @@ export async function* flatMapIterable<T, R>(it: AsyncIterable<T>, cb: (v: T) =>
   }
 }
 
-export async function* throttleIterable<T, R>(
+export async function* throttleIterable<T, _R>(
   it: AsyncIterable<T>,
   dt: number,
   options: { leading?: boolean; trailing?: boolean }) {
@@ -54,7 +54,7 @@ export async function* throttleIterable<T, R>(
   const state = {
     leading: options.leading ?? true,
     trailing: options.trailing ?? false,
-    trailingValue: [] as T[]
+    trailingValue: [] as T[],
   };
 
   for await (const v of it) {

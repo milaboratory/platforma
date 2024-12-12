@@ -1,5 +1,155 @@
 # @platforma-sdk/ui-vue
 
+## 1.18.3
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+
+## 1.18.2
+
+### Patch Changes
+
+- e1d8a3b: PlAgDataTable export selected rows
+
+## 1.18.1
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
+## 1.18.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/uikit@2.2.28
+
+## 1.17.5
+
+### Patch Changes
+
+- 994ea52: fixed styles
+
+## 1.17.3
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
+## 1.17.2
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
+## 1.17.0
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/uikit@2.2.26
+
+## 1.16.0
+
+### Minor Changes
+
+- ca9bf5b: PlAgDataTable: removed 'pframe' source type, added setting to configure loading screens
+
+## 1.15.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/uikit@2.2.26
+
+## 1.15.1
+
+### Patch Changes
+
+- f38f686: fixed styles
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+
+## 1.15.0
+
+### Minor Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+
+## 1.14.22
+
+### Patch Changes
+
+- 7eadcd3: PlAgDataTable row numbers
+
+## 1.14.21
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+
+## 1.14.20
+
+### Patch Changes
+
+- Updated dependencies [63722de]
+  - @milaboratories/uikit@2.2.25
+
+## 1.14.19
+
+### Patch Changes
+
+- Updated dependencies [56421e3]
+- Updated dependencies [6dcee2e]
+  - @milaboratories/uikit@2.2.24
+
+## 1.14.18
+
+### Patch Changes
+
+- Updated dependencies [dec84ba]
+  - @milaboratories/uikit@2.2.23
+
+## 1.14.15
+
+### Patch Changes
+
+- Updated dependencies [6dfa829]
+  - @milaboratories/uikit@2.2.22
+
+## 1.14.11
+
+### Patch Changes
+
+- Updated dependencies [2b98d93]
+  - @milaboratories/uikit@2.2.21
+
+## 1.14.8
+
+### Patch Changes
+
+- Updated dependencies [556765e]
+  - @milaboratories/uikit@2.2.20
+
+## 1.14.5
+
+### Patch Changes
+
+- 0cfb225: fixed styles
+- Updated dependencies [0cfb225]
+  - @milaboratories/uikit@2.2.19
+
 ## 1.14.2
 
 ### Patch Changes

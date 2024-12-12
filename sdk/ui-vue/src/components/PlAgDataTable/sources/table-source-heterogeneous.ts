@@ -77,11 +77,11 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
   fields: number[],
   indices: number[],
 ): {
-  columnDefs: ColDef[];
-  serverSideDatasource?: IServerSideDatasource;
-  rowModelType: RowModelType;
-  rowData?: unknown[];
-} {
+    columnDefs: ColDef[];
+    serverSideDatasource?: IServerSideDatasource;
+    rowModelType: RowModelType;
+    rowData?: unknown[];
+  } {
   if (hColumns.length > 1) {
     throw Error('hColumns.length > 1 is not supported');
   }

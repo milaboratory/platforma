@@ -53,11 +53,11 @@ export type Data = {
   resize: boolean;
   resizeTh:
     | {
-        index: number;
-        width: number;
-        x: number;
-        right: number;
-      }
+      index: number;
+      width: number;
+      x: number;
+      right: number;
+    }
     | undefined;
   bodyHeight: number;
   scrollTop: number;

@@ -86,12 +86,19 @@ export { useQuery } from './composition/useQuery.ts';
 export { useDraggable } from './composition/useDraggable';
 
 /**
+ * Utils/Partials
+ */
+
+export { default as PlCloseModalBtn } from './utils/PlCloseModalBtn.vue';
+export * from './utils/DropdownOverlay';
+
+/**
  * Technical
  * @TODO move it from here maybe
  */
 export { useLabelNotch } from './utils/useLabelNotch.ts';
 
-//for new version
+// for new version
 import LongText from './components/LongText.vue';
 import SliderRangeTriple from './components/SliderRangeTriple.vue';
 import SliderRange from './components/SliderRange.vue';
@@ -118,7 +125,7 @@ export { ThemeSwitcher, DropdownListItem, DataTable, ContextProvider, Slider };
 // Helpers
 export { showContextMenu };
 
-//move to new version pl-uikit
+// move to new version pl-uikit
 export { LongText, SliderRangeTriple, SliderRange, Scrollable };
 
 // @todo

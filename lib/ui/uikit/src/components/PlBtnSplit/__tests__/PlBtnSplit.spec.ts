@@ -39,7 +39,7 @@ describe('PlBtnSplit.vue', () => {
     expect(dropdown?.textContent).toContain('Option 1');
     expect(dropdown?.textContent).not.toContain('Option 3');
 
-    //Hide dropdown on focusout
+    // Hide dropdown on focusout
     wrapper.trigger('focusout');
     await wrapper.vm.$nextTick();
 

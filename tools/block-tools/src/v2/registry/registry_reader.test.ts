@@ -11,7 +11,7 @@ test('test listing packets from global registry', async () => {
   // console.dir(listing, { depth: 5 });
   expect(listing[0].allVersions.length).toBeGreaterThanOrEqual(1);
   expect(listing[0].latestByChannel[AnyChannel]).toBeDefined();
-});
+}, 20000);
 
 test('test getting components from global registry', async () => {
   const registryReader = new RegistryV2Reader(folderReaderByUrl('https://blocks.pl-open.science'));
@@ -30,4 +30,4 @@ test('test getting components from global registry', async () => {
   expect(
     (await (await request(components.workflow.main.url)).body.arrayBuffer()).byteLength
   ).toBeGreaterThan(100);
-});
+}, 20000);

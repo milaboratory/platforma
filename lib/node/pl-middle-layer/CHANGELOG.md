@@ -1,5 +1,146 @@
 # @milaboratories/pl-middle-layer
 
+## 1.20.5
+
+### Patch Changes
+
+- Updated dependencies [9405947]
+  - @platforma-sdk/workflow-tengo@2.8.0
+
+## 1.20.4
+
+### Patch Changes
+
+- Updated dependencies [6efea3d]
+  - @milaboratories/pl-model-common@1.9.0
+  - @milaboratories/pl-model-middle-layer@1.6.6
+  - @milaboratories/pl-drivers@1.5.2
+  - @platforma-sdk/model@1.18.0
+  - @platforma-sdk/block-tools@2.4.10
+
+## 1.20.3
+
+### Patch Changes
+
+- Updated dependencies [2f3f37f]
+  - @platforma-sdk/workflow-tengo@2.7.0
+
+## 1.20.2
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+
+## 1.20.1
+
+### Patch Changes
+
+- Updated dependencies [02feb1a]
+  - @milaboratories/pl-model-common@1.8.1
+  - @milaboratories/pl-model-middle-layer@1.6.5
+  - @milaboratories/pl-drivers@1.5.1
+  - @platforma-sdk/model@1.15.4
+  - @platforma-sdk/block-tools@2.4.9
+
+## 1.20.0
+
+### Minor Changes
+
+- dac7e27: undici and grpc libraries upgrade
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [93a363a]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/pl-http@1.0.1
+  - @milaboratories/pl-drivers@1.5.0
+  - @platforma-sdk/block-tools@2.4.8
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+  - @milaboratories/pl-config@1.3.3
+  - @milaboratories/pl-local@1.9.1
+
+## 1.19.11
+
+### Patch Changes
+
+- Updated dependencies [606f494]
+  - @milaboratories/pl-local@1.9.0
+
+## 1.19.10
+
+### Patch Changes
+
+- Updated dependencies [7eb5aa3]
+  - @milaboratories/pl-local@1.8.2
+
+## 1.19.9
+
+### Patch Changes
+
+- ed6b79c: BlockPackRegistry.getOverview method to retrieve block overview for specific version
+- Updated dependencies [ed6b79c]
+  - @platforma-sdk/block-tools@2.4.7
+
+## 1.19.8
+
+### Patch Changes
+
+- 7cf4db8: PTable filters final
+- Updated dependencies [7cf4db8]
+  - @milaboratories/pl-model-middle-layer@1.6.4
+  - @platforma-sdk/block-tools@2.4.6
+
+## 1.19.7
+
+### Patch Changes
+
+- Updated dependencies [5692733]
+  - @milaboratories/pl-model-middle-layer@1.6.3
+  - @platforma-sdk/block-tools@2.4.5
+
+## 1.19.6
+
+### Patch Changes
+
+- Updated dependencies [7be05ec]
+  - @milaboratories/pl-model-middle-layer@1.6.2
+  - @platforma-sdk/block-tools@2.4.4
+
+## 1.19.5
+
+### Patch Changes
+
+- c0f2421: Fixes bug leading to wrong block spec in dev block registry
+
+## 1.19.4
+
+### Patch Changes
+
+- Updated dependencies [32c3157]
+  - @platforma-sdk/block-tools@2.4.3
+
+## 1.19.3
+
+### Patch Changes
+
+- Updated dependencies [6240ac0]
+  - @milaboratories/pl-model-middle-layer@1.6.1
+  - @platforma-sdk/block-tools@2.4.2
+
+## 1.19.2
+
+### Patch Changes
+
+- Updated dependencies [885c08b]
+  - @platforma-sdk/workflow-tengo@2.6.0
+
 ## 1.19.1
 
 ### Patch Changes

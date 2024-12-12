@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/uikit-playground",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.12",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "@milaboratories/uikit": "workspace:*"
   },
   "devDependencies": {
+    "@milaboratories/eslint-config": "workspace:^",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",

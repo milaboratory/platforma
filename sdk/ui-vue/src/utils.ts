@@ -5,12 +5,12 @@ import canonicalize from 'canonicalize';
 
 export class UnresolvedError extends Error {}
 
+// @TODO use AggregateError
 export class MultiError extends Error {
   constructor(public readonly errors: string[]) {
     super(errors.join('\n'));
   }
 
-  // @todo
   toString() {
     return this.errors.join('\n');
   }
@@ -29,7 +29,7 @@ export function unwrapValueOrErrors<V>(valueOrErrors?: ValueOrErrors<V>): V {
   }
 
   if (!valueOrErrors.ok) {
-    throw Error(valueOrErrors.errors.join(';'));
+    throw new MultiError(valueOrErrors.errors);
   }
 
   return valueOrErrors.value;

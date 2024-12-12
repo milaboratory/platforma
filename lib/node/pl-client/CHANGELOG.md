@@ -1,5 +1,19 @@
 # @milaboratories/pl-client
 
+## 2.7.0
+
+### Minor Changes
+
+- dac7e27: undici and grpc libraries upgrade
+
+### Patch Changes
+
+- 81a1ad7: HTTP2 enabled in HTTP client
+- Updated dependencies [93a363a]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-http@1.0.1
+  - @milaboratories/ts-helpers@1.1.3
+
 ## 2.6.3
 
 ### Patch Changes

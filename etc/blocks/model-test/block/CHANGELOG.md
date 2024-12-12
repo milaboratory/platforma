@@ -1,5 +1,138 @@
 # @milaboratories/milaboratories.test-block-model
 
+## 1.0.62
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.62
+
+## 1.0.61
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.61
+
+## 1.0.60
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.60
+
+## 1.0.59
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/milaboratories.test-block-model.ui@1.0.59
+- @milaboratories/milaboratories.test-block-model.model@1.0.14
+
+## 1.0.58
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.58
+
+## 1.0.57
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.57
+
+## 1.0.56
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.56
+
+## 1.0.55
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/milaboratories.test-block-model.model@1.0.13
+  - @milaboratories/milaboratories.test-block-model.ui@1.0.55
+
+## 1.0.54
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.54
+
+## 1.0.53
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/milaboratories.test-block-model.model@1.0.12
+- @milaboratories/milaboratories.test-block-model.ui@1.0.53
+
+## 1.0.52
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.52
+
+## 1.0.51
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.51
+
+## 1.0.50
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.50
+
+## 1.0.49
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.49
+
+## 1.0.48
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.48
+
+## 1.0.47
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.47
+
+## 1.0.46
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.46
+
+## 1.0.45
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.45
+
+## 1.0.44
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.44
+
+## 1.0.43
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.43
+
+## 1.0.42
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-block-model.ui@1.0.42
+
 ## 1.0.41
 
 ### Patch Changes
