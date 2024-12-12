@@ -41,10 +41,10 @@ export function getHeterogeneousColumns(specs: PTableColumnSpec[], indices: numb
         }
 
         const axisId = getAxisId(hAx);
-        const axisIdx = specs.findIndex((s) => lodash.isEqual(s.id, axisId));
+        const axisIdx = indices.find((idx) => lodash.isEqual(specs[idx].id, axisId));
 
-        if (axisIdx === -1) {
-          console.error('axis not found', i, axisId, specs);
+        if (axisIdx === undefined) {
+          console.error('axis not found', i, axisId, specs, indices);
           throw Error('axis not found');
         }
 
@@ -57,12 +57,12 @@ export function getHeterogeneousColumns(specs: PTableColumnSpec[], indices: numb
 }
 
 // auxiliary function to get a field for i-th axis-value
-const hColumnField = (originalLength: number, i: number) => (originalLength + i).toString();
+const hColumnField = (originalLength: number, i: number) => "hC" + (originalLength + i).toString();
 
 /**
  * Calculate GridOptions for p-table data source type
  *
- * @param hColumns heterogeneous columns list
+ * @param hColumn heterogeneous column
  * @param shape table shape
  * @param columnDefs initial column definitions (with h-cols inside and no additional columns)
  * @param data data array (including initial columns)
@@ -70,24 +70,18 @@ const hColumnField = (originalLength: number, i: number) => (originalLength + i)
  * @param indices indices in the original specs array
  */
 export function updatePFrameGridOptionsHeterogeneousAxes(
-  hColumns: HeterogeneousColumnInfo[],
+  hColumn: HeterogeneousColumnInfo,
   shape: PTableShape,
   columnDefs: ColDef[],
   data: PTableVector[],
   fields: number[],
   indices: number[],
 ): {
-    columnDefs: ColDef[];
-    serverSideDatasource?: IServerSideDatasource;
-    rowModelType: RowModelType;
-    rowData?: unknown[];
-  } {
-  if (hColumns.length > 1) {
-    throw Error('hColumns.length > 1 is not supported');
-  }
-
-  const hColumn = hColumns[0];
-
+  columnDefs: ColDef[];
+  serverSideDatasource?: IServerSideDatasource;
+  rowModelType: RowModelType;
+  rowData?: unknown[];
+} {
   // recalculate indices of h-cols to the positions in the resulting data
   // index of axis & column in indices array
   let axisIdx: number = -1;
@@ -99,6 +93,10 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
     if (indices[i] === hColumn.columnIdx) {
       columnIdx = i;
     }
+  }
+  if (axisIdx === -1 || columnIdx === -1) {
+    console.error(`axisIdx === -1 || columnIdx === -1: ${axisIdx} ${columnIdx}`, hColumn, indices);
+    throw Error(`axisIdx === -1 || columnIdx === -1: ${axisIdx} ${columnIdx}`);
   }
 
   // columns to add into the data table definition
@@ -114,11 +112,11 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
 
   // remove heterogeneous column from the column defs
   if (columnIdx > axisIdx) {
-    columnDefs.splice(columnIdx, 1);
-    columnDefs.splice(axisIdx, 1);
+    columnDefs.splice(columnIdx + 1, 1); // note '+1' added to account for # column
+    columnDefs.splice(axisIdx + 1, 1);
   } else {
-    columnDefs.splice(axisIdx, 1);
-    columnDefs.splice(columnIdx, 1);
+    columnDefs.splice(axisIdx + 1, 1);
+    columnDefs.splice(columnIdx + 1, 1);
   }
 
   // calculate row data

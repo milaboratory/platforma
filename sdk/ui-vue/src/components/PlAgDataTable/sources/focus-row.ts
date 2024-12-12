@@ -28,7 +28,7 @@ export function trackFirstDataRendered(gridApi: GridApi, tracker: OnceTracker<Gr
   });
   gridApi.addEventListener('modelUpdated', (event) => {
     const groupState = event.api.getServerSideGroupLevelState();
-    if (groupState.length > 0 && groupState[0].lastRowIndexKnown) {
+    if (groupState && groupState.length > 0 && groupState[0].lastRowIndexKnown) {
       tracker.track(event.api);
     }
   });
