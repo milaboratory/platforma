@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.21.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @milaboratories/pl-model-common@1.10.0
+  - @platforma-sdk/model@1.19.0
+  - @milaboratories/pl-model-middle-layer@1.6.7
+  - @milaboratories/pl-drivers@1.5.3
+  - @platforma-sdk/block-tools@2.4.11
+
 ## 1.20.5
 
 ### Patch Changes
