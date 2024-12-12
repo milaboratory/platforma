@@ -19,9 +19,9 @@ _runInVenv := func(python, venv, wd) {
 		ref("python-venv", venv).
 		ref("python-run-environment", python).
 		substitutionRule("python", "python-venv").
-		substitutionRule("python-runenv", "python-run-environment").
+		substitutionRule("python_runenv", "python-run-environment").
 		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{python}}", "venv", "bin")).
-		envVar("VIRTUAL_ENV", path.join("{{python}}", "venv"))
+		envExpression("VIRTUAL_ENV", path.join("{{python}}", "venv"))
 }
 
 _installPipDependencies := func(python, venv, dependencies) {
@@ -37,7 +37,7 @@ _installPipDependencies := func(python, venv, dependencies) {
 		cmd("python").arg("-m").
 		arg("pip").arg("install").
 		arg("--requirement").arg("requirements.txt").
-		arg("--find-links").argVar("{python-runenv}/packages/")
+		arg("--find-links").argExpression("{{python_runenv}}/packages/")
 
 	depsBuilder.
 		inQueue("light").

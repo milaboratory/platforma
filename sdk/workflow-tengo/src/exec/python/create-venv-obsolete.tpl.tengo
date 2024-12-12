@@ -12,7 +12,7 @@ assets := import(":assets")
 path := import(":path")
 validation := import(":validation")
 runenv := import(":exec.runenv")
-internal := import(":exec.python.internal")
+internal := import(":exec.python.internal-obsolete")
 constants := import(":exec.constants")
 
 _createVenv := func(pythonPackage, pythonDescriptor) {
