@@ -68,11 +68,7 @@ const modelText = computed<string>(() => {
     const index = getIndexForModelInItems();
     if (index !== -1) {
       const item = normalizeListOptions(props.options)[index];
-      if (typeof item['label'] === 'object') {
-        return item['label']['title'];
-      } else {
-        return item['label'];
-      }
+      return item.label;
     }
   }
   return '';
@@ -91,7 +87,7 @@ const placeholderVal = computed(() => {
     }
   }
 
-  return modelText.value ?? '...';
+  return modelText.value || '...';
 });
 
 useClickOutside(container, () => {

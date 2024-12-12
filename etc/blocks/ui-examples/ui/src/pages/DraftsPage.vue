@@ -21,6 +21,9 @@ const data = reactive({
   }, {
     label: 'Test label 2',
     value: 2,
+  }, {
+    label: 'Test label 3',
+    value: 3,
   }],
 });
 
@@ -61,7 +64,7 @@ const currentLabel = computed({
       />
     </template>
     <template #append>
-      <PlBtnPrimary> Just a button 111 </PlBtnPrimary>
+      <PlBtnPrimary> Just a button</PlBtnPrimary>
     </template>
     <PlRow>
       <div :class="$style['drag-and-drop']" @drop="onDrop" @dragover.prevent>Drag & Drop</div>
@@ -75,7 +78,8 @@ const currentLabel = computed({
     <PlRow> <PlCloseModalBtn /> </PlRow>
     <PlRow> <PlTextField v-model="currentLabel" label="Change title" :clearable="() => undefined" /> </PlRow>
     <PlRow>
-      <PlDropdownLine v-model="data.value" :label="data.title" :options="data.options" />
+      <PlDropdownLine v-model="data.value" clearable :label="data.title" :options="data.options" />
+      <PlDropdownLine v-model="data.value" prefix="Option:" clearable :label="data.title" :options="data.options" />
     </PlRow>
   </PlBlockPage>
 </template>
