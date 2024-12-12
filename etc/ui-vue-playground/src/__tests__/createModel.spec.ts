@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest'
-import { reactive } from 'vue'
+import { describe, it, expect } from 'vitest';
+import { reactive } from 'vue';
 import { createModel } from '@platforma-sdk/ui-vue';
-import { delay } from '@milaboratories/helpers'
+import { delay } from '@milaboratories/helpers';
 
 describe('createModel', async () => {
   it('link source', async () => {
     const data = reactive({
       user: {
         age: 0,
-      }
+      },
     });
 
     let saveCount = 0;
@@ -21,12 +21,12 @@ describe('createModel', async () => {
       onSave(v) {
         console.log('perform save');
         saveCount++;
-        data.user = v as {age: number};
+        data.user = v as { age: number };
       },
     });
 
     data.user = {
-      age: 1
+      age: 1,
     }; // source change @TODO add deep watch for source
 
     await delay(1);
@@ -50,7 +50,7 @@ describe('createModel', async () => {
     const data = reactive({
       user: {
         age: 0,
-      }
+      },
     });
 
     let saveCount = 0;
@@ -85,4 +85,4 @@ describe('createModel', async () => {
 
     expect(data.user.age === $age.model).toEqual(true);
   });
-})
+});

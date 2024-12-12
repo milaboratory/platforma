@@ -18,7 +18,7 @@ const data = reactive({
 const valueTypeRef = computed(() => props.valueType);
 
 const onInput = (ev: Event) => {
-  let inputValue = (ev.target as HTMLInputElement)?.value;
+  const inputValue = (ev.target as HTMLInputElement)?.value;
 
   const valueType = unref(valueTypeRef);
 

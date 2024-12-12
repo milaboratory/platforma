@@ -18,7 +18,7 @@ import { useLabelNotch } from '@/utils/useLabelNotch';
 import DoubleContour from '@/utils/DoubleContour.vue';
 import { PlTooltip } from '../PlTooltip';
 
-const getOutputError = <T,>(o?: ValueOrErrors<T>) => {
+const getOutputError = <T>(o?: ValueOrErrors<T>) => {
   if (o && o.ok === false) {
     return o.errors.join('\n');
   }

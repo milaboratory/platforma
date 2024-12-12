@@ -7,9 +7,9 @@ describe('PlDropdown', () => {
   it('modelValue', async () => {
     const wrapper = mount(PlDropdown, {
       props: {
-        modelValue: 1,
+        'modelValue': 1,
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
-        options: [
+        'options': [
           { text: 'Option 1', value: 1 },
           { text: 'Option 2', value: 2 },
         ],

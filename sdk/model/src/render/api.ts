@@ -3,6 +3,7 @@ import {
   Option,
   PColumn,
   PColumnSpec,
+  PColumnValues,
   PFrameDef,
   PFrameHandle,
   PObject,
@@ -16,6 +17,7 @@ import {
   ResultCollection,
   ValueOrError,
   ensurePColumn,
+  extractAllColumns,
   isPColumn,
   isPColumnSpec,
   mapPObjectData,
@@ -310,28 +312,37 @@ export class RenderCtx<Args, UiState> {
     return undefined;
   }
 
-  public createPFrame(def: PFrameDef<TreeNodeAccessor>): PFrameHandle {
-    return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => d.handle)));
+  private verifyInlineColumnsSupport(columns: PColumn<TreeNodeAccessor | PColumnValues>[]) {
+    const hasInlineColumns = columns.some((c) => !(c.data instanceof TreeNodeAccessor))
+    const inlineColumnsSupport = this.ctx.featureFlags?.inlineColumnsSupport === true;
+    if (hasInlineColumns && !inlineColumnsSupport) throw Error(`inline columns not supported`);
   }
 
-  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor>>): PTableHandle;
+  public createPFrame(def: PFrameDef<TreeNodeAccessor | PColumnValues>): PFrameHandle {
+    this.verifyInlineColumnsSupport(def);
+    return this.ctx.createPFrame(def.map((c) => mapPObjectData(c, (d) => 
+      d instanceof TreeNodeAccessor ? d.handle : d
+    )));
+  }
+
+  public createPTable(def: PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>): PTableHandle;
   public createPTable(def: {
-    columns: PColumn<TreeNodeAccessor>[];
+    columns: PColumn<TreeNodeAccessor | PColumnValues>[];
     filters?: PTableRecordFilter[];
     /** Table sorting */
     sorting?: PTableSorting[];
   }): PTableHandle;
   public createPTable(
     def:
-      | PTableDef<PColumn<TreeNodeAccessor>>
+      | PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>
       | {
-          columns: PColumn<TreeNodeAccessor>[];
+          columns: PColumn<TreeNodeAccessor | PColumnValues>[];
           filters?: PTableRecordFilter[];
           /** Table sorting */
           sorting?: PTableSorting[];
         }
   ): PTableHandle {
-    var rawDef: PTableDef<PColumn<TreeNodeAccessor>>;
+    var rawDef: PTableDef<PColumn<TreeNodeAccessor | PColumnValues>>;
     if ('columns' in def) {
       rawDef = {
         src: {
@@ -344,7 +355,10 @@ export class RenderCtx<Args, UiState> {
     } else {
       rawDef = def;
     }
-    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => d.handle)));
+    this.verifyInlineColumnsSupport(extractAllColumns(rawDef.src));
+    return this.ctx.createPTable(mapPTableDef(rawDef, (po) => mapPObjectData(po, (d) => 
+      d instanceof TreeNodeAccessor ? d.handle : d
+    )));
   }
 
   /** @deprecated scheduled for removal from SDK */

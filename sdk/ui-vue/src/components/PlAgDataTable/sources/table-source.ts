@@ -1,21 +1,22 @@
-import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
-import type { AxisId, JoinEntry, PColumnIdAndSpec, PFrameHandle, PlDataTableSheet, PObjectId } from '@platforma-sdk/model';
+import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
 import {
+  getAxisId,
+  pTableValue,
+  type AxisId,
   type PColumnSpec,
   type PFrameDriver,
+  type PlDataTableSheet,
   type PTableColumnSpec,
   type PTableHandle,
+  type PTableValue,
   type PTableVector,
-  type PValue,
-  type ValueType,
-  getAxesId,
-  getAxisId,
-  isValueAbsent,
-  isValueNA,
-  mapJoinEntry,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
+import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
+import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
+import type { PlAgDataTableRow } from '../types';
+import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 
 /**
@@ -45,19 +46,54 @@ export const defaultValueFormatter = (value: any) => {
     return value.value.toString();
   }
 };
+
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]): ColDef {
+function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
   const colId = makeColId(spec);
+  const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
     colId,
+    context: spec,
     field: iCol.toString(),
     headerName: spec.spec.annotations?.['pl7.app/label']?.trim() ?? 'Unlabeled ' + spec.type + ' ' + iCol.toString(),
     lockPosition: spec.type === 'axis',
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
-    cellDataType: ((valueType: ValueType) => {
+    headerComponent: PlAgColumnHeader,
+    cellRendererSelector: showCellButtonForAxisId
+      ? (params: ICellRendererParams) => {
+          if (spec.type !== 'axis') return;
+
+          const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
+          if (lodash.isEqual(axisId, showCellButtonForAxisId)) {
+            return { component: PlAgTextAndButtonCell };
+          }
+        }
+      : undefined,
+    cellRendererParams: showCellButtonForAxisId
+      ? {
+          invokeRowsOnDoubleClick: true,
+        }
+      : undefined,
+    headerComponentParams: {
+      type: ((): PlAgHeaderComponentType => {
+        switch (valueType) {
+          case 'Int':
+          case 'Long':
+          case 'Float':
+          case 'Double':
+            return 'Number';
+          case 'String':
+          case 'Bytes':
+            return 'Text';
+          default:
+            throw Error(`unsupported data type: ${valueType satisfies never}`);
+        }
+      })(),
+    } satisfies PlAgHeaderComponentParams,
+    cellDataType: (() => {
       switch (valueType) {
         case 'Int':
         case 'Long':
@@ -70,197 +106,23 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
         default:
           throw Error(`unsupported data type: ${valueType satisfies never}`);
       }
-    })(spec.type === 'axis' ? spec.spec.type : spec.spec.valueType),
+    })(),
   };
 }
 
-/**
- * Convert value to displayable form
- */
-function toDisplayValue(value: Exclude<PValue, null>, valueType: ValueType): string | number {
-  switch (valueType) {
-    case 'Int':
-      return value as number;
-    case 'Long':
-      return typeof value === 'bigint' ? Number(value as bigint) : (value as number);
-    case 'Float':
-      return value as number;
-    case 'Double':
-      return value as number;
-    case 'String':
-      return value as string;
-    case 'Bytes':
-      return Buffer.from(value as Uint8Array).toString('hex');
-    default:
-      throw Error(`unsupported data type: ${valueType satisfies never}`);
-  }
+export function makeRowId(rowKey: PTableValue[]) {
+  return canonicalize(rowKey)!;
 }
 
-function getColumnsFromJoin(join: JoinEntry<PColumnIdAndSpec>): PColumnIdAndSpec[] {
-  const columns: PColumnIdAndSpec[] = [];
-  mapJoinEntry(join, (idAndSpec) => {
-    columns.push(idAndSpec);
-    return idAndSpec;
-  });
-  return columns;
-}
-
-async function getLabelColumns(pfDriver: PFrameDriver, pFrame: PFrameHandle, idsAndSpecs: PColumnIdAndSpec[]): Promise<PColumnIdAndSpec[]> {
-  if (!idsAndSpecs.length) return [];
-
-  const response = await pfDriver.findColumns(pFrame, {
-    columnFilter: {
-      name: ['pl7.app/label'],
-    },
-    compatibleWith: lodash.uniqWith(idsAndSpecs.map((column) => getAxesId(column.spec.axesSpec).map(lodash.cloneDeep)).flat(), lodash.isEqual),
-    strictlyCompatible: true,
-  });
-  return response.hits.filter((idAndSpec) => idAndSpec.spec.axesSpec.length === 1);
-}
-
-export async function enrichJoinWithLabelColumns(
-  pfDriver: PFrameDriver,
-  pFrame: PFrameHandle,
-  join: JoinEntry<PColumnIdAndSpec>,
-): Promise<JoinEntry<PColumnIdAndSpec>> {
-  const columns = getColumnsFromJoin(join);
-  const labelColumns = await getLabelColumns(pfDriver, pFrame, columns);
-  const missingLabelColumns = labelColumns.filter((column) => !lodash.find(columns, (c) => column.columnId === c.columnId));
-  if (missingLabelColumns.length === 0) return join;
-  return {
-    type: 'outer',
-    primary: join,
-    secondary: missingLabelColumns.map((column) => ({
-      type: 'column',
-      column,
-    })),
-  };
-}
-
-export async function makeSheets(
-  pfDriver: PFrameDriver,
-  pFrameHandle: PFrameHandle,
-  sheetAxes: AxisId[],
-  join: JoinEntry<PColumnIdAndSpec>,
-): Promise<PlDataTableSheet[]> {
-  const axes = sheetAxes.filter((spec) => spec.type !== 'Bytes');
-
-  const columns = getColumnsFromJoin(join);
-
-  const mapping: [number, number][][] = axes.map((_) => []);
-  const labelCol: (PObjectId | null)[] = axes.map((_) => null);
-  for (let i = 0; i < columns.length; ++i) {
-    const axesId = getAxesId(columns[i].spec.axesSpec);
-    for (let j = 0; j < axesId.length; ++j) {
-      const k = lodash.findIndex(axes, (axis) => lodash.isEqual(axis, axesId[j]));
-      if (k === -1 || labelCol[k]) continue;
-
-      if (axesId.length === 1 && columns[i].spec.name === 'pl7.app/label') {
-        mapping[k] = [[i, j]];
-        labelCol[k] = columns[i].columnId;
-      } else {
-        mapping[k].push([i, j]);
-      }
-    }
-  }
-
-  for (let i = axes.length - 1; i >= 0; --i) {
-    if (!mapping[i].length) {
-      labelCol.splice(i, 1);
-      mapping.splice(i, 1);
-      axes.splice(i, 1);
-    }
-  }
-
-  const limit = 100;
-  const possibleValues: Set<string | number>[] = axes.map((_) => new Set());
-
-  loop1: for (let i = axes.length - 1; i >= 0; --i) {
-    for (const [column, _] of mapping[i]) {
-      const response = await pfDriver.getUniqueValues(pFrameHandle, {
-        columnId: columns[column].columnId,
-        ...(!labelCol[i] && { axis: lodash.cloneDeep(axes[i]) }),
-        filters: [],
-        limit,
-      });
-      if (response.overflow) {
-        labelCol.splice(i, 1);
-        mapping.splice(i, 1);
-        axes.splice(i, 1);
-        continue loop1;
-      }
-
-      const valueType = response.values.type;
-      for (const value of response.values.data) {
-        if (isValueNA(value, valueType) || value === null) continue;
-        possibleValues[i].add(toDisplayValue(value, valueType));
-
-        if (possibleValues[i].size === limit) {
-          labelCol.splice(i, 1);
-          mapping.splice(i, 1);
-          axes.splice(i, 1);
-          continue loop1;
-        }
-      }
-    }
-
-    if (!possibleValues[i].size) {
-      labelCol.splice(i, 1);
-      mapping.splice(i, 1);
-      axes.splice(i, 1);
-      continue loop1;
-    }
-  }
-
-  return axes.map((axis, i) => {
-    const options = [...possibleValues[i]].map((value) => ({
-      value: value,
-      label: value.toString(),
-    }));
-    const defaultValue = options[0].value;
-    return {
-      axis: lodash.cloneDeep(axis),
-      ...(labelCol[i] && { column: labelCol[i] }),
-      options,
-      defaultValue,
-    } as PlDataTableSheet;
-  });
-}
-
-export type PlAgDataTableRow = {
-  id: string;
-  key: unknown[];
-  [field: `${number}`]: undefined | null | number | string;
-};
-
-/**
- * Convert columnar data from the driver to rows, used by ag-grid
- * @param specs column specs
- * @param columns columnar data
- * @param nRows number of rows
- * @returns
- */
-function columns2rows(fields: number[], columns: PTableVector[], axes: number[], index: number): PlAgDataTableRow[] {
-  const nCols = fields.length;
+/** Convert columnar data from the driver to rows, used by ag-grid */
+function columns2rows(fields: number[], columns: PTableVector[], axes: number[]): PlAgDataTableRow[] {
   const rowData: PlAgDataTableRow[] = [];
   for (let iRow = 0; iRow < columns[0].data.length; ++iRow) {
-    const key: unknown[] = [];
-    const id = (index++).toString();
-    for (const axisIdx of axes) key.push(columns[axisIdx].data[iRow]);
-    const row: PlAgDataTableRow = { key, id };
-    for (let iCol = 0; iCol < nCols; ++iCol) {
-      const field = fields[iCol].toString() as `${number}`;
-      const value = columns[iCol].data[iRow];
-      const valueType = columns[iCol].type;
-      if (isValueAbsent(columns[iCol].absent, iRow)) {
-        row[field] = undefined; // NULL
-      } else if (isValueNA(value, valueType) || value === null) {
-        row[field] = null; // NA
-      } else {
-        row[field] = toDisplayValue(value, valueType);
-      }
-    }
-
+    const key = axes.map((iAxis) => pTableValue(columns[iAxis], iRow));
+    const row: PlAgDataTableRow = { id: makeRowId(key), key };
+    fields.forEach((field, iCol) => {
+      row[field.toString() as `${number}`] = pTableValue(columns[iCol], iRow);
+    });
     rowData.push(row);
   }
   return rowData;
@@ -276,12 +138,13 @@ export async function updatePFrameGridOptions(
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
   hiddenColIds?: string[],
+  showCellButtonForAxisId?: AxisId,
 ): Promise<{
-  columnDefs: ColDef[];
-  serverSideDatasource?: IServerSideDatasource;
-  rowModelType: RowModelType;
-  rowData?: unknown[];
-}> {
+    columnDefs: ColDef[];
+    serverSideDatasource?: IServerSideDatasource;
+    rowModelType: RowModelType;
+    rowData?: unknown[];
+  }> {
   const specs = await pfDriver.getSpec(pt);
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
@@ -289,7 +152,18 @@ export async function updatePFrameGridOptions(
 
   // column indices in the specs array that we are going to process
   const indices = [...specs.keys()]
-    .filter((i) => !lodash.find(sheets, (sheet) => lodash.isEqual(sheet.axis, specs[i].id) || lodash.isEqual(sheet.column, specs[i].id)))
+    .filter(
+      (i) =>
+        !lodash.some(
+          sheets,
+          (sheet) =>
+            lodash.isEqual(getAxisId(sheet.axis), specs[i].id)
+            || (specs[i].type === 'column'
+              && specs[i].spec.name === 'pl7.app/label'
+              && specs[i].spec.axesSpec.length === 1
+              && lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
+        ),
+    )
     .sort((a, b) => {
       if (specs[a].type !== specs[b].type) return specs[a].type === 'axis' ? -1 : 1;
 
@@ -335,7 +209,7 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId))];
 
   if (hColumns.length > 0) {
     let valueColumn = undefined;
@@ -414,12 +288,12 @@ export async function updatePFrameGridOptions(
               offset: params.request.startRow,
               length,
             });
-            rowData = columns2rows(fields, data, axes, params.request.startRow);
+            rowData = columns2rows(fields, data, axes);
           }
         }
 
         params.success({ rowData, rowCount });
-        params.api.autoSizeAllColumns();
+        params.api.autoSizeColumns(params.api.getAllDisplayedColumns().filter((column) => column.getColId() !== PlAgDataTableRowNumberColId));
         params.api.setGridOption('loading', false);
       } catch (error: unknown) {
         params.api.setGridOption('loading', true);

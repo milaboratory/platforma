@@ -106,13 +106,13 @@ export type UnwrapOutputs<Outputs extends BlockOutputsBase, K extends keyof Outp
 // Draft
 export type ModelResult<T, E = unknown> =
   | {
-      ok: true;
-      model: T;
-    }
+    ok: true;
+    model: T;
+  }
   | {
-      ok: false;
-      error: E;
-    };
+    ok: false;
+    error: E;
+  };
 
 export type OutputValues<Outputs extends BlockOutputsBase> = {
   [P in keyof Outputs]?: UnwrapValueOrError<Outputs[P]>;
@@ -127,13 +127,13 @@ export type OutputErrors<Outputs extends BlockOutputsBase> = {
  */
 export type OptionalResult<T> =
   | {
-      errors?: undefined;
-      value?: T; // I make this optional (wip)
-    }
+    errors?: undefined;
+    value?: T; // I make this optional (wip)
+  }
   | {
-      value?: undefined;
-      errors: string[];
-    };
+    value?: undefined;
+    errors: string[];
+  };
 
 // Static tests
 

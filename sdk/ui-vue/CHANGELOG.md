@@ -1,5 +1,133 @@
 # @platforma-sdk/ui-vue
 
+## 1.19.0
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @platforma-sdk/model@1.19.0
+  - @milaboratories/uikit@2.2.32
+
+## 1.18.7
+
+### Patch Changes
+
+- Updated dependencies [8cb8082]
+  - @milaboratories/uikit@2.2.32
+
+## 1.18.6
+
+### Patch Changes
+
+- Updated dependencies [ddff372]
+  - @milaboratories/uikit@2.2.31
+
+## 1.18.5
+
+### Patch Changes
+
+- Updated dependencies [ca01bd7]
+  - @milaboratories/uikit@2.2.30
+
+## 1.18.3
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+
+## 1.18.2
+
+### Patch Changes
+
+- e1d8a3b: PlAgDataTable export selected rows
+
+## 1.18.1
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
+## 1.18.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/uikit@2.2.28
+
+## 1.17.5
+
+### Patch Changes
+
+- 994ea52: fixed styles
+
+## 1.17.3
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
+## 1.17.2
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+- Updated dependencies [ec3bffe]
+  - @milaboratories/uikit@2.2.27
+
+## 1.17.0
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/uikit@2.2.26
+
+## 1.16.0
+
+### Minor Changes
+
+- ca9bf5b: PlAgDataTable: removed 'pframe' source type, added setting to configure loading screens
+
+## 1.15.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/uikit@2.2.26
+
+## 1.15.1
+
+### Patch Changes
+
+- f38f686: fixed styles
+- Updated dependencies [f38f686]
+  - @milaboratories/uikit@2.2.26
+
+## 1.15.0
+
+### Minor Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+
+## 1.14.22
+
+### Patch Changes
+
+- 7eadcd3: PlAgDataTable row numbers
+
+## 1.14.21
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+
 ## 1.14.20
 
 ### Patch Changes

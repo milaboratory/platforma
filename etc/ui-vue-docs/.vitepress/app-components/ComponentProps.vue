@@ -12,7 +12,7 @@
         <span class="component-props__props-description">
           {{ item['description'] }}
         </span>
-        <div class="line"></div>
+        <div class="line"/>
       </template>
     </div>
 
@@ -28,7 +28,7 @@
           <span class="component-props__event-description text-mono-m">
             {{ item }}
           </span>
-          <div class="line"></div>
+          <div class="line"/>
         </template>
       </div>
     </div>
@@ -44,7 +44,7 @@
           <span class="component-props__event-description text-mono-m">
             {{ item }}
           </span>
-          <div class="line"></div>
+          <div class="line"/>
         </template>
       </div>
     </div>

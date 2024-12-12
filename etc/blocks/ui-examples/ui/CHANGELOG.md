@@ -1,5 +1,104 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.0
+
+### Minor Changes
+
+- 4d9885b: pFrameDriver inline columns support
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.0
+  - @platforma-sdk/model@1.19.0
+
+## 1.2.68
+
+### Patch Changes
+
+- 8cb8082: [sdk-ui/vue] Migrate icon in PlBtnGhost to 24px
+
+## 1.2.67
+
+### Patch Changes
+
+- ddff372: [sdk/ui-vue] PlDropdownLine glitch
+
+## 1.2.66
+
+### Patch Changes
+
+- ca01bd7: [sdk/ui-vue] PlDropdownLine changing options labels is not watched properly
+
+## 1.2.65
+
+### Patch Changes
+
+- 07afde6: Fix PlBlockPage title overflow bug (set overflow ellipsis and title attribute if needed)
+
+## 1.2.64
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
+## 1.2.63
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/milaboratories.ui-examples.model@1.0.50
+
+## 1.2.62
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.49
+
+## 1.2.61
+
+### Patch Changes
+
+- ec3bffe: Create a shareable eslint config as an npm package (and use it)
+
+## 1.2.60
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/milaboratories.ui-examples.model@1.0.48
+
+## 1.2.59
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/milaboratories.ui-examples.model@1.0.47
+
+## 1.2.58
+
+### Patch Changes
+
+- b4081fc: [sdk/ui-vue] Deprecate everything that should be deprecated
+
+## 1.2.57
+
+### Patch Changes
+
+- Updated dependencies [7eadcd3]
+  - @platforma-sdk/ui-vue@1.14.22
+
+## 1.2.56
+
+### Patch Changes
+
+- bc6141f: PlAgColumnHeader impl
+- Updated dependencies [bc6141f]
+  - @platforma-sdk/ui-vue@1.14.21
+
 ## 1.2.55
 
 ### Patch Changes

@@ -1,5 +1,42 @@
 # @milaboratories/pl-drivers
 
+## 1.5.3
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @milaboratories/pl-model-common@1.10.0
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [6efea3d]
+  - @milaboratories/pl-model-common@1.9.0
+
+## 1.5.1
+
+### Patch Changes
+
+- Updated dependencies [02feb1a]
+  - @milaboratories/pl-model-common@1.8.1
+
+## 1.5.0
+
+### Minor Changes
+
+- dac7e27: undici and grpc libraries upgrade
+
+### Patch Changes
+
+- Updated dependencies [81a1ad7]
+- Updated dependencies [dac7e27]
+- Updated dependencies [dac7e27]
+  - @milaboratories/pl-client@2.7.0
+  - @milaboratories/ts-helpers@1.1.3
+  - @milaboratories/pl-tree@1.4.19
+  - @milaboratories/computable@2.3.4
+
 ## 1.4.0
 
 ### Minor Changes

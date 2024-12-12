@@ -16,7 +16,7 @@ import {
   PlBtnGhost,
   PlNumberField,
   PlBtnDanger,
-  PlBtnGroup
+  PlBtnGroup,
 } from '@platforma-sdk/ui-vue';
 import { computed, reactive } from 'vue';
 
@@ -30,7 +30,7 @@ const dialogData = reactive({
   dialogWidth: '448px', // default,
   maxHeight: 440,
   contentHeight: 216,
-  closeOnOutsideClick: true
+  closeOnOutsideClick: true,
 });
 
 const slideData = reactive({
@@ -41,14 +41,14 @@ const slideData = reactive({
   actions: true,
   shadow: false,
   closeOnOutsideClick: true,
-  sliderWidth: '368px' // default and min
+  sliderWidth: '368px', // default and min
 });
 
 const modalVariants = ['newProject', 'newProject2', 'deleteDataset', 'deleteDataset2'] as const;
 
 const examples = reactive({
   projectLabel: '',
-  modal: '' as (typeof modalVariants)[number] | ''
+  modal: '' as (typeof modalVariants)[number] | '',
 });
 
 const append = reactive<Record<string, boolean>>({});
@@ -60,7 +60,7 @@ for (const example of modalVariants) {
     },
     set(v) {
       examples.modal = v ? example : '';
-    }
+    },
   }) as unknown as boolean;
 }
 
@@ -73,9 +73,9 @@ const lorem = faker.lorem.paragraph(100);
     <PlRow>
       <PlContainer width="50%" @click.stop>
         <PlRow>
-          <PlBtnPrimary @click.stop="dialogData.dialogModal = true"
-            >Open PlDialogModal</PlBtnPrimary
-          >
+          <PlBtnPrimary @click.stop="dialogData.dialogModal = true">
+            Open PlDialogModal
+          </PlBtnPrimary>
         </PlRow>
         <PlNumberField
           v-model="dialogData.contentHeight"
@@ -85,9 +85,9 @@ const lorem = faker.lorem.paragraph(100);
           v-model="dialogData.maxHeight"
           label="Max height in px (default is 'auto')"
         />
-        <PlCheckbox v-model="dialogData.actionsHasTopBorder"
-          >Actions slot has top border</PlCheckbox
-        >
+        <PlCheckbox v-model="dialogData.actionsHasTopBorder">
+          Actions slot has top border
+        </PlCheckbox>
         <PlCheckbox v-model="dialogData.title">Show title</PlCheckbox>
         <PlCheckbox v-model="dialogData.actions">Show actions</PlCheckbox>
         <PlCheckbox v-model="dialogData.closeOnOutsideClick">Close on outside click</PlCheckbox>

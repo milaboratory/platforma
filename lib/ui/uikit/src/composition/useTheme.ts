@@ -8,10 +8,11 @@ type Callback = (mode: Theme) => void;
 
 const cm = new Set<Callback>();
 
-window.matchMedia &&
+if (window.matchMedia) {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
     toList(mapIterable(cm.values(), (cb) => cb(e.matches ? 'dark' : 'light')));
   });
+}
 
 const init = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -25,7 +26,7 @@ export function useTheme(_cb?: Callback) {
 
   const cb = (theme: Theme) => {
     browserTheme.value = theme;
-    _cb && _cb(theme);
+    _cb?.(theme);
   };
 
   function toggleTheme() {
@@ -33,7 +34,7 @@ export function useTheme(_cb?: Callback) {
   }
 
   watch(theme, (v) => {
-    _cb && _cb(unref(v));
+    _cb?.(unref(v));
   });
 
   onMounted(() => {

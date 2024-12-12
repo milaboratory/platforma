@@ -9,7 +9,7 @@ import {
   maskIcons16,
   maskIcons24,
   PlRow,
-  PlTooltip
+  PlTooltip,
 } from '@platforma-sdk/ui-vue';
 </script>
 

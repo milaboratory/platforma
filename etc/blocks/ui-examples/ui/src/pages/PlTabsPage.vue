@@ -5,7 +5,7 @@ import {
   PlIcon24,
   PlRow,
   PlTabs,
-  PlTextField
+  PlTextField,
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -13,7 +13,7 @@ const data = reactive({
   currentTab: 'one',
   topLine: false,
   disabled: false,
-  maxTabWidth: '200px'
+  maxTabWidth: '200px',
 });
 
 const tabOptions = [
@@ -25,8 +25,8 @@ const tabOptions = [
   {
     label: 'Max width 200px for this specific option',
     value: 'five',
-    maxWidth: '200px'
-  }
+    maxWidth: '200px',
+  },
 ];
 </script>
 

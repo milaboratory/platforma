@@ -47,6 +47,7 @@
     height: 4px;
     background-color: transparent;
     position: absolute;
+    z-index: 1; // @TODO
     top: 0;
     right: 0;
     left: 0;

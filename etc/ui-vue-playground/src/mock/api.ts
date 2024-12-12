@@ -12,16 +12,16 @@ import type {
   OpenMultipleFilesResponse,
   OpenSingleFileResponse,
   Platforma,
-  StorageHandle
+  StorageHandle,
 } from '@platforma-sdk/model';
 import { getLsFilesResult } from './utils';
-import { BlockMock } from './BlockMock';
+import type { BlockMock } from './BlockMock';
 
 export function createMockApi<
   Args,
   Outputs extends BlockOutputsBase,
   UiState = unknown,
-  Href extends `/${string}` = `/${string}`
+  Href extends `/${string}` = `/${string}`,
 >(block: BlockMock<Args, Outputs, UiState, Href>): Platforma<Args, Outputs, UiState> {
   type MyPatch = BlockStatePatch<Args, Outputs, UiState, Href>;
 
@@ -39,7 +39,7 @@ export function createMockApi<
 
   return {
     sdkInfo: {
-      sdkVersion: 'dev'
+      sdkVersion: 'dev',
     },
     loadBlockState: async function (): Promise<BlockState<Args, Outputs, UiState>> {
       return block.getState();
@@ -55,8 +55,8 @@ export function createMockApi<
       await setPatches([
         {
           key: 'args',
-          value
-        }
+          value,
+        },
       ]);
 
       await block.setBlockArgs(value);
@@ -65,8 +65,8 @@ export function createMockApi<
       await setPatches([
         {
           key: 'ui',
-          value
-        }
+          value,
+        },
       ]);
 
       await block.setBlockUiState(value);
@@ -75,12 +75,12 @@ export function createMockApi<
       await setPatches([
         {
           key: 'args',
-          value: args
+          value: args,
         },
         {
           key: 'ui',
-          value: uiState
-        }
+          value: uiState,
+        },
       ]);
 
       await block.setBlockArgsAndUiState(args, uiState);
@@ -89,15 +89,15 @@ export function createMockApi<
       await setPatches([
         {
           key: 'navigationState',
-          value: navigationState
-        }
+          value: navigationState,
+        },
       ]);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     blobDriver: undefined as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     logDriver: undefined as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     lsDriver: {
       async getStorageList() {
         return [
@@ -105,8 +105,8 @@ export function createMockApi<
             name: 'local',
             handle: 'local://test',
             initialFullPath: '/',
-            isInitialPathHome: false
-          }
+            isInitialPathHome: false,
+          },
         ];
       },
       async listFiles(_storage: StorageHandle, fullPath: string): Promise<ListFilesResult> {
@@ -127,9 +127,9 @@ export function createMockApi<
       },
       async fileToImportHandle(_file: FileLike): Promise<ImportFileHandle> {
         return '' as ImportFileHandle;
-      }
+      },
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pFrameDriver: undefined as any
+    pFrameDriver: undefined as any,
   };
 }

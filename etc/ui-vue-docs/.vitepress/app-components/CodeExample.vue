@@ -5,12 +5,12 @@
       <div class="d-flex align-center text-subtitle-s">
         <slot name="name" />
       </div>
-      <div class="flex-grow-1"></div>
+      <div class="flex-grow-1"/>
       <div class="code-example__icon cursor-pointer">
-        <div :class="modeIcons" class="icon-24" @click="darkMode = !darkMode"></div>
+        <div :class="modeIcons" class="icon-24" @click="darkMode = !darkMode"/>
       </div>
       <div class="code-example__icon cursor-pointer">
-        <div class="icon-24 icon-code" @click="showExampleCode = !showExampleCode"></div>
+        <div class="icon-24 icon-code" @click="showExampleCode = !showExampleCode"/>
       </div>
     </div>
 
@@ -33,7 +33,7 @@
         <div class="code-example__copy-code cursor-pointer" @click="copyCode">
           <div class="mask-16" :class="copyIcon" />
         </div>
-        <pre><code v-html="highlightedCode"></code></pre>
+        <pre><code v-html="highlightedCode"/></pre>
       </div>
     </div>
   </div>
@@ -50,7 +50,7 @@ hljs.registerLanguage('javascript', javascript);
 const props = defineProps<{ code: string; hideHeader?: boolean }>();
 
 const highlightedCode = hljs.highlight(props.code, {
-  language: 'xml'
+  language: 'xml',
 }).value;
 
 const darkMode = ref(false);

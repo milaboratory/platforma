@@ -1,5 +1,124 @@
 # @milaboratories/milaboratories.test-sum-numbers
 
+## 1.0.26
+
+### Patch Changes
+
+- Updated dependencies [4d9885b]
+  - @platforma-sdk/model@1.19.0
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.5
+  - @milaboratories/milaboratories.test-sum-numbers.ui@1.0.26
+
+## 1.0.25
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.25
+
+## 1.0.24
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.24
+
+## 1.0.23
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.23
+
+## 1.0.22
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.22
+
+## 1.0.21
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.21
+
+## 1.0.20
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.20
+
+## 1.0.19
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.19
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.4
+
+## 1.0.18
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.18
+
+## 1.0.17
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.17
+
+## 1.0.16
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.16
+
+## 1.0.15
+
+### Patch Changes
+
+- Updated dependencies [b1a3abc]
+  - @platforma-sdk/model@1.17.0
+  - @milaboratories/milaboratories.test-sum-numbers.model@1.0.3
+  - @milaboratories/milaboratories.test-sum-numbers.ui@1.0.15
+
+## 1.0.14
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.14
+
+## 1.0.13
+
+### Patch Changes
+
+- @platforma-sdk/model@1.15.4
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.2
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.13
+
+## 1.0.12
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.12
+
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [b4081fc]
+  - @milaboratories/milaboratories.test-sum-numbers.ui@1.0.11
+
+## 1.0.10
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.10
+
+## 1.0.9
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.9
+
 ## 1.0.8
 
 ### Patch Changes

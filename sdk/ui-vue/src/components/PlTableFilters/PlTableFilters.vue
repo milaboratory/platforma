@@ -65,7 +65,7 @@ const defaultsMap = computed<Record<PlTableFilterColumnId, PlTableFiltersStateEn
 });
 
 /* State upgrader */ (() => {
-  let state = model.value.state;
+  const state = model.value.state;
   if (typeof state === 'object' && !Array.isArray(state)) {
     model.value.state = Object.entries(state as unknown as Record<PlTableFilterColumnId, PlTableFilter>).map(([id, filter]) => ({
       columnId: id,

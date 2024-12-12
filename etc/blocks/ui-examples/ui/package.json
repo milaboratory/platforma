@@ -1,21 +1,21 @@
 {
   "name": "@milaboratories/milaboratories.ui-examples.ui",
-  "version": "1.2.55",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "watch": "vue-tsc && vite build --watch",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,ts,vue"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@milaboratories/milaboratories.ui-examples.model": "workspace:*",
     "vue": "catalog:",
-    "@platforma-sdk/model": "workspace:^",
-    "@platforma-sdk/ui-vue": "workspace:^"
+    "@platforma-sdk/model": "workspace:^"
   },
   "devDependencies": {
+    "@platforma-sdk/ui-vue": "workspace:^",
     "@vitejs/plugin-vue": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

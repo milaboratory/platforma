@@ -16,7 +16,7 @@ describe('TextArea', () => {
   it('modelValue', async () => {
     const wrapper = mount(PlTextArea, {
       props: {
-        modelValue: 'initialText',
+        'modelValue': 'initialText',
         'onUpdate:modelValue': (e) => wrapper.setProps({ modelValue: e }),
       },
     });

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.19.10",
+  "version": "1.21.0",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -25,6 +25,7 @@
   "keywords": [],
   "license": "UNLICENSED",
   "dependencies": {
+    "@milaboratories/pl-http": "workspace:^",
     "@milaboratories/computable": "workspace:^",
     "@milaboratories/pframes-node": "catalog:",
     "@milaboratories/resolve-helper": "workspace:^",

@@ -1,18 +1,20 @@
 {
   "name": "@milaboratories/ui-vue-docs",
   "private": true,
-  "version": "0.2.12",
+  "version": "0.2.30",
   "type": "module",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "docs:test": "echo 'Hola!'"
+    "docs:test": "echo 'Hola!'",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "sass": "catalog:",
-    "vitepress": "catalog:"
+    "vitepress": "catalog:",
+    "@milaboratories/eslint-config": "workspace:^"
   },
   "dependencies": {
     "@faker-js/faker": "catalog:",
