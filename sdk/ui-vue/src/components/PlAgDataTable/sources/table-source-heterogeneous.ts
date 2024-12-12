@@ -57,7 +57,7 @@ export function getHeterogeneousColumns(specs: PTableColumnSpec[], indices: numb
 }
 
 // auxiliary function to get a field for i-th axis-value
-const hColumnField = (originalLength: number, i: number) => (originalLength + i).toString();
+const hColumnField = (originalLength: number, i: number) => "hC" + (originalLength + i).toString();
 
 /**
  * Calculate GridOptions for p-table data source type
@@ -112,11 +112,11 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
 
   // remove heterogeneous column from the column defs
   if (columnIdx > axisIdx) {
-    columnDefs.splice(columnIdx, 1);
-    columnDefs.splice(axisIdx, 1);
+    columnDefs.splice(columnIdx + 1, 1); // note '+1' added to account for # column
+    columnDefs.splice(axisIdx + 1, 1);
   } else {
-    columnDefs.splice(axisIdx, 1);
-    columnDefs.splice(columnIdx, 1);
+    columnDefs.splice(axisIdx + 1, 1);
+    columnDefs.splice(columnIdx + 1, 1);
   }
 
   // calculate row data

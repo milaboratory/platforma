@@ -140,11 +140,11 @@ export async function updatePFrameGridOptions(
   hiddenColIds?: string[],
   showCellButtonForAxisId?: AxisId,
 ): Promise<{
-    columnDefs: ColDef[];
-    serverSideDatasource?: IServerSideDatasource;
-    rowModelType: RowModelType;
-    rowData?: unknown[];
-  }> {
+  columnDefs: ColDef[];
+  serverSideDatasource?: IServerSideDatasource;
+  rowModelType: RowModelType;
+  rowData?: unknown[];
+}> {
   const specs = await pfDriver.getSpec(pt);
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
@@ -157,11 +157,11 @@ export async function updatePFrameGridOptions(
         !lodash.some(
           sheets,
           (sheet) =>
-            lodash.isEqual(getAxisId(sheet.axis), specs[i].id)
-            || (specs[i].type === 'column'
-              && specs[i].spec.name === 'pl7.app/label'
-              && specs[i].spec.axesSpec.length === 1
-              && lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
+            lodash.isEqual(getAxisId(sheet.axis), specs[i].id) ||
+            (specs[i].type === 'column' &&
+              specs[i].spec.name === 'pl7.app/label' &&
+              specs[i].spec.axesSpec.length === 1 &&
+              lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
         ),
     )
     .sort((a, b) => {
@@ -198,7 +198,7 @@ export async function updatePFrameGridOptions(
     indices[axisIdx] = idx;
     for (const hCol of hColumns) {
       if (hCol.axisIdx === oldIdx) {
-        hCol.axisIdx = indices[axisIdx];
+        hCol.axisIdx = idx;
       }
     }
 
@@ -209,7 +209,10 @@ export async function updatePFrameGridOptions(
 
   const ptShape = await pfDriver.getShape(pt);
   const rowCount = ptShape.rows;
-  const columnDefs: ColDef<PlAgDataTableRow>[] = [makeRowNumberColDef(), ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId))];
+  const columnDefs: ColDef<PlAgDataTableRow>[] = [
+    makeRowNumberColDef(),
+    ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId)),
+  ];
 
   if (hColumns.length > 0) {
     let valueColumn = undefined;
