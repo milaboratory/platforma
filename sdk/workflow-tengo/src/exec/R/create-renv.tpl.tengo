@@ -81,8 +81,8 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 	depsInstaller := internal.runRBuilder(activateRenvRun.workdir, rPackage, rDescriptor).
 		env("RENV_PATHS_RENV", "./renv").
 		ref("r-software-pkg", swPackage).
-		substitutionRule("{pkg}", "r-software-pkg").
-		envVar("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile)
+		substitutionRule("pkg", "r-software-pkg").
+		envExpression("RENV_PATHS_LOCKFILE", "{{pkg}}/"+dependencies.lockFile)
 
 	depsInstaller.
 		cmd("R").
@@ -109,9 +109,9 @@ _toolsetRenvCreate = func(operationMode, swPackage, rPackage, rDescriptor, depen
 _toolsetRenvRefreshSwPackage = func(wd, swPackage, rPackage, rDescriptor, dependencies) {
 	swRefreshener := internal.runRBuilder(wd, rPackage, rDescriptor).
 		ref("r-software-pkg", swPackage).
-		substitutionRule("{pkg}", "r-software-pkg").
-		envVar("R_PROJECT_DIR", "{pkg}").
-		envVar("RENV_PATHS_LOCKFILE", "{pkg}/"+dependencies.lockFile).
+		substitutionRule("pkg", "r-software-pkg").
+		envExpression("R_PROJECT_DIR", "{{pkg}}").
+		envExpression("RENV_PATHS_LOCKFILE", "{{pkg}}/"+dependencies.lockFile).
 		env("TRICK_DEDUPLICATION", "" + times.time_unix(times.now()))
 
 	swRefreshener.

@@ -1,5 +1,35 @@
 # @milaboratories/uikit
 
+## 2.2.32
+
+### Patch Changes
+
+- 8cb8082: [sdk-ui/vue] Migrate icon in PlBtnGhost to 24px
+
+## 2.2.31
+
+### Patch Changes
+
+- ddff372: [sdk/ui-vue] PlDropdownLine glitch
+
+## 2.2.30
+
+### Patch Changes
+
+- ca01bd7: [sdk/ui-vue] PlDropdownLine changing options labels is not watched properly
+
+## 2.2.29
+
+### Patch Changes
+
+- 07afde6: Fix PlBlockPage title overflow bug (set overflow ellipsis and title attribute if needed)
+
+## 2.2.28
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+
 ## 2.2.27
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 ARG_TYPE_STRING := "string"
 ARG_TYPE_EXPRESSION := "expressionRef"
-ARG_TYPE_VAR        := "variableRef" // TODO: deprecated, remove after a month
+ARG_TYPE_VAR        := "variableRef" // TODO: deprecated, remove after 15 Mar 2025
 ARG_TYPES := [ARG_TYPE_STRING, ARG_TYPE_EXPRESSION, ARG_TYPE_VAR]
 
 export {

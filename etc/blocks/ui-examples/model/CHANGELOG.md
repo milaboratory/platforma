@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.0.50
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+
+## 1.0.49
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+
 ## 1.0.48
 
 ### Patch Changes

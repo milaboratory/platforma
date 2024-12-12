@@ -1,5 +1,70 @@
 # @platforma-sdk/ui-vue
 
+## 1.18.7
+
+### Patch Changes
+
+- Updated dependencies [8cb8082]
+  - @milaboratories/uikit@2.2.32
+
+## 1.18.6
+
+### Patch Changes
+
+- Updated dependencies [ddff372]
+  - @milaboratories/uikit@2.2.31
+
+## 1.18.5
+
+### Patch Changes
+
+- Updated dependencies [ca01bd7]
+  - @milaboratories/uikit@2.2.30
+
+## 1.18.3
+
+### Patch Changes
+
+- Updated dependencies [07afde6]
+  - @milaboratories/uikit@2.2.29
+
+## 1.18.2
+
+### Patch Changes
+
+- e1d8a3b: PlAgDataTable export selected rows
+
+## 1.18.1
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
+## 1.18.0
+
+### Minor Changes
+
+- 6efea3d: PlAgDataTable unified data format
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/uikit@2.2.28
+
+## 1.17.5
+
+### Patch Changes
+
+- 994ea52: fixed styles
+
+## 1.17.3
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/uikit@2.2.28
+
 ## 1.17.2
 
 ### Patch Changes

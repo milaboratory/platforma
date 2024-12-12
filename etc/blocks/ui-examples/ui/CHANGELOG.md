@@ -1,5 +1,50 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.2.68
+
+### Patch Changes
+
+- 8cb8082: [sdk-ui/vue] Migrate icon in PlBtnGhost to 24px
+
+## 1.2.67
+
+### Patch Changes
+
+- ddff372: [sdk/ui-vue] PlDropdownLine glitch
+
+## 1.2.66
+
+### Patch Changes
+
+- ca01bd7: [sdk/ui-vue] PlDropdownLine changing options labels is not watched properly
+
+## 1.2.65
+
+### Patch Changes
+
+- 07afde6: Fix PlBlockPage title overflow bug (set overflow ellipsis and title attribute if needed)
+
+## 1.2.64
+
+### Patch Changes
+
+- 8022606: PlAgCsvExporter component
+
+## 1.2.63
+
+### Patch Changes
+
+- @platforma-sdk/model@1.18.0
+- @milaboratories/milaboratories.ui-examples.model@1.0.50
+
+## 1.2.62
+
+### Patch Changes
+
+- ec69dca: added support PlAgTextAndButtonCell for axis and fixed styles
+- Updated dependencies [ec69dca]
+  - @milaboratories/milaboratories.ui-examples.model@1.0.49
+
 ## 1.2.61
 
 ### Patch Changes
