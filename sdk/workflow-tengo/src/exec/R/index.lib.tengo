@@ -13,6 +13,12 @@ desc := import(":exec.descriptor")
 
 _OUTPUT_RUN_ENV       := "runEnv"
 
+createRenvTpl := assets.importTemplate(":exec.R.create-renv")
+// deprecated, remove after 15 Jan 2025 when nobody will use create-renv-obsolete and internal-obsolete
+if !desc.hasBackendExpressions() {
+	createRenvTpl = assets.importTemplate(":exec.R.create-renv-obsolete")
+}
+
 rVenvBuilder := func() {
 	self := undefined
 
@@ -151,7 +157,7 @@ rVenvBuilder := func() {
 
 			validation.assertJsonSchema(rVenvInputs, internal.rVenvInputSchema, "incomplete R runenv configuration")
 
-			tpl := render.create(assets.importTemplate(":exec.R.create-renv"), rVenvInputs)
+			tpl := render.create(createRenvTpl, rVenvInputs)
 
 			self := undefined
 			self = ll.toStrict(oop.inherit(tpl, {
