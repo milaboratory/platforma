@@ -130,7 +130,13 @@ export class BlockPackRegistry {
                 ...e,
                 latestByChannel: {
                   ...e.latestByChannel,
-                  [StableChannel]: e.latestByChannel[AnyChannel]
+                  [StableChannel]: ((s: SingleBlockPackOverview) => {
+                    if (s.spec.type === 'from-registry-v2') {
+                      return {...s, spec: {...s.spec, channel: StableChannel}};
+                    }
+
+                    return s;
+                  })(e.latestByChannel[AnyChannel])
                 },
                 registryId: regEntry.id
               }
