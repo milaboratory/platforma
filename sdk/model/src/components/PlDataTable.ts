@@ -343,7 +343,7 @@ export function createPlDataTableSheet<A, U>(
     axis: getAxisId(axis),
     options: values.map((v) => ({
       value: v,
-      label: labels?.get(v) ?? v.toString()
+      label: labels?.[v] ?? v.toString()
     })),
     defaultValue: values[0]
   };

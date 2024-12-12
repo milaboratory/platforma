@@ -27,7 +27,7 @@ import { getCfgRenderCtx } from '../internal';
 import { TreeNodeAccessor } from './accessor';
 import { FutureRef } from './future';
 import { GlobalCfgRenderCtx, MainAccessorName, StagingAccessorName } from './internal';
-import { deriveLabels, LabelDerivationOps } from './util/label';
+import { LabelDerivationOps, deriveLabels } from './util/label';
 
 export class ResultPool {
   private readonly ctx: GlobalCfgRenderCtx = getCfgRenderCtx();
@@ -141,6 +141,18 @@ export class ResultPool {
     const data = this.getDataByRef(ref);
     if (!data) return undefined;
     return ensurePColumn(data);
+  }
+
+  /**
+   * Returns spec associated with the ref ensuring that it is a p-column spec.
+   * @param ref a Ref
+   * @returns p-column spec associated with the ref
+   */
+  public getPColumnSpecByRef(ref: PlRef): PColumnSpec | undefined {
+    const spec = this.getSpecByRef(ref);
+    if (!spec) return undefined;
+    if (!isPColumnSpec(spec)) throw new Error(`not a PColumn spec (kind = ${spec.kind})`);
+    return spec as PColumnSpec;
   }
 
   /**
@@ -268,7 +280,7 @@ export class RenderCtx<Args, UiState> {
    * Find labels data for a given axis id. It will search for a label column and return its data as a map.
    * @returns a map of axis value => label
    */
-  public findLabels(axis: AxisId): Map<string | number, string> | undefined {
+  public findLabels(axis: AxisId): Record<string | number, string> | undefined {
     const dataPool = this.resultPool.getData();
     for (const column of dataPool.entries) {
       if (!isPColumn(column.obj)) continue;
@@ -284,7 +296,7 @@ export class RenderCtx<Args, UiState> {
         if (column.obj.data.resourceType.name !== 'PColumnData/Json') {
           throw Error(`Expected JSON column for labels, got: ${column.obj.data.resourceType.name}`);
         }
-        const labels = new Map<string | number, string>(
+        const labels: Record<string | number, string> = Object.fromEntries(
           Object.entries(
             column.obj.data.getDataAsJson<{
               data: Record<string | number, string>;

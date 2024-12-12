@@ -313,21 +313,18 @@ export async function updatePFrameGridOptions(
 
     // axis of labels
     const axisId = getAxisId((specs[idx].spec as PColumnSpec).axesSpec[0]);
-    const axisIdx = lodash.findIndex(indices, (idx) => lodash.isEqual(specs[idx].id, axisId));
+    const axisIdx = indices.findIndex((idx) => lodash.isEqual(specs[idx].id, axisId));
     if (axisIdx === -1) {
-      // no axis, probably we are in the sheet
-      const sheetIdx = lodash.findIndex(sheets, (sheet) => lodash.isEqual(sheet.axis, axisId));
-      if (sheetIdx === -1) {
-        console.warn(`added label column, but the axis is not in the data; axisId: ${axisId}`);
-        continue;
-      }
+      // no axis, it was already processed
+      continue;
     }
 
     // replace in h-columns
+    const oldIdx = indices[axisIdx];
     indices[axisIdx] = idx;
     for (const hCol of hColumns) {
-      if (hCol.axisIdx === idx) {
-        hCol.axisIdx = axisIdx;
+      if (hCol.axisIdx === oldIdx) {
+        hCol.axisIdx = indices[axisIdx];
       }
     }
 
@@ -340,13 +337,22 @@ export async function updatePFrameGridOptions(
   const rowCount = ptShape.rows;
   const columnDefs = fields.map((i) => getColDef(i, specs[i], hiddenColIds));
 
-  if (hColumns.length > 1) {
-    console.warn('Currently, only one heterogeneous axis is supported in the table, got', hColumns.length, ' transposition will not be applied.');
-  }
+  if (hColumns.length > 0) {
+    let valueColumn = undefined;
+    if (hColumns.length == 1) {
+      valueColumn = hColumns[0];
+    } else {
+      const vc = hColumns.filter((i) => specs[i.columnIdx].spec.annotations?.['pl7.app/table/hValue'] === 'true');
+      if (vc.length === 1) valueColumn = vc[0];
+    }
 
-  if (hColumns.length === 1) {
-    // return data
-    return updatePFrameGridOptionsHeterogeneousAxes(hColumns, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
+    if (!valueColumn) {
+      console.warn(
+        `Currently, only one heterogeneous axis / column is supported in the table, got ${hColumns.length} transposition will not be applied.`,
+      );
+    } else {
+      return updatePFrameGridOptionsHeterogeneousAxes(valueColumn, ptShape, columnDefs, await pfDriver.getData(pt, indices), fields, indices);
+    }
   }
 
   // mixing in axis indices
