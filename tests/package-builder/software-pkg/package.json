@@ -68,27 +68,27 @@
       "hello": {
         "binary": {
           "artifact": "with-py-environment",
-          "command": [ "python", "{{pkg}}/script1.py", "Hello from python!" ],
+          "cmd": [ "python", "{pkg}/script1.py", "Hello from python!" ],
           "envVars": [ "MYVAR=1" ]
         }
       },
       "goodbye": {
         "binary": {
           "artifact": "with-py-environment",
-          "command": [ "python", "{{pkg}}/script1.py", "Have a nice day!" ],
+          "cmd": [ "python", "{pkg}/script1.py", "Have a nice day!" ],
           "envVars": [ "MYVAR=2" ]
         }
       },
       "yes-java": {
         "binary": {
           "artifact": "with-java-environment",
-          "command": [ "java", "--version" ]
+          "cmd": [ "java", "--version" ]
         }
       },
       "yes-r": {
         "binary": {
           "artifact": "with-r-environment",
-          "command": [ "R", "--version" ]
+          "cmd": [ "R", "--version" ]
         }
       },
       "hello2": {
@@ -99,13 +99,13 @@
             "registry": "milaboratories",
             "root": "./src"
           },
-          "command": [ "printf", "Hello from binary!\n" ]
+          "cmd": [ "printf", "Hello from binary!\n" ]
         }
       },
       "starter": {
         "binary": {
           "artifact": "multiarch",
-          "command": [ "true" ]
+          "cmd": [ "true" ]
         }
       }
     }
