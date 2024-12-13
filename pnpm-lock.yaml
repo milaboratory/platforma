@@ -292,8 +292,8 @@ catalogs:
       specifier: ^1.2.0
       version: 1.2.0
     zod:
-      specifier: ~3.24.1
-      version: 3.24.1
+      specifier: ~3.23.8
+      version: 3.23.8
 
 overrides:
   '@microsoft/api-extractor>typescript': ~5.5.4
@@ -344,7 +344,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -391,7 +391,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/download-file/workflow:
     devDependencies:
@@ -428,7 +428,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -475,7 +475,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/enter-numbers/workflow:
     devDependencies:
@@ -550,7 +550,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/model-test/workflow:
     devDependencies:
@@ -587,7 +587,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -637,7 +637,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/read-logs/workflow:
     dependencies:
@@ -678,7 +678,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -725,7 +725,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/sum-numbers/workflow:
     devDependencies:
@@ -762,7 +762,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -824,7 +824,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/ui-examples/workflow:
     devDependencies:
@@ -861,7 +861,7 @@ importers:
         version: link:../../../../sdk/model
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
@@ -908,7 +908,7 @@ importers:
         version: 2.1.10(typescript@5.5.4)
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   etc/blocks/upload-file/workflow:
     devDependencies:
@@ -1085,7 +1085,7 @@ importers:
     dependencies:
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
@@ -1110,7 +1110,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
@@ -1263,7 +1263,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
@@ -1339,7 +1339,7 @@ importers:
         version: 7.1.0
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -1419,7 +1419,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@milaboratories/platforma-build-configs':
         specifier: workspace:*
@@ -1528,7 +1528,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -1580,7 +1580,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -1786,7 +1786,7 @@ importers:
         version: 3.11.0
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -1966,7 +1966,7 @@ importers:
         version: 1.2.0
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
 
   sdk/workflow-tengo:
     dependencies:
@@ -2213,7 +2213,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -2350,7 +2350,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@jest/globals':
         specifier: 'catalog:'
@@ -2414,7 +2414,7 @@ importers:
         version: 2.6.1
       zod:
         specifier: 'catalog:'
-        version: 3.24.1
+        version: 3.23.8
     devDependencies:
       '@milaboratories/oclif-index':
         specifier: workspace:*
@@ -7987,8 +7987,8 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+  zod@3.23.8:
+    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
@@ -9948,14 +9948,14 @@ snapshots:
 
   '@milaboratories/pl-model-common@1.8.0':
     dependencies:
-      zod: 3.24.1
+      zod: 3.23.8
 
   '@milaboratories/pl-model-middle-layer@1.6.2':
     dependencies:
       '@milaboratories/pl-model-common': 1.8.0
       remeda: 2.17.4
       utility-types: 3.11.0
-      zod: 3.24.1
+      zod: 3.23.8
 
   '@milaboratories/software-pframes-conv@2.1.2': {}
 
@@ -15015,6 +15015,6 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.5.2
 
-  zod@3.24.1: {}
+  zod@3.23.8: {}
 
   zwitch@2.0.4: {}
