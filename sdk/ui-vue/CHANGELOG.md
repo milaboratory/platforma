@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.2
+
+### Patch Changes
+
+- b017f36: ui-vue lint fix
+
 ## 1.20.0
 
 ### Minor Changes
