@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.10
+
+### Patch Changes
+
+- 7734966: Typing fix in debounce
+
 ## 1.6.9
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.21.3
+
+### Patch Changes
+
+- 2a74806: Added option to set a preferredUpdateChannel
+- Updated dependencies [7734966]
+  - @platforma-sdk/workflow-tengo@2.8.1
+
 ## 1.21.2
 
 ### Patch Changes
