@@ -1,5 +1,12 @@
 # @milaboratories/uikit-playground
 
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies [4360a85]
+  - @milaboratories/uikit@2.2.34
+
 ## 0.1.16
 
 ### Patch Changes

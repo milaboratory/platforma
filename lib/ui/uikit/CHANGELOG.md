@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.34
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+
 ## 2.2.33
 
 ### Patch Changes
