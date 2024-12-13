@@ -32,7 +32,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@microsoft/api-extractor>typescript": "catalog:"
+      "@microsoft/api-extractor>typescript": "catalog:",
+      "@platforma-open/milaboratories.software-paggregate": "file:/Users/dbolotin/milab/blocks/software-paggregate/package.tgz"
     }
   },
   "//": {
