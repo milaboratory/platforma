@@ -10,6 +10,7 @@ export { BlockLayout, PlAgDataTable, PlAgOverlayLoading, PlAgOverlayNoRows, Valu
 export * from './components/PlAgColumnHeader';
 
 export * from './components/PlAgCellFile';
+export * from './components/PlAgCellStatusTag';
 
 export * from './components/PlAgDataTable/types';
 export * from './components/PlAgDataTable/sources/row-number';
