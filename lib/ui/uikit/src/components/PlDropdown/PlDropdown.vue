@@ -321,8 +321,8 @@ watchPostEffect(() => {
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" @click="setFocusOnInput">
-            <LongText class="input-value"> {{ textValue }} </LongText>
+          <div v-if="!data.open" class="input-value" @click="setFocusOnInput">
+            <LongText> {{ textValue }} </LongText>
           </div>
 
           <div class="pl-dropdown__controls">
