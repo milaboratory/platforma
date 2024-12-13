@@ -131,13 +131,13 @@ resultUnmarshaller := func() {
 
 					// even if spec is present, the data may be still not available
 					if isNR(resource.get("data")) {
-						result["data"] = undefined
+						result.data = undefined
 					} else {
-						result["data"] = parser(resource.get("data"))
+						result.data = parser(resource.get("data"))
 					}
 				}
 
-				return result
+				return ll.toStrict(result)
 			} else {
 				// format list of results
 
@@ -156,10 +156,10 @@ resultUnmarshaller := func() {
 
 					// only if the data is there
 					if !is_undefined(data) {
-						r["data"] = parser(data[ref].getValue())
+						r.data = parser(data[ref].getValue())
 					}
 
-					result = append(result, r)
+					result = append(result, ll.toStrict(r))
 				}
 
 				if ops.single {
