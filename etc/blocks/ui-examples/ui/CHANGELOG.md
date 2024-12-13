@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.2
+
+### Patch Changes
+
+- 9799fa1: [Ui-kit] Proper Cursor Styles in Dropdown Fields
+
 ## 1.3.1
 
 ### Patch Changes

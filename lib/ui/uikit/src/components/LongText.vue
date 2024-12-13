@@ -41,7 +41,6 @@ function mouseoutHandler() {
 
 <style lang="scss">
 .ui-lt-container {
-  outline: 1px solid red;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;

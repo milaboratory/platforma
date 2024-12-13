@@ -17,25 +17,26 @@ export function makeOnceTracker<TContext = undefined>() {
   };
   return { track, reset, onceTracked };
 }
-
 export type OnceTracker<TContext = undefined> = ReturnType<typeof makeOnceTracker<TContext>>;
 
-export function trackFirstDataRendered(gridApi: GridApi, tracker: OnceTracker<GridApi>) {
+export function trackFirstDataRendered(gridApi: GridApi, tracker: OnceTracker<GridApi>): void {
   gridApi.addEventListener('firstDataRendered', (event) => {
     if (event.api.getGridOption('rowModelType') === 'clientSide') {
       tracker.track(event.api);
     }
   });
   gridApi.addEventListener('modelUpdated', (event) => {
-    const groupState = event.api.getServerSideGroupLevelState();
-    if (groupState && groupState.length > 0 && groupState[0].lastRowIndexKnown) {
-      tracker.track(event.api);
+    if (event.api.getGridOption('rowModelType') === 'serverSide') {
+      const groupState = event.api.getServerSideGroupLevelState();
+      if (groupState && groupState.length > 0 && groupState[0].lastRowIndexKnown) {
+        tracker.track(event.api);
+      }
     }
   });
   gridApi.addEventListener('gridPreDestroyed', () => tracker.reset());
 }
 
-function ensureNodeVisible(api: GridApi, rowId: string) {
+function ensureNodeVisible(api: GridApi, rowId: string): void {
   let rowIndex: number | null = null;
   const nodeSelector = (row: IRowNode): boolean => {
     if (row.id === rowId) {
@@ -54,6 +55,11 @@ function ensureNodeVisible(api: GridApi, rowId: string) {
   }
 };
 
-export function focusRow(rowId: string, tracker: OnceTracker<GridApi>) {
-  nextTick(() => tracker.onceTracked((gridApi) => ensureNodeVisible(gridApi, rowId)));
+export async function focusRow(rowId: string, tracker: OnceTracker<GridApi>): Promise<void> {
+  return new Promise((resolve) => {
+    nextTick(() => tracker.onceTracked((gridApi) => {
+      ensureNodeVisible(gridApi, rowId);
+      resolve();
+    }));
+  });
 }
