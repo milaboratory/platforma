@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "type-check": "pl-tengo check",
-    "build": "rm -rf dist && pl-tengo check && pl-tengo build",
+    "build": "rm -rf dist && ./find-unused-imports.sh fix && pl-tengo check && pl-tengo build",
     "test": "pl-tengo test",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
