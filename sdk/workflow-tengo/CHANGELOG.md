@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.1
+
+### Patch Changes
+
+- 7734966: Safer migration errors for unmarshalled bquery results
+
 ## 2.8.0
 
 ### Minor Changes
