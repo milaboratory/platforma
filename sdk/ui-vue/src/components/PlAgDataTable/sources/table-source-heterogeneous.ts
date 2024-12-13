@@ -57,7 +57,7 @@ export function getHeterogeneousColumns(specs: PTableColumnSpec[], indices: numb
 }
 
 // auxiliary function to get a field for i-th axis-value
-const hColumnField = (originalLength: number, i: number) => "hC" + (originalLength + i).toString();
+const hColumnField = (originalLength: number, i: number) => 'hC' + (originalLength + i).toString();
 
 /**
  * Calculate GridOptions for p-table data source type
@@ -77,11 +77,11 @@ export function updatePFrameGridOptionsHeterogeneousAxes(
   fields: number[],
   indices: number[],
 ): {
-  columnDefs: ColDef[];
-  serverSideDatasource?: IServerSideDatasource;
-  rowModelType: RowModelType;
-  rowData?: unknown[];
-} {
+    columnDefs: ColDef[];
+    serverSideDatasource?: IServerSideDatasource;
+    rowModelType: RowModelType;
+    rowData?: unknown[];
+  } {
   // recalculate indices of h-cols to the positions in the resulting data
   // index of axis & column in indices array
   let axisIdx: number = -1;
