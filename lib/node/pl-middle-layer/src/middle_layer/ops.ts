@@ -159,6 +159,9 @@ export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
 
   /** How often to check for dev block updates */
   readonly devBlockUpdateRecheckInterval: number;
+
+  /** Prioritize this channel if update is available in this block */
+  readonly preferredUpdateChannel?: string;
 };
 
 export type MiddleLayerOps = MiddleLayerOpsSettings & MiddleLayerOpsPaths;
