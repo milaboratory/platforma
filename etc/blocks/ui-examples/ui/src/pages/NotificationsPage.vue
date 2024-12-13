@@ -5,10 +5,11 @@ import { PlBlockPage, PlStatusTag } from '@platforma-sdk/ui-vue';
   <PlBlockPage>
     <template #title>Notifications and Alerts</template>
     <div class="d-flex gap-8 align-center">
-      <PlStatusTag type="success"/>
-      <PlStatusTag type="warning" />
-      <PlStatusTag type="alert" />
-      <PlStatusTag type="hold" />
+      <PlStatusTag type="OK"/>
+      <PlStatusTag type="WARN" />
+      <PlStatusTag type="WARN" > Slot text </PlStatusTag>
+      <PlStatusTag type="ALERT" />
+      <PlStatusTag type="HOLD" />
     </div>
   </PlBlockPage>
 </template>
