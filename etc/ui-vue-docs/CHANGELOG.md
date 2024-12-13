@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-docs
 
+## 0.2.34
+
+### Patch Changes
+
+- Updated dependencies [9799fa1]
+  - @milaboratories/uikit@2.2.33
+  - @platforma-sdk/ui-vue@1.20.4
+
 ## 0.2.33
 
 ### Patch Changes
