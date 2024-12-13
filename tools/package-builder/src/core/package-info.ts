@@ -117,9 +117,7 @@ export interface SoftwareEntrypoint {
   type: 'software';
   name: string;
   package: PackageConfig;
-  // TODO: remove after a month of keeping this forward compatible
-  oldCmd: string[];
-  command: string[];
+  cmd: string[];
   env: string[];
 }
 
@@ -189,7 +187,7 @@ const wellKnownRegistries: Record<string, storagePreset> = {
  *       "script1": {
  *         "software": {
  *           "artifact": "pkg-1",
- *           "command": [ "{{pkg}}/script1" ]
+ *           "cmd": [ "{pkg}/script1" ]
  *         }
  *       }
  *     }
@@ -249,8 +247,7 @@ export class PackageInfo {
           type: 'software',
           name: epName,
           package: this.getPackage(packageID),
-          oldCmd: ep.binary.oldCmd,
-          command: ep.binary.command,
+          cmd: ep.binary.cmd,
           env: ep.binary.envVars ?? []
         });
         continue;
@@ -683,26 +680,7 @@ const readPackageJson = (filePath: string) => parsePackageJson(fs.readFileSync(f
 function parsePackageJson(data: string) {
   const parsedData = JSON.parse(data);
   // TODO: try/catch and transform errors on human-readable format
-  const result = packageJsonSchema.safeParse(parsedData);
-  if (result.success) {
-    return result.data as packageJson;
-  }
-
-  const err = JSON.stringify(result.error.format(), null, 2);
-  if (err.includes(`Unrecognized key(s) in object: 'cmd'`)) {
-    throw new Error(`
-    Error: "cmd" was renamed to "command" in package.json in block-software.entrypoints.
-    The syntax has changed: all curly braces should be doubled, for example:
-        {pkg} -> {{pkg}}
-
-    The new "command" field supports math expressions and env variables resolution, for example:
-        –Xms{{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}}m
-
-    If you need to keep both old and new commands, add a new field "command" and rename "cmd" -> "oldCmd".
-`);
-  }
-
-  throw result.error;
+  return packageJsonSchema.parse(parsedData) as packageJson;
 }
 
 function archiveFullName(

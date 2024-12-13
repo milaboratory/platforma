@@ -11,7 +11,6 @@ export const EPNameAsset: string = 'asset';
 export const EPNameCustomName: string = 'custom-name';
 export const EPNameJavaEnvironment: string = 'java-test-entrypoint';
 export const EPNameJavaDependency: string = 'java-dep';
-export const EPNamePythonEnvironment: string = 'python-test-entrypoint';
 
 export const PackageJsonNoSoftware = `{
     "name": "${PackageName}",
@@ -77,7 +76,7 @@ export const PackageJson = `{
         "${EPNameCustomName}": {
           "binary": {
             "artifact": ${CustomVersionArtifact},
-            "command": ["aaaa"]
+            "cmd": ["aaaa"]
           }
         },
         "${EPNameJavaEnvironment}": {
@@ -86,7 +85,7 @@ export const PackageJson = `{
         "${EPNameJavaDependency}": {
           "binary": {
             "artifact": "pEnvDep",
-            "command": ["aaaa"]
+            "cmd": ["aaaa"]
           }
         }
       }
