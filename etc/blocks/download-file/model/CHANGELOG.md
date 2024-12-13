@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-download-file.model
 
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [8903a30]
+  - @platforma-sdk/model@1.20.6
+
 ## 1.0.6
 
 ### Patch Changes
