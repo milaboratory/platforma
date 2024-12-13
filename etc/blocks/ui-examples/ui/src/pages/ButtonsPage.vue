@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlBlockPage, PlBtnAccent, PlBtnGhost, PlBtnPrimary, PlBtnSecondary } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlBtnAccent, PlBtnGhost, PlBtnPrimary, PlBtnSecondary, PlStatusTag } from '@platforma-sdk/ui-vue';
 import { reactive, ref } from 'vue';
 
 const counter = ref(0);
@@ -20,6 +20,7 @@ function onClick() {
   <PlBlockPage>
     <template #title>Buttons</template>
     <div class="d-flex gap-8 align-center">
+      <PlStatusTag type="hold" />
       <PlBtnPrimary
         icon="add"
         :round="data.round"
