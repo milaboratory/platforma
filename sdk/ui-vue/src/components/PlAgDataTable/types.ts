@@ -46,8 +46,11 @@ export type PTableRowKey = PTableValue[];
 
 /** PlAgDataTable controller contains all exported methods */
 export type PlAgDataTableController = {
-  /** Scroll table to make row with provided key visible */
-  focusRow: (rowKey: PTableRowKey) => void;
+  /**
+   * Scroll table to make row with provided key visible
+   * Warning: works reliably only in client side mode.
+   */
+  focusRow: (rowKey: PTableRowKey) => Promise<void>;
 };
 
 /** PlAgDataTable row */
