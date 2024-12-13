@@ -1,5 +1,17 @@
 # @milaboratories/milaboratories.test-sum-numbers
 
+## 1.0.30
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.30
+
+## 1.0.29
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.29
+
 ## 1.0.28
 
 ### Patch Changes

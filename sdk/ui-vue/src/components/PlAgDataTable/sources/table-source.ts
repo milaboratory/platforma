@@ -137,6 +137,7 @@ export async function updatePFrameGridOptions(
   pfDriver: PFrameDriver,
   pt: PTableHandle,
   sheets: PlDataTableSheet[],
+  clientSide: boolean,
   hiddenColIds?: string[],
   showCellButtonForAxisId?: AxisId,
 ): Promise<{
@@ -260,6 +261,14 @@ export async function updatePFrameGridOptions(
     const fieldIdx = axisToFieldIdx.get(i);
     if (fieldIdx === undefined || fieldIdx === -1) throw new Error('assertion exception');
     axes.push(fieldIdx);
+  }
+
+  if (clientSide) {
+    return {
+      rowModelType: 'clientSide',
+      columnDefs,
+      rowData: columns2rows(fields, await pfDriver.getData(pt, allIndices), axes),
+    };
   }
 
   let lastParams: IServerSideGetRowsParams | undefined = undefined;
