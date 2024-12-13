@@ -31,7 +31,7 @@
     font-family: var(--font-family-base);
     font-weight: 500;
     min-height: calc(var(--control-height) - 2px);
-    line-height: calc(var(--control-height) - 2px);
+    line-height: 20px;
     width: 100%;
     padding: 0 12px;
     border: none;
@@ -82,6 +82,7 @@
     flex-direction: row;
     align-items: center;
     gap: 4px;
+    cursor: text;
     .icon-16 {
       cursor: pointer;
     }
