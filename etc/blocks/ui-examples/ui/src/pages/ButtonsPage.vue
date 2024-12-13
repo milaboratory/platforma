@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PlBlockPage, PlBtnAccent, PlBtnGhost, PlBtnPrimary, PlBtnSecondary } from '@platforma-sdk/ui-vue';
+import { PlBlockPage, PlBtnAccent, PlBtnGhost, PlBtnPrimary, PlBtnSecondary, PlStatusTag } from '@platforma-sdk/ui-vue';
 import { reactive, ref } from 'vue';
 
 const counter = ref(0);
