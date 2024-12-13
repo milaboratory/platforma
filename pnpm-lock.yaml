@@ -297,6 +297,7 @@ catalogs:
 
 overrides:
   '@microsoft/api-extractor>typescript': ~5.5.4
+  '@platforma-open/milaboratories.software-paggregate': file:/Users/dbolotin/milab/blocks/software-paggregate/package.tgz
 
 importers:
 
@@ -2142,6 +2143,9 @@ importers:
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.1.2
+      '@platforma-open/milaboratories.software-paggregate':
+        specifier: file:/Users/dbolotin/milab/blocks/software-paggregate/package.tgz
+        version: file:../../blocks/software-paggregate/package.tgz
       '@platforma-open/milaboratories.software-small-binaries':
         specifier: 'catalog:'
         version: 1.14.6
@@ -4038,6 +4042,10 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@platforma-open/milaboratories.software-paggregate@file:../../blocks/software-paggregate/package.tgz':
+    resolution: {integrity: sha512-RzoGUltuRj5v/WeSo2r4t8s6NheuDrXpVmXQyDzHHkNriEcjx9qDj5IUUc3smYvMUtRVbizv6iyLI2JaG1Y4lQ==, tarball: file:../../blocks/software-paggregate/package.tgz}
+    version: 0.0.1
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6':
     resolution: {integrity: sha512-d7cbFNHb6/1O4wWNlvjTVlTTsIelafnt/niAe8AZNjxoM0ivbE8bR4jnTUXaXwURjUzwV/LI5sk39kJelZxsMA==}
@@ -10474,6 +10482,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@platforma-open/milaboratories.software-paggregate@file:../../blocks/software-paggregate/package.tgz': {}
 
   '@platforma-open/milaboratories.software-small-binaries@1.14.6': {}
 

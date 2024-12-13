@@ -81,6 +81,29 @@ aggregate := func(data, indices, bodyTpl, outputs, isEph, ...extra) {
 	return renderResult;
 }
 
+transform := func(data, ) {
+	renderInputs := {
+		params: smart.createJsonResource({
+			indices: indices,
+			eph: isEph,
+			outputs: outputs
+		}),
+		body: bodyTpl,
+		data: data
+	}
+
+	if len(extra) == 1 {
+		for k, v in extra[0] {
+			renderInputs["__extra_" + k] = v
+		}
+	} else if len(extra) != 0 {
+		ll.panic("Wrong number of parameters for aggregate method.")
+	}
+
+	renderResult := render.createEphemeral(llAggTpl, renderInputs)
+	return renderResult;
+}
+
 export ll.toStrict({
 	aggregate: aggregate
 })
