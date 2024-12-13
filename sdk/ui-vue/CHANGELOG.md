@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.5
+
+### Patch Changes
+
+- c74f56a: PlAgDataTable row selection
+
 ## 1.20.4
 
 ### Patch Changes
