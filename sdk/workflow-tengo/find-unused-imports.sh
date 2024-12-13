@@ -8,7 +8,11 @@ cd "${script_dir}"
 
 dropUnusedImports=false
 if [ "${1:-}" = "fix" ]; then
-    dropUnusedImports=true
+    if [ "${CI:-}" = "" ]; then
+        dropUnusedImports=true
+    else
+        echo "Tengo imports are not automatically fixed in CI runs. Unused imports will cause an error instead of automatic fix"
+    fi
 fi
 
 hasLostImports=false

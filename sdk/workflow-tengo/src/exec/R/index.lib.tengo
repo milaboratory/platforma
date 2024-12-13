@@ -8,7 +8,6 @@ smart := import(":smart")
 render := import(":render")
 pkg := import(":exec.package")
 internal := import(":exec.R.internal")
-runenv := import(":exec.runenv")
 
 _OUTPUT_RUN_ENV       := "runEnv"
 
