@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.21.2
+
+### Patch Changes
+
+- d0af7b8: Fix fake stable spec channel name
+
 ## 1.21.1
 
 ### Patch Changes
