@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.3
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+
 ## 1.1.2
 
 ### Patch Changes

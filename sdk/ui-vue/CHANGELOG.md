@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.7
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+- Updated dependencies [4360a85]
+  - @milaboratories/uikit@2.2.34
+
 ## 1.20.6
 
 ### Patch Changes
