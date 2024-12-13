@@ -1,22 +1,21 @@
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import './pl-status-tag.scss';
+import type { PlStatusTagType } from './types';
 
-type TagTypes = 'success' | 'warning' | 'alert' | 'hold';
+defineProps<{ type?: PlStatusTagType }>();
 
-withDefaults(defineProps<{ type?: TagTypes }>(), { type: 'success' });
-
-const data = reactive<{ typeToText: Record<TagTypes, string> }>({
+const data = reactive<{ typeToText: Record<PlStatusTagType, string> }>({
   typeToText: {
-    success: 'OK',
-    warning: 'WARN',
-    alert: 'ALERT',
-    hold: 'HOLD',
+    OK: 'OK',
+    WARN: 'WARN',
+    ALERT: 'ALERT',
+    HOLD: 'HOLD',
   },
 });
 </script>
 <template>
-  <div v-bind="$attrs" :class="{[type]: true}" class="pl-status-tag text-caps11">
+  <div v-if="type" v-bind="$attrs" :class="{[type.toLocaleLowerCase()]: true}" class="pl-status-tag text-caps11 d-flex align-center">
     <slot>
       {{ data.typeToText[type] }}
     </slot>

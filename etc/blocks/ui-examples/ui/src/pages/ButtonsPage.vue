@@ -20,7 +20,6 @@ function onClick() {
   <PlBlockPage>
     <template #title>Buttons</template>
     <div class="d-flex gap-8 align-center">
-      <PlStatusTag type="hold" />
       <PlBtnPrimary
         icon="add"
         :round="data.round"
