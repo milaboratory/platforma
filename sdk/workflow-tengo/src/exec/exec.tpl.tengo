@@ -79,13 +79,14 @@ _runBinaryCommand := func(inputs) {
 	// Load secrets
 	for envName, secretVar in inputs.runOptions.secrets {
 		if desc.canBackendUseExpressions() {
-			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, "{"+secretVar+"}")
+			runBuilder.envTyped(envName, constants.ARG_TYPE_EXPRESSION, secretVar)
 		} else { // deprecated, remove after 15 Mar 2025
 			runBuilder.envTyped(envName, constants.ARG_TYPE_VAR, secretVar)
 		}
 	}
 
 	// exec command
+	ll.assert(!is_undefined(ll.fromStrict(opts.cmd).type), opts.cmd)
 	runBuilder.cmdTyped(opts.cmd.type, opts.cmd.value)
 
 	// cmd args

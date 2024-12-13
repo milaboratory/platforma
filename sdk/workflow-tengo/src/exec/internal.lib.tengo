@@ -27,45 +27,39 @@ _ARG_VAR_R              := "R" // abs path to 'R' run environment runtime
 _ARG_VAR_R_VENV         := "rVenv" // abs path to 'R' portable virtual environment
 
 /** Converts the args above to the expressions. */
-_expr := func(descriptor, varName) {
-	// deprecated, remove on 15 Mar 2025
-	if !desc.shouldUseExpressions(descriptor) {
-		return "{" + varName + "}"
-	}
-
-	return "{{" + varName + "}}"
+_expr := func(varName) {
+	return "{" + varName + "}"
 }
 
 /**
- * Create new argument with a type. The type can be either simple, expression or variable.
- * The types advice Platforma Backend to interpret the argument.
- */
-_newArg := func(type, value) {
-	return ll.toStrict({
-		type: type,
-		value: value
-	})
-}
-
-/**
+ * Create new argument with a type. The type can be either string, expression or variable.
  * Decides whether we need a simple argument or an expression one.
  * For a month, we keep deprecated variable arguments.
  *
  * @param isString: boolean - whether it is a string or a difficult (expression) argument.
  */
-_typedArg := func(isString, entrypointDescriptor, value) {
+_newArg := func(isString, value) {
 	if isString {
-		return _newArg(constants.ARG_TYPE_STRING, value)
+		return ll.toStrict({
+			type: constants.ARG_TYPE_STRING,
+			value: value
+		})
 	}
-	if desc.shouldUseExpressions(entrypointDescriptor) {
-		return _newArg(constants.ARG_TYPE_EXPRESSION, value)
+	if desc.canBackendUseExpressions() {
+		return ll.toStrict({
+			type: constants.ARG_TYPE_EXPRESSION,
+			value: value
+		})
 	}
-	return _newArg(constants.ARG_TYPE_VAR, value)
+	return ll.toStrict({
+		type: constants.ARG_TYPE_VAR,
+		value: value
+	})
 }
 
-_newRefVar := func(entrypointDescriptor, varName, refName, reference) {
+_newRefVar := func(varName, refName, reference) {
 	// deprecated, remove on 15 Mar 2025
-	if !desc.shouldUseExpressions(entrypointDescriptor) {
+	if !desc.canBackendUseExpressions() {
 		return ll.toStrict({
 			varName: "{" + varName + "}",
 			refName: refName,
@@ -86,16 +80,16 @@ _installSoftware := func(registry, pkgName) {
 }
 
 _directCallOptions := func(runOptions) {
-	cmd := _typedArg(true, undefined, runOptions.cmd)
+	cmd := _newArg(true, runOptions.cmd)
 	args := []
 	envs := {}
 
 	for name, arg in runOptions.args {
-		args = append(args, _typedArg(true, undefined, arg))
+		args = append(args, _newArg(true, arg))
 	}
 
 	for name, val in runOptions.envs {
-		envs[name] = _typedArg(true, undefined, val)
+		envs[name] = _newArg(true, val)
 	}
 
 	return oop.inherit(runOptions, {
@@ -107,20 +101,20 @@ _directCallOptions := func(runOptions) {
 	})
 }
 
-_loadJavaRunEnvironment := func(entrypointDescriptor, operationMode, descriptor) {
+_loadJavaRunEnvironment := func(operationMode, descriptor) {
 	javaPkg := _installSoftware(descriptor.runEnv.registry, descriptor.runEnv.package)
-	javaRefVar := _newRefVar(entrypointDescriptor, _ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
+	javaRefVar := _newRefVar(_ARG_VAR_JAVA, descriptor.runEnv.name, javaPkg)
 
 	return ll.toStrict({
 		runEnvType: "java",
 
 		variables: [ javaRefVar ],
-		customPaths: [ _typedArg(false, entrypointDescriptor, path.join(_expr(entrypointDescriptor, _ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
+		customPaths: [ _newArg(false, path.join(_expr(_ARG_VAR_JAVA), descriptor.runEnv.binDir)) ],
 		envs: {}
 	})
 }
 
-_loadPythonRunEnvironment := func(entrypointDescriptor, operationMode, descriptor, softName, softPkg) {
+_loadPythonRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	venvBuilder := python.venvBuilder().
 		software(softPkg).
 		runEnvDescriptor(descriptor.runEnv).
@@ -135,23 +129,23 @@ _loadPythonRunEnvironment := func(entrypointDescriptor, operationMode, descripto
 		build().
 		venv()
 
-	venvRoot := path.join(_expr(entrypointDescriptor, _ARG_VAR_PYTHON), "venv")
+	venvRoot := path.join(_expr(_ARG_VAR_PYTHON), "venv")
 	venvRefKey := softName + "/venv"
 
-	pythonRefVar := _newRefVar(entrypointDescriptor, _ARG_VAR_PYTHON, venvRefKey, venv)
+	pythonRefVar := _newRefVar(_ARG_VAR_PYTHON, venvRefKey, venv)
 
 	return ll.toStrict({
 		runEnvType: "python",
 
 		variables: [ pythonRefVar ],
-		customPaths: [ _typedArg(false, entrypointDescriptor, path.join(venvRoot, "bin")) ],
+		customPaths: [ _newArg(false, path.join(venvRoot, "bin")) ],
 		envs: {
-			"VIRTUAL_ENV": _typedArg(false, entrypointDescriptor, venvRoot)
+			"VIRTUAL_ENV": _newArg(false, venvRoot)
 		}
 	})
 }
 
-_loadRRunEnvironment := func(entrypointDescriptor, operationMode, descriptor, softName, softPkg) {
+_loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 	renvBuilder := R.rVenvBuilder().
 		operationMode(operationMode).
 		software(softPkg).
@@ -169,40 +163,40 @@ _loadRRunEnvironment := func(entrypointDescriptor, operationMode, descriptor, so
 	rEnv := rRuntime.venv()
 	rPackage := rRuntime.R()
 
-	rBinDir := path.join(_expr(entrypointDescriptor, _ARG_VAR_R), descriptor.runEnv.binDir)
+	rBinDir := path.join(_expr(_ARG_VAR_R), descriptor.runEnv.binDir)
 
 	rRefKey := softName + "/R-runtime"
-	rRefVar := _newRefVar(entrypointDescriptor, _ARG_VAR_R, rRefKey, rPackage)
+	rRefVar := _newRefVar(_ARG_VAR_R, rRefKey, rPackage)
 
 	rEnvRefKey := softName + "/R-virtual-env"
-	rEnvRefVar := _newRefVar(entrypointDescriptor, _ARG_VAR_R_VENV, rEnvRefKey, rEnv)
+	rEnvRefVar := _newRefVar(_ARG_VAR_R_VENV, rEnvRefKey, rEnv)
 
 	return ll.toStrict({
 		runEnvType: "R",
 
 		variables: [ rRefVar, rEnvRefVar ],
-		customPaths: [ _typedArg(false, entrypointDescriptor, rBinDir) ],
+		customPaths: [ _newArg(false, rBinDir) ],
 		envs: {
-			"R_HOME_DIR": _typedArg(false, entrypointDescriptor, _expr(entrypointDescriptor, _ARG_VAR_R)),
-			"RENV_PATHS_ROOT": _typedArg(false, entrypointDescriptor, path.join(_expr(entrypointDescriptor, _ARG_VAR_R), "renv-root")),
-			"RENV_PATHS_RENV": _typedArg(false, entrypointDescriptor, path.join(_expr(entrypointDescriptor, _ARG_VAR_R_VENV), "renv")),
-			"RENV_PATHS_LOCKFILE": _typedArg(false, entrypointDescriptor, path.join(_expr(entrypointDescriptor, _ARG_VAR_PKG), descriptor.dependencies.lockFile)),
-			"RENV_CONFIG_AUTO_SNAPSHOT": _typedArg(true, entrypointDescriptor, "FALSE"),
-			"RENV_CONFIG_SYNCHRONIZED_CHECK": _typedArg(true, entrypointDescriptor, "FALSE")
+			"R_HOME_DIR": _newArg(false, _expr(_ARG_VAR_R)),
+			"RENV_PATHS_ROOT": _newArg(false, path.join(_expr(_ARG_VAR_R), "renv-root")),
+			"RENV_PATHS_RENV": _newArg(false, path.join(_expr(_ARG_VAR_R_VENV), "renv")),
+			"RENV_PATHS_LOCKFILE": _newArg(false, path.join(_expr(_ARG_VAR_PKG), descriptor.dependencies.lockFile)),
+			"RENV_CONFIG_AUTO_SNAPSHOT": _newArg(true, "FALSE"),
+			"RENV_CONFIG_SYNCHRONIZED_CHECK": _newArg(true, "FALSE")
 		}
 	})
 }
 
 
-_loadRunEnvironment := func(entrypointDescriptor, operationMode, descriptor, softName, softPackage) {
+_loadRunEnvironment := func(operationMode, descriptor, softName, softPackage) {
 	if descriptor.runEnv.type == "java" {
-		return _loadJavaRunEnvironment(entrypointDescriptor, operationMode, descriptor)
+		return _loadJavaRunEnvironment(operationMode, descriptor)
 	}
 	if descriptor.runEnv.type == "python" {
-		return _loadPythonRunEnvironment(entrypointDescriptor, operationMode, descriptor, softName, softPackage)
+		return _loadPythonRunEnvironment(operationMode, descriptor, softName, softPackage)
 	}
 	if descriptor.runEnv.type == "R" {
-		return _loadRRunEnvironment(entrypointDescriptor, operationMode, descriptor, softName, softPackage)
+		return _loadRRunEnvironment(operationMode, descriptor, softName, softPackage)
 	}
 
 	ll.panic("run environment type %q is not currently supported by workflow-sdk",	descriptor.runEnv.type)
@@ -216,13 +210,11 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 	envs := ll.toStrict({})
 	args := []
 	runEnvType := "binary"
-	entrypointDescriptor := runOptions.software.descriptor
 
 	// Real command should be:
 	//   [<runEnv bin>] [<runEnv options>] [<entrypoint bin>] [<entrypoint options>] <cmd> <args>
 	if (maps.containsKey(descriptor, "runEnv")) {
 		runEnvInfo := _loadRunEnvironment(
-			entrypointDescriptor,
 			operationMode,
 			descriptor,
 			runOptions.software.name,
@@ -244,24 +236,20 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 	}
 
 	ll.assert(
-		len(descriptor.cmd) != 0 || len(descriptor.command) != 0,
+		len(descriptor.cmd) != 0,
 		"cannot render final command for software: empty 'cmd' and 'command' in software descriptor")
 
-	command := descriptor.command
-	if !desc.shouldUseExpressions(entrypointDescriptor) {
-		command = descriptor.cmd
-	}
-	cmd := _typedArg(false, entrypointDescriptor, command[0])
+	cmd := _newArg(false, descriptor.cmd[0])
 
-	for arg in splice(command, 1) {
-		args = append(args, _typedArg(false, entrypointDescriptor, arg))
+	for arg in splice(descriptor.cmd, 1) {
+		args = append(args, _newArg(false, arg))
 	}
 	for arg in runOptions.args {
-		args = append(args, _typedArg(true, entrypointDescriptor, arg))
+		args = append(args, _newArg(true, arg))
 	}
 
 	for name, val in runOptions.envs {
-		envs[name] = _typedArg(true, entrypointDescriptor, val)
+		envs[name] = _newArg(true, val)
 	}
 
 	return oop.inherit(runOptions, {
@@ -276,7 +264,6 @@ _binPackageCallOptions := func(operationMode, runOptions, variables, descriptor,
 
 _devLocalPackageCallOptions := func(runOptions) {
 	software := runOptions.software
-	entrypointDescriptor := software.descriptor
 	localDescriptor := software.descriptor.local
 
 	softPackage := pkg.use({
@@ -290,19 +277,18 @@ _devLocalPackageCallOptions := func(runOptions) {
 		}
 	}).package()
 
-	variables := [ _newRefVar(entrypointDescriptor, _ARG_VAR_PKG, software.name, softPackage) ]
+	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
 	return _binPackageCallOptions("dev-local", runOptions, variables, localDescriptor, softPackage)
 }
 
 _remotePackageCallOptions := func(runOptions) {
 	software := runOptions.software
-	entrypointDescriptor := software.descriptor
 	binaryDescriptor := software.descriptor.binary
 
 	softPackage := _installSoftware(binaryDescriptor.registry, binaryDescriptor.package)
 
-	variables := [ _newRefVar(entrypointDescriptor, _ARG_VAR_PKG, software.name, softPackage) ]
+	variables := [ _newRefVar(_ARG_VAR_PKG, software.name, softPackage) ]
 
 	return _binPackageCallOptions("remote", runOptions, variables, binaryDescriptor, softPackage)
 }

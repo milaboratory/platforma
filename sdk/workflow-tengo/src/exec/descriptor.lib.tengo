@@ -47,38 +47,9 @@ scheme := {
 	"local,?": localScheme
 }
 
-_schemaVersion := func(descriptor) {
-	version := ll.fromStrict(descriptor)["schemaVersion"]
-	if is_undefined(version) {
-		return 1
-	}
-
-	return version
-}
-
 /** True if Platforma Backend supports expression refs. */
 canBackendUseExpressions := func() {
 	return ll.apiVersion() >= 2
-}
-
-/**
- * Shows if sw descriptor is new enough to support expression refs
- * that will be interpreted by the exec controller.
- *
- * @param descriptor: any - sw descriptor to see if it's new enough.
- */
-_hasSwExpressions := func(descriptor) {
-	return _schemaVersion(descriptor) >= 2
-}
-
-/**
- * Shows if Platforma Backend is new enough
- * and sw descriptor is new enough to support expression refs.
- *
- * @param descriptor: any - entrypoint descriptor to see if it's new enough.
- */
-shouldUseExpressions := func(descriptor) {
-	return canBackendUseExpressions() && _hasSwExpressions(descriptor)
 }
 
 export {
@@ -87,6 +58,5 @@ export {
 	assetScheme: assetScheme,
 	localScheme: localScheme,
 	scheme: scheme,
-	canBackendUseExpressions: canBackendUseExpressions,
-	shouldUseExpressions: shouldUseExpressions
+	canBackendUseExpressions: canBackendUseExpressions
 }

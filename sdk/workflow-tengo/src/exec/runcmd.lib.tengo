@@ -44,9 +44,9 @@ _createVariableArg := func(argTpl) {
 /**
  * Creates 'expressionRef' arguments
  * @param argTpl: string - arguments value in any form with expressions inside, e.g.:
- *   - `–Xms{{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}}m`
- *   - `file://{{pkg}}/some-file`
- *   - `o-{{java}}-o`
+ *   - `–Xms{env.PL_EXEC_HARD_MEMORY_LIMIT_MB * 80 / 100}m`
+ *   - `file://{pkg}/some-file`
+ *   - `o-{java}-o`
  */
 _createExpressionArg := func(argTpl) {
 	return {
@@ -111,7 +111,7 @@ builder := func(workdir) {
 		 * Sets the command with expressions inside to be rendered using rules
 		 * from .substitutionRules().
 		 *
-		 * @param commandTpl: string - string with '{{any expression}}' substitutions to be replaced with
+		 * @param commandTpl: string - string with '{any expression}' substitutions to be replaced with
 		 *                             software paths. Replace rules are defined by .substitutionRule()
 		 *                             and .substitutionRules(),
 		 */
@@ -164,7 +164,7 @@ builder := func(workdir) {
 		 * Adds an argument with variables inside to be rendered using rules
 		 * from .substitutionRules().
 		 *
-		 * @param argTpl: string - string with '{{expression}}' substitutions to be replaced with
+		 * @param argTpl: string - string with '{expression}' substitutions to be replaced with
 		 *                         expression value. Replace rules are defined by .substitutionRule()
 		 *                         and .substitutionRules(),
 		 */

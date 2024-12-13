@@ -20,9 +20,9 @@ runRBuilder := func(wd, rPackage, rDescriptor) {
 	return runcmd.builder(wd).
 		ref("r-run-environment", rPackage).
 		substitutionRule("R", "r-run-environment").
-		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{{R}}", rDescriptor.binDir)).
-		envExpression("R_HOME_DIR", "{{R}}").
-		envExpression("RENV_PATHS_ROOT", path.join("{{R}}", "renv-root"))
+		addToPath(constants.ARG_TYPE_EXPRESSION, path.join("{R}", rDescriptor.binDir)).
+		envExpression("R_HOME_DIR", "{R}").
+		envExpression("RENV_PATHS_ROOT", path.join("{R}", "renv-root"))
 }
 
 export ll.toStrict({
