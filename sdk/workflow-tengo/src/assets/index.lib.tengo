@@ -5,6 +5,7 @@ json := import("json")
 ll := import(":ll")
 smart := import(":smart")
 swinfo := import(":assets.swinfo")
+maps := import(":maps")
 
 /**
  * Returns resource of template available in current execution context.
