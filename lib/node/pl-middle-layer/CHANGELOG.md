@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.21.4
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @milaboratories/pl-model-common@1.10.1
+  - @milaboratories/pl-model-middle-layer@1.6.8
+  - @milaboratories/pl-drivers@1.5.4
+  - @milaboratories/pl-http@1.0.2
+  - @platforma-sdk/model@1.20.6
+  - @platforma-sdk/block-tools@2.4.12
+  - @milaboratories/pl-client@2.7.1
+  - @milaboratories/pl-tree@1.4.20
+
 ## 1.21.3
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @milaboratories/pl-drivers
 
+## 1.5.4
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @milaboratories/pl-model-common@1.10.1
+  - @milaboratories/pl-client@2.7.1
+  - @milaboratories/pl-tree@1.4.20
+
 ## 1.5.3
 
 ### Patch Changes
