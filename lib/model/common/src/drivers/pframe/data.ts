@@ -248,22 +248,36 @@ export type PColumnValuesEntry = {
 };
 export type PColumnValues = PColumnValuesEntry[];
 
-export const PTableNull = { type: 'absent' };
+export const PTableAbsent = { type: 'absent' };
+export type PTableAbsent = typeof PTableAbsent;
 export const PTableNA = null;
+export type PTableNA = typeof PTableNA;
 
 /** Decoded PTable value */
-export type PTableValue =
-  | typeof PTableNull
-  | typeof PTableNA
-  | number | string;
+export type PTableValue = PTableAbsent | PTableNA | number | string;
+
+/** Type guard for absent PValue */
+export function isPTableAbsent(value: PTableValue): value is PTableAbsent {
+  return typeof value === 'object' && value !== null && value.type === 'absent';
+}
+
+export type AbsentAndNAFill = {
+  na?: PTableValue;
+  absent?: PTableValue;
+};
 
 /** Read PTableValue from PTable column at specified row */
-export function pTableValue(column: PTableVector, row: number): PTableValue {
-  if (isValueAbsent(column.absent, row)) return PTableNull;
+export function pTableValue(
+  column: PTableVector,
+  row: number,
+  fill: AbsentAndNAFill = {}
+): PTableValue {
+  if (isValueAbsent(column.absent, row))
+    return fill.absent === undefined ? PTableAbsent : fill.absent;
 
   const value = column.data[row];
   const valueType = column.type;
-  if (isValueNA(value, valueType)) return PTableNA;
+  if (isValueNA(value, valueType)) return fill.na === undefined ? PTableNA : fill.na;
 
   switch (valueType) {
     case 'Int':
