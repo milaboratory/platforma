@@ -4,14 +4,14 @@ set -o nounset
 set -o errexit
 
 script_dir=$(cd "$(dirname "${0}")" && pwd)
-cd "${script_dir}"
+cd "${script_dir}/.."
 
 dropUnusedImports=false
 if [ "${1:-}" = "fix" ]; then
     if [ "${CI:-}" = "" ]; then
         dropUnusedImports=true
     else
-        echo "Tengo imports are not automatically fixed in CI runs. Unused imports will cause an error instead of automatic fix"
+        echo "$0: tengo imports are not automatically fixed in CI runs. Unused imports will cause an error instead of automatic fix"
     fi
 fi
 
@@ -32,7 +32,7 @@ while read -r file; do
 
     if [ "${#lostImports[@]}" -ne 0 ]; then
         hasLostImports=true
-        echo "Found unused imports in ${file}: ${lostImports[@]}"
+        echo "$0: found unused imports in ${file}: ${lostImports[@]}"
 
         if $dropUnusedImports; then
             echo "Fixing file ${file} ..."
