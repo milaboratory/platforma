@@ -5,7 +5,8 @@
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest && node ../../tests/package-builder/test.js"
+    "test": "jest && node ../../tests/package-builder/test.js",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
     "pl-pkg": "./bin/run.mjs"

@@ -1,7 +1,15 @@
-import type { ColDef, ICellRendererParams, IServerSideDatasource, IServerSideGetRowsParams, RowModelType } from '@ag-grid-community/core';
+import type {
+  ColDef,
+  ICellRendererParams,
+  IServerSideDatasource,
+  IServerSideGetRowsParams,
+  RowModelType,
+  ValueFormatterParams,
+} from '@ag-grid-community/core';
 import {
   getAxisId,
   pTableValue,
+  isPTableAbsent,
   type AxisId,
   type PColumnSpec,
   type PFrameDriver,
@@ -33,15 +41,13 @@ export function parseColId(str: string) {
   return JSON.parse(str) as PTableColumnSpec;
 }
 
-// do not use `any` please
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const defaultValueFormatter = (value: any) => {
-  if (!value) {
-    return 'ERROR';
-  } else if (value.value === undefined) {
-    return 'NULL';
+export const defaultValueFormatter = (value: ValueFormatterParams<PlAgDataTableRow, PTableValue>) => {
+  if (value.value === undefined) {
+    return 'undefined';
+  } else if (isPTableAbsent(value.value)) {
+    return ''; //'NULL';
   } else if (value.value === null) {
-    return 'NA';
+    return ''; //'NA';
   } else {
     return value.value.toString();
   }
@@ -141,11 +147,11 @@ export async function updatePFrameGridOptions(
   hiddenColIds?: string[],
   showCellButtonForAxisId?: AxisId,
 ): Promise<{
-    columnDefs: ColDef[];
-    serverSideDatasource?: IServerSideDatasource;
-    rowModelType: RowModelType;
-    rowData?: unknown[];
-  }> {
+  columnDefs: ColDef[];
+  serverSideDatasource?: IServerSideDatasource;
+  rowModelType: RowModelType;
+  rowData?: unknown[];
+}> {
   const specs = await pfDriver.getSpec(pt);
 
   let numberOfAxes = specs.findIndex((s) => s.type === 'column');
@@ -158,11 +164,11 @@ export async function updatePFrameGridOptions(
         !lodash.some(
           sheets,
           (sheet) =>
-            lodash.isEqual(getAxisId(sheet.axis), specs[i].id)
-            || (specs[i].type === 'column'
-              && specs[i].spec.name === 'pl7.app/label'
-              && specs[i].spec.axesSpec.length === 1
-              && lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
+            lodash.isEqual(getAxisId(sheet.axis), specs[i].id) ||
+            (specs[i].type === 'column' &&
+              specs[i].spec.name === 'pl7.app/label' &&
+              specs[i].spec.axesSpec.length === 1 &&
+              lodash.isEqual(getAxisId(sheet.axis), getAxisId(specs[i].spec.axesSpec[0]))),
         ),
     )
     .sort((a, b) => {
@@ -292,7 +298,7 @@ export async function updatePFrameGridOptions(
         lastParams = params;
 
         let length = 0;
-        let rowData: unknown[] = [];
+        let rowData: PlAgDataTableRow[] = [];
         if (rowCount > 0 && params.request.startRow !== undefined && params.request.endRow !== undefined) {
           length = Math.min(rowCount, params.request.endRow) - params.request.startRow;
           if (length > 0) {
