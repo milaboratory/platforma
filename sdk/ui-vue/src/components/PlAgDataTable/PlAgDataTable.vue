@@ -40,6 +40,7 @@ import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
+import { isJsonEqual } from '@milaboratories/helpers';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -113,11 +114,17 @@ const gridState = computed({
       = settings.value?.sourceType !== 'ptable' || gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
     const oldState = tableState.value;
-    tableState.value = {
+
+    const newState = {
       ...oldState,
       gridState: { ...oldState.gridState, ...gridState },
       pTableParams: { ...oldState.pTableParams, sorting },
     };
+
+    // Note: the table constantly emits an unchanged state, so I added this
+    if (!isJsonEqual(oldState, newState)) {
+      tableState.value = newState;
+    }
   },
 });
 
