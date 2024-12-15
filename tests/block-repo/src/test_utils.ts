@@ -10,6 +10,6 @@ export const regTest = test.extend<{
     const workFolder = path.resolve(`work/${randomUUID()}`);
     await fsp.mkdir(workFolder, { recursive: true });
     await use(workFolder);
-    await fsp.rm(workFolder, { recursive: true });
+    // await fsp.rm(workFolder, { recursive: true });
   }
 });
