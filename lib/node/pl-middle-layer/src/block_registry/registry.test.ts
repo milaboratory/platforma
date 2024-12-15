@@ -10,6 +10,10 @@ test('testing remote registry', async () => {
     { id: 'central', title: 'Central Block Registry', spec: CentralBlockRegistry }
   ]);
   const listing = await registry.listBlockPacks();
+  console.dir(
+    listing.blockPacks.find((l) => l.id.name === 'table'),
+    { depth: 5 }
+  );
   expect(listing.blockPacks.length).toBeGreaterThanOrEqual(1);
 });
 

@@ -110,14 +110,14 @@ export class RegistryV2Reader {
                 {
                   id: data.description.id,
                   meta: await this.embedMetaContent(
-                    p.latest.id,
-                    p.latestManifestSha256,
+                    data.description.id,
+                    data.manifestSha256,
                     true,
-                    p.latest.meta
+                    data.description.meta
                   ),
                   spec: {
                     type: 'from-registry-v2',
-                    id: p.latest.id,
+                    id: data.description.id,
                     registryUrl: this.registryReader.rootUrl.toString(),
                     channel
                   }
