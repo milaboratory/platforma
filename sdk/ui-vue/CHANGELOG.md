@@ -1,5 +1,12 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.10
+
+### Patch Changes
+
+- 29c0b22: ui-vue: do not save unchanged model
+  - @milaboratories/uikit@2.2.34
+
 ## 1.20.9
 
 ### Patch Changes

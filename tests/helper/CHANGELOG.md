@@ -1,5 +1,13 @@
 # @milaboratories/helper-tests
 
+## 1.1.12
+
+### Patch Changes
+
+- 29c0b22: ui-vue: do not save unchanged model
+- Updated dependencies [29c0b22]
+  - @milaboratories/helpers@1.6.11
+
 ## 1.1.11
 
 ### Patch Changes

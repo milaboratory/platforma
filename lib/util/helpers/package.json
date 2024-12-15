@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/helpers",
-  "version": "1.6.10",
+  "version": "1.6.11",
   "engines": {
     "node": ">=20.10.0"
   },
