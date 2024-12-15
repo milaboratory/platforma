@@ -6,8 +6,6 @@ ll := import(":ll")
 oop := import(":oop")
 json := import("json")
 smart := import(":smart")
-assets := import(":assets")
-render := import(":render")
 constants := import(":pframes.constants")
 
 /**
