@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-upload-file
 
+## 1.0.33
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-upload-file.ui@1.0.33
+- @milaboratories/milaboratories.test-upload-file.model@1.0.7
+- @milaboratories/milaboratories.test-upload-file.workflow@1.0.1
+
 ## 1.0.32
 
 ### Patch Changes
