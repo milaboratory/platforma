@@ -25,13 +25,13 @@ import {
   ManifestFileName,
   ChannelsFolder,
   packageChannelPrefix,
-  ChannelNameRegexp
+  ChannelNameRegexp,
+  MainPrefix,
+  PackageManifestPattern
 } from './schema_public';
 import { BlockPackDescriptionManifestAddRelativePathPrefix, RelativeContentReader } from '../model';
 import { randomUUID } from 'node:crypto';
 import { calculateSha256 } from '../../util';
-import { z } from 'zod';
-import { version } from 'node:os';
 
 type PackageUpdateInfo = {
   package: BlockPackIdNoVersion;
@@ -44,33 +44,50 @@ export class BlockRegistryV2 {
     private readonly logger: MiLogger = new ConsoleLoggerAdapter()
   ) {}
 
-  private async updateRegistry(dryRun: boolean = false) {
+  private async updateRegistry(mode: 'force' | 'normal' | 'dry-run' = 'normal') {
     this.logger.info('Initiating registry refresh...');
 
     // reading update requests
     const packagesToUpdate = new Map<string, PackageUpdateInfo>();
     const seedPaths: string[] = [];
     const rawSeedPaths = await this.storage.listFiles(VersionUpdatesPrefix);
+
+    const addVersionToBeUpdated = ({ organization, name, version }: BlockPackId) => {
+      const keyNoVersion = `${organization}:${name}`;
+      let update = packagesToUpdate.get(keyNoVersion);
+      if (!update) {
+        packagesToUpdate.set(keyNoVersion, {
+          package: { organization, name },
+          versions: new Set([version])
+        });
+        return true;
+      } else if (!update.versions.has(version)) {
+        update.versions.add(version);
+        return true;
+      }
+      return false;
+    };
+
     this.logger.info('Packages to be updated:');
     for (const seedPath of rawSeedPaths) {
       const match = seedPath.match(PackageUpdatePattern);
       if (!match) continue;
       seedPaths.push(seedPath);
-      const { packageKeyWithoutVersion, organization, name, version, seed } = match.groups!;
-
-      let update = packagesToUpdate.get(packageKeyWithoutVersion);
-      let added = false;
-      if (!update) {
-        packagesToUpdate.set(packageKeyWithoutVersion, {
-          package: { organization, name },
-          versions: new Set([version])
-        });
-        added = true;
-      } else if (!update.versions.has(version)) {
-        update.versions.add(version);
-        added = true;
-      }
+      const { organization, name, version, seed } = match.groups!;
+      const added = addVersionToBeUpdated({ organization, name, version });
       this.logger.info(`  - ${organization}:${name}:${version} added:${added}`);
+    }
+
+    if (mode === 'force') {
+      // Listing all the packages with all the versions and adding them to the list of packages to be updated
+      const allPaths = await this.storage.listFiles(MainPrefix);
+      for (const path of allPaths) {
+        const match = path.match(PackageManifestPattern);
+        if (!match) continue;
+        const { organization, name, version } = match.groups!;
+        const added = addVersionToBeUpdated({ organization, name, version });
+        this.logger.info(`  - ${organization}:${name}:${version} force_added:${added}`);
+      }
     }
 
     // loading global overview
@@ -136,7 +153,7 @@ export class BlockRegistryV2 {
       );
 
       // write package overview back
-      if (!dryRun)
+      if (mode !== 'dry-run')
         await this.storage.putFile(
           overviewFile,
           Buffer.from(
@@ -155,6 +172,9 @@ export class BlockRegistryV2 {
           e.id.organization !== packageInfo.package.organization ||
           e.id.name !== packageInfo.package.name
       );
+      const relativeDescriptionSchema = BlockPackDescriptionManifestAddRelativePathPrefix(
+        `${packageInfo.package.organization}/${packageInfo.package.name}`
+      );
       overviewPackages.push({
         id: {
           organization: packageInfo.package.organization,
@@ -166,9 +186,7 @@ export class BlockRegistryV2 {
           .map((e) => ({ version: e.description.id.version, channels: e.channels }))
           .reverse(),
         // left for backward compatibility
-        latest: BlockPackDescriptionManifestAddRelativePathPrefix(
-          `${packageInfo.package.organization}/${packageInfo.package.name}`
-        ).parse(newVersions[0].description),
+        latest: relativeDescriptionSchema.parse(newVersions[0].description),
         // left for backward compatibility
         latestManifestSha256: newVersions[0].manifestSha256,
         latestByChannel: Object.fromEntries(
@@ -176,14 +194,20 @@ export class BlockRegistryV2 {
             // if c === 'any' the first element will be "found"
             const v = newVersions.find((v) => c === AnyChannel || v.channels.indexOf(c) !== -1);
             if (!v) throw new Error('Assertion error');
-            return [c, { description: v.description, manifestSha256: v?.manifestSha256 }];
+            return [
+              c,
+              {
+                description: relativeDescriptionSchema.parse(v.description),
+                manifestSha256: v?.manifestSha256
+              }
+            ];
           })
         )
       });
     }
 
     // writing global overview
-    if (!dryRun)
+    if (mode !== 'dry-run')
       await this.storage.putFile(
         GlobalOverviewPath,
         Buffer.from(
@@ -193,7 +217,7 @@ export class BlockRegistryV2 {
     this.logger.info(`Global overview updated (${overviewPackages.length} records)`);
 
     // deleting seeds
-    if (!dryRun)
+    if (mode !== 'dry-run')
       await this.storage.deleteFiles(...seedPaths.map((sp) => `${VersionUpdatesPrefix}${sp}`));
     this.logger.info(`Version update requests cleared`);
   }
@@ -218,7 +242,7 @@ export class BlockRegistryV2 {
       return;
     }
 
-    await this.updateRegistry(mode === 'dry-run');
+    await this.updateRegistry(mode);
 
     if (updateRequestSeed) {
       if (mode !== 'dry-run')
