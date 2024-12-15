@@ -5,7 +5,6 @@
 
 tx := import("tx")
 ll := import(":ll")
-sets := import(":sets")
 text := import("text")
 
 createContext := func() {
