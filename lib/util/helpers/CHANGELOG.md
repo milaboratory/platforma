@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.6.11
+
+### Patch Changes
+
+- 29c0b22: ui-vue: do not save unchanged model
+
 ## 1.6.10
 
 ### Patch Changes
