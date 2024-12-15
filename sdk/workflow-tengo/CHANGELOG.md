@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.2
+
+### Patch Changes
+
+- f2f1d12: Drop unused imports
+
 ## 2.8.1
 
 ### Patch Changes
