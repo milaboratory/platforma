@@ -19,8 +19,8 @@
     "type-check": "pl-tengo check",
     "build": "rm -rf dist && ./scripts/build.sh",
     "test": "pl-tengo test",
-    "format": "/usr/bin/env emacs --quick --script ./format.el",
-    "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
+    "format": "/usr/bin/env emacs --quick --script ./scripts/format.el",
+    "format-stdin": "/usr/bin/env emacs --quick --script ./scripts/format-stdin.el",
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/scripts/create_tags.sh .tags false",
     "emacs-tags": "./scripts/create_tags.sh ../TAGS false -e",
     "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
