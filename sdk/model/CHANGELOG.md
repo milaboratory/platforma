@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.20.11
+
+### Patch Changes
+
+- ead0e68: Account for domain when calculating labels in createPlDataTable
+
 ## 1.20.6
 
 ### Patch Changes
