@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.9
+
+### Patch Changes
+
+- 69b15fe: Minor typing corrections for PlAgDataTable
+
 ## 1.20.7
 
 ### Patch Changes

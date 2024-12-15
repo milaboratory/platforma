@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.5.0
+
+### Minor Changes
+
+- 69b15fe: Multiple for block registry reader
+
 ## 2.4.12
 
 ### Patch Changes

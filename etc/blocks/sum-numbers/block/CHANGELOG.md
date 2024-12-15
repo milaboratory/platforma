@@ -1,5 +1,13 @@
 # @milaboratories/milaboratories.test-sum-numbers
 
+## 1.0.33
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-sum-numbers.ui@1.0.33
+- @milaboratories/milaboratories.test-sum-numbers.model@1.0.7
+- @milaboratories/milaboratories.test-sum-numbers.workflow@1.0.4
+
 ## 1.0.32
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.22.0
+
+### Minor Changes
+
+- 69b15fe: Multiple for block registry reader
+
+### Patch Changes
+
+- Updated dependencies [69b15fe]
+  - @platforma-sdk/block-tools@2.5.0
+  - @platforma-sdk/workflow-tengo@2.8.2
+
 ## 1.21.5
 
 ### Patch Changes
