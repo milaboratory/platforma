@@ -234,7 +234,7 @@ export type PlTableFilterStringContainsFuzzyMatch = {
    */
   substitutionsOnly: boolean;
   /**
-   * Single character in {@link reference} that will match any
+   * Single character in {@link reference} that will labelColumn any
    * single character in searched text.
    */
   wildcard?: string;
@@ -269,7 +269,7 @@ export type PlTableFiltersStateEntry = {
   filter: PlTableFilter;
   /** Flag to temporarily disable filter */
   disabled: boolean;
-}
+};
 
 /** PlTableFiltersModel state */
 export type PlTableFiltersState = PlTableFiltersStateEntry[];
@@ -302,22 +302,53 @@ export function createPlDataTable<A, U>(
     .filter(isPColumn)
     .filter((p) => p.spec.name === 'pl7.app/label' && p.spec.axesSpec.length === 1);
 
-  const labelColumns = new Map<PObjectId, PColumn<TreeNodeAccessor>>();
+  const colId = (id: PObjectId, domain?: Record<string, string>) => {
+    let wid = id.toString();
+    if (domain) {
+      for (const k in domain) {
+        wid += k;
+        wid += domain[k];
+      }
+    }
+    return wid;
+  };
+
+  const labelColumns = new Map<string, PColumn<TreeNodeAccessor>>();
+
   for (const col of columns) {
     for (const axis of col.spec.axesSpec) {
       const axisId = getAxisId(axis);
-      for (const match of allLabelCols) {
-        if (matchAxisId(axisId, getAxisId(match.spec.axesSpec[0]))) {
-          labelColumns.set(match.id, match);
+      for (const labelColumn of allLabelCols) {
+        const labelAxis = labelColumn.spec.axesSpec[0];
+        const labelAxisId = getAxisId(labelColumn.spec.axesSpec[0]);
+        if (matchAxisId(axisId, labelAxisId)) {
+          const dataDomainLen = Object.keys(axisId.domain ?? {}).length;
+          const labelDomainLen = Object.keys(labelAxisId.domain ?? {}).length;
+          if (dataDomainLen > labelDomainLen) {
+            const id = colId(labelColumn.id, axisId.domain);
+
+            labelColumns.set(id, {
+              id: id as PObjectId,
+              spec: {
+                ...labelColumn.spec,
+                axesSpec: [{ ...axisId, annotations: labelAxis.annotations }]
+              },
+              data: labelColumn.data
+            });
+          } else {
+            labelColumns.set(colId(labelColumn.id), labelColumn);
+          }
         }
       }
     }
   }
 
   // if at least one column is not yet ready, we can't show the table
-  if ([...columns, ...labelColumns.values()].some((a) =>
-      a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError()
-    ))
+  if (
+    [...columns, ...labelColumns.values()].some(
+      (a) => a.data instanceof TreeNodeAccessor && !a.data.getIsReadyOrError()
+    )
+  )
     return undefined;
 
   return ctx.createPTable({
