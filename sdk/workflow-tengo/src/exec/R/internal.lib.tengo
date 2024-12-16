@@ -1,7 +1,6 @@
 ll := import(":ll")
 validation := import(":validation")
 runcmd := import(":exec.runcmd")
-pkg := import(":exec.package")
 path := import(":path")
 desc := import(":exec.descriptor")
 constants := import(":exec.constants")

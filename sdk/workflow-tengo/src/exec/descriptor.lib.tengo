@@ -3,12 +3,6 @@
  * https://github.com/milaboratory/platforma/blob/main/tools/package-builder/src/core/renderer.ts#L161 */
 
 ll := import(":ll")
-smart := import(":smart")
-workdir := import(":workdir")
-oop := import(":oop")
-sets := import(":sets")
-validation := import(":validation")
-json := import("json")
 
 runEnvScheme := {
 	registry: "string",
