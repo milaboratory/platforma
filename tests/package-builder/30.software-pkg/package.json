@@ -119,6 +119,6 @@
   "dependencies": {},
   "devDependencies": {
     "@platforma-sdk/package-builder": "file:../../../tools/package-builder",
-    "pl-package-builder-runenv-1": "file:../runenv"
+    "pl-package-builder-runenv-1": "file:../20.runenv"
   }
 }
