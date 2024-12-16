@@ -63,6 +63,7 @@ export class Core {
 
     for (const [id, ep] of this.entrypoints.entries()) {
       if (ep.type === 'reference') {
+        // References have no pacakge definitions inside
         continue;
       }
 
