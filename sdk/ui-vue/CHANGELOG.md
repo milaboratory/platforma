@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.17
+
+### Patch Changes
+
+- e654872: PlAgDataTable row butting click type fix
+
 ## 1.20.16
 
 ### Patch Changes
