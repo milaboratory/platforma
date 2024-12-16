@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.7
+
+### Patch Changes
+
+- 22685b6: uikit: forbid text wrapping in PlBtnGroup options
+
 ## 1.3.6
 
 ### Patch Changes
