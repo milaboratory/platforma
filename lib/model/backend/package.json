@@ -1,0 +1,31 @@
+{
+  "name": "@milaboratories/pl-model-backend",
+  "version": "1.0.0",
+  "description": "Backend model for Platforma.bio",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit --composite false",
+    "build": "vite build",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+  },
+  "files": [
+    "./dist/**/*",
+    "./src/**/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratories/platforma-build-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

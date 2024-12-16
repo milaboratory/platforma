@@ -5,6 +5,7 @@ packages:
 
   - lib/model/common
   - lib/model/middle-layer
+  - lib/model/backend
 
   - lib/node/ts-helpers
   - lib/node/ts-helpers-oclif

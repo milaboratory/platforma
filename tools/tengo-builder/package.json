@@ -19,6 +19,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@milaboratories/tengo-tester": "catalog:",
+    "@milaboratories/pl-model-backend": "workspace:^",
     "@oclif/core": "catalog:",
     "canonicalize": "catalog:",
     "winston": "catalog:"
