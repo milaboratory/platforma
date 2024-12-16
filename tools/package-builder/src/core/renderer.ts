@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import winston from 'winston';
 import { z } from 'zod';
-import { Entrypoint, PackageConfig, SoftwareEntrypoint } from './package-info';
+import { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } from './package-info';
 import * as artifacts from './schemas/artifacts';
 import * as util from './util';
 
@@ -266,6 +266,7 @@ export class Renderer {
     }
   ): Map<string, entrypointSwJson> {
     const result = new Map<string, entrypointSwJson>();
+    let hasReferences = false;
 
     const sources = options?.sources ?? util.AllSoftwareSources;
     const fullDirHash = options?.fullDirHash ?? false;
@@ -275,10 +276,18 @@ export class Renderer {
       throw new Error('nothing to render: empty list of software sources');
     }
 
+    this.logger.info(`Rendering entrypoint descriptors...`);
+    this.logger.debug('  entrypoints: ' + JSON.stringify(entrypoints));
+    this.logger.debug('  sources: ' + JSON.stringify(sources));
+
     for (const [epName, ep] of entrypoints.entries()) {
-      this.logger.info(`Rendering entrypoint descriptor '${epName}'...`);
-      this.logger.debug('  entrypoints: ' + JSON.stringify(entrypoints));
-      this.logger.debug('  sources: ' + JSON.stringify(sources));
+      if (ep.type === 'reference') {
+        // Entrypoint references do not need any rendering
+        hasReferences = true;
+        continue;
+      }
+
+      this.logger.debug(`Rendering entrypoint descriptor '${epName}'...`);
 
       const info: entrypointSwJson = {
         id: {
@@ -326,7 +335,7 @@ export class Renderer {
       }
     }
 
-    if (result.size === 0) {
+    if (result.size === 0 && !hasReferences) {
       this.logger.error('no entrypoint descriptors were rendered');
       throw new Error('no entrypoint descriptors were rendered');
     }
@@ -357,10 +366,27 @@ export class Renderer {
     fs.writeFileSync(dstSwInfoPath, encoded + '\n');
   }
 
+  public copyEntrypointDescriptor(epName: string, srcFile: string) {
+    let epType: Extract<EntrypointType, 'software' | 'asset'>;
+    if (srcFile.endsWith(compiledSoftwareSuffix)) {
+      epType = 'software';
+    } else if (srcFile.endsWith(compiledAssetSuffix)) {
+      epType = 'asset';
+    } else {
+      throw new Error(
+        `unknown entrypoint '${epName}' type: cannot get type from extension of source file ${srcFile}`
+      );
+    }
+
+    const dstSwInfoPath = entrypointFilePath(this.npmPackageRoot, epType, epName);
+    util.ensureDirsExist(path.dirname(dstSwInfoPath));
+    fs.copyFileSync(srcFile, dstSwInfoPath);
+  }
+
   private renderLocalInfo(
     mode: util.BuildMode,
     epName: string,
-    ep: Entrypoint,
+    ep: PackageEntrypoint,
     fullDirHash: boolean
   ): localInfo {
     switch (mode) {
@@ -477,7 +503,11 @@ export class Renderer {
     }
   }
 
-  private renderBinaryInfo(mode: util.BuildMode, epName: string, ep: Entrypoint): binaryInfo {
+  private renderBinaryInfo(
+    mode: util.BuildMode,
+    epName: string,
+    ep: PackageEntrypoint
+  ): binaryInfo {
     switch (mode) {
       case 'release':
         break;
@@ -595,7 +625,11 @@ export class Renderer {
     }
   }
 
-  private renderRunEnvInfo(mode: util.BuildMode, epName: string, ep: Entrypoint): runEnvInfo {
+  private renderRunEnvInfo(
+    mode: util.BuildMode,
+    epName: string,
+    ep: PackageEntrypoint
+  ): runEnvInfo {
     switch (mode) {
       case 'release':
         break;
@@ -623,7 +657,7 @@ export class Renderer {
     };
   }
 
-  private renderAssetInfo(mode: util.BuildMode, epName: string, ep: Entrypoint): assetInfo {
+  private renderAssetInfo(mode: util.BuildMode, epName: string, ep: PackageEntrypoint): assetInfo {
     switch (mode) {
       case 'release':
         break;
@@ -700,12 +734,15 @@ export class Renderer {
   }
 }
 
+export const compiledSoftwareSuffix = '.sw.json';
+export const compiledAssetSuffix = '.as.json';
+
 export function entrypointFilePath(
   packageRoot: string,
-  entrypointType: 'software' | 'asset',
+  entrypointType: Extract<EntrypointType, 'software' | 'asset'>,
   entrypointName?: string
 ): string {
-  const typeSuffix = entrypointType === 'software' ? 'sw' : 'as';
+  const typeSuffix = entrypointType === 'software' ? compiledSoftwareSuffix : compiledAssetSuffix;
 
   if (!entrypointName) {
     return path.resolve(packageRoot, 'dist', 'tengo', entrypointType);
@@ -716,6 +753,6 @@ export function entrypointFilePath(
     'dist',
     'tengo',
     entrypointType,
-    `${entrypointName}.${typeSuffix}.json`
+    `${entrypointName}${typeSuffix}`
   );
 }

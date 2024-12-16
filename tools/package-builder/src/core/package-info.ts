@@ -7,6 +7,7 @@ import * as util from './util';
 import * as envs from './envs';
 import * as artifacts from './schemas/artifacts';
 import * as entrypoint from './schemas/entrypoint';
+import { tryResolve } from '@milaboratories/resolve-helper';
 
 export interface PackageArchiveInfo extends artifacts.archiveRules {
   name: string;
@@ -107,6 +108,12 @@ export type PackageConfig = BuildablePackage & {
   contentRoot(platform: util.PlatformType): string;
 };
 
+export interface ReferenceEntrypoint {
+  type: 'reference';
+  name: string;
+  reference: string;
+}
+
 export interface AssetEntrypoint {
   type: 'asset';
   name: string;
@@ -128,7 +135,9 @@ export interface EnvironmentEntrypoint {
   env: string[];
 }
 
-export type Entrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
+export type PackageEntrypoint = AssetEntrypoint | SoftwareEntrypoint | EnvironmentEntrypoint;
+export type Entrypoint = ReferenceEntrypoint | PackageEntrypoint;
+export type EntrypointType = Extract<Entrypoint, { type: any }>['type'];
 
 const storagePresetSchema = z.object({
   downloadURL: z.string().optional(),
@@ -241,6 +250,15 @@ export class PackageInfo {
     const list = new Map<string, Entrypoint>();
 
     for (const [epName, ep] of Object.entries(this.pkgJson['block-software'].entrypoints)) {
+      if (ep.reference) {
+        list.set(epName, {
+          type: 'reference',
+          name: epName,
+          reference: ep.reference!
+        });
+        continue;
+      }
+
       if (ep.binary) {
         const packageID = typeof ep.binary.artifact === 'string' ? ep.binary.artifact : epName;
         list.set(epName, {
@@ -287,11 +305,38 @@ export class PackageInfo {
     return this.entrypoints.get(name)!;
   }
 
+  /**
+   * Resolves entrypoint reference to full entrypoint file path and type
+   */
+  public resolveReference(epName: string, ep: ReferenceEntrypoint): string {
+    const refInfo = ep.reference.match(entrypoint.EnyrypointReferencePattern)?.groups;
+
+    if (!refInfo) {
+      this.logger.error(
+        `entrypoint reference '${epName}' has incorrect reference format. <full package name>/<path to entrypoint> is expected`
+      );
+      throw new Error(`invalid entrypoint '${epName}' reference format`);
+    }
+
+    const refPath = tryResolve(this.packageRoot, ep.reference);
+    if (!refPath) {
+      this.logger.error(`entrypoint reference '${epName}' cannot be resolved into file path`);
+      throw new Error(`invalid entrypoint '${epName}' reference`);
+    }
+
+    return refPath;
+  }
+
   // Packages are buildable artifacts with entrypoints
   get packages(): Map<string, PackageConfig> {
     const result = new Map<string, PackageConfig>();
 
     for (const ep of this.entrypoints.values()) {
+      if (ep.type === 'reference') {
+        // Entrypoint references are not buildable
+        continue;
+      }
+
       if (!result.has(ep.package.id)) {
         result.set(ep.package.id, ep.package);
       }
@@ -394,98 +439,6 @@ export class PackageInfo {
       `entrypoint '${id}' points to artifact '${idOrArtifact}' which does not exist in 'artifacts'`
     );
   }
-
-  // private getBinary(packageID: string, binSettings: artifacts.config, entrypoints: Record<string, entrypoint.info>): BuildablePackage {
-  //     this.logger.debug(`  generating binary config for package`)
-
-  //     const pkgRoot = this.packageRoot
-  //     const version = this.getVersion(binSettings.version)
-
-  //     const registry = this.binRegistryFor(binSettings.registry)
-  //     const name = this.getName(packageID, binSettings.name)
-
-  //     const binEntrypoints: Record<string, entrypoint.binaryOptions> = {}
-  //     for (const [epName, ep] of Object.entries(entrypoints)) {
-  //         binEntrypoints[epName] = ep.binary!
-  //     }
-
-  //     return {
-  //         ...binSettings,
-
-  //         registry,
-  //         name,
-  //         version,
-  //         entrypoints: binEntrypoints,
-
-  //         get crossplatform(): boolean {
-  //             if (binSettings.crossplatform !== undefined) {
-  //                 return binSettings.crossplatform
-  //             }
-
-  //             return binSettings.type === 'java' ||
-  //                 binSettings.type === 'python'
-  //         },
-
-  //         fullName(platform: util.PlatformType): string {
-  //             return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
-  //         },
-
-  //         get namePattern(): string {
-  //             return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
-  //         },
-
-  //         contentRoot(platform: util.PlatformType): string {
-  //             const root = this.root ?? this.roots?.[platform]
-  //             if (!root) {
-  //                 throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
-  //             }
-
-  //             return path.resolve(pkgRoot, root)
-  //         }
-  //     }
-  // }
-
-  // private getEnvironment(packageID: string, envSettings: artifacts.environmentConfig, entrypoints: Record<string, entrypoint.info>): RunEnvironmentPackage {
-  //     this.logger.debug("  generating environment config for package")
-
-  //     const pkgRoot = this.packageRoot
-  //     const version = this.getVersion(envSettings.version)
-
-  //     const registry = this.binRegistryFor(envSettings.registry)
-  //     const name: string = this.getName(packageID, envSettings.name)
-  //     const envEntrypoints: Record<string, entrypoint.binaryOptions> = {}
-  //     for (const [epName, ep] of Object.entries(entrypoints)) {
-  //         envEntrypoints[epName] = ep.binary!
-  //     }
-
-  //     return {
-  //         ...envSettings,
-
-  //         registry,
-  //         name,
-  //         version,
-  //         entrypoints: envEntrypoints,
-
-  //         crossplatform: envSettings.crossplatform ?? false,
-
-  //         fullName(platform: util.PlatformType): string {
-  //             return binaryPackageFullName(this.crossplatform, this.name, this.version, platform)
-  //         },
-
-  //         get namePattern(): string {
-  //             return binaryPackageAddressPattern(this.crossplatform, this.name, this.version)
-  //         },
-
-  //         contentRoot(platform: util.PlatformType): string {
-  //             const root = this.root ?? this.roots?.[platform]
-  //             if (!root) {
-  //                 throw new Error(`root path for software archive of platform ${platform} is undefined for binary package`)
-  //             }
-
-  //             return path.resolve(pkgRoot, root)
-  //         }
-  //     }
-  // }
 
   public set version(v: string | undefined) {
     this._versionOverride = v;

@@ -59,15 +59,28 @@ export class Core {
   }
 
   public get packages(): Map<string, PackageConfig> {
-    return new Map(
-      Array.from(this.entrypoints.entries()).map(([_, ep]) => [ep.package.id, ep.package])
-    );
+    const pkgs = new Map<string, PackageConfig>();
+
+    for (const [id, ep] of this.entrypoints.entries()) {
+      if (ep.type === 'reference') {
+        continue;
+      }
+
+      pkgs.set(ep.package.id, ep.package);
+    }
+
+    return pkgs;
   }
 
   public get packageEntrypointsIndex(): Map<string, string[]> {
     const result = new Map<string, string[]>();
 
     for (const [epName, ep] of this.entrypoints) {
+      if (ep.type === 'reference') {
+        // References have no pacakge definitions inside
+        continue;
+      }
+
       if (!result.has(ep.package.id)) {
         result.set(ep.package.id, []);
       }
@@ -92,15 +105,15 @@ export class Core {
   }
 
   public buildDescriptors(options?: {
-    ids?: string[];
+    packageIds?: string[];
     entrypoints?: string[];
     sources?: util.SoftwareSource[];
   }) {
     const index = this.packageEntrypointsIndex;
 
     const entrypointNames = options?.entrypoints ?? [];
-    if (options?.ids) {
-      for (const pkgId of options.ids) {
+    if (options?.packageIds) {
+      for (const pkgId of options.packageIds) {
         const packageEntrypoints = index.get(pkgId);
         if (!packageEntrypoints || packageEntrypoints.length === 0) {
           throw new Error(
@@ -124,6 +137,13 @@ export class Core {
 
     for (const swJson of infos.values()) {
       this.renderer.writeEntrypointDescriptor(swJson);
+    }
+
+    for (const [epName, ep] of entrypoints) {
+      if (ep.type === 'reference') {
+        const srcPath = this.pkg.resolveReference(epName, ep);
+        this.renderer.copyEntrypointDescriptor(epName, srcPath);
+      }
     }
   }
 
