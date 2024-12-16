@@ -2336,6 +2336,9 @@ importers:
       '@aws-sdk/lib-storage':
         specifier: 'catalog:'
         version: 3.709.0(@aws-sdk/client-s3@3.709.0)
+      '@milaboratories/resolve-helper':
+        specifier: workspace:^
+        version: link:../../lib/node/resolve-helper
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.0.37

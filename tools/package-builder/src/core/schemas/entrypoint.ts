@@ -13,6 +13,16 @@ const envVarsSchema = z.array(
     )
 );
 
+export const EnyrypointReferencePattern =
+  /^(?<fullName>(?:(?<scope>@[a-z0-9-.]+)\/)?(?<name>[a-z0-9-.]+))\/(?<path>.*)$/;
+
+export const referenceSchema = z
+  .string()
+  .regex(
+    EnyrypointReferencePattern,
+    'entrypoint reference must contain full package name and path to the file inside'
+  );
+
 export const softwareOptionsSchema = z.strictObject({
   artifact: artifactOrRef,
 
@@ -36,15 +46,20 @@ export const environmentOptionsSchema = z.strictObject({
 
 export const infoSchema = z
   .strictObject({
+    reference: referenceSchema.optional(),
     asset: z.union([z.string(), artifacts.assetPackageSchema]).optional(),
     binary: softwareOptionsSchema.optional(),
     environment: environmentOptionsSchema.optional()
   })
-  .refine((data) => toInt(data.environment) + toInt(data.binary) + toInt(data.asset) == 1, {
-    message:
-      "entrypoint cannot point to several packages at once: choose 'environment', 'binary' or 'asset'",
-    path: ['environment | binary | asset']
-  });
+  .refine(
+    (data) =>
+      toInt(data.reference) + toInt(data.asset) + toInt(data.binary) + toInt(data.environment) == 1,
+    {
+      message:
+        "entrypoint cannot point to several packages at once: choose 'reference', 'asset', 'binary' or 'environment'",
+      path: ['reference | asset | binary | environment']
+    }
+  );
 
 export type info = z.infer<typeof infoSchema>;
 
