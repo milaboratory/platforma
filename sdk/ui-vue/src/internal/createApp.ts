@@ -1,4 +1,4 @@
-import { deepClone, isJsonEqual, throttle } from '@milaboratories/helpers';
+import { debounce, deepClone, isJsonEqual, throttle } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
@@ -7,7 +7,7 @@ import { createModel } from '../createModel';
 import { createAppModel } from './createAppModel';
 import { parseQuery } from '../urls';
 import { MultiError, unwrapValueOrErrors } from '../utils';
-
+import { useDebounceFn } from '@vueuse/core';
 /**
  * Creates an application instance with reactive state management, outputs, and methods for state updates and navigation.
  *
@@ -39,14 +39,6 @@ export function createApp<
     }
   };
 
-  const throttleSpan = 100; // @todo settings and more flexible
-
-  const setBlockArgs = throttle(platforma.setBlockArgs, throttleSpan);
-
-  const setBlockUiState = throttle(platforma.setBlockUiState, throttleSpan);
-
-  const setBlockArgsAndUiState = throttle(platforma.setBlockArgsAndUiState, throttleSpan);
-
   /**
    * Reactive snapshot of the application state, including args, outputs, UI state, and navigation state.
    */
@@ -61,6 +53,28 @@ export function createApp<
     ui: Readonly<UiState>;
     navigationState: Readonly<NavigationState<Href>>;
   };
+
+  const debounceSpan = settings.debounceSpan ?? 100;
+
+  const maxWait = settings.debounceMaxWait ?? 1000;
+
+  const setBlockArgs = useDebounceFn((args: Args) => {
+    if (!isJsonEqual(args, snapshot.args)) {
+      platforma.setBlockArgs(args);
+    }
+  }, debounceSpan, { maxWait });
+
+  const setBlockUiState = useDebounceFn((ui: UiState) => {
+    if (!isJsonEqual(ui, snapshot.ui)) {
+      platforma.setBlockUiState(ui);
+    }
+  }, debounceSpan, { maxWait });
+
+  const setBlockArgsAndUiState = useDebounceFn((args: Args, ui: UiState) => {
+    if (!isJsonEqual(args, snapshot.args) || !isJsonEqual(ui, snapshot.ui)) {
+      platforma.setBlockArgsAndUiState(args, ui);
+    }
+  }, debounceSpan, { maxWait });
 
   platforma.onStateUpdates(async (updates) => {
     updates.forEach((patch) => {
@@ -80,8 +94,10 @@ export function createApp<
       }
 
       if (patch.key === 'navigationState') {
-        snapshot.navigationState = Object.freeze(patch.value);
-        log('navigationState patch', snapshot.navigationState);
+        if (!isJsonEqual(snapshot.navigationState, patch.value)) {
+          snapshot.navigationState = Object.freeze(patch.value);
+          log('navigationState patch', snapshot.navigationState);
+        }
       }
     });
 
@@ -242,9 +258,7 @@ export function createApp<
       },
       autoSave: true,
       onSave(newData: AppModel) {
-        if (!isJsonEqual(newData.args, snapshot.args) || !isJsonEqual(newData.ui, snapshot.ui)) {
-          setBlockArgsAndUiState(newData.args, newData.ui);
-        }
+        setBlockArgsAndUiState(newData.args, newData.ui);
       },
     },
     {
