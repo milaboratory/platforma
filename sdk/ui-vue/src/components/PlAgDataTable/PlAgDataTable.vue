@@ -1,22 +1,22 @@
 <script lang="ts" setup>
-import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import type {
-  ColDef,
-  ColGroupDef,
-  GridApi,
-  GridOptions,
-  GridReadyEvent,
-  GridState,
-  ManagedGridOptionKey,
-  ManagedGridOptions,
-  SortState,
-  StateUpdatedEvent,
-} from '@ag-grid-community/core';
-import { ModuleRegistry } from '@ag-grid-community/core';
-import { AgGridVue } from '@ag-grid-community/vue3';
-import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
-import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
-import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
+import {
+  type ColDef,
+  type ColGroupDef,
+  type GridApi,
+  type GridOptions,
+  type GridReadyEvent,
+  type GridState,
+  type ManagedGridOptionKey,
+  type ManagedGridOptions,
+  type SortState,
+  type StateUpdatedEvent,
+  ModuleRegistry,
+  ClientSideRowModelModule,
+  ClipboardModule,
+  CellSelectionModule,
+  ServerSideRowModelModule,
+} from 'ag-grid-enterprise';
+import { AgGridVue } from 'ag-grid-vue3';
 import { PlDropdownLine } from '@milaboratories/uikit';
 import {
   getAxisId,
@@ -46,7 +46,7 @@ ModuleRegistry.registerModules([
   ClientSideRowModelModule,
   ClipboardModule,
   ServerSideRowModelModule,
-  RangeSelectionModule,
+  CellSelectionModule,
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
@@ -216,11 +216,13 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   },
   onSelectionChanged: (event) => {
     if (selectedRows.value) {
-      selectedRows.value = event.api.getSelectedNodes().map((rowNode) => rowNode.data!.key);
+      selectedRows.value = event.api.getSelectedNodes()
+        .map((rowNode) => rowNode.data?.key)
+        .filter((rowKey) => !!rowKey);
     }
   },
   onRowDoubleClicked: (event) => {
-    if (event.data) emit('rowDoubleClicked', event.data.key);
+    if (event.data && event.data.key) emit('rowDoubleClicked', event.data.key);
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -349,73 +351,77 @@ let oldSettings: PlDataTableSettings | undefined = undefined;
 watch(
   () => [gridApi.value, settings.value] as const,
   async (state) => {
-    const [gridApi, settings] = state;
-    if (!gridApi) return;
+    try {
+      const [gridApi, settings] = state;
+      if (!gridApi) return;
 
-    if (lodash.isEqual(settings, oldSettings)) return;
-    oldSettings = settings;
+      if (lodash.isEqual(settings, oldSettings)) return;
+      oldSettings = settings;
 
-    const sourceType = settings?.sourceType;
-    switch (sourceType) {
-      case undefined:
-        return gridApi.updateGridOptions({
-          loading: true,
-          loadingOverlayComponentParams: { notReady: true },
-          columnDefs: [],
-          rowData: undefined,
-          datasource: undefined,
-        });
-
-      case 'ptable': {
-        if (!settings?.pTable) {
+      const sourceType = settings?.sourceType;
+      switch (sourceType) {
+        case undefined:
           return gridApi.updateGridOptions({
             loading: true,
-            loadingOverlayComponentParams: { notReady: false },
+            loadingOverlayComponentParams: { notReady: true },
             columnDefs: [],
             rowData: undefined,
             datasource: undefined,
           });
-        }
 
-        const options = await updatePFrameGridOptions(
-          getRawPlatformaInstance().pFrameDriver,
-          settings.pTable,
-          settings.sheets ?? [],
-          !!props.clientSideModel || !!selectedRows.value,
-          gridState.value?.columnVisibility?.hiddenColIds,
-          props.showCellButtonForAxisId,
-        );
+        case 'ptable': {
+          if (!settings?.pTable) {
+            return gridApi.updateGridOptions({
+              loading: true,
+              loadingOverlayComponentParams: { notReady: false },
+              columnDefs: [],
+              rowData: undefined,
+              datasource: undefined,
+            });
+          }
 
-        return gridApi.updateGridOptions({
-          loading: false,
-          loadingOverlayComponentParams: { notReady: false },
-          ...options,
-        });
-      }
+          const options = await updatePFrameGridOptions(
+            getRawPlatformaInstance().pFrameDriver,
+            settings.pTable,
+            settings.sheets ?? [],
+            !!props.clientSideModel || !!selectedRows.value,
+            gridState.value?.columnVisibility?.hiddenColIds,
+            props.showCellButtonForAxisId,
+          );
 
-      case 'xsv': {
-        const xsvFile = settings?.xsvFile;
-        if (!xsvFile) {
           return gridApi.updateGridOptions({
-            loading: true,
+            loading: false,
             loadingOverlayComponentParams: { notReady: false },
-            columnDefs: [],
-            rowData: undefined,
-            datasource: undefined,
+            ...options,
           });
         }
 
-        const driver = getRawPlatformaInstance().blobDriver;
-        const options = await updateXsvGridOptions(driver, xsvFile);
-        return gridApi.updateGridOptions({
-          loading: true,
-          loadingOverlayComponentParams: { notReady: false },
-          ...options,
-        });
-      }
+        case 'xsv': {
+          const xsvFile = settings?.xsvFile;
+          if (!xsvFile) {
+            return gridApi.updateGridOptions({
+              loading: true,
+              loadingOverlayComponentParams: { notReady: false },
+              columnDefs: [],
+              rowData: undefined,
+              datasource: undefined,
+            });
+          }
 
-      default:
-        throw Error(`unsupported source type: ${sourceType satisfies never}`);
+          const driver = getRawPlatformaInstance().blobDriver;
+          const options = await updateXsvGridOptions(driver, xsvFile);
+          return gridApi.updateGridOptions({
+            loading: true,
+            loadingOverlayComponentParams: { notReady: false },
+            ...options,
+          });
+        }
+
+        default:
+          throw Error(`unsupported source type: ${sourceType satisfies never}`);
+      }
+    } catch (error: unknown) {
+      console.trace(error);
     }
   },
 );

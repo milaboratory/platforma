@@ -1,35 +1,9 @@
-import { LicenseManager } from '@ag-grid-enterprise/core';
+import { LicenseManager, type Theme, themeQuartz, createPart, ModuleRegistry, AllEnterpriseModule } from 'ag-grid-enterprise';
 import { getEnvironmentValue } from '@platforma-sdk/model';
-
-import { ModuleRegistry } from '@ag-grid-community/core';
-import { ClientSideRowModelModule } from '@ag-grid-community/client-side-row-model';
-import { InfiniteRowModelModule } from '@ag-grid-community/infinite-row-model';
-import { ServerSideRowModelModule } from '@ag-grid-enterprise/server-side-row-model';
-import { CsvExportModule } from '@ag-grid-community/csv-export';
-import { ClipboardModule } from '@ag-grid-enterprise/clipboard';
-import { RangeSelectionModule } from '@ag-grid-enterprise/range-selection';
-import { RichSelectModule } from '@ag-grid-enterprise/rich-select';
-import { MenuModule } from '@ag-grid-enterprise/menu';
-import { ExcelExportModule } from '@ag-grid-enterprise/excel-export';
-import { SideBarModule } from '@ag-grid-enterprise/side-bar';
-import { ColumnsToolPanelModule } from '@ag-grid-enterprise/column-tool-panel';
-import { type Theme, themeQuartz, createPart } from '@ag-grid-community/theming';
 import OverrideCss from './components/PlAgDataTable/ag-override.css?raw';
 
 export function activateAgGrid() {
-  ModuleRegistry.registerModules([
-    ClientSideRowModelModule,
-    InfiniteRowModelModule,
-    ServerSideRowModelModule,
-    CsvExportModule,
-    ClipboardModule,
-    RangeSelectionModule,
-    RichSelectModule,
-    MenuModule,
-    ExcelExportModule,
-    SideBarModule,
-    ColumnsToolPanelModule,
-  ]);
+  ModuleRegistry.registerModules([AllEnterpriseModule]);
   const agGridLicense = getEnvironmentValue('AGGRID_LICENSE');
   if (agGridLicense) {
     LicenseManager.setLicenseKey(agGridLicense);
@@ -39,7 +13,7 @@ export function activateAgGrid() {
   }
 }
 
-const agGridOverrideStyles = createPart('headerBottomBorder').withCSS(OverrideCss);
+const agGridOverrideStyles = createPart({ feature: 'headerBottomBorder', css: OverrideCss });
 
 export const AgGridTheme: Theme = themeQuartz
   .withParams({

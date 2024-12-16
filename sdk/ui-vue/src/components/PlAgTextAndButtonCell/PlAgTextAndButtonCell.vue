@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { ICellRendererParams, RowDoubleClickedEvent } from '@ag-grid-community/core';
+import type { ICellRendererParams, RowDoubleClickedEvent } from 'ag-grid-enterprise';
 import type { MaskIconName16 } from '@milaboratories/uikit';
 import { PlMaskIcon16 } from '@milaboratories/uikit';
 import './pl-ag-text-and-button-cell.scss';

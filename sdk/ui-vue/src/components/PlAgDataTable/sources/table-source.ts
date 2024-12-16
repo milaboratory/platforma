@@ -5,7 +5,7 @@ import type {
   IServerSideGetRowsParams,
   RowModelType,
   ValueFormatterParams,
-} from '@ag-grid-community/core';
+} from 'ag-grid-enterprise';
 import {
   getAxisId,
   pTableValue,
@@ -18,6 +18,7 @@ import {
   type PTableHandle,
   type PTableValue,
   type PTableVector,
+  PTableNA,
 } from '@platforma-sdk/model';
 import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
@@ -44,10 +45,8 @@ export function parseColId(str: string) {
 export const defaultValueFormatter = (value: ValueFormatterParams<PlAgDataTableRow, PTableValue>) => {
   if (value.value === undefined) {
     return 'undefined';
-  } else if (isPTableAbsent(value.value)) {
-    return ''; // 'NULL';
-  } else if (value.value === null) {
-    return ''; // 'NA';
+  } else if (isPTableAbsent(value.value) || value.value === PTableNA) {
+    return '';
   } else {
     return value.value.toString();
   }
@@ -56,7 +55,7 @@ export const defaultValueFormatter = (value: ValueFormatterParams<PlAgDataTableR
 /**
  * Calculates column definition for a given p-table column
  */
-function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
+function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
   const colId = makeColId(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
@@ -150,7 +149,7 @@ export async function updatePFrameGridOptions(
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
     rowModelType: RowModelType;
-    rowData?: unknown[];
+    rowData?: PlAgDataTableRow[];
   }> {
   const specs = await pfDriver.getSpec(pt);
 
@@ -218,7 +217,7 @@ export async function updatePFrameGridOptions(
   const rowCount = ptShape.rows;
   const columnDefs: ColDef<PlAgDataTableRow>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => getColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId)),
+    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId)),
   ];
 
   if (hColumns.length > 0) {
