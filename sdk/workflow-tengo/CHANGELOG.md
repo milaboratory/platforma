@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.3
+
+### Patch Changes
+
+- 0be0012: Move rest of the scripts to 'scripts' dir
+
 ## 2.8.2
 
 ### Patch Changes
