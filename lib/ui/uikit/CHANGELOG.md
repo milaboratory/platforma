@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.36
+
+### Patch Changes
+
+- 4208dcf: added PlLoaderCircular
+
 ## 2.2.35
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-upload-file.ui
 
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [4208dcf]
+  - @platforma-sdk/ui-vue@1.20.19
+
 ## 1.0.40
 
 ### Patch Changes
