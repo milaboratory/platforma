@@ -302,7 +302,7 @@ export class Core {
     archivePath?: string;
     storageURL?: string;
 
-    skipExisting?: boolean;
+    failExisting?: boolean;
     forceReupload?: boolean;
   }) {
     const packagesToPublish = options?.ids ?? Array.from(this.buildablePackages.keys());
@@ -343,7 +343,7 @@ export class Core {
       archivePath?: string;
       storageURL?: string;
 
-      skipExisting?: boolean;
+      failExisting?: boolean;
       forceReupload?: boolean;
     }
   ) {
@@ -377,18 +377,17 @@ export class Core {
     const s = await storage.initByUrl(storageURL, this.pkg.packageRoot);
 
     const exists = await s.exists(dstName);
-    if (exists) {
-      if (options?.skipExisting) {
-        this.logger.warn(
-          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`
-        );
-        return;
-      }
-      if (!options?.forceReupload) {
+    if (exists && !options?.forceReupload) {
+      if (options?.failExisting) {
         throw new Error(
-          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag`
+          `software package '${dstName}' already exists in registry '${pkg.registry.name}'. To re-upload it, use 'force' flag. To not fail, remove 'fail-existing-packages' flag`
         );
       }
+
+      this.logger.warn(
+        `software package '${dstName}' already exists in registry '${pkg.registry.name}'. Upload was skipped.`
+      );
+      return;
     }
 
     const uploads: Promise<void>[] = [];
