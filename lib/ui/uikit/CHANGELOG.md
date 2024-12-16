@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.35
+
+### Patch Changes
+
+- 22685b6: uikit: forbid text wrapping in PlBtnGroup options
+
 ## 2.2.34
 
 ### Patch Changes

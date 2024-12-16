@@ -1,5 +1,23 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.8
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+
+## 1.3.7
+
+### Patch Changes
+
+- 22685b6: uikit: forbid text wrapping in PlBtnGroup options
+
+## 1.3.6
+
+### Patch Changes
+
+- cc58398: ui-vue: use configurable debounce with max wait for all set args or ui api methods (optimization)
+
 ## 1.3.5
 
 ### Patch Changes

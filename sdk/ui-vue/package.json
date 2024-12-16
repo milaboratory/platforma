@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/ui-vue",
-  "version": "1.20.11",
+  "version": "1.20.15",
   "type": "module",
   "main": "dist/lib.umd.cjs",
   "module": "dist/lib.js",
@@ -34,22 +34,8 @@
     "lru-cache": "catalog:",
     "vue": "catalog:",
     "canonicalize": "catalog:",
-    "@ag-grid-community/core": "catalog:",
-    "@ag-grid-community/client-side-row-model": "catalog:",
-    "@ag-grid-community/infinite-row-model": "catalog:",
-    "@ag-grid-enterprise/server-side-row-model": "catalog:",
-    "@ag-grid-community/styles": "catalog:",
-    "@ag-grid-community/vue3": "catalog:",
-    "@ag-grid-community/csv-export": "catalog:",
-    "@ag-grid-enterprise/core": "catalog:",
-    "@ag-grid-enterprise/clipboard": "catalog:",
-    "@ag-grid-enterprise/range-selection": "catalog:",
-    "@ag-grid-enterprise/rich-select": "catalog:",
-    "@ag-grid-enterprise/menu": "catalog:",
-    "@ag-grid-enterprise/excel-export": "catalog:",
-    "@ag-grid-community/theming": "catalog:",
-    "@ag-grid-enterprise/side-bar": "catalog:",
-    "@ag-grid-enterprise/column-tool-panel": "catalog:"
+    "ag-grid-enterprise": "catalog:",
+    "ag-grid-vue3": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/helpers": "workspace:^",
