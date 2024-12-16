@@ -16,8 +16,8 @@ import {
   type PlAgHeaderComponentParams,
   PlAgCsvExporter,
 } from '@platforma-sdk/ui-vue';
-import { AgGridVue } from '@ag-grid-community/vue3';
-import type { ColDef, GridApi, GridOptions, GridReadyEvent } from '@ag-grid-community/core';
+import { AgGridVue } from 'ag-grid-vue3';
+import type { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-enterprise';
 import { times } from '@milaboratories/helpers';
 import { faker } from '@faker-js/faker';
 

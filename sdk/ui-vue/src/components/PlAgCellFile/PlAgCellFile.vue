@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PlFileInput } from '@milaboratories/uikit';
-import type { ICellRendererParams } from '@ag-grid-community/core';
+import type { ICellRendererParams } from 'ag-grid-enterprise';
 import type { ImportFileHandle, ImportProgress } from '@platforma-sdk/model';
 import { computed } from 'vue';
 
