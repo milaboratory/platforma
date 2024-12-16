@@ -3,26 +3,30 @@
 import Cmd0 from './commands/build';
 import Cmd1 from './commands/publish';
 import Cmd2 from './commands/sign';
-import Cmd3 from './commands/build/descriptors';
-import Cmd4 from './commands/build/packages';
-import Cmd5 from './commands/publish/descriptors';
-import Cmd6 from './commands/publish/packages';
-import Cmd7 from './commands/sign/packages';
-import Cmd8 from './commands/get/package/name';
-import Cmd9 from './commands/get/package/path';
-import Cmd10 from './commands/get/package/version';
+import Cmd3 from './commands/build/all';
+import Cmd4 from './commands/build/descriptors';
+import Cmd5 from './commands/build/packages';
+import Cmd6 from './commands/publish/all';
+import Cmd7 from './commands/publish/descriptors';
+import Cmd8 from './commands/publish/packages';
+import Cmd9 from './commands/sign/packages';
+import Cmd10 from './commands/get/package/name';
+import Cmd11 from './commands/get/package/path';
+import Cmd12 from './commands/get/package/version';
 
 // prettier-ignore
 export const COMMANDS = {
   'build': Cmd0,
   'publish': Cmd1,
   'sign': Cmd2,
-  'build:descriptors': Cmd3,
-  'build:packages': Cmd4,
-  'publish:descriptors': Cmd5,
-  'publish:packages': Cmd6,
-  'sign:packages': Cmd7,
-  'get:package:name': Cmd8,
-  'get:package:path': Cmd9,
-  'get:package:version': Cmd10
+  'build:all': Cmd3,
+  'build:descriptors': Cmd4,
+  'build:packages': Cmd5,
+  'publish:all': Cmd6,
+  'publish:descriptors': Cmd7,
+  'publish:packages': Cmd8,
+  'sign:packages': Cmd9,
+  'get:package:name': Cmd10,
+  'get:package:path': Cmd11,
+  'get:package:version': Cmd12
 };

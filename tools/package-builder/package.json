@@ -26,7 +26,8 @@
     "tar": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:^"
   },
   "devDependencies": {
     "@jest/globals": "catalog:",
