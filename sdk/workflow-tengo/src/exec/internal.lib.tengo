@@ -148,6 +148,7 @@ _loadRRunEnvironment := func(operationMode, descriptor, softName, softPkg) {
 		customPaths: [ _newArg(true, rBinDir) ],
 		envs: {
 			"R_HOME_DIR": _newArg(true, _ARG_VAR_R),
+			"RHOME": _newArg(true, _ARG_VAR_R),
 			"RENV_PATHS_ROOT": _newArg(true, path.join(_ARG_VAR_R, "renv-root")),
 			"RENV_PATHS_RENV": _newArg(true, path.join(_ARG_VAR_R_VENV, "renv")),
 			"RENV_PATHS_LOCKFILE": _newArg(true, path.join(_ARG_VAR_PKG, descriptor.dependencies.lockFile)),
