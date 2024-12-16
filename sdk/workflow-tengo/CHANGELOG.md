@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.4
+
+### Patch Changes
+
+- 345d088: Set RHOME for Rscript correct execution
+
 ## 2.8.3
 
 ### Patch Changes

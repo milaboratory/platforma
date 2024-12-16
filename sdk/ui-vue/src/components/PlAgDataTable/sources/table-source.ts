@@ -31,7 +31,7 @@ import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } fro
 type PlAgCellButtonAxisParams = {
   showCellButtonForAxisId?: AxisId;
   cellButtonInvokeRowsOnDoubleClick?: boolean;
-  trigger: (key: PTableRowKey) => void;
+  trigger: (key?: PTableRowKey) => void;
 };
 
 /**
@@ -83,8 +83,8 @@ function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[
               component: PlAgTextAndButtonCell,
               params: {
                 invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
-                onClick: (prms: ICellRendererParams) => {
-                  cellButtonAxisParams.trigger(prms.data.key);
+                onClick: (prms: ICellRendererParams<PlAgDataTableRow>) => {
+                  cellButtonAxisParams.trigger(prms.data?.key);
                 },
               },
             };
