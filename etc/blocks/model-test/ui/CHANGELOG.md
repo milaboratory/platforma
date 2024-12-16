@@ -1,5 +1,12 @@
 # @milaboratories/milaboratories.test-block-model.ui
 
+## 1.0.80
+
+### Patch Changes
+
+- Updated dependencies [e654872]
+  - @platforma-sdk/ui-vue@1.20.17
+
 ## 1.0.79
 
 ### Patch Changes

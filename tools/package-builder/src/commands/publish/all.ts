@@ -18,7 +18,7 @@ export default class PublishAll extends Command {
     ...cmdOpts.StorageURLFlag,
 
     ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.SkipExistingPackagesFlag
+    ...cmdOpts.FailExistingPackagesFlag
   };
 
   public async run(): Promise<void> {
@@ -37,7 +37,7 @@ export default class PublishAll extends Command {
       archivePath: flags.archive,
       storageURL: flags['storage-url'],
 
-      skipExisting: flags['skip-existing-packages'],
+      failExisting: flags['fail-existing-packages'],
       forceReupload: flags.force
     });
 
