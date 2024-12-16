@@ -24,9 +24,15 @@ import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
-import type { PlAgDataTableRow } from '../types';
+import type { PlAgDataTableRow, PTableRowKey } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
+
+type PlAgCellButtonAxisParams = {
+  showCellButtonForAxisId?: AxisId;
+  cellButtonInvokeRowsOnDoubleClick?: boolean;
+  trigger: (key: PTableRowKey) => void;
+};
 
 /**
  * Generate unique colId based on the column spec.
@@ -55,7 +61,7 @@ export const defaultValueFormatter = (value: ValueFormatterParams<PlAgDataTableR
 /**
  * Calculates column definition for a given p-table column
  */
-function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], showCellButtonForAxisId?: AxisId): ColDef {
+function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[], cellButtonAxisParams?: PlAgCellButtonAxisParams): ColDef {
   const colId = makeColId(spec);
   const valueType = spec.type === 'axis' ? spec.spec.type : spec.spec.valueType;
   return {
@@ -67,19 +73,22 @@ function makeColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[
     hide: hiddenColIds?.includes(colId) ?? spec.spec.annotations?.['pl7.app/table/visibility'] === 'optional',
     valueFormatter: defaultValueFormatter,
     headerComponent: PlAgColumnHeader,
-    cellRendererSelector: showCellButtonForAxisId
+    cellRendererSelector: cellButtonAxisParams?.showCellButtonForAxisId
       ? (params: ICellRendererParams) => {
           if (spec.type !== 'axis') return;
 
           const axisId = (params.colDef?.context as PTableColumnSpec)?.id as AxisId;
-          if (lodash.isEqual(axisId, showCellButtonForAxisId)) {
-            return { component: PlAgTextAndButtonCell };
+          if (lodash.isEqual(axisId, cellButtonAxisParams.showCellButtonForAxisId)) {
+            return {
+              component: PlAgTextAndButtonCell,
+              params: {
+                invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
+                onClick: (prms: ICellRendererParams) => {
+                  cellButtonAxisParams.trigger(prms.data.key);
+                },
+              },
+            };
           }
-        }
-      : undefined,
-    cellRendererParams: showCellButtonForAxisId
-      ? {
-          invokeRowsOnDoubleClick: true,
         }
       : undefined,
     headerComponentParams: {
@@ -144,7 +153,7 @@ export async function updatePFrameGridOptions(
   sheets: PlDataTableSheet[],
   clientSide: boolean,
   hiddenColIds?: string[],
-  showCellButtonForAxisId?: AxisId,
+  cellButtonAxisParams?: PlAgCellButtonAxisParams,
 ): Promise<{
     columnDefs: ColDef[];
     serverSideDatasource?: IServerSideDatasource;
@@ -217,7 +226,7 @@ export async function updatePFrameGridOptions(
   const rowCount = ptShape.rows;
   const columnDefs: ColDef<PlAgDataTableRow>[] = [
     makeRowNumberColDef(),
-    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, showCellButtonForAxisId)),
+    ...fields.map((i) => makeColDef(i, specs[i], hiddenColIds, cellButtonAxisParams)),
   ];
 
   if (hColumns.length > 0) {
