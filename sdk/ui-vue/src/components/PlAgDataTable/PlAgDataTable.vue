@@ -90,9 +90,9 @@ const props = defineProps<{
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
-  rowDoubleClicked: [key: PTableRowKey];
+  rowDoubleClicked: [key?: PTableRowKey];
   columnsChanged: [columns: PTableColumnSpec[]];
-  cellButtonClicked: [key: PTableRowKey];
+  cellButtonClicked: [key?: PTableRowKey];
 }>();
 
 /** State upgrader */ (() => {
@@ -403,7 +403,7 @@ watch(
             {
               showCellButtonForAxisId: props.showCellButtonForAxisId,
               cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
-              trigger: (key: PTableRowKey) => emit('cellButtonClicked', key),
+              trigger: (key?: PTableRowKey) => emit('cellButtonClicked', key),
             },
           );
 
