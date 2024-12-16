@@ -1,5 +1,24 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.15
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+
+## 1.20.14
+
+### Patch Changes
+
+- Updated dependencies [22685b6]
+  - @milaboratories/uikit@2.2.35
+
+## 1.20.13
+
+### Patch Changes
+
+- cc58398: ui-vue: use configurable debounce with max wait for all set args or ui api methods (optimization)
+
 ## 1.20.11
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/package-builder",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "MiLaboratories Platforma Package builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
@@ -26,7 +26,8 @@
     "tar": "catalog:",
     "winston": "catalog:",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@milaboratories/resolve-helper": "workspace:^"
   },
   "devDependencies": {
     "@jest/globals": "catalog:",

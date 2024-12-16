@@ -80,6 +80,9 @@ export const sdkPlugin = defineApp(platforma, (base) => {
       '/notifications': () => NotificationsPage,
     },
   };
+}, {
+  debug: true,
+  deepPatchModel: true,
 });
 
 export const useApp = sdkPlugin.useApp;

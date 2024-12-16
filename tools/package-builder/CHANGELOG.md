@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.13.0
+
+### Minor Changes
+
+- a1b295e: Entrypoint references support: now entrypoint catalogues are made easier
+
 ## 2.12.0
 
 ### Minor Changes

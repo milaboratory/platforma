@@ -17,6 +17,8 @@ export const sdkPlugin = defineApp(platforma, () => {
       '/': Page,
     },
   };
+}, {
+  debounceSpan: 0,
 });
 
 describe('BlockSum', () => {

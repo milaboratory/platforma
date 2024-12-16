@@ -60,6 +60,14 @@ export type AppSettings = {
    * Enables some debug logs
    */
   debug?: boolean;
+  /**
+   * Debounce span in ms (default is 100ms)
+   */
+  debounceSpan?: number;
+  /**
+   * Debounce max wait in ms (default is 1000ms)
+   */
+  debounceMaxWait?: number;
 };
 
 export type ExtendSettings<Href extends `/${string}` = `/${string}`> = {
