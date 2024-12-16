@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.16
+
+### Patch Changes
+
+- 52b19cf: added cellButtonClicked event
+
 ## 1.20.15
 
 ### Patch Changes
