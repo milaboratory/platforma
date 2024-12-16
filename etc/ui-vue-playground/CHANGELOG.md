@@ -1,5 +1,13 @@
 # @milaboratories/ui-vue-playground
 
+## 0.0.164
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+- Updated dependencies [7f72aa4]
+  - @platforma-sdk/ui-vue@1.20.15
+
 ## 0.0.163
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.8
+
+### Patch Changes
+
+- 7f72aa4: Ag Grid major version upgrade
+
 ## 1.3.7
 
 ### Patch Changes
