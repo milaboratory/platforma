@@ -34,6 +34,7 @@
     "@milaboratories/pl-drivers": "workspace:^",
     "@milaboratories/pl-model-common": "workspace:^",
     "@milaboratories/pl-model-middle-layer": "workspace:^",
+    "@milaboratories/pl-model-backend": "workspace:^",
     "@milaboratories/pl-tree": "workspace:^",
     "@platforma-sdk/model": "workspace:^",
     "@milaboratories/ts-helpers": "workspace:^",
