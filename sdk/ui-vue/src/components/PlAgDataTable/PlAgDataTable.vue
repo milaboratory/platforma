@@ -73,12 +73,26 @@ const props = defineProps<{
    * Auto-enabled when selectedRows provided.
    */
   clientSideModel?: boolean;
+
+  /**
+   * The AxisId property is used to configure and display the PlAgTextAndButtonCell component
+   */
   showCellButtonForAxisId?: AxisId;
+
+  /**
+     * If cellButtonInvokeRowsOnDoubleClick = true, clicking a button inside the row
+     * triggers the doubleClick event for the entire row.
+     *
+     * If cellButtonInvokeRowsOnDoubleClick = false, the doubleClick event for the row
+     * is not triggered, but will triggered cellButtonClicked event with (key: PTableRowKey) argument.
+     */
+  cellButtonInvokeRowsOnDoubleClick?: boolean;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key: PTableRowKey];
   columnsChanged: [columns: PTableColumnSpec[]];
+  cellButtonClicked: [key: PTableRowKey];
 }>();
 
 /** State upgrader */ (() => {
@@ -386,7 +400,11 @@ watch(
             settings.sheets ?? [],
             !!props.clientSideModel || !!selectedRows.value,
             gridState.value?.columnVisibility?.hiddenColIds,
-            props.showCellButtonForAxisId,
+            {
+              showCellButtonForAxisId: props.showCellButtonForAxisId,
+              cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
+              trigger: (key: PTableRowKey) => emit('cellButtonClicked', key),
+            },
           );
 
           return gridApi.updateGridOptions({
