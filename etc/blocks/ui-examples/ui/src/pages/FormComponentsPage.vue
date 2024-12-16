@@ -13,6 +13,7 @@ import {
   PlMaskIcon16,
   PlAccordion,
   PlAccordionSection,
+  PlDropdownMulti,
 } from '@platforma-sdk/ui-vue';
 import { reactive } from 'vue';
 
@@ -26,7 +27,8 @@ const data = reactive({
   multipleAccordion: false,
 });
 
-const options = listToOptions(['A', 'B', 'C', 'D']);
+const shortOptions = listToOptions(['A', 'B', 'C', 'D']);
+const options = listToOptions(['A', 'B', 'C', 'D', 'Lorem ipsum', 'Lorem ipsum dolor sit amet', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.']);
 </script>
 
 <template>
@@ -37,12 +39,14 @@ const options = listToOptions(['A', 'B', 'C', 'D']);
         <PlBtnGroup
           v-model="data.single"
           label="PlBtnGroup"
-          :options="options"
+          :options="shortOptions"
           :compact="data.compactBtnGroup"
         />
         <PlCheckbox v-model="data.compactBtnGroup">Compact btn group component</PlCheckbox>
         <PlTextField v-model="data.text" label="PlTextField" clearable />
+        <PlTextField v-model="data.text" label="PlTextField (password)" type="password" clearable />
         <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />
+        <PlDropdownMulti v-model="data.multiple" label="PlDropdownMulti" :options="options" />
         <PlSectionSeparator>Group name</PlSectionSeparator>
         <PlTextField v-model="data.text" label="PlTextField" />
         <PlDropdown v-model="data.single" label="PlDropdown" :options="options" />

@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.10.1
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+
 ## 1.10.0
 
 ### Minor Changes

@@ -51,7 +51,7 @@ const clear = () => emit('update:modelValue', '');
   line-height: calc(var(--control-height) - 2px);
   background-color: var(--pl-search-field-bg);
   padding: 0 0 0 0;
-  border-bottom: 2px solid var(--pl-search-field-border-bottom-color);
+  border-bottom: 1px solid var(--pl-search-field-border-bottom-color);
 
   input {
     margin-left: 8px;

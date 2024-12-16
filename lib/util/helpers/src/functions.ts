@@ -46,7 +46,7 @@ export function promiseTimeout<T>(prom: PromiseLike<T>, ms: number): Promise<T> 
  * @returns
  */
 export function debounce<F extends AnyFunction>(callback: F, ms: number, immediate?: boolean): (...args: Parameters<F>) => void {
-  let timeout: number | undefined;
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   return function (this: unknown, ...args: Parameters<F>) {
     const i = immediate && !timeout;
     if (i) {

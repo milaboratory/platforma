@@ -4,8 +4,6 @@
 
 validation := import(":validation")
 constants := import(":pframes.constants")
-objects := import(":objects")
-render := import(":render")
 smart := import(":smart")
 exec := import(":exec")
 json := import("json")

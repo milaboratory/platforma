@@ -90,7 +90,7 @@ export class Template {
     }
 
     if (content === undefined)
-      content = gzipSync(encoder.encode(canonicalize(data!)));
+      content = gzipSync(encoder.encode(canonicalize(data!)), { chunkSize: 256 * 1024, level: 9 });
 
     const nameFromData: FullArtifactNameWithoutType = parseArtefactNameAndVersion(data);
 

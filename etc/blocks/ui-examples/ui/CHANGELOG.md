@@ -1,5 +1,43 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.5
+
+### Patch Changes
+
+- Updated dependencies [ead0e68]
+  - @platforma-sdk/model@1.20.11
+  - @milaboratories/milaboratories.ui-examples.model@1.1.4
+
+## 1.3.4
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+- Updated dependencies [4360a85]
+  - @milaboratories/milaboratories.ui-examples.model@1.1.3
+
+## 1.3.3
+
+### Patch Changes
+
+- Updated dependencies [8903a30]
+  - @platforma-sdk/model@1.20.6
+  - @milaboratories/milaboratories.ui-examples.model@1.1.2
+
+## 1.3.2
+
+### Patch Changes
+
+- 9799fa1: [Ui-kit] Proper Cursor Styles in Dropdown Fields
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/model@1.20.0
+  - @milaboratories/milaboratories.ui-examples.model@1.1.1
+
 ## 1.3.0
 
 ### Minor Changes

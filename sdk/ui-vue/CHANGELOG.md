@@ -1,5 +1,75 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.11
+
+### Patch Changes
+
+- Updated dependencies [ead0e68]
+  - @platforma-sdk/model@1.20.11
+  - @milaboratories/uikit@2.2.34
+
+## 1.20.10
+
+### Patch Changes
+
+- 29c0b22: ui-vue: do not save unchanged model
+  - @milaboratories/uikit@2.2.34
+
+## 1.20.9
+
+### Patch Changes
+
+- 69b15fe: Minor typing corrections for PlAgDataTable
+
+## 1.20.7
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+- Updated dependencies [4360a85]
+  - @milaboratories/uikit@2.2.34
+
+## 1.20.6
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @platforma-sdk/model@1.20.6
+  - @milaboratories/uikit@2.2.33
+
+## 1.20.5
+
+### Patch Changes
+
+- c74f56a: PlAgDataTable row selection
+
+## 1.20.4
+
+### Patch Changes
+
+- Updated dependencies [9799fa1]
+  - @milaboratories/uikit@2.2.33
+
+## 1.20.2
+
+### Patch Changes
+
+- b017f36: ui-vue lint fix
+
+## 1.20.0
+
+### Minor Changes
+
+- 1c8631b: - PlAgDataTable: allow multiple columns sharing same heterogeneous axis
+  - model: bugfix related to findLabels
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/model@1.20.0
+  - @milaboratories/uikit@2.2.32
+
 ## 1.19.0
 
 ### Patch Changes

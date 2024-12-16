@@ -1,5 +1,11 @@
 # @platforma-sdk/tengo-builder
 
+## 1.17.4
+
+### Patch Changes
+
+- 69b15fe: Increased compression level in compiled templates
+
 ## 1.17.3
 
 ### Patch Changes

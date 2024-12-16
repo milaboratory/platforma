@@ -68,6 +68,9 @@ export function packageChannelPrefix(bp: BlockPackId): string {
   return `${MainPrefix}${packageChannelPrefixInsideV2(bp)}`;
 }
 
+export const PackageManifestPattern =
+  /(?<packageKeyWithoutVersion>(?<organization>[^\/]+)\/(?<name>[^\/]+))\/(?<version>[^\/]+)\/manifest\.json$/;
+
 export const GlobalOverviewPath = `${MainPrefix}${GlobalOverviewFileName}`;
 
 export function GlobalOverviewEntry<const Description extends z.ZodTypeAny>(

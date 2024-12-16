@@ -77,7 +77,7 @@ const props = defineProps<{
   /**
    * The string specifies whether the field should be a password or not, value could be "password" or undefined.
    */
-  type?: 'password' | 'number';
+  type?: 'password';
 }>();
 
 const rootRef = ref<HTMLInputElement | undefined>(undefined);
@@ -168,6 +168,8 @@ const onFocusOut = () => {
   data.cached = undefined;
 };
 
+const setFocusOnInput = () => inputRef.value?.focus();
+
 useLabelNotch(rootRef);
 </script>
 
@@ -204,9 +206,9 @@ useLabelNotch(rootRef);
         spellcheck="false"
         @focusout="onFocusOut"
       />
-      <div class="pl-text-field__append">
-        <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click="clear" />
-        <PlMaskIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click="togglePasswordVisibility" />
+      <div class="pl-text-field__append" @click="setFocusOnInput">
+        <PlIcon16 v-if="canShowClearable" class="pl-text-field__clearable" name="delete-clear" @click.stop="clear" />
+        <PlMaskIcon24 v-if="type === 'password'" :name="passwordIcon" style="cursor: pointer" @click.stop="togglePasswordVisibility" />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" />

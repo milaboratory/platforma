@@ -12,12 +12,16 @@ import { getDevV1PacketMtime, getDevV2PacketMtime } from './registry';
 import { tryLoadPackDescription } from '@platforma-sdk/block-tools';
 import { assertNever, MiLogger } from '@milaboratories/ts-helpers';
 import { V2RegistryProvider } from './registry-v2-provider';
+import semver from 'semver';
 
 export const DefaultBlockUpdateWatcherOps: PollPoolOps = {
   minDelay: 1500
 };
 
-export type BlockUpdateWatcherOps = Partial<PollPoolOps> & { readonly http?: Dispatcher };
+export type BlockUpdateWatcherOps = Partial<PollPoolOps> & {
+  readonly http?: Dispatcher;
+  readonly preferredUpdateChannel?: string;
+};
 
 const NoUpdatesKey = '__no_updates__';
 
@@ -26,6 +30,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
   BlockPackSpec | undefined
 > {
   private readonly http?: Dispatcher;
+  private readonly preferredUpdateChannel?: string;
 
   constructor(
     private readonly registryProvider: V2RegistryProvider,
@@ -34,6 +39,7 @@ export class BlockUpdateWatcher extends PollComputablePool<
   ) {
     super({ ...ops, ...DefaultBlockUpdateWatcherOps }, logger);
     this.http = ops.http;
+    this.preferredUpdateChannel = ops.preferredUpdateChannel;
   }
 
   protected getKey(req: BlockPackSpec): string {
@@ -88,28 +94,27 @@ export class BlockUpdateWatcher extends PollComputablePool<
                 // forcing update from non-existent channel to stable
                 const a2 = await registry.getLatestOverview(req.id, AnyChannel);
                 if (a2 === undefined) {
-                  this.logger.error(`No any channel record for ${blockPackIdToString(req.id)}`);
+                  this.logger.error(`No "any" channel record for ${blockPackIdToString(req.id)}`);
                   return undefined;
                 }
                 spec = { ...(a2.spec as BlockPackFromRegistryV2), channel: StableChannel };
               }
             } else {
-              const a1 = await registry.getLatestOverview(req.id, req.channel);
+              const targetChannel = this.preferredUpdateChannel ?? req.channel;
+              const a1 = await registry.getLatestOverview(req.id, targetChannel);
               if (a1) spec = a1.spec;
-              else if(req.channel === StableChannel) {
-                // we were not able to find a stable package because there are none for the block pack yet
-                const a2 = await registry.getLatestOverview(req.id, AnyChannel);
-                if (a2 === undefined) {
-                  this.logger.error(`No any channel record for ${blockPackIdToString(req.id)}`);
-                  return undefined;
-                }
-                // providing "any" channel package as a substitute and marking it as stable
-                spec = { ...(a2.spec as BlockPackFromRegistryV2), channel: StableChannel };
+              else {
+                this.logger.error(
+                  `Can't find update for ${blockPackIdToString(req.id)} in channel "${targetChannel}"`
+                );
+                return undefined;
               }
             }
 
-            if (spec?.type !== 'from-registry-v2') throw new Error('Unexpected');
-            if (blockPackIdEquals(spec.id, req.id)) return undefined;
+            if (spec.type !== 'from-registry-v2') throw new Error(`Unexpected spec type ${spec}.`);
+
+            // check that version is in fact later compared to what we already have
+            if (semver.compare(spec.id.version, req.id.version) <= 0) return undefined;
 
             // warming cache
             // noinspection ES6MissingAwait

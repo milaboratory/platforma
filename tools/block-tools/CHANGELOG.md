@@ -1,5 +1,20 @@
 # @platforma-sdk/block-tools
 
+## 2.5.0
+
+### Minor Changes
+
+- 69b15fe: Multiple for block registry reader
+
+## 2.4.12
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @milaboratories/pl-model-middle-layer@1.6.8
+  - @milaboratories/pl-http@1.0.2
+
 ## 2.4.11
 
 ### Patch Changes

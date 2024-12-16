@@ -9,11 +9,7 @@ import { createProjectList, ProjectsField, ProjectsResourceType } from './projec
 import { createProject, withProject, withProjectAuthored } from '../mutator/project';
 import { SynchronizedTreeState } from '@milaboratories/pl-tree';
 import { BlockPackPreparer } from '../mutator/block-pack/block_pack';
-import {
-  HmacSha256Signer,
-  MiLogger,
-  Signer
-} from '@milaboratories/ts-helpers';
+import { HmacSha256Signer, MiLogger, Signer } from '@milaboratories/ts-helpers';
 import { ComputableStableDefined, WatchableValue } from '@milaboratories/computable';
 import { Project } from './project';
 import {
@@ -258,7 +254,8 @@ export class MiddleLayer {
       driverKit,
       blockUpdateWatcher: new BlockUpdateWatcher(v2RegistryProvider, logger, {
         minDelay: ops.devBlockUpdateRecheckInterval,
-        http: retryHttpDispatcher
+        http: retryHttpDispatcher,
+        preferredUpdateChannel: ops.preferredUpdateChannel
       }),
       quickJs: await getQuickJS()
     };
