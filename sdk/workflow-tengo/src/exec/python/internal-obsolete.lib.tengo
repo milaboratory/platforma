@@ -1,6 +1,5 @@
 ll := import(":ll")
 validation := import(":validation")
-pkg := import(":exec.package")
 desc := import(":exec.descriptor")
 
 pythonVenvInputSchema := {
