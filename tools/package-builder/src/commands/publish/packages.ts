@@ -18,7 +18,7 @@ export default class Packages extends Command {
 
     ...cmdOpts.ArchiveFlag,
     ...cmdOpts.StorageURLFlag,
-    ...cmdOpts.SkipExistingPackagesFlag
+    ...cmdOpts.FailExistingPackagesFlag
   };
 
   static strict: boolean = false;
@@ -39,7 +39,7 @@ export default class Packages extends Command {
       archivePath: flags.archive,
       storageURL: flags['storage-url'],
 
-      skipExisting: flags['skip-existing-packages'],
+      failExisting: flags['fail-existing-packages'],
       forceReupload: flags.force
     });
   }
