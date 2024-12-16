@@ -1,5 +1,11 @@
 # @milaboratories/milaboratories.ui-examples.ui
 
+## 1.3.6
+
+### Patch Changes
+
+- cc58398: ui-vue: use configurable debounce with max wait for all set args or ui api methods (optimization)
+
 ## 1.3.5
 
 ### Patch Changes

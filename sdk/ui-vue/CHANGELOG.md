@@ -1,5 +1,11 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.13
+
+### Patch Changes
+
+- cc58398: ui-vue: use configurable debounce with max wait for all set args or ui api methods (optimization)
+
 ## 1.20.11
 
 ### Patch Changes
