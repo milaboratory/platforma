@@ -1,4 +1,4 @@
-import { deepClone, throttle } from '@milaboratories/helpers';
+import { deepClone, isJsonEqual, throttle } from '@milaboratories/helpers';
 import type { Mutable } from '@milaboratories/helpers';
 import type { NavigationState, BlockOutputsBase, BlockState, Platforma } from '@platforma-sdk/model';
 import { reactive, nextTick, computed, watch } from 'vue';
@@ -242,7 +242,9 @@ export function createApp<
       },
       autoSave: true,
       onSave(newData: AppModel) {
-        setBlockArgsAndUiState(newData.args, newData.ui);
+        if (!isJsonEqual(newData.args, snapshot.args) || !isJsonEqual(newData.ui, snapshot.ui)) {
+          setBlockArgsAndUiState(newData.args, newData.ui);
+        }
       },
     },
     {

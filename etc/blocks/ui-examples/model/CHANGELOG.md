@@ -1,5 +1,32 @@
 # @milaboratories/milaboratories.ui-examples.model
 
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [ead0e68]
+  - @platforma-sdk/model@1.20.11
+
+## 1.1.3
+
+### Patch Changes
+
+- 4360a85: fix: add PlAgCellStatusTag (need update platforma deps)
+
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [8903a30]
+  - @platforma-sdk/model@1.20.6
+
+## 1.1.1
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/model@1.20.0
+
 ## 1.1.0
 
 ### Minor Changes

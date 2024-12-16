@@ -5,7 +5,6 @@
 self := import(":tpl")
 
 ll := import(":ll")
-render := import(":render")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 path := import(":path")

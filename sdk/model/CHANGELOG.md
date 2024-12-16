@@ -1,5 +1,26 @@
 # @platforma-sdk/model
 
+## 1.20.11
+
+### Patch Changes
+
+- ead0e68: Account for domain when calculating labels in createPlDataTable
+
+## 1.20.6
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @milaboratories/pl-model-common@1.10.1
+
+## 1.20.0
+
+### Minor Changes
+
+- 1c8631b: - PlAgDataTable: allow multiple columns sharing same heterogeneous axis
+  - model: bugfix related to findLabels
+
 ## 1.19.0
 
 ### Minor Changes

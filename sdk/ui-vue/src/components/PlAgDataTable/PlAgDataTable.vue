@@ -35,11 +35,12 @@ import PlOverlayLoading from './PlAgOverlayLoading.vue';
 import PlOverlayNoRows from './PlAgOverlayNoRows.vue';
 import { updateXsvGridOptions } from './sources/file-source';
 import { makeRowId, parseColId, updatePFrameGridOptions } from './sources/table-source';
-import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow } from './types';
+import type { PlAgDataTableController, PlDataTableSettings, PlAgDataTableRow, PTableRowKey } from './types';
 import { PlAgGridColumnManager } from '../PlAgGridColumnManager';
 import { autoSizeRowNumberColumn, PlAgDataTableRowNumberColId } from './sources/row-number';
 import { focusRow, makeOnceTracker, trackFirstDataRendered } from './sources/focus-row';
 import PlAgCsvExporter from '../PlAgCsvExporter/PlAgCsvExporter.vue';
+import { isJsonEqual } from '@milaboratories/helpers';
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -49,7 +50,7 @@ ModuleRegistry.registerModules([
 ]);
 
 const tableState = defineModel<PlDataTableState>({ default: { gridState: {} } });
-const selectedRows = defineModel<string[]>('selectedRows');
+const selectedRows = defineModel<PTableRowKey[]>('selectedRows');
 const props = defineProps<{
   settings?: Readonly<PlDataTableSettings>;
   /**
@@ -66,11 +67,17 @@ const props = defineProps<{
    * This component serves as the target for teleporting the button.
    */
   showExportButton?: boolean;
+  /**
+   * Force use of client-side row model.
+   * Required for reliable work of focusRow.
+   * Auto-enabled when selectedRows provided.
+   */
+  clientSideModel?: boolean;
   showCellButtonForAxisId?: AxisId;
 }>();
 const { settings } = toRefs(props);
 const emit = defineEmits<{
-  onRowDoubleClicked: [key: unknown[]];
+  rowDoubleClicked: [key: PTableRowKey];
   columnsChanged: [columns: PTableColumnSpec[]];
 }>();
 
@@ -107,11 +114,17 @@ const gridState = computed({
       = settings.value?.sourceType !== 'ptable' || gridOptions.value.rowModelType === 'clientSide' ? undefined : makeSorting(gridState.sort);
 
     const oldState = tableState.value;
-    tableState.value = {
+
+    const newState = {
       ...oldState,
       gridState: { ...oldState.gridState, ...gridState },
       pTableParams: { ...oldState.pTableParams, sorting },
     };
+
+    // Note: the table constantly emits an unchanged state, so I added this
+    if (!isJsonEqual(oldState, newState)) {
+      tableState.value = newState;
+    }
   },
 });
 
@@ -170,7 +183,7 @@ watch(
 );
 
 const gridApi = shallowRef<GridApi>();
-const firstDataRenderedTracker = makeOnceTracker<GridApi>();
+const firstDataRenderedTracker = makeOnceTracker<GridApi<PlAgDataTableRow>>();
 const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   animateRows: false,
   suppressColumnMoveAnimation: true,
@@ -180,11 +193,34 @@ const gridOptions = shallowRef<GridOptions<PlAgDataTableRow>>({
   rowSelection: selectedRows.value
     ? {
         mode: 'multiRow',
-        headerCheckbox: false,
       }
     : undefined,
+  selectionColumnDef: {
+    mainMenuItems: [],
+    contextMenuItems: [],
+    pinned: 'left',
+    lockPinned: true,
+    suppressSizeToFit: true,
+    suppressAutoSize: true,
+    sortable: false,
+    resizable: false,
+  },
+  onRowDataUpdated: (event) => {
+    const selectedRowsValue = selectedRows.value;
+    if (selectedRowsValue) {
+      const nodes = selectedRowsValue
+        .map((rowKey) => event.api.getRowNode(makeRowId(rowKey)))
+        .filter((node) => !!node);
+      event.api.setNodesSelected({ nodes, newValue: true });
+    }
+  },
+  onSelectionChanged: (event) => {
+    if (selectedRows.value) {
+      selectedRows.value = event.api.getSelectedNodes().map((rowNode) => rowNode.data!.key);
+    }
+  },
   onRowDoubleClicked: (event) => {
-    if (event.data) emit('onRowDoubleClicked', event.data.key);
+    if (event.data) emit('rowDoubleClicked', event.data.key);
   },
   defaultColDef: {
     suppressHeaderMenuButton: true,
@@ -341,9 +377,14 @@ watch(
           });
         }
 
-        const driver = getRawPlatformaInstance().pFrameDriver;
-        const hiddenColIds = gridState.value?.columnVisibility?.hiddenColIds;
-        const options = await updatePFrameGridOptions(driver, settings.pTable, settings.sheets ?? [], hiddenColIds, props.showCellButtonForAxisId);
+        const options = await updatePFrameGridOptions(
+          getRawPlatformaInstance().pFrameDriver,
+          settings.pTable,
+          settings.sheets ?? [],
+          !!props.clientSideModel || !!selectedRows.value,
+          gridState.value?.columnVisibility?.hiddenColIds,
+          props.showCellButtonForAxisId,
+        );
 
         return gridApi.updateGridOptions({
           loading: false,

@@ -218,17 +218,17 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-multi-dropdown__envelope">
+  <div class="pl-dropdown-multi__envelope">
     <div
       ref="rootRef"
       :tabindex="tabindex"
-      class="pl-multi-dropdown"
+      class="pl-dropdown-multi"
       :class="{ open: data.open, error, disabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
     >
-      <div class="pl-multi-dropdown__container">
-        <div class="pl-multi-dropdown__field">
+      <div class="pl-dropdown-multi__container">
+        <div class="pl-dropdown-multi__field">
           <input
             ref="input"
             v-model="data.search"
@@ -246,7 +246,7 @@ watchPostEffect(() => {
             </PlChip>
           </div>
           <div class="arrow" @click.stop="toggleModel" />
-          <div class="pl-multi-dropdown__append">
+          <div class="pl-dropdown-multi__append">
             <slot name="append" />
           </div>
         </div>
@@ -263,12 +263,12 @@ watchPostEffect(() => {
           v-if="data.open"
           ref="overlay"
           :root="rootRef"
-          class="pl-multi-dropdown__options"
-          :gap="3"
+          class="pl-dropdown-multi__options"
+          :gap="5"
           tabindex="-1"
           @focusout="onFocusOut"
         >
-          <div class="pl-multi-dropdown__open-chips-container">
+          <div class="pl-dropdown-multi__open-chips-container">
             <PlChip v-for="(opt, i) in selectedOptionsRef" :key="i" closeable small @close="unselectOption(opt.value)">
               {{ opt.label || opt.value }}
             </PlChip>
@@ -286,10 +286,10 @@ watchPostEffect(() => {
           />
           <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
         </DropdownOverlay>
-        <DoubleContour class="pl-multi-dropdown__contour" />
+        <DoubleContour class="pl-dropdown-multi__contour" />
       </div>
     </div>
-    <div v-if="error" class="pl-multi-dropdown__error">{{ error }}</div>
-    <div v-else-if="helper" class="pl-multi-dropdown__helper">{{ helper }}</div>
+    <div v-if="error" class="pl-dropdown-multi__error">{{ error }}</div>
+    <div v-else-if="helper" class="pl-dropdown-multi__helper">{{ helper }}</div>
   </div>
 </template>

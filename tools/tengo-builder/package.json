@@ -1,11 +1,12 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "1.17.3",
+  "version": "1.17.4",
   "description": "Pl Tengo Template Builder",
   "scripts": {
     "type-check": "tsc --noEmit --composite false",
     "build": "oclif-index && vite build",
-    "test": "jest"
+    "test": "jest",
+    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
   },
   "bin": {
     "pl-tengo": "./bin/run.js"

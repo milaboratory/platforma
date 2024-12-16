@@ -1,5 +1,23 @@
 # @platforma-sdk/workflow-tengo
 
+## 2.8.3
+
+### Patch Changes
+
+- 0be0012: Move rest of the scripts to 'scripts' dir
+
+## 2.8.2
+
+### Patch Changes
+
+- f2f1d12: Drop unused imports
+
+## 2.8.1
+
+### Patch Changes
+
+- 7734966: Safer migration errors for unmarshalled bquery results
+
 ## 2.8.0
 
 ### Minor Changes

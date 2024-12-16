@@ -3,7 +3,7 @@ export type AnyFunction = (...args: any[]) => any;
 
 export type AnyAsyncFunction = (...args: any[]) => Promise<any>;
 
-export type PlainObject = Record<string | symbol, unknown>;
+export type PlainObject<V = unknown> = Record<string | symbol, V>;
 
 export type Optional<T> = T | undefined;
 

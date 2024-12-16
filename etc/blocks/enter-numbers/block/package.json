@@ -1,10 +1,10 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers",
-  "version": "1.0.148",
+  "version": "1.0.157",
   "private": true,
   "scripts": {
     "build": "rm -rf ./block-pack && block-tools pack",
-    "publish-to-local-registry": "block-tools publish --registry file:./../../../test-registry && block-tools publish --version-override 100.0.0 --registry file:./../../../test-registry && block-tools mark-stable --registry file:./../../../test-registry"
+    "publish-to-local-registry": "block-tools publish --registry file:./../../../../test-registry && block-tools publish --version-override 100.0.0 --registry file:./../../../../test-registry && block-tools mark-stable --registry file:./../../../../test-registry"
   },
   "files": [
     "index.d.ts",

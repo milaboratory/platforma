@@ -1,0 +1,23 @@
+.pl-status-tag {
+    border-radius: 4px;
+    border: 1px solid var(--txt-01);
+    padding: 2px 8px;
+    width: fit-content;
+    height: 24px;
+
+    &.ok {
+        background: var(--notification-success);
+    }
+
+    &.warn {
+        background: var(--notification-warning);
+    }
+
+    &.alert {
+        background: var(--notification-error);
+    }
+
+    &.hold {
+        background: var(--notification-neutral);
+    }
+}

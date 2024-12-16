@@ -15,7 +15,6 @@ path := import(":path")
 enum := import("enum")
 validation := import(":validation")
 render := import(":render")
-blobs := import(":file.internal")
 
 create := func() {
 	wd := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_CREATE).lockAndBuild()

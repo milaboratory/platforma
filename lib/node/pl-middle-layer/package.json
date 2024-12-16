@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.21.0",
+  "version": "1.22.2",
   "description": "Pl Middle Layer",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -50,6 +50,8 @@
     "@milaboratories/pl-local": "workspace:^"
   },
   "devDependencies": {
+    "semver": "catalog:",
+    "@types/semver": "catalog:",
     "@milaboratories/platforma-build-configs": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

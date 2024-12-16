@@ -1,5 +1,74 @@
 # @milaboratories/pl-middle-layer
 
+## 1.22.2
+
+### Patch Changes
+
+- Updated dependencies [0be0012]
+  - @platforma-sdk/workflow-tengo@2.8.3
+
+## 1.22.1
+
+### Patch Changes
+
+- Updated dependencies [ead0e68]
+  - @platforma-sdk/model@1.20.11
+
+## 1.22.0
+
+### Minor Changes
+
+- 69b15fe: Multiple for block registry reader
+
+### Patch Changes
+
+- Updated dependencies [69b15fe]
+  - @platforma-sdk/block-tools@2.5.0
+  - @platforma-sdk/workflow-tengo@2.8.2
+
+## 1.21.5
+
+### Patch Changes
+
+- Updated dependencies [f2f1d12]
+  - @platforma-sdk/workflow-tengo@2.8.2
+
+## 1.21.4
+
+### Patch Changes
+
+- 8903a30: Dependency upgrade
+- Updated dependencies [8903a30]
+  - @milaboratories/pl-model-common@1.10.1
+  - @milaboratories/pl-model-middle-layer@1.6.8
+  - @milaboratories/pl-drivers@1.5.4
+  - @milaboratories/pl-http@1.0.2
+  - @platforma-sdk/model@1.20.6
+  - @platforma-sdk/block-tools@2.4.12
+  - @milaboratories/pl-client@2.7.1
+  - @milaboratories/pl-tree@1.4.20
+
+## 1.21.3
+
+### Patch Changes
+
+- 2a74806: Added option to set a preferredUpdateChannel
+- Updated dependencies [7734966]
+  - @platforma-sdk/workflow-tengo@2.8.1
+
+## 1.21.2
+
+### Patch Changes
+
+- d0af7b8: Fix fake stable spec channel name
+
+## 1.21.1
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/model@1.20.0
+
 ## 1.21.0
 
 ### Minor Changes

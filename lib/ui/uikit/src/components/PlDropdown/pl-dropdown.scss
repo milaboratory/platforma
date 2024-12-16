@@ -121,26 +121,30 @@
     display: flex;
     flex-direction: row;
     align-items: center;
+    cursor: pointer;
 
     .input-value {
-      outline: 1px solid red;
       position: absolute;
       top: 0;
       left: 0;
       bottom: 0;
       right: 0;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
       padding: 0 60px 0 11px; // @TODO padding-right based on controls width
       pointer-events: none;
-      line-height: var(--control-height);
+      line-height: 20px;
       color: var(--txt-01);
       overflow: hidden;
       white-space: pre;
       text-overflow: ellipsis;
+      cursor: inherit;
     }
 
     input {
       min-height: calc(var(--control-height) - 2px);
-      line-height: calc(var(--control-height) - 2px);
+      line-height: 20px;
       font-family: inherit;
       font-size: inherit;
       background-color: transparent;

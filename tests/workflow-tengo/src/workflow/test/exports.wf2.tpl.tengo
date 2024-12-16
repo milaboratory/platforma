@@ -34,7 +34,10 @@ wf.body(func(args) {
 
 	return {
 		outputs: {
-			query: args.query,
+			query: {
+				spec: args.query.spec,
+				data: args.query.data
+			},
 			join: str
 		},
 		exports: {}

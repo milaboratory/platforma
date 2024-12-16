@@ -1,5 +1,70 @@
 # @milaboratories/milaboratories.test-upload-file.ui
 
+## 1.0.35
+
+### Patch Changes
+
+- @milaboratories/milaboratories.test-upload-file.model@1.0.8
+- @platforma-sdk/ui-vue@1.20.11
+
+## 1.0.34
+
+### Patch Changes
+
+- Updated dependencies [29c0b22]
+  - @platforma-sdk/ui-vue@1.20.10
+
+## 1.0.33
+
+### Patch Changes
+
+- Updated dependencies [69b15fe]
+  - @platforma-sdk/ui-vue@1.20.9
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.7
+
+## 1.0.32
+
+### Patch Changes
+
+- Updated dependencies [4360a85]
+  - @platforma-sdk/ui-vue@1.20.7
+
+## 1.0.31
+
+### Patch Changes
+
+- Updated dependencies [8903a30]
+  - @platforma-sdk/ui-vue@1.20.6
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.7
+
+## 1.0.30
+
+### Patch Changes
+
+- Updated dependencies [c74f56a]
+  - @platforma-sdk/ui-vue@1.20.5
+
+## 1.0.29
+
+### Patch Changes
+
+- @platforma-sdk/ui-vue@1.20.4
+
+## 1.0.28
+
+### Patch Changes
+
+- Updated dependencies [b017f36]
+  - @platforma-sdk/ui-vue@1.20.2
+
+## 1.0.27
+
+### Patch Changes
+
+- Updated dependencies [1c8631b]
+  - @platforma-sdk/ui-vue@1.20.0
+  - @milaboratories/milaboratories.test-upload-file.model@1.0.6
+
 ## 1.0.26
 
 ### Patch Changes

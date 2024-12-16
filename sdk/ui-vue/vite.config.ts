@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [vue()],
   build: {
     emptyOutDir: false,
+    sourcemap: true,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: [resolve(__dirname, 'src/lib.ts')],
