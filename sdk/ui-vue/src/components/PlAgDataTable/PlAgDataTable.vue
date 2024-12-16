@@ -7,7 +7,6 @@ import type {
   GridOptions,
   GridReadyEvent,
   GridState,
-  ICellRendererParams,
   ManagedGridOptionKey,
   ManagedGridOptions,
   SortState,
@@ -85,7 +84,7 @@ const props = defineProps<{
      * triggers the doubleClick event for the entire row.
      *
      * If cellButtonInvokeRowsOnDoubleClick = false, the doubleClick event for the row
-     * is not triggered, but will triggered cellButtonClicked event with (data: ICellRendererParams) argument.
+     * is not triggered, but will triggered cellButtonClicked event with (key: PTableRowKey) argument.
      */
   cellButtonInvokeRowsOnDoubleClick?: boolean;
 }>();
@@ -93,7 +92,7 @@ const { settings } = toRefs(props);
 const emit = defineEmits<{
   rowDoubleClicked: [key: PTableRowKey];
   columnsChanged: [columns: PTableColumnSpec[]];
-  cellButtonClicked: [data: ICellRendererParams];
+  cellButtonClicked: [key: PTableRowKey];
 }>();
 
 /** State upgrader */ (() => {
@@ -401,7 +400,7 @@ watch(
           {
             showCellButtonForAxisId: props.showCellButtonForAxisId,
             cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
-            trigger: (data: ICellRendererParams) => emit('cellButtonClicked', data),
+            trigger: (key: PTableRowKey) => emit('cellButtonClicked', key),
           },
         );
 

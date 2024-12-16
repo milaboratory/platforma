@@ -23,14 +23,14 @@ import canonicalize from 'canonicalize';
 import * as lodash from 'lodash';
 import { PlAgColumnHeader, type PlAgHeaderComponentParams, type PlAgHeaderComponentType } from '../../PlAgColumnHeader';
 import PlAgTextAndButtonCell from '../../PlAgTextAndButtonCell/PlAgTextAndButtonCell.vue';
-import type { PlAgDataTableRow } from '../types';
+import type { PlAgDataTableRow, PTableRowKey } from '../types';
 import { makeRowNumberColDef, PlAgDataTableRowNumberColId } from './row-number';
 import { getHeterogeneousColumns, updatePFrameGridOptionsHeterogeneousAxes } from './table-source-heterogeneous';
 
 type PlAgCellButtonAxisParams = {
   showCellButtonForAxisId?: AxisId;
   cellButtonInvokeRowsOnDoubleClick?: boolean;
-  trigger: (data: ICellRendererParams) => void;
+  trigger: (key: PTableRowKey) => void;
 };
 
 /**
@@ -85,7 +85,7 @@ function getColDef(iCol: number, spec: PTableColumnSpec, hiddenColIds?: string[]
               params: {
                 invokeRowsOnDoubleClick: cellButtonAxisParams.cellButtonInvokeRowsOnDoubleClick,
                 onClick: (prms: ICellRendererParams) => {
-                  cellButtonAxisParams.trigger(prms);
+                  cellButtonAxisParams.trigger(prms.data.key);
                 },
               },
             };
