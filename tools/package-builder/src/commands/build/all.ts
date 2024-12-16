@@ -3,7 +3,7 @@ import * as cmdOpts from '../../core/cmd-opts';
 import * as util from '../../core/util';
 import { Core } from '../../core/core';
 
-export default class Build extends Command {
+export default class BuildAll extends Command {
   static override description =
     'Build all targets (entrypoint descriptors, binary pacakges and so on)';
 
@@ -26,7 +26,7 @@ export default class Build extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Build);
+    const { flags } = await this.parse(BuildAll);
     const logger = util.createLogger(flags['log-level']);
 
     const sources: util.SoftwareSource[] = flags.source
