@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder
 
+## 2.14.0
+
+### Minor Changes
+
+- ec3a952: Skip existing packages reupload by default
+
 ## 2.13.0
 
 ### Minor Changes
