@@ -49,6 +49,7 @@ export * from './components/PlTabs';
 export * from './components/PlSectionSeparator';
 export * from './components/PlAccordion';
 export * from './components/PlStatusTag';
+export * from './components/PlLoaderCircular';
 
 export * from './components/PlFileDialog';
 export * from './components/PlFileInput';
