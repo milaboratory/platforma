@@ -20,5 +20,5 @@ export const COMMANDS = {
   'dump:libs': Cmd5,
   'dump:software': Cmd6,
   'dump:templates': Cmd7,
-  'dump:tests': Cmd8
+  'dump:tests': Cmd8,
 };

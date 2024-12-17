@@ -18,5 +18,5 @@ export const COMMANDS = {
   'start:docker': Cmd4,
   'start:local': Cmd5,
   'start:docker:s3': Cmd6,
-  'start:local:s3': Cmd7
+  'start:local:s3': Cmd7,
 };
