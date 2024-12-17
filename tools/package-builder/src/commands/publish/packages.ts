@@ -18,13 +18,13 @@ export default class Packages extends Command {
 
     ...cmdOpts.ArchiveFlag,
     ...cmdOpts.StorageURLFlag,
-    ...cmdOpts.FailExistingPackagesFlag
+    ...cmdOpts.FailExistingPackagesFlag,
   };
 
   static strict: boolean = false;
 
   public async run(): Promise<void> {
-    const { argv, flags } = await this.parse(Packages);
+    const { flags } = await this.parse(Packages);
     const logger = util.createLogger(flags['log-level']);
 
     const core = new Core(logger);
@@ -40,7 +40,7 @@ export default class Packages extends Command {
       storageURL: flags['storage-url'],
 
       failExisting: flags['fail-existing-packages'],
-      forceReupload: flags.force
+      forceReupload: flags.force,
     });
   }
 }

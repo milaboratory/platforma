@@ -2256,6 +2256,9 @@ importers:
       '@jest/globals':
         specifier: 'catalog:'
         version: 29.7.0
+      '@milaboratories/eslint-config':
+        specifier: workspace:^
+        version: link:../eslint-config
       '@milaboratories/oclif-index':
         specifier: workspace:*
         version: link:../oclif-index
