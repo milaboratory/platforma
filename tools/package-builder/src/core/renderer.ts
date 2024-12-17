@@ -1,5 +1,5 @@
 import path from 'path';
-import fs, { existsSync } from 'fs';
+import fs from 'fs';
 import winston from 'winston';
 import { z } from 'zod';
 import { Entrypoint, EntrypointType, PackageConfig, PackageEntrypoint } from './package-info';
