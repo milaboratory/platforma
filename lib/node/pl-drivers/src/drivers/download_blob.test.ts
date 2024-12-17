@@ -20,7 +20,7 @@ import { OnDemandBlobResourceSnapshot } from './types';
 
 const fileName = 'answer_to_the_ultimate_question.txt';
 
-test.skip('should download a blob and read its content', async () => {
+test('should download a blob and read its content', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-1-'));
@@ -49,7 +49,55 @@ test.skip('should download a blob and read its content', async () => {
   });
 });
 
-test.skip('should get on demand blob without downloading a blob', async () => {
+test('should not redownload a blob a file already exists', async () => {
+  await TestHelpers.withTempRoot(async (client) => {
+    const logger = new ConsoleLoggerAdapter();
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-1-'));
+
+    const signer = new HmacSha256Signer(HmacSha256Signer.generateSecret());
+
+    const driver = new DownloadDriver(
+      logger,
+      createDownloadClient(logger, client, []),
+      createLogsClient(client, logger),
+      dir,
+      signer,
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+    );
+
+    console.log('Download the first time');
+    const downloadable = await makeDownloadableBlobFromAssets(client, fileName);
+    const c = driver.getDownloadedBlob(downloadable);
+    await c.getValue();
+    await c.awaitChange();
+    const blob = await c.getValue();
+    expect(blob).toBeDefined();
+    expect(blob!.size).toBe(3);
+    expect((await driver.getContent(blob!.handle))?.toString()).toBe('42\n');
+
+    await driver.releaseAll();
+
+    const driver2 = new DownloadDriver(
+      logger,
+      createDownloadClient(logger, client, []),
+      createLogsClient(client, logger),
+      dir,
+      signer,
+      { cacheSoftSizeBytes: 700 * 1024, nConcurrentDownloads: 10 }
+    );
+
+    console.log('Download the second time');
+    const c2 = driver2.getDownloadedBlob(downloadable);
+    await c2.getValue();
+    await c2.awaitChange();
+    const blob2 = await c2.getValue();
+    expect(blob2).toBeDefined();
+    expect(blob2!.size).toBe(3);
+    expect((await driver.getContent(blob2!.handle))?.toString()).toBe('42\n');
+  });
+});
+
+test('should get on demand blob without downloading a blob', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-2-'));
@@ -74,7 +122,7 @@ test.skip('should get on demand blob without downloading a blob', async () => {
   });
 });
 
-test.skip('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
+test('should get undefined when releasing a blob from a small cache and the blob was deleted.', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-3-'));
@@ -111,7 +159,7 @@ test.skip('should get undefined when releasing a blob from a small cache and the
   });
 });
 
-test.skip('should get the blob when releasing a blob, but a cache is big enough and it keeps a file on the local drive.', async () => {
+test('should get the blob when releasing a blob, but a cache is big enough and it keeps a file on the local drive.', async () => {
   await TestHelpers.withTempRoot(async (client) => {
     const logger = new ConsoleLoggerAdapter();
     const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'test-download-4-'));
