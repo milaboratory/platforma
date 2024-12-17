@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { type Column, type GridApi } from 'ag-grid-enterprise';
-import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable } from '@milaboratories/uikit';
+import { PlBtnGhost, PlMaskIcon16, PlMaskIcon24, PlSlideModal, PlTooltip, useSortable2 } from '@milaboratories/uikit';
 import { ref, toRefs, watch } from 'vue';
 import './pl-ag-grid-column-manager.scss';
 import { PlAgDataTableToolsPanelId } from '../PlAgDataTableToolsPanel/PlAgDataTableToolsPanelId';
-import { PlAgDataTableRowNumberColId } from '../PlAgDataTable';
 
 const props = defineProps<{
   /**
@@ -22,7 +21,7 @@ const listRef = ref<HTMLElement>();
 const slideModal = ref(false);
 const listKey = ref(0);
 
-useSortable(listRef, {
+useSortable2(listRef, {
   handle: '.handle',
   onChange(indices) {
     gridApi.value.moveColumns(indices.map((i) => columns.value[i]), 0);
@@ -64,7 +63,7 @@ watch(
     <PlSlideModal v-model="slideModal" :width="'368px'" close-on-outside-click>
       <template #title>Manage Columns</template>
 
-      <div ref="listRef" :key="listKey" class="pl-ag-columns">
+      <div ref="listRef" :key="listKey" class="pl-ag-columns pl-2 pr-2">
         <div v-for="col in columns" :key="col.getId()" class="pl-ag-columns__item">
           <div :class="{ handle: !col.getColDef().lockPosition }" class="pl-ag-columns__drag">
             <PlMaskIcon16 name="drag-dots" />

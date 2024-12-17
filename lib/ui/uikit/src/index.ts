@@ -82,6 +82,7 @@ export { useMouseCapture } from './composition/useMouseCapture';
 export { useHover } from './composition/useHover';
 export { useMouse } from './composition/useMouse';
 export { useSortable } from './composition/useSortable';
+export { useSortable2 } from './composition/useSortable2';
 export { useInterval } from './composition/useInterval';
 export { useFormState } from './composition/useFormState';
 export { useQuery } from './composition/useQuery.ts';
