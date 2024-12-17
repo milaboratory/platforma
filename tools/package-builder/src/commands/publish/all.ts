@@ -18,11 +18,11 @@ export default class PublishAll extends Command {
     ...cmdOpts.StorageURLFlag,
 
     ...cmdOpts.PackageIDFlag,
-    ...cmdOpts.FailExistingPackagesFlag
+    ...cmdOpts.FailExistingPackagesFlag,
   };
 
   public async run(): Promise<void> {
-    const { argv, flags } = await this.parse(PublishAll);
+    const { flags } = await this.parse(PublishAll);
     const logger = util.createLogger(flags['log-level']);
 
     const core = new Core(logger);
@@ -30,7 +30,7 @@ export default class PublishAll extends Command {
     core.targetPlatform = flags.platform as util.PlatformType;
     core.allPlatforms = flags['all-platforms'];
 
-    core.publishPackages({
+    await core.publishPackages({
       ids: flags['package-id'],
       ignoreArchiveOverlap: flags.force,
 
@@ -38,7 +38,7 @@ export default class PublishAll extends Command {
       storageURL: flags['storage-url'],
 
       failExisting: flags['fail-existing-packages'],
-      forceReupload: flags.force
+      forceReupload: flags.force,
     });
 
     core.publishDescriptors();
