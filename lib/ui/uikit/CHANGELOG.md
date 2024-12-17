@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.2.37
+
+### Patch Changes
+
+- 54cdf0f: added scroll support for sortable
+
 ## 2.2.36
 
 ### Patch Changes

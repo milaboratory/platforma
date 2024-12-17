@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.20.21
+
+### Patch Changes
+
+- 54cdf0f: added scroll support for sortable
+- Updated dependencies [54cdf0f]
+  - @milaboratories/uikit@2.2.37
+
 ## 1.20.19
 
 ### Patch Changes
