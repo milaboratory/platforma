@@ -59,6 +59,10 @@ export * from './components/PlMaskIcon24';
 export * from './components/PlIcon16';
 export * from './components/PlIcon24';
 
+export * from './components/PlChartStackedBar';
+
+export * from './colors';
+
 // @TODO review (may be private)
 import DropdownListItem from './components/DropdownListItem.vue';
 
