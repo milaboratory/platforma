@@ -5,7 +5,7 @@ import {
   ComputableStableDefined,
   Watcher
 } from '@milaboratories/computable';
-import { ResourceId, ResourceType } from '@milaboratories/pl-client';
+import { ResourceId, ResourceType, stringifyWithResourceId } from '@milaboratories/pl-client';
 import {
   AnyLogHandle,
   BlobDriver,
@@ -435,8 +435,8 @@ export class DownloadDriver implements BlobDriver {
 
           this.removeTask(
             task,
-            `the task ${task.path} was removed` +
-              `from cache along with ${toDelete.map((d) => d.path)}`
+            `the task ${stringifyWithResourceId(task.info())} was removed` +
+              `from cache along with ${stringifyWithResourceId(toDelete.map((d) => d.info()))}`
           );
         })
       );
@@ -444,7 +444,10 @@ export class DownloadDriver implements BlobDriver {
       // The task is still in a downloading queue.
       const deleted = task.counter.dec(callerId);
       if (deleted) {
-        this.removeTask(task, `the task ${task.path} was removed from cache`);
+        this.removeTask(
+          task,
+          `the task ${stringifyWithResourceId(task.info())} was removed from cache`
+        );
       }
     }
   }
